@@ -245,6 +245,7 @@ def plot_results(results, titles, output):
     save(figure, "spectrum")
 
     figure, axes = plt.subplots(3, 1, figsize=(10, 8), sharex=True, constrained_layout=True)
+    figure.suptitle(f"Effective state dimensions (head width: {width})")
     for axis, key, label in zip(
         axes, ("participation_ratio", "energy_rank90", "energy_rank99"),
         ("Participation ratio", "Modes for 90% energy", "Modes for 99% energy"),
@@ -252,7 +253,7 @@ def plot_results(results, titles, output):
         for index, title in enumerate(titles):
             axis.plot(positions, results[key][index], color=colors[index], label=title, linewidth=1.2)
         axis.set_ylabel(label)
-        axis.set_ylim(0, width + 1)
+        axis.set_ylim(0, min(width + 1, max(2, math.ceil(results[key].max() * 1.15))))
         axis.grid(alpha=0.2)
     axes[0].legend(fontsize=8, loc="upper left")
     axes[-1].set_xlabel("Prefix length t (including BOS)")
