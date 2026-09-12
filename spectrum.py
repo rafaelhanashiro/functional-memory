@@ -1,6 +1,7 @@
 """Inspect the state in Section 3.2 of overleaf/iclr/iclr2027_conference.tex.
 
 Run with: uv run spectrum.py --layer 8 --kv-head 0 --tokens 512 --output results/run
+For Slurm, run uv sync --frozen first, then launch .venv/bin/python directly.
 The saved eigenvalues describe the unnormalized numerator state, before W_O.
 """
 
@@ -255,7 +256,7 @@ def plot_results(results, titles, output):
         axis.set_ylabel(label)
         axis.set_ylim(0, min(width + 1, max(2, math.ceil(results[key].max() * 1.15))))
         axis.grid(alpha=0.2)
-    axes[0].legend(fontsize=8, loc="upper left")
+    axes[0].legend(fontsize=8, loc="upper right")
     axes[-1].set_xlabel("Prefix length t (including BOS)")
     save(figure, "effective_rank")
 
