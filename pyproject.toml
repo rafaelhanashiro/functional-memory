@@ -9,6 +9,7 @@ dependencies = [
     "datasets",
     "numpy",
     "matplotlib",
+    "flash-linear-attention",
 ]
 
 [dependency-groups]
@@ -19,6 +20,7 @@ package = false
 
 [tool.uv.sources]
 torch = { index = "pytorch-cu126" }
+flash-linear-attention = { git = "https://github.com/fla-org/flash-linear-attention.git", rev = "516143e31fce09925e6c39ac37148444bad176c4" }
 
 [[tool.uv.index]]
 name = "pytorch-cu126"

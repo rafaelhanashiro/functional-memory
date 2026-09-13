@@ -214,3 +214,80 @@ def test_extracted_keys_include_rope_and_values_match_the_selected_kv_head(tiny_
     np.testing.assert_allclose(keys, expected_keys[0].numpy(), rtol=1e-6, atol=1e-8)
     np.testing.assert_allclose(values, expected_values.numpy(), rtol=1e-6, atol=1e-8)
     assert not np.allclose(keys[1:], raw_keys[0, 1:].numpy())
+
+
+def test_threshold_rank_strict_boundary_scale_and_zero():
+    from spectrum import threshold_rank, spectral_metrics, RANK_TOL
+    singular = np.array([[1., 2e-4, 1e-4, 5e-5, 0.], [0., 0., 0., 0., 0.]])
+    np.testing.assert_array_equal(threshold_rank(singular, RANK_TOL), [2, 0])
+    for scale in (1e-100, 1., 1e100):
+        scaled = singular * scale
+        np.testing.assert_array_equal(threshold_rank(scaled, RANK_TOL), [2, 0])
+        metrics = spectral_metrics(scaled**2, np.zeros(2))
+        np.testing.assert_array_equal(metrics['threshold_rank'], [2, 0])
+        assert metrics['participation_ratio'][1] == 0
+        assert metrics['energy_rank90'][1] == metrics['energy_rank99'][1] == 0
+        assert np.isneginf(metrics['log_trace'][1])
+    with pytest.raises(ValueError):
+        threshold_rank(np.array([np.nan]), RANK_TOL)
+
+
+def test_gdn_input_selection_keeps_reference_articles():
+    class Tokenizer:
+        bos_token_id = 1
+        def encode(self, text, **kwargs):
+            return list(range(len(text.split())))[:kwargs['max_length']]
+        def decode(self, ids, **kwargs):
+            return str(ids)
+    rows = ['= First =', 'a b c d', '= Second =', 'e f g h', '= Third =', 'i j k l']
+    selected = select_inputs(Tokenizer(), rows, 4, count=2, article_indices=[0, 2])
+    assert [item['title'] for item in selected] == ['First', 'Third']
+    assert all(len(item['token_ids']) == 4 for item in selected)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason='Native FLA kernels require CUDA')
+def test_native_gated_delta_rule_matches_explicit_recurrence():
+    from fla.ops.gated_delta_rule import fused_recurrent_gated_delta_rule
+    torch.manual_seed(123)
+    q = torch.randn(1, 9, 2, 16, device='cuda')
+    k = torch.randn_like(q)
+    v = torch.randn(1, 9, 2, 12, device='cuda')
+    g = -torch.rand(1, 9, 2, device='cuda')
+    beta = torch.sigmoid(torch.randn(1, 9, 2, device='cuda'))
+    state = torch.zeros(2, 16, 12, dtype=torch.float64, device='cuda')
+    with torch.inference_mode():
+        for t in range(1, 10):
+            key = k[0, t - 1].double()
+            key = key / torch.sqrt(key.square().sum(-1, keepdim=True) + 1e-6)
+            state = state * g[0, t - 1].double().exp()[:, None, None]
+            residual = v[0, t - 1].double() - torch.einsum('hkv,hk->hv', state, key)
+            state += beta[0, t - 1].double()[:, None, None] * key[:, :, None] * residual[:, None, :]
+            _, native = fused_recurrent_gated_delta_rule(
+                q=q[:, :t], k=k[:, :t], v=v[:, :t], g=g[:, :t], beta=beta[:, :t],
+                output_final_state=True, use_qk_l2norm_in_kernel=True,
+            )
+            assert native.dtype == torch.float32
+            torch.testing.assert_close(native[0].double(), state, rtol=2e-5, atol=2e-6)
+            sigma = torch.linalg.svdvals(native[0].double()).cpu().numpy()
+            from spectrum import threshold_rank, RANK_TOL
+            assert np.all(threshold_rank(sigma, RANK_TOL) <= min(t, 12))
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason='Native FLA kernels require CUDA')
+def test_tiny_gdn_cached_states_match_independent_prefixes():
+    from fla.models.gated_deltanet import GatedDeltaNetConfig, GatedDeltaNetModel
+    from spectrum import compute_gdn_spectra
+    torch.manual_seed(42)
+    config = GatedDeltaNetConfig(
+        vocab_size=127, hidden_size=32, intermediate_size=64, num_hidden_layers=2,
+        num_heads=2, head_dim=16, expand_v=1, attn_mode='fused_recurrent', conv_size=4,
+    )
+    model = GatedDeltaNetModel(config).float().cuda().eval()
+    ids = torch.randint(0, 127, (1, 70))
+    result = compute_gdn_spectra(model, ids, layer=1, heads=[0, 1], check_prefixes=[1, 2, 8, 70])
+    assert result['scaled_eigenvalues'].shape == (70, 2, 16)
+    assert result['singular_values'].dtype == np.float64
+    np.testing.assert_array_equal(result['threshold_rank'][0], [1, 1])
+    assert np.all(result['threshold_rank'] <= np.minimum(np.arange(1, 71), 16)[:, None])
+    assert np.isfinite(result['scaled_eigenvalues']).all()
+    np.testing.assert_allclose(result['normalized_eigenvalues'].sum(-1), 1)
