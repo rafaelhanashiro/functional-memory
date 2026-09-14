@@ -3,7 +3,7 @@
 __pycache__/
 /.pytest_cache/
 /.cache/
-/results/
+/results/logs/
 *.log
 slurm-*.out
 slurm-*.err
