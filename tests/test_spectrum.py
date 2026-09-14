@@ -5,7 +5,8 @@ import pytest
 import torch
 from transformers import LlamaConfig, LlamaModel
 
-from spectrum import (
+from scripts.spectrum import (
+    compute_llama_spectra,
     compute_spectra,
     direct_prefix_matrix,
     extract_kv,
@@ -73,6 +74,46 @@ def test_single_token_and_prefix_rank_ceiling():
         assert np.all(np.diff(spectrum) <= 0)
     assert result["participation_ratio"][0] == pytest.approx(1)
     assert result["energy_rank90"][0] == result["energy_rank99"][0] == 1
+
+
+@pytest.mark.parametrize("scale", [None, 0.2])
+def test_llama_multihead_spectra_keep_heads_independent(scale):
+    rng = np.random.default_rng(51)
+    keys = rng.normal(size=(7, 3, 4)) * 0.3
+    values = rng.normal(size=(7, 3, 5))
+    keys[:, 0] = keys[0, 0]  # Identical keys give a rank-one state for head 0.
+    values[:, 2] = 0  # A zero state must not borrow another head's energy.
+    result = compute_llama_spectra(keys, values, check_prefixes=(1, 4, 7), scale=scale)
+    factor = 1 / np.sqrt(keys.shape[-1]) if scale is None else scale
+
+    for name, array in result.items():
+        expected_shape = (7, 3, 5) if name in {
+            "scaled_eigenvalues", "normalized_eigenvalues",
+        } else (7, 3)
+        assert array.shape == expected_shape, name
+    np.testing.assert_allclose(result["key_norms"], np.linalg.norm(keys, axis=-1))
+    for head in range(3):
+        for t in range(1, 8):
+            prefix_keys, prefix_values = keys[:t, head], values[:t, head]
+            shift = factor * np.square(prefix_keys).sum(axis=-1).max()
+            gram = np.exp(factor * (prefix_keys @ prefix_keys.T) - shift)
+            expected = prefix_values.T @ gram @ prefix_values
+            eigenvalues = np.linalg.eigvalsh(expected)[::-1].clip(min=0)
+            np.testing.assert_allclose(result["log_scale"][t - 1, head], shift)
+            np.testing.assert_allclose(
+                result["scaled_eigenvalues"][t - 1, head], eigenvalues, atol=1e-12,
+            )
+        errors = result["direct_check_relative_error"][:, head]
+        assert np.isnan(errors[[1, 2, 4, 5]]).all()
+        assert np.all(errors[[0, 3, 6]] < 1e-10)
+    np.testing.assert_allclose(result["normalized_eigenvalues"][:, :2].sum(-1), 1)
+    np.testing.assert_array_equal(result["normalized_eigenvalues"][:, 2], 0)
+    np.testing.assert_array_equal(result["threshold_rank"][:, 0], 1)
+    np.testing.assert_array_equal(result["threshold_rank"][:, 2], 0)
+    np.testing.assert_allclose(result["participation_ratio"][:, 0], 1)
+    np.testing.assert_array_equal(result["participation_ratio"][:, 2], 0)
+    assert np.all(result["threshold_rank"] <= np.minimum(np.arange(1, 8), 5)[:, None])
+    assert np.isneginf(result["log_trace"][:, 2]).all()
 
 
 def test_opposite_values_cancel_the_state():
@@ -185,6 +226,28 @@ def test_full_pass_cache_prefixes_match_separate_causal_passes(tiny_llama):
         np.testing.assert_allclose(values[:t], prefix_values, rtol=2e-6, atol=2e-7)
 
 
+def test_llama_all_kv_heads_are_extracted_in_one_forward_pass(tiny_llama):
+    token_ids = torch.tensor([[1, 11, 22, 33, 44]])
+    forward_inputs = []
+
+    def record_forward(_model, _args, kwargs):
+        forward_inputs.append(kwargs["input_ids"].clone())
+
+    handle = tiny_llama.register_forward_pre_hook(record_forward, with_kwargs=True)
+    try:
+        keys, values = extract_kv(tiny_llama, token_ids, layer=1)
+    finally:
+        handle.remove()
+    assert len(forward_inputs) == 1
+    torch.testing.assert_close(forward_inputs[0], token_ids)
+    assert keys.shape == values.shape == (5, 2, 8)
+    assert keys.dtype == values.dtype == np.float64
+    for head in range(tiny_llama.config.num_key_value_heads):
+        head_keys, head_values = extract_kv(tiny_llama, token_ids, layer=1, kv_head=head)
+        np.testing.assert_array_equal(keys[:, head], head_keys)
+        np.testing.assert_array_equal(values[:, head], head_values)
+
+
 def test_extracted_keys_include_rope_and_values_match_the_selected_kv_head(tiny_llama):
     token_ids = torch.tensor([[1, 11, 22, 33, 44]])
     captured = {}
@@ -217,7 +280,7 @@ def test_extracted_keys_include_rope_and_values_match_the_selected_kv_head(tiny_
 
 
 def test_threshold_rank_strict_boundary_scale_and_zero():
-    from spectrum import threshold_rank, spectral_metrics, RANK_TOL
+    from scripts.spectrum import threshold_rank, spectral_metrics, RANK_TOL
     singular = np.array([[1., 2e-4, 1e-4, 5e-5, 0.], [0., 0., 0., 0., 0.]])
     np.testing.assert_array_equal(threshold_rank(singular, RANK_TOL), [2, 0])
     for scale in (1e-100, 1., 1e100):
@@ -269,14 +332,14 @@ def test_native_gated_delta_rule_matches_explicit_recurrence():
             assert native.dtype == torch.float32
             torch.testing.assert_close(native[0].double(), state, rtol=2e-5, atol=2e-6)
             sigma = torch.linalg.svdvals(native[0].double()).cpu().numpy()
-            from spectrum import threshold_rank, RANK_TOL
+            from scripts.spectrum import threshold_rank, RANK_TOL
             assert np.all(threshold_rank(sigma, RANK_TOL) <= min(t, 12))
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='Native FLA kernels require CUDA')
 def test_tiny_gdn_cached_states_match_independent_prefixes():
     from fla.models.gated_deltanet import GatedDeltaNetConfig, GatedDeltaNetModel
-    from spectrum import compute_gdn_spectra
+    from scripts.spectrum import compute_gdn_spectra
     torch.manual_seed(42)
     config = GatedDeltaNetConfig(
         vocab_size=127, hidden_size=32, intermediate_size=64, num_hidden_layers=2,

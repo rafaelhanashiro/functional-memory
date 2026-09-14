@@ -1,9 +1,10 @@
 """Inspect the state in Section 3.2 of overleaf/iclr/iclr2027_conference.tex.
 
-Run with: uv run spectrum.py --layer 8 --kv-head 0 --tokens 512 --output results/run
-Gated DeltaNet: uv run spectrum.py --model gated-deltanet --layer 12
-Refresh saved figures/metrics: uv run spectrum.py --replot results/run
-For Slurm, run uv sync --frozen first, then launch .venv/bin/python directly.
+Llama, all KV heads: uv run scripts/spectrum.py --layer 8 --tokens 512 --output results/run
+Select one Llama KV head: uv run scripts/spectrum.py --layer 8 --kv-head 0
+Gated DeltaNet: uv run scripts/spectrum.py --model gated-deltanet --layer 12
+Refresh saved figures/metrics: uv run scripts/spectrum.py --replot results/run
+For Slurm, run uv sync --frozen first, then .venv/bin/python scripts/spectrum.py.
 The saved eigenvalues describe the attention state before output processing.
 Threshold rank counts state singular values > 1e-4 times the largest.
 Participation ratio uses squared singular values; neither metric must grow monotonically.
@@ -276,11 +277,26 @@ def compute_gdn_spectra(model, input_ids, layer, heads, check_prefixes=()):
     return result
 
 
-def extract_kv(model, input_ids, layer, kv_head):
-    """Read a single head from the model's native post-RoPE KV cache."""
+def compute_llama_spectra(keys, values, check_prefixes=(), scale=None):
+    """Analyze [tokens, heads, dimension] arrays independently for every KV head."""
+    keys, values = np.asarray(keys), np.asarray(values)
+    if (keys.ndim != 3 or values.ndim != 3 or keys.shape[:2] != values.shape[:2]
+            or min(*keys.shape, *values.shape) < 1):
+        raise ValueError("Require matching nonempty [tokens, heads, dimension] arrays.")
+    per_head = [compute_spectra(keys[:, head], values[:, head], check_prefixes, scale)
+                for head in range(keys.shape[1])]
+    return {key: np.stack([result[key] for result in per_head], axis=1) for key in per_head[0]}
+
+
+def extract_kv(model, input_ids, layer, kv_head=None):
+    """Read native post-RoPE KV cache in one causal pass.
+
+    Default: [tokens, KV heads, dimension]. An integer selects [tokens, dimension].
+    These are the distinct KV heads, before repetition across query heads.
+    """
     if not 0 <= layer < model.config.num_hidden_layers:
         raise ValueError(f"Layer must be in [0, {model.config.num_hidden_layers - 1}].")
-    if not 0 <= kv_head < model.config.num_key_value_heads:
+    if kv_head is not None and not 0 <= kv_head < model.config.num_key_value_heads:
         raise ValueError(f"KV head must be in [0, {model.config.num_key_value_heads - 1}].")
     if input_ids.ndim != 2 or input_ids.shape[0] != 1 or input_ids.shape[1] == 0:
         raise ValueError("Extract one nonempty sequence at a time, with shape [1, tokens].")
@@ -290,13 +306,16 @@ def extract_kv(model, input_ids, layer, kv_head):
     with torch.inference_mode():
         outputs = model(input_ids=input_ids.to(device), use_cache=True, return_dict=True)
         keys, values = outputs.past_key_values[layer]
+        if kv_head is None:
+            return tuple(tensor[0].transpose(0, 1).to(device="cpu", dtype=torch.float64).numpy().copy()
+                         for tensor in (keys, values))
         return (
             keys[0, kv_head].to(device="cpu", dtype=torch.float64).numpy().copy(),
             values[0, kv_head].to(device="cpu", dtype=torch.float64).numpy().copy(),
         )
 
 
-def plot_results(results, titles, output, context=None):
+def plot_results(results, titles, output, context=None, layer=None, model_name=None):
     """Write publication-exportable PNG and PDF figures from saved arrays."""
     import matplotlib
     matplotlib.use("Agg")
@@ -305,7 +324,9 @@ def plot_results(results, titles, output, context=None):
 
     output = Path(output)
     if results["scaled_eigenvalues"].ndim == 4:
-        plot_gdn_results(results, titles, output)
+        if model_name is None:
+            model_name = "Gated DeltaNet" if "singular_values" in results else "Llama"
+        plot_head_results(results, titles, output, layer=layer, model_name=model_name)
         return
     count, length, width = results["scaled_eigenvalues"].shape
     positions = np.arange(1, length + 1)
@@ -357,8 +378,8 @@ def plot_results(results, titles, output, context=None):
     save(figure, "state_norm")
 
 
-def plot_gdn_results(results, titles, output):
-    """One set of figures per article; head colors and spectrum scales are shared."""
+def plot_head_results(results, titles, output, layer=None, model_name="Gated DeltaNet"):
+    """Per-article figures plus sequence means/ranges with all heads together."""
     # Reuse the plotting layout with heads as curves/panels within each article.
     count, length, head_count, width = results["scaled_eigenvalues"].shape
     for index, title in enumerate(titles):
@@ -367,8 +388,74 @@ def plot_gdn_results(results, titles, output):
         per_head = {key: np.moveaxis(results[key][index], 1, 0)
                     for key in ("scaled_eigenvalues", "normalized_eigenvalues", "participation_ratio",
                                 "threshold_rank", "energy_rank90", "energy_rank99", "log_trace")}
-        labels = [f"Head {head}" for head in results["head_indices"]]
-        plot_results(per_head, labels, directory, context=title)
+        head_label = "KV head" if model_name == "Llama" else "Head"
+        labels = [f"{head_label} {head}" for head in results["head_indices"]]
+        layer_label = f" · layer {layer}" if layer is not None else ""
+        plot_results(per_head, labels, directory, context=f"{model_name}{layer_label} · {title}")
+    plot_aggregate(results, output / "aggregate", layer=layer, model_name=model_name)
+
+
+def plot_aggregate(results, output, layer=None, model_name="Gated DeltaNet"):
+    """Average each metric across sequences, preserving token and head axes.
+
+    Shading shows the observed min–max range, not a confidence interval.
+    No temporal smoothing, averaging of states, or pooling of spectra is used.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    output = Path(output)
+    output.mkdir(exist_ok=True)
+    count, length, _, width = results["scaled_eigenvalues"].shape
+    positions = np.arange(1, length + 1)
+    colors = plt.get_cmap("tab10").colors
+    fields = (
+        ("participation_ratio", "Participation ratio"),
+        ("threshold_rank", "Threshold rank (σ > 10⁻⁴ σ₁)"),
+        ("energy_rank90", "Modes for 90% energy"),
+        ("energy_rank99", "Modes for 99% energy"),
+    )
+    summaries = {key: (results[key].mean(axis=0), results[key].min(axis=0), results[key].max(axis=0))
+                 for key, _ in fields}
+    layer_label = f" · layer {layer}" if layer is not None else ""
+    title = (f"{model_name}{layer_label} · state width {width}\n"
+             f"Mean across {count} sequences; shading: min–max range")
+    head_label = "KV head" if model_name == "Llama" else "Head"
+
+    def draw(axis, key, label):
+        mean, lower, upper = summaries[key]
+        for index, head in enumerate(results["head_indices"]):
+            color = colors[index % len(colors)]
+            axis.fill_between(positions, lower[:, index], upper[:, index],
+                              color=color, alpha=0.10, linewidth=0, zorder=1)
+            axis.plot(positions, mean[:, index], color=color, linewidth=1.6,
+                      label=f"{head_label} {head}", zorder=2)
+        limit = min(width + 1, max(2, math.ceil(upper.max() * 1.10)))
+        if key == "threshold_rank":
+            axis.plot(positions, np.minimum(positions, width), color="black", linestyle="--",
+                      linewidth=1.1, label=f"Ceiling min(t, {width})", zorder=3)
+            limit = width * 1.04
+        axis.set(ylabel=label, xlim=(1, length), ylim=(0, limit))
+        axis.grid(alpha=0.2)
+
+    def save(figure, axes, name, legend_axis):
+        axes[-1].set_xlabel("Prefix length t (including BOS)")
+        figure.suptitle(title)
+        handles, labels = legend_axis.get_legend_handles_labels()
+        figure.legend(handles, labels, loc="outside lower center", ncol=5, fontsize=8)
+        for suffix in ("png", "pdf"):
+            figure.savefig(output / f"{name}.{suffix}", dpi=180, bbox_inches="tight")
+        plt.close(figure)
+
+    figure, axis = plt.subplots(figsize=(10, 5), constrained_layout=True)
+    draw(axis, *fields[1])
+    save(figure, [axis], "threshold_rank", axis)
+
+    figure, axes = plt.subplots(4, 1, figsize=(10, 11), sharex=True, constrained_layout=True)
+    for axis, (key, label) in zip(axes, fields):
+        draw(axis, key, label)
+    save(figure, axes, "effective_rank", axes[1])
 
 
 def replot(directory):
@@ -388,7 +475,7 @@ def replot(directory):
     temporary = directory / "spectra.tmp.npz"
     np.savez_compressed(temporary, **results)
     temporary.replace(directory / "spectra.npz")
-    plot_results(results, [item["title"] for item in inputs], directory)
+    plot_results(results, [item["title"] for item in inputs], directory, layer=metadata["layer"])
     (directory / "metadata.json").write_text(json.dumps(metadata, indent=2, allow_nan=False) + "\n")
     print(f"Updated threshold ranks and plots in {directory}", flush=True)
 
@@ -399,13 +486,15 @@ def main():
         epilog=("Indices are zero-based. Four WikiText-2 test articles are selected using Llama,\n"
                 "then tokenized separately for each model: BOS + tokens-1 text tokens.\n"
                 "Outputs: spectra.npz, inputs.json, metadata.json, and PNG/PDF figures.\n"
+                "All heads are analyzed by default, with per-text plots under text-N/\n"
+                "and sequence mean/min–max rank plots under aggregate/.\n"
                 "Original eigenvalues = exp(log_scale) * scaled_eigenvalues.\n"
                 "Gated DeltaNet requires CUDA. Output must be a new directory.\n"
                 "--replot updates saved metrics/figures in place without inference."),
     )
     parser.add_argument("--model", choices=("llama", "gated-deltanet"), default="llama")
     parser.add_argument("--layer", type=int, help="Layer index (default: Llama 8, Gated DeltaNet 12)")
-    parser.add_argument("--kv-head", type=int, default=0, help="Llama KV head (default: 0)")
+    parser.add_argument("--kv-head", type=int, help="Llama KV head (default: all KV heads)")
     parser.add_argument("--head", type=int, help="Gated DeltaNet head (default: all heads)")
     parser.add_argument("--tokens", type=int, default=512, help="Tokens per text including BOS (default: 512)")
     parser.add_argument("--output", type=Path, help="New results directory; default name includes model/layer/head/tokens")
@@ -419,10 +508,10 @@ def main():
         args.layer = 12 if gdn else 8
     if not gdn and args.head is not None:
         parser.error("--head is for Gated DeltaNet; use --kv-head for Llama")
-    if gdn and args.kv_head != 0:
+    if gdn and args.kv_head is not None:
         parser.error("--kv-head is for Llama; use --head for Gated DeltaNet")
     if args.output is None:
-        name = f"gated-deltanet-1.3b-l{args.layer}-h{args.head if args.head is not None else 'all'}" if gdn else f"llama-3.2-1b-l{args.layer}-kv{args.kv_head}"
+        name = f"gated-deltanet-1.3b-l{args.layer}-h{args.head if args.head is not None else 'all'}" if gdn else f"llama-3.2-1b-l{args.layer}-kv{args.kv_head if args.kv_head is not None else 'all'}"
         args.output = Path(f"results/{name}-t{args.tokens}")
     if args.tokens < 2:
         parser.error("--tokens must be at least 2")
@@ -446,8 +535,10 @@ def main():
         if any(not 0 <= h < (config.num_v_heads or config.num_heads) for h in heads):
             parser.error("--head outside the model's head range")
         config.attn_mode = "fused_recurrent"  # float32 native kernel also for prefix checks
-    elif not 0 <= args.kv_head < config.num_key_value_heads:
-        parser.error(f"--kv-head must be in [0, {config.num_key_value_heads - 1}]")
+    else:
+        heads = list(range(config.num_key_value_heads)) if args.kv_head is None else [args.kv_head]
+        if any(not 0 <= head < config.num_key_value_heads for head in heads):
+            parser.error(f"--kv-head must be in [0, {config.num_key_value_heads - 1}]")
     if args.tokens > config.max_position_embeddings:
         parser.error(f"--tokens exceeds the model context limit ({config.max_position_embeddings})")
     tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
@@ -495,8 +586,9 @@ def main():
         if gdn:
             result = compute_gdn_spectra(model, token_ids, args.layer, heads, check_prefixes)
         else:
-            keys, values = extract_kv(model, token_ids, args.layer, args.kv_head)
-            result = compute_spectra(keys, values, check_prefixes=check_prefixes, scale=scale)
+            keys, values = extract_kv(model, token_ids, args.layer)
+            keys, values = keys[:, heads], values[:, heads]
+            result = compute_llama_spectra(keys, values, check_prefixes=check_prefixes, scale=scale)
             all_keys.append(keys)
             all_values.append(values)
         all_results.append(result)
@@ -504,12 +596,12 @@ def main():
 
     results = {key: np.stack([item[key] for item in all_results]) for key in all_results[0]}
     results["token_ids"] = np.array([item["token_ids"] for item in inputs], dtype=np.int64)
+    results["head_indices"] = np.array(heads, dtype=np.int64)
     if gdn:
-        results["head_indices"] = np.array(heads, dtype=np.int64)
         expected_shape = (4, args.tokens, len(heads), min(config.head_dim, int(config.head_dim * config.expand_v)))
     else:
         results.update(keys=np.stack(all_keys), values=np.stack(all_values))
-        expected_shape = (4, args.tokens, config.head_dim)
+        expected_shape = (4, args.tokens, len(heads), config.head_dim)
     if results["scaled_eigenvalues"].shape != expected_shape:
         raise RuntimeError(f"Unexpected spectrum shape: {results['scaled_eigenvalues'].shape}; expected {expected_shape}")
     np.savez_compressed(args.output / "spectra.npz", **results)
@@ -525,7 +617,7 @@ def main():
         "dataset": DATASET_ID, "dataset_revision": DATASET_REVISION,
         "dataset_config": DATASET_CONFIG, "dataset_split": "test",
         "layer": args.layer, "kv_head": None if gdn else args.kv_head,
-        "head_indices": heads if gdn else [args.kv_head], "tokens": args.tokens,
+        "head_indices": heads, "head_type": "recurrent" if gdn else "kv", "tokens": args.tokens,
         "spectrum_shape": list(expected_shape), "attention_scale": scale,
         "model_dtype": "float32", "analysis_dtype": "float64",
         "attention_implementation": "fused_recurrent" if gdn else "eager",
@@ -550,7 +642,7 @@ def main():
     }
     if not gdn:
         metadata["max_direct_relative_error"] = metadata["max_validation_relative_error"]
-    plot_results(results, [item["title"] for item in inputs], args.output)
+    plot_results(results, [item["title"] for item in inputs], args.output, layer=args.layer)
     metadata["elapsed_seconds"] = time.monotonic() - started
     (args.output / "metadata.json").write_text(json.dumps(metadata, indent=2, allow_nan=False) + "\n")
     print(f"Saved spectra {expected_shape} and figures to {args.output.resolve()} in {metadata['elapsed_seconds']:.1f}s", flush=True)
