@@ -448,10 +448,6 @@ def plot_aggregate(results, output, layer=None, model_name="Gated DeltaNet"):
             figure.savefig(output / f"{name}.{suffix}", dpi=180, bbox_inches="tight")
         plt.close(figure)
 
-    figure, axis = plt.subplots(figsize=(10, 5), constrained_layout=True)
-    draw(axis, *fields[1])
-    save(figure, [axis], "threshold_rank", axis)
-
     figure, axes = plt.subplots(4, 1, figsize=(10, 11), sharex=True, constrained_layout=True)
     for axis, (key, label) in zip(axes, fields):
         draw(axis, key, label)
