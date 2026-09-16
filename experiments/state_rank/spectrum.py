@@ -1,10 +1,10 @@
 """Inspect the state in Section 3.2 of overleaf/iclr/iclr2027_conference.tex.
 
-Llama, all KV heads: uv run scripts/spectrum.py --layer 8 --tokens 512 --output results/run
-Select one Llama KV head: uv run scripts/spectrum.py --layer 8 --kv-head 0
-Gated DeltaNet: uv run scripts/spectrum.py --model gated-deltanet --layer 12
-Refresh saved figures/metrics: uv run scripts/spectrum.py --replot results/run
-For Slurm, run uv sync --frozen first, then .venv/bin/python scripts/spectrum.py.
+Llama, all KV heads: uv run experiments/state_rank/spectrum.py --layer 8 --tokens 512 --output results/run
+Select one Llama KV head: uv run experiments/state_rank/spectrum.py --layer 8 --kv-head 0
+Gated DeltaNet: uv run experiments/state_rank/spectrum.py --model gated-deltanet --layer 12
+Refresh saved figures/metrics: uv run experiments/state_rank/spectrum.py --replot results/run
+For Slurm, run uv sync --frozen first, then .venv/bin/python experiments/state_rank/spectrum.py.
 The saved eigenvalues describe the attention state before output processing.
 Threshold rank counts state singular values > 1e-4 times the largest.
 Participation ratio uses squared singular values; neither metric must grow monotonically.

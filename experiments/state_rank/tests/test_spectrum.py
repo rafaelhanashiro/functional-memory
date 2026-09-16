@@ -5,7 +5,7 @@ import pytest
 import torch
 from transformers import LlamaConfig, LlamaModel
 
-from scripts.spectrum import (
+from experiments.state_rank.spectrum import (
     compute_llama_spectra,
     compute_spectra,
     direct_prefix_matrix,
@@ -280,7 +280,7 @@ def test_extracted_keys_include_rope_and_values_match_the_selected_kv_head(tiny_
 
 
 def test_threshold_rank_strict_boundary_scale_and_zero():
-    from scripts.spectrum import threshold_rank, spectral_metrics, RANK_TOL
+    from experiments.state_rank.spectrum import threshold_rank, spectral_metrics, RANK_TOL
     singular = np.array([[1., 2e-4, 1e-4, 5e-5, 0.], [0., 0., 0., 0., 0.]])
     np.testing.assert_array_equal(threshold_rank(singular, RANK_TOL), [2, 0])
     for scale in (1e-100, 1., 1e100):
@@ -332,14 +332,14 @@ def test_native_gated_delta_rule_matches_explicit_recurrence():
             assert native.dtype == torch.float32
             torch.testing.assert_close(native[0].double(), state, rtol=2e-5, atol=2e-6)
             sigma = torch.linalg.svdvals(native[0].double()).cpu().numpy()
-            from scripts.spectrum import threshold_rank, RANK_TOL
+            from experiments.state_rank.spectrum import threshold_rank, RANK_TOL
             assert np.all(threshold_rank(sigma, RANK_TOL) <= min(t, 12))
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason='Native FLA kernels require CUDA')
 def test_tiny_gdn_cached_states_match_independent_prefixes():
     from fla.models.gated_deltanet import GatedDeltaNetConfig, GatedDeltaNetModel
-    from scripts.spectrum import compute_gdn_spectra
+    from experiments.state_rank.spectrum import compute_gdn_spectra
     torch.manual_seed(42)
     config = GatedDeltaNetConfig(
         vocab_size=127, hidden_size=32, intermediate_size=64, num_hidden_layers=2,

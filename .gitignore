@@ -1,9 +1,15 @@
 /overleaf/
 /.venv/
+/.envs/
+/worktrees/
+**/.venv/
+**/.pytest_cache/
 __pycache__/
 /.pytest_cache/
 /.cache/
 /results/logs/
+/results/key_dimension/**/checkpoints/
+/results/key_dimension/**/wandb/
 *.log
 slurm-*.out
 slurm-*.err
