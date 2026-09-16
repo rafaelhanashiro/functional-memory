@@ -63,6 +63,9 @@ export TMPDIR="${CACHE_ROOT}/tmp"
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-32}"
 export MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-32}"
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
+# Slurm inherits the submission environment, including CPU-only test settings.
+# GPU jobs must choose CUDA explicitly; CPU preflight workers override this.
+export JAX_PLATFORMS=cuda
 export PYTHONPATH="${EXECUTION_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 export MPLBACKEND=Agg
 UV=(uv run --project "${EXECUTION_ROOT}/experiments/polynomial_attention" --locked --extra cuda)

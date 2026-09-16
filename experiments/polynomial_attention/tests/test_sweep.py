@@ -213,14 +213,15 @@ def test_failed_launcher_preflight_never_submits_production(tmp_path):
     git.chmod(0o755)
     calls = tmp_path / "uv-calls"
     uv = commands / "uv"
-    uv.write_text(f'#!/bin/bash\necho "$*" >> "{calls}"\nexit 19\n')
+    uv.write_text(f'#!/bin/bash\necho "JAX_PLATFORMS=$JAX_PLATFORMS $*" >> "{calls}"\nexit 19\n')
     uv.chmod(0o755)
     result = subprocess.run(
         ["/bin/bash", str(BASE.parents[1] / "launch.sbatch"), "preflight-and-submit", str(manifest_path)],
-        env=dict(os.environ, PATH=f"{commands}:/usr/bin:/bin", SLURM_JOB_ID="42", BASH_ENV=""),
+        env=dict(os.environ, PATH=f"{commands}:/usr/bin:/bin", SLURM_JOB_ID="42", BASH_ENV="", JAX_PLATFORMS="cpu"),
         capture_output=True, text=True,
     )
     assert result.returncode == 19
     lines = calls.read_text().splitlines()
     assert len(lines) == 1 and "polynomial_attention.preflight" in lines[0]
+    assert lines[0].startswith("JAX_PLATFORMS=cuda ")
     assert "polynomial_attention.sweep" not in lines[0]
