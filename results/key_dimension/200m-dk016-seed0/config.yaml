@@ -39,7 +39,7 @@ optim:
   total_steps: 19074
 train:
   seed: 0
-  source_commit: 8f717e524a8558adc256224ce3dd21825c54fbec
+  source_commit: 5e871d2659373272e26668e10911922c7201678a
   dtype: bfloat16
   workdir: /home/rafah/projects/functional_memory/results/key_dimension/200m-dk016-seed0
   micro_batch_size: 64

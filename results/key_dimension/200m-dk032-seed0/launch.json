@@ -9,9 +9,9 @@
       "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
     }
   },
-  "dependency_job_id": "22808003",
-  "log_path": "/home/rafah/projects/functional_memory/results/logs/key_dimension/200m-dk032-seed0/slurm-22808004.out",
-  "slurm_job_id": "22808004",
-  "source_commit": "8f717e524a8558adc256224ce3dd21825c54fbec",
-  "sweep_identity": "cec4c540de54e9395d298a9993cc1fa05752399da6ba9176358ba486b556e6b2"
+  "dependency_job_id": "22808238",
+  "log_path": "/home/rafah/projects/functional_memory/results/logs/key_dimension/200m-dk032-seed0/slurm-22808239.out",
+  "slurm_job_id": "22808239",
+  "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+  "sweep_identity": "0ceca430e0bff3c418fe7a21cd99107059d4d5d229d85e8582621d658795fa1e"
 }
