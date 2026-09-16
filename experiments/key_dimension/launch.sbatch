@@ -7,7 +7,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=256G
-#SBATCH --gpus=h200:2
+#SBATCH --gres=gpu:h200:2
 set -euo pipefail
 
 MODE="${1:?Expected preflight or train}"

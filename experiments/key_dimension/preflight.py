@@ -77,8 +77,15 @@ def run_preflight(manifest: dict, *, check_only: bool = False) -> None:
 
     import jax
 
-    if jax.default_backend() != "gpu" or len(jax.local_devices()) != 2:
-        raise RuntimeError("Production preflight requires the same two-GPU layout as production")
+    backend = jax.default_backend()
+    local_devices = jax.local_devices()
+    if backend != "gpu" or len(local_devices) != 2:
+        raise RuntimeError(
+            "Production preflight requires the same two-GPU layout as production; "
+            f"backend={backend!r}, local_devices={local_devices!r}, "
+            f"SLURM_JOB_GPUS={os.environ.get('SLURM_JOB_GPUS')!r}, "
+            f"CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES')!r}"
+        )
     attempt = root / "attempts" / f"{os.environ.get('SLURM_JOB_ID', 'local')}-{os.environ.get('SLURM_RESTART_COUNT', '0')}-{uuid.uuid4().hex[:8]}"
     attempt.mkdir(parents=True)
     parity_record = root / "checks/attention-parity.json"

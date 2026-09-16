@@ -143,7 +143,7 @@ def submit_sweep(manifest: dict, base) -> dict:
     manifest["submitted_utc"] = datetime.now(UTC).isoformat()
     write_json(manifest_path, manifest)
     launcher = execution_root / "experiments/key_dimension/launch.sbatch"
-    common = ["sbatch", "--parsable", "--requeue", "--gpus=h200:2"]
+    common = ["sbatch", "--parsable", "--requeue", "--gres=gpu:h200:2"]
     previous = submit_job(common + scheduler_log_options(project_root, "preflight") + ["--time=01:00:00", "--job-name=kd-preflight", str(launcher), "preflight", str(manifest_path)], execution_root)
     manifest["jobs"]["preflight"] = previous
     write_json(manifest_path, manifest)

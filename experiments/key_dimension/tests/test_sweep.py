@@ -67,7 +67,8 @@ def test_submit_serializes_success_only_dependencies_and_retry_configuration(tmp
 
     def fake_submit(command, execution_root, dependency=None):
         assert execution_root == Path(manifest["execution_root"])
-        assert "--requeue" in command and "--gpus=h200:2" in command
+        assert "--requeue" in command and "--gres=gpu:h200:2" in command
+        assert not any(argument.startswith("--gpus=") for argument in command)
         output = next(item.removeprefix("--output=") for item in command if item.startswith("--output="))
         assert f"--error={output}" in command
         assert "--open-mode=append" in command
