@@ -10,6 +10,8 @@ __pycache__/
 /results/logs/
 /results/key_dimension/**/checkpoints/
 /results/key_dimension/**/wandb/
+/results/polynomial_attention/**/checkpoints/
+/results/polynomial_attention/**/wandb/
 *.log
 slurm-*.out
 slurm-*.err

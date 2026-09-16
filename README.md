@@ -7,9 +7,12 @@ Experiments are grouped by the question they investigate:
 - [Key dimension](experiments/key_dimension/README.md): pretrain a fixed
   Transformer backbone while varying query/key width and measure perplexity.
   [Sweep status and results](results/key_dimension/README.md).
+- [Polynomial attention](experiments/polynomial_attention/README.md): train the
+  same 200M-reference backbone from scratch while varying the Taylor degree of
+  the exponential attention kernel, with a matched exact-softmax control.
 
 Each family owns its code, tests, and scientific configuration. The root
-PyTorch environment serves state-rank experiments; key-dimension training has
+PyTorch environment serves state-rank experiments; each training family has
 an independent locked JAX environment. Results live under `results/`; existing
 rank results retain their original locations and provenance.
 
