@@ -1,0 +1,8 @@
+run,qk_head_dim,value_head_dim,parameter_count,status,training_tokens,terminal_nll,terminal_ppl,best_step,best_ppl
+200m-dk002-seed0,2,64,179590144,pending,,,,,
+200m-dk004-seed0,4,64,180245504,pending,,,,,
+200m-dk008-seed0,8,64,181556224,pending,,,,,
+200m-dk016-seed0,16,64,184177664,pending,,,,,
+200m-dk032-seed0,32,64,189420544,pending,,,,,
+200m-dk064-seed0,64,64,199906304,pending,,,,,
+200m-dk128-seed0,128,64,220877824,pending,,,,,

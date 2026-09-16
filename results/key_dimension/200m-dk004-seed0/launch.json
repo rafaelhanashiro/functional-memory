@@ -1,0 +1,17 @@
+{
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/home/rafah/projects/ofm/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "dependency_job_id": "22808000",
+  "log_path": "/home/rafah/projects/functional_memory/results/logs/key_dimension/200m-dk004-seed0/slurm-22808001.out",
+  "slurm_job_id": "22808001",
+  "source_commit": "8f717e524a8558adc256224ce3dd21825c54fbec",
+  "sweep_identity": "cec4c540de54e9395d298a9993cc1fa05752399da6ba9176358ba486b556e6b2"
+}
