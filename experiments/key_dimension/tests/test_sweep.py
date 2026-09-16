@@ -1,5 +1,8 @@
 from pathlib import Path
 import json
+import os
+import subprocess
+import sys
 
 import pytest
 
@@ -65,6 +68,11 @@ def test_submit_serializes_success_only_dependencies_and_retry_configuration(tmp
     def fake_submit(command, execution_root, dependency=None):
         assert execution_root == Path(manifest["execution_root"])
         assert "--requeue" in command and "--gpus=h200:2" in command
+        output = next(item.removeprefix("--output=") for item in command if item.startswith("--output="))
+        assert f"--error={output}" in command
+        assert "--open-mode=append" in command
+        assert output.endswith("/slurm-%j.out")
+        assert Path(output).parent.is_dir(), "Slurm must be able to open logs before launching the script"
         commands.append((command, dependency))
         return str(100 + len(commands))
 
@@ -73,6 +81,7 @@ def test_submit_serializes_success_only_dependencies_and_retry_configuration(tmp
     submitted = submit_sweep(manifest, base)
     assert len(commands) == 8
     assert commands[0][1] is None
+    assert "--time=01:00:00" in commands[0][0]
     for index, (command, dependency) in enumerate(commands[1:], start=1):
         assert dependency == str(100 + index)
         assert f"--dependency=afterok:{dependency}" in command
@@ -94,3 +103,23 @@ def test_interrupted_preflight_cannot_be_reused_as_success(tmp_path):
     record_success(path, manifest)
     assert passed_check(path, "exact")
     assert not passed_check(path, "different")
+
+
+def test_launcher_bootstraps_without_python_on_compute_node_path(tmp_path):
+    project = tmp_path / "project"
+    interpreter = project / ".envs/key_dimension/bin/python"
+    interpreter.parent.mkdir(parents=True)
+    interpreter.symlink_to(sys.executable)
+    manifest = project / "results/key_dimension/sweep.json"
+    manifest.parent.mkdir(parents=True)
+    # A deliberately mismatched root causes a controlled bootstrap failure,
+    # before any scheduler, GPU, or training command can run.
+    manifest.write_text(json.dumps({"project_root": str(tmp_path / "wrong-project")}))
+    environment = dict(os.environ, PATH=str(tmp_path / "empty-path"), BASH_ENV="")
+    result = subprocess.run(
+        ["/bin/bash", str(BASE.parents[1] / "launch.sbatch"), "preflight", str(manifest)],
+        env=environment, text=True, capture_output=True,
+    )
+    assert result.returncode != 0
+    assert "project_root does not match its canonical location" in result.stderr
+    assert "command not found" not in result.stderr

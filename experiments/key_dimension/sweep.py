@@ -108,6 +108,13 @@ def submit_job(command: list[str], execution_root: Path, dependency: str | None 
     return job_id
 
 
+def scheduler_log_options(project_root: Path, name: str) -> list[str]:
+    log_dir = project_root / "results/logs/key_dimension" / name
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_pattern = log_dir / "slurm-%j.out"
+    return [f"--output={log_pattern}", f"--error={log_pattern}", "--open-mode=append"]
+
+
 def submit_sweep(manifest: dict, base) -> dict:
     project_root = Path(manifest["project_root"])
     execution_root = Path(manifest["execution_root"])
@@ -137,11 +144,11 @@ def submit_sweep(manifest: dict, base) -> dict:
     write_json(manifest_path, manifest)
     launcher = execution_root / "experiments/key_dimension/launch.sbatch"
     common = ["sbatch", "--parsable", "--requeue", "--gpus=h200:2"]
-    previous = submit_job(common + ["--job-name=kd-preflight", str(launcher), "preflight", str(manifest_path)], execution_root)
+    previous = submit_job(common + scheduler_log_options(project_root, "preflight") + ["--time=01:00:00", "--job-name=kd-preflight", str(launcher), "preflight", str(manifest_path)], execution_root)
     manifest["jobs"]["preflight"] = previous
     write_json(manifest_path, manifest)
     for run in manifest["runs"]:
-        job_id = submit_job(common + [f"--dependency=afterok:{previous}", f"--job-name=kd-{run['qk_head_dim']:03d}", str(launcher), "train", str(manifest_path), run["name"]], execution_root, previous)
+        job_id = submit_job(common + scheduler_log_options(project_root, run["name"]) + [f"--dependency=afterok:{previous}", f"--job-name=kd-{run['qk_head_dim']:03d}", str(launcher), "train", str(manifest_path), run["name"]], execution_root, previous)
         manifest["jobs"][run["name"]] = job_id
         write_json(Path(run["workdir"]) / "launch.json", {
             "source_commit": manifest["source_commit"],

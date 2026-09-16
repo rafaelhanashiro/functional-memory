@@ -8,25 +8,36 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=256G
 #SBATCH --gpus=h200:2
-#SBATCH --output=/dev/null
-#SBATCH --error=/dev/null
 set -euo pipefail
 
 MODE="${1:?Expected preflight or train}"
 MANIFEST="${2:?Expected sweep manifest}"
 RUN_NAME="${3:-preflight}"
-# Use the standard-library interpreter only to locate the isolated uv project.
-mapfile -t LOCATIONS < <(python3 - "$MANIFEST" "$RUN_NAME" <<'PY'
+# sweep.py precreates the retained log directory and gives Slurm both output
+# paths, so errors here are captured before Python or the environment starts.
+case "$MANIFEST" in
+  /*/results/key_dimension/sweep.json) PROJECT_ROOT="${MANIFEST%/results/key_dimension/sweep.json}" ;;
+  *) echo "Expected absolute canonical results/key_dimension/sweep.json path: $MANIFEST" >&2; exit 1 ;;
+esac
+BOOTSTRAP_PYTHON="${PROJECT_ROOT}/.envs/key_dimension/bin/python"
+if [[ ! -x "$BOOTSTRAP_PYTHON" ]]; then
+  echo "Missing isolated key-dimension interpreter: $BOOTSTRAP_PYTHON" >&2
+  exit 1
+fi
+BOOTSTRAP_OUTPUT="$("$BOOTSTRAP_PYTHON" - "$MANIFEST" "$RUN_NAME" "$PROJECT_ROOT" <<'PY'
 import json, sys
 from pathlib import Path
 manifest = json.loads(Path(sys.argv[1]).read_text())
+if Path(manifest['project_root']).resolve() != Path(sys.argv[3]).resolve():
+    raise ValueError('Manifest project_root does not match its canonical location')
 print(manifest['project_root'])
 print(manifest['execution_root'])
 print(manifest['source_commit'])
 run = next((run for run in manifest['runs'] if run['name'] == sys.argv[2]), None)
 print(run['config_path'] if run else '')
 PY
-)
+)"
+mapfile -t LOCATIONS <<< "$BOOTSTRAP_OUTPUT"
 PROJECT_ROOT="${LOCATIONS[0]}"
 EXECUTION_ROOT="${LOCATIONS[1]}"
 EXPECTED_COMMIT="${LOCATIONS[2]}"
