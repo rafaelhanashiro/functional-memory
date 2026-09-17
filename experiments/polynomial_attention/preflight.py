@@ -1,4 +1,4 @@
-"""Retry-safe CPU and two-H200 checks that gate an exact Taylor sweep identity."""
+"""Retry-safe CPU and allocated-GPU checks that gate an exact Taylor sweep identity."""
 from __future__ import annotations
 
 import argparse
@@ -14,9 +14,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from experiments.polynomial_attention.configs import config_to_dict, load_config
-from experiments.polynomial_attention.sweep import ATTENTION_DEGREES, run_name, write_json
+from experiments.polynomial_attention.sweep import ATTENTION_DEGREES, run_name, validate_scheduler_profile, write_json
 
 PREFLIGHT_CHECKS = ("attention-cpu", "attention-gpu", "initialization", *[run_name(m) for m in ATTENTION_DEGREES])
+MAX_PROJECTED_RUNTIME_SECONDS = 6 * 24 * 60 * 60
 
 
 def verify_manifest(manifest: dict) -> None:
@@ -24,11 +25,13 @@ def verify_manifest(manifest: dict) -> None:
         "source_commit": manifest["source_commit"],
         "dependency_lock_sha256": manifest["dependency_lock_sha256"],
         "data_identity": manifest["data_identity"],
+        "scheduler": manifest["scheduler"],
         "configs": [run["config"] for run in manifest["runs"]],
     }
     identity = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
     if identity != manifest["identity"]:
         raise ValueError("Sweep manifest identity does not match its contents")
+    validate_scheduler_profile(manifest["scheduler"])
     if [run["attention_degree"] for run in manifest["runs"]] != list(ATTENTION_DEGREES):
         raise ValueError("Preflight requires every degree and exact-softmax control in canonical order")
     execution_root = Path(manifest["execution_root"])
@@ -98,20 +101,60 @@ def launch_worker(manifest: dict, worker: str, output: Path, *, name: str = "", 
     return json.loads(output.read_text())
 
 
-def run_preflight(manifest: dict, *, check_only: bool = False) -> None:
+def projected_runtime(run: dict, outcome: dict) -> dict:
+    """Conservatively project production from synchronized full-batch pilot timings."""
+    timing = outcome["timing"]
+    # Each worker recompiles its first update; use subsequent updates for the
+    # training rate and charge the entire pilot runtime once for startup.
+    steady_steps = timing["train_step_seconds"][1:]
+    evaluation = timing["evaluation_seconds"]
+    checkpoints = timing["checkpoint_seconds"]
+    values = [timing["runtime_seconds"], *steady_steps, *evaluation, *checkpoints]
+    if not steady_steps or not evaluation or not checkpoints or any(not math.isfinite(value) or value <= 0 for value in values):
+        raise RuntimeError(f"Pilot has no valid steady training/evaluation/checkpoint timings: {timing}")
+    config = run["config"]
+    total_steps = config["optim"]["total_steps"]
+    eval_steps = set(range(config["train"]["eval_every"], total_steps + 1, config["train"]["eval_every"])) | {total_steps}
+    checkpoint_steps = set(range(config["train"]["ckpt_every"], total_steps + 1, config["train"]["ckpt_every"])) | eval_steps
+    training_seconds = max(steady_steps) * total_steps
+    # The pilot evaluates one global batch. Scaling its complete validation
+    # time also multiplies diagnostics/JIT overhead, making this conservative.
+    evaluation_seconds = max(evaluation) * config["train"]["eval_batches"] * len(eval_steps)
+    checkpoint_seconds = max(checkpoints) * len(checkpoint_steps)
+    estimate = {
+        "startup_seconds": timing["runtime_seconds"],
+        "steady_train_step_seconds": max(steady_steps),
+        "training_seconds": training_seconds,
+        "evaluation_seconds": evaluation_seconds,
+        "checkpoint_seconds": checkpoint_seconds,
+        "projected_total_seconds": timing["runtime_seconds"] + training_seconds + evaluation_seconds + checkpoint_seconds,
+        "limit_seconds": MAX_PROJECTED_RUNTIME_SECONDS,
+    }
+    if estimate["projected_total_seconds"] >= MAX_PROJECTED_RUNTIME_SECONDS:
+        raise RuntimeError(f"Preflight {run['name']} projects beyond the six-day production limit: {estimate}")
+    return estimate
+
+
+def run_preflight(manifest: dict, *, check_only: bool = False, check_hardware: bool = False) -> None:
     verify_manifest(manifest)
     root = Path(manifest["preflight_dir"])
     success_path = root / "success.json"
-    if preflight_complete(manifest):
+    if check_only and not check_hardware:
+        if not preflight_complete(manifest):
+            raise RuntimeError(f"This sweep has no successful matching complete preflight: {success_path}")
         print(f"preflight_success_reused={success_path}", flush=True)
         return
-    if check_only:
-        raise RuntimeError(f"This sweep has no successful matching complete preflight: {success_path}")
     attempt = root / "attempts" / f"{os.environ.get('SLURM_JOB_ID', 'local')}-{os.environ.get('SLURM_RESTART_COUNT', '0')}-{uuid.uuid4().hex[:8]}"
     attempt.mkdir(parents=True)
     stage = "hardware"
     try:
         hardware = launch_worker(manifest, "hardware", attempt / "hardware.json")
+        # Allocation changes must be rejected even when an earlier job passed.
+        if preflight_complete(manifest):
+            print(f"preflight_success_reused={success_path}", flush=True)
+            return
+        if check_only:
+            raise RuntimeError(f"This sweep has no successful matching complete preflight: {success_path}")
         for marker, minimum in (("cpu", len(ATTENTION_DEGREES)), ("gpu", len(ATTENTION_DEGREES) + 1)):
             stage = f"attention-{marker}"
             check_path = root / "checks" / f"{stage}.json"
@@ -144,8 +187,11 @@ def run_preflight(manifest: dict, *, check_only: bool = False) -> None:
                 continue
             workdir = attempt / stage
             outcome = launch_worker(manifest, "pilot", attempt / f"{stage}-step2.json", name=stage, workdir=workdir)
-            if outcome["final_step"] != 2 or outcome["data_parallel_devices"] != 2:
-                raise RuntimeError(f"Preflight {stage} did not finish two updates on two GPUs: {outcome}")
+            gpu_count = manifest["scheduler"]["gpu_count"]
+            if outcome["final_step"] != 2 or outcome["data_parallel_devices"] != gpu_count:
+                raise RuntimeError(f"Preflight {stage} did not finish two updates on {gpu_count} GPUs: {outcome}")
+            runtime = projected_runtime(run, outcome)
+            print(f"preflight_runtime={stage} projected_seconds={runtime['projected_total_seconds']:.1f} limit_seconds={MAX_PROJECTED_RUNTIME_SECONDS}", flush=True)
             from experiments.polynomial_attention.plot import committed_records
             records = committed_records(workdir)
             validation = next((record for record in records if record["step"] == 2), None)
@@ -153,10 +199,10 @@ def run_preflight(manifest: dict, *, check_only: bool = False) -> None:
                 raise RuntimeError(f"Preflight {stage} has no finite committed validation at step 2")
             if run["attention_degree"] in (16, None):
                 outcome = launch_worker(manifest, "pilot", attempt / f"{stage}-resume.json", name=stage, workdir=workdir, stop=3)
-                if outcome["restored_step"] != 2 or outcome["final_step"] != 3 or outcome["data_start_sequence"] != 2 * run["config"]["data"]["batch_size"]:
+                if outcome["restored_step"] != 2 or outcome["final_step"] != 3 or outcome["data_start_sequence"] != 2 * run["config"]["data"]["batch_size"] or outcome["data_parallel_devices"] != gpu_count:
                     raise RuntimeError(f"Preflight {stage} resume did not preserve optimizer/data progress: {outcome}")
             record_success(check_path, manifest, attention_degree=run["attention_degree"], outcome=outcome,
-                           validation_nll=validation["validation_nll"], validation_perplexity=validation["validation_perplexity"], workdir=str(workdir))
+                           validation_nll=validation["validation_nll"], validation_perplexity=validation["validation_perplexity"], runtime=runtime, workdir=str(workdir))
         record_success(success_path, manifest, checks=list(PREFLIGHT_CHECKS), hardware=hardware)
     except BaseException as error:
         write_json(attempt / "failure.json", {"identity": manifest["identity"], "status": "failed", "stage": stage,
@@ -169,8 +215,10 @@ def worker_result(manifest: dict, worker: str, name: str, workdir: Path | None, 
     import jax
     if worker == "hardware":
         devices = jax.local_devices()
-        if jax.default_backend() != "gpu" or len(devices) != 2 or any("H200" not in d.device_kind.upper() for d in devices):
-            raise RuntimeError(f"Preflight requires two H200 GPUs; found {devices!r}")
+        gpu_count = manifest["scheduler"]["gpu_count"]
+        gpu_type = manifest["scheduler"]["gpu_type"].upper()
+        if jax.default_backend() != "gpu" or len(devices) != gpu_count or any(gpu_type not in d.device_kind.upper() for d in devices):
+            raise RuntimeError(f"Preflight requires {gpu_count} {gpu_type} GPUs; found {devices!r}")
         return {"backend": "gpu", "devices": [str(d) for d in devices], "device_kinds": [d.device_kind for d in devices]}
     if worker == "initialization":
         import numpy as np
@@ -213,6 +261,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("manifest", type=Path)
     parser.add_argument("--check-only", action="store_true")
+    parser.add_argument("--check-hardware", action="store_true", help="Validate the current GPU allocation before accepting cached preflight success.")
     parser.add_argument("--worker", choices=("hardware", "initialization", "pilot"))
     parser.add_argument("--run-name", default="")
     parser.add_argument("--workdir", type=Path)
@@ -226,7 +275,7 @@ def main() -> None:
         verify_manifest(manifest)
         write_json(args.output, worker_result(manifest, args.worker, args.run_name, args.workdir, args.stop_after_step))
     else:
-        run_preflight(manifest, check_only=args.check_only)
+        run_preflight(manifest, check_only=args.check_only, check_hardware=args.check_hardware)
 
 
 if __name__ == "__main__":

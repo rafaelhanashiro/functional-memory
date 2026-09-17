@@ -7,8 +7,8 @@ data:
   split: train
   tokenizer_name: NousResearch/Llama-2-7b-hf
   text_field: text
-  train_manifest: /home/rafah/projects/ofm/datasets/fineweb_12b/train/manifest.json
-  eval_manifest: /home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json
+  train_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
+  eval_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
   batch_size: 256
   sequence_length: 2049
   shuffle_seed: 0

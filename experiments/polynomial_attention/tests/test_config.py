@@ -80,6 +80,9 @@ def test_scientific_recipe_matches_original_softmax_reference():
     current["model"].pop("attention_degree")
     for config in (original, current):
         config["model"].pop("attention_backend")
+        # The same immutable corpus lives at a different absolute path on Kennel.
+        for key in ("train_manifest", "eval_manifest"):
+            config["data"].pop(key)
         for key in ("workdir", "wandb_project", "wandb_run_name"):
             config["train"].pop(key)
     assert current == original

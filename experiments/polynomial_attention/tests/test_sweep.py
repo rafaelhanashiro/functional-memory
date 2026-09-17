@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 import os
+import shlex
 import subprocess
 import sys
 
@@ -13,13 +14,14 @@ from experiments.polynomial_attention.preflight import (
 )
 from experiments.polynomial_attention.sweep import (
     ATTENTION_DEGREES, make_manifest, parameter_count, prepare_sweep,
-    resolve_runs, run_name, submit_preflight, submit_sweep,
+    resolve_runs, resolve_scheduler_profile, run_name, scheduler_profile,
+    submit_preflight, submit_sweep,
 )
 
 BASE = Path(__file__).resolve().parents[1] / "configs/base.yaml"
 
 
-def make_test_manifest(tmp_path):
+def make_test_manifest(tmp_path, *, gpu_count=2):
     base = load_config(BASE)
     for name in ("train_manifest", "eval_manifest"):
         path = tmp_path / f"{name}.json"
@@ -28,7 +30,8 @@ def make_test_manifest(tmp_path):
     lock = tmp_path / "execution/experiments/polynomial_attention/uv.lock"
     lock.parent.mkdir(parents=True)
     lock.write_text("test locked dependencies\n")
-    return base, make_manifest(base, tmp_path / "project", tmp_path / "execution", "a" * 40)
+    return base, make_manifest(base, tmp_path / "project", tmp_path / "execution", "a" * 40,
+                               scheduler=scheduler_profile(gpu_count))
 
 
 def test_fixed_backbone_sweep_and_exact_prediction_budget(tmp_path):
@@ -66,12 +69,51 @@ def test_preflight_identity_includes_data_and_dependency_lock(tmp_path):
     assert changed_data["identity"] != changed_lock["identity"]
 
 
+def test_allocation_changes_identity_without_changing_recipe(tmp_path):
+    base, manifest = make_test_manifest(tmp_path)
+    changed = make_manifest(base, Path(manifest["project_root"]), Path(manifest["execution_root"]),
+                            manifest["source_commit"], scheduler=scheduler_profile(4))
+    assert changed["identity"] != manifest["identity"]
+    assert changed["preflight_dir"] != manifest["preflight_dir"]
+    assert changed["runs"] == manifest["runs"]
+    assert changed["scheduler"]["gpu_count"] == 4
+
+
+def test_followup_submission_preserves_persisted_allocation(tmp_path):
+    base, manifest = make_test_manifest(tmp_path, gpu_count=4)
+    project_root = Path(manifest["project_root"])
+    assert resolve_scheduler_profile(project_root) == scheduler_profile(2)
+    prepare_sweep(manifest, base)
+    assert resolve_scheduler_profile(project_root) == scheduler_profile(4)
+    assert resolve_scheduler_profile(project_root, 4) == scheduler_profile(4)
+    with pytest.raises(ValueError, match="differs from the persisted sweep"):
+        resolve_scheduler_profile(project_root, 2)
+
+
+def test_legacy_manifest_is_not_silently_reused(tmp_path):
+    manifest_path = tmp_path / "results/polynomial_attention/sweep.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text('{"jobs":{"preflight":"123"}}')
+    with pytest.raises(ValueError, match="predates the Kennel scheduler profile"):
+        resolve_scheduler_profile(tmp_path)
+
+
+@pytest.mark.parametrize("gpu_count", [0, 1, 3, 8, True, "2"])
+def test_unsupported_allocations_are_rejected(gpu_count):
+    with pytest.raises(ValueError, match="GPU count must be 2 or 4"):
+        scheduler_profile(gpu_count)
+
+
 def install_fake_scheduler(monkeypatch, manifest):
     commands = []
 
     def fake_submit(command, execution_root, dependency=None, dependency_type="afterok"):
         assert execution_root == Path(manifest["execution_root"])
-        assert "--requeue" in command and "--gres=gpu:h200:2" in command
+        assert "--requeue" in command
+        assert f"--gres=gpu:h100:{manifest['scheduler']['gpu_count']}" in command
+        assert "--partition=long" in command
+        assert "--nodes=1" in command and "--ntasks=1" in command
+        assert "--cpus-per-task=32" in command and "--mem=256G" in command
         assert not any(argument.startswith("--gpus=") for argument in command)
         output = next(item.removeprefix("--output=") for item in command if item.startswith("--output="))
         assert f"--error={output}" in command and "--open-mode=append" in command
@@ -87,12 +129,14 @@ def install_fake_scheduler(monkeypatch, manifest):
 
 
 @pytest.mark.parametrize("launch", [False, True])
-def test_only_preflight_is_submitted_until_all_checks_pass(tmp_path, monkeypatch, launch):
-    base, manifest = make_test_manifest(tmp_path)
+@pytest.mark.parametrize("gpu_count", [2, 4])
+def test_only_preflight_is_submitted_until_all_checks_pass(tmp_path, monkeypatch, launch, gpu_count):
+    base, manifest = make_test_manifest(tmp_path, gpu_count=gpu_count)
     commands = install_fake_scheduler(monkeypatch, manifest)
     submitted = submit_preflight(manifest, base, launch=launch)
     assert len(commands) == 1
     assert commands[0][1] is None
+    assert "--time=08:00:00" in commands[0][0]
     assert commands[0][0][-2] == ("preflight-and-submit" if launch else "preflight")
     assert submitted["jobs"] == {"preflight": "101"}
     assert submitted["launch_after_preflight"] is launch
@@ -108,12 +152,14 @@ def test_only_preflight_is_submitted_until_all_checks_pass(tmp_path, monkeypatch
     submitted = submit_sweep(manifest, base)
     assert len(commands) == 7
     for index, (command, dependency, dependency_type) in enumerate(commands[1:], start=1):
+        assert "--time=7-00:00:00" in command
         assert dependency == str(100 + index)
         assert dependency_type == ("afterok" if index == 1 else "afterany")
         assert f"--dependency={dependency_type}:{dependency}" in command
     for run in submitted["runs"]:
         launch_record = json.loads((Path(run["workdir"]) / "launch.json").read_text())
         assert launch_record["slurm_job_id"] == submitted["jobs"][run["name"]]
+        assert launch_record["scheduler"] == manifest["scheduler"]
         assert launch_record["log_path"].endswith(f"/{run['name']}/slurm-{launch_record['slurm_job_id']}.out")
         assert (Path(run["workdir"]) / "REPORT.md").exists()
     # Repeating a production submission resumes its manifest, without duplicates.
@@ -143,8 +189,9 @@ def test_parity_gate_rejects_skips_failures_and_missing_checks(tmp_path, kind):
         require_passing_tests(xml, minimum=6)
 
 
-def test_preflight_pilots_all_degrees_in_processes_and_resumes_controls(tmp_path, monkeypatch):
-    base, manifest = make_test_manifest(tmp_path)
+@pytest.mark.parametrize("gpu_count", [2, 4])
+def test_preflight_pilots_all_degrees_in_processes_and_resumes_controls(tmp_path, monkeypatch, gpu_count):
+    base, manifest = make_test_manifest(tmp_path, gpu_count=gpu_count)
     prepare_sweep(manifest, base)
     monkeypatch.setattr("experiments.polynomial_attention.preflight.verify_manifest", lambda manifest: None)
     calls = []
@@ -152,12 +199,14 @@ def test_preflight_pilots_all_degrees_in_processes_and_resumes_controls(tmp_path
     def fake_worker(manifest, worker, output, *, name="", workdir=None, stop=2, cpu=False):
         calls.append((worker, name, stop, cpu))
         if worker == "hardware":
-            return {"devices": ["H200", "H200"]}
+            return {"devices": ["H100"] * gpu_count}
         if worker == "initialization":
             return {"parameter_count": 199906304, "parameter_sha256": "same"}
         assert workdir is not None
         return {"final_step": stop, "restored_step": 2 if stop == 3 else None,
-                "data_parallel_devices": 2, "data_start_sequence": 512 if stop == 3 else 0}
+                "data_parallel_devices": gpu_count, "data_start_sequence": 512 if stop == 3 else 0,
+                "timing": {"runtime_seconds": 20., "train_step_seconds": [10., 1.],
+                           "evaluation_seconds": [2.], "checkpoint_seconds": [1.]}}
 
     def fake_pytest(command, **kwargs):
         xml = Path(next(argument.removeprefix("--junitxml=") for argument in command if argument.startswith("--junitxml=")))
@@ -196,32 +245,43 @@ def test_launcher_bootstraps_without_python_on_compute_node_path(tmp_path):
     assert "command not found" not in result.stderr
 
 
-def test_failed_launcher_preflight_never_submits_production(tmp_path):
+@pytest.mark.parametrize("preflight_status", [0, 19])
+def test_launcher_preserves_allocation_and_submits_only_after_success(tmp_path, preflight_status):
     project = tmp_path / "project"
     interpreter = project / ".envs/polynomial_attention/bin/python"
     interpreter.parent.mkdir(parents=True)
-    interpreter.symlink_to(sys.executable)
+    calls = tmp_path / "python-calls"
+    interpreter.write_text(
+        '#!/bin/bash\n'
+        f'if [[ "$1" == - ]]; then exec {shlex.quote(sys.executable)} "$@"; fi\n'
+        f'echo "JAX_PLATFORMS=$JAX_PLATFORMS $*" >> {shlex.quote(str(calls))}\n'
+        f'exit {preflight_status}\n'
+    )
+    interpreter.chmod(0o755)
     execution = tmp_path / "execution"
     execution.mkdir()
     manifest_path = project / "results/polynomial_attention/sweep.json"
     manifest_path.parent.mkdir(parents=True)
-    manifest_path.write_text(json.dumps({"project_root": str(project), "execution_root": str(execution), "source_commit": "abc", "runs": []}))
+    manifest_path.write_text(json.dumps({"project_root": str(project), "execution_root": str(execution),
+                                        "source_commit": "abc", "scheduler": scheduler_profile(4),
+                                        "runs": [{"name": "200m-m000-seed0", "config_path": str(project / "config.yaml")}]}))
     commands = tmp_path / "commands"
     commands.mkdir()
     git = commands / "git"
     git.write_text('#!/bin/bash\nif [[ "$1" == rev-parse ]]; then echo abc; fi\n')
     git.chmod(0o755)
-    calls = tmp_path / "uv-calls"
-    uv = commands / "uv"
-    uv.write_text(f'#!/bin/bash\necho "JAX_PLATFORMS=$JAX_PLATFORMS $*" >> "{calls}"\nexit 19\n')
-    uv.chmod(0o755)
     result = subprocess.run(
         ["/bin/bash", str(BASE.parents[1] / "launch.sbatch"), "preflight-and-submit", str(manifest_path)],
         env=dict(os.environ, PATH=f"{commands}:/usr/bin:/bin", SLURM_JOB_ID="42", BASH_ENV="", JAX_PLATFORMS="cpu"),
         capture_output=True, text=True,
     )
-    assert result.returncode == 19
+    assert result.returncode == preflight_status
     lines = calls.read_text().splitlines()
-    assert len(lines) == 1 and "polynomial_attention.preflight" in lines[0]
+    assert "polynomial_attention.preflight" in lines[0]
     assert lines[0].startswith("JAX_PLATFORMS=cuda ")
     assert "polynomial_attention.sweep" not in lines[0]
+    if preflight_status:
+        assert len(lines) == 1
+    else:
+        assert len(lines) == 2
+        assert "polynomial_attention.sweep --submit --gpu-count 4" in lines[1]

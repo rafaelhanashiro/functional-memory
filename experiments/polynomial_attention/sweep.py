@@ -12,6 +12,53 @@ from pathlib import Path
 from experiments.polynomial_attention.configs import ATTENTION_DEGREES, config_to_dict, load_config, save_config, validate_config
 
 
+def scheduler_profile(gpu_count: int = 2) -> dict:
+    """The supported single-node Kennel allocations for this fixed recipe."""
+    if type(gpu_count) is not int or gpu_count not in (2, 4):
+        raise ValueError("Kennel GPU count must be 2 or 4")
+    return {
+        "partition": "long",
+        "gpu_type": "h100",
+        "gpu_count": gpu_count,
+        "cpus_per_task": 32,
+        "memory": "256G",
+        "preflight_time": "08:00:00",
+        "production_time": "7-00:00:00",
+    }
+
+
+def validate_scheduler_profile(profile: dict) -> None:
+    if not isinstance(profile, dict) or profile != scheduler_profile(profile.get("gpu_count")):
+        raise ValueError("Unsupported Kennel scheduler profile")
+
+
+def resolve_scheduler_profile(project_root: Path, gpu_count: int | None = None) -> dict:
+    """Reuse the persisted allocation when a follow-up submission omits it."""
+    manifest_path = project_root / "results/polynomial_attention/sweep.json"
+    if not manifest_path.exists():
+        return scheduler_profile(2 if gpu_count is None else gpu_count)
+    previous = json.loads(manifest_path.read_text())
+    profile = previous.get("scheduler")
+    if profile is None:
+        raise ValueError(f"Existing sweep predates the Kennel scheduler profile: {manifest_path}")
+    validate_scheduler_profile(profile)
+    if gpu_count is not None and gpu_count != profile["gpu_count"]:
+        raise ValueError(f"GPU count differs from the persisted sweep: {manifest_path}")
+    return profile.copy()
+
+
+def scheduler_options(profile: dict, *, preflight: bool) -> list[str]:
+    validate_scheduler_profile(profile)
+    walltime = profile["preflight_time" if preflight else "production_time"]
+    return [
+        "--requeue", "--nodes=1", "--ntasks=1",
+        f"--partition={profile['partition']}",
+        f"--gres=gpu:{profile['gpu_type']}:{profile['gpu_count']}",
+        f"--cpus-per-task={profile['cpus_per_task']}",
+        f"--mem={profile['memory']}", f"--time={walltime}",
+    ]
+
+
 def write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
@@ -47,7 +94,9 @@ def parameter_count(model) -> int:
     return embedding + model.num_layers * block + model.hidden_size
 
 
-def make_manifest(base, project_root: Path, execution_root: Path, source_commit: str) -> dict:
+def make_manifest(base, project_root: Path, execution_root: Path, source_commit: str, *, scheduler: dict | None = None) -> dict:
+    scheduler = scheduler_profile() if scheduler is None else scheduler.copy()
+    validate_scheduler_profile(scheduler)
     runs = resolve_runs(base, project_root, source_commit)
     data_identity = {
         name: {
@@ -61,17 +110,19 @@ def make_manifest(base, project_root: Path, execution_root: Path, source_commit:
         "source_commit": source_commit,
         "dependency_lock_sha256": lock_sha256,
         "data_identity": data_identity,
+        "scheduler": scheduler,
         "configs": [config_to_dict(config) for _, config in runs],
     }
     fingerprint = hashlib.sha256(json.dumps(identity_payload, sort_keys=True).encode()).hexdigest()
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "source_commit": source_commit,
         "dependency_lock_sha256": lock_sha256,
         "project_root": str(project_root.resolve()),
         "execution_root": str(execution_root.resolve()),
         "identity": fingerprint,
         "data_identity": data_identity,
+        "scheduler": scheduler,
         "preflight_dir": str(project_root.resolve() / ".cache/polynomial_attention/preflight" / fingerprint),
         "runs": [
             {
@@ -120,6 +171,7 @@ def scheduler_log_options(project_root: Path, name: str) -> list[str]:
 
 def prepare_sweep(manifest: dict, base) -> dict:
     """Persist exact resolved configurations, preserving any existing job identities."""
+    validate_scheduler_profile(manifest["scheduler"])
     project_root = Path(manifest["project_root"])
     manifest_path = project_root / "results/polynomial_attention/sweep.json"
     if manifest_path.exists():
@@ -160,9 +212,9 @@ def submit_preflight(manifest: dict, base, *, launch: bool = False) -> dict:
     execution_root = Path(manifest["execution_root"])
     launcher = execution_root / "experiments/polynomial_attention/launch.sbatch"
     manifest_path = project_root / "results/polynomial_attention/sweep.json"
-    command = ["sbatch", "--parsable", "--requeue", "--gres=gpu:h200:2"]
+    command = ["sbatch", "--parsable", *scheduler_options(manifest["scheduler"], preflight=True)]
     command += scheduler_log_options(project_root, "preflight")
-    command += ["--time=08:00:00", "--job-name=pa-preflight", str(launcher), "preflight-and-submit" if launch else "preflight", str(manifest_path)]
+    command += ["--job-name=pa-preflight", str(launcher), "preflight-and-submit" if launch else "preflight", str(manifest_path)]
     job_id = submit_job(command, execution_root)
     manifest["jobs"]["preflight"] = job_id
     manifest["launch_after_preflight"] = launch
@@ -181,7 +233,7 @@ def submit_sweep(manifest: dict, base) -> dict:
     execution_root = Path(manifest["execution_root"])
     manifest_path = project_root / "results/polynomial_attention/sweep.json"
     launcher = execution_root / "experiments/polynomial_attention/launch.sbatch"
-    common = ["sbatch", "--parsable", "--requeue", "--gres=gpu:h200:2"]
+    common = ["sbatch", "--parsable", *scheduler_options(manifest["scheduler"], preflight=False)]
     previous = manifest["jobs"].get("preflight")
     dependency_type = "afterok"
     for run in manifest["runs"]:
@@ -203,6 +255,7 @@ def submit_sweep(manifest: dict, base) -> dict:
             "dependency_type": dependency_type if previous else None,
             "log_path": str(project_root / "results/logs/polynomial_attention" / run["name"] / f"slurm-{job_id}.out"),
             "data_identity": manifest["data_identity"],
+            "scheduler": manifest["scheduler"],
         })
         write_json(manifest_path, manifest)
         previous = job_id
@@ -219,6 +272,8 @@ def main() -> None:
     parser.add_argument("--base-config", type=Path, default=Path("experiments/polynomial_attention/configs/base.yaml"))
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
     parser.add_argument("--execution-root", type=Path, default=Path.cwd())
+    parser.add_argument("--gpu-count", type=int, choices=(2, 4),
+                        help="H100 GPUs per node; defaults to the persisted allocation, or 2 for a new sweep.")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--dry-run", action="store_true", help="Print resolved jobs; this is the default.")
     mode.add_argument("--preflight-only", action="store_true", help="Persist all configs and submit only the six-variant GPU preflight.")
@@ -232,7 +287,8 @@ def main() -> None:
         if dirty:
             raise ValueError(f"Execution checkout must be clean before submission: {execution_root}")
     base = load_config(args.base_config)
-    manifest = make_manifest(base, args.project_root, execution_root, source_commit)
+    scheduler = resolve_scheduler_profile(args.project_root, args.gpu_count)
+    manifest = make_manifest(base, args.project_root, execution_root, source_commit, scheduler=scheduler)
     if args.preflight_only or args.launch:
         manifest = submit_preflight(manifest, base, launch=args.launch)
     elif args.submit:

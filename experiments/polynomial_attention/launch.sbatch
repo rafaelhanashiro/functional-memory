@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=polynomial_attention
-#SBATCH --partition=mit_preemptable
-#SBATCH --time=48:00:00
+#SBATCH --partition=long
+#SBATCH --time=7-00:00:00
 #SBATCH --requeue
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=256G
-#SBATCH --gres=gpu:h200:2
+#SBATCH --gres=gpu:h100:2
 set -euo pipefail
 
 MODE="${1:?Expected preflight, preflight-and-submit, or train}"
@@ -36,6 +36,7 @@ print(manifest['source_commit'])
 run = next((run for run in manifest['runs'] if run['name'] == sys.argv[2]), None)
 print(run['config_path'] if run else '')
 print(manifest['runs'][0]['config_path'] if manifest['runs'] else '')
+print(manifest['scheduler']['gpu_count'])
 PY
 )"
 mapfile -t LOCATIONS <<< "$BOOTSTRAP_OUTPUT"
@@ -44,6 +45,7 @@ EXECUTION_ROOT="${LOCATIONS[1]}"
 EXPECTED_COMMIT="${LOCATIONS[2]}"
 CONFIG_PATH="${LOCATIONS[3]:-}"
 BASE_CONFIG_PATH="${LOCATIONS[4]:-}"
+GPU_COUNT="${LOCATIONS[5]}"
 LOG_DIR="${PROJECT_ROOT}/results/logs/polynomial_attention/${RUN_NAME}"
 CACHE_ROOT="${PROJECT_ROOT}/.cache/polynomial_attention"
 mkdir -p "$LOG_DIR" "$CACHE_ROOT/uv" "$CACHE_ROOT/jax" "$CACHE_ROOT/tmp" "${PROJECT_ROOT}/.envs"
@@ -68,21 +70,23 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_PLATFORMS=cuda
 export PYTHONPATH="${EXECUTION_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 export MPLBACKEND=Agg
-UV=(uv run --project "${EXECUTION_ROOT}/experiments/polynomial_attention" --locked --extra cuda)
+# The locked environment is installed before submission; jobs never resolve or
+# mutate dependencies while another run may be using the same interpreter.
+PYTHON="${PROJECT_ROOT}/.envs/polynomial_attention/bin/python"
 echo "mode=$MODE run=$RUN_NAME slurm_job_id=$SLURM_JOB_ID restart=${SLURM_RESTART_COUNT:-0} source_commit=$EXPECTED_COMMIT"
 if [[ "$MODE" == preflight || "$MODE" == preflight-and-submit ]]; then
-  "${UV[@]}" python -m experiments.polynomial_attention.preflight "$MANIFEST"
+  "$PYTHON" -m experiments.polynomial_attention.preflight "$MANIFEST"
   if [[ "$MODE" == preflight-and-submit ]]; then
-    "${UV[@]}" python -m experiments.polynomial_attention.sweep --submit \
+    "$PYTHON" -m experiments.polynomial_attention.sweep --submit --gpu-count "$GPU_COUNT" \
       --base-config "$BASE_CONFIG_PATH" \
       --project-root "$PROJECT_ROOT" --execution-root "$EXECUTION_ROOT"
   fi
 elif [[ "$MODE" == train ]]; then
   if [[ -z "$CONFIG_PATH" ]]; then echo "Unknown run: $RUN_NAME" >&2; exit 1; fi
-  "${UV[@]}" python -m experiments.polynomial_attention.preflight "$MANIFEST" --check-only
+  "$PYTHON" -m experiments.polynomial_attention.preflight "$MANIFEST" --check-only --check-hardware
   TRAIN_STATUS=0
-  "${UV[@]}" python -m experiments.polynomial_attention.train "$CONFIG_PATH" || TRAIN_STATUS=$?
-  "${UV[@]}" python -m experiments.polynomial_attention.plot --manifest "$MANIFEST"
+  "$PYTHON" -m experiments.polynomial_attention.train "$CONFIG_PATH" || TRAIN_STATUS=$?
+  "$PYTHON" -m experiments.polynomial_attention.plot --manifest "$MANIFEST"
   exit "$TRAIN_STATUS"
 else
   echo "Unknown mode: $MODE" >&2

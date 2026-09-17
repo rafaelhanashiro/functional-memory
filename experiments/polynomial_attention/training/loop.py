@@ -503,6 +503,8 @@ def run_training(config: Config, *, resume: bool = True, stop_after_step: int | 
 
 
 def _run_training(config, manager, layout, devices, *, resume, end_step):
+    runtime_start = time.perf_counter()
+    timing = {"train_step_seconds": [], "evaluation_seconds": [], "checkpoint_seconds": []}
     completion_path = config.train.workdir / "completion.json"
     latest_before = manager.latest_step()
     validated_train_manifest = None
@@ -578,6 +580,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
         train_losses = []
         attempt_id = f"{os.environ.get('SLURM_JOB_ID', 'local')}:{os.environ.get('SLURM_RESTART_COUNT', '0')}:{uuid.uuid4().hex[:8]}"
         for step in trange(start_step + 1, end_step + 1, desc="train"):
+            train_step_start = time.perf_counter()
             step_rng = jax.random.fold_in(rng, step)
             if data_parallel is not None:
                 batches = np.stack([next(train_iter) for _ in range(layout.grad_accum_steps)])
@@ -593,6 +596,10 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
             is_checkpoint = is_eval or step % config.train.ckpt_every == 0 or step == end_step
             # Check every update, including steps between log/checkpoint events.
             loss_value = float(loss)
+            # The host scalar synchronizes the update. Keep early measurements
+            # so pilots can separate compilation from steady training speed.
+            if len(timing["train_step_seconds"]) < 8:
+                timing["train_step_seconds"].append(time.perf_counter() - train_step_start)
             if not math.isfinite(loss_value):
                 _fail_numerics(config, state, step,
                                f"Nonfinite training loss at step {step}: {loss_value}",
@@ -602,6 +609,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
                 print(f"step={step} train_nll={loss_value:.6f} train_ppl={math.exp(loss_value):.4f}", flush=True)
             if is_eval:
                 interval_seconds = time.perf_counter() - window_time
+                evaluation_start = time.perf_counter()
                 if not train_losses:
                     train_losses.append(loss_value)
                 diagnostics = attention_diagnostics(state, config, diagnostic_sample, diagnostic_provenance)
@@ -619,6 +627,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
                                    f"Nonfinite validation loss at step {step}: {eval_loss}",
                                    diagnostic_sample, diagnostic_provenance, diagnostics=diagnostics, loss=eval_loss)
                 eval_ppl = math.exp(eval_loss)
+                timing["evaluation_seconds"].append(time.perf_counter() - evaluation_start)
                 is_best = eval_loss < best_nll
                 train_nll = float(np.mean(train_losses))
                 throughput = (step - window_step) * tokens_per_step / interval_seconds
@@ -643,6 +652,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
                     "slurm_restart_count": int(os.environ.get("SLURM_RESTART_COUNT", "0")),
                     "wandb_run_id": wandb_run_id, "is_best": is_best,
                 }
+                checkpoint_start = time.perf_counter()
                 metrics_store.stage(record)
                 if not save_checkpoint(manager, step, state, metrics={
                     "validation_nll": eval_loss, "validation_perplexity": eval_ppl,
@@ -650,6 +660,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
                 }):
                     raise RuntimeError(f"Failed to save validation checkpoint at step {step}")
                 manager.wait_until_finished()
+                timing["checkpoint_seconds"].append(time.perf_counter() - checkpoint_start)
                 if is_best:
                     best_nll = eval_loss
                     write_json_atomic(config.train.workdir / "best_validation.json", _best_validation_record(record))
@@ -668,6 +679,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
             if is_checkpoint:
                 print(f"checkpoint_saved_step={step}", flush=True)
         manager.wait_until_finished()
+        timing["runtime_seconds"] = time.perf_counter() - runtime_start
         final_step = int(state.step)
         result = {
             "latest_checkpoint_before": latest_before, "restored": restored_step is not None,
@@ -676,6 +688,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
             "training_tokens": final_step * tokens_per_step,
             "latest_checkpoint_after": manager.latest_step(), "best_checkpoint_after": manager.best_step(),
             "data_parallel_devices": layout.device_count,
+            "timing": timing,
             **attention_identity(config),
         }
         if final_step == config.optim.total_steps:

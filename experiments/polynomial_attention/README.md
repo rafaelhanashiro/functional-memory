@@ -62,11 +62,21 @@ JAX_PLATFORMS=cpu uv run --project experiments/polynomial_attention --locked --e
   -c experiments/polynomial_attention/pyproject.toml experiments/polynomial_attention/tests -m 'not gpu'
 ```
 
+The Kennel configuration reads the original packed corpus directly from NFS at
+`/data/cl/u/rafah/home/datasets/fineweb_12b`. Results, checkpoints, environments,
+and caches also remain on NFS; no node-local staging is used.
+
 CPU tests verify recipe/initialization equality, FP64-reference attention outputs
 and Q/K/V gradients, causal block boundaries, prefix averaging, failure detection,
 packed data, metrics transactions, and checkpoint resume. Accelerator acceptance
 additionally requires all variants' full-context/full-microbatch training and
-evaluation pilots on the same two-H200 layout as production.
+evaluation pilots on the same H100 allocation as production. The Kennel default
+is two H100s; `--gpu-count 4` selects four without changing the global batch,
+microbatch, accumulation count, or scientific recipe. Hardware allocation is
+part of the sweep identity and is checked again when each production job starts.
+Pilots measure synchronized update, validation, and checkpoint times and require
+a conservative projected production runtime below six days. First-update
+compilation is excluded from the steady update rate and charged once as startup.
 
 ## Launch
 
@@ -101,7 +111,11 @@ uv run --project experiments/polynomial_attention --locked --extra cuda python -
 ```
 
 Production submission rejects a missing or unsuccessful preflight. The six
-production jobs run serially on two H200s with requeue support. The first uses
+production jobs run serially on the validated H100 allocation with requeue
+support. Kennel jobs use the `long` partition, 32 CPUs and 256 GB RAM; the
+preflight limit is eight hours and each production limit is seven days. The
+locked Python environment must be installed before submission; jobs invoke its
+interpreter directly without changing dependencies. The first uses
 `afterok` on preflight; subsequent jobs use `afterany` on the preceding production
 job, so a recorded failure at one degree does not suppress the remaining trials.
 Resumption restores the optimizer and exact data cursor. Submission records live under
