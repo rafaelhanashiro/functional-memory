@@ -11,21 +11,14 @@
   },
   "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
   "execution_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/polynomial_attention_kennel",
-  "identity": "24a4338e07a3863550e8968cd102c5bcfdc1fd905d04c126276e5b2c5690e123",
+  "identity": "aa637f534e37dc5c47611bcab6407403f141d835925628091e0cc34192d65b32",
   "jobs": {
-    "200m-m000-seed0": "199416",
-    "200m-m002-seed0": "199417",
-    "200m-m004-seed0": "199418",
-    "200m-m008-seed0": "199419",
-    "200m-m016-seed0": "199420",
-    "200m-softmax-seed0": "199421",
-    "preflight": "199413"
+    "preflight": "199422"
   },
   "launch_after_preflight": true,
-  "preflight_dir": "/data/cl/u/rafah/home/projects/functional-memory/.cache/polynomial_attention/preflight/24a4338e07a3863550e8968cd102c5bcfdc1fd905d04c126276e5b2c5690e123",
-  "preflight_log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention/preflight/slurm-199413.out",
-  "preflight_submitted_utc": "2026-09-17T05:24:07.373181+00:00",
-  "production_submitted_utc": "2026-09-17T05:40:02.175990+00:00",
+  "preflight_dir": "/data/cl/u/rafah/home/projects/functional-memory/.cache/polynomial_attention/preflight/aa637f534e37dc5c47611bcab6407403f141d835925628091e0cc34192d65b32",
+  "preflight_log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention/preflight/slurm-199422.out",
+  "preflight_submitted_utc": "2026-09-17T05:48:13.568697+00:00",
   "project_root": "/data/cl/u/rafah/home/projects/functional-memory",
   "runs": [
     {
@@ -451,7 +444,7 @@
   ],
   "scheduler": {
     "cpus_per_task": 32,
-    "gpu_count": 2,
+    "gpu_count": 4,
     "gpu_type": "h100",
     "memory": "256G",
     "partition": "long",
