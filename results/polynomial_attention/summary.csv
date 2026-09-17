@@ -1,0 +1,7 @@
+run,kernel,attention_degree,qk_head_dim,value_head_dim,parameter_count,status,error,training_tokens,terminal_nll,terminal_ppl,best_step,best_ppl,latest_tokens_per_second
+200m-m000-seed0,m=0,0,64,64,199906304,pending,,,,,,,
+200m-m002-seed0,m=2,2,64,64,199906304,pending,,,,,,,
+200m-m004-seed0,m=4,4,64,64,199906304,pending,,,,,,,
+200m-m008-seed0,m=8,8,64,64,199906304,pending,,,,,,,
+200m-m016-seed0,m=16,16,64,64,199906304,pending,,,,,,,
+200m-softmax-seed0,Exact softmax,,64,64,199906304,pending,,,,,,,

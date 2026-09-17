@@ -1,0 +1,27 @@
+{
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "dependency_job_id": "199420",
+  "dependency_type": "afterany",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention/200m-softmax-seed0/slurm-199421.out",
+  "scheduler": {
+    "cpus_per_task": 32,
+    "gpu_count": 2,
+    "gpu_type": "h100",
+    "memory": "256G",
+    "partition": "long",
+    "preflight_time": "08:00:00",
+    "production_time": "7-00:00:00"
+  },
+  "slurm_job_id": "199421",
+  "source_commit": "2484f00e9a32f1571b330fff5788d9a86175235f",
+  "sweep_identity": "24a4338e07a3863550e8968cd102c5bcfdc1fd905d04c126276e5b2c5690e123"
+}
