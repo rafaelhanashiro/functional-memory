@@ -1,9 +1,11 @@
+import csv
 import hashlib
 import json
+import sys
 
 import pytest
 
-from experiments.key_dimension.plot import aggregate, summarize_run
+from experiments.key_dimension.plot import aggregate, main, summarize_run
 
 
 def fixture_run(tmp_path, dim=64, source_commit="a" * 40):
@@ -102,6 +104,36 @@ def test_aggregate_combines_pinned_sources_and_preserves_reference(tmp_path):
     assert manifest["reference_manifests"][0]["sha256"] in readme
     assert reference.read_bytes() == original_bytes
     assert (tmp_path / "dk64/metrics.jsonl").read_bytes() == original_metrics
+
+
+@pytest.mark.parametrize("retained,explicit,expected_widths", [
+    (True, False, [64, 256]),
+    (True, True, [64]),
+    (False, False, [64]),
+])
+def test_plot_cli_selects_retained_extension_without_overriding_explicit_manifest(
+    tmp_path, monkeypatch, retained, explicit, expected_widths,
+):
+    extension, reference = fixture_extension(tmp_path)
+    results = tmp_path / "results/key_dimension"
+    results.mkdir(parents=True)
+    original = results / "sweep.json"
+    original.write_bytes(reference.read_bytes())
+    (results / "sweep-dk256.json").write_text(json.dumps(extension))
+    if retained:
+        (results / "provenance.json").write_text(json.dumps({"plot_manifest": "sweep-dk256.json"}))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["plot", *(["--manifest", str(original)] if explicit else [])])
+    main()
+    with (results / "summary.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    assert [int(row["qk_head_dim"]) for row in rows] == expected_widths
+    assert all(row["status"] == "complete" for row in rows)
+    readme = (results / "README.md").read_text()
+    assert ("[Retention provenance](provenance.json)" in readme) == retained
+    if retained:
+        assert "authority for resolved configuration and retained checkpoint locations" in readme
+        assert "archived launch records" in readme
 
 
 def test_aggregate_rejects_modified_reference_manifest(tmp_path):

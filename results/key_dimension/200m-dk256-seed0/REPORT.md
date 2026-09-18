@@ -2,12 +2,11 @@
 
 Status: complete.
 
-- Query/key width: 256; value width: 64.
-- Parameters: 262820864; seed: 0.
-- Updates: 19,074 / 19,074.
-- Prediction tokens: 10,000,269,312 / 10,000,269,312.
-- Source: `3d330a2f29e067b4df017ac08d12b9b6d3154b94`; Slurm job: `22951341`.
-- Latest validation NLL: 2.651382; PPL: 14.173615.
+- Parameters: 262,820,864; seed: 0.
+- Terminal validation PPL: **14.173615** after 10,000,269,312 prediction tokens (19,074 updates).
+- Validation-best checkpoint: step 19,074, PPL 14.173615; retained at `experiments/key_dimension/checkpoints/200m-dk256-seed0/19074`.
+- Resolved configuration: `experiments/key_dimension/configs/runs/200m-dk256-seed0.yaml`.
+- Source commit: `3d330a2f29e067b4df017ac08d12b9b6d3154b94`.
+- Successful Slurm log: `results/logs/key_dimension/200m-dk256-seed0/slurm-22951341.out`.
 
-Primary result: terminal PPL at the common prediction-token budget.
-Retained terminal checkpoint: `19074`; validation best: `19074`.
+Full retention provenance: [provenance.json](../provenance.json).

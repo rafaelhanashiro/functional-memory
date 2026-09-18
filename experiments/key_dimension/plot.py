@@ -113,6 +113,15 @@ def aggregation_sources(manifest: dict) -> list[tuple[dict, dict | None]]:
     return sources
 
 
+def default_manifest_path(results_dir: Path = Path("results/key_dimension")) -> Path:
+    provenance_path = results_dir / "provenance.json"
+    if provenance_path.exists():
+        provenance = json.loads(provenance_path.read_text())
+        if provenance.get("plot_manifest"):
+            return results_dir / provenance["plot_manifest"]
+    return results_dir / "sweep.json"
+
+
 def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
     sources = aggregation_sources(manifest)
     runs = sorted(
@@ -166,10 +175,16 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
         figure.savefig(output_dir / f"learningcurves.{extension}", dpi=180)
     plt.close(figure)
     lines = ["# Key-dimension sweep", ""]
+    retained = (output_dir / "provenance.json").exists()
+    if retained:
+        lines.extend([
+            "[Retention provenance](provenance.json) is the authority for resolved configuration and retained checkpoint locations. "
+            "Historical source manifests below are archived launch records.", "",
+        ])
     if len(sources) == 1:
         lines.extend([f"Source: `{manifest['source_commit']}`. Identity: `{manifest['identity']}`.", ""])
     else:
-        lines.extend(["Source manifests:", ""])
+        lines.extend(["Archived launch manifests:" if retained else "Source manifests:", ""])
         for source, reference in sources:
             label = "Current sweep" if reference is None else f"Reference `{reference['path']}` (SHA-256 `{reference['sha256']}`)"
             lines.append(f"- {label}: source `{source['source_commit']}`; identity `{source['identity']}`.")
@@ -186,10 +201,11 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", type=Path, default=Path("results/key_dimension/sweep.json"))
+    parser.add_argument("--manifest", type=Path, help="Sweep manifest; defaults to the retained plot manifest, or results/key_dimension/sweep.json")
     parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
-    aggregate(json.loads(args.manifest.read_text()), args.output_dir)
+    manifest_path = args.manifest if args.manifest is not None else default_manifest_path()
+    aggregate(json.loads(manifest_path.read_text()), args.output_dir)
 
 
 if __name__ == "__main__":

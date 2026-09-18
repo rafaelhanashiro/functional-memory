@@ -1,6 +1,8 @@
 # Key-dimension sweep
 
-Source manifests:
+[Retention provenance](provenance.json) is the authority for resolved configuration and retained checkpoint locations. Historical source manifests below are archived launch records.
+
+Archived launch manifests:
 
 - Current sweep: source `3d330a2f29e067b4df017ac08d12b9b6d3154b94`; identity `a237d91a0c287ec1a182aa17114a6294983be05d9dfbb2882076a3ba44df9883`.
 - Reference `/home/rafah/projects/functional_memory/results/key_dimension/sweep.json` (SHA-256 `8080d58cddad8879687c804427c8746fc1133aec133f6d657d3be8ad20b96566`): source `5e871d2659373272e26668e10911922c7201678a`; identity `0ceca430e0bff3c418fe7a21cd99107059d4d5d229d85e8582621d658795fa1e`.

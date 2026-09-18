@@ -11,12 +11,13 @@
     "cuda:0",
     "cuda:1"
   ],
-  "error": null,
   "log_path": "/home/rafah/projects/functional_memory/results/logs/key_dimension/200m-dk008-seed0/slurm-22808237.out",
   "next_train_sequence": 4882944,
   "ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
   "parameter_count": 181556224,
   "qk_head_dim": 8,
+  "resolved_config_path": "experiments/key_dimension/configs/runs/200m-dk008-seed0.yaml",
+  "retained_best_checkpoint_path": "experiments/key_dimension/checkpoints/200m-dk008-seed0/19074",
   "retained_best_checkpoint_step": 19074,
   "retained_terminal_checkpoint_step": 19074,
   "rng_state": {
