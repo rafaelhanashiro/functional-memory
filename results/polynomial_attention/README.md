@@ -1,27 +1,22 @@
-# Polynomial attention sweep on Kennel
+# Taylor attention sweep
 
-The active sweep requests **four H100 GPUs per run** on one node, in the
-`long` partition. Preflight job **199422** is queued for resources. After all
-four-GPU checks pass, it automatically submits the six production runs in
-sequence: Taylor degrees 0, 2, 4, 8, 16, then exact softmax.
+Source: `1a8836a75836671cdf83a3ab7763425a6a88cac7`. Identity: `6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a`.
 
-- Frozen source: `2484f00e9a32f1571b330fff5788d9a86175235f`.
-- Each model has 199,906,304 parameters and trains for 19,074 updates,
-  totaling 10,000,269,312 prediction tokens.
-- Global batch 256, global microbatch 64, four accumulation steps, and
-  2,048 prediction positions are unchanged. Four devices use 16 sequences
-  per device per microbatch.
-- Data, environments, caches, results, and checkpoints remain on NFS.
-- Dataset verification passed for all 91 shards; the unchanged source passed
-  138 CPU tests. Four-GPU acceptance must pass separately before production.
+1/6 runs complete. Endpoints use committed terminal validation at the common token budget; all other runs are excluded.
 
-See `sweep.json` for the current immutable run specifications and job IDs,
-and `allocation_change.json` for the allocation change provenance. The earlier
-two-GPU jobs 199416–199421 were cancelled. Degree zero had completed about 202
-updates without a checkpoint; it will restart from the same seed on four GPUs.
-The superseded attempt is preserved under the archive path in that record.
+The degree-zero control is causal prefix averaging; its Q/K projections receive no attention-derived learning signal.
 
-The seven-day production limit, checkpoint/resume behavior, evaluation subset,
-optimizer, initialization, and scientific recipe remain unchanged. Production
-submission is blocked until every GPU pilot and both resume checks pass with
-a projected runtime below six days per model.
+| Kernel | Parameters | Status | Terminal PPL |
+|---|---:|---|---:|
+| m=0 | 199,906,304 | complete | 47.0653 |
+| m=2 | 199,906,304 | queued | — |
+| m=4 | 199,906,304 | queued | — |
+| m=8 | 199,906,304 | queued | — |
+| m=16 | 199,906,304 | queued | — |
+| Exact softmax | 199,906,304 | queued | — |
+
+Retained results from earlier source revisions:
+
+- m=0: `2484f00e9a32f1571b330fff5788d9a86175235f`.
+
+[Machine-readable results](summary.csv) · [Terminal PPL](ppl_vs_degree.pdf) · [Learning curves](learningcurves.pdf)

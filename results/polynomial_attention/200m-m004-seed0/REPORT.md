@@ -1,8 +1,9 @@
 # 200m-m004-seed0
 
-Status: awaiting successful preflight.
+Status: queued as Slurm job 199649; requires successful preflight 199647.
 
-- Kernel: Taylor degree 4; query/key and value dimensions: 64.
-- Parameters: 199,906,304; seed: 0.
-- Prediction-token budget: 10,000,269,312.
-- Source: `2484f00e9a32f1571b330fff5788d9a86175235f`; resolved config: `config.yaml`.
+- Parameters: 199,906,304; prediction tokens: 10,000,269,312.
+- Backend: fused; source: `1a8836a75836671cdf83a3ab7763425a6a88cac7`.
+- Allocation: four H100 SXM GPUs on dogo; global batch 256, microbatch 64.
+- Log: `/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention/200m-m004-seed0/slurm-199649.out`.
+- Automatic requeue and checkpoint resume enabled.

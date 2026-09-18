@@ -1,0 +1,12 @@
+{
+  "status": "queued",
+  "step": 0,
+  "training_tokens": 0,
+  "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+  "slurm_job_id": "199650",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention/200m-m008-seed0/slurm-199650.out",
+  "parameter_count": 199906304,
+  "attention_degree": 8,
+  "attention_backend": "fused",
+  "updated_utc": "2026-09-18T04:57:32.180123+00:00"
+}

@@ -1,0 +1,29 @@
+{
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "dependency_job_id": "199648",
+  "dependency_type": "afterany",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention/200m-m004-seed0/slurm-199649.out",
+  "preflight_dependency_job_id": "199647",
+  "scheduler": {
+    "cpus_per_task": 32,
+    "gpu_count": 4,
+    "gpu_type": "h100",
+    "memory": "256G",
+    "node": "dogo",
+    "partition": "standard",
+    "preflight_time": "02:00:00",
+    "production_time": "08:00:00"
+  },
+  "slurm_job_id": "199649",
+  "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+  "sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a"
+}
