@@ -1,0 +1,30 @@
+{
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/home/rafah/projects/ofm/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "dependency_job_id": null,
+  "log_path": "/home/rafah/projects/functional_memory/results/logs/key_dimension/200m-dk256-seed0/slurm-22951341.out",
+  "preflight_job_id": "22946959",
+  "previous_attempts": [
+    {
+      "last_logged_training_step": 1000,
+      "log_cleanup_reason": "Removed after replacement job 22951341 completed successfully.",
+      "log_path": "/home/rafah/projects/functional_memory/results/logs/key_dimension/200m-dk256-seed0/slurm-22946962.out",
+      "log_retained": false,
+      "reason": "Disk quota exceeded while saving checkpoint 500; no durable checkpoint remained.",
+      "slurm_job_id": "22946962",
+      "state": "FAILED"
+    }
+  ],
+  "resubmitted_utc": "2026-09-18T04:10:23.096962+00:00",
+  "slurm_job_id": "22951341",
+  "source_commit": "3d330a2f29e067b4df017ac08d12b9b6d3154b94",
+  "sweep_identity": "a237d91a0c287ec1a182aa17114a6294983be05d9dfbb2882076a3ba44df9883"
+}
