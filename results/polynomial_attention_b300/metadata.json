@@ -1,0 +1,90 @@
+{
+  "format": "polynomial-attention-b300-artifacts",
+  "status": "complete",
+  "slurm_job_id": "199854",
+  "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+  "source_sha256": {
+    "experiments/polynomial_attention/benchmark_attention.py": "eda9a6cdaffea7507f876f021f28571edbac029c8448ed6af6d3cdfe265cca3c",
+    "experiments/polynomial_attention/benchmark_train_step.py": "1a19fb08ee50d2ebb2c85e933141c9a20c19d589d7442a2a615a468cdc0ef928",
+    "experiments/polynomial_attention/configs/base.py": "d8f49f6974218b49e7c133fbfa900c8ca7df9877b2ad068726e5270ded426c75",
+    "experiments/polynomial_attention/models/architectures/transformer.py": "8d1fac95941d61feffc6b25f0f09408e603f778261546275f83e07d4df4ac850",
+    "experiments/polynomial_attention/models/components/attention.py": "1be81a96ecfd688f5b8d84932c03de907664a946223c131c0b8fd1aef6239dc2",
+    "experiments/polynomial_attention/models/components/fused_attention.py": "2584f962aeab6cc6bd8c663676233cafed30b343768289e65c21365258326271",
+    "experiments/polynomial_attention/training/distributed.py": "a5f0a02be3d8a7ff8bd53adbc2b7c7749263c10881f7fdfb338c5b7136ff15a9",
+    "experiments/polynomial_attention/training/state.py": "754d3ade512c1a26f2a6d73e71d67863d29b536bbd2bdd28337fe9fff4a22ffb",
+    "experiments/polynomial_attention/uv.lock": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c"
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention_b300/slurm-199854.out",
+  "scheduler_accounting": [
+    "199854|COMPLETED|00:06:01|akita|0:0",
+    "199854.batch|COMPLETED|00:06:01|akita|0:0",
+    "199854.extern|COMPLETED|00:06:01|akita|0:0"
+  ],
+  "gpu_kind": "NVIDIA B300 SXM6 AC",
+  "device_count": 4,
+  "tests": {
+    "tests": 56,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0
+  },
+  "cublas": {
+    "installed_package": "nvidia-cublas-cu12==12.9.2.10",
+    "reported_runtime_version": 120902,
+    "warning_assessment": "JAX 0.10.0 version guard does not account for the 12.9.2 TMEM fix backport.",
+    "fix_source": "https://docs.nvidia.com/cuda/cublas-patch-release-notes/#cublas-patch-release-12-9-2",
+    "warning_source": "https://github.com/jax-ml/jax/blob/jax-v0.10.0/jax_plugins/cuda/__init__.py#L276-L290"
+  },
+  "comparison": {
+    "format": "polynomial-attention-b300-comparison",
+    "captured_at_utc": "2026-09-18T18:50:00.021508+00:00",
+    "same_source_hashes": true,
+    "same_initial_parameters": true,
+    "same_input_tokens": true,
+    "results": [
+      {
+        "attention": "m002",
+        "h100_median_ms": 463.70522608049214,
+        "b300_median_ms": 399.7134412638843,
+        "b300_throughput_ratio": 1.1600941529868682,
+        "b300_step_time_change_percent": -13.800099981081482
+      },
+      {
+        "attention": "m016",
+        "h100_median_ms": 686.4991236943752,
+        "b300_median_ms": 880.2292051259428,
+        "b300_throughput_ratio": 0.7799095050432361,
+        "b300_step_time_change_percent": 28.22000418427555
+      },
+      {
+        "attention": "softmax",
+        "h100_median_ms": 357.3790604714304,
+        "b300_median_ms": 188.82126361131668,
+        "b300_throughput_ratio": 1.8926844023620415,
+        "b300_step_time_change_percent": -47.16498964370314
+      }
+    ],
+    "h100_reference_job": "199635",
+    "b300_job": "199854"
+  },
+  "artifact_sha256": {
+    "train-step.json": "041191442a66e4a05bc7720f720fc1c58d04ea989e91b6725fc1658f5ba5917d",
+    "comparison.json": "01e5a7740d0c322df5c20cabb16fce379d5a2292259147ab2bf1b7db021113d1",
+    "gpu-tests.xml": "736add695547078a3e7912578762ba5b9ab5568c86a6eeb25ac7d75ece8fdd63",
+    "cluster-snapshot.json": "a3ca61a8f3d85c15b61a3c6c6ca6e626d7c3c115fe999325dea3f3f51e4cd6b0",
+    "run.sbatch": "ebdc1834780999080f6c4dea79babc70964631abd7727b2d4dacb52c6c81c098",
+    "REPORT.md": "c3d0eaa00cab9ef2f60fb045b9ab69991c47dd315a661d1c8193dd32620a8f44",
+    "resume-softmax.sbatch": "acad1e3b7223cf44f02635e3a15f1b576551841e6671984059592d4b08e7332a"
+  },
+  "production_continuation": {
+    "slurm_job_id": "199869",
+    "previous_slurm_job_id": "199652",
+    "run": "200m-softmax-seed0",
+    "resume_checkpoint_step": 9000,
+    "partition": "standard",
+    "node": "akita",
+    "record_path": "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/200m-softmax-seed0/hardware_migration.json",
+    "source_configuration_data_unchanged": true,
+    "resume_verified": true
+  }
+}
