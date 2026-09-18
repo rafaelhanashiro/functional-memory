@@ -21,18 +21,15 @@ MAX_PROJECTED_RUNTIME_SECONDS = 6 * 24 * 60 * 60
 
 
 def required_checks(manifest: dict) -> tuple[str, ...]:
-    fused = any(run["config"]["model"]["attention_backend"] == "fused" for run in manifest["runs"])
-    return (*PREFLIGHT_CHECKS, "attention-fused-gpu") if fused else PREFLIGHT_CHECKS
+    active = [run for run in manifest["runs"] if not run.get("retained_completed", False)]
+    checks = ("attention-cpu", "attention-gpu", "initialization", *[run["name"] for run in active])
+    fused = any(run["config"]["model"]["attention_backend"] == "fused" for run in active)
+    return (*checks, "attention-fused-gpu") if fused else checks
 
 
 def verify_manifest(manifest: dict) -> None:
-    payload = {
-        "source_commit": manifest["source_commit"],
-        "dependency_lock_sha256": manifest["dependency_lock_sha256"],
-        "data_identity": manifest["data_identity"],
-        "scheduler": manifest["scheduler"],
-        "configs": [run["config"] for run in manifest["runs"]],
-    }
+    from experiments.polynomial_attention.sweep import manifest_identity_payload
+    payload = manifest_identity_payload(manifest)
     identity = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
     if identity != manifest["identity"]:
         raise ValueError("Sweep manifest identity does not match its contents")
@@ -57,6 +54,11 @@ def verify_manifest(manifest: dict) -> None:
             raise ValueError(f"Run config changed: {run['config_path']}")
         if run["config"]["model"]["attention_degree"] != run["attention_degree"]:
             raise ValueError(f"Run degree does not match resolved config: {run['name']}")
+        if run.get("retained_completed", False):
+            from experiments.polynomial_attention.sweep import validate_retained_run
+            validate_retained_run(run)
+        elif run["config"]["train"]["source_commit"] != manifest["source_commit"]:
+            raise ValueError(f"Active run source does not match execution checkout: {run['name']}")
 
 
 def passed_check(path: Path, identity: str) -> bool:
@@ -180,16 +182,17 @@ def run_preflight(manifest: dict, *, check_only: bool = False, check_hardware: b
             record_success(check_path, manifest, tests_passed=passed, junit_path=str(junit_path))
         stage = "initialization"
         initial_check = root / "checks/initialization.json"
+        active_runs = [run for run in manifest["runs"] if not run.get("retained_completed", False)]
         if not passed_check(initial_check, manifest["identity"]):
             initializations = {
                 name: launch_worker(manifest, "initialization", attempt / f"init-{name}.json", name=name, cpu=True)
-                for name in ["original", *[run["name"] for run in manifest["runs"]]]
+                for name in ["original", *[run["name"] for run in active_runs]]
             }
             reference = initializations["original"]
             if any(value != reference for value in initializations.values()):
                 raise RuntimeError(f"Initial parameters differ across degrees or from original dK64 recipe: {initializations}")
             record_success(initial_check, manifest, initializations=initializations)
-        for run in manifest["runs"]:
+        for run in active_runs:
             stage = run["name"]
             check_path = root / "checks" / f"{stage}.json"
             if passed_check(check_path, manifest["identity"]):

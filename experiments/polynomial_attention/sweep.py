@@ -12,11 +12,13 @@ from pathlib import Path
 from experiments.polynomial_attention.configs import ATTENTION_DEGREES, config_to_dict, load_config, save_config, validate_config
 
 
-def scheduler_profile(gpu_count: int = 2) -> dict:
+def scheduler_profile(gpu_count: int = 2, *, node: str | None = None) -> dict:
     """The supported single-node Kennel allocations for this fixed recipe."""
     if type(gpu_count) is not int or gpu_count not in (2, 4):
         raise ValueError("Kennel GPU count must be 2 or 4")
-    return {
+    if node not in (None, "dogo"):
+        raise ValueError("The supported SXM node is dogo")
+    profile = {
         "partition": "long",
         "gpu_type": "h100",
         "gpu_count": gpu_count,
@@ -25,10 +27,13 @@ def scheduler_profile(gpu_count: int = 2) -> dict:
         "preflight_time": "08:00:00",
         "production_time": "7-00:00:00",
     }
+    if node is not None:
+        profile.update(node=node, partition="standard", preflight_time="02:00:00", production_time="08:00:00")
+    return profile
 
 
 def validate_scheduler_profile(profile: dict) -> None:
-    if not isinstance(profile, dict) or profile != scheduler_profile(profile.get("gpu_count")):
+    if not isinstance(profile, dict) or profile != scheduler_profile(profile.get("gpu_count"), node=profile.get("node")):
         raise ValueError("Unsupported Kennel scheduler profile")
 
 
@@ -50,13 +55,16 @@ def resolve_scheduler_profile(project_root: Path, gpu_count: int | None = None) 
 def scheduler_options(profile: dict, *, preflight: bool) -> list[str]:
     validate_scheduler_profile(profile)
     walltime = profile["preflight_time" if preflight else "production_time"]
-    return [
+    options = [
         "--requeue", "--nodes=1", "--ntasks=1",
         f"--partition={profile['partition']}",
         f"--gres=gpu:{profile['gpu_type']}:{profile['gpu_count']}",
         f"--cpus-per-task={profile['cpus_per_task']}",
         f"--mem={profile['memory']}", f"--time={walltime}",
     ]
+    if profile.get("node"):
+        options.append(f"--nodelist={profile['node']}")
+    return options
 
 
 def write_json(path: Path, payload: dict) -> None:
@@ -93,7 +101,36 @@ def parameter_count(model) -> int:
     return embedding + model.num_layers * block + model.hidden_size
 
 
-def make_manifest(base, project_root: Path, execution_root: Path, source_commit: str, *, scheduler: dict | None = None) -> dict:
+def manifest_identity_payload(manifest: dict) -> dict:
+    payload = {key: manifest[key] for key in (
+        "source_commit", "dependency_lock_sha256", "data_identity", "scheduler",
+    )}
+    payload["configs"] = [run["config"] for run in manifest["runs"]]
+    if manifest.get("schema_version", 2) >= 3:
+        payload["retained_runs"] = [
+            {"name": run["name"], "completion_sha256": run["retained_completion_sha256"]}
+            for run in manifest["runs"] if run.get("retained_completed")
+        ]
+    return payload
+
+
+def validate_retained_run(run: dict) -> None:
+    """Accept the existing completed uniform-attention control without relabeling it."""
+    if not run.get("retained_completed") or run["attention_degree"] != 0:
+        raise ValueError("Only the completed degree-zero control can be retained")
+    if config_to_dict(load_config(run["config_path"])) != run["config"]:
+        raise ValueError(f"Retained run config changed: {run['name']}")
+    completion = Path(run["workdir"]) / "completion.json"
+    if hashlib.sha256(completion.read_bytes()).hexdigest() != run["retained_completion_sha256"]:
+        raise ValueError(f"Retained completion changed: {completion}")
+    from experiments.polynomial_attention.plot import summarize_run
+    row, _ = summarize_run(run, run["config"]["train"]["source_commit"])
+    if row["status"] != "complete":
+        raise ValueError(f"Retained run is not complete: {run['name']}")
+
+
+def make_manifest(base, project_root: Path, execution_root: Path, source_commit: str, *, scheduler: dict | None = None,
+                  retained_runs: list[dict] | None = None) -> dict:
     scheduler = scheduler_profile() if scheduler is None else scheduler.copy()
     validate_scheduler_profile(scheduler)
     runs = resolve_runs(base, project_root, source_commit)
@@ -113,7 +150,7 @@ def make_manifest(base, project_root: Path, execution_root: Path, source_commit:
         "configs": [config_to_dict(config) for _, config in runs],
     }
     fingerprint = hashlib.sha256(json.dumps(identity_payload, sort_keys=True).encode()).hexdigest()
-    return {
+    manifest = {
         "schema_version": 2,
         "source_commit": source_commit,
         "dependency_lock_sha256": lock_sha256,
@@ -139,6 +176,26 @@ def make_manifest(base, project_root: Path, execution_root: Path, source_commit:
         ],
         "jobs": {},
     }
+    if retained_runs:
+        if len(retained_runs) != 1:
+            raise ValueError("Expected only one retained degree-zero control")
+        retained = copy.deepcopy(retained_runs[0])
+        validate_retained_run(retained)
+        candidate = manifest["runs"][0]
+        if retained["name"] != candidate["name"] or retained["workdir"] != candidate["workdir"]:
+            raise ValueError("Retained control must use the canonical degree-zero workdir")
+        # Only execution provenance/backend can differ from the requested recipe.
+        original, current = copy.deepcopy(retained["config"]), copy.deepcopy(candidate["config"])
+        for config in (original, current):
+            config["model"].pop("attention_backend")
+            config["train"].pop("source_commit")
+        if original != current:
+            raise ValueError("Retained degree-zero control has a different scientific recipe")
+        manifest["schema_version"] = 3
+        manifest["runs"][0] = retained
+        manifest["identity"] = hashlib.sha256(json.dumps(manifest_identity_payload(manifest), sort_keys=True).encode()).hexdigest()
+        manifest["preflight_dir"] = str(project_root.resolve() / ".cache/polynomial_attention/preflight" / manifest["identity"])
+    return manifest
 
 
 def submit_job(command: list[str], execution_root: Path, dependency: str | None = None, dependency_type: str = "afterok") -> str:
@@ -181,6 +238,9 @@ def prepare_sweep(manifest: dict, base) -> dict:
             raise ValueError(f"Existing sweep has a different frozen execution checkout: {manifest_path}")
         manifest = previous
     for (_, config), run in zip(resolve_runs(base, project_root, manifest["source_commit"]), manifest["runs"], strict=True):
+        if run.get("retained_completed"):
+            validate_retained_run(run)
+            continue
         if config_to_dict(config) != run["config"]:
             raise ValueError(f"Resolved config differs from persisted sweep: {run['name']}")
         config_path = Path(run["config_path"])
@@ -223,11 +283,20 @@ def submit_preflight(manifest: dict, base, *, launch: bool = False) -> dict:
     return manifest
 
 
-def submit_sweep(manifest: dict, base) -> dict:
-    """Submit production only after *all* matching pilots have actually passed."""
+def submit_sweep(manifest: dict, base, *, queue_after_preflight: bool = False) -> dict:
+    """Submit checked runs, or queue them behind the matching preflight job.
+
+    Every queued run depends on successful preflight, including later runs in
+    the serial chain. The train launcher also rechecks the exact success record.
+    """
     manifest = prepare_sweep(manifest, base)
-    from experiments.polynomial_attention.preflight import run_preflight
-    run_preflight(manifest, check_only=True)
+    from experiments.polynomial_attention.preflight import run_preflight, verify_manifest
+    if queue_after_preflight:
+        verify_manifest(manifest)
+        if not manifest["jobs"].get("preflight"):
+            raise ValueError("Queueing production requires a submitted matching preflight job")
+    else:
+        run_preflight(manifest, check_only=True)
     project_root = Path(manifest["project_root"])
     execution_root = Path(manifest["execution_root"])
     manifest_path = project_root / "results/polynomial_attention/sweep.json"
@@ -236,11 +305,18 @@ def submit_sweep(manifest: dict, base) -> dict:
     previous = manifest["jobs"].get("preflight")
     dependency_type = "afterok"
     for run in manifest["runs"]:
+        if run.get("retained_completed"):
+            validate_retained_run(run)
+            continue
         if run["name"] in manifest["jobs"]:
             previous = manifest["jobs"][run["name"]]
             dependency_type = "afterany"
             continue
-        dependency = [f"--dependency={dependency_type}:{previous}"] if previous else []
+        dependencies = [f"{dependency_type}:{previous}"] if previous else []
+        preflight_job = manifest["jobs"].get("preflight")
+        if queue_after_preflight and previous != preflight_job:
+            dependencies.insert(0, f"afterok:{preflight_job}")
+        dependency = [f"--dependency={','.join(dependencies)}"] if dependencies else []
         label = "softmax" if run["attention_degree"] is None else f"m{run['attention_degree']:03d}"
         command = common + scheduler_log_options(project_root, run["name"]) + dependency
         command += [f"--job-name=pa-{label}", str(launcher), "train", str(manifest_path), run["name"]]
@@ -252,6 +328,7 @@ def submit_sweep(manifest: dict, base) -> dict:
             "slurm_job_id": job_id,
             "dependency_job_id": previous,
             "dependency_type": dependency_type if previous else None,
+            "preflight_dependency_job_id": preflight_job if queue_after_preflight else None,
             "log_path": str(project_root / "results/logs/polynomial_attention" / run["name"] / f"slurm-{job_id}.out"),
             "data_identity": manifest["data_identity"],
             "scheduler": manifest["scheduler"],
@@ -278,17 +355,24 @@ def main() -> None:
     mode.add_argument("--preflight-only", action="store_true", help="Persist all configs and submit only the six-variant GPU preflight.")
     mode.add_argument("--launch", action="store_true", help="Submit preflight now; its launcher submits production only after all checks pass.")
     mode.add_argument("--submit", action="store_true", help="Submit production only if this exact sweep has passed preflight.")
+    mode.add_argument("--queue", action="store_true", help="Queue preflight and all production jobs with success dependencies.")
     args = parser.parse_args()
     execution_root = args.execution_root.resolve()
     source_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=execution_root, text=True).strip()
-    if args.submit or args.preflight_only or args.launch:
+    if args.submit or args.preflight_only or args.launch or args.queue:
         dirty = subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=normal"], cwd=execution_root, text=True)
         if dirty:
             raise ValueError(f"Execution checkout must be clean before submission: {execution_root}")
     base = load_config(args.base_config)
     scheduler = resolve_scheduler_profile(args.project_root, args.gpu_count)
-    manifest = make_manifest(base, args.project_root, execution_root, source_commit, scheduler=scheduler)
-    if args.preflight_only or args.launch:
+    persisted_path = args.project_root / "results/polynomial_attention/sweep.json"
+    retained = ([run for run in json.loads(persisted_path.read_text())["runs"] if run.get("retained_completed")]
+                if persisted_path.exists() else None)
+    manifest = make_manifest(base, args.project_root, execution_root, source_commit, scheduler=scheduler, retained_runs=retained)
+    if args.queue:
+        manifest = submit_preflight(manifest, base)
+        manifest = submit_sweep(manifest, base, queue_after_preflight=True)
+    elif args.preflight_only or args.launch:
         manifest = submit_preflight(manifest, base, launch=args.launch)
     elif args.submit:
         manifest = submit_sweep(manifest, base)

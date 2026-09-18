@@ -1,4 +1,5 @@
 from pathlib import Path
+import hashlib
 import json
 import os
 import shlex
@@ -10,7 +11,7 @@ import pytest
 from experiments.polynomial_attention.configs import load_config, config_to_dict
 from experiments.polynomial_attention.preflight import (
     PREFLIGHT_CHECKS, passed_check, preflight_complete, record_success,
-    require_passing_tests, run_preflight,
+    require_passing_tests, required_checks, run_preflight,
 )
 from experiments.polynomial_attention.sweep import (
     ATTENTION_DEGREES, make_manifest, parameter_count, prepare_sweep,
@@ -207,9 +208,12 @@ def test_parity_gate_rejects_skips_failures_and_missing_checks(tmp_path, kind):
 
 @pytest.mark.parametrize("gpu_count", [2, 4])
 @pytest.mark.parametrize("backend", ["blocked", "fused"])
-def test_preflight_pilots_all_degrees_in_processes_and_resumes_controls(tmp_path, monkeypatch, gpu_count, backend):
+@pytest.mark.parametrize("retain_zero", [False, True])
+def test_preflight_pilots_active_degrees_in_processes_and_resumes_controls(tmp_path, monkeypatch, gpu_count, backend, retain_zero):
     base, manifest = make_test_manifest(tmp_path, gpu_count=gpu_count, backend=backend)
     prepare_sweep(manifest, base)
+    if retain_zero:
+        manifest["runs"][0]["retained_completed"] = True
     monkeypatch.setattr("experiments.polynomial_attention.preflight.verify_manifest", lambda manifest: None)
     calls = []
     test_commands = []
@@ -239,14 +243,85 @@ def test_preflight_pilots_all_degrees_in_processes_and_resumes_controls(tmp_path
     fused_test_path = "experiments/polynomial_attention/tests/test_fused_attention.py"
     assert any(fused_test_path in command for command in test_commands) == (backend == "fused")
     assert len(test_commands) == (3 if backend == "fused" else 2)
+    active_names = [run_name(m) for m in ATTENTION_DEGREES if not (retain_zero and m == 0)]
     initial = [name for worker, name, _, cpu in calls if worker == "initialization" and cpu]
-    assert initial == ["original", *[run_name(m) for m in ATTENTION_DEGREES]]
+    assert initial == ["original", *active_names]
     pilots = [(name, stop) for worker, name, stop, _ in calls if worker == "pilot"]
-    assert [name for name, stop in pilots if stop == 2] == [run_name(m) for m in ATTENTION_DEGREES]
+    assert [name for name, stop in pilots if stop == 2] == active_names
     assert [name for name, stop in pilots if stop == 3] == [run_name(16), run_name(None)]
     previous = list(calls)
     run_preflight(manifest, check_only=True)
     assert calls == previous
+
+
+def test_retained_control_does_not_replace_active_preflight_gate(tmp_path):
+    _, manifest = make_test_manifest(tmp_path, backend="fused")
+    manifest["runs"][0]["retained_completed"] = True
+    manifest["runs"][0]["config"]["model"]["attention_backend"] = "blocked"
+    checks = required_checks(manifest)
+    assert run_name(0) not in checks
+    assert checks == ("attention-cpu", "attention-gpu", "initialization",
+                      *[run_name(m) for m in ATTENTION_DEGREES[1:]], "attention-fused-gpu")
+    root = Path(manifest["preflight_dir"])
+    record_success(root / "success.json", manifest)
+    for name in checks:
+        if name != run_name(2):
+            record_success(root / "checks" / f"{name}.json", manifest)
+    record_success(root / "checks" / f"{run_name(0)}.json", manifest)
+    assert not preflight_complete(manifest)
+    record_success(root / "checks" / f"{run_name(2)}.json", manifest)
+    assert preflight_complete(manifest)
+
+
+@pytest.mark.parametrize("retained", [False, True])
+def test_preflight_accepts_historical_source_only_for_validated_retained_run(tmp_path, monkeypatch, retained):
+    from experiments.polynomial_attention.configs import save_config
+    from experiments.polynomial_attention.preflight import verify_manifest
+    from experiments.polynomial_attention.sweep import manifest_identity_payload
+
+    base, manifest = make_test_manifest(tmp_path)
+    prepare_sweep(manifest, base)
+    run = manifest["runs"][0]
+    config = load_config(run["config_path"])
+    config.train.source_commit = "b" * 40
+    save_config(config, Path(run["config_path"]))
+    run["config"] = config_to_dict(config)
+    if retained:
+        manifest["schema_version"] = 3
+        run["retained_completed"] = True
+        run["retained_completion_sha256"] = "c" * 64
+    manifest["identity"] = hashlib.sha256(json.dumps(manifest_identity_payload(manifest), sort_keys=True).encode()).hexdigest()
+    monkeypatch.setattr("experiments.polynomial_attention.preflight.subprocess.check_output",
+                        lambda command, **kwargs: manifest["source_commit"] if "rev-parse" in command else "")
+    validated = []
+    monkeypatch.setattr("experiments.polynomial_attention.sweep.validate_retained_run", validated.append)
+    if retained:
+        verify_manifest(manifest)
+        assert validated == [run]
+    else:
+        with pytest.raises(ValueError, match="Active run source"):
+            verify_manifest(manifest)
+        assert not validated
+
+
+def test_aggregate_preserves_retained_control_source_and_rejects_wrong_metrics(tmp_path):
+    from experiments.polynomial_attention.plot import aggregate
+    from experiments.polynomial_attention.tests.test_plot import fixture_run, write_completion
+
+    retained, workdir = fixture_run(tmp_path, 0)
+    retained["retained_completed"] = True
+    retained["config"]["train"] = {"source_commit": "a" * 40}
+    write_completion(retained, workdir)
+    manifest = {"source_commit": "b" * 40, "identity": "mixed-sources",
+                "project_root": str(tmp_path), "runs": [retained]}
+    output = tmp_path / "plots"
+    rows = aggregate(manifest, output)
+    assert rows[0]["status"] == "complete"
+    assert rows[0]["source_commit"] == "a" * 40
+    assert "Retained results from earlier source revisions" in (output / "README.md").read_text()
+    retained["config"]["train"]["source_commit"] = "b" * 40
+    with pytest.raises(ValueError, match="Metric identity"):
+        aggregate(manifest, output)
 
 
 def test_launcher_bootstraps_without_python_on_compute_node_path(tmp_path):

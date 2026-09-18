@@ -35,7 +35,7 @@ print(manifest['execution_root'])
 print(manifest['source_commit'])
 run = next((run for run in manifest['runs'] if run['name'] == sys.argv[2]), None)
 print(run['config_path'] if run else '')
-print(manifest['runs'][0]['config_path'] if manifest['runs'] else '')
+print(next((run['config_path'] for run in manifest['runs'] if not run.get('retained_completed')), ''))
 print(manifest['scheduler']['gpu_count'])
 PY
 )"
