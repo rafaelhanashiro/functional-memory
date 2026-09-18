@@ -231,8 +231,15 @@ def test_invalid_causal_scores_or_kernel_poison_only_affected_rows(degree, bad_s
 def test_finite_large_kernel_and_values_do_not_overflow_numerator(degree, score_scale):
     # Each kernel and its row sum are finite, and the correct convex combination
     # of V is finite. Forming sum(kernel * V) before dividing would overflow FP32.
-    q = jnp.ones((1, 3, 1, 1), dtype=jnp.float32)
-    k = (jnp.asarray([0.5, 0.75, 1.0], dtype=jnp.float32) * score_scale).reshape(q.shape)
+    # A one-dimensional query only rescales all scores; at large positive
+    # scores p_m(s) is nearly a monomial, so that radial derivative nearly
+    # cancels under normalization. A second key component gives a substantial
+    # transverse query derivative without changing the score magnitudes, so
+    # strict relative VJP checks measure arithmetic accuracy rather than that
+    # ill-conditioned cancellation.
+    q = jnp.tile(jnp.asarray([2.0 ** 0.5, 0.0], dtype=jnp.float32), (1, 3, 1, 1))
+    k = (jnp.asarray([[0.5, -0.25], [0.75, 0.5], [1.0, -0.75]], dtype=jnp.float32)
+         * score_scale)[None, :, None, :]
     v = (jnp.asarray([[1.0, -2.0], [-3.0, 2.0], [2.0, 1.0]], dtype=jnp.float32) * 1e25)[None, :, None, :]
     cotangent = jnp.asarray([[0.2, -0.3], [0.5, 0.1], [-0.4, 0.7]], dtype=jnp.float32)[None, :, None, :]
     with jax.default_matmul_precision("highest"):
@@ -241,6 +248,8 @@ def test_finite_large_kernel_and_values_do_not_overflow_numerator(degree, score_
         )
         blocked = jax.jit(partial(blocked_dot_product_attention, attention_degree=degree))(q, k, v)
     dense64 = _fp64_forward_and_vjp((q, k, v), cotangent, degree)
+    reference_dq = dense64[1][0]
+    assert np.linalg.norm(reference_dq[..., 1]) >= 0.1 * np.linalg.norm(reference_dq)
     _assert_relative(actual[0], blocked, rtol=3e-5, name=f"large finite kernel/V vs blocked, degree={degree}")
     # The backward must form derivative/kernel_sum before multiplying by dP;
     # dP*derivative can overflow even when the correct q/k gradients are finite.
