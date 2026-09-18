@@ -56,8 +56,14 @@ The default remains `model.attention_backend: blocked`. To select the fused
 implementation, copy the base YAML, set `model.attention_backend: fused`, and
 pass that file with `--base-config /path/to/fused.yaml` to the same sweep launch
 command below. Integer degrees use the Pallas/Triton polynomial kernel with
-FP32 Horner arithmetic and TF32x3 FP32 matrix products; the exact control uses
-cuDNN. Diagnostics retain the actual fused layer outputs and collect score and
+FP32 Horner arithmetic. Mixed FP32/BF16 matrix products split the FP32 operand
+into three BF16 components with FP32 accumulation; products of original BF16
+operands use one BF16 matrix product. FP32-only inputs retain the TF32x3 path.
+Truncating the leading components avoids rounding finite FP32 values near the
+range limit to BF16 infinity. The split retains the FP32 significand away from
+BF16 underflow; it does not promise bitwise IEEE equivalence or exact subnormal
+handling. The exact softmax control uses cuDNN.
+Diagnostics retain the actual fused layer outputs and collect score and
 kernel statistics separately through the blocked reference implementation.
 Fused sweeps must additionally pass the fused GPU correctness suite. Backend,
 source, and configuration are part of sweep provenance: an existing blocked
@@ -93,6 +99,27 @@ initial weights and resident synthetic tokens; it excludes data loading,
 validation, and checkpoint I/O. JSON reports include source hashes, hardware,
 raw timing samples, and numerical comparisons. Kernel memory figures are
 compiler buffer estimates, not measured allocator peaks.
+
+For a comparison with cuDNN and a profile of complete warmed updates:
+
+```bash
+python -m experiments.polynomial_attention.benchmark_train_step --degrees 2 16 softmax --implementations fused --trace-dir /path/to/traces --output /path/to/training.json
+python -m experiments.polynomial_attention.analyze_profile /path/to/traces --output /path/to/profile-summary.json
+python -m experiments.polynomial_attention.tune_attention --degrees 2 16 --output /path/to/tile-tuning.json
+python -m experiments.polynomial_attention.benchmark_packed_run --workdir /path/to/fresh/pilot --output /path/to/packed-pilot.json
+```
+
+Profiles capture three additional updates after timing. The analyzer counts
+actual GPU stream kernels, avoiding nested host/HLO annotations. CUDA command
+buffer replay can hide operation names; such GEMMs remain unattributed rather
+than being assigned to the MLP or loss. Recorded GPU activity is not SM utilization.
+Tile tuning rejects numerical failures and reports resource failures explicitly.
+The packed pilot requires a clean committed checkout and a fresh workdir. It
+uses real configured data and the production learning-rate horizon, stopping
+after 100 updates. Its compressed evaluation/checkpoint cadence measures their
+first and warmed costs; its total wall time must not be scaled directly to a
+full production run. See `results/polynomial_attention_throughput/REPORT.md`
+for the measured comparison and runtime assumptions.
 
 Recorded H100 measurements and correctness results are in the
 [kernel report](../../results/polynomial_attention_kernel/REPORT.md) and

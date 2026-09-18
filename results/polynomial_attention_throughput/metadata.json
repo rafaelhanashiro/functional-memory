@@ -1,0 +1,114 @@
+{
+  "format": "polynomial-attention-throughput-artifacts",
+  "status": "complete",
+  "source_commit": "0f655fb7098ae73e5923fc295fe0b5c3012184ee",
+  "source_sha256": {
+    "experiments/polynomial_attention/benchmark_attention.py": "eda9a6cdaffea7507f876f021f28571edbac029c8448ed6af6d3cdfe265cca3c",
+    "experiments/polynomial_attention/benchmark_train_step.py": "1a19fb08ee50d2ebb2c85e933141c9a20c19d589d7442a2a615a468cdc0ef928",
+    "experiments/polynomial_attention/configs/base.py": "d8f49f6974218b49e7c133fbfa900c8ca7df9877b2ad068726e5270ded426c75",
+    "experiments/polynomial_attention/models/architectures/transformer.py": "8d1fac95941d61feffc6b25f0f09408e603f778261546275f83e07d4df4ac850",
+    "experiments/polynomial_attention/models/components/attention.py": "1be81a96ecfd688f5b8d84932c03de907664a946223c131c0b8fd1aef6239dc2",
+    "experiments/polynomial_attention/models/components/fused_attention.py": "2584f962aeab6cc6bd8c663676233cafed30b343768289e65c21365258326271",
+    "experiments/polynomial_attention/training/distributed.py": "a5f0a02be3d8a7ff8bd53adbc2b7c7749263c10881f7fdfb338c5b7136ff15a9",
+    "experiments/polynomial_attention/training/state.py": "754d3ade512c1a26f2a6d73e71d67863d29b536bbd2bdd28337fe9fff4a22ffb",
+    "experiments/polynomial_attention/uv.lock": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c"
+  },
+  "slurm_job_id": "199635",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention_throughput/slurm-199635.out",
+  "scheduler_accounting": [
+    "199635|COMPLETED|00:11:02|dogo|0:0",
+    "199635.batch|COMPLETED|00:11:02|dogo|0:0",
+    "199635.extern|COMPLETED|00:11:02|dogo|0:0",
+    "199635.0|COMPLETED|00:00:00|dogo|0:0",
+    "199635.1|COMPLETED|00:00:01|dogo|0:0"
+  ],
+  "tests": {
+    "passed": 56,
+    "failed": 0,
+    "skipped": 0
+  },
+  "gpu_kind": "NVIDIA H100 80GB HBM3",
+  "device_count": 4,
+  "profile_summary": {
+    "baseline-profile-summary.json": [
+      {
+        "degree": "2",
+        "wall_ms": 940.7920003333334,
+        "attention_ms": 658.7625329166668,
+        "attention_percent": 70.02212313489696,
+        "collectives_ms": 8.116516166666512
+      },
+      {
+        "degree": "16",
+        "wall_ms": 1238.3582016666664,
+        "attention_ms": 952.2023219166671,
+        "attention_percent": 76.89231763758892,
+        "collectives_ms": 12.143570166666468
+      },
+      {
+        "degree": "softmax",
+        "wall_ms": 357.97346266666665,
+        "attention_ms": 59.84202416666675,
+        "attention_percent": 16.71688837515582,
+        "collectives_ms": 8.007880166666709
+      }
+    ],
+    "profile-summary.json": [
+      {
+        "degree": "2",
+        "wall_ms": 463.8461426666666,
+        "attention_ms": 175.88067550000002,
+        "attention_percent": 37.91789115435051,
+        "collectives_ms": 11.018604916666668
+      },
+      {
+        "degree": "4",
+        "wall_ms": 487.40020366666664,
+        "attention_ms": 200.18735416666684,
+        "attention_percent": 41.07248061463165,
+        "collectives_ms": 10.749249333333239
+      },
+      {
+        "degree": "8",
+        "wall_ms": 535.8529896666668,
+        "attention_ms": 251.36111400000004,
+        "attention_percent": 46.908595985694134,
+        "collectives_ms": 9.126074999999876
+      },
+      {
+        "degree": "16",
+        "wall_ms": 696.3176213333332,
+        "attention_ms": 416.33160658333367,
+        "attention_percent": 59.79047403484166,
+        "collectives_ms": 6.393782750000023
+      },
+      {
+        "degree": "softmax",
+        "wall_ms": 358.94348599999995,
+        "attention_ms": 60.19983058333328,
+        "attention_percent": 16.77139520045038,
+        "collectives_ms": 9.3269323333334
+      }
+    ]
+  },
+  "exploratory_allocation": {
+    "id": "199628",
+    "note": "Interactive allocation released after all successful steps; its allocation status is cancelled. Exploratory JSON captures exact file hashes of the working source. Canonical final validation above used a clean committed checkout."
+  },
+  "production_restarted": false,
+  "completed_degree_zero_preserved": true,
+  "artifact_sha256": {
+    "run.sbatch": "8d0f2f5c866bfe55dfec1f75d0ceb2865b3213aca8e28c55f9e97d6e38abd94d",
+    "packed-pilot.json": "8c2186ac976b32b4cebc4ca6790a76ee453ff5c1578bede219d28cb198cbe686",
+    "baseline-profile-summary.json": "4851cf03fe7124cb50ffc7949151eea13084467be3d2cf56fa1b2ab1519bc64e",
+    "tile-tuning.json": "699a162a0b496625ae9d54cbcb156a6a6c44ea9245395a49d2b79ece13ac3cc5",
+    "runtime-estimate.json": "d8fd704177e26c1e279659047831bb3fdb25eb573d30712afe72037acd0680bb",
+    "packed-validation-metrics.jsonl": "bbf06442b94a3fd0fb5f56e694c1a5849440be277d9557cf21faf1b6739ad5ef",
+    "train-step.json": "b8743b3d09b4f0d23bf241d6c4d35f799fb6060c58076315ed181f914bc50bf3",
+    "microbatch128.json": "754cacf3ce3e4b7f7bb21b2bd8de0ec4fee190004c225495d12b513e44546953",
+    "baseline-train-step.json": "9d752b6324720eeff84c9c371501d835c81004544f7f6770142832ac5eccf8ac",
+    "profile-summary.json": "226e6e5bff0d85105609e7805e88e4158b21928f4727f21931b169a59b6e96ed",
+    "packed-data-identity.json": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "gpu-tests.xml": "e1a5bf01e6f2ca64b383993cefde98485b751b031f504010d69608c8c2dcdb8a"
+  }
+}

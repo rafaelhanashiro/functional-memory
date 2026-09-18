@@ -1,0 +1,177 @@
+{
+  "configuration": {
+    "data": {
+      "batch_size": 256,
+      "dataset_config": "sample-100BT",
+      "dataset_name": "HuggingFaceFW/fineweb-edu",
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sequence_length": 2049,
+      "shuffle_seed": 0,
+      "source": "packed",
+      "split": "train",
+      "synthetic_vocab_size": 32000,
+      "text_field": "text",
+      "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+      "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+    },
+    "model": {
+      "attention_backend": "fused",
+      "attention_degree": 16,
+      "dropout": 0.0,
+      "hidden_size": 1024,
+      "intermediate_size": 3008,
+      "kind": "transformer",
+      "max_seq_len": 2048,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "num_layers": 10,
+      "qk_head_dim": 64,
+      "remat": false,
+      "rms_norm_eps": 1e-06,
+      "rope_theta": 10000.0,
+      "tie_embeddings": false,
+      "value_head_dim": 64,
+      "vocab_size": 32000
+    },
+    "optim": {
+      "beta1": 0.9,
+      "beta2": 0.95,
+      "grad_clip_norm": 1.0,
+      "learning_rate": 0.0003,
+      "min_learning_rate": 3e-05,
+      "total_steps": 19074,
+      "warmup_steps": 2000,
+      "weight_decay": 0.1
+    },
+    "train": {
+      "ckpt_every": 25,
+      "dtype": "bfloat16",
+      "eval_batches": 7,
+      "eval_every": 50,
+      "log_every": 10,
+      "micro_batch_size": 64,
+      "seed": 0,
+      "source_commit": "0f655fb7098ae73e5923fc295fe0b5c3012184ee",
+      "wandb_entity": null,
+      "wandb_mode": "disabled",
+      "wandb_project": "functional-memory-polynomial-attention",
+      "wandb_run_name": "200m-softmax-seed0",
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/.cache/polynomial_attention/throughput/packed-pilot-199635"
+    }
+  },
+  "created_at_utc": "2026-09-18T04:30:17.567499+00:00",
+  "finished_at_utc": "2026-09-18T04:36:33.087857+00:00",
+  "format": "polynomial-attention-packed-run-benchmark",
+  "measurement_notes": [
+    "Actual packed-data loading, transfers, updates, diagnostics, evaluation, and checkpoint writes.",
+    "Production learning-rate horizon is unchanged; validation/checkpoint cadence is compressed.",
+    "Training loop retains the first eight synchronized step timings; first step includes compilation.",
+    "First evaluation includes compilation; later evaluations use warmed executables.",
+    "Validation checkpoints are waited for; other checkpoints can overlap subsequent training.",
+    "Full wall time includes initialization and final checkpoint completion; no NFS staging."
+  ],
+  "outcome": {
+    "attention_backend": "fused",
+    "attention_degree": 16,
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "taylor",
+    "best_checkpoint_after": 100,
+    "data_parallel_devices": 4,
+    "data_start_sequence": 0,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 100,
+    "final_step": 100,
+    "key_block_size": 64,
+    "latest_checkpoint_after": 100,
+    "latest_checkpoint_before": null,
+    "m0_qk_parameter_note": null,
+    "query_block_size": 64,
+    "restored": false,
+    "restored_step": null,
+    "start_step": 0,
+    "timing": {
+      "checkpoint_seconds": [
+        20.933938374277204,
+        21.487877415958792
+      ],
+      "evaluation_seconds": [
+        14.91734529985115,
+        3.5860696132294834
+      ],
+      "runtime_seconds": 375.39908512635157,
+      "train_step_seconds": [
+        21.088019215036184,
+        0.6968538616783917,
+        0.7025170968845487,
+        0.6970593859441578,
+        0.700455142185092,
+        0.6997787761501968,
+        0.6996221132576466,
+        0.6996688144281507
+      ]
+    },
+    "training_tokens": 52428800
+  },
+  "provenance": {
+    "device": {
+      "description": "cuda:0",
+      "id": 0,
+      "kind": "NVIDIA H100 80GB HBM3",
+      "platform": "gpu",
+      "process_index": 0
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "199635",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": null
+    },
+    "hostname": "dogo.csail.mit.edu",
+    "package_versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda12-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cudnn-cu12": "9.22.0.52"
+    },
+    "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "source_commit": "0f655fb7098ae73e5923fc295fe0b5c3012184ee",
+    "source_dirty": false,
+    "source_sha256": {
+      "experiments/polynomial_attention/benchmark_attention.py": "eda9a6cdaffea7507f876f021f28571edbac029c8448ed6af6d3cdfe265cca3c",
+      "experiments/polynomial_attention/benchmark_packed_run.py": "e7036ee9170137be401391265f96211027afc4cacb0f2fc9b5dcd4877d726ea7",
+      "experiments/polynomial_attention/models/architectures/transformer.py": "8d1fac95941d61feffc6b25f0f09408e603f778261546275f83e07d4df4ac850",
+      "experiments/polynomial_attention/models/components/attention.py": "1be81a96ecfd688f5b8d84932c03de907664a946223c131c0b8fd1aef6239dc2",
+      "experiments/polynomial_attention/models/components/fused_attention.py": "2584f962aeab6cc6bd8c663676233cafed30b343768289e65c21365258326271",
+      "experiments/polynomial_attention/training/distributed.py": "a5f0a02be3d8a7ff8bd53adbc2b7c7749263c10881f7fdfb338c5b7136ff15a9",
+      "experiments/polynomial_attention/training/loop.py": "74f65b554b28280a31cf33cec14923048c0846609eb8ae4f102e06ba1a34ce75",
+      "experiments/polynomial_attention/uv.lock": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ]
+  },
+  "schema_version": 1,
+  "status": "complete",
+  "stop_after_step": 100,
+  "wall_seconds": 375.5181834558025
+}

@@ -1,0 +1,393 @@
+{
+  "completed_at_utc": "2026-09-18T04:10:50.107982+00:00",
+  "configuration": {
+    "accumulation_steps": 4,
+    "comparison": "fresh identical initial parameters and optimizer state for each trial; loss sequences are diagnostic, not gradient correctness proof",
+    "degrees": [
+      2,
+      16,
+      null
+    ],
+    "device_count": 4,
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ],
+    "excluded": [
+      "compilation",
+      "input loading/transfers",
+      "validation",
+      "diagnostics",
+      "checkpointing",
+      "profiling"
+    ],
+    "global_batch_size": 256,
+    "global_micro_batch_size": 64,
+    "implementations": [
+      "fused"
+    ],
+    "input_distribution": "fixed independent uniform token IDs; same packed-shaped batch for every update",
+    "iterations": 10,
+    "local_micro_batch_size": 16,
+    "model_and_training_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "synthetic",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "blocked",
+        "attention_degree": 2,
+        "dropout": 0.0,
+        "hidden_size": 1024,
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 64,
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 2000,
+        "weight_decay": 0.1
+      },
+      "train": {
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "auto",
+        "wandb_entity": null,
+        "wandb_mode": "disabled",
+        "wandb_project": "functional-memory-polynomial-attention",
+        "wandb_run_name": "200m-softmax-seed0",
+        "workdir": "results/polynomial_attention/200m-softmax-seed0"
+      }
+    },
+    "profile": {
+      "directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/polynomial_attention/throughput/traces/20260918T040912690995Z",
+      "included_in_timing": false,
+      "updates_per_trial": 3
+    },
+    "timing": "existing compiled distributed forward/backward/accumulation/all-reduce/optimizer; complete state and loss synchronized",
+    "token_sha256": "1a0d1f7c35b40d2f9d21f6913eeaa6dc959bdac9803544326454f677fb3bb9f3",
+    "token_shape": [
+      4,
+      64,
+      2049
+    ],
+    "tokens_per_step": 524288,
+    "warmup": 3
+  },
+  "created_at_utc": "2026-09-18T04:09:12.691120+00:00",
+  "format": "polynomial-attention-train-step-benchmark",
+  "initialization": {
+    "initialized_once": true,
+    "optimizer_step": 0,
+    "parameter_count": 199906304,
+    "parameter_sha256": "01d61699c41fa41ec8a8abe29fd493eb17d901cde4ba385eecb8ce3c028b1be7",
+    "reusable_snapshot": "read-only NumPy copies of every parameter/optimizer/step array"
+  },
+  "provenance": {
+    "device": {
+      "description": "cuda:0",
+      "id": 0,
+      "kind": "NVIDIA H100 80GB HBM3",
+      "platform": "gpu",
+      "process_index": 0
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "199628",
+      "SLURM_STEP_ID": "1",
+      "XLA_FLAGS": null
+    },
+    "hostname": "dogo.csail.mit.edu",
+    "package_versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda12-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cudnn-cu12": "9.22.0.52"
+    },
+    "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "source_commit": "4e2c906c32bb76b3ec358c4822d25d1e4561e388",
+    "source_dirty": true,
+    "source_sha256": {
+      "experiments/polynomial_attention/benchmark_attention.py": "eda9a6cdaffea7507f876f021f28571edbac029c8448ed6af6d3cdfe265cca3c",
+      "experiments/polynomial_attention/benchmark_train_step.py": "1a19fb08ee50d2ebb2c85e933141c9a20c19d589d7442a2a615a468cdc0ef928",
+      "experiments/polynomial_attention/configs/base.py": "d8f49f6974218b49e7c133fbfa900c8ca7df9877b2ad068726e5270ded426c75",
+      "experiments/polynomial_attention/models/architectures/transformer.py": "8d1fac95941d61feffc6b25f0f09408e603f778261546275f83e07d4df4ac850",
+      "experiments/polynomial_attention/models/components/attention.py": "1be81a96ecfd688f5b8d84932c03de907664a946223c131c0b8fd1aef6239dc2",
+      "experiments/polynomial_attention/models/components/fused_attention.py": "b6802f2b5b5eef9acaa7d09150108768f3831ab58022739612cfdb7d6caa3362",
+      "experiments/polynomial_attention/training/distributed.py": "a5f0a02be3d8a7ff8bd53adbc2b7c7749263c10881f7fdfb338c5b7136ff15a9",
+      "experiments/polynomial_attention/training/state.py": "754d3ade512c1a26f2a6d73e71d67863d29b536bbd2bdd28337fe9fff4a22ffb",
+      "experiments/polynomial_attention/uv.lock": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ]
+  },
+  "results": [
+    {
+      "attention": "m002",
+      "degree": 2,
+      "implementations": {
+        "fused": {
+          "final_optimizer_step": 13,
+          "first_warmup_including_compilation_seconds": 22.53517472790554,
+          "initial_loss": 10.872848510742188,
+          "losses": [
+            10.871795654296875,
+            10.870691299438477,
+            10.869283676147461,
+            10.867462158203125,
+            10.865286827087402,
+            10.86279296875,
+            10.859893798828125,
+            10.856689453125,
+            10.853094100952148,
+            10.84913158416748
+          ],
+          "max_ms": 940.5375150963664,
+          "median_ms": 939.2810824792832,
+          "min_ms": 935.5647070333362,
+          "p10_ms": 936.9317468255758,
+          "p90_ms": 940.5268139205873,
+          "profile": {
+            "create_perfetto_trace": true,
+            "directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/polynomial_attention/throughput/traces/20260918T040912690995Z/m002-fused-g4-mb64",
+            "final_optimizer_step": 16,
+            "initial_optimizer_step": 13,
+            "losses": [
+              10.844812393188477,
+              10.840139389038086,
+              10.83515739440918
+            ],
+            "position": "after timed updates; continuing the same warmed state and executable",
+            "total_including_profiler_export_seconds": 4.506849510129541,
+            "updates": 3
+          },
+          "samples_ms": [
+            938.2724151946604,
+            938.4683198295534,
+            935.5647070333362,
+            937.0836401358247,
+            939.1741650179029,
+            940.272550098598,
+            940.0367140769958,
+            940.5375150963664,
+            939.3879999406636,
+            940.5256249010563
+          ],
+          "timed_iterations": 10,
+          "tokens_per_second_at_median": 558180.0909011321,
+          "warmup_iterations": 3,
+          "warmup_losses": [
+            10.872848510742188,
+            10.872848510742188,
+            10.872530937194824
+          ],
+          "warmup_seconds": [
+            22.53517472790554,
+            0.9331132229417562,
+            0.9386110017076135
+          ]
+        }
+      }
+    },
+    {
+      "attention": "m016",
+      "degree": 16,
+      "implementations": {
+        "fused": {
+          "final_optimizer_step": 13,
+          "first_warmup_including_compilation_seconds": 11.340728378854692,
+          "initial_loss": 10.872207641601562,
+          "losses": [
+            10.8710355758667,
+            10.869841575622559,
+            10.868221282958984,
+            10.866264343261719,
+            10.863859176635742,
+            10.86108684539795,
+            10.85787296295166,
+            10.854293823242188,
+            10.850299835205078,
+            10.845970153808594
+          ],
+          "max_ms": 1233.714245725423,
+          "median_ms": 1230.1905944477767,
+          "min_ms": 1226.5049698762596,
+          "p10_ms": 1227.3283171001822,
+          "p90_ms": 1233.290273975581,
+          "profile": {
+            "create_perfetto_trace": true,
+            "directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/polynomial_attention/throughput/traces/20260918T040912690995Z/m016-fused-g4-mb64",
+            "final_optimizer_step": 16,
+            "initial_optimizer_step": 13,
+            "losses": [
+              10.841197967529297,
+              10.836061477661133,
+              10.830486297607422
+            ],
+            "position": "after timed updates; continuing the same warmed state and executable",
+            "total_including_profiler_export_seconds": 5.34307298110798,
+            "updates": 3
+          },
+          "samples_ms": [
+            1228.917642030865,
+            1230.8843256905675,
+            1227.4198001250625,
+            1232.240374200046,
+            1229.9884050153196,
+            1226.5049698762596,
+            1230.3927838802338,
+            1233.714245725423,
+            1233.2431660033762,
+            1228.4584129229188
+          ],
+          "timed_iterations": 10,
+          "tokens_per_second_at_median": 426184.367175518,
+          "warmup_iterations": 3,
+          "warmup_losses": [
+            10.872207641601562,
+            10.872207641601562,
+            10.87181282043457
+          ],
+          "warmup_seconds": [
+            11.340728378854692,
+            1.2290847850963473,
+            1.229303440079093
+          ]
+        }
+      }
+    },
+    {
+      "attention": "softmax",
+      "degree": null,
+      "implementations": {
+        "fused": {
+          "final_optimizer_step": 13,
+          "first_warmup_including_compilation_seconds": 8.00389251857996,
+          "initial_loss": 10.872200012207031,
+          "losses": [
+            10.871015548706055,
+            10.869861602783203,
+            10.868206977844238,
+            10.866209983825684,
+            10.86384391784668,
+            10.861016273498535,
+            10.85786247253418,
+            10.85429573059082,
+            10.850305557250977,
+            10.845935821533203
+          ],
+          "max_ms": 364.76795515045524,
+          "median_ms": 358.1331600435078,
+          "min_ms": 353.75733533874154,
+          "p10_ms": 355.1857013255358,
+          "p90_ms": 361.58147994428873,
+          "profile": {
+            "create_perfetto_trace": true,
+            "directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/polynomial_attention/throughput/traces/20260918T040912690995Z/softmax-fused-g4-mb64",
+            "final_optimizer_step": 16,
+            "initial_optimizer_step": 13,
+            "losses": [
+              10.841203689575195,
+              10.836030960083008,
+              10.830516815185547
+            ],
+            "position": "after timed updates; continuing the same warmed state and executable",
+            "total_including_profiler_export_seconds": 2.818835928104818,
+            "updates": 3
+          },
+          "samples_ms": [
+            355.75763694942,
+            353.75733533874154,
+            364.76795515045524,
+            357.4908059090376,
+            358.1729307770729,
+            360.58358335867524,
+            358.0933893099427,
+            360.8545889146626,
+            361.22742714360356,
+            355.3444086574018
+          ],
+          "timed_iterations": 10,
+          "tokens_per_second_at_median": 1463947.097041522,
+          "warmup_iterations": 3,
+          "warmup_losses": [
+            10.872200012207031,
+            10.872200012207031,
+            10.87181568145752
+          ],
+          "warmup_seconds": [
+            8.00389251857996,
+            0.3544296589680016,
+            0.3651962033472955
+          ]
+        }
+      }
+    }
+  ],
+  "schema_version": 1,
+  "status": "complete"
+}

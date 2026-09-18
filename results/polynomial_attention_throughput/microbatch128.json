@@ -1,0 +1,297 @@
+{
+  "completed_at_utc": "2026-09-18T04:24:44.133361+00:00",
+  "configuration": {
+    "accumulation_steps": 2,
+    "comparison": "fresh identical initial parameters and optimizer state for each trial; loss sequences are diagnostic, not gradient correctness proof",
+    "degrees": [
+      2,
+      16
+    ],
+    "device_count": 4,
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ],
+    "excluded": [
+      "compilation",
+      "input loading/transfers",
+      "validation",
+      "diagnostics",
+      "checkpointing",
+      "profiling"
+    ],
+    "global_batch_size": 256,
+    "global_micro_batch_size": 128,
+    "implementations": [
+      "fused"
+    ],
+    "input_distribution": "fixed independent uniform token IDs; same packed-shaped batch for every update",
+    "iterations": 10,
+    "local_micro_batch_size": 32,
+    "model_and_training_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "synthetic",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "blocked",
+        "attention_degree": 2,
+        "dropout": 0.0,
+        "hidden_size": 1024,
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 64,
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 2000,
+        "weight_decay": 0.1
+      },
+      "train": {
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 128,
+        "seed": 0,
+        "source_commit": "auto",
+        "wandb_entity": null,
+        "wandb_mode": "disabled",
+        "wandb_project": "functional-memory-polynomial-attention",
+        "wandb_run_name": "200m-softmax-seed0",
+        "workdir": "results/polynomial_attention/200m-softmax-seed0"
+      }
+    },
+    "profile": {
+      "directory": null,
+      "included_in_timing": false,
+      "updates_per_trial": 0
+    },
+    "timing": "existing compiled distributed forward/backward/accumulation/all-reduce/optimizer; complete state and loss synchronized",
+    "token_sha256": "1a0d1f7c35b40d2f9d21f6913eeaa6dc959bdac9803544326454f677fb3bb9f3",
+    "token_shape": [
+      2,
+      128,
+      2049
+    ],
+    "tokens_per_step": 524288,
+    "warmup": 3
+  },
+  "created_at_utc": "2026-09-18T04:23:46.363249+00:00",
+  "format": "polynomial-attention-train-step-benchmark",
+  "initialization": {
+    "initialized_once": true,
+    "optimizer_step": 0,
+    "parameter_count": 199906304,
+    "parameter_sha256": "01d61699c41fa41ec8a8abe29fd493eb17d901cde4ba385eecb8ce3c028b1be7",
+    "reusable_snapshot": "read-only NumPy copies of every parameter/optimizer/step array"
+  },
+  "provenance": {
+    "device": {
+      "description": "cuda:0",
+      "id": 0,
+      "kind": "NVIDIA H100 80GB HBM3",
+      "platform": "gpu",
+      "process_index": 0
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "199628",
+      "SLURM_STEP_ID": "6",
+      "XLA_FLAGS": null
+    },
+    "hostname": "dogo.csail.mit.edu",
+    "package_versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda12-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cudnn-cu12": "9.22.0.52"
+    },
+    "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "source_commit": "4e2c906c32bb76b3ec358c4822d25d1e4561e388",
+    "source_dirty": true,
+    "source_sha256": {
+      "experiments/polynomial_attention/benchmark_attention.py": "eda9a6cdaffea7507f876f021f28571edbac029c8448ed6af6d3cdfe265cca3c",
+      "experiments/polynomial_attention/benchmark_train_step.py": "1a19fb08ee50d2ebb2c85e933141c9a20c19d589d7442a2a615a468cdc0ef928",
+      "experiments/polynomial_attention/configs/base.py": "d8f49f6974218b49e7c133fbfa900c8ca7df9877b2ad068726e5270ded426c75",
+      "experiments/polynomial_attention/models/architectures/transformer.py": "8d1fac95941d61feffc6b25f0f09408e603f778261546275f83e07d4df4ac850",
+      "experiments/polynomial_attention/models/components/attention.py": "1be81a96ecfd688f5b8d84932c03de907664a946223c131c0b8fd1aef6239dc2",
+      "experiments/polynomial_attention/models/components/fused_attention.py": "2584f962aeab6cc6bd8c663676233cafed30b343768289e65c21365258326271",
+      "experiments/polynomial_attention/training/distributed.py": "a5f0a02be3d8a7ff8bd53adbc2b7c7749263c10881f7fdfb338c5b7136ff15a9",
+      "experiments/polynomial_attention/training/state.py": "754d3ade512c1a26f2a6d73e71d67863d29b536bbd2bdd28337fe9fff4a22ffb",
+      "experiments/polynomial_attention/uv.lock": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ]
+  },
+  "results": [
+    {
+      "attention": "m002",
+      "degree": 2,
+      "implementations": {
+        "fused": {
+          "final_optimizer_step": 13,
+          "first_warmup_including_compilation_seconds": 26.85769129311666,
+          "initial_loss": 10.872879028320312,
+          "losses": [
+            10.871800422668457,
+            10.870699882507324,
+            10.869277954101562,
+            10.86747932434082,
+            10.865283966064453,
+            10.862796783447266,
+            10.859912872314453,
+            10.856668472290039,
+            10.853071212768555,
+            10.849129676818848
+          ],
+          "max_ms": 459.1276878491044,
+          "median_ms": 456.2058486044407,
+          "min_ms": 450.9270368143916,
+          "p10_ms": 453.99476308375597,
+          "p90_ms": 458.73694363981485,
+          "samples_ms": [
+            450.9270368143916,
+            454.3356215581298,
+            456.22298400849104,
+            458.69352761656046,
+            454.67140013352036,
+            456.18871320039034,
+            454.47189500555396,
+            459.1276878491044,
+            458.18239683285356,
+            457.58474385365844
+          ],
+          "timed_iterations": 10,
+          "tokens_per_second_at_median": 1149235.5952994167,
+          "warmup_iterations": 3,
+          "warmup_losses": [
+            10.872879028320312,
+            10.872879028320312,
+            10.872502326965332
+          ],
+          "warmup_seconds": [
+            26.85769129311666,
+            0.44758310401812196,
+            0.4590928270481527
+          ]
+        }
+      }
+    },
+    {
+      "attention": "m016",
+      "degree": 16,
+      "implementations": {
+        "fused": {
+          "final_optimizer_step": 13,
+          "first_warmup_including_compilation_seconds": 9.382422822061926,
+          "initial_loss": 10.872238159179688,
+          "losses": [
+            10.871002197265625,
+            10.869831085205078,
+            10.868200302124023,
+            10.86624526977539,
+            10.863828659057617,
+            10.861059188842773,
+            10.857844352722168,
+            10.854321479797363,
+            10.85029411315918,
+            10.845952987670898
+          ],
+          "max_ms": 678.4829767420888,
+          "median_ms": 674.5256893336773,
+          "min_ms": 671.2168259546161,
+          "p10_ms": 673.1202694121748,
+          "p90_ms": 677.7933728415519,
+          "samples_ms": [
+            678.4829767420888,
+            674.7002732008696,
+            674.1982521489263,
+            673.3317631296813,
+            671.2168259546161,
+            675.5660730414093,
+            674.4700879789889,
+            677.7167501859367,
+            674.5812906883657,
+            673.3458233065903
+          ],
+          "timed_iterations": 10,
+          "tokens_per_second_at_median": 777269.1363584864,
+          "warmup_iterations": 3,
+          "warmup_losses": [
+            10.872238159179688,
+            10.872238159179688,
+            10.871807098388672
+          ],
+          "warmup_seconds": [
+            9.382422822061926,
+            0.6763928011059761,
+            0.6746864127926528
+          ]
+        }
+      }
+    }
+  ],
+  "schema_version": 1,
+  "status": "complete"
+}
