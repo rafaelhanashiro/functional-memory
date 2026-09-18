@@ -218,5 +218,8 @@
   "training_tokens": 10000269312,
   "validation_nll": 2.6874512689454213,
   "validation_perplexity": 14.69417664861716,
-  "version": 1
+  "version": 1,
+  "retained_checkpoint_path": "experiments/polynomial_attention/checkpoints/200m-softmax-seed0/19074",
+  "checkpoint_retention": "validation_best_only",
+  "retention_provenance": "results/polynomial_attention/provenance.json"
 }

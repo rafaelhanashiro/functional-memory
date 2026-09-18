@@ -13,4 +13,4 @@ Status: complete.
 Attention diagnostics at update 19074: valid on the fixed first held-out sequence (2048 prediction positions).
 
 Primary result: terminal PPL at the common prediction-token budget.
-Retained terminal checkpoint: `19074`; validation best: `19074`.
+Retained validation-best checkpoint: [19074](../../../experiments/polynomial_attention/checkpoints/200m-m002-seed0/19074/), validation PPL 16.281036. Terminal metrics remain the primary result.

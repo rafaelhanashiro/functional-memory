@@ -12,6 +12,7 @@ __pycache__/
 /experiments/key_dimension/checkpoints/
 /results/key_dimension/**/wandb/
 /results/polynomial_attention/**/checkpoints/
+/experiments/polynomial_attention/checkpoints/
 /results/polynomial_attention/**/wandb/
 *.log
 slurm-*.out

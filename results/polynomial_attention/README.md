@@ -1,6 +1,6 @@
 # Taylor attention sweep
 
-Source: `1a8836a75836671cdf83a3ab7763425a6a88cac7`. Identity: `6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a`.
+[Provenance](provenance.json) is the retained record of per-run source commits, seeds, resolved configurations, data identity, and selected checkpoints.
 
 6/6 runs complete. Endpoints use committed terminal validation at the common token budget; all other runs are excluded.
 
@@ -15,10 +15,17 @@ The degree-zero control is causal prefix averaging; its Q/K projections receive 
 | m=16 | 199,906,304 | complete | 14.7062 |
 | Exact softmax | 199,906,304 | complete | 14.6942 |
 
-Retained results from earlier source revisions:
+Only the validation-best checkpoint is retained for each run under `experiments/polynomial_attention/checkpoints/<run>/` (on shared storage, ignored by Git). Terminal metrics above remain the scientific endpoint even when the best checkpoint is earlier.
 
-- m=0: `2484f00e9a32f1571b330fff5788d9a86175235f`.
+| Run | Seed | Source commit | Best step | Best PPL |
+|---|---:|---|---:|---:|
+| 200m-m000-seed0 | 0 | `2484f00e9a32f1571b330fff5788d9a86175235f` | 19000 | 47.0326 |
+| 200m-m002-seed0 | 0 | `1a8836a75836671cdf83a3ab7763425a6a88cac7` | 19074 | 16.2810 |
+| 200m-m004-seed0 | 0 | `1a8836a75836671cdf83a3ab7763425a6a88cac7` | 19074 | 14.9836 |
+| 200m-m008-seed0 | 0 | `1a8836a75836671cdf83a3ab7763425a6a88cac7` | 19074 | 14.6781 |
+| 200m-m016-seed0 | 0 | `1a8836a75836671cdf83a3ab7763425a6a88cac7` | 19074 | 14.7062 |
+| 200m-softmax-seed0 | 0 | `1a8836a75836671cdf83a3ab7763425a6a88cac7` | 19074 | 14.6942 |
+
+Resolved configurations and reproduction instructions are in the [experiment scaffold](../../experiments/polynomial_attention/README.md). [Performance measurements](performance/README.md) document the execution backends and hardware.
 
 [Machine-readable results](summary.csv) · [Terminal PPL](ppl_vs_degree.pdf) · [Learning curves](learningcurves.pdf)
-
-Final cleanup is recorded in [cleanup.json](cleanup.json): each retained training run, benchmark, and validation has one successful Slurm log matching its metadata. The degree-zero preflight is retained separately in [preflight-m000-retained](preflight-m000-retained/metadata.json), the fused preflight in [preflight](preflight/metadata.json), and the transferred-data validation in [data_validation](data_validation/metadata.json). Historical manifests keep their original bytes; relocated log paths are recorded in the cleanup manifest.

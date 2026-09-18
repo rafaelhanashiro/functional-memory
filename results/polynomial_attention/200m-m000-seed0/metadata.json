@@ -182,7 +182,7 @@
   "qk_head_dim": 64,
   "query_block_size": 128,
   "retained_best_checkpoint_step": 19000,
-  "retained_terminal_checkpoint_step": 19074,
+  "retained_terminal_checkpoint_step": null,
   "rng_state": {
     "completed_updates": 19074,
     "seed": 0
@@ -199,5 +199,8 @@
   "updated_utc": "2026-09-17T16:20:19.391020+00:00",
   "validation_nll": 3.851536282471248,
   "validation_perplexity": 47.06531333496572,
-  "value_head_dim": 64
+  "value_head_dim": 64,
+  "retained_checkpoint_path": "experiments/polynomial_attention/checkpoints/200m-m000-seed0/19000",
+  "checkpoint_retention": "validation_best_only",
+  "retention_provenance": "results/polynomial_attention/provenance.json"
 }

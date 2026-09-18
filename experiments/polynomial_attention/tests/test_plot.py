@@ -1,8 +1,12 @@
+import hashlib
 import json
+import shutil
+import sys
 
 import pytest
+import yaml
 
-from experiments.polynomial_attention.plot import aggregate, summarize_run
+from experiments.polynomial_attention.plot import aggregate, main, summarize_run
 from experiments.polynomial_attention.sweep import run_name
 
 
@@ -95,3 +99,83 @@ def test_aggregate_exports_completed_zero_degree_and_softmax_reference(tmp_path,
     for filename in ("summary.csv", "README.md", "ppl_vs_degree.pdf", "ppl_vs_degree.png", "learningcurves.pdf", "learningcurves.png"):
         assert (output / filename).stat().st_size > 0
     assert "m=0" in (output / "README.md").read_text()
+
+
+def retained_fixture(root):
+    """A retained result whose best checkpoint precedes its terminal endpoint."""
+    results = root / "results/polynomial_attention"
+    results.mkdir(parents=True)
+    run, workdir = fixture_run(results)
+    write_completion(run, workdir)
+    config = {
+        "data": {"batch_size": 10, "sequence_length": 11},
+        "model": {"attention_degree": 16, "qk_head_dim": 64, "value_head_dim": 64},
+        "optim": {"total_steps": 10},
+        "train": {"seed": 0, "source_commit": "a" * 40, "workdir": "/removed/execution/checkout/run"},
+    }
+    config_path = root / f"experiments/polynomial_attention/configs/runs/{run['name']}.yaml"
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text(yaml.safe_dump(config))
+    lock_path = root / "experiments/polynomial_attention/uv.lock"
+    lock_path.write_text("retained dependency lock\n")
+
+    def artifact(path):
+        return {"path": str(path.relative_to(root)), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+
+    retained = {key: run[key] for key in ("name", "attention_degree", "qk_head_dim", "value_head_dim", "parameter_count")}
+    retained.update(
+        seed=0, source_commit="a" * 40, resolved_config=artifact(config_path),
+        metrics=artifact(workdir / "metrics.jsonl"), completion=str((workdir / "completion.json").relative_to(root)),
+        selected_checkpoint={"path": f"experiments/polynomial_attention/checkpoints/{run['name']}/step_5.pkl",
+                             "step": 5, "validation_nll": 2.0, "validation_perplexity": 7.39},
+        terminal={"step": 10, "training_tokens": 1000, "validation_nll": 2.1, "validation_perplexity": 8.17},
+    )
+    manifest = {"format": "functional-memory-retained-experiment", "experiment": "polynomial_attention",
+                "runs": [retained], "dependency_lock_sha256": artifact(lock_path)["sha256"]}
+    path = results / "provenance.json"
+    path.write_text(json.dumps(manifest))
+    return path, manifest
+
+
+def test_retained_cli_is_portable_without_checkpoints_or_original_checkout(tmp_path, monkeypatch):
+    original = tmp_path / "original"
+    retained_fixture(original)
+    relocated = tmp_path / "relocated"
+    shutil.copytree(original, relocated)
+    shutil.rmtree(original)
+    unrelated = tmp_path / "unrelated"
+    unrelated.mkdir()
+    monkeypatch.chdir(unrelated)
+    manifest_path = relocated / "results/polynomial_attention/provenance.json"
+    monkeypatch.setattr(sys, "argv", ["plot", "--manifest", str(manifest_path)])
+    main()
+    import csv
+    with (manifest_path.parent / "summary.csv").open() as handle:
+        row = next(csv.DictReader(handle))
+    assert row["status"] == "complete"
+    assert row["terminal_ppl"] == "8.17" and row["best_ppl"] == "7.39" and row["best_step"] == "5"
+    assert (manifest_path.parent / "learningcurves.pdf").stat().st_size > 0
+    readme = (manifest_path.parent / "README.md").read_text()
+    assert "provenance.json" in readme and "validation-best" in readme
+    assert not (relocated / "experiments/polynomial_attention/checkpoints").exists()
+
+
+@pytest.mark.parametrize("field", ["resolved_config", "metrics"])
+def test_retained_artifact_changes_are_rejected(tmp_path, field):
+    manifest_path, manifest = retained_fixture(tmp_path)
+    path = tmp_path / manifest["runs"][0][field]["path"]
+    path.write_text(path.read_text() + "\n")
+    with pytest.raises(ValueError, match="checksum"):
+        aggregate(manifest, manifest_path=manifest_path)
+
+
+@pytest.mark.parametrize("field", ["selected_checkpoint", "terminal"])
+def test_retained_best_and_terminal_metrics_must_match_validation_history(tmp_path, field):
+    manifest_path, manifest = retained_fixture(tmp_path)
+    run = manifest["runs"][0]
+    if field == "selected_checkpoint":
+        run[field].update(step=10, validation_nll=2.1, validation_perplexity=8.17)
+    else:
+        run[field].update(validation_nll=2.0, validation_perplexity=7.39)
+    with pytest.raises(ValueError, match="validation-best|terminal metrics"):
+        aggregate(manifest, manifest_path=manifest_path)

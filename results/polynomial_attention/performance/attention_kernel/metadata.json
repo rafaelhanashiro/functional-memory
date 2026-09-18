@@ -1,0 +1,47 @@
+{
+  "benchmark_path": "results/polynomial_attention/performance/attention_kernel/benchmark.json",
+  "cpu_test_slurm_job_id": "199622",
+  "cpu_test_source_commit": "aeebff38f742eeddbbd995763c9a3b7dc2cf8295",
+  "format": "polynomial-attention-kernel-benchmark-artifacts",
+  "log_path": "results/logs/polynomial_attention/performance/attention_kernel/slurm-199626.out",
+  "slurm_job_id": "199626",
+  "source_commit": "0b7a37bab00c75b1b550bd44180c804b8d91170f",
+  "source_sha256": {
+    "experiments/polynomial_attention/benchmark_attention.py": "eda9a6cdaffea7507f876f021f28571edbac029c8448ed6af6d3cdfe265cca3c",
+    "experiments/polynomial_attention/models/components/attention.py": "1be81a96ecfd688f5b8d84932c03de907664a946223c131c0b8fd1aef6239dc2",
+    "experiments/polynomial_attention/models/components/fused_attention.py": "b6802f2b5b5eef9acaa7d09150108768f3831ab58022739612cfdb7d6caa3362",
+    "experiments/polynomial_attention/uv.lock": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c"
+  },
+  "status": "complete",
+  "tests": {
+    "cpu": {
+      "errors": 0,
+      "failures": 0,
+      "passed": 151,
+      "skipped": 1,
+      "tests": 152
+    },
+    "distributed": {
+      "errors": 0,
+      "failures": 0,
+      "passed": 1,
+      "skipped": 0,
+      "tests": 1
+    },
+    "gpu": {
+      "errors": 0,
+      "failures": 0,
+      "passed": 46,
+      "skipped": 0,
+      "tests": 46
+    }
+  },
+  "retention_note": "Canonical retained measurements; batch wrappers, temporary checkouts, caches, and transient outputs are not required artifacts. Original execution details remain in Git history and the successful Slurm log.",
+  "artifact_sha256": {
+    "REPORT.md": "b1365a1f798fad8f6cd6e5d918ba833d67358887e1549ce1706181d5086b4441",
+    "benchmark.json": "5ed546b2269b67198e8fbb0cddef79221ee52b9d4c24ed5b8eaca6ef4c59570b",
+    "cpu-tests.xml": "0db4e489e24eff87a780debca175628bac3edd270a200ccac715540cf8e023a6",
+    "distributed-tests.xml": "577acda77d428ddd73dc7fbbb5a057f256c6a993292c4a6a8f2c576015c2a02f",
+    "gpu-tests.xml": "bdebae5623da1d352ad40ff78fadc9a2d75638ba5cd60e71816b2f9122801b12"
+  }
+}
