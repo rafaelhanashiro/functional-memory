@@ -3,7 +3,8 @@
 Experiments are grouped by the question they investigate:
 
 - [State rank](experiments/state_rank/README.md): tokenwise spectra and effective
-  rank of pretrained attention states, including Llama and Gated DeltaNet.
+  rank of attention states, including pretrained Llama/Gated DeltaNet and a
+  matched random-versus-pretrained Llama comparison across every layer.
 - [Key dimension](experiments/key_dimension/README.md): pretrain a fixed
   Transformer backbone while varying query/key width and measure perplexity.
   All eight widths from 2 through 256 completed the same 10B-token budget.

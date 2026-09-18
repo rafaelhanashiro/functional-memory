@@ -288,16 +288,26 @@ def compute_llama_spectra(keys, values, check_prefixes=(), scale=None):
     return {key: np.stack([result[key] for result in per_head], axis=1) for key in per_head[0]}
 
 
-def extract_kv(model, input_ids, layer, kv_head=None):
-    """Read native post-RoPE KV cache in one causal pass.
+def extract_kv_layers(model, input_ids, layers):
+    """Read selected layers' native post-RoPE KV caches in one causal pass.
 
-    Default: [tokens, KV heads, dimension]. An integer selects [tokens, dimension].
-    These are the distinct KV heads, before repetition across query heads.
+    Return an insertion-ordered dict from layer index to independent float64
+    (keys, values) arrays with shape [tokens, KV heads, dimension]. These are
+    the distinct KV heads, before repetition across query heads. Layer indices
+    must be unique; their requested order is preserved.
     """
-    if not 0 <= layer < model.config.num_hidden_layers:
-        raise ValueError(f"Layer must be in [0, {model.config.num_hidden_layers - 1}].")
-    if kv_head is not None and not 0 <= kv_head < model.config.num_key_value_heads:
-        raise ValueError(f"KV head must be in [0, {model.config.num_key_value_heads - 1}].")
+    try:
+        layers = tuple(layers)
+    except TypeError as error:
+        raise ValueError("Layers must be a nonempty iterable of integer indices.") from error
+    if not layers:
+        raise ValueError("Layers must be nonempty.")
+    if any(not isinstance(layer, (int, np.integer)) or isinstance(layer, (bool, np.bool_))
+           or not 0 <= layer < model.config.num_hidden_layers for layer in layers):
+        raise ValueError(f"Layers must be integer indices in [0, {model.config.num_hidden_layers - 1}].")
+    layers = tuple(int(layer) for layer in layers)
+    if len(set(layers)) != len(layers):
+        raise ValueError("Layer indices must be unique.")
     if input_ids.ndim != 2 or input_ids.shape[0] != 1 or input_ids.shape[1] == 0:
         raise ValueError("Extract one nonempty sequence at a time, with shape [1, tokens].")
     if model.training:
@@ -305,14 +315,25 @@ def extract_kv(model, input_ids, layer, kv_head=None):
     device = next(model.parameters()).device
     with torch.inference_mode():
         outputs = model(input_ids=input_ids.to(device), use_cache=True, return_dict=True)
-        keys, values = outputs.past_key_values[layer]
-        if kv_head is None:
-            return tuple(tensor[0].transpose(0, 1).to(device="cpu", dtype=torch.float64).numpy().copy()
-                         for tensor in (keys, values))
-        return (
-            keys[0, kv_head].to(device="cpu", dtype=torch.float64).numpy().copy(),
-            values[0, kv_head].to(device="cpu", dtype=torch.float64).numpy().copy(),
-        )
+        return {
+            layer: tuple(tensor[0].transpose(0, 1).to(device="cpu", dtype=torch.float64).numpy().copy()
+                         for tensor in outputs.past_key_values[layer])
+            for layer in layers
+        }
+
+
+def extract_kv(model, input_ids, layer, kv_head=None):
+    """Read one layer's native post-RoPE KV cache in one causal pass.
+
+    Default: [tokens, KV heads, dimension]. An integer selects [tokens, dimension].
+    These are the distinct KV heads, before repetition across query heads.
+    """
+    if kv_head is not None and not 0 <= kv_head < model.config.num_key_value_heads:
+        raise ValueError(f"KV head must be in [0, {model.config.num_key_value_heads - 1}].")
+    keys, values = extract_kv_layers(model, input_ids, (layer,))[layer]
+    if kv_head is None:
+        return keys, values
+    return keys[:, kv_head].copy(), values[:, kv_head].copy()
 
 
 def plot_results(results, titles, output, context=None, layer=None, model_name=None):

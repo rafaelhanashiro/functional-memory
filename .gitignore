@@ -14,3 +14,4 @@ __pycache__/
 *.log
 slurm-*.out
 slurm-*.err
+/results/state_rank/random_vs_pretrained/**/metrics.npz
