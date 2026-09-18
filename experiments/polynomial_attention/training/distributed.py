@@ -111,9 +111,10 @@ def _loss_and_grads(
 
 
 def _cross_entropy(logits: jax.Array, targets: jax.Array) -> jax.Array:
-    return optax.softmax_cross_entropy_with_integer_labels(
-        logits.astype(jnp.float32), targets
-    ).mean()
+    with jax.named_scope("token_cross_entropy"):
+        return optax.softmax_cross_entropy_with_integer_labels(
+            logits.astype(jnp.float32), targets
+        ).mean()
 
 
 def fold_in_data_parallel_rng(
