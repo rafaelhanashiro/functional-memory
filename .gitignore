@@ -8,7 +8,8 @@ __pycache__/
 /.pytest_cache/
 /.cache/
 /results/logs/
-/results/key_dimension/**/checkpoints/
+/results/key_dimension/**/checkpoints
+/experiments/key_dimension/checkpoints/
 /results/key_dimension/**/wandb/
 /results/polynomial_attention/**/checkpoints/
 /results/polynomial_attention/**/wandb/

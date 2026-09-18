@@ -14,6 +14,9 @@ from experiments.key_dimension.models.components.attention import (
 from experiments.key_dimension.models.components.positional import apply_rope
 
 
+ATTENTION_DIMENSIONS = tuple(dict.fromkeys((*KEY_DIMENSIONS, 256)))
+
+
 def _unpad_reference(q, k, v):
     scores = jnp.einsum("bthd,bshd->bhts", q, k) / math.sqrt(q.shape[-1])
     causal = jnp.tril(jnp.ones(scores.shape[-2:], dtype=bool))
@@ -22,7 +25,7 @@ def _unpad_reference(q, k, v):
     return jnp.einsum("bhts,bshd->bthd", probabilities, v)
 
 
-@pytest.mark.parametrize("qk_dim", KEY_DIMENSIONS)
+@pytest.mark.parametrize("qk_dim", ATTENTION_DIMENSIONS)
 def test_padded_xla_matches_unpadded_output_and_qkv_gradients(qk_dim):
     keys = jax.random.split(jax.random.key(7), 3)
     q, k = [jax.random.normal(key, (2, 9, 2, qk_dim)) for key in keys[:2]]
@@ -58,7 +61,7 @@ def _model_gradients(layer, x):
     return jax.grad(loss, argnums=(0, 1))(params, x)
 
 
-@pytest.mark.parametrize("qk_dim", KEY_DIMENSIONS)
+@pytest.mark.parametrize("qk_dim", ATTENTION_DIMENSIONS)
 def test_xla_projection_shapes_causality_and_model_gradient_parity(qk_dim):
     manual, fused = _layer(qk_dim, "manual"), _layer(qk_dim, "xla")
     x = jax.random.normal(jax.random.key(9), (2, 11, 32))
@@ -111,7 +114,7 @@ def test_dk64_baseline_preserves_ofm_initialization_outputs_and_gradients():
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("qk_dim", (2, 4, 64, 128))
+@pytest.mark.parametrize("qk_dim", ATTENTION_DIMENSIONS)
 def test_cudnn_matches_manual_outputs_input_and_parameter_gradients(qk_dim):
     if jax.default_backend() != "gpu":
         pytest.skip("cuDNN parity requires a GPU")
@@ -125,7 +128,7 @@ def test_cudnn_matches_manual_outputs_input_and_parameter_gradients(qk_dim):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("qk_dim", (2, 4, 64, 128))
+@pytest.mark.parametrize("qk_dim", ATTENTION_DIMENSIONS)
 def test_cudnn_production_context_forward_and_backward_are_finite(qk_dim):
     if jax.default_backend() != "gpu":
         pytest.skip("cuDNN production-context check requires a GPU")

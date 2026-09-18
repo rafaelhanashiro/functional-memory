@@ -17,7 +17,33 @@ from pathlib import Path
 from experiments.key_dimension.configs import config_to_dict, load_config
 from experiments.key_dimension.sweep import write_json
 
-PREFLIGHT_DIMENSIONS = (2, 4, 64, 128)
+CUDNN_CHECKS = (
+    "test_cudnn_matches_manual_outputs_input_and_parameter_gradients",
+    "test_cudnn_production_context_forward_and_backward_are_finite",
+)
+
+
+def preflight_dimensions(manifest: dict) -> tuple[int, ...]:
+    dimensions = tuple(dict.fromkeys(run["qk_head_dim"] for run in manifest["runs"]))
+    if not dimensions:
+        raise ValueError("Preflight requires at least one resolved run")
+    for run in manifest["runs"]:
+        if run["qk_head_dim"] != run["config"]["model"]["qk_head_dim"]:
+            raise ValueError(f"Run key dimension does not match its resolved config: {run['name']}")
+    return dimensions
+
+
+def validate_attention_report(path: Path, dimensions: tuple[int, ...]) -> int:
+    expected = {f"{check}[{dim}]" for check in CUDNN_CHECKS for dim in dimensions}
+    testcases = list(ET.parse(path).iter("testcase"))
+    passed = [case for case in testcases if not any(case.find(tag) is not None for tag in ("skipped", "failure", "error"))]
+    names = {case.get("name") for case in passed}
+    if names != expected or len(passed) != len(expected) or len(passed) != len(testcases):
+        raise RuntimeError(
+            f"Expected {len(expected)} passing accelerator checks for {dimensions}; "
+            f"got {len(passed)}/{len(testcases)}, missing={sorted(expected - names)}"
+        )
+    return len(passed)
 
 
 def verify_manifest(manifest: dict) -> None:
@@ -67,6 +93,7 @@ def record_success(path: Path, manifest: dict, **fields) -> None:
 
 def run_preflight(manifest: dict, *, check_only: bool = False) -> None:
     verify_manifest(manifest)
+    dimensions = preflight_dimensions(manifest)
     root = Path(manifest["preflight_dir"])
     success_path = root / "success.json"
     if passed_check(success_path, manifest["identity"]):
@@ -94,18 +121,21 @@ def run_preflight(manifest: dict, *, check_only: bool = False) -> None:
         subprocess.run([
             sys.executable, "-m", "pytest",
             "-c", "experiments/key_dimension/pyproject.toml",
-            "experiments/key_dimension/tests/test_attention.py", "-q", "-k", "cudnn",
+            *[
+                f"experiments/key_dimension/tests/test_attention.py::{check}[{dim}]"
+                for check in CUDNN_CHECKS for dim in dimensions
+            ], "-q",
             f"--junitxml={junit_path}",
         ], cwd=manifest["execution_root"], check=True)
-        testcases = list(ET.parse(junit_path).iter("testcase"))
-        passed = [case for case in testcases if not any(case.find(tag) is not None for tag in ("skipped", "failure", "error"))]
-        if len(passed) != 8 or len(passed) != len(testcases):
-            raise RuntimeError(f"Expected eight passing accelerator checks; got {len(passed)}/{len(testcases)}")
-        record_success(parity_record, manifest, check="padded_cudnn_forward_and_gradients", tests_passed=len(passed))
+        tests_passed = validate_attention_report(junit_path, dimensions)
+        record_success(parity_record, manifest, check="padded_cudnn_forward_and_gradients", qk_head_dimensions=list(dimensions), tests_passed=tests_passed)
 
     from experiments.key_dimension.training.loop import run_training
 
-    for key_dim in PREFLIGHT_DIMENSIONS:
+    # Exercise resume at the largest requested width, retaining the original
+    # sweep's equal-width baseline check whenever it is present.
+    resume_dimensions = {64, max(dimensions)}
+    for key_dim in dimensions:
         check_path = root / "checks" / f"dk{key_dim:03d}.json"
         if passed_check(check_path, manifest["identity"]):
             print(f"preflight_check_reused=dk{key_dim:03d}", flush=True)
@@ -124,12 +154,12 @@ def run_preflight(manifest: dict, *, check_only: bool = False) -> None:
         validation = next((record for record in records if record["step"] == 2), None)
         if validation is None or not math.isfinite(validation["validation_nll"]) or not math.isfinite(validation["validation_perplexity"]):
             raise RuntimeError(f"Preflight dk={key_dim} has no finite committed validation at step 2")
-        if key_dim == 64:
+        if key_dim in resume_dimensions:
             outcome = run_training(config, resume=True, stop_after_step=3)
             if outcome["restored_step"] != 2 or outcome["final_step"] != 3:
                 raise RuntimeError(f"Preflight resume did not preserve optimizer/data progress: {outcome}")
         record_success(check_path, manifest, qk_head_dim=key_dim, outcome=outcome, validation_nll=validation["validation_nll"], validation_perplexity=validation["validation_perplexity"], workdir=str(config.train.workdir))
-    record_success(success_path, manifest, checks=["attention-parity", *[f"dk{dim:03d}" for dim in PREFLIGHT_DIMENSIONS]])
+    record_success(success_path, manifest, checks=["attention-parity", *[f"dk{dim:03d}" for dim in dimensions]])
     print(f"preflight_success={success_path}", flush=True)
 
 

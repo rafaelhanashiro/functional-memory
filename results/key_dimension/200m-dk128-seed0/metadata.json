@@ -1,0 +1,40 @@
+{
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0",
+    "cuda:1"
+  ],
+  "log_path": "/home/rafah/projects/functional_memory/results/logs/key_dimension/200m-dk128-seed0/slurm-22808244.out",
+  "next_train_sequence": 4882944,
+  "ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "parameter_count": 220877824,
+  "qk_head_dim": 128,
+  "resolved_config_path": "experiments/key_dimension/configs/runs/200m-dk128-seed0.yaml",
+  "retained_best_checkpoint_path": "experiments/key_dimension/checkpoints/200m-dk128-seed0/19074",
+  "retained_best_checkpoint_step": 19074,
+  "retained_terminal_checkpoint_step": 19074,
+  "rng_state": {
+    "completed_updates": 19074,
+    "seed": 0
+  },
+  "seed": 0,
+  "slurm_job_id": "22808244",
+  "slurm_restart_count": 0,
+  "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+  "status": "complete",
+  "step": 19074,
+  "target_steps": 19074,
+  "target_tokens": 10000269312,
+  "training_tokens": 10000269312,
+  "updated_utc": "2026-09-17T20:25:06.588845+00:00",
+  "validation_nll": 2.6656709483691623,
+  "validation_perplexity": 14.377592933058489,
+  "value_head_dim": 64
+}
