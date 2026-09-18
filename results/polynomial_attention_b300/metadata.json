@@ -73,7 +73,7 @@
     "gpu-tests.xml": "736add695547078a3e7912578762ba5b9ab5568c86a6eeb25ac7d75ece8fdd63",
     "cluster-snapshot.json": "a3ca61a8f3d85c15b61a3c6c6ca6e626d7c3c115fe999325dea3f3f51e4cd6b0",
     "run.sbatch": "ebdc1834780999080f6c4dea79babc70964631abd7727b2d4dacb52c6c81c098",
-    "REPORT.md": "c3d0eaa00cab9ef2f60fb045b9ab69991c47dd315a661d1c8193dd32620a8f44",
+    "REPORT.md": "140f456f95513c5d8e6817369776da380cafea89604a9f1ee143e5e4a4d52bd0",
     "resume-softmax.sbatch": "acad1e3b7223cf44f02635e3a15f1b576551841e6671984059592d4b08e7332a"
   },
   "production_continuation": {
@@ -85,6 +85,12 @@
     "node": "akita",
     "record_path": "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/200m-softmax-seed0/hardware_migration.json",
     "source_configuration_data_unchanged": true,
-    "resume_verified": true
+    "resume_verified": true,
+    "status": "complete",
+    "final_step": 19074,
+    "training_tokens": 10000269312,
+    "validation_perplexity": 14.69417664861716,
+    "completed_utc": "2026-09-18T19:34:57.162982+00:00",
+    "allocation_elapsed_seconds": 2334
   }
 }

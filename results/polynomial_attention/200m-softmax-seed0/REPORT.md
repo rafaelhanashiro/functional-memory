@@ -1,9 +1,16 @@
-# 200m-softmax-seed0
+# Polynomial attention: softmax control
 
-Status: queued as Slurm job 199652; requires successful preflight 199647.
+Status: complete.
 
-- Parameters: 199,906,304; prediction tokens: 10,000,269,312.
-- Backend: fused; source: `1a8836a75836671cdf83a3ab7763425a6a88cac7`.
-- Allocation: four H100 SXM GPUs on dogo; global batch 256, microbatch 64.
-- Log: `/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention/200m-softmax-seed0/slurm-199652.out`.
-- Automatic requeue and checkpoint resume enabled.
+- Attention: softmax; degree: None; backend: fused.
+- Query/key width: 64; value width: 64.
+- Parameters: 199906304; seed: 0.
+- Updates: 19,074 / 19,074.
+- Prediction tokens: 10,000,269,312 / 10,000,269,312.
+- Source: `1a8836a75836671cdf83a3ab7763425a6a88cac7`; Slurm job: `199869`.
+- Latest validation NLL: 2.687451; PPL: 14.694177.
+
+Attention diagnostics at update 19074: valid on the fixed first held-out sequence (2048 prediction positions).
+
+Primary result: terminal PPL at the common prediction-token budget.
+Retained terminal checkpoint: `19074`; validation best: `19074`.

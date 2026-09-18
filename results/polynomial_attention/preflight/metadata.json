@@ -1,0 +1,19 @@
+{
+  "format": "polynomial-attention-retained-preflight",
+  "status": "passed",
+  "slurm_job_id": "199647",
+  "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+  "sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention/preflight/slurm-199647.out",
+  "log_sha256": "89bf5b220c5d495e4cb0464f776e475a6177befc0bcf91c7b2d9bac47a4c7725",
+  "retained_for_runs": [
+    "200m-m002-seed0",
+    "200m-m004-seed0",
+    "200m-m008-seed0",
+    "200m-m016-seed0",
+    "200m-softmax-seed0"
+  ],
+  "success_record_path": "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/preflight/success.json",
+  "success_record_sha256": "59133e3a4267e1c3831c1152496e2dbec9bb8a615c56abc779cc5f469e0e2288",
+  "original_success_record_path": "/data/cl/u/rafah/home/projects/functional-memory/.cache/polynomial_attention/preflight/6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a/success.json"
+}
