@@ -42,7 +42,7 @@ class ModelConfig:
     dropout: float = 0.0
     tie_embeddings: bool = True
     remat: bool = False
-    attention_backend: Literal["blocked"] = "blocked"
+    attention_backend: Literal["blocked", "fused"] = "blocked"
     attention_degree: int | None = None
 
     def __post_init__(self):
@@ -59,7 +59,7 @@ class ModelConfig:
             raise ValueError("This experiment uses full MHA: num_kv_heads must equal num_heads")
         if self.qk_head_dim % 2:
             raise ValueError("model.qk_head_dim must be even for RoPE")
-        if self.attention_backend != "blocked":
+        if self.attention_backend not in ("blocked", "fused"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
         if self.attention_degree is not None and (
             not isinstance(self.attention_degree, int)
@@ -140,6 +140,8 @@ def validate_config(config: Config) -> None:
         raise ValueError("Packed data requires train_manifest and eval_manifest")
     if train.dtype not in ("float32", "bfloat16"):
         raise ValueError("train.dtype must be float32 or bfloat16")
+    if config.model.attention_backend == "fused" and config.model.attention_degree is None and train.dtype != "bfloat16":
+        raise ValueError("Fused exact-softmax attention uses cuDNN and requires train.dtype=bfloat16")
     if train.wandb_mode not in ("online", "offline", "disabled"):
         raise ValueError("Invalid train.wandb_mode")
     if not 0 <= optim.warmup_steps <= optim.total_steps:

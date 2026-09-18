@@ -32,7 +32,7 @@ m selects `P_m(s) = sum(s**r / r!, r=0..m)` on unshifted post-RoPE scores
 Attention is `sum(P_m(s) * v) / sum(P_m(s))` over the causal prefix. The division
 is exact. The output vocabulary softmax and next-token loss are unchanged.
 
-All variants share the `blocked` backend: 128-position query blocks, causal
+By default, all variants share the `blocked` backend: 128-position query blocks, causal
 key prefixes, FP32 polynomial/normalization arithmetic, and attention-local
 backward recomputation. This replaces the reference's cuDNN implementation
 without changing model geometry, context, batches, or optimizer settings.
@@ -49,6 +49,50 @@ At m=0, attention is uniform causal-prefix averaging. Q/K projections stay in
 the model and parameter count, but receive no attention-derived gradient;
 AdamW weight decay still applies. Increasing degree need not improve perplexity
 monotonically or match exact softmax by degree 16.
+
+## Opt-in fused execution
+
+The default remains `model.attention_backend: blocked`. To select the fused
+implementation, copy the base YAML, set `model.attention_backend: fused`, and
+pass that file with `--base-config /path/to/fused.yaml` to the same sweep launch
+command below. Integer degrees use the Pallas/Triton polynomial kernel with
+FP32 Horner arithmetic and TF32x3 FP32 matrix products; the exact control uses
+cuDNN. Diagnostics retain the actual fused layer outputs and collect score and
+kernel statistics separately through the blocked reference implementation.
+Fused sweeps must additionally pass the fused GPU correctness suite. Backend,
+source, and configuration are part of sweep provenance: an existing blocked
+sweep cannot be changed in place or reused as a fused preflight success.
+
+The polynomial kernel schedules independent query tiles in parallel and streams
+only causal key tiles through each program. It stores no sequence-square score
+or weight arrays. Separate dQ and dK/dV kernels recompute tiles without atomic
+gradient updates; the saved output and normalizers have linear sequence size.
+Online normalized accumulation and division before the derivative product avoid
+unnecessary overflow. The backward retains the FP32 output before its BF16 cast.
+These reduction and matrix-product choices are mathematically equivalent to the
+reference but not bitwise identical; FP64 and BF16 output/VJP tests bound error.
+
+The CUDA kernel targets H100s, accepts FP32/BF16 Q/K/V and head widths up to 128,
+and uses smaller tiles for widths above 64. Scalar diagnostics still come from
+the reference implementation. Degree zero currently uses the fused tiled path
+to preserve the reference's invalid-score checks; it is not a prefix-scan path.
+No extra Python dependency is needed: the pinned JAX supplies the Triton compiler.
+
+Run benchmarks inside a GPU allocation, from the repository root:
+
+```bash
+python -m experiments.polynomial_attention.benchmark_attention --output /path/to/kernel.json
+python -m experiments.polynomial_attention.benchmark_train_step --output /path/to/training.json
+```
+
+The kernel benchmark uses the production per-GPU shape `[16, 2048, 16, 64]`.
+The complete-update benchmark requires four GPUs by default, the production
+model, global batch 256, and four accumulation steps. Both exclude compilation
+and synchronize three warmups and ten measured calls. Training uses identical
+initial weights and resident synthetic tokens; it excludes data loading,
+validation, and checkpoint I/O. JSON reports include source hashes, hardware,
+raw timing samples, and numerical comparisons. Kernel memory figures are
+compiler buffer estimates, not measured allocator peaks.
 
 ## Environment and validation
 

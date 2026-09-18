@@ -76,7 +76,6 @@ def resolve_runs(base, project_root: Path, source_commit: str) -> list[tuple[str
     for degree in ATTENTION_DEGREES:
         config = copy.deepcopy(base)
         config.model.attention_degree = degree
-        config.model.attention_backend = "blocked"
         config.train.seed = 0
         config.train.source_commit = source_commit
         name = run_name(degree)

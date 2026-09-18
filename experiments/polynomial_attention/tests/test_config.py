@@ -95,3 +95,46 @@ def test_degree_round_trip(tmp_path, degree):
     path = tmp_path / "config.yaml"
     save_config(config, path)
     assert load_config(path).model.attention_degree == degree
+
+
+@pytest.mark.parametrize("degree", (0, 2, 4, 8, 16, None))
+def test_fused_backend_is_explicit_and_round_trips(tmp_path, degree):
+    config = Config()
+    assert config.model.attention_backend == "blocked"
+    config.model.attention_backend = "fused"
+    config.model.attention_degree = degree
+    if degree is None:
+        config.train.dtype = "bfloat16"
+    validate_config(config)
+    path = tmp_path / "fused.yaml"
+    save_config(config, path)
+    restored = load_config(path)
+    assert restored.model.attention_backend == "fused"
+    assert restored.model.attention_degree == degree
+
+
+def test_fused_softmax_rejects_float32_training_before_execution():
+    config = Config()
+    config.model = ModelConfig(attention_backend="fused", attention_degree=None)
+    with pytest.raises(ValueError, match="cuDNN.*train.dtype=bfloat16"):
+        validate_config(config)
+    config.train.dtype = "bfloat16"
+    validate_config(config)
+
+
+@pytest.mark.parametrize("qk_dim,value_dim,tile", [(64, 64, 64), (32, 65, 32), (128, 64, 32)])
+def test_fused_diagnostics_metadata_reports_adaptive_tiles(qk_dim, value_dim, tile):
+    from experiments.polynomial_attention.training.diagnostics import attention_identity
+
+    config = Config()
+    config.model = ModelConfig(attention_backend="fused", attention_degree=2,
+                               qk_head_dim=qk_dim, value_head_dim=value_dim)
+    identity = attention_identity(config)
+    assert identity["attention_implementation"] == "pallas_triton"
+    assert identity["query_block_size"] == identity["key_block_size"] == tile
+    assert identity["diagnostic_backend"] == "blocked"
+    assert identity["diagnostic_query_block_size"] == 128
+    config.model.attention_degree = None
+    identity = attention_identity(config)
+    assert identity["attention_implementation"] == "cudnn"
+    assert identity["query_block_size"] is identity["key_block_size"] is None

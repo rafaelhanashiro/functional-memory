@@ -10,7 +10,7 @@ from flax import nnx
 from experiments.polynomial_attention.models.components.positional import apply_rope
 
 
-AttentionBackend = Literal["blocked", "manual", "auto", "xla", "cudnn"]
+AttentionBackend = Literal["blocked", "fused", "manual", "auto", "xla", "cudnn"]
 QUERY_BLOCK_SIZE = 128
 
 
@@ -178,10 +178,10 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("This experiment requires full MHA (num_heads == num_kv_heads)")
         if qk_head_dim % 2:
             raise ValueError("qk_head_dim must be even for RoPE")
-        if backend not in ("blocked", "manual", "auto", "xla", "cudnn"):
+        if backend not in ("blocked", "fused", "manual", "auto", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {backend}")
-        if backend != "blocked" and attention_degree is not None:
-            raise ValueError("Taylor attention requires backend='blocked'")
+        if backend not in ("blocked", "fused") and attention_degree is not None:
+            raise ValueError("Taylor attention requires backend='blocked' or 'fused'")
         if backend != "manual" and dropout != 0.0:
             raise ValueError("Blocked/fused attention requires dropout=0")
         self.hidden_size = hidden_size
@@ -222,8 +222,22 @@ class MultiHeadAttention(nnx.Module):
                 return_diagnostics=return_diagnostics,
             )
             y, diagnostics = result if return_diagnostics else (result, None)
+        elif self.backend == "fused":
+            if self.attention_degree is None:
+                y = padded_dot_product_attention(q, k, v, backend="cudnn")
+            else:
+                from experiments.polynomial_attention.models.components.fused_attention import fused_polynomial_attention
+                y = fused_polynomial_attention(q, k, v, attention_degree=self.attention_degree)
+            diagnostics = None
+            if return_diagnostics:
+                # Collect reference score/kernel statistics on the actual layer
+                # inputs while preserving the fused output for following layers.
+                _, diagnostics = blocked_dot_product_attention(
+                    q, k, v, attention_degree=self.attention_degree,
+                    return_diagnostics=True,
+                )
         elif return_diagnostics:
-            raise ValueError("Diagnostics require backend='blocked'")
+            raise ValueError("Diagnostics require backend='blocked' or 'fused'")
         elif self.backend != "manual":
             y = padded_dot_product_attention(q, k, v, backend=self.backend)
         else:
