@@ -42,8 +42,16 @@ does not suppress the remaining eligible variants.
 Preflight checks CPU reference/gradient/optimizer/resume tests, fused GPU parity,
 full-backbone initialization hashes against the fixed control, and coefficient
 initialization/counts. Every variant runs full-context, full-microbatch training
-and evaluation, an interrupted/resumed pilot, and an independent uninterrupted
-pilot with exact full-state hash comparison. Runtime estimates include evaluation,
+and evaluation and an interrupted/resumed GPU pilot. Exact full-state hashes
+match the live parameters, optimizer moments, and update count to the durable
+checkpoint and the fresh process's restored state. The first resumed batch and
+RNG must match the original iterator's next batch and RNG exactly. CPU tests also
+require exact uninterrupted/resumed trajectory agreement for all four variants.
+Independent GPU executions already differed before any restart in the initial
+pilot, including embedding optimizer moments; their terminal hashes therefore
+cannot isolate checkpoint fidelity. The audit uses no floating-point tolerance
+and does not change production computation to enforce GPU determinism.
+Runtime estimates include evaluation,
 checkpoint overhead, and 10% headroom against the eight-hour allocation limit.
 Numerical or runtime pilot failures reject only that variant; correctness and
 infrastructure failures block the entire sweep. Small validation records and test

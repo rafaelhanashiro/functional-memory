@@ -27,8 +27,13 @@ def test_learned_training_resume_and_identity(tmp_path, mode, sharing):
     config.optim.min_learning_rate = 1e-5
     full = loop.run_training(config)
     resumed_config = replace(config, train=replace(config.train, workdir=tmp_path / "resumed"))
-    loop.run_training(resumed_config, stop_after_step=1)
-    resumed = loop.run_training(resumed_config)
+    interrupted = loop.run_training(resumed_config, stop_after_step=1, audit_checkpoint=True)
+    resumed = loop.run_training(resumed_config, audit_checkpoint=True)
+    initial_audit, resumed_audit = interrupted["checkpoint_audit"], resumed["checkpoint_audit"]
+    assert initial_audit["final_state_sha256"] == initial_audit["checkpoint_state_sha256"]
+    assert initial_audit["final_state_sha256"] == resumed_audit["start_state_sha256"]
+    assert initial_audit["next_update"] == resumed_audit["first_update"]
+    assert resumed_audit["final_state_sha256"] == resumed_audit["checkpoint_state_sha256"]
     assert resumed["restored_step"] == 1
     assert resumed["data_start_sequence"] == config.data.batch_size
     assert full["quadratic_mode"] == resumed["quadratic_mode"] == mode
@@ -61,6 +66,24 @@ def test_finite_forward_loss_does_not_hide_nonfinite_coefficient_gradient(tmp_pa
     grads["quadratic_coefficients"].value = jnp.array([jnp.inf, 0.0])
     loss = checked_update_loss(state.params, grads, state.params, jnp.array(2.0))
     assert np.isnan(loss)
+
+
+def test_checkpoint_audit_rejects_finite_restoration_corruption(tmp_path, monkeypatch):
+    config = tiny_config(tmp_path)
+    config.model.attention_degree = 2
+    config.model.quadratic_mode = "positive"
+    actual_restore = loop.restore_latest_checkpoint
+
+    def corrupt_restore(manager, template):
+        restored, step = actual_restore(manager, template)
+        if step is not None:
+            coefficients = restored.params["quadratic_coefficients"]
+            coefficients.value = coefficients.value + jnp.array([1e-3, 0.0])
+        return restored, step
+
+    monkeypatch.setattr(loop, "restore_latest_checkpoint", corrupt_restore)
+    with pytest.raises(RuntimeError, match="differs from its durable checkpoint"):
+        loop.run_training(config, stop_after_step=1, audit_checkpoint=True)
 
 
 def test_historical_config_defaults_do_not_rewrite_original(tmp_path):

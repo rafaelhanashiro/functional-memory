@@ -167,6 +167,37 @@ def validate_initializations(initializations: dict, manifest: dict) -> None:
             raise RuntimeError(f"Wrong coefficient initialization for {run['name']}: {result}")
 
 
+def validate_resume_audit(initial: dict, resumed: dict) -> None:
+    """Require exact checkpoint state, next input, and RNG across the restart.
+
+    Independent GPU trajectories need not be bitwise reproducible. CPU tests
+    separately compare uninterrupted and resumed trajectories for all variants.
+    This gate isolates checkpoint fidelity without imposing float tolerances.
+    """
+    for outcome in (initial, resumed):
+        audit = outcome.get("checkpoint_audit")
+        if not isinstance(audit, dict):
+            raise RuntimeError("Pilot is missing its checkpoint audit")
+        hashes = [audit.get(key) for key in
+                  ("start_state_sha256", "final_state_sha256", "checkpoint_state_sha256")]
+        for key, step in (("first_update", outcome["start_step"] + 1),
+                          ("next_update", outcome["final_step"] + 1)):
+            update = audit.get(key)
+            if not isinstance(update, dict) or update.get("step") != step:
+                raise RuntimeError(f"Checkpoint audit has an invalid {key} step")
+            hashes.extend(update.get(key) for key in ("batch_sha256", "rng_sha256"))
+        if any(not isinstance(value, str) or len(value) != 64 or
+               any(char not in "0123456789abcdef" for char in value) for value in hashes):
+            raise RuntimeError("Checkpoint audit contains an invalid SHA256")
+        if audit["final_state_sha256"] != audit["checkpoint_state_sha256"]:
+            raise RuntimeError("Durable checkpoint differs from the live training state")
+    before, after = initial["checkpoint_audit"], resumed["checkpoint_audit"]
+    if before["final_state_sha256"] != after["start_state_sha256"]:
+        raise RuntimeError("Restarted state differs from the saved live training state")
+    if before["next_update"] != after["first_update"]:
+        raise RuntimeError("Restarted training changed the next batch or RNG")
+
+
 def retain_preflight_evidence(manifest: dict) -> None:
     """Keep small reproducibility evidence after temporary pilot caches are gone."""
     source = Path(manifest["preflight_dir"])
@@ -259,22 +290,18 @@ def run_preflight(manifest: dict, *, check_only: bool = False, check_hardware: b
                         resumed["data_start_sequence"] != 2 * run["config"]["data"]["batch_size"] or
                         resumed["data_parallel_devices"] != manifest["scheduler"]["gpu_count"]):
                     raise RuntimeError(f"Resume lost optimizer/data progress: {resumed}")
-                uninterrupted = launch_worker(manifest, "pilot", attempt / f"{stage}-uninterrupted.json",
-                                              name=stage, workdir=attempt / f"{stage}-uninterrupted", stop=3)
-                if resumed["state_sha256"] != uninterrupted["state_sha256"]:
-                    raise RuntimeError(f"Resumed state differs from uninterrupted training: {stage}")
+                validate_resume_audit(initial, resumed)
                 record_success(path, manifest, outcome=initial, resumed=resumed, runtime=runtime,
+                               resume_validation="exact_live_durable_restart_state_and_next_batch_rng",
                                quadratic_mode=run["quadratic_mode"], quadratic_sharing=run["quadratic_sharing"],
                                validation_nll=validation["validation_nll"], validation_perplexity=validation["validation_perplexity"])
-                for pilot in (workdir, attempt / f"{stage}-uninterrupted"):
-                    checkpoints = pilot / "checkpoints"
-                    if checkpoints.exists():
-                        shutil.rmtree(checkpoints)
+                checkpoints = workdir / "checkpoints"
+                if checkpoints.exists():
+                    shutil.rmtree(checkpoints)
             except (NumericalPilotFailure, RuntimeLimitExceeded) as error:
                 details = []
-                for pilot in (workdir, attempt / f"{stage}-uninterrupted"):
-                    for failure_path in sorted(pilot.glob("numerical_failure_step_*.json")):
-                        details.append({"pilot": pilot.name, "record": json.loads(failure_path.read_text())})
+                for failure_path in sorted(workdir.glob("numerical_failure_step_*.json")):
+                    details.append({"pilot": workdir.name, "record": json.loads(failure_path.read_text())})
                 record = {"identity": manifest["identity"], "source_commit": manifest["source_commit"],
                           "status": "ineligible", "reason": "numerical" if isinstance(error, NumericalPilotFailure) else "runtime",
                           "error": f"{type(error).__name__}: {error}", "completed_utc": datetime.now(UTC).isoformat(),
@@ -334,29 +361,7 @@ def worker_result(manifest: dict, worker: str, name: str, workdir: Path | None, 
         config.train.workdir, config.train.wandb_mode = workdir, "disabled"
         config.train.eval_every, config.train.eval_batches = 2, 1
         from experiments.polynomial_attention.training.loop import run_training
-        outcome = run_training(config, resume=True, stop_after_step=stop)
-        # Include optimizer moments, coefficients, and step in exact resume parity.
-        # The state is restored after the training manager has flushed and closed.
-        from experiments.polynomial_attention.training.checkpointing import make_checkpoint_manager, restore_latest_checkpoint
-        from experiments.polynomial_attention.training.state import create_state
-        manager = make_checkpoint_manager(config)
-        try:
-            state, restored = restore_latest_checkpoint(manager, create_state(config, jax.random.PRNGKey(config.train.seed)))
-            if restored != stop:
-                raise RuntimeError("Pilot is missing its requested resume checkpoint")
-            digest = hashlib.sha256()
-            for path, leaf in jax.tree_util.tree_flatten_with_path(state)[0]:
-                array = np.asarray(leaf)
-                if not np.all(np.isfinite(array)):
-                    raise FloatingPointError(f"Nonfinite checkpoint state at {path}")
-                digest.update(str(path).encode())
-                digest.update(str(array.shape).encode())
-                digest.update(str(array.dtype).encode())
-                digest.update(array.tobytes())
-            outcome["state_sha256"] = digest.hexdigest()
-        finally:
-            manager.close()
-        return outcome
+        return run_training(config, resume=True, stop_after_step=stop, audit_checkpoint=True)
     raise ValueError(f"Unknown worker: {worker}")
 
 

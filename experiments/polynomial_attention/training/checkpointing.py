@@ -12,6 +12,24 @@ from experiments.polynomial_attention.training.state import TrainState
 VALIDATION_NLL_METRIC = "validation_nll"
 
 
+def state_sha256(state) -> str:
+    """Fingerprint every finite array, including its path, shape, and dtype."""
+    import hashlib
+    import jax
+    import numpy as np
+
+    digest = hashlib.sha256()
+    for path, leaf in jax.tree_util.tree_flatten_with_path(state)[0]:
+        array = np.asarray(leaf)
+        if not np.all(np.isfinite(array)):
+            raise FloatingPointError(f"Nonfinite checkpoint/audit array at {path}")
+        digest.update(str(path).encode())
+        digest.update(str(array.shape).encode())
+        digest.update(str(array.dtype).encode())
+        digest.update(array.tobytes())
+    return digest.hexdigest()
+
+
 def _validation_nll(metrics: Mapping[str, Any]) -> float:
     return float(metrics[VALIDATION_NLL_METRIC])
 

@@ -259,6 +259,48 @@ def test_runtime_projection_uses_allocation_limit_with_margin():
         preflight.projected_runtime(run, outcome, sweep.scheduler_profile())
 
 
+def checkpoint_audit(*, start, final):
+    def update(step):
+        return {"step": step, "batch_sha256": f"{step:064x}", "rng_sha256": f"{step + 100:064x}"}
+    return {
+        "start_state_sha256": f"{start:064x}", "final_state_sha256": f"{final:064x}",
+        "checkpoint_state_sha256": f"{final:064x}",
+        "first_update": update(start + 1), "next_update": update(final + 1),
+    }
+
+
+@pytest.mark.parametrize("change,error", [
+    ("live_state", "Durable checkpoint"),
+    ("durable_state", "Durable checkpoint"),
+    ("restart_state", "Restarted state"),
+    ("batch", "next batch or RNG"),
+    ("rng", "next batch or RNG"),
+    ("first_step", "invalid first_update step"),
+    ("next_step", "invalid next_update step"),
+    ("bad_hash", "invalid SHA256"),
+    ("missing_audit", "missing its checkpoint audit"),
+])
+def test_resume_audit_rejects_state_input_and_rng_changes(change, error):
+    initial = {"start_step": 0, "final_step": 2, "checkpoint_audit": checkpoint_audit(start=0, final=2)}
+    resumed = {"start_step": 2, "final_step": 3, "checkpoint_audit": checkpoint_audit(start=2, final=3)}
+    preflight.validate_resume_audit(initial, resumed)
+    audit = resumed["checkpoint_audit"]
+    if change in ("live_state", "durable_state", "restart_state"):
+        key = {"live_state": "final_state_sha256", "durable_state": "checkpoint_state_sha256",
+               "restart_state": "start_state_sha256"}[change]
+        audit[key] = "f" * 64
+    elif change in ("batch", "rng"):
+        audit["first_update"][f"{change}_sha256"] = "f" * 64
+    elif change in ("first_step", "next_step"):
+        audit["first_update" if change == "first_step" else "next_update"]["step"] += 1
+    elif change == "bad_hash":
+        audit["first_update"]["batch_sha256"] = "not-a-sha256"
+    else:
+        resumed.pop("checkpoint_audit")
+    with pytest.raises(RuntimeError, match=error):
+        preflight.validate_resume_audit(initial, resumed)
+
+
 def mock_preflight_workers(monkeypatch, manifest, *, numerical_run=None, wrong_resume=False, infrastructure=False):
     calls = []
     monkeypatch.setattr(preflight, "verify_manifest", lambda manifest: None)
@@ -272,10 +314,13 @@ def mock_preflight_workers(monkeypatch, manifest, *, numerical_run=None, wrong_r
             raise subprocess.CalledProcessError(1, ["pilot"])
         if name == numerical_run:
             raise preflight.NumericalPilotFailure("zero final denominator")
-        resumed = stop == 3 and not str(workdir).endswith("uninterrupted")
-        return {"final_step": stop, "restored_step": 2 if resumed else None,
+        resumed = stop == 3
+        audit = checkpoint_audit(start=2 if resumed else 0, final=stop)
+        if resumed and wrong_resume:
+            audit["start_state_sha256"] = "f" * 64
+        return {"final_step": stop, "start_step": 2 if resumed else 0, "restored_step": 2 if resumed else None,
                 "data_parallel_devices": 4, "data_start_sequence": 512 if resumed else 0,
-                "state_sha256": "wrong" if resumed and wrong_resume else "identical",
+                "checkpoint_audit": audit,
                 "timing": {"runtime_seconds": 20., "train_step_seconds": [10., .5],
                            "evaluation_seconds": [2.], "checkpoint_seconds": [1.]}}
     def pytest_command(command, **kwargs):
@@ -297,7 +342,7 @@ def test_numeric_pilot_failure_does_not_suppress_other_variants(tmp_path, monkey
     assert rejected not in preflight.eligible_runs(manifest)
     for run in manifest["runs"][1:]:
         assert ("pilot", run["name"], 2) in calls
-        assert calls.count(("pilot", run["name"], 3)) == 2
+        assert calls.count(("pilot", run["name"], 3)) == 1
     retained = Path(manifest["project_root"]) / "results/learned_quadratic_attention/preflight" / manifest["identity"]
     assert (retained / "success.json").exists()
     assert (retained / "attention-fused-gpu.xml").exists()
