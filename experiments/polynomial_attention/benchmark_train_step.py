@@ -56,13 +56,30 @@ def backend_state(reference, model_config):
     return reference.replace(graphdef=graphdef)
 
 
+def immutable_host_state(state):
+    """Detach the reusable initialization from all donatable device buffers."""
+    def snapshot(value):
+        if not isinstance(value, (jax.Array, np.ndarray)):
+            return value
+        array = np.array(jax.device_get(value), copy=True)
+        array.setflags(write=False)
+        return array
+
+    return jax.tree.map(snapshot, state)
+
+
 def fresh_replicated_state(state, sharding):
-    # The production JIT donates its state buffers. Force new buffers so the
-    # immutable reference remains usable by every later backend/degree trial.
-    return jax.tree.map(
-        lambda value: jax.device_put(value, sharding, may_alias=False) if isinstance(value, jax.Array) else value,
-        state,
-    )
+    # Copy from host-owned arrays for each trial. Keeping the reference on the
+    # host avoids dependence on device-buffer ownership during resharding and
+    # donation; the earlier device-backed reference was deleted by donation.
+    def restore(value):
+        if isinstance(value, jax.Array):
+            raise TypeError("A reusable benchmark state must contain only host arrays")
+        if isinstance(value, np.ndarray):
+            return jax.device_put(np.array(value, copy=True), sharding, may_alias=False)
+        return value
+
+    return jax.tree.map(restore, state)
 
 
 def time_updates(state, functions, batches, rngs, *, warmup: int, iterations: int) -> dict:
@@ -165,11 +182,14 @@ def benchmark(args) -> dict:
     try:
         with jax.default_device(devices[0]):
             print("Initializing shared model parameters and optimizer state", flush=True)
-            reference = create_state(config, jax.random.PRNGKey(args.seed))
-            jax.block_until_ready(reference)
+            initialized = create_state(config, jax.random.PRNGKey(args.seed))
+            jax.block_until_ready(initialized)
+            reference = immutable_host_state(initialized)
+            del initialized
             digest, parameter_count = parameter_digest(reference.params)
             report["initialization"] = {"parameter_sha256": digest, "parameter_count": parameter_count,
-                                        "optimizer_step": int(reference.step), "initialized_once": True}
+                                        "optimizer_step": int(reference.step), "initialized_once": True,
+                                        "reusable_snapshot": "read-only NumPy copies of every parameter/optimizer/step array"}
             write_report(args.output, report)
             for degree in args.degrees:
                 entry = {"degree": degree, "implementations": {}}
