@@ -16,8 +16,8 @@ RUN_NAME="${3:-preflight}"
 # sweep.py precreates the retained log directory and gives Slurm both output
 # paths, so errors here are captured before Python or the environment starts.
 case "$MANIFEST" in
-  /*/results/key_dimension/sweep.json) PROJECT_ROOT="${MANIFEST%/results/key_dimension/sweep.json}" ;;
-  *) echo "Expected absolute canonical results/key_dimension/sweep.json path: $MANIFEST" >&2; exit 1 ;;
+  /*/results/key_dimension/*.json) PROJECT_ROOT="${MANIFEST%/results/key_dimension/*}" ;;
+  *) echo "Expected an absolute manifest JSON path under results/key_dimension: $MANIFEST" >&2; exit 1 ;;
 esac
 BOOTSTRAP_PYTHON="${PROJECT_ROOT}/.envs/key_dimension/bin/python"
 if [[ ! -x "$BOOTSTRAP_PYTHON" ]]; then
@@ -61,6 +61,7 @@ export TMPDIR="${CACHE_ROOT}/tmp"
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-32}"
 export MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-32}"
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_PLATFORMS=cuda
 export PYTHONPATH="${EXECUTION_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 export MPLBACKEND=Agg
 UV=(uv run --project "${EXECUTION_ROOT}/experiments/key_dimension" --locked --extra cuda)

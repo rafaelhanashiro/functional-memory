@@ -25,9 +25,11 @@ def run_name(key_dim: int, seed: int = 0) -> str:
     return f"200m-dk{key_dim:03d}-seed{seed}"
 
 
-def resolve_runs(base, project_root: Path, source_commit: str) -> list[tuple[str, object]]:
+def resolve_runs(base, project_root: Path, source_commit: str, key_dimensions=KEY_DIMENSIONS) -> list[tuple[str, object]]:
+    if not key_dimensions or len(set(key_dimensions)) != len(key_dimensions):
+        raise ValueError("Choose at least one distinct query/key dimension")
     runs = []
-    for key_dim in KEY_DIMENSIONS:
+    for key_dim in key_dimensions:
         config = copy.deepcopy(base)
         config.model.qk_head_dim = key_dim
         config.train.seed = 0
@@ -48,8 +50,8 @@ def parameter_count(model) -> int:
     return embedding + model.num_layers * block + model.hidden_size
 
 
-def make_manifest(base, project_root: Path, execution_root: Path, source_commit: str) -> dict:
-    runs = resolve_runs(base, project_root, source_commit)
+def make_manifest(base, project_root: Path, execution_root: Path, source_commit: str, key_dimensions=KEY_DIMENSIONS) -> dict:
+    runs = resolve_runs(base, project_root, source_commit, key_dimensions)
     data_identity = {
         name: {
             "path": str(Path(getattr(base.data, name)).resolve()),
@@ -115,22 +117,39 @@ def scheduler_log_options(project_root: Path, name: str) -> list[str]:
     return [f"--output={log_pattern}", f"--error={log_pattern}", "--open-mode=append"]
 
 
-def submit_sweep(manifest: dict, base) -> dict:
+def submit_sweep(manifest: dict, base, manifest_path: Path | None = None) -> dict:
     project_root = Path(manifest["project_root"])
     execution_root = Path(manifest["execution_root"])
-    manifest_path = project_root / "results/key_dimension/sweep.json"
+    manifest_path = (manifest_path or project_root / "results/key_dimension/sweep.json").resolve()
+    if manifest_path.parent != project_root.resolve() / "results/key_dimension" or manifest_path.suffix != ".json":
+        raise ValueError("Sweep manifest must be a JSON file directly under results/key_dimension")
     if manifest_path.exists():
         previous = json.loads(manifest_path.read_text())
         if previous.get("jobs"):
             raise ValueError(f"Sweep already has submitted jobs; inspect/resume those jobs: {manifest_path}")
         if previous.get("identity") != manifest["identity"]:
             raise ValueError(f"Existing sweep has a different identity: {manifest_path}")
-    for (_, config), run in zip(resolve_runs(base, project_root, manifest["source_commit"]), manifest["runs"], strict=True):
+    dimensions = [run["qk_head_dim"] for run in manifest["runs"]]
+    for (_, config), run in zip(resolve_runs(base, project_root, manifest["source_commit"], dimensions), manifest["runs"], strict=True):
         config_path = Path(run["config_path"])
         if config_path.exists() and config_to_dict(load_config(config_path)) != run["config"]:
             raise ValueError(f"Refusing to overwrite a different run config: {config_path}")
+        if any((config_path.parent / name).exists() for name in ("launch.json", "metadata.json", "completion.json")):
+            raise ValueError(f"Run already has launch or training records; inspect/resume it: {config_path.parent}")
         config_path.parent.mkdir(parents=True, exist_ok=True)
         save_config(config, config_path)
+        # Keep large artifacts outside scientific results and the execution checkout.
+        checkpoint_dir = project_root / "experiments/key_dimension/checkpoints" / run["name"]
+        checkpoint_link = config_path.parent / "checkpoints"
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        if checkpoint_link.is_symlink():
+            if checkpoint_link.resolve() != checkpoint_dir.resolve():
+                raise ValueError(f"Run checkpoints point to an unexpected location: {checkpoint_link}")
+        elif checkpoint_link.exists():
+            raise ValueError(f"Refusing to replace an existing checkpoint directory: {checkpoint_link}")
+        else:
+            checkpoint_link.symlink_to(checkpoint_dir.resolve(), target_is_directory=True)
+        run["checkpoint_dir"] = str(checkpoint_dir.resolve())
         report_path = config_path.parent / "REPORT.md"
         if not report_path.exists():
             report_path.write_text(
@@ -140,11 +159,15 @@ def submit_sweep(manifest: dict, base) -> dict:
                 f"- Prediction-token budget: {run['training_tokens']:,}.\n"
                 f"- Source: `{manifest['source_commit']}`; resolved config: `config.yaml`.\n"
             )
+    # Validate comparison provenance and recipe compatibility before launching GPUs.
+    from experiments.key_dimension.plot import aggregate
+    aggregate(manifest)
     manifest["submitted_utc"] = datetime.now(UTC).isoformat()
     write_json(manifest_path, manifest)
     launcher = execution_root / "experiments/key_dimension/launch.sbatch"
     common = ["sbatch", "--parsable", "--requeue", "--gres=gpu:h200:2"]
-    previous = submit_job(common + scheduler_log_options(project_root, "preflight") + ["--time=01:00:00", "--job-name=kd-preflight", str(launcher), "preflight", str(manifest_path)], execution_root)
+    preflight_name = "preflight" if manifest_path.name == "sweep.json" else f"preflight-{manifest_path.stem.removeprefix('sweep-')}"
+    previous = submit_job(common + scheduler_log_options(project_root, preflight_name) + ["--time=01:00:00", f"--job-name=kd-{preflight_name}", str(launcher), "preflight", str(manifest_path), preflight_name], execution_root)
     manifest["jobs"]["preflight"] = previous
     write_json(manifest_path, manifest)
     for run in manifest["runs"]:
@@ -160,8 +183,6 @@ def submit_sweep(manifest: dict, base) -> dict:
         })
         write_json(manifest_path, manifest)
         previous = job_id
-    from experiments.key_dimension.plot import aggregate
-    aggregate(manifest)
     return manifest
 
 
@@ -170,6 +191,11 @@ def main() -> None:
     parser.add_argument("--base-config", type=Path, default=Path("experiments/key_dimension/configs/base.yaml"))
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
     parser.add_argument("--execution-root", type=Path, default=Path.cwd())
+    parser.add_argument("--key-dimensions", type=int, nargs="+", default=KEY_DIMENSIONS,
+                        choices=(*KEY_DIMENSIONS, 256), help="Submit only these dimensions; default: original seven-run sweep.")
+    parser.add_argument("--manifest", type=Path, help="Separate manifest under results/key_dimension, e.g. sweep-dk256.json.")
+    parser.add_argument("--reference-manifest", type=Path, action="append", default=[],
+                        help="Existing sweep to include in comparison plots without resubmitting its runs.")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--dry-run", action="store_true", help="Print resolved jobs; this is the default.")
     mode.add_argument("--submit", action="store_true", help="Write runtime configs and submit the gated sweep.")
@@ -181,9 +207,14 @@ def main() -> None:
         if dirty:
             raise ValueError(f"Execution checkout must be clean before submission: {execution_root}")
     base = load_config(args.base_config)
-    manifest = make_manifest(base, args.project_root, execution_root, source_commit)
+    manifest = make_manifest(base, args.project_root, execution_root, source_commit, args.key_dimensions)
+    if args.reference_manifest:
+        manifest["reference_manifests"] = [
+            {"path": str(path.resolve()), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+            for path in args.reference_manifest
+        ]
     if args.submit:
-        manifest = submit_sweep(manifest, base)
+        manifest = submit_sweep(manifest, base, args.manifest)
     print(json.dumps(manifest, indent=2, sort_keys=True))
 
 
