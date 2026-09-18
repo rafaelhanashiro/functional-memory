@@ -16,3 +16,6 @@ __pycache__/
 *.log
 slurm-*.out
 slurm-*.err
+/experiments/learned_quadratic_attention/checkpoints/
+/results/learned_quadratic_attention/**/checkpoints
+/results/learned_quadratic_attention/**/wandb/

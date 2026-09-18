@@ -13,6 +13,7 @@ from jax.sharding import Mesh, NamedSharding, PartitionSpec as P
 from experiments.polynomial_attention.configs import Config
 from experiments.polynomial_attention.training.randomness import model_forward_rngs
 from experiments.polynomial_attention.training.state import TrainState
+from experiments.polynomial_attention.training.numerics import checked_update_loss
 
 
 DATA_AXIS = "data"
@@ -190,7 +191,8 @@ def make_data_parallel_functions(
 
         global_loss = jax.lax.pmean(local_loss, DATA_AXIS)
         global_grads = jax.lax.pmean(local_grads, DATA_AXIS)
-        return current_state.apply_gradients(grads=global_grads), global_loss
+        updated = current_state.apply_gradients(grads=global_grads)
+        return updated, checked_update_loss(current_state.params, global_grads, updated.params, global_loss)
 
     def local_eval_step(
         current_state: TrainState,

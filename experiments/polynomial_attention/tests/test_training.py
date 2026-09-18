@@ -227,8 +227,14 @@ def test_invalid_attention_diagnostics_fail_before_validation_commit(tmp_path, m
 
 
 @pytest.mark.skipif(jax.local_device_count() < 2, reason="requires two JAX devices")
-def test_distributed_accumulation_matches_single_device(tmp_path):
+@pytest.mark.parametrize("mode,sharing", [("fixed", "global"), ("positive", "global"),
+                                         ("positive", "per_head"), ("unrestricted", "global"),
+                                         ("unrestricted", "per_head")])
+def test_distributed_accumulation_matches_single_device(tmp_path, mode, sharing):
     cfg = tiny_config(tmp_path)
+    cfg.model.quadratic_mode, cfg.model.quadratic_sharing = mode, sharing
+    if mode != "fixed":
+        cfg.model.attention_degree = 2
     state = create_state(cfg, jax.random.PRNGKey(0))
     batch = np.arange(20, dtype=np.int32).reshape(4, 5) % 16
     expected, expected_loss = loop.train_step(state, jnp.asarray(batch), jax.random.PRNGKey(1))

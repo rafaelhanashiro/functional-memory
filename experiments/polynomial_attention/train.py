@@ -9,6 +9,7 @@ from pathlib import Path
 from experiments.polynomial_attention.configs import load_config
 from experiments.polynomial_attention.configs.base import validate_config
 from experiments.polynomial_attention.training.loop import run_training
+from experiments.polynomial_attention.training.metrics import write_json_atomic
 
 
 def should_resume(*, no_resume: bool, slurm_restart_count: str | None) -> bool:
@@ -40,6 +41,7 @@ def main() -> None:
     parser.add_argument("--stop-after-step", type=int, help="Stop with a resume checkpoint; retain the full learning-rate schedule.")
     parser.add_argument("--no-resume", action="store_true")
     parser.add_argument("--wandb-mode", choices=("disabled", "offline", "online"))
+    parser.add_argument("--result-json", type=Path, help="Write the training result, including synchronized pilot timings.")
     args = parser.parse_args()
     config = load_config(args.config)
     if hasattr(args, "attention_degree"):
@@ -58,11 +60,13 @@ def main() -> None:
             raise ValueError(f"Invalid source commit: {source!r}")
         config.train.source_commit = source
     validate_config(config)
-    run_training(
+    result = run_training(
         config,
         resume=should_resume(no_resume=args.no_resume, slurm_restart_count=os.environ.get("SLURM_RESTART_COUNT")),
         stop_after_step=args.stop_after_step,
     )
+    if args.result_json is not None:
+        write_json_atomic(args.result_json, result)
 
 
 if __name__ == "__main__":

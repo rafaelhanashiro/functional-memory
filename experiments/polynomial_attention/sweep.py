@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from experiments.polynomial_attention.configs import ATTENTION_DEGREES, config_to_dict, load_config, save_config, validate_config
+from experiments.polynomial_attention.configs.loader import config_dicts_equal
 
 
 def scheduler_profile(gpu_count: int = 2, *, node: str | None = None) -> dict:
@@ -98,7 +99,9 @@ def parameter_count(model) -> int:
     embedding = model.vocab_size * model.hidden_size * (1 if model.tie_embeddings else 2)
     attention = 2 * model.hidden_size * model.num_heads * (model.qk_head_dim + model.value_head_dim)
     block = attention + 3 * model.hidden_size * model.intermediate_size + 2 * model.hidden_size
-    return embedding + model.num_layers * block + model.hidden_size
+    coefficients = (0 if model.quadratic_mode == "fixed" else
+                    2 if model.quadratic_sharing == "global" else 2 * model.num_layers * model.num_heads)
+    return embedding + model.num_layers * block + model.hidden_size + coefficients
 
 
 def manifest_identity_payload(manifest: dict) -> dict:
@@ -118,7 +121,7 @@ def validate_retained_run(run: dict) -> None:
     """Accept the existing completed uniform-attention control without relabeling it."""
     if not run.get("retained_completed") or run["attention_degree"] != 0:
         raise ValueError("Only the completed degree-zero control can be retained")
-    if config_to_dict(load_config(run["config_path"])) != run["config"]:
+    if not config_dicts_equal(config_to_dict(load_config(run["config_path"])), run["config"]):
         raise ValueError(f"Retained run config changed: {run['name']}")
     completion = Path(run["workdir"]) / "completion.json"
     if hashlib.sha256(completion.read_bytes()).hexdigest() != run["retained_completion_sha256"]:
@@ -189,7 +192,7 @@ def make_manifest(base, project_root: Path, execution_root: Path, source_commit:
         for config in (original, current):
             config["model"].pop("attention_backend")
             config["train"].pop("source_commit")
-        if original != current:
+        if not config_dicts_equal(original, current):
             raise ValueError("Retained degree-zero control has a different scientific recipe")
         manifest["schema_version"] = 3
         manifest["runs"][0] = retained
@@ -244,7 +247,7 @@ def prepare_sweep(manifest: dict, base) -> dict:
         if config_to_dict(config) != run["config"]:
             raise ValueError(f"Resolved config differs from persisted sweep: {run['name']}")
         config_path = Path(run["config_path"])
-        if config_path.exists() and config_to_dict(load_config(config_path)) != run["config"]:
+        if config_path.exists() and not config_dicts_equal(config_to_dict(load_config(config_path)), run["config"]):
             raise ValueError(f"Refusing to overwrite a different run config: {config_path}")
         save_config(config, config_path)
         report_path = config_path.parent / "REPORT.md"

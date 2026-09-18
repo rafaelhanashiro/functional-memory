@@ -30,4 +30,6 @@ def model_parameter_count(config: ModelConfig) -> int:
         embedding * (1 if config.tie_embeddings else 2)
         + config.num_layers * (attention + feed_forward + 2 * h)
         + h
+        + (0 if config.quadratic_mode == "fixed" else
+           2 if config.quadratic_sharing == "global" else 2 * config.num_layers * config.num_heads)
     )

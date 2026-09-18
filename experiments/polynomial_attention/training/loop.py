@@ -1,3 +1,4 @@
+import hashlib
 import json
 import math
 import os
@@ -53,6 +54,7 @@ from experiments.polynomial_attention.training.metrics import (
     write_json_atomic,
 )
 from experiments.polynomial_attention.training.optim import make_learning_rate_schedule
+from experiments.polynomial_attention.training.numerics import checked_update_loss
 from experiments.polynomial_attention.training.randomness import model_forward_rngs
 from experiments.polynomial_attention.training.state import TrainState, create_state
 
@@ -92,8 +94,8 @@ def loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Array):
 @nnx.jit
 def train_step(state: TrainState, batch: jax.Array, rng: jax.Array):
     loss, grads = loss_and_grads(state, batch, rng)
-    state = state.apply_gradients(grads=grads)
-    return state, loss
+    updated = state.apply_gradients(grads=grads)
+    return updated, checked_update_loss(state.params, grads, updated.params, loss)
 
 
 @nnx.jit
@@ -121,7 +123,8 @@ def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Arra
     scale = jnp.asarray(1.0 / len(batches), dtype=loss_sum.dtype)
     grads = jax.tree_util.tree_map(lambda grad: grad * scale, grad_sum)
     loss = loss_sum * scale
-    return apply_gradients_step(state, grads), loss
+    updated = apply_gradients_step(state, grads)
+    return updated, checked_update_loss(state.params, grads, updated.params, loss)
 
 
 @nnx.jit
@@ -244,6 +247,10 @@ def ensure_run_config(config: Config, *, resume: bool) -> None:
     current = _serializable_config(config)
     if path.exists():
         existing = json.loads(path.read_text(encoding="utf-8"))
+        # Legacy fixed-kernel runs predate these fields. Compare their defaults
+        # semantically without rewriting their persisted configuration bytes.
+        existing["model"].setdefault("quadratic_mode", "fixed")
+        existing["model"].setdefault("quadratic_sharing", "global")
         if existing != current:
             raise ValueError(
                 f"Training configuration does not match the initialized run: {path}"
@@ -412,6 +419,13 @@ def _write_status(config: Config, **updates) -> None:
         "target_tokens": config.optim.total_steps * config.data.batch_size * (config.data.sequence_length - 1),
         **updates,
     })
+    retention_path = config.train.workdir / "retention.json"
+    if config.model.quadratic_mode != "fixed" and retention_path.exists():
+        retention = json.loads(retention_path.read_text())
+        metadata["checkpoint_retention"] = retention
+        metadata["retained_terminal_checkpoint_step"] = (
+            retention["best_checkpoint_step"] if retention["best_checkpoint_step"] == retention["terminal_step"] else None
+        )
     identity_path = config.train.workdir / "data_identity.json"
     if identity_path.exists():
         metadata["data_identity"] = json.loads(identity_path.read_text())
@@ -442,8 +456,11 @@ def _write_status(config: Config, **updates) -> None:
                   f"{'valid' if diagnostic['valid'] else 'failed'} on the fixed first held-out "
                   f"sequence ({diagnostic['sample']['prediction_tokens']} prediction positions)."]
     if metadata.get("status") == "complete":
-        lines += ["", "Primary result: terminal PPL at the common prediction-token budget.",
-                  f"Retained terminal checkpoint: `{metadata['retained_terminal_checkpoint_step']}`; validation best: `{metadata['retained_best_checkpoint_step']}`."]
+        lines += ["", "Primary result: terminal PPL at the common prediction-token budget."]
+        if metadata.get("checkpoint_retention"):
+            lines += [f"Retained validation-best checkpoint: `{metadata['retained_best_checkpoint_step']}`. Terminal metrics remain in `metrics.jsonl`."]
+        else:
+            lines += [f"Retained terminal checkpoint: `{metadata['retained_terminal_checkpoint_step']}`; validation best: `{metadata['retained_best_checkpoint_step']}`."]
     if metadata.get("error"):
         lines += ["", f"Failure: `{metadata['error']}`"]
     from experiments.polynomial_attention.training.metrics import _write_text_atomic
@@ -461,6 +478,9 @@ def _fail_numerics(config, state, step, message, sample, provenance, *, diagnost
     }
     if loss is not None:
         failure["loss"] = json_number(loss)
+        if config.model.quadratic_mode != "fixed":
+            failure["checked_quantities"] = ["forward_loss", "global_gradient_norm", "updated_coefficients"]
+            failure["loss_note"] = "A NaN loss scalar also signals an invalid gradient norm or coefficient update."
     try:
         failure["attention_diagnostics"] = diagnostics if diagnostics is not None else attention_diagnostics(
             state, config, sample, provenance,
@@ -474,6 +494,16 @@ def _fail_numerics(config, state, step, message, sample, provenance, *, diagnost
                   error=message, numerical_failure_path=str(failure_path),
                   attention_diagnostics=failure.get("attention_diagnostics"))
     raise FloatingPointError(message)
+
+
+def _perplexity(config, state, step, nll, sample, provenance, *, diagnostics=None):
+    """Classify metric overflow as a numerical failure of this variant."""
+    try:
+        return math.exp(nll)
+    except OverflowError:
+        _fail_numerics(config, state, step,
+                       f"Perplexity overflow at step {step} for finite NLL {nll}",
+                       sample, provenance, diagnostics=diagnostics, loss=nll)
 
 
 def run_training(config: Config, *, resume: bool = True, stop_after_step: int | None = None) -> dict:
@@ -520,9 +550,18 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
     )
     if completion_path.exists():
         completion = json.loads(completion_path.read_text())
+        retained_best_complete = False
+        retention_path = config.train.workdir / "retention.json"
+        if config.model.quadratic_mode != "fixed" and retention_path.exists():
+            retention = json.loads(retention_path.read_text())
+            retained_best_complete = (
+                retention.get("format") == "learned-quadratic-checkpoint-retention"
+                and retention.get("completion_sha256") == hashlib.sha256(completion_path.read_bytes()).hexdigest()
+                and retention.get("best_checkpoint_step") == completion["retained_best_checkpoint_step"] == latest_before
+            )
         if (not resume or completion.get("format") != "polynomial-attention-training-completion"
                 or completion.get("final_step") != config.optim.total_steps
-                or latest_before != config.optim.total_steps):
+                or (latest_before != config.optim.total_steps and not retained_best_complete)):
             raise ValueError(f"Invalid or incompatible completed run: {completion_path}")
         _write_status(config, status="complete", step=config.optim.total_steps, **{
             key: completion[key] for key in (
@@ -601,12 +640,15 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
             if len(timing["train_step_seconds"]) < 8:
                 timing["train_step_seconds"].append(time.perf_counter() - train_step_start)
             if not math.isfinite(loss_value):
+                quantity = ("training loss" if config.model.quadratic_mode == "fixed" else
+                            "training loss or learned-quadratic update")
                 _fail_numerics(config, state, step,
-                               f"Nonfinite training loss at step {step}: {loss_value}",
+                               f"Nonfinite {quantity} at step {step}: {loss_value}",
                                diagnostic_sample, diagnostic_provenance, loss=loss_value)
             if is_log:
                 train_losses.append(loss_value)
-                print(f"step={step} train_nll={loss_value:.6f} train_ppl={math.exp(loss_value):.4f}", flush=True)
+                train_ppl = _perplexity(config, state, step, loss_value, diagnostic_sample, diagnostic_provenance)
+                print(f"step={step} train_nll={loss_value:.6f} train_ppl={train_ppl:.4f}", flush=True)
             if is_eval:
                 interval_seconds = time.perf_counter() - window_time
                 evaluation_start = time.perf_counter()
@@ -626,10 +668,15 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
                     _fail_numerics(config, state, step,
                                    f"Nonfinite validation loss at step {step}: {eval_loss}",
                                    diagnostic_sample, diagnostic_provenance, diagnostics=diagnostics, loss=eval_loss)
-                eval_ppl = math.exp(eval_loss)
+                eval_ppl = _perplexity(config, state, step, eval_loss, diagnostic_sample, diagnostic_provenance,
+                                       diagnostics=diagnostics)
                 timing["evaluation_seconds"].append(time.perf_counter() - evaluation_start)
-                is_best = eval_loss < best_nll
+                # Orbax keeps the latest checkpoint among equal best metrics.
+                # Match that tie rule in the learned family's selected record.
+                is_best = eval_loss < best_nll or (config.model.quadratic_mode != "fixed" and eval_loss == best_nll)
                 train_nll = float(np.mean(train_losses))
+                train_ppl = _perplexity(config, state, step, train_nll, diagnostic_sample, diagnostic_provenance,
+                                        diagnostics=diagnostics)
                 throughput = (step - window_step) * tokens_per_step / interval_seconds
                 record = {
                     "schema_version": METRICS_SCHEMA_VERSION, "event": "validation",
@@ -637,7 +684,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
                     "timestamp_utc": datetime.now(UTC).isoformat(), "step": step, "checkpoint_step": step,
                     "training_tokens": step * tokens_per_step, "training_window_start_step": window_step,
                     "train_nll_sample_count": len(train_losses), "train_nll_sample_mean": train_nll,
-                    "train_perplexity_from_mean_nll": math.exp(train_nll),
+                    "train_perplexity_from_mean_nll": train_ppl,
                     "validation_nll": eval_loss, "validation_perplexity": eval_ppl,
                     "validation_batches": config.train.eval_batches,
                     "validation_sequences": config.train.eval_batches * config.data.batch_size,

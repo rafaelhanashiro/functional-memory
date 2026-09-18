@@ -83,7 +83,8 @@ def test_max_sequence_length_is_enforced():
 def test_all_parameter_tensors_identical_across_degrees_and_reference():
     cfg = _small_config()
     reference_cfg = ReferenceModelConfig(**{
-        name: value for name, value in vars(cfg).items() if name != "attention_degree"
+        name: value for name, value in vars(cfg).items()
+        if name not in ("attention_degree", "quadratic_mode", "quadratic_sharing")
     } | {"attention_backend": "xla"})
     reference = build_reference_model(reference_cfg, 0)
     expected, expected_tree = jax.tree.flatten(nnx.state(reference, nnx.Param))

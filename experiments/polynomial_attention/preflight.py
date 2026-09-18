@@ -14,6 +14,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from experiments.polynomial_attention.configs import config_to_dict, load_config
+from experiments.polynomial_attention.configs.loader import config_dicts_equal
 from experiments.polynomial_attention.sweep import ATTENTION_DEGREES, run_name, validate_scheduler_profile, write_json
 
 PREFLIGHT_CHECKS = ("attention-cpu", "attention-gpu", "initialization", *[run_name(m) for m in ATTENTION_DEGREES])
@@ -50,7 +51,7 @@ def verify_manifest(manifest: dict) -> None:
         if hashlib.sha256(Path(identity["path"]).read_bytes()).hexdigest() != identity["sha256"]:
             raise ValueError(f"Data manifest changed: {identity['path']}")
     for run in manifest["runs"]:
-        if config_to_dict(load_config(run["config_path"])) != run["config"]:
+        if not config_dicts_equal(config_to_dict(load_config(run["config_path"])), run["config"]):
             raise ValueError(f"Run config changed: {run['config_path']}")
         if run["config"]["model"]["attention_degree"] != run["attention_degree"]:
             raise ValueError(f"Run degree does not match resolved config: {run['name']}")

@@ -1,3 +1,4 @@
+import jax
 import optax
 
 from experiments.polynomial_attention.configs import Config
@@ -22,5 +23,14 @@ def make_optimizer(config: Config):
             b1=config.optim.beta1,
             b2=config.optim.beta2,
             weight_decay=config.optim.weight_decay,
+            # A single model-level coefficient array is the only decay exclusion.
+            # The callable retains the NNX State tree shape expected by Optax.
+            mask=(quadratic_weight_decay_mask if config.model.quadratic_mode != "fixed" else None),
         ),
+    )
+
+
+def quadratic_weight_decay_mask(params):
+    return jax.tree.map_with_path(
+        lambda path, _: getattr(path[0], "key", None) != "quadratic_coefficients", params,
     )

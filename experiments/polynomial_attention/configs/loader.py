@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from dataclasses import asdict, fields, is_dataclass
 from pathlib import Path
 from typing import Any
@@ -41,6 +42,17 @@ def config_to_dict(config: Config) -> dict[str, Any]:
     values = asdict(config)
     values["train"]["workdir"] = str(config.train.workdir)
     return values
+
+
+def config_dicts_equal(left: dict, right: dict) -> bool:
+    """Compare new configs with legacy fixed configs without altering provenance."""
+    normalized = []
+    for value in (left, right):
+        value = copy.deepcopy(value)
+        value.setdefault("model", {}).setdefault("quadratic_mode", "fixed")
+        value["model"].setdefault("quadratic_sharing", "global")
+        normalized.append(value)
+    return normalized[0] == normalized[1]
 
 
 def save_config(config: Config, path: str | Path) -> None:

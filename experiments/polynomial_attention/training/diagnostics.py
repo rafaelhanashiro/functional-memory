@@ -24,13 +24,21 @@ M0_PARAMETER_NOTE = (
 
 def attention_identity(config) -> dict:
     degree = config.model.attention_degree
+    mode = config.model.quadratic_mode
     identity = {
         "attention_degree": degree,
-        "attention_kernel": "softmax" if degree is None else "taylor",
+        "attention_kernel": "learned_quadratic" if mode != "fixed" else "softmax" if degree is None else "taylor",
         "attention_backend": config.model.attention_backend,
         "query_block_size": QUERY_BLOCK_SIZE,
         "m0_qk_parameter_note": M0_PARAMETER_NOTE if degree == 0 else None,
     }
+    if mode != "fixed":
+        identity.update({
+            "quadratic_mode": mode,
+            "quadratic_sharing": config.model.quadratic_sharing,
+            "quadratic_parameter_count": (2 if config.model.quadratic_sharing == "global" else
+                                          2 * config.model.num_layers * config.model.num_heads),
+        })
     if config.model.attention_backend == "fused":
         from experiments.polynomial_attention.models.components.fused_attention import _tile_sizes
         block_q, block_k = ((None, None) if degree is None else
@@ -43,6 +51,31 @@ def attention_identity(config) -> dict:
             "diagnostic_query_block_size": QUERY_BLOCK_SIZE,
         })
     return identity
+
+
+def quadratic_coefficient_report(params, config) -> dict:
+    """Record both optimizer parameters and the polynomial they currently define."""
+    raw = np.asarray(jax.device_get(params["quadratic_coefficients"][...]), dtype=np.float64)
+    first, second = raw[..., 0], raw[..., 1]
+    if config.model.quadratic_mode == "positive":
+        effective = np.stack((0.5 * (1.0 + second ** 2), first * second, 0.5 * first ** 2), axis=-1)
+        names = ["a", "b"]
+    else:
+        effective = np.stack((np.ones_like(first), first, second), axis=-1)
+        names = ["b", "c"]
+
+    def serializable(array):
+        if array.ndim == 0:
+            return json_number(array)
+        return [serializable(value) for value in array]
+
+    return {
+        "raw_parameter_names": names,
+        "raw": serializable(raw),
+        "effective_coefficient_names": ["constant", "linear", "quadratic"],
+        "effective": serializable(effective),
+        "finite": bool(np.all(np.isfinite(raw)) and np.all(np.isfinite(effective))),
+    }
 
 
 def fixed_diagnostic_sample(config, *, validated_manifest=None):
@@ -106,6 +139,10 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                 issues.append(f"layer {index}: {name}={int(number)}")
         for name in ("kernel_min", "normalizer_min"):
             value = float(raw[name])
+            if config.model.quadratic_mode == "unrestricted":
+                # Signed kernels and negative nonzero sums are permitted. Exact
+                # zeros are detected in invalid_normalizer_count, not extrema.
+                continue
             # Stable exact softmax may underflow individual weights to zero.
             invalid = value < 0 if name == "kernel_min" and config.model.attention_degree is None else value <= 0
             if math.isfinite(value) and invalid:
@@ -113,14 +150,23 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         layers.append(layer)
     if len(layers) != config.model.num_layers:
         issues.append(f"Expected {config.model.num_layers} layers, got {len(layers)}")
-    return {
+    coefficient_report = None
+    if config.model.quadratic_mode != "fixed":
+        coefficient_report = quadratic_coefficient_report(params, config)
+        if not coefficient_report["finite"]:
+            issues.append("Nonfinite quadratic coefficients")
+    report = {
         "format": "polynomial-attention-diagnostics",
         "version": 1,
         "step": int(state.step),
         **attention_identity(config),
         "sample": provenance,
-        "kernel_values": "row_max_shifted_exp" if config.model.attention_degree is None else "unshifted_taylor",
+        "kernel_values": ("unshifted_learned_quadratic" if config.model.quadratic_mode != "fixed" else
+                          "row_max_shifted_exp" if config.model.attention_degree is None else "unshifted_taylor"),
         "layers": layers,
         "valid": not issues,
         "issues": issues,
     }
+    if coefficient_report is not None:
+        report["coefficients"] = coefficient_report
+    return report

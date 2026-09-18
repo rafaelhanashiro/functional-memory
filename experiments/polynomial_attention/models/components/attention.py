@@ -32,12 +32,23 @@ def _taylor_polynomial(scores: jax.Array, degree: int) -> jax.Array:
     return result
 
 
+def _quadratic_polynomial(scores: jax.Array, coefficients: jax.Array, mode: str) -> jax.Array:
+    """Evaluate raw learned parameters over [batch, heads, queries, keys] scores."""
+    coefficients = jnp.broadcast_to(coefficients, (scores.shape[1], 2)).astype(jnp.float32)
+    first, second = coefficients[:, 0][None, :, None, None], coefficients[:, 1][None, :, None, None]
+    if mode == "positive":
+        return 0.5 * (1.0 + jnp.square(first * scores + second))
+    return 1.0 + scores * (first + scores * second)
+
+
 def blocked_dot_product_attention(
     q: jax.Array,
     k: jax.Array,
     v: jax.Array,
     *,
     attention_degree: int | None = None,
+    coefficients: jax.Array | None = None,
+    quadratic_mode: str = "fixed",
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
 ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array]]:
@@ -49,12 +60,19 @@ def blocked_dot_product_attention(
     shifted in the Taylor branch. A checkpointed scan body prevents retaining
     the [batch, heads, query_block, time] intermediates for every block/layer.
 
-    Invalid causal scores, nonpositive/nonfinite Taylor kernels, and invalid
-    normalizers poison their rows with NaN, rather than clipping the kernel.
-    Stable exact exponentials may underflow to zero. Diagnostics are scalar
-    extrema/counts over actual causal entries, with no padded queries included.
+    Invalid causal scores, nonfinite kernels, and invalid normalizers poison
+    their rows with NaN. Fixed Taylor and positive learned kernels must stay
+    positive; unrestricted quadratics permit signed/zero kernels and negative
+    nonzero normalizers. Stable exact exponentials may underflow to zero.
+    Diagnostics exclude padded queries and masked future entries.
     """
     _validate_degree(attention_degree)
+    if quadratic_mode not in ("fixed", "positive", "unrestricted"):
+        raise ValueError(f"Unknown quadratic mode: {quadratic_mode}")
+    if quadratic_mode != "fixed" and (attention_degree != 2 or coefficients is None):
+        raise ValueError("Learned quadratic attention requires degree=2 and coefficients")
+    if quadratic_mode == "fixed" and coefficients is not None:
+        raise ValueError("Fixed attention does not accept learned coefficients")
     if not isinstance(query_block_size, int) or isinstance(query_block_size, bool) or query_block_size <= 0:
         raise ValueError("query_block_size must be a positive integer")
     if q.ndim != 4 or k.ndim != 4 or v.ndim != 4:
@@ -62,6 +80,8 @@ def blocked_dot_product_attention(
     if q.shape != k.shape or q.shape[:3] != v.shape[:3]:
         raise ValueError("Q/K shapes and Q/K/V batch, time, and head dimensions must match")
     batch, time, heads, qk_dim = q.shape
+    if coefficients is not None and coefficients.shape not in ((2,), (heads, 2)):
+        raise ValueError("Quadratic coefficients must have shape (2,) or (heads, 2)")
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -94,12 +114,17 @@ def blocked_dot_product_attention(
         else:
             # Evaluate masked positions at zero, never at masking sentinels.
             safe_scores = jnp.where(causal, scores, 0.0)
-            kernel = _taylor_polynomial(safe_scores, attention_degree)
-            invalid_kernel = (~jnp.isfinite(kernel)) | (kernel <= 0)
+            kernel = (_taylor_polynomial(safe_scores, attention_degree) if quadratic_mode == "fixed"
+                      else _quadratic_polynomial(safe_scores, coefficients, quadratic_mode))
+            invalid_kernel = ~jnp.isfinite(kernel)
+            if quadratic_mode != "unrestricted":
+                invalid_kernel = invalid_kernel | (kernel <= 0)
         kernel = jnp.where(causal, kernel, 0.0)
         normalizer = jnp.sum(kernel, axis=-1, keepdims=True, dtype=jnp.float32)
         invalid_score = ~jnp.isfinite(scores)
-        invalid_normalizer = (~jnp.isfinite(normalizer)) | (normalizer <= 0)
+        invalid_normalizer = (~jnp.isfinite(normalizer)) | (
+            (normalizer == 0) if quadratic_mode == "unrestricted" else (normalizer <= 0)
+        )
         invalid_row = (
             jnp.any(causal & (invalid_score | invalid_kernel), axis=-1, keepdims=True)
             | invalid_normalizer
@@ -124,6 +149,19 @@ def blocked_dot_product_attention(
             "invalid_kernel_count": jnp.sum(measured & invalid_kernel, dtype=jnp.int32),
             "invalid_normalizer_count": jnp.sum(actual_rows[None, None, :, None] & invalid_normalizer, dtype=jnp.int32),
         }
+        if quadratic_mode != "fixed":
+            actual = actual_rows[None, None, :, None]
+            cancellation = jnp.sum(jnp.abs(kernel), axis=-1, keepdims=True) / jnp.abs(normalizer)
+            diagnostics.update({
+                "min_abs_normalizer": jnp.min(jnp.where(actual, jnp.abs(normalizer), jnp.inf)),
+                "negative_weight_count": jnp.sum(measured & (weights < 0), dtype=jnp.int32),
+                "negative_kernel_count": jnp.sum(measured & (kernel < 0), dtype=jnp.int32),
+                "causal_entry_count": jnp.sum(measured, dtype=jnp.int32) * batch * heads,
+                "cancellation_ratio_max": jnp.max(jnp.where(actual, cancellation, -jnp.inf)),
+                "cancellation_sum": jnp.sum(jnp.where(actual, cancellation, 0.0)),
+                "row_count": jnp.sum(actual_rows, dtype=jnp.int32) * batch * heads,
+                "invalid_output_count": jnp.sum(actual_rows[None, :, None, None] & ~jnp.isfinite(output), dtype=jnp.int32),
+            })
         return None, (output, jax.lax.stop_gradient(diagnostics))
 
     _, result = jax.lax.scan(
@@ -132,10 +170,14 @@ def blocked_dot_product_attention(
     if return_diagnostics:
         output_blocks, per_block = result
         diagnostics = {
-            name: (jnp.min(values) if name.endswith("_min") else
+            name: (jnp.min(values) if name.endswith("_min") or name == "min_abs_normalizer" else
                    jnp.max(values) if name.endswith("_max") else jnp.sum(values))
             for name, values in per_block.items()
         }
+        if quadratic_mode != "fixed":
+            diagnostics["negative_weight_fraction"] = diagnostics["negative_weight_count"] / diagnostics["causal_entry_count"]
+            diagnostics["negative_kernel_fraction"] = diagnostics["negative_kernel_count"] / diagnostics["causal_entry_count"]
+            diagnostics["cancellation_ratio_mean"] = diagnostics.pop("cancellation_sum") / diagnostics["row_count"]
     else:
         output_blocks = result
     output = jnp.swapaxes(output_blocks, 0, 1).reshape(batch, block_count * block_size, heads, v.shape[-1])
@@ -169,9 +211,13 @@ class MultiHeadAttention(nnx.Module):
         self, hidden_size: int, num_heads: int, num_kv_heads: int,
         qk_head_dim: int, value_head_dim: int, rope_theta: float = 10000.0,
         dropout: float = 0.0, backend: AttentionBackend = "blocked",
-        attention_degree: int | None = None, *, rngs: nnx.Rngs,
+        attention_degree: int | None = None, quadratic_mode: str = "fixed", *, rngs: nnx.Rngs,
     ):
         _validate_degree(attention_degree)
+        if quadratic_mode not in ("fixed", "positive", "unrestricted"):
+            raise ValueError(f"Unknown quadratic mode: {quadratic_mode}")
+        if quadratic_mode != "fixed" and attention_degree != 2:
+            raise ValueError("Learned quadratic attention requires degree=2")
         if min(hidden_size, num_heads, num_kv_heads, qk_head_dim, value_head_dim) <= 0:
             raise ValueError("Attention dimensions must be positive")
         if num_heads != num_kv_heads:
@@ -192,6 +238,7 @@ class MultiHeadAttention(nnx.Module):
         self.rope_theta = rope_theta
         self.backend = backend
         self.attention_degree = attention_degree
+        self.quadratic_mode = quadratic_mode
         self.dtype = jnp.float32
         # Preserve the reference constructor order/default initialization exactly.
         self.q_proj = nnx.Linear(hidden_size, num_heads * qk_head_dim, use_bias=False, rngs=rngs)
@@ -203,6 +250,7 @@ class MultiHeadAttention(nnx.Module):
     def __call__(
         self, x: jax.Array, *, deterministic: bool = True,
         rngs: nnx.Rngs | jax.Array | None = None, return_diagnostics: bool = False,
+        coefficients: jax.Array | None = None,
     ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array]]:
         batch, seq_len, _ = x.shape
         q, k, v = self.q_proj(x), self.k_proj(x), self.v_proj(x)
@@ -219,11 +267,18 @@ class MultiHeadAttention(nnx.Module):
         if self.backend == "blocked":
             result = blocked_dot_product_attention(
                 q, k, v, attention_degree=self.attention_degree,
+                coefficients=coefficients, quadratic_mode=self.quadratic_mode,
                 return_diagnostics=return_diagnostics,
             )
             y, diagnostics = result if return_diagnostics else (result, None)
         elif self.backend == "fused":
-            if self.attention_degree is None:
+            if self.quadratic_mode != "fixed":
+                from experiments.polynomial_attention.models.components.fused_quadratic_attention import fused_quadratic_attention
+                y = fused_quadratic_attention(
+                    q, k, v, jnp.broadcast_to(coefficients, (self.num_heads, 2)),
+                    quadratic_mode=self.quadratic_mode,
+                )
+            elif self.attention_degree is None:
                 y = padded_dot_product_attention(q, k, v, backend="cudnn")
             else:
                 from experiments.polynomial_attention.models.components.fused_attention import fused_polynomial_attention
@@ -234,6 +289,7 @@ class MultiHeadAttention(nnx.Module):
                 # inputs while preserving the fused output for following layers.
                 _, diagnostics = blocked_dot_product_attention(
                     q, k, v, attention_degree=self.attention_degree,
+                    coefficients=coefficients, quadratic_mode=self.quadratic_mode,
                     return_diagnostics=True,
                 )
         elif return_diagnostics:

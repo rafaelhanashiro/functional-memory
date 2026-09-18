@@ -1,4 +1,5 @@
 import jax
+import jax.numpy as jnp
 from flax import nnx
 
 from experiments.polynomial_attention.configs import ModelConfig
@@ -12,8 +13,10 @@ def _call_block_remat(
     deterministic: bool,
     rngs: nnx.Rngs | jax.Array | None,
     return_diagnostics: bool,
+    coefficients: jax.Array | None,
 ):
-    return block(x, deterministic=deterministic, rngs=rngs, return_diagnostics=return_diagnostics)
+    return block(x, deterministic=deterministic, rngs=rngs, return_diagnostics=return_diagnostics,
+                 coefficients=coefficients)
 
 
 class SwiGLU(nnx.Module):
@@ -42,6 +45,7 @@ class Block(nnx.Module):
             dropout=cfg.dropout,
             backend=cfg.attention_backend,
             attention_degree=cfg.attention_degree,
+            quadratic_mode=cfg.quadratic_mode,
             rngs=rngs,
         )
         self.ffn_norm = RMSNorm(cfg.hidden_size, cfg.rms_norm_eps)
@@ -54,10 +58,12 @@ class Block(nnx.Module):
         deterministic: bool = True,
         rngs: nnx.Rngs | jax.Array | None = None,
         return_diagnostics: bool = False,
+        coefficients: jax.Array | None = None,
     ):
         with jax.named_scope("attention"):
             h = self.attention_norm(x)
-            result = self.attention(h, deterministic=deterministic, rngs=rngs, return_diagnostics=return_diagnostics)
+            result = self.attention(h, deterministic=deterministic, rngs=rngs,
+                                    return_diagnostics=return_diagnostics, coefficients=coefficients)
         h, diagnostics = result if return_diagnostics else (result, None)
         x = x + h
         with jax.named_scope("mlp"):
@@ -80,6 +86,12 @@ class TransformerLM(nnx.Module):
             self.lm_head = None
         else:
             self.lm_head = nnx.Linear(config.hidden_size, config.vocab_size, use_bias=False, rngs=rngs)
+        if config.quadratic_mode != "fixed":
+            # No RNG access: every existing parameter retains exactly its old initialization.
+            initial = jnp.asarray((1.0, 1.0 if config.quadratic_mode == "positive" else 0.5),
+                                  dtype=jnp.float32)
+            shape = (2,) if config.quadratic_sharing == "global" else (config.num_layers, config.num_heads, 2)
+            self.quadratic_coefficients = nnx.Param(jnp.broadcast_to(initial, shape))
 
     def __call__(
         self,
@@ -96,14 +108,20 @@ class TransformerLM(nnx.Module):
         x = self.dropout(x, deterministic=deterministic, rngs=rngs)
 
         diagnostics = []
-        for layer_name in self.layer_names:
+        for index, layer_name in enumerate(self.layer_names):
             layer = getattr(self, layer_name)
+            coefficients = None
+            if cfg.quadratic_mode != "fixed":
+                coefficients = self.quadratic_coefficients[...]
+                if cfg.quadratic_sharing == "per_head":
+                    coefficients = coefficients[index]
             if cfg.remat:
                 result = nnx.remat(_call_block_remat, static_argnums=(2, 4))(
-                    layer, x, deterministic, rngs, return_diagnostics,
+                    layer, x, deterministic, rngs, return_diagnostics, coefficients,
                 )
             else:
-                result = layer(x, deterministic=deterministic, rngs=rngs, return_diagnostics=return_diagnostics)
+                result = layer(x, deterministic=deterministic, rngs=rngs,
+                               return_diagnostics=return_diagnostics, coefficients=coefficients)
             if return_diagnostics:
                 x, layer_diagnostics = result
                 diagnostics.append(layer_diagnostics)

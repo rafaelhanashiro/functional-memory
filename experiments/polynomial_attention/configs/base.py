@@ -44,6 +44,8 @@ class ModelConfig:
     remat: bool = False
     attention_backend: Literal["blocked", "fused"] = "blocked"
     attention_degree: int | None = None
+    quadratic_mode: Literal["fixed", "positive", "unrestricted"] = "fixed"
+    quadratic_sharing: Literal["global", "per_head"] = "global"
 
     def __post_init__(self):
         if self.kind != "transformer":
@@ -61,6 +63,12 @@ class ModelConfig:
             raise ValueError("model.qk_head_dim must be even for RoPE")
         if self.attention_backend not in ("blocked", "fused"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
+        if self.quadratic_mode not in ("fixed", "positive", "unrestricted"):
+            raise ValueError(f"Unknown quadratic mode: {self.quadratic_mode}")
+        if self.quadratic_sharing not in ("global", "per_head"):
+            raise ValueError(f"Unknown quadratic sharing: {self.quadratic_sharing}")
+        if self.quadratic_mode != "fixed" and self.attention_degree != 2:
+            raise ValueError("Learned quadratic modes require model.attention_degree=2")
         if self.attention_degree is not None and (
             not isinstance(self.attention_degree, int)
             or isinstance(self.attention_degree, bool)
