@@ -429,6 +429,8 @@
     "historical_launch_and_debug_artifacts": "available in Git history, removed from the retained tree",
     "external_dataset_preserved": true,
     "logs": "one successful Slurm log per retained training run, benchmark, and validation",
-    "temporary_checkouts_and_caches_removed": false
+    "temporary_checkouts_and_caches_removed": true,
+    "cleanup_scope": "Completed polynomial sweep and its benchmarks; active learned-quadratic checkout and caches are separate.",
+    "shared_environment": ".envs/polynomial_attention remains in use by the active learned-quadratic experiment."
   }
 }
