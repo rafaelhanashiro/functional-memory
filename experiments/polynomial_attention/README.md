@@ -121,6 +121,22 @@ first and warmed costs; its total wall time must not be scaled directly to a
 full production run. See `results/polynomial_attention_throughput/REPORT.md`
 for the measured comparison and runtime assumptions.
 
+An existing completed degree-zero control can be retained in a schema-3 sweep
+with its original configuration, source revision, and completion checksum.
+Only the other five runs receive the new fused configuration. Preflight and
+initialization checks apply to the active runs, while aggregation validates
+each result against its own recorded source. A retained control must match the
+same scientific recipe; changing its backend label or rewriting its provenance
+is not required.
+
+For a prepared manifest, `sweep --queue` submits preflight and the production
+jobs immediately. Every production job depends on successful preflight; later
+jobs also wait for the previous training job to terminate. The launcher's own
+preflight check remains active. The persisted `dogo` scheduler profile requests
+four H100 SXM GPUs on that node in the standard partition, with two hours for
+preflight and eight hours per production run. Requeue and checkpoint resume
+remain enabled.
+
 Recorded H100 measurements and correctness results are in the
 [kernel report](../../results/polynomial_attention_kernel/REPORT.md) and
 [four-GPU training report](../../results/polynomial_attention_train_step/REPORT.md).

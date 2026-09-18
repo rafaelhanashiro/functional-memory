@@ -55,6 +55,7 @@ def summarize_run(run: dict, source_commit: str) -> tuple[dict, list[dict]]:
         "qk_head_dim": run["qk_head_dim"],
         "value_head_dim": run["value_head_dim"],
         "parameter_count": run["parameter_count"],
+        "source_commit": source_commit,
         "status": status,
         "error": metadata.get("error") or "",
         "training_tokens": metadata.get("training_tokens", ""),
@@ -93,7 +94,10 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
 
     output_dir = output_dir or Path(manifest["project_root"]) / "results/polynomial_attention"
     output_dir.mkdir(parents=True, exist_ok=True)
-    summaries = [summarize_run(run, manifest["source_commit"]) for run in manifest["runs"]]
+    summaries = [
+        summarize_run(run, run["config"].get("train", {}).get("source_commit", manifest["source_commit"]))
+        for run in manifest["runs"]
+    ]
     rows = [row for row, _ in summaries]
     with (output_dir / "summary.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
@@ -148,6 +152,11 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
     ]
     lines.extend(f"| {row['kernel']} | {row['parameter_count']:,} | {row['status']} | {row['terminal_ppl']:.4f} |" if row["status"] == "complete"
                  else f"| {row['kernel']} | {row['parameter_count']:,} | {row['status']} | — |" for row in rows)
+    retained = [row for row in rows if row["source_commit"] != manifest["source_commit"]]
+    if retained:
+        lines += ["", "Retained results from earlier source revisions:", "", *[
+            f"- {row['kernel']}: `{row['source_commit']}`." for row in retained
+        ]]
     failures = [row for row in rows if row["error"]]
     if failures:
         lines += ["", "Recorded failures:", "", *[f"- {row['kernel']}: {row['error']}" for row in failures]]
