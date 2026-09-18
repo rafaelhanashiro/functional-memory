@@ -24,6 +24,11 @@ and should not be used merely to verify a source-code relocation.
 
 ## Random versus pretrained Llama
 
+The completed six-condition comparison is retained in
+[`results/state_rank/random_vs_pretrained/REPORT.md`](../../results/state_rank/random_vs_pretrained/REPORT.md).
+Use a new `--output` directory for a new run; the retained manifest is a historical
+execution record and protects the original source/configuration/input identity.
+
 `configs/random_vs_pretrained.json` compares the pinned Llama-3.2-1B checkpoint
 with five complete Hugging Face reference initializations (seeds 0–4), across all
 16 layers and all eight KV heads. Each random layer and head has distinct weight

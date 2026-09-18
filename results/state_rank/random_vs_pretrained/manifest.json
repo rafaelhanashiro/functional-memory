@@ -1,0 +1,107 @@
+{
+  "baseline_directory": "/home/rafah/projects/functional_memory/results/llama-3.2-1b-l8-kvall-t512",
+  "baseline_metadata_sha256": "cd72e93c24104617e9f286b622c7e56d852e2403fc7d072590b3755ff1c97ab2",
+  "baseline_spectra_sha256": "ed64ae5582797460a12eb3326bde20df5b621381b5b12f35fdb490904b949aa0",
+  "checkpoint_retention": "none",
+  "conditions": [
+    {
+      "name": "pretrained",
+      "seed": null,
+      "weights": "pretrained"
+    },
+    {
+      "name": "random-seed0",
+      "seed": 0,
+      "weights": "random"
+    },
+    {
+      "name": "random-seed1",
+      "seed": 1,
+      "weights": "random"
+    },
+    {
+      "name": "random-seed2",
+      "seed": 2,
+      "weights": "random"
+    },
+    {
+      "name": "random-seed3",
+      "seed": 3,
+      "weights": "random"
+    },
+    {
+      "name": "random-seed4",
+      "seed": 4,
+      "weights": "random"
+    }
+  ],
+  "config": {
+    "allow_tf32": false,
+    "analysis_dtype": "float64",
+    "attention_implementation": "eager",
+    "baseline_directory": "results/llama-3.2-1b-l8-kvall-t512",
+    "baseline_layer": 8,
+    "comparison_layer": 8,
+    "input_count": 4,
+    "layers": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "model_dtype": "float32",
+    "model_id": "meta-llama/Llama-3.2-1B",
+    "model_revision": "4e20de362430cd3b72f300e6b0f18e50e7166e08",
+    "output_directory": "results/state_rank/random_vs_pretrained",
+    "schema_version": 1,
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "spectrum_prefixes": [
+      1,
+      2,
+      8,
+      32,
+      128,
+      512
+    ],
+    "tokens": 512
+  },
+  "created_utc": "2026-09-18T22:54:20.959810+00:00",
+  "dependency_lock_sha256": "3d0a8accf78ebe6a2288bce53032412d7f86dce603609d568c8193af4d5c6356",
+  "execution_root": "/home/rafah/projects/functional_memory/worktrees/random_weight_rank",
+  "experiment": "state_rank/random_vs_pretrained",
+  "identity": "1ddd9feba180924944fc9157425a8df8b16cb00f5101c5844acf9e08657c9972",
+  "initialization": "Hugging Face reference initialization; not Meta's original random weights",
+  "inputs_sha256": "8ac90c69b0c3503e3a505d6bcf317af31ad0f2f3c04853e699bb6cf504a497ed",
+  "jobs": {
+    "pretrained": "23045242",
+    "random-seed0": "23045243",
+    "random-seed1": "23045244",
+    "random-seed2": "23045246",
+    "random-seed3": "23045247",
+    "random-seed4": "23045248"
+  },
+  "output_directory": "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained",
+  "project_root": "/home/rafah/projects/functional_memory",
+  "schema_version": 1,
+  "source_commit": "c5308deb23ed5e30b77a3d3491d482032322a235",
+  "state_definition": "unnormalized softmax numerator; post-RoPE keys; before output processing",
+  "submitted_utc": "2026-09-18T22:54:21.635836+00:00"
+}

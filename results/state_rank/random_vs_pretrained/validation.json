@@ -1,0 +1,101 @@
+{
+  "status": "passed",
+  "source_commit": "c5308deb23ed5e30b77a3d3491d482032322a235",
+  "offline_tests": {
+    "passed": 82,
+    "skipped": 2
+  },
+  "conditions": [
+    {
+      "condition": "pretrained",
+      "status": "passed",
+      "parameter_sha256": "270990947595a37e636f45040fb0e9ccfb8fe7c7258218b292741958637e2cde",
+      "slurm_job_id": "23045242"
+    },
+    {
+      "condition": "random-seed0",
+      "status": "passed",
+      "parameter_sha256": "8d48427c9c2b822cf1cbb3054a83d17f01b246999043b25106e5c7c14aaa7d25",
+      "slurm_job_id": "23045243"
+    },
+    {
+      "condition": "random-seed1",
+      "status": "passed",
+      "parameter_sha256": "bc5f07d5846229a6ac6ed133acfe39673cce93e15ed0e7ee65354cc44f01edf9",
+      "slurm_job_id": "23045244"
+    },
+    {
+      "condition": "random-seed2",
+      "status": "passed",
+      "parameter_sha256": "2297a2b3568ccb102f28c3251616deb2d97838bf793ac37d0cb1a67f69e9a558",
+      "slurm_job_id": "23045246"
+    },
+    {
+      "condition": "random-seed3",
+      "status": "passed",
+      "parameter_sha256": "ac03d2641b73af6636e656031290ef0786ac9dd8a04228adc16655ccc2a0ff42",
+      "slurm_job_id": "23045247"
+    },
+    {
+      "condition": "random-seed4",
+      "status": "passed",
+      "parameter_sha256": "12b8ed5eef98e157e6db55ac3fc565b8f20663375f7070a0d350d074d508a78e",
+      "slurm_job_id": "23045248"
+    }
+  ],
+  "layer8_terminal_summary": {
+    "participation_ratio": {
+      "pretrained": 1.3882981651640383,
+      "random_mean": 4.764778015248276,
+      "seed_min": 4.208473465077412,
+      "seed_max": 5.322219937141342
+    },
+    "threshold_rank": {
+      "pretrained": 29.75,
+      "random_mean": 64.0,
+      "seed_min": 64.0,
+      "seed_max": 64.0
+    },
+    "energy_rank90": {
+      "pretrained": 1.65625,
+      "random_mean": 33.21875,
+      "seed_min": 32.625,
+      "seed_max": 34.25
+    },
+    "energy_rank99": {
+      "pretrained": 3.375,
+      "random_mean": 58.79375,
+      "seed_min": 58.59375,
+      "seed_max": 59.0625
+    },
+    "key_l2_rms": {
+      "pretrained": 23.065386418194745,
+      "random_mean": 7.199735711160129,
+      "seed_min": 7.110955283481863,
+      "seed_max": 7.33579332463175
+    },
+    "value_l2_rms": {
+      "pretrained": 2.1864620383701414,
+      "random_mean": 7.186017762852318,
+      "seed_min": 7.123162586647623,
+      "seed_max": 7.2655816524866825
+    }
+  },
+  "independent_review": {
+    "status": "passed",
+    "conditions_reviewed": 6,
+    "summary_rows_reviewed": 96,
+    "checks": [
+      "archive checksums",
+      "unique parameter fingerprints",
+      "source/model/input identities",
+      "axes and shapes",
+      "finite measurements and causal rank bounds",
+      "saved-spectrum reconstruction of rank metrics",
+      "summary values and reported seed ranges",
+      "one matching successful Slurm log per condition"
+    ],
+    "maximum_summary_rounding_discrepancy": 1.42e-14,
+    "blockers": []
+  }
+}
