@@ -20,6 +20,11 @@ PREFLIGHT_CHECKS = ("attention-cpu", "attention-gpu", "initialization", *[run_na
 MAX_PROJECTED_RUNTIME_SECONDS = 6 * 24 * 60 * 60
 
 
+def required_checks(manifest: dict) -> tuple[str, ...]:
+    fused = any(run["config"]["model"]["attention_backend"] == "fused" for run in manifest["runs"])
+    return (*PREFLIGHT_CHECKS, "attention-fused-gpu") if fused else PREFLIGHT_CHECKS
+
+
 def verify_manifest(manifest: dict) -> None:
     payload = {
         "source_commit": manifest["source_commit"],
@@ -78,7 +83,7 @@ def preflight_complete(manifest: dict) -> bool:
     root = Path(manifest["preflight_dir"])
     if not passed_check(root / "success.json", manifest["identity"]):
         return False
-    return all(passed_check(root / "checks" / f"{name}.json", manifest["identity"]) for name in PREFLIGHT_CHECKS)
+    return all(passed_check(root / "checks" / f"{name}.json", manifest["identity"]) for name in required_checks(manifest))
 
 
 def require_passing_tests(junit_path: Path, minimum: int) -> int:
@@ -155,15 +160,20 @@ def run_preflight(manifest: dict, *, check_only: bool = False, check_hardware: b
             return
         if check_only:
             raise RuntimeError(f"This sweep has no successful matching complete preflight: {success_path}")
-        for marker, minimum in (("cpu", len(ATTENTION_DEGREES)), ("gpu", len(ATTENTION_DEGREES) + 1)):
-            stage = f"attention-{marker}"
+        test_suites = [
+            ("attention-cpu", "cpu", "test_attention.py", len(ATTENTION_DEGREES)),
+            ("attention-gpu", "gpu", "test_attention.py", len(ATTENTION_DEGREES) + 1),
+        ]
+        if "attention-fused-gpu" in required_checks(manifest):
+            test_suites.append(("attention-fused-gpu", "gpu", "test_fused_attention.py", len(ATTENTION_DEGREES) - 1))
+        for stage, marker, test_file, minimum in test_suites:
             check_path = root / "checks" / f"{stage}.json"
             if passed_check(check_path, manifest["identity"]):
                 continue
             junit_path = attempt / f"{stage}.xml"
             subprocess.run([
                 sys.executable, "-m", "pytest", "-c", "experiments/polynomial_attention/pyproject.toml",
-                "experiments/polynomial_attention/tests/test_attention.py", "-q", "-m", "not gpu" if marker == "cpu" else "gpu",
+                f"experiments/polynomial_attention/tests/{test_file}", "-q", "-m", "not gpu" if marker == "cpu" else "gpu",
                 f"--junitxml={junit_path}",
             ], cwd=manifest["execution_root"], env=dict(os.environ, JAX_PLATFORMS="cpu" if marker == "cpu" else "cuda"), check=True)
             passed = require_passing_tests(junit_path, minimum)
@@ -203,7 +213,7 @@ def run_preflight(manifest: dict, *, check_only: bool = False, check_hardware: b
                     raise RuntimeError(f"Preflight {stage} resume did not preserve optimizer/data progress: {outcome}")
             record_success(check_path, manifest, attention_degree=run["attention_degree"], outcome=outcome,
                            validation_nll=validation["validation_nll"], validation_perplexity=validation["validation_perplexity"], runtime=runtime, workdir=str(workdir))
-        record_success(success_path, manifest, checks=list(PREFLIGHT_CHECKS), hardware=hardware)
+        record_success(success_path, manifest, checks=list(required_checks(manifest)), hardware=hardware)
     except BaseException as error:
         write_json(attempt / "failure.json", {"identity": manifest["identity"], "status": "failed", "stage": stage,
                                              "error": f"{type(error).__name__}: {error}", "slurm_job_id": os.environ.get("SLURM_JOB_ID")})

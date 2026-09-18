@@ -24,13 +24,25 @@ M0_PARAMETER_NOTE = (
 
 def attention_identity(config) -> dict:
     degree = config.model.attention_degree
-    return {
+    identity = {
         "attention_degree": degree,
         "attention_kernel": "softmax" if degree is None else "taylor",
         "attention_backend": config.model.attention_backend,
         "query_block_size": QUERY_BLOCK_SIZE,
         "m0_qk_parameter_note": M0_PARAMETER_NOTE if degree == 0 else None,
     }
+    if config.model.attention_backend == "fused":
+        from experiments.polynomial_attention.models.components.fused_attention import _tile_sizes
+        block_q, block_k = ((None, None) if degree is None else
+                           _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
+        identity.update({
+            "attention_implementation": "cudnn" if degree is None else "pallas_triton",
+            "query_block_size": block_q,
+            "key_block_size": block_k,
+            "diagnostic_backend": "blocked",
+            "diagnostic_query_block_size": QUERY_BLOCK_SIZE,
+        })
+    return identity
 
 
 def fixed_diagnostic_sample(config, *, validated_manifest=None):

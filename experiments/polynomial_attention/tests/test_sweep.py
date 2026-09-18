@@ -21,8 +21,9 @@ from experiments.polynomial_attention.sweep import (
 BASE = Path(__file__).resolve().parents[1] / "configs/base.yaml"
 
 
-def make_test_manifest(tmp_path, *, gpu_count=2):
+def make_test_manifest(tmp_path, *, gpu_count=2, backend="blocked"):
     base = load_config(BASE)
+    base.model.attention_backend = backend
     for name in ("train_manifest", "eval_manifest"):
         path = tmp_path / f"{name}.json"
         path.write_text('{"dataset": "test"}')
@@ -67,6 +68,21 @@ def test_preflight_identity_includes_data_and_dependency_lock(tmp_path):
     Path(base.data.train_manifest).write_text('{"dataset": "changed"}')
     changed_data = make_manifest(base, Path(manifest["project_root"]), execution_root, "a" * 40)
     assert changed_data["identity"] != changed_lock["identity"]
+
+
+def test_fused_backend_propagates_to_every_run_and_changes_identity(tmp_path):
+    base, blocked = make_test_manifest(tmp_path)
+    base.model.attention_backend = "fused"
+    fused = make_manifest(base, Path(blocked["project_root"]), Path(blocked["execution_root"]), blocked["source_commit"])
+    assert all(run["config"]["model"]["attention_backend"] == "fused" for run in fused["runs"])
+    assert fused["identity"] != blocked["identity"]
+    root = Path(fused["preflight_dir"])
+    record_success(root / "success.json", fused)
+    for name in PREFLIGHT_CHECKS:
+        record_success(root / "checks" / f"{name}.json", fused)
+    assert not preflight_complete(fused)
+    record_success(root / "checks/attention-fused-gpu.json", fused)
+    assert preflight_complete(fused)
 
 
 def test_allocation_changes_identity_without_changing_recipe(tmp_path):
@@ -190,11 +206,13 @@ def test_parity_gate_rejects_skips_failures_and_missing_checks(tmp_path, kind):
 
 
 @pytest.mark.parametrize("gpu_count", [2, 4])
-def test_preflight_pilots_all_degrees_in_processes_and_resumes_controls(tmp_path, monkeypatch, gpu_count):
-    base, manifest = make_test_manifest(tmp_path, gpu_count=gpu_count)
+@pytest.mark.parametrize("backend", ["blocked", "fused"])
+def test_preflight_pilots_all_degrees_in_processes_and_resumes_controls(tmp_path, monkeypatch, gpu_count, backend):
+    base, manifest = make_test_manifest(tmp_path, gpu_count=gpu_count, backend=backend)
     prepare_sweep(manifest, base)
     monkeypatch.setattr("experiments.polynomial_attention.preflight.verify_manifest", lambda manifest: None)
     calls = []
+    test_commands = []
 
     def fake_worker(manifest, worker, output, *, name="", workdir=None, stop=2, cpu=False):
         calls.append((worker, name, stop, cpu))
@@ -209,6 +227,7 @@ def test_preflight_pilots_all_degrees_in_processes_and_resumes_controls(tmp_path
                            "evaluation_seconds": [2.], "checkpoint_seconds": [1.]}}
 
     def fake_pytest(command, **kwargs):
+        test_commands.append(command)
         xml = Path(next(argument.removeprefix("--junitxml=") for argument in command if argument.startswith("--junitxml=")))
         xml.write_text('<testsuite>' + '<testcase name="check"/>' * 7 + '</testsuite>')
 
@@ -217,6 +236,9 @@ def test_preflight_pilots_all_degrees_in_processes_and_resumes_controls(tmp_path
     monkeypatch.setattr("experiments.polynomial_attention.plot.committed_records", lambda workdir: [{"step": 2, "validation_nll": 3.0, "validation_perplexity": 20.0}])
     run_preflight(manifest)
     assert preflight_complete(manifest)
+    fused_test_path = "experiments/polynomial_attention/tests/test_fused_attention.py"
+    assert any(fused_test_path in command for command in test_commands) == (backend == "fused")
+    assert len(test_commands) == (3 if backend == "fused" else 2)
     initial = [name for worker, name, _, cpu in calls if worker == "initialization" and cpu]
     assert initial == ["original", *[run_name(m) for m in ATTENTION_DEGREES]]
     pilots = [(name, stop) for worker, name, stop, _ in calls if worker == "pilot"]
