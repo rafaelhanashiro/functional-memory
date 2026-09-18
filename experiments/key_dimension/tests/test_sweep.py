@@ -61,6 +61,56 @@ def test_preflight_identity_includes_data_and_dependency_lock(tmp_path):
     assert changed_data["identity"] != changed_lock["identity"]
 
 
+def test_dk256_extension_preserves_recipe_and_submits_only_new_run(tmp_path, monkeypatch):
+    base, original = make_test_manifest(tmp_path)
+    project = Path(original["project_root"])
+    execution = Path(original["execution_root"])
+    extension = make_manifest(base, project, execution, "b" * 40, (256,))
+    assert len(extension["runs"]) == 1
+    run = extension["runs"][0]
+    assert run["qk_head_dim"] == 256 and run["value_head_dim"] == 64
+    assert run["parameter_count"] == 262820864
+    assert run["training_tokens"] == 10000269312
+    reference = config_to_dict(resolve_runs(base, project, "b" * 40, (128,))[0][1])
+    current = json.loads(json.dumps(run["config"]))
+    for config in (reference, current):
+        config["model"].pop("qk_head_dim")
+        config["train"].pop("workdir")
+        config["train"].pop("wandb_run_name")
+    assert reference == current
+    original_path = project / "results/key_dimension/sweep.json"
+    original_path.parent.mkdir(parents=True)
+    original_path.write_text(json.dumps(original))
+    original_bytes = original_path.read_bytes()
+    commands = []
+
+    def fake_submit(command, execution_root, dependency=None):
+        commands.append((command, dependency))
+        return str(200 + len(commands))
+
+    monkeypatch.setattr("experiments.key_dimension.sweep.submit_job", fake_submit)
+    monkeypatch.setattr("experiments.key_dimension.plot.aggregate", lambda manifest: [])
+    path = project / "results/key_dimension/sweep-dk256.json"
+    submitted = submit_sweep(extension, base, path)
+    assert len(commands) == 2
+    assert "--job-name=kd-preflight-dk256" in commands[0][0]
+    assert "--job-name=kd-256" in commands[1][0]
+    assert commands[1][1] == "201" and "--dependency=afterok:201" in commands[1][0]
+    assert original_path.read_bytes() == original_bytes
+    checkpoint_dir = project / "experiments/key_dimension/checkpoints" / run["name"]
+    assert (Path(run["workdir"]) / "checkpoints").resolve() == checkpoint_dir.resolve()
+    assert submitted["runs"][0]["checkpoint_dir"] == str(checkpoint_dir.resolve())
+    with pytest.raises(ValueError, match="already has submitted jobs"):
+        submit_sweep(extension, base, path)
+
+
+def test_dimensions_must_be_nonempty_and_distinct(tmp_path):
+    base = load_config(BASE)
+    for dimensions in ((), (256, 256)):
+        with pytest.raises(ValueError, match="distinct"):
+            resolve_runs(base, tmp_path, "a" * 40, dimensions)
+
+
 def test_submit_serializes_success_only_dependencies_and_retry_configuration(tmp_path, monkeypatch):
     base, manifest = make_test_manifest(tmp_path)
     commands = []
@@ -106,12 +156,13 @@ def test_interrupted_preflight_cannot_be_reused_as_success(tmp_path):
     assert not passed_check(path, "different")
 
 
-def test_launcher_bootstraps_without_python_on_compute_node_path(tmp_path):
+@pytest.mark.parametrize("manifest_name", ("sweep.json", "sweep-dk256.json"))
+def test_launcher_bootstraps_without_python_on_compute_node_path(tmp_path, manifest_name):
     project = tmp_path / "project"
     interpreter = project / ".envs/key_dimension/bin/python"
     interpreter.parent.mkdir(parents=True)
     interpreter.symlink_to(sys.executable)
-    manifest = project / "results/key_dimension/sweep.json"
+    manifest = project / "results/key_dimension" / manifest_name
     manifest.parent.mkdir(parents=True)
     # A deliberately mismatched root causes a controlled bootstrap failure,
     # before any scheduler, GPU, or training command can run.

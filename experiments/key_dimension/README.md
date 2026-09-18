@@ -42,8 +42,10 @@ updates and at completion: **3,670,016 prediction tokens**. Perplexity is the
 exponential of mean token negative log likelihood, not an average of sequence
 perplexities. Terminal results are compared at the common token budget;
 validation-best values are recorded separately. Checkpoints are saved every
-500 steps and at validation. Both terminal and validation-best checkpoints
-are retained, sharing one checkpoint if they coincide.
+500 steps and at validation. During training, the latest checkpoint supports
+exact resume and the validation-best checkpoint is preserved. Before retaining
+the completed experiment, keep only the validation-best checkpoint; terminal
+metrics remain in the results even if their checkpoint is not retained.
 
 ## Source and data provenance
 
@@ -95,10 +97,11 @@ uv run --project experiments/key_dimension --locked --extra cuda python -m \
 
 Submission creates one preflight and seven serial training jobs, each with two
 H200s and Slurm requeue enabled. Every training job depends on successful
-completion of its predecessor. The preflight requires eight passing CUDA
-attention checks, full-context train/evaluation pilots at widths 2, 4, 64,
-and 128, and a checkpoint-resume check. It caches only successful checks with
-matching source, configuration, data, and dependency-lock identity.
+completion of its predecessor. Each selected width must pass CUDA attention
+output/gradient checks and a full-context training/evaluation pilot. Checkpoint
+resume is checked at the largest selected width and at width 64 when present.
+The preflight caches only successful checks with matching source,
+configuration, data, and dependency-lock identity.
 
 The immutable run specifications and job IDs are in
 `results/key_dimension/sweep.json`. Inspect the scheduler with
@@ -135,3 +138,37 @@ for debugging or exact resume. After resolution, remove failed/superseded logs.
 The aggregation tool writes a summary CSV, a PPL-versus-width plot with a
 logarithmic base-two x-axis, and validation learning curves. Incomplete runs
 are identified explicitly and are excluded from the terminal-PPL curve.
+
+## Extending the sweep to dK=256
+
+The extension uses `configs/dk256.yaml`: 262,820,864 parameters with the same
+backbone, value width 64, seed 0, optimizer, batches, data order, held-out subset,
+and 10,000,269,312-token budget as the original seven runs. It runs on two H200s
+from the dedicated `codex/key-dimension-256` checkout. GPU preflight checks
+attention outputs and gradients at width 256, then executes full-context
+training/evaluation and checkpoint resume before allowing production training.
+
+Submit only the new width with a separate manifest. The original manifest is
+referenced by path and SHA-256 for combined plots, preserving each run's source
+commit and avoiding resubmission of completed widths:
+
+```bash
+KEY_DIMENSION_PROJECT=/home/rafah/projects/functional_memory
+cd "$KEY_DIMENSION_PROJECT/worktrees/key_dimension_256"
+"$KEY_DIMENSION_PROJECT/.envs/key_dimension/bin/python" -m experiments.key_dimension.sweep \
+  --project-root "$KEY_DIMENSION_PROJECT" --execution-root "$PWD" \
+  --base-config experiments/key_dimension/configs/dk256.yaml --key-dimensions 256 \
+  --manifest "$KEY_DIMENSION_PROJECT/results/key_dimension/sweep-dk256.json" \
+  --reference-manifest "$KEY_DIMENSION_PROJECT/results/key_dimension/sweep.json" \
+  --submit
+```
+
+For an inspection without submitting jobs, replace `--submit` with `--dry-run`.
+Keep the execution checkout clean and unchanged while its jobs are active.
+Scientific outputs go to `results/key_dimension/200m-dk256-seed0/`; checkpoints
+are stored outside the temporary checkout under
+`experiments/key_dimension/checkpoints/200m-dk256-seed0/`, reached through an
+ignored `checkpoints` symlink in the run's results directory. The successful
+training log is `results/logs/key_dimension/200m-dk256-seed0/slurm-<job_id>.out`.
+Before merging, retain only the validation-best checkpoint and remove preflight
+caches and other temporary artifacts according to the repository guidance.
