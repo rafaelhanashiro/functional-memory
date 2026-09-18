@@ -15,4 +15,4 @@ Degree zero uses uniform causal-prefix averaging. Q/K parameters remain in the m
 Attention diagnostics at update 19074: valid on the fixed first held-out sequence (2048 prediction positions).
 
 Primary result: terminal PPL at the common prediction-token budget.
-Retained terminal checkpoint: `19074`; validation best: `19000`.
+Retained validation-best checkpoint: [19000](../../../experiments/polynomial_attention/checkpoints/200m-m000-seed0/19000/), validation PPL 47.032595. Terminal metrics remain the primary result.

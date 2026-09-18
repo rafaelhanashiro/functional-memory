@@ -1,0 +1,434 @@
+{
+  "format": "functional-memory-retained-experiment",
+  "schema_version": 1,
+  "experiment": "polynomial_attention",
+  "retained_utc": "2026-09-18T22:25:28.231866+00:00",
+  "checkpoint_selection": "minimum committed validation NLL per run; only that checkpoint retained; terminal metrics retained independently",
+  "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "run_budget": {
+    "updates": 19074,
+    "prediction_tokens": 10000269312,
+    "validation_tokens": 3670016
+  },
+  "historical_sweep": {
+    "identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
+    "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+    "original_manifest_sha256": "cc7f94660dc9760908a79cfef82232b979a21270a7fe07c82421e9208342c3c2",
+    "git_history_commit": "e5ba3c618af230adaa5f3d5796e1b4c280b9535b"
+  },
+  "runs": [
+    {
+      "name": "200m-m000-seed0",
+      "attention_degree": 0,
+      "attention_backend": "blocked",
+      "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "parameter_count": 199906304,
+      "seed": 0,
+      "source_commit": "2484f00e9a32f1571b330fff5788d9a86175235f",
+      "resolved_config": {
+        "path": "experiments/polynomial_attention/configs/runs/200m-m000-seed0.yaml",
+        "sha256": "0ef5c56dcb6f3f916512b5a252ef882a53fe02654e78c64c42806a0dfe3e9aa3"
+      },
+      "metrics": {
+        "path": "results/polynomial_attention/200m-m000-seed0/metrics.jsonl",
+        "sha256": "81d1526abd39534ed990102595a1c4255376a1db46e15570f16595b662371a23"
+      },
+      "completion": "results/polynomial_attention/200m-m000-seed0/completion.json",
+      "selected_checkpoint": {
+        "path": "experiments/polynomial_attention/checkpoints/200m-m000-seed0/19000",
+        "step": 19000,
+        "validation_nll": 3.8508408665657043,
+        "validation_perplexity": 47.03259474530559,
+        "metadata_sha256": "26f0652f1058de3cbe1025141c8df8abf0c370911c7117f9fcbec50a14e6b774",
+        "file_count": 14,
+        "size_bytes": 2058102254
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 3.851536282471248,
+        "validation_perplexity": 47.06531333496572
+      },
+      "slurm_job_id": "199433",
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/200m-m000-seed0/slurm-199433.out",
+        "sha256": "07cf8a4621f284a696a8887f4e3c8262d82814eed4b550eae9c285cd80879cc7"
+      },
+      "execution_attempts": [
+        {
+          "slurm_job_id": "199433",
+          "gpu_kind": "H100 PCIe",
+          "gpu_count": 4,
+          "node": "mastiff",
+          "status": "complete",
+          "elapsed_seconds": 36068,
+          "started_local": "2026-09-17T02:19:14",
+          "ended_local": "2026-09-17T12:20:22",
+          "timezone": "America/New_York",
+          "exit_code": "0:0"
+        }
+      ]
+    },
+    {
+      "name": "200m-m002-seed0",
+      "attention_degree": 2,
+      "attention_backend": "fused",
+      "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "parameter_count": 199906304,
+      "seed": 0,
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "resolved_config": {
+        "path": "experiments/polynomial_attention/configs/runs/200m-m002-seed0.yaml",
+        "sha256": "7b07128485d77ac24292ae01b1a3a7b60131f2a22def078e22acffdd7eadb308"
+      },
+      "metrics": {
+        "path": "results/polynomial_attention/200m-m002-seed0/metrics.jsonl",
+        "sha256": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77"
+      },
+      "completion": "results/polynomial_attention/200m-m002-seed0/completion.json",
+      "selected_checkpoint": {
+        "path": "experiments/polynomial_attention/checkpoints/200m-m002-seed0/19074",
+        "step": 19074,
+        "validation_nll": 2.7900009751319885,
+        "validation_perplexity": 16.281035677939382,
+        "metadata_sha256": "4d49559fc7c83e403cf9fa54d61ccaa725af944863a4f38308795a9541b9d0a0",
+        "file_count": 12,
+        "size_bytes": 2199258055
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.7900009751319885,
+        "validation_perplexity": 16.281035677939382
+      },
+      "slurm_job_id": "199648",
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/200m-m002-seed0/slurm-199648.out",
+        "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6"
+      },
+      "execution_attempts": [
+        {
+          "slurm_job_id": "199648",
+          "gpu_kind": "H100 SXM",
+          "gpu_count": 4,
+          "node": "dogo",
+          "status": "complete",
+          "elapsed_seconds": 10094,
+          "started_local": "2026-09-18T01:13:40",
+          "ended_local": "2026-09-18T04:01:54",
+          "timezone": "America/New_York",
+          "exit_code": "0:0"
+        }
+      ]
+    },
+    {
+      "name": "200m-m004-seed0",
+      "attention_degree": 4,
+      "attention_backend": "fused",
+      "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "parameter_count": 199906304,
+      "seed": 0,
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "resolved_config": {
+        "path": "experiments/polynomial_attention/configs/runs/200m-m004-seed0.yaml",
+        "sha256": "ef88949d6d1a7f381a107916cbd0166f871a3fcff20455f48647f4c4b4021f83"
+      },
+      "metrics": {
+        "path": "results/polynomial_attention/200m-m004-seed0/metrics.jsonl",
+        "sha256": "9ced82fa7db159b5a93b569ac40b7d8139169bd38634040e781512209e92ee17"
+      },
+      "completion": "results/polynomial_attention/200m-m004-seed0/completion.json",
+      "selected_checkpoint": {
+        "path": "experiments/polynomial_attention/checkpoints/200m-m004-seed0/19074",
+        "step": 19074,
+        "validation_nll": 2.7069559693336487,
+        "validation_perplexity": 14.983595500270773,
+        "metadata_sha256": "cfe64ae9e8577a083045cec69f4bb292ff5f275a6a2832aa69340ad86db057b2",
+        "file_count": 14,
+        "size_bytes": 2197043345
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.7069559693336487,
+        "validation_perplexity": 14.983595500270773
+      },
+      "slurm_job_id": "199649",
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/200m-m004-seed0/slurm-199649.out",
+        "sha256": "c91f16f7ae3b36a2fabc64d6214b4df6379b2958553ac2178e6bf525e50a08ea"
+      },
+      "execution_attempts": [
+        {
+          "slurm_job_id": "199649",
+          "gpu_kind": "H100 SXM",
+          "gpu_count": 4,
+          "node": "dogo",
+          "status": "complete",
+          "elapsed_seconds": 10313,
+          "started_local": "2026-09-18T04:01:54",
+          "ended_local": "2026-09-18T06:53:47",
+          "timezone": "America/New_York",
+          "exit_code": "0:0"
+        }
+      ]
+    },
+    {
+      "name": "200m-m008-seed0",
+      "attention_degree": 8,
+      "attention_backend": "fused",
+      "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "parameter_count": 199906304,
+      "seed": 0,
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "resolved_config": {
+        "path": "experiments/polynomial_attention/configs/runs/200m-m008-seed0.yaml",
+        "sha256": "02f3287c03ecbaf2baaaa1fa679e0fdcacdbb1b4701547a8e2b77ef08a7b10eb"
+      },
+      "metrics": {
+        "path": "results/polynomial_attention/200m-m008-seed0/metrics.jsonl",
+        "sha256": "edeb0eaa9980c748808df22b18ffcd13c010662ad82c6a472e6445de397cd590"
+      },
+      "completion": "results/polynomial_attention/200m-m008-seed0/completion.json",
+      "selected_checkpoint": {
+        "path": "experiments/polynomial_attention/checkpoints/200m-m008-seed0/19074",
+        "step": 19074,
+        "validation_nll": 2.6863556674548557,
+        "validation_perplexity": 14.678086502581763,
+        "metadata_sha256": "f4e8be44af24bc634f96677d0ba74874b332bb04a0af56e145a441992cd1b498",
+        "file_count": 14,
+        "size_bytes": 2196216004
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.6863556674548557,
+        "validation_perplexity": 14.678086502581763
+      },
+      "slurm_job_id": "199650",
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/200m-m008-seed0/slurm-199650.out",
+        "sha256": "81bcf948faefae264cb7a955960acd5ce7672b96d59ff85d1fdcfdbfb45cd90b"
+      },
+      "execution_attempts": [
+        {
+          "slurm_job_id": "199650",
+          "gpu_kind": "H100 SXM",
+          "gpu_count": 4,
+          "node": "dogo",
+          "status": "complete",
+          "elapsed_seconds": 11118,
+          "started_local": "2026-09-18T06:53:47",
+          "ended_local": "2026-09-18T09:59:05",
+          "timezone": "America/New_York",
+          "exit_code": "0:0"
+        }
+      ]
+    },
+    {
+      "name": "200m-m016-seed0",
+      "attention_degree": 16,
+      "attention_backend": "fused",
+      "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "parameter_count": 199906304,
+      "seed": 0,
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "resolved_config": {
+        "path": "experiments/polynomial_attention/configs/runs/200m-m016-seed0.yaml",
+        "sha256": "c490b3c8d0803612df74ea8c4684215b60481b8e6365c443499cf1c63c4e0e60"
+      },
+      "metrics": {
+        "path": "results/polynomial_attention/200m-m016-seed0/metrics.jsonl",
+        "sha256": "3bb5eb752f69f69e4b0c00f04559093baad00d15541f5831f162e46aa3130e1a"
+      },
+      "completion": "results/polynomial_attention/200m-m016-seed0/completion.json",
+      "selected_checkpoint": {
+        "path": "experiments/polynomial_attention/checkpoints/200m-m016-seed0/19074",
+        "step": 19074,
+        "validation_nll": 2.688271709850856,
+        "validation_perplexity": 14.70623729906033,
+        "metadata_sha256": "d55fe67b6ada53cc7edbec49599155dd499039f1f441e02f58abbab23e20b318",
+        "file_count": 13,
+        "size_bytes": 2196448790
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.688271709850856,
+        "validation_perplexity": 14.70623729906033
+      },
+      "slurm_job_id": "199651",
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/200m-m016-seed0/slurm-199651.out",
+        "sha256": "7ccc0811022235c69dbfb3179d5a5cce8e432b398c4867ec7c1371d17b687dd7"
+      },
+      "execution_attempts": [
+        {
+          "slurm_job_id": "199651",
+          "gpu_kind": "H100 SXM",
+          "gpu_count": 4,
+          "node": "dogo",
+          "status": "complete",
+          "elapsed_seconds": 14010,
+          "started_local": "2026-09-18T09:59:05",
+          "ended_local": "2026-09-18T13:52:35",
+          "timezone": "America/New_York",
+          "exit_code": "0:0"
+        }
+      ]
+    },
+    {
+      "name": "200m-softmax-seed0",
+      "attention_degree": null,
+      "attention_backend": "fused",
+      "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "parameter_count": 199906304,
+      "seed": 0,
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "resolved_config": {
+        "path": "experiments/polynomial_attention/configs/runs/200m-softmax-seed0.yaml",
+        "sha256": "ca4071773c7ad128d732a04e40bccec54e0d8fe505aef29ebfde331fd338b09a"
+      },
+      "metrics": {
+        "path": "results/polynomial_attention/200m-softmax-seed0/metrics.jsonl",
+        "sha256": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262"
+      },
+      "completion": "results/polynomial_attention/200m-softmax-seed0/completion.json",
+      "selected_checkpoint": {
+        "path": "experiments/polynomial_attention/checkpoints/200m-softmax-seed0/19074",
+        "step": 19074,
+        "validation_nll": 2.6874512689454213,
+        "validation_perplexity": 14.69417664861716,
+        "metadata_sha256": "fa8681bab9517fa0b9fad89ccd85a12cf734c86b9f95736df8a3022dca2ca00c",
+        "file_count": 18,
+        "size_bytes": 2196497053
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.6874512689454213,
+        "validation_perplexity": 14.69417664861716
+      },
+      "slurm_job_id": "199869",
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/200m-softmax-seed0/slurm-199869.out",
+        "sha256": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277"
+      },
+      "execution_attempts": [
+        {
+          "slurm_job_id": "199652",
+          "gpu_kind": "H100 SXM",
+          "gpu_count": 4,
+          "node": "dogo",
+          "elapsed_seconds": 3777,
+          "status": "cancelled_for_validated_hardware_migration",
+          "last_observed_step": 9282,
+          "started_local": "2026-09-18T13:52:35",
+          "ended_local": "2026-09-18T14:55:32",
+          "timezone": "America/New_York",
+          "exit_code": "0:0"
+        },
+        {
+          "slurm_job_id": "199869",
+          "gpu_kind": "B300 SXM6 AC",
+          "gpu_count": 4,
+          "node": "akita",
+          "elapsed_seconds": 2334,
+          "status": "complete",
+          "restored_step": 9000,
+          "packed_data_start_sequence": 2304000,
+          "replayed_uncheckpointed_updates": 282,
+          "started_local": "2026-09-18T14:56:10",
+          "ended_local": "2026-09-18T15:35:04",
+          "timezone": "America/New_York",
+          "exit_code": "0:0"
+        }
+      ]
+    }
+  ],
+  "validation_records": [
+    {
+      "name": "preflight-degree-zero",
+      "status": "passed",
+      "slurm_job_id": "199422",
+      "record": {
+        "path": "results/polynomial_attention/validation/preflight-degree-zero.json",
+        "sha256": "711663adf4a5b01fd96940deb7e0c0067b7e2f4528e823802d1f2dc5af7a4074"
+      },
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/preflight-m000-retained/slurm-199422.out",
+        "sha256": "d0f9fd0f01b2622f255497144aec29b0faa30a6cf02886d65fdc98ce77102d07"
+      },
+      "source_commit": "2484f00e9a32f1571b330fff5788d9a86175235f",
+      "retained_for_runs": [
+        "200m-m000-seed0"
+      ]
+    },
+    {
+      "name": "preflight-fused",
+      "status": "passed",
+      "slurm_job_id": "199647",
+      "record": {
+        "path": "results/polynomial_attention/validation/preflight-fused.json",
+        "sha256": "59133e3a4267e1c3831c1152496e2dbec9bb8a615c56abc779cc5f469e0e2288"
+      },
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/preflight/slurm-199647.out",
+        "sha256": "89bf5b220c5d495e4cb0464f776e475a6177befc0bcf91c7b2d9bac47a4c7725"
+      },
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "retained_for_runs": [
+        "200m-m002-seed0",
+        "200m-m004-seed0",
+        "200m-m008-seed0",
+        "200m-m016-seed0",
+        "200m-softmax-seed0"
+      ]
+    },
+    {
+      "name": "data",
+      "status": "passed",
+      "slurm_job_id": "199411",
+      "record": {
+        "path": "results/polynomial_attention/validation/data.json",
+        "sha256": "31abd7cea5ca0efe6da62fe5b4f5ea6b6dda0dad23947eec2d8d88aa5ec496b6"
+      },
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/data_validation/slurm-199411.out",
+        "sha256": "41d9d3c0568905b5d60e89b5b978744d3e053cf6f21659e8de7ea510e559e7a8"
+      }
+    }
+  ],
+  "performance_report": "results/polynomial_attention/performance/README.md",
+  "retention_notes": [
+    "Resolved YAML configs preserve historical launch paths; reproduce into a fresh workdir and provide the same packed manifests or their content-identical replacements.",
+    "Original launch history and superseded configuration/plot snapshots remain available in Git history, not duplicated in the retained tree.",
+    "Model/optimizer kernels are unchanged by retention cleanup. Source commits remain reachable from main history.",
+    "Checkpoints, Slurm logs and datasets are retained on shared storage and are not uploaded to GitHub."
+  ],
+  "total_training_allocation_seconds": 87714,
+  "retention": {
+    "one_validation_best_checkpoint_per_run": true,
+    "terminal_metrics_preserved": true,
+    "historical_launch_and_debug_artifacts": "available in Git history, removed from the retained tree",
+    "external_dataset_preserved": true,
+    "logs": "one successful Slurm log per retained training run, benchmark, and validation",
+    "temporary_checkouts_and_caches_removed": false
+  }
+}

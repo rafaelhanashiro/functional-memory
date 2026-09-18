@@ -1,8 +1,11 @@
 # Taylor degree and learned attention performance
 
-Train **six models from scratch** with attention degrees **0, 2, 4, 8, 16** and
-an **exact-softmax control**. The only scientific sweep variable is the attention
-kernel. There is no frozen-checkpoint replacement or per-degree tuning.
+This completed collection trained **six models from scratch** with attention
+degrees **0, 2, 4, 8, 16** and an **exact-softmax control**. The only scientific
+sweep variable was the attention kernel: no frozen-checkpoint replacement or
+per-degree tuning. [Results](../../results/polynomial_attention/README.md) and
+[provenance](../../results/polynomial_attention/provenance.json) retain the
+terminal metrics, learning curves, execution history, and selected checkpoints.
 
 ## Fixed recipe
 
@@ -21,8 +24,10 @@ gradient clipping at 1.0 after accumulation and device averaging.
 
 Evaluation uses the same first 1,792 held-out sequences (3,670,016 prediction
 tokens) every 1,000 updates and at completion. Checkpoints are saved every 500
-updates and at evaluation; terminal and validation-best checkpoints survive.
-This initial sweep has one seed and does not estimate seed-to-seed variation.
+updates and at evaluation during training. After completion, only the
+validation-best checkpoint per run survives; terminal metrics remain in the
+results even when the selected checkpoint is earlier. This collection has one
+seed and does not estimate seed-to-seed variation.
 
 ## Kernel and execution
 
@@ -32,11 +37,13 @@ m selects `P_m(s) = sum(s**r / r!, r=0..m)` on unshifted post-RoPE scores
 Attention is `sum(P_m(s) * v) / sum(P_m(s))` over the causal prefix. The division
 is exact. The output vocabulary softmax and next-token loss are unchanged.
 
-By default, all variants share the `blocked` backend: 128-position query blocks, causal
-key prefixes, FP32 polynomial/normalization arithmetic, and attention-local
-backward recomputation. This replaces the reference's cuDNN implementation
-without changing model geometry, context, batches, or optimizer settings.
-Architecture-level `remat` remains false. No tensor feature maps are materialized.
+The base configuration retains the `blocked` reference backend: 128-position
+query blocks, causal key prefixes, FP32 polynomial/normalization arithmetic, and
+attention-local backward recomputation. The retained degree-zero control used
+this implementation; degrees 2–16 and softmax used the optimized `fused` backend.
+The resolved configurations record this execution difference without changing
+model geometry, context, batches, or optimizer settings. Architecture-level
+`remat` remains false. No tensor feature maps are materialized.
 
 Taylor attention has no score shifting, clipping, extra Q/K normalization,
 learned coefficients, or temperature. Masked pairs are zeroed without evaluating
@@ -78,7 +85,7 @@ unnecessary overflow. The backward retains the FP32 output before its BF16 cast.
 These reduction and matrix-product choices are mathematically equivalent to the
 reference but not bitwise identical; FP64 and BF16 output/VJP tests bound error.
 
-The CUDA kernel targets H100s, accepts FP32/BF16 Q/K/V and head widths up to 128,
+The CUDA kernel was validated on H100 and B300 GPUs, accepts FP32/BF16 Q/K/V and head widths up to 128,
 and uses smaller tiles for widths above 64. Scalar diagnostics still come from
 the reference implementation. Degree zero currently uses the fused tiled path
 to preserve the reference's invalid-score checks; it is not a prefix-scan path.
@@ -118,28 +125,16 @@ The packed pilot requires a clean committed checkout and a fresh workdir. It
 uses real configured data and the production learning-rate horizon, stopping
 after 100 updates. Its compressed evaluation/checkpoint cadence measures their
 first and warmed costs; its total wall time must not be scaled directly to a
-full production run. See `results/polynomial_attention_throughput/REPORT.md`
-for the measured comparison and runtime assumptions.
+full production run. See the [performance reports](../../results/polynomial_attention/performance/README.md)
+for the measured comparisons, hardware, and runtime assumptions.
 
-An existing completed degree-zero control can be retained in a schema-3 sweep
-with its original configuration, source revision, and completion checksum.
-Only the other five runs receive the new fused configuration. Preflight and
-initialization checks apply to the active runs, while aggregation validates
-each result against its own recorded source. A retained control must match the
-same scientific recipe; changing its backend label or rewriting its provenance
-is not required.
-
-For a prepared manifest, `sweep --queue` submits preflight and the production
-jobs immediately. Every production job depends on successful preflight; later
-jobs also wait for the previous training job to terminate. The launcher's own
-preflight check remains active. The persisted `dogo` scheduler profile requests
-four H100 SXM GPUs on that node in the standard partition, with two hours for
-preflight and eight hours per production run. Requeue and checkpoint resume
-remain enabled.
-
-Recorded H100 measurements and correctness results are in the
-[kernel report](../../results/polynomial_attention_kernel/REPORT.md) and
-[four-GPU training report](../../results/polynomial_attention_train_step/REPORT.md).
+The completed production runs used four GPUs each. Degree zero ran on H100
+PCIe, degrees 2–16 on H100 SXM, and softmax continued from an H100 checkpoint on
+B300. The performance reports preserve these distinctions: B300 improved
+softmax substantially but was slower for degree 16 with this kernel. Select
+hardware using measured full-update costs. Independent future runs may use
+available partitions concurrently; `sweep` jobs can be preempted and must resume
+from checkpoints.
 
 ## Environment and validation
 
@@ -155,62 +150,73 @@ JAX_PLATFORMS=cpu uv run --project experiments/polynomial_attention --locked --e
 
 The Kennel configuration reads the original packed corpus directly from NFS at
 `/data/cl/u/rafah/home/datasets/fineweb_12b`. Results, checkpoints, environments,
-and caches also remain on NFS; no node-local staging is used.
+and caches can also use NFS; no node-local staging is required. Completed
+experiment caches and temporary execution checkouts are removed after retention.
 
 CPU tests verify recipe/initialization equality, FP64-reference attention outputs
 and Q/K/V gradients, causal block boundaries, prefix averaging, failure detection,
 packed data, metrics transactions, and checkpoint resume. Accelerator acceptance
 additionally requires all variants' full-context/full-microbatch training and
-evaluation pilots on the same H100 allocation as production. The Kennel default
-is two H100s; `--gpu-count 4` selects four without changing the global batch,
-microbatch, accumulation count, or scientific recipe. Hardware allocation is
-part of the sweep identity and is checked again when each production job starts.
+evaluation pilots on the intended production allocation. The historical sweep
+launcher defaults to two H100s; use `--gpu-count 4` to reproduce the four-GPU
+layout without changing the global batch, microbatch, accumulation count, or
+scientific recipe. Its supported scheduler profiles are recorded in `sweep.py`;
+it does not automatically select B300s or schedule independent runs in parallel.
+Hardware allocation is part of a live sweep identity and checked at job startup.
 Pilots measure synchronized update, validation, and checkpoint times and require
 a conservative projected production runtime below six days. First-update
 compilation is excluded from the steady update rate and charged once as startup.
 
-## Launch
+## Reproduce in a fresh experiment checkout
 
-Freeze the tested source in an isolated execution worktree. Leave that checkout
-unchanged while its jobs remain runnable or requeueable. For an execution checkout
-at `worktrees/polynomial_attention_200m`:
-
-```bash
-uv run --project experiments/polynomial_attention --locked --extra cuda python -m \
-  experiments.polynomial_attention.sweep --execution-root "$PWD/worktrees/polynomial_attention_200m" --dry-run
-uv run --project experiments/polynomial_attention --locked --extra cuda python -m \
-  experiments.polynomial_attention.sweep --execution-root "$PWD/worktrees/polynomial_attention_200m" --launch
-```
-
-`--launch` submits only the preflight initially. After all checks pass, that job
-submits the six production jobs automatically; the first waits for successful
-preflight job completion. A failed preflight submits no production jobs.
-For a manual two-stage workflow, use this instead of `--launch`:
+Keep the completed collection on `main` intact. Create a dedicated branch and
+separate checkout for a reproduction, using the run's `source_commit` from
+`results/polynomial_attention/provenance.json` for the original implementation:
 
 ```bash
-uv run --project experiments/polynomial_attention --locked --extra cuda python -m \
-  experiments.polynomial_attention.sweep --execution-root "$PWD/worktrees/polynomial_attention_200m" --preflight-only
+git worktree add -b codex/poly-reproduction /path/to/new/checkout <source_commit>
 ```
 
-The preflight runs each variant in a separate process to release compiled programs
-and GPU memory between pilots. It also checks checkpoint resume. Only after every
-check succeeds for the exact source/configuration/data/lock identity:
+Install the locked environment for that checkout and run acceptance tests before
+production. The exact per-run YAML files are retained on `main` under
+`experiments/polynomial_attention/configs/runs/<run>.yaml`. They include the
+original source, seed, backend, and training recipe. Their recorded
+`train.workdir` is historical: always override it with a new, empty directory.
+Update data manifest locations in a copied configuration if reproducing on
+another system, and verify the corpus against the retained data identity.
+
+Inside a four-GPU Slurm allocation, from the new source checkout:
 
 ```bash
-uv run --project experiments/polynomial_attention --locked --extra cuda python -m \
-  experiments.polynomial_attention.sweep --execution-root "$PWD/worktrees/polynomial_attention_200m" --submit
+rerun_workdir="$PWD/results/polynomial_attention/reproduction-m016-seed0"
+test ! -e "$rerun_workdir" && \
+python -m experiments.polynomial_attention.train \
+  /path/to/main/experiments/polynomial_attention/configs/runs/200m-m016-seed0.yaml \
+  --workdir "$rerun_workdir" --no-resume
 ```
 
-Production submission rejects a missing or unsuccessful preflight. The six
-production jobs run serially on the validated H100 allocation with requeue
-support. Kennel jobs use the `long` partition, 32 CPUs and 256 GB RAM; the
-preflight limit is eight hours and each production limit is seven days. The
-locked Python environment must be installed before submission; jobs invoke its
-interpreter directly without changing dependencies. The first uses
-`afterok` on preflight; subsequent jobs use `afterany` on the preceding production
-job, so a recorded failure at one degree does not suppress the remaining trials.
-Resumption restores the optimizer and exact data cursor. Submission records live under
-`results/polynomial_attention/sweep.json`.
+Use the source revision recorded in the configuration; if changing code, record
+its new commit in a copied configuration before running. For a new complete
+sweep, the existing launcher can prepare, validate, and submit all variants:
+
+```bash
+python -m experiments.polynomial_attention.sweep \
+  --project-root "$PWD" --execution-root "$PWD" --gpu-count 4 --dry-run
+```
+
+Use this only in a fresh experiment checkout with a fresh results directory.
+Pass `--base-config /path/to/config.yaml` to select the desired backend.
+`--launch` submits GPU preflight first and submits production only after it
+passes; `--preflight-only` then `--submit` is the manual equivalent. `--queue`
+queues production with successful-preflight dependencies. The existing launcher
+runs production jobs serially; its default profile uses `long`, and its persisted
+`dogo` profile uses `standard`. Review allocation and partition availability
+before a new sweep. Freeze the checkout while jobs can run or requeue, and keep
+the environment unchanged. Resume restores optimizer state and the data cursor.
+
+After reviewing a reproduction, retain its validation-best checkpoint and
+scientific results according to `AGENTS.md`, then merge it into `main` and
+remove its temporary checkout and merged branch.
 
 ## Results and diagnostics
 
@@ -228,11 +234,33 @@ but does not determine the training budget.
 
 ```bash
 uv run --project experiments/polynomial_attention --locked --extra cuda python -m \
-  experiments.polynomial_attention.plot --manifest results/polynomial_attention/sweep.json
+  experiments.polynomial_attention.plot --manifest results/polynomial_attention/provenance.json
 ```
 
-Keep one successful combined Slurm log per retained run at
-`results/logs/polynomial_attention/<run>/slurm-<job_id>.out`, matching its metadata.
-Keep checkpoints and failed/interrupted logs while debugging or resuming; remove
-superseded and failed logs once resolved. Existing key-dimension runs and results
-are independent of this family.
+The retained layout is:
+
+- `experiments/polynomial_attention/`: scaffold, dependency lock, tests, and
+  `configs/runs/<run>.yaml` with the six resolved configurations.
+- `experiments/polynomial_attention/checkpoints/<run>/`: exactly one
+  validation-best checkpoint per run, stored on shared storage and ignored by
+  Git. Degree zero's best checkpoint precedes its final training step.
+- `results/polynomial_attention/`: `provenance.json`, per-run metrics and
+  completion records, summary tables, figures, and consolidated `performance/`
+  reports. Terminal metrics are independent of checkpoint selection.
+- `results/logs/polynomial_attention/<run>/slurm-<job_id>.out`: one successful
+  combined Slurm log per run, matching its provenance; logs remain ignored by
+  Git. Validation and benchmark logs use their recorded experiment paths.
+
+The plotting command defaults to `provenance.json` when present, otherwise to a
+live `sweep.json`. Retained paths resolve relative to the repository containing
+the manifest, so a copied checkout can regenerate plots without the original
+execution worktrees, training datasets, or physical checkpoints. Configuration,
+metric, and dependency-lock checksums are verified before aggregation; best and
+terminal metrics are checked against the committed validation history. Dataset
+checksums remain provenance for reproducing training and are not reread to plot.
+Live sweep aggregation remains available during new experiments.
+
+Temporary launch manifests, caches, intermediate/final checkpoint duplicates,
+failed or superseded logs, and execution worktrees are removed once completion
+and retention are verified. Existing key-dimension runs are a separate experiment
+family.

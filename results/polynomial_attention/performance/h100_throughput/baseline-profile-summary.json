@@ -1,0 +1,810 @@
+{
+  "created_at_utc": "2026-09-18T04:14:55.326326+00:00",
+  "format": "polynomial-attention-compact-perfetto-summary",
+  "method": {
+    "categories": "exclusive name/scope heuristics; categories sum to kernel duration, not elapsed wall time",
+    "idle": "wall minus union of recorded kernel/memory intervals; includes host delay and trace overhead",
+    "overlap": "kernel sum minus interval union; not a measure of SM occupancy or critical-path cost",
+    "profiling": "profiled durations can differ from unprofiled benchmark medians",
+    "scope_limit": "CUDA command-buffer replay can erase op scopes; zero attributed MLP/loss time does not mean no MLP/loss work",
+    "selection": "GPU Stream # tracks only; kernel_details identifies kernels; Memcpy/Memset count only toward memory/GPU activity",
+    "timestamp_unit": "Chrome trace ts/dur are microseconds, regardless of displayTimeUnit",
+    "windows": "clipped to nonoverlapping synchronized host update annotations; gaps between updates excluded"
+  },
+  "schema_version": 1,
+  "traces": [
+    {
+      "devices": [
+        {
+          "device": "/device:GPU:0",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 22.0,
+                "kernel_sum_ms": 6.909420333333158,
+                "percent_of_kernel_sum": 0.7421783254079237
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 852.0,
+                "kernel_sum_ms": 169.68104633333112,
+                "percent_of_kernel_sum": 18.22636179964241
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 2080.0,
+                "kernel_sum_ms": 94.47570633333085,
+                "percent_of_kernel_sum": 10.148148199919525
+              },
+              "pallas_attention": {
+                "kernel_count": 120.0,
+                "kernel_sum_ms": 659.8988116666659,
+                "percent_of_kernel_sum": 70.88331167503013
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 99.19119725689472,
+            "gpu_activity_percent_of_wall": 98.75620689845834,
+            "gpu_activity_union_ms": 929.0904943333317,
+            "kernel_active_union_ms": 928.6375669999965,
+            "kernel_count": 3074.0,
+            "kernel_overlap_excess_ms": 2.3274176666646187,
+            "kernel_sum_ms": 930.964984666661,
+            "memory_operation_sum_ms": 0.4529273333351836,
+            "no_recorded_gpu_activity_ms": 11.701506000001721,
+            "wall_ms": 940.7920003333334
+          }
+        },
+        {
+          "device": "/device:GPU:1",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 22.0,
+                "kernel_sum_ms": 5.815675666666512,
+                "percent_of_kernel_sum": 0.625006406287821
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 852.0,
+                "kernel_sum_ms": 170.97787766666465,
+                "percent_of_kernel_sum": 18.37486734132359
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 2080.0,
+                "kernel_sum_ms": 94.44353633333668,
+                "percent_of_kernel_sum": 10.149777708399304
+              },
+              "pallas_attention": {
+                "kernel_count": 120.0,
+                "kernel_sum_ms": 659.2614793333338,
+                "percent_of_kernel_sum": 70.85034854398928
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 99.30919857939806,
+            "gpu_activity_percent_of_wall": 98.71641921603789,
+            "gpu_activity_union_ms": 928.716175000002,
+            "kernel_active_union_ms": 928.2202189999994,
+            "kernel_count": 3074.0,
+            "kernel_overlap_excess_ms": 2.278350000002344,
+            "kernel_sum_ms": 930.4985690000017,
+            "memory_operation_sum_ms": 0.4959560000026686,
+            "no_recorded_gpu_activity_ms": 12.07582533333136,
+            "wall_ms": 940.7920003333334
+          }
+        },
+        {
+          "device": "/device:GPU:2",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 22.0,
+                "kernel_sum_ms": 11.231500999999541,
+                "percent_of_kernel_sum": 1.206470689890409
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 852.0,
+                "kernel_sum_ms": 168.1368793333304,
+                "percent_of_kernel_sum": 18.06100687747006
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 2080.0,
+                "kernel_sum_ms": 94.54059633333083,
+                "percent_of_kernel_sum": 10.155406519656543
+              },
+              "pallas_attention": {
+                "kernel_count": 120.0,
+                "kernel_sum_ms": 657.029594333333,
+                "percent_of_kernel_sum": 70.57711591298298
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 98.72763960634457,
+            "gpu_activity_percent_of_wall": 98.74440659262147,
+            "gpu_activity_union_ms": 928.9794780000034,
+            "kernel_active_union_ms": 928.5267559999993,
+            "kernel_count": 3074.0,
+            "kernel_overlap_excess_ms": 2.4118149999945113,
+            "kernel_sum_ms": 930.9385709999939,
+            "memory_operation_sum_ms": 0.45272200000403,
+            "no_recorded_gpu_activity_ms": 11.812522333329893,
+            "wall_ms": 940.7920003333334
+          }
+        },
+        {
+          "device": "/device:GPU:3",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 22.0,
+                "kernel_sum_ms": 8.509467666666838,
+                "percent_of_kernel_sum": 0.9141629518374704
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 852.0,
+                "kernel_sum_ms": 169.04690100000315,
+                "percent_of_kernel_sum": 18.160526612315277
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 2080.0,
+                "kernel_sum_ms": 94.43139733333066,
+                "percent_of_kernel_sum": 10.144663369546404
+              },
+              "pallas_attention": {
+                "kernel_count": 120.0,
+                "kernel_sum_ms": 658.8602463333347,
+                "percent_of_kernel_sum": 70.78064706630084
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 99.01967236192955,
+            "gpu_activity_percent_of_wall": 98.74428222931938,
+            "gpu_activity_union_ms": 928.9783080000061,
+            "kernel_active_union_ms": 928.5251060000013,
+            "kernel_count": 3074.0,
+            "kernel_overlap_excess_ms": 2.3229063333340068,
+            "kernel_sum_ms": 930.8480123333353,
+            "memory_operation_sum_ms": 0.45320200000465655,
+            "no_recorded_gpu_activity_ms": 11.813692333327259,
+            "wall_ms": 940.7920003333334
+          }
+        }
+      ],
+      "excluded_stream_events": {},
+      "step_annotation": "train",
+      "step_count": 3,
+      "trace_sha256": "51014ae78345700d8142e4a083cb374ddcb252dbea3e2e45c54a28198c0daf2c",
+      "trial_annotations": [
+        {
+          "degree": "2",
+          "device_count": "4",
+          "implementation": "fused"
+        }
+      ],
+      "raw_trace_retained": false
+    },
+    {
+      "devices": [
+        {
+          "device": "/device:GPU:0",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 22.0,
+                "kernel_sum_ms": 8.752525333333217,
+                "percent_of_kernel_sum": 0.7125936136432698
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 852.0,
+                "kernel_sum_ms": 169.6375656666671,
+                "percent_of_kernel_sum": 13.811173498428724
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 2080.0,
+                "kernel_sum_ms": 94.4066619999968,
+                "percent_of_kernel_sum": 7.686191340728943
+              },
+              "pallas_attention": {
+                "kernel_count": 120.0,
+                "kernel_sum_ms": 955.4664766666671,
+                "percent_of_kernel_sum": 77.79004154719905
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 99.23743609889378,
+            "gpu_activity_percent_of_wall": 99.03682494150097,
+            "gpu_activity_union_ms": 1226.430644333336,
+            "kernel_active_union_ms": 1225.9724573333344,
+            "kernel_count": 3074.0,
+            "kernel_overlap_excess_ms": 2.2907723333297763,
+            "kernel_sum_ms": 1228.2632296666643,
+            "memory_operation_sum_ms": 0.45818700000204265,
+            "no_recorded_gpu_activity_ms": 11.927557333330391,
+            "wall_ms": 1238.3582016666664
+          }
+        },
+        {
+          "device": "/device:GPU:1",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 22.0,
+                "kernel_sum_ms": 5.258944333333211,
+                "percent_of_kernel_sum": 0.42833884814870904
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 852.0,
+                "kernel_sum_ms": 171.15025866666687,
+                "percent_of_kernel_sum": 13.94011801816665
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 2080.0,
+                "kernel_sum_ms": 94.41604933333694,
+                "percent_of_kernel_sum": 7.690148298748077
+              },
+              "pallas_attention": {
+                "kernel_count": 120.0,
+                "kernel_sum_ms": 956.9280453333344,
+                "percent_of_kernel_sum": 77.94139483493656
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 99.52168653552026,
+            "gpu_activity_percent_of_wall": 98.99504685720927,
+            "gpu_activity_union_ms": 1225.9132820000107,
+            "kernel_active_union_ms": 1225.4210923333392,
+            "kernel_count": 3074.0,
+            "kernel_overlap_excess_ms": 2.3322053333323756,
+            "kernel_sum_ms": 1227.7532976666714,
+            "memory_operation_sum_ms": 0.492189666671921,
+            "no_recorded_gpu_activity_ms": 12.444919666655672,
+            "wall_ms": 1238.3582016666664
+          }
+        },
+        {
+          "device": "/device:GPU:2",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 22.0,
+                "kernel_sum_ms": 21.55243166666649,
+                "percent_of_kernel_sum": 1.7546454329831256
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 852.0,
+                "kernel_sum_ms": 167.70918999999807,
+                "percent_of_kernel_sum": 13.653687382195544
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 2080.0,
+                "kernel_sum_ms": 94.51452300000165,
+                "percent_of_kernel_sum": 7.694699080708504
+              },
+              "pallas_attention": {
+                "kernel_count": 120.0,
+                "kernel_sum_ms": 944.5307976666662,
+                "percent_of_kernel_sum": 76.89696810411284
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 98.19509687935009,
+            "gpu_activity_percent_of_wall": 99.02374708838487,
+            "gpu_activity_union_ms": 1226.2686936666707,
+            "kernel_active_union_ms": 1225.8175953333323,
+            "kernel_count": 3074.0,
+            "kernel_overlap_excess_ms": 2.4893469999999116,
+            "kernel_sum_ms": 1228.3069423333322,
+            "memory_operation_sum_ms": 0.4510983333384357,
+            "no_recorded_gpu_activity_ms": 12.089507999995723,
+            "wall_ms": 1238.3582016666664
+          }
+        },
+        {
+          "device": "/device:GPU:3",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 22.0,
+                "kernel_sum_ms": 13.010379333332956,
+                "percent_of_kernel_sum": 1.0593828742856946
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 852.0,
+                "kernel_sum_ms": 168.77705200000162,
+                "percent_of_kernel_sum": 13.742836690636567
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 2080.0,
+                "kernel_sum_ms": 94.43787533333386,
+                "percent_of_kernel_sum": 7.689696453026626
+              },
+              "pallas_attention": {
+                "kernel_count": 120.0,
+                "kernel_sum_ms": 951.8839680000007,
+                "percent_of_kernel_sum": 77.5080839820511
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 98.89039350044546,
+            "gpu_activity_percent_of_wall": 99.01586732738107,
+            "gpu_activity_union_ms": 1226.1711140000086,
+            "kernel_active_union_ms": 1225.7169386666699,
+            "kernel_count": 3074.0,
+            "kernel_overlap_excess_ms": 2.3923359999991956,
+            "kernel_sum_ms": 1228.109274666669,
+            "memory_operation_sum_ms": 0.4541753333387751,
+            "no_recorded_gpu_activity_ms": 12.187087666657987,
+            "wall_ms": 1238.3582016666664
+          }
+        }
+      ],
+      "excluded_stream_events": {},
+      "step_annotation": "train",
+      "step_count": 3,
+      "trace_sha256": "5645ed2aa7fb2619ba61e323618c64db54a252e83198f344517064f2fb1b2d12",
+      "trial_annotations": [
+        {
+          "degree": "16",
+          "device_count": "4",
+          "implementation": "fused"
+        }
+      ],
+      "raw_trace_retained": false
+    },
+    {
+      "devices": [
+        {
+          "device": "/device:GPU:0",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 22.0,
+                "kernel_sum_ms": 9.631284999999975,
+                "percent_of_kernel_sum": 2.7673343149128624
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 80.0,
+                "kernel_sum_ms": 59.357837333333656,
+                "percent_of_kernel_sum": 17.055146858550074
+              },
+              "gemm_unattributed": {
+                "kernel_count": 852.0,
+                "kernel_sum_ms": 179.38836999999947,
+                "percent_of_kernel_sum": 51.5432356115809
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 2120.0,
+                "kernel_sum_ms": 99.65725533333051,
+                "percent_of_kernel_sum": 28.634283214956163
+              },
+              "pallas_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 97.05630771964974,
+            "gpu_activity_percent_of_wall": 96.69060375451403,
+            "gpu_activity_union_ms": 346.12670233333984,
+            "kernel_active_union_ms": 345.6109456666648,
+            "kernel_count": 3074.0,
+            "kernel_overlap_excess_ms": 2.423801999998822,
+            "kernel_sum_ms": 348.03474766666363,
+            "memory_operation_sum_ms": 0.515756666675113,
+            "no_recorded_gpu_activity_ms": 11.846760333326799,
+            "wall_ms": 357.97346266666665
+          }
+        },
+        {
+          "device": "/device:GPU:1",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 22.0,
+                "kernel_sum_ms": 5.16536799999994,
+                "percent_of_kernel_sum": 1.4859421177207044
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 80.0,
+                "kernel_sum_ms": 60.61147933333317,
+                "percent_of_kernel_sum": 17.43634721838964
+              },
+              "gemm_unattributed": {
+                "kernel_count": 852.0,
+                "kernel_sum_ms": 182.16963300000043,
+                "percent_of_kernel_sum": 52.405468544434264
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 2120.0,
+                "kernel_sum_ms": 99.6692133333302,
+                "percent_of_kernel_sum": 28.672242119455397
+              },
+              "pallas_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 98.33846521549592,
+            "gpu_activity_percent_of_wall": 96.62857373744272,
+            "gpu_activity_union_ms": 345.904651333337,
+            "kernel_active_union_ms": 345.38625166666367,
+            "kernel_count": 3074.0,
+            "kernel_overlap_excess_ms": 2.2294420000000197,
+            "kernel_sum_ms": 347.61569366666373,
+            "memory_operation_sum_ms": 0.5183996666732468,
+            "no_recorded_gpu_activity_ms": 12.06881133332969,
+            "wall_ms": 357.97346266666665
+          }
+        },
+        {
+          "device": "/device:GPU:2",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 22.0,
+                "kernel_sum_ms": 9.598520333333504,
+                "percent_of_kernel_sum": 2.759083687822614
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 80.0,
+                "kernel_sum_ms": 59.5036266666667,
+                "percent_of_kernel_sum": 17.10424940520699
+              },
+              "gemm_unattributed": {
+                "kernel_count": 852.0,
+                "kernel_sum_ms": 179.02929266666627,
+                "percent_of_kernel_sum": 51.46176534352057
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 2120.0,
+                "kernel_sum_ms": 99.75653399999563,
+                "percent_of_kernel_sum": 28.674901563449836
+              },
+              "pallas_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 97.06474417831289,
+            "gpu_activity_percent_of_wall": 96.6420699892715,
+            "gpu_activity_union_ms": 345.9529643333387,
+            "kernel_active_union_ms": 345.43684299999677,
+            "kernel_count": 3074.0,
+            "kernel_overlap_excess_ms": 2.451130666665325,
+            "kernel_sum_ms": 347.88797366666205,
+            "memory_operation_sum_ms": 0.5161213333419364,
+            "no_recorded_gpu_activity_ms": 12.020498333328016,
+            "wall_ms": 357.97346266666665
+          }
+        },
+        {
+          "device": "/device:GPU:3",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 22.0,
+                "kernel_sum_ms": 7.636347333333416,
+                "percent_of_kernel_sum": 2.1965996835393478
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 80.0,
+                "kernel_sum_ms": 59.895153333333475,
+                "percent_of_kernel_sum": 17.2288751564827
+              },
+              "gemm_unattributed": {
+                "kernel_count": 852.0,
+                "kernel_sum_ms": 180.5036709999999,
+                "percent_of_kernel_sum": 51.921984332162744
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 2120.0,
+                "kernel_sum_ms": 99.60884333333019,
+                "percent_of_kernel_sum": 28.65254082781522
+              },
+              "pallas_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 97.62670769215839,
+            "gpu_activity_percent_of_wall": 96.63143847493646,
+            "gpu_activity_union_ms": 345.9149063333396,
+            "kernel_active_union_ms": 345.3987376666651,
+            "kernel_count": 3074.0,
+            "kernel_overlap_excess_ms": 2.245277333331857,
+            "kernel_sum_ms": 347.64401499999695,
+            "memory_operation_sum_ms": 0.5161686666746124,
+            "no_recorded_gpu_activity_ms": 12.058556333327004,
+            "wall_ms": 357.97346266666665
+          }
+        }
+      ],
+      "excluded_stream_events": {},
+      "step_annotation": "train",
+      "step_count": 3,
+      "trace_sha256": "dded808c42c883d99ba502dea4f548eea1a20f35f1b93199759f94a8a0520b09",
+      "trial_annotations": [
+        {
+          "degree": "softmax",
+          "device_count": "4",
+          "implementation": "fused"
+        }
+      ],
+      "raw_trace_retained": false
+    }
+  ],
+  "retention_note": "Per-device averages and trace hashes retained; raw traces and per-update kernel event lists removed after analysis."
+}

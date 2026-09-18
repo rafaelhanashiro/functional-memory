@@ -207,5 +207,8 @@
   "updated_utc": "2026-09-18T08:01:17.072248+00:00",
   "validation_nll": 2.7900009751319885,
   "validation_perplexity": 16.281035677939382,
-  "value_head_dim": 64
+  "value_head_dim": 64,
+  "retained_checkpoint_path": "experiments/polynomial_attention/checkpoints/200m-m002-seed0/19074",
+  "checkpoint_retention": "validation_best_only",
+  "retention_provenance": "results/polynomial_attention/provenance.json"
 }
