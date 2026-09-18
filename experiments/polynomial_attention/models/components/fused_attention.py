@@ -3,8 +3,9 @@
 Each Pallas/Triton program owns a query tile (forward/dQ) or a key tile
 (dK/dV). Only causal tiles are visited. Scores and polynomial values stay in
 registers/shared memory; neither pass materializes a sequence-square array.
-Unshifted Horner arithmetic, normalization, and accumulators are FP32. FP32
-matrix products explicitly use TF32x3, never single-TF32 or BF16 weights.
+Unshifted Horner arithmetic, normalization, and accumulators are FP32. Mixed
+FP32/BF16 products decompose the FP32 operand into three BF16 components;
+FP32/FP32 products use TF32x3. Weights are never rounded to a single BF16 value.
 The backward saves the *unrounded* FP32 output for the normalization derivative.
 """
 
@@ -20,12 +21,38 @@ from jax.experimental.pallas import triton as plt
 
 BLOCK_Q = 64
 BLOCK_K = 64
+NUM_WARPS = 4
+NUM_STAGES = 2
 _F32_DOT = lax.DotAlgorithmPreset.TF32_TF32_F32_X3
 
 
+def _bf16_components(value):
+    """Split FP32 into BF16 components without rounding the high part to inf.
+
+    Truncating each leading component leaves a same-sign residual. Three
+    components retain the FP32 significand away from BF16 underflow; products
+    and their sums still have ordinary FP32 accumulation error.
+    """
+    def truncate(operand):
+        bits = lax.bitcast_convert_type(operand, jnp.uint32)
+        return lax.bitcast_convert_type(bits & jnp.uint32(0xFFFF0000), jnp.float32)
+
+    high = truncate(value)
+    residual = value - high
+    middle = truncate(residual)
+    low = residual - middle
+    return high.astype(jnp.bfloat16), middle.astype(jnp.bfloat16), low.astype(jnp.bfloat16)
+
+
 def _dot(a, b):
-    precision = _F32_DOT if a.dtype == jnp.float32 else lax.Precision.HIGHEST
-    return pl.dot(a, b, precision=precision)
+    if a.dtype == jnp.float32 and b.dtype == jnp.bfloat16:
+        high, middle, low = _bf16_components(a)
+        return (pl.dot(high, b, precision=lax.Precision.HIGHEST)
+                + pl.dot(middle, b, precision=lax.Precision.HIGHEST)
+                + pl.dot(low, b, precision=lax.Precision.HIGHEST))
+    if a.dtype == b.dtype == jnp.bfloat16:
+        return pl.dot(a, b, precision=lax.Precision.HIGHEST)
+    return pl.dot(a.astype(jnp.float32), b.astype(jnp.float32), precision=_F32_DOT)
 
 
 def _polynomial(scores, degree):
@@ -73,7 +100,7 @@ def _forward_kernel(q_ref, k_ref, v_ref, out_ref, norm_ref, *, degree, time, dq,
         # sum(p(s)*V) when p(s), sum(p(s)), and the final output are finite.
         denominator = jnp.where(updated > 0, updated, 1.0)
         output = output * (normalizer / denominator)[:, None]
-        output += _dot(values / denominator[:, None], v.astype(jnp.float32))
+        output += _dot(values / denominator[:, None], v)
         return output, updated, invalid
 
     end = lax.div((pl.program_id(0) + 1) * block_q + block_k - 1, block_k)
@@ -90,10 +117,10 @@ def _dq_kernel(q_ref, k_ref, v_ref, do_ref, out_ref, norm_ref, dq_ref, *, degree
     qmask = (qi[:, None] < time) & (jnp.arange(q_ref.shape[-1])[None, :] < dq)
     vmask = (qi[:, None] < time) & (jnp.arange(do_ref.shape[-1])[None, :] < dv)
     q = plt.load(q_ref, mask=qmask, other=0)
-    do = plt.load(do_ref, mask=vmask, other=0).astype(jnp.float32)
+    do = plt.load(do_ref, mask=vmask, other=0)
     output = plt.load(out_ref, mask=vmask, other=0)
     normalizer = plt.load(norm_ref, mask=qi < time, other=1)
-    delta = jnp.sum(do * output, axis=1)
+    delta = jnp.sum(do.astype(jnp.float32) * output, axis=1)
 
     def body(tile, grad_q):
         ki = tile * block_k + jnp.arange(block_k)
@@ -101,9 +128,9 @@ def _dq_kernel(q_ref, k_ref, v_ref, do_ref, out_ref, norm_ref, dq_ref, *, degree
         scores = _dot(q, k.T) * (1.0 / math.sqrt(dq))
         causal = (qi[:, None] >= ki[None, :]) & (ki[None, :] < time)
         _, derivative = _polynomial_and_derivative(jnp.where(causal, scores, 0.0), degree)
-        dp = _dot(do, v.astype(jnp.float32).T) - delta[:, None]
+        dp = _dot(do, v.T) - delta[:, None]
         ds = jnp.where(causal, dp * (derivative / normalizer[:, None]), 0.0)
-        return grad_q + _dot(ds, k.astype(jnp.float32)) * (1.0 / math.sqrt(dq))
+        return grad_q + _dot(ds, k) * (1.0 / math.sqrt(dq))
 
     grad_q = jnp.zeros(q_ref.shape, jnp.float32)
     if degree:
@@ -117,17 +144,17 @@ def _dkv_kernel(q_ref, k_ref, v_ref, do_ref, out_ref, norm_ref, dk_ref, dv_ref, 
     kmask = (ki[:, None] < time) & (jnp.arange(k_ref.shape[-1])[None, :] < dq)
     vmask = (ki[:, None] < time) & (jnp.arange(v_ref.shape[-1])[None, :] < dv)
     k = plt.load(k_ref, mask=kmask, other=0)
-    v = plt.load(v_ref, mask=vmask, other=0).astype(jnp.float32)
+    v = plt.load(v_ref, mask=vmask, other=0)
     initial = (jnp.zeros(k_ref.shape, jnp.float32), jnp.zeros(v_ref.shape, jnp.float32))
 
     def body(tile, carry):
         grad_k, grad_v = carry
         qi = tile * block_q + jnp.arange(block_q)
         q = _load(q_ref, qi, dq, time)
-        do = _load(do_ref, qi, dv, time).astype(jnp.float32)
+        do = _load(do_ref, qi, dv, time)
         output = _load(out_ref, qi, dv, time)
         normalizer = plt.load(norm_ref.at[qi], mask=qi < time, other=1)
-        delta = jnp.sum(do * output, axis=1)
+        delta = jnp.sum(do.astype(jnp.float32) * output, axis=1)
         scores = _dot(q, k.T) * (1.0 / math.sqrt(dq))
         causal = (qi[:, None] >= ki[None, :]) & (qi[:, None] < time) & (ki[None, :] < time)
         values, derivative = _polynomial_and_derivative(jnp.where(causal, scores, 0.0), degree)
@@ -136,7 +163,7 @@ def _dkv_kernel(q_ref, k_ref, v_ref, do_ref, out_ref, norm_ref, dk_ref, dv_ref, 
         if degree:
             dp = _dot(do, v.T) - delta[:, None]
             ds = jnp.where(causal, dp * (derivative / normalizer[:, None]), 0.0)
-            grad_k += _dot(ds.T, q.astype(jnp.float32)) * (1.0 / math.sqrt(dq))
+            grad_k += _dot(ds.T, q) * (1.0 / math.sqrt(dq))
         return grad_k, grad_v
 
     start = lax.div(pl.program_id(0) * block_k, block_q)
@@ -160,7 +187,7 @@ def _norm_spec(tile):
 
 
 def _tile_sizes(dq, dv):
-    # Wider heads need smaller tiles to keep TF32x3 backward within H100 SRAM.
+    # Wider heads need smaller tiles to keep backward within H100 SRAM.
     return (BLOCK_Q, BLOCK_K) if max(dq, dv) <= 64 else (32, 32)
 
 
@@ -175,7 +202,7 @@ def _forward(q, k, v, degree):
         grid=(pl.cdiv(time, block_q), batch, heads),
         in_specs=(_spec(block_q, dq), _full_spec(time, dq), _full_spec(time, dv)),
         out_specs=(_spec(block_q, dv), _norm_spec(block_q)),
-        compiler_params=plt.CompilerParams(num_warps=4, num_stages=2),
+        compiler_params=plt.CompilerParams(num_warps=NUM_WARPS, num_stages=NUM_STAGES),
         name=f"taylor_{degree}_forward",
     )(q, k, v)
 
@@ -196,7 +223,7 @@ def _attention_bwd(degree, residuals, do):
     batch, time, heads, dq = q.shape
     dv = v.shape[-1]
     block_q, block_k = _tile_sizes(dq, dv)
-    params = plt.CompilerParams(num_warps=4, num_stages=2)
+    params = plt.CompilerParams(num_warps=NUM_WARPS, num_stages=NUM_STAGES)
     grad_q = pl.pallas_call(
         partial(_dq_kernel, degree=degree, time=time, dq=dq, dv=dv, block_q=block_q, block_k=block_k),
         out_shape=jax.ShapeDtypeStruct(q.shape, q.dtype),

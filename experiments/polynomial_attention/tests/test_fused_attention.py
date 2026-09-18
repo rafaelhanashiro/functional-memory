@@ -6,6 +6,7 @@ blocked reference uses the original training arithmetic, including BF16 casts.
 """
 
 from functools import partial
+import math
 
 import jax
 import jax.numpy as jnp
@@ -227,8 +228,9 @@ def test_invalid_causal_scores_or_kernel_poison_only_affected_rows(degree, bad_s
     assert bool(jnp.all(jnp.isnan(output[:, 2:])))
 
 
+@pytest.mark.parametrize("dtype", [jnp.float32, jnp.bfloat16])
 @pytest.mark.parametrize("degree,score_scale", [(2, 1e10), (4, 1e5), (8, 1e3), (16, 1e2)])
-def test_finite_large_kernel_and_values_do_not_overflow_numerator(degree, score_scale):
+def test_finite_large_kernel_and_values_do_not_overflow_numerator(degree, score_scale, dtype):
     # Each kernel and its row sum are finite, and the correct convex combination
     # of V is finite. Forming sum(kernel * V) before dividing would overflow FP32.
     # A one-dimensional query only rescales all scores; at large positive
@@ -237,11 +239,11 @@ def test_finite_large_kernel_and_values_do_not_overflow_numerator(degree, score_
     # transverse query derivative without changing the score magnitudes, so
     # strict relative VJP checks measure arithmetic accuracy rather than that
     # ill-conditioned cancellation.
-    q = jnp.tile(jnp.asarray([2.0 ** 0.5, 0.0], dtype=jnp.float32), (1, 3, 1, 1))
-    k = (jnp.asarray([[0.5, -0.25], [0.75, 0.5], [1.0, -0.75]], dtype=jnp.float32)
+    q = jnp.tile(jnp.asarray([2.0 ** 0.5, 0.0], dtype=dtype), (1, 3, 1, 1))
+    k = (jnp.asarray([[0.5, -0.25], [0.75, 0.5], [1.0, -0.75]], dtype=dtype)
          * score_scale)[None, :, None, :]
-    v = (jnp.asarray([[1.0, -2.0], [-3.0, 2.0], [2.0, 1.0]], dtype=jnp.float32) * 1e25)[None, :, None, :]
-    cotangent = jnp.asarray([[0.2, -0.3], [0.5, 0.1], [-0.4, 0.7]], dtype=jnp.float32)[None, :, None, :]
+    v = (jnp.asarray([[1.0, -2.0], [-3.0, 2.0], [2.0, 1.0]], dtype=dtype) * 1e25)[None, :, None, :]
+    cotangent = jnp.asarray([[0.2, -0.3], [0.5, 0.1], [-0.4, 0.7]], dtype=dtype)[None, :, None, :]
     with jax.default_matmul_precision("highest"):
         actual = _compiled_forward_and_vjp(partial(fused_polynomial_attention, attention_degree=degree))(
             (q, k, v), cotangent,
@@ -250,10 +252,14 @@ def test_finite_large_kernel_and_values_do_not_overflow_numerator(degree, score_
     dense64 = _fp64_forward_and_vjp((q, k, v), cotangent, degree)
     reference_dq = dense64[1][0]
     assert np.linalg.norm(reference_dq[..., 1]) >= 0.1 * np.linalg.norm(reference_dq)
-    _assert_relative(actual[0], blocked, rtol=3e-5, name=f"large finite kernel/V vs blocked, degree={degree}")
+    output_rtol = 0.006 if dtype == jnp.bfloat16 else 3e-5
+    gradient_rtol = 0.006 if dtype == jnp.bfloat16 else 1e-4
+    assert actual[0].dtype == dtype
+    assert all(grad.dtype == dtype for grad in actual[1])
+    _assert_relative(actual[0], blocked, rtol=output_rtol, name=f"large finite kernel/V vs blocked, degree={degree}")
     # The backward must form derivative/kernel_sum before multiplying by dP;
     # dP*derivative can overflow even when the correct q/k gradients are finite.
-    _assert_result(actual, dense64, output_rtol=3e-5, gradient_rtols=(1e-4,) * 3,
+    _assert_result(actual, dense64, output_rtol=output_rtol, gradient_rtols=(gradient_rtol,) * 3,
                    label=f"large finite kernel/V vs FP64, degree={degree}")
 
 
@@ -304,3 +310,80 @@ def test_model_fused_dispatch_retains_real_output_when_collecting_diagnostics(mo
     np.testing.assert_array_equal(plain, expected)
     np.testing.assert_array_equal(output, expected)
     assert float(observed_diagnostics["normalizer_min"]) == 7.0
+
+
+@pytest.mark.parametrize("degree", (2, 8, 16))
+def test_bf16_broad_scores_and_small_vjp_match_fp64(degree):
+    # Existing production-context tests use score standard deviation ~0.5.
+    # Increase this to ~12 to exercise many orders of polynomial weights and
+    # signed dS values across causal tile boundaries in the mixed-dot paths.
+    operands, cotangent = _inputs((1, 131, 2, 32, 17), dtype=jnp.bfloat16, seed=184)
+    q, k, v = operands
+    operands = (q * 5, k * 5, v * (2.0 ** 24))
+    cotangent = cotangent * (2.0 ** -20)
+    host_q, host_k = (np.asarray(x, dtype=np.float64) for x in operands[:2])
+    scores = np.einsum("bthd,bshd->bhts", host_q, host_k) / math.sqrt(q.shape[-1])
+    kernels = sum(scores ** order / math.factorial(order) for order in range(degree + 1))
+    causal_kernels = kernels[..., np.tril(np.ones((131, 131), dtype=bool))]
+    assert np.all(np.isfinite(causal_kernels) & (causal_kernels > 0))
+    assert causal_kernels.max() / causal_kernels.min() > (100 if degree == 2 else 1e6)
+    assert causal_kernels.max() * 131 < np.finfo(np.float32).max
+
+    actual = _compiled_forward_and_vjp(partial(fused_polynomial_attention, attention_degree=degree))(
+        operands, cotangent,
+    )
+    dense64 = _fp64_forward_and_vjp(operands, cotangent, degree)
+    assert actual[0].dtype == jnp.bfloat16
+    assert all(grad.dtype == jnp.bfloat16 for grad in actual[1])
+    # Independent FP64 checks allow final BF16 rounding, not FP32 score/weight
+    # rounding to a single BF16 value. The direct mixed-dot tests below resolve
+    # that distinction before the public API's final BF16 cast can obscure it.
+    _assert_result(actual, dense64, output_rtol=0.006, gradient_rtols=(0.006,) * 3,
+                   label=f"BF16 broad scores vs FP64, degree={degree}")
+    with jax.default_matmul_precision("highest"):
+        blocked = _compiled_forward_and_vjp(partial(
+            blocked_dot_product_attention, attention_degree=degree, query_block_size=32,
+        ))(operands, cotangent)
+    _assert_result(actual, blocked, output_rtol=0.006, gradient_rtols=(0.025, 0.025, 0.015),
+                   label=f"BF16 broad scores vs blocked, degree={degree}")
+
+
+@pytest.mark.parametrize("scale_case", ("ordinary", "balanced_exponents", "finite_fp32_limit"))
+def test_mixed_fp32_bf16_dot_preserves_fp32_mantissa_and_finite_range(scale_case):
+    from jax.experimental import pallas as pl
+    from jax.experimental.pallas import triton as plt
+    from experiments.polynomial_attention.models.components.fused_attention import _dot
+
+    rng = np.random.default_rng(185)
+    a = rng.uniform(-2, 2, (16, 64)).astype(np.float32)
+    b = rng.uniform(-2, 2, (64, 16)).astype(np.float32)
+    if scale_case == "balanced_exponents":
+        # Every product stays O(1), while each operand spans 180 exponent bits.
+        # This also keeps all three BF16 components above normal underflow.
+        exponents = np.linspace(-90, 90, 64).astype(np.int32)
+        a = np.ldexp(a, exponents[None, :]).astype(np.float32)
+        b = np.ldexp(b, -exponents[:, None]).astype(np.float32)
+    elif scale_case == "finite_fp32_limit":
+        # A nearest-BF16 cast rounds these finite FP32 values to infinity. A
+        # correct high-component truncation and residual split stays finite.
+        signs = rng.choice([-1.0, 1.0], size=a.shape)
+        a = (signs * float(np.finfo(np.float32).max)
+             * (1 - rng.uniform(0, 2.0 ** -11, a.shape))).astype(np.float32)
+        b = (rng.choice([-1.0, 1.0], size=b.shape)
+             * rng.uniform(0.5, 1.5, b.shape) * (2.0 ** -120)).astype(np.float32)
+    operand_a = jnp.asarray(a)
+    operand_b = jnp.asarray(b, dtype=jnp.bfloat16)
+    reference = a.astype(np.float64) @ np.asarray(operand_b, dtype=np.float64)
+
+    def kernel(a_ref, b_ref, output_ref):
+        output_ref[...] = _dot(a_ref[...], b_ref[...])
+
+    apply = pl.pallas_call(
+        kernel, grid=(), out_shape=jax.ShapeDtypeStruct((16, 16), jnp.float32),
+        compiler_params=plt.CompilerParams(num_warps=4, num_stages=1),
+        name=f"mixed_dot_precision_{scale_case}",
+    )
+    actual = jax.jit(apply)(operand_a, operand_b)
+    assert actual.dtype == jnp.float32
+    _assert_relative(actual[None, :, None, :], reference[None, :, None, :], rtol=2e-6,
+                     name=f"mixed FP32/BF16 dot, {scale_case}")

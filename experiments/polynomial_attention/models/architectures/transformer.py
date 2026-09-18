@@ -55,12 +55,14 @@ class Block(nnx.Module):
         rngs: nnx.Rngs | jax.Array | None = None,
         return_diagnostics: bool = False,
     ):
-        h = self.attention_norm(x)
-        result = self.attention(h, deterministic=deterministic, rngs=rngs, return_diagnostics=return_diagnostics)
+        with jax.named_scope("attention"):
+            h = self.attention_norm(x)
+            result = self.attention(h, deterministic=deterministic, rngs=rngs, return_diagnostics=return_diagnostics)
         h, diagnostics = result if return_diagnostics else (result, None)
         x = x + h
-        h = self.ffn_norm(x)
-        h = self.feed_forward(h)
+        with jax.named_scope("mlp"):
+            h = self.ffn_norm(x)
+            h = self.feed_forward(h)
         output = x + h
         return (output, diagnostics) if return_diagnostics else output
 
@@ -109,10 +111,11 @@ class TransformerLM(nnx.Module):
                 x = result
 
         x = self.final_norm(x)
-        if cfg.tie_embeddings:
-            logits = self.token_embedding.attend(x)
-        else:
-            if self.lm_head is None:
-                raise ValueError("lm_head is not initialized when tie_embeddings=False")
-            logits = self.lm_head(x)
+        with jax.named_scope("vocabulary_projection"):
+            if cfg.tie_embeddings:
+                logits = self.token_embedding.attend(x)
+            else:
+                if self.lm_head is None:
+                    raise ValueError("lm_head is not initialized when tie_embeddings=False")
+                logits = self.lm_head(x)
         return (logits, tuple(diagnostics)) if return_diagnostics else logits
