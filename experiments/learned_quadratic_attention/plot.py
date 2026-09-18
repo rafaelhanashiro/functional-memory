@@ -26,6 +26,10 @@ def summarize_run(run: dict, source_commit: str) -> tuple[dict, list[dict]]:
                negative_weight_fraction="", min_abs_normalizer="", cancellation_ratio_max="",
                score_min="", score_max="")
     if not run.get("retained_completed"):
+        if records:
+            # Match the learned training and retention policy on exact ties.
+            best = min(records, key=lambda record: (record["validation_nll"], -record["step"]))
+            row.update(best_step=best["step"], best_ppl=best["validation_perplexity"])
         completion_path = Path(run["workdir"]) / "completion.json"
         identities = records + ([json.loads(completion_path.read_text())] if completion_path.exists() else [])
         for record in identities:

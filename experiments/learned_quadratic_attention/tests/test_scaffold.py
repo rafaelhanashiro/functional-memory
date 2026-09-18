@@ -362,6 +362,20 @@ def test_correctness_or_infrastructure_failures_block_production(tmp_path, monke
     assert not preflight.eligible_runs(manifest)
 
 
+def test_learned_summary_best_step_matches_latest_tie_retention(tmp_path, monkeypatch):
+    from experiments.learned_quadratic_attention import plot
+
+    base, manifest = make_test_manifest(tmp_path)
+    run = manifest["runs"][0]
+    records = [{"step": step, "validation_nll": 2.0, "validation_perplexity": 7.4,
+                "quadratic_mode": run["quadratic_mode"], "quadratic_sharing": run["quadratic_sharing"]}
+               for step in (2, 4)]
+    monkeypatch.setattr(plot, "historical_summary", lambda *args: ({"best_step": 2}, records))
+    row, _ = plot.summarize_run(run, manifest["source_commit"])
+    assert row["best_step"] == 4
+    assert row["best_ppl"] == 7.4
+
+
 def test_report_has_six_labels_and_rejects_mislabeled_coefficients(tmp_path):
     from experiments.learned_quadratic_attention.plot import aggregate, summarize_run
     base, manifest = make_test_manifest(tmp_path)
