@@ -1,0 +1,19 @@
+{
+  "benchmark_path": "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention_train_step/benchmark.json",
+  "format": "polynomial-attention-training-benchmark-artifacts",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention_train_step/slurm-199623.out",
+  "slurm_job_id": "199623",
+  "source_commit": "3537262e5b84b5fb44c204e5e70ad767da46a109",
+  "source_sha256": {
+    "experiments/polynomial_attention/benchmark_attention.py": "eda9a6cdaffea7507f876f021f28571edbac029c8448ed6af6d3cdfe265cca3c",
+    "experiments/polynomial_attention/benchmark_train_step.py": "297b33567bc721857a195d37b92e9850c0e49095fee321efbda92643c834bece",
+    "experiments/polynomial_attention/configs/base.py": "d8f49f6974218b49e7c133fbfa900c8ca7df9877b2ad068726e5270ded426c75",
+    "experiments/polynomial_attention/models/architectures/transformer.py": "92355f4ad995a259b71cf207fb6bde15d7c6c7b6aa3f4faa00be11b331e506f1",
+    "experiments/polynomial_attention/models/components/attention.py": "1be81a96ecfd688f5b8d84932c03de907664a946223c131c0b8fd1aef6239dc2",
+    "experiments/polynomial_attention/models/components/fused_attention.py": "b6802f2b5b5eef9acaa7d09150108768f3831ab58022739612cfdb7d6caa3362",
+    "experiments/polynomial_attention/training/distributed.py": "ac40eeebc8a24062d25b2a75c6eee95ec77beb3123af31b8e63ef5d3322f017a",
+    "experiments/polynomial_attention/training/state.py": "754d3ade512c1a26f2a6d73e71d67863d29b536bbd2bdd28337fe9fff4a22ffb",
+    "experiments/polynomial_attention/uv.lock": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c"
+  },
+  "status": "complete"
+}

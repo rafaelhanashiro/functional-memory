@@ -1,0 +1,396 @@
+{
+  "completed_at_utc": "2026-09-18T03:43:34.697035+00:00",
+  "configuration": {
+    "accumulation_steps": 4,
+    "comparison": "fresh identical initial parameters and optimizer state for each trial; loss sequences are diagnostic, not gradient correctness proof",
+    "degrees": [
+      2,
+      16
+    ],
+    "device_count": 4,
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ],
+    "excluded": [
+      "compilation",
+      "input loading/transfers",
+      "validation",
+      "diagnostics",
+      "checkpointing"
+    ],
+    "global_batch_size": 256,
+    "global_micro_batch_size": 64,
+    "implementations": [
+      "blocked",
+      "fused"
+    ],
+    "input_distribution": "fixed independent uniform token IDs; same packed-shaped batch for every update",
+    "iterations": 10,
+    "local_micro_batch_size": 16,
+    "model_and_training_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "synthetic",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "blocked",
+        "attention_degree": 2,
+        "dropout": 0.0,
+        "hidden_size": 1024,
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 64,
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 2000,
+        "weight_decay": 0.1
+      },
+      "train": {
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "auto",
+        "wandb_entity": null,
+        "wandb_mode": "disabled",
+        "wandb_project": "functional-memory-polynomial-attention",
+        "wandb_run_name": "200m-softmax-seed0",
+        "workdir": "results/polynomial_attention/200m-softmax-seed0"
+      }
+    },
+    "timing": "existing compiled distributed forward/backward/accumulation/all-reduce/optimizer; complete state and loss synchronized",
+    "token_sha256": "1a0d1f7c35b40d2f9d21f6913eeaa6dc959bdac9803544326454f677fb3bb9f3",
+    "token_shape": [
+      4,
+      64,
+      2049
+    ],
+    "tokens_per_step": 524288,
+    "warmup": 3
+  },
+  "created_at_utc": "2026-09-18T03:41:18.626231+00:00",
+  "format": "polynomial-attention-train-step-benchmark",
+  "initialization": {
+    "initialized_once": true,
+    "optimizer_step": 0,
+    "parameter_count": 199906304,
+    "parameter_sha256": "01d61699c41fa41ec8a8abe29fd493eb17d901cde4ba385eecb8ce3c028b1be7",
+    "reusable_snapshot": "read-only NumPy copies of every parameter/optimizer/step array"
+  },
+  "provenance": {
+    "device": {
+      "description": "cuda:0",
+      "id": 0,
+      "kind": "NVIDIA H100 80GB HBM3",
+      "platform": "gpu",
+      "process_index": 0
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "199623",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": null
+    },
+    "hostname": "dogo.csail.mit.edu",
+    "package_versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda12-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cudnn-cu12": "9.22.0.52"
+    },
+    "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "source_commit": "3537262e5b84b5fb44c204e5e70ad767da46a109",
+    "source_dirty": false,
+    "source_sha256": {
+      "experiments/polynomial_attention/benchmark_attention.py": "eda9a6cdaffea7507f876f021f28571edbac029c8448ed6af6d3cdfe265cca3c",
+      "experiments/polynomial_attention/benchmark_train_step.py": "297b33567bc721857a195d37b92e9850c0e49095fee321efbda92643c834bece",
+      "experiments/polynomial_attention/configs/base.py": "d8f49f6974218b49e7c133fbfa900c8ca7df9877b2ad068726e5270ded426c75",
+      "experiments/polynomial_attention/models/architectures/transformer.py": "92355f4ad995a259b71cf207fb6bde15d7c6c7b6aa3f4faa00be11b331e506f1",
+      "experiments/polynomial_attention/models/components/attention.py": "1be81a96ecfd688f5b8d84932c03de907664a946223c131c0b8fd1aef6239dc2",
+      "experiments/polynomial_attention/models/components/fused_attention.py": "b6802f2b5b5eef9acaa7d09150108768f3831ab58022739612cfdb7d6caa3362",
+      "experiments/polynomial_attention/training/distributed.py": "ac40eeebc8a24062d25b2a75c6eee95ec77beb3123af31b8e63ef5d3322f017a",
+      "experiments/polynomial_attention/training/state.py": "754d3ade512c1a26f2a6d73e71d67863d29b536bbd2bdd28337fe9fff4a22ffb",
+      "experiments/polynomial_attention/uv.lock": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ]
+  },
+  "results": [
+    {
+      "degree": 2,
+      "implementations": {
+        "blocked": {
+          "final_optimizer_step": 13,
+          "first_warmup_including_compilation_seconds": 23.181007627863437,
+          "initial_loss": 10.872810363769531,
+          "losses": [
+            10.871793746948242,
+            10.870697975158691,
+            10.869258880615234,
+            10.867464065551758,
+            10.865297317504883,
+            10.862763404846191,
+            10.859877586364746,
+            10.85668659210205,
+            10.853092193603516,
+            10.84913444519043
+          ],
+          "max_ms": 1644.95105529204,
+          "median_ms": 1643.957878695801,
+          "min_ms": 1643.124535214156,
+          "p10_ms": 1643.471771897748,
+          "p90_ms": 1644.4535692222416,
+          "samples_ms": [
+            1643.9963541924953,
+            1644.95105529204,
+            1643.5103537514806,
+            1644.398292992264,
+            1643.124535214156,
+            1644.3396718241274,
+            1643.890012986958,
+            1643.9194031991065,
+            1643.737809266895,
+            1644.0599970519543
+          ],
+          "timed_iterations": 10,
+          "tokens_per_second_at_median": 318918.146744692,
+          "warmup_iterations": 3,
+          "warmup_losses": [
+            10.872810363769531,
+            10.872810363769531,
+            10.872498512268066
+          ],
+          "warmup_seconds": [
+            23.181007627863437,
+            1.6410373100079596,
+            1.645054546650499
+          ]
+        },
+        "fused": {
+          "final_optimizer_step": 13,
+          "first_warmup_including_compilation_seconds": 9.801424156874418,
+          "initial_loss": 10.872848510742188,
+          "losses": [
+            10.87179946899414,
+            10.870710372924805,
+            10.869282722473145,
+            10.867501258850098,
+            10.865310668945312,
+            10.86279582977295,
+            10.85991096496582,
+            10.856685638427734,
+            10.853092193603516,
+            10.849143981933594
+          ],
+          "max_ms": 939.6485919132829,
+          "median_ms": 937.2667390853167,
+          "min_ms": 935.2995562367141,
+          "p10_ms": 935.5160825885832,
+          "p90_ms": 939.4669766072184,
+          "samples_ms": [
+            938.3872128091753,
+            937.0317631401122,
+            939.4467971287668,
+            937.5017150305212,
+            935.2995562367141,
+            937.6404169015586,
+            939.6485919132829,
+            935.9292197041214,
+            935.5401410721242,
+            936.4890428259969
+          ],
+          "timed_iterations": 10,
+          "tokens_per_second_at_median": 559379.7135185393,
+          "warmup_iterations": 3,
+          "warmup_losses": [
+            10.872848510742188,
+            10.872848510742188,
+            10.872529029846191
+          ],
+          "warmup_seconds": [
+            9.801424156874418,
+            0.9367303070612252,
+            0.9353401870466769
+          ]
+        }
+      },
+      "loss_comparison": {
+        "initial_absolute_error": 3.814697265625e-05,
+        "max_timed_absolute_error": 3.719329833984375e-05,
+        "mean_timed_absolute_error": 1.6880035400390624e-05
+      },
+      "speedup_blocked_over_fused": 1.7539914841106468
+    },
+    {
+      "degree": 16,
+      "implementations": {
+        "blocked": {
+          "final_optimizer_step": 13,
+          "first_warmup_including_compilation_seconds": 12.8935411516577,
+          "initial_loss": 10.872211456298828,
+          "losses": [
+            10.871030807495117,
+            10.869800567626953,
+            10.868280410766602,
+            10.866291046142578,
+            10.863840103149414,
+            10.861062049865723,
+            10.857873916625977,
+            10.854280471801758,
+            10.850318908691406,
+            10.845958709716797
+          ],
+          "max_ms": 1925.5504431203008,
+          "median_ms": 1921.8762784730643,
+          "min_ms": 1920.4607931897044,
+          "p10_ms": 1920.8711761981249,
+          "p90_ms": 1924.690619111061,
+          "samples_ms": [
+            1922.0359669998288,
+            1924.5950831100345,
+            1925.5504431203008,
+            1921.9596749171615,
+            1921.5010949410498,
+            1922.544687986374,
+            1920.4607931897044,
+            1921.6674803756177,
+            1920.9167743101716,
+            1921.7928820289671
+          ],
+          "timed_iterations": 10,
+          "tokens_per_second_at_median": 272800.07869005395,
+          "warmup_iterations": 3,
+          "warmup_losses": [
+            10.872211456298828,
+            10.872211456298828,
+            10.871816635131836
+          ],
+          "warmup_seconds": [
+            12.8935411516577,
+            1.921052145306021,
+            1.9221834898926318
+          ]
+        },
+        "fused": {
+          "final_optimizer_step": 13,
+          "first_warmup_including_compilation_seconds": 11.214115856215358,
+          "initial_loss": 10.872207641601562,
+          "losses": [
+            10.871050834655762,
+            10.869831085205078,
+            10.868230819702148,
+            10.866231918334961,
+            10.863826751708984,
+            10.861064910888672,
+            10.857889175415039,
+            10.85429573059082,
+            10.850301742553711,
+            10.845928192138672
+          ],
+          "max_ms": 1233.9155972003937,
+          "median_ms": 1227.4482063949108,
+          "min_ms": 1224.2842568084598,
+          "p10_ms": 1225.0125612132251,
+          "p90_ms": 1229.556729691103,
+          "samples_ms": [
+            1233.9155972003937,
+            1225.2764981240034,
+            1226.7774622887373,
+            1227.9928768984973,
+            1227.1455200389028,
+            1229.0724110789597,
+            1225.0934839248657,
+            1224.2842568084598,
+            1228.7804149091244,
+            1227.7508927509189
+          ],
+          "timed_iterations": 10,
+          "tokens_per_second_at_median": 427136.5563683256,
+          "warmup_iterations": 3,
+          "warmup_losses": [
+            10.872207641601562,
+            10.872207641601562,
+            10.871807098388672
+          ],
+          "warmup_seconds": [
+            11.214115856215358,
+            1.2307337182573974,
+            1.2239707601256669
+          ]
+        }
+      },
+      "loss_comparison": {
+        "initial_absolute_error": 3.814697265625e-06,
+        "max_timed_absolute_error": 5.91278076171875e-05,
+        "mean_timed_absolute_error": 2.536773681640625e-05
+      },
+      "speedup_blocked_over_fused": 1.5657493884143026
+    }
+  ],
+  "schema_version": 1,
+  "status": "complete"
+}

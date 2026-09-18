@@ -94,6 +94,10 @@ validation, and checkpoint I/O. JSON reports include source hashes, hardware,
 raw timing samples, and numerical comparisons. Kernel memory figures are
 compiler buffer estimates, not measured allocator peaks.
 
+Recorded H100 measurements and correctness results are in the
+[kernel report](../../results/polynomial_attention_kernel/REPORT.md) and
+[four-GPU training report](../../results/polynomial_attention_train_step/REPORT.md).
+
 ## Environment and validation
 
 Run from the repository root:
