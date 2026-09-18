@@ -1,0 +1,2 @@
+# Preserve the exact bytes covered by each archive.json checksum.
+*.csv -text
