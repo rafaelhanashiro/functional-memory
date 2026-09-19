@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,7 +22,8 @@ RANK_METRICS = (
     ("energy_rank90", "Modes for 90% energy"),
     ("energy_rank99", "Modes for 99% energy"),
 )
-SCALAR_METRICS = tuple(key for key, _ in RANK_METRICS) + ("log_trace", "key_norms", "value_norms")
+REQUIRED_SCALAR_METRICS = tuple(key for key, _ in RANK_METRICS) + ("log_trace",)
+SCALAR_METRICS = REQUIRED_SCALAR_METRICS + ("key_norms", "value_norms")
 FIGURE_NAMES = ("token_metrics", "terminal_rank_depth", "normalized_spectra", "norm_energy_depth")
 PRETRAINED_COLOR = "#1f567d"
 RANDOM_COLOR = "#c16828"
@@ -38,10 +40,12 @@ class Condition:
 
 def _validate_arrays(name: str, arrays: dict[str, np.ndarray]) -> None:
     required = {"layers", "head_indices", "prefixes", "spectrum_prefixes", "token_ids",
-                "normalized_eigenvalues", *SCALAR_METRICS}
+                "normalized_eigenvalues", *REQUIRED_SCALAR_METRICS}
     missing = required - arrays.keys()
     if missing:
         raise ValueError(f"Complete condition {name!r} is missing arrays: {sorted(missing)}")
+    if ("key_norms" in arrays) != ("value_norms" in arrays):
+        raise ValueError(f"{name}: key/value norms must either both be present or both be omitted")
     for key in ("layers", "head_indices", "prefixes", "spectrum_prefixes"):
         values = arrays[key]
         if values.ndim != 1 or not values.size or not np.issubdtype(values.dtype, np.integer):
@@ -61,6 +65,8 @@ def _validate_arrays(name: str, arrays: dict[str, np.ndarray]) -> None:
         raise ValueError(f"{name}: token_ids must have shape [inputs, tokens]")
     scalar_shape = (len(layers), tokens.shape[0], len(prefixes), len(heads))
     for key in SCALAR_METRICS:
+        if key not in arrays:
+            continue
         values = arrays[key]
         if values.shape != scalar_shape:
             raise ValueError(f"{name}: {key} shape {values.shape} != {scalar_shape}")
@@ -106,11 +112,25 @@ def load_conditions(results: Path) -> tuple[dict, list[Condition], list[dict]]:
         path = directory / "metrics.npz"
         if not path.exists():
             raise ValueError(f"Complete condition {name!r} has no metrics.npz")
+        if manifest.get("identity"):
+            if metadata.get("identity") != manifest["identity"]:
+                raise ValueError(f"{name}: condition identity differs from its manifest")
+            if metadata.get("weights") != weights or metadata.get("seed") != seed:
+                raise ValueError(f"{name}: condition weights or seed differ from its manifest")
+            if not metadata.get("metrics_sha256"):
+                raise ValueError(f"{name}: complete condition has no archive checksum")
+        if metadata.get("metrics_sha256"):
+            with path.open("rb") as stream:
+                digest = hashlib.file_digest(stream, "sha256").hexdigest()
+            if digest != metadata["metrics_sha256"]:
+                raise ValueError(f"{name}: metrics archive checksum differs from its metadata")
         with np.load(path, allow_pickle=False) as archive:
             arrays = {key: archive[key] for key in archive.files}
         _validate_arrays(name, arrays)
         if conditions:
             reference = conditions[0].arrays
+            if ("key_norms" in arrays) != ("key_norms" in reference):
+                raise ValueError(f"{name}: norm availability differs across conditions")
             for key in ("layers", "head_indices", "prefixes", "spectrum_prefixes", "token_ids"):
                 if not np.array_equal(arrays[key], reference[key]):
                     raise ValueError(f"{name}: {key} differs from {conditions[0].name}; cannot compare")
@@ -123,9 +143,10 @@ def load_conditions(results: Path) -> tuple[dict, list[Condition], list[dict]]:
 def aggregate_condition(condition: Condition) -> dict[str, np.ndarray]:
     """Reduce input/head axes after computing each head's scientific metric."""
     arrays = condition.arrays
-    curves = {key: arrays[key].mean(axis=(1, 3)) for key in SCALAR_METRICS}
-    curves["key_l2_rms"] = np.sqrt(np.square(arrays["key_norms"]).mean(axis=(1, 3)))
-    curves["value_l2_rms"] = np.sqrt(np.square(arrays["value_norms"]).mean(axis=(1, 3)))
+    curves = {key: arrays[key].mean(axis=(1, 3)) for key in SCALAR_METRICS if key in arrays}
+    for kind in ("key", "value"):
+        if f"{kind}_norms" in arrays:
+            curves[f"{kind}_l2_rms"] = np.sqrt(np.square(arrays[f"{kind}_norms"]).mean(axis=(1, 3)))
     eigenvalues = arrays["normalized_eigenvalues"]
     relative = np.divide(eigenvalues, eigenvalues[..., :1], out=np.zeros_like(eigenvalues),
                          where=eigenvalues[..., :1] > 0)
@@ -143,9 +164,11 @@ def summary_rows(conditions: list[Condition]) -> list[dict]:
                    "layer": int(layer), "terminal_prefix": int(arrays["prefixes"][-1]),
                    "inputs": int(arrays["token_ids"].shape[0]), "heads": int(len(arrays["head_indices"]))}
             for key in SCALAR_METRICS:
-                row[f"final_{key}_mean"] = float(curves[key][index, -1])
+                if key in curves:
+                    row[f"final_{key}_mean"] = float(curves[key][index, -1])
             for key in ("key_l2_rms", "value_l2_rms"):
-                row[f"final_{key}"] = float(curves[key][index, -1])
+                if key in curves:
+                    row[f"final_{key}"] = float(curves[key][index, -1])
             rows.append(row)
     return rows
 
@@ -231,22 +254,26 @@ def _plot_figures(results: Path, conditions: list[Condition], comparison_layer: 
         _save_figure(figure, results, "normalized_spectra")
         plt.close(figure)
 
-        figure, axes = plt.subplots(1, 3, figsize=(11, 3.5), constrained_layout=True)
-        for axis, metric, label in zip(axes, ("key_l2_rms", "value_l2_rms", "log_trace"),
-                                      ("Key L2 norm (RMS)", "Value L2 norm (RMS)", "Mean log₁₀ state energy"), strict=True):
+        panels = [("log_trace", "Mean log₁₀ state energy")]
+        if "key_norms" in arrays:
+            panels = [("key_l2_rms", "Key L2 norm (RMS)"), ("value_l2_rms", "Value L2 norm (RMS)")] + panels
+        figure, axes = plt.subplots(1, len(panels), figsize=(4 * len(panels), 3.5), constrained_layout=True, squeeze=False)
+        for axis, (metric, label) in zip(axes.flat, panels, strict=True):
             values = {name: values[metric][:, -1] for name, values in curves.items()}
             if metric == "log_trace":
                 values = {name: value / np.log(10.) for name, value in values.items()}
             _plot_comparison(axis, layers, conditions, values)
             axis.set(xlabel="Layer index (zero based)", ylabel=label)
-        axes[0].legend(loc="best", frameon=False)
-        figure.suptitle(f"Norms at token {prefixes[-1]} and cumulative state energy")
+        axes.flat[0].legend(loc="best", frameon=False)
+        figure.suptitle(f"State energy at token {prefixes[-1]}" if len(panels) == 1 else
+                       f"Norms at token {prefixes[-1]} and cumulative state energy")
         _save_figure(figure, results, "norm_energy_depth")
         plt.close(figure)
 
 
 def _write_readme(results, manifest, conditions, statuses, comparison_layer):
     config = manifest.get("config", {})
+    has_norms = bool(conditions and "key_norms" in conditions[0].arrays)
     random_count = sum(condition.weights == "random" for condition in conditions)
     lines = ["# Pretrained versus random-weight state rank", "",
              f"Complete conditions: {len(conditions)}/{len(statuses)}; completed random seeds: {random_count}.", "",
@@ -257,11 +284,11 @@ def _write_readme(results, manifest, conditions, statuses, comparison_layer):
     if conditions:
         arrays = conditions[0].arrays
         lines += ["", f"Figures and `summary.csv` include complete conditions only. All included conditions use identical token IDs, layer indices, head indices, and saved spectrum prefixes.",
-                  f"There are {arrays['token_ids'].shape[0]} fixed inputs, {len(arrays['prefixes'])} tokens per input, {len(arrays['head_indices'])} KV heads, and {len(arrays['layers'])} measured layers. Layers use zero-based indices. Token and spectrum panels show layer index {comparison_layer}.", "",
+                  f"There are {arrays['token_ids'].shape[0]} fixed inputs, {len(arrays['prefixes'])} tokens per input, {len(arrays['head_indices'])} state heads, and {len(arrays['layers'])} measured layers. Layers use zero-based indices. Token and spectrum panels show layer index {comparison_layer}.", "",
                   "- `token_metrics.{png,pdf}`: four rank metrics at every prefix.",
                   "- `terminal_rank_depth.{png,pdf}`: terminal rank metrics across layers.",
                   "- `normalized_spectra.{png,pdf}`: relative singular spectra at saved prefixes.",
-                  "- `norm_energy_depth.{png,pdf}`: terminal-token key/value norms and terminal cumulative state energy.",
+                  "- `norm_energy_depth.{png,pdf}`: " + ("terminal-token key/value norms and " if has_norms else "") + "terminal state energy.",
                   "- `summary.csv`: one row per complete condition and layer; terminal metrics retain full numerical precision."]
     else:
         lines += ["", "No complete measurements are available yet. Figures will be produced once a condition is complete."]
@@ -275,10 +302,14 @@ def _write_readme(results, manifest, conditions, statuses, comparison_layer):
               "Participation ratio is (sum(sigma²))² / sum(sigma⁴). The 90% and 99% energy ranks count the minimum number of descending modes whose squared singular values reach the respective energy fraction.", "",
               "Rank metrics are computed for each input/head state first, then averaged equally over inputs and heads. We never compute a rank from an averaged spectrum. Each faint random curve is one seed's input/head aggregate; the solid random curve is the equal-weight mean over completed seeds, and shading is the minimum–maximum range of those seed aggregates. It is a descriptive range, not a confidence interval. Inputs and heads are not treated as independent experimental replications, and corresponding pretrained/random heads are not assumed to be matched.", "",
               "For each saved input/head state, relative singular values are computed as sqrt(lambda_i / lambda_1) from the normalized eigenvalues, and only then averaged over inputs and heads. A zero state contributes zeros. Spectral values below 10⁻⁶ are clipped only for logarithmic display; saved measurements and CSV values are unchanged.", "",
-              "Key/value norm panels show sqrt(mean(||vector||₂²)) across inputs and heads at the terminal token. These are RMS vector norms, not per-component RMS and not averages across all token positions. The energy panel averages log(trace(B)) over input/head states, then converts to base 10; it is not log of the arithmetic mean energy. Zero state energy is represented by negative infinity.", "",
+              (("Key/value norm panels show sqrt(mean(||vector||₂²)) across inputs and heads at the terminal token. These are RMS vector norms, not per-component RMS and not averages across all token positions. " if has_norms else "Key/value vector norms were not collected for this native recurrent-state diagnostic. ") + "The energy panel averages the natural log of squared state Frobenius norm over input/head states, then converts to base 10; it is not log of the arithmetic mean energy. Zero state energy is represented by negative infinity."), "",
               "This is a descriptive diagnostic on a fixed, small set of inputs. The pretrained model is one checkpoint, while random weights are independent initialization seeds of the same architecture; seed ranges do not measure pretrained uncertainty. Matching the inputs and architecture isolates this comparison but does not identify a causal contribution of an individual head or establish generalization to other texts, checkpoints, model sizes, or training recipes. No language-model quality claim follows from state rank alone."]
     if config.get("model_id"):
         lines += ["", f"Model: `{config['model_id']}`; revision: `{config.get('model_revision', 'unspecified')}`."]
+    if manifest.get("state_definition"):
+        lines += ["", f"Measured state: {manifest['state_definition']}."]
+    if manifest.get("initialization"):
+        lines += ["", f"Random initialization: {manifest['initialization']}."]
     lines += ["", "Resolved configuration and planned conditions are in `manifest.json`; condition-specific seeds, source commits, and execution metadata are in each condition's `metadata.json`. Incomplete conditions remain visible in the status table and do not enter aggregates."]
     (results / "README.md").write_text("\n".join(lines) + "\n")
 
@@ -287,8 +318,12 @@ def plot_comparison(results: str | Path) -> dict:
     results = Path(results).expanduser().resolve()
     manifest, conditions, statuses = load_conditions(results)
     rows = summary_rows(conditions)
+    metrics = (tuple(key for key in SCALAR_METRICS if key in conditions[0].arrays)
+               if conditions else REQUIRED_SCALAR_METRICS)
     fields = ["condition", "weights", "seed", "layer", "terminal_prefix", "inputs", "heads",
-              *(f"final_{key}_mean" for key in SCALAR_METRICS), "final_key_l2_rms", "final_value_l2_rms"]
+              *(f"final_{key}_mean" for key in metrics)]
+    if "key_norms" in metrics:
+        fields += ["final_key_l2_rms", "final_value_l2_rms"]
     with (results / "summary.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()

@@ -48,6 +48,49 @@ def build_random_llama(config: PretrainedConfig, seed: int) -> torch.nn.Module:
     return model.eval()
 
 
+
+def build_random_gated_deltanet(config: PretrainedConfig, seed: int) -> torch.nn.Module:
+    """Build the pinned FLA Gated DeltaNet reference initialization on CPU.
+
+    FLA's normal ``post_init`` path initializes Linear, Conv1d, and Embedding
+    weights with ``config.initializer_range`` and initializes normalization
+    scales to one. Its special decay/time-step parameters keep their reference
+    distributions: exp(A_log) is uniform on [0, 16), and softplus(dt_bias) is
+    log-uniform on [0.001, 0.1]. Do not overwrite these with generic normal draws
+    or apply an additional initialization pass. Historical unused D parameters
+    are absent from the pinned implementation.
+
+    Parameters are drawn directly in FP32 on CPU, under an isolated CPU RNG.
+    The caller's configuration and defaults are preserved; the returned eval
+    model selects native fused_recurrent inference (which requires a GPU).
+    """
+    if isinstance(seed, bool) or not isinstance(seed, int) or not 0 <= seed < 2**64:
+        raise ValueError("seed must be a nonnegative integer smaller than 2**64")
+    if getattr(config, "model_type", None) != "gated_deltanet":
+        raise ValueError("build_random_gated_deltanet requires a GatedDeltaNet configuration")
+
+    random_config = deepcopy(config)
+    random_config.attn_mode = "fused_recurrent"
+    random_config.dtype = torch.float32
+    previous_dtype = torch.get_default_dtype()
+    try:
+        with torch.random.fork_rng(devices=[]), torch.device("cpu"):
+            torch.set_default_dtype(torch.float32)
+            # Register the installed, revision-pinned FLA class with AutoModel.
+            # Keep this lazy so Llama-only callers do not import GPU kernel code.
+            import fla.models.gated_deltanet  # noqa: F401
+
+            torch.random.default_generator.manual_seed(seed)
+            model = AutoModel.from_config(random_config, dtype=torch.float32)
+    finally:
+        torch.set_default_dtype(previous_dtype)
+
+    if any(parameter.device.type != "cpu" or parameter.dtype != torch.float32
+           for parameter in model.parameters()):
+        raise RuntimeError("Random model initialization must produce CPU FP32 parameters")
+    return model.eval()
+
+
 def parameter_fingerprint(model: torch.nn.Module) -> str:
     """SHA256 of parameter registration order, names, shapes, dtypes, and bytes.
 

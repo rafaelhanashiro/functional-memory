@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import json
 from pathlib import Path
 
@@ -140,3 +141,55 @@ def test_random_band_represents_seed_means_and_pretrained_is_separate():
             assert (y.min(), y.max()) == expected
     finally:
         plt.close(figure)
+
+
+def test_native_recurrent_states_plot_without_fabricating_vector_norms(tmp_path):
+    make_manifest(tmp_path, [{"name": "pretrained", "weights": "pretrained", "seed": None}])
+    arrays = fixture_arrays()
+    arrays.pop("key_norms")
+    arrays.pop("value_norms")
+    write_condition(tmp_path, "pretrained", arrays=arrays)
+    result = plot_comparison(tmp_path)
+    assert result["summary_rows"] == 2
+    with (tmp_path / "summary.csv").open() as stream:
+        rows = list(csv.DictReader(stream))
+    assert "final_log_trace_mean" in rows[0]
+    assert not any("key" in key or "value_l2" in key for key in rows[0])
+    assert "vector norms were not collected" in (tmp_path / "README.md").read_text()
+    for name in FIGURE_NAMES:
+        assert (tmp_path / f"{name}.png").is_file()
+
+
+def test_comparison_rejects_inconsistent_optional_norms(tmp_path):
+    make_manifest(tmp_path, [
+        {"name": "pretrained", "weights": "pretrained", "seed": None},
+        {"name": "random-seed0", "weights": "random", "seed": 0},
+    ])
+    write_condition(tmp_path, "pretrained")
+    arrays = fixture_arrays()
+    arrays.pop("key_norms")
+    write_condition(tmp_path, "random-seed0", arrays=arrays)
+    with pytest.raises(ValueError, match="both be present"):
+        load_conditions(tmp_path)
+    arrays.pop("value_norms")
+    np.savez_compressed(tmp_path / "random-seed0/metrics.npz", **arrays)
+    with pytest.raises(ValueError, match="norm availability differs"):
+        load_conditions(tmp_path)
+
+
+def test_completed_archive_provenance_and_checksum_are_verified(tmp_path):
+    entries = [{"name": "pretrained", "weights": "pretrained", "seed": None}]
+    manifest = make_manifest(tmp_path, entries)
+    manifest["identity"] = "fixed-identity"
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest))
+    write_condition(tmp_path, "pretrained")
+    path = tmp_path / "pretrained/metadata.json"
+    metadata = {"status": "complete", "identity": manifest["identity"], "weights": "pretrained", "seed": None,
+                "metrics_sha256": hashlib.sha256((tmp_path / "pretrained/metrics.npz").read_bytes()).hexdigest()}
+    path.write_text(json.dumps(metadata))
+    assert len(load_conditions(tmp_path)[1]) == 1
+    for field, value, message in (("identity", "wrong", "identity"), ("seed", 2, "seed"),
+                                  ("metrics_sha256", "wrong", "checksum")):
+        path.write_text(json.dumps({**metadata, field: value}))
+        with pytest.raises(ValueError, match=message):
+            load_conditions(tmp_path)

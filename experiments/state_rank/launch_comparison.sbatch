@@ -15,6 +15,11 @@ PROJECT_ROOT="${2:?Expected retained project root}"
 MANIFEST="${3:?Expected comparison manifest}"
 CONDITION="${4:?Expected comparison condition}"
 EXPECTED_COMMIT="${5:?Expected frozen source commit}"
+DRIVER="${6:-compare_random}"
+case "$DRIVER" in
+  compare_random|compare_deltanet) ;;
+  *) echo "Unsupported comparison driver: $DRIVER" >&2; exit 1 ;;
+esac
 cd "$EXECUTION_ROOT"
 if [[ "$(git rev-parse HEAD)" != "$EXPECTED_COMMIT" ]] || [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
   echo "Frozen execution checkout changed; refusing to run: $EXECUTION_ROOT" >&2
@@ -28,5 +33,11 @@ export MPLBACKEND=Agg
 export PYTHONUNBUFFERED=1
 PYTHON="${PROJECT_ROOT}/.venv/bin/python"
 echo "condition=$CONDITION source=$EXPECTED_COMMIT job=$SLURM_JOB_ID restart=${SLURM_RESTART_COUNT:-0}"
-"$PYTHON" -m experiments.state_rank.compare_random --manifest "$MANIFEST" --condition "$CONDITION" --require-cuda
+if [[ "$DRIVER" == compare_deltanet && "$CONDITION" == pretrained ]]; then
+  "$PYTHON" -m pytest -q -p no:cacheprovider \
+    experiments/state_rank/tests/test_spectrum.py::test_native_gated_delta_rule_matches_explicit_recurrence \
+    experiments/state_rank/tests/test_spectrum.py::test_tiny_gdn_cached_states_match_independent_prefixes \
+    experiments/state_rank/tests/test_deltanet_states.py::test_native_all_layer_states_match_existing_spectra_and_prefix_checks
+fi
+"$PYTHON" -m "experiments.state_rank.$DRIVER" --manifest "$MANIFEST" --condition "$CONDITION" --require-cuda
 "$PYTHON" -m experiments.state_rank.plot_comparison --results "$(dirname "$MANIFEST")"

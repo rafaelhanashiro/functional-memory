@@ -151,3 +151,30 @@ def test_rejects_unparseable_scheduler_response(launch_fixture, monkeypatch):
     with pytest.raises(RuntimeError, match="Unexpected sbatch output"):
         launch_comparison.submit(path)
     assert json.loads(path.read_text())["jobs"] == {}
+
+
+def test_deltanet_routes_driver_and_keeps_distinct_logs(launch_fixture, monkeypatch):
+    path, manifest, _, _, submissions = launch_fixture
+    manifest["experiment"] = "state_rank/random_vs_pretrained_deltanet"
+    path.write_text(json.dumps(manifest))
+
+    def fake_sbatch(command, **kwargs):
+        assert command[-1] == "compare_deltanet"
+        assert "--cpus-per-task=8" in command
+        assert "--time=02:00:00" in command
+        output = next(part for part in command if part.startswith("--output="))
+        assert "/results/logs/state_rank/random_vs_pretrained_deltanet/" in output
+        submissions.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout=f"{1300 + len(submissions)}\n", stderr="")
+
+    monkeypatch.setattr(launch_comparison.subprocess, "run", fake_sbatch)
+    result = launch_comparison.submit(path)
+    assert len(result["jobs"]) == 6
+
+
+def test_unknown_experiment_cannot_redirect_log_directory(launch_fixture):
+    path, manifest, _, _, _ = launch_fixture
+    manifest["experiment"] = "../../unexpected"
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="Unsupported comparison"):
+        launch_comparison.submit(path)
