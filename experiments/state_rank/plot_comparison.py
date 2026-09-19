@@ -198,6 +198,10 @@ def _plot_comparison(axis, x, conditions, values, *, positive_floor=None):
 
 
 def _save_figure(figure, results: Path, name: str) -> None:
+    # Resolve constrained layout once, then keep PNG/PDF tight-bbox exports from
+    # independently moving axes after their bounding boxes have been measured.
+    figure.canvas.draw()
+    figure.set_layout_engine("none")
     for extension in ("png", "pdf"):
         figure.savefig(results / f"{name}.{extension}", dpi=180, bbox_inches="tight")
 
