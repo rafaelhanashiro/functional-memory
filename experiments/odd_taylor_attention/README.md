@@ -44,6 +44,11 @@ infrastructure failures block production. Runtime estimates include evaluation,
 checkpointing, three startup allowances, and 10% headroom against the eight-hour
 allocation limit.
 
+CPU checks have separate mandatory gates: ordinary attention/training tests run
+without distributed tests, and distributed accumulation tests run in a fresh
+process with two forced CPU devices. Every gate rejects failures or skipped
+tests; distributed tests require both degree variants to execute.
+
 Each production job first trains to update 5,000 with the full 19,074-update
 schedule and unchanged validation cadence. It writes `stability_stage.json`,
 requires finite committed step-5,000 validation, then independently restores and

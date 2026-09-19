@@ -345,6 +345,50 @@ def test_numeric_pilot_failure_does_not_suppress_other_variants(tmp_path, monkey
         preflight.run_preflight(manifest, check_only=True, run_name=rejected)
 
 
+def test_cpu_and_distributed_preflight_route_tests_without_skipping(tmp_path, monkeypatch):
+    base, manifest = make_test_manifest(tmp_path)
+    sweep.prepare_sweep(manifest, base)
+    mock_preflight_workers(monkeypatch, manifest)
+    calls, minimums = {}, {}
+    real_require = preflight.require_passing_tests
+    monkeypatch.setenv("XLA_FLAGS", "--xla_existing_fixture_flag=true")
+
+    def pytest_command(command, **kwargs):
+        junit = Path(next(value.removeprefix("--junitxml=") for value in command if value.startswith("--junitxml=")))
+        stage = junit.stem
+        calls[stage] = command, kwargs
+        count = 2 if stage == "attention-distributed-cpu" else 4
+        junit.write_text('<testsuite>' + '<testcase name="check"/>' * count + '</testsuite>')
+
+    def require(junit, minimum):
+        minimums[junit.stem] = minimum
+        return real_require(junit, minimum)
+
+    monkeypatch.setattr(preflight.subprocess, "run", pytest_command)
+    monkeypatch.setattr(preflight, "require_passing_tests", require)
+    preflight.run_preflight(manifest)
+    assert minimums == {"attention-cpu": 4, "attention-distributed-cpu": 2, "attention-fused-gpu": 4}
+    assert set(preflight.SHARED_CHECKS) == {*minimums, "initialization"}
+    command, options = calls["attention-cpu"]
+    assert command[command.index("-k") + 1] == "not distributed"
+    assert command[command.index("-m", 3) + 1] == "not gpu"
+    assert options["env"]["JAX_PLATFORMS"] == "cpu"
+    assert options["env"]["XLA_FLAGS"] == "--xla_existing_fixture_flag=true"
+    assert [Path(arg).name for arg in command if arg.endswith(".py")] == ["test_odd_attention.py", "test_odd_training.py"]
+    command, options = calls["attention-distributed-cpu"]
+    assert command[command.index("-k") + 1] == "distributed"
+    assert options["env"]["JAX_PLATFORMS"] == "cpu"
+    assert options["env"]["XLA_FLAGS"] == "--xla_force_host_platform_device_count=2"
+    assert [Path(arg).name for arg in command if arg.endswith(".py")] == ["test_odd_training.py"]
+    command, options = calls["attention-fused-gpu"]
+    assert "-k" not in command
+    assert command[command.index("-m", 3) + 1] == "gpu"
+    assert options["env"]["JAX_PLATFORMS"] == "cuda"
+    assert options["env"]["XLA_FLAGS"] == "--xla_existing_fixture_flag=true"
+    assert [Path(arg).name for arg in command if arg.endswith(".py")] == ["test_odd_attention.py"]
+    assert all(options["check"] and options["cwd"] == manifest["execution_root"] for _, options in calls.values())
+
+
 @pytest.mark.parametrize("wrong_resume,infrastructure", [(True, False), (False, True)])
 def test_correctness_or_infrastructure_failures_block_production(tmp_path, monkeypatch, wrong_resume, infrastructure):
     base, manifest = make_test_manifest(tmp_path)

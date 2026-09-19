@@ -21,7 +21,7 @@ from experiments.odd_taylor_attention.sweep import (
     scientific_recipe, scheduler_profile, sha256, validate_control,
 )
 
-SHARED_CHECKS = ("attention-cpu", "attention-fused-gpu", "initialization")
+SHARED_CHECKS = ("attention-cpu", "attention-distributed-cpu", "attention-fused-gpu", "initialization")
 
 
 class NumericalPilotFailure(RuntimeError):
@@ -241,22 +241,25 @@ def run_preflight(manifest: dict, *, check_only: bool = False, check_hardware: b
             return
         if check_only:
             raise RuntimeError("This sweep has no successful matching complete preflight")
-        for stage, test_file, cpu in (
-            ("attention-cpu", "test_odd_attention.py", True),
-            ("attention-fused-gpu", "test_odd_attention.py", False),
+        for stage, test_files, cpu, selection, minimum_tests in (
+            ("attention-cpu", ("test_odd_attention.py", "test_odd_training.py"), True,
+             ("-m", "not gpu", "-k", "not distributed"), 4),
+            ("attention-distributed-cpu", ("test_odd_training.py",), True,
+             ("-m", "not gpu", "-k", "distributed"), 2),
+            ("attention-fused-gpu", ("test_odd_attention.py",), False, ("-m", "gpu"), 4),
         ):
             check_path = root / "checks" / f"{stage}.json"
             if passed_check(check_path, manifest["identity"]):
                 continue
             junit = attempt / f"{stage}.xml"
-            test_paths = [f"experiments/polynomial_attention/tests/{test_file}"]
-            if cpu:
-                test_paths.append("experiments/polynomial_attention/tests/test_odd_training.py")
+            test_paths = [f"experiments/polynomial_attention/tests/{test_file}" for test_file in test_files]
+            environment = dict(os.environ, JAX_PLATFORMS="cpu" if cpu else "cuda")
+            if stage == "attention-distributed-cpu":
+                environment["XLA_FLAGS"] = "--xla_force_host_platform_device_count=2"
             subprocess.run([sys.executable, "-m", "pytest", "-c", "experiments/polynomial_attention/pyproject.toml",
-                            *test_paths, "-q",
-                            "-m", "not gpu" if cpu else "gpu", f"--junitxml={junit}"],
-                           cwd=manifest["execution_root"], env=dict(os.environ, JAX_PLATFORMS="cpu" if cpu else "cuda"), check=True)
-            record_success(check_path, manifest, tests_passed=require_passing_tests(junit, 4), junit_path=str(junit))
+                            *test_paths, "-q", *selection, f"--junitxml={junit}"],
+                           cwd=manifest["execution_root"], env=environment, check=True)
+            record_success(check_path, manifest, tests_passed=require_passing_tests(junit, minimum_tests), junit_path=str(junit))
         stage = "initialization"
         path = root / "checks/initialization.json"
         if not passed_check(path, manifest["identity"]):
