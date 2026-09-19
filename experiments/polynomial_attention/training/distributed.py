@@ -13,7 +13,7 @@ from jax.sharding import Mesh, NamedSharding, PartitionSpec as P
 from experiments.polynomial_attention.configs import Config
 from experiments.polynomial_attention.training.randomness import model_forward_rngs
 from experiments.polynomial_attention.training.state import TrainState
-from experiments.polynomial_attention.training.numerics import checked_update_loss
+from experiments.polynomial_attention.training.numerics import checked_update_loss, update_numerics
 
 
 DATA_AXIS = "data"
@@ -130,6 +130,7 @@ def fold_in_data_parallel_rng(
 def make_data_parallel_functions(
     state: TrainState,
     devices: Sequence[jax.Device],
+    *, check_all_gradients: bool = False,
 ) -> DataParallelFunctions:
     if len(devices) < 2:
         raise ValueError("Data-parallel functions require at least two devices")
@@ -192,7 +193,11 @@ def make_data_parallel_functions(
         global_loss = jax.lax.pmean(local_loss, DATA_AXIS)
         global_grads = jax.lax.pmean(local_grads, DATA_AXIS)
         updated = current_state.apply_gradients(grads=global_grads)
-        return updated, checked_update_loss(current_state.params, global_grads, updated.params, global_loss)
+        checked_loss = checked_update_loss(current_state.params, global_grads, updated.params, global_loss,
+                                          check_all_gradients=check_all_gradients)
+        if check_all_gradients:
+            return updated, checked_loss, update_numerics(global_grads, updated.params, global_loss)
+        return updated, checked_loss
 
     def local_eval_step(
         current_state: TrainState,
@@ -217,7 +222,7 @@ def make_data_parallel_functions(
         local_train_step,
         mesh=mesh,
         in_specs=(P(), P(None, DATA_AXIS, None), P()),
-        out_specs=(P(), P()),
+        out_specs=(P(), P(), P()) if check_all_gradients else (P(), P()),
         # cuDNN attention's custom VJP does not currently preserve shard_map's
         # explicit varying-axis annotation even though its values are correctly
         # local to each data shard. The explicit pmean above establishes the
@@ -234,7 +239,7 @@ def make_data_parallel_functions(
     compiled_train_step = jax.jit(
         mapped_train_step,
         in_shardings=(replicated, train_batch_sharding, replicated),
-        out_shardings=(replicated, replicated),
+        out_shardings=(replicated, replicated, replicated) if check_all_gradients else (replicated, replicated),
         donate_argnums=(0,),
     )
     compiled_eval_step = jax.jit(

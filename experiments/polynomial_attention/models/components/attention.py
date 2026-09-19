@@ -19,9 +19,8 @@ def _validate_degree(attention_degree: int | None) -> None:
         isinstance(attention_degree, bool)
         or not isinstance(attention_degree, int)
         or attention_degree < 0
-        or attention_degree % 2
     ):
-        raise ValueError("attention_degree must be None or a nonnegative even integer")
+        raise ValueError("attention_degree must be None or a nonnegative integer")
 
 
 def _taylor_polynomial(scores: jax.Array, degree: int) -> jax.Array:
@@ -61,9 +60,9 @@ def blocked_dot_product_attention(
     the [batch, heads, query_block, time] intermediates for every block/layer.
 
     Invalid causal scores, nonfinite kernels, and invalid normalizers poison
-    their rows with NaN. Fixed Taylor and positive learned kernels must stay
-    positive; unrestricted quadratics permit signed/zero kernels and negative
-    nonzero normalizers. Stable exact exponentials may underflow to zero.
+    their rows with NaN. Even Taylor and positive learned kernels must stay
+    positive; odd Taylor and unrestricted quadratics permit signed/zero kernels
+    and negative nonzero normalizers. Stable exact exponentials may underflow to zero.
     Diagnostics exclude padded queries and masked future entries.
     """
     _validate_degree(attention_degree)
@@ -73,6 +72,10 @@ def blocked_dot_product_attention(
         raise ValueError("Learned quadratic attention requires degree=2 and coefficients")
     if quadratic_mode == "fixed" and coefficients is not None:
         raise ValueError("Fixed attention does not accept learned coefficients")
+    signed = quadratic_mode == "unrestricted" or (
+        quadratic_mode == "fixed" and attention_degree is not None and attention_degree % 2 == 1
+    )
+    extended_diagnostics = quadratic_mode != "fixed" or signed
     if not isinstance(query_block_size, int) or isinstance(query_block_size, bool) or query_block_size <= 0:
         raise ValueError("query_block_size must be a positive integer")
     if q.ndim != 4 or k.ndim != 4 or v.ndim != 4:
@@ -117,13 +120,13 @@ def blocked_dot_product_attention(
             kernel = (_taylor_polynomial(safe_scores, attention_degree) if quadratic_mode == "fixed"
                       else _quadratic_polynomial(safe_scores, coefficients, quadratic_mode))
             invalid_kernel = ~jnp.isfinite(kernel)
-            if quadratic_mode != "unrestricted":
+            if not signed:
                 invalid_kernel = invalid_kernel | (kernel <= 0)
         kernel = jnp.where(causal, kernel, 0.0)
         normalizer = jnp.sum(kernel, axis=-1, keepdims=True, dtype=jnp.float32)
         invalid_score = ~jnp.isfinite(scores)
         invalid_normalizer = (~jnp.isfinite(normalizer)) | (
-            (normalizer == 0) if quadratic_mode == "unrestricted" else (normalizer <= 0)
+            (normalizer == 0) if signed else (normalizer <= 0)
         )
         invalid_row = (
             jnp.any(causal & (invalid_score | invalid_kernel), axis=-1, keepdims=True)
@@ -136,6 +139,8 @@ def blocked_dot_product_attention(
         )
         output = jnp.where(jnp.swapaxes(invalid_row, 1, 2), jnp.nan, output)
         output = output.astype(v.dtype)
+        if signed:
+            output = jnp.where(jnp.all(jnp.isfinite(output), axis=-1, keepdims=True), output, jnp.nan)
         if not return_diagnostics:
             return None, output
         diagnostics = {
@@ -149,7 +154,7 @@ def blocked_dot_product_attention(
             "invalid_kernel_count": jnp.sum(measured & invalid_kernel, dtype=jnp.int32),
             "invalid_normalizer_count": jnp.sum(actual_rows[None, None, :, None] & invalid_normalizer, dtype=jnp.int32),
         }
-        if quadratic_mode != "fixed":
+        if extended_diagnostics:
             actual = actual_rows[None, None, :, None]
             cancellation = jnp.sum(jnp.abs(kernel), axis=-1, keepdims=True) / jnp.abs(normalizer)
             diagnostics.update({
@@ -174,7 +179,7 @@ def blocked_dot_product_attention(
                    jnp.max(values) if name.endswith("_max") else jnp.sum(values))
             for name, values in per_block.items()
         }
-        if quadratic_mode != "fixed":
+        if extended_diagnostics:
             diagnostics["negative_weight_fraction"] = diagnostics["negative_weight_count"] / diagnostics["causal_entry_count"]
             diagnostics["negative_kernel_fraction"] = diagnostics["negative_kernel_count"] / diagnostics["causal_entry_count"]
             diagnostics["cancellation_ratio_mean"] = diagnostics.pop("cancellation_sum") / diagnostics["row_count"]

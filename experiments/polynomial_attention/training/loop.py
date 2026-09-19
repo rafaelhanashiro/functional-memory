@@ -7,6 +7,7 @@ import uuid
 from dataclasses import asdict
 from dataclasses import replace
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 
 import jax
@@ -55,7 +56,7 @@ from experiments.polynomial_attention.training.metrics import (
     write_json_atomic,
 )
 from experiments.polynomial_attention.training.optim import make_learning_rate_schedule
-from experiments.polynomial_attention.training.numerics import checked_update_loss
+from experiments.polynomial_attention.training.numerics import checked_update_loss, is_odd_taylor, update_numerics
 from experiments.polynomial_attention.training.randomness import model_forward_rngs
 from experiments.polynomial_attention.training.state import TrainState, create_state
 
@@ -92,11 +93,15 @@ def loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Array):
     return nnx.value_and_grad(loss_fn)(state.params)
 
 
-@nnx.jit
-def train_step(state: TrainState, batch: jax.Array, rng: jax.Array):
+@partial(nnx.jit, static_argnames=("check_all_gradients",))
+def train_step(state: TrainState, batch: jax.Array, rng: jax.Array, *, check_all_gradients=False):
     loss, grads = loss_and_grads(state, batch, rng)
     updated = state.apply_gradients(grads=grads)
-    return updated, checked_update_loss(state.params, grads, updated.params, loss)
+    checked_loss = checked_update_loss(state.params, grads, updated.params, loss,
+                                      check_all_gradients=check_all_gradients)
+    if check_all_gradients:
+        return updated, checked_loss, update_numerics(grads, updated.params, loss)
+    return updated, checked_loss
 
 
 @nnx.jit
@@ -109,7 +114,7 @@ def apply_gradients_step(state: TrainState, grads):
     return state.apply_gradients(grads=grads)
 
 
-def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Array):
+def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Array, *, check_all_gradients=False):
     grad_sum = None
     loss_sum = None
     for batch, rng in zip(batches, rngs, strict=True):
@@ -125,7 +130,11 @@ def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Arra
     grads = jax.tree_util.tree_map(lambda grad: grad * scale, grad_sum)
     loss = loss_sum * scale
     updated = apply_gradients_step(state, grads)
-    return updated, checked_update_loss(state.params, grads, updated.params, loss)
+    checked_loss = checked_update_loss(state.params, grads, updated.params, loss,
+                                      check_all_gradients=check_all_gradients)
+    if check_all_gradients:
+        return updated, checked_loss, update_numerics(grads, updated.params, loss)
+    return updated, checked_loss
 
 
 @nnx.jit
@@ -421,7 +430,7 @@ def _write_status(config: Config, **updates) -> None:
         **updates,
     })
     retention_path = config.train.workdir / "retention.json"
-    if config.model.quadratic_mode != "fixed" and retention_path.exists():
+    if (config.model.quadratic_mode != "fixed" or is_odd_taylor(config.model)) and retention_path.exists():
         retention = json.loads(retention_path.read_text())
         metadata["checkpoint_retention"] = retention
         metadata["retained_terminal_checkpoint_step"] = (
@@ -468,7 +477,8 @@ def _write_status(config: Config, **updates) -> None:
     _write_text_atomic(config.train.workdir / "REPORT.md", "\n".join(lines) + "\n")
 
 
-def _fail_numerics(config, state, step, message, sample, provenance, *, diagnostics=None, loss=None):
+def _fail_numerics(config, state, step, message, sample, provenance, *, diagnostics=None, loss=None,
+                   numerical_metrics=None):
     """Persist the offending state diagnostics before aborting without a repair."""
     failure = {
         "format": "polynomial-attention-numerical-failure", "version": 1,
@@ -479,9 +489,17 @@ def _fail_numerics(config, state, step, message, sample, provenance, *, diagnost
     }
     if loss is not None:
         failure["loss"] = json_number(loss)
-        if config.model.quadratic_mode != "fixed":
+        if is_odd_taylor(config.model):
+            failure["checked_quantities"] = ["forward_loss", "global_gradient_norm", "updated_parameters"]
+            failure["loss_note"] = "A NaN loss scalar also signals an invalid gradient norm or parameter update."
+        elif config.model.quadratic_mode != "fixed":
             failure["checked_quantities"] = ["forward_loss", "global_gradient_norm", "updated_coefficients"]
             failure["loss_note"] = "A NaN loss scalar also signals an invalid gradient norm or coefficient update."
+    if numerical_metrics is not None:
+        failure["update_numerics"] = dict(zip(
+            ("forward_loss", "global_gradient_norm", "updated_parameter_norm"),
+            (json_number(value) for value in numerical_metrics), strict=True,
+        ))
     try:
         failure["attention_diagnostics"] = diagnostics if diagnostics is not None else attention_diagnostics(
             state, config, sample, provenance,
@@ -542,6 +560,8 @@ def _update_audit(step, batches, rng):
 def _run_training(config, manager, layout, devices, *, resume, end_step, audit_checkpoint=False):
     runtime_start = time.perf_counter()
     timing = {"train_step_seconds": [], "evaluation_seconds": [], "checkpoint_seconds": []}
+    check_all_gradients = is_odd_taylor(config.model)
+    best_only_retention = check_all_gradients or config.model.quadratic_mode != "fixed"
     completion_path = config.train.workdir / "completion.json"
     latest_before = manager.latest_step()
     validated_train_manifest = None
@@ -559,10 +579,11 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         completion = json.loads(completion_path.read_text())
         retained_best_complete = False
         retention_path = config.train.workdir / "retention.json"
-        if config.model.quadratic_mode != "fixed" and retention_path.exists():
+        if best_only_retention and retention_path.exists():
             retention = json.loads(retention_path.read_text())
             retained_best_complete = (
-                retention.get("format") == "learned-quadratic-checkpoint-retention"
+                retention.get("format") == ("odd-taylor-checkpoint-retention" if check_all_gradients
+                                             else "learned-quadratic-checkpoint-retention")
                 and retention.get("completion_sha256") == hashlib.sha256(completion_path.read_bytes()).hexdigest()
                 and retention.get("best_checkpoint_step") == completion["retained_best_checkpoint_step"] == latest_before
             )
@@ -603,7 +624,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
           f"global_micro_batch_size={layout.global_micro_batch_size} grad_accum_steps={layout.grad_accum_steps}", flush=True)
     data_parallel = None
     if layout.device_count > 1:
-        data_parallel = make_data_parallel_functions(state, devices)
+        data_parallel = make_data_parallel_functions(state, devices, check_all_gradients=check_all_gradients)
         state = put_replicated(state, data_parallel.replicated_sharding)
     train_iter = make_train_iterator(
         replace(config.data, batch_size=layout.global_micro_batch_size),
@@ -633,18 +654,21 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 batches = np.stack([next(train_iter) for _ in range(layout.grad_accum_steps)])
                 if audit is not None and step == start_step + 1:
                     audit["first_update"] = _update_audit(step, batches, step_rng)
-                state, loss = data_parallel.train_step(state, put_train_batches(batches, data_parallel.train_batch_sharding), step_rng)
+                step_result = data_parallel.train_step(state, put_train_batches(batches, data_parallel.train_batch_sharding), step_rng)
             elif layout.grad_accum_steps == 1:
                 batch = jnp.asarray(next(train_iter))
                 if audit is not None and step == start_step + 1:
                     audit["first_update"] = _update_audit(step, batch[None], step_rng)
-                state, loss = train_step(state, batch, step_rng)
+                step_result = (train_step(state, batch, step_rng, check_all_gradients=True) if check_all_gradients
+                               else train_step(state, batch, step_rng))
             else:
                 batches = jnp.asarray(np.stack([next(train_iter) for _ in range(layout.grad_accum_steps)]))
                 if audit is not None and step == start_step + 1:
                     audit["first_update"] = _update_audit(step, batches, step_rng)
                 micro_rngs = jax.random.split(step_rng, layout.grad_accum_steps)
-                state, loss = accumulated_train_step(state, batches, micro_rngs)
+                step_result = (accumulated_train_step(state, batches, micro_rngs, check_all_gradients=True)
+                               if check_all_gradients else accumulated_train_step(state, batches, micro_rngs))
+            state, loss, *numerical_metrics = step_result
             is_log = step == start_step + 1 or step % config.train.log_every == 0
             is_eval = step % config.train.eval_every == 0 or step == config.optim.total_steps
             is_checkpoint = is_eval or step % config.train.ckpt_every == 0 or step == end_step
@@ -655,11 +679,13 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             if len(timing["train_step_seconds"]) < 8:
                 timing["train_step_seconds"].append(time.perf_counter() - train_step_start)
             if not math.isfinite(loss_value):
-                quantity = ("training loss" if config.model.quadratic_mode == "fixed" else
+                quantity = ("training loss or signed-Taylor update" if check_all_gradients else
+                            "training loss" if config.model.quadratic_mode == "fixed" else
                             "training loss or learned-quadratic update")
                 _fail_numerics(config, state, step,
                                f"Nonfinite {quantity} at step {step}: {loss_value}",
-                               diagnostic_sample, diagnostic_provenance, loss=loss_value)
+                               diagnostic_sample, diagnostic_provenance, loss=loss_value,
+                               numerical_metrics=numerical_metrics[0] if numerical_metrics else None)
             if is_log:
                 train_losses.append(loss_value)
                 train_ppl = _perplexity(config, state, step, loss_value, diagnostic_sample, diagnostic_provenance)
@@ -688,7 +714,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 timing["evaluation_seconds"].append(time.perf_counter() - evaluation_start)
                 # Orbax keeps the latest checkpoint among equal best metrics.
                 # Match that tie rule in the learned family's selected record.
-                is_best = eval_loss < best_nll or (config.model.quadratic_mode != "fixed" and eval_loss == best_nll)
+                is_best = eval_loss < best_nll or (best_only_retention and eval_loss == best_nll)
                 train_nll = float(np.mean(train_losses))
                 train_ppl = _perplexity(config, state, step, train_nll, diagnostic_sample, diagnostic_provenance,
                                         diagnostics=diagnostics)

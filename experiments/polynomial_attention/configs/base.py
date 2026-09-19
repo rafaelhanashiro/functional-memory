@@ -73,9 +73,8 @@ class ModelConfig:
             not isinstance(self.attention_degree, int)
             or isinstance(self.attention_degree, bool)
             or self.attention_degree < 0
-            or self.attention_degree % 2
         ):
-            raise ValueError("model.attention_degree must be null or a nonnegative even integer")
+            raise ValueError("model.attention_degree must be null or a nonnegative integer")
         if not 0 <= self.dropout < 1:
             raise ValueError("model.dropout must be in [0, 1)")
         if self.dropout != 0:

@@ -20,3 +20,6 @@ slurm-*.err
 /experiments/learned_quadratic_attention/checkpoints/
 /results/learned_quadratic_attention/**/checkpoints
 /results/learned_quadratic_attention/**/wandb/
+/experiments/odd_taylor_attention/checkpoints/
+/results/odd_taylor_attention/**/checkpoints
+/results/odd_taylor_attention/**/wandb/

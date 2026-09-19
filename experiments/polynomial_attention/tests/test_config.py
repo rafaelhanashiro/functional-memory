@@ -50,10 +50,9 @@ def test_defaults_are_tiny_synthetic_and_round_trip(tmp_path):
     ("model:\n  num_kv_heads: 2\n", "full MHA"),
     ("model:\n  attention_backend: fast\n", "backend"),
     ("model:\n  dropout: 0.1\n", "dropout=0"),
-    ("model:\n  attention_degree: 3\n", "nonnegative even"),
-    ("model:\n  attention_degree: -2\n", "nonnegative even"),
-    ("model:\n  attention_degree: true\n", "nonnegative even"),
-    ("model:\n  attention_degree: 2.0\n", "nonnegative even"),
+    ("model:\n  attention_degree: -2\n", "nonnegative integer"),
+    ("model:\n  attention_degree: true\n", "nonnegative integer"),
+    ("model:\n  attention_degree: 2.0\n", "nonnegative integer"),
     ("train:\n  micro_batch_size: 3\n", "divisible"),
     ("unknown: 1\n", "Unknown"),
     ("model: []\n", "mapping"),
@@ -64,6 +63,15 @@ def test_reject_invalid_or_stale_configs(tmp_path, body, error):
     path.write_text(body)
     with pytest.raises(ValueError, match=error):
         load_config(path)
+
+
+@pytest.mark.parametrize("degree", (1, 3))
+def test_fixed_odd_degree_configs_are_valid(tmp_path, degree):
+    path = tmp_path / "odd.yaml"
+    path.write_text(f"model:\n  attention_degree: {degree}\n")
+    config = load_config(path)
+    assert config.model.attention_degree == degree
+    assert config.model.quadratic_mode == "fixed"
 
 
 @pytest.mark.parametrize("qk_dim", (-2, 0, 3, 2.5, True))

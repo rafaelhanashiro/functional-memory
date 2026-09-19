@@ -45,9 +45,9 @@ def degree_argument(value: str) -> int | None:
     try:
         degree = int(value)
     except ValueError as error:
-        raise argparse.ArgumentTypeError("Expected 'softmax' or a nonnegative even integer") from error
-    if degree < 0 or degree % 2:
-        raise argparse.ArgumentTypeError("Expected 'softmax' or a nonnegative even integer")
+        raise argparse.ArgumentTypeError("Expected 'softmax' or a nonnegative integer") from error
+    if degree < 0:
+        raise argparse.ArgumentTypeError("Expected 'softmax' or a nonnegative integer")
     return degree
 
 

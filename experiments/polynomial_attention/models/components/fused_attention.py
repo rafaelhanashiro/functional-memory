@@ -112,6 +112,50 @@ def _forward_kernel(q_ref, k_ref, v_ref, out_ref, norm_ref, *, degree, time, dq,
     plt.store(norm_ref, normalizer, mask=qi < time)
 
 
+def _signed_forward_kernel(q_ref, k_ref, v_ref, out_ref, norm_ref, *, degree, time, dq, dv, block_q, block_k):
+    """Normalize against final sums: signed partial tile sums can be zero.
+
+    The first pass accumulates final denominators without dividing. The second
+    recomputes the same score/kernel tiles and accumulates normalized values.
+    There is no denominator clipping, epsilon, or absolute normalization.
+    """
+    qi = pl.program_id(0) * block_q + jnp.arange(block_q)
+    q = plt.load(q_ref, mask=(qi[:, None] < time) & (jnp.arange(q_ref.shape[-1])[None, :] < dq), other=0)
+    initial = (jnp.zeros((block_q,), jnp.float32), jnp.zeros((block_q,), jnp.bool_))
+
+    def kernel_tile(tile):
+        ki = tile * block_k + jnp.arange(block_k)
+        k = _load(k_ref, ki, dq, time)
+        scores = _dot(q, k.T) * (1.0 / math.sqrt(dq))
+        causal = (qi[:, None] >= ki[None, :]) & (ki[None, :] < time)
+        values = _polynomial(jnp.where(causal, scores, 0.0), degree)
+        invalid = jnp.max((causal & (~jnp.isfinite(scores) | ~jnp.isfinite(values))).astype(jnp.int32), axis=1) != 0
+        return ki, jnp.where(causal, values, 0.0), invalid
+
+    def denominator_body(tile, carry):
+        normalizer, invalid = carry
+        _, values, invalid_entries = kernel_tile(tile)
+        normalizer += jnp.sum(values, axis=1)
+        return normalizer, invalid | invalid_entries | ~jnp.isfinite(normalizer)
+
+    end = lax.div((pl.program_id(0) + 1) * block_q + block_k - 1, block_k)
+    normalizer, invalid = lax.fori_loop(0, end, denominator_body, initial)
+    invalid |= ~jnp.isfinite(normalizer) | (normalizer == 0)
+    normalizer = jnp.where(invalid, jnp.nan, normalizer)
+
+    def output_body(tile, output):
+        ki, values, _ = kernel_tile(tile)
+        v = _load(v_ref, ki, dv, time)
+        return output + _dot(values / normalizer[:, None], v)
+
+    output = lax.fori_loop(0, end, output_body, jnp.zeros((block_q, v_ref.shape[-1]), jnp.float32))
+    invalid |= jnp.max((~jnp.isfinite(output)).astype(jnp.int32), axis=1) != 0
+    output = jnp.where(invalid[:, None], jnp.nan, output)
+    normalizer = jnp.where(invalid, jnp.nan, normalizer)
+    plt.store(out_ref, output, mask=(qi[:, None] < time) & (jnp.arange(out_ref.shape[-1])[None, :] < dv))
+    plt.store(norm_ref, normalizer, mask=qi < time)
+
+
 def _dq_kernel(q_ref, k_ref, v_ref, do_ref, out_ref, norm_ref, dq_ref, *, degree, time, dq, dv, block_q, block_k):
     qi = pl.program_id(0) * block_q + jnp.arange(block_q)
     qmask = (qi[:, None] < time) & (jnp.arange(q_ref.shape[-1])[None, :] < dq)
@@ -196,7 +240,8 @@ def _forward(q, k, v, degree):
     dv = v.shape[-1]
     block_q, block_k = _tile_sizes(dq, dv)
     return pl.pallas_call(
-        partial(_forward_kernel, degree=degree, time=time, dq=dq, dv=dv, block_q=block_q, block_k=block_k),
+        partial(_signed_forward_kernel if degree % 2 else _forward_kernel,
+                degree=degree, time=time, dq=dq, dv=dv, block_q=block_q, block_k=block_k),
         out_shape=(jax.ShapeDtypeStruct(v.shape, jnp.float32),
                    jax.ShapeDtypeStruct((batch, time, heads), jnp.float32)),
         grid=(pl.cdiv(time, block_q), batch, heads),
@@ -257,8 +302,8 @@ def fused_polynomial_attention(q, k, v, *, attention_degree: int):
     The blocked implementation remains the scalar-diagnostics reference.
     """
     if (not isinstance(attention_degree, int) or isinstance(attention_degree, bool)
-            or attention_degree < 0 or attention_degree % 2):
-        raise ValueError("attention_degree must be a nonnegative even integer")
+            or attention_degree < 0):
+        raise ValueError("attention_degree must be a nonnegative integer")
     if q.ndim != 4 or k.ndim != 4 or v.ndim != 4:
         raise ValueError("Q, K, V must have shape [batch, time, heads, channels]")
     if q.shape != k.shape or q.shape[:3] != v.shape[:3]:

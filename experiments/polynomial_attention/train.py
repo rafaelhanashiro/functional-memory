@@ -26,9 +26,9 @@ def attention_degree_argument(value: str) -> int | None:
     try:
         degree = int(value)
     except ValueError as error:
-        raise argparse.ArgumentTypeError("Expected an even degree or 'softmax'") from error
-    if degree < 0 or degree % 2:
-        raise argparse.ArgumentTypeError("Expected a nonnegative even degree")
+        raise argparse.ArgumentTypeError("Expected an integer degree or 'softmax'") from error
+    if degree < 0:
+        raise argparse.ArgumentTypeError("Expected a nonnegative integer degree")
     return degree
 
 
@@ -36,7 +36,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Pretrain with a fixed Taylor attention degree or exact softmax.")
     parser.add_argument("config", type=Path)
     parser.add_argument("--attention-degree", type=attention_degree_argument, default=argparse.SUPPRESS,
-                        help="Nonnegative even degree, or softmax for the exact control.")
+                        help="Nonnegative degree (odd degrees permit signed weights), or softmax.")
     parser.add_argument("--workdir", type=Path)
     parser.add_argument("--stop-after-step", type=int, help="Stop with a resume checkpoint; retain the full learning-rate schedule.")
     parser.add_argument("--no-resume", action="store_true")

@@ -13,6 +13,7 @@ from flax import nnx
 from experiments.polynomial_attention.data.loaders import make_eval_iterator
 from experiments.polynomial_attention.data.packed import manifest_fingerprint
 from experiments.polynomial_attention.models.components.attention import QUERY_BLOCK_SIZE
+from experiments.polynomial_attention.training.numerics import is_odd_taylor
 
 
 M0_PARAMETER_NOTE = (
@@ -32,6 +33,8 @@ def attention_identity(config) -> dict:
         "query_block_size": QUERY_BLOCK_SIZE,
         "m0_qk_parameter_note": M0_PARAMETER_NOTE if degree == 0 else None,
     }
+    if is_odd_taylor(config.model) or mode == "unrestricted":
+        identity["attention_signed"] = True
     if mode != "fixed":
         identity.update({
             "quadratic_mode": mode,
@@ -139,7 +142,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                 issues.append(f"layer {index}: {name}={int(number)}")
         for name in ("kernel_min", "normalizer_min"):
             value = float(raw[name])
-            if config.model.quadratic_mode == "unrestricted":
+            if is_odd_taylor(config.model) or config.model.quadratic_mode == "unrestricted":
                 # Signed kernels and negative nonzero sums are permitted. Exact
                 # zeros are detected in invalid_normalizer_count, not extrema.
                 continue
