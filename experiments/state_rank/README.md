@@ -89,6 +89,9 @@ files, merge, and remove the experiment checkout and merged branch.
 
 ## Random versus pretrained Gated DeltaNet
 
+The completed six-condition comparison and its depth-wise findings are retained in
+[`results/state_rank/random_vs_pretrained_deltanet/REPORT.md`](../../results/state_rank/random_vs_pretrained_deltanet/REPORT.md).
+
 `configs/random_vs_pretrained_deltanet.json` applies the same design to the pinned
 `m-a-p/1.3B-100B-GatedDeltaNet-pure` model: one pretrained condition and five
 independent complete initializations (seeds 0–4), all 24 layers, all eight heads,
