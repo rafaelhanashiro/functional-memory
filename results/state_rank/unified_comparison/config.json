@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "output": "/home/rafah/projects/functional_memory/results/state_rank/unified_comparison",
+  "models": [
+    {
+      "key": "llama",
+      "label": "Llama",
+      "results": "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained",
+      "layer": 8
+    },
+    {
+      "key": "gated-deltanet",
+      "label": "Gated DeltaNet",
+      "results": "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet",
+      "layer": 12
+    }
+  ],
+  "project_root": "/home/rafah/projects/functional_memory",
+  "sequence_index": null
+}

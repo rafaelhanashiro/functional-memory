@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "kind": "derived-state-rank-comparison",
+  "created_utc": "2026-09-20T23:55:31.597951+00:00",
+  "generator_source_commit": "dc743f313c253c84b134ca87210179629a6f7878",
+  "generator_files_sha256": {
+    "experiments/state_rank/unify_analysis.py": "ba3dafe61630c2537296bd710ff913bb59174372b78ad95ba5968731facc7448",
+    "experiments/state_rank/unified_metrics.py": "18d085d401e95e6e26415941ff91ad3de909e82d948c6ef755fe009e413c2fee",
+    "experiments/state_rank/unified_plots.py": "f7d306ba90654f664e5f29100cdee755734cced2c5abe6aa352a2a70633d7761",
+    "experiments/state_rank/plot_comparison.py": "516a58b854b67124a2017ca72b60a9cfff60f0182807ba586f8a201ec633e19f",
+    "experiments/state_rank/configs/unified_rank_analysis.json": "84a9e193aa24d46300cf910b601b9f358a318b341cd3f87ed4435bc724578e70",
+    "uv.lock": "3d0a8accf78ebe6a2288bce53032412d7f86dce603609d568c8193af4d5c6356"
+  },
+  "package_versions": {
+    "numpy": "2.5.3",
+    "matplotlib": "3.11.2"
+  },
+  "execution": "Local CPU postprocessing of retained measurements; no model run or new Slurm job",
+  "input_files_sha256": {
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/manifest.json": "664ac265d00f458915f125e8fc8b4486775df670735432ca5015d9d8b877c887",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/config.json": "f4e2151054528e7959ed257c97a1485b8577bc514925923ca641b8388e38fab5",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/inputs.json": "8ac90c69b0c3503e3a505d6bcf317af31ad0f2f3c04853e699bb6cf504a497ed",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/pretrained/metadata.json": "8c7f6e31a62c59c2f56f8ce0d508d8491a1c916d43f990376d6c7f096223276e",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/pretrained/metrics.npz": "301f093ce6b83bf11f79335f4554629b784d98eb2288212d5171686711d9537b",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/random-seed0/metadata.json": "a272c1a349481bc9179b698cf3268581eb29182e3aec55e10ff372fdda8c4644",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/random-seed0/metrics.npz": "7877a2ca7c23963802629d09e1127364eeaa6d303c10aeca2582047fe4027dda",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/random-seed1/metadata.json": "7dad72db9813b6a2da537f888d77f41a28fb758ba49c88cd386f1bd9dc943ad7",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/random-seed1/metrics.npz": "dffe43350b3b9580774e2697322e1ccb6566fda5a7e69f24c1c7180b6a6a6749",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/random-seed2/metadata.json": "03f2e8bf71dc1ec412a5d366340636667e96c8711301a3e8b9aacc69b62c9c01",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/random-seed2/metrics.npz": "06b6f2e11ef867d73e4968452a4305eb5a653b3ab12cf93d797dc764479cc606",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/random-seed3/metadata.json": "ac073d16696de2a76ae6f72242d9a24fe9ae38fe5ca28ae259bc07e787de64e0",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/random-seed3/metrics.npz": "c6558e11999c2b3028ecdd89a6bf7a09e78871aeaa1c99d9e16cd2760784eaca",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/random-seed4/metadata.json": "b0aeb0534a505b6947dff6586e6edf4a852a564f884d9e34f1d6e6a7b9667c96",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained/random-seed4/metrics.npz": "919ec11bcc3551b87bab0e4a599854c132f45e86da6adfa7c21ff8656826f3ab",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/manifest.json": "1e31fc27a254a61b2acd48ca679efea365fbd932943fd395022d5463db078b27",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/config.json": "9ec495aae1797b6c37b8f98fd046252337a66863f696a786e8dcedbaf67a58ab",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/inputs.json": "986feaf726cdef35ccbba48857b537831cd9ecdac5a0bb12a335d3fee7da0c4f",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/pretrained/metadata.json": "340d820095fec7b752c6020db9ded124ba5a1e99cc114acdc556ace0074ecba8",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/pretrained/metrics.npz": "35faa97d7f0d1613c9154856041bf4d3d1ad39fce3b7ae504d6443462a40e32c",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/random-seed0/metadata.json": "b66cf6dbf99b4f27a7c5eed052bdc85f87517bd3f2cfa4c3e33a35f94f78fe87",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/random-seed0/metrics.npz": "d6d3584d9fa4ba5ce945a81a2f83d9b6e34f75a39f8825bafd7cd474507b5b49",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/random-seed1/metadata.json": "fd5ef60262015b7d67ec0be0589707f28ee221450e0f5cd11d5c3647eb973421",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/random-seed1/metrics.npz": "4448f58a02ec733eba7a5b058057065b685583b71b951e489e0d06cceab979f0",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/random-seed2/metadata.json": "7e0998d208729013538a3dc3024e3bf405cbd9d0957ea88daecf8bc9d3397e34",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/random-seed2/metrics.npz": "2fba6bfa4fe56b153b5297fb1cfe4c6a9c8d7e55a35023c95b21c668b772eb00",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/random-seed3/metadata.json": "93e92a2965dde88007a20aee9a3843729b0047cef5168b26e00806eac94d8a08",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/random-seed3/metrics.npz": "dde1b31d42dc850adf08fe60e6a02d9b161e8e27b3e43871dbf093a65b57faa9",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/random-seed4/metadata.json": "6681391f06a2ee5c26ba77fc3c70d46fa2500f4c02c68f58df183a2435bd61c0",
+    "/home/rafah/projects/functional_memory/results/state_rank/random_vs_pretrained_deltanet/random-seed4/metrics.npz": "d8f22e573d266a8cdf081abbb74616ea170100e657f1efd1d4c3708cb8cbc0c8"
+  },
+  "models": [
+    {
+      "key": "llama",
+      "selected_layer": 8,
+      "state_width": 64,
+      "source_commit": "c5308deb23ed5e30b77a3d3491d482032322a235",
+      "model_id": "meta-llama/Llama-3.2-1B",
+      "conditions": [
+        {
+          "name": "pretrained",
+          "seed": null,
+          "source_commit": "c5308deb23ed5e30b77a3d3491d482032322a235",
+          "slurm_job_id": "23045242",
+          "log_path": "/home/rafah/projects/functional_memory/results/logs/state_rank/random_vs_pretrained/pretrained/slurm-23045242.out"
+        },
+        {
+          "name": "random-seed0",
+          "seed": 0,
+          "source_commit": "c5308deb23ed5e30b77a3d3491d482032322a235",
+          "slurm_job_id": "23045243",
+          "log_path": "/home/rafah/projects/functional_memory/results/logs/state_rank/random_vs_pretrained/random-seed0/slurm-23045243.out"
+        },
+        {
+          "name": "random-seed1",
+          "seed": 1,
+          "source_commit": "c5308deb23ed5e30b77a3d3491d482032322a235",
+          "slurm_job_id": "23045244",
+          "log_path": "/home/rafah/projects/functional_memory/results/logs/state_rank/random_vs_pretrained/random-seed1/slurm-23045244.out"
+        },
+        {
+          "name": "random-seed2",
+          "seed": 2,
+          "source_commit": "c5308deb23ed5e30b77a3d3491d482032322a235",
+          "slurm_job_id": "23045246",
+          "log_path": "/home/rafah/projects/functional_memory/results/logs/state_rank/random_vs_pretrained/random-seed2/slurm-23045246.out"
+        },
+        {
+          "name": "random-seed3",
+          "seed": 3,
+          "source_commit": "c5308deb23ed5e30b77a3d3491d482032322a235",
+          "slurm_job_id": "23045247",
+          "log_path": "/home/rafah/projects/functional_memory/results/logs/state_rank/random_vs_pretrained/random-seed3/slurm-23045247.out"
+        },
+        {
+          "name": "random-seed4",
+          "seed": 4,
+          "source_commit": "c5308deb23ed5e30b77a3d3491d482032322a235",
+          "slurm_job_id": "23045248",
+          "log_path": "/home/rafah/projects/functional_memory/results/logs/state_rank/random_vs_pretrained/random-seed4/slurm-23045248.out"
+        }
+      ]
+    },
+    {
+      "key": "gated-deltanet",
+      "selected_layer": 12,
+      "state_width": 256,
+      "source_commit": "449739a463ae0a7805756fb8e20a7fe7e6843377",
+      "model_id": "m-a-p/1.3B-100B-GatedDeltaNet-pure",
+      "conditions": [
+        {
+          "name": "pretrained",
+          "seed": null,
+          "source_commit": "449739a463ae0a7805756fb8e20a7fe7e6843377",
+          "slurm_job_id": "23127764",
+          "log_path": "/home/rafah/projects/functional_memory/results/logs/state_rank/random_vs_pretrained_deltanet/pretrained/slurm-23127764.out"
+        },
+        {
+          "name": "random-seed0",
+          "seed": 0,
+          "source_commit": "449739a463ae0a7805756fb8e20a7fe7e6843377",
+          "slurm_job_id": "23127765",
+          "log_path": "/home/rafah/projects/functional_memory/results/logs/state_rank/random_vs_pretrained_deltanet/random-seed0/slurm-23127765.out"
+        },
+        {
+          "name": "random-seed1",
+          "seed": 1,
+          "source_commit": "449739a463ae0a7805756fb8e20a7fe7e6843377",
+          "slurm_job_id": "23127766",
+          "log_path": "/home/rafah/projects/functional_memory/results/logs/state_rank/random_vs_pretrained_deltanet/random-seed1/slurm-23127766.out"
+        },
+        {
+          "name": "random-seed2",
+          "seed": 2,
+          "source_commit": "449739a463ae0a7805756fb8e20a7fe7e6843377",
+          "slurm_job_id": "23127767",
+          "log_path": "/home/rafah/projects/functional_memory/results/logs/state_rank/random_vs_pretrained_deltanet/random-seed2/slurm-23127767.out"
+        },
+        {
+          "name": "random-seed3",
+          "seed": 3,
+          "source_commit": "449739a463ae0a7805756fb8e20a7fe7e6843377",
+          "slurm_job_id": "23127768",
+          "log_path": "/home/rafah/projects/functional_memory/results/logs/state_rank/random_vs_pretrained_deltanet/random-seed3/slurm-23127768.out"
+        },
+        {
+          "name": "random-seed4",
+          "seed": 4,
+          "source_commit": "449739a463ae0a7805756fb8e20a7fe7e6843377",
+          "slurm_job_id": "23127769",
+          "log_path": "/home/rafah/projects/functional_memory/results/logs/state_rank/random_vs_pretrained_deltanet/random-seed4/slurm-23127769.out"
+        }
+      ]
+    }
+  ],
+  "output_files_sha256": {
+    "REPORT.md": "25c8448144505b83844690e2a3d6b778501da105face356e18a6ae17d8d57a92",
+    "comparison_statistics.json": "ac6265260b06dc21ccf05c2b9a19fd1494e5b6297aed9ec48f7b9027b29b77e2",
+    "config.json": "a0b021fe6972e625283b41abcc26ba4a9f59a685cb55d3ea4b6616a4836bf387",
+    "depth_counts.pdf": "614b8cd53079b8164e5fbc8eaf5476b5297d76d76379fcec4320c7a3a8f5f725",
+    "depth_counts.png": "29b93481fad148919f6a736d0e7a76cdf7ead2667662d43e08c421dcde37873f",
+    "depth_fractional.pdf": "c6f9852107ab629e6f55b14517e36ffe91476a8dae5ce7ad2b4b99fb4b7db690",
+    "depth_fractional.png": "106dafcae6cabd02d77b9229a526c2a1a97860820036049b5fee46d960e69a61",
+    "depth_summary.csv": "32a4157b8ae5962a71c4fe624c63e938fd8b3a6f78e1ffdc2aaa8ca7747f80d1",
+    "gated-deltanet/heads/aggregate/pretrained.pdf": "1001df951e5ec8d07318f52c316a42123e2e34966e3cb316c06fddf2318323f1",
+    "gated-deltanet/heads/aggregate/pretrained.png": "555a8eee941fd7b1975fd6a228015a724e587ca1e4277629d6fb41991179816f",
+    "gated-deltanet/heads/aggregate/random-seed0.pdf": "7cfc733ac8fa503cf1df22178c1009bb0e55bce8260a1dd66e45d899dc64432d",
+    "gated-deltanet/heads/aggregate/random-seed0.png": "c0d8ab3a47db3bc05c85c89bcb9ec8a0769058b6f1300bc511957cc31146304a",
+    "gated-deltanet/heads/aggregate/random-seed1.pdf": "fffa7434a61450c073c55962f9b63bbc182a111d297e9b66f5ce2518e99e5194",
+    "gated-deltanet/heads/aggregate/random-seed1.png": "0610cb3a28c4f611a2b74b92df2e627319615fc1e319c6d5b2bd1d7ec83bb5c1",
+    "gated-deltanet/heads/aggregate/random-seed2.pdf": "1a58933662812e388a85705acd78138b850a244e1b2fb819b805797e0f91c0bd",
+    "gated-deltanet/heads/aggregate/random-seed2.png": "eed2448c23a2d7db969a97b1c65a9ab5c2e2a5ce9e5e070209de387a8f1a1a2f",
+    "gated-deltanet/heads/aggregate/random-seed3.pdf": "9cc53ea255c4bf0f32db0be4eb9fc3ab972710c2f08a082c0e3034df553caa3e",
+    "gated-deltanet/heads/aggregate/random-seed3.png": "5a29ecccdae81dd25b596270e8b496da01b8f2677bc07468b55e818331dbd68c",
+    "gated-deltanet/heads/aggregate/random-seed4.pdf": "abe84bdf8b2d04217e2fe02f0bc4d19e98187d1441fe628ee67d1d8f509b1be8",
+    "gated-deltanet/heads/aggregate/random-seed4.png": "6411d8c34e7e22fddbcf8b7f8f887aa3a4d262585ed634cc332065a2217081f1",
+    "gated-deltanet/layers/pretrained.pdf": "becc64f7055ba49a1d1899400c67784321390d97fb4fd46462f3f0734ea8b807",
+    "gated-deltanet/layers/pretrained.png": "cc97fcd1dd306cf042eac65079a203f52c7e0023ad274e1b2270ee9fbb231293",
+    "gated-deltanet/layers/random-seed0.pdf": "f22b8a9996a1872928ac98190e57740fc1ebd20fbc151c93b2f22d2e787edabb",
+    "gated-deltanet/layers/random-seed0.png": "4d5256a7d8525897c95a159e14d64c795fcf31f47319fd38b114e38aeb5fb9f7",
+    "gated-deltanet/layers/random-seed1.pdf": "4dbf4796bc378899c714aba32a98efd3cf7193f64ee26a2c38e4606ac3650d05",
+    "gated-deltanet/layers/random-seed1.png": "0698c17e8cdea5fc6dbadb89869013b6a7637cf6513d5920e680e707dd7a38b9",
+    "gated-deltanet/layers/random-seed2.pdf": "2432736e616af72a25d02c140f4110df67e958e276a6bb82e7634d99cfaef3a1",
+    "gated-deltanet/layers/random-seed2.png": "a467212014eac4d847c2d4df79accbc347cc06cd42bf3a470773f1cb5ba081bb",
+    "gated-deltanet/layers/random-seed3.pdf": "3947f428798f00a27f70e7d165823553a0ef6b4d51e160498b2f463f482d0225",
+    "gated-deltanet/layers/random-seed3.png": "a697777454e0a8e0bf9e35b22650b2664cbfb89f9c5f39762c550cf9e1be7cc2",
+    "gated-deltanet/layers/random-seed4.pdf": "c761322a3f3765d6527d08e1d6abbfa96f73d50667ce53b0a9bc192e9de22f68",
+    "gated-deltanet/layers/random-seed4.png": "10d9d6cebaf954545517c7edf1f2be59206f4eea2e2eb16e0cf82e51378dba93",
+    "llama/heads/aggregate/pretrained.pdf": "2e6afdcfeb26538fed117352ce4d4692cfc4a1f2727608c28c6328b689d220c0",
+    "llama/heads/aggregate/pretrained.png": "b9ab27c5246a6a3f27c6e47e7ffe988d6f1f4cd71956b5af77d5fb623d512c94",
+    "llama/heads/aggregate/random-seed0.pdf": "0e680bda8c8899215c79bb307e83a7bc4be437b5fa696c5364fb8c516cc14a60",
+    "llama/heads/aggregate/random-seed0.png": "4c95e02294f71451ce05652be6489197686bd9d35214397c89416bb4fd58f873",
+    "llama/heads/aggregate/random-seed1.pdf": "5cba2fedcaaab6dd5c631971529f83bf9bf5ac4a2c3ab8415ab7d0ae7bebb48f",
+    "llama/heads/aggregate/random-seed1.png": "d26121c0de02e6b02cd8471b0d1d6279a3f7d84cd9146055969ee46087166c65",
+    "llama/heads/aggregate/random-seed2.pdf": "76b7d571ea85550844f3e290dbc351bcae2b3b6e3d457868200412f7e19d9739",
+    "llama/heads/aggregate/random-seed2.png": "2a4770c3ea6cfbdd2958a5774db0149955880a50e81f4c6939b6f46d312d7267",
+    "llama/heads/aggregate/random-seed3.pdf": "895b366561ff8ab933fcd8c59f6f770f2529ca810b1f66ad4bde490ff88bc5b9",
+    "llama/heads/aggregate/random-seed3.png": "31886d116263a46c25abfc4cdfced510adca7da76ee0b7c29a098c87dec017f8",
+    "llama/heads/aggregate/random-seed4.pdf": "f5448042c114e60c2b89e363c95a8889f5dea20805eaa81e7cb2e1c6f0bd4c67",
+    "llama/heads/aggregate/random-seed4.png": "33a527d6e726d4754f2ef6aeddb014b2311d60a4794bd6a941cef0ab06a19133",
+    "llama/layers/pretrained.pdf": "173fcff2be17159088d2cb3d86a7ff467cdc27430db814d26e5a2f3914d0231f",
+    "llama/layers/pretrained.png": "1e5f66295939c8ea5f69a0c41b788cd6b95a73d86b52eac1dc9125a00eb0d7df",
+    "llama/layers/random-seed0.pdf": "d0ebe4e084e95a06f6f357ca78cff45de69c501cca63fc870a4df744cb62f605",
+    "llama/layers/random-seed0.png": "b179847d4284116a9b143e6c08da2bb89d6a25805a2236e3b6eadcc0d4236d65",
+    "llama/layers/random-seed1.pdf": "4e13faf21506d3c04f00f56d37f6551ed8ed120bda0cb9dc26b59e5e5a0ccf31",
+    "llama/layers/random-seed1.png": "519f3529678c740eebc678d24830995ea7993b6744d5ad8b9cbfcab749fa9fcf",
+    "llama/layers/random-seed2.pdf": "680eca47b73655cc06172fabadb0303b74069ddae48defdc36c545b1e9dace71",
+    "llama/layers/random-seed2.png": "29b29dde7d5817200cc7e4cbe827728a81b87b92c05de970604c01296e9687c8",
+    "llama/layers/random-seed3.pdf": "73f545d6e2550c75b6ffbaca5336ba848e496683583264088837c53cfb8b16c3",
+    "llama/layers/random-seed3.png": "ee7b310a2e4136cad1128c9a356fdf927617f3441b7ce284a9bf3819c2314bc7",
+    "llama/layers/random-seed4.pdf": "649bf87233bca984d1b6ae17ec3f6a19e59e37a26d74c9551bd38bf5fb1e0cc7",
+    "llama/layers/random-seed4.png": "10dc68cc1e489e5cead01a08dc2ca509c42f6243f5f72ad831429fad2368baeb",
+    "per_head_terminal.csv": "2ebaa73683d31b2bbbfca51ec7f5018743743deb53d2b64ba9539ea4ab2a5465",
+    "validation.json": "8c4426acc5b5fb11d25e2ba95088b78b67a64c1f64582d73d643b9bdad89f5f8"
+  }
+}
