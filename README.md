@@ -6,7 +6,8 @@ Experiments are grouped by the question they investigate:
   rank of attention states, including pretrained Llama/Gated DeltaNet and
   matched random-versus-pretrained comparisons across every layer.
   [Llama results](results/state_rank/random_vs_pretrained/REPORT.md) ·
-  [Gated DeltaNet results](results/state_rank/random_vs_pretrained_deltanet/REPORT.md).
+  [Gated DeltaNet results](results/state_rank/random_vs_pretrained_deltanet/REPORT.md) ·
+  [Unified per-head and per-layer analysis](results/state_rank/unified_comparison/REPORT.md).
 - [Key dimension](experiments/key_dimension/README.md): pretrain a fixed
   Transformer backbone while varying query/key width and measure perplexity.
   All eight widths from 2 through 256 completed the same 10B-token budget.
