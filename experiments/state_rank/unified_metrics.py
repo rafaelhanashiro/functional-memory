@@ -244,7 +244,9 @@ def write_summaries(output: str | Path, analyses: Sequence[ModelAnalysis]) -> di
         destination = output / f"{name}.csv"
         temporary = destination.with_suffix(".csv.tmp")
         with temporary.open("w", newline="") as stream:
-            writer = csv.DictWriter(stream, fieldnames=fields[name])
+            # Match the repository's CSV LF rule so provenance hashes survive
+            # staging, merging and a fresh Git checkout byte-for-byte.
+            writer = csv.DictWriter(stream, fieldnames=fields[name], lineterminator="\n")
             writer.writeheader()
             writer.writerows(entries)
         temporary.replace(destination)

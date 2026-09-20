@@ -111,6 +111,8 @@ def test_load_checks_identity_inputs_and_depth_and_never_mutates_source(tmp_path
     assert not analysis.conditions[0].arrays['participation_ratio'].flags.writeable
     counts=write_summaries(tmp_path/'derived',[analysis])
     assert counts=={'per_head_terminal_rows':6,'depth_summary_rows':9}
+    for path in (tmp_path/'derived').glob('*.csv'):
+        assert b'\r\n' not in path.read_bytes()  # Git enforces LF for result CSVs.
     assert before=={str(p.relative_to(source)):p.read_bytes() for p in source.rglob('*') if p.is_file()}
     with (tmp_path/'derived/depth_summary.csv').open() as stream:
         row=next(csv.DictReader(stream))
