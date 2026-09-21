@@ -14,6 +14,10 @@ __pycache__/
 /results/polynomial_attention/**/checkpoints/
 /experiments/polynomial_attention/checkpoints/
 /results/polynomial_attention/**/wandb/
+/results/unnormalized_attention/250m-exp-seed0/
+/results/unnormalized_attention/**/checkpoints/
+/experiments/unnormalized_attention/checkpoints/
+/results/unnormalized_attention/**/wandb/
 *.log
 slurm-*.out
 slurm-*.err

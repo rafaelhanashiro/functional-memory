@@ -2,6 +2,10 @@
 
 Experiments are grouped by the question they investigate:
 
+- [Unnormalized attention](experiments/unnormalized_attention/README.md): train
+  the canonical 250M Transformer with exponential attention weights and no
+  softmax row denominator, using the matched 11.5B-token OFM recipe.
+  [Experiment status](results/unnormalized_attention/REPORT.md).
 - [State rank](experiments/state_rank/README.md): tokenwise spectra and effective
   rank of attention states, including pretrained Llama/Gated DeltaNet and
   matched random-versus-pretrained comparisons across every layer.

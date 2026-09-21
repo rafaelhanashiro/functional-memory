@@ -1,0 +1,18 @@
+{
+  "source_repository": "ofm",
+  "source_commit": "32ea743b7b3aed1d631116dfaa3c4b85101baf32",
+  "source_config": "configs/experiments/transformer_250m.yaml",
+  "source_report": "/home/rafah/projects/ofm/runs/250m/transformer_250m/REPORT.md",
+  "status": "complete",
+  "parameter_count": 253654016,
+  "seed": 0,
+  "training_tokens": 11500257280,
+  "terminal_step": 21935,
+  "validation_best_step": 21935,
+  "terminal_validation_nll_reported": 2.591487,
+  "terminal_validation_perplexity_reported": 13.3496,
+  "gpu_type": "H200",
+  "gpu_count": 2,
+  "attention_backend": "cudnn",
+  "notes": "Historical report metrics are rounded; no new softmax training run is implied."
+}
