@@ -1,3 +1,4 @@
+import hashlib
 import json
 import math
 import os
@@ -30,6 +31,7 @@ from experiments.polynomial_attention.training.checkpointing import (
     make_checkpoint_manager,
     restore_latest_checkpoint,
     save_checkpoint,
+    state_sha256,
 )
 from experiments.polynomial_attention.training.distributed import (
     BatchLayout,
@@ -420,6 +422,14 @@ def _write_status(config: Config, **updates) -> None:
         launch = json.loads(launch_path.read_text())
         if launch.get("log_path") is not None:
             metadata["log_path"] = launch["log_path"]
+    retention_path = config.train.workdir / "retention.json"
+    if retention_path.exists():
+        retention = json.loads(retention_path.read_text())
+        if retention.get("format") == "key-dimension-taylor-checkpoint-retention":
+            best_step = retention["best_checkpoint_step"]
+            metadata["retained_best_checkpoint_step"] = best_step
+            metadata["retained_terminal_checkpoint_step"] = (
+                best_step if best_step == config.optim.total_steps else None)
     write_json_atomic(path, metadata)
     lines = [
         f"# Polynomial attention: {metadata['attention_kernel']}"
@@ -476,7 +486,8 @@ def _fail_numerics(config, state, step, message, sample, provenance, *, diagnost
     raise FloatingPointError(message)
 
 
-def run_training(config: Config, *, resume: bool = True, stop_after_step: int | None = None) -> dict:
+def run_training(config: Config, *, resume: bool = True, stop_after_step: int | None = None,
+                 audit_checkpoint: bool = False) -> dict:
     """Train with an exact packed-data cursor and transactional local validation metrics."""
     validate_config(config)
     resolve_workdir(config)
@@ -493,7 +504,8 @@ def run_training(config: Config, *, resume: bool = True, stop_after_step: int | 
         print(f"removed_stale_checkpoint_tmp={path}", flush=True)
     manager = make_checkpoint_manager(config)
     try:
-        return _run_training(config, manager, layout, devices, resume=resume, end_step=end_step)
+        return _run_training(config, manager, layout, devices, resume=resume, end_step=end_step,
+                             audit_checkpoint=audit_checkpoint)
     except BaseException as error:
         _write_status(config, status="failed", error=f"{type(error).__name__}: {error}")
         raise
@@ -502,7 +514,11 @@ def run_training(config: Config, *, resume: bool = True, stop_after_step: int | 
         manager.close()
 
 
-def _run_training(config, manager, layout, devices, *, resume, end_step):
+def _update_audit(step, batches, rng):
+    return {"step": step, "batch_sha256": state_sha256(batches), "rng_sha256": state_sha256(rng)}
+
+
+def _run_training(config, manager, layout, devices, *, resume, end_step, audit_checkpoint=False):
     runtime_start = time.perf_counter()
     timing = {"train_step_seconds": [], "evaluation_seconds": [], "checkpoint_seconds": []}
     completion_path = config.train.workdir / "completion.json"
@@ -520,9 +536,18 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
     )
     if completion_path.exists():
         completion = json.loads(completion_path.read_text())
+        retained_best_complete = False
+        retention_path = config.train.workdir / "retention.json"
+        if retention_path.exists():
+            retention = json.loads(retention_path.read_text())
+            retained_best_complete = (
+                retention.get("format") == "key-dimension-taylor-checkpoint-retention"
+                and retention.get("completion_sha256") == hashlib.sha256(completion_path.read_bytes()).hexdigest()
+                and retention.get("best_checkpoint_step") == completion["retained_best_checkpoint_step"] == latest_before
+            )
         if (not resume or completion.get("format") != "polynomial-attention-training-completion"
                 or completion.get("final_step") != config.optim.total_steps
-                or latest_before != config.optim.total_steps):
+                or (latest_before != config.optim.total_steps and not retained_best_complete)):
             raise ValueError(f"Invalid or incompatible completed run: {completion_path}")
         _write_status(config, status="complete", step=config.optim.total_steps, **{
             key: completion[key] for key in (
@@ -545,6 +570,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
         raise ValueError("Checkpoint state step differs from checkpoint directory")
     if start_sequence != start_step * config.data.batch_size:
         raise ValueError("Checkpoint step and data cursor disagree")
+    audit = {"start_state_sha256": state_sha256(state)} if audit_checkpoint else None
     parameter_count = param_count(state)
     tokens_per_step = config.data.batch_size * (config.data.sequence_length - 1)
     _write_status(config, status="running", step=start_step, training_tokens=start_step * tokens_per_step,
@@ -584,11 +610,18 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
             step_rng = jax.random.fold_in(rng, step)
             if data_parallel is not None:
                 batches = np.stack([next(train_iter) for _ in range(layout.grad_accum_steps)])
+                if audit is not None and step == start_step + 1:
+                    audit["first_update"] = _update_audit(step, batches, step_rng)
                 state, loss = data_parallel.train_step(state, put_train_batches(batches, data_parallel.train_batch_sharding), step_rng)
             elif layout.grad_accum_steps == 1:
-                state, loss = train_step(state, jnp.asarray(next(train_iter)), step_rng)
+                batch = jnp.asarray(next(train_iter))
+                if audit is not None and step == start_step + 1:
+                    audit["first_update"] = _update_audit(step, batch[None], step_rng)
+                state, loss = train_step(state, batch, step_rng)
             else:
                 batches = jnp.asarray(np.stack([next(train_iter) for _ in range(layout.grad_accum_steps)]))
+                if audit is not None and step == start_step + 1:
+                    audit["first_update"] = _update_audit(step, batches, step_rng)
                 micro_rngs = jax.random.split(step_rng, layout.grad_accum_steps)
                 state, loss = accumulated_train_step(state, batches, micro_rngs)
             is_log = step == start_step + 1 or step % config.train.log_every == 0
@@ -603,6 +636,10 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
             if not math.isfinite(loss_value):
                 _fail_numerics(config, state, step,
                                f"Nonfinite training loss at step {step}: {loss_value}",
+                               diagnostic_sample, diagnostic_provenance, loss=loss_value)
+            if loss_value > math.log(np.finfo(np.float64).max):
+                _fail_numerics(config, state, step,
+                               f"Training perplexity overflows at step {step}: NLL={loss_value}",
                                diagnostic_sample, diagnostic_provenance, loss=loss_value)
             if is_log:
                 train_losses.append(loss_value)
@@ -626,9 +663,15 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
                     _fail_numerics(config, state, step,
                                    f"Nonfinite validation loss at step {step}: {eval_loss}",
                                    diagnostic_sample, diagnostic_provenance, diagnostics=diagnostics, loss=eval_loss)
+                if eval_loss > math.log(np.finfo(np.float64).max):
+                    _fail_numerics(config, state, step,
+                                   f"Validation perplexity overflows at step {step}: NLL={eval_loss}",
+                                   diagnostic_sample, diagnostic_provenance, diagnostics=diagnostics, loss=eval_loss)
                 eval_ppl = math.exp(eval_loss)
                 timing["evaluation_seconds"].append(time.perf_counter() - evaluation_start)
-                is_best = eval_loss < best_nll
+                # Orbax retains the latest checkpoint on an exact metric tie.
+                # Keep the small selection record consistent with that choice.
+                is_best = eval_loss <= best_nll
                 train_nll = float(np.mean(train_losses))
                 throughput = (step - window_step) * tokens_per_step / interval_seconds
                 record = {
@@ -691,6 +734,21 @@ def _run_training(config, manager, layout, devices, *, resume, end_step):
             "timing": timing,
             **attention_identity(config),
         }
+        if audit is not None:
+            audit["final_state_sha256"] = state_sha256(state)
+            restored, checkpoint_step = restore_latest_checkpoint(manager, state)
+            audit["checkpoint_state_sha256"] = state_sha256(restored)
+            if checkpoint_step != final_step or audit["final_state_sha256"] != audit["checkpoint_state_sha256"]:
+                raise RuntimeError("Live training state differs from its durable checkpoint")
+            del restored
+            if final_step < config.optim.total_steps:
+                # The next worker hashes its actual first input; comparing two
+                # reconstructions of a cursor could conceal a shared cursor bug.
+                next_batches = np.stack([next(train_iter) for _ in range(layout.grad_accum_steps)])
+                audit["next_update"] = _update_audit(final_step + 1, next_batches,
+                                                     jax.random.fold_in(rng, final_step + 1))
+            result["checkpoint_audit"] = audit
+            timing["runtime_seconds"] = time.perf_counter() - runtime_start
         if final_step == config.optim.total_steps:
             terminal_metrics = manager.metrics(final_step)
             if not terminal_metrics or manager.latest_step() != final_step:

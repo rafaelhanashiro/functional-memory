@@ -14,6 +14,9 @@ __pycache__/
 /results/polynomial_attention/**/checkpoints/
 /experiments/polynomial_attention/checkpoints/
 /results/polynomial_attention/**/wandb/
+/results/key_dimension_taylor/**/checkpoints
+/experiments/key_dimension_taylor/checkpoints/
+/results/key_dimension_taylor/**/wandb/
 *.log
 slurm-*.out
 slurm-*.err
