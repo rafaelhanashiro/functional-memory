@@ -1,0 +1,32 @@
+{
+  "format": "polynomial-attention-b300-comparison",
+  "captured_at_utc": "2026-09-18T18:50:00.021508+00:00",
+  "same_source_hashes": true,
+  "same_initial_parameters": true,
+  "same_input_tokens": true,
+  "results": [
+    {
+      "attention": "m002",
+      "h100_median_ms": 463.70522608049214,
+      "b300_median_ms": 399.7134412638843,
+      "b300_throughput_ratio": 1.1600941529868682,
+      "b300_step_time_change_percent": -13.800099981081482
+    },
+    {
+      "attention": "m016",
+      "h100_median_ms": 686.4991236943752,
+      "b300_median_ms": 880.2292051259428,
+      "b300_throughput_ratio": 0.7799095050432361,
+      "b300_step_time_change_percent": 28.22000418427555
+    },
+    {
+      "attention": "softmax",
+      "h100_median_ms": 357.3790604714304,
+      "b300_median_ms": 188.82126361131668,
+      "b300_throughput_ratio": 1.8926844023620415,
+      "b300_step_time_change_percent": -47.16498964370314
+    }
+  ],
+  "h100_reference_job": "199635",
+  "b300_job": "199854"
+}

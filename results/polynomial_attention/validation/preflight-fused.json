@@ -1,0 +1,35 @@
+{
+  "checks": [
+    "attention-cpu",
+    "attention-gpu",
+    "initialization",
+    "200m-m002-seed0",
+    "200m-m004-seed0",
+    "200m-m008-seed0",
+    "200m-m016-seed0",
+    "200m-softmax-seed0",
+    "attention-fused-gpu"
+  ],
+  "completed_utc": "2026-09-18T05:13:40.589641+00:00",
+  "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+  "hardware": {
+    "backend": "gpu",
+    "device_kinds": [
+      "NVIDIA H100 80GB HBM3",
+      "NVIDIA H100 80GB HBM3",
+      "NVIDIA H100 80GB HBM3",
+      "NVIDIA H100 80GB HBM3"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ]
+  },
+  "identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
+  "slurm_job_id": "199647",
+  "slurm_restart_count": "0",
+  "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+  "status": "passed"
+}

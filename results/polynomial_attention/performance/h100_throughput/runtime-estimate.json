@@ -1,0 +1,63 @@
+{
+  "method": "Projection from synchronized update medians plus observed packed-data overhead and warmed degree-16 validation/checkpoint costs. Budget range charges 20 waited-for validation checkpoints to all 39 checkpoints as serial, respectively. Other checkpoints can overlap training. Applies only to four H100 SXM GPUs on dogo; excludes queue time and failures. Not a confidence interval.",
+  "steps": 19074,
+  "validation_events": 20,
+  "all_checkpoint_events": 39,
+  "real_data_step_median_seconds": 0.6996688144281507,
+  "resident_degree16_step_median_seconds": 0.6864991236943752,
+  "data_and_loop_allowance_per_step_seconds": 0.013169690733775496,
+  "warmed_degree16_evaluation_seconds": 3.5860696132294834,
+  "warmed_checkpoint_seconds": 21.487877415958792,
+  "startup_allowance_seconds": 255.95734699629247,
+  "first_evaluation_seconds": 14.91734529985115,
+  "pilot_wall_seconds": 375.5181834558025,
+  "variants": [
+    {
+      "degree": 2,
+      "median_ms": 463.70522608049214,
+      "p10_ms": 462.6973784994334,
+      "p90_ms": 465.40198745206,
+      "training_only_hours": 2.4568648561831408,
+      "budget_hours_low": 2.737041236359833,
+      "budget_hours_high": 2.8504494782773935
+    },
+    {
+      "degree": 4,
+      "median_ms": 485.3015411645174,
+      "p10_ms": 484.2755960300565,
+      "p90_ms": 487.02722624875605,
+      "training_only_hours": 2.5712893322700014,
+      "budget_hours_low": 2.8514657124466933,
+      "budget_hours_high": 2.9648739543642537
+    },
+    {
+      "degree": 8,
+      "median_ms": 533.4288054145873,
+      "p10_ms": 531.2990930862725,
+      "p90_ms": 537.2482805047184,
+      "training_only_hours": 2.826283620688288,
+      "budget_hours_low": 3.1064600008649803,
+      "budget_hours_high": 3.2198682427825407
+    },
+    {
+      "degree": 16,
+      "median_ms": 686.4991236943752,
+      "p10_ms": 684.7922961693257,
+      "p90_ms": 688.3878058288246,
+      "training_only_hours": 3.637301190374031,
+      "budget_hours_low": 3.917477570550723,
+      "budget_hours_high": 4.030885812468283
+    },
+    {
+      "degree": null,
+      "median_ms": 357.3790604714304,
+      "p10_ms": 353.04581159725785,
+      "p90_ms": 361.406685737893,
+      "training_only_hours": 1.8935133887311288,
+      "budget_hours_low": 2.173689768907821,
+      "budget_hours_high": 2.2870980108253813
+    }
+  ],
+  "remaining_five_hours_low": 14.78613428913005,
+  "remaining_five_hours_high": 15.353175498717853
+}

@@ -14,6 +14,12 @@ Experiments are grouped by the question they investigate:
   All eight widths from 2 through 256 completed the same 10B-token budget.
   [Results](results/key_dimension/README.md) ·
   [Retention provenance](results/key_dimension/provenance.json).
+- [Polynomial attention](experiments/polynomial_attention/README.md): train the
+  same 200M-reference backbone from scratch while varying the Taylor degree of
+  the exponential attention kernel, with a matched exact-softmax control.
+  All six variants completed the same 10B-token budget.
+  [Results](results/polynomial_attention/README.md) ·
+  [Retention provenance](results/polynomial_attention/provenance.json).
 
 Each family owns its code, tests, and scientific configuration. The root
 PyTorch environment serves state-rank experiments; each training family has

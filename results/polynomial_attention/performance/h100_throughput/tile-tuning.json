@@ -1,0 +1,5168 @@
+{
+  "candidate_status_counts": {
+    "accepted": 28
+  },
+  "completed_at_utc": "2026-09-18T04:22:50.165517+00:00",
+  "configuration": {
+    "baseline": {
+      "block_k": 64,
+      "block_q": 64,
+      "id": "q64_k64_w4_s2",
+      "num_stages": 2,
+      "num_warps": 4
+    },
+    "baseline_policy": "always included; measured once per degree before other candidates",
+    "cache_policy": "jax.clear_caches before every candidate, then set BLOCK_Q/BLOCK_K/NUM_WARPS/NUM_STAGES",
+    "degrees": [
+      2,
+      16
+    ],
+    "dtype": "bfloat16",
+    "evaluated_candidates": [
+      {
+        "block_k": 64,
+        "block_q": 64,
+        "id": "q64_k64_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 64,
+        "block_q": 32,
+        "id": "q32_k64_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 64,
+        "block_q": 32,
+        "id": "q32_k64_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 32,
+        "block_q": 64,
+        "id": "q64_k32_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 32,
+        "block_q": 64,
+        "id": "q64_k32_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 64,
+        "block_q": 64,
+        "id": "q64_k64_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 128,
+        "block_q": 64,
+        "id": "q64_k128_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 128,
+        "block_q": 64,
+        "id": "q64_k128_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 32,
+        "block_q": 128,
+        "id": "q128_k32_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 32,
+        "block_q": 128,
+        "id": "q128_k32_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 64,
+        "block_q": 128,
+        "id": "q128_k64_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 64,
+        "block_q": 128,
+        "id": "q128_k64_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 128,
+        "block_q": 128,
+        "id": "q128_k128_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 128,
+        "block_q": 128,
+        "id": "q128_k128_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      }
+    ],
+    "input_distribution": "fixed independent normal(0,1); Q/K scaled before BF16 conversion",
+    "iterations": 10,
+    "layout": "batch,time,heads,channels",
+    "memory": "compiler estimates from time_program; not measured allocator peak",
+    "objective": "sum(float32(output) * float32(cotangent)); Q/K/V gradients",
+    "parity": {
+      "limitation": "tile-invariance check against the same semantic kernel, not an independent correctness proof",
+      "objective": "finite-only gate; cancellation-sensitive scalar error recorded",
+      "relative_l2_tolerances": {
+        "forward": 0.006,
+        "gradient_k": 0.025,
+        "gradient_q": 0.025,
+        "gradient_v": 0.015
+      },
+      "relative_max_multiplier": 3,
+      "scope": "global and every batch/head; exact zero references require exact zero errors"
+    },
+    "qk_scale": 1.0,
+    "reference_storage": "independent read-only host arrays; never cached device outputs",
+    "requested_candidates": [
+      {
+        "block_k": 64,
+        "block_q": 32,
+        "id": "q32_k64_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 64,
+        "block_q": 32,
+        "id": "q32_k64_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 32,
+        "block_q": 64,
+        "id": "q64_k32_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 32,
+        "block_q": 64,
+        "id": "q64_k32_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 64,
+        "block_q": 64,
+        "id": "q64_k64_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 64,
+        "block_q": 64,
+        "id": "q64_k64_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 128,
+        "block_q": 64,
+        "id": "q64_k128_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 128,
+        "block_q": 64,
+        "id": "q64_k128_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 32,
+        "block_q": 128,
+        "id": "q128_k32_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 32,
+        "block_q": 128,
+        "id": "q128_k32_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 64,
+        "block_q": 128,
+        "id": "q128_k64_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 64,
+        "block_q": 128,
+        "id": "q128_k64_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 128,
+        "block_q": 128,
+        "id": "q128_k128_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 128,
+        "block_q": 128,
+        "id": "q128_k128_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      }
+    ],
+    "seed": 0,
+    "shape": [
+      16,
+      2048,
+      16,
+      64
+    ],
+    "timing": "synchronized compiled calls; compilation, reference transfers, and parity checks excluded",
+    "warmup": 3
+  },
+  "created_at_utc": "2026-09-18T04:20:41.211172+00:00",
+  "format": "polynomial-attention-tile-tuning",
+  "provenance": {
+    "device": {
+      "description": "cuda:0",
+      "id": 0,
+      "kind": "NVIDIA H100 80GB HBM3",
+      "platform": "gpu",
+      "process_index": 0
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "199628",
+      "SLURM_STEP_ID": "5",
+      "XLA_FLAGS": null
+    },
+    "hostname": "dogo.csail.mit.edu",
+    "package_versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda12-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cudnn-cu12": "9.22.0.52"
+    },
+    "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "source_commit": "4e2c906c32bb76b3ec358c4822d25d1e4561e388",
+    "source_dirty": true,
+    "source_sha256": {
+      "experiments/polynomial_attention/benchmark_attention.py": "eda9a6cdaffea7507f876f021f28571edbac029c8448ed6af6d3cdfe265cca3c",
+      "experiments/polynomial_attention/models/components/attention.py": "1be81a96ecfd688f5b8d84932c03de907664a946223c131c0b8fd1aef6239dc2",
+      "experiments/polynomial_attention/models/components/fused_attention.py": "2584f962aeab6cc6bd8c663676233cafed30b343768289e65c21365258326271",
+      "experiments/polynomial_attention/tune_attention.py": "c070ac295402f294a06b8efda755869392f40bb63f5ccf8aa8b1fce1b46389d1",
+      "experiments/polynomial_attention/uv.lock": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA H100 80GB HBM3"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ]
+  },
+  "results": [
+    {
+      "baseline": {
+        "config": {
+          "block_k": 64,
+          "block_q": 64,
+          "id": "q64_k64_w4_s2",
+          "num_stages": 2,
+          "num_warps": 4
+        },
+        "forward": {
+          "compilation_seconds": 0.34770827600732446,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 201326592,
+            "available": true,
+            "generated_code_size_in_bytes": 27376,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 67108864,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 134217984
+          },
+          "max_ms": 1.206515822559595,
+          "median_ms": 1.1773309670388699,
+          "min_ms": 1.1509247124195099,
+          "p10_ms": 1.1671076528728008,
+          "p90_ms": 1.2021970469504595,
+          "samples_ms": [
+            1.206515822559595,
+            1.2017171829938889,
+            1.1930661275982857,
+            1.1851959861814976,
+            1.170986331999302,
+            1.1725756339728832,
+            1.168905757367611,
+            1.1509247124195099,
+            1.1746757663786411,
+            1.1799861676990986
+          ],
+          "timed_iterations": 10,
+          "warmup_iterations": 3
+        },
+        "forward_backward": {
+          "compilation_seconds": 1.2601017579436302,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 268435456,
+            "available": true,
+            "generated_code_size_in_bytes": 89136,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 201326628,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 136315152
+          },
+          "max_ms": 4.346306435763836,
+          "median_ms": 4.276048857718706,
+          "min_ms": 4.221413284540176,
+          "p10_ms": 4.240988381206989,
+          "p90_ms": 4.321186291053891,
+          "samples_ms": [
+            4.221413284540176,
+            4.263703711330891,
+            4.243163391947746,
+            4.257064312696457,
+            4.274223931133747,
+            4.300334956496954,
+            4.295755177736282,
+            4.318395163863897,
+            4.277873784303665,
+            4.346306435763836
+          ],
+          "timed_iterations": 10,
+          "warmup_iterations": 3
+        },
+        "is_baseline": true,
+        "parity": {
+          "forward": {
+            "accepted": true,
+            "all_finite": true,
+            "l2_error": 0.0,
+            "max_abs_error": 0.0,
+            "per_batch_head": {
+              "all_passed": true,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "reference_l2": 447.3031311035156,
+            "reference_max_abs": 4.0625,
+            "relative_l2_error": 0.0,
+            "relative_l2_tolerance": 0.006,
+            "relative_max_tolerance": 0.018000000000000002
+          },
+          "gradient_k": {
+            "accepted": true,
+            "all_finite": true,
+            "l2_error": 0.0,
+            "max_abs_error": 0.0,
+            "per_batch_head": {
+              "all_passed": true,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "reference_l2": 296.9757385253906,
+            "reference_max_abs": 3.171875,
+            "relative_l2_error": 0.0,
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_q": {
+            "accepted": true,
+            "all_finite": true,
+            "l2_error": 0.0,
+            "max_abs_error": 0.0,
+            "per_batch_head": {
+              "all_passed": true,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "reference_l2": 296.3283386230469,
+            "reference_max_abs": 4.1875,
+            "relative_l2_error": 0.0,
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_v": {
+            "accepted": true,
+            "all_finite": true,
+            "l2_error": 0.0,
+            "max_abs_error": 0.0,
+            "per_batch_head": {
+              "all_passed": true,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "reference_l2": 446.5157775878906,
+            "reference_max_abs": 6.375,
+            "relative_l2_error": 0.0,
+            "relative_l2_tolerance": 0.015,
+            "relative_max_tolerance": 0.045
+          },
+          "objective": {
+            "accepted": true,
+            "all_finite": true,
+            "l2_error": 0.0,
+            "max_abs_error": 0.0,
+            "reference_l2": 299.3487548828125,
+            "reference_max_abs": 299.3487548828125,
+            "relative_l2_error": 0.0,
+            "relative_l2_tolerance": null,
+            "relative_max_tolerance": null
+          }
+        },
+        "status": "accepted"
+      },
+      "best": {
+        "forward": {
+          "candidate": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "median_ms": 1.1773309670388699,
+          "speedup_over_baseline": 1.0
+        },
+        "forward_backward": {
+          "candidate": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "median_ms": 4.276048857718706,
+          "speedup_over_baseline": 1.0
+        }
+      },
+      "candidates": [
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.34770827600732446,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 27376,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 1.206515822559595,
+            "median_ms": 1.1773309670388699,
+            "min_ms": 1.1509247124195099,
+            "p10_ms": 1.1671076528728008,
+            "p90_ms": 1.2021970469504595,
+            "samples_ms": [
+              1.206515822559595,
+              1.2017171829938889,
+              1.1930661275982857,
+              1.1851959861814976,
+              1.170986331999302,
+              1.1725756339728832,
+              1.168905757367611,
+              1.1509247124195099,
+              1.1746757663786411,
+              1.1799861676990986
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.2601017579436302,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 89136,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 4.346306435763836,
+            "median_ms": 4.276048857718706,
+            "min_ms": 4.221413284540176,
+            "p10_ms": 4.240988381206989,
+            "p90_ms": 4.321186291053891,
+            "samples_ms": [
+              4.221413284540176,
+              4.263703711330891,
+              4.243163391947746,
+              4.257064312696457,
+              4.274223931133747,
+              4.300334956496954,
+              4.295755177736282,
+              4.318395163863897,
+              4.277873784303665,
+              4.346306435763836
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": true,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 32,
+            "id": "q32_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.2873382270336151,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 21360,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 1.8201302736997604,
+            "median_ms": 1.786339096724987,
+            "min_ms": 1.7557782121002674,
+            "p10_ms": 1.7582441680133343,
+            "p90_ms": 1.7982778139412403,
+            "samples_ms": [
+              1.793388742953539,
+              1.7958497628569603,
+              1.787849236279726,
+              1.7901500687003136,
+              1.7626387998461723,
+              1.784828957170248,
+              1.7585181631147861,
+              1.7557782121002674,
+              1.7667189240455627,
+              1.8201302736997604
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 0.9216903857886791,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 64560,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 5.991312209516764,
+            "median_ms": 5.877934629097581,
+            "min_ms": 5.821998696774244,
+            "p10_ms": 5.845830962061882,
+            "p90_ms": 5.981051921844482,
+            "samples_ms": [
+              5.821998696774244,
+              5.875299219042063,
+              5.991312209516764,
+              5.979911889880896,
+              5.922200158238411,
+              5.88642992079258,
+              5.868678912520409,
+              5.880570039153099,
+              5.848478991538286,
+              5.85394911468029
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.005880778189748526,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 7.25077188690193e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 1.314718762473314e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.012081962078809738,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00030313385650515556,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 4.068333035823653e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.004029312636703253,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00011774183076340705,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 1.3597459680792993e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.013628998771309853,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0001466589601477608,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 3.052299483107776e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 6.103515625e-05,
+              "max_abs_error": 6.103515625e-05,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 2.038931355298061e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 32,
+            "id": "q32_k64_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.23697239765897393,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 16752,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 3.0421968549489975,
+            "median_ms": 3.0065211467444897,
+            "min_ms": 3.000416327267885,
+            "p10_ms": 3.0027829576283693,
+            "p90_ms": 3.014017315581441,
+            "samples_ms": [
+              3.005986101925373,
+              3.0050757341086864,
+              3.0070561915636063,
+              3.007895778864622,
+              3.009607084095478,
+              3.0035460367798805,
+              3.000416327267885,
+              3.0108862556517124,
+              3.003045916557312,
+              3.0421968549489975
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 0.709832520224154,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 47152,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 10.87467884644866,
+            "median_ms": 10.766897117719054,
+            "min_ms": 10.60038385912776,
+            "p10_ms": 10.631165141239762,
+            "p90_ms": 10.860827751457691,
+            "samples_ms": [
+              10.722007136791945,
+              10.740975849330425,
+              10.747997090220451,
+              10.792118031531572,
+              10.858748573809862,
+              10.87467884644866,
+              10.85928874090314,
+              10.785797145217657,
+              10.60038385912776,
+              10.634585283696651
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.005570890381932259,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 7.250699127325788e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 1.2454396123247869e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.011804325506091118,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0003027848433703184,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 3.974845071420499e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0039204820059239864,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00011787962284870446,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 1.3230196018853095e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.014813740737736225,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00016071928257588297,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 3.31762985347597e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 6.103515625e-05,
+              "max_abs_error": 6.103515625e-05,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 2.038931355298061e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 32,
+            "block_q": 64,
+            "id": "q64_k32_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.26521650003269315,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 19824,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 1.3636499643325806,
+            "median_ms": 1.310909166932106,
+            "min_ms": 1.2739580124616623,
+            "p10_ms": 1.2825620360672474,
+            "p90_ms": 1.3537052553147078,
+            "samples_ms": [
+              1.3455292209982872,
+              1.3526002876460552,
+              1.3636499643325806,
+              1.3403990305960178,
+              1.3011479750275612,
+              1.3114293105900288,
+              1.3103890232741833,
+              1.2739580124616623,
+              1.2983488850295544,
+              1.2835180386900902
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 0.8658118052408099,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 65072,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 5.86707005277276,
+            "median_ms": 5.786127177998424,
+            "min_ms": 5.69905573502183,
+            "p10_ms": 5.719585111364722,
+            "p90_ms": 5.856691999360919,
+            "samples_ms": [
+              5.69905573502183,
+              5.721866153180599,
+              5.7611167430877686,
+              5.7905372232198715,
+              5.86707005277276,
+              5.855538882315159,
+              5.827808286994696,
+              5.849089007824659,
+              5.781717132776976,
+              5.780837032943964
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.012468254193663597,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 8.132947550620884e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 2.7874283291744214e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0068350136280059814,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00011256356810918078,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 2.301539399125564e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.008477067574858665,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00012255624460522085,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 2.8607009421539553e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.009474792517721653,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.000146940175909549,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 2.1219390205885095e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 3.0517578125e-05,
+              "max_abs_error": 3.0517578125e-05,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 1.0194656776490305e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 32,
+            "block_q": 64,
+            "id": "q64_k32_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.25309517281129956,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 18928,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 2.891653683036566,
+            "median_ms": 2.8623028192669153,
+            "min_ms": 2.8288220055401325,
+            "p10_ms": 2.834573667496443,
+            "p90_ms": 2.886378951370716,
+            "samples_ms": [
+              2.835212741047144,
+              2.8700437396764755,
+              2.8857928700745106,
+              2.8675729408860207,
+              2.840702887624502,
+              2.85703269764781,
+              2.8288220055401325,
+              2.8453930281102657,
+              2.891653683036566,
+              2.8798626735806465
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 0.7696231971494853,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 59056,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 12.239450123161077,
+            "median_ms": 12.101301224902272,
+            "min_ms": 12.052265927195549,
+            "p10_ms": 12.065459042787552,
+            "p90_ms": 12.184313964098692,
+            "samples_ms": [
+              12.178187724202871,
+              12.239450123161077,
+              12.066924944519997,
+              12.052265927195549,
+              12.11460679769516,
+              12.10858579725027,
+              12.094016652554274,
+              12.087206356227398,
+              12.07571616396308,
+              12.117516715079546
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.012468254193663597,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 8.132947550620884e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 2.7874283291744214e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0068350136280059814,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00011256356810918078,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 2.301539399125564e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.008477067574858665,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00012255624460522085,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 2.8607009421539553e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.009474792517721653,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.000146940175909549,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 2.1219390205885095e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 3.0517578125e-05,
+              "max_abs_error": 3.0517578125e-05,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 1.0194656776490305e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.3296859902329743,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 26224,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 3.0325669795274734,
+            "median_ms": 3.001351607963443,
+            "min_ms": 2.972315065562725,
+            "p10_ms": 2.9920439701527357,
+            "p90_ms": 3.0302171129733324,
+            "samples_ms": [
+              2.972315065562725,
+              2.994236070662737,
+              2.998196054250002,
+              2.994406037032604,
+              3.002716228365898,
+              3.004566300660372,
+              3.0101360753178596,
+              3.0325669795274734,
+              3.029956016689539,
+              2.9999869875609875
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.0908811106346548,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 85936,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 10.068072006106377,
+            "median_ms": 9.924804093316197,
+            "min_ms": 9.889096952974796,
+            "p10_ms": 9.895163774490356,
+            "p90_ms": 10.04135007970035,
+            "samples_ms": [
+              9.915788192301989,
+              10.038380976766348,
+              10.068072006106377,
+              9.982210118323565,
+              9.921188931912184,
+              9.895837865769863,
+              9.889096952974796,
+              9.949939325451851,
+              9.915448725223541,
+              9.928419254720211
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 128,
+            "block_q": 64,
+            "id": "q64_k128_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.5617597899399698,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 42736,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 1.2808679603040218,
+            "median_ms": 1.2494162656366825,
+            "min_ms": 1.1773859150707722,
+            "p10_ms": 1.2066458817571402,
+            "p90_ms": 1.277547050267458,
+            "samples_ms": [
+              1.2808679603040218,
+              1.2771780602633953,
+              1.2764479033648968,
+              1.2750388123095036,
+              1.2723365798592567,
+              1.2264959514141083,
+              1.2132669799029827,
+              1.1773859150707722,
+              1.2243869714438915,
+              1.2098969891667366
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.065413639880717,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 151728,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 6.44625211134553,
+            "median_ms": 6.345320027321577,
+            "min_ms": 6.305769085884094,
+            "p10_ms": 6.30761394277215,
+            "p90_ms": 6.400504102930427,
+            "samples_ms": [
+              6.336119957268238,
+              6.307818926870823,
+              6.305769085884094,
+              6.35962001979351,
+              6.395420990884304,
+              6.361949723213911,
+              6.330639123916626,
+              6.44625211134553,
+              6.354520097374916,
+              6.326870061457157
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.012759306468069553,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 8.565502503188327e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 2.8524965690697956e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.005697778891772032,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00010054867743747309,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 1.9186007988611795e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.010075405240058899,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00011135340901091695,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 3.4000815739987704e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.008435754105448723,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014647872012574226,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 1.889239872109168e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 3.0517578125e-05,
+              "max_abs_error": 3.0517578125e-05,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 1.0194656776490305e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 128,
+            "block_q": 64,
+            "id": "q64_k128_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.51096386089921,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 41840,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 2.7300501242280006,
+            "median_ms": 2.708550076931715,
+            "min_ms": 2.677628770470619,
+            "p10_ms": 2.6804358698427677,
+            "p90_ms": 2.719772234559059,
+            "samples_ms": [
+              2.6807477697730064,
+              2.706610132008791,
+              2.710490021854639,
+              2.677628770470619,
+              2.7186302468180656,
+              2.7056192047894,
+              2.706230152398348,
+              2.7180397883057594,
+              2.7300501242280006,
+              2.7123098261654377
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.6374108148738742,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 134704,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 8.516737725585699,
+            "median_ms": 8.435911033302546,
+            "min_ms": 8.416896220296621,
+            "p10_ms": 8.418739819899201,
+            "p90_ms": 8.485561236739159,
+            "samples_ms": [
+              8.443586062639952,
+              8.482097182422876,
+              8.478896226733923,
+              8.516737725585699,
+              8.472827263176441,
+              8.423334918916225,
+              8.42823600396514,
+              8.418944664299488,
+              8.416896220296621,
+              8.42473516240716
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.012759306468069553,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 8.565502503188327e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 2.8524965690697956e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.005697778891772032,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00010054867743747309,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 1.9186007988611795e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.010075405240058899,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00011135340901091695,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 3.4000815739987704e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.008435754105448723,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014647872012574226,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 1.889239872109168e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 3.0517578125e-05,
+              "max_abs_error": 3.0517578125e-05,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 1.0194656776490305e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 32,
+            "block_q": 128,
+            "id": "q128_k32_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.40379404090344906,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 31088,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 1.4238907024264336,
+            "median_ms": 1.413991441950202,
+            "min_ms": 1.4029312878847122,
+            "p10_ms": 1.4069810044020414,
+            "p90_ms": 1.42297288402915,
+            "samples_ms": [
+              1.4238907024264336,
+              1.41995120793581,
+              1.4103306457400322,
+              1.4121211133897305,
+              1.4029312878847122,
+              1.4228709042072296,
+              1.4164107851684093,
+              1.407430972903967,
+              1.4118016697466373,
+              1.4158617705106735
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.443110486958176,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 109872,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 6.120135076344013,
+            "median_ms": 6.046463036909699,
+            "min_ms": 6.009022239595652,
+            "p10_ms": 6.010318920016289,
+            "p90_ms": 6.111710425466299,
+            "samples_ms": [
+              6.009022239595652,
+              6.0338531620800495,
+              6.034212652593851,
+              6.035713013261557,
+              6.065994035452604,
+              6.057213060557842,
+              6.010462995618582,
+              6.110774353146553,
+              6.109934765845537,
+              6.120135076344013
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.012652670964598656,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 8.154403622029349e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 2.828656918493726e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.010696731507778168,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014350049605127424,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 3.601887332915455e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.008469827473163605,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00012255624460522085,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 2.8582576720540714e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0240909606218338,
+              "max_abs_error": 0.015625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0005586575716733932,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 5.3953212475435585e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 32,
+            "block_q": 128,
+            "id": "q128_k32_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.2668341062963009,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 19568,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 1.4464110136032104,
+            "median_ms": 1.4358318876475096,
+            "min_ms": 1.4207009226083755,
+            "p10_ms": 1.425966015085578,
+            "p90_ms": 1.4454487711191177,
+            "samples_ms": [
+              1.4265510253608227,
+              1.4341222122311592,
+              1.4207009226083755,
+              1.42718106508255,
+              1.4413418248295784,
+              1.4323522336781025,
+              1.4453418552875519,
+              1.4464110136032104,
+              1.4387317933142185,
+              1.43754156306386
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 0.8771055429242551,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 64560,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 7.613247726112604,
+            "median_ms": 7.597791962325573,
+            "min_ms": 7.497194688767195,
+            "p10_ms": 7.57050197571516,
+            "p90_ms": 7.612302666530013,
+            "samples_ms": [
+              7.497194688767195,
+              7.591206580400467,
+              7.613247726112604,
+              7.612197659909725,
+              7.57864722982049,
+              7.596476934850216,
+              7.59910698980093,
+              7.606887724250555,
+              7.579147350043058,
+              7.603856734931469
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.012652670964598656,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 8.154403622029349e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 2.828656918493726e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.010696731507778168,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014350049605127424,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 3.601887332915455e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.008469827473163605,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00012255624460522085,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 2.8582576720540714e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0240909606218338,
+              "max_abs_error": 0.015625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0005586575716733932,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 5.3953212475435585e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 128,
+            "id": "q128_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.5913397809490561,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 47600,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 1.3540801592171192,
+            "median_ms": 1.3331340160220861,
+            "min_ms": 1.2848079204559326,
+            "p10_ms": 1.2930888216942549,
+            "p90_ms": 1.3506419025361538,
+            "samples_ms": [
+              1.3540801592171192,
+              1.349099911749363,
+              1.3450291007757187,
+              1.3502598740160465,
+              1.346880104392767,
+              1.3212389312684536,
+              1.3145692646503448,
+              1.314079388976097,
+              1.2848079204559326,
+              1.2940089218318462
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.111026704311371,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 159536,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 6.378899794071913,
+            "median_ms": 6.338114384561777,
+            "min_ms": 6.256638094782829,
+            "p10_ms": 6.2890660017728806,
+            "p90_ms": 6.368451751768589,
+            "samples_ms": [
+              6.256638094782829,
+              6.3292789272964,
+              6.367290858179331,
+              6.358969956636429,
+              6.378899794071913,
+              6.346949841827154,
+              6.360890343785286,
+              6.324559915810823,
+              6.308079231530428,
+              6.292669102549553
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.002337792655453086,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 7.289343921002e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 5.226416926001956e-06,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.01065151859074831,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014551526692230254,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 3.58666288486648e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0006665251567028463,
+              "max_abs_error": 0.00048828125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 2.7576823413255624e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 2.249279160406994e-06,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.023963917046785355,
+              "max_abs_error": 0.015625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0005575022660195827,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 5.366869044637147e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 3.0517578125e-05,
+              "max_abs_error": 3.0517578125e-05,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 1.0194656776490305e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 128,
+            "id": "q128_k64_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.3539387327618897,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 26864,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 1.6933768056333065,
+            "median_ms": 1.6864368226379156,
+            "min_ms": 1.6812277026474476,
+            "p10_ms": 1.6814879607409239,
+            "p90_ms": 1.69298998080194,
+            "samples_ms": [
+              1.6933768056333065,
+              1.6859169118106365,
+              1.684748101979494,
+              1.690537203103304,
+              1.6815168783068657,
+              1.688356976956129,
+              1.6869567334651947,
+              1.6929470002651215,
+              1.6853171400725842,
+              1.6812277026474476
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.2729269689880311,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 93488,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 6.6655767150223255,
+            "median_ms": 6.579735083505511,
+            "min_ms": 6.474133115261793,
+            "p10_ms": 6.486804457381368,
+            "p90_ms": 6.605789018794894,
+            "samples_ms": [
+              6.474133115261793,
+              6.488212384283543,
+              6.522524170577526,
+              6.50762440636754,
+              6.6655767150223255,
+              6.599145941436291,
+              6.5940250642597675,
+              6.5819150768220425,
+              6.589234806597233,
+              6.57755509018898
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.002337792655453086,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 7.289343921002e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 5.226416926001956e-06,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.01065151859074831,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014551526692230254,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 3.58666288486648e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0006665251567028463,
+              "max_abs_error": 0.00048828125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 2.7576823413255624e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 2.249279160406994e-06,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.023963917046785355,
+              "max_abs_error": 0.015625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0005575022660195827,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 5.366869044637147e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 3.0517578125e-05,
+              "max_abs_error": 3.0517578125e-05,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 1.0194656776490305e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 128,
+            "block_q": 128,
+            "id": "q128_k128_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 1.1042576641775668,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 83568,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 1.7596487887203693,
+            "median_ms": 1.7545390874147415,
+            "min_ms": 1.7491490580141544,
+            "p10_ms": 1.7500580754131079,
+            "p90_ms": 1.759342011064291,
+            "samples_ms": [
+              1.7539788968861103,
+              1.7581991851329803,
+              1.7549190670251846,
+              1.7491490580141544,
+              1.7541591078042984,
+              1.75930792465806,
+              1.7596487887203693,
+              1.750159077346325,
+              1.7518079839646816,
+              1.7568888142704964
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 4.265071824193001,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 307248,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 12.789492029696703,
+            "median_ms": 12.72966992110014,
+            "min_ms": 12.57053716108203,
+            "p10_ms": 12.585873110219836,
+            "p90_ms": 12.789284158498049,
+            "samples_ms": [
+              12.735059950500727,
+              12.789261061698198,
+              12.755500618368387,
+              12.763570994138718,
+              12.789492029696703,
+              12.724279891699553,
+              12.589776888489723,
+              12.587577104568481,
+              12.604057788848877,
+              12.57053716108203
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.012759306468069553,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 8.565502503188327e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 2.8524965690697956e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.010776852257549763,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014630718214903027,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 3.6288662202041705e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.010075405240058899,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00011135340901091695,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 3.4000815739987704e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.02378860116004944,
+              "max_abs_error": 0.015625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0005585863254964352,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 5.3276059557306396e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 3.0517578125e-05,
+              "max_abs_error": 3.0517578125e-05,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 1.0194656776490305e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 128,
+            "block_q": 128,
+            "id": "q128_k128_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.54945237794891,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 41712,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 1.5519042499363422,
+            "median_ms": 1.5311934985220432,
+            "min_ms": 1.5181740745902061,
+            "p10_ms": 1.5196140855550766,
+            "p90_ms": 1.5486730262637138,
+            "samples_ms": [
+              1.5436136163771152,
+              1.5483140014111996,
+              1.537372823804617,
+              1.5519042499363422,
+              1.521402969956398,
+              1.5306640416383743,
+              1.5199240297079086,
+              1.5197740867733955,
+              1.5317229554057121,
+              1.5181740745902061
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.9306376622989774,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 139440,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 5.136983003467321,
+            "median_ms": 5.109166959300637,
+            "min_ms": 5.069921258836985,
+            "p10_ms": 5.072288727387786,
+            "p90_ms": 5.119829019531608,
+            "samples_ms": [
+              5.069921258836985,
+              5.083892028778791,
+              5.072551779448986,
+              5.081202369183302,
+              5.108091980218887,
+              5.116933025419712,
+              5.110783036798239,
+              5.110241938382387,
+              5.117923021316528,
+              5.136983003467321
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.012759306468069553,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 8.565502503188327e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 447.3031311035156,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 2.8524965690697956e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.010776852257549763,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014630718214903027,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.9757385253906,
+              "reference_max_abs": 3.171875,
+              "relative_l2_error": 3.6288662202041705e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.010075405240058899,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00011135340901091695,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 296.3283386230469,
+              "reference_max_abs": 4.1875,
+              "relative_l2_error": 3.4000815739987704e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.02378860116004944,
+              "max_abs_error": 0.015625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0005585863254964352,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 446.5157775878906,
+              "reference_max_abs": 6.375,
+              "relative_l2_error": 5.3276059557306396e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 3.0517578125e-05,
+              "max_abs_error": 3.0517578125e-05,
+              "reference_l2": 299.3487548828125,
+              "reference_max_abs": 299.3487548828125,
+              "relative_l2_error": 1.0194656776490305e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        }
+      ],
+      "degree": 2
+    },
+    {
+      "baseline": {
+        "config": {
+          "block_k": 64,
+          "block_q": 64,
+          "id": "q64_k64_w4_s2",
+          "num_stages": 2,
+          "num_warps": 4
+        },
+        "forward": {
+          "compilation_seconds": 0.5012965076602995,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 201326592,
+            "available": true,
+            "generated_code_size_in_bytes": 48880,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 67108864,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 134217984
+          },
+          "max_ms": 2.0748251117765903,
+          "median_ms": 2.0470398012548685,
+          "min_ms": 2.022943925112486,
+          "p10_ms": 2.026958856731653,
+          "p90_ms": 2.072791662067175,
+          "samples_ms": [
+            2.049834933131933,
+            2.0468048751354218,
+            2.0326850935816765,
+            2.027404960244894,
+            2.032055053859949,
+            2.022943925112486,
+            2.0472747273743153,
+            2.072565723210573,
+            2.0748251117765903,
+            2.0659458823502064
+          ],
+          "timed_iterations": 10,
+          "warmup_iterations": 3
+        },
+        "forward_backward": {
+          "compilation_seconds": 2.165958452038467,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 268435456,
+            "available": true,
+            "generated_code_size_in_bytes": 196912,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 201326628,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 136315152
+          },
+          "max_ms": 10.343597736209631,
+          "median_ms": 10.13574842363596,
+          "min_ms": 10.058540850877762,
+          "p10_ms": 10.05883002653718,
+          "p90_ms": 10.301089333370328,
+          "samples_ms": [
+            10.16579382121563,
+            10.256775189191103,
+            10.296366177499294,
+            10.273227002471685,
+            10.343597736209631,
+            10.058862157166004,
+            10.091842152178288,
+            10.10570302605629,
+            10.058540850877762,
+            10.077781975269318
+          ],
+          "timed_iterations": 10,
+          "warmup_iterations": 3
+        },
+        "is_baseline": true,
+        "parity": {
+          "forward": {
+            "accepted": true,
+            "all_finite": true,
+            "l2_error": 0.0,
+            "max_abs_error": 0.0,
+            "per_batch_head": {
+              "all_passed": true,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "reference_l2": 533.8668823242188,
+            "reference_max_abs": 4.0625,
+            "relative_l2_error": 0.0,
+            "relative_l2_tolerance": 0.006,
+            "relative_max_tolerance": 0.018000000000000002
+          },
+          "gradient_k": {
+            "accepted": true,
+            "all_finite": true,
+            "l2_error": 0.0,
+            "max_abs_error": 0.0,
+            "per_batch_head": {
+              "all_passed": true,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "reference_l2": 472.4459533691406,
+            "reference_max_abs": 4.625,
+            "relative_l2_error": 0.0,
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_q": {
+            "accepted": true,
+            "all_finite": true,
+            "l2_error": 0.0,
+            "max_abs_error": 0.0,
+            "per_batch_head": {
+              "all_passed": true,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "reference_l2": 468.96490478515625,
+            "reference_max_abs": 5.1875,
+            "relative_l2_error": 0.0,
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_v": {
+            "accepted": true,
+            "all_finite": true,
+            "l2_error": 0.0,
+            "max_abs_error": 0.0,
+            "per_batch_head": {
+              "all_passed": true,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "reference_l2": 533.1607666015625,
+            "reference_max_abs": 6.6875,
+            "relative_l2_error": 0.0,
+            "relative_l2_tolerance": 0.015,
+            "relative_max_tolerance": 0.045
+          },
+          "objective": {
+            "accepted": true,
+            "all_finite": true,
+            "l2_error": 0.0,
+            "max_abs_error": 0.0,
+            "reference_l2": 391.0694580078125,
+            "reference_max_abs": 391.0694580078125,
+            "relative_l2_error": 0.0,
+            "relative_l2_tolerance": null,
+            "relative_max_tolerance": null
+          }
+        },
+        "status": "accepted"
+      },
+      "best": {
+        "forward": {
+          "candidate": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "median_ms": 2.0470398012548685,
+          "speedup_over_baseline": 1.0
+        },
+        "forward_backward": {
+          "candidate": {
+            "block_k": 64,
+            "block_q": 32,
+            "id": "q32_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "median_ms": 9.931892855092883,
+          "speedup_over_baseline": 1.0205253491471713
+        }
+      },
+      "candidates": [
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.5012965076602995,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 48880,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 2.0748251117765903,
+            "median_ms": 2.0470398012548685,
+            "min_ms": 2.022943925112486,
+            "p10_ms": 2.026958856731653,
+            "p90_ms": 2.072791662067175,
+            "samples_ms": [
+              2.049834933131933,
+              2.0468048751354218,
+              2.0326850935816765,
+              2.027404960244894,
+              2.032055053859949,
+              2.022943925112486,
+              2.0472747273743153,
+              2.072565723210573,
+              2.0748251117765903,
+              2.0659458823502064
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.165958452038467,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 196912,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 10.343597736209631,
+            "median_ms": 10.13574842363596,
+            "min_ms": 10.058540850877762,
+            "p10_ms": 10.05883002653718,
+            "p90_ms": 10.301089333370328,
+            "samples_ms": [
+              10.16579382121563,
+              10.256775189191103,
+              10.296366177499294,
+              10.273227002471685,
+              10.343597736209631,
+              10.058862157166004,
+              10.091842152178288,
+              10.10570302605629,
+              10.058540850877762,
+              10.077781975269318
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": true,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 32,
+            "id": "q32_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.37554396921768785,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 32112,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 2.639597747474909,
+            "median_ms": 2.590262098237872,
+            "min_ms": 2.5487057864665985,
+            "p10_ms": 2.573852753266692,
+            "p90_ms": 2.635196829214692,
+            "samples_ms": [
+              2.5487057864665985,
+              2.599666826426983,
+              2.5880569592118263,
+              2.576646860688925,
+              2.639597747474909,
+              2.5856471620500088,
+              2.5839568115770817,
+              2.6347078382968903,
+              2.614437136799097,
+              2.592467237263918
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.4366723839193583,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 118704,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 9.961089119315147,
+            "median_ms": 9.931892855092883,
+            "min_ms": 9.702183306217194,
+            "p10_ms": 9.775760071352124,
+            "p90_ms": 9.959973068907857,
+            "samples_ms": [
+              9.807986207306385,
+              9.88460797816515,
+              9.93282813578844,
+              9.961089119315147,
+              9.930957574397326,
+              9.934359230101109,
+              9.935218840837479,
+              9.959849063307047,
+              9.783935267478228,
+              9.702183306217194
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.00719022611156106,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00012253485328983516,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 1.3468200312890765e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.01811312884092331,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014672920224256814,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 3.8339049602930575e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.006654312834143639,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 6.706175918225199e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 1.4189362074315848e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0259686391800642,
+              "max_abs_error": 0.015625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0004698756674770266,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 4.870695821373308e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 32,
+            "id": "q32_k64_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.28929671039804816,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 22128,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 3.8357749581336975,
+            "median_ms": 3.676231484860182,
+            "min_ms": 3.6553610116243362,
+            "p10_ms": 3.6571430042386055,
+            "p90_ms": 3.8082337006926537,
+            "samples_ms": [
+              3.664120100438595,
+              3.6573410034179688,
+              3.6553610116243362,
+              3.675192128866911,
+              3.6712498404085636,
+              3.6772708408534527,
+              3.7179221399128437,
+              3.8357749581336975,
+              3.781663253903389,
+              3.805173560976982
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.0355303711257875,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 74160,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 14.095339924097061,
+            "median_ms": 14.025499112904072,
+            "min_ms": 13.749482110142708,
+            "p10_ms": 13.773865066468716,
+            "p90_ms": 14.072272088378668,
+            "samples_ms": [
+              13.969188090413809,
+              14.028068631887436,
+              14.025229029357433,
+              14.02576919645071,
+              14.095339924097061,
+              14.055800158530474,
+              14.069708995521069,
+              13.92328692600131,
+              13.776574283838272,
+              13.749482110142708
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.007654950954020023,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00012324724229983985,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 1.4338688552273133e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.017729736864566803,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014419977378565818,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 3.752754518930944e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.006106625311076641,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 6.709334411425516e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 1.302149744845881e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.025831570848822594,
+              "max_abs_error": 0.015625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0004707850457634777,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 4.844987190913626e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 6.103515625e-05,
+              "max_abs_error": 6.103515625e-05,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 1.5607241885092618e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 32,
+            "block_q": 64,
+            "id": "q64_k32_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.3479274311102927,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 30576,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 2.164218109101057,
+            "median_ms": 2.128385938704014,
+            "min_ms": 2.0954557694494724,
+            "p10_ms": 2.1047978196293116,
+            "p90_ms": 2.150366175919771,
+            "samples_ms": [
+              2.106386236846447,
+              2.1058358252048492,
+              2.0954557694494724,
+              2.1178661845624447,
+              2.164218109101057,
+              2.1248660050332546,
+              2.131905872374773,
+              2.1330080926418304,
+              2.1437881514430046,
+              2.1488270722329617
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.3960270886309445,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 119344,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 10.082291904836893,
+            "median_ms": 10.020820889621973,
+            "min_ms": 9.903938043862581,
+            "p10_ms": 9.968252805992961,
+            "p90_ms": 10.058325110003352,
+            "samples_ms": [
+              9.903938043862581,
+              10.082291904836893,
+              10.04333095625043,
+              10.039790999144316,
+              10.055662132799625,
+              9.975398890674114,
+              10.021290741860867,
+              10.00293018296361,
+              10.02035103738308,
+              10.011429898440838
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.016474096104502678,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00012815895024687052,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 3.085805965858342e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.011463401839137077,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0001344552292721346,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 2.4263943330212566e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.014689633622765541,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 7.63252392061986e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 3.1323524367980594e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.012904022820293903,
+              "max_abs_error": 0.0078125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00022906022786628455,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 2.4202873933402597e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0001220703125,
+              "max_abs_error": 0.0001220703125,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 3.1214483770185236e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 32,
+            "block_q": 64,
+            "id": "q64_k32_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.3343486520461738,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 29680,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 4.431918263435364,
+            "median_ms": 4.316264996305108,
+            "min_ms": 4.283553920686245,
+            "p10_ms": 4.285049252212048,
+            "p90_ms": 4.416041262447834,
+            "samples_ms": [
+              4.2916336096823215,
+              4.3122549541294575,
+              4.294254817068577,
+              4.283553920686245,
+              4.285215400159359,
+              4.320275038480759,
+              4.431918263435364,
+              4.414277151226997,
+              4.394306801259518,
+              4.384445957839489
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.2818945152685046,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 112944,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 19.662202801555395,
+            "median_ms": 19.509644014760852,
+            "min_ms": 19.1921629011631,
+            "p10_ms": 19.204807840287685,
+            "p90_ms": 19.64892796240747,
+            "samples_ms": [
+              19.61241103708744,
+              19.647452980279922,
+              19.662202801555395,
+              19.612721633166075,
+              19.588631112128496,
+              19.430656917393208,
+              19.1921629011631,
+              19.212283194065094,
+              19.20621283352375,
+              19.24270438030362
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.016474096104502678,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00012815895024687052,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 3.085805965858342e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.011463401839137077,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0001344552292721346,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 2.4263943330212566e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.014689633622765541,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 7.63252392061986e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 3.1323524367980594e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.012904022820293903,
+              "max_abs_error": 0.0078125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00022906022786628455,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 2.4202873933402597e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0001220703125,
+              "max_abs_error": 0.0001220703125,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 3.1214483770185236e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.4863855387084186,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 47728,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 5.290257278829813,
+            "median_ms": 5.204610293731093,
+            "min_ms": 5.138882901519537,
+            "p10_ms": 5.152357229962945,
+            "p90_ms": 5.271176295354962,
+            "samples_ms": [
+              5.138882901519537,
+              5.153854377567768,
+              5.1613436080515385,
+              5.169123876839876,
+              5.193405319005251,
+              5.215815268456936,
+              5.269056186079979,
+              5.252394825220108,
+              5.290257278829813,
+              5.258835852146149
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.051689976360649,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 193584,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 19.266664050519466,
+            "median_ms": 18.96957727149129,
+            "min_ms": 18.810033798217773,
+            "p10_ms": 18.813265021890402,
+            "p90_ms": 19.21858503483236,
+            "samples_ms": [
+              19.174842163920403,
+              19.213242921978235,
+              19.266664050519466,
+              19.17496183887124,
+              19.112310837954283,
+              18.824934028089046,
+              18.822655081748962,
+              18.813624046742916,
+              18.826843705028296,
+              18.810033798217773
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 128,
+            "block_q": 64,
+            "id": "q64_k128_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.9050473081879318,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 85744,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 2.715029753744602,
+            "median_ms": 2.698733936995268,
+            "min_ms": 2.689269371330738,
+            "p10_ms": 2.6935537811368704,
+            "p90_ms": 2.7109259739518166,
+            "samples_ms": [
+              2.7002301067113876,
+              2.6999888941645622,
+              2.694029826670885,
+              2.689269371330738,
+              2.6957588270306587,
+              2.710469998419285,
+              2.715029753744602,
+              2.6974789798259735,
+              2.7045300230383873,
+              2.6944787241518497
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 4.3196058720350266,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 368816,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 21.43921237438917,
+            "median_ms": 21.31447894498706,
+            "min_ms": 21.10448433086276,
+            "p10_ms": 21.147082839161158,
+            "p90_ms": 21.412741905078292,
+            "samples_ms": [
+              21.409800741821527,
+              21.31127892062068,
+              21.43921237438917,
+              21.261978428810835,
+              21.317678969353437,
+              21.275737788528204,
+              21.337249781936407,
+              21.10448433086276,
+              21.3387799449265,
+              21.15181600674987
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.01739574782550335,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 7.106523844413459e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 3.258442956747946e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.011216380633413792,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00013705749006476253,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 2.374108732105065e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.017652766779065132,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00010534552711760625,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 3.7641978320642726e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.011426286771893501,
+              "max_abs_error": 0.0078125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00022894080029800534,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 2.1431222039697652e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 128,
+            "block_q": 64,
+            "id": "q64_k128_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.8675199411809444,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 84848,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 5.0359610468149185,
+            "median_ms": 4.956044489517808,
+            "min_ms": 4.908067639917135,
+            "p10_ms": 4.908742802217603,
+            "p90_ms": 5.032910034060478,
+            "samples_ms": [
+              4.908817820250988,
+              4.908067639917135,
+              4.9118176102638245,
+              4.943489097058773,
+              4.96653001755476,
+              4.945558961480856,
+              4.998029675334692,
+              5.0359610468149185,
+              5.032571032643318,
+              5.025079939514399
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 3.8177855922840536,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 353200,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 21.577104926109314,
+            "median_ms": 21.34282933548093,
+            "min_ms": 21.163476165384054,
+            "p10_ms": 21.18856906890869,
+            "p90_ms": 21.533355163410306,
+            "samples_ms": [
+              21.51795430108905,
+              21.450932137668133,
+              21.425770595669746,
+              21.52849407866597,
+              21.577104926109314,
+              21.191357169300318,
+              21.20294701308012,
+              21.20363712310791,
+              21.163476165384054,
+              21.25988807529211
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.01739574782550335,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 7.106523844413459e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 3.258442956747946e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.011216380633413792,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00013705749006476253,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 2.374108732105065e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.017652766779065132,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00010534552711760625,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 3.7641978320642726e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.011426286771893501,
+              "max_abs_error": 0.0078125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00022894080029800534,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 2.1431222039697652e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 32,
+            "block_q": 128,
+            "id": "q128_k32_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.5639403569512069,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 52592,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 2.784841228276491,
+            "median_ms": 2.738300012424588,
+            "min_ms": 2.7159997262060642,
+            "p10_ms": 2.7186010498553514,
+            "p90_ms": 2.76506831869483,
+            "samples_ms": [
+              2.7159997262060642,
+              2.723870798945427,
+              2.7219089679419994,
+              2.743470948189497,
+              2.734019886702299,
+              2.7188900858163834,
+              2.7425801381468773,
+              2.7503110468387604,
+              2.762871328741312,
+              2.784841228276491
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.606159452814609,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 229680,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 19.29395506158471,
+            "median_ms": 18.988312454894185,
+            "min_ms": 18.81662430241704,
+            "p10_ms": 18.89955191873014,
+            "p90_ms": 19.251851504668593,
+            "samples_ms": [
+              19.247173331677914,
+              19.29395506158471,
+              19.150680862367153,
+              18.991167191416025,
+              18.929786048829556,
+              18.985457718372345,
+              19.03164992108941,
+              18.908766098320484,
+              18.917787354439497,
+              18.81662430241704
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0164125207811594,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00012303773837629706,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 3.074272131229903e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.02051337994635105,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014746584929525852,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 4.341952724976171e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.015067663043737411,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 7.74990112404339e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 3.2129617568377015e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.022864751517772675,
+              "max_abs_error": 0.0078125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00023783605138305575,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 4.288528517114197e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.000274658203125,
+              "max_abs_error": 0.000274658203125,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 7.023258848291678e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 32,
+            "block_q": 128,
+            "id": "q128_k32_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.34850524412468076,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 30320,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 2.3354622535407543,
+            "median_ms": 2.2929355036467314,
+            "min_ms": 2.258958760648966,
+            "p10_ms": 2.2705509327352047,
+            "p90_ms": 2.3248951882123947,
+            "samples_ms": [
+              2.291371114552021,
+              2.2944998927414417,
+              2.2804010659456253,
+              2.271838951855898,
+              2.2785398177802563,
+              2.258958760648966,
+              2.3354622535407543,
+              2.3214812390506268,
+              2.3155310191214085,
+              2.323721069842577
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.4445313960313797,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 121520,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 12.365312315523624,
+            "median_ms": 12.25867005996406,
+            "min_ms": 12.227279134094715,
+            "p10_ms": 12.234011059626937,
+            "p90_ms": 12.313723377883434,
+            "samples_ms": [
+              12.307991273701191,
+              12.365312315523624,
+              12.23475905135274,
+              12.235559988766909,
+              12.227279134094715,
+              12.267450336366892,
+              12.291171122342348,
+              12.24988978356123,
+              12.243769131600857,
+              12.288630940020084
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0164125207811594,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00012303773837629706,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 3.074272131229903e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.02051337994635105,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014746584929525852,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 4.341952724976171e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.015067663043737411,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 7.74990112404339e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 3.2129617568377015e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.022864751517772675,
+              "max_abs_error": 0.0078125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00023783605138305575,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 4.288528517114197e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.000274658203125,
+              "max_abs_error": 0.000274658203125,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 7.023258848291678e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 128,
+            "id": "q128_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.9508706061169505,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 90608,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 2.956253942102194,
+            "median_ms": 2.9233701061457396,
+            "min_ms": 2.8924429789185524,
+            "p10_ms": 2.8966921847313643,
+            "p90_ms": 2.947398880496621,
+            "samples_ms": [
+              2.956253942102194,
+              2.9456536285579205,
+              2.9074549674987793,
+              2.9144943691790104,
+              2.8971643187105656,
+              2.8924429789185524,
+              2.917964942753315,
+              2.928775269538164,
+              2.946175169199705,
+              2.9464149847626686
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 4.384840116370469,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 378544,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 24.955489207059145,
+            "median_ms": 24.751199642196298,
+            "min_ms": 24.472768884152174,
+            "p10_ms": 24.60090471431613,
+            "p90_ms": 24.875073228031397,
+            "samples_ms": [
+              24.955489207059145,
+              24.866138119250536,
+              24.83092714101076,
+              24.472768884152174,
+              24.61514202877879,
+              24.685882963240147,
+              24.6589332818985,
+              24.76673573255539,
+              24.735663551837206,
+              24.768745061010122
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.004318026825785637,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0001195458389702253,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 8.088208818997856e-06,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.019819967448711395,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014476127398665994,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 4.1951819689363015e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.002396757248789072,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 6.876588304294273e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 5.110739043227728e-06,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.023013601079583168,
+              "max_abs_error": 0.0078125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0002378148346906528,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 4.316446843280483e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 6.103515625e-05,
+              "max_abs_error": 6.103515625e-05,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 1.5607241885092618e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 128,
+            "id": "q128_k64_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.5061182528734207,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 48368,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 2.8067021630704403,
+            "median_ms": 2.7994911652058363,
+            "min_ms": 2.7912119403481483,
+            "p10_ms": 2.7912831865251064,
+            "p90_ms": 2.806521952152252,
+            "samples_ms": [
+              2.7912911027669907,
+              2.801781054586172,
+              2.8067021630704403,
+              2.8061019256711006,
+              2.806501928716898,
+              2.797200810164213,
+              2.7912119403481483,
+              2.800991293042898,
+              2.7931309305131435,
+              2.7979910373687744
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.2928250832483172,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 201008,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 11.417890898883343,
+            "median_ms": 11.400500778108835,
+            "min_ms": 11.29490789026022,
+            "p10_ms": 11.378061398863792,
+            "p90_ms": 11.409972095862031,
+            "samples_ms": [
+              11.29490789026022,
+              11.400870978832245,
+              11.401462368667126,
+              11.409092228859663,
+              11.417890898883343,
+              11.400130577385426,
+              11.40765193849802,
+              11.390820145606995,
+              11.398001108318567,
+              11.387300677597523
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.004318026825785637,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0001195458389702253,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 8.088208818997856e-06,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.019819967448711395,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014476127398665994,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 4.1951819689363015e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.002396757248789072,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 6.876588304294273e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 5.110739043227728e-06,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.023013601079583168,
+              "max_abs_error": 0.0078125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.0002378148346906528,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 4.316446843280483e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 6.103515625e-05,
+              "max_abs_error": 6.103515625e-05,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 1.5607241885092618e-07,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 128,
+            "block_q": 128,
+            "id": "q128_k128_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 1.9944221917539835,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 169584,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 5.193893797695637,
+            "median_ms": 5.1246576476842165,
+            "min_ms": 5.106941796839237,
+            "p10_ms": 5.11150574311614,
+            "p90_ms": 5.144555401057005,
+            "samples_ms": [
+              5.106941796839237,
+              5.119133275002241,
+              5.130812991410494,
+              5.119822453707457,
+              5.1120128482580185,
+              5.11381309479475,
+              5.139073356986046,
+              5.129492841660976,
+              5.134842824190855,
+              5.193893797695637
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 12.997957644052804,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 884784,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 104.55666203051805,
+            "median_ms": 104.47136498987675,
+            "min_ms": 104.36310805380344,
+            "p10_ms": 104.39961208030581,
+            "p90_ms": 104.5349273364991,
+            "samples_ms": [
+              104.40366808325052,
+              104.51288195326924,
+              104.48620095849037,
+              104.55666203051805,
+              104.45652902126312,
+              104.52465200796723,
+              104.44283904507756,
+              104.53251237049699,
+              104.36310805380344,
+              104.41100876778364
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.01739574782550335,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 7.106523844413459e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 3.258442956747946e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.019932400435209274,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014476419892162085,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 4.218980032121326e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.017652766779065132,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00010534552711760625,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 3.7641978320642726e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.02285253442823887,
+              "max_abs_error": 0.0078125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00023794997832737863,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 4.286237071400425e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 128,
+            "block_q": 128,
+            "id": "q128_k128_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.8983962596394122,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326592,
+              "available": true,
+              "generated_code_size_in_bytes": 84848,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134217984
+            },
+            "max_ms": 2.804561983793974,
+            "median_ms": 2.7972515672445297,
+            "min_ms": 2.7645407244563103,
+            "p10_ms": 2.782973786816001,
+            "p90_ms": 2.8024920728057623,
+            "samples_ms": [
+              2.795082051306963,
+              2.802262082695961,
+              2.8001819737255573,
+              2.7958410792052746,
+              2.7850219048559666,
+              2.7991216629743576,
+              2.798432018607855,
+              2.7960711158812046,
+              2.7645407244563103,
+              2.804561983793974
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 4.199902770109475,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435456,
+              "available": true,
+              "generated_code_size_in_bytes": 356656,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 201326628,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 136315152
+            },
+            "max_ms": 14.071879908442497,
+            "median_ms": 13.943542260676622,
+            "min_ms": 13.882735278457403,
+            "p10_ms": 13.887199899181724,
+            "p90_ms": 14.045419078320265,
+            "samples_ms": [
+              13.887695968151093,
+              14.071879908442497,
+              14.042478986084461,
+              13.993008062243462,
+              13.933467213064432,
+              13.911786023527384,
+              13.940977398306131,
+              13.946107123047113,
+              13.882735278457403,
+              13.959326781332493
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.01739574782550335,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 7.106523844413459e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.8668823242188,
+              "reference_max_abs": 4.0625,
+              "relative_l2_error": 3.258442956747946e-05,
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.019932400435209274,
+              "max_abs_error": 0.00390625,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00014476419892162085,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 472.4459533691406,
+              "reference_max_abs": 4.625,
+              "relative_l2_error": 4.218980032121326e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.017652766779065132,
+              "max_abs_error": 0.001953125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00010534552711760625,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 468.96490478515625,
+              "reference_max_abs": 5.1875,
+              "relative_l2_error": 3.7641978320642726e-05,
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.02285253442823887,
+              "max_abs_error": 0.0078125,
+              "per_batch_head": {
+                "all_passed": true,
+                "max_relative_l2_error": 0.00023794997832737863,
+                "nonzero_error_with_zero_reference": false
+              },
+              "reference_l2": 533.1607666015625,
+              "reference_max_abs": 6.6875,
+              "relative_l2_error": 4.286237071400425e-05,
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "accepted": true,
+              "all_finite": true,
+              "l2_error": 0.0,
+              "max_abs_error": 0.0,
+              "reference_l2": 391.0694580078125,
+              "reference_max_abs": 391.0694580078125,
+              "relative_l2_error": 0.0,
+              "relative_l2_tolerance": null,
+              "relative_max_tolerance": null
+            }
+          },
+          "status": "accepted"
+        }
+      ],
+      "degree": 16
+    }
+  ],
+  "schema_version": 1,
+  "status": "complete"
+}
