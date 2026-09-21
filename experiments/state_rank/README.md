@@ -22,6 +22,11 @@ the source did not alter their metadata, data, or figures. To regenerate plots
 intentionally, pass `--replot <result-directory>`; this rewrites result metadata
 and should not be used merely to verify a source-code relocation.
 
+The original pretrained Llama and DeltaNet result folders retain their numerical
+archives, inputs, metadata, and aggregate figures. Their standalone `text-1`
+through `text-4` figures have been removed. Use the unified model collections
+below for the current sequence/seed-averaged presentation.
+
 ## Random versus pretrained Llama
 
 The completed six-condition comparison is retained in
