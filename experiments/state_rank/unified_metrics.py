@@ -2,8 +2,9 @@
 
 Input/head rank statistics are already measured in each archive. This module
 averages those scalar statistics directly, never an averaged spectrum. Token
-curves retain every head and random model separately; depth curves reduce
-inputs and heads at the terminal token within one model condition.
+curves can retain each random model for audit or average random models at a
+fixed positional head index for grouped plots. Depth curves reduce inputs and
+heads at the terminal token within one model condition.
 """
 from __future__ import annotations
 
@@ -166,6 +167,57 @@ def head_curves(condition: Condition, layer: int, input_index: int | None = None
         else:
             result[metric] = {"mean": values.mean(axis=0), "min": values.min(axis=0), "max": values.max(axis=0)}
     return result
+
+
+
+def grouped_curves(analysis: ModelAnalysis, view: str = "heads") -> dict[str, dict[str, dict[str, np.ndarray]]]:
+    """Average saved scalar metrics into pretrained/random plotting groups.
+
+    ``heads`` returns [T,H] arrays at ``analysis.layer``. Pretrained mean/min/max
+    reduce sequences only. Each random model first averages its sequences, then
+    mean/min/max reduce those model-level curves at each positional head index.
+    The same index across seeds is not asserted to identify a shared head role.
+
+    ``layers`` returns [L,T] arrays. Pretrained first averages heads within each
+    sequence, then mean/min/max reduce sequences. Each random model averages
+    sequences and heads; mean/min/max then reduce those per-seed layer curves.
+    Bands therefore describe sequence spread for pretrained and seed spread for
+    random models. These are descriptive ranges, not confidence intervals.
+
+    Per-condition helpers and CSV exports remain separate audit records. No
+    rank statistic is recomputed from pooled or averaged spectra.
+    """
+    if view not in ("heads", "layers"):
+        raise ValueError("view must be 'heads' or 'layers'")
+    pretrained = [condition for condition in analysis.conditions if condition.weights == "pretrained"]
+    random = [condition for condition in analysis.conditions if condition.weights == "random"]
+    if len(pretrained) != 1 or not random:
+        raise ValueError("Grouped curves require one pretrained model and random controls")
+    reference = pretrained[0]
+    groups = {"pretrained": {}, "random": {}}
+    for metric in SCALAR_METRICS:
+        if metric not in reference.arrays:
+            continue
+        if view == "heads":
+            # [I,T,H] samples for the pretrained sequence range.
+            reference_samples = reference.arrays[metric][_layer_index(reference, analysis.layer)]
+            # [S,T,H] samples for the random-model range after sequence means.
+            random_samples = np.stack([
+                condition.arrays[metric][_layer_index(condition, analysis.layer)].mean(axis=0)
+                for condition in random
+            ])
+        else:
+            # [I,L,T] sequence samples after within-sequence head averaging.
+            reference_samples = reference.arrays[metric].mean(axis=3).transpose(1, 0, 2)
+            # [S,L,T] model samples after averaging sequences and heads.
+            random_samples = np.stack([
+                condition.arrays[metric].mean(axis=(1, 3)) for condition in random
+            ])
+        for group, samples in (("pretrained", reference_samples), ("random", random_samples)):
+            groups[group][metric] = {
+                "mean": samples.mean(axis=0), "min": samples.min(axis=0), "max": samples.max(axis=0),
+            }
+    return groups
 
 
 def depth_curves(condition: Condition) -> dict[str, np.ndarray]:

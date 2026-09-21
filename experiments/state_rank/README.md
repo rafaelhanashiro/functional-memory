@@ -140,35 +140,37 @@ saved. Key/value vector norms are not collected for this diagnostic. Use a fresh
 
 ## Unified analysis of both architectures and weight conditions
 
-The [unified report](../../results/state_rank/unified_comparison/REPORT.md) uses
-the same presentation for pretrained Llama, random Llama, pretrained Gated
-DeltaNet, and random Gated DeltaNet. It reads the original archives without
-rewriting their measurements, historical figures, metadata, or logs.
+The [unified report](../../results/state_rank/unified_comparison/REPORT.md) has
+one collection for [Llama](../../results/state_rank/unified_comparison/llama/README.md)
+and one for [Gated DeltaNet](../../results/state_rank/unified_comparison/gated-deltanet/README.md),
+each placing pretrained and random models side by side. It reads the original
+archives without rewriting their measurements, metadata, or logs.
 
 - At the original selected layers (Llama 8, DeltaNet 12), each head has its own
-  token-position curve, averaged **only over sequences**, with the sequence
-  minimum/maximum shaded. Each random seed has a separate figure.
+  token-position curve, averaged over sequences and additionally over seeds
+  for random models. Pretrained shading shows the sequence minimum/maximum;
+  random shading shows the range of sequence-averaged seed curves.
 - A second token-position view has one curve per layer, averaged over sequences
-  and heads within each model. A shared colorbar identifies the layer.
+  and heads within each model, and additionally over random seeds. A shared
+  colorbar identifies the layer.
 - Terminal rank versus depth averages sequences and heads at token 512; random
-  mean/range then summarizes independent model seeds. A companion divides rank
-  by state width (64 or 256) and uses relative model depth.
+  mean/range then summarizes independent model seeds. This shared overview
+  retains its faint individual-seed curves. No separate sequence/seed figures
+  or additional normalized-depth figure are retained in this collection.
 
 All four rank metrics are included. These are averages of individually measured
-state ranks, not ranks of averaged states or spectra. Head IDs are not paired
-between independently initialized models. Inputs are the same four source
+state ranks, not ranks of averaged states or spectra. Random per-head means
+average the same numerical head index across seeds; they describe the
+initialization ensemble, not matched learned features. Inputs are the same four source
 articles with model-native 512-token prefixes, not identical text spans across
-architectures. Normalization aids comparison but does not equate their different
-state definitions.
+architectures. The architectures also have different state definitions and
+rank ceilings (64 and 256).
 
 Run CPU postprocessing with the root environment and a fresh output directory:
 
 ```bash
 uv run --frozen python -m experiments.state_rank.unify_analysis \
   --output /path/to/new-results
-# Additionally plot one fixed sequence, preserving the original per-input view:
-uv run --frozen python -m experiments.state_rank.unify_analysis \
-  --output /path/to/other-results --sequence-index 0
 ```
 
 The default configuration is `configs/unified_rank_analysis.json`; edit a copy
@@ -176,6 +178,7 @@ and pass `--config` to select other saved layers. `--project-root` locates the
 retained source archives when executing from a separate checkout. The generator
 requires all planned conditions, verifies archive/input checksums and matched
 scientific conventions, and records source hashes before and after generation.
-Outputs include PNG/PDF figures, per-head and per-layer terminal CSVs, detailed
+Outputs include five PNG/PDF figures, per-head and per-layer terminal CSVs, detailed
 comparison statistics, resolved configuration, and a provenance manifest. The
-original per-token numerical archives remain the source of truth.
+CSV summaries retain individual seeds for auditing; the figures show seed
+averages. The original per-token numerical archives remain the source of truth.

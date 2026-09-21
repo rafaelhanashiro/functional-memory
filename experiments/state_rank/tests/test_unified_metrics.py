@@ -194,3 +194,92 @@ def test_summary_rows_keep_architectures_conditions_and_head_ids_separate(tmp_pa
     assert rows['depth_summary'][3]['participation_ratio_fraction']==81.5/8
     with pytest.raises(ValueError,match='keys must be distinct'):
         summary_rows([first,first])
+
+
+def grouped_fixture(tmp_path):
+    """Seed-specific input spread separates seed bands from pooled sample bands."""
+    models=[condition(layers=(1,4,9)), condition('random-seed0','random',0,layers=(1,4,9)),
+            condition('random-seed1','random',1,layers=(1,4,9))]
+    # For every metric use independent layer/time/head offsets, while choosing
+    # sequence values whose seed range is narrower than their pooled range.
+    for current, input_values in zip(models, ([20.,60.], [0.,100.], [75.,85.]), strict=True):
+        for metric_index, metric in enumerate((*RANK_KEYS,'log_trace')):
+            for layer_index in range(3):
+                for input_index, base in enumerate(input_values):
+                    for token in range(4):
+                        current.arrays[metric][layer_index,input_index,token,:] = (
+                            base + layer_index*1000 + token*10 + np.array([0.,100.]) + metric_index*10000
+                        )
+    return ModelAnalysis('test','Test',tmp_path,{},models,4,[{},{}])
+
+
+def test_grouped_heads_average_sequences_then_seeds_and_keep_head_axis(tmp_path):
+    from experiments.state_rank.unified_metrics import grouped_curves
+    analysis=grouped_fixture(tmp_path)
+    groups=grouped_curves(analysis,view='heads')
+    base=np.array([[1000.,1100.],[1010.,1110.],[1020.,1120.],[1030.,1130.]])
+    for metric_index,metric in enumerate(RANK_KEYS):
+        expected=base+metric_index*10000
+        pretrained,random=groups['pretrained'][metric],groups['random'][metric]
+        np.testing.assert_array_equal(pretrained['mean'],expected+40)
+        np.testing.assert_array_equal(pretrained['min'],expected+20)
+        np.testing.assert_array_equal(pretrained['max'],expected+60)
+        np.testing.assert_array_equal(random['mean'],expected+65)
+        # Seed 0 averages inputs 0/100 to 50; seed 1 averages 75/85 to 80.
+        np.testing.assert_array_equal(random['min'],expected+50)
+        np.testing.assert_array_equal(random['max'],expected+80)
+        assert random['mean'].shape==(4,2)
+    assert groups['random']['participation_ratio']['min'][0,0] != 1000.  # Not pooled input minimum.
+    assert groups['random']['participation_ratio']['max'][0,0] != 1100.  # Not pooled input maximum.
+    # The stored spectra are rank one; these figures still average raw scalar
+    # measurements instead of deriving fresh ranks from an averaged spectrum.
+    assert groups['random']['participation_ratio']['mean'][0,0]==1065.
+
+
+def test_grouped_layer_curves_average_heads_and_sequences_before_seed_range(tmp_path):
+    from experiments.state_rank.unified_metrics import grouped_curves
+    groups=grouped_curves(grouped_fixture(tmp_path),view='layers')
+    base=np.array([[0.,10.,20.,30.],[1000.,1010.,1020.,1030.],[2000.,2010.,2020.,2030.]])
+    pretrained,random=groups['pretrained']['participation_ratio'],groups['random']['participation_ratio']
+    # Each head mean adds 50, then the pretrained sequence mean adds 40.
+    np.testing.assert_array_equal(pretrained['mean'],base+90)
+    np.testing.assert_array_equal(pretrained['min'],base+70)
+    np.testing.assert_array_equal(pretrained['max'],base+110)
+    np.testing.assert_array_equal(random['mean'],base+115)
+    np.testing.assert_array_equal(random['min'],base+100)
+    np.testing.assert_array_equal(random['max'],base+130)
+    assert random['mean'].shape==(3,4)
+    # Terminal depth statistics remain the identical mean of per-condition raw
+    # aggregates; grouping has not averaged over token positions.
+    analysis=grouped_fixture(tmp_path)
+    expected=np.stack([depth_curves(c)['participation_ratio'] for c in analysis.conditions if c.weights=='random']).mean(axis=0)
+    np.testing.assert_array_equal(random['mean'][:,-1],expected)
+
+
+def test_grouped_curves_are_seed_order_invariant_and_leave_audit_data_unchanged(tmp_path):
+    from experiments.state_rank.unified_metrics import grouped_curves
+    analysis=grouped_fixture(tmp_path)
+    audit_before=summary_rows([analysis])
+    arrays_before=[{key:value.copy() for key,value in c.arrays.items()} for c in analysis.conditions]
+    first=grouped_curves(analysis)
+    analysis.conditions[1:]=analysis.conditions[:0:-1]
+    reordered=grouped_curves(analysis)
+    for group in first:
+        for metric in first[group]:
+            for statistic in first[group][metric]:
+                np.testing.assert_array_equal(first[group][metric][statistic],reordered[group][metric][statistic])
+    analysis.conditions[1:]=analysis.conditions[:0:-1]
+    first['random']['participation_ratio']['mean'][:]=-99
+    assert summary_rows([analysis])==audit_before
+    for current,before in zip(analysis.conditions,arrays_before,strict=True):
+        for key,value in current.arrays.items():np.testing.assert_array_equal(value,before[key])
+
+
+def test_grouped_curves_reject_unknown_view_or_missing_weight_group(tmp_path):
+    from experiments.state_rank.unified_metrics import grouped_curves
+    analysis=grouped_fixture(tmp_path)
+    with pytest.raises(ValueError,match='view must be'):
+        grouped_curves(analysis,view='tokens')
+    analysis.conditions=analysis.conditions[:1]
+    with pytest.raises(ValueError,match='one pretrained model and random controls'):
+        grouped_curves(analysis)

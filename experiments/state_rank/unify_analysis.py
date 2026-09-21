@@ -81,20 +81,24 @@ def validate_output(output: Path, analyses: list[ModelAnalysis]) -> None:
         raise ValueError(f"Output is not empty; choose a fresh --output directory: {output}")
 
 
-def write_report(output: Path, analyses: list[ModelAnalysis], statistics: dict, comparison: dict,
-                 sequence_index: int | None) -> None:
+def write_report(output: Path, analyses: list[ModelAnalysis], statistics: dict, comparison: dict) -> None:
     lines = [
         "# Unified state-rank comparison", "",
         "The same analysis is applied to pretrained and randomly initialized Llama and Gated DeltaNet. "
         "All curves reuse the retained measurements; no inference or training was rerun.", "",
         "## How to read the figures", "",
-        "- **Per head, across tokens:** fix a layer; each colored curve is one head's rank averaged over the four sequences. "
-        "Shading is the sequence minimum/maximum. Heads are never averaged in this view.",
-        "- **Per layer, across tokens:** each colored curve is one layer's rank averaged over sequences and heads, at each token position.",
+        "- **Per head, across tokens:** fix a layer; each colored curve preserves a head index and averages over sequences. "
+        "The random panel additionally averages the five seeds at each head index. Heads remain separate.",
+        "- **Per layer, across tokens:** each colored curve is one layer's rank averaged over sequences and heads, "
+        "and additionally over seeds for random models, at each token position.",
         "- **Across depth:** at the final token, average over sequences and heads within each model. "
         "Random means and ranges then summarize the five independently initialized models.",
-        "- Random seeds have separate per-head and per-layer figures. Head IDs are local to each model, "
-        "not matched identities across seeds or between pretrained and random models.",
+        "- Each architecture has one collection with pretrained and random panels side by side. "
+        "No individual-sequence or individual-seed figures are retained in the collection.",
+        "- Random per-head curves average the same numerical head index across independently initialized models. "
+        "This describes an initialization ensemble, not matched learned features across seeds or with the pretrained model.",
+        "- In per-head panels, pretrained shading is the sequence min/max; random shading is the min/max of the "
+        "five sequence-averaged seed curves. Layer panels show means only. The retained depth overview also shows faint seed curves.",
         "- Compute rank separately for each state before averaging. No rank is computed from an averaged state or spectrum. "
         "Bands are descriptive ranges, not confidence intervals.", "",
         "All layer and head indices are zero-based. Token positions count the initial BOS token.", "",
@@ -103,29 +107,35 @@ def write_report(output: Path, analyses: list[ModelAnalysis], statistics: dict, 
     for a in analyses:
         lines.append(f"| {a.label} | {len(a.layers)} | {len(a.head_indices)} | {a.width} | {a.layer} |")
     lines += [
-        "", "[Terminal ranks versus layer](depth_counts.png) · [PDF](depth_counts.pdf) · "
-        "[Ranks divided by state width versus relative depth](depth_fractional.png) · [PDF](depth_fractional.pdf)", "",
-        "The normalized companion uses rank / state width and layer / (number of layers − 1). "
-        "It helps compare different widths and depths, but does not make the state definitions identical. "
+        "", "[Terminal ranks versus layer](depth_counts.png) · [PDF](depth_counts.pdf)", "",
         "Llama measures its implicit softmax numerator (eight KV heads, width 64); Gated DeltaNet measures its "
         "native 256 × 256 recurrent state before output processing.", "",
         "The same four source articles are used in both architectures, with model-native 512-token prefixes. "
         "The text spans and token IDs differ across architectures; pretrained and random conditions within "
         "an architecture use exactly the same tokens.", "",
-        "## Token-position views", "",
-        "PNG links below also have sibling PDF files. Fixed scales are shared across conditions within each architecture.", "",
-        "| Model | Weights | Per head (sequence mean) | Per layer (sequence/head mean) |",
-        "|---|---|---|---|",
+        "## Model collections", "",
+        "Each figure has pretrained and random columns, with four rank measures and shared vertical scales. "
+        "PNG links below also have sibling PDF files.", "",
+        "| Model collection | Per head | Per layer |", "|---|---|---|",
     ]
     for a in analyses:
-        for c in a.conditions:
-            lines.append(f"| {a.label} | {c.name} | [Layer {a.layer}]({a.key}/heads/aggregate/{c.name}.png) "
-                         f"| [All layers]({a.key}/layers/{c.name}.png) |")
-    if sequence_index is not None:
-        lines += ["", f"Fixed-input per-head views are also included for input index {sequence_index}:", ""]
-        for a in analyses:
-            links = " · ".join(f"[{c.name}]({a.key}/heads/sequence-{sequence_index + 1}/{c.name}.png)" for c in a.conditions)
-            lines.append(f"- {a.label}: {links}")
+        lines.append(f"| [{a.label}]({a.key}/README.md) | [Layer {a.layer}]({a.key}/heads.png) "
+                     f"| [All layers]({a.key}/layers.png) |")
+        collection = [
+            f"# {a.label}: pretrained and random weights", "",
+            "Both figures place pretrained and random models side by side. All curves average over sequences; "
+            "random curves additionally average over initialization seeds. No separate input or seed figures are retained.", "",
+            f"## Per-head rank at layer {a.layer}", "",
+            "Each color preserves a head index. Random head-index means describe independent initializations, "
+            "not semantically matched heads. Shading is the input range for pretrained weights and the "
+            "range of sequence-averaged seed curves for random weights.", "",
+            "![Per-head rank across tokens](heads.png)", "", "[PDF](heads.pdf)", "",
+            "## Per-layer rank across tokens", "",
+            "Each color identifies one layer. Curves average over inputs and heads, plus seeds for random models.", "",
+            "![Per-layer rank across tokens](layers.png)", "", "[PDF](layers.pdf)", "",
+            "[Terminal rank versus depth](../depth_counts.png) · [Full comparison and provenance](../REPORT.md)", "",
+        ]
+        (output / a.key / "README.md").write_text("\n".join(collection))
     lines += [
         "", "## Terminal comparisons", "",
         "The table compares pretrained ranks with the mean of the five random models, after averaging "
@@ -155,27 +165,27 @@ def write_report(output: Path, analyses: list[ModelAnalysis], statistics: dict, 
         "- The original successful Slurm logs are recorded in provenance. This CPU postprocessing required no Slurm job.", "",
         "Reproduce from the repository root with a fresh output directory:", "", "```bash",
         "uv run --frozen python -m experiments.state_rank.unify_analysis --output /path/to/new-results",
-        "# Optional: additionally retain the original fixed-sequence view (zero-based index):",
-        "uv run --frozen python -m experiments.state_rank.unify_analysis --output /path/to/other-results --sequence-index 0",
         "```", "",
     ]
     (output / "REPORT.md").write_text("\n".join(lines))
 
 
-def generate(config_path: Path, project_root: Path, output: Path | None = None,
-             sequence_index: int | None = None) -> Path:
+def generate(config_path: Path, project_root: Path, output: Path | None = None) -> Path:
     config = json.loads(config_path.read_text())
     analyses = [load_analysis((project_root / entry["results"]).resolve(), key=entry["key"],
                              label=entry["label"], layer=entry.get("layer")) for entry in config["models"]]
     comparison = validate_comparison(analyses)
-    if sequence_index is not None and any(not 0 <= sequence_index < len(a.inputs) for a in analyses):
-        raise ValueError("Sequence index is outside saved inputs")
     output = (output if output is not None else project_root / config["output"]).resolve()
     validate_output(output, analyses)
     before = source_hashes(analyses)
     output.mkdir(parents=True, exist_ok=True)
     resolved = {**config, "project_root": str(project_root.resolve()), "output": str(output),
-                "sequence_index": sequence_index,
+                "plot_aggregation": {
+                    "pretrained": "mean over sequences",
+                    "random": "mean over sequences within each seed, then equal-weight seed mean",
+                    "heads": "preserve numerical head indices; no matching of learned features",
+                    "layers": "also average heads within each model; preserve token and layer axes",
+                },
                 "models": [{"key": a.key, "label": a.label, "results": str(a.results), "layer": a.layer}
                            for a in analyses]}
     (output / "config.json").write_text(json.dumps(resolved, indent=2) + "\n")
@@ -183,12 +193,10 @@ def generate(config_path: Path, project_root: Path, output: Path | None = None,
     figures = []
     for analysis in analyses:
         figures.extend(plot_analysis(analysis, output))
-        if sequence_index is not None:
-            figures.extend(plot_analysis(analysis, output, sequence_index=sequence_index))
     figures.extend(plot_depth_comparison(analyses, output))
     statistics = {a.key: comparison_statistics(a) for a in analyses}
     (output / "comparison_statistics.json").write_text(json.dumps(statistics, indent=2) + "\n")
-    write_report(output, analyses, statistics, comparison, sequence_index)
+    write_report(output, analyses, statistics, comparison)
     after = source_hashes(analyses)
     if before != after:
         raise RuntimeError("Source result files changed during postprocessing")
@@ -202,7 +210,8 @@ def generate(config_path: Path, project_root: Path, output: Path | None = None,
                     Path(__file__).with_name("unified_plots.py"), Path(__file__).with_name("plot_comparison.py"),
                     config_path, SOURCE_ROOT / "uv.lock"]
     provenance = {
-        "schema_version": 1, "kind": "derived-state-rank-comparison", "created_utc": datetime.now(timezone.utc).isoformat(),
+        "schema_version": 2, "kind": "derived-state-rank-comparison", "created_utc": datetime.now(timezone.utc).isoformat(),
+        "plot_aggregation": resolved["plot_aggregation"],
         "generator_source_commit": source_commit,
         "generator_files_sha256": {str(path.relative_to(SOURCE_ROOT)) if path.is_relative_to(SOURCE_ROOT) else str(path): sha256(path)
                                    for path in source_files},
@@ -225,9 +234,8 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--project-root", type=Path, default=SOURCE_ROOT)
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--sequence-index", type=int, help="Also plot this individual input (zero-based)")
     args = parser.parse_args()
-    print(generate(args.config.resolve(), args.project_root.resolve(), args.output, args.sequence_index))
+    print(generate(args.config.resolve(), args.project_root.resolve(), args.output))
 
 
 if __name__ == "__main__":
