@@ -27,5 +27,6 @@ yet. The comparison is single-seed and changes numerical kernel execution
 (cuDNN for historical softmax, Pallas/Triton for unnormalized attention).
 
 Next: complete output/gradient tests, exact initialization verification, and
-full-recipe training/validation/resume preflight, then launch on 2 H200 GPUs.
+full-recipe training/validation/resume preflight, then launch on 2 H100 GPUs.
+The historical control used 2 H200s; allocation differences are recorded.
 Retain validation-best weights and terminal metrics separately after review.

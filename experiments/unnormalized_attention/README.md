@@ -72,11 +72,12 @@ sbatch --output="$project_root/results/logs/unnormalized_attention/bootstrap/slu
 ```
 
 After bootstrap completes, submit `launch.sbatch preflight "$execution_root"
-"$project_root" "$source_commit" 2 H200` with a log under
+"$project_root" "$source_commit" 2 H100` with a log under
 `results/logs/unnormalized_attention/preflight/slurm-%j.out`. Submit the same
 launcher with `train` only with an `afterok:<preflight_job>` dependency. The
-launcher defaults to MIT's `mit_preemptable`, 2 H200 GPUs, a 48-hour limit, and
-requeue. Training verifies the matching successful preflight again at startup.
+launcher defaults to MIT's `mit_preemptable`, 2 H100 GPUs, a 48-hour limit, and
+requeue. H100s were selected for availability; the historical control used H200s.
+Training verifies the matching successful preflight again at startup.
 Never change this checkout or its environment while any job can run or requeue.
 
 Preflight records are keyed by source, resolved configuration, dependency lock,

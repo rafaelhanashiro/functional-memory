@@ -200,7 +200,7 @@ def main():
     parser.add_argument("config", type=Path)
     parser.add_argument("--directory", type=Path, required=True)
     parser.add_argument("--gpu-count", type=int, default=2)
-    parser.add_argument("--gpu-type", default="H200")
+    parser.add_argument("--gpu-type", default="H100")
     parser.add_argument("--check-only", action="store_true")
     parser.add_argument("--worker", choices=("hardware", "pilot"))
     parser.add_argument("--output", type=Path)

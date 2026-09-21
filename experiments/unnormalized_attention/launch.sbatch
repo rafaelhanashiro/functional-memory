@@ -7,14 +7,14 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=256G
-#SBATCH --gpus=h200:2
+#SBATCH --gpus=h100:2
 set -euo pipefail
 MODE="${1:?Expected cpu-tests, preflight, or train}"
 EXECUTION_ROOT="${2:?Expected absolute experiment checkout}"
 PROJECT_ROOT="${3:?Expected absolute storage project root}"
 EXPECTED_COMMIT="${4:?Expected frozen source commit}"
 GPU_COUNT="${5:-2}"
-GPU_TYPE="${6:-H200}"
+GPU_TYPE="${6:-H100}"
 cd "$EXECUTION_ROOT"
 if [[ "$(git rev-parse HEAD)" != "$EXPECTED_COMMIT" ]] || [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
   echo "Frozen execution checkout changed: $EXECUTION_ROOT" >&2

@@ -245,18 +245,23 @@ def test_invalid_attention_diagnostics_fail_before_validation_commit(tmp_path, m
 @pytest.mark.gpu
 @pytest.mark.skipif(jax.local_device_count() < 2, reason="requires two JAX devices")
 def test_distributed_accumulation_matches_single_device(tmp_path):
-    cfg = tiny_config(tmp_path)
-    state = create_state(cfg, jax.random.PRNGKey(0))
-    batch = np.arange(20, dtype=np.int32).reshape(4, 5) % 16
-    expected, expected_loss, expected_norm = loop.train_step(state, jnp.asarray(batch), jax.random.PRNGKey(1))
-    layout = resolve_batch_layout(cfg)
-    distributed = make_data_parallel_functions(state, tuple(jax.local_devices()))
-    replicated = put_replicated(state, distributed.replicated_sharding)
-    batches = put_train_batches(batch.reshape(layout.grad_accum_steps, layout.global_micro_batch_size, 5), distributed.train_batch_sharding)
-    actual, actual_loss, actual_norm = distributed.train_step(replicated, batches, jax.random.PRNGKey(1))
-    assert_state_close(expected, actual)
-    np.testing.assert_allclose(expected_loss, actual_loss, rtol=1e-6)
-    np.testing.assert_allclose(expected_norm, actual_norm, rtol=1e-6)
-    sample, provenance = diagnostic_tools.fixed_diagnostic_sample(cfg)
-    report = diagnostic_tools.attention_diagnostics(actual, cfg, sample, provenance)
-    assert report["valid"] and report["sample"]["num_sequences"] == 1
+    # The full batch and per-device microbatches select different GEMM shapes.
+    # Compare the accumulation/reduction semantics in full FP32: GPU TF32
+    # roundoff can otherwise be amplified by Adam's first update near zero.
+    # This precision setting is confined to the test, not the training recipe.
+    with jax.default_matmul_precision("highest"):
+        cfg = tiny_config(tmp_path)
+        state = create_state(cfg, jax.random.PRNGKey(0))
+        batch = np.arange(20, dtype=np.int32).reshape(4, 5) % 16
+        expected, expected_loss, expected_norm = loop.train_step(state, jnp.asarray(batch), jax.random.PRNGKey(1))
+        layout = resolve_batch_layout(cfg)
+        distributed = make_data_parallel_functions(state, tuple(jax.local_devices()))
+        replicated = put_replicated(state, distributed.replicated_sharding)
+        batches = put_train_batches(batch.reshape(layout.grad_accum_steps, layout.global_micro_batch_size, 5), distributed.train_batch_sharding)
+        actual, actual_loss, actual_norm = distributed.train_step(replicated, batches, jax.random.PRNGKey(1))
+        assert_state_close(expected, actual)
+        np.testing.assert_allclose(expected_loss, actual_loss, rtol=1e-6)
+        np.testing.assert_allclose(expected_norm, actual_norm, rtol=1e-6)
+        sample, provenance = diagnostic_tools.fixed_diagnostic_sample(cfg)
+        report = diagnostic_tools.attention_diagnostics(actual, cfg, sample, provenance)
+        assert report["valid"] and report["sample"]["num_sequences"] == 1
