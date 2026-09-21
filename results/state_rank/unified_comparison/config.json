@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "output": "/home/rafah/projects/functional_memory/results/state_rank/unified_comparison",
   "models": [
     {
@@ -16,5 +16,10 @@
     }
   ],
   "project_root": "/home/rafah/projects/functional_memory",
-  "sequence_index": null
+  "plot_aggregation": {
+    "pretrained": "mean over sequences",
+    "random": "mean over sequences within each seed, then equal-weight seed mean",
+    "heads": "preserve numerical head indices; no matching of learned features",
+    "layers": "also average heads within each model; preserve token and layer axes"
+  }
 }

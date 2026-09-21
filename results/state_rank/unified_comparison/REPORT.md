@@ -4,10 +4,12 @@ The same analysis is applied to pretrained and randomly initialized Llama and Ga
 
 ## How to read the figures
 
-- **Per head, across tokens:** fix a layer; each colored curve is one head's rank averaged over the four sequences. Shading is the sequence minimum/maximum. Heads are never averaged in this view.
-- **Per layer, across tokens:** each colored curve is one layer's rank averaged over sequences and heads, at each token position.
+- **Per head, across tokens:** fix a layer; each colored curve preserves a head index and averages over sequences. The random panel additionally averages the five seeds at each head index. Heads remain separate.
+- **Per layer, across tokens:** each colored curve is one layer's rank averaged over sequences and heads, and additionally over seeds for random models, at each token position.
 - **Across depth:** at the final token, average over sequences and heads within each model. Random means and ranges then summarize the five independently initialized models.
-- Random seeds have separate per-head and per-layer figures. Head IDs are local to each model, not matched identities across seeds or between pretrained and random models.
+- Each architecture has one collection with pretrained and random panels side by side. No individual-sequence or individual-seed figures are retained in the collection.
+- Random per-head curves average the same numerical head index across independently initialized models. This describes an initialization ensemble, not matched learned features across seeds or with the pretrained model.
+- In per-head panels, pretrained shading is the sequence min/max; random shading is the min/max of the five sequence-averaged seed curves. Layer panels show means only. The retained depth overview also shows faint seed curves.
 - Compute rank separately for each state before averaging. No rank is computed from an averaged state or spectrum. Bands are descriptive ranges, not confidence intervals.
 
 All layer and head indices are zero-based. Token positions count the initial BOS token.
@@ -17,30 +19,20 @@ All layer and head indices are zero-based. Token positions count the initial BOS
 | Llama | 16 | 8 | 64 | 8 |
 | Gated DeltaNet | 24 | 8 | 256 | 12 |
 
-[Terminal ranks versus layer](depth_counts.png) · [PDF](depth_counts.pdf) · [Ranks divided by state width versus relative depth](depth_fractional.png) · [PDF](depth_fractional.pdf)
+[Terminal ranks versus layer](depth_counts.png) · [PDF](depth_counts.pdf)
 
-The normalized companion uses rank / state width and layer / (number of layers − 1). It helps compare different widths and depths, but does not make the state definitions identical. Llama measures its implicit softmax numerator (eight KV heads, width 64); Gated DeltaNet measures its native 256 × 256 recurrent state before output processing.
+Llama measures its implicit softmax numerator (eight KV heads, width 64); Gated DeltaNet measures its native 256 × 256 recurrent state before output processing.
 
 The same four source articles are used in both architectures, with model-native 512-token prefixes. The text spans and token IDs differ across architectures; pretrained and random conditions within an architecture use exactly the same tokens.
 
-## Token-position views
+## Model collections
 
-PNG links below also have sibling PDF files. Fixed scales are shared across conditions within each architecture.
+Each figure has pretrained and random columns, with four rank measures and shared vertical scales. PNG links below also have sibling PDF files.
 
-| Model | Weights | Per head (sequence mean) | Per layer (sequence/head mean) |
-|---|---|---|---|
-| Llama | pretrained | [Layer 8](llama/heads/aggregate/pretrained.png) | [All layers](llama/layers/pretrained.png) |
-| Llama | random-seed0 | [Layer 8](llama/heads/aggregate/random-seed0.png) | [All layers](llama/layers/random-seed0.png) |
-| Llama | random-seed1 | [Layer 8](llama/heads/aggregate/random-seed1.png) | [All layers](llama/layers/random-seed1.png) |
-| Llama | random-seed2 | [Layer 8](llama/heads/aggregate/random-seed2.png) | [All layers](llama/layers/random-seed2.png) |
-| Llama | random-seed3 | [Layer 8](llama/heads/aggregate/random-seed3.png) | [All layers](llama/layers/random-seed3.png) |
-| Llama | random-seed4 | [Layer 8](llama/heads/aggregate/random-seed4.png) | [All layers](llama/layers/random-seed4.png) |
-| Gated DeltaNet | pretrained | [Layer 12](gated-deltanet/heads/aggregate/pretrained.png) | [All layers](gated-deltanet/layers/pretrained.png) |
-| Gated DeltaNet | random-seed0 | [Layer 12](gated-deltanet/heads/aggregate/random-seed0.png) | [All layers](gated-deltanet/layers/random-seed0.png) |
-| Gated DeltaNet | random-seed1 | [Layer 12](gated-deltanet/heads/aggregate/random-seed1.png) | [All layers](gated-deltanet/layers/random-seed1.png) |
-| Gated DeltaNet | random-seed2 | [Layer 12](gated-deltanet/heads/aggregate/random-seed2.png) | [All layers](gated-deltanet/layers/random-seed2.png) |
-| Gated DeltaNet | random-seed3 | [Layer 12](gated-deltanet/heads/aggregate/random-seed3.png) | [All layers](gated-deltanet/layers/random-seed3.png) |
-| Gated DeltaNet | random-seed4 | [Layer 12](gated-deltanet/heads/aggregate/random-seed4.png) | [All layers](gated-deltanet/layers/random-seed4.png) |
+| Model collection | Per head | Per layer |
+|---|---|---|
+| [Llama](llama/README.md) | [Layer 8](llama/heads.png) | [All layers](llama/layers.png) |
+| [Gated DeltaNet](gated-deltanet/README.md) | [Layer 12](gated-deltanet/heads.png) | [All layers](gated-deltanet/layers.png) |
 
 ## Terminal comparisons
 
@@ -75,6 +67,4 @@ Reproduce from the repository root with a fresh output directory:
 
 ```bash
 uv run --frozen python -m experiments.state_rank.unify_analysis --output /path/to/new-results
-# Optional: additionally retain the original fixed-sequence view (zero-based index):
-uv run --frozen python -m experiments.state_rank.unify_analysis --output /path/to/other-results --sequence-index 0
 ```
