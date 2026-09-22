@@ -1,0 +1,22 @@
+[
+  {
+    "pci_bus": "0000:81:00.0",
+    "group": "/sys/kernel/iommu_groups/137",
+    "type": "DMA-FQ\n"
+  },
+  {
+    "pci_bus": "0000:a1:00.0",
+    "group": "/sys/kernel/iommu_groups/120",
+    "type": "DMA-FQ\n"
+  },
+  {
+    "pci_bus": "0000:c2:00.0",
+    "group": "/sys/kernel/iommu_groups/104",
+    "type": "DMA-FQ\n"
+  },
+  {
+    "pci_bus": "0000:c3:00.0",
+    "group": "/sys/kernel/iommu_groups/105",
+    "type": "DMA-FQ\n"
+  }
+]

@@ -1,0 +1,43 @@
+........................................................................ [ 33%]
+........................................................................ [ 67%]
+...................................................ss...........sssss    [100%]
+=============================== warnings summary ===============================
+tests/test_learned_training.py::test_learned_training_resume_and_identity[global-positive]
+tests/test_learned_training.py::test_learned_training_resume_and_identity[global-unrestricted]
+tests/test_learned_training.py::test_learned_training_resume_and_identity[per_head-positive]
+tests/test_learned_training.py::test_learned_training_resume_and_identity[per_head-unrestricted]
+  /data/cl/u/rafah/home/projects/functional-memory/worktrees/shared_transformer_scaffold/experiments/shared_transformer/tests/test_learned_training.py:53: DeprecationWarning: '.value' access is now deprecated. For Variable[Array] instances use:
+  
+    variable[...]
+  
+  For other Variable types use:
+  
+    variable.get_value()
+  
+    assert not np.array_equal(np.asarray(states[0].params["quadratic_coefficients"].value).reshape(-1, 2)[0], initial)
+
+tests/test_learned_training.py::test_finite_forward_loss_does_not_hide_nonfinite_coefficient_gradient
+tests/test_learned_training.py::test_checkpoint_audit_rejects_finite_restoration_corruption
+  /data/cl/u/rafah/home/projects/functional-memory/worktrees/shared_transformer_scaffold/.envs/shared_transformer/lib/python3.11/site-packages/flax/nnx/variablelib.py:1410: DeprecationWarning: '.value' setter is now deprecated. For Variable[Array] instances use:
+  
+    variable[...] = value
+  
+  For other Variable types use:
+  
+    variable.set_value(value)
+  
+    object.__setattr__(self, name, value)
+
+tests/test_learned_training.py::test_checkpoint_audit_rejects_finite_restoration_corruption
+  /data/cl/u/rafah/home/projects/functional-memory/worktrees/shared_transformer_scaffold/experiments/shared_transformer/tests/test_learned_training.py:81: DeprecationWarning: '.value' access is now deprecated. For Variable[Array] instances use:
+  
+    variable[...]
+  
+  For other Variable types use:
+  
+    variable.get_value()
+  
+    coefficients.value = coefficients.value + jnp.array([1e-3, 0.0])
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+206 passed, 7 skipped, 89 deselected, 7 warnings in 168.27s (0:02:48)

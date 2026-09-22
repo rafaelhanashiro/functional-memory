@@ -8,6 +8,10 @@ from pathlib import Path
 
 from scaffolds.transformer.studies.polynomial_attention.plot import summarize_run as historical_summary
 from scaffolds.transformer.studies.polynomial_attention.plot import default_manifest_path, update_results_readme
+from scaffolds.transformer.studies.polynomial_attention.plot import (
+    RETAINED_FORMAT, artifact_path, check_dependency_lock, checked_artifact,
+    committed_records, retained_root, summarize_retained_run,
+)
 from scaffolds.transformer.studies.learned_quadratic_attention.sweep import EXPERIMENT, validate_control
 
 
@@ -18,7 +22,7 @@ def label(run: dict) -> str:
 
 
 def summarize_run(run: dict, source_commit: str) -> tuple[dict, list[dict]]:
-    if run.get("retained_completed"):
+    if run.get("retained_completed") and not run.get("_retained_checked"):
         validate_control(run)
     row, records = historical_summary(run, source_commit)
     row.update(kernel=label(run), quadratic_mode=run.get("quadratic_mode", "fixed"),
@@ -47,15 +51,73 @@ def summarize_run(run: dict, source_commit: str) -> tuple[dict, list[dict]]:
             values = [layer[key] for layer in layers if key in layer]
             if values:
                 row[key] = reduction(values)
+    if run.get("_retained_checked") and run["status"] == "numerical-failure":
+        row.update(status="numerical-failure", error=run["failure"].get("error", row["error"]))
     return row, records
 
 
-def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
+def retained_plot_manifest(manifest: dict, manifest_path: Path | None = None) -> dict:
+    """Adapt a concluded attention study, including numerical failures, for plots."""
+    import yaml
+
+    root = retained_root(manifest, manifest_path)
+    check_dependency_lock(manifest, root)
+    adapted = dict(manifest, project_root=str(root))
+    for group in ("controls", "runs"):
+        adapted[group] = []
+        for run in manifest[group]:
+            if run.get("source_provenance"):
+                checked_artifact(root, run["source_provenance"])
+            config = yaml.safe_load(checked_artifact(root, run["resolved_config"]).read_text())
+            identity = ("attention_degree", "qk_head_dim", "value_head_dim")
+            if (config["train"]["source_commit"] != run["source_commit"]
+                    or config["train"]["seed"] != run["seed"]
+                    or any(config["model"][key] != run[key] for key in identity)):
+                raise ValueError(f"Retained configuration identity mismatch: {run['name']}")
+            metadata_path = checked_artifact(root, run["metadata"])
+            workdir = metadata_path.parent
+            metadata = json.loads(metadata_path.read_text())
+            if metadata.get("source_commit") != run["source_commit"] or metadata.get("parameter_count") != run["parameter_count"]:
+                raise ValueError(f"Retained metadata identity mismatch: {run['name']}")
+            if run.get("metrics"):
+                if checked_artifact(root, run["metrics"]) != workdir / "metrics.jsonl":
+                    raise ValueError("Retained metrics must be in their run directory")
+            elif (workdir / "metrics.jsonl").exists():
+                raise ValueError(f"Unrecorded retained validation metrics: {run['name']}")
+            if run.get("completion_artifact"):
+                checked_artifact(root, run["completion_artifact"])
+            if run["status"] == "complete":
+                summarize_retained_run(run, root)
+            else:
+                if run.get("terminal") is not None or run.get("completion") is not None:
+                    raise ValueError(f"Failed run cannot have a terminal endpoint: {run['name']}")
+                failure = json.loads(checked_artifact(root, run["failure"]).read_text())
+                if (metadata.get("status") != "failed" or metadata.get("step") != run["failure"]["step"]
+                        or failure["step"] != run["failure"]["step"]
+                        or failure.get("attention_degree") != run["attention_degree"]):
+                    raise ValueError(f"Retained numerical failure mismatch: {run['name']}")
+                if run.get("launcher_failure"):
+                    checked_artifact(root, run["launcher_failure"])
+                selected = run.get("selected_checkpoint")
+                records = committed_records(workdir)
+                if selected:
+                    best = min(records, key=lambda record: (record["validation_nll"], -record["step"]))
+                    if any(best[key] != selected[key] for key in ("step", "validation_nll", "validation_perplexity")):
+                        raise ValueError(f"Retained failed-run checkpoint is not validation-best: {run['name']}")
+                    artifact_path(root, selected["path"])
+            adapted[group].append(dict(run, config=config, workdir=str(workdir), _retained_checked=True,
+                training_tokens=config["optim"]["total_steps"] * config["data"]["batch_size"] * (config["data"]["sequence_length"] - 1)))
+    return adapted
+
+
+def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: Path | None = None) -> list[dict]:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import numpy as np
 
+    if manifest.get("format") == RETAINED_FORMAT:
+        manifest = retained_plot_manifest(manifest, manifest_path)
     output_dir = output_dir or Path(manifest["project_root"]) / "results" / EXPERIMENT
     output_dir.mkdir(parents=True, exist_ok=True)
     figures_dir = output_dir / "figures"
@@ -167,7 +229,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
               "Coefficient magnitudes must be interpreted together with score scales: Q/K rescaling can absorb some coefficient movement. The constant scale of a normalized polynomial is unidentifiable. Positive and unrestricted families use different optimization coordinates, so equal learning rates do not isolate positivity alone. One seed per variant does not estimate seed variation.", "",
               "The stability plots use the fixed first held-out diagnostic sequence. Negative-weight fractions are computed after signed normalization; minimum absolute denominators and cancellation ratios expose near-zero signed sums.", "",
               "Learned runs use four H100s on dogo. Historical control throughput reflects each control's recorded allocations, including any hardware migration; it is not a matched hardware benchmark. Hardware histories are preserved in the control provenance.", "",
-              "Historical controls retain original source revisions and artifact SHA256 checksums in `sweep.json`:", ""]
+              "Historical controls retain original source revisions and artifact SHA256 checksums in the canonical provenance; the archived launch record preserves the original references:", ""]
     lines += [f"- {label(run)}: `{run['config']['train']['source_commit']}`; original sweep `{run['original_sweep_identity']}`." for run in manifest["controls"]]
     failures = [row for row in rows if row["error"]]
     if failures:
@@ -182,7 +244,7 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, default=default_manifest_path(Path("results/learned_quadratic_attention")))
     parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
-    aggregate(json.loads(args.manifest.read_text()), args.output_dir)
+    aggregate(json.loads(args.manifest.read_text()), args.output_dir, manifest_path=args.manifest)
 
 
 if __name__ == "__main__":

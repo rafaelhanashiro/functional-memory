@@ -1,0 +1,25 @@
+{
+  "collective_elements": 1024,
+  "collectives": [],
+  "completed_devices": 4,
+  "cuda_visible_devices": "0,1,2,3",
+  "device_kinds": [
+    "NVIDIA RTX A6000",
+    "NVIDIA RTX A6000",
+    "NVIDIA RTX A6000",
+    "NVIDIA RTX A6000"
+  ],
+  "elapsed_seconds": 24.578780834563076,
+  "jax_version": "0.10.0",
+  "nccl_environment": {
+    "NCCL_DEBUG": "INFO",
+    "NCCL_DEBUG_FILE": "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/job-200762/default.nccl.%h.%p.log",
+    "NCCL_DEBUG_SUBSYS": "INIT,ENV,GRAPH,COLL"
+  },
+  "node": "doodle.csail.mit.edu",
+  "pid": 1178383,
+  "process_exit_code": 124,
+  "slurm_job_id": "200762",
+  "stage": "collective_start",
+  "status": "timed_out"
+}

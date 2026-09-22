@@ -1,0 +1,51 @@
+{
+  "recorded_utc": "2026-09-22T04:49:01.281741+00:00",
+  "status": "all_three_training",
+  "runs": [
+    {
+      "run_name": "200m-dk032-m016-seed0",
+      "slurm_job_id": "200787",
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200787.out",
+      "first_training_update": [
+        "1",
+        "10.873755",
+        "52773.0253"
+      ],
+      "latest_training_update": [
+        "1",
+        "10.873755",
+        "52773.0253"
+      ]
+    },
+    {
+      "run_name": "200m-dk128-m008-seed0",
+      "slurm_job_id": "200791",
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m008-seed0/slurm-200791.out",
+      "first_training_update": [
+        "1",
+        "10.880325",
+        "53120.8783"
+      ],
+      "latest_training_update": [
+        "1",
+        "10.880325",
+        "53120.8783"
+      ]
+    },
+    {
+      "run_name": "200m-dk128-m016-seed0",
+      "slurm_job_id": "200794",
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200794.out",
+      "first_training_update": [
+        "1",
+        "10.880345",
+        "53121.9421"
+      ],
+      "latest_training_update": [
+        "50",
+        "9.104616",
+        "8996.7274"
+      ]
+    }
+  ]
+}

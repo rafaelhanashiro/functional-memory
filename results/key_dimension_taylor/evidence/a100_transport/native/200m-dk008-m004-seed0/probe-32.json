@@ -1,0 +1,1121 @@
+{
+  "mode": "native",
+  "stop": 32,
+  "name": "200m-dk008-m004-seed0",
+  "runtime_commit": "a1f1b2f04a3a625d8f48735aad0c990a09dbcc01",
+  "scientific_source": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "slurm_job_id": "200853",
+  "node": "samoyed.csail.mit.edu",
+  "devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+    "NCCL_P2P_DISABLE": null,
+    "POLYNOMIAL_ATTENTION_HOST_STAGING": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null
+  },
+  "config": {
+    "data": {
+      "source": "packed",
+      "dataset_name": "HuggingFaceFW/fineweb-edu",
+      "dataset_config": "sample-100BT",
+      "split": "train",
+      "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+      "text_field": "text",
+      "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "batch_size": 256,
+      "sequence_length": 2049,
+      "shuffle_seed": 0,
+      "synthetic_vocab_size": 32000
+    },
+    "model": {
+      "kind": "transformer",
+      "vocab_size": 32000,
+      "max_seq_len": 2048,
+      "num_layers": 10,
+      "hidden_size": 1024,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "qk_head_dim": 8,
+      "value_head_dim": 64,
+      "intermediate_size": 3008,
+      "rope_theta": 10000.0,
+      "rms_norm_eps": 1e-06,
+      "dropout": 0.0,
+      "tie_embeddings": false,
+      "remat": false,
+      "attention_backend": "fused",
+      "attention_degree": 4
+    },
+    "optim": {
+      "learning_rate": 0.0003,
+      "min_learning_rate": 3e-05,
+      "weight_decay": 0.1,
+      "beta1": 0.9,
+      "beta2": 0.95,
+      "grad_clip_norm": 1.0,
+      "warmup_steps": 2000,
+      "total_steps": 19074
+    },
+    "train": {
+      "seed": 0,
+      "source_commit": "a1f1b2f04a3a625d8f48735aad0c990a09dbcc01",
+      "dtype": "bfloat16",
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/native/200m-dk008-m004-seed0/workdir",
+      "micro_batch_size": 64,
+      "log_every": 10,
+      "eval_every": 32,
+      "eval_batches": 1,
+      "ckpt_every": 500,
+      "wandb_project": "functional-memory-key-dimension-taylor",
+      "wandb_entity": null,
+      "wandb_run_name": "200m-dk008-m004-seed0",
+      "wandb_mode": "disabled"
+    }
+  },
+  "events": [
+    {
+      "kind": "initial_state_replicas",
+      "devices": {
+        "cuda:0": {
+          "leaves": 282,
+          "mismatched_leaves": 0,
+          "examples": []
+        },
+        "cuda:1": {
+          "leaves": 282,
+          "mismatched_leaves": 93,
+          "examples": [
+            {
+              "path": ".params['final_norm']['scale'].value",
+              "shape": [
+                1024
+              ],
+              "expected_first": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "e9bac255f4adc7cb4ada9298e193a5ff66b434d15afabd458505325f29c398c7",
+              "actual_sha256": "ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention']['k_proj']['kernel'].value",
+              "shape": [
+                1024,
+                128
+              ],
+              "expected_first": [
+                0.04248715937137604,
+                0.04424966871738434,
+                -0.013854200020432472,
+                -0.025918995961546898,
+                0.012889264151453972,
+                0.0006405275198630989,
+                0.0193824153393507,
+                -0.025307228788733482
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "f68fcbdf1f0279118379620082d031c8bf87a738ba668777321c76f9e51f9e9e",
+              "actual_sha256": "07854d2fef297a06ba81685e660c332de36d5d18d546927d30daad6d7fda1541",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention']['o_proj']['kernel'].value",
+              "shape": [
+                1024,
+                1024
+              ],
+              "expected_first": [
+                -0.033980607986450195,
+                0.020557209849357605,
+                -0.04244323447346687,
+                -0.004117375239729881,
+                -0.04405941814184189,
+                -0.023340635001659393,
+                0.02683207392692566,
+                0.05366544425487518
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "e7774a5684dd513148b63a69a97e0ed91927d90f447b6c8e1cd250eadc2a156c",
+              "actual_sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention']['q_proj']['kernel'].value",
+              "shape": [
+                1024,
+                128
+              ],
+              "expected_first": [
+                -0.06696891039609909,
+                -0.06111549958586693,
+                0.0069656092673540115,
+                -0.011966208927333355,
+                -0.02559325098991394,
+                -0.0389254204928875,
+                -0.037986207753419876,
+                0.010063503868877888
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "9016e39b78e2b085546d75275626853e3dfbcb4f1a2e4ba72d2a148745256a60",
+              "actual_sha256": "07854d2fef297a06ba81685e660c332de36d5d18d546927d30daad6d7fda1541",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention']['v_proj']['kernel'].value",
+              "shape": [
+                1024,
+                1024
+              ],
+              "expected_first": [
+                -0.020961027592420578,
+                0.021056154742836952,
+                0.05325840041041374,
+                -0.02710362710058689,
+                -0.06613761931657791,
+                0.0299675352871418,
+                0.047361306846141815,
+                -0.020081672817468643
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "cb3e6b2d3c238a05a550297a464a2279d7c16bb8b5121b0dfc7e1d369cb145bb",
+              "actual_sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention_norm']['scale'].value",
+              "shape": [
+                1024
+              ],
+              "expected_first": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "e9bac255f4adc7cb4ada9298e193a5ff66b434d15afabd458505325f29c398c7",
+              "actual_sha256": "ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['feed_forward']['down_proj']['kernel'].value",
+              "shape": [
+                3008,
+                1024
+              ],
+              "expected_first": [
+                -0.0012382898712530732,
+                -0.027610866352915764,
+                -0.017443284392356873,
+                -0.002030862495303154,
+                0.011711345985531807,
+                0.005590684246271849,
+                -0.03861209377646446,
+                -0.016384435817599297
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "67bc54d5a1fb35129da7fa105cb57a227fb40182a13767d6e6bb9ff5b5a2b20e",
+              "actual_sha256": "9b46b938ed17e3a127dcded39df461cb56042949ec7ba4d4bf1a445b5adc4da4",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['feed_forward']['gate_proj']['kernel'].value",
+              "shape": [
+                1024,
+                3008
+              ],
+              "expected_first": [
+                0.021474065259099007,
+                0.010820658877491951,
+                0.041679318994283676,
+                0.0452125109732151,
+                0.03289424628019333,
+                0.018969856202602386,
+                0.02157207578420639,
+                -0.043792374432086945
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "6e2465205381b66a6130549877ad90e649e7122a649318c2110622e5ab5f2e09",
+              "actual_sha256": "9b46b938ed17e3a127dcded39df461cb56042949ec7ba4d4bf1a445b5adc4da4",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            }
+          ]
+        },
+        "cuda:2": {
+          "leaves": 282,
+          "mismatched_leaves": 93,
+          "examples": [
+            {
+              "path": ".params['final_norm']['scale'].value",
+              "shape": [
+                1024
+              ],
+              "expected_first": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "e9bac255f4adc7cb4ada9298e193a5ff66b434d15afabd458505325f29c398c7",
+              "actual_sha256": "ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention']['k_proj']['kernel'].value",
+              "shape": [
+                1024,
+                128
+              ],
+              "expected_first": [
+                0.04248715937137604,
+                0.04424966871738434,
+                -0.013854200020432472,
+                -0.025918995961546898,
+                0.012889264151453972,
+                0.0006405275198630989,
+                0.0193824153393507,
+                -0.025307228788733482
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "f68fcbdf1f0279118379620082d031c8bf87a738ba668777321c76f9e51f9e9e",
+              "actual_sha256": "07854d2fef297a06ba81685e660c332de36d5d18d546927d30daad6d7fda1541",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention']['o_proj']['kernel'].value",
+              "shape": [
+                1024,
+                1024
+              ],
+              "expected_first": [
+                -0.033980607986450195,
+                0.020557209849357605,
+                -0.04244323447346687,
+                -0.004117375239729881,
+                -0.04405941814184189,
+                -0.023340635001659393,
+                0.02683207392692566,
+                0.05366544425487518
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "e7774a5684dd513148b63a69a97e0ed91927d90f447b6c8e1cd250eadc2a156c",
+              "actual_sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention']['q_proj']['kernel'].value",
+              "shape": [
+                1024,
+                128
+              ],
+              "expected_first": [
+                -0.06696891039609909,
+                -0.06111549958586693,
+                0.0069656092673540115,
+                -0.011966208927333355,
+                -0.02559325098991394,
+                -0.0389254204928875,
+                -0.037986207753419876,
+                0.010063503868877888
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "9016e39b78e2b085546d75275626853e3dfbcb4f1a2e4ba72d2a148745256a60",
+              "actual_sha256": "07854d2fef297a06ba81685e660c332de36d5d18d546927d30daad6d7fda1541",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention']['v_proj']['kernel'].value",
+              "shape": [
+                1024,
+                1024
+              ],
+              "expected_first": [
+                -0.020961027592420578,
+                0.021056154742836952,
+                0.05325840041041374,
+                -0.02710362710058689,
+                -0.06613761931657791,
+                0.0299675352871418,
+                0.047361306846141815,
+                -0.020081672817468643
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "cb3e6b2d3c238a05a550297a464a2279d7c16bb8b5121b0dfc7e1d369cb145bb",
+              "actual_sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention_norm']['scale'].value",
+              "shape": [
+                1024
+              ],
+              "expected_first": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "e9bac255f4adc7cb4ada9298e193a5ff66b434d15afabd458505325f29c398c7",
+              "actual_sha256": "ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['feed_forward']['down_proj']['kernel'].value",
+              "shape": [
+                3008,
+                1024
+              ],
+              "expected_first": [
+                -0.0012382898712530732,
+                -0.027610866352915764,
+                -0.017443284392356873,
+                -0.002030862495303154,
+                0.011711345985531807,
+                0.005590684246271849,
+                -0.03861209377646446,
+                -0.016384435817599297
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "67bc54d5a1fb35129da7fa105cb57a227fb40182a13767d6e6bb9ff5b5a2b20e",
+              "actual_sha256": "9b46b938ed17e3a127dcded39df461cb56042949ec7ba4d4bf1a445b5adc4da4",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['feed_forward']['gate_proj']['kernel'].value",
+              "shape": [
+                1024,
+                3008
+              ],
+              "expected_first": [
+                0.021474065259099007,
+                0.010820658877491951,
+                0.041679318994283676,
+                0.0452125109732151,
+                0.03289424628019333,
+                0.018969856202602386,
+                0.02157207578420639,
+                -0.043792374432086945
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "6e2465205381b66a6130549877ad90e649e7122a649318c2110622e5ab5f2e09",
+              "actual_sha256": "9b46b938ed17e3a127dcded39df461cb56042949ec7ba4d4bf1a445b5adc4da4",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            }
+          ]
+        },
+        "cuda:3": {
+          "leaves": 282,
+          "mismatched_leaves": 93,
+          "examples": [
+            {
+              "path": ".params['final_norm']['scale'].value",
+              "shape": [
+                1024
+              ],
+              "expected_first": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "e9bac255f4adc7cb4ada9298e193a5ff66b434d15afabd458505325f29c398c7",
+              "actual_sha256": "ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention']['k_proj']['kernel'].value",
+              "shape": [
+                1024,
+                128
+              ],
+              "expected_first": [
+                0.04248715937137604,
+                0.04424966871738434,
+                -0.013854200020432472,
+                -0.025918995961546898,
+                0.012889264151453972,
+                0.0006405275198630989,
+                0.0193824153393507,
+                -0.025307228788733482
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "f68fcbdf1f0279118379620082d031c8bf87a738ba668777321c76f9e51f9e9e",
+              "actual_sha256": "07854d2fef297a06ba81685e660c332de36d5d18d546927d30daad6d7fda1541",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention']['o_proj']['kernel'].value",
+              "shape": [
+                1024,
+                1024
+              ],
+              "expected_first": [
+                -0.033980607986450195,
+                0.020557209849357605,
+                -0.04244323447346687,
+                -0.004117375239729881,
+                -0.04405941814184189,
+                -0.023340635001659393,
+                0.02683207392692566,
+                0.05366544425487518
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "e7774a5684dd513148b63a69a97e0ed91927d90f447b6c8e1cd250eadc2a156c",
+              "actual_sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention']['q_proj']['kernel'].value",
+              "shape": [
+                1024,
+                128
+              ],
+              "expected_first": [
+                -0.06696891039609909,
+                -0.06111549958586693,
+                0.0069656092673540115,
+                -0.011966208927333355,
+                -0.02559325098991394,
+                -0.0389254204928875,
+                -0.037986207753419876,
+                0.010063503868877888
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "9016e39b78e2b085546d75275626853e3dfbcb4f1a2e4ba72d2a148745256a60",
+              "actual_sha256": "07854d2fef297a06ba81685e660c332de36d5d18d546927d30daad6d7fda1541",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention']['v_proj']['kernel'].value",
+              "shape": [
+                1024,
+                1024
+              ],
+              "expected_first": [
+                -0.020961027592420578,
+                0.021056154742836952,
+                0.05325840041041374,
+                -0.02710362710058689,
+                -0.06613761931657791,
+                0.0299675352871418,
+                0.047361306846141815,
+                -0.020081672817468643
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "cb3e6b2d3c238a05a550297a464a2279d7c16bb8b5121b0dfc7e1d369cb145bb",
+              "actual_sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['attention_norm']['scale'].value",
+              "shape": [
+                1024
+              ],
+              "expected_first": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "e9bac255f4adc7cb4ada9298e193a5ff66b434d15afabd458505325f29c398c7",
+              "actual_sha256": "ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['feed_forward']['down_proj']['kernel'].value",
+              "shape": [
+                3008,
+                1024
+              ],
+              "expected_first": [
+                -0.0012382898712530732,
+                -0.027610866352915764,
+                -0.017443284392356873,
+                -0.002030862495303154,
+                0.011711345985531807,
+                0.005590684246271849,
+                -0.03861209377646446,
+                -0.016384435817599297
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "67bc54d5a1fb35129da7fa105cb57a227fb40182a13767d6e6bb9ff5b5a2b20e",
+              "actual_sha256": "9b46b938ed17e3a127dcded39df461cb56042949ec7ba4d4bf1a445b5adc4da4",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            },
+            {
+              "path": ".params['layers_0']['feed_forward']['gate_proj']['kernel'].value",
+              "shape": [
+                1024,
+                3008
+              ],
+              "expected_first": [
+                0.021474065259099007,
+                0.010820658877491951,
+                0.041679318994283676,
+                0.0452125109732151,
+                0.03289424628019333,
+                0.018969856202602386,
+                0.02157207578420639,
+                -0.043792374432086945
+              ],
+              "actual_first": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "expected_sha256": "6e2465205381b66a6130549877ad90e649e7122a649318c2110622e5ab5f2e09",
+              "actual_sha256": "9b46b938ed17e3a127dcded39df461cb56042949ec7ba4d4bf1a445b5adc4da4",
+              "actual_nonfinite": 0,
+              "actual_zero_fraction": 1.0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "first_train_batch",
+      "shards": [
+        {
+          "device": "cuda:0",
+          "shape": [
+            4,
+            16,
+            2049
+          ],
+          "matches_host": true,
+          "min": 2,
+          "max": 31793,
+          "mismatch_elements": 0
+        },
+        {
+          "device": "cuda:1",
+          "shape": [
+            4,
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 0,
+          "mismatch_elements": 131136
+        },
+        {
+          "device": "cuda:2",
+          "shape": [
+            4,
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 0,
+          "mismatch_elements": 131136
+        },
+        {
+          "device": "cuda:3",
+          "shape": [
+            4,
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 0,
+          "mismatch_elements": 131136
+        }
+      ]
+    },
+    {
+      "kind": "eval_batch",
+      "shards": [
+        {
+          "device": "cuda:0",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": true,
+          "min": 2,
+          "max": 31478,
+          "mismatch_elements": 0
+        },
+        {
+          "device": "cuda:1",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 0,
+          "mismatch_elements": 32784
+        },
+        {
+          "device": "cuda:2",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 0,
+          "mismatch_elements": 32784
+        },
+        {
+          "device": "cuda:3",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 0,
+          "mismatch_elements": 32784
+        }
+      ]
+    },
+    {
+      "kind": "eval_loss",
+      "value": 10.257230758666992,
+      "step": 32
+    },
+    {
+      "kind": "eval_batch",
+      "shards": [
+        {
+          "device": "cuda:0",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": true,
+          "min": 2,
+          "max": 30515,
+          "mismatch_elements": 0
+        },
+        {
+          "device": "cuda:1",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 0,
+          "mismatch_elements": 32784
+        },
+        {
+          "device": "cuda:2",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 0,
+          "mismatch_elements": 32784
+        },
+        {
+          "device": "cuda:3",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 0,
+          "mismatch_elements": 32784
+        }
+      ]
+    },
+    {
+      "kind": "eval_loss",
+      "value": 10.24956226348877,
+      "step": 32
+    },
+    {
+      "kind": "eval_batch",
+      "shards": [
+        {
+          "device": "cuda:0",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": true,
+          "min": 2,
+          "max": 30342,
+          "mismatch_elements": 0
+        },
+        {
+          "device": "cuda:1",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 1092885918,
+          "mismatch_elements": 32784
+        },
+        {
+          "device": "cuda:2",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 1092885918,
+          "mismatch_elements": 32784
+        },
+        {
+          "device": "cuda:3",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 1092885918,
+          "mismatch_elements": 32784
+        }
+      ]
+    },
+    {
+      "kind": "eval_loss",
+      "value": "nan",
+      "step": 32
+    },
+    {
+      "kind": "eval_batch",
+      "shards": [
+        {
+          "device": "cuda:0",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": true,
+          "min": 2,
+          "max": 30263,
+          "mismatch_elements": 0
+        },
+        {
+          "device": "cuda:1",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 0,
+          "mismatch_elements": 32784
+        },
+        {
+          "device": "cuda:2",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 0,
+          "mismatch_elements": 32784
+        },
+        {
+          "device": "cuda:3",
+          "shape": [
+            16,
+            2049
+          ],
+          "matches_host": false,
+          "min": 0,
+          "max": 0,
+          "mismatch_elements": 32784
+        }
+      ]
+    },
+    {
+      "kind": "eval_loss",
+      "value": 10.300827026367188,
+      "step": 32
+    }
+  ],
+  "status": "failed",
+  "error": "FloatingPointError: Nonfinite validation loss at step 32: nan",
+  "traceback": "Traceback (most recent call last):\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/a100_diagnostics/experiments/key_dimension_taylor/a100_diagnostics/probe.py\", line 125, in worker\n    result = loop.run_training(config, resume=True, stop_after_step=args.worker, audit_checkpoint=True)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/a100_diagnostics/experiments/polynomial_attention/training/loop.py\", line 507, in run_training\n    return _run_training(config, manager, layout, devices, resume=resume, end_step=end_step,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/a100_diagnostics/experiments/polynomial_attention/training/loop.py\", line 663, in _run_training\n    _fail_numerics(config, state, step,\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/a100_diagnostics/experiments/polynomial_attention/training/loop.py\", line 486, in _fail_numerics\n    raise FloatingPointError(message)\nFloatingPointError: Nonfinite validation loss at step 32: nan\n"
+}

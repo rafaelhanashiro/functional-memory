@@ -1,0 +1,111 @@
+{
+  "assignments": {
+    "200m-dk032-m016-seed0": "h100_or_better",
+    "200m-dk128-m008-seed0": "h100_or_better",
+    "200m-dk128-m016-seed0": "h100_or_better"
+  },
+  "authorization": "User requested cancelling A6000 allocations and queuing each run on any H100-or-better hardware on 2026-09-22",
+  "created_utc": "2026-09-22T05:27:48.727293+00:00",
+  "cross_coordinate_dependencies": false,
+  "eligibility_rule": "H100 immediately; admit B300 for each pending job only after its native full-model qualification passes",
+  "format": "key-dimension-taylor-execution-amendment",
+  "hardware_policy_reference": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/policy.json",
+    "sha256": "29313a2ece060638ece9d5135fbcf75dc795734d61379cd1c575dff0873efc73"
+  },
+  "identity": "efbd675ab1133abfecd0b3e27afa92dd8a74802f6ef8c4bfdd1047339ed85c14",
+  "inventory_note": "Current eligible GPU families are H100 and B300; no H200 is installed. Mastiff H100 remains eligible if restored to service.",
+  "legacy_renderer_jobs": [
+    "200729",
+    "200738"
+  ],
+  "minimum_checkpoint_step": 500,
+  "orchestrator_commit": "78b2f7f400856ae14a7cd85b23a43faea0e2f1e6",
+  "orchestrator_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor_fast_queue",
+  "profiles": {
+    "b300": {
+      "allowed_nodes": [
+        "akita"
+      ],
+      "cpus_per_task": 32,
+      "gpu_count": 4,
+      "gpu_type": "b300",
+      "memory": "256G",
+      "partition": "sweep",
+      "preflight_time": "08:00:00",
+      "production_time": "08:00:00"
+    },
+    "h100": {
+      "allowed_nodes": [
+        "dogo",
+        "mastiff"
+      ],
+      "cpus_per_task": 32,
+      "gpu_count": 4,
+      "gpu_type": "h100",
+      "memory": "256G",
+      "partition": "sweep",
+      "preflight_time": "08:00:00",
+      "production_time": "08:00:00"
+    },
+    "h100_or_better": {
+      "allowed_gpu_types": [
+        "h100",
+        "b300"
+      ],
+      "allowed_nodes": [
+        "akita",
+        "dogo",
+        "mastiff"
+      ],
+      "cpus_per_task": 32,
+      "excluded_nodes": [
+        "collie",
+        "doodle",
+        "samoyed",
+        "terrier"
+      ],
+      "gpu_count": 4,
+      "gpu_type": "h100_or_better",
+      "memory": "256G",
+      "partition": "sweep",
+      "preflight_time": "08:00:00",
+      "production_time": "08:00:00"
+    }
+  },
+  "scientific_changes": [],
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "submission_order": [
+    "200m-dk128-m016-seed0",
+    "200m-dk128-m008-seed0",
+    "200m-dk032-m016-seed0"
+  ],
+  "superseded_jobs": {
+    "200m-dk032-m016-seed0": [
+      "200787",
+      "200788",
+      "200789",
+      "200790"
+    ],
+    "200m-dk128-m008-seed0": [
+      "200791",
+      "200792",
+      "200793"
+    ],
+    "200m-dk128-m016-seed0": [
+      "200794",
+      "200795",
+      "200796",
+      "200797"
+    ]
+  },
+  "supersedes_policy": {
+    "identity": "9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/execution-policy-a6000.json",
+    "sha256": "a9988828534c32e9398a289ae775a3d991e732acb3efae56dd5cc4832b329c77"
+  },
+  "training_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+  "training_manifest": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/sweep.json",
+  "training_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor",
+  "version": 3
+}

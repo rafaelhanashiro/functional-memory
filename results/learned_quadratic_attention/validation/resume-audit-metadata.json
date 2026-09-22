@@ -1,0 +1,9 @@
+{
+  "source_commit": "e4ddb749a3f129e120be6f9e8841cb51de8ceefa",
+  "passed": 46,
+  "skipped_requires_multiple_devices": 5,
+  "artifacts_sha256": {
+    "resume-audit-tests.xml": "91c6376bb5cb7d04b487757b20d8f315d6d827f491627c7c216375897dd2b2f1"
+  },
+  "note": "Validates revised exact checkpoint/state/input/RNG audits, CPU uninterrupted equivalence, and legacy training behavior. Prior GPU kernels and production numerical recipe are unchanged."
+}

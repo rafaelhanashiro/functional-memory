@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from scaffolds.transformer.studies.key_dimension_taylor.plot import DEGREES, WIDTHS, aggregate, grid_rows, summarize_run
+from scaffolds.transformer.studies.key_dimension_taylor.plot import DEGREES, WIDTHS, aggregate, grid_rows, summarize_run, summarize_retained_run
 
 
 def write_json(path, record):
@@ -134,6 +134,73 @@ def test_aggregate_exports_annotated_grid_curves_and_terminal_csv(tmp_path):
     assert "14.689767074685026" in report
     assert "14.69417664861716" in report
     assert "is not used in this grid" in report
+
+
+def retained_manifest(root):
+    import yaml
+
+    manifest = make_manifest(root)
+    manifest.update(format="functional-memory-retained-experiment", experiment="key_dimension_taylor")
+    manifest.pop("project_root")
+    manifest["key_dimensions"] = [8]
+    manifest["degrees"] = [2, 4, 8, 16]
+
+    def reference(path):
+        return {"path": str(path.relative_to(root)), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+
+    for category in ("runs", "controls"):
+        manifest[category] = [run for run in manifest[category] if run["qk_head_dim"] == 8]
+        for run in manifest[category]:
+            workdir = Path(run.pop("workdir"))
+            config = run.pop("config")
+            config["model"] = {key: run[key] for key in ("qk_head_dim", "value_head_dim", "attention_degree")}
+            config["data"] = {"batch_size": 256, "sequence_length": 2049}
+            config["train"]["workdir"] = "/historical/removed/worktree/output"
+            config_path = root / "results/key_dimension_taylor/configs" / f"{run['name']}.yaml"
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            config_path.write_text(yaml.safe_dump(config))
+            write_json(workdir / "metadata.json", {"status": "complete"})
+            records = [json.loads(line) for line in (workdir / "metrics.jsonl").read_text().splitlines()]
+            run.update(seed=0, resolved_config=reference(config_path), metrics=reference(workdir / "metrics.jsonl"),
+                       completion=reference(workdir / "completion.json"), metadata=reference(workdir / "metadata.json"),
+                       terminal={key: records[-1][key] for key in ("step", "training_tokens", "validation_nll", "validation_perplexity")},
+                       selected_checkpoint={"path": f"checkpoints/key_dimension_taylor/{run['name']}/18000", "step": 18000,
+                                            "validation_nll": math.log(10.0), "validation_perplexity": 10.0})
+            run.pop("provenance_sha256", None)
+    path = root / "results/key_dimension_taylor/provenance/manifest.json"
+    write_json(path, manifest)
+    return path, manifest
+
+
+def test_retained_manifest_uses_portable_paths_preserves_readme_and_selection(tmp_path):
+    path, manifest = retained_manifest(tmp_path)
+    output = tmp_path / "rendered"
+    output.mkdir()
+    authored = "# Authored question\n\nExact reproduction instructions.\n"
+    (output / "README.md").write_text(authored + "<!-- BEGIN GENERATED RESULTS -->\nold\n<!-- END GENERATED RESULTS -->\n\nAuthored limitations.\n")
+    rows = aggregate(manifest, output, manifest_path=path)
+    assert len(rows) == 5
+    assert all(row["best_step"] == 18000 and row["terminal_step"] == 19074 for row in rows)
+    report = (output / "README.md").read_text()
+    assert report.startswith(authored) and report.endswith("Authored limitations.\n")
+    assert "provenance/manifest.json" in report
+    assert "Heatmaps omit reuse markers" in report
+    assert len(list(output.rglob("README.md"))) == 1
+    assert not list(output.rglob("REPORT.md"))
+    assert not list(output.glob("*.png"))
+    assert (output / "figures/terminal_ppl_heatmap.png").exists()
+
+
+def test_retained_manifest_rejects_changed_bytes_and_wrong_best(tmp_path):
+    _, manifest = retained_manifest(tmp_path)
+    run = manifest["runs"][0]
+    run["selected_checkpoint"]["step"] = 19074
+    with pytest.raises(ValueError, match="validation-best"):
+        summarize_retained_run(run, tmp_path)
+    path = tmp_path / run["metrics"]["path"]
+    path.write_text(path.read_text() + "\n")
+    with pytest.raises(ValueError, match="checksum"):
+        summarize_retained_run(run, tmp_path)
 
 
 def test_subset_grid_and_unavailable_historical_artifacts(tmp_path):

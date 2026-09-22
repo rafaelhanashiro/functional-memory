@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "diagnosed_at_utc": "2026-09-18T23:03:31Z",
+  "experiment": "learned_quadratic_attention",
+  "run_name": "200m-positive-global-seed0",
+  "slurm_job_id": "199891",
+  "source_commit": "a4d479f288fa8b37f04727e8bb8629b2da1d448f",
+  "preflight_identity": "81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71",
+  "attempt_directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba",
+  "outcome": "Independent training trajectories already differed before the checkpoint resume; CPU restores reproduce the worker state hashes exactly.",
+  "method": {
+    "platform": "cpu",
+    "cpu_affinity_cores": 8,
+    "environment_python": "/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+    "restoration": "orbax.StandardCheckpointer with each run's saved config and freshly initialized TrainState template",
+    "config_parsing": "json.loads followed by _update_dataclass; PyYAML misparses exponent-only JSON floats",
+    "comparison": "All 285 leaves checked for identical tree path, shape, dtype and array equality; differing arrays compared in float64.",
+    "state_sha256_encoding": "Ordered tree paths, shapes, dtypes and C-order raw bytes, matching the GPU worker algorithm.",
+    "numerical_finiteness": "The recorded pilot workers reject nonfinite state leaves before hashing; all CPU hashes with recorded worker counterparts reproduce those finite-checked hashes. All computed discrepancy statistics were finite."
+  },
+  "worker_results": {
+    "initial_step2": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0-step2.json",
+      "state_sha256": "0a83bac4ac75226417816bd6af50317e1b60bd91a2b2282aeb0cf4984545caaf"
+    },
+    "resumed_step3": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0-resume.json",
+      "state_sha256": "47c6ade80d6c201cdac074acb9649d26f2334c78f232e156aa93dd419809b398",
+      "restored_step": 2,
+      "data_start_sequence": 512,
+      "final_step": 3,
+      "data_parallel_devices": 4
+    },
+    "uninterrupted_step3": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0-uninterrupted.json",
+      "state_sha256": "c4f33fa193197d071cc395613e5c65b13cbcbc3db3d24fac68431e2a5d48a552"
+    }
+  },
+  "step2_validation_nll": {
+    "initial_run": 10.881455659866333,
+    "independent_uninterrupted_run": 10.881449937820435
+  },
+  "comparisons": [
+    {
+      "step": 2,
+      "left_checkpoint": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0/checkpoints/2/default",
+      "right_checkpoint": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0-uninterrupted/checkpoints/2/default",
+      "left_cpu_sha256": "0a83bac4ac75226417816bd6af50317e1b60bd91a2b2282aeb0cf4984545caaf",
+      "right_cpu_sha256": "20aa45984e9f57503c117ba00ba9a16648876ad2c1f8e205c5525fba9271336f",
+      "total_leaves": 285,
+      "bitwise_equal_leaves": 25,
+      "differing_leaves": 260,
+      "all_paths_shapes_dtypes_identical": true,
+      "quadratic_coefficient_parameters_bitwise_equal": true,
+      "groups": {
+        "params": {
+          "differing_leaves": 72,
+          "differing_elements": 438001,
+          "compared_elements_in_differing_leaves": 199884800,
+          "max_absolute_difference": 1.5273690223693848e-7,
+          "max_difference_relative_to_leaf_peak": 9.017698971788767e-7,
+          "relative_l2_over_differing_leaves": 3.311671293304076e-9
+        },
+        "adam_mu": {
+          "differing_leaves": 94,
+          "differing_elements": 185190086,
+          "compared_elements_in_differing_leaves": 199906306,
+          "max_absolute_difference": 0.000023589469492435455,
+          "max_difference_relative_to_leaf_peak": 0.009668140292429848,
+          "relative_l2_over_differing_leaves": 0.0012100162402445011
+        },
+        "adam_nu": {
+          "differing_leaves": 94,
+          "differing_elements": 185270288,
+          "compared_elements_in_differing_leaves": 199906306,
+          "max_absolute_difference": 1.5623891158611514e-7,
+          "max_difference_relative_to_leaf_peak": 0.009721843995038866,
+          "relative_l2_over_differing_leaves": 0.00526908591176294
+        }
+      },
+      "largest_absolute_leaf_difference": {
+        "dtype": "float32",
+        "maxabs": 0.000023589469492435455,
+        "num_diff": 18126122,
+        "numel": 32768000,
+        "path": "(GetAttrKey(name='opt_state'), SequenceKey(idx=1), SequenceKey(idx=0), GetAttrKey(name='mu'), DictKey(key='token_embedding'), DictKey(key='embedding'), GetAttrKey(name='value'))",
+        "rel_to_peak": 0.009668140292429848,
+        "rms": 0.000010315832320737238,
+        "rmsdiff": 3.9767717610137434e-8,
+        "shape": [
+          32000,
+          1024
+        ]
+      },
+      "coefficient_moment_differences": [
+        {
+          "dtype": "float32",
+          "maxabs": 3.0850060284137726e-9,
+          "num_diff": 2,
+          "numel": 2,
+          "path": "(GetAttrKey(name='opt_state'), SequenceKey(idx=1), SequenceKey(idx=0), GetAttrKey(name='mu'), DictKey(key='quadratic_coefficients'), GetAttrKey(name='value'))",
+          "rel_to_peak": 0.000008940077863017765,
+          "rms": 0.0002702874155597235,
+          "rmsdiff": 2.429777694021096e-9,
+          "shape": [
+            2
+          ],
+          "values": [
+            [
+              -0.00034507596865296364,
+              0.00016441760817542672
+            ],
+            [
+              -0.0003450728836469352,
+              0.00016441609477624297
+            ]
+          ]
+        },
+        {
+          "dtype": "float32",
+          "maxabs": 5.7696070143720135e-12,
+          "num_diff": 2,
+          "numel": 2,
+          "path": "(GetAttrKey(name='opt_state'), SequenceKey(idx=1), SequenceKey(idx=0), GetAttrKey(name='nu'), DictKey(key='quadratic_coefficients'), GetAttrKey(name='value'))",
+          "rel_to_peak": 0.000017142004023557674,
+          "rms": 2.435488244554515e-7,
+          "rmsdiff": 4.189925377361354e-12,
+          "shape": [
+            2
+          ],
+          "values": [
+            [
+              3.3657715903245844e-7,
+              7.312917205126723e-8
+            ],
+            [
+              3.3657138942544407e-7,
+              7.312782202006929e-8
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "step": 3,
+      "left_checkpoint": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0/checkpoints/3/default",
+      "right_checkpoint": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0-uninterrupted/checkpoints/3/default",
+      "left_cpu_sha256": "47c6ade80d6c201cdac074acb9649d26f2334c78f232e156aa93dd419809b398",
+      "right_cpu_sha256": "c4f33fa193197d071cc395613e5c65b13cbcbc3db3d24fac68431e2a5d48a552",
+      "total_leaves": 285,
+      "bitwise_equal_leaves": 9,
+      "differing_leaves": 276,
+      "all_paths_shapes_dtypes_identical": true,
+      "quadratic_coefficient_parameters_bitwise_equal": true,
+      "groups": {
+        "params": {
+          "differing_leaves": 88,
+          "differing_elements": 29998028,
+          "compared_elements_in_differing_leaves": 199901184,
+          "max_absolute_difference": 3.4552067518234253e-7,
+          "max_difference_relative_to_leaf_peak": 0.0000022605298569660263,
+          "relative_l2_over_differing_leaves": 2.7748719226078095e-8
+        },
+        "adam_mu": {
+          "differing_leaves": 94,
+          "differing_elements": 186329177,
+          "compared_elements_in_differing_leaves": 199906306,
+          "max_absolute_difference": 0.000021130312234163284,
+          "max_difference_relative_to_leaf_peak": 0.006145915966582319,
+          "relative_l2_over_differing_leaves": 0.001042440032919297
+        },
+        "adam_nu": {
+          "differing_leaves": 94,
+          "differing_elements": 186331001,
+          "compared_elements_in_differing_leaves": 199906306,
+          "max_absolute_difference": 2.1271353034535423e-7,
+          "max_difference_relative_to_leaf_peak": 0.009255486586883353,
+          "relative_l2_over_differing_leaves": 0.004343291387404426
+        }
+      },
+      "largest_absolute_leaf_difference": {
+        "dtype": "float32",
+        "maxabs": 0.000021130312234163284,
+        "num_diff": 19202390,
+        "numel": 32768000,
+        "path": "(GetAttrKey(name='opt_state'), SequenceKey(idx=1), SequenceKey(idx=0), GetAttrKey(name='mu'), DictKey(key='token_embedding'), DictKey(key='embedding'), GetAttrKey(name='value'))",
+        "rel_to_peak": 0.006145915966582319,
+        "rms": 0.000014616318550383414,
+        "rmsdiff": 4.6891438570671647e-8,
+        "shape": [
+          32000,
+          1024
+        ]
+      },
+      "coefficient_moment_differences": [
+        {
+          "dtype": "float32",
+          "maxabs": 2.1455343812704086e-7,
+          "num_diff": 2,
+          "numel": 2,
+          "path": "(GetAttrKey(name='opt_state'), SequenceKey(idx=1), SequenceKey(idx=0), GetAttrKey(name='mu'), DictKey(key='quadratic_coefficients'), GetAttrKey(name='value'))",
+          "rel_to_peak": 0.00043447117396916527,
+          "rms": 0.00038550732117707684,
+          "rmsdiff": 1.603278539884895e-7,
+          "shape": [
+            2
+          ],
+          "values": [
+            [
+              -0.0004938266356475651,
+              0.00023101308033801615
+            ],
+            [
+              -0.0004936120822094381,
+              0.0002309397532371804
+            ]
+          ]
+        },
+        {
+          "dtype": "float32",
+          "maxabs": 3.9329961509793065e-10,
+          "num_diff": 2,
+          "numel": 2,
+          "path": "(GetAttrKey(name='opt_state'), SequenceKey(idx=1), SequenceKey(idx=0), GetAttrKey(name='nu'), DictKey(key='quadratic_coefficients'), GetAttrKey(name='value'))",
+          "rel_to_peak": 0.0008064934436710547,
+          "rms": 3.5257883189038446e-7,
+          "rmsdiff": 2.8143068915958543e-10,
+          "shape": [
+            2
+          ],
+          "values": [
+            [
+              4.87666227400041e-7,
+              1.0394862215434841e-7
+            ],
+            [
+              4.87272927784943e-7,
+              1.0388761495505605e-7
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "interpretation": {
+    "pre_resume_evidence": "The two step-2 checkpoints already differ in 260/285 leaves; this comparison precedes any resumed update.",
+    "serialization_artifact_excluded": "CPU hashes exactly match GPU worker hashes for initial step 2, resumed step 3 and uninterrupted step 3; paths, dtypes and shapes match between each state pair.",
+    "coefficient_parameters": "Bitwise equal between runs at both compared steps; their Adam moments differ.",
+    "possible_origin": "The largest optimizer discrepancies are in token-embedding moments and exist before resume, consistent with GPU gradient accumulation variability.",
+    "caveat": "The actual nondeterministic primitive has not been conclusively located. These observations do not independently establish exact checkpoint round-trip fidelity or isolate the effect of resume on continuation.",
+    "recommended_gate": "Check live pre-save versus restored state exactly, separately from independently generated GPU trajectory comparison."
+  },
+  "checkpoint_retention": {
+    "status": "preserved",
+    "policy": "Keep these diagnostic checkpoints until the replacement validation gate passes; this diagnosis did not modify or delete checkpoints."
+  }
+}

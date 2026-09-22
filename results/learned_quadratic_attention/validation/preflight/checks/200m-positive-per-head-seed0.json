@@ -1,0 +1,125 @@
+{
+  "completed_utc": "2026-09-18T23:17:01.287059+00:00",
+  "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+  "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+  "outcome": {
+    "attention_backend": "fused",
+    "attention_degree": 2,
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "learned_quadratic",
+    "best_checkpoint_after": 2,
+    "checkpoint_audit": {
+      "checkpoint_state_sha256": "2749c6d715a13d5fdcc0dce99a09a84fe0458286ce37cd69e334d0e3e3af5661",
+      "final_state_sha256": "2749c6d715a13d5fdcc0dce99a09a84fe0458286ce37cd69e334d0e3e3af5661",
+      "first_update": {
+        "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+        "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+        "step": 1
+      },
+      "next_update": {
+        "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+        "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+        "step": 3
+      },
+      "start_state_sha256": "0c1121eeeefb72a10b04207e6629334e3868305b904be005368d5880bf6bae36"
+    },
+    "data_parallel_devices": 4,
+    "data_start_sequence": 0,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 2,
+    "final_step": 2,
+    "key_block_size": 64,
+    "latest_checkpoint_after": 2,
+    "latest_checkpoint_before": null,
+    "m0_qk_parameter_note": null,
+    "quadratic_mode": "positive",
+    "quadratic_parameter_count": 320,
+    "quadratic_sharing": "per_head",
+    "query_block_size": 64,
+    "restored": false,
+    "restored_step": null,
+    "start_step": 0,
+    "timing": {
+      "checkpoint_seconds": [
+        22.34289692528546
+      ],
+      "evaluation_seconds": [
+        6.940651999786496
+      ],
+      "runtime_seconds": 63.66089130891487,
+      "train_step_seconds": [
+        11.022895146161318,
+        0.4904244667850435
+      ]
+    },
+    "training_tokens": 1048576
+  },
+  "quadratic_mode": "positive",
+  "quadratic_sharing": "per_head",
+  "resume_validation": "exact_live_durable_restart_state_and_next_batch_rng",
+  "resumed": {
+    "attention_backend": "fused",
+    "attention_degree": 2,
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "learned_quadratic",
+    "best_checkpoint_after": 2,
+    "checkpoint_audit": {
+      "checkpoint_state_sha256": "1b11cf78f56109e7b57421788c445eef364d60d9a271b8576d9446ba8ef876ab",
+      "final_state_sha256": "1b11cf78f56109e7b57421788c445eef364d60d9a271b8576d9446ba8ef876ab",
+      "first_update": {
+        "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+        "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+        "step": 3
+      },
+      "next_update": {
+        "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+        "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+        "step": 4
+      },
+      "start_state_sha256": "2749c6d715a13d5fdcc0dce99a09a84fe0458286ce37cd69e334d0e3e3af5661"
+    },
+    "data_parallel_devices": 4,
+    "data_start_sequence": 512,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 3,
+    "final_step": 3,
+    "key_block_size": 64,
+    "latest_checkpoint_after": 3,
+    "latest_checkpoint_before": 2,
+    "m0_qk_parameter_note": null,
+    "quadratic_mode": "positive",
+    "quadratic_parameter_count": 320,
+    "quadratic_sharing": "per_head",
+    "query_block_size": 64,
+    "restored": true,
+    "restored_step": 2,
+    "start_step": 2,
+    "timing": {
+      "checkpoint_seconds": [],
+      "evaluation_seconds": [],
+      "runtime_seconds": 58.68511082511395,
+      "train_step_seconds": [
+        11.223757422994822
+      ]
+    },
+    "training_tokens": 1572864
+  },
+  "runtime": {
+    "checkpoint_seconds": 871.3729800861329,
+    "evaluation_seconds": 971.6912799701095,
+    "limit_seconds": 28800,
+    "projected_total_seconds": 11261.081430823077,
+    "required_seconds_with_margin": 12387.189573905385,
+    "startup_seconds": 63.66089130891487,
+    "steady_train_step_seconds": 0.4904244667850435,
+    "training_seconds": 9354.35627945792
+  },
+  "slurm_job_id": "199894",
+  "slurm_restart_count": "0",
+  "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+  "status": "passed",
+  "validation_nll": 10.881449937820435,
+  "validation_perplexity": 53180.652683390865
+}

@@ -1,0 +1,45 @@
+{
+  "recorded_utc": "2026-09-22T01:36:13.562117+00:00",
+  "slurm_job_id": "200762",
+  "node": "doodle",
+  "gpu": "NVIDIA RTX A6000",
+  "gpu_count": 4,
+  "status": "diagnostic_complete",
+  "default_result": "All four independent GPU matmuls passed; first 1024-element all-reduce hung and process timed out at 60 seconds.",
+  "p2p_disabled_result": "All four independent GPU matmuls and verified all-reduces of 1024 and 262144 elements passed.",
+  "interpretation": "This reproduces the failure without the transformer or polynomial kernel, and supports a direct peer-to-peer GPU communication-path problem on this node. Exact hardware/driver/system cause is not established. NCCL_P2P_DISABLE=1 is a tested diagnostic workaround for these collectives; full-model compatibility remains unqualified.",
+  "artifacts": [
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/diagnostics/a6000-communication-200762/default.json",
+      "sha256": "86df1fe8375aab23539e441da26fe3cc0ae532a7a72b1bd40336bde284602d17"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/diagnostics/a6000-communication-200762/default.log",
+      "sha256": "5a4fe417988adcde16bf775a5ac446108d9265a33573d3b81785373401b8a8f8"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/diagnostics/a6000-communication-200762/default.nccl.doodle.1178383.log",
+      "sha256": "f2c237dcffc606c12c461f40e7d679e4c1cdb14f5b9668602b65b0cd5ced0fe4"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/diagnostics/a6000-communication-200762/gpus.csv",
+      "sha256": "fd614d046fd9fd43a8e230b632e0deaca610878d6ac04123e4ae41fa14ef6a9e"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/diagnostics/a6000-communication-200762/p2p_disabled.json",
+      "sha256": "6c2eceaac93c9c1a89b50253a1c8e2552687be9637a802f9a8fba9cbb70b7aa9"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/diagnostics/a6000-communication-200762/p2p_disabled.log",
+      "sha256": "137689774966627cd363b280ff43dfe7c4c2c7813b93de7f5be6de5e2bb787dd"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/diagnostics/a6000-communication-200762/p2p_disabled.nccl.doodle.1178621.log",
+      "sha256": "6056073ed2f398c3df25e7f52927fbebf2f4d28cee61c553c3520661507a84c1"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/diagnostics/a6000-communication-200762/topology.txt",
+      "sha256": "b4aaa859d4b541104b1b52ce5fcab5f0f2cb850b44bae5cd1024f279998e76c3"
+    }
+  ]
+}

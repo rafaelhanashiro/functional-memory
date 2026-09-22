@@ -1,0 +1,5 @@
+srun: job 200759 queued and waiting for resources
+srun: job 200759 has been allocated resources
+........................................................................ [ 80%]
+.................                                                        [100%]
+89 passed, 228 deselected in 222.96s (0:03:42)

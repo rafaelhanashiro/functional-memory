@@ -1,0 +1,41 @@
+{
+  "completed_utc": "2026-09-21T23:44:01.593136+00:00",
+  "hardware": {
+    "device_kinds": [
+      "NVIDIA B300 SXM6 AC",
+      "NVIDIA B300 SXM6 AC",
+      "NVIDIA B300 SXM6 AC",
+      "NVIDIA B300 SXM6 AC"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "gpu_count": 4,
+    "jax_version": "0.10.0",
+    "node": "akita",
+    "partition": "sweep",
+    "slurm_job_id": "200733"
+  },
+  "identity": "2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2",
+  "junit_path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/execution_validation/execution-policy/b300/attempts/200733-0-f6e0b4f9/kernels.xml",
+  "orchestrator_commit": "0dc83ae8e04ebb3689a03e4c35887b602848d06e",
+  "policy_identity": "2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2",
+  "profile": "b300",
+  "scheduler": {
+    "cpus_per_task": 32,
+    "gpu_count": 4,
+    "gpu_type": "b300",
+    "memory": "256G",
+    "node": "akita",
+    "partition": "sweep",
+    "preflight_time": "08:00:00",
+    "production_time": "08:00:00"
+  },
+  "slurm_job_id": "200733",
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "status": "passed",
+  "tests_passed": 105
+}

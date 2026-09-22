@@ -1,0 +1,945 @@
+{
+  "attempt_path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/attempts/200m-dk008-m004-seed0-200783-a72b9915",
+  "attention_degree": 4,
+  "completed_utc": "2026-09-22T04:00:10.156453+00:00",
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+    "JAX_COMPILATION_CACHE_DIR": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/cache",
+    "JAX_PLATFORMS": "cuda",
+    "NCCL_P2P_DISABLE": "1",
+    "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+    "POLYNOMIAL_ATTENTION_SOURCE_COMMIT": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+    "PYTHONPATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix",
+    "XLA_FLAGS": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "format": "key-dimension-taylor-a6000-host-staging",
+  "h100_initialization_and_input_parity": {
+    "first_update": {
+      "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+      "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+      "step": 1
+    },
+    "reference": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk008-m004-seed0.json",
+      "sha256": "9a0e7c15709ecac048b9fbe46422ed8e4c486a577d0c0ac434d7e5a656b0dbd8"
+    },
+    "start_state_sha256": "06c23688f2a9bc2b3ceb395de87502ba047e63fd0f3b66dfd2b98443e9234295",
+    "status": "passed"
+  },
+  "initial": {
+    "attention_backend": "fused",
+    "attention_degree": 4,
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "taylor",
+    "best_checkpoint_after": 32,
+    "checkpoint_audit": {
+      "checkpoint_state_sha256": "80485605f366499a89845076f1a9d4033ec8314e50b14c6cb846d797a155ad4a",
+      "final_state_sha256": "80485605f366499a89845076f1a9d4033ec8314e50b14c6cb846d797a155ad4a",
+      "first_update": {
+        "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+        "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+        "step": 1
+      },
+      "next_update": {
+        "batch_sha256": "3ec6bff2c38602df85c4c003f7fab9855f8a8d569f7128fe4617423eae295203",
+        "rng_sha256": "0dc2fc78abafe0737485791302a1df4fd7e8f606c5fe00ba6d1dd1078e9fd93a",
+        "step": 33
+      },
+      "start_state_sha256": "06c23688f2a9bc2b3ceb395de87502ba047e63fd0f3b66dfd2b98443e9234295"
+    },
+    "data_parallel_devices": 4,
+    "data_start_sequence": 0,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 32,
+    "final_step": 32,
+    "hardware": {
+      "cuda_visible_devices": "0,1,2,3",
+      "device_kinds": [
+        "NVIDIA RTX A6000",
+        "NVIDIA RTX A6000",
+        "NVIDIA RTX A6000",
+        "NVIDIA RTX A6000"
+      ],
+      "gpu_count": 4,
+      "gpu_inventory": "index, name, uuid, driver_version\n0, NVIDIA RTX A6000, GPU-dca473c0-d6c8-2807-f913-316be0a09f96, 580.159.04\n1, NVIDIA RTX A6000, GPU-4434f15b-45ff-ed24-a47c-1c3e55ed36b3, 580.159.04\n2, NVIDIA RTX A6000, GPU-18932edf-5fdd-754d-c99e-289ccc76267c, 580.159.04\n3, NVIDIA RTX A6000, GPU-3cac88c3-9ea5-119d-55a8-d31968b08e0b, 580.159.04\n4, NVIDIA RTX A6000, GPU-b9973033-a53a-8c53-d6b3-b96db4e22fd8, 580.159.04\n",
+      "jax_version": "0.10.0",
+      "memory_stats": [
+        {
+          "bytes_in_use": 0,
+          "bytes_limit": 42925797058,
+          "bytes_reserved": 0,
+          "largest_alloc_size": 0,
+          "largest_free_block_bytes": 0,
+          "num_allocs": 0,
+          "peak_bytes_in_use": 0,
+          "peak_bytes_reserved": 0,
+          "peak_pool_bytes": 0,
+          "pool_bytes": 0
+        },
+        {
+          "bytes_in_use": 0,
+          "bytes_limit": 42925797058,
+          "bytes_reserved": 0,
+          "largest_alloc_size": 0,
+          "largest_free_block_bytes": 0,
+          "num_allocs": 0,
+          "peak_bytes_in_use": 0,
+          "peak_bytes_reserved": 0,
+          "peak_pool_bytes": 0,
+          "pool_bytes": 0
+        },
+        {
+          "bytes_in_use": 0,
+          "bytes_limit": 42925797058,
+          "bytes_reserved": 0,
+          "largest_alloc_size": 0,
+          "largest_free_block_bytes": 0,
+          "num_allocs": 0,
+          "peak_bytes_in_use": 0,
+          "peak_bytes_reserved": 0,
+          "peak_pool_bytes": 0,
+          "pool_bytes": 0
+        },
+        {
+          "bytes_in_use": 0,
+          "bytes_limit": 42925797058,
+          "bytes_reserved": 0,
+          "largest_alloc_size": 0,
+          "largest_free_block_bytes": 0,
+          "num_allocs": 0,
+          "peak_bytes_in_use": 0,
+          "peak_bytes_reserved": 0,
+          "peak_pool_bytes": 0,
+          "pool_bytes": 0
+        }
+      ],
+      "node": "doodle",
+      "partition": "sweep",
+      "slurm_job_id": "200783"
+    },
+    "key_block_size": 64,
+    "latest_checkpoint_after": 32,
+    "latest_checkpoint_before": null,
+    "m0_qk_parameter_note": null,
+    "query_block_size": 64,
+    "resolved_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "fused",
+        "attention_degree": 4,
+        "dropout": 0.0,
+        "hidden_size": 1024,
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 8,
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 2000,
+        "weight_decay": 0.1
+      },
+      "train": {
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 1,
+        "eval_every": 32,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+        "wandb_entity": null,
+        "wandb_mode": "disabled",
+        "wandb_project": "functional-memory-key-dimension-taylor",
+        "wandb_run_name": "200m-dk008-m004-seed0",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/attempts/200m-dk008-m004-seed0-200783-a72b9915/workdir"
+      }
+    },
+    "restored": false,
+    "restored_step": null,
+    "start_step": 0,
+    "timing": {
+      "checkpoint_seconds": [
+        9.52844219096005
+      ],
+      "evaluation_seconds": [
+        21.809711051173508
+      ],
+      "runtime_seconds": 247.16563366167247,
+      "train_step_seconds": [
+        38.69372712355107,
+        2.5497412076219916,
+        2.5506739262491465,
+        2.540525213815272,
+        2.5474025812000036,
+        2.5448028994724154,
+        2.5545925004407763,
+        2.54837254434824
+      ]
+    },
+    "training_tokens": 16777216
+  },
+  "initial_last_committed_validation": {
+    "attempt_id": "200783:0:e73cc910",
+    "attention_backend": "fused",
+    "attention_degree": 4,
+    "attention_diagnostics": {
+      "attention_backend": "fused",
+      "attention_degree": 4,
+      "attention_implementation": "pallas_triton",
+      "attention_kernel": "taylor",
+      "diagnostic_backend": "blocked",
+      "diagnostic_query_block_size": 128,
+      "format": "polynomial-attention-diagnostics",
+      "issues": [],
+      "kernel_values": "unshifted_taylor",
+      "key_block_size": 64,
+      "layers": [
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 253.69940185546875,
+          "kernel_min": 0.27039462327957153,
+          "layer": 0,
+          "normalizer_max": 8598.490234375,
+          "normalizer_min": 0.30283868312835693,
+          "score_max": 7.636358737945557,
+          "score_min": -7.956566333770752
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 204.66859436035156,
+          "kernel_min": 0.27039462327957153,
+          "layer": 1,
+          "normalizer_max": 16686.86328125,
+          "normalizer_min": 0.2964951992034912,
+          "score_max": 7.162022113800049,
+          "score_min": -7.661941051483154
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 153.68341064453125,
+          "kernel_min": 0.27039462327957153,
+          "layer": 2,
+          "normalizer_max": 8630.501953125,
+          "normalizer_min": 0.3568878769874573,
+          "score_max": 6.565176010131836,
+          "score_min": -6.462340354919434
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 190.31536865234375,
+          "kernel_min": 0.27039462327957153,
+          "layer": 3,
+          "normalizer_max": 15434.49609375,
+          "normalizer_min": 0.3272551894187927,
+          "score_max": 7.00676155090332,
+          "score_min": -6.678138256072998
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 265.49285888671875,
+          "kernel_min": 0.27039462327957153,
+          "layer": 4,
+          "normalizer_max": 12692.130859375,
+          "normalizer_min": 0.2948542833328247,
+          "score_max": 7.739826679229736,
+          "score_min": -6.3962836265563965
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 134.49269104003906,
+          "kernel_min": 0.27039462327957153,
+          "layer": 5,
+          "normalizer_max": 11854.1796875,
+          "normalizer_min": 0.2974417805671692,
+          "score_max": 6.300520896911621,
+          "score_min": -6.4541754722595215
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 161.2257080078125,
+          "kernel_min": 0.27039462327957153,
+          "layer": 6,
+          "normalizer_max": 13279.99609375,
+          "normalizer_min": 0.28146058320999146,
+          "score_max": 6.662242412567139,
+          "score_min": -6.682225704193115
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 150.0340118408203,
+          "kernel_min": 0.27039462327957153,
+          "layer": 7,
+          "normalizer_max": 15335.796875,
+          "normalizer_min": 0.2802355885505676,
+          "score_max": 6.5168890953063965,
+          "score_min": -6.166741847991943
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 119.14307403564453,
+          "kernel_min": 0.27039462327957153,
+          "layer": 8,
+          "normalizer_max": 6822.43359375,
+          "normalizer_min": 0.3642204999923706,
+          "score_max": 6.066993713378906,
+          "score_min": -6.387954235076904
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 91.79631042480469,
+          "kernel_min": 0.27039462327957153,
+          "layer": 9,
+          "normalizer_max": 9320.36328125,
+          "normalizer_min": 0.2798464894294739,
+          "score_max": 5.585793495178223,
+          "score_min": -6.1737236976623535
+        }
+      ],
+      "m0_qk_parameter_note": null,
+      "query_block_size": 64,
+      "sample": {
+        "diagnostic_pass_contributes_to_validation_loss": false,
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+        "num_sequences": 1,
+        "prediction_tokens": 2048,
+        "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+        "selection": "first_heldout_sequence",
+        "sequence_index": 0,
+        "source": "packed"
+      },
+      "step": 32,
+      "valid": true,
+      "version": 1
+    },
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "taylor",
+    "checkpoint_step": 32,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "event": "validation",
+    "event_id": "validation:32",
+    "is_best": true,
+    "key_block_size": 64,
+    "learning_rate": 4.650006303563714e-06,
+    "m0_qk_parameter_note": null,
+    "parameter_count": 181556224,
+    "qk_head_dim": 8,
+    "query_block_size": 64,
+    "schema_version": 1,
+    "slurm_job_id": "200783",
+    "slurm_restart_count": 0,
+    "source_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+    "step": 32,
+    "timestamp_utc": "2026-09-22T03:57:33.293202+00:00",
+    "tokens_per_second": 141716.59933448292,
+    "tokens_per_second_per_device": 35429.14983362073,
+    "train_nll_sample_count": 4,
+    "train_nll_sample_mean": 10.545087575912476,
+    "train_perplexity_from_mean_nll": 37990.35443812666,
+    "training_interval_seconds": 118.38568014465272,
+    "training_tokens": 16777216,
+    "training_window_start_step": 0,
+    "validation_batches": 1,
+    "validation_nll": 9.802146911621094,
+    "validation_perplexity": 18072.503374978995,
+    "validation_sequences": 256,
+    "validation_tokens": 524288,
+    "value_head_dim": 64,
+    "wandb_run_id": null
+  },
+  "kernel_reference": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000/kernels.json",
+    "sha256": "9abff797d47797ae488aa52c32db22214460e6f7ff2d7909c5fce7e7ec634f97"
+  },
+  "name": "200m-dk008-m004-seed0",
+  "node": "doodle.csail.mit.edu",
+  "original_config": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/configs/200m-dk008-m004-seed0.yaml",
+    "sha256": "e895777e55b3873cc8fe23732ccd48457069d8d02f754f354c5c386e0328eff2"
+  },
+  "original_policy": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/policy.json",
+    "sha256": "29313a2ece060638ece9d5135fbcf75dc795734d61379cd1c575dff0873efc73"
+  },
+  "original_policy_identity": "2054ab1e453208778fb12ad95c34070c4040bc5aa93ae98682cc898187c8e638",
+  "original_scientific_source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "parameter_count": 181556224,
+  "partition": "sweep",
+  "processes": [
+    {
+      "command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix/experiments/key_dimension_taylor/hardware_checks/host_staging.py",
+        "--policy",
+        "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/policy.json",
+        "--runtime-commit",
+        "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+        "--output-root",
+        "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0",
+        "--names",
+        "200m-dk008-m004-seed0",
+        "--worker",
+        "32",
+        "--workdir",
+        "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/attempts/200m-dk008-m004-seed0-200783-a72b9915/workdir",
+        "--output",
+        "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/attempts/200m-dk008-m004-seed0-200783-a72b9915/initial.json"
+      ],
+      "elapsed_seconds": 253.16072712652385,
+      "exit_code": 0,
+      "log": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/attempts/200m-dk008-m004-seed0-200783-a72b9915/initial.log",
+        "sha256": "e13a863c1f319e09896b2e001966d80fb79f976ac6553f877e5ef7ff4d7fb5f6"
+      },
+      "timeout": false,
+      "timeout_seconds": 900
+    },
+    {
+      "command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix/experiments/key_dimension_taylor/hardware_checks/host_staging.py",
+        "--policy",
+        "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/policy.json",
+        "--runtime-commit",
+        "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+        "--output-root",
+        "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0",
+        "--names",
+        "200m-dk008-m004-seed0",
+        "--worker",
+        "33",
+        "--workdir",
+        "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/attempts/200m-dk008-m004-seed0-200783-a72b9915/workdir",
+        "--output",
+        "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/attempts/200m-dk008-m004-seed0-200783-a72b9915/resumed.json"
+      ],
+      "elapsed_seconds": 126.06012155581266,
+      "exit_code": 0,
+      "log": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/attempts/200m-dk008-m004-seed0-200783-a72b9915/resumed.log",
+        "sha256": "c476e5bff760d6e9955cb6896aa22c68e175fed88d83cfeed93dccbfcb8e1820"
+      },
+      "timeout": false,
+      "timeout_seconds": 900
+    }
+  ],
+  "production_submission": false,
+  "qk_head_dim": 8,
+  "resolved_original_config": {
+    "data": {
+      "batch_size": 256,
+      "dataset_config": "sample-100BT",
+      "dataset_name": "HuggingFaceFW/fineweb-edu",
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sequence_length": 2049,
+      "shuffle_seed": 0,
+      "source": "packed",
+      "split": "train",
+      "synthetic_vocab_size": 32000,
+      "text_field": "text",
+      "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+      "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+    },
+    "model": {
+      "attention_backend": "fused",
+      "attention_degree": 4,
+      "dropout": 0.0,
+      "hidden_size": 1024,
+      "intermediate_size": 3008,
+      "kind": "transformer",
+      "max_seq_len": 2048,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "num_layers": 10,
+      "qk_head_dim": 8,
+      "remat": false,
+      "rms_norm_eps": 1e-06,
+      "rope_theta": 10000.0,
+      "tie_embeddings": false,
+      "value_head_dim": 64,
+      "vocab_size": 32000
+    },
+    "optim": {
+      "beta1": 0.9,
+      "beta2": 0.95,
+      "grad_clip_norm": 1.0,
+      "learning_rate": 0.0003,
+      "min_learning_rate": 3e-05,
+      "total_steps": 19074,
+      "warmup_steps": 2000,
+      "weight_decay": 0.1
+    },
+    "train": {
+      "ckpt_every": 500,
+      "dtype": "bfloat16",
+      "eval_batches": 7,
+      "eval_every": 1000,
+      "log_every": 10,
+      "micro_batch_size": 64,
+      "seed": 0,
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "wandb_entity": null,
+      "wandb_mode": "disabled",
+      "wandb_project": "functional-memory-key-dimension-taylor",
+      "wandb_run_name": "200m-dk008-m004-seed0",
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/templates/200m-dk008-m004-seed0"
+    }
+  },
+  "resumed": {
+    "attention_backend": "fused",
+    "attention_degree": 4,
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "taylor",
+    "best_checkpoint_after": 32,
+    "checkpoint_audit": {
+      "checkpoint_state_sha256": "6a8fe8a58640ae0254eb8308f0e2ecd4a442b80772e04334678fc0737f1a9770",
+      "final_state_sha256": "6a8fe8a58640ae0254eb8308f0e2ecd4a442b80772e04334678fc0737f1a9770",
+      "first_update": {
+        "batch_sha256": "3ec6bff2c38602df85c4c003f7fab9855f8a8d569f7128fe4617423eae295203",
+        "rng_sha256": "0dc2fc78abafe0737485791302a1df4fd7e8f606c5fe00ba6d1dd1078e9fd93a",
+        "step": 33
+      },
+      "next_update": {
+        "batch_sha256": "f9c9f3ee2502b5915cef226334e1d1968504c29e2b0a7e0ed44e988168cf4135",
+        "rng_sha256": "2eabe03e9b55d8189462d21499e79b6c08f02a4c6a142202138630b222c43fd6",
+        "step": 34
+      },
+      "start_state_sha256": "80485605f366499a89845076f1a9d4033ec8314e50b14c6cb846d797a155ad4a"
+    },
+    "data_parallel_devices": 4,
+    "data_start_sequence": 8192,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 33,
+    "final_step": 33,
+    "hardware": {
+      "cuda_visible_devices": "0,1,2,3",
+      "device_kinds": [
+        "NVIDIA RTX A6000",
+        "NVIDIA RTX A6000",
+        "NVIDIA RTX A6000",
+        "NVIDIA RTX A6000"
+      ],
+      "gpu_count": 4,
+      "gpu_inventory": "index, name, uuid, driver_version\n0, NVIDIA RTX A6000, GPU-dca473c0-d6c8-2807-f913-316be0a09f96, 580.159.04\n1, NVIDIA RTX A6000, GPU-4434f15b-45ff-ed24-a47c-1c3e55ed36b3, 580.159.04\n2, NVIDIA RTX A6000, GPU-18932edf-5fdd-754d-c99e-289ccc76267c, 580.159.04\n3, NVIDIA RTX A6000, GPU-3cac88c3-9ea5-119d-55a8-d31968b08e0b, 580.159.04\n4, NVIDIA RTX A6000, GPU-b9973033-a53a-8c53-d6b3-b96db4e22fd8, 580.159.04\n",
+      "jax_version": "0.10.0",
+      "memory_stats": [
+        {
+          "bytes_in_use": 0,
+          "bytes_limit": 42925797058,
+          "bytes_reserved": 0,
+          "largest_alloc_size": 0,
+          "largest_free_block_bytes": 0,
+          "num_allocs": 0,
+          "peak_bytes_in_use": 0,
+          "peak_bytes_reserved": 0,
+          "peak_pool_bytes": 0,
+          "pool_bytes": 0
+        },
+        {
+          "bytes_in_use": 0,
+          "bytes_limit": 42925797058,
+          "bytes_reserved": 0,
+          "largest_alloc_size": 0,
+          "largest_free_block_bytes": 0,
+          "num_allocs": 0,
+          "peak_bytes_in_use": 0,
+          "peak_bytes_reserved": 0,
+          "peak_pool_bytes": 0,
+          "pool_bytes": 0
+        },
+        {
+          "bytes_in_use": 0,
+          "bytes_limit": 42925797058,
+          "bytes_reserved": 0,
+          "largest_alloc_size": 0,
+          "largest_free_block_bytes": 0,
+          "num_allocs": 0,
+          "peak_bytes_in_use": 0,
+          "peak_bytes_reserved": 0,
+          "peak_pool_bytes": 0,
+          "pool_bytes": 0
+        },
+        {
+          "bytes_in_use": 0,
+          "bytes_limit": 42925797058,
+          "bytes_reserved": 0,
+          "largest_alloc_size": 0,
+          "largest_free_block_bytes": 0,
+          "num_allocs": 0,
+          "peak_bytes_in_use": 0,
+          "peak_bytes_reserved": 0,
+          "peak_pool_bytes": 0,
+          "pool_bytes": 0
+        }
+      ],
+      "node": "doodle",
+      "partition": "sweep",
+      "slurm_job_id": "200783"
+    },
+    "key_block_size": 64,
+    "latest_checkpoint_after": 33,
+    "latest_checkpoint_before": 32,
+    "m0_qk_parameter_note": null,
+    "query_block_size": 64,
+    "resolved_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "fused",
+        "attention_degree": 4,
+        "dropout": 0.0,
+        "hidden_size": 1024,
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 8,
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 2000,
+        "weight_decay": 0.1
+      },
+      "train": {
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 1,
+        "eval_every": 32,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+        "wandb_entity": null,
+        "wandb_mode": "disabled",
+        "wandb_project": "functional-memory-key-dimension-taylor",
+        "wandb_run_name": "200m-dk008-m004-seed0",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/attempts/200m-dk008-m004-seed0-200783-a72b9915/workdir"
+      }
+    },
+    "restored": true,
+    "restored_step": 32,
+    "start_step": 32,
+    "timing": {
+      "checkpoint_seconds": [],
+      "evaluation_seconds": [],
+      "runtime_seconds": 119.76994786784053,
+      "train_step_seconds": [
+        8.324471733532846
+      ]
+    },
+    "training_tokens": 17301504
+  },
+  "resumed_last_committed_validation": {
+    "attempt_id": "200783:0:e73cc910",
+    "attention_backend": "fused",
+    "attention_degree": 4,
+    "attention_diagnostics": {
+      "attention_backend": "fused",
+      "attention_degree": 4,
+      "attention_implementation": "pallas_triton",
+      "attention_kernel": "taylor",
+      "diagnostic_backend": "blocked",
+      "diagnostic_query_block_size": 128,
+      "format": "polynomial-attention-diagnostics",
+      "issues": [],
+      "kernel_values": "unshifted_taylor",
+      "key_block_size": 64,
+      "layers": [
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 253.69940185546875,
+          "kernel_min": 0.27039462327957153,
+          "layer": 0,
+          "normalizer_max": 8598.490234375,
+          "normalizer_min": 0.30283868312835693,
+          "score_max": 7.636358737945557,
+          "score_min": -7.956566333770752
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 204.66859436035156,
+          "kernel_min": 0.27039462327957153,
+          "layer": 1,
+          "normalizer_max": 16686.86328125,
+          "normalizer_min": 0.2964951992034912,
+          "score_max": 7.162022113800049,
+          "score_min": -7.661941051483154
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 153.68341064453125,
+          "kernel_min": 0.27039462327957153,
+          "layer": 2,
+          "normalizer_max": 8630.501953125,
+          "normalizer_min": 0.3568878769874573,
+          "score_max": 6.565176010131836,
+          "score_min": -6.462340354919434
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 190.31536865234375,
+          "kernel_min": 0.27039462327957153,
+          "layer": 3,
+          "normalizer_max": 15434.49609375,
+          "normalizer_min": 0.3272551894187927,
+          "score_max": 7.00676155090332,
+          "score_min": -6.678138256072998
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 265.49285888671875,
+          "kernel_min": 0.27039462327957153,
+          "layer": 4,
+          "normalizer_max": 12692.130859375,
+          "normalizer_min": 0.2948542833328247,
+          "score_max": 7.739826679229736,
+          "score_min": -6.3962836265563965
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 134.49269104003906,
+          "kernel_min": 0.27039462327957153,
+          "layer": 5,
+          "normalizer_max": 11854.1796875,
+          "normalizer_min": 0.2974417805671692,
+          "score_max": 6.300520896911621,
+          "score_min": -6.4541754722595215
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 161.2257080078125,
+          "kernel_min": 0.27039462327957153,
+          "layer": 6,
+          "normalizer_max": 13279.99609375,
+          "normalizer_min": 0.28146058320999146,
+          "score_max": 6.662242412567139,
+          "score_min": -6.682225704193115
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 150.0340118408203,
+          "kernel_min": 0.27039462327957153,
+          "layer": 7,
+          "normalizer_max": 15335.796875,
+          "normalizer_min": 0.2802355885505676,
+          "score_max": 6.5168890953063965,
+          "score_min": -6.166741847991943
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 119.14307403564453,
+          "kernel_min": 0.27039462327957153,
+          "layer": 8,
+          "normalizer_max": 6822.43359375,
+          "normalizer_min": 0.3642204999923706,
+          "score_max": 6.066993713378906,
+          "score_min": -6.387954235076904
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 91.79631042480469,
+          "kernel_min": 0.27039462327957153,
+          "layer": 9,
+          "normalizer_max": 9320.36328125,
+          "normalizer_min": 0.2798464894294739,
+          "score_max": 5.585793495178223,
+          "score_min": -6.1737236976623535
+        }
+      ],
+      "m0_qk_parameter_note": null,
+      "query_block_size": 64,
+      "sample": {
+        "diagnostic_pass_contributes_to_validation_loss": false,
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+        "num_sequences": 1,
+        "prediction_tokens": 2048,
+        "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+        "selection": "first_heldout_sequence",
+        "sequence_index": 0,
+        "source": "packed"
+      },
+      "step": 32,
+      "valid": true,
+      "version": 1
+    },
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "taylor",
+    "checkpoint_step": 32,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "event": "validation",
+    "event_id": "validation:32",
+    "is_best": true,
+    "key_block_size": 64,
+    "learning_rate": 4.650006303563714e-06,
+    "m0_qk_parameter_note": null,
+    "parameter_count": 181556224,
+    "qk_head_dim": 8,
+    "query_block_size": 64,
+    "schema_version": 1,
+    "slurm_job_id": "200783",
+    "slurm_restart_count": 0,
+    "source_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+    "step": 32,
+    "timestamp_utc": "2026-09-22T03:57:33.293202+00:00",
+    "tokens_per_second": 141716.59933448292,
+    "tokens_per_second_per_device": 35429.14983362073,
+    "train_nll_sample_count": 4,
+    "train_nll_sample_mean": 10.545087575912476,
+    "train_perplexity_from_mean_nll": 37990.35443812666,
+    "training_interval_seconds": 118.38568014465272,
+    "training_tokens": 16777216,
+    "training_window_start_step": 0,
+    "validation_batches": 1,
+    "validation_nll": 9.802146911621094,
+    "validation_perplexity": 18072.503374978995,
+    "validation_sequences": 256,
+    "validation_tokens": 524288,
+    "value_head_dim": 64,
+    "wandb_run_id": null
+  },
+  "runtime": {
+    "allocation_fraction": 0.8,
+    "checkpoint_seconds": 9.52844219096005,
+    "evaluation_batch_seconds": 21.809711051173508,
+    "limit_seconds": 28800,
+    "projected_total_seconds": 53634.259947989136,
+    "segments": [
+      {
+        "end_step": 8000,
+        "projected_seconds": 22304.870164770633,
+        "start_step": 0
+      },
+      {
+        "end_step": 16000,
+        "projected_seconds": 22304.870164770633,
+        "start_step": 8000
+      },
+      {
+        "end_step": 19074,
+        "projected_seconds": 9024.51961844787,
+        "start_step": 16000
+      }
+    ],
+    "startup_seconds": 494.33126732334495,
+    "steady_train_step_seconds": 2.5545925004407763,
+    "usable_seconds": 23040.0
+  },
+  "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+  "runtime_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix",
+  "slurm_job_id": "200783",
+  "started_utc": "2026-09-22T03:53:50.889141+00:00",
+  "status": "passed",
+  "temporary_checkpoints_removed": true,
+  "validation_only": true
+}

@@ -1,0 +1,13 @@
+{
+  "rendered_utc": "2026-09-22T17:20:16.785876+00:00",
+  "plot_source_commit": "84b9f2296442d2f99b857cd6e4d3ec1e8c6576ea",
+  "change": "Remove reuse asterisks and reuse legend from heatmap presentation; preserve provenance in report and manifest",
+  "scientific_manifest_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+  "summary_sha256": "ec9a3715a19dfb24adb82247df22367b05d87b89c1152041dcf342bca23a74f6",
+  "artifacts": {
+    "terminal_ppl_heatmap.png": "fa10146e844ad9dfbf043dfb801f24d0b1b7f9d76dab909bbb2efdd4802558ec",
+    "terminal_ppl_heatmap.pdf": "50f9c0454059be833d0d68d7a4c12bd7f0042d902517e6ab9bdaa46af49a9892",
+    "delta_ppl_heatmap.png": "11e554a4835add576d0c3e662424657a1465f8989213dc78bc8f596f4cc82fec",
+    "delta_ppl_heatmap.pdf": "cdb0a3af11d3f1d27373ccca572286d343753f98f4c4db3f5a2802085146e2e3"
+  }
+}

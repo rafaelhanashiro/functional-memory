@@ -1,0 +1,7 @@
+{
+  "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+  "passed": 27,
+  "artifacts_sha256": {
+    "scaffold-tests.xml": "575d2e2eecbad12dc1a4a3997e9fd661b55b93c80805d6d4c8f9560f29c1dfc0"
+  }
+}

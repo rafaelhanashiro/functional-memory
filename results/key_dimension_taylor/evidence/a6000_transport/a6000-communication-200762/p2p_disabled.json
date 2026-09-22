@@ -1,0 +1,37 @@
+{
+  "collective_elements": 262144,
+  "collectives": [
+    {
+      "elements": 1024,
+      "seconds": 0.9362483937293291,
+      "status": "passed"
+    },
+    {
+      "elements": 262144,
+      "seconds": 0.15834270883351564,
+      "status": "passed"
+    }
+  ],
+  "completed_devices": 4,
+  "cuda_visible_devices": "0,1,2,3",
+  "device_kinds": [
+    "NVIDIA RTX A6000",
+    "NVIDIA RTX A6000",
+    "NVIDIA RTX A6000",
+    "NVIDIA RTX A6000"
+  ],
+  "elapsed_seconds": 24.540363962762058,
+  "jax_version": "0.10.0",
+  "nccl_environment": {
+    "NCCL_DEBUG": "INFO",
+    "NCCL_DEBUG_FILE": "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/job-200762/p2p_disabled.nccl.%h.%p.log",
+    "NCCL_DEBUG_SUBSYS": "INIT,ENV,GRAPH,COLL",
+    "NCCL_P2P_DISABLE": "1"
+  },
+  "node": "doodle.csail.mit.edu",
+  "pid": 1178621,
+  "process_exit_code": 0,
+  "slurm_job_id": "200762",
+  "stage": "complete",
+  "status": "passed"
+}

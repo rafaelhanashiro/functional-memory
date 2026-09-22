@@ -22,6 +22,22 @@ remain in `attention/backends/`; resolved implementations and runtime settings
 belong in execution provenance. See the canonical separation rules in
 [AGENTS.md](../../AGENTS.md) and cluster policy in [CLUSTERS.md](../../CLUSTERS.md).
 
+The runtime accepts `TRANSFORMER_HOST_STAGING=1` to copy initialization and
+restored state through host memory and verify every physical replica byte for
+byte. It also stages replicated RNG keys; model computation stays on the GPU.
+Packed training and evaluation batches always transfer directly from NumPy host
+arrays to their destination shards. `metadata.json` records the resolved transfer
+policy, hardware, selected environment settings, and changes across resumptions
+in `execution_runtime` and `runtime_history`. `scaffold_ofm_source_commit` records
+shared implementation ancestry; an experiment's scientific control source belongs
+in its own provenance manifest.
+
+Kennel launchers source `launchers/kennel_runtime.sh`, which selects host staging
+and disables NCCL peer transport for A100/A6000 allocations. A6000 uses the
+validated 0.90 allocator fraction. Explicit `TRANSFORMER_HOST_STAGING=0` or `1`
+overrides automatic selection. This transport policy does not replace kernel and
+full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
+
 ## Attention and parameter ownership
 
 `attention/multihead.py` owns Q/K/V projections, RoPE, head layout, and the output

@@ -1,0 +1,90 @@
+{
+  "date": "2026-09-20",
+  "base_source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+  "original_sweep_identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "temporary_scripts_sha256": {
+    "diagnostic_replay.py": "f0f6bacb8e45c4017cef05386d633c3536c640c6571f7f1f6fb6c5687fa619e5",
+    "diagnostic_kernel.py": "538ef526370a830f43e323bba9b56a149164d8723fbe69d75dd616cbfd694af7",
+    "diagnostic_trace.py": "6949b92c9dd495fe1e683b37bff84f820ceeb67b90950b48a9394739315a1785"
+  },
+  "runs": {
+    "1": {
+      "slurm_job_id": "200497",
+      "slurm_state": "COMPLETED",
+      "slurm_exit_code": "0:0",
+      "elapsed": "00:07:05",
+      "config_sha256": "e4ace05aaa8891704202e5a7827e9651ca3202f961e24192f9024727b98fd717",
+      "failure": {
+        "step": 15,
+        "learning_rate": 2.100015990436077e-06,
+        "checked_loss": "nan",
+        "forward_loss": "nan",
+        "global_gradient_norm": "nan",
+        "updated_parameter_norm": "nan",
+        "seconds": 0.4643224119208753,
+        "batch_sha256": "a816c093e8c11b46530cfa146408e6329417098ce47e57f5a81ce57f9c0c141a",
+        "rng_sha256": "f63712b30abbc78d7c0bc4d5dd1251870590c8b5aac3df1c05e59549f5d2f1d6",
+        "preupdate_parameter_sha256": "6df94ba4c7c6cc234c967f6fc33c95296a9d11c30c19d92cceda837ccc71a151",
+        "preupdate_completed_step": 14,
+        "degree": 1
+      },
+      "selected_shard": {
+        "accumulation_index": 2,
+        "original_device_index": 1,
+        "global_microbatch_start": 16,
+        "screen_loss": "NaN"
+      },
+      "log_path": "results/logs/odd_taylor_diagnostic/m1/slurm-200497.out",
+      "log_sha256": "2ccd32ae17b5fcc797b9909650d3554f1f425cbb63605b35c9c9d1f9980b5e92",
+      "removed_evidence_sha256": {
+        "trace.json": "2a0c14516f4cb4e1b5bf17dec4399f80dc8eddd0ea983519f242bedf5e187ba6",
+        "updates.jsonl": "77835948500d74c89ea2347638ec0ac5db8d7352770bcf444a5a171dbabc5266",
+        "attention_rows.npz": "07dd3cfc23fbc5f368594987a13a6d2368115b60a6ebe75d04436993037fd20e"
+      }
+    },
+    "3": {
+      "slurm_job_id": "200498",
+      "slurm_state": "COMPLETED",
+      "slurm_exit_code": "0:0",
+      "elapsed": "00:02:19",
+      "config_sha256": "047c1afcf36e645e825c72a2c8cff559740724b783b2096ab643c32d101e6dea",
+      "failure": {
+        "step": 135,
+        "learning_rate": 2.0100007532164454e-05,
+        "checked_loss": "nan",
+        "forward_loss": "nan",
+        "global_gradient_norm": "nan",
+        "updated_parameter_norm": "nan",
+        "seconds": 0.4864614000543952,
+        "batch_sha256": "eb9087217e00fd674ab1570e436ad25550792330043fe085262d7752f375d016",
+        "rng_sha256": "b67c9c8d143273383347ac600896154a3ad2e805be65e831efa48b29a9fe3283",
+        "preupdate_parameter_sha256": "04cbe6d72d3540a087fd6896e7df86ea2456e3459344d605153f65a7c6d9383c",
+        "preupdate_completed_step": 134,
+        "degree": 3
+      },
+      "selected_shard": {
+        "accumulation_index": 1,
+        "original_device_index": 3,
+        "global_microbatch_start": 48,
+        "screen_loss": "NaN"
+      },
+      "log_path": "results/logs/odd_taylor_diagnostic/m3/slurm-200498.out",
+      "log_sha256": "d62ca955274329b2563d8e63e5b00dd245e27caf62445b9dc931d7ded16225b8",
+      "removed_evidence_sha256": {
+        "trace.json": "bcbe15cc349bb51f2c8cbfda2f56800326f711525e94277da2f0e4485562ba04",
+        "updates.jsonl": "f9b02c1039d8bfae1acc94d0b039db774c864f86738de386f3766cb216297930",
+        "attention_rows.npz": "82148ce276295846eae52392e0bb79b2ec3155a34ab585151e42011b06356a64"
+      }
+    }
+  }
+}

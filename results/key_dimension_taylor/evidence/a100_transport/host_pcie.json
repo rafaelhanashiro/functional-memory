@@ -1,0 +1,24 @@
+{
+  "cmdline": "BOOT_IMAGE=/vmlinuz-6.8.0-60-generic root=ZFS=tank/root ro quiet splash vt.handoff=1\n",
+  "iommu_groups": 143,
+  "virtualization": {
+    "exit_code": 1,
+    "stdout": "none",
+    "stderr": ""
+  },
+  "iommu_dmesg": {
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": "dmesg: read kernel buffer failed: Operation not permitted\n"
+  },
+  "pci": {
+    "exit_code": 0,
+    "stdout": "01:00.0 3D controller: NVIDIA Corporation GA100 [A100 PCIe 80GB] (rev a1)\n\tSubsystem: NVIDIA Corporation GA100 [A100 PCIe 80GB]\n25:00.0 3D controller: NVIDIA Corporation GA100 [A100 PCIe 80GB] (rev a1)\n\tSubsystem: NVIDIA Corporation GA100 [A100 PCIe 80GB]\n41:00.0 3D controller: NVIDIA Corporation GA100 [A100 PCIe 80GB] (rev a1)\n\tSubsystem: NVIDIA Corporation GA100 [A100 PCIe 80GB]\n61:00.0 3D controller: NVIDIA Corporation GA100 [A100 PCIe 80GB] (rev a1)\n\tSubsystem: NVIDIA Corporation GA100 [A100 PCIe 80GB]\n81:00.0 3D controller: NVIDIA Corporation GA100 [A100 PCIe 80GB] (rev a1)\n\tSubsystem: NVIDIA Corporation GA100 [A100 PCIe 80GB]\na1:00.0 3D controller: NVIDIA Corporation GA100 [A100 PCIe 80GB] (rev a1)\n\tSubsystem: NVIDIA Corporation GA100 [A100 PCIe 80GB]\nc1:00.0 3D controller: NVIDIA Corporation GA100 [A100 PCIe 80GB] (rev a1)\n\tSubsystem: NVIDIA Corporation GA100 [A100 PCIe 80GB]\nc2:00.0 3D controller: NVIDIA Corporation GA100 [A100 PCIe 80GB] (rev a1)\n\tSubsystem: NVIDIA Corporation GA100 [A100 PCIe 80GB]\nc3:00.0 3D controller: NVIDIA Corporation GA100 [A100 PCIe 80GB] (rev a1)\n\tSubsystem: NVIDIA Corporation GA100 [A100 PCIe 80GB]\ne1:00.0 3D controller: NVIDIA Corporation GA100 [A100 PCIe 80GB] (rev a1)\n\tSubsystem: NVIDIA Corporation GA100 [A100 PCIe 80GB]",
+    "stderr": ""
+  },
+  "gpu_pci": {
+    "exit_code": 0,
+    "stdout": "index, pci.bus_id\n0, 00000000:81:00.0\n1, 00000000:A1:00.0\n2, 00000000:C2:00.0\n3, 00000000:C3:00.0",
+    "stderr": ""
+  }
+}

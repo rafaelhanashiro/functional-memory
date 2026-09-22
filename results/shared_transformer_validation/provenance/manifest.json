@@ -1,0 +1,105 @@
+{
+  "format": "functional-memory-software-validation",
+  "schema_version": 1,
+  "experiment": "shared_transformer_validation",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "status": "retained",
+  "implementation_commit": "d493a41ac3b6785c95f02c6e6102313024697c59",
+  "frozen_benchmark_source": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+  "selected_checkpoints": [],
+  "files": [
+    {
+      "path": "results/shared_transformer_validation/configs/global.yaml",
+      "sha256": "85c10c8b54be06b08d0fc1ee2fc4b98b68fc78665796214da821730043a5a0af"
+    },
+    {
+      "path": "results/shared_transformer_validation/runs/global-frozen/benchmark.json",
+      "sha256": "200dbcd1132c2c4ee725c61dde41be592cc4c36af413fe058d7aa713fef3c6ae"
+    },
+    {
+      "path": "results/shared_transformer_validation/runs/global-shared/benchmark.json",
+      "sha256": "d57c4d1fa12f402365c738179fcd777485a23c4bb0f9ecf832b19f033a9055e1"
+    },
+    {
+      "path": "results/shared_transformer_validation/configs/per_head.yaml",
+      "sha256": "eeb9ddb8306a70a48d48bde761f670cbdc34d46654c18d59597ef7f294c57fda"
+    },
+    {
+      "path": "results/shared_transformer_validation/runs/per_head-frozen/benchmark.json",
+      "sha256": "62f23004be3abae7fe8a4c266dba3d045062d5e7fe626d4d66d35dca7cf45e97"
+    },
+    {
+      "path": "results/shared_transformer_validation/runs/per_head-shared/benchmark.json",
+      "sha256": "e62ab5726e77f908ff992c1c2bfc351425e1f5333b00fef61f8d390c9f8d488f"
+    },
+    {
+      "path": "results/shared_transformer_validation/configs/taylor.yaml",
+      "sha256": "e9faddeb2f14ee91725f3bbdf23fce1c006de9731cd674dbdac9001fbe1bfa89"
+    },
+    {
+      "path": "results/shared_transformer_validation/runs/taylor-frozen/benchmark.json",
+      "sha256": "3c32440502c3d4570dfa25bfbe0b638c8d4178be6f6a3e69eb978ab8ab75aea6"
+    },
+    {
+      "path": "results/shared_transformer_validation/runs/taylor-shared/benchmark.json",
+      "sha256": "01003451c057042bb7a74af35108a52d04e8ff9044b6a4fdcb23c90d59387316"
+    },
+    {
+      "path": "results/shared_transformer_validation/configs/uv.lock",
+      "sha256": "49d54eb7a7eb344655fc1aeb2d5de16806dc8a2c60025c9181b24687db2c53d8"
+    },
+    {
+      "path": "results/shared_transformer_validation/validation/frozen-parity-tests.txt",
+      "sha256": "3a94a9209a706ce239450e5837c7ef5ba07a8b8b9b99adb30888b56f48aaa83e"
+    },
+    {
+      "path": "results/shared_transformer_validation/validation/legacy-adapter-single-cpu-tests.txt",
+      "sha256": "691323654fdc2000c44153cf891ffadfed6d746c34740dfed5d2dac782d4451c"
+    },
+    {
+      "path": "results/shared_transformer_validation/validation/legacy-distributed-tests.txt",
+      "sha256": "86d8995beb74999020cf0b135dd4b1f03ebda3bb2d12277dc8bdd983bc3ccd81"
+    },
+    {
+      "path": "results/shared_transformer_validation/validation/new-adapter-comparison-tests.txt",
+      "sha256": "8a84644dbcd43d06f7539aa4ba27a6f4392b019c5953f4fb53d87cba41a8e11c"
+    },
+    {
+      "path": "results/shared_transformer_validation/validation/shared-cpu-tests-final.txt",
+      "sha256": "e0c6e6aa31dfac343ad4035e81978b1c78bb5c060dce64545f3ef73b8e7ff483"
+    },
+    {
+      "path": "results/shared_transformer_validation/validation/shared-distributed-tests.txt",
+      "sha256": "4bd54a87299231328d92e6fa2af4a235fc09594ee6aed56d1dffece4d3276bae"
+    },
+    {
+      "path": "results/shared_transformer_validation/validation/shared-gpu-tests.txt",
+      "sha256": "f275da17d23635b0f60d749c6882daa245ce35a3678e991eb131be0bee16d6c5"
+    },
+    {
+      "path": "results/shared_transformer_validation/validation/canonical-runtime-cpu.txt",
+      "sha256": "712a4719bdde2f61610e86cee15a231cfc975bbb955d92b3141a8a75a9347a17"
+    }
+  ],
+  "slurm_logs": [
+    {
+      "path": "results/logs/shared_transformer_validation/benchmark/slurm-200760.out",
+      "sha256": "21026001bff9ca98114b3ab8d8b57530a2f3ea1d8993d74c9b02f96488952250",
+      "slurm_job_id": "200760",
+      "capture": "srun stdout/stderr",
+      "state": "COMPLETED",
+      "exit_code": "0:0"
+    },
+    {
+      "path": "results/logs/shared_transformer_validation/gpu_validation/slurm-200759.out",
+      "sha256": "f275da17d23635b0f60d749c6882daa245ce35a3678e991eb131be0bee16d6c5",
+      "slurm_job_id": "200759",
+      "capture": "srun stdout/stderr",
+      "state": "COMPLETED",
+      "exit_code": "0:0"
+    }
+  ],
+  "source_limitation": "Raw benchmark source_commit captured the surrounding checkout parent while the extraction was uncommitted. The preserved frozen snapshot matches all 53 Python files at 2e0e88d. The final shared implementation is committed at d493a41; an immutable hash of its benchmark-time dirty tree was not recorded.",
+  "runtime_integration_commit": "66a8b965cb11d12a6c6f7313ec19d1d5ff56a989"
+}

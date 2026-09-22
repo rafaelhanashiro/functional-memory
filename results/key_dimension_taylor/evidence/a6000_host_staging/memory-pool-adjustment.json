@@ -1,0 +1,14 @@
+{
+  "recorded_utc": "2026-09-22T03:46:59.516124+00:00",
+  "affected_jobs": [
+    "200778",
+    "200779"
+  ],
+  "cause": "GPU0_BFC allocation limit after verified state placement;18.75GiB buffer request failed atfirstupdate.",
+  "status": "infrastructure_memory_limit",
+  "next_environment": {
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "scientific_configuration_changed": false
+}

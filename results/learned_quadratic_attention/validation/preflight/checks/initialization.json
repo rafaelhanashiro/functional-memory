@@ -1,0 +1,75 @@
+{
+  "completed_utc": "2026-09-18T23:12:04.006451+00:00",
+  "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+  "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+  "initializations": {
+    "200m-positive-global-seed0": {
+      "backbone_parameter_count": 199906304,
+      "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+      "coefficient_count": 2,
+      "coefficient_shape": [
+        2
+      ],
+      "initial_coefficient_pair": [
+        1.0,
+        1.0
+      ],
+      "parameter_count": 199906306
+    },
+    "200m-positive-per-head-seed0": {
+      "backbone_parameter_count": 199906304,
+      "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+      "coefficient_count": 320,
+      "coefficient_shape": [
+        10,
+        16,
+        2
+      ],
+      "initial_coefficient_pair": [
+        1.0,
+        1.0
+      ],
+      "parameter_count": 199906624
+    },
+    "200m-unrestricted-global-seed0": {
+      "backbone_parameter_count": 199906304,
+      "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+      "coefficient_count": 2,
+      "coefficient_shape": [
+        2
+      ],
+      "initial_coefficient_pair": [
+        1.0,
+        0.5
+      ],
+      "parameter_count": 199906306
+    },
+    "200m-unrestricted-per-head-seed0": {
+      "backbone_parameter_count": 199906304,
+      "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+      "coefficient_count": 320,
+      "coefficient_shape": [
+        10,
+        16,
+        2
+      ],
+      "initial_coefficient_pair": [
+        1.0,
+        0.5
+      ],
+      "parameter_count": 199906624
+    },
+    "fixed": {
+      "backbone_parameter_count": 199906304,
+      "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+      "coefficient_count": 0,
+      "coefficient_shape": null,
+      "initial_coefficient_pair": null,
+      "parameter_count": 199906304
+    }
+  },
+  "slurm_job_id": "199894",
+  "slurm_restart_count": "0",
+  "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+  "status": "passed"
+}

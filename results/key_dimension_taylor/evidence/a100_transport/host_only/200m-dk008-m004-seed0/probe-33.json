@@ -1,0 +1,207 @@
+{
+  "mode": "host_only",
+  "stop": 33,
+  "name": "200m-dk008-m004-seed0",
+  "runtime_commit": "a1f1b2f04a3a625d8f48735aad0c990a09dbcc01",
+  "scientific_source": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "slurm_job_id": "200853",
+  "node": "samoyed.csail.mit.edu",
+  "devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+    "NCCL_P2P_DISABLE": null,
+    "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null
+  },
+  "config": {
+    "data": {
+      "source": "packed",
+      "dataset_name": "HuggingFaceFW/fineweb-edu",
+      "dataset_config": "sample-100BT",
+      "split": "train",
+      "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+      "text_field": "text",
+      "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "batch_size": 256,
+      "sequence_length": 2049,
+      "shuffle_seed": 0,
+      "synthetic_vocab_size": 32000
+    },
+    "model": {
+      "kind": "transformer",
+      "vocab_size": 32000,
+      "max_seq_len": 2048,
+      "num_layers": 10,
+      "hidden_size": 1024,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "qk_head_dim": 8,
+      "value_head_dim": 64,
+      "intermediate_size": 3008,
+      "rope_theta": 10000.0,
+      "rms_norm_eps": 1e-06,
+      "dropout": 0.0,
+      "tie_embeddings": false,
+      "remat": false,
+      "attention_backend": "fused",
+      "attention_degree": 4
+    },
+    "optim": {
+      "learning_rate": 0.0003,
+      "min_learning_rate": 3e-05,
+      "weight_decay": 0.1,
+      "beta1": 0.9,
+      "beta2": 0.95,
+      "grad_clip_norm": 1.0,
+      "warmup_steps": 2000,
+      "total_steps": 19074
+    },
+    "train": {
+      "seed": 0,
+      "source_commit": "a1f1b2f04a3a625d8f48735aad0c990a09dbcc01",
+      "dtype": "bfloat16",
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/host_only/200m-dk008-m004-seed0/workdir",
+      "micro_batch_size": 64,
+      "log_every": 10,
+      "eval_every": 32,
+      "eval_batches": 1,
+      "ckpt_every": 500,
+      "wandb_project": "functional-memory-key-dimension-taylor",
+      "wandb_entity": null,
+      "wandb_run_name": "200m-dk008-m004-seed0",
+      "wandb_mode": "disabled"
+    }
+  },
+  "events": [
+    {
+      "kind": "initial_state_replicas",
+      "devices": {
+        "cuda:0": {
+          "leaves": 282,
+          "mismatched_leaves": 0,
+          "examples": []
+        },
+        "cuda:1": {
+          "leaves": 282,
+          "mismatched_leaves": 0,
+          "examples": []
+        },
+        "cuda:2": {
+          "leaves": 282,
+          "mismatched_leaves": 0,
+          "examples": []
+        },
+        "cuda:3": {
+          "leaves": 282,
+          "mismatched_leaves": 0,
+          "examples": []
+        }
+      }
+    },
+    {
+      "kind": "first_train_batch",
+      "shards": [
+        {
+          "device": "cuda:0",
+          "shape": [
+            4,
+            16,
+            2049
+          ],
+          "matches_host": true,
+          "min": 2,
+          "max": 31942,
+          "mismatch_elements": 0
+        },
+        {
+          "device": "cuda:1",
+          "shape": [
+            4,
+            16,
+            2049
+          ],
+          "matches_host": true,
+          "min": 2,
+          "max": 31576,
+          "mismatch_elements": 0
+        },
+        {
+          "device": "cuda:2",
+          "shape": [
+            4,
+            16,
+            2049
+          ],
+          "matches_host": true,
+          "min": 2,
+          "max": 31944,
+          "mismatch_elements": 0
+        },
+        {
+          "device": "cuda:3",
+          "shape": [
+            4,
+            16,
+            2049
+          ],
+          "matches_host": true,
+          "min": 2,
+          "max": 31339,
+          "mismatch_elements": 0
+        }
+      ]
+    }
+  ],
+  "status": "passed",
+  "result": {
+    "latest_checkpoint_before": 32,
+    "restored": true,
+    "restored_step": 32,
+    "start_step": 32,
+    "end_step": 33,
+    "data_start_sequence": 8192,
+    "final_step": 33,
+    "training_tokens": 17301504,
+    "latest_checkpoint_after": 33,
+    "best_checkpoint_after": 32,
+    "data_parallel_devices": 4,
+    "timing": {
+      "train_step_seconds": [
+        6.36479072086513
+      ],
+      "evaluation_seconds": [],
+      "checkpoint_seconds": [],
+      "runtime_seconds": 67.27276090532541
+    },
+    "attention_degree": 4,
+    "attention_kernel": "taylor",
+    "attention_backend": "fused",
+    "query_block_size": 64,
+    "m0_qk_parameter_note": null,
+    "attention_implementation": "pallas_triton",
+    "key_block_size": 64,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "checkpoint_audit": {
+      "start_state_sha256": "74643dfd5e058d28e4b6722e87671d302ffbbc8bfdf3e5de9fb78d98f277e138",
+      "first_update": {
+        "step": 33,
+        "batch_sha256": "3ec6bff2c38602df85c4c003f7fab9855f8a8d569f7128fe4617423eae295203",
+        "rng_sha256": "0dc2fc78abafe0737485791302a1df4fd7e8f606c5fe00ba6d1dd1078e9fd93a"
+      },
+      "final_state_sha256": "fe0c7919b57a9e836470860302b9c9608f37b0673f7e2410fb413a1dfa88cf02",
+      "checkpoint_state_sha256": "fe0c7919b57a9e836470860302b9c9608f37b0673f7e2410fb413a1dfa88cf02",
+      "next_update": {
+        "step": 34,
+        "batch_sha256": "f9c9f3ee2502b5915cef226334e1d1968504c29e2b0a7e0ed44e988168cf4135",
+        "rng_sha256": "2eabe03e9b55d8189462d21499e79b6c08f02a4c6a142202138630b222c43fd6"
+      }
+    }
+  }
+}

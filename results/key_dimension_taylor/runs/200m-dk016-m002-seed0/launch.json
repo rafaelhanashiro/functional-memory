@@ -1,0 +1,16 @@
+{
+  "segments": [
+    {
+      "dependency_job_id": "200508",
+      "dependency_type": "afterany",
+      "end_step": 19074,
+      "index": 0,
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk016-m002-seed0/slurm-200509.out",
+      "projected_seconds": 10433.181563801132,
+      "slurm_job_id": "200509",
+      "start_step": 0
+    }
+  ],
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "sweep_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3"
+}

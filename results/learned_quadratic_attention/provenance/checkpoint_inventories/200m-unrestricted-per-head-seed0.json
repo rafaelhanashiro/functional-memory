@@ -1,0 +1,70 @@
+{
+  "checkpoint_path": "checkpoints/learned_quadratic_attention/200m-unrestricted-per-head-seed0/2000",
+  "files": [
+    {
+      "path": "_CHECKPOINT_METADATA",
+      "size_bytes": 366,
+      "sha256": "c6ff4da01bbd615e2772a57043954ae7f173e83be667aade6cc44d62657c0262"
+    },
+    {
+      "path": "default/_METADATA",
+      "size_bytes": 143663,
+      "sha256": "83a9fcf682fdfc2691db8563fbb84fa53fcd4ba6152a82e48856faa3a131dac2"
+    },
+    {
+      "path": "default/_sharding",
+      "size_bytes": 88337,
+      "sha256": "39ba182e958a6e5adaa76dcc8f506331a16d81c9aae33e97eca5258867048cd5"
+    },
+    {
+      "path": "default/array_metadatas/process_0",
+      "size_bytes": 49700,
+      "sha256": "7d4b5034c6f872b3d601bed40dfa9837f79911bd27761c622b1d145bdcce3f81"
+    },
+    {
+      "path": "default/d/fcc83437c092bed8191d2c86b4ffcb7e",
+      "size_bytes": 3492,
+      "sha256": "91315787780c0c315a0f826275903d2b61c894145a25e73286417c0fd0bc59e2"
+    },
+    {
+      "path": "default/manifest.ocdbt",
+      "size_bytes": 118,
+      "sha256": "6e6bb17d2d4f8db849befd1cf274c4a32aec92a1d7d6276c6798b536c3d8ede0"
+    },
+    {
+      "path": "default/ocdbt.process_0/d/06768c5c7766d781102ae2b82b5affcb",
+      "size_bytes": 4094,
+      "sha256": "984438c2cd6c43e9d84fc1fc1d9721ca0ef89ae5963dd59c70ee3bb8d0a3f9d1"
+    },
+    {
+      "path": "default/ocdbt.process_0/d/1a05724e7185c0d3857bfb3823958f21",
+      "size_bytes": 195,
+      "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e"
+    },
+    {
+      "path": "default/ocdbt.process_0/d/938e0555a6b1ed83719f61f6113b401e",
+      "size_bytes": 1112047616,
+      "sha256": "f9b6adc34fad820082182c29be9907b179648309b98771ce8b977fad8fa4f628"
+    },
+    {
+      "path": "default/ocdbt.process_0/d/a5180c01df422a98ec1024ed3a5e84ac",
+      "size_bytes": 1095274496,
+      "sha256": "40a20230c1c276b3a00f515f65e4aba1bed5491e04d90e9f7da8c0b6c91f0159"
+    },
+    {
+      "path": "default/ocdbt.process_0/d/cf4af820efac11eefa91e89d4735760d",
+      "size_bytes": 729,
+      "sha256": "9b35a1c618f949b31ae8ff35a340bc4dd75090be773f3911328e5b820792ac6e"
+    },
+    {
+      "path": "default/ocdbt.process_0/manifest.ocdbt",
+      "size_bytes": 317,
+      "sha256": "f6e0ae14d214f4ee18049e83589016c40cb44305c79d2d63734270506ccbeac8"
+    },
+    {
+      "path": "metrics/metrics",
+      "size_bytes": 137,
+      "sha256": "2e98399a5364fb991fb0adec787a69fd50a23c6bda016d500d5ed872deee65ed"
+    }
+  ]
+}

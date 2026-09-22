@@ -1,0 +1,4 @@
+{
+  "error": "FloatingPointError: Nonfinite validation loss at step 32: nan",
+  "status": "numerical_failure"
+}

@@ -34,6 +34,22 @@ nodes before choosing hardware. General priority is `debug > standard > long > s
 Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
 60 seconds (the supplied PDFs say 120); `sweep` has no grace period.
 
+### Kennel transfer policy
+
+The shared launcher helper `scaffolds/transformer/launchers/kennel_runtime.sh`
+selects `TRANSFORMER_HOST_STAGING=1` and `NCCL_P2P_DISABLE=1` for A100/A6000
+allocations. A6000 also defaults to `XLA_PYTHON_CLIENT_MEM_FRACTION=0.90`.
+Explicit environment settings can override these choices for isolated diagnostics.
+The shared runtime owns placement and replica verification; model and optimizer
+code do not select hardware policy.
+
+The retained joint-sweep checks cover all 20 B300 and host-staged A6000
+configurations and 16 new H100 configurations. On `samoyed`, direct peer transfers
+corrupted replicas and batches; the host-staged A100 pilot passed training,
+evaluation, and fresh-process resume for `d_K=8,m=4`. This does not qualify the
+remaining A100 grid or a new attention mechanism. Evidence and limitations are
+recorded in `results/key_dimension_taylor/README.md`.
+
 ## ORCD / Engaging (MIT)
 
 - **Login:** `ssh rafah@orcd-login.mit.edu`, using MIT authentication/Duo.

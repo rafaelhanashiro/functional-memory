@@ -1,0 +1,169 @@
+{
+  "completed_utc": "2026-09-22T01:43:39.395307+00:00",
+  "config_sha256": "330beb6a8fb3b07ef774174e46e38796d6aead9f16088082e16eb4553030d522",
+  "coordinate": {
+    "attention_degree": 2,
+    "qk_head_dim": 8,
+    "seed": 0
+  },
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+  "diagnostic_only": true,
+  "elapsed_seconds": 377.46634771022946,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+    "JAX_COMPILATION_CACHE_DIR": "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/concurrent/jax",
+    "JAX_PLATFORMS": "cuda",
+    "MKL_NUM_THREADS": "32",
+    "NCCL_DEBUG": "INFO",
+    "NCCL_DEBUG_SUBSYS": "INIT,ENV,GRAPH,COLL",
+    "NCCL_P2P_DISABLE": "1",
+    "OMP_NUM_THREADS": "32",
+    "POLYNOMIAL_ATTENTION_SOURCE_COMMIT": "4d942eae8981752f4666d4b6f8261b35e1338320",
+    "PYTHONPATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor",
+    "TMPDIR": "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/concurrent/tmp",
+    "XDG_CACHE_HOME": "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/concurrent/xdg",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "environment_sha256": "8440887458bfc8e9b504279add073b34a09307c029bb631b1401cc231274c5cc",
+  "error": "initial subprocess exited 1; see initial.log",
+  "evidence_sha256": {
+    "evidence/REPORT.md": "7d07d7358fd35b630d1fe2a28367369853130c9057c226714b4580dfc378e0df",
+    "evidence/config.json": "d5bd3c7f3cf0a802725b2ba9e5f7b2ab7ff5d3a8d3cf5f019851f882485e129f",
+    "evidence/data_identity.json": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "evidence/metadata.json": "61c0bcba6fd76d9a4ee3c64370cb7e6f416e62c94f33c2b6abe4f5bffb6894ac",
+    "evidence/numerical_failure_step_00000032.json": "575f098773bc3a1941159d836a5a04a6ab486e0a0854a9daaa9949b54747cbf8",
+    "gpus.csv": "fd614d046fd9fd43a8e230b632e0deaca610878d6ac04123e4ae41fa14ef6a9e",
+    "initial.json": "85c18be0a91ddf3a43319767d21462a954cca91a295639e988eb872aa5e2d4cb",
+    "initial.log": "964e2140b266f43a4928b6bbf99190dcf6ef0598118ef71f30ac561d5642475f",
+    "initial.nccl.doodle.1178990.log": "eded0cfd87cf298b7e1479f3a4f841e4df3629521fba8b6f4da6cdb93d3369ad"
+  },
+  "exception_type": "RuntimeError",
+  "files": {
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/single_pilot.py": "b8642f793659da72c32154a2adbf6034970b1ba94470069ccd537c8063444e0f",
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/single_pilot.sbatch": "3f9c0ce4b7c415e0476fc76c1f7d8bcffe45f268d2b17abab6721bb8fa2e5918",
+    "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/policy.json": "29313a2ece060638ece9d5135fbcf75dc795734d61379cd1c575dff0873efc73",
+    "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor_hardware_checks/experiments/key_dimension_taylor/hardware_checks/runner.py": "93e897647a6ed390f627f00d5fde798e5a153f718e7e48eb6211b35f3f967d99"
+  },
+  "kill_after_seconds": 30,
+  "node": "doodle.csail.mit.edu",
+  "orchestrator_commit": "d303e3a90c77673ffb08c61a1e77b936bb3d5dc3",
+  "parent_policy_identity": "2054ab1e453208778fb12ad95c34070c4040bc5aa93ae98682cc898187c8e638",
+  "partition": "sweep",
+  "per_process_timeout_seconds": 900,
+  "processes": [
+    {
+      "command": [
+        "timeout",
+        "--signal=TERM",
+        "--kill-after=30s",
+        "900s",
+        "/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor_hardware_checks/experiments/key_dimension_taylor/hardware_checks/runner.py",
+        "--policy",
+        "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/policy.json",
+        "--profile",
+        "a6000",
+        "--stage",
+        "pilots",
+        "--worker",
+        "pilot",
+        "--width",
+        "8",
+        "--degree",
+        "2",
+        "--workdir",
+        "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000/attempts/diagnostic-200764-p2p_disabled/200m-dk008-m002-seed0",
+        "--stop",
+        "32",
+        "--output",
+        "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/pilot-200764-p2p_disabled/initial.json"
+      ],
+      "elapsed_seconds": 356.31918779946864,
+      "exit_code": 1,
+      "nccl_debug_file": "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/pilot-200764-p2p_disabled/initial.nccl.%h.%p.log",
+      "stage": "initial"
+    }
+  ],
+  "qualification_published": false,
+  "resolved_config": {
+    "data": {
+      "batch_size": 256,
+      "dataset_config": "sample-100BT",
+      "dataset_name": "HuggingFaceFW/fineweb-edu",
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sequence_length": 2049,
+      "shuffle_seed": 0,
+      "source": "packed",
+      "split": "train",
+      "synthetic_vocab_size": 32000,
+      "text_field": "text",
+      "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+      "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+    },
+    "model": {
+      "attention_backend": "fused",
+      "attention_degree": 2,
+      "dropout": 0.0,
+      "hidden_size": 1024,
+      "intermediate_size": 3008,
+      "kind": "transformer",
+      "max_seq_len": 2048,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "num_layers": 10,
+      "qk_head_dim": 8,
+      "remat": false,
+      "rms_norm_eps": 1e-06,
+      "rope_theta": 10000.0,
+      "tie_embeddings": false,
+      "value_head_dim": 64,
+      "vocab_size": 32000
+    },
+    "optim": {
+      "beta1": 0.9,
+      "beta2": 0.95,
+      "grad_clip_norm": 1.0,
+      "learning_rate": 0.0003,
+      "min_learning_rate": 3e-05,
+      "total_steps": 19074,
+      "warmup_steps": 2000,
+      "weight_decay": 0.1
+    },
+    "train": {
+      "ckpt_every": 500,
+      "dtype": "bfloat16",
+      "eval_batches": 7,
+      "eval_every": 1000,
+      "log_every": 10,
+      "micro_batch_size": 64,
+      "seed": 0,
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "wandb_entity": null,
+      "wandb_mode": "disabled",
+      "wandb_project": "functional-memory-key-dimension-taylor",
+      "wandb_run_name": "200m-dk008-m002-seed0",
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/templates/200m-dk008-m002-seed0"
+    }
+  },
+  "slurm_job_id": "200764",
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "stage": "complete",
+  "started_utc": "2026-09-22T01:37:21.929066+00:00",
+  "status": "failed",
+  "temporary_workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000/attempts/diagnostic-200764-p2p_disabled/200m-dk008-m002-seed0",
+  "traceback": "Traceback (most recent call last):\n  File \"/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/single_pilot.py\", line 125, in main\n    raise RuntimeError(f'{label} subprocess exited {code}; see {label}.log')\nRuntimeError: initial subprocess exited 1; see initial.log\n",
+  "training_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor",
+  "validation_only": true,
+  "variant": "p2p_disabled",
+  "workdir_removed": true
+}

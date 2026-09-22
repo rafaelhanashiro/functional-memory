@@ -1,0 +1,197 @@
+{
+  "completed_utc": "2026-09-22T17:42:02.677552+00:00",
+  "slurm_accounting": "200853|COMPLETED|0:0|2026-09-22T13:19:18|2026-09-22T13:40:09|00:20:51",
+  "coordinate": {
+    "dK": 8,
+    "m": 4
+  },
+  "scope": "Representative full-size diagnostic; not complete20coordinateA100qualification",
+  "modes": {
+    "native": {
+      "initial_status": "failed",
+      "initial_error": "FloatingPointError: Nonfinite validation loss at step 32: nan",
+      "checkpoint_resume_audit": "not_run",
+      "records": {
+        "probe-32.json": "d91405c7371f5bb2621eb5ea71ac391a4e857c39f709ec7674391eb6e6e848d4"
+      },
+      "all_inspected_replicas_match": false,
+      "all_inspected_batch_shards_match": false,
+      "evaluation_microbatch_losses": [
+        10.257230758666992,
+        10.24956226348877,
+        "nan",
+        10.300827026367188
+      ],
+      "validation_nll": null,
+      "validated_workaround": false,
+      "process_log_extracts": {
+        "probe-32.log": {
+          "sha256": "a7f275b763d60dba6f753a7dfb81a74ddde2517b29a96d2f78e819a4512ba52c",
+          "metric_lines": [
+            "step=1 train_nll=10.501698 train_ppl=36377.2021",
+            "step=10 train_nll=10.483520 train_ppl=35721.9118",
+            "step=20 train_nll=10.411469 train_ppl=33238.6774",
+            "step=30 train_nll=10.303477 train_ppl=29836.1877"
+          ],
+          "error_lines": [
+            "FloatingPointError: Nonfinite validation loss at step 32: nan"
+          ]
+        }
+      }
+    },
+    "nccl_only": {
+      "initial_status": "failed",
+      "initial_error": "FloatingPointError: Nonfinite validation loss at step 32: nan",
+      "checkpoint_resume_audit": "not_run",
+      "records": {
+        "probe-32.json": "ddeb37c2c84ceaf439d65c27af09c411d629f97b09e62bc5a587fc375e19c88d"
+      },
+      "all_inspected_replicas_match": false,
+      "all_inspected_batch_shards_match": false,
+      "evaluation_microbatch_losses": [
+        10.257230758666992,
+        10.249590873718262,
+        "nan",
+        10.300834655761719
+      ],
+      "validation_nll": null,
+      "validated_workaround": false,
+      "process_log_extracts": {
+        "probe-32.log": {
+          "sha256": "a41537184645fb0084f595809d6828a26395d2b7b37b6fb15870a884325c77f7",
+          "metric_lines": [
+            "step=1 train_nll=10.501698 train_ppl=36377.2021",
+            "step=10 train_nll=10.483519 train_ppl=35721.8777",
+            "step=20 train_nll=10.411473 train_ppl=33238.8042",
+            "step=30 train_nll=10.303478 train_ppl=29836.2161"
+          ],
+          "error_lines": [
+            "FloatingPointError: Nonfinite validation loss at step 32: nan"
+          ]
+        }
+      }
+    },
+    "host_only": {
+      "initial_status": "passed",
+      "initial_error": null,
+      "checkpoint_resume_audit": "passed",
+      "records": {
+        "probe-33.json": "19227d9e06e7cef6dd73d6f2d54895a1402e5fc87f05c11642588df28423e18c",
+        "probe-32.json": "07f754b1845ab3a8348e40723a7b6f27f70b65d890e5bb4fbc018429504ff2fa"
+      },
+      "h100_initialization_and_first_input_match": true,
+      "all_inspected_replicas_match": true,
+      "all_inspected_batch_shards_match": true,
+      "evaluation_microbatch_losses": [
+        9.813764572143555,
+        9.795514106750488,
+        9.840347290039062,
+        9.759016036987305
+      ],
+      "validation_nll": 9.802160501480103,
+      "validated_workaround": true,
+      "process_log_extracts": {
+        "probe-33.log": {
+          "sha256": "404f049fb5f992f846b96172ff5772c4e7c60c99a4b970fd41d871ad5539b5e0",
+          "metric_lines": [
+            "step=33 train_nll=9.850157 train_ppl=18961.3274"
+          ],
+          "error_lines": []
+        },
+        "probe-32.log": {
+          "sha256": "a3573bfb466afae6984cdf19129df3de0844e979477ae0314d917cb73c69364a",
+          "metric_lines": [
+            "step=1 train_nll=10.885088 train_ppl=53374.4778",
+            "step=10 train_nll=10.795609 train_ppl=48805.9993",
+            "step=20 train_nll=10.490597 train_ppl=35975.6202",
+            "step=30 train_nll=10.009027 train_ppl=22226.2095",
+            "step=32 val_nll=9.802161 val_ppl=18072.7490 best=True"
+          ],
+          "error_lines": []
+        }
+      }
+    },
+    "both": {
+      "initial_status": "passed",
+      "initial_error": null,
+      "checkpoint_resume_audit": "passed",
+      "records": {
+        "probe-32.json": "fe7e9f97b90ab239f2d5b8a33056f33c29ca78296741728c2d36626c8cbf0068",
+        "probe-33.json": "a83424b835fd2c5c4573235861e4c4193f9ec8f6a72e1b9c5c8ee2a753ac2cd8"
+      },
+      "h100_initialization_and_first_input_match": true,
+      "all_inspected_replicas_match": true,
+      "all_inspected_batch_shards_match": true,
+      "evaluation_microbatch_losses": [
+        9.813779830932617,
+        9.795503616333008,
+        9.840307235717773,
+        9.758999824523926
+      ],
+      "validation_nll": 9.802147626876831,
+      "validated_workaround": true,
+      "process_log_extracts": {
+        "probe-32.log": {
+          "sha256": "ea0b2284cd4727e0f491fb3bf2bff99ce089add58329da9738ee9bfe87dab42d",
+          "metric_lines": [
+            "step=1 train_nll=10.885088 train_ppl=53374.4778",
+            "step=10 train_nll=10.795622 train_ppl=48806.6509",
+            "step=20 train_nll=10.490607 train_ppl=35975.9976",
+            "step=30 train_nll=10.009031 train_ppl=22226.2943",
+            "step=32 val_nll=9.802148 val_ppl=18072.5163 best=True"
+          ],
+          "error_lines": []
+        },
+        "probe-33.log": {
+          "sha256": "a03ce8e9190ba4351950ffa27b464065f3bf09213b9cfbb0ce20f90c51cc7af8",
+          "metric_lines": [
+            "step=33 train_nll=9.850162 train_ppl=18961.4178"
+          ],
+          "error_lines": []
+        }
+      }
+    }
+  },
+  "reference_pilots": {
+    "h100": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk008-m004-seed0.json",
+      "sha256": "9a0e7c15709ecac048b9fbe46422ed8e4c486a577d0c0ac434d7e5a656b0dbd8",
+      "validation_nll": 9.802358865737915,
+      "initial_audit": {
+        "checkpoint_state_sha256": "fa4ca88b8e9dabf4364b8a255ea0cf710e9b0857e4baac931209ee9b164d3410",
+        "final_state_sha256": "fa4ca88b8e9dabf4364b8a255ea0cf710e9b0857e4baac931209ee9b164d3410",
+        "first_update": {
+          "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+          "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+          "step": 1
+        },
+        "next_update": {
+          "batch_sha256": "3ec6bff2c38602df85c4c003f7fab9855f8a8d569f7128fe4617423eae295203",
+          "rng_sha256": "0dc2fc78abafe0737485791302a1df4fd7e8f606c5fe00ba6d1dd1078e9fd93a",
+          "step": 33
+        },
+        "start_state_sha256": "06c23688f2a9bc2b3ceb395de87502ba047e63fd0f3b66dfd2b98443e9234295"
+      }
+    },
+    "b300": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk008-m004-seed0.json",
+      "sha256": "062de37eddbc3a3b2e69c88c7bab813bb29573dd109e4a895e51e32336fbaf1e",
+      "validation_nll": 9.80241060256958,
+      "initial_audit": {
+        "checkpoint_state_sha256": "1631cbbbbd011e6c5d971f4a9a16941e4ab0f4c1bab84fe3bd0c899e94c8b069",
+        "final_state_sha256": "1631cbbbbd011e6c5d971f4a9a16941e4ab0f4c1bab84fe3bd0c899e94c8b069",
+        "first_update": {
+          "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+          "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+          "step": 1
+        },
+        "next_update": {
+          "batch_sha256": "3ec6bff2c38602df85c4c003f7fab9855f8a8d569f7128fe4617423eae295203",
+          "rng_sha256": "0dc2fc78abafe0737485791302a1df4fd7e8f606c5fe00ba6d1dd1078e9fd93a",
+          "step": 33
+        },
+        "start_state_sha256": "06c23688f2a9bc2b3ceb395de87502ba047e63fd0f3b66dfd2b98443e9234295"
+      }
+    }
+  }
+}

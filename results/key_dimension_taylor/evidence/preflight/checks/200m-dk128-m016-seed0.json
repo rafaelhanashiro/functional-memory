@@ -1,0 +1,319 @@
+{
+  "attention_degree": 16,
+  "completed_utc": "2026-09-21T04:46:17.298410+00:00",
+  "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+  "identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+  "initial": {
+    "attention_backend": "fused",
+    "attention_degree": 16,
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "taylor",
+    "best_checkpoint_after": 32,
+    "checkpoint_audit": {
+      "checkpoint_state_sha256": "e31a9f6dd36d9a236a546b84c8660bbe2784102fe000662e15a5088ca16b9a11",
+      "final_state_sha256": "e31a9f6dd36d9a236a546b84c8660bbe2784102fe000662e15a5088ca16b9a11",
+      "first_update": {
+        "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+        "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+        "step": 1
+      },
+      "next_update": {
+        "batch_sha256": "3ec6bff2c38602df85c4c003f7fab9855f8a8d569f7128fe4617423eae295203",
+        "rng_sha256": "0dc2fc78abafe0737485791302a1df4fd7e8f606c5fe00ba6d1dd1078e9fd93a",
+        "step": 33
+      },
+      "start_state_sha256": "acbbf9b505c3b673fe305744d6dbd3022b25e700c50a983f239369b5d16b1b19"
+    },
+    "data_parallel_devices": 4,
+    "data_start_sequence": 0,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 32,
+    "final_step": 32,
+    "key_block_size": 32,
+    "latest_checkpoint_after": 32,
+    "latest_checkpoint_before": null,
+    "m0_qk_parameter_note": null,
+    "query_block_size": 32,
+    "restored": false,
+    "restored_step": null,
+    "start_step": 0,
+    "timing": {
+      "checkpoint_seconds": [
+        24.84788454277441
+      ],
+      "evaluation_seconds": [
+        6.596689298283309
+      ],
+      "runtime_seconds": 102.48110707011074,
+      "train_step_seconds": [
+        10.981420299969614,
+        0.9100728547200561,
+        0.9157630503177643,
+        0.9146509161219001,
+        0.9160705767571926,
+        0.9175805998966098,
+        0.9195916038006544,
+        0.9144679913297296
+      ]
+    },
+    "training_tokens": 16777216
+  },
+  "qk_head_dim": 128,
+  "resumed": {
+    "attention_backend": "fused",
+    "attention_degree": 16,
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "taylor",
+    "best_checkpoint_after": 32,
+    "checkpoint_audit": {
+      "checkpoint_state_sha256": "54b256c82e72145ba7eb4df12f550b5bc12821771c49a343b005d1e5417db13b",
+      "final_state_sha256": "54b256c82e72145ba7eb4df12f550b5bc12821771c49a343b005d1e5417db13b",
+      "first_update": {
+        "batch_sha256": "3ec6bff2c38602df85c4c003f7fab9855f8a8d569f7128fe4617423eae295203",
+        "rng_sha256": "0dc2fc78abafe0737485791302a1df4fd7e8f606c5fe00ba6d1dd1078e9fd93a",
+        "step": 33
+      },
+      "next_update": {
+        "batch_sha256": "f9c9f3ee2502b5915cef226334e1d1968504c29e2b0a7e0ed44e988168cf4135",
+        "rng_sha256": "2eabe03e9b55d8189462d21499e79b6c08f02a4c6a142202138630b222c43fd6",
+        "step": 34
+      },
+      "start_state_sha256": "e31a9f6dd36d9a236a546b84c8660bbe2784102fe000662e15a5088ca16b9a11"
+    },
+    "data_parallel_devices": 4,
+    "data_start_sequence": 8192,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 33,
+    "final_step": 33,
+    "key_block_size": 32,
+    "latest_checkpoint_after": 33,
+    "latest_checkpoint_before": 32,
+    "m0_qk_parameter_note": null,
+    "query_block_size": 32,
+    "restored": true,
+    "restored_step": 32,
+    "start_step": 32,
+    "timing": {
+      "checkpoint_seconds": [],
+      "evaluation_seconds": [],
+      "runtime_seconds": 65.65777626307681,
+      "train_step_seconds": [
+        6.182730126194656
+      ]
+    },
+    "training_tokens": 17301504
+  },
+  "runtime": {
+    "allocation_fraction": 0.8,
+    "checkpoint_seconds": 24.84788454277441,
+    "evaluation_batch_seconds": 6.596689298283309,
+    "limit_seconds": 28800,
+    "projected_total_seconds": 19637.85646396177,
+    "segments": [
+      {
+        "end_step": 19074,
+        "projected_seconds": 19637.85646396177,
+        "start_step": 0
+      }
+    ],
+    "startup_seconds": 204.96221414022148,
+    "steady_train_step_seconds": 0.9195916038006544,
+    "usable_seconds": 23040.0
+  },
+  "slurm_job_id": "200502",
+  "slurm_restart_count": "0",
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "status": "passed",
+  "validation": {
+    "attempt_id": "200502:0:4c7eaab0",
+    "attention_backend": "fused",
+    "attention_degree": 16,
+    "attention_diagnostics": {
+      "attention_backend": "fused",
+      "attention_degree": 16,
+      "attention_implementation": "pallas_triton",
+      "attention_kernel": "taylor",
+      "diagnostic_backend": "blocked",
+      "diagnostic_query_block_size": 128,
+      "format": "polynomial-attention-diagnostics",
+      "issues": [],
+      "kernel_values": "unshifted_taylor",
+      "key_block_size": 32,
+      "layers": [
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 270.3623046875,
+          "kernel_min": 0.008385777473449707,
+          "layer": 0,
+          "normalizer_max": 4903.7841796875,
+          "normalizer_min": 0.18835687637329102,
+          "score_max": 5.599841117858887,
+          "score_min": -5.43916654586792
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 353.3016662597656,
+          "kernel_min": 0.008385539054870605,
+          "layer": 1,
+          "normalizer_max": 13135.3134765625,
+          "normalizer_min": 0.2328329086303711,
+          "score_max": 5.867457389831543,
+          "score_min": -5.890636444091797
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 189.65570068359375,
+          "kernel_min": 0.008425891399383545,
+          "layer": 2,
+          "normalizer_max": 11716.21484375,
+          "normalizer_min": 0.0591544508934021,
+          "score_max": 5.245245933532715,
+          "score_min": -5.315587997436523
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 272.8456115722656,
+          "kernel_min": 0.008387565612792969,
+          "layer": 3,
+          "normalizer_max": 12748.8193359375,
+          "normalizer_min": 0.09435445070266724,
+          "score_max": 5.608985900878906,
+          "score_min": -5.5887861251831055
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 280.6676940917969,
+          "kernel_min": 0.00846189260482788,
+          "layer": 4,
+          "normalizer_max": 9535.20703125,
+          "normalizer_min": 0.1991841197013855,
+          "score_max": 5.637256145477295,
+          "score_min": -5.206439971923828
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 313.4813232421875,
+          "kernel_min": 0.008410751819610596,
+          "layer": 5,
+          "normalizer_max": 11387.3642578125,
+          "normalizer_min": 0.13539892435073853,
+          "score_max": 5.7478461265563965,
+          "score_min": -5.176065921783447
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 176.9171142578125,
+          "kernel_min": 0.008412420749664307,
+          "layer": 6,
+          "normalizer_max": 7486.841796875,
+          "normalizer_min": 0.2108478546142578,
+          "score_max": 5.175711631774902,
+          "score_min": -5.715041160583496
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 132.78152465820312,
+          "kernel_min": 0.008456707000732422,
+          "layer": 7,
+          "normalizer_max": 6698.03955078125,
+          "normalizer_min": 0.1561008095741272,
+          "score_max": 4.8887200355529785,
+          "score_min": -5.381073951721191
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 324.7855529785156,
+          "kernel_min": 0.008405804634094238,
+          "layer": 8,
+          "normalizer_max": 10391.7412109375,
+          "normalizer_min": 0.0946846604347229,
+          "score_max": 5.7832794189453125,
+          "score_min": -5.28053092956543
+        },
+        {
+          "invalid_kernel_count": 0,
+          "invalid_normalizer_count": 0,
+          "invalid_score_count": 0,
+          "kernel_max": 182.32101440429688,
+          "kernel_min": 0.008905112743377686,
+          "layer": 9,
+          "normalizer_max": 11153.7421875,
+          "normalizer_min": 0.2292158603668213,
+          "score_max": 5.205801486968994,
+          "score_min": -4.833920955657959
+        }
+      ],
+      "m0_qk_parameter_note": null,
+      "query_block_size": 32,
+      "sample": {
+        "diagnostic_pass_contributes_to_validation_loss": false,
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+        "num_sequences": 1,
+        "prediction_tokens": 2048,
+        "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+        "selection": "first_heldout_sequence",
+        "sequence_index": 0,
+        "source": "packed"
+      },
+      "step": 32,
+      "valid": true,
+      "version": 1
+    },
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "taylor",
+    "checkpoint_step": 32,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "event": "validation",
+    "event_id": "validation:32",
+    "is_best": true,
+    "key_block_size": 32,
+    "learning_rate": 4.650006303563714e-06,
+    "m0_qk_parameter_note": null,
+    "parameter_count": 220877824,
+    "qk_head_dim": 128,
+    "query_block_size": 32,
+    "schema_version": 1,
+    "slurm_job_id": "200502",
+    "slurm_restart_count": 0,
+    "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+    "step": 32,
+    "timestamp_utc": "2026-09-21T04:44:25.524686+00:00",
+    "tokens_per_second": 425955.085108612,
+    "tokens_per_second_per_device": 106488.771277153,
+    "train_nll_sample_count": 4,
+    "train_nll_sample_mean": 10.533568859100342,
+    "train_perplexity_from_mean_nll": 37555.26495071714,
+    "training_interval_seconds": 39.38728891033679,
+    "training_tokens": 16777216,
+    "training_window_start_step": 0,
+    "validation_batches": 1,
+    "validation_nll": 9.77721118927002,
+    "validation_perplexity": 17627.42468978409,
+    "validation_sequences": 256,
+    "validation_tokens": 524288,
+    "value_head_dim": 64,
+    "wandb_run_id": null
+  }
+}
