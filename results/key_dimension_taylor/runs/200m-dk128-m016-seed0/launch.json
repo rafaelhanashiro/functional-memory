@@ -1,0 +1,275 @@
+{
+  "active_execution": {
+    "actual_node": "dogo",
+    "actual_node_list": "dogo",
+    "actual_partition": "sweep",
+    "attempt": "200807-0-87ae3ba2",
+    "attention_degree": 16,
+    "handoff_reference": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/200m-dk128-m016-seed0/handoff.json",
+      "sha256": "95b7125f39e12369a66b1dbfa61cab4b1b9b3b7840102c0c5d333ccbe9f37e53"
+    },
+    "hardware": {
+      "actual_profile": "h100",
+      "device_kinds": [
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3"
+      ],
+      "devices": [
+        "cuda:0",
+        "cuda:1",
+        "cuda:2",
+        "cuda:3"
+      ],
+      "gpu_count": 4,
+      "jax_version": "0.10.0",
+      "node": "dogo",
+      "partition": "sweep",
+      "slurm_job_id": "200807"
+    },
+    "identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+    "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200807.out",
+    "orchestrator_commit": "78b2f7f400856ae14a7cd85b23a43faea0e2f1e6",
+    "original_scientific_source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+    "policy_identity": "efbd675ab1133abfecd0b3e27afa92dd8a74802f6ef8c4bfdd1047339ed85c14",
+    "profile": "h100",
+    "qk_head_dim": 128,
+    "qualification_reference": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk128-m016-seed0.json",
+      "sha256": "0b1e4af65278a4b345aeb03eb03326a483b3d247f04e292de392c02939dd0578"
+    },
+    "requested_profile": "h100_or_better",
+    "run_name": "200m-dk128-m016-seed0",
+    "runtime_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+    "runtime_environment": {},
+    "runtime_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor",
+    "segment_index": 0,
+    "slurm_job_id": "200807",
+    "slurm_restart_count": 0,
+    "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+    "started_utc": "2026-09-22T05:49:51.672363+00:00",
+    "sweep_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+    "training_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor"
+  },
+  "concurrent_segments": [
+    {
+      "comment": "dkt:2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2:200m-dk128-m016-seed0:0",
+      "dependency_job_id": null,
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200732.out",
+      "profile": "h100",
+      "run_name": "200m-dk128-m016-seed0",
+      "segment": 0,
+      "slurm_job_id": "200732",
+      "submitted_utc": "2026-09-21T23:32:00.498136+00:00"
+    },
+    {
+      "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m016-seed0:0",
+      "dependency_job_id": null,
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200794.out",
+      "profile": "a6000",
+      "run_name": "200m-dk128-m016-seed0",
+      "segment": 0,
+      "slurm_job_id": "200794",
+      "submitted_utc": "2026-09-22T04:43:39.501356+00:00"
+    },
+    {
+      "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m016-seed0:1",
+      "dependency_job_id": "200794",
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200795.out",
+      "profile": "a6000",
+      "run_name": "200m-dk128-m016-seed0",
+      "segment": 1,
+      "slurm_job_id": "200795",
+      "submitted_utc": "2026-09-22T04:43:39.671082+00:00"
+    },
+    {
+      "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m016-seed0:2",
+      "dependency_job_id": "200795",
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200796.out",
+      "profile": "a6000",
+      "run_name": "200m-dk128-m016-seed0",
+      "segment": 2,
+      "slurm_job_id": "200796",
+      "submitted_utc": "2026-09-22T04:43:39.845619+00:00"
+    },
+    {
+      "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m016-seed0:3",
+      "dependency_job_id": "200796",
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200797.out",
+      "profile": "a6000",
+      "run_name": "200m-dk128-m016-seed0",
+      "segment": 3,
+      "slurm_job_id": "200797",
+      "submitted_utc": "2026-09-22T04:43:40.022158+00:00"
+    },
+    {
+      "comment": "dkt:efbd675ab1133abfecd0b3e27afa92dd8a74802f6ef8c4bfdd1047339ed85c14:200m-dk128-m016-seed0:0",
+      "dependency_job_id": null,
+      "excluded_nodes": [
+        "akita",
+        "collie",
+        "doodle",
+        "samoyed",
+        "terrier"
+      ],
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200807.out",
+      "profile": "h100_or_better",
+      "run_name": "200m-dk128-m016-seed0",
+      "segment": 0,
+      "slurm_job_id": "200807",
+      "submitted_utc": "2026-09-22T05:28:14.946508+00:00"
+    }
+  ],
+  "execution_amendments": {
+    "2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2": {
+      "orchestrator_commit": "0dc83ae8e04ebb3689a03e4c35887b602848d06e",
+      "policy_path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/execution-policy.json",
+      "superseded_jobs": [
+        "200520"
+      ]
+    },
+    "9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0": {
+      "orchestrator_commit": "2b27b9e46514ec0194fe2fca1034cd11fb60b328",
+      "policy_path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/execution-policy-a6000.json",
+      "superseded_jobs": [
+        "200732"
+      ]
+    },
+    "efbd675ab1133abfecd0b3e27afa92dd8a74802f6ef8c4bfdd1047339ed85c14": {
+      "orchestrator_commit": "78b2f7f400856ae14a7cd85b23a43faea0e2f1e6",
+      "policy_path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/execution-policy-fast.json",
+      "superseded_jobs": [
+        "200794",
+        "200795",
+        "200796",
+        "200797"
+      ]
+    }
+  },
+  "execution_history": [
+    {
+      "actual_node": "terrier",
+      "actual_node_list": "terrier",
+      "actual_partition": "sweep",
+      "attempt": "200794-0-f2759957",
+      "attention_degree": 16,
+      "hardware": {
+        "device_kinds": [
+          "NVIDIA RTX A6000",
+          "NVIDIA RTX A6000",
+          "NVIDIA RTX A6000",
+          "NVIDIA RTX A6000"
+        ],
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "gpu_count": 4,
+        "jax_version": "0.10.0",
+        "node": "terrier",
+        "partition": "sweep",
+        "slurm_job_id": "200794"
+      },
+      "identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200794.out",
+      "orchestrator_commit": "2b27b9e46514ec0194fe2fca1034cd11fb60b328",
+      "original_scientific_source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "policy_identity": "9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0",
+      "profile": "a6000",
+      "qk_head_dim": 128,
+      "qualification_reference": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large/checks/200m-dk128-m016-seed0.json",
+        "sha256": "6ec331146f267a5b02edcc9f29d964546013dac4b97d09a71f991c6eec23e867"
+      },
+      "run_name": "200m-dk128-m016-seed0",
+      "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+      "runtime_environment": {
+        "NCCL_P2P_DISABLE": "1",
+        "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "runtime_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix",
+      "segment_index": 0,
+      "slurm_job_id": "200794",
+      "slurm_restart_count": 0,
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "started_utc": "2026-09-22T04:43:53.456348+00:00",
+      "sweep_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+      "training_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor"
+    },
+    {
+      "actual_node": "dogo",
+      "actual_node_list": "dogo",
+      "actual_partition": "sweep",
+      "attempt": "200807-0-87ae3ba2",
+      "attention_degree": 16,
+      "handoff_reference": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/200m-dk128-m016-seed0/handoff.json",
+        "sha256": "95b7125f39e12369a66b1dbfa61cab4b1b9b3b7840102c0c5d333ccbe9f37e53"
+      },
+      "hardware": {
+        "actual_profile": "h100",
+        "device_kinds": [
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "gpu_count": 4,
+        "jax_version": "0.10.0",
+        "node": "dogo",
+        "partition": "sweep",
+        "slurm_job_id": "200807"
+      },
+      "identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200807.out",
+      "orchestrator_commit": "78b2f7f400856ae14a7cd85b23a43faea0e2f1e6",
+      "original_scientific_source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "policy_identity": "efbd675ab1133abfecd0b3e27afa92dd8a74802f6ef8c4bfdd1047339ed85c14",
+      "profile": "h100",
+      "qk_head_dim": 128,
+      "qualification_reference": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk128-m016-seed0.json",
+        "sha256": "0b1e4af65278a4b345aeb03eb03326a483b3d247f04e292de392c02939dd0578"
+      },
+      "requested_profile": "h100_or_better",
+      "run_name": "200m-dk128-m016-seed0",
+      "runtime_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "runtime_environment": {},
+      "runtime_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor",
+      "segment_index": 0,
+      "slurm_job_id": "200807",
+      "slurm_restart_count": 0,
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "started_utc": "2026-09-22T05:49:51.672363+00:00",
+      "sweep_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+      "training_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor"
+    }
+  ],
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200807.out",
+  "segments": [
+    {
+      "dependency_job_id": "200519",
+      "dependency_type": "afterany",
+      "end_step": 19074,
+      "index": 0,
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200520.out",
+      "projected_seconds": 19637.85646396177,
+      "slurm_job_id": "200520",
+      "start_step": 0
+    }
+  ],
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "sweep_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3"
+}

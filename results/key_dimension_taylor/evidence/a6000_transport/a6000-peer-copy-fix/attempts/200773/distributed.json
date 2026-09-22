@@ -1,0 +1,58 @@
+{
+  "case": "distributed",
+  "status": "failed",
+  "node": "doodle.csail.mit.edu",
+  "job_id": "200773",
+  "source": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix",
+  "source_commit": "d303e3a90c77673ffb08c61a1e77b936bb3d5dc3",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+    "NCCL_P2P_DISABLE": "1",
+    "XLA_FLAGS": null
+  },
+  "devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "config_sha256": "330beb6a8fb3b07ef774174e46e38796d6aead9f16088082e16eb4553030d522",
+  "backend": "fused",
+  "stage": "failed",
+  "elapsed_seconds": 237.2274379208684,
+  "params_sha256": "307bceee6adc3fa4331b5a504b92b312c9e95d26c7080273e73e40d1bfa352fc",
+  "state_sha256": "06c23688f2a9bc2b3ceb395de87502ba047e63fd0f3b66dfd2b98443e9234295",
+  "parameter_count": 181556224,
+  "first_train_batch_sha256": "554f9dfd9e7f884aeedb98121404794c22d27d1f126793f9b102623b27245b9d",
+  "first_eval_batch_sha256": "a19a3df1d4c2eefd1ee0cbab65c3329eea171c2a88ea07303b9fb83cf0240c7f",
+  "train_batch_shape": [
+    256,
+    2049
+  ],
+  "eval_batch_shape": [
+    256,
+    2049
+  ],
+  "per_device_microbatch": 16,
+  "context_length": 2048,
+  "replicated_param_hashes": {
+    "cuda:0": "327d566e65435b27efa503ac8808c000dc5c50c9f02f5ed27df9610219e0cee7",
+    "cuda:1": "9e40cb7cf02dc62490ddee4ef9b10bfc15144ecbe5d01a276e22abec9d2d3205",
+    "cuda:2": "9e40cb7cf02dc62490ddee4ef9b10bfc15144ecbe5d01a276e22abec9d2d3205",
+    "cuda:3": "9e40cb7cf02dc62490ddee4ef9b10bfc15144ecbe5d01a276e22abec9d2d3205"
+  },
+  "replicated_param_mismatches": {
+    "cuda:0": 0,
+    "cuda:1": 181556202,
+    "cuda:2": 181556202,
+    "cuda:3": 181556202
+  },
+  "replicated_param_nonfinite": {
+    "cuda:0": 0,
+    "cuda:1": 0,
+    "cuda:2": 0,
+    "cuda:3": 0
+  },
+  "error": "RuntimeError: Replicated parameters differ from original initial parameters",
+  "traceback": "Traceback (most recent call last):\n  File \"/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_fix/parity.py\", line 105, in main\n    raise RuntimeError('Replicated parameters differ from original initial parameters')\nRuntimeError: Replicated parameters differ from original initial parameters\n"
+}

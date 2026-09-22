@@ -1,0 +1,650 @@
+[
+  {
+    "name": "host_replicate_1024",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "host_replicate_1024",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "host_replicate_1024",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "host_replicate_1024",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_0_1024",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_0_1024",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_0_1024",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_0_1024",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_0_1024",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_0_1024",
+    "device": "cuda:1",
+    "equal": false,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 1024
+  },
+  {
+    "name": "computed_from_0_1024",
+    "device": "cuda:2",
+    "equal": false,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 1024
+  },
+  {
+    "name": "computed_from_0_1024",
+    "device": "cuda:3",
+    "equal": false,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 1024
+  },
+  {
+    "name": "from_1_1024",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_1_1024",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_1_1024",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_1_1024",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_1_1024",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_1_1024",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_1_1024",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_1_1024",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_2_1024",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_2_1024",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_2_1024",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_2_1024",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_2_1024",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_2_1024",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_2_1024",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_2_1024",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_3_1024",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_3_1024",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_3_1024",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_3_1024",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": 3.379075159667991,
+    "expected_sum": 3.379075159667991,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_3_1024",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_3_1024",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_3_1024",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_3_1024",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": 6.758150319335982,
+    "expected_sum": 6.758150319335982,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "host_replicate_1048576",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "host_replicate_1048576",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "host_replicate_1048576",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "host_replicate_1048576",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_0_1048576",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_0_1048576",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_0_1048576",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_0_1048576",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_0_1048576",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_0_1048576",
+    "device": "cuda:1",
+    "equal": false,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 1048576
+  },
+  {
+    "name": "computed_from_0_1048576",
+    "device": "cuda:2",
+    "equal": false,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 1048576
+  },
+  {
+    "name": "computed_from_0_1048576",
+    "device": "cuda:3",
+    "equal": false,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 1048576
+  },
+  {
+    "name": "from_1_1048576",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_1_1048576",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_1_1048576",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_1_1048576",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_1_1048576",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_1_1048576",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_1_1048576",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_1_1048576",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_2_1048576",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_2_1048576",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_2_1048576",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_2_1048576",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_2_1048576",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_2_1048576",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_2_1048576",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_2_1048576",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_3_1048576",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_3_1048576",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_3_1048576",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "from_3_1048576",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": -2209.6990165073184,
+    "expected_sum": -2209.6990165073184,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_3_1048576",
+    "device": "cuda:0",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_3_1048576",
+    "device": "cuda:1",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_3_1048576",
+    "device": "cuda:2",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  },
+  {
+    "name": "computed_from_3_1048576",
+    "device": "cuda:3",
+    "equal": true,
+    "actual_sum": -4419.398033014637,
+    "expected_sum": -4419.398033014637,
+    "finite": true,
+    "mismatches": 0
+  }
+]

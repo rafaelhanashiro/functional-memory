@@ -8,6 +8,8 @@ from pathlib import Path
 
 from scaffolds.transformer.studies.polynomial_attention.plot import summarize_run as historical_summary
 from scaffolds.transformer.studies.polynomial_attention.plot import default_manifest_path, update_results_readme
+from scaffolds.transformer.studies.polynomial_attention.plot import RETAINED_FORMAT
+from scaffolds.transformer.studies.learned_quadratic_attention.plot import retained_plot_manifest
 from scaffolds.transformer.studies.odd_taylor_attention.sweep import EXPERIMENT, validate_control
 
 
@@ -16,7 +18,7 @@ def label(run: dict) -> str:
 
 
 def summarize_run(run: dict, source_commit: str) -> tuple[dict, list[dict]]:
-    if run.get("retained_completed"):
+    if run.get("retained_completed") and not run.get("_retained_checked"):
         validate_control(run)
     row, records = historical_summary(run, source_commit)
     row.update(kernel=label(run), quadratic_mode=run.get("quadratic_mode", "fixed"),
@@ -59,14 +61,18 @@ def summarize_run(run: dict, source_commit: str) -> tuple[dict, list[dict]]:
             values = [layer[key] for layer in layers if key in layer]
             if values:
                 row[key] = reduction(values)
+    if run.get("_retained_checked") and run["status"] == "numerical-failure":
+        row.update(status="numerical-failure", error=run["failure"].get("error", row["error"]))
     return row, records
 
 
-def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
+def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: Path | None = None) -> list[dict]:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    if manifest.get("format") == RETAINED_FORMAT:
+        manifest = retained_plot_manifest(manifest, manifest_path)
     output_dir = output_dir or Path(manifest["project_root"]) / "results" / EXPERIMENT
     output_dir.mkdir(parents=True, exist_ok=True)
     figures_dir = output_dir / "figures"
@@ -157,7 +163,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
               "Each model uses the full 19,074-update learning-rate schedule throughout a 5,000-update stability stage and subsequent continuation. Continuation requires finite committed validation and exact checkpoint, next-batch, and RNG restoration. One seed per variant does not estimate seed variation.", "",
               "The stability plots use the fixed first held-out diagnostic sequence. Negative-weight fractions are computed after signed normalization; minimum absolute denominators and cancellation ratios expose near-zero signed sums.", "",
               "Odd-degree runs use four H100s on dogo. Historical control throughput reflects its recorded allocations, including hardware migration, and is not a matched hardware benchmark. Original hardware histories remain in control provenance.", "",
-              "Historical controls retain original source revisions and artifact SHA256 checksums in `sweep.json`:", ""]
+              "Historical controls retain original source revisions and artifact SHA256 checksums in the canonical provenance; the archived launch record preserves the original references:", ""]
     lines += [f"- {label(run)}: `{run['config']['train']['source_commit']}`; original sweep `{run['original_sweep_identity']}`." for run in manifest["controls"]]
     failures = [row for row in rows if row["error"]]
     if failures:
@@ -172,7 +178,7 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, default=default_manifest_path(Path("results/odd_taylor_attention")))
     parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
-    aggregate(json.loads(args.manifest.read_text()), args.output_dir)
+    aggregate(json.loads(args.manifest.read_text()), args.output_dir, manifest_path=args.manifest)
 
 
 if __name__ == "__main__":

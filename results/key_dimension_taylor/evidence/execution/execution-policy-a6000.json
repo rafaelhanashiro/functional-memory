@@ -1,0 +1,79 @@
+{
+  "a6000_qualifications": {
+    "200m-dk032-m016-seed0": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-2/checks/200m-dk032-m016-seed0.json",
+      "sha256": "1e5f8fba0a9ef7053cc4908022159cc4017e108ae0827f502f7cdb327e750c05"
+    },
+    "200m-dk128-m008-seed0": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-1/checks/200m-dk128-m008-seed0.json",
+      "sha256": "95e980d1a4e42c015bdd405cd1fc7116d24294b1f3a47b906887ad12aa17c6ee"
+    },
+    "200m-dk128-m016-seed0": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large/checks/200m-dk128-m016-seed0.json",
+      "sha256": "6ec331146f267a5b02edcc9f29d964546013dac4b97d09a71f991c6eec23e867"
+    }
+  },
+  "assignments": {
+    "200m-dk032-m016-seed0": "a6000",
+    "200m-dk128-m008-seed0": "a6000",
+    "200m-dk128-m016-seed0": "a6000"
+  },
+  "authorization": "User requested moving queued runs onto validated A6000s on 2026-09-22",
+  "created_utc": "2026-09-22T04:43:20.368009+00:00",
+  "cross_coordinate_dependencies": false,
+  "format": "key-dimension-taylor-execution-amendment",
+  "identity": "9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0",
+  "legacy_renderer_jobs": [
+    "200729",
+    "200737",
+    "200738"
+  ],
+  "orchestrator_commit": "2b27b9e46514ec0194fe2fca1034cd11fb60b328",
+  "orchestrator_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor_a6000_production",
+  "profiles": {
+    "a6000": {
+      "allowed_nodes": [
+        "doodle",
+        "terrier"
+      ],
+      "cpus_per_task": 32,
+      "gpu_count": 4,
+      "gpu_type": "a6000",
+      "memory": "256G",
+      "partition": "sweep",
+      "preflight_time": "08:00:00",
+      "production_time": "08:00:00"
+    }
+  },
+  "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+  "runtime_environment": {
+    "NCCL_P2P_DISABLE": "1",
+    "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "runtime_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix",
+  "scientific_changes": [],
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "source_commit_semantics": "Original scientific configuration source; runtime_commit records the actual executed training checkout",
+  "superseded_jobs": {
+    "200m-dk032-m016-seed0": [
+      "200730"
+    ],
+    "200m-dk128-m008-seed0": [
+      "200731"
+    ],
+    "200m-dk128-m016-seed0": [
+      "200732"
+    ]
+  },
+  "supersedes_policy": {
+    "identity": "2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/execution-policy.json",
+    "sha256": "d32ebeb821b45f302da75c107b9c963338595d2497de2788709540b9998169b1"
+  },
+  "training_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+  "training_manifest": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/sweep.json",
+  "training_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor",
+  "version": 2
+}

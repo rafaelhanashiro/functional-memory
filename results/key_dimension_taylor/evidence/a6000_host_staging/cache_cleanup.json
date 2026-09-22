@@ -1,0 +1,36 @@
+{
+  "recorded_utc": "2026-09-22T04:41:55.079981+00:00",
+  "removed": [
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/cache",
+      "file_count": 136,
+      "reason": "All shard qualification jobs completed successfully; reproducible compilation cache only"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-1/cache",
+      "file_count": 136,
+      "reason": "All shard qualification jobs completed successfully; reproducible compilation cache only"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-2/cache",
+      "file_count": 121,
+      "reason": "All shard qualification jobs completed successfully; reproducible compilation cache only"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-3/cache",
+      "file_count": 119,
+      "reason": "All shard qualification jobs completed successfully; reproducible compilation cache only"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-small/cache",
+      "file_count": 78,
+      "reason": "All shard qualification jobs completed successfully; reproducible compilation cache only"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large/cache",
+      "file_count": 76,
+      "reason": "All shard qualification jobs completed successfully; reproducible compilation cache only"
+    }
+  ],
+  "retained": "All scientific qualification records, resolved configs, metrics, audit results, and matching successful Slurm logs"
+}

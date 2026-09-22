@@ -1,0 +1,90 @@
+{
+  "observed_utc": "2026-09-22T03:40:33.055501+00:00",
+  "status": "fix_verified_on_both_nodes",
+  "initial_state_sha256": "06c23688f2a9bc2b3ceb395de87502ba047e63fd0f3b66dfd2b98443e9234295",
+  "initial_state_matches_h100": true,
+  "transfer_probe": {
+    "job": "200774",
+    "comparisons": 72,
+    "failed_comparisons": 6,
+    "failure": "GPU0-computed arrays did not transfer correctly to GPUs1-3 at1024 and1048576 elements; destinations retained prior input values. Host-backed placement was exact."
+  },
+  "all_four_gpu_kernel_comparison": {
+    "job": "200776",
+    "passed": true,
+    "separate_devices": 4,
+    "shard_map_backends": [
+      "blocked",
+      "fused"
+    ]
+  },
+  "fix_commit": "0e19fe5",
+  "fix_environment": {
+    "NCCL_P2P_DISABLE": "1",
+    "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "cpu_tests_passed": 12,
+  "model_and_attention_math_changed": false,
+  "artifact_checksums": {
+    "kernels-200776.json": "d73ae656661c8e0f786405c8619641f287576dc40b22d8e8998d6e734e1ab04e",
+    "transfers-200774/transfers.json": "5a6cc4dfe9cd567bb5f954c362ef2446a4fd08062baf44ff11034f277376f210",
+    "transfers-200772/transfers.json": "62dc3f2b32f12235f99b79ba383995d307da5204fd452fc46819c2766a03d119",
+    "attempts/200773/operator.json": "c47081d1fdc72aa9c16969dc1b6278502d3de24962418d4422bb84d6ceae4d29",
+    "attempts/200773/distributed.json": "09bc33be3e1e03021c2877adc21442cb3b6c8e356b7ff6623acddfac1747c219"
+  },
+  "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+  "validation_runner_cpu_tests_passed": 10,
+  "gpu_pilots": [
+    {
+      "job": "200778",
+      "node": "doodle",
+      "qk_head_dim": 8,
+      "attention_degree": 2
+    },
+    {
+      "job": "200779",
+      "node": "terrier",
+      "qk_head_dim": 128,
+      "attention_degree": 16
+    }
+  ],
+  "verified_utc": "2026-09-22T03:59:56.944777+00:00",
+  "passing_pilots": [
+    {
+      "name": "200m-dk008-m002-seed0",
+      "slurm_job_id": "200781",
+      "node": "doodle.csail.mit.edu",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-small/checks/200m-dk008-m002-seed0.json",
+      "sha256": "298b07ad19d2e405684acd100eb11f91ea589790a0a0900c9be2e1e504caadf4",
+      "validation_nll": 9.803295373916626,
+      "restored_step": 32,
+      "final_step": 33
+    },
+    {
+      "name": "200m-dk128-m016-seed0",
+      "slurm_job_id": "200782",
+      "node": "terrier.csail.mit.edu",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large/checks/200m-dk128-m016-seed0.json",
+      "sha256": "6ec331146f267a5b02edcc9f29d964546013dac4b97d09a71f991c6eec23e867",
+      "validation_nll": 9.77705454826355,
+      "restored_step": 32,
+      "final_step": 33
+    }
+  ],
+  "temporary_diagnostic_script_sha256": {
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_fix/rank_forward.py": "02444498bf2a8f37c3c9f83295c7ecd19bb248bc1924d1d872e0f9da547bc92d",
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_fix/launch.sbatch": "0a9f7b3ddb202395977473662e0f3d62c95e3acf8f0a74dbae1beb904f2ba17e",
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_fix/parity.py": "6088927907ce1d1af4500e672929f6ed659bd1aeb198b6bd74924dce8b4e5e90",
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_fix/transfers.sbatch": "25b3fe4650e3a640dba58c04a67901955266acbf4eb6ba9785b7986005c4790c",
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_fix/kernel_devices.py": "b8d7de18b3f48579bd3d08fd56765287ca4dfe06b5e78efc41cd30e5c9d323f0",
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_fix/kernel_devices.sbatch": "7e327a6458b2e30ae7cfd82acaa479db2a515264d067c9d8193d12e06fec05bf",
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_fix/transfers.py": "726381ed97efbacaff34727e5c42d94f96cd81d9c23c46cdf4e7ce3874ee99e6",
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/probe.py": "dc710c96ad9f543ebd9419b5a7b347f823109d15741fd79cb1069e87249a22f1",
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/launch.sbatch": "200d6008b0fe7b92b8292e9fd62e72f0fc63256d7aa4f2cb318b2107438e290b",
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/single_pilot.sbatch": "3f9c0ce4b7c415e0476fc76c1f7d8bcffe45f268d2b17abab6721bb8fa2e5918",
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/single_pilot.py": "b8642f793659da72c32154a2adbf6034970b1ba94470069ccd537c8063444e0f"
+  },
+  "temporary_diagnostic_code_removed": true
+}

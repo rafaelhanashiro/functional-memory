@@ -1,0 +1,11 @@
+{
+  "source_commit": "a4d479f288fa8b37f04727e8bb8629b2da1d448f",
+  "cpu_tests_passed": 240,
+  "cpu_tests_skipped_requires_multiple_devices": 5,
+  "distributed_tests_passed": 5,
+  "artifacts_sha256": {
+    "cpu-tests.xml": "ac1fedac69de1f7507da65f3a4b915248f5c38ea9c67691c8da46e47ae879c87",
+    "distributed-tests.xml": "dbf6f83c63adbbb583d57d3a0714cb9d41a505564024042df7b754897ba109cd"
+  },
+  "note": "The five distributed checks skipped by the single-device suite passed separately with two CPU devices."
+}

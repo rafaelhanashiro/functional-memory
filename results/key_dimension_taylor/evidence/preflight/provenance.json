@@ -1,0 +1,44 @@
+{
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "eligible_runs": [
+    "200m-dk008-m002-seed0",
+    "200m-dk008-m004-seed0",
+    "200m-dk008-m008-seed0",
+    "200m-dk008-m016-seed0",
+    "200m-dk016-m002-seed0",
+    "200m-dk016-m004-seed0",
+    "200m-dk016-m008-seed0",
+    "200m-dk016-m016-seed0",
+    "200m-dk032-m002-seed0",
+    "200m-dk032-m004-seed0",
+    "200m-dk032-m008-seed0",
+    "200m-dk032-m016-seed0",
+    "200m-dk128-m002-seed0",
+    "200m-dk128-m004-seed0",
+    "200m-dk128-m008-seed0",
+    "200m-dk128-m016-seed0"
+  ],
+  "identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/preflight/slurm-200502.out",
+  "scheduler": {
+    "cpus_per_task": 32,
+    "gpu_count": 4,
+    "gpu_type": "h100",
+    "memory": "256G",
+    "node": "dogo",
+    "partition": "standard",
+    "preflight_time": "08:00:00",
+    "production_time": "08:00:00"
+  },
+  "slurm_job_id": "200502",
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320"
+}

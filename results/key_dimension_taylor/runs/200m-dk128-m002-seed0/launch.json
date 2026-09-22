@@ -1,0 +1,120 @@
+{
+  "active_execution": {
+    "actual_node": "akita",
+    "actual_node_list": "akita",
+    "actual_partition": "sweep",
+    "attempt": "200737-0-fa942abc",
+    "attention_degree": 2,
+    "hardware": {
+      "device_kinds": [
+        "NVIDIA B300 SXM6 AC",
+        "NVIDIA B300 SXM6 AC",
+        "NVIDIA B300 SXM6 AC",
+        "NVIDIA B300 SXM6 AC"
+      ],
+      "devices": [
+        "cuda:0",
+        "cuda:1",
+        "cuda:2",
+        "cuda:3"
+      ],
+      "gpu_count": 4,
+      "jax_version": "0.10.0",
+      "node": "akita",
+      "partition": "sweep",
+      "slurm_job_id": "200737"
+    },
+    "identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+    "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m002-seed0/slurm-200737.out",
+    "orchestrator_commit": "0dc83ae8e04ebb3689a03e4c35887b602848d06e",
+    "policy_identity": "2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2",
+    "profile": "b300",
+    "qk_head_dim": 128,
+    "run_name": "200m-dk128-m002-seed0",
+    "segment_index": 0,
+    "slurm_job_id": "200737",
+    "slurm_restart_count": 0,
+    "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+    "started_utc": "2026-09-22T01:56:28.405343+00:00",
+    "sweep_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+    "training_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor"
+  },
+  "concurrent_segments": [
+    {
+      "comment": "dkt:2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2:200m-dk128-m002-seed0:0",
+      "dependency_job_id": null,
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m002-seed0/slurm-200737.out",
+      "profile": "b300",
+      "run_name": "200m-dk128-m002-seed0",
+      "segment": 0,
+      "slurm_job_id": "200737",
+      "submitted_utc": "2026-09-21T23:58:56.235105+00:00"
+    }
+  ],
+  "execution_amendments": {
+    "2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2": {
+      "orchestrator_commit": "0dc83ae8e04ebb3689a03e4c35887b602848d06e",
+      "policy_path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/execution-policy.json",
+      "superseded_jobs": [
+        "200517"
+      ]
+    }
+  },
+  "execution_history": [
+    {
+      "actual_node": "akita",
+      "actual_node_list": "akita",
+      "actual_partition": "sweep",
+      "attempt": "200737-0-fa942abc",
+      "attention_degree": 2,
+      "hardware": {
+        "device_kinds": [
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC"
+        ],
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "gpu_count": 4,
+        "jax_version": "0.10.0",
+        "node": "akita",
+        "partition": "sweep",
+        "slurm_job_id": "200737"
+      },
+      "identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m002-seed0/slurm-200737.out",
+      "orchestrator_commit": "0dc83ae8e04ebb3689a03e4c35887b602848d06e",
+      "policy_identity": "2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2",
+      "profile": "b300",
+      "qk_head_dim": 128,
+      "run_name": "200m-dk128-m002-seed0",
+      "segment_index": 0,
+      "slurm_job_id": "200737",
+      "slurm_restart_count": 0,
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "started_utc": "2026-09-22T01:56:28.405343+00:00",
+      "sweep_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+      "training_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor"
+    }
+  ],
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m002-seed0/slurm-200737.out",
+  "segments": [
+    {
+      "dependency_job_id": "200516",
+      "dependency_type": "afterany",
+      "end_step": 19074,
+      "index": 0,
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m002-seed0/slurm-200517.out",
+      "projected_seconds": 17559.85502957739,
+      "slurm_job_id": "200517",
+      "start_step": 0
+    }
+  ],
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "sweep_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3"
+}

@@ -1,0 +1,120 @@
+{
+  "attention_degree": 1,
+  "completed_utc": "2026-09-19T21:42:41.865314+00:00",
+  "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+  "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+  "outcome": {
+    "attention_backend": "fused",
+    "attention_degree": 1,
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "taylor",
+    "attention_signed": true,
+    "best_checkpoint_after": 2,
+    "checkpoint_audit": {
+      "checkpoint_state_sha256": "1c030f5f49758b4c9c96e3e1abb0637394922204f4db2b712b048f1d7188e00c",
+      "final_state_sha256": "1c030f5f49758b4c9c96e3e1abb0637394922204f4db2b712b048f1d7188e00c",
+      "first_update": {
+        "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+        "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+        "step": 1
+      },
+      "next_update": {
+        "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+        "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+        "step": 3
+      },
+      "start_state_sha256": "609d2f978a015b93c8749b5a2faf4513c0b946da31e6e0ff8c3f98959e4b1bc5"
+    },
+    "data_parallel_devices": 4,
+    "data_start_sequence": 0,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 2,
+    "final_step": 2,
+    "key_block_size": 64,
+    "latest_checkpoint_after": 2,
+    "latest_checkpoint_before": null,
+    "m0_qk_parameter_note": null,
+    "query_block_size": 64,
+    "restored": false,
+    "restored_step": null,
+    "start_step": 0,
+    "timing": {
+      "checkpoint_seconds": [
+        22.768072289880365
+      ],
+      "evaluation_seconds": [
+        12.25090653123334
+      ],
+      "runtime_seconds": 300.5343589298427,
+      "train_step_seconds": [
+        26.813753386959434,
+        0.45524157816544175
+      ]
+    },
+    "training_tokens": 1048576
+  },
+  "resume_validation": "exact_live_durable_restart_state_and_next_batch_rng",
+  "resumed": {
+    "attention_backend": "fused",
+    "attention_degree": 1,
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "taylor",
+    "attention_signed": true,
+    "best_checkpoint_after": 2,
+    "checkpoint_audit": {
+      "checkpoint_state_sha256": "9838ba18987c4514be8b901cd1d659dce7a2876ba42a250ea137bc8709a5b4e1",
+      "final_state_sha256": "9838ba18987c4514be8b901cd1d659dce7a2876ba42a250ea137bc8709a5b4e1",
+      "first_update": {
+        "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+        "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+        "step": 3
+      },
+      "next_update": {
+        "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+        "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+        "step": 4
+      },
+      "start_state_sha256": "1c030f5f49758b4c9c96e3e1abb0637394922204f4db2b712b048f1d7188e00c"
+    },
+    "data_parallel_devices": 4,
+    "data_start_sequence": 512,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 3,
+    "final_step": 3,
+    "key_block_size": 64,
+    "latest_checkpoint_after": 3,
+    "latest_checkpoint_before": 2,
+    "m0_qk_parameter_note": null,
+    "query_block_size": 64,
+    "restored": true,
+    "restored_step": 2,
+    "start_step": 2,
+    "timing": {
+      "checkpoint_seconds": [],
+      "evaluation_seconds": [],
+      "runtime_seconds": 58.301057640928775,
+      "train_step_seconds": [
+        11.092377095948905
+      ]
+    },
+    "training_tokens": 1572864
+  },
+  "runtime": {
+    "checkpoint_seconds": 887.9548193053342,
+    "evaluation_seconds": 1715.1269143726677,
+    "limit_seconds": 28800,
+    "projected_total_seconds": 12187.962672395166,
+    "required_seconds_with_margin": 13406.758939634683,
+    "startup_seconds": 901.6030767895281,
+    "steady_train_step_seconds": 0.45524157816544175,
+    "training_seconds": 8683.277861927636
+  },
+  "slurm_job_id": "200224",
+  "slurm_restart_count": "0",
+  "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+  "status": "passed",
+  "validation_nll": 10.887937545776367,
+  "validation_perplexity": 53526.78949476015
+}

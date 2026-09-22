@@ -1,0 +1,22 @@
+{
+  "source_commit": "4c624873b2b298a6f14051bf89ad75216966d79b",
+  "cpu_tests_passed": 324,
+  "cpu_tests_skipped_requires_multiple_devices": 7,
+  "distributed_tests_passed": 7,
+  "gpu_tests_passed": 18,
+  "gpu_slurm_job_id": "200214",
+  "gpu_log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/odd_taylor_attention/development/slurm-200214.out",
+  "artifacts_sha256": {
+    "cpu-tests.xml": "2f9eca5dbac679ea5563d95bb40f4192b0ad86fe821963709ea7d5ca47805aba",
+    "distributed-tests.xml": "d415e73cb4c78a87966e0ff14a05c96a9e399747cedd0221663b0082c25e3e3f",
+    "gpu-tests.xml": "e92db63a3dbb7758f9132ab30b181b20fa563b98e51ff6eb0b5d84cb449c8015"
+  },
+  "note": "All seven multi-device tests skipped in the single-device suite passed separately with two CPU devices. GPU checks include FP64 Q/K/V gradients and production per-device shape.",
+  "preflight_routing_fix": {
+    "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+    "scaffold_tests_passed": 46,
+    "scaffold_junit_sha256": "2b8e150a26f3ee77092d03986ee44431188168cbd00d4c18726b59a281b736d0",
+    "preflight_job_id": "200224",
+    "note": "Single-device and two-device CPU gates are separate; neither permits skipped tests. Attention/training implementation unchanged from the full validation source."
+  }
+}

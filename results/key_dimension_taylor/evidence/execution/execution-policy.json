@@ -1,0 +1,81 @@
+{
+  "assignments": {
+    "200m-dk016-m016-seed0": "h100",
+    "200m-dk032-m002-seed0": "b300",
+    "200m-dk032-m004-seed0": "b300",
+    "200m-dk032-m008-seed0": "b300",
+    "200m-dk032-m016-seed0": "h100",
+    "200m-dk128-m002-seed0": "b300",
+    "200m-dk128-m004-seed0": "b300",
+    "200m-dk128-m008-seed0": "h100",
+    "200m-dk128-m016-seed0": "h100"
+  },
+  "authorization": "User requested concurrent B300 training alongside H100s on 2026-09-21",
+  "created_utc": "2026-09-21T23:31:44.932094+00:00",
+  "cross_coordinate_dependencies": false,
+  "format": "key-dimension-taylor-execution-amendment",
+  "identity": "2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2",
+  "legacy_renderer_jobs": [
+    "200511"
+  ],
+  "orchestrator_commit": "0dc83ae8e04ebb3689a03e4c35887b602848d06e",
+  "orchestrator_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor_parallel",
+  "profiles": {
+    "b300": {
+      "cpus_per_task": 32,
+      "gpu_count": 4,
+      "gpu_type": "b300",
+      "memory": "256G",
+      "node": "akita",
+      "partition": "sweep",
+      "preflight_time": "08:00:00",
+      "production_time": "08:00:00"
+    },
+    "h100": {
+      "cpus_per_task": 32,
+      "gpu_count": 4,
+      "gpu_type": "h100",
+      "memory": "256G",
+      "node": "dogo",
+      "partition": "standard",
+      "preflight_time": "08:00:00",
+      "production_time": "08:00:00"
+    }
+  },
+  "qualification_root": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/execution_validation/execution-policy",
+  "scientific_changes": [],
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "superseded_jobs": {
+    "200m-dk016-m016-seed0": [
+      "200512"
+    ],
+    "200m-dk032-m002-seed0": [
+      "200513"
+    ],
+    "200m-dk032-m004-seed0": [
+      "200514"
+    ],
+    "200m-dk032-m008-seed0": [
+      "200515"
+    ],
+    "200m-dk032-m016-seed0": [
+      "200516"
+    ],
+    "200m-dk128-m002-seed0": [
+      "200517"
+    ],
+    "200m-dk128-m004-seed0": [
+      "200518"
+    ],
+    "200m-dk128-m008-seed0": [
+      "200519"
+    ],
+    "200m-dk128-m016-seed0": [
+      "200520"
+    ]
+  },
+  "training_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+  "training_manifest": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/sweep.json",
+  "training_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor",
+  "version": 1
+}

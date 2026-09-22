@@ -1,0 +1,268 @@
+{
+  "recorded_utc": "2026-09-22T04:44:45.085037+00:00",
+  "orchestrator_commit": "2b27b9e46514ec0194fe2fca1034cd11fb60b328",
+  "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+  "original_scientific_source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "policy_identity": "9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0",
+  "cpu_tests": {
+    "passed": 75,
+    "suites": [
+      "test_a6000_production_core.py",
+      "test_concurrent_schedule.py",
+      "test_concurrent_production.py",
+      "test_concurrent_qualification.py"
+    ]
+  },
+  "independent_review": "No blocking findings; real evidence gates and fixed-runtime imports verified",
+  "all_a6000_full_model_pilots": {
+    "passed": 20,
+    "failed": 0
+  },
+  "runs": [
+    {
+      "run_name": "200m-dk032-m016-seed0",
+      "qk_head_dim": 32,
+      "attention_degree": 16,
+      "jobs": [
+        {
+          "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk032-m016-seed0:0",
+          "dependency_job_id": null,
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200787.out",
+          "profile": "a6000",
+          "released_utc": "2026-09-22T04:43:38.087155+00:00",
+          "run_name": "200m-dk032-m016-seed0",
+          "segment": 0,
+          "slurm_job_id": "200787",
+          "submitted_utc": "2026-09-22T04:43:37.931577+00:00"
+        },
+        {
+          "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk032-m016-seed0:1",
+          "dependency_job_id": "200787",
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200788.out",
+          "profile": "a6000",
+          "released_utc": "2026-09-22T04:43:38.254498+00:00",
+          "run_name": "200m-dk032-m016-seed0",
+          "segment": 1,
+          "slurm_job_id": "200788",
+          "submitted_utc": "2026-09-22T04:43:38.116051+00:00"
+        },
+        {
+          "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk032-m016-seed0:2",
+          "dependency_job_id": "200788",
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200789.out",
+          "profile": "a6000",
+          "released_utc": "2026-09-22T04:43:38.426343+00:00",
+          "run_name": "200m-dk032-m016-seed0",
+          "segment": 2,
+          "slurm_job_id": "200789",
+          "submitted_utc": "2026-09-22T04:43:38.285788+00:00"
+        },
+        {
+          "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk032-m016-seed0:3",
+          "dependency_job_id": "200789",
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200790.out",
+          "profile": "a6000",
+          "released_utc": "2026-09-22T04:43:38.598084+00:00",
+          "run_name": "200m-dk032-m016-seed0",
+          "segment": 3,
+          "slurm_job_id": "200790",
+          "submitted_utc": "2026-09-22T04:43:38.456408+00:00"
+        }
+      ],
+      "runtime": {
+        "allocation_fraction": 0.8,
+        "checkpoint_seconds": 10.090070344507694,
+        "evaluation_batch_seconds": 13.06349481176585,
+        "limit_seconds": 28800,
+        "projected_total_seconds": 73591.36307573691,
+        "segments": [
+          {
+            "end_step": 6000,
+            "projected_seconds": 22987.60718363151,
+            "start_step": 0
+          },
+          {
+            "end_step": 12000,
+            "projected_seconds": 22987.60718363151,
+            "start_step": 6000
+          },
+          {
+            "end_step": 18000,
+            "projected_seconds": 22987.60718363151,
+            "start_step": 12000
+          },
+          {
+            "end_step": 19074,
+            "projected_seconds": 4628.5415248423815,
+            "start_step": 18000
+          }
+        ],
+        "startup_seconds": 512.1626378428191,
+        "steady_train_step_seconds": 3.6342828199267387,
+        "usable_seconds": 23040.0
+      },
+      "qualification": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-2/checks/200m-dk032-m016-seed0.json",
+        "sha256": "1e5f8fba0a9ef7053cc4908022159cc4017e108ae0827f502f7cdb327e750c05"
+      }
+    },
+    {
+      "run_name": "200m-dk128-m008-seed0",
+      "qk_head_dim": 128,
+      "attention_degree": 8,
+      "jobs": [
+        {
+          "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m008-seed0:0",
+          "dependency_job_id": null,
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m008-seed0/slurm-200791.out",
+          "profile": "a6000",
+          "released_utc": "2026-09-22T04:43:38.944701+00:00",
+          "run_name": "200m-dk128-m008-seed0",
+          "segment": 0,
+          "slurm_job_id": "200791",
+          "submitted_utc": "2026-09-22T04:43:38.796869+00:00"
+        },
+        {
+          "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m008-seed0:1",
+          "dependency_job_id": "200791",
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m008-seed0/slurm-200792.out",
+          "profile": "a6000",
+          "released_utc": "2026-09-22T04:43:39.122663+00:00",
+          "run_name": "200m-dk128-m008-seed0",
+          "segment": 1,
+          "slurm_job_id": "200792",
+          "submitted_utc": "2026-09-22T04:43:38.975293+00:00"
+        },
+        {
+          "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m008-seed0:2",
+          "dependency_job_id": "200792",
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m008-seed0/slurm-200793.out",
+          "profile": "a6000",
+          "released_utc": "2026-09-22T04:43:39.299918+00:00",
+          "run_name": "200m-dk128-m008-seed0",
+          "segment": 2,
+          "slurm_job_id": "200793",
+          "submitted_utc": "2026-09-22T04:43:39.154776+00:00"
+        }
+      ],
+      "runtime": {
+        "allocation_fraction": 0.8,
+        "checkpoint_seconds": 27.044323784299195,
+        "evaluation_batch_seconds": 13.19698666781187,
+        "limit_seconds": 28800,
+        "projected_total_seconds": 67594.51903350558,
+        "segments": [
+          {
+            "end_step": 6500,
+            "projected_seconds": 22939.62280152086,
+            "start_step": 0
+          },
+          {
+            "end_step": 13000,
+            "projected_seconds": 23032.001708195545,
+            "start_step": 6500
+          },
+          {
+            "end_step": 19074,
+            "projected_seconds": 21622.894523789175,
+            "start_step": 13000
+          }
+        ],
+        "startup_seconds": 533.311418376863,
+        "steady_train_step_seconds": 3.3077633436769247,
+        "usable_seconds": 23040.0
+      },
+      "qualification": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-1/checks/200m-dk128-m008-seed0.json",
+        "sha256": "95e980d1a4e42c015bdd405cd1fc7116d24294b1f3a47b906887ad12aa17c6ee"
+      }
+    },
+    {
+      "run_name": "200m-dk128-m016-seed0",
+      "qk_head_dim": 128,
+      "attention_degree": 16,
+      "jobs": [
+        {
+          "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m016-seed0:0",
+          "dependency_job_id": null,
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200794.out",
+          "profile": "a6000",
+          "released_utc": "2026-09-22T04:43:39.641514+00:00",
+          "run_name": "200m-dk128-m016-seed0",
+          "segment": 0,
+          "slurm_job_id": "200794",
+          "submitted_utc": "2026-09-22T04:43:39.501356+00:00"
+        },
+        {
+          "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m016-seed0:1",
+          "dependency_job_id": "200794",
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200795.out",
+          "profile": "a6000",
+          "released_utc": "2026-09-22T04:43:39.812153+00:00",
+          "run_name": "200m-dk128-m016-seed0",
+          "segment": 1,
+          "slurm_job_id": "200795",
+          "submitted_utc": "2026-09-22T04:43:39.671082+00:00"
+        },
+        {
+          "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m016-seed0:2",
+          "dependency_job_id": "200795",
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200796.out",
+          "profile": "a6000",
+          "released_utc": "2026-09-22T04:43:39.992264+00:00",
+          "run_name": "200m-dk128-m016-seed0",
+          "segment": 2,
+          "slurm_job_id": "200796",
+          "submitted_utc": "2026-09-22T04:43:39.845619+00:00"
+        },
+        {
+          "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m016-seed0:3",
+          "dependency_job_id": "200796",
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200797.out",
+          "profile": "a6000",
+          "released_utc": "2026-09-22T04:43:40.171398+00:00",
+          "run_name": "200m-dk128-m016-seed0",
+          "segment": 3,
+          "slurm_job_id": "200797",
+          "submitted_utc": "2026-09-22T04:43:40.022158+00:00"
+        }
+      ],
+      "runtime": {
+        "allocation_fraction": 0.8,
+        "checkpoint_seconds": 26.462920513004065,
+        "evaluation_batch_seconds": 21.047619407065213,
+        "limit_seconds": 28800,
+        "projected_total_seconds": 79113.3837409243,
+        "segments": [
+          {
+            "end_step": 5500,
+            "projected_seconds": 22564.460390535183,
+            "start_step": 0
+          },
+          {
+            "end_step": 11000,
+            "projected_seconds": 22711.79372638464,
+            "start_step": 5500
+          },
+          {
+            "end_step": 16500,
+            "projected_seconds": 22564.460390535183,
+            "start_step": 11000
+          },
+          {
+            "end_step": 19074,
+            "projected_seconds": 11272.669233469293,
+            "start_step": 16500
+          }
+        ],
+        "startup_seconds": 837.1842573527247,
+        "steady_train_step_seconds": 3.763548605144024,
+        "usable_seconds": 23040.0
+      },
+      "qualification": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large/checks/200m-dk128-m016-seed0.json",
+        "sha256": "6ec331146f267a5b02edcc9f29d964546013dac4b97d09a71f991c6eec23e867"
+      }
+    }
+  ]
+}

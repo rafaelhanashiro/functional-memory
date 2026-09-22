@@ -1,0 +1,5 @@
+{
+  "status": "cancelled",
+  "recorded_utc": "2026-09-22T03:35:23.778591+00:00",
+  "reason": "Stopped after more than 80 seconds without progress at replicating_state. Separate computed-buffer probe200774 already reproduced stale cross-device copies; initial source-state fingerprint matched H100 exactly. No model forward was reached."
+}

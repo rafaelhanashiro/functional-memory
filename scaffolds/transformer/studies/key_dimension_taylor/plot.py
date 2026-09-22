@@ -9,6 +9,7 @@ from pathlib import Path
 
 from scaffolds.transformer.studies.polynomial_attention.plot import committed_records
 from scaffolds.transformer.studies.polynomial_attention.plot import default_manifest_path, update_results_readme
+from scaffolds.transformer.studies.polynomial_attention.plot import artifact_path, checked_artifact, check_dependency_lock, retained_root
 
 EXPERIMENT = "key_dimension_taylor"
 WIDTHS = (8, 16, 32, 64, 128)
@@ -126,18 +127,55 @@ def grid_rows(rows: list[dict], *, widths=WIDTHS, degrees=DEGREES) -> list[list[
     return [[cells[width, degree] for degree in (*degrees, None)] for width in widths]
 
 
-def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
+def summarize_retained_run(run: dict, root: Path) -> tuple[dict, list[dict]]:
+    """Read a completed cell using portable, checksummed retained artifacts."""
+    import yaml
+
+    config = yaml.safe_load(checked_artifact(root, run["resolved_config"]).read_text())
+    metrics = checked_artifact(root, run["metrics"])
+    completion = checked_artifact(root, run["completion"])
+    checked_artifact(root, run["metadata"])
+    if (config["train"]["seed"] != run["seed"]
+            or config["train"]["source_commit"] != run["source_commit"]
+            or any(config["model"].get(key) != run[key]
+                   for key in ("qk_head_dim", "value_head_dim", "attention_degree"))):
+        raise ValueError(f"Retained configuration identity does not match: {run['name']}")
+    tokens = config["optim"]["total_steps"] * config["data"]["batch_size"] * (config["data"]["sequence_length"] - 1)
+    adapted = dict(run, config=config, workdir=str(metrics.parent), metrics_path=str(metrics),
+                   completion_path=str(completion), training_tokens=tokens,
+                   provenance_sha256={str(metrics): run["metrics"]["sha256"], str(completion): run["completion"]["sha256"]})
+    row, records = summarize_run(adapted)
+    terminal = run["terminal"]
+    final = next((record for record in records if record["step"] == terminal["step"]), None)
+    if row["status"] != "complete" or final is None or any(final[key] != value for key, value in terminal.items()):
+        raise ValueError(f"Retained terminal metrics do not match: {run['name']}")
+    selected = run["selected_checkpoint"]
+    artifact_path(root, selected["path"])
+    best = next((record for record in records if record["step"] == selected["step"]), None)
+    if (best is None or best["validation_nll"] != min(record["validation_nll"] for record in records)
+            or any(best[key] != selected[key] for key in ("validation_nll", "validation_perplexity"))):
+        raise ValueError(f"Retained checkpoint is not validation-best: {run['name']}")
+    row.update(best_step=selected["step"], best_ppl=selected["validation_perplexity"])
+    return row, records
+
+
+def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: Path | None = None) -> list[dict]:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.colors import Normalize, TwoSlopeNorm
     import numpy as np
 
-    output_dir = output_dir or Path(manifest["project_root"]) / "results" / EXPERIMENT
+    retained = manifest.get("format") == "functional-memory-retained-experiment"
+    root = retained_root(manifest, manifest_path) if retained else Path(manifest["project_root"])
+    if retained:
+        check_dependency_lock(manifest, root)
+    output_dir = output_dir or root / "results" / EXPERIMENT
     output_dir.mkdir(parents=True, exist_ok=True)
     figures_dir = output_dir / "figures"
     figures_dir.mkdir(exist_ok=True)
-    summaries = [summarize_run(run) for run in [*manifest["runs"], *manifest["controls"]]]
+    summaries = [(summarize_retained_run(run, root) if retained else summarize_run(run))
+                 for run in [*manifest["runs"], *manifest["controls"]]]
     widths = tuple(sorted(manifest.get("key_dimensions", {run["qk_head_dim"] for run in manifest["runs"]})))
     degrees = tuple(sorted(manifest.get("degrees", {run["attention_degree"] for run in manifest["runs"]})))
     n_degrees = len(degrees)
@@ -174,7 +212,6 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
                 row = line[column]
                 value = values[row_index, column]
                 annotation = f"{value:.4f}" if np.isfinite(value) else row["status"].upper()
-                annotation += " *" if row["reused"] else ""
                 color = "white" if np.isfinite(value) and norm(value) > 0.58 else "black"
                 axis.text(x, row_index, annotation, ha="center", va="center", fontsize=9, color=color)
         axis.set_xticks(np.arange(-0.5, len(columns), 1), minor=True)
@@ -185,7 +222,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
     axes[0].set_title("Taylor degree")
     axes[1].set_title("Reference")
     figure.colorbar(image, cax=figure.add_subplot(layout[0, 2]), label="Terminal held-out perplexity (linear scale)")
-    figure.suptitle("Joint dK × Taylor degree · 19,074 updates · seed 0\n* Reused historical result")
+    figure.suptitle("Joint dK × Taylor degree · 19,074 updates · seed 0")
     save(figure, "terminal_ppl_heatmap")
 
     deltas = np.array([[row["delta_ppl_vs_softmax"] if row["delta_ppl_vs_softmax"] != "" else np.nan for row in line[:n_degrees]] for line in grid])
@@ -199,13 +236,12 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
         for j, row in enumerate(line[:n_degrees]):
             value = deltas[i, j]
             annotation = f"{value:+.4f}" if np.isfinite(value) else row["status"].upper() if row["status"] != "complete" else "NO REF"
-            annotation += " *" if row["reused"] else ""
             axis.text(j, i, annotation, ha="center", va="center", fontsize=9,
                       color="white" if np.isfinite(value) and abs(value) > 0.65 * extent else "black")
     axis.set_xticks(range(n_degrees), [f"m={degree}" for degree in degrees])
     axis.set_yticks(range(len(widths)), [str(width) for width in widths])
     axis.set_ylabel("Query/key dimension per head (dK)")
-    axis.set_title("Terminal perplexity − softmax at the same dK\nNegative is better; * reused historical result")
+    axis.set_title("Terminal perplexity − softmax at the same dK\nNegative is better")
     figure.colorbar(image, ax=axis, label="Δ perplexity (linear scale)")
     save(figure, "delta_ppl_heatmap")
 
@@ -234,10 +270,10 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
     lines = ["# Joint key dimension × Taylor degree", "", f"Source: `{manifest['source_commit']}`. Sweep identity: `{manifest['identity']}`.", "",
              f"Status: {sum(row['status'] == 'complete' for row in rows)} complete, {sum(row['status'] == 'pending' for row in rows)} pending, {sum(row['status'] == 'incomplete' for row in rows)} incomplete, and {sum(row['status'] == 'failed' for row in rows)} numerical failures. Of the incomplete cells, {sum(row['execution_status'] == 'interrupted' for row in rows)} have a recorded infrastructure or validation interruption.", "",
              "The primary endpoint is held-out NLL/perplexity at 19,074 updates (10,000,269,312 prediction tokens), independently of the retained validation-best checkpoint. All runs use seed 0; this comparison does not estimate seed variation.", "",
-             f"The grid uses ascending dK rows ({', '.join(map(str, widths))}), Taylor degrees {', '.join(map(str, degrees))}, and a separate softmax column with the same linear color scale. Asterisks mark reused results. Failed, pending, and incomplete cells have no imputed perplexity.", "",
+             f"The grid uses ascending dK rows ({', '.join(map(str, widths))}), Taylor degrees {', '.join(map(str, degrees))}, and a separate softmax column with the same linear color scale. Heatmaps omit reuse markers; asterisks in the table and learning curves mark reused results. Failed, pending, and incomplete cells have no imputed perplexity.", "",
              "FAILED means a recorded numerical failure. Infrastructure interruptions and failed restore/audit validation remain INCOMPLETE, with `execution_status=interrupted`, `failure_kind`, and error details in the CSV. They do not establish a scientific numerical failure. A validated completion supersedes earlier resolved interruptions.", "",
              "Reused dK=64 Taylor results come from `polynomial_attention`. Softmax references come from `key_dimension`; its dK=64 softmax endpoint is **14.689767074685026**. The separate `polynomial_attention` softmax result, **14.69417664861716**, is historical context and is not used in this grid or its deltas. Each delta subtracts the softmax endpoint at the same width.", "",
-             "Original source commits, resolved configurations, and artifact checksums remain in `sweep.json`. Historical hardware histories remain attached to their source provenance; throughput across these runs is not a matched hardware benchmark.", "",
+             f"Original source commits, resolved configurations, and artifact checksums remain in `{'provenance/manifest.json' if retained else 'sweep.json'}`. Historical hardware histories remain attached to their source provenance; throughput across these runs is not a matched hardware benchmark.", "",
              "| dK | Kernel | Origin | Status | Terminal NLL | Terminal PPL | Δ PPL vs softmax |", "|---:|---|---|---|---:|---:|---:|"]
     for row in rows:
         nll, ppl = (f"{row['terminal_nll']:.6f}", f"{row['terminal_ppl']:.4f}") if row["status"] == "complete" else ("—", "—")
@@ -263,7 +299,7 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, default=default_manifest_path(Path("results/key_dimension_taylor")))
     parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
-    aggregate(json.loads(args.manifest.read_text()), args.output_dir)
+    aggregate(json.loads(args.manifest.read_text()), args.output_dir, manifest_path=args.manifest)
 
 
 if __name__ == "__main__":

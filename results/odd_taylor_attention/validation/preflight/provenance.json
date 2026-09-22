@@ -1,0 +1,32 @@
+{
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+  "eligible_runs": [
+    "200m-m001-seed0",
+    "200m-m003-seed0"
+  ],
+  "execution_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/odd_taylor_attention",
+  "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/odd_taylor_attention/preflight/slurm-200224.out",
+  "scheduler": {
+    "cpus_per_task": 32,
+    "gpu_count": 4,
+    "gpu_type": "h100",
+    "memory": "256G",
+    "node": "dogo",
+    "partition": "standard",
+    "preflight_time": "02:00:00",
+    "production_time": "08:00:00"
+  },
+  "slurm_job_id": "200224",
+  "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c"
+}

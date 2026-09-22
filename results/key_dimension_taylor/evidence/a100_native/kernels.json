@@ -1,0 +1,116 @@
+{
+  "attempt_path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a100/attempts/kernels-200754-0-268b9a7f",
+  "blocked_runs": {},
+  "completed_utc": "2026-09-22T04:33:42.064393+00:00",
+  "eligible_runs": [
+    "200m-dk008-m002-seed0",
+    "200m-dk008-m004-seed0",
+    "200m-dk008-m008-seed0",
+    "200m-dk008-m016-seed0",
+    "200m-dk016-m002-seed0",
+    "200m-dk016-m004-seed0",
+    "200m-dk016-m008-seed0",
+    "200m-dk016-m016-seed0",
+    "200m-dk032-m002-seed0",
+    "200m-dk032-m004-seed0",
+    "200m-dk032-m008-seed0",
+    "200m-dk032-m016-seed0",
+    "200m-dk064-m002-seed0",
+    "200m-dk064-m004-seed0",
+    "200m-dk064-m008-seed0",
+    "200m-dk064-m016-seed0",
+    "200m-dk128-m002-seed0",
+    "200m-dk128-m004-seed0",
+    "200m-dk128-m008-seed0",
+    "200m-dk128-m016-seed0"
+  ],
+  "hardware": {
+    "cuda_visible_devices": "0,1,2,3",
+    "device_kinds": [
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe"
+    ],
+    "gpu_count": 4,
+    "jax_version": "0.10.0",
+    "memory_stats": [
+      {
+        "bytes_in_use": 0,
+        "bytes_limit": 63823478784,
+        "bytes_reserved": 0,
+        "largest_alloc_size": 0,
+        "largest_free_block_bytes": 0,
+        "num_allocs": 0,
+        "peak_bytes_in_use": 0,
+        "peak_bytes_reserved": 0,
+        "peak_pool_bytes": 0,
+        "pool_bytes": 0
+      },
+      {
+        "bytes_in_use": 0,
+        "bytes_limit": 63823478784,
+        "bytes_reserved": 0,
+        "largest_alloc_size": 0,
+        "largest_free_block_bytes": 0,
+        "num_allocs": 0,
+        "peak_bytes_in_use": 0,
+        "peak_bytes_reserved": 0,
+        "peak_pool_bytes": 0,
+        "pool_bytes": 0
+      },
+      {
+        "bytes_in_use": 0,
+        "bytes_limit": 63823478784,
+        "bytes_reserved": 0,
+        "largest_alloc_size": 0,
+        "largest_free_block_bytes": 0,
+        "num_allocs": 0,
+        "peak_bytes_in_use": 0,
+        "peak_bytes_reserved": 0,
+        "peak_pool_bytes": 0,
+        "pool_bytes": 0
+      },
+      {
+        "bytes_in_use": 0,
+        "bytes_limit": 63823478784,
+        "bytes_reserved": 0,
+        "largest_alloc_size": 0,
+        "largest_free_block_bytes": 0,
+        "num_allocs": 0,
+        "peak_bytes_in_use": 0,
+        "peak_bytes_reserved": 0,
+        "peak_pool_bytes": 0,
+        "pool_bytes": 0
+      }
+    ],
+    "node": "samoyed",
+    "partition": "sweep",
+    "slurm_job_id": "200754"
+  },
+  "identity": "2054ab1e453208778fb12ad95c34070c4040bc5aa93ae98682cc898187c8e638",
+  "junit_path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/a100/attempts/kernels-200754-0-268b9a7f/kernels.xml",
+  "orchestrator_commit": "d303e3a90c77673ffb08c61a1e77b936bb3d5dc3",
+  "profile": "a100",
+  "reused": false,
+  "scheduler": {
+    "allowed_nodes": [
+      "samoyed",
+      "collie"
+    ],
+    "cpus_per_task": 32,
+    "gpu_count": 4,
+    "gpu_type": "a100",
+    "kernel_gpu_count": 4,
+    "memory": "256G",
+    "partition": "sweep",
+    "production_time": "08:00:00",
+    "validation_time": "04:00:00"
+  },
+  "slurm_job_id": "200754",
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "status": "passed",
+  "tests_completed": 105,
+  "tests_passed": 105,
+  "validation_only": true
+}

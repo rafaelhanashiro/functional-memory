@@ -1,0 +1,145 @@
+{
+  "validated_utc": "2026-09-22T05:30:19.151312+00:00",
+  "orchestrator_commit": "78b2f7f400856ae14a7cd85b23a43faea0e2f1e6",
+  "policy_identity": "efbd675ab1133abfecd0b3e27afa92dd8a74802f6ef8c4bfdd1047339ed85c14",
+  "tests": {
+    "status": "passed",
+    "count": 114,
+    "suites": [
+      "test_fast_queue",
+      "test_fast_handoff",
+      "test_fast_production_core",
+      "test_concurrent_schedule",
+      "test_concurrent_production",
+      "test_concurrent_qualification",
+      "test_a6000_production_core"
+    ]
+  },
+  "independent_review": "No remaining blockers after verifying held-job recovery and requeue eligibility",
+  "migration": {
+    "cancel_requested_jobs": [
+      "200797",
+      "200796",
+      "200795",
+      "200794",
+      "200793",
+      "200792",
+      "200791",
+      "200790",
+      "200789",
+      "200788",
+      "200787"
+    ],
+    "checkpoints": {
+      "200m-dk032-m016-seed0": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/key_dimension_taylor/checkpoints/200m-dk032-m016-seed0/500",
+        "step": 500
+      },
+      "200m-dk128-m008-seed0": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/key_dimension_taylor/checkpoints/200m-dk128-m008-seed0/500",
+        "step": 500
+      },
+      "200m-dk128-m016-seed0": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/key_dimension_taylor/checkpoints/200m-dk128-m016-seed0/500",
+        "step": 500
+      }
+    },
+    "completed_utc": "2026-09-22T05:28:14.750221+00:00",
+    "final_states": {
+      "200787": "CANCELLED",
+      "200788": "CANCELLED",
+      "200789": "CANCELLED",
+      "200790": "CANCELLED",
+      "200791": "CANCELLED",
+      "200792": "CANCELLED",
+      "200793": "CANCELLED",
+      "200794": "CANCELLED",
+      "200795": "CANCELLED",
+      "200796": "CANCELLED",
+      "200797": "CANCELLED"
+    },
+    "handoffs": {
+      "200m-dk032-m016-seed0": {
+        "checkpoint_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/key_dimension_taylor/checkpoints/200m-dk032-m016-seed0/500",
+        "checkpoint_step": 500,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/200m-dk032-m016-seed0/handoff.json",
+        "sha256": "8514e2662891c3c7c5d083b5dd264a3822238cad109b8566fcef8163c2339ab4"
+      },
+      "200m-dk128-m008-seed0": {
+        "checkpoint_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/key_dimension_taylor/checkpoints/200m-dk128-m008-seed0/500",
+        "checkpoint_step": 500,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/200m-dk128-m008-seed0/handoff.json",
+        "sha256": "25e1b976cfea34dada749ca2f5084be6047e62e38c379728bb54d75969c7b08f"
+      },
+      "200m-dk128-m016-seed0": {
+        "checkpoint_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/key_dimension_taylor/checkpoints/200m-dk128-m016-seed0/500",
+        "checkpoint_step": 500,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/200m-dk128-m016-seed0/handoff.json",
+        "sha256": "95b7125f39e12369a66b1dbfa61cab4b1b9b3b7840102c0c5d333ccbe9f37e53"
+      }
+    },
+    "jobs": {
+      "200787": "CANCELLED",
+      "200788": "CANCELLED",
+      "200789": "CANCELLED",
+      "200790": "CANCELLED",
+      "200791": "CANCELLED",
+      "200792": "CANCELLED",
+      "200793": "CANCELLED",
+      "200794": "CANCELLED",
+      "200795": "CANCELLED",
+      "200796": "CANCELLED",
+      "200797": "CANCELLED"
+    },
+    "minimum_checkpoint_step": 500,
+    "missing_checkpoints": [],
+    "old_policy_identity": "9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0",
+    "status": "complete",
+    "superseded_jobs": {
+      "200m-dk032-m016-seed0": [
+        "200787",
+        "200788",
+        "200789",
+        "200790"
+      ],
+      "200m-dk128-m008-seed0": [
+        "200791",
+        "200792",
+        "200793"
+      ],
+      "200m-dk128-m016-seed0": [
+        "200794",
+        "200795",
+        "200796",
+        "200797"
+      ]
+    },
+    "updated_utc": "2026-09-22T05:28:14.750229+00:00"
+  },
+  "scheduler_snapshot": {
+    "200809": "JobId=200809 JobName=dkt-h100_or_better-200m-dk032-m016-seed0-s0 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20068 Nice=0 Account=rafah QOS=normal JobState=PENDING Reason=Priority Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:00 TimeLimit=08:00:00 TimeMin=N/A SubmitTime=2026-09-22T01:28:15 EligibleTime=2026-09-22T01:28:16 AccrueTime=2026-09-22T01:28:16 StartTime=2026-09-22T22:05:00 EndTime=2026-09-23T06:05:00 Deadline=N/A SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-09-22T01:30:16 Scheduler=Main Partition=sweep AllocNode:Sid=kennel:84762 ReqNodeList=(null) ExcNodeList=akita,collie,doodle,samoyed,terrier NodeList= SchedNodeList=dogo NumNodes=1-1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=(null) Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor_fast_queue/experiments/key_dimension_taylor/concurrent/launch.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor_fast_queue Comment=dkt:efbd675ab1133abfecd0b3e27afa92dd8a74802f6ef8c4bfdd1047339ed85c14:200m-dk032-m016-seed0:0  StdErr=/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200809.out StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200809.out Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+    "200808": "JobId=200808 JobName=dkt-h100_or_better-200m-dk128-m008-seed0-s0 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20068 Nice=0 Account=rafah QOS=normal JobState=PENDING Reason=Priority Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:00 TimeLimit=08:00:00 TimeMin=N/A SubmitTime=2026-09-22T01:28:15 EligibleTime=2026-09-22T01:28:16 AccrueTime=2026-09-22T01:28:16 StartTime=2026-09-22T14:05:00 EndTime=2026-09-22T22:05:00 Deadline=N/A SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-09-22T01:30:16 Scheduler=Main Partition=sweep AllocNode:Sid=kennel:84762 ReqNodeList=(null) ExcNodeList=akita,collie,doodle,samoyed,terrier NodeList= SchedNodeList=dogo NumNodes=1-1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=(null) Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor_fast_queue/experiments/key_dimension_taylor/concurrent/launch.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor_fast_queue Comment=dkt:efbd675ab1133abfecd0b3e27afa92dd8a74802f6ef8c4bfdd1047339ed85c14:200m-dk128-m008-seed0:0  StdErr=/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m008-seed0/slurm-200808.out StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m008-seed0/slurm-200808.out Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+    "200807": "JobId=200807 JobName=dkt-h100_or_better-200m-dk128-m016-seed0-s0 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20068 Nice=0 Account=rafah QOS=normal JobState=PENDING Reason=Resources Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:00 TimeLimit=08:00:00 TimeMin=N/A SubmitTime=2026-09-22T01:28:14 EligibleTime=2026-09-22T01:28:16 AccrueTime=2026-09-22T01:28:16 StartTime=2026-09-22T06:05:13 EndTime=2026-09-22T14:05:13 Deadline=N/A SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-09-22T01:30:16 Scheduler=Main Partition=sweep AllocNode:Sid=kennel:84762 ReqNodeList=(null) ExcNodeList=akita,collie,doodle,samoyed,terrier NodeList= SchedNodeList=dogo NumNodes=1-1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=(null) Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor_fast_queue/experiments/key_dimension_taylor/concurrent/launch.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor_fast_queue Comment=dkt:efbd675ab1133abfecd0b3e27afa92dd8a74802f6ef8c4bfdd1047339ed85c14:200m-dk128-m016-seed0:0  StdErr=/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200807.out StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200807.out Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32"
+  },
+  "eligibility": {
+    "200m-dk032-m016-seed0": {
+      "b300": "pending",
+      "updated_utc": "2026-09-22T05:28:15.603475+00:00"
+    },
+    "200m-dk128-m008-seed0": {
+      "b300": "pending",
+      "updated_utc": "2026-09-22T05:28:15.255642+00:00"
+    },
+    "200m-dk128-m016-seed0": {
+      "b300": "pending",
+      "updated_utc": "2026-09-22T05:28:14.917822+00:00"
+    }
+  },
+  "watcher": {
+    "pending_jobs_keep_h100_eligibility": true,
+    "pid": 88650,
+    "policy_identity": "efbd675ab1133abfecd0b3e27afa92dd8a74802f6ef8c4bfdd1047339ed85c14",
+    "status": "watching",
+    "updated_utc": "2026-09-22T05:30:18.798241+00:00"
+  }
+}

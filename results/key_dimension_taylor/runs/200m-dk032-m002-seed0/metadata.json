@@ -1,0 +1,383 @@
+{
+  "actual_node": "akita",
+  "actual_partition": "sweep",
+  "attention_backend": "fused",
+  "attention_degree": 2,
+  "attention_diagnostics": {
+    "attention_backend": "fused",
+    "attention_degree": 2,
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "taylor",
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "format": "polynomial-attention-diagnostics",
+    "issues": [],
+    "kernel_values": "unshifted_taylor",
+    "key_block_size": 64,
+    "layers": [
+      {
+        "invalid_kernel_count": 0,
+        "invalid_normalizer_count": 0,
+        "invalid_score_count": 0,
+        "kernel_max": 336.7872314453125,
+        "kernel_min": 0.5,
+        "layer": 0,
+        "normalizer_max": 10210.408203125,
+        "normalizer_min": 1.8831007480621338,
+        "score_max": 24.934040069580078,
+        "score_min": -21.300058364868164
+      },
+      {
+        "invalid_kernel_count": 0,
+        "invalid_normalizer_count": 0,
+        "invalid_score_count": 0,
+        "kernel_max": 5372.47216796875,
+        "kernel_min": 0.5,
+        "layer": 1,
+        "normalizer_max": 98793.546875,
+        "normalizer_min": 0.800275981426239,
+        "score_max": 102.65299987792969,
+        "score_min": -33.84700393676758
+      },
+      {
+        "invalid_kernel_count": 0,
+        "invalid_normalizer_count": 0,
+        "invalid_score_count": 0,
+        "kernel_max": 47791.359375,
+        "kernel_min": 0.5,
+        "layer": 2,
+        "normalizer_max": 678549.125,
+        "normalizer_min": 0.5549500584602356,
+        "score_max": 308.1629333496094,
+        "score_min": -111.667236328125
+      },
+      {
+        "invalid_kernel_count": 0,
+        "invalid_normalizer_count": 0,
+        "invalid_score_count": 0,
+        "kernel_max": 34813.3984375,
+        "kernel_min": 0.5,
+        "layer": 3,
+        "normalizer_max": 264320.0,
+        "normalizer_min": 10.076336860656738,
+        "score_max": 262.86700439453125,
+        "score_min": -76.66058349609375
+      },
+      {
+        "invalid_kernel_count": 0,
+        "invalid_normalizer_count": 0,
+        "invalid_score_count": 0,
+        "kernel_max": 22224.767578125,
+        "kernel_min": 0.5,
+        "layer": 4,
+        "normalizer_max": 267451.5625,
+        "normalizer_min": 4.148454666137695,
+        "score_max": 209.82821655273438,
+        "score_min": -69.54946899414062
+      },
+      {
+        "invalid_kernel_count": 0,
+        "invalid_normalizer_count": 0,
+        "invalid_score_count": 0,
+        "kernel_max": 23785.873046875,
+        "kernel_min": 0.5,
+        "layer": 5,
+        "normalizer_max": 168867.5,
+        "normalizer_min": 60.645755767822266,
+        "score_max": 217.10719299316406,
+        "score_min": -187.80712890625
+      },
+      {
+        "invalid_kernel_count": 0,
+        "invalid_normalizer_count": 0,
+        "invalid_score_count": 0,
+        "kernel_max": 13003.1806640625,
+        "kernel_min": 0.5,
+        "layer": 6,
+        "normalizer_max": 90798.8359375,
+        "normalizer_min": 75.77384948730469,
+        "score_max": 160.26177978515625,
+        "score_min": -43.19965744018555
+      },
+      {
+        "invalid_kernel_count": 0,
+        "invalid_normalizer_count": 0,
+        "invalid_score_count": 0,
+        "kernel_max": 16188.716796875,
+        "kernel_min": 0.5,
+        "layer": 7,
+        "normalizer_max": 111196.2109375,
+        "normalizer_min": 50.41478729248047,
+        "score_max": 178.9345245361328,
+        "score_min": -175.08734130859375
+      },
+      {
+        "invalid_kernel_count": 0,
+        "invalid_normalizer_count": 0,
+        "invalid_score_count": 0,
+        "kernel_max": 14142.3466796875,
+        "kernel_min": 0.5,
+        "layer": 8,
+        "normalizer_max": 96065.109375,
+        "normalizer_min": 399.08856201171875,
+        "score_max": 167.1775665283203,
+        "score_min": -158.23414611816406
+      },
+      {
+        "invalid_kernel_count": 0,
+        "invalid_normalizer_count": 0,
+        "invalid_score_count": 0,
+        "kernel_max": 15086.7607421875,
+        "kernel_min": 0.5,
+        "layer": 9,
+        "normalizer_max": 75085.421875,
+        "normalizer_min": 235.56455993652344,
+        "score_max": 172.702392578125,
+        "score_min": -127.6255111694336
+      }
+    ],
+    "m0_qk_parameter_note": null,
+    "query_block_size": 64,
+    "sample": {
+      "diagnostic_pass_contributes_to_validation_loss": false,
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "num_sequences": 1,
+      "prediction_tokens": 2048,
+      "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+      "selection": "first_heldout_sequence",
+      "sequence_index": 0,
+      "source": "packed"
+    },
+    "step": 19074,
+    "valid": true,
+    "version": 1
+  },
+  "attention_implementation": "pallas_triton",
+  "attention_kernel": "taylor",
+  "checkpoint_retention": {
+    "best_checkpoint_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/key_dimension_taylor/checkpoints/200m-dk032-m002-seed0/19074",
+    "best_checkpoint_step": 19074,
+    "completion_sha256": "575519164ca70d973b0431b1a9719690ea6940073c1953c7d2450cf82fff84a0",
+    "format": "key-dimension-taylor-checkpoint-retention",
+    "launch_history": {
+      "active_execution": {
+        "actual_node": "akita",
+        "actual_node_list": "akita",
+        "actual_partition": "sweep",
+        "attempt": "200734-0-6de7cc5d",
+        "attention_degree": 2,
+        "hardware": {
+          "device_kinds": [
+            "NVIDIA B300 SXM6 AC",
+            "NVIDIA B300 SXM6 AC",
+            "NVIDIA B300 SXM6 AC",
+            "NVIDIA B300 SXM6 AC"
+          ],
+          "devices": [
+            "cuda:0",
+            "cuda:1",
+            "cuda:2",
+            "cuda:3"
+          ],
+          "gpu_count": 4,
+          "jax_version": "0.10.0",
+          "node": "akita",
+          "partition": "sweep",
+          "slurm_job_id": "200734"
+        },
+        "identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+        "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
+        "orchestrator_commit": "0dc83ae8e04ebb3689a03e4c35887b602848d06e",
+        "policy_identity": "2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2",
+        "profile": "b300",
+        "qk_head_dim": 32,
+        "run_name": "200m-dk032-m002-seed0",
+        "segment_index": 0,
+        "slurm_job_id": "200734",
+        "slurm_restart_count": 0,
+        "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+        "started_utc": "2026-09-21T23:59:09.242794+00:00",
+        "sweep_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+        "training_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor"
+      },
+      "concurrent_segments": [
+        {
+          "comment": "dkt:2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2:200m-dk032-m002-seed0:0",
+          "dependency_job_id": null,
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
+          "profile": "b300",
+          "run_name": "200m-dk032-m002-seed0",
+          "segment": 0,
+          "slurm_job_id": "200734",
+          "submitted_utc": "2026-09-21T23:58:55.323398+00:00"
+        }
+      ],
+      "execution_amendments": {
+        "2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2": {
+          "orchestrator_commit": "0dc83ae8e04ebb3689a03e4c35887b602848d06e",
+          "policy_path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/execution-policy.json",
+          "superseded_jobs": [
+            "200513"
+          ]
+        }
+      },
+      "execution_history": [
+        {
+          "actual_node": "akita",
+          "actual_node_list": "akita",
+          "actual_partition": "sweep",
+          "attempt": "200734-0-6de7cc5d",
+          "attention_degree": 2,
+          "hardware": {
+            "device_kinds": [
+              "NVIDIA B300 SXM6 AC",
+              "NVIDIA B300 SXM6 AC",
+              "NVIDIA B300 SXM6 AC",
+              "NVIDIA B300 SXM6 AC"
+            ],
+            "devices": [
+              "cuda:0",
+              "cuda:1",
+              "cuda:2",
+              "cuda:3"
+            ],
+            "gpu_count": 4,
+            "jax_version": "0.10.0",
+            "node": "akita",
+            "partition": "sweep",
+            "slurm_job_id": "200734"
+          },
+          "identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
+          "orchestrator_commit": "0dc83ae8e04ebb3689a03e4c35887b602848d06e",
+          "policy_identity": "2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2",
+          "profile": "b300",
+          "qk_head_dim": 32,
+          "run_name": "200m-dk032-m002-seed0",
+          "segment_index": 0,
+          "slurm_job_id": "200734",
+          "slurm_restart_count": 0,
+          "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+          "started_utc": "2026-09-21T23:59:09.242794+00:00",
+          "sweep_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+          "training_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor"
+        }
+      ],
+      "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
+      "segments": [
+        {
+          "dependency_job_id": "200512",
+          "dependency_type": "afterany",
+          "end_step": 19074,
+          "index": 0,
+          "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200513.out",
+          "projected_seconds": 10778.808705353644,
+          "slurm_job_id": "200513",
+          "start_step": 0
+        }
+      ],
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "sweep_identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3"
+    },
+    "log_history": [
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
+        "retained": true,
+        "slurm_job_id": "200734"
+      }
+    ],
+    "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
+    "seed": 0,
+    "segment_job_ids": [
+      "200734"
+    ],
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "slurm_job_id": "200734",
+    "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+    "terminal_metrics_preserved": true,
+    "terminal_nll": 2.8432648267064775,
+    "terminal_perplexity": 17.171736864198078,
+    "terminal_step": 19074,
+    "validation_nll": 2.8432648267064775,
+    "validation_perplexity": 17.171736864198078,
+    "version": 1
+  },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "diagnostic_backend": "blocked",
+  "diagnostic_query_block_size": 128,
+  "diagnostic_sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "error": null,
+  "execution_hardware": {
+    "device_kinds": [
+      "NVIDIA B300 SXM6 AC",
+      "NVIDIA B300 SXM6 AC",
+      "NVIDIA B300 SXM6 AC",
+      "NVIDIA B300 SXM6 AC"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "gpu_count": 4,
+    "jax_version": "0.10.0",
+    "node": "akita",
+    "partition": "sweep",
+    "slurm_job_id": "200734"
+  },
+  "execution_policy_identity": "2c3db68d5c733659fd6b88c207275d68dc24a06bbd45e9a75ae556e35f6465e2",
+  "execution_profile": "b300",
+  "key_block_size": 64,
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
+  "m0_qk_parameter_note": null,
+  "next_train_sequence": 4882944,
+  "ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "orchestrator_commit": "0dc83ae8e04ebb3689a03e4c35887b602848d06e",
+  "parameter_count": 189420544,
+  "qk_head_dim": 32,
+  "query_block_size": 64,
+  "retained_best_checkpoint_step": 19074,
+  "retained_terminal_checkpoint_step": 19074,
+  "rng_state": {
+    "completed_updates": 19074,
+    "seed": 0
+  },
+  "seed": 0,
+  "slurm_job_id": "200734",
+  "slurm_restart_count": 0,
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "status": "complete",
+  "step": 19074,
+  "target_steps": 19074,
+  "target_tokens": 10000269312,
+  "training_tokens": 10000269312,
+  "updated_utc": "2026-09-22T01:47:48.707740+00:00",
+  "validation_nll": 2.8432648267064775,
+  "validation_perplexity": 17.171736864198078,
+  "value_head_dim": 64
+}

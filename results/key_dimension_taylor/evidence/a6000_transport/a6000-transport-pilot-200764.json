@@ -1,0 +1,51 @@
+{
+  "slurm_job_id": "200764",
+  "submitted_utc": "2026-09-22T01:37:30.118377+00:00",
+  "profile": "a6000",
+  "node": "doodle",
+  "partition": "sweep",
+  "gpu_count": 4,
+  "walltime": "00:35:00",
+  "initial_steps": 32,
+  "fresh_process_continuation": 33,
+  "qk_head_dim": 8,
+  "attention_degree": 2,
+  "NCCL_P2P_DISABLE": "1",
+  "status": "numerical_failure",
+  "validation_only": true,
+  "diagnostic_only": true,
+  "qualification_published": false,
+  "output_path": "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/pilot-200764-p2p_disabled",
+  "timeout_per_process_seconds": 900,
+  "scripts": {
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/single_pilot.py": "b8642f793659da72c32154a2adbf6034970b1ba94470069ccd537c8063444e0f",
+    "/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_diagnostic/single_pilot.sbatch": "3f9c0ce4b7c415e0476fc76c1f7d8bcffe45f268d2b17abab6721bb8fa2e5918"
+  },
+  "stage": "validation",
+  "completed_training_updates": 32,
+  "completed_validation": false,
+  "checkpoint_resume_verified": false,
+  "error": "Nonfinite validation loss at step 32: nan",
+  "failure_timestamp_utc": "2026-09-22T01:43:33.736029+00:00",
+  "retained_evidence_path": "/data/cl/u/rafah/home/projects/functional-memory/results/key_dimension_taylor/hardware_checks/diagnostics/a6000-transport-pilot-200764",
+  "temporary_workdir_removed": true,
+  "diagnostic_sample": {
+    "valid": true,
+    "issues": [],
+    "min_normalizer": 0.5000088214874268
+  },
+  "observed_utc": "2026-09-22T03:02:23.239626+00:00",
+  "artifact_checksums": {
+    "gpus.csv": "fd614d046fd9fd43a8e230b632e0deaca610878d6ac04123e4ae41fa14ef6a9e",
+    "result.json": "b27e10c6c34733df194f2808e0561c080ad618a069737fdccfdd3a68fd735e63",
+    "slurm-200764.out": "7b9f78394661e70be4b97018e512f2f6fce07e74a3af6d3527bc4fa8e7c4f4a7",
+    "initial.json": "85c18be0a91ddf3a43319767d21462a954cca91a295639e988eb872aa5e2d4cb",
+    "initial.log": "964e2140b266f43a4928b6bbf99190dcf6ef0598118ef71f30ac561d5642475f",
+    "initial.nccl.doodle.1178990.log": "eded0cfd87cf298b7e1479f3a4f841e4df3629521fba8b6f4da6cdb93d3369ad",
+    "evidence/config.json": "d5bd3c7f3cf0a802725b2ba9e5f7b2ab7ff5d3a8d3cf5f019851f882485e129f",
+    "evidence/metadata.json": "61c0bcba6fd76d9a4ee3c64370cb7e6f416e62c94f33c2b6abe4f5bffb6894ac",
+    "evidence/REPORT.md": "7d07d7358fd35b630d1fe2a28367369853130c9057c226714b4580dfc378e0df",
+    "evidence/numerical_failure_step_00000032.json": "575f098773bc3a1941159d836a5a04a6ab486e0a0854a9daaa9949b54747cbf8",
+    "evidence/data_identity.json": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+  }
+}

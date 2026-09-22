@@ -1,0 +1,38 @@
+[
+  {
+    "mode": "native",
+    "step": 32,
+    "exit_code": 1,
+    "seconds": 616.5159712815657
+  },
+  {
+    "mode": "nccl_only",
+    "step": 32,
+    "exit_code": 1,
+    "seconds": 170.6726133795455
+  },
+  {
+    "mode": "host_only",
+    "step": 32,
+    "exit_code": 0,
+    "seconds": 133.39153702463955
+  },
+  {
+    "mode": "host_only",
+    "step": 33,
+    "exit_code": 0,
+    "seconds": 76.46318944636732
+  },
+  {
+    "mode": "both",
+    "step": 32,
+    "exit_code": 0,
+    "seconds": 174.9186768028885
+  },
+  {
+    "mode": "both",
+    "step": 33,
+    "exit_code": 0,
+    "seconds": 75.58447097614408
+  }
+]

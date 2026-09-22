@@ -1,0 +1,340 @@
+{
+  "degree": 2,
+  "devices": [
+    {
+      "id": 0,
+      "kind": "NVIDIA RTX A6000"
+    },
+    {
+      "id": 1,
+      "kind": "NVIDIA RTX A6000"
+    },
+    {
+      "id": 2,
+      "kind": "NVIDIA RTX A6000"
+    },
+    {
+      "id": 3,
+      "kind": "NVIDIA RTX A6000"
+    }
+  ],
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+    "HOSTNAME": "doodle",
+    "JAX_PLATFORMS": "cuda",
+    "NCCL_P2P_DISABLE": "1",
+    "SLURM_JOB_ID": "200776",
+    "XLA_FLAGS": null
+  },
+  "errors": [],
+  "jax_version": "0.10.0",
+  "kind": "temporary_attention_device_diagnostic",
+  "passed": true,
+  "qk_shape_per_device": [
+    1,
+    129,
+    2,
+    8
+  ],
+  "shard_map": [
+    {
+      "backend": "blocked",
+      "passed": true,
+      "seconds": 1.5150227304548025,
+      "shards": [
+        {
+          "device": 0,
+          "passed": true,
+          "vs_gpu0_blocked": {
+            "exactly_equal": true,
+            "finite": true,
+            "max_absolute_error": 0.0,
+            "passed": true,
+            "relative_l2": 0.0,
+            "relative_max": 0.0
+          },
+          "vs_same_device_single": {
+            "exactly_equal": true,
+            "finite": true,
+            "max_absolute_error": 0.0,
+            "passed": true,
+            "relative_l2": 0.0,
+            "relative_max": 0.0
+          }
+        },
+        {
+          "device": 1,
+          "passed": true,
+          "vs_gpu0_blocked": {
+            "exactly_equal": true,
+            "finite": true,
+            "max_absolute_error": 0.0,
+            "passed": true,
+            "relative_l2": 0.0,
+            "relative_max": 0.0
+          },
+          "vs_same_device_single": {
+            "exactly_equal": true,
+            "finite": true,
+            "max_absolute_error": 0.0,
+            "passed": true,
+            "relative_l2": 0.0,
+            "relative_max": 0.0
+          }
+        },
+        {
+          "device": 2,
+          "passed": true,
+          "vs_gpu0_blocked": {
+            "exactly_equal": true,
+            "finite": true,
+            "max_absolute_error": 0.0,
+            "passed": true,
+            "relative_l2": 0.0,
+            "relative_max": 0.0
+          },
+          "vs_same_device_single": {
+            "exactly_equal": true,
+            "finite": true,
+            "max_absolute_error": 0.0,
+            "passed": true,
+            "relative_l2": 0.0,
+            "relative_max": 0.0
+          }
+        },
+        {
+          "device": 3,
+          "passed": true,
+          "vs_gpu0_blocked": {
+            "exactly_equal": true,
+            "finite": true,
+            "max_absolute_error": 0.0,
+            "passed": true,
+            "relative_l2": 0.0,
+            "relative_max": 0.0
+          },
+          "vs_same_device_single": {
+            "exactly_equal": true,
+            "finite": true,
+            "max_absolute_error": 0.0,
+            "passed": true,
+            "relative_l2": 0.0,
+            "relative_max": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "backend": "fused",
+      "passed": true,
+      "seconds": 0.5293482523411512,
+      "shards": [
+        {
+          "device": 0,
+          "passed": true,
+          "vs_gpu0_blocked": {
+            "exactly_equal": false,
+            "finite": true,
+            "max_absolute_error": 0.0078125,
+            "passed": true,
+            "relative_l2": 0.0007781239692121744,
+            "relative_max": 0.0030864197530864196
+          },
+          "vs_same_device_single": {
+            "exactly_equal": true,
+            "finite": true,
+            "max_absolute_error": 0.0,
+            "passed": true,
+            "relative_l2": 0.0,
+            "relative_max": 0.0
+          }
+        },
+        {
+          "device": 1,
+          "passed": true,
+          "vs_gpu0_blocked": {
+            "exactly_equal": false,
+            "finite": true,
+            "max_absolute_error": 0.0078125,
+            "passed": true,
+            "relative_l2": 0.0007781239692121744,
+            "relative_max": 0.0030864197530864196
+          },
+          "vs_same_device_single": {
+            "exactly_equal": true,
+            "finite": true,
+            "max_absolute_error": 0.0,
+            "passed": true,
+            "relative_l2": 0.0,
+            "relative_max": 0.0
+          }
+        },
+        {
+          "device": 2,
+          "passed": true,
+          "vs_gpu0_blocked": {
+            "exactly_equal": false,
+            "finite": true,
+            "max_absolute_error": 0.0078125,
+            "passed": true,
+            "relative_l2": 0.0007781239692121744,
+            "relative_max": 0.0030864197530864196
+          },
+          "vs_same_device_single": {
+            "exactly_equal": true,
+            "finite": true,
+            "max_absolute_error": 0.0,
+            "passed": true,
+            "relative_l2": 0.0,
+            "relative_max": 0.0
+          }
+        },
+        {
+          "device": 3,
+          "passed": true,
+          "vs_gpu0_blocked": {
+            "exactly_equal": false,
+            "finite": true,
+            "max_absolute_error": 0.0078125,
+            "passed": true,
+            "relative_l2": 0.0007781239692121744,
+            "relative_max": 0.0030864197530864196
+          },
+          "vs_same_device_single": {
+            "exactly_equal": true,
+            "finite": true,
+            "max_absolute_error": 0.0,
+            "passed": true,
+            "relative_l2": 0.0,
+            "relative_max": 0.0
+          }
+        }
+      ]
+    }
+  ],
+  "single_device": [
+    {
+      "blocked_vs_gpu0_blocked": {
+        "exactly_equal": true,
+        "finite": true,
+        "max_absolute_error": 0.0,
+        "passed": true,
+        "relative_l2": 0.0,
+        "relative_max": 0.0
+      },
+      "device": 0,
+      "fused_vs_gpu0_blocked": {
+        "exactly_equal": false,
+        "finite": true,
+        "max_absolute_error": 0.0078125,
+        "passed": true,
+        "relative_l2": 0.0007781239692121744,
+        "relative_max": 0.0030864197530864196
+      },
+      "fused_vs_local_blocked": {
+        "exactly_equal": false,
+        "finite": true,
+        "max_absolute_error": 0.0078125,
+        "passed": true,
+        "relative_l2": 0.0007781239692121744,
+        "relative_max": 0.0030864197530864196
+      },
+      "passed": true,
+      "seconds": 2.3123317612335086
+    },
+    {
+      "blocked_vs_gpu0_blocked": {
+        "exactly_equal": true,
+        "finite": true,
+        "max_absolute_error": 0.0,
+        "passed": true,
+        "relative_l2": 0.0,
+        "relative_max": 0.0
+      },
+      "device": 1,
+      "fused_vs_gpu0_blocked": {
+        "exactly_equal": false,
+        "finite": true,
+        "max_absolute_error": 0.0078125,
+        "passed": true,
+        "relative_l2": 0.0007781239692121744,
+        "relative_max": 0.0030864197530864196
+      },
+      "fused_vs_local_blocked": {
+        "exactly_equal": false,
+        "finite": true,
+        "max_absolute_error": 0.0078125,
+        "passed": true,
+        "relative_l2": 0.0007781239692121744,
+        "relative_max": 0.0030864197530864196
+      },
+      "passed": true,
+      "seconds": 1.1192825613543391
+    },
+    {
+      "blocked_vs_gpu0_blocked": {
+        "exactly_equal": true,
+        "finite": true,
+        "max_absolute_error": 0.0,
+        "passed": true,
+        "relative_l2": 0.0,
+        "relative_max": 0.0
+      },
+      "device": 2,
+      "fused_vs_gpu0_blocked": {
+        "exactly_equal": false,
+        "finite": true,
+        "max_absolute_error": 0.0078125,
+        "passed": true,
+        "relative_l2": 0.0007781239692121744,
+        "relative_max": 0.0030864197530864196
+      },
+      "fused_vs_local_blocked": {
+        "exactly_equal": false,
+        "finite": true,
+        "max_absolute_error": 0.0078125,
+        "passed": true,
+        "relative_l2": 0.0007781239692121744,
+        "relative_max": 0.0030864197530864196
+      },
+      "passed": true,
+      "seconds": 1.038243379443884
+    },
+    {
+      "blocked_vs_gpu0_blocked": {
+        "exactly_equal": true,
+        "finite": true,
+        "max_absolute_error": 0.0,
+        "passed": true,
+        "relative_l2": 0.0,
+        "relative_max": 0.0
+      },
+      "device": 3,
+      "fused_vs_gpu0_blocked": {
+        "exactly_equal": false,
+        "finite": true,
+        "max_absolute_error": 0.0078125,
+        "passed": true,
+        "relative_l2": 0.0007781239692121744,
+        "relative_max": 0.0030864197530864196
+      },
+      "fused_vs_local_blocked": {
+        "exactly_equal": false,
+        "finite": true,
+        "max_absolute_error": 0.0078125,
+        "passed": true,
+        "relative_l2": 0.0007781239692121744,
+        "relative_max": 0.0030864197530864196
+      },
+      "passed": true,
+      "seconds": 1.0720449825748801
+    }
+  ],
+  "source_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/key_dimension_taylor",
+  "v_shape_per_device": [
+    1,
+    129,
+    2,
+    64
+  ]
+}

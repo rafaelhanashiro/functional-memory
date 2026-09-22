@@ -1,0 +1,2910 @@
+{
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "controls": [
+    {
+      "artifact_root": "/home/rafah/projects/functional_memory",
+      "attention_degree": null,
+      "completion": {
+        "path": "results/key_dimension/runs/200m-dk008-seed0/completion.json",
+        "sha256": "f32575a5214ca009c88f81b0dfc0ce2448b917463ee4941870762505f7b8d398"
+      },
+      "home_cluster": "orcd",
+      "metadata": {
+        "path": "results/key_dimension/runs/200m-dk008-seed0/metadata.json",
+        "sha256": "12129013bc5c34ca4091759552d3a0567dcb3637b1d52df7bd5393c39687e49e"
+      },
+      "metrics": {
+        "path": "results/key_dimension/runs/200m-dk008-seed0/metrics.jsonl",
+        "sha256": "75bcb65689ba5618be5403794f17c34c4eb8001557db8ae0f6c4bfe336be144a"
+      },
+      "name": "200m-dk008-seed0",
+      "original_experiment": "key_dimension",
+      "parameter_count": 181556224,
+      "qk_head_dim": 8,
+      "resolved_config": {
+        "path": "results/key_dimension/configs/200m-dk008-seed0.yaml",
+        "sha256": "72b85f5cab8de9ebcdf3d7f0c0dedb02ff803077606e827a4b10d0531c7d5f97"
+      },
+      "retained_completed": true,
+      "seed": 0,
+      "selected_checkpoint": {
+        "availability": "home_cluster_not_reverified; migration_pending",
+        "canonical_destination": "checkpoints/key_dimension/200m-dk008-seed0/19074",
+        "file_count": 13,
+        "metadata_sha256": "768e800d097ecc0f5b86ed5fc98833459ad4932f624d5543b6efc859118b88ce",
+        "path": "experiments/key_dimension/checkpoints/200m-dk008-seed0/19074",
+        "size_bytes": 1996430765,
+        "step": 19074,
+        "validation_nll": 2.815727804388319,
+        "validation_perplexity": 16.70532956917316
+      },
+      "slurm_job_id": "22808237",
+      "slurm_log": {
+        "path": "results/logs/key_dimension/200m-dk008-seed0/slurm-22808237.out",
+        "sha256": "cce4364a950dcf027cb6177145eb4e18f16109a59143a9ecfd97675b858ec149"
+      },
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "source_provenance": {
+        "path": "results/key_dimension/provenance/manifest.json",
+        "sha256": "de89e30d53a93486048e58074844c7830dfe24e1186c69cf38a62adcab1814ac"
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.815727804388319,
+        "validation_perplexity": 16.70532956917316
+      },
+      "unavailable_historical_artifacts": [
+        {
+          "kind": "slurm_log",
+          "path": "results/logs/key_dimension/200m-dk008-seed0/slurm-22808237.out",
+          "sha256": "cce4364a950dcf027cb6177145eb4e18f16109a59143a9ecfd97675b858ec149"
+        },
+        {
+          "kind": "selected_checkpoint",
+          "metadata_sha256": "768e800d097ecc0f5b86ed5fc98833459ad4932f624d5543b6efc859118b88ce",
+          "path": "experiments/key_dimension/checkpoints/200m-dk008-seed0/19074"
+        }
+      ],
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/home/rafah/projects/functional_memory",
+      "attention_degree": null,
+      "completion": {
+        "path": "results/key_dimension/runs/200m-dk016-seed0/completion.json",
+        "sha256": "9f7548222f69d86867db9a5281457b0197b3b7fe38a5007fc38f8433ffe37d4c"
+      },
+      "home_cluster": "orcd",
+      "metadata": {
+        "path": "results/key_dimension/runs/200m-dk016-seed0/metadata.json",
+        "sha256": "01a30d87bb289c95bfbfcf5a1221f8711a05bebf3f24bf24752fb8f49bb48a74"
+      },
+      "metrics": {
+        "path": "results/key_dimension/runs/200m-dk016-seed0/metrics.jsonl",
+        "sha256": "5d19fb18cdc2f5b7ee0b5b90c7bb2fa622ff653c8fd3c51cf7d5b8c18dd74b14"
+      },
+      "name": "200m-dk016-seed0",
+      "original_experiment": "key_dimension",
+      "parameter_count": 184177664,
+      "qk_head_dim": 16,
+      "resolved_config": {
+        "path": "results/key_dimension/configs/200m-dk016-seed0.yaml",
+        "sha256": "76f6759e4e36738801e2bcf4e2178d12b3493329f713af698bcbc8d3480e5bbf"
+      },
+      "retained_completed": true,
+      "seed": 0,
+      "selected_checkpoint": {
+        "availability": "home_cluster_not_reverified; migration_pending",
+        "canonical_destination": "checkpoints/key_dimension/200m-dk016-seed0/19074",
+        "file_count": 13,
+        "metadata_sha256": "2dd93a6b64a9f905a33c6bfb8b43e3d88bb9fdf23bbc71b4a5b9221c62e916a5",
+        "path": "experiments/key_dimension/checkpoints/200m-dk016-seed0/19074",
+        "size_bytes": 2025135532,
+        "step": 19074,
+        "validation_nll": 2.745754207883562,
+        "validation_perplexity": 15.576357314635974
+      },
+      "slurm_job_id": "22808238",
+      "slurm_log": {
+        "path": "results/logs/key_dimension/200m-dk016-seed0/slurm-22808238.out",
+        "sha256": "afb0c18f873d71cb3f3046a47f7add61bd52672ebcbafef41514e1225ba6969d"
+      },
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "source_provenance": {
+        "path": "results/key_dimension/provenance/manifest.json",
+        "sha256": "de89e30d53a93486048e58074844c7830dfe24e1186c69cf38a62adcab1814ac"
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.745754207883562,
+        "validation_perplexity": 15.576357314635974
+      },
+      "unavailable_historical_artifacts": [
+        {
+          "kind": "slurm_log",
+          "path": "results/logs/key_dimension/200m-dk016-seed0/slurm-22808238.out",
+          "sha256": "afb0c18f873d71cb3f3046a47f7add61bd52672ebcbafef41514e1225ba6969d"
+        },
+        {
+          "kind": "selected_checkpoint",
+          "metadata_sha256": "2dd93a6b64a9f905a33c6bfb8b43e3d88bb9fdf23bbc71b4a5b9221c62e916a5",
+          "path": "experiments/key_dimension/checkpoints/200m-dk016-seed0/19074"
+        }
+      ],
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/home/rafah/projects/functional_memory",
+      "attention_degree": null,
+      "completion": {
+        "path": "results/key_dimension/runs/200m-dk032-seed0/completion.json",
+        "sha256": "7537c2875711264916f0853370c305321f5a90dab168f2d45b293307e4ccdfb6"
+      },
+      "home_cluster": "orcd",
+      "metadata": {
+        "path": "results/key_dimension/runs/200m-dk032-seed0/metadata.json",
+        "sha256": "e10e58ecfd4ca89d4b1acffcb3760a5a51527f734646b8d0a874b7f499cc5dda"
+      },
+      "metrics": {
+        "path": "results/key_dimension/runs/200m-dk032-seed0/metrics.jsonl",
+        "sha256": "5a199dbb81f4caeccf79af40454c7eef997ebe0f3698d75211df6e553b2913d3"
+      },
+      "name": "200m-dk032-seed0",
+      "original_experiment": "key_dimension",
+      "parameter_count": 189420544,
+      "qk_head_dim": 32,
+      "resolved_config": {
+        "path": "results/key_dimension/configs/200m-dk032-seed0.yaml",
+        "sha256": "9c39237a5b7d47bc8a5f29513de8a2ade0e214bd662a79424143cf60c1f19bbb"
+      },
+      "retained_completed": true,
+      "seed": 0,
+      "selected_checkpoint": {
+        "availability": "home_cluster_not_reverified; migration_pending",
+        "canonical_destination": "checkpoints/key_dimension/200m-dk032-seed0/19074",
+        "file_count": 13,
+        "metadata_sha256": "bf9317b3eb4dd977b513ed8f57ae7fbbd38183ec922b5ef10c3f4976efdf13c1",
+        "path": "experiments/key_dimension/checkpoints/200m-dk032-seed0/19074",
+        "size_bytes": 2082192738,
+        "step": 19074,
+        "validation_nll": 2.707067149026053,
+        "validation_perplexity": 14.985261464418581
+      },
+      "slurm_job_id": "22808239",
+      "slurm_log": {
+        "path": "results/logs/key_dimension/200m-dk032-seed0/slurm-22808239.out",
+        "sha256": "0c94ab3e83be327790dc20c6f15c78c5539610b6e7b18cd09939f6a0697f8a34"
+      },
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "source_provenance": {
+        "path": "results/key_dimension/provenance/manifest.json",
+        "sha256": "de89e30d53a93486048e58074844c7830dfe24e1186c69cf38a62adcab1814ac"
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.707067149026053,
+        "validation_perplexity": 14.985261464418581
+      },
+      "unavailable_historical_artifacts": [
+        {
+          "kind": "slurm_log",
+          "path": "results/logs/key_dimension/200m-dk032-seed0/slurm-22808239.out",
+          "sha256": "0c94ab3e83be327790dc20c6f15c78c5539610b6e7b18cd09939f6a0697f8a34"
+        },
+        {
+          "kind": "selected_checkpoint",
+          "metadata_sha256": "bf9317b3eb4dd977b513ed8f57ae7fbbd38183ec922b5ef10c3f4976efdf13c1",
+          "path": "experiments/key_dimension/checkpoints/200m-dk032-seed0/19074"
+        }
+      ],
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/home/rafah/projects/functional_memory",
+      "attention_degree": null,
+      "completion": {
+        "path": "results/key_dimension/runs/200m-dk064-seed0/completion.json",
+        "sha256": "703df2d1448324a23bf0949e46ee21c0c1cc1d97e8ede01aa627c6f381cf9d80"
+      },
+      "home_cluster": "orcd",
+      "metadata": {
+        "path": "results/key_dimension/runs/200m-dk064-seed0/metadata.json",
+        "sha256": "542cfc49057ab876943c3cfc6586a6a6f2f6564cfeaf02b75403d7bd26456359"
+      },
+      "metrics": {
+        "path": "results/key_dimension/runs/200m-dk064-seed0/metrics.jsonl",
+        "sha256": "97ed5129bbd6f81363b0d617c1d22b10d718d00ded6734f25e616fb4f4612c76"
+      },
+      "name": "200m-dk064-seed0",
+      "original_experiment": "key_dimension",
+      "parameter_count": 199906304,
+      "qk_head_dim": 64,
+      "resolved_config": {
+        "path": "results/key_dimension/configs/200m-dk064-seed0.yaml",
+        "sha256": "62de3f135734f9a42e2aa6aeaea1628ca04d7a37e901fec6ffa9e2d30b9093e3"
+      },
+      "retained_completed": true,
+      "seed": 0,
+      "selected_checkpoint": {
+        "availability": "home_cluster_not_reverified; migration_pending",
+        "canonical_destination": "checkpoints/key_dimension/200m-dk064-seed0/19074",
+        "file_count": 13,
+        "metadata_sha256": "be71b220b024633c7533556534d650757a9957733aca8fbf051c28a05c26c55c",
+        "path": "experiments/key_dimension/checkpoints/200m-dk064-seed0/19074",
+        "size_bytes": 2196516542,
+        "step": 19074,
+        "validation_nll": 2.6871511340141296,
+        "validation_perplexity": 14.689767074685026
+      },
+      "slurm_job_id": "22808243",
+      "slurm_log": {
+        "path": "results/logs/key_dimension/200m-dk064-seed0/slurm-22808243.out",
+        "sha256": "5b6d7fdaecc19ce8f84f835a42fb2841417d62a5a903db5cd040dbf65e7226dc"
+      },
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "source_provenance": {
+        "path": "results/key_dimension/provenance/manifest.json",
+        "sha256": "de89e30d53a93486048e58074844c7830dfe24e1186c69cf38a62adcab1814ac"
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.6871511340141296,
+        "validation_perplexity": 14.689767074685026
+      },
+      "unavailable_historical_artifacts": [
+        {
+          "kind": "slurm_log",
+          "path": "results/logs/key_dimension/200m-dk064-seed0/slurm-22808243.out",
+          "sha256": "5b6d7fdaecc19ce8f84f835a42fb2841417d62a5a903db5cd040dbf65e7226dc"
+        },
+        {
+          "kind": "selected_checkpoint",
+          "metadata_sha256": "be71b220b024633c7533556534d650757a9957733aca8fbf051c28a05c26c55c",
+          "path": "experiments/key_dimension/checkpoints/200m-dk064-seed0/19074"
+        }
+      ],
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/home/rafah/projects/functional_memory",
+      "attention_degree": null,
+      "completion": {
+        "path": "results/key_dimension/runs/200m-dk128-seed0/completion.json",
+        "sha256": "46a0f3bed429f66d78f20d0f1e0df9de215d8e2d58a6c73b5dda5a936fdb80f7"
+      },
+      "home_cluster": "orcd",
+      "metadata": {
+        "path": "results/key_dimension/runs/200m-dk128-seed0/metadata.json",
+        "sha256": "cc2ef5502f587920e3cb519041665bf7f7c0c4796abe8cf1491e1fa14b83668d"
+      },
+      "metrics": {
+        "path": "results/key_dimension/runs/200m-dk128-seed0/metrics.jsonl",
+        "sha256": "93ef9664a46cc56e40f2279f18cab2891840228af66a10dd532deac63ebfe720"
+      },
+      "name": "200m-dk128-seed0",
+      "original_experiment": "key_dimension",
+      "parameter_count": 220877824,
+      "qk_head_dim": 128,
+      "resolved_config": {
+        "path": "results/key_dimension/configs/200m-dk128-seed0.yaml",
+        "sha256": "be0001128ecc3d892701189d70e93b9ca392c06533fb41285306d89a3f90cc5e"
+      },
+      "retained_completed": true,
+      "seed": 0,
+      "selected_checkpoint": {
+        "availability": "home_cluster_not_reverified; migration_pending",
+        "canonical_destination": "checkpoints/key_dimension/200m-dk128-seed0/19074",
+        "file_count": 13,
+        "metadata_sha256": "7199d75a739470491682512e31ac40edcfca75c4e6d2fbe10d98297b59f942de",
+        "path": "experiments/key_dimension/checkpoints/200m-dk128-seed0/19074",
+        "size_bytes": 2426243451,
+        "step": 19074,
+        "validation_nll": 2.6656709483691623,
+        "validation_perplexity": 14.377592933058489
+      },
+      "slurm_job_id": "22808244",
+      "slurm_log": {
+        "path": "results/logs/key_dimension/200m-dk128-seed0/slurm-22808244.out",
+        "sha256": "d0845f5f6e2c4fc78bc017e28c35f28418d43cd6ef08e62b6a7db6001f4bdaf8"
+      },
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "source_provenance": {
+        "path": "results/key_dimension/provenance/manifest.json",
+        "sha256": "de89e30d53a93486048e58074844c7830dfe24e1186c69cf38a62adcab1814ac"
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.6656709483691623,
+        "validation_perplexity": 14.377592933058489
+      },
+      "unavailable_historical_artifacts": [
+        {
+          "kind": "slurm_log",
+          "path": "results/logs/key_dimension/200m-dk128-seed0/slurm-22808244.out",
+          "sha256": "d0845f5f6e2c4fc78bc017e28c35f28418d43cd6ef08e62b6a7db6001f4bdaf8"
+        },
+        {
+          "kind": "selected_checkpoint",
+          "metadata_sha256": "7199d75a739470491682512e31ac40edcfca75c4e6d2fbe10d98297b59f942de",
+          "path": "experiments/key_dimension/checkpoints/200m-dk128-seed0/19074"
+        }
+      ],
+      "value_head_dim": 64
+    }
+  ],
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "degrees": [
+    2,
+    4,
+    8,
+    16
+  ],
+  "dependency_lock": {
+    "path": "results/key_dimension_taylor/configs/uv.lock",
+    "sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c"
+  },
+  "evidence": [
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk008-m002-seed0.json",
+      "sha256": "bdae93c3e82376fefa06c4a572698e770d3dd70791f42e38cad3af2c59966869",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk008-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk008-m004-seed0.json",
+      "sha256": "9a0e7c15709ecac048b9fbe46422ed8e4c486a577d0c0ac434d7e5a656b0dbd8",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk008-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk008-m008-seed0.json",
+      "sha256": "e2f3d5bdd12d857921fbbd4be6a6780a88a4cbcd276c97dd63118e4b239ad459",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk008-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk008-m016-seed0.json",
+      "sha256": "f29e18dfdb68ec00ea3d488236f8619e856b1ed09dc2c9b9b39ed16250a60b20",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk008-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk016-m002-seed0.json",
+      "sha256": "0a706b5e85f26db41d4357c02805a3383faa6041e008947e222a7537c11dae5a",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk016-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk016-m004-seed0.json",
+      "sha256": "596b0b5b61ff41c77611a75c783da375031dfc81b0e072f1704af54d3ccb9fe4",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk016-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk016-m008-seed0.json",
+      "sha256": "d603a10c890ce9f7fede2282ef0c41fc5dfd2bc0a6605d4365b4dfe42a9870c8",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk016-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk016-m016-seed0.json",
+      "sha256": "5fa22b2edd4d344725824515d044eb1f0056c5596e684f373154673a765dca0d",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk016-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk032-m002-seed0.json",
+      "sha256": "e927e2290dd647da055431da592445b734dc03bf0e31565f7e0f7a4304ecec8a",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk032-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk032-m004-seed0.json",
+      "sha256": "369b3686212abe0e184af9d2e6439001d468929be21217a00120a4c55947b05f",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk032-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk032-m008-seed0.json",
+      "sha256": "5a3a8d784c277160959ddbddd588a794da7a2e791133ffa560cfdd9643c1c039",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk032-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk032-m016-seed0.json",
+      "sha256": "8c0511b979037202778d7cc6c738defda6669f1efbd8ee4fc0210f2d123221bd",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk032-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk128-m002-seed0.json",
+      "sha256": "bde8c42293a6d4e8706a1a2088e8557031725515fee8c13d93afda4d3baa45cb",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk128-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk128-m004-seed0.json",
+      "sha256": "f20ad0d5f4e13f3b92bab45aff1a4b7301c64bd46a4efbe019facf583faa9710",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk128-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk128-m008-seed0.json",
+      "sha256": "beac66d214e19afc1f511fcc7eb3e542bc86f210143afdef9d22e14fa0f92f9a",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk128-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/200m-dk128-m016-seed0.json",
+      "sha256": "0b1e4af65278a4b345aeb03eb03326a483b3d247f04e292de392c02939dd0578",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/200m-dk128-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/initialization.json",
+      "sha256": "438ff6eb4854971c7d9e4bd16878d3cb6e667a751858b7d05266dcafe8daafe6",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/initialization.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/kernels-cpu.json",
+      "sha256": "c76b9ec32b8e6eadbd103dd6764abee41b5b6945f49fd9b5da4e9b30b6fa2f1b",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/kernels-cpu.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/kernels-gpu.json",
+      "sha256": "a12f26e5350bafd21cab32f35a00139f0df362fc8a87d7ae62364c4daa3072cf",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/kernels-gpu.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/training-audit-cpu.json",
+      "sha256": "2d754cc8262ee29d31893de57c91b85fba2dbe63c0aef07b75cbf41175703833",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/training-audit-cpu.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/checks/training-distributed-cpu.json",
+      "sha256": "bc070fa459d9be8e823da5ee72eb3661e050da49571104dc3156b219869620c7",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/checks/training-distributed-cpu.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/kernels-cpu.xml",
+      "sha256": "7e5e589a4669cfec07dfaf2d93ba3427bcf0f7d35dfd43ab9dea993e8abb067c",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/kernels-cpu.xml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/kernels-gpu.xml",
+      "sha256": "98810854bd4ebbb7f9d16f62965a4d1a028e83505b81dc9c34e37e4f9f624c21",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/kernels-gpu.xml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/provenance.json",
+      "sha256": "caf8e461b05fd72858bbe6dc69e8e41b2adb6785d89cde884b44e3c29d505e9b",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/provenance.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/success.json",
+      "sha256": "0f19aa3f649faa56b298bd9554ab28145210a728f926b6607008034a157900bd",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/success.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/training-audit-cpu.xml",
+      "sha256": "6dea8d5eab9fa11a18e517b8c3513815463bda179b59d82383be693195a35939",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/training-audit-cpu.xml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/preflight/training-distributed-cpu.xml",
+      "sha256": "575ad39b067deaa472892babf32097aa34e835e5f8aadf13715d0d308111a69b",
+      "source": "results/key_dimension_taylor/preflight/7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3/training-distributed-cpu.xml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_initial/attempts/200733-0-f6e0b4f9/kernels.xml",
+      "sha256": "9199a73336df38d35decf78cc4f695dcc89d214a49343c6626dad2a8153d718a",
+      "source": "results/key_dimension_taylor/execution_validation/execution-policy/b300/attempts/200733-0-f6e0b4f9/kernels.xml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_initial/checks/200m-dk032-m002-seed0.json",
+      "sha256": "bde839dd49de2cb6083feec5b18611d0690e09b93f0cadfe5b64a0e75e577812",
+      "source": "results/key_dimension_taylor/execution_validation/execution-policy/b300/checks/200m-dk032-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_initial/checks/200m-dk032-m004-seed0.json",
+      "sha256": "75b413abd1c838723546914dff726cc5b34e09b837020112db0dc9267b205983",
+      "source": "results/key_dimension_taylor/execution_validation/execution-policy/b300/checks/200m-dk032-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_initial/checks/200m-dk032-m008-seed0.json",
+      "sha256": "9665a026fe8d85d9d2bd8db52ed5619007f4e95d254d6bd99d89ab919ee13e14",
+      "source": "results/key_dimension_taylor/execution_validation/execution-policy/b300/checks/200m-dk032-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_initial/checks/200m-dk128-m002-seed0.json",
+      "sha256": "9216571bf69f74bd6b40abc81d0383f0e8a9a54a938ff2ca8b5d15cc4d65502b",
+      "source": "results/key_dimension_taylor/execution_validation/execution-policy/b300/checks/200m-dk128-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_initial/checks/200m-dk128-m004-seed0.json",
+      "sha256": "822258aa080d9df3c20bcba04c5efc455bec322e6db6bff55717a97c1d3c587c",
+      "source": "results/key_dimension_taylor/execution_validation/execution-policy/b300/checks/200m-dk128-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_initial/kernels.json",
+      "sha256": "ea3a5c9ec430ff73ad159c68b16b0c3a5411e115372c126c305849e585ba9274",
+      "source": "results/key_dimension_taylor/execution_validation/execution-policy/b300/kernels.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_initial/success.json",
+      "sha256": "21a030717abeb1ee84d7404d0770f63ef7da9c3b1a2185151b15829a1f1c2b60",
+      "source": "results/key_dimension_taylor/execution_validation/execution-policy/b300/success.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/attempts/kernels-200754-0-268b9a7f/kernels.xml",
+      "sha256": "03b396837b2104c24cc38ef977e6b14a0755474503b678eb2dc3bcddca7cab98",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/attempts/kernels-200754-0-268b9a7f/kernels.xml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk008-m002-seed0.json",
+      "sha256": "769e0f252d7269c193715ac2c2b7b8a2ce0229ffb01c6da75dd2effee57a5fa0",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk008-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk008-m004-seed0.json",
+      "sha256": "07fe347ea36c801b8008c0adead8351eae0096d718bb5c397538ab07c1b65342",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk008-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk008-m008-seed0.json",
+      "sha256": "8cab5a8374abd81543bc68dfb90a3cec80b0a5360a71a1cd37a39f43ceae530b",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk008-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk008-m016-seed0.json",
+      "sha256": "8b910d3856c05b7df84646932a336a5d42377bb39614190cf4b0770e3bf88f28",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk008-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk016-m002-seed0.json",
+      "sha256": "a22319c15af1d49a83122c7d9dbf1fb6e1e9ea7cd8ed9652044d2f89bc766a7e",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk016-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk016-m004-seed0.json",
+      "sha256": "a3ef96a0ec0abeda02f6abacbe652f6519dc1a97694a8dd727e34cbcfa27d53b",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk016-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk016-m008-seed0.json",
+      "sha256": "fc4705ba3a49f267168ccee6e567a37705c1864616231ffb8618da38893559ea",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk016-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk016-m016-seed0.json",
+      "sha256": "7a2d4b8d492c144ec0aa8606c830ae1bd1be857c04ac8f34c9758b6e7fa1afea",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk016-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk032-m002-seed0.json",
+      "sha256": "afa1b01921ca8eba7c4c34297233d70f859e99051d5b3260f3906ad712a0b652",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk032-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk032-m004-seed0.json",
+      "sha256": "0bc25516404054f7376fa1f37dfb84e65a36f4a5080514dc86670c3423d1fc2f",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk032-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk032-m008-seed0.json",
+      "sha256": "5ddabc8c37c7ce775d5d15dce4f2e2e8a4f016095a03098778044f299337e9aa",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk032-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk032-m016-seed0.json",
+      "sha256": "a0f9db49ec11cc7f8577bf8bb67ad8724385981e85d4e9e6df70204dccc058eb",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk032-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk064-m002-seed0.json",
+      "sha256": "317cce68da0859af5a7a7bf41154706828c56b085c80ac0e1182a16327756bd3",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk064-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk064-m004-seed0.json",
+      "sha256": "1777028430f963521fa3253cd914804169a744f990f5234800e08c84ff9df38c",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk064-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk064-m008-seed0.json",
+      "sha256": "47d392026119a01dd8da94f61ed140a1a95a4374eb69d60068146ed10279ed07",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk064-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk064-m016-seed0.json",
+      "sha256": "0369f16fea6368b68103442f195cc88e8e3f84d6f62c155292000d8d3680bad7",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk064-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk128-m002-seed0.json",
+      "sha256": "6283f8590ce06feda6e01522f4814551789326f8f8333b421340979db8f84503",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk128-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk128-m004-seed0.json",
+      "sha256": "f60f288d6ffaff71b7a575f8758909e518761864a980d73340f4d2962c6cc44a",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk128-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk128-m008-seed0.json",
+      "sha256": "47e96fe0d2d8e78d25b6e97c2541b83c74cfcfedbfa4cb15198862326e8f2bd1",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk128-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/checks/200m-dk128-m016-seed0.json",
+      "sha256": "f5953ea9bbf650dc006751ec1b9d75c670122ecabf52ea1742a63d860ff59cdb",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/checks/200m-dk128-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/kernels.json",
+      "sha256": "5e6c6de92ad19d91500e53d33032ea6e97bd222764ed7f3033a779ca23fd840d",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/kernels.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_native/pilots-shard0.json",
+      "sha256": "6d0c58f994974e7bfadd1c0019a55bb7f6e572bdfe80d514216450cf254f9e2e",
+      "source": "results/key_dimension_taylor/hardware_checks/a100/pilots-shard0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk008-m002-seed0.json",
+      "sha256": "c0e64f2dfca4668ca0d2a19705ce33d8c564ba3301819c9d19e83b848b7083da",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk008-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk008-m004-seed0.json",
+      "sha256": "062de37eddbc3a3b2e69c88c7bab813bb29573dd109e4a895e51e32336fbaf1e",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk008-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk008-m008-seed0.json",
+      "sha256": "258e2c527013217dd456e1ec5e073b316e87c5100639d5d2cc8b4debfb93e456",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk008-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk008-m016-seed0.json",
+      "sha256": "eafaee012b233e9b8935e50ed8204b82cbe6c9f2639ad9162676a0e73474a349",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk008-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk016-m002-seed0.json",
+      "sha256": "21cd8b50425fd18d9d5e9058c9ad7f99ceb37878f68e40636d774de132d9ae9c",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk016-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk016-m004-seed0.json",
+      "sha256": "231f54c11e942a242154e23b44e1f16242679797eacb25dd9a56d73b07672cdf",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk016-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk016-m008-seed0.json",
+      "sha256": "f49f9b1f96fdf2565e07f2c26f1a0d1be4224e6393c46f74856eda4dc363df48",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk016-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk016-m016-seed0.json",
+      "sha256": "4d8560a73e5625bb35e2ac241133bb6f34ee86f6c776e9360166b4c12a7663b6",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk016-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk032-m002-seed0.json",
+      "sha256": "a6cde9ba2197a9a8925a33af6210f3b816faf96c58e1815df9c00704176906a6",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk032-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk032-m004-seed0.json",
+      "sha256": "e67b154e972b1ebd9ea4f9d93a212f1211f4d18ab2883b2dda83886a56c3242d",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk032-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk032-m008-seed0.json",
+      "sha256": "3a6697806d228e5eea4abe89a2f384748e4e423b663a533b2d6536e494252ae0",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk032-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk032-m016-seed0.json",
+      "sha256": "5a03fdd53dd9a1a2901d49047a3af71caff4d631bb46c47bc54cadcf72259f9a",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk032-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk064-m002-seed0.json",
+      "sha256": "3acd07a16f77811c7d30e6538b7429e12c47314d8db4090cdaa497619baf2303",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk064-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk064-m004-seed0.json",
+      "sha256": "7cbd78090611275135a0f8dfae6492afb25006f43eac0b2335914d4db9fd3931",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk064-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk064-m008-seed0.json",
+      "sha256": "ee58099e6035c635f17a0e6d8048f7f5d71c3a056efcc678facd5cac086e3a7b",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk064-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk064-m016-seed0.json",
+      "sha256": "811724802edeffaf8927fbbe39fafa42ac6f61fd3547331d7ec955390cd9ddb4",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk064-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk128-m002-seed0.json",
+      "sha256": "c93fbb69bc2b6a8e73e0cd16ead73073c70b2515af10aa860d9c3388c2a1ceaf",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk128-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk128-m004-seed0.json",
+      "sha256": "2c6e28e5879cfbe7d2938425ab0a2dd74d36784666b71d685d253b73d9d2deb2",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk128-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk128-m008-seed0.json",
+      "sha256": "80721352d9936ec9b4a54b066088703035248808378b821870cc577a0c883913",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk128-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/checks/200m-dk128-m016-seed0.json",
+      "sha256": "78e5f45ae6d0f3912eb419c92938b5b4aabeb829a00f4b5b604027ad69e3876d",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/checks/200m-dk128-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/kernels.json",
+      "sha256": "c33e08268bc5e84204c1df0c0a1dfc9a31e3f18866884b104ab4989d16732784",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/kernels.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/b300_native/pilots-shard0.json",
+      "sha256": "e90370f74c530eba6316f2dcc93a897c065e85142087959df348027b3028b9b9",
+      "source": "results/key_dimension_taylor/hardware_checks/b300/pilots-shard0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk008-m002-seed0.yaml",
+      "sha256": "330beb6a8fb3b07ef774174e46e38796d6aead9f16088082e16eb4553030d522",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk008-m002-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk008-m004-seed0.yaml",
+      "sha256": "e895777e55b3873cc8fe23732ccd48457069d8d02f754f354c5c386e0328eff2",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk008-m004-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk008-m008-seed0.yaml",
+      "sha256": "efee49efbb072ab9b2f5ac230f7feb4b35a02694fd5b94407dca5bc3f73af301",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk008-m008-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk008-m016-seed0.yaml",
+      "sha256": "44f02f039a3f297a19c4fc1fde1f7ef2d59e3fdd66a0f0d95246bc4811dee445",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk008-m016-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk016-m002-seed0.yaml",
+      "sha256": "da58731f70dab5d6e640443ebd15306a2bd35a8a6f53c0bf6ce112265f962f20",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk016-m002-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk016-m004-seed0.yaml",
+      "sha256": "d521b4f4d886f5f12445f26b437b6966f9b8745bdb5258e7b1dd5689821d7d4b",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk016-m004-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk016-m008-seed0.yaml",
+      "sha256": "6243e9a20307661a9b3490ec11e2d800f3f692811c235482437ba2f418e90ed8",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk016-m008-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk016-m016-seed0.yaml",
+      "sha256": "c0a3839504793152b7200ac91c0106904408385d842482ad415d592c8f3e59c8",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk016-m016-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk032-m002-seed0.yaml",
+      "sha256": "aca83b1d2241edf7d0e85a309f2e8d5c8f09f23c1cb85e5583ce9b5393604165",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk032-m002-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk032-m004-seed0.yaml",
+      "sha256": "fc3732061f760b49dd47808ec1f0cfa36d66227f04d15d001f3e4ee5e1ce72e8",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk032-m004-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk032-m008-seed0.yaml",
+      "sha256": "460986751c1042bc32332bf82ec803706ef51ce39d7c7b0a51b106b14bdc639b",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk032-m008-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk032-m016-seed0.yaml",
+      "sha256": "dcd896c688d5ffb78b6d237c41aeb9fa9ed573acc27f9ab5534d3d2f25501376",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk032-m016-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk064-m002-seed0.yaml",
+      "sha256": "5bfd884962e5bc33351b0fdf36246fdb135373f8c3274f77568f3c0ec845aad9",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk064-m002-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk064-m004-seed0.yaml",
+      "sha256": "f5407e59881c8db73c535cee62e24ae8a108931235fdbdb7aef1119c071100b0",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk064-m004-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk064-m008-seed0.yaml",
+      "sha256": "0f70311ff6aa739a6a365cbc8f4b36a8fe136f34bfbddc2892afa7fb973dd956",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk064-m008-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk064-m016-seed0.yaml",
+      "sha256": "cd59c2fc2bff390365fb10c2c40a19d3d8163d783b9a380a6f4843ed6545ce60",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk064-m016-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk128-m002-seed0.yaml",
+      "sha256": "a5a1b2a4d68089e2d87c8940890d623124f4b5b0a4273acce9b5c6ac02c81118",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk128-m002-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk128-m004-seed0.yaml",
+      "sha256": "6f730b7f63ccafa4e400a40bbe18966dba73cf4b57379b16dc3ceebdc4669789",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk128-m004-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk128-m008-seed0.yaml",
+      "sha256": "3f52d06f1397791d8ae8bd2a8b510c3d74c4960f6780370fe73b252637c23085",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk128-m008-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/qualification_configs/200m-dk128-m016-seed0.yaml",
+      "sha256": "e2de36f278fbc755a63443bd0260a386604efa7ffca29fe69fa63d10c32ca68e",
+      "source": "results/key_dimension_taylor/hardware_checks/configs/200m-dk128-m016-seed0.yaml"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/cache_cleanup.json",
+      "sha256": "cb06b2231c3cabfe1437a1cf626c912f55ef4821c401b55d347855e1713ec343",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/cache_cleanup.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-0/checks/200m-dk008-m004-seed0.json",
+      "sha256": "02eb93f407d45b61a0ca95ab4c0c7c6bb98f00ff8368b216eb42f2f7b4e66385",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/checks/200m-dk008-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-0/checks/200m-dk016-m004-seed0.json",
+      "sha256": "b80b31ead8448abb30f772b327bd35430eca34304932cbd45cd27bf4496af430",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/checks/200m-dk016-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-0/checks/200m-dk032-m004-seed0.json",
+      "sha256": "22f5bc978c99cff7d4666930903ecc2954828325ce5e1df5337e64c6dedf9be7",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/checks/200m-dk032-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-0/checks/200m-dk064-m004-seed0.json",
+      "sha256": "d16e6218a8813fae83934459a4992db2529861f9a241693c2443203f2aa74b6c",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/checks/200m-dk064-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-0/checks/200m-dk128-m004-seed0.json",
+      "sha256": "5b3d405815df69168e5d5fd576843beac808d1c4e506cde7e8a39df0c518e15c",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/checks/200m-dk128-m004-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-0/summary-200783.json",
+      "sha256": "d84ba7bcdd2a8b4246539368008bd593853b2fd143e270b6fc097ecfb35cf3d0",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0/summary-200783.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-1/checks/200m-dk008-m008-seed0.json",
+      "sha256": "3e4803a4266345e6eee2ab6742b8ae6f42a7f71aa454acc69674cf62913fbbf2",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-1/checks/200m-dk008-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-1/checks/200m-dk016-m008-seed0.json",
+      "sha256": "166cfed1f0dc95ca19e4e715df1cae9dac840fd5f6da46fb65ba20525de99ea6",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-1/checks/200m-dk016-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-1/checks/200m-dk032-m008-seed0.json",
+      "sha256": "1168e4949a61ff7e3531d708a6cfc9534ff797d1fa3ecca87a34ea9d81ec2d67",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-1/checks/200m-dk032-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-1/checks/200m-dk064-m008-seed0.json",
+      "sha256": "62e37d3ac089121e409d07637681b2d5c7192305cd80bf0c15d35abe3274aa95",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-1/checks/200m-dk064-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-1/checks/200m-dk128-m008-seed0.json",
+      "sha256": "95e980d1a4e42c015bdd405cd1fc7116d24294b1f3a47b906887ad12aa17c6ee",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-1/checks/200m-dk128-m008-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-1/summary-200784.json",
+      "sha256": "cd911216ef7ae878a230e3445847dc3c2aa93953651b86536c98fc3e76ac0e0b",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-1/summary-200784.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-2/checks/200m-dk008-m016-seed0.json",
+      "sha256": "38b5a296f26acf1d4b002dddb83e67a50304267f80185ef98f87671ed00685ee",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-2/checks/200m-dk008-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-2/checks/200m-dk016-m016-seed0.json",
+      "sha256": "e532c8125633f4ea9972db9fcc53c65adfffc0326cc2c4107585a58f7b17c49d",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-2/checks/200m-dk016-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-2/checks/200m-dk032-m016-seed0.json",
+      "sha256": "1e5f8fba0a9ef7053cc4908022159cc4017e108ae0827f502f7cdb327e750c05",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-2/checks/200m-dk032-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-2/checks/200m-dk064-m016-seed0.json",
+      "sha256": "986528d02894fbe9cd2858f78b1a9296a554b309649023de5e4ed93cb9451279",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-2/checks/200m-dk064-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-2/summary-200785.json",
+      "sha256": "c24b6ca1d27928edd0ff7abcd13231ff1408ac3e6de460f72d2a5c7924579d55",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-2/summary-200785.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-3/checks/200m-dk016-m002-seed0.json",
+      "sha256": "ca4a7178c0ab52147db68a4fc559f0da3ced0527c88e2476b7c78418167e3b28",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-3/checks/200m-dk016-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-3/checks/200m-dk032-m002-seed0.json",
+      "sha256": "4b1bfd0b6cfa65dec7e5854caa25c61715c6fa8ddd3aeabd9a0048987ee2be10",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-3/checks/200m-dk032-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-3/checks/200m-dk064-m002-seed0.json",
+      "sha256": "8cb0c2f93ae9d550abae94232018a07d9ca7f8fdc2b8b49ff4fc52518a84e69f",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-3/checks/200m-dk064-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-3/checks/200m-dk128-m002-seed0.json",
+      "sha256": "389e58cc9ad3eff644e0ee53e39975e716bac2aeaa4dc99bf39fcba58b9cdbb7",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-3/checks/200m-dk128-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/grid-3/summary-200786.json",
+      "sha256": "9088cc202dfd90acf97c2161d42016bf63f4b7e77126abe7378d367ea6842ef4",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-3/summary-200786.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/jobs.json",
+      "sha256": "d57b9e5bffb5dd0e395da516c6e88b75d57ae41daee0d9aecb49cdadfdaf3352",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/jobs.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/memory-pool-adjustment.json",
+      "sha256": "67fd5190382fe604951891a6ac9b31187399353e4541b798c7c8db0c741cbc7c",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/memory-pool-adjustment.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/pilot-large/checks/200m-dk128-m016-seed0.json",
+      "sha256": "6ec331146f267a5b02edcc9f29d964546013dac4b97d09a71f991c6eec23e867",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large/checks/200m-dk128-m016-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/pilot-large/summary-200782.json",
+      "sha256": "b121646159974fecb3b64dbb335aaf1a06dab0e06e4d7cd1f30bb88dd3411ec7",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large/summary-200782.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/pilot-small/checks/200m-dk008-m002-seed0.json",
+      "sha256": "298b07ad19d2e405684acd100eb11f91ea589790a0a0900c9be2e1e504caadf4",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-small/checks/200m-dk008-m002-seed0.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/pilot-small/summary-200781.json",
+      "sha256": "a9e0ff211cbb89dc63d794aa32d32bfab4acc8df0a8a86fa59559860e92a99f5",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-small/summary-200781.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_host_staging/summary.json",
+      "sha256": "848220fe34cde80fcf949d4d78ba0cc9e054485500b50d7249c12cc4664c705e",
+      "source": "results/key_dimension_taylor/hardware_checks/a6000_host_staging/summary.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-communication-200762/default.json",
+      "sha256": "86df1fe8375aab23539e441da26fe3cc0ae532a7a72b1bd40336bde284602d17",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-communication-200762/default.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-communication-200762/p2p_disabled.json",
+      "sha256": "6c2eceaac93c9c1a89b50253a1c8e2552687be9637a802f9a8fba9cbb70b7aa9",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-communication-200762/p2p_disabled.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-communication-200762/record.json",
+      "sha256": "5a6b6ec7578e9b3bb7d10189fbd5c449f8c4e9cbe062e56f4c939ca96432fee0",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-communication-200762/record.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-peer-copy-fix/attempts/200773/distributed.json",
+      "sha256": "09bc33be3e1e03021c2877adc21442cb3b6c8e356b7ff6623acddfac1747c219",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-peer-copy-fix/attempts/200773/distributed.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-peer-copy-fix/attempts/200773/operator.json",
+      "sha256": "c47081d1fdc72aa9c16969dc1b6278502d3de24962418d4422bb84d6ceae4d29",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-peer-copy-fix/attempts/200773/operator.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-peer-copy-fix/kernels-200776.json",
+      "sha256": "d73ae656661c8e0f786405c8619641f287576dc40b22d8e8998d6e734e1ab04e",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-peer-copy-fix/kernels-200776.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-peer-copy-fix/record.json",
+      "sha256": "eac7c75008a89ac3c7bdf3391ae74b4535e4ec7823f94094081a8820fb47a542",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-peer-copy-fix/record.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-peer-copy-fix/transfers-200772/transfers.json",
+      "sha256": "62dc3f2b32f12235f99b79ba383995d307da5204fd452fc46819c2766a03d119",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-peer-copy-fix/transfers-200772/transfers.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-peer-copy-fix/transfers-200774/transfers.json",
+      "sha256": "5a6cc4dfe9cd567bb5f954c362ef2446a4fd08062baf44ff11034f277376f210",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-peer-copy-fix/transfers-200774/transfers.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-transport-pilot-200764/evidence/config.json",
+      "sha256": "d5bd3c7f3cf0a802725b2ba9e5f7b2ab7ff5d3a8d3cf5f019851f882485e129f",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-transport-pilot-200764/evidence/config.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-transport-pilot-200764/evidence/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-transport-pilot-200764/evidence/data_identity.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-transport-pilot-200764/evidence/metadata.json",
+      "sha256": "61c0bcba6fd76d9a4ee3c64370cb7e6f416e62c94f33c2b6abe4f5bffb6894ac",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-transport-pilot-200764/evidence/metadata.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-transport-pilot-200764/evidence/numerical_failure_step_00000032.json",
+      "sha256": "575f098773bc3a1941159d836a5a04a6ab486e0a0854a9daaa9949b54747cbf8",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-transport-pilot-200764/evidence/numerical_failure_step_00000032.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-transport-pilot-200764/initial.json",
+      "sha256": "85c18be0a91ddf3a43319767d21462a954cca91a295639e988eb872aa5e2d4cb",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-transport-pilot-200764/initial.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-transport-pilot-200764/result.json",
+      "sha256": "b27e10c6c34733df194f2808e0561c080ad618a069737fdccfdd3a68fd735e63",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-transport-pilot-200764/result.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/a6000-transport-pilot-200764.json",
+      "sha256": "c0fdbc47af3aea654e855c820e3119432131b6746b12be0dcfc939a2706a5b77",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/a6000-transport-pilot-200764.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a6000_transport/cleanup.json",
+      "sha256": "b27283cd6d2a1e0c30ac8fd453884c6f32d5c168e93c2d919509ca84e1bbe38e",
+      "source": "results/key_dimension_taylor/hardware_checks/diagnostics/cleanup.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/allocation.json",
+      "sha256": "d931a35ac273a470657f921c0df019fda40be20bed988e5187ee9d596faf9882",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/allocation.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/both/200m-dk008-m004-seed0/probe-32.json",
+      "sha256": "fe7e9f97b90ab239f2d5b8a33056f33c29ca78296741728c2d36626c8cbf0068",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/both/200m-dk008-m004-seed0/probe-32.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/both/200m-dk008-m004-seed0/probe-33.json",
+      "sha256": "a83424b835fd2c5c4573235861e4c4193f9ec8f6a72e1b9c5c8ee2a753ac2cd8",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/both/200m-dk008-m004-seed0/probe-33.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/cuda_peer_copy.json",
+      "sha256": "40b5d08c1c5c344e262547d824b2c0ed1b807d6ce012bc142bdd73a08f98ebd2",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/cuda_peer_copy.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/host_only/200m-dk008-m004-seed0/probe-32.json",
+      "sha256": "07f754b1845ab3a8348e40723a7b6f27f70b65d890e5bb4fbc018429504ff2fa",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/host_only/200m-dk008-m004-seed0/probe-32.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/host_only/200m-dk008-m004-seed0/probe-33.json",
+      "sha256": "19227d9e06e7cef6dd73d6f2d54895a1402e5fc87f05c11642588df28423e18c",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/host_only/200m-dk008-m004-seed0/probe-33.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/host_pcie.json",
+      "sha256": "2f5792978e86acb509b65163ac79fe209ac2acc33ddaf8777c147cb2cd5097af",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/host_pcie.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/invalid_label_loss.json",
+      "sha256": "c32b818a45889c6888d80a7bfe868515ffb0dd7ebddb709c44519bbe483a78cb",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/invalid_label_loss.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/iommu_domains.json",
+      "sha256": "1835563ce16e89f330ae0833057fdbd74723a117734df63c666345779d2ee520",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/iommu_domains.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/launch.json",
+      "sha256": "ecf664a4fa91f01e9cbc0a2fe6f90047804d1829e01d32b79878e798b6959309",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/launch.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/native/200m-dk008-m004-seed0/probe-32.json",
+      "sha256": "d91405c7371f5bb2621eb5ea71ac391a4e857c39f709ec7674391eb6e6e848d4",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/native/200m-dk008-m004-seed0/probe-32.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/nccl_only/200m-dk008-m004-seed0/probe-32.json",
+      "sha256": "ddeb37c2c84ceaf439d65c27af09c411d629f97b09e62bc5a587fc375e19c88d",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/nccl_only/200m-dk008-m004-seed0/probe-32.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/summary.json",
+      "sha256": "38f664a0fc9696660f02ce4ebea601e2c44a15ad09ec09f9f32995b39d836761",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/summary.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/validation.json",
+      "sha256": "46cbabd899ad9700d1e284e331bc77ba28bbf2e6057fd505acbb2316ea105f22",
+      "source": "results/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/validation.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/a100_transport/cuda_peer_probe.py",
+      "sha256": "2c989f5b5e1f6dda79e26cf8d7d276bec9dcee238b474c16e1128f956bc3fc94",
+      "source": ".cache/a100_diagnostics/cuda_peer_probe.py"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/execution/execution-policy-a6000.json",
+      "sha256": "a9988828534c32e9398a289ae775a3d991e732acb3efae56dd5cc4832b329c77",
+      "source": "results/key_dimension_taylor/execution-policy-a6000.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/execution/execution-policy-a6000.startup.json",
+      "sha256": "07194157dd354bcfd86dfe89170b848365a775b3c746176e9c64a0f31b5fcf9c",
+      "source": "results/key_dimension_taylor/execution-policy-a6000.startup.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/execution/execution-policy-a6000.validation.json",
+      "sha256": "67ed3ebe69555052aaea225b9743702a96fd70dcd76b747b34420cc4dfc3097b",
+      "source": "results/key_dimension_taylor/execution-policy-a6000.validation.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/execution/execution-policy-fast.eligibility-verification.json",
+      "sha256": "0355b51abf0913067f5415d8f7a45d5f2b621b5732629bf488e4f8352704592d",
+      "source": "results/key_dimension_taylor/execution-policy-fast.eligibility-verification.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/execution/execution-policy-fast.json",
+      "sha256": "a770c55bedb134e4305ce45063b1440568eca904f749d2c281e4afd2819ebae4",
+      "source": "results/key_dimension_taylor/execution-policy-fast.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/execution/execution-policy-fast.validation.json",
+      "sha256": "c44ee8b93df8277af37be1261c706c6ebaeb7ba414d92832efc8845aa442215d",
+      "source": "results/key_dimension_taylor/execution-policy-fast.validation.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/execution/execution-policy-fast.watch.json",
+      "sha256": "2de0fb9cd2b27ad5b3c48a8ebb82b3682b3d57e93ef1f1cd5d5b19b5c4d372cf",
+      "source": "results/key_dimension_taylor/execution-policy-fast.watch.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/execution/execution-policy-fast.watch.launch.json",
+      "sha256": "85ff8c345a395ed4d3767c3277ac9ea8b895781a9c3ae3bef831592ddd645f36",
+      "source": "results/key_dimension_taylor/execution-policy-fast.watch.launch.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/execution/execution-policy.json",
+      "sha256": "d32ebeb821b45f302da75c107b9c963338595d2497de2788709540b9998169b1",
+      "source": "results/key_dimension_taylor/execution-policy.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/execution/hardware-policy.json",
+      "sha256": "29313a2ece060638ece9d5135fbcf75dc795734d61379cd1c575dff0873efc73",
+      "source": "results/key_dimension_taylor/hardware_checks/policy.json"
+    },
+    {
+      "path": "results/key_dimension_taylor/evidence/execution/scheduler.json",
+      "sha256": "95016c82be6a25bb9e7bf4cad6c5284be7c4c90253353fa1bac078487a3827c0",
+      "source": "Slurm sacct observation 2026-09-22"
+    }
+  ],
+  "experiment": "key_dimension_taylor",
+  "figure_rendering": {
+    "path": "results/key_dimension_taylor/provenance/figure_rendering.json",
+    "sha256": "4a21fde210271f16ed06c705497b4b75be79c96dbd1900817a83e1b7e952f79c"
+  },
+  "format": "functional-memory-retained-experiment",
+  "hardware_qualification": {
+    "a100_host_staging": {
+      "full_grid_qualified": false,
+      "job": "200853",
+      "passed_coordinates": [
+        {
+          "attention_degree": 4,
+          "qk_head_dim": 8
+        }
+      ],
+      "runtime_source_commit": "a1f1b2f04a3a625d8f48735aad0c990a09dbcc01"
+    },
+    "a100_native": {
+      "failed": 19,
+      "job": "200754",
+      "passed": 1,
+      "runtime_source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320"
+    },
+    "a6000_host_staging": {
+      "failed": 0,
+      "jobs": [
+        "200781",
+        "200782",
+        "200783",
+        "200784",
+        "200785",
+        "200786"
+      ],
+      "passed": 20,
+      "runtime_source_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb"
+    },
+    "b300_native": {
+      "failed": 0,
+      "jobs": [
+        "200733",
+        "200753"
+      ],
+      "passed": 20,
+      "runtime_source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320"
+    },
+    "h100": {
+      "preflight_job_id": "200502",
+      "production_complete": true,
+      "runtime_source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320"
+    }
+  },
+  "historical_sweep_sha256": "5976bf75dc66d7d3e1c38db812c935a947704f020eb2f5c13441cc95a9724fcd",
+  "home_cluster": "kennel",
+  "identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
+  "key_dimensions": [
+    8,
+    16,
+    32,
+    64,
+    128
+  ],
+  "retained_logs": [
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk008-m002-seed0/slurm-200505.out",
+      "sha256": "2f985e90e79a4c417568bc115915eb78e274ef7b8a2b12cb23b4a82c8c906c4f",
+      "size_bytes": 1500954,
+      "slurm_job_id": "200505"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk008-m004-seed0/slurm-200506.out",
+      "sha256": "380c822469b4a58166b3bf7d82c3a8ccf42229acc6de89bf5091839cb4144a9d",
+      "size_bytes": 1502524,
+      "slurm_job_id": "200506"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk008-m008-seed0/slurm-200507.out",
+      "sha256": "61dcb92acdbe871bb978600490ad79a03fc43e4c1adb9e7124534f8d02363595",
+      "size_bytes": 1505355,
+      "slurm_job_id": "200507"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk008-m016-seed0/slurm-200508.out",
+      "sha256": "4988278174b30a8b572438ee4fe824cd2d2a05dc15dd388c9631a648e515b62b",
+      "size_bytes": 1511563,
+      "slurm_job_id": "200508"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk016-m002-seed0/slurm-200509.out",
+      "sha256": "0bf48780d87cdb8679e8f0ccff746b829856ba6173ced38b85e1bbe30b65e8be",
+      "size_bytes": 1501416,
+      "slurm_job_id": "200509"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk016-m004-seed0/slurm-200510.out",
+      "sha256": "7ed9b707ae621b81b28a0b068de253c586fb1e6d042aa7b4299f16dbbcfac0f5",
+      "size_bytes": 1502749,
+      "slurm_job_id": "200510"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk016-m008-seed0/slurm-200511.out",
+      "sha256": "2dc3fa52773a29ac4e8a38c0d47dfb0f6e83511c30d8749ab605eb92944017db",
+      "size_bytes": 1505570,
+      "slurm_job_id": "200511"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk016-m016-seed0/slurm-200729.out",
+      "sha256": "86dc98ef115400e58fcfcc7da754ff875bd74d2f5caddb90cf538d57f0273e34",
+      "size_bytes": 1517027,
+      "slurm_job_id": "200729"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
+      "sha256": "086036d00705b13dc3e5e3bfa775ba31e46a676cdd62c9077759d8da9fe82c16",
+      "size_bytes": 1495071,
+      "slurm_job_id": "200734"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk032-m004-seed0/slurm-200735.out",
+      "sha256": "8f7b70321e9728e3a0524fa77f86006e4e9477ae4314f41896e7bb53d8c2d433",
+      "size_bytes": 1498420,
+      "slurm_job_id": "200735"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk032-m008-seed0/slurm-200736.out",
+      "sha256": "0c1599e33b10cb67f9a6f2b5cc0594196eb3ba9f59900f24c5ad07f8a52844ef",
+      "size_bytes": 1505813,
+      "slurm_job_id": "200736"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200809.out",
+      "sha256": "9dfec51b1b132b6a821ed8e760d703c2d7c463f60eaf4c1cdbd9053c00b902de",
+      "size_bytes": 1478606,
+      "slurm_job_id": "200809"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk128-m002-seed0/slurm-200737.out",
+      "sha256": "7558588effd3c4d38e1e9801a9612c1f55c822707c7e42da213622e82c45d245",
+      "size_bytes": 1513425,
+      "slurm_job_id": "200737"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk128-m004-seed0/slurm-200738.out",
+      "sha256": "34fa98404a3f9e2766a9b638c004b02cb6fe0996e4129e132fd1f62404f9c4a1",
+      "size_bytes": 1514023,
+      "slurm_job_id": "200738"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk128-m008-seed0/slurm-200808.out",
+      "sha256": "ad5143f251eb95275202495644dcd9950cd0cf0d3dc1fc0da965dd23bea9e130",
+      "size_bytes": 1475020,
+      "slurm_job_id": "200808"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200807.out",
+      "sha256": "1b57e1f58b20648d80fbeabc244176e30aa7a86045400ef18690301990cea780",
+      "size_bytes": 1482397,
+      "slurm_job_id": "200807"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/a100_diagnosis/slurm-200853.out",
+      "sha256": "21beff33da1733c0046bd59f6efa0b306977a0ea7d5f9d05967c8780df494977",
+      "size_bytes": 468,
+      "slurm_job_id": "200853"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/b300-preflight/slurm-200733.out",
+      "sha256": "647c276dfef46286078484456a55962e01d7256dab345bcd3f7f36b5584c0d8d",
+      "size_bytes": 21138,
+      "slurm_job_id": "200733"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/hardware-a100/slurm-200754.out",
+      "sha256": "7d9f296862880a8ec3719ccea4250a4442ea5e94a2ccd3411c96a0e3b99ca60b",
+      "size_bytes": 1788,
+      "slurm_job_id": "200754"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200781.out",
+      "sha256": "eaccefb0f3f8c3c780ffb2a7ce6daf0c1c0547e67ee01a0179529785e57cb724",
+      "size_bytes": 3601,
+      "slurm_job_id": "200781"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200782.out",
+      "sha256": "c442c7a9be377ad30b4737d51fa1c04d6fa39b5beb6492389c08beb8ea86d799",
+      "size_bytes": 3600,
+      "slurm_job_id": "200782"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200783.out",
+      "sha256": "0ab3629b6e3e820b9f30ddfae8916b31fbc7c982b2623a5a595c11ad53cbf0e5",
+      "size_bytes": 18001,
+      "slurm_job_id": "200783"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200784.out",
+      "sha256": "b504daf7ed76c48a54a246c945548d1a9358a6c0eac529ffb22b3e30c6f712e4",
+      "size_bytes": 18001,
+      "slurm_job_id": "200784"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200785.out",
+      "sha256": "294857177defe97f549a19912eb5a9b60b9af7695731f82a2a0efb289698fb55",
+      "size_bytes": 14401,
+      "slurm_job_id": "200785"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200786.out",
+      "sha256": "64b9d1d68244170eb90d7c183a394f778317e45dcdd3369d2897932048d7b8a0",
+      "size_bytes": 14401,
+      "slurm_job_id": "200786"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/hardware-b300/slurm-200753.out",
+      "sha256": "c709c7ca5b0ca466b6d39425184276508cede4e23ed4f76a4722459b58407a1e",
+      "size_bytes": 1517,
+      "slurm_job_id": "200753"
+    },
+    {
+      "path": "results/logs/key_dimension_taylor/preflight/slurm-200502.out",
+      "sha256": "3d8b98ab5959907c1fbb46d64a23d624f19ab400a5af178030b6535180be19b3",
+      "size_bytes": 201411,
+      "slurm_job_id": "200502"
+    }
+  ],
+  "retention": {
+    "checkpoint_selection": "minimum committed validation_nll",
+    "checkpoint_validation": "Orbax metrics, metadata SHA256, file count and byte-size inventory; full checkpoint payloads were not rehashed",
+    "historical_record_paths": "Byte-preserved metadata and diagnostic evidence contain original execution paths. Canonical paths in this manifest and the evidence source-to-path index are authoritative; historical paths are not live dependencies.",
+    "new_completed_runs": 16,
+    "reused_grid_cells": 9,
+    "terminal_step": 19074,
+    "training_tokens": 10000269312
+  },
+  "runs": [
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 2,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m002-seed0/best_validation.json",
+        "sha256": "a7728e5e75817c509fe3a2f865105607650078bf2ccd799b4d3ac701caf71671"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m002-seed0/completion.json",
+        "sha256": "b638327ad96544d53384058e9b09a4d975c6d08eafa062c53c66ac371f5fb6f8"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m002-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "dogo",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "gpu_count": 4,
+        "gpu_family": "H100"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m002-seed0/launch.json",
+        "sha256": "4da2de656cc027935675b838f0b036184317de246b02b0d3142dcc7f3b9db552"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m002-seed0/metadata.json",
+        "sha256": "d6d7ec00474997e28893114c2c122a6ce675b29607b8c55b11f19367b8921478"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m002-seed0/metrics.jsonl",
+        "sha256": "c79a75cdd00d5955b95549106f03b91f687054c885e48bd9443fe54dbc6255d0"
+      },
+      "name": "200m-dk008-m002-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 181556224,
+      "qk_head_dim": 8,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk008-m002-seed0.yaml",
+        "sha256": "2c57e451f943029734c905e721c3b58e3ded00cc8a4b07c98ce53de472ec5cc6"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "24cf14daf81b0feb590ecd128ae53e8fc474a6129089393f1aa3f7e2c1521f7f",
+        "path": "checkpoints/key_dimension_taylor/200m-dk008-m002-seed0/19074",
+        "size_bytes": 1998366599,
+        "step": 19074,
+        "validation_nll": 3.024197425161089,
+        "validation_perplexity": 20.577483111979156
+      },
+      "slurm_job_id": "200505",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk008-m002-seed0/slurm-200505.out",
+        "sha256": "2f985e90e79a4c417568bc115915eb78e274ef7b8a2b12cb23b4a82c8c906c4f"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 3.024197425161089,
+        "validation_perplexity": 20.577483111979156
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 4,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m004-seed0/best_validation.json",
+        "sha256": "fbda74e4a26677f4602002af7d78fa30ed1f71ec272dd3b992c06c8469eb358e"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m004-seed0/completion.json",
+        "sha256": "ac246e4f4abc81e40fac17d3b36023901a867db2a5615c372b48291067addc1f"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m004-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "dogo",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "gpu_count": 4,
+        "gpu_family": "H100"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m004-seed0/launch.json",
+        "sha256": "bdeec8b3682ff5efda3484583c668fd55bc72ab904a37c711ab9cc2074e4a3e6"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m004-seed0/metadata.json",
+        "sha256": "c7716e6a52b8991fc63f83c7c508e236b327884ecc300e78fa2735b38707d78a"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m004-seed0/metrics.jsonl",
+        "sha256": "a9f1db65865e1012e6de36666075baa4ce09b323aafefaf481097b9046ac30dc"
+      },
+      "name": "200m-dk008-m004-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 181556224,
+      "qk_head_dim": 8,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk008-m004-seed0.yaml",
+        "sha256": "4acfaefab370b84a2223f0b514f19b33e66a9a92e6c0d6057519df78fc8e1a92"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "62cba78732e051821f28ebdd4a4103226e63e93a0ddace320dabbf4ac2371b9c",
+        "path": "checkpoints/key_dimension_taylor/200m-dk008-m004-seed0/19074",
+        "size_bytes": 1997182843,
+        "step": 19074,
+        "validation_nll": 2.900241528238569,
+        "validation_perplexity": 18.178535468906798
+      },
+      "slurm_job_id": "200506",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk008-m004-seed0/slurm-200506.out",
+        "sha256": "380c822469b4a58166b3bf7d82c3a8ccf42229acc6de89bf5091839cb4144a9d"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.900241528238569,
+        "validation_perplexity": 18.178535468906798
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 8,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m008-seed0/best_validation.json",
+        "sha256": "8a9112438bee4365d81d2dc5bf7308035815e0d1a7d525d074963ef2fa959e09"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m008-seed0/completion.json",
+        "sha256": "db4914e6be28857a12b2f9928646364bde3000069ea42473d25bd60eeef90be2"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m008-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "dogo",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "gpu_count": 4,
+        "gpu_family": "H100"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m008-seed0/launch.json",
+        "sha256": "775b1b3b2775624b1303ec2e6aa72306c88ccf3db4f55a714e6536d3e1cdce01"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m008-seed0/metadata.json",
+        "sha256": "c471ab4663d7fa45b382381c35fe6adae58243bbfde9ee13b3fa0c79b7806ddc"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m008-seed0/metrics.jsonl",
+        "sha256": "1ef52873252a1b44b4b927a94260ec2609ce14444014932f6375d7e015110383"
+      },
+      "name": "200m-dk008-m008-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 181556224,
+      "qk_head_dim": 8,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk008-m008-seed0.yaml",
+        "sha256": "56d6dcb47d30504a73688bdf4acbd733297d1bb616786371839d8bcfa543fc5b"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "916563db6e6107deeec74039bc9e546cea1f95c9e48fe1ab0e8743029cea60aa",
+        "path": "checkpoints/key_dimension_taylor/200m-dk008-m008-seed0/19074",
+        "size_bytes": 1996748654,
+        "step": 19074,
+        "validation_nll": 2.843690403870174,
+        "validation_perplexity": 17.179046318526584
+      },
+      "slurm_job_id": "200507",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk008-m008-seed0/slurm-200507.out",
+        "sha256": "61dcb92acdbe871bb978600490ad79a03fc43e4c1adb9e7124534f8d02363595"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.843690403870174,
+        "validation_perplexity": 17.179046318526584
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 16,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m016-seed0/best_validation.json",
+        "sha256": "9994eb1a077a1477d0a6d3261e961a7c130bad6ca571293345451a986758ca9b"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m016-seed0/completion.json",
+        "sha256": "94c511b6b29ee085a200735d4b82afa2a6b347be35960e589411f752d4083f8a"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m016-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "dogo",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "gpu_count": 4,
+        "gpu_family": "H100"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m016-seed0/launch.json",
+        "sha256": "1a447da81f5ee2c4df78b5ab763aa33f85e3de2a690edf37ed91c16644e9ee16"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m016-seed0/metadata.json",
+        "sha256": "ad120cc41070f8ca1d5586d500f5b20b0b53818d9bdaf3c1957d13e429712795"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk008-m016-seed0/metrics.jsonl",
+        "sha256": "3be0519b762c5638c54130bf105d3728df2aa4d236e4242304b543ed4faae858"
+      },
+      "name": "200m-dk008-m016-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 181556224,
+      "qk_head_dim": 8,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk008-m016-seed0.yaml",
+        "sha256": "94a8195dc1cc153fc9d59ec7b7200177b368bbec21e9e2f598ef1e34bb796233"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "065b5050610b99094c39a2513bfd71255fa83df37bbd641b11ee2258b32fab45",
+        "path": "checkpoints/key_dimension_taylor/200m-dk008-m016-seed0/19074",
+        "size_bytes": 1996743861,
+        "step": 19074,
+        "validation_nll": 2.8242272904941013,
+        "validation_perplexity": 16.847921405989926
+      },
+      "slurm_job_id": "200508",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk008-m016-seed0/slurm-200508.out",
+        "sha256": "4988278174b30a8b572438ee4fe824cd2d2a05dc15dd388c9631a648e515b62b"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.8242272904941013,
+        "validation_perplexity": 16.847921405989926
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 2,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m002-seed0/best_validation.json",
+        "sha256": "fca2cf59711cd79a8da5bb2b7b5ec818d8e1118e2df7a15dc1f716f91b8e322f"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m002-seed0/completion.json",
+        "sha256": "2ee1db56f1f9926ad9e86a65b4cf870fd5273655ae47a6b24c673150663d5226"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m002-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "dogo",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "gpu_count": 4,
+        "gpu_family": "H100"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m002-seed0/launch.json",
+        "sha256": "78d2c4b5170d4a8bbd3f75fef42da6968f4c81d8611d9151ed35e7811d66ae3f"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m002-seed0/metadata.json",
+        "sha256": "0a1359ff51ee59d684d6e8fdcce96e5429bbb8e93c9513b8dffc9953800d0e32"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m002-seed0/metrics.jsonl",
+        "sha256": "3862a0101acccb80fd668e2575288bcea3469d643cc80967855eef3bbcd523b8"
+      },
+      "name": "200m-dk016-m002-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 184177664,
+      "qk_head_dim": 16,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk016-m002-seed0.yaml",
+        "sha256": "3bb9b68112626b9cb2b81b847fba9b5f1391ae736e96bad276dccfbaef9ceb26"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 15,
+        "metadata_sha256": "daa4a69b0357c39233ddf49bf8bd3a519a3aab2cc9223ecb963e4824e964bbd3",
+        "path": "checkpoints/key_dimension_taylor/200m-dk016-m002-seed0/19074",
+        "size_bytes": 2027068401,
+        "step": 19074,
+        "validation_nll": 2.9177121264593944,
+        "validation_perplexity": 18.49891582770924
+      },
+      "slurm_job_id": "200509",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk016-m002-seed0/slurm-200509.out",
+        "sha256": "0bf48780d87cdb8679e8f0ccff746b829856ba6173ced38b85e1bbe30b65e8be"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.9177121264593944,
+        "validation_perplexity": 18.49891582770924
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 4,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m004-seed0/best_validation.json",
+        "sha256": "ae1dcd00253f1842f080a175ea6b828620e26db3f1ed3f979571e39001192898"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m004-seed0/completion.json",
+        "sha256": "33197f96e8c4fd2cf56747d7b6d0bc496a28ef70d73f06a67e7a3ec9aa7fbe4f"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m004-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "dogo",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "gpu_count": 4,
+        "gpu_family": "H100"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m004-seed0/launch.json",
+        "sha256": "3518fcb0132695c0e1dc2ef17116a81a9e579b3fbfa153db466187640872937c"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m004-seed0/metadata.json",
+        "sha256": "c6ce19fb117c5f586990f0dd908c7b1c23055cb059ffaf2bfa94ff6f52643a65"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m004-seed0/metrics.jsonl",
+        "sha256": "4e478beac647915ca8d55d6c791694faf0950e9925224bc7503e3487e1cbd91f"
+      },
+      "name": "200m-dk016-m004-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 184177664,
+      "qk_head_dim": 16,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk016-m004-seed0.yaml",
+        "sha256": "e6d05ce4b4bd1803481f6dc72ddfa01e5ef0fafad515f2a59dbf01cefcd9deb9"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "7ebf78d7d51984bdee53e7bba9583415b43ebcb3bdf1112d40f7d33a0393e3bf",
+        "path": "checkpoints/key_dimension_taylor/200m-dk016-m004-seed0/19074",
+        "size_bytes": 2025293703,
+        "step": 19074,
+        "validation_nll": 2.804158474717821,
+        "validation_perplexity": 16.513173804152746
+      },
+      "slurm_job_id": "200510",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk016-m004-seed0/slurm-200510.out",
+        "sha256": "7ed9b707ae621b81b28a0b068de253c586fb1e6d042aa7b4299f16dbbcfac0f5"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.804158474717821,
+        "validation_perplexity": 16.513173804152746
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 8,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m008-seed0/best_validation.json",
+        "sha256": "eb7c23d87927c8c01d63055a5616d0a7df09607998bb51a9127d71a6e9a06bff"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m008-seed0/completion.json",
+        "sha256": "93931b7a3f32c84149e428a35009c8491ab6d9fb4d560b105225a6a886f79587"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m008-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "dogo",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "gpu_count": 4,
+        "gpu_family": "H100"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m008-seed0/launch.json",
+        "sha256": "23100564110d5a3f3af3914036d7adc592c34a4c9d8837f4f2344020fdca2993"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m008-seed0/metadata.json",
+        "sha256": "c752714e541a6c131ffce357a635236fbb643881b6c70dab41546bb78e6f28ac"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m008-seed0/metrics.jsonl",
+        "sha256": "6715d9d635bd2f01ea3cff26feaf34bea68455ed5acc31a860d84a635241a3bd"
+      },
+      "name": "200m-dk016-m008-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 184177664,
+      "qk_head_dim": 16,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk016-m008-seed0.yaml",
+        "sha256": "f05150f61e275ace153cd9af71c14345e7a0a9faa33d7af7b05905137434aa84"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "8e1221e7bebd608e377807ff41fa241b5eb37f3081329380af58061e8752ed0c",
+        "path": "checkpoints/key_dimension_taylor/200m-dk016-m008-seed0/19074",
+        "size_bytes": 2024798130,
+        "step": 19074,
+        "validation_nll": 2.760017820766994,
+        "validation_perplexity": 15.800124516088989
+      },
+      "slurm_job_id": "200511",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk016-m008-seed0/slurm-200511.out",
+        "sha256": "2dc3fa52773a29ac4e8a38c0d47dfb0f6e83511c30d8749ab605eb92944017db"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.760017820766994,
+        "validation_perplexity": 15.800124516088989
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 16,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m016-seed0/best_validation.json",
+        "sha256": "161cd32d324a986f588df6e9e1d706fde5a7c782a60c2e87c88a930d9332348e"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m016-seed0/completion.json",
+        "sha256": "16293317ca700799fed3d197dc16f6193afd4cd009413efc166aaa708e423d5c"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m016-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "dogo",
+        "actual_partition": "standard",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "execution_profile": "h100",
+        "gpu_count": 4,
+        "gpu_family": "H100"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m016-seed0/launch.json",
+        "sha256": "c2b7cf329206b1de6187f2ef7c912de1875dd422885b6d3010e9c09b29c059b5"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m016-seed0/metadata.json",
+        "sha256": "9ac76943b4a5f79636e63f28e63ec3102beccd49021b6519c654574343a1e9d7"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk016-m016-seed0/metrics.jsonl",
+        "sha256": "f9d0c35d52b0dc45c792f95d8d4c267a667d69fdf0f84a59e97bd50060a61ef5"
+      },
+      "name": "200m-dk016-m016-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 184177664,
+      "qk_head_dim": 16,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk016-m016-seed0.yaml",
+        "sha256": "25b54bdbc6c601d8c034f580edb3f5afe1cb3100ca109d7224f9ccb2f046088a"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "507ac041a1dfa6dc05813cb2faf2c1f6f728f4d525a618e6bd8e65b8a5107ea1",
+        "path": "checkpoints/key_dimension_taylor/200m-dk016-m016-seed0/19074",
+        "size_bytes": 2025039667,
+        "step": 19074,
+        "validation_nll": 2.7491975171225413,
+        "validation_perplexity": 15.630083975357097
+      },
+      "slurm_job_id": "200729",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk016-m016-seed0/slurm-200729.out",
+        "sha256": "86dc98ef115400e58fcfcc7da754ff875bd74d2f5caddb90cf538d57f0273e34"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.7491975171225413,
+        "validation_perplexity": 15.630083975357097
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 2,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m002-seed0/best_validation.json",
+        "sha256": "c127ea4a2b28b4832cd0cb9cd7abcde536108b5996edf72a8e2a0b4b48ad79ee"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m002-seed0/completion.json",
+        "sha256": "575519164ca70d973b0431b1a9719690ea6940073c1953c7d2450cf82fff84a0"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m002-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "akita",
+        "actual_partition": "sweep",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "execution_profile": "b300",
+        "gpu_count": 4,
+        "gpu_family": "B300"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m002-seed0/launch.json",
+        "sha256": "996c47bb9d941ac4dca2838d587c6aeec5ff1d161731cd3109682c8aab3db4b8"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m002-seed0/metadata.json",
+        "sha256": "59fb2268d9f473dce8b81697a07d8d4cd08bae26e537c902225d29c53dd78b79"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m002-seed0/metrics.jsonl",
+        "sha256": "f211003390dd1e795100bb9520e0ed98fb6a75b31b3affd0af909c1ba8e5a888"
+      },
+      "name": "200m-dk032-m002-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 189420544,
+      "qk_head_dim": 32,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk032-m002-seed0.yaml",
+        "sha256": "99f9dce450ba01a565356630d16c66eba285b2fd9910b41f4f8dd05c8a118063"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "dd615efba5cdd3b8b3a6329888a734ad161baf8acca0b8bec2cb2e3a29551359",
+        "path": "checkpoints/key_dimension_taylor/200m-dk032-m002-seed0/19074",
+        "size_bytes": 2084202316,
+        "step": 19074,
+        "validation_nll": 2.8432648267064775,
+        "validation_perplexity": 17.171736864198078
+      },
+      "slurm_job_id": "200734",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
+        "sha256": "086036d00705b13dc3e5e3bfa775ba31e46a676cdd62c9077759d8da9fe82c16"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.8432648267064775,
+        "validation_perplexity": 17.171736864198078
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 4,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m004-seed0/best_validation.json",
+        "sha256": "ef4674bcfe1bfb87c6c264000c7b26bc66d6f3fa3497b6dfe19a10d2ff3ad7e9"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m004-seed0/completion.json",
+        "sha256": "458cf803729ed1cbee40502e81ba30a55f571f26bd8d5238181eddbf6f3319ee"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m004-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "akita",
+        "actual_partition": "sweep",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "execution_profile": "b300",
+        "gpu_count": 4,
+        "gpu_family": "B300"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m004-seed0/launch.json",
+        "sha256": "a9c3a6928e27429c5c20bd8126e5fa43b841c801c02b0fdc6ceebd44e7991baf"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m004-seed0/metadata.json",
+        "sha256": "27b3673a7fd90eecda8456d3b4fa732e35add0c3ec575c78a0884920e81945f8"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m004-seed0/metrics.jsonl",
+        "sha256": "f860878f62bb69f799ef05265a5f17d94bb79afc4081252b1718352510fd7bc2"
+      },
+      "name": "200m-dk032-m004-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 189420544,
+      "qk_head_dim": 32,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk032-m004-seed0.yaml",
+        "sha256": "65050e8edbd326e490751425542c60c4680123e1ac6a2caeb60ef10fbd5b861d"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "b24c2a36c4c00643ac152369c4207926779ae6d06cafb01a680b7db81ea09356",
+        "path": "checkpoints/key_dimension_taylor/200m-dk032-m004-seed0/19074",
+        "size_bytes": 2082387771,
+        "step": 19074,
+        "validation_nll": 2.7453334076063975,
+        "validation_perplexity": 15.569804158042514
+      },
+      "slurm_job_id": "200735",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk032-m004-seed0/slurm-200735.out",
+        "sha256": "8f7b70321e9728e3a0524fa77f86006e4e9477ae4314f41896e7bb53d8c2d433"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.7453334076063975,
+        "validation_perplexity": 15.569804158042514
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 8,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m008-seed0/best_validation.json",
+        "sha256": "ddb126523e38cffcd22fc7ffc1b1e11464c87eb25f1c4e50f0b1e318d528052e"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m008-seed0/completion.json",
+        "sha256": "008c10a9fdd4060c259a88d52acec57e711070f02c88a657f31ad9dc4826c7d2"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m008-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "akita",
+        "actual_partition": "sweep",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "execution_profile": "b300",
+        "gpu_count": 4,
+        "gpu_family": "B300"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m008-seed0/launch.json",
+        "sha256": "eb5cdae4fe7e3b06060fb45c122d5cdc5abb78fee3b83749435af586b101e365"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m008-seed0/metadata.json",
+        "sha256": "fffe7341524eaf5cdb3395311349728dff6f148dccb53ebaf8e91d687a1929ec"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m008-seed0/metrics.jsonl",
+        "sha256": "ec578e7a8bfdd175a394d1261027f09237038121b2c6fa8e7baf6c75d4b4ba2a"
+      },
+      "name": "200m-dk032-m008-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 189420544,
+      "qk_head_dim": 32,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk032-m008-seed0.yaml",
+        "sha256": "ae782fc32008873aa92c205333e7afc3000db1de2461cb3d23f3c80e5cc830e9"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 15,
+        "metadata_sha256": "1217bf8ccac36c89fe7afdd91f902b652bc183432ef8fab94fac1f755dcf5937",
+        "path": "checkpoints/key_dimension_taylor/200m-dk032-m008-seed0/19074",
+        "size_bytes": 2082007270,
+        "step": 19074,
+        "validation_nll": 2.7127883349146162,
+        "validation_perplexity": 15.07124064776829
+      },
+      "slurm_job_id": "200736",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk032-m008-seed0/slurm-200736.out",
+        "sha256": "0c1599e33b10cb67f9a6f2b5cc0594196eb3ba9f59900f24c5ad07f8a52844ef"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.7127883349146162,
+        "validation_perplexity": 15.07124064776829
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 16,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m016-seed0/best_validation.json",
+        "sha256": "17a216f678d33f1348dafd325cce73842ff7c95121590fff8abec0cf7c791090"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m016-seed0/completion.json",
+        "sha256": "b4467c4bb82e4634abc86e7869c8d315d64cb1747eb434eb01452b1f1b0affce"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m016-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "akita",
+        "actual_partition": "sweep",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "execution_profile": "b300",
+        "gpu_count": 4,
+        "gpu_family": "B300",
+        "runtime_environment": {}
+      },
+      "handoff": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m016-seed0/handoff.json",
+        "sha256": "8514e2662891c3c7c5d083b5dd264a3822238cad109b8566fcef8163c2339ab4"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m016-seed0/launch.json",
+        "sha256": "68b1725014d613dbf80c6e27aab9d6b52a0f90bc91dfcb73260986fd49f74a0b"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m016-seed0/metadata.json",
+        "sha256": "cb20063c9a48a0b860da91eebc0957ac6925839657d7baea7c024a9c4a9beb04"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk032-m016-seed0/metrics.jsonl",
+        "sha256": "8169d4fd407a4eb02b6595f5071cbc7ed8b6392b437e9b1550743042a681c6d4"
+      },
+      "name": "200m-dk032-m016-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 189420544,
+      "qk_head_dim": 32,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk032-m016-seed0.yaml",
+        "sha256": "59d6d7b38772258b404d7ffd91dbb9d3611ccf8c4ab724aaf34cf1b9aa2b0797"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 12,
+        "metadata_sha256": "e3c4239284af5caa437d08021f978a8be15c16f9e617a7d46821a15ebc13d69c",
+        "path": "checkpoints/key_dimension_taylor/200m-dk032-m016-seed0/19074",
+        "size_bytes": 2082046545,
+        "step": 19074,
+        "validation_nll": 2.709314090864999,
+        "validation_perplexity": 15.018970332120823
+      },
+      "slurm_job_id": "200809",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200809.out",
+        "sha256": "9dfec51b1b132b6a821ed8e760d703c2d7c463f60eaf4c1cdbd9053c00b902de"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.709314090864999,
+        "validation_perplexity": 15.018970332120823
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 2,
+      "completion": {
+        "path": "results/polynomial_attention/runs/200m-m002-seed0/completion.json",
+        "sha256": "b58da90a02f1bc1b0c0d6bf3b63584b7ab9df39f600e1c65b5e6d442211e59a7"
+      },
+      "home_cluster": "kennel",
+      "metadata": {
+        "path": "results/polynomial_attention/runs/200m-m002-seed0/metadata.json",
+        "sha256": "754692f8fad41a85d630883aab228c6aab7a947b29871cade89968d2e52cb296"
+      },
+      "metrics": {
+        "path": "results/polynomial_attention/runs/200m-m002-seed0/metrics.jsonl",
+        "sha256": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77"
+      },
+      "name": "200m-m002-seed0",
+      "original_experiment": "polynomial_attention",
+      "parameter_count": 199906304,
+      "qk_head_dim": 64,
+      "resolved_config": {
+        "path": "results/polynomial_attention/configs/200m-m002-seed0.yaml",
+        "sha256": "7b07128485d77ac24292ae01b1a3a7b60131f2a22def078e22acffdd7eadb308"
+      },
+      "retained_completed": true,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 12,
+        "metadata_sha256": "4d49559fc7c83e403cf9fa54d61ccaa725af944863a4f38308795a9541b9d0a0",
+        "path": "checkpoints/polynomial_attention/200m-m002-seed0/19074",
+        "size_bytes": 2199258055,
+        "step": 19074,
+        "validation_nll": 2.7900009751319885,
+        "validation_perplexity": 16.281035677939382
+      },
+      "slurm_job_id": "199648",
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/200m-m002-seed0/slurm-199648.out",
+        "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6"
+      },
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "source_provenance": {
+        "path": "results/polynomial_attention/provenance/manifest.json",
+        "sha256": "1b79a196a9242e1172f674c0539c8b4575bc2f69ebc2bdb57bad389f7671d75c"
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.7900009751319885,
+        "validation_perplexity": 16.281035677939382
+      },
+      "unavailable_historical_artifacts": [],
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 4,
+      "completion": {
+        "path": "results/polynomial_attention/runs/200m-m004-seed0/completion.json",
+        "sha256": "5aa158bc0661f8682353c4c9b19030c3935abc27c145f823709abdf98100ada1"
+      },
+      "home_cluster": "kennel",
+      "metadata": {
+        "path": "results/polynomial_attention/runs/200m-m004-seed0/metadata.json",
+        "sha256": "3c38a793975e2bd1b4804b4001ea2c98a2acb679950c1c465f522c7a5d9a8514"
+      },
+      "metrics": {
+        "path": "results/polynomial_attention/runs/200m-m004-seed0/metrics.jsonl",
+        "sha256": "9ced82fa7db159b5a93b569ac40b7d8139169bd38634040e781512209e92ee17"
+      },
+      "name": "200m-m004-seed0",
+      "original_experiment": "polynomial_attention",
+      "parameter_count": 199906304,
+      "qk_head_dim": 64,
+      "resolved_config": {
+        "path": "results/polynomial_attention/configs/200m-m004-seed0.yaml",
+        "sha256": "ef88949d6d1a7f381a107916cbd0166f871a3fcff20455f48647f4c4b4021f83"
+      },
+      "retained_completed": true,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "cfe64ae9e8577a083045cec69f4bb292ff5f275a6a2832aa69340ad86db057b2",
+        "path": "checkpoints/polynomial_attention/200m-m004-seed0/19074",
+        "size_bytes": 2197043345,
+        "step": 19074,
+        "validation_nll": 2.7069559693336487,
+        "validation_perplexity": 14.983595500270773
+      },
+      "slurm_job_id": "199649",
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/200m-m004-seed0/slurm-199649.out",
+        "sha256": "c91f16f7ae3b36a2fabc64d6214b4df6379b2958553ac2178e6bf525e50a08ea"
+      },
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "source_provenance": {
+        "path": "results/polynomial_attention/provenance/manifest.json",
+        "sha256": "1b79a196a9242e1172f674c0539c8b4575bc2f69ebc2bdb57bad389f7671d75c"
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.7069559693336487,
+        "validation_perplexity": 14.983595500270773
+      },
+      "unavailable_historical_artifacts": [],
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 8,
+      "completion": {
+        "path": "results/polynomial_attention/runs/200m-m008-seed0/completion.json",
+        "sha256": "4c1e37050f64bce387de8266596309e13d8de381e8368965cb3926e1105a63a4"
+      },
+      "home_cluster": "kennel",
+      "metadata": {
+        "path": "results/polynomial_attention/runs/200m-m008-seed0/metadata.json",
+        "sha256": "2525594087e15a5512a6bee1622b7a8ccdf1fce85df587d2a863ea2d8b0fc838"
+      },
+      "metrics": {
+        "path": "results/polynomial_attention/runs/200m-m008-seed0/metrics.jsonl",
+        "sha256": "edeb0eaa9980c748808df22b18ffcd13c010662ad82c6a472e6445de397cd590"
+      },
+      "name": "200m-m008-seed0",
+      "original_experiment": "polynomial_attention",
+      "parameter_count": 199906304,
+      "qk_head_dim": 64,
+      "resolved_config": {
+        "path": "results/polynomial_attention/configs/200m-m008-seed0.yaml",
+        "sha256": "02f3287c03ecbaf2baaaa1fa679e0fdcacdbb1b4701547a8e2b77ef08a7b10eb"
+      },
+      "retained_completed": true,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "f4e8be44af24bc634f96677d0ba74874b332bb04a0af56e145a441992cd1b498",
+        "path": "checkpoints/polynomial_attention/200m-m008-seed0/19074",
+        "size_bytes": 2196216004,
+        "step": 19074,
+        "validation_nll": 2.6863556674548557,
+        "validation_perplexity": 14.678086502581763
+      },
+      "slurm_job_id": "199650",
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/200m-m008-seed0/slurm-199650.out",
+        "sha256": "81bcf948faefae264cb7a955960acd5ce7672b96d59ff85d1fdcfdbfb45cd90b"
+      },
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "source_provenance": {
+        "path": "results/polynomial_attention/provenance/manifest.json",
+        "sha256": "1b79a196a9242e1172f674c0539c8b4575bc2f69ebc2bdb57bad389f7671d75c"
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.6863556674548557,
+        "validation_perplexity": 14.678086502581763
+      },
+      "unavailable_historical_artifacts": [],
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 16,
+      "completion": {
+        "path": "results/polynomial_attention/runs/200m-m016-seed0/completion.json",
+        "sha256": "d5a95945386136c1183a0f78d492cad4b261023cd5413e175c4ee01cbee4317d"
+      },
+      "home_cluster": "kennel",
+      "metadata": {
+        "path": "results/polynomial_attention/runs/200m-m016-seed0/metadata.json",
+        "sha256": "1169532305ca5500b6bf2fafdc99d75d79715bfb07cd1b9bd4545a80db63f8fa"
+      },
+      "metrics": {
+        "path": "results/polynomial_attention/runs/200m-m016-seed0/metrics.jsonl",
+        "sha256": "3bb5eb752f69f69e4b0c00f04559093baad00d15541f5831f162e46aa3130e1a"
+      },
+      "name": "200m-m016-seed0",
+      "original_experiment": "polynomial_attention",
+      "parameter_count": 199906304,
+      "qk_head_dim": 64,
+      "resolved_config": {
+        "path": "results/polynomial_attention/configs/200m-m016-seed0.yaml",
+        "sha256": "c490b3c8d0803612df74ea8c4684215b60481b8e6365c443499cf1c63c4e0e60"
+      },
+      "retained_completed": true,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 13,
+        "metadata_sha256": "d55fe67b6ada53cc7edbec49599155dd499039f1f441e02f58abbab23e20b318",
+        "path": "checkpoints/polynomial_attention/200m-m016-seed0/19074",
+        "size_bytes": 2196448790,
+        "step": 19074,
+        "validation_nll": 2.688271709850856,
+        "validation_perplexity": 14.70623729906033
+      },
+      "slurm_job_id": "199651",
+      "slurm_log": {
+        "path": "results/logs/polynomial_attention/200m-m016-seed0/slurm-199651.out",
+        "sha256": "7ccc0811022235c69dbfb3179d5a5cce8e432b398c4867ec7c1371d17b687dd7"
+      },
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "source_provenance": {
+        "path": "results/polynomial_attention/provenance/manifest.json",
+        "sha256": "1b79a196a9242e1172f674c0539c8b4575bc2f69ebc2bdb57bad389f7671d75c"
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.688271709850856,
+        "validation_perplexity": 14.70623729906033
+      },
+      "unavailable_historical_artifacts": [],
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 2,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m002-seed0/best_validation.json",
+        "sha256": "8d2eebf0d1bc04812776b6cee7e3b825b8c8e31e9b1b75bb14ed2aeae4d1460a"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m002-seed0/completion.json",
+        "sha256": "86c2c0b0576807eddcc8d86a227fa55786fb6ef51430d43ef4ed935591de40fd"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m002-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "akita",
+        "actual_partition": "sweep",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "execution_profile": "b300",
+        "gpu_count": 4,
+        "gpu_family": "B300"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m002-seed0/launch.json",
+        "sha256": "cf5db863cef1eb6fb995f400be4dd6d171b7d229eebd2e1637ae736e756a0b15"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m002-seed0/metadata.json",
+        "sha256": "0d966aecc94b1b284ac9d34a6ec13a558e304bf66de3961136b3af7aae701172"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m002-seed0/metrics.jsonl",
+        "sha256": "4731d3920a58201f8ca9ac8bf2568826a28a1a21d1f30e28c5c71e1023fc108d"
+      },
+      "name": "200m-dk128-m002-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 220877824,
+      "qk_head_dim": 128,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk128-m002-seed0.yaml",
+        "sha256": "1e93fd070f5d015a330000d62feb822b73a8b99192f683a768a1c2ded1616585"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "4151054cfe32f59c56e668bb9eaaf320857dd15bc02090f86c7ad3459e0c5f51",
+        "path": "checkpoints/key_dimension_taylor/200m-dk128-m002-seed0/19074",
+        "size_bytes": 2430044451,
+        "step": 19074,
+        "validation_nll": 2.754944213799068,
+        "validation_perplexity": 15.720163910119203
+      },
+      "slurm_job_id": "200737",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk128-m002-seed0/slurm-200737.out",
+        "sha256": "7558588effd3c4d38e1e9801a9612c1f55c822707c7e42da213622e82c45d245"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.754944213799068,
+        "validation_perplexity": 15.720163910119203
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 4,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m004-seed0/best_validation.json",
+        "sha256": "492f581284553e09d1d4f070f2731dc392ccd41ba23be3cc20b2b6f82b1e3347"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m004-seed0/completion.json",
+        "sha256": "981ff4663ee5fd768f671f2c2b13eec81bf57c997a6cab678cf6098dbc4bb778"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m004-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "akita",
+        "actual_partition": "sweep",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "execution_profile": "b300",
+        "gpu_count": 4,
+        "gpu_family": "B300"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m004-seed0/launch.json",
+        "sha256": "aaa7fc7f6e0a30303574109d368c3020bc88801a5fd936ef9c2aabcdf727ad08"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m004-seed0/metadata.json",
+        "sha256": "5dd6cb70953094f823ca36f1b4f2247e87f7c66ee4e5b5539169562d8f7acd88"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m004-seed0/metrics.jsonl",
+        "sha256": "11e9ed1325c8009a3de91bec8e7247235da8426272b23149051c65d836ac5f5f"
+      },
+      "name": "200m-dk128-m004-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 220877824,
+      "qk_head_dim": 128,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk128-m004-seed0.yaml",
+        "sha256": "3684d6a865d8de8e1f11e878a22fce48d4f992073f5888dfc51459e8c4c14abe"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "7aa935ac729bc276a4b110f41fa9fbe385ee5b5dcf503d894bf940476a119ead",
+        "path": "checkpoints/key_dimension_taylor/200m-dk128-m004-seed0/19074",
+        "size_bytes": 2426873728,
+        "step": 19074,
+        "validation_nll": 2.6762146949768066,
+        "validation_perplexity": 14.529988628748207
+      },
+      "slurm_job_id": "200738",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk128-m004-seed0/slurm-200738.out",
+        "sha256": "34fa98404a3f9e2766a9b638c004b02cb6fe0996e4129e132fd1f62404f9c4a1"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.6762146949768066,
+        "validation_perplexity": 14.529988628748207
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 8,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m008-seed0/best_validation.json",
+        "sha256": "1f7eb2ffecfc69101817ee8b96bb7057199a5838a052bad0a09bd34bd80f2783"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m008-seed0/completion.json",
+        "sha256": "665b83a1a693486f7ce7b1efead761db8d83b5a1b61080e3ab5c9eedbb9ffcd9"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m008-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "akita",
+        "actual_partition": "sweep",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "execution_profile": "b300",
+        "gpu_count": 4,
+        "gpu_family": "B300",
+        "runtime_environment": {}
+      },
+      "handoff": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m008-seed0/handoff.json",
+        "sha256": "25e1b976cfea34dada749ca2f5084be6047e62e38c379728bb54d75969c7b08f"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m008-seed0/launch.json",
+        "sha256": "44b69a58d533736c34908bbbf2f8dce0bfd7889390e0a2ac6209b7d92aab7c11"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m008-seed0/metadata.json",
+        "sha256": "530b1482b6f5d5445ade597efc1433ed93f0a5ac0165c0017d672a98f0f87de3"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m008-seed0/metrics.jsonl",
+        "sha256": "b1729cd20fe5726ccc1ecf28c8b726f4e3516991a6359ec9c672756266977293"
+      },
+      "name": "200m-dk128-m008-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 220877824,
+      "qk_head_dim": 128,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk128-m008-seed0.yaml",
+        "sha256": "fe3c8f7d3a2c871151381b10c5c880f2ed2ed09893b127cdc735da5cf1f63a4f"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 13,
+        "metadata_sha256": "6ce6bfe5ef20b3ded4b6926f78a7cd2ceedb57aa46f8b87c493873d5d1f9b4d6",
+        "path": "checkpoints/key_dimension_taylor/200m-dk128-m008-seed0/19074",
+        "size_bytes": 2425869728,
+        "step": 19074,
+        "validation_nll": 2.664348942892892,
+        "validation_perplexity": 14.358598234779393
+      },
+      "slurm_job_id": "200808",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk128-m008-seed0/slurm-200808.out",
+        "sha256": "ad5143f251eb95275202495644dcd9950cd0cf0d3dc1fc0da965dd23bea9e130"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.664348942892892,
+        "validation_perplexity": 14.358598234779393
+      },
+      "value_head_dim": 64
+    },
+    {
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_degree": 16,
+      "best_validation": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m016-seed0/best_validation.json",
+        "sha256": "7aed5f2f9d5e0db9c67608ec95f867025a3e336ca2cfb260424ed32c7c36f4f6"
+      },
+      "completion": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m016-seed0/completion.json",
+        "sha256": "97417db27cbab9d9aaa135a184513e3b0f09ebc9f311028e17fcccc53ca3ec6a"
+      },
+      "data_identity": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m016-seed0/data_identity.json",
+        "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+      },
+      "execution": {
+        "actual_node": "dogo",
+        "actual_partition": "sweep",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "execution_profile": "h100",
+        "gpu_count": 4,
+        "gpu_family": "H100",
+        "runtime_environment": {}
+      },
+      "handoff": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m016-seed0/handoff.json",
+        "sha256": "95b7125f39e12369a66b1dbfa61cab4b1b9b3b7840102c0c5d333ccbe9f37e53"
+      },
+      "home_cluster": "kennel",
+      "launch": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m016-seed0/launch.json",
+        "sha256": "b79454e3d86ce34f98bc12aac6d23c16518f5a74461b1a7d9a3096e728cc4a7b"
+      },
+      "metadata": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m016-seed0/metadata.json",
+        "sha256": "9ef8cf24ca5855062781fd3385edc0b6ad18dad5a515c35afdd54b7808ee0be3"
+      },
+      "metrics": {
+        "path": "results/key_dimension_taylor/runs/200m-dk128-m016-seed0/metrics.jsonl",
+        "sha256": "1691a4090e4684df0b7a6c5691dcd633c45e6b2354537014e413d4be9060f61d"
+      },
+      "name": "200m-dk128-m016-seed0",
+      "original_experiment": "key_dimension_taylor",
+      "parameter_count": 220877824,
+      "qk_head_dim": 128,
+      "resolved_config": {
+        "path": "results/key_dimension_taylor/configs/200m-dk128-m016-seed0.yaml",
+        "sha256": "77e83bce32fcf2587c907c73c8495dd26373b41bbc4c629ca33a5e5837b5eb05"
+      },
+      "retained_completed": false,
+      "seed": 0,
+      "selected_checkpoint": {
+        "file_count": 14,
+        "metadata_sha256": "d84c347597a72f8298ca4d438573fc10d0720905bf3ef92f171e65349a80bed8",
+        "path": "checkpoints/key_dimension_taylor/200m-dk128-m016-seed0/19074",
+        "size_bytes": 2426061541,
+        "step": 19074,
+        "validation_nll": 2.666055755955832,
+        "validation_perplexity": 14.38312660452828
+      },
+      "slurm_job_id": "200807",
+      "slurm_log": {
+        "path": "results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200807.out",
+        "sha256": "1b57e1f58b20648d80fbeabc244176e30aa7a86045400ef18690301990cea780"
+      },
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.666055755955832,
+        "validation_perplexity": 14.38312660452828
+      },
+      "value_head_dim": 64
+    }
+  ],
+  "schema_version": 1,
+  "seed": 0,
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "source_commits": [
+    {
+      "commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "role": "Original scientific recipe and H100/B300 runtime"
+    },
+    {
+      "commit": "0dc83ae8e04ebb3689a03e4c35887b602848d06e",
+      "role": "Independent allocation orchestration"
+    },
+    {
+      "commit": "2b27b9e46514ec0194fe2fca1034cd11fb60b328",
+      "role": "A6000 production orchestration"
+    },
+    {
+      "commit": "78b2f7f400856ae14a7cd85b23a43faea0e2f1e6",
+      "role": "Checkpoint handoff and H100-or-better queue orchestration"
+    },
+    {
+      "commit": "84b9f2296442d2f99b857cd6e4d3ec1e8c6576ea",
+      "role": "Retained heatmap rendering without reuse markers"
+    },
+    {
+      "commit": "d303e3a90c77673ffb08c61a1e77b936bb3d5dc3",
+      "role": "Native hardware qualification harness"
+    },
+    {
+      "commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+      "role": "Host-staging fix and A6000 qualification harness"
+    },
+    {
+      "commit": "a1f1b2f04a3a625d8f48735aad0c990a09dbcc01",
+      "role": "A100 transport ablation probe and launcher"
+    },
+    {
+      "commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "role": "Reused retained scientific result"
+    },
+    {
+      "commit": "5e871d2659373272e26668e10911922c7201678a",
+      "role": "Reused retained scientific result"
+    }
+  ]
+}

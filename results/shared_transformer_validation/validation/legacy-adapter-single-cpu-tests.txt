@@ -1,0 +1,19 @@
+........................................................................ [ 17%]
+.......................s................................................ [ 30%]
+........................................................................ [ 44%]
+.....................................................s.................. [ 59%]
+........................................................................ [ 76%]
+..............................................................           [ 85%]
+=============================== warnings summary ===============================
+test_joint_plot.py::test_aggregate_exports_annotated_grid_curves_and_terminal_csv
+test_joint_plot.py::test_subset_grid_and_unavailable_historical_artifacts
+  /data/cl/u/rafah/home/projects/functional-memory/worktrees/shared_transformer_scaffold/experiments/shared_transformer/../../experiments/key_dimension_taylor/plot.py:160: PendingDeprecationWarning: The set_bad function will be deprecated in a future version. Use cmap.with_extremes(bad=...) or Colormap(bad=...) instead.
+    cmap.set_bad("#eeeeee")
+
+test_joint_plot.py::test_aggregate_exports_annotated_grid_curves_and_terminal_csv
+test_joint_plot.py::test_subset_grid_and_unavailable_historical_artifacts
+  /data/cl/u/rafah/home/projects/functional-memory/worktrees/shared_transformer_scaffold/experiments/shared_transformer/../../experiments/key_dimension_taylor/plot.py:193: PendingDeprecationWarning: The set_bad function will be deprecated in a future version. Use cmap.with_extremes(bad=...) or Colormap(bad=...) instead.
+    delta_cmap.set_bad("#eeeeee")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+420 passed, 2 skipped, 177 deselected, 4 warnings in 258.18s (0:04:18)
