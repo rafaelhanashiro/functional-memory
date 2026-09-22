@@ -28,7 +28,8 @@ RUNTIME_ROOT = Path(__file__).resolve().parents[3]
 TIMEOUT_SECONDS = 900
 ENVIRONMENT_KEYS = ('NCCL_P2P_DISABLE', 'POLYNOMIAL_ATTENTION_HOST_STAGING',
                     'POLYNOMIAL_ATTENTION_SOURCE_COMMIT', 'CUDA_VISIBLE_DEVICES',
-                    'JAX_PLATFORMS', 'JAX_COMPILATION_CACHE_DIR', 'XLA_FLAGS', 'PYTHONPATH')
+                    'JAX_PLATFORMS', 'JAX_COMPILATION_CACHE_DIR', 'XLA_FLAGS', 'PYTHONPATH',
+                    'XLA_PYTHON_CLIENT_MEM_FRACTION', 'XLA_PYTHON_CLIENT_PREALLOCATE')
 
 
 def verify_runtime(expected: str) -> None:
@@ -69,6 +70,7 @@ def worker_environment(commit: str, output_root: Path) -> dict:
     env.update(NCCL_P2P_DISABLE='1', POLYNOMIAL_ATTENTION_HOST_STAGING='1',
                POLYNOMIAL_ATTENTION_SOURCE_COMMIT=commit, JAX_PLATFORMS='cuda',
                XLA_PYTHON_CLIENT_PREALLOCATE='false', PYTHONUNBUFFERED='1',
+               XLA_PYTHON_CLIENT_MEM_FRACTION='0.90',
                PYTHONPATH=str(RUNTIME_ROOT),
                JAX_COMPILATION_CACHE_DIR=str(output_root / 'cache'))
     return env

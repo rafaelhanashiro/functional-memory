@@ -11,6 +11,8 @@ Set both execution options for the A6000 compatibility checks:
 ```text
 NCCL_P2P_DISABLE=1
 POLYNOMIAL_ATTENTION_HOST_STAGING=1
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.90
+XLA_PYTHON_CLIENT_PREALLOCATE=false
 ```
 
 Host staging places initialized/restored parameters, optimizer state, input
@@ -20,6 +22,11 @@ resumes. This changes transfer routing only: model arrays, BF16 computation,
 attention kernels, optimizer, data order, clipping, and learning-rate schedule
 remain unchanged. The default execution path remains unchanged when the host
 staging option is absent or `0`.
+
+The A6000 qualification profile allows JAX's allocator to grow to 90% of device
+memory. At the default 75% limit, the first update's 18.75 GiB temporary buffer
+could not fit alongside existing allocations after verified state placement.
+This adjusts the allocator budget without changing the model or batch size.
 
 `host_staging.sbatch` runs only short compatibility checks. Set
 `HOST_STAGING_RUNTIME_ROOT` to a clean, frozen checkout containing this fix and
