@@ -2,6 +2,8 @@
 
 Whenever the user mentions the "write-up," always use `overleaf/iclr/iclr2027_conference.tex` as the reference. This is the main write-up.
 
+Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits, and operational commands before launching or migrating experiments.
+
 Keep one successful Slurm log per retained experiment at `results/logs/<experiment>/slurm-<job_id>.out`, matching its metadata. Remove superseded logs and failed-run logs once debugging is resolved.
 
 ## Experiment home cluster
