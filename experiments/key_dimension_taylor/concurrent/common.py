@@ -73,6 +73,106 @@ def _original_preflight(policy: dict):
     return module
 
 
+def _hardware_policy(policy: dict, manifest: dict) -> dict:
+    original = _reference_json(policy["hardware_policy_reference"])
+    if (policy_identity(original) != original.get("identity")
+            or original.get("production_submission") is not False
+            or original.get("training_identity") != manifest["identity"]
+            or original.get("source_commit") != manifest["source_commit"]
+            or original.get("training_manifest") != policy["training_manifest"]
+            or original.get("training_root") != policy["training_root"]
+            or original.get("dependency_lock_sha256") != manifest["dependency_lock_sha256"]
+            or original.get("data_identity") != manifest["data_identity"]):
+        raise ValueError("Hardware qualification policy differs from the original sweep")
+    _verify_checkout(Path(original["orchestrator_root"]), original["orchestrator_commit"])
+    _verify_checkout(Path(policy["training_root"]), manifest["source_commit"])
+    lock = Path(policy["training_root"]) / "experiments/polynomial_attention/uv.lock"
+    if hashlib.sha256(lock.read_bytes()).hexdigest() != manifest["dependency_lock_sha256"]:
+        raise ValueError("Original qualified runtime dependency lock changed")
+    for reference in original.get("reference_files", []):
+        _reference_bytes(reference)
+    return original
+
+
+def _b300_hardware(hardware: dict, profile: dict) -> None:
+    kinds = hardware.get("device_kinds", [])
+    if (hardware.get("gpu_count") != 4 or len(kinds) != 4
+            or any("b300" not in kind.lower() for kind in kinds)
+            or hardware.get("node") not in profile["allowed_nodes"]
+            or hardware.get("partition") != profile["partition"]):
+        raise ValueError("B300 qualification used incompatible hardware")
+
+
+def load_b300_qualification(policy: dict, manifest: dict, run: dict) -> dict:
+    """Read a completed hardware-check record, including its original provenance.
+
+    The original policy is immutable. Its future per-coordinate output can be
+    absent while short pilots run; capture its SHA256 only after all gates pass.
+    """
+    original = _hardware_policy(policy, manifest)
+    profile = original["profiles"]["b300"]
+    root = Path(original["output_root"]) / "b300"
+    path = root / "checks" / f"{run['name']}.json"
+    contents = path.read_bytes()
+    record = json.loads(contents)
+    expected = {"identity": original["identity"], "source_commit": manifest["source_commit"],
+                "orchestrator_commit": original["orchestrator_commit"], "profile": "b300",
+                "scheduler": profile, "validation_only": True, "status": "passed"}
+    if (any(record.get(key) != value for key, value in expected.items())
+            or any(record.get(key) != run[key] for key in ("name", "qk_head_dim", "attention_degree", "parameter_count"))):
+        raise ValueError("B300 coordinate qualification is absent, failed, or belongs to another source")
+    candidates = [item for item in original["runs"] if item["name"] == run["name"]]
+    if len(candidates) != 1:
+        raise ValueError("Hardware policy omitted or duplicated the B300 coordinate")
+    validation_run = candidates[0]
+    if any(validation_run.get(key) != run[key] for key in ("qk_head_dim", "attention_degree", "parameter_count")):
+        raise ValueError("B300 configuration coordinate differs")
+    _reference_bytes({"path": validation_run["config_path"], "sha256": validation_run["config_sha256"]})
+    preflight = _original_preflight(policy)
+    if preflight.scientific_recipe(validation_run["config"], manifest["data_identity"]) != preflight.scientific_recipe(run["config"], manifest["data_identity"]):
+        raise ValueError("B300 pilot changed the scientific recipe")
+    kernel_path = root / "kernels.json"
+    kernel_bytes = kernel_path.read_bytes()
+    kernels = json.loads(kernel_bytes)
+    if any(kernels.get(key) != value for key, value in expected.items()) or kernels.get("tests_passed") != 105:
+        raise ValueError("B300 requires its matching 105-case kernel qualification")
+    _b300_hardware(kernels["hardware"], profile)
+    if kernels.get("reused"):
+        source = _reference_json(kernels["reference"])
+        if (source.get("status") != "passed" or source.get("tests_passed") != 105
+                or source.get("source_commit") != manifest["source_commit"] or source.get("profile") != "b300"):
+            raise ValueError("Reused B300 kernel qualification has incompatible provenance")
+        _b300_hardware(source["hardware"], profile)
+    # The three migrating coordinates are fresh full-grid checks. Supporting
+    # prior reused checks preserves their original fields rather than relabeling.
+    proof = _reference_json(record["reference"]) if record.get("reused") else record
+    if (proof.get("status") != "passed" or proof.get("source_commit") != manifest["source_commit"]
+            or proof.get("profile") != "b300"
+            or any(proof.get(key) != run[key] for key in ("name", "qk_head_dim", "attention_degree"))):
+        raise ValueError("B300 pilot reference has incompatible provenance")
+    _b300_hardware(record["hardware"], profile)
+    _b300_hardware(proof["hardware"], profile)
+    initial, resumed = proof["initial"], proof["resumed"]
+    for outcome, start, end in ((initial, 0, 32), (resumed, 32, 33)):
+        if (outcome.get("start_step") != start or outcome.get("final_step") != end
+                or outcome.get("restored_step") != (start or None)
+                or outcome.get("data_start_sequence") != start * run["config"]["data"]["batch_size"]
+                or outcome.get("data_parallel_devices") != 4 or outcome.get("attention_degree") != run["attention_degree"]):
+            raise ValueError("B300 pilot changed its update budget, checkpoint, or cursor")
+    preflight.validate_resume_audit(initial, resumed)
+    validation = proof["validation"]
+    if (validation.get("step") != 32 or validation.get("source_commit") != manifest["source_commit"]
+            or any(validation.get(key) != run[key] for key in ("qk_head_dim", "attention_degree", "parameter_count"))
+            or not all(math.isfinite(validation.get(key, math.nan)) for key in ("validation_nll", "validation_perplexity"))
+            or validation.get("attention_diagnostics", {}).get("valid") is not True):
+        raise ValueError("B300 pilot lacks matching finite evaluation and diagnostics")
+    if record["runtime"] != preflight.projected_runtime(run, initial, resumed, profile):
+        raise ValueError("B300 runtime differs from its synchronized pilot timings")
+    validate_runtime_segments(record["runtime"], run["config"]["optim"]["total_steps"])
+    return {**record, "qualification_reference": {"path": str(path.resolve()), "sha256": hashlib.sha256(contents).hexdigest()},
+            "kernel_qualification_reference": {"path": str(kernel_path.resolve()), "sha256": hashlib.sha256(kernel_bytes).hexdigest()}}
+
+
 def load_a6000_qualification(policy: dict, manifest: dict, run: dict) -> dict:
     """Validate original host-staging evidence without copying or relabeling it."""
     if policy["assignments"].get(run["name"]) != "a6000":
@@ -253,6 +353,26 @@ def verify_policy(policy: dict, manifest: dict) -> None:
         _verify_checkout(Path(policy["runtime_root"]), policy["runtime_commit"])
     elif any(key in policy for key in ("runtime_root", "runtime_commit", "runtime_environment", "a6000_qualifications")):
         raise ValueError("Host-staging runtime is reserved for the A6000 amendment")
+    if "h100_or_better" in policy["assignments"].values():
+        flexible = policy["profiles"]["h100_or_better"]
+        if (set(policy["assignments"].values()) != {"h100_or_better"}
+                or flexible.get("gpu_type") != "h100_or_better"
+                or set(flexible.get("allowed_gpu_types", [])) != {"h100", "b300"}
+                or set(flexible.get("allowed_nodes", [])) != {"akita", "dogo", "mastiff"}
+                or flexible.get("partition") != "sweep"):
+            raise ValueError("Flexible production requires only qualified H100/B300 allocations")
+        for family, nodes in (("h100", {"dogo", "mastiff"}), ("b300", {"akita"})):
+            profile = policy["profiles"][family]
+            if (profile.get("gpu_type") != family or set(profile.get("allowed_nodes", [])) != nodes
+                    or profile.get("partition") != "sweep"):
+                raise ValueError("Flexible concrete hardware profile changed")
+        minimum = policy.get("minimum_checkpoint_step")
+        if "minimum_checkpoint_step" in policy and (type(minimum) is not int or minimum <= 0 or minimum % 500):
+            raise ValueError("Checkpoint handoff minimum must be a positive 500-update boundary")
+        if minimum is not None and any(minimum > run["config"]["optim"]["total_steps"]
+                                       for run in manifest["runs"] if run["name"] in policy["assignments"]):
+            raise ValueError("Checkpoint handoff minimum exceeds the training budget")
+        _hardware_policy(policy, manifest)
 
 
 def training_env(policy: dict) -> dict:
@@ -273,16 +393,26 @@ def training_env(policy: dict) -> dict:
         if env.get("XLA_FLAGS"):
             raise ValueError("A6000 qualification did not use custom XLA_FLAGS")
         env.update(policy["runtime_environment"])
+    elif "h100_or_better" in policy["assignments"].values():
+        # Submission may originate in an A6000 execution environment. The
+        # original fast-GPU runtime was qualified without those workarounds.
+        for key in ("NCCL_P2P_DISABLE", "POLYNOMIAL_ATTENTION_HOST_STAGING", "XLA_PYTHON_CLIENT_MEM_FRACTION"):
+            env.pop(key, None)
+        if env.get("XLA_FLAGS"):
+            raise ValueError("Flexible production was not qualified with custom XLA_FLAGS")
     return env
 
 
 def check_hardware(profile: dict) -> dict:
     import jax
     devices = jax.devices()
-    if len(devices) != profile["gpu_count"] or any(
-            device.platform != "gpu" or profile["gpu_type"].lower() not in device.device_kind.lower()
-            for device in devices):
+    allowed = profile.get("allowed_gpu_types", [profile["gpu_type"]])
+    families = [{kind for kind in allowed if kind.lower() in device.device_kind.lower()} for device in devices]
+    if (len(devices) != profile["gpu_count"] or any(device.platform != "gpu" for device in devices)
+            or any(len(matches) != 1 for matches in families)
+            or len({next(iter(matches)) for matches in families if matches}) != 1):
         raise RuntimeError(f"Allocation does not match hardware profile: {devices}")
+    actual_profile = next(iter(families[0]))
     node = os.environ.get("SLURMD_NODENAME") or os.environ.get("SLURM_JOB_NODELIST")
     partition = os.environ.get("SLURM_JOB_PARTITION")
     allowed_nodes = profile.get("allowed_nodes", [profile.get("node")])
@@ -291,7 +421,7 @@ def check_hardware(profile: dict) -> dict:
     return {"devices": [str(device) for device in devices],
             "device_kinds": [device.device_kind for device in devices],
             "node": node, "partition": partition, "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
-            "gpu_count": len(devices), "jax_version": jax.__version__}
+            "gpu_count": len(devices), "jax_version": jax.__version__, "actual_profile": actual_profile}
 
 
 def job_states(job_ids: list[str]) -> dict[str, str]:
@@ -351,6 +481,12 @@ def render_report(policy: dict, manifest: dict) -> None:
                              "the actual executed source, environment, and hashed qualification references are preserved "
                              "in each allocation's execution provenance.", "",
                              f"Runtime environment: `{json.dumps(policy['runtime_environment'], sort_keys=True)}`."]
+            if "h100_or_better" in policy["assignments"].values():
+                appendix += ["", "Flexible allocations admit H100 and B300 GPUs only. Each worker detects its "
+                             "actual GPU family and validates that coordinate's matching qualification before training. "
+                             "Existing checkpoints resume with the original frozen trainer; earlier hardware/runtime "
+                             "history remains in the allocation records. Actual hardware can change subsequent "
+                             "floating-point trajectories."]
             appendix += ["", "Actual allocations, restart counts, and qualification evidence are retained "
                          "in each run's `execution_attempts/` and the separate execution-policy ledger. "
                          "Completed and historical reference runs retain their original provenance.", ""]

@@ -89,3 +89,53 @@ the A6000s idle; it does not establish that completing entirely on A6000s gives
 the shortest sweep finish time. Durable 500-update checkpoints preserve the
 option of a separately recorded handoff to faster hardware. This amendment
 does not automatically migrate running jobs or create duplicate training copies.
+
+## Flexible H100/B300 checkpoint handoff
+
+The user subsequently requested stopping the A6000 allocations and queueing the
+three unfinished coordinates on any available GPU at least as fast as H100.
+The current inventory supports H100 and B300 for this request. All jobs still
+require four homogeneous GPUs on one node, the original batch sizes, and the
+full 19,074-update schedule.
+
+`fast_queue.py --policy NEW_PATH --prepare MANIFEST --from-policy A6000_POLICY`
+records a separate immutable execution policy. `--migrate --submit` first holds
+the old continuation jobs and waits for all selected runs to have a finalized
+checkpoint at update 500 or later. It cancels only their A6000 chains, waits for
+Slurm termination and release of the per-run execution locks, and records each
+checkpoint handoff before releasing replacement jobs. Checkpoints, scientific
+results, and old execution histories remain in their canonical locations.
+
+Each replacement is a single independent eight-hour job in `sweep`, requesting
+`--gres=gpu:4` with exclusions for A100/A6000 nodes. This admits Dogo and Mastiff
+H100s and Akita B300s; Mastiff may become usable if repaired. No hostname is
+required, and there is no cross-run dependency or fixed future start time.
+Jobs are submitted longest projected H100 runtime first. Slurm chooses actual
+start times and hardware based on availability, priority, and other users.
+
+H100 qualification already exists for every selected coordinate. While a
+specific B300 qualification is missing, that job also excludes Akita, retaining
+immediate H100 eligibility. A temporary CPU-only controller
+`JAX_PLATFORMS=cpu .../fast_queue.py --policy NEW_PATH --watch` checks every 30
+seconds and removes Akita from each pending job's exclusions when that exact
+coordinate passes its B300 pilot. It never changes a running job or waits for
+unrelated coordinates. It remains available for up to 24 hours if an H100 job
+could be preempted and requeued before B300 eligibility is recorded, and exits
+once no queued or requeueable job needs that update. `.watch.json` records its
+PID and status. Keep its small log until
+the handoff is resolved, then remove temporary controller outputs at retention.
+
+At allocation time, the worker detects H100 or B300, verifies that family's
+original qualification and checksums, and records the actual hardware. The fast
+worker executes the original frozen scientific checkout and clears the A6000
+host-staging/NCCL/allocator overrides. It independently restores and audits model
+and optimizer arrays, data cursor, and RNG before continuing from the retained
+checkpoint. The subsequent floating-point trajectory may differ across hardware;
+the earlier A6000 execution remains explicitly recorded in provenance. Training
+metrics preserve the original scientific source and common terminal budget.
+
+The B300 qualification records remain under their original validation-only
+policy and worker commit. The fast execution policy references those records
+without relabeling their source or modifying frozen checkouts. A failed B300
+pilot leaves the coordinate eligible for H100. The three fast jobs each fit one
+allocation at the pilot's 80% wall-time budget; no A6000 continuation jobs remain.

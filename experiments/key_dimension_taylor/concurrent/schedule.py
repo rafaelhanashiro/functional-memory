@@ -179,10 +179,12 @@ def _existing_comment(comment: str) -> str | None:
 
 
 def submit_held(path: Path, policy: dict, manifest: dict, ledger: dict, *, key: str,
-                profile_name: str, run_name: str, segment: int = 0, dependency: str | None = None) -> str:
+                profile_name: str, run_name: str, segment: int = 0, dependency: str | None = None,
+                excluded_nodes: list[str] | None = None) -> str:
     comment = f"dkt:{policy['identity']}:{key}"
     previous_entry = ledger["jobs"].get(key)
     job = previous_entry["slurm_job_id"] if previous_entry else _existing_comment(comment)
+    recovered_held_job = job is not None and previous_entry is None
     profile = policy["profiles"][profile_name]
     mode = "qualify" if key == "qualification:b300" else "train"
     log_dir = Path(manifest["project_root"]) / "results/logs/key_dimension_taylor" / run_name
@@ -190,12 +192,15 @@ def submit_held(path: Path, policy: dict, manifest: dict, ledger: dict, *, key: 
     if job is None:
         command = ["sbatch", "--parsable", "--hold", "--nodes=1", "--ntasks=1", "--requeue",
                    "--signal=B:TERM@120", f"--partition={profile['partition']}",
-                   f"--gres=gpu:{profile['gpu_type']}:4", f"--time={profile['production_time']}",
+                   ("--gres=gpu:4" if profile.get("allowed_gpu_types") else f"--gres=gpu:{profile['gpu_type']}:4"),
+                   f"--time={profile['production_time']}",
                    f"--cpus-per-task={profile['cpus_per_task']}", f"--mem={profile['memory']}",
                    f"--comment={comment}", f"--job-name=dkt-{profile_name}-{run_name}-s{segment}",
                    f"--output={log_dir}/slurm-%j.out", f"--error={log_dir}/slurm-%j.out"]
         if profile.get("node"):
             command += [f"--nodelist={profile['node']}"]
+        if excluded_nodes:
+            command += [f"--exclude={','.join(sorted(excluded_nodes))}"]
         if dependency:
             command += [f"--dependency=afterok:{dependency}", "--kill-on-invalid-dep=yes"]
         command += [str(Path(policy["orchestrator_root"]) / "experiments/key_dimension_taylor/concurrent/launch.sbatch"),
@@ -203,9 +208,20 @@ def submit_held(path: Path, policy: dict, manifest: dict, ledger: dict, *, key: 
         job = subprocess.check_output(command, cwd=policy["orchestrator_root"], text=True).strip().split(";")[0]
         if not job.isdigit():
             raise RuntimeError(f"Invalid sbatch response: {job}")
+    if recovered_held_job and excluded_nodes is not None:
+        # Qualification can advance after sbatch succeeds but before its ledger
+        # write. Reconcile the recovered held reservation before recording and
+        # releasing it, rather than pretending it already has today's exclusions.
+        detail = subprocess.check_output(["scontrol", "show", "job", "-o", job], text=True)
+        if "JobState=PENDING" not in detail or "Priority=0 " not in detail:
+            raise RuntimeError("Recovered unrecorded flexible job is not safely held")
+        subprocess.run(["scontrol", "update", f"JobId={job}",
+                        f"ExcNodeList={','.join(sorted(excluded_nodes))}"], check=True)
     entry = previous_entry or {"slurm_job_id": job, "profile": profile_name, "run_name": run_name, "segment": segment,
              "dependency_job_id": dependency, "comment": comment, "submitted_utc": utc(),
              "log_path": str(log_dir / f"slurm-{job}.out")}
+    if excluded_nodes is not None and not previous_entry:
+        entry["excluded_nodes"] = sorted(excluded_nodes)
     ledger["jobs"][key] = entry
     common.write_json(ledger_path(path), ledger)
     if mode == "train":

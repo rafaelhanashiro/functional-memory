@@ -6,6 +6,7 @@ no model, optimizer, schedule, data, or checkpoint implementation is replaced he
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib
 import json
 import math
@@ -36,7 +37,7 @@ def _run(policy: dict, manifest: dict, name: str) -> dict:
     candidates = [run for run in manifest["runs"] if run["name"] == name and not run.get("retained_completed", False)]
     if len(candidates) != 1 or name not in policy["assignments"]:
         raise ValueError("Production requires a known active coordinate assigned by this policy")
-    if policy["assignments"][name] not in ("h100", "b300", "a6000"):
+    if policy["assignments"][name] not in ("h100", "b300", "a6000", "h100_or_better"):
         raise ValueError("Unsupported assigned production profile")
     return candidates[0]
 
@@ -53,9 +54,14 @@ def _old_helpers(policy: dict):
                            finalize_run=retention.finalize_run)
 
 
-def _segment(policy: dict, manifest: dict, run: dict, index: int) -> tuple[dict, dict]:
+def _segment(policy: dict, manifest: dict, run: dict, index: int, *, actual_profile: str | None = None) -> tuple[dict, dict]:
     """Accept only this profile's qualified, checkpoint-aligned 80% budget."""
     profile_name = policy["assignments"][run["name"]]
+    flexible = profile_name == "h100_or_better"
+    if flexible:
+        if actual_profile not in ("h100", "b300"):
+            raise RuntimeError("Flexible production requires its detected GPU family")
+        profile_name = actual_profile
     if profile_name == "h100":
         root = Path(manifest["preflight_dir"])
         shared = _read(root / "success.json")
@@ -65,6 +71,8 @@ def _segment(policy: dict, manifest: dict, run: dict, index: int) -> tuple[dict,
             raise RuntimeError("H100 production lacks its matching original preflight")
     elif profile_name == "a6000":
         qualification = common.load_a6000_qualification(policy, manifest, run)
+    elif flexible and profile_name == "b300":
+        qualification = common.load_b300_qualification(policy, manifest, run)
     else:
         root = Path(policy["qualification_root"]) / profile_name
         kernels = _read(root / "kernels.json")
@@ -95,6 +103,8 @@ def _segment(policy: dict, manifest: dict, run: dict, index: int) -> tuple[dict,
         cursor = end
     if cursor != total or type(index) is not int or not 0 <= index < len(segments):
         raise ValueError("Unknown production segment or incomplete qualified schedule")
+    if flexible and (index != 0 or len(segments) != 1):
+        raise RuntimeError("Flexible production requires one qualified full-run allocation")
     return segments[index], qualification
 
 
@@ -103,6 +113,7 @@ def _base(policy: dict, manifest: dict, run: dict, index: int) -> dict:
             "policy_identity": policy["identity"], "source_commit": manifest["source_commit"],
             "orchestrator_commit": policy["orchestrator_commit"], "training_root": policy["training_root"],
             "profile": policy["assignments"][run["name"]], "run_name": run["name"], "segment_index": index,
+            "requested_profile": policy["assignments"][run["name"]],
             "qk_head_dim": run["qk_head_dim"], "attention_degree": run["attention_degree"],
             "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
             "slurm_restart_count": int(os.environ.get("SLURM_RESTART_COUNT", "0")),
@@ -149,6 +160,25 @@ def launch_worker(policy: dict, run: dict, worker: str, end_step: int, output: P
 def _checkpoint_exists(run: dict) -> bool:
     root = Path(run["checkpoint_dir"])
     return root.exists() and any(path.is_dir() and path.name.isdigit() for path in root.iterdir())
+
+
+def _checkpoint_handoff(policy: dict, manifest: dict, run: dict) -> tuple[dict, dict]:
+    path = Path(run["workdir"]) / "handoff.json"
+    contents = path.read_bytes()
+    record = json.loads(contents)
+    expected = {"format": "key-dimension-taylor-checkpoint-handoff", "policy_identity": policy["identity"],
+                "source_commit": manifest["source_commit"], "run_name": run["name"], "checkpoint_preserved": True}
+    step = record.get("checkpoint_step")
+    if (any(record.get(key) != value for key, value in expected.items())
+            or type(step) is not int or not policy["minimum_checkpoint_step"] <= step <= run["config"]["optim"]["total_steps"]
+            or step % 500 or not isinstance(record.get("checkpoint_path"), str)
+            or Path(record["checkpoint_path"]).resolve() != (Path(run["checkpoint_dir"]) / str(step)).resolve()):
+        raise RuntimeError("Checkpoint handoff identity, source, progress, or canonical path differs")
+    # A later checkpoint can replace the originally handed-off checkpoint after
+    # progress. The independent restore must still be at least the handoff step.
+    if not (Path(run["workdir"]) / "completion.json").exists() and not _checkpoint_exists(run):
+        raise RuntimeError("Handed-off checkpoint disappeared; refusing to restart from scratch")
+    return record, {"path": str(path.resolve()), "sha256": hashlib.sha256(contents).hexdigest()}
 
 
 def _has_numerical_failure(root: Path) -> bool:
@@ -218,10 +248,30 @@ def run_segment(policy: dict, manifest: dict, run_name: str, index: int, *, poli
         try:
             if not (root / "completion.json").exists() and _has_numerical_failure(root):
                 raise ExistingNumericalFailure("This coordinate already failed numerically; automatic repeat is suppressed")
-            segment, qualification = _segment(policy, manifest, run, index)
+            flexible = policy["assignments"][run_name] == "h100_or_better"
+            handoff = None
+            if flexible and "minimum_checkpoint_step" in policy:
+                stage = "checkpoint_handoff"
+                handoff, base["handoff_reference"] = _checkpoint_handoff(policy, manifest, run)
+            if flexible:
+                stage = "hardware"
+                hardware = _hardware_worker(policy_path, policy, run, attempt_root / "hardware.json", _lock_fd(handle))
+                actual_profile = hardware.get("actual_profile")
+                base["profile"] = actual_profile
+                stage = "qualification"
+                segment, qualification = _segment(policy, manifest, run, index, actual_profile=actual_profile)
+                if "qualification_reference" in qualification:
+                    base["qualification_reference"] = qualification["qualification_reference"]
+                    base["kernel_qualification_reference"] = qualification["kernel_qualification_reference"]
+                else:
+                    path = Path(manifest["preflight_dir"]) / "checks" / f"{run_name}.json"
+                    base["qualification_reference"] = {"path": str(path.resolve()), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+            else:
+                segment, qualification = _segment(policy, manifest, run, index)
             start, end = segment["start_step"], segment["end_step"]
             stage = "hardware"
-            hardware = _hardware_worker(policy_path, policy, run, attempt_root / "hardware.json", _lock_fd(handle))
+            if hardware is None:
+                hardware = _hardware_worker(policy_path, policy, run, attempt_root / "hardware.json", _lock_fd(handle))
             helpers = _old_helpers(policy)
             completed_before = (root / "completion.json").exists()
             if not completed_before:
@@ -236,12 +286,14 @@ def run_segment(policy: dict, manifest: dict, run_name: str, index: int, *, poli
                 if result.get("final_step") != run["config"]["optim"]["total_steps"]:
                     raise RuntimeError("Frozen trainer rejected the completed coordinate")
             else:
-                if index or _checkpoint_exists(run):
+                if index or handoff is not None or _checkpoint_exists(run):
                     stage = "restore"
                     restored = launch_worker(policy, run, "restore", end, attempt_root / "restore.json", _lock_fd(handle))
                     current = restored.get("restored_step")
                     if type(current) is not int or not start <= current <= end:
                         raise RuntimeError("Restored checkpoint is outside the qualified segment")
+                    if handoff is not None and current < handoff["checkpoint_step"]:
+                        raise RuntimeError("Restored checkpoint precedes the preserved handoff progress")
                     if index and current == start:
                         previous = _read(segment_root / f"segment-{index - 1:03d}.json")
                         helpers.validate_segment_restart(previous, restored, start)
@@ -330,6 +382,9 @@ def main() -> None:
         common.verify_policy(policy, manifest)
         run = _run(policy, manifest, args.run_name)
         result = common.check_hardware(policy["profiles"][policy["assignments"][run["name"]]])
+        if policy["assignments"][run["name"]] == "h100_or_better":
+            # Recheck the detected family against its concrete node allowlist.
+            result = common.check_hardware(policy["profiles"][result["actual_profile"]])
         common.write_json(args.output, result)
     elif args.segment is None:
         parser.error("Production requires --segment")
