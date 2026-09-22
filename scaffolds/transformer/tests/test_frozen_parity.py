@@ -20,6 +20,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[3]
 PROBE = Path(__file__).with_name("frozen_probe.py")
 REFERENCES = {
+    "unnormalized_attention": "7a3e584fd199b2edbc595cf7053b620401309216",
     "key_dimension": "c2b0d6e5514995cbe7b5e564f902201cfde1ba4e",
     "polynomial_attention": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
 }
@@ -32,6 +33,8 @@ VARIANTS = [
     *[("polynomial_attention", {"attention_backend": "blocked", "attention_degree": 2,
                                 "quadratic_mode": mode, "quadratic_sharing": sharing})
       for mode in ("positive", "unrestricted") for sharing in ("global", "per_head")],
+    *[("unnormalized_attention", {"attention_backend": "blocked", "attention_normalization": normalized})
+      for normalized in (False, True)],
 ]
 
 
@@ -82,7 +85,7 @@ def test_frozen_forward_gradients_and_optimizer_parity(frozen_sources, tmp_path,
     compare(expected, actual)
 
 
-@pytest.mark.parametrize("family,settings", [VARIANTS[0], VARIANTS[5], VARIANTS[8], VARIANTS[11]])
+@pytest.mark.parametrize("family,settings", [VARIANTS[0], VARIANTS[5], VARIANTS[8], VARIANTS[11], *VARIANTS[-2:]])
 def test_frozen_checkpoint_restores_and_continues(frozen_sources, tmp_path, family, settings):
     checkpoint = tmp_path / "checkpoint"
     probe(frozen_sources / family, f"experiments.{family}", settings,

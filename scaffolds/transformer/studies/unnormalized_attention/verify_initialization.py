@@ -8,10 +8,19 @@ import gc
 import hashlib
 import json
 import os
+import importlib
+import io
+import subprocess
+import sys
+import tarfile
+import tempfile
 from pathlib import Path
 
 
 EXPECTED_PARAMETER_COUNT = 253_654_016
+REFERENCE_COMMIT = "c2b0d6e5514995cbe7b5e564f902201cfde1ba4e"
+OFM_SOURCE_COMMIT = "32ea743b7b3aed1d631116dfaa3c4b85101baf32"
+ROOT = Path(__file__).resolve().parents[4]
 
 
 def _parameter_fingerprint(build_model, model_config, seed: int) -> dict:
@@ -48,18 +57,26 @@ def _parameter_fingerprint(build_model, model_config, seed: int) -> dict:
 def verify_initialization(config_path: str | Path) -> dict:
     import jax
 
-    from experiments.key_dimension.configs.base import (
-        ModelConfig as ReferenceModelConfig,
-        OFM_SOURCE_COMMIT as REFERENCE_OFM_SOURCE_COMMIT,
-    )
-    from experiments.key_dimension.models import build_model as build_reference
-    from experiments.unnormalized_attention.configs.base import OFM_SOURCE_COMMIT
-    from experiments.unnormalized_attention.configs.loader import load_config
-    from experiments.unnormalized_attention.models import build_model
+    from scaffolds.transformer.configs.loader import load_config
+    from scaffolds.transformer.models import build_model
 
     if jax.default_backend() != "cpu":
         raise RuntimeError("Initialization verification must run on the CPU")
     config = load_config(config_path)
+    # Export immutable independent source, not a current compatibility adapter.
+    with tempfile.TemporaryDirectory(prefix="ofm-initialization-reference-") as directory:
+        archive = subprocess.check_output(["git", "archive", REFERENCE_COMMIT, "experiments/key_dimension"], cwd=ROOT)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as source:
+            source.extractall(directory, filter="data")
+        sys.path.insert(0, directory)
+        try:
+            reference_configs = importlib.import_module("experiments.key_dimension.configs.base")
+            reference_models = importlib.import_module("experiments.key_dimension.models")
+        finally:
+            sys.path.remove(directory)
+    ReferenceModelConfig = reference_configs.ModelConfig
+    REFERENCE_OFM_SOURCE_COMMIT = reference_configs.OFM_SOURCE_COMMIT
+    build_reference = reference_models.build_model
     reference_values = {
         field.name: getattr(config.model, field.name)
         for field in fields(ReferenceModelConfig)
@@ -68,7 +85,10 @@ def verify_initialization(config_path: str | Path) -> dict:
     reference_config = ReferenceModelConfig(
         **reference_values, attention_backend="cudnn",
     )
-    actual = _parameter_fingerprint(build_model, config.model, config.train.seed)
+    # Initialization consumes no attention operations; CPU blocked selection is
+    # sufficient even if the production recipe requests automatic GPU dispatch.
+    from dataclasses import replace
+    actual = _parameter_fingerprint(build_model, replace(config.model, attention_backend="blocked"), config.train.seed)
     # Do not retain two 1 GB parameter trees (or their initializer executables)
     # at once. _parameter_fingerprint returns only scalars and a digest.
     gc.collect()
@@ -87,7 +107,7 @@ def verify_initialization(config_path: str | Path) -> dict:
             )
     if actual != reference:
         raise AssertionError(
-            f"Initial parameters differ from the existing OFM port: "
+            f"Initial parameters differ from the frozen OFM port: "
             f"experiment={actual!r}, reference={reference!r}"
         )
     return {
@@ -101,7 +121,8 @@ def verify_initialization(config_path: str | Path) -> dict:
         "experiment_model_config": asdict(config.model),
         "reference_model_config": asdict(reference_config),
         "reference_module": "experiments.key_dimension.models",
-        "reference_source_commit": REFERENCE_OFM_SOURCE_COMMIT,
+        "reference_source_commit": REFERENCE_COMMIT,
+        "reference_ofm_source_commit": REFERENCE_OFM_SOURCE_COMMIT,
         "canonical_ofm_run_source_commit": OFM_SOURCE_COMMIT,
         "hash_format": (
             "SHA-256 of each JAX flattened parameter path, shape, and C-order "
@@ -113,7 +134,8 @@ def verify_initialization(config_path: str | Path) -> dict:
             "unnormalized_attention derives from that scaffold at the canonical "
             "14-layer 250M geometry. This check establishes exact initial "
             "parameter identity with the independent in-repository "
-            "key_dimension port, without importing the adjacent OFM repository."
+            "key_dimension port exported from its frozen Git commit, without "
+            "importing the adjacent OFM repository."
         ),
     }
 

@@ -26,15 +26,21 @@ M0_PARAMETER_NOTE = (
 def attention_identity(config) -> dict:
     degree = config.model.attention_degree
     mode = config.model.quadratic_mode
+    normalized = config.model.attention_normalization
     identity = {
         "attention_degree": degree,
-        "attention_kernel": "learned_quadratic" if mode != "fixed" else "softmax" if degree is None else "taylor",
+        "attention_normalization": normalized,
+        "attention_kernel": ("exp_unnormalized" if not normalized else
+                             "learned_quadratic" if mode != "fixed" else "softmax" if degree is None else "taylor"),
         "attention_backend": config.model.attention_backend,
         "attention_backend_requested": getattr(config, "_attention_backend_request", config.model.attention_backend),
         "attention_implementation": config.model.attention_backend,
         "query_block_size": QUERY_BLOCK_SIZE,
         "m0_qk_parameter_note": M0_PARAMETER_NOTE if degree == 0 else None,
     }
+    if not normalized:
+        identity.update(attention_formula="causal_exp(QK^T / sqrt(d_k)) V",
+                        attention_score_scale="1/sqrt(d_k)", attention_output_normalization=False)
     if hasattr(config, "_attention_backend_resume_request"):
         identity["attention_backend_resume_requested"] = config._attention_backend_resume_request
     if is_odd_taylor(config.model) or mode == "unrestricted":
@@ -47,11 +53,14 @@ def attention_identity(config) -> dict:
                                           2 * config.model.num_layers * config.model.num_heads),
         })
     if config.model.attention_backend == "fused":
-        from scaffolds.transformer.models.components.fused_attention import _tile_sizes
-        block_q, block_k = ((None, None) if degree is None else
+        if not normalized:
+            from scaffolds.transformer.attention.backends.fused_exponential import _tile_sizes
+        else:
+            from scaffolds.transformer.models.components.fused_attention import _tile_sizes
+        block_q, block_k = ((None, None) if degree is None and normalized else
                            _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
         identity.update({
-            "attention_implementation": "cudnn" if degree is None else "pallas_triton",
+            "attention_implementation": "cudnn" if degree is None and normalized else "pallas_triton",
             "query_block_size": block_q,
             "key_block_size": block_k,
             "diagnostic_backend": "blocked",
@@ -146,18 +155,23 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         for name, value in raw.items():
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
-            if not math.isfinite(number):
+            diagnostic_only_sum = (not config.model.attention_normalization
+                                   and name in ("weight_sum_min", "weight_sum_max"))
+            if not math.isfinite(number) and not diagnostic_only_sum:
                 issues.append(f"layer {index}: nonfinite {name}")
             elif name.startswith("invalid_") and number != 0:
                 issues.append(f"layer {index}: {name}={int(number)}")
-        for name in ("kernel_min", "normalizer_min"):
+        sum_key = "normalizer_min" if config.model.attention_normalization else "weight_sum_min"
+        for name in ("kernel_min", sum_key):
             value = float(raw[name])
             if is_odd_taylor(config.model) or config.model.quadratic_mode == "unrestricted":
                 # Signed kernels and negative nonzero sums are permitted. Exact
                 # zeros are detected in invalid_normalizer_count, not extrema.
                 continue
             # Stable exact softmax may underflow individual weights to zero.
-            invalid = value < 0 if name == "kernel_min" and config.model.attention_degree is None else value <= 0
+            invalid = (value < 0 if (not config.model.attention_normalization or
+                                     name == "kernel_min" and config.model.attention_degree is None)
+                       else value <= 0)
             if math.isfinite(value) and invalid:
                 issues.append(f"layer {index}: invalid {name}={value}")
         layers.append(layer)
@@ -174,7 +188,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         "step": int(state.step),
         **attention_identity(config),
         "sample": provenance,
-        "kernel_values": ("unshifted_learned_quadratic" if config.model.quadratic_mode != "fixed" else
+        "kernel_values": ("unshifted_exp" if not config.model.attention_normalization else
+                          "unshifted_learned_quadratic" if config.model.quadratic_mode != "fixed" else
                           "row_max_shifted_exp" if config.model.attention_degree is None else "unshifted_taylor"),
         "layers": layers,
         "valid": not issues,

@@ -13,11 +13,11 @@ import sys
 from datetime import UTC, datetime
 import xml.etree.ElementTree as ET
 
-from experiments.unnormalized_attention.configs import load_config, config_to_dict
+from scaffolds.transformer.configs import load_config, config_to_dict
 
 
-ROOT = Path(__file__).resolve().parents[2]
-FAMILY = "experiments.unnormalized_attention"
+ROOT = Path(__file__).resolve().parents[4]
+FAMILY = "scaffolds.transformer.studies.unnormalized_attention"
 CHECKS = ("cpu-tests", "gpu-tests", "initialization", "pilot", "resume")
 
 
@@ -48,7 +48,7 @@ def identity(config_path, gpu_count, gpu_type):
         "source_commit": source,
         "config": config_to_dict(config),
         "config_sha256": sha256(config_path),
-        "dependency_lock_sha256": sha256(ROOT / "experiments/unnormalized_attention/uv.lock"),
+        "dependency_lock_sha256": sha256(ROOT / "scaffolds/transformer/uv.lock"),
         "data_manifests": {
             split: {"path": path, "sha256": sha256(path)}
             for split, path in (("train", config.data.train_manifest), ("eval", config.data.eval_manifest))
@@ -103,10 +103,11 @@ def worker(args, experiment):
         return {"devices": [str(d) for d in devices], "device_kinds": [d.device_kind for d in devices],
                 "versions": {name: version(name) for name in ("jax", "flax", "optax", "orbax-checkpoint")}}
     if args.worker == "pilot":
-        from experiments.unnormalized_attention.training.loop import run_training
+        from scaffolds.transformer.training.loop import run_training
         config = load_config(args.config)
         config.train.source_commit = experiment["source_commit"]
         config.train.workdir = args.directory / "pilot"
+        config.train.checkpoint_dir = None
         config.train.wandb_mode = "disabled"
         config.train.eval_every = 20
         config.train.eval_batches = 1
@@ -137,8 +138,8 @@ def run(args, experiment):
             junit = directory / (stage + ".xml")
             env = dict(os.environ, JAX_PLATFORMS="cpu" if stage == "cpu-tests" else "cuda")
             subprocess.run([
-                sys.executable, "-m", "pytest", "-c", "experiments/unnormalized_attention/pyproject.toml",
-                "experiments/unnormalized_attention/tests", "-q", "-m", "not gpu" if stage == "cpu-tests" else "gpu",
+                sys.executable, "-m", "pytest", "-c", "scaffolds/transformer/pyproject.toml",
+                "scaffolds/transformer/studies/unnormalized_attention/tests", "-q", "--import-mode=importlib", "-m", "not gpu" if stage == "cpu-tests" else "gpu",
                 f"--junitxml={junit}",
             ], cwd=ROOT, env=env, check=True)
             record(path, experiment, tests_passed=require_passing_tests(junit))

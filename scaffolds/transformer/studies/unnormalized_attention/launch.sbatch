@@ -20,8 +20,8 @@ if [[ "$(git rev-parse HEAD)" != "$EXPECTED_COMMIT" ]] || [[ -n "$(git status --
   echo "Frozen execution checkout changed: $EXECUTION_ROOT" >&2
   exit 1
 fi
-export UNNORMALIZED_ATTENTION_SOURCE_COMMIT="$EXPECTED_COMMIT"
-export UV_PROJECT_ENVIRONMENT="${PROJECT_ROOT}/.envs/unnormalized_attention"
+export SHARED_TRANSFORMER_SOURCE_COMMIT="$EXPECTED_COMMIT"
+export UV_PROJECT_ENVIRONMENT="${PROJECT_ROOT}/.envs/shared_transformer"
 export UV_CACHE_DIR="${PROJECT_ROOT}/.cache/uv"
 export UV_LINK_MODE=copy
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-32}"
@@ -36,18 +36,18 @@ export JAX_COMPILATION_CACHE_DIR="${CACHE_ROOT}/jax"
 export TMPDIR="${CACHE_ROOT}/tmp/${SLURM_JOB_ID}"
 export XDG_CACHE_HOME="${CACHE_ROOT}/xdg"
 mkdir -p "$TMPDIR" "$JAX_COMPILATION_CACHE_DIR" "$XDG_CACHE_HOME"
-CONFIG="${EXECUTION_ROOT}/experiments/unnormalized_attention/configs/base.yaml"
+CONFIG="${7:?Expected absolute resolved config YAML path}"
 CHECKS="${CACHE_ROOT}/preflight/${EXPECTED_COMMIT}-${GPU_TYPE}-${GPU_COUNT}"
 echo "mode=$MODE source=$EXPECTED_COMMIT job=$SLURM_JOB_ID restart=${SLURM_RESTART_COUNT:-0}"
-RUN=(uv run --project experiments/unnormalized_attention --locked --extra cuda --no-sync python)
+RUN=(uv run --project scaffolds/transformer --locked --extra cuda --no-sync python)
 if [[ "$MODE" == cpu-tests ]]; then
   export JAX_PLATFORMS=cpu
-  "${RUN[@]}" -m pytest -c experiments/unnormalized_attention/pyproject.toml experiments/unnormalized_attention/tests -m 'not gpu' -q
+  "${RUN[@]}" -m pytest -c scaffolds/transformer/pyproject.toml scaffolds/transformer/studies/unnormalized_attention/tests --import-mode=importlib -m 'not gpu' -q
 elif [[ "$MODE" == preflight ]]; then
-  "${RUN[@]}" -m experiments.unnormalized_attention.preflight "$CONFIG" --directory "$CHECKS" --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE"
+  "${RUN[@]}" -m scaffolds.transformer.studies.unnormalized_attention.preflight "$CONFIG" --directory "$CHECKS" --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE"
 elif [[ "$MODE" == train ]]; then
-  "${RUN[@]}" -m experiments.unnormalized_attention.preflight "$CONFIG" --directory "$CHECKS" --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --check-only
-  "${RUN[@]}" -m experiments.unnormalized_attention.train "$CONFIG"
+  "${RUN[@]}" -m scaffolds.transformer.studies.unnormalized_attention.preflight "$CONFIG" --directory "$CHECKS" --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --check-only
+  "${RUN[@]}" -m scaffolds.transformer.train "$CONFIG"
 else
   echo "Unknown mode: $MODE" >&2
   exit 1

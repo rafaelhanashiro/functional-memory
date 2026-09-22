@@ -8,7 +8,7 @@ GPU_COUNT="${3:-4}"
 GPU_TYPE="${4:-H200}"
 PYTHON="${5:-python}"
 : "${SLURM_JOB_ID:?Run inside a Slurm GPU allocation}"
-EXECUTION_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+EXECUTION_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 cd "$EXECUTION_ROOT"
 if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
   echo 'Commit configuration/code changes before launching the frozen checkout.' >&2
@@ -16,7 +16,7 @@ if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
 fi
 SOURCE_COMMIT="$(git rev-parse HEAD)"
 CONFIG_SHA="$(sha256sum "$CONFIG" | cut -d ' ' -f 1)"
-export UNNORMALIZED_ATTENTION_SOURCE_COMMIT="$SOURCE_COMMIT"
+export SHARED_TRANSFORMER_SOURCE_COMMIT="$SOURCE_COMMIT"
 export PYTHONPATH="$EXECUTION_ROOT"
 export JAX_PLATFORMS=cuda
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
@@ -34,6 +34,6 @@ echo "job=$SLURM_JOB_ID source=$SOURCE_COMMIT expected_gpus=$GPU_COUNT expected_
 echo "slurm_job_gpus=${SLURM_JOB_GPUS:-unset} cuda_visible_devices=${CUDA_VISIBLE_DEVICES:-unset}"
 # Acceptance and production share the same allocation. Matching passed stages
 # are reused on requeue, and training automatically resumes its own workdir.
-"$PYTHON" -m experiments.unnormalized_attention.preflight "$CONFIG" \
+"$PYTHON" -m scaffolds.transformer.studies.unnormalized_attention.preflight "$CONFIG" \
   --directory "$CHECKS" --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE"
-exec "$PYTHON" -m experiments.unnormalized_attention.train "$CONFIG"
+exec "$PYTHON" -m scaffolds.transformer.train "$CONFIG"

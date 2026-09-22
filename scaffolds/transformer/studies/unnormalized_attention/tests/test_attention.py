@@ -1,6 +1,7 @@
 """Mathematical and numerical contracts for the blocked exponential reference."""
 
 import math
+from functools import partial
 
 import jax
 import jax.numpy as jnp
@@ -8,12 +9,15 @@ import numpy as np
 import pytest
 from flax import nnx
 
-from experiments.unnormalized_attention.models.components.attention import (
+from scaffolds.transformer.models.components.attention import (
     MultiHeadAttention,
     QUERY_BLOCK_SIZE,
     blocked_dot_product_attention,
     padded_dot_product_attention,
 )
+
+
+blocked_dot_product_attention = partial(blocked_dot_product_attention, attention_normalization=False)
 
 
 def _dense_reference(q, k, v, attention_normalization=False):
@@ -66,7 +70,7 @@ def test_default_block_boundaries_causality_and_diagnostics(normalized):
     modified = blocked_dot_product_attention(*changed, attention_normalization=normalized)
     np.testing.assert_array_equal(modified[:, :127], output[:, :127])
     assert all(value.shape == () for value in diag.values())
-    assert float(diag["weight_sum_min"]) > 0
+    assert float(diag["normalizer_min" if normalized else "weight_sum_min"]) > 0
     assert float(diag["kernel_min"]) > 0
     assert all(int(value) == 0 for name, value in diag.items() if name.endswith("_count"))
 
@@ -176,4 +180,46 @@ def test_mha_preserves_parameter_initialization_across_attention_modes():
 @pytest.mark.parametrize("backend", ["manual", "auto", "xla", "cudnn"])
 def test_unnormalized_mode_cannot_silently_dispatch_to_softmax(backend):
     with pytest.raises(ValueError, match="Unnormalized attention requires"):
-        MultiHeadAttention(16, 2, 2, 4, 4, backend=backend, rngs=nnx.Rngs(19))
+        MultiHeadAttention(16, 2, 2, 4, 4, backend=backend, attention_normalization=False, rngs=nnx.Rngs(19))
+
+
+@pytest.mark.parametrize("normalized", [False, True])
+def test_model_fused_dispatch_retains_real_output_when_collecting_diagnostics(monkeypatch, normalized):
+    from flax import nnx
+    from scaffolds.transformer.models.components import attention as attention_module
+    from scaffolds.transformer.attention.backends import fused_exponential as fused_module
+    from scaffolds.transformer.attention.backends import reference as reference_module
+    from scaffolds.transformer.attention import softmax as softmax_module
+
+    settings = dict(hidden_size=16, num_heads=2, num_kv_heads=2, qk_head_dim=4,
+                    value_head_dim=6, attention_normalization=normalized)
+    layer = attention_module.MultiHeadAttention(**settings, backend="fused", rngs=nnx.Rngs(19))
+    calls = []
+    captured_operands = []
+
+    def fast(q, k, v, **kwargs):
+        calls.append(("fast", kwargs))
+        captured_operands.append((q, k, v))
+        return jnp.full_like(v, 3)
+
+    def diagnostics(q, k, v, **kwargs):
+        calls.append(("diagnostics", kwargs))
+        for actual, expected in zip((q, k, v), captured_operands[-1], strict=True):
+            np.testing.assert_array_equal(actual, expected)
+        return jnp.full_like(v, -11), {"weight_sum_min": jnp.asarray(7.0)}
+
+    monkeypatch.setattr(fused_module, "fused_unnormalized_attention", fast)
+    monkeypatch.setattr(softmax_module, "padded_dot_product_attention", fast)
+    monkeypatch.setattr(reference_module, "blocked_dot_product_attention", diagnostics)
+    x = jnp.arange(3 * 16, dtype=jnp.float32).reshape(1, 3, 16) / 48
+    expected = layer.o_proj(jnp.full((1, 3, 12), 3, dtype=jnp.float32))
+    plain = layer(x)
+    output, observed_diagnostics = layer(x, return_diagnostics=True)
+    assert [kind for kind, _ in calls] == ["fast", "fast", "diagnostics"]
+    expected_fast_kwargs = {"backend": "cudnn"} if normalized else {}
+    assert calls[0][1] == calls[1][1] == expected_fast_kwargs
+    assert calls[2][1] == ({"return_diagnostics": True} if normalized else
+                           {"attention_normalization": False, "return_diagnostics": True})
+    np.testing.assert_array_equal(plain, expected)
+    np.testing.assert_array_equal(output, expected)
+    assert float(observed_diagnostics["weight_sum_min"]) == 7.0

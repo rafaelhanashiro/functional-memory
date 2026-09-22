@@ -7,14 +7,12 @@ import numpy as np
 import pytest
 from flax import nnx
 
-from experiments.key_dimension.configs import ModelConfig as ReferenceModelConfig
-from experiments.key_dimension.models import build_model as build_reference_model
-from experiments.unnormalized_attention.configs import Config, ModelConfig, load_config, save_config, validate_config
-from experiments.unnormalized_attention.models import build_model, model_parameter_count
-from experiments.unnormalized_attention.training.diagnostics import attention_identity
+from scaffolds.transformer.configs import Config, ModelConfig, load_config, save_config, validate_config
+from scaffolds.transformer.models import build_model, model_parameter_count
+from scaffolds.transformer.training.diagnostics import attention_identity
 
 
-BASE_CONFIG = Path(__file__).resolve().parents[1] / "configs/base.yaml"
+BASE_CONFIG = Path(__file__).resolve().parents[5] / "results/unnormalized_attention/configs/base.yaml"
 
 
 def test_baseline_matches_ofm_250m_budget_and_geometry():
@@ -28,7 +26,7 @@ def test_baseline_matches_ofm_250m_budget_and_geometry():
     assert config.model.tie_embeddings is False
     assert config.model.dropout == 0
     assert config.model.remat is False
-    assert config.model.attention_backend == "fused"
+    assert config.model.attention_backend == "auto"
     assert config.model.attention_normalization is False
     assert config.train.seed == config.data.shuffle_seed == 0
     assert config.optim.total_steps == 21935
@@ -45,21 +43,18 @@ def test_baseline_matches_ofm_250m_budget_and_geometry():
 
 @pytest.mark.parametrize("normalized", (False, True))
 def test_250m_parameter_count_is_unchanged(normalized):
-    cfg = replace(load_config(BASE_CONFIG).model, attention_normalization=normalized)
+    cfg = replace(load_config(BASE_CONFIG).model, attention_normalization=normalized, attention_backend="blocked")
     params = jax.eval_shape(lambda: nnx.state(build_model(cfg, 0), nnx.Param))
     count = sum(leaf.size for leaf in jax.tree.leaves(params))
     assert count == model_parameter_count(cfg) == 253_654_016
     assert all(leaf.dtype == jnp.float32 for leaf in jax.tree.leaves(params))
 
 
-def test_parameter_initialization_matches_ported_ofm_reference():
+def test_parameter_initialization_is_independent_of_normalization():
     cfg = ModelConfig(vocab_size=128, max_seq_len=16, num_layers=2, hidden_size=32,
                       num_heads=4, num_kv_heads=4, qk_head_dim=8, value_head_dim=8,
-                      intermediate_size=64, tie_embeddings=False)
-    reference_cfg = ReferenceModelConfig(**{
-        name: value for name, value in vars(cfg).items() if name != "attention_normalization"
-    } | {"attention_backend": "xla"})
-    baseline = build_reference_model(reference_cfg, 0)
+                      intermediate_size=64, tie_embeddings=False, attention_backend="blocked")
+    baseline = build_model(replace(cfg, attention_normalization=True), 0)
     expected, expected_tree = jax.tree.flatten(nnx.state(baseline, nnx.Param))
     for normalized in (False, True):
         model = build_model(replace(cfg, attention_normalization=normalized), 0)
@@ -88,7 +83,7 @@ def test_defaults_are_tiny_synthetic_and_round_trip(tmp_path):
     ("model:\n  num_kv_heads: 2\n", "full MHA"),
     ("model:\n  attention_backend: fast\n", "backend"),
     ("model:\n  dropout: 0.1\n", "dropout=0"),
-    ("model:\n  attention_degree: 2\n", "Unknown"),
+    ("model:\n  attention_degree: 2\n  attention_normalization: false\n", "exact exponential"),
     ("model:\n  attention_normalization: 0\n", "boolean"),
     ("model:\n  attention_normalization: null\n", "boolean"),
     ('model:\n  attention_normalization: "false"\n', "boolean"),
@@ -144,3 +139,68 @@ def test_fused_diagnostics_metadata_reports_actual_implementation(qk_dim, value_
     identity = attention_identity(config)
     assert identity["attention_implementation"] == "cudnn"
     assert identity["query_block_size"] is identity["key_block_size"] is None
+
+
+@pytest.mark.parametrize("platform,dtype,width,expected", [
+    ("cpu", "float32", 64, "blocked"),
+    ("gpu", "float32", 64, "fused"),
+    ("gpu", "bfloat16", 64, "fused"),
+    ("gpu", "bfloat16", 256, "blocked"),
+])
+def test_automatic_backend_selects_exponential_implementation(platform, dtype, width, expected):
+    from scaffolds.transformer.attention.backends.selection import resolve_attention_backend
+    model = ModelConfig(attention_normalization=False, qk_head_dim=width)
+    assert resolve_attention_backend(model, platform=platform, dtype=dtype) == expected
+
+
+def test_unnormalized_auto_choice_is_pinned_and_recorded_on_resume(tmp_path):
+    import json
+    from scaffolds.transformer.training.loop import ensure_run_config, _write_status
+    config = Config()
+    config.model.attention_normalization = False
+    config.train.workdir = tmp_path
+    ensure_run_config(config, resume=True)
+    _write_status(config, status="initialized")
+    assert config.model.attention_backend == "blocked"
+    config.model.attention_backend = "auto"
+    ensure_run_config(config, resume=True)
+    metadata = json.loads((tmp_path / "metadata.json").read_text())
+    assert metadata["attention_backend_requested"] == "auto"
+    assert metadata["attention_implementation"] == "blocked"
+    assert metadata["attention_kernel"] == "exp_unnormalized"
+    config.model.attention_normalization = True
+    with pytest.raises(ValueError, match="does not match"):
+        ensure_run_config(config, resume=True)
+
+
+def test_historical_config_defaults_compare_without_changing_original():
+    from scaffolds.transformer.configs.loader import config_dicts_equal
+    old = {"model": {"attention_normalization": False}, "train": {}}
+    new = {"model": {"attention_normalization": False, "attention_degree": None,
+                     "quadratic_mode": "fixed", "quadratic_sharing": "global"},
+           "train": {"checkpoint_dir": None}}
+    assert config_dicts_equal(old, new)
+    assert old == {"model": {"attention_normalization": False}, "train": {}}
+    assert not config_dicts_equal(old, {"model": {}, "train": {}})
+
+
+def test_pilot_does_not_use_production_checkpoint_directory(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from scaffolds.transformer.studies.unnormalized_attention import preflight
+    from scaffolds.transformer.training import loop
+    config = Config()
+    config.train.checkpoint_dir = tmp_path / "production-checkpoints"
+    monkeypatch.setattr(preflight, "load_config", lambda path: config)
+    captured = {}
+    def run(pilot, **kwargs):
+        captured.update(workdir=pilot.train.workdir, checkpoints=pilot.train.checkpoint_dir,
+                        horizon=pilot.optim.total_steps, **kwargs)
+        return captured
+    monkeypatch.setattr(loop, "run_training", run)
+    args = SimpleNamespace(worker="pilot", config=tmp_path / "config.yaml",
+                           directory=tmp_path / "acceptance", stop_after_step=20)
+    result = preflight.worker(args, {"source_commit": "frozen"})
+    assert result["workdir"] == tmp_path / "acceptance/pilot"
+    assert result["checkpoints"] is None
+    assert result["horizon"] == config.optim.total_steps
+    assert result["stop_after_step"] == 20 and result["resume"] is True

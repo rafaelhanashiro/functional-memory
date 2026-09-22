@@ -8,6 +8,11 @@ def is_odd_taylor(model) -> bool:
     return model.attention_degree is not None and model.attention_degree % 2 == 1
 
 
+def requires_update_checks(model) -> bool:
+    """Operators whose gradients may overflow before their forward loss does."""
+    return is_odd_taylor(model) or not model.attention_normalization
+
+
 def update_numerics(grads, updated_params, loss):
     """Small device-side record that distinguishes forward and update failures."""
     return jnp.stack((loss, optax.tree.norm(grads), optax.tree.norm(updated_params)))

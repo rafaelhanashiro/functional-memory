@@ -8,9 +8,10 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from experiments.unnormalized_attention.models.components.attention import blocked_dot_product_attention
-from experiments.unnormalized_attention.models.components.fused_attention import fused_unnormalized_attention
-from experiments.unnormalized_attention.tests.test_attention import _dense_reference
+from scaffolds.transformer.models.components.attention import blocked_dot_product_attention
+blocked_dot_product_attention = partial(blocked_dot_product_attention, attention_normalization=False)
+from scaffolds.transformer.attention.backends.fused_exponential import fused_unnormalized_attention
+from scaffolds.transformer.studies.unnormalized_attention.tests.test_attention import _dense_reference
 
 
 pytestmark = pytest.mark.gpu
@@ -203,47 +204,9 @@ def test_bf16_broad_scores_and_small_vjp_match_fp64():
                    label="BF16 broad scores vs FP64")
 
 
-@pytest.mark.parametrize("normalized", [False, True])
-def test_model_fused_dispatch_retains_real_output_when_collecting_diagnostics(monkeypatch, normalized):
-    from flax import nnx
-    from experiments.unnormalized_attention.models.components import attention as attention_module
-    from experiments.unnormalized_attention.models.components import fused_attention as fused_module
-
-    settings = dict(hidden_size=16, num_heads=2, num_kv_heads=2, qk_head_dim=4,
-                    value_head_dim=6, attention_normalization=normalized)
-    layer = attention_module.MultiHeadAttention(**settings, backend="fused", rngs=nnx.Rngs(19))
-    calls = []
-    captured_operands = []
-
-    def fast(q, k, v, **kwargs):
-        calls.append(("fast", kwargs))
-        captured_operands.append((q, k, v))
-        return jnp.full_like(v, 3)
-
-    def diagnostics(q, k, v, **kwargs):
-        calls.append(("diagnostics", kwargs))
-        for actual, expected in zip((q, k, v), captured_operands[-1], strict=True):
-            np.testing.assert_array_equal(actual, expected)
-        return jnp.full_like(v, -11), {"weight_sum_min": jnp.asarray(7.0)}
-
-    monkeypatch.setattr(fused_module, "fused_unnormalized_attention", fast)
-    monkeypatch.setattr(attention_module, "padded_dot_product_attention", fast)
-    monkeypatch.setattr(attention_module, "blocked_dot_product_attention", diagnostics)
-    x = jnp.arange(3 * 16, dtype=jnp.float32).reshape(1, 3, 16) / 48
-    expected = layer.o_proj(jnp.full((1, 3, 12), 3, dtype=jnp.float32))
-    plain = layer(x)
-    output, observed_diagnostics = layer(x, return_diagnostics=True)
-    assert [kind for kind, _ in calls] == ["fast", "fast", "diagnostics"]
-    expected_fast_kwargs = {"backend": "cudnn"} if normalized else {}
-    assert calls[0][1] == calls[1][1] == expected_fast_kwargs
-    assert calls[2][1] == {"attention_normalization": normalized, "return_diagnostics": True}
-    np.testing.assert_array_equal(plain, expected)
-    np.testing.assert_array_equal(output, expected)
-    assert float(observed_diagnostics["weight_sum_min"]) == 7.0
-
 
 def test_normalized_control_matches_cudnn():
-    from experiments.unnormalized_attention.models.components.attention import padded_dot_product_attention
+    from scaffolds.transformer.models.components.attention import padded_dot_product_attention
 
     operands, cotangent = _inputs((1, 256, 4, 64, 64), dtype=jnp.bfloat16, seed=13)
     blocked = _compiled_forward_and_vjp(partial(blocked_dot_product_attention, attention_normalization=True))

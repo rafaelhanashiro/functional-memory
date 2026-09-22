@@ -17,6 +17,7 @@ def blocked_dot_product_attention(
     v: jax.Array,
     *,
     attention_degree: int | None = None,
+    attention_normalization: bool = True,
     coefficients: jax.Array | None = None,
     quadratic_mode: str = "fixed",
     query_block_size: int = QUERY_BLOCK_SIZE,
@@ -37,6 +38,10 @@ def blocked_dot_product_attention(
     Diagnostics exclude padded queries and masked future entries.
     """
     _validate_degree(attention_degree)
+    if not isinstance(attention_normalization, bool):
+        raise ValueError("attention_normalization must be a boolean")
+    if not attention_normalization and (attention_degree is not None or quadratic_mode != "fixed"):
+        raise ValueError("Unnormalized attention requires the exact exponential kernel")
     if quadratic_mode not in ("fixed", "positive", "unrestricted"):
         raise ValueError(f"Unknown quadratic mode: {quadratic_mode}")
     if quadratic_mode != "fixed" and (attention_degree != 2 or coefficients is None):
@@ -79,7 +84,12 @@ def blocked_dot_product_attention(
             "bqhd,bkhd->bhqk", query, k,
             preferred_element_type=jnp.float32,
         ) * (1.0 / math.sqrt(qk_dim))
-        if attention_degree is None:
+        if not attention_normalization:
+            # A row shift changes the unnormalized operator. Underflow to zero
+            # is allowed; a nonfinite causal exponential poisons the output.
+            kernel = jnp.exp(jnp.where(causal, scores, 0.0))
+            invalid_kernel = ~jnp.isfinite(kernel)
+        elif attention_degree is None:
             # Shifting is an exact identity only for the exponential control.
             maximum = jnp.max(jnp.where(causal, scores, -jnp.inf), axis=-1, keepdims=True)
             safe_scores = jnp.where(causal, scores - maximum, 0.0)
@@ -96,14 +106,14 @@ def blocked_dot_product_attention(
         kernel = jnp.where(causal, kernel, 0.0)
         normalizer = jnp.sum(kernel, axis=-1, keepdims=True, dtype=jnp.float32)
         invalid_score = ~jnp.isfinite(scores)
-        invalid_normalizer = (~jnp.isfinite(normalizer)) | (
+        invalid_normalizer = ((~jnp.isfinite(normalizer)) | (
             (normalizer == 0) if signed else (normalizer <= 0)
-        )
+        )) if attention_normalization else jnp.zeros_like(normalizer, dtype=bool)
         invalid_row = (
             jnp.any(causal & (invalid_score | invalid_kernel), axis=-1, keepdims=True)
             | invalid_normalizer
         )
-        weights = kernel / normalizer
+        weights = kernel / normalizer if attention_normalization else kernel
         output = jnp.einsum(
             "bhqk,bkhd->bqhd", weights, v.astype(jnp.float32),
             preferred_element_type=jnp.float32,
@@ -125,6 +135,15 @@ def blocked_dot_product_attention(
             "invalid_kernel_count": jnp.sum(measured & invalid_kernel, dtype=jnp.int32),
             "invalid_normalizer_count": jnp.sum(actual_rows[None, None, :, None] & invalid_normalizer, dtype=jnp.int32),
         }
+        if not attention_normalization:
+            # This sum is observed, never divided by. It may be zero or infinite
+            # while the weighted output is finite, and must not stop training.
+            for suffix in ("min", "max"):
+                diagnostics[f"weight_sum_{suffix}"] = diagnostics.pop(f"normalizer_{suffix}")
+            diagnostics["invalid_weight_sum_count"] = diagnostics.pop("invalid_normalizer_count")
+            diagnostics["invalid_output_count"] = jnp.sum(
+                actual_rows[None, :, None, None] & ~jnp.isfinite(output), dtype=jnp.int32,
+            )
         if extended_diagnostics:
             actual = actual_rows[None, None, :, None]
             cancellation = jnp.sum(jnp.abs(kernel), axis=-1, keepdims=True) / jnp.abs(normalizer)

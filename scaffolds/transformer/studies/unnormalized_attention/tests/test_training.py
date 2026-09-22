@@ -8,23 +8,24 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from experiments.unnormalized_attention.configs import Config, ModelConfig
-from experiments.unnormalized_attention.data.packed import FORMAT_NAME, FORMAT_VERSION
-from experiments.unnormalized_attention.training import loop
-from experiments.unnormalized_attention.training import diagnostics as diagnostic_tools
-from experiments.unnormalized_attention.training.checkpointing import make_checkpoint_manager, restore_latest_checkpoint
-from experiments.unnormalized_attention.training.distributed import (
+from scaffolds.transformer.configs import Config, ModelConfig
+from scaffolds.transformer.data.packed import FORMAT_NAME, FORMAT_VERSION
+from scaffolds.transformer.training import loop
+from scaffolds.transformer.training import diagnostics as diagnostic_tools
+from scaffolds.transformer.training.checkpointing import make_checkpoint_manager, restore_latest_checkpoint
+from scaffolds.transformer.training.distributed import (
     make_data_parallel_functions, put_replicated, put_train_batches, resolve_batch_layout,
 )
-from experiments.unnormalized_attention.training.state import create_state
-from experiments.unnormalized_attention.train import should_resume
+from scaffolds.transformer.training.state import create_state
+from scaffolds.transformer.train import should_resume
 
 
 def tiny_config(path):
     cfg = Config()
     cfg.model = ModelConfig(vocab_size=16, max_seq_len=4, num_layers=1, hidden_size=8,
                             num_heads=2, num_kv_heads=2, qk_head_dim=2, value_head_dim=4,
-                            intermediate_size=12, tie_embeddings=False)
+                            intermediate_size=12, tie_embeddings=False, attention_backend="blocked",
+                            attention_normalization=False)
     cfg.data.synthetic_vocab_size, cfg.data.sequence_length, cfg.data.batch_size = 16, 5, 4
     cfg.train.micro_batch_size = 2
     cfg.train.workdir = path
@@ -55,8 +56,8 @@ def test_accumulation_matches_full_batch_before_clipping(tmp_path):
     rng = jax.random.PRNGKey(0)
     state = create_state(cfg, rng)
     batch = jnp.asarray(np.arange(20).reshape(4, 5) % 16)
-    full, loss, norm = loop.train_step(state, batch, rng)
-    accum, accum_loss, accum_norm = loop.accumulated_train_step(state, batch.reshape(2, 2, 5), jax.random.split(rng, 2))
+    full, loss, norm = loop.train_step(state, batch, rng, check_all_gradients=True)
+    accum, accum_loss, accum_norm = loop.accumulated_train_step(state, batch.reshape(2, 2, 5), jax.random.split(rng, 2), check_all_gradients=True)
     assert_state_close(full, accum)
     np.testing.assert_allclose(loss, accum_loss, rtol=1e-6)
     np.testing.assert_allclose(norm, accum_norm, rtol=1e-6)
@@ -182,6 +183,8 @@ def test_unnormalized_weight_sum_is_diagnostic_only(tmp_path, monkeypatch, weigh
     assert report["valid"]
     json.dumps(report, allow_nan=False)
     cfg.model.attention_normalization = True
+    raw["normalizer_min"] = raw.pop("weight_sum_min")
+    raw["normalizer_max"] = raw.pop("weight_sum_max")
     assert not diagnostic_tools.attention_diagnostics(state, cfg, sample, provenance)["valid"]
 
 
@@ -195,7 +198,7 @@ def test_nonfinite_loss_between_log_events_persists_failure(tmp_path, monkeypatc
         return state, jnp.nan if int(state.step) == 2 else loss, norm
 
     monkeypatch.setattr(loop, "accumulated_train_step", nonfinite_second_step)
-    with pytest.raises(FloatingPointError, match="training loss at step 2"):
+    with pytest.raises(FloatingPointError, match="at step 2"):
         loop.run_training(cfg)
     failure = json.loads((tmp_path / "numerical_failure_step_00000002.json").read_text())
     assert failure["step"] == 2 and failure["loss"] == "NaN"
@@ -207,18 +210,18 @@ def test_nonfinite_loss_between_log_events_persists_failure(tmp_path, monkeypatc
 
 def test_nonfinite_gradient_with_finite_loss_persists_failure(tmp_path, monkeypatch):
     cfg = tiny_config(tmp_path)
-    actual_step = loop.accumulated_train_step
+    actual_loss_and_grads = loop.loss_and_grads
 
     def nonfinite_gradient(*args, **kwargs):
-        state, loss, _ = actual_step(*args, **kwargs)
-        return state, loss, jnp.inf
+        loss, grads = actual_loss_and_grads(*args, **kwargs)
+        return loss, jax.tree.map(lambda value: jnp.full_like(value, jnp.inf), grads)
 
-    monkeypatch.setattr(loop, "accumulated_train_step", nonfinite_gradient)
-    with pytest.raises(FloatingPointError, match="gradient norm at step 1"):
+    monkeypatch.setattr(loop, "loss_and_grads", nonfinite_gradient)
+    with pytest.raises(FloatingPointError, match="attention update|unnormalized-exponential update"):
         loop.run_training(cfg)
     failure = json.loads((tmp_path / "numerical_failure_step_00000001.json").read_text())
-    assert math.isfinite(failure["loss"])
-    assert failure["gradient_norm"] == "Infinity"
+    assert math.isfinite(failure["update_numerics"]["forward_loss"])
+    assert failure["update_numerics"]["global_gradient_norm"] == "Infinity"
     assert not (tmp_path / "completion.json").exists()
 
 
@@ -256,9 +259,9 @@ def test_distributed_accumulation_matches_single_device(tmp_path):
         cfg.train.micro_batch_size = device_count
         state = create_state(cfg, jax.random.PRNGKey(0))
         batch = np.arange(cfg.data.batch_size * 5, dtype=np.int32).reshape(cfg.data.batch_size, 5) % 16
-        expected, expected_loss, expected_norm = loop.train_step(state, jnp.asarray(batch), jax.random.PRNGKey(1))
+        expected, expected_loss, expected_norm = loop.train_step(state, jnp.asarray(batch), jax.random.PRNGKey(1), check_all_gradients=True)
         layout = resolve_batch_layout(cfg)
-        distributed = make_data_parallel_functions(state, tuple(jax.local_devices()))
+        distributed = make_data_parallel_functions(state, tuple(jax.local_devices()), check_all_gradients=True)
         replicated = put_replicated(state, distributed.replicated_sharding)
         batches = put_train_batches(batch.reshape(layout.grad_accum_steps, layout.global_micro_batch_size, 5), distributed.train_batch_sharding)
         actual, actual_loss, actual_norm = distributed.train_step(replicated, batches, jax.random.PRNGKey(1))

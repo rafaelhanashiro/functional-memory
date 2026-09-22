@@ -1,0 +1,66 @@
+{
+  "format": "functional-memory-experiment-setup",
+  "version": 1,
+  "experiment": "unnormalized_attention",
+  "status": "setup_only_no_retained_training_result",
+  "home_cluster": "orcd",
+  "artifact_root": "/home/rafah/projects/functional_memory",
+  "artifact_availability": "Original ORCD jobs/checkpoints/logs have not been inspected or transferred; a clone does not provide ignored artifacts.",
+  "original_source_commit": "7a3e584fd199b2edbc595cf7053b620401309216",
+  "shared_scaffold_base_commit": "9ca0904c167855a548ea028403eca7a9e4727171",
+  "reference_initialization_source_commit": "c2b0d6e5514995cbe7b5e564f902201cfde1ba4e",
+  "historical_config": {
+    "path": "results/unnormalized_attention/configs/historical.yaml",
+    "sha256": "06a40e9c68d57750262ac911862cc0c579dd1d926c2872d8129e0b53554d07da"
+  },
+  "historical_dependency_lock": {
+    "path": "results/unnormalized_attention/configs/historical.uv.lock",
+    "sha256": "41063490b1dc8b3ff00c2731a7b7bb4383094a14379061a5856c645a93b322f9"
+  },
+  "canonical_config": {
+    "path": "results/unnormalized_attention/configs/base.yaml",
+    "sha256": "607dabf4d8b8837fde3d937de60a3460ce082002151d2f58c5980f25a8ccf596"
+  },
+  "shared_dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "49d54eb7a7eb344655fc1aeb2d5de16806dc8a2c60025c9181b24687db2c53d8"
+  },
+  "baseline": {
+    "path": "results/unnormalized_attention/baseline.json",
+    "sha256": "9649b178ef3d1ead3d52f79a78d8014133a629127df19945df1ce97fcbd7e69a"
+  },
+  "documentation": "results/unnormalized_attention/README.md",
+  "scaffold": "scaffolds/transformer",
+  "study_tools": "scaffolds/transformer/studies/unnormalized_attention",
+  "seed": 0,
+  "parameter_count": 253654016,
+  "training_updates": 21935,
+  "prediction_tokens": 11500257280,
+  "scientific_change": "Remove attention row normalization; use causal unshifted exp(QK^T / sqrt(d_K)) V.",
+  "canonical_config_changes": [
+    "attention_backend: fused -> auto; resolved execution choice is pinned on resume",
+    "workdir: results/unnormalized_attention/runs/250m-exp-seed0",
+    "checkpoint_dir: checkpoints/unnormalized_attention/250m-exp-seed0"
+  ],
+  "historical_artifacts": {
+    "workdir": "<original-execution-checkout>/results/unnormalized_attention/250m-exp-seed0",
+    "checkpoint_directory": "<original-execution-checkout>/results/unnormalized_attention/250m-exp-seed0/checkpoints",
+    "availability": "not inspected"
+  },
+  "proposed_artifacts": {
+    "workdir": "results/unnormalized_attention/runs/250m-exp-seed0",
+    "checkpoint_directory": "checkpoints/unnormalized_attention/250m-exp-seed0",
+    "successful_log": "results/logs/unnormalized_attention/250m-exp-seed0/slurm-<job_id>.out",
+    "selected_checkpoint": null,
+    "status": "paths for a future qualified run, not transferred artifacts"
+  },
+  "kennel_handoff": {
+    "status": "independent fresh run proposed; no launch or migration performed",
+    "home_cluster_assignment": "Required before launch; do not concurrently duplicate the ORCD run unintentionally"
+  },
+  "runs": [],
+  "initialization_validation": {
+    "path": "results/unnormalized_attention/validation/initialization.json",
+    "sha256": "14b9fc326de7472b77aa7a43faa6485208f5391ab1a964d8dd0652b2af1f48dd"
+  }
+}
