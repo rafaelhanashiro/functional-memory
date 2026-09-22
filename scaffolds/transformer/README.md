@@ -28,7 +28,9 @@ byte. It also stages replicated RNG keys; model computation stays on the GPU.
 Packed training and evaluation batches always transfer directly from NumPy host
 arrays to their destination shards. `metadata.json` records the resolved transfer
 policy, hardware, selected environment settings, and changes across resumptions
-in `execution_runtime` and `runtime_history`.
+in `execution_runtime` and `runtime_history`. `scaffold_ofm_source_commit` records
+shared implementation ancestry; an experiment's scientific control source belongs
+in its own provenance manifest.
 
 Kennel launchers source `launchers/kennel_runtime.sh`, which selects host staging
 and disables NCCL peer transport for A100/A6000 allocations. A6000 uses the

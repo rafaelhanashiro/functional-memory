@@ -446,7 +446,7 @@ def _write_status(config: Config, **updates) -> None:
         "value_head_dim": config.model.value_head_dim,
         "seed": config.train.seed,
         "source_commit": config.train.source_commit or None,
-        "ofm_source_commit": OFM_SOURCE_COMMIT,
+        "scaffold_ofm_source_commit": OFM_SOURCE_COMMIT,
         "slurm_job_id": os.environ.get("SLURM_JOB_ID") or metadata.get("slurm_job_id"),
         "slurm_restart_count": int(os.environ.get("SLURM_RESTART_COUNT", str(metadata.get("slurm_restart_count", 0)))),
         "updated_utc": datetime.now(UTC).isoformat(),

@@ -163,3 +163,5 @@ def test_runtime_provenance_records_execution_changes_separately(tmp_path, monke
     assert record["execution_runtime"]["batch_transfer"] == "host_to_shard"
     assert record["execution_runtime"]["environment"]["NCCL_P2P_DISABLE"] == "1"
     assert not hasattr(config.train, "host_staging")
+    assert "scaffold_ofm_source_commit" in record
+    assert "ofm_source_commit" not in record
