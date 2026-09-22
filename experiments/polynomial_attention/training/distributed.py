@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from typing import Callable, Sequence
 
 import jax
@@ -16,6 +17,34 @@ from experiments.polynomial_attention.training.state import TrainState
 
 
 DATA_AXIS = "data"
+HOST_STAGING_ENV = "POLYNOMIAL_ATTENTION_HOST_STAGING"
+
+
+def _host_staging_enabled() -> bool:
+    value = os.environ.get(HOST_STAGING_ENV, "0")
+    if value not in ("0", "1"):
+        raise ValueError(f"{HOST_STAGING_ENV} must be 0 or 1, got {value!r}")
+    return value == "1"
+
+
+def _put_from_host(value, sharding: NamedSharding, *, verify: str | None = None):
+    # A NumPy source sends each shard directly from host memory. Staging via
+    # jnp.asarray first would put it on the default GPU and require peer copies.
+    host = np.asarray(jax.device_get(value))
+    placed = jax.device_put(host, sharding)
+    if verify is not None:
+        # Check every physical replica, not just np.asarray(placed), which may
+        # return only replica zero. Process leaves/replicas sequentially so the
+        # check does not retain a second full model/optimizer state on the host.
+        expected_bytes = host.ravel(order="C").view(np.uint8)
+        for shard in placed.addressable_shards:
+            actual = np.asarray(shard.data)
+            if (actual.shape != host.shape or actual.dtype != host.dtype
+                    or not np.array_equal(actual.ravel(order="C").view(np.uint8), expected_bytes)):
+                raise RuntimeError(
+                    f"Host-staged state replica mismatch at {verify} on {shard.device}"
+                )
+    return placed
 
 
 @dataclass(frozen=True)
@@ -132,6 +161,7 @@ def make_data_parallel_functions(
 ) -> DataParallelFunctions:
     if len(devices) < 2:
         raise ValueError("Data-parallel functions require at least two devices")
+    host_staging = _host_staging_enabled()
 
     mesh = Mesh(np.asarray(devices), (DATA_AXIS,))
     replicated = NamedSharding(mesh, P())
@@ -245,6 +275,8 @@ def make_data_parallel_functions(
         batches: jax.Array,
         step_rng: jax.Array,
     ) -> tuple[TrainState, jax.Array]:
+        if host_staging:
+            step_rng = _put_from_host(step_rng, replicated)
         with mesh:
             return compiled_train_step(current_state, batches, step_rng)
 
@@ -253,6 +285,8 @@ def make_data_parallel_functions(
         batch: jax.Array,
         batch_rng: jax.Array,
     ) -> jax.Array:
+        if host_staging:
+            batch_rng = _put_from_host(batch_rng, replicated)
         with mesh:
             return compiled_eval_step(current_state, batch, batch_rng)
 
@@ -267,6 +301,15 @@ def make_data_parallel_functions(
 
 
 def put_replicated(state: TrainState, sharding: NamedSharding) -> TrainState:
+    if _host_staging_enabled():
+        # Called after initialization and after checkpoint restoration, before
+        # any update: parameters, optimizer moments, and counters all need the
+        # same verified transport. Computation and precision stay unchanged.
+        return jax.tree_util.tree_map_with_path(
+            lambda path, value: _put_from_host(value, sharding, verify=jax.tree_util.keystr(path))
+            if isinstance(value, (jax.Array, np.ndarray)) else value,
+            state,
+        )
     return jax.tree.map(
         lambda value: jax.device_put(value, sharding)
         if isinstance(value, jax.Array)
@@ -276,8 +319,12 @@ def put_replicated(state: TrainState, sharding: NamedSharding) -> TrainState:
 
 
 def put_train_batches(batches: np.ndarray, sharding: NamedSharding) -> jax.Array:
+    if _host_staging_enabled():
+        return jax.device_put(np.asarray(batches, dtype=np.int32), sharding)
     return jax.device_put(jnp.asarray(batches, dtype=jnp.int32), sharding)
 
 
 def put_eval_batch(batch: np.ndarray, sharding: NamedSharding) -> jax.Array:
+    if _host_staging_enabled():
+        return jax.device_put(np.asarray(batch, dtype=np.int32), sharding)
     return jax.device_put(jnp.asarray(batch, dtype=jnp.int32), sharding)
