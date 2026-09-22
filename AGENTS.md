@@ -4,6 +4,14 @@ Whenever the user mentions the "write-up," always use `overleaf/iclr/iclr2027_co
 
 Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits, and operational commands before launching or migrating experiments.
 
+## Canonical scaffold and runtime separation
+
+- Experiments sharing a model family must use one shared model, attention, data pipeline, optimizer, trainer, evaluation, and checkpoint implementation. Keep cluster names, GPU-model workarounds, and transport policy out of model definitions, optimizer logic, and scientific recipes.
+- Generic device placement, replication, sharding, and gradient synchronization belong in the shared training runtime, such as `training/distributed.py`. Host staging is a generic transfer option implemented there; it must not require a separate scaffold for each GPU model. The trainer calls these helpers rather than implementing hardware branches itself.
+- Launcher scripts (Slurm `.sbatch`/shell scripts or Python submission scripts), separate from model and runtime modules, select cluster resources and execution settings such as host staging and `NCCL_P2P_DISABLE`, then invoke the same trainer. Document cluster policy in `CLUSTERS.md` and the generic runtime interface in the scaffold README.
+- Keep device-capability checks and implementation selection in attention backends and the runtime. Hardware-specific kernels are allowed behind the shared attention interface; they must preserve the requested mathematics and explicit numerical-failure behavior.
+- Record selected runtime settings, resolved backends, and hardware in execution provenance separately from scientific hyperparameters. Preserve historical provenance and frozen execution checkouts. A layout refactor alone does not qualify a hardware/runtime combination; validate changes before using them for production.
+
 Keep one successful Slurm log per retained experiment at `results/logs/<experiment>/slurm-<job_id>.out`, matching its metadata. Remove superseded logs and failed-run logs once debugging is resolved.
 
 ## Experiment home cluster
