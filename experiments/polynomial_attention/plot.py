@@ -167,7 +167,10 @@ def aggregate(
         root = retained_root(manifest, manifest_path)
         lock_hash = manifest.get("dependency_lock_sha256")
         if lock_hash:
-            checked_artifact(root, {"path": f"experiments/{manifest['experiment']}/uv.lock", "sha256": lock_hash})
+            checked_artifact(root, {
+                "path": manifest.get("dependency_lock_path", f"experiments/{manifest['experiment']}/uv.lock"),
+                "sha256": lock_hash,
+            })
         summaries = [summarize_retained_run(run, root) for run in manifest["runs"]]
         output_dir = output_dir or root / "results" / manifest["experiment"]
     else:

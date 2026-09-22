@@ -44,9 +44,8 @@ def provenance(device) -> dict:
         dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=root, text=True).strip())
     except (OSError, subprocess.CalledProcessError):
         commit, dirty = None, None
-    sources = [Path(__file__).resolve(), root / "experiments/polynomial_attention/uv.lock"]
-    sources += [root / "experiments/polynomial_attention/models/components" / name
-                for name in ("attention.py", "fused_attention.py")]
+    sources = [Path(__file__).resolve(), root / "experiments/shared_transformer/uv.lock"]
+    sources += sorted((root / "experiments/shared_transformer/attention").rglob("*.py"))
     versions = {}
     for name in ("jax", "jaxlib", "flax", "numpy", "jax-cuda12-plugin", "nvidia-cudnn-cu12"):
         try:

@@ -21,10 +21,14 @@ Experiments are grouped by the question they investigate:
   [Results](results/polynomial_attention/README.md) ·
   [Retention provenance](results/polynomial_attention/provenance.json).
 
-Each family owns its code, tests, and scientific configuration. The root
-PyTorch environment serves state-rank experiments; each training family has
-an independent locked JAX environment. Results live under `results/`; existing
-rank results retain their original locations and provenance.
+Pretraining families use the [shared Transformer scaffold](experiments/shared_transformer/README.md)
+for model, attention implementations, data, training, and checkpointing. Families
+retain their scientific configurations, sweep orchestration, and analysis. Legacy
+training imports and commands are compatibility adapters. The shared JAX
+environment is isolated from the root PyTorch environment used for state-rank
+analysis. Results live under `results/`; historical results retain their original
+locations and source provenance. Frozen execution checkouts remain unchanged
+during the shared-scaffold rollout.
 
 The main write-up is `overleaf/iclr/iclr2027_conference.tex`.
 

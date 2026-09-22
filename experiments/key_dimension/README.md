@@ -1,5 +1,11 @@
 # Query/key dimension and perplexity
 
+This experiment uses the shared Transformer implementation in
+[`experiments/shared_transformer`](../shared_transformer/README.md). Its configuration,
+sweep, preflight, plots, and retention policy stay in this experiment directory.
+Use the shared locked environment for new runs; reproduce historical runs from
+the source revision and dependency lock recorded in their provenance.
+
 The retained sweep contains eight completed decoder-only Transformer runs
 with a fixed backbone and per-head query/key widths
 **2, 4, 8, 16, 32, 64, 128, 256**. The primary endpoint is terminal held-out
@@ -78,11 +84,11 @@ Run commands from the repository root. The JAX environment is separate from
 the root PyTorch environment because their CUDA-library pins differ.
 
 ```bash
-export UV_PROJECT_ENVIRONMENT="$PWD/.envs/key_dimension"
+export UV_PROJECT_ENVIRONMENT="$PWD/.envs/shared_transformer"
 export UV_CACHE_DIR="$PWD/.cache/uv"
-uv sync --project experiments/key_dimension --locked --extra cuda
-uv run --project experiments/key_dimension --locked --extra cuda python -m pytest \
-  -c experiments/key_dimension/pyproject.toml experiments/key_dimension/tests
+uv sync --project experiments/shared_transformer --locked --extra cuda
+uv run --project experiments/shared_transformer --locked --extra cuda python -m pytest \
+  -c experiments/shared_transformer/pyproject.toml experiments/key_dimension/tests
 ```
 
 GPU tests require a CUDA node. Use the Slurm preflight before production;
@@ -125,7 +131,7 @@ budget; incomplete runs are excluded from terminal-PPL comparisons. Combined
 figures can be regenerated without GPUs using the extension manifest:
 
 ```bash
-uv run --project experiments/key_dimension --locked --extra cuda python -m \
+uv run --project experiments/shared_transformer --locked --extra cuda python -m \
   experiments.key_dimension.plot --manifest results/key_dimension/sweep-dk256.json
 ```
 

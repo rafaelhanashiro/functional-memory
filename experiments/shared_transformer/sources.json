@@ -1,0 +1,9 @@
+{
+  "format": "shared-transformer-extraction-sources",
+  "version": 1,
+  "main": "c2b0d6e5514995cbe7b5e564f902201cfde1ba4e",
+  "key_dimension_taylor": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "learned_quadratic_attention": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+  "odd_taylor_attention": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+  "note": "Source-only extraction. Existing run artifacts and frozen execution checkouts are unchanged."
+}

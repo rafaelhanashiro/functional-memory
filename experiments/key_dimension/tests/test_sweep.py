@@ -20,7 +20,7 @@ def make_test_manifest(tmp_path):
         path = tmp_path / f"{name}.json"
         path.write_text('{"dataset": "test"}')
         setattr(base.data, name, str(path))
-    lock = tmp_path / "execution/experiments/key_dimension/uv.lock"
+    lock = tmp_path / "execution/experiments/shared_transformer/uv.lock"
     lock.parent.mkdir(parents=True)
     lock.write_text("test locked dependencies\n")
     return base, make_manifest(base, tmp_path / "project", tmp_path / "execution", "a" * 40)
@@ -52,7 +52,7 @@ def test_fixed_backbone_sweep_and_exact_prediction_budget(tmp_path):
 def test_preflight_identity_includes_data_and_dependency_lock(tmp_path):
     base, manifest = make_test_manifest(tmp_path)
     execution_root = Path(manifest["execution_root"])
-    lock = execution_root / "experiments/key_dimension/uv.lock"
+    lock = execution_root / "experiments/shared_transformer/uv.lock"
     lock.write_text("changed locked dependencies\n")
     changed_lock = make_manifest(base, Path(manifest["project_root"]), execution_root, "a" * 40)
     assert changed_lock["identity"] != manifest["identity"]
@@ -159,7 +159,7 @@ def test_interrupted_preflight_cannot_be_reused_as_success(tmp_path):
 @pytest.mark.parametrize("manifest_name", ("sweep.json", "sweep-dk256.json"))
 def test_launcher_bootstraps_without_python_on_compute_node_path(tmp_path, manifest_name):
     project = tmp_path / "project"
-    interpreter = project / ".envs/key_dimension/bin/python"
+    interpreter = project / ".envs/shared_transformer/bin/python"
     interpreter.parent.mkdir(parents=True)
     interpreter.symlink_to(sys.executable)
     manifest = project / "results/key_dimension" / manifest_name

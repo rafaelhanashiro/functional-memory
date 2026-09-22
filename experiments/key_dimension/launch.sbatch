@@ -19,9 +19,9 @@ case "$MANIFEST" in
   /*/results/key_dimension/*.json) PROJECT_ROOT="${MANIFEST%/results/key_dimension/*}" ;;
   *) echo "Expected an absolute manifest JSON path under results/key_dimension: $MANIFEST" >&2; exit 1 ;;
 esac
-BOOTSTRAP_PYTHON="${PROJECT_ROOT}/.envs/key_dimension/bin/python"
+BOOTSTRAP_PYTHON="${PROJECT_ROOT}/.envs/shared_transformer/bin/python"
 if [[ ! -x "$BOOTSTRAP_PYTHON" ]]; then
-  echo "Missing isolated key-dimension interpreter: $BOOTSTRAP_PYTHON" >&2
+  echo "Missing shared Transformer interpreter: $BOOTSTRAP_PYTHON" >&2
   exit 1
 fi
 BOOTSTRAP_OUTPUT="$("$BOOTSTRAP_PYTHON" - "$MANIFEST" "$RUN_NAME" "$PROJECT_ROOT" <<'PY'
@@ -52,7 +52,7 @@ if [[ "$(git rev-parse HEAD)" != "$EXPECTED_COMMIT" ]] || [[ -n "$(git status --
   exit 1
 fi
 export KEY_DIMENSION_SOURCE_COMMIT="$EXPECTED_COMMIT"
-export UV_PROJECT_ENVIRONMENT="${PROJECT_ROOT}/.envs/key_dimension"
+export UV_PROJECT_ENVIRONMENT="${PROJECT_ROOT}/.envs/shared_transformer"
 export UV_CACHE_DIR="${CACHE_ROOT}/uv"
 export UV_LINK_MODE=copy
 export JAX_COMPILATION_CACHE_DIR="${CACHE_ROOT}/jax"
@@ -64,7 +64,7 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_PLATFORMS=cuda
 export PYTHONPATH="${EXECUTION_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 export MPLBACKEND=Agg
-UV=(uv run --project "${EXECUTION_ROOT}/experiments/key_dimension" --locked --extra cuda)
+UV=(uv run --project "${EXECUTION_ROOT}/experiments/shared_transformer" --locked --extra cuda)
 echo "mode=$MODE run=$RUN_NAME slurm_job_id=$SLURM_JOB_ID restart=${SLURM_RESTART_COUNT:-0} source_commit=$EXPECTED_COMMIT"
 if [[ "$MODE" == preflight ]]; then
   "${UV[@]}" python -m experiments.key_dimension.preflight "$MANIFEST"

@@ -34,6 +34,9 @@ def test_baseline_matches_approved_budget_and_geometry():
 def test_defaults_are_tiny_synthetic_and_round_trip(tmp_path):
     config = Config()
     validate_config(config)
+    assert isinstance(config.model, ModelConfig)
+    assert config.model.attention_backend == "blocked"
+    assert config.train.workdir == Path("results/polynomial_attention/smoke_transformer")
     assert config.model.hidden_size == 128
     assert config.model.num_layers == 2
     assert config.data.source == "synthetic"
@@ -50,10 +53,9 @@ def test_defaults_are_tiny_synthetic_and_round_trip(tmp_path):
     ("model:\n  num_kv_heads: 2\n", "full MHA"),
     ("model:\n  attention_backend: fast\n", "backend"),
     ("model:\n  dropout: 0.1\n", "dropout=0"),
-    ("model:\n  attention_degree: 3\n", "nonnegative even"),
-    ("model:\n  attention_degree: -2\n", "nonnegative even"),
-    ("model:\n  attention_degree: true\n", "nonnegative even"),
-    ("model:\n  attention_degree: 2.0\n", "nonnegative even"),
+    ("model:\n  attention_degree: -2\n", "nonnegative integer"),
+    ("model:\n  attention_degree: true\n", "nonnegative integer"),
+    ("model:\n  attention_degree: 2.0\n", "nonnegative integer"),
     ("train:\n  micro_batch_size: 3\n", "divisible"),
     ("unknown: 1\n", "Unknown"),
     ("model: []\n", "mapping"),
@@ -88,7 +90,7 @@ def test_scientific_recipe_matches_original_softmax_reference():
     assert current == original
 
 
-@pytest.mark.parametrize("degree", (0, 2, 4, 8, 16, None))
+@pytest.mark.parametrize("degree", (0, 1, 2, 3, 4, 8, 16, None))
 def test_degree_round_trip(tmp_path, degree):
     config = Config()
     config.model.attention_degree = degree
@@ -138,3 +140,9 @@ def test_fused_diagnostics_metadata_reports_adaptive_tiles(qk_dim, value_dim, ti
     identity = attention_identity(config)
     assert identity["attention_implementation"] == "cudnn"
     assert identity["query_block_size"] is identity["key_block_size"] is None
+
+
+def test_empty_config_preserves_family_defaults(tmp_path):
+    path = tmp_path / "empty.yaml"
+    path.write_text("{}\n")
+    assert asdict(load_config(path)) == asdict(Config())

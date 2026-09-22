@@ -123,9 +123,9 @@ def test_exact_exponential_underflow_is_allowed():
     assert int(diag["invalid_kernel_count"]) == 0
 
 
-@pytest.mark.parametrize("degree", (-2, 1, 3, 2.0, True, "2"))
+@pytest.mark.parametrize("degree", (-2, 2.0, True, "2"))
 def test_invalid_degrees_are_rejected(degree):
-    with pytest.raises(ValueError, match="nonnegative even"):
+    with pytest.raises(ValueError, match="nonnegative integer"):
         blocked_dot_product_attention(*_inputs(), attention_degree=degree)
 
 

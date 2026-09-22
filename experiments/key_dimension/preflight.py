@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from experiments.key_dimension.configs import config_to_dict, load_config
+from experiments.key_dimension.configs.loader import config_dicts_equal
 from experiments.key_dimension.sweep import write_json
 
 CUDNN_CHECKS = (
@@ -53,6 +54,8 @@ def verify_manifest(manifest: dict) -> None:
         "data_identity": manifest["data_identity"],
         "configs": [run["config"] for run in manifest["runs"]],
     }
+    if "dependency_lock_path" in manifest:
+        payload["dependency_lock_path"] = manifest["dependency_lock_path"]
     identity = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
     if identity != manifest["identity"]:
         raise ValueError("Sweep manifest identity does not match its contents")
@@ -60,14 +63,14 @@ def verify_manifest(manifest: dict) -> None:
     actual_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=execution_root, text=True).strip()
     if actual_commit != manifest["source_commit"]:
         raise ValueError("Execution source commit changed since sweep resolution")
-    lock_sha = hashlib.sha256((execution_root / "experiments/key_dimension/uv.lock").read_bytes()).hexdigest()
+    lock_sha = hashlib.sha256((execution_root / manifest.get("dependency_lock_path", "experiments/key_dimension/uv.lock")).read_bytes()).hexdigest()
     if lock_sha != manifest["dependency_lock_sha256"]:
         raise ValueError("Dependency lock changed since sweep resolution")
     for identity in manifest["data_identity"].values():
         if hashlib.sha256(Path(identity["path"]).read_bytes()).hexdigest() != identity["sha256"]:
             raise ValueError(f"Data manifest changed: {identity['path']}")
     for run in manifest["runs"]:
-        if config_to_dict(load_config(run["config_path"])) != run["config"]:
+        if not config_dicts_equal(config_to_dict(load_config(run["config_path"])), run["config"]):
             raise ValueError(f"Run config changed: {run['config_path']}")
 
 
@@ -120,7 +123,7 @@ def run_preflight(manifest: dict, *, check_only: bool = False) -> None:
         junit_path = attempt / "attention-parity.xml"
         subprocess.run([
             sys.executable, "-m", "pytest",
-            "-c", "experiments/key_dimension/pyproject.toml",
+            "-c", "experiments/shared_transformer/pyproject.toml",
             *[
                 f"experiments/key_dimension/tests/test_attention.py::{check}[{dim}]"
                 for check in CUDNN_CHECKS for dim in dimensions

@@ -33,6 +33,9 @@ def test_baseline_matches_approved_budget_and_geometry():
 def test_defaults_are_tiny_synthetic_and_round_trip(tmp_path):
     config = Config()
     validate_config(config)
+    assert isinstance(config.model, ModelConfig)
+    assert config.model.attention_backend == "manual"
+    assert config.train.workdir == Path("results/key_dimension/smoke_transformer")
     assert config.model.hidden_size == 128
     assert config.model.num_layers == 2
     assert config.data.source == "synthetic"
@@ -65,3 +68,9 @@ def test_reject_invalid_or_stale_configs(tmp_path, body, error):
 def test_invalid_qk_dimensions_rejected_at_construction(qk_dim):
     with pytest.raises(ValueError):
         ModelConfig(qk_head_dim=qk_dim)
+
+
+def test_empty_config_preserves_family_defaults(tmp_path):
+    path = tmp_path / "empty.yaml"
+    path.write_text("{}\n")
+    assert asdict(load_config(path)) == asdict(Config())

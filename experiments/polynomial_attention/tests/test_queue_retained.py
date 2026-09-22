@@ -98,3 +98,22 @@ def test_queued_active_jobs_all_require_successful_preflight_and_skip_zero(tmp_p
         assert "--nodelist=dogo" in command and "--gres=gpu:h100:4" in command
     submit_sweep(manifest, base, queue_after_preflight=True)
     assert len(commands) == 5
+
+
+def test_legacy_retained_control_accepts_missing_new_default_fields(tmp_path):
+    import yaml
+
+    base, old, retained = completed_zero(tmp_path)
+    config_path = Path(retained["config_path"])
+    old_config = yaml.safe_load(config_path.read_text())
+    for field in ("quadratic_mode", "quadratic_sharing"):
+        old_config["model"].pop(field)
+        retained["config"]["model"].pop(field)
+    config_path.write_text(yaml.safe_dump(old_config, sort_keys=False))
+    before = config_path.read_bytes()
+    manifest = revised(base, old, retained)
+    assert manifest["runs"][0]["config"] == retained["config"]
+    assert config_path.read_bytes() == before
+    retained["config"]["model"]["qk_head_dim"] *= 2
+    with pytest.raises(ValueError, match="config changed"):
+        validate_retained_run(retained)
