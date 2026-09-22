@@ -100,6 +100,12 @@ parameters against the independently exported original key-dimension/OFM port.
 This [full-model CPU check](validation/initialization.json) passed: the parameter
 SHA256 is `6e1b4dddd849bc14944f8f7e399aa405179deac85a32903f89dd3ca83b0b8b80`.
 
+The [refactor validation record](validation/refactor.json) retains tested source
+revisions, commands, and counts: 298 shared CPU checks before runtime integration;
+198 focused checks, 15 multi-device checks, and four original-source parity and
+checkpoint-continuation checks afterward. These suites overlap; their counts
+should not be summed as distinct tests.
+
 GPU acceptance must run in the intended allocation. It includes fused forward/VJP
 tests, exact initialization verification, 20 full-context/full-microbatch updates,
 validation, and a one-update checkpoint-resume check while preserving the full

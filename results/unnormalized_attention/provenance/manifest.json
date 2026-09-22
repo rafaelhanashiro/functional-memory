@@ -62,5 +62,10 @@
   "initialization_validation": {
     "path": "results/unnormalized_attention/validation/initialization.json",
     "sha256": "14b9fc326de7472b77aa7a43faa6485208f5391ab1a964d8dd0652b2af1f48dd"
+  },
+  "shared_implementation_source_commit": "a532dfb812417bd729c3c17de39aa7e7c094859d",
+  "refactor_validation": {
+    "path": "results/unnormalized_attention/validation/refactor.json",
+    "sha256": "8f23b81a91f436ae2c4b9178af87e2246782e0b34ee4442ff7d4724d253e33cf"
   }
 }
