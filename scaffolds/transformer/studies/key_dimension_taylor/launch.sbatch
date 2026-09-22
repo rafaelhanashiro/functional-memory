@@ -58,6 +58,7 @@ export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-32}"
 export MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-32}"
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_PLATFORMS=cuda
+source "${EXECUTION_ROOT}/scaffolds/transformer/launchers/kennel_runtime.sh"
 export PYTHONPATH="${EXECUTION_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 export MPLBACKEND=Agg
 TRAIN_PID=""

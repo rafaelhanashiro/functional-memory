@@ -68,6 +68,7 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
 # Slurm inherits the submission environment, including CPU-only test settings.
 # GPU jobs must choose CUDA explicitly; CPU preflight workers override this.
 export JAX_PLATFORMS=cuda
+source "${EXECUTION_ROOT}/scaffolds/transformer/launchers/kennel_runtime.sh"
 export PYTHONPATH="${EXECUTION_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 export MPLBACKEND=Agg
 # The locked environment is installed before submission; jobs never resolve or

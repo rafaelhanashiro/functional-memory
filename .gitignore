@@ -7,16 +7,9 @@ __pycache__/
 /.cache/
 /checkpoints/
 /results/logs/
-# Legacy runtime locations remain ignored until active experiments migrate.
-/experiments/
 /results/**/checkpoints
 /results/**/wandb/
 *.log
 slurm-*.out
 slurm-*.err
 /results/state_rank/**/metrics.npz
-# Frozen control records still used by unretained collections; remove after migration.
-/results/key_dimension/provenance.json
-/results/polynomial_attention/provenance.json
-/results/key_dimension/200m-*/
-/results/polynomial_attention/200m-*/

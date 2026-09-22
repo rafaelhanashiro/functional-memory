@@ -43,6 +43,7 @@ from scaffolds.transformer.training.distributed import (
     put_replicated,
     put_train_batches,
     resolve_batch_layout,
+    runtime_provenance,
     select_data_parallel_devices,
 )
 from scaffolds.transformer.training.diagnostics import (
@@ -433,7 +434,13 @@ def _recover_pending_validation(*, metrics_store, latest_checkpoint_step, workdi
 def _write_status(config: Config, **updates) -> None:
     path = config.train.workdir / "metadata.json"
     metadata = json.loads(path.read_text()) if path.exists() else {}
+    runtime = runtime_provenance()
+    history = metadata.setdefault("runtime_history", [])
+    if not history or history[-1]["runtime"] != runtime:
+        history.append({"timestamp_utc": datetime.now(UTC).isoformat(),
+                        "slurm_job_id": os.environ.get("SLURM_JOB_ID"), "runtime": runtime})
     metadata.update({
+        "execution_runtime": runtime,
         **attention_identity(config),
         "qk_head_dim": config.model.qk_head_dim,
         "value_head_dim": config.model.value_head_dim,

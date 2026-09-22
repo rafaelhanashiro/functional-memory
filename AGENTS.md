@@ -19,6 +19,7 @@ Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits
 - Store exact scientific recipes under `results/<experiment>/configs/`, run metrics and metadata under `runs/<run>/`, and figures under `figures/`. Keep small summaries at the experiment root. Specialized numerical evidence may use descriptive subdirectories. Configurations retained from an executed source revision remain byte-identical; document historical paths and overrides rather than silently rewriting them.
 - Keep the canonical provenance manifest at `results/<experiment>/provenance/manifest.json`. Record source commits, resolved configurations and hashes, seeds, home cluster, artifact root, and selected checkpoints. Provenance is the authoritative machine-readable record; summarize its important locations in the experiment README.
 - Store checkpoints separately at `checkpoints/<experiment>/<run>/<step>/` on the experiment's home cluster. For completed pretraining retain only one validation-best checkpoint per run, which need not be the latest or final checkpoint. Preserve terminal metrics independently. Other experiments retain no checkpoints or intermediate data unless indispensable for reproduction or use.
+- A concluded numerical failure is a scientific result: record its stopping step, last valid metrics, failure diagnostics, and one matching failure log. Do not label it as a completed training run. Retain a diagnostic checkpoint only when justified in provenance and the README.
 - Retain one successful Slurm log per retained run, benchmark, or validation under `results/logs/<experiment>/.../slurm-<job_id>.out`, matching metadata. Remove superseded and failed-run logs after debugging is resolved.
 - The root `README.md` is the experiment index; `CLUSTERS.md` documents cluster operations. Keep datasets outside the repository. Environments, temporary caches, execution worktrees, checkpoints, and logs are local artifacts, not Git contents.
 
@@ -37,8 +38,15 @@ Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits
 - Maintain artifact exclusions in the committed root `.gitignore`, using shared patterns. Do not use `.git/info/exclude` or machine-local global exclusions for repository artifacts. Exclude checkpoint directories and any runtime checkpoint symlinks.
 - After cleanup and review, merge the retained experiment into `main`. Confirm indispensable artifacts live safely outside its temporary checkout, then remove the checkout and delete the merged branch. No Git tag is required.
 
-## Legacy artifact migration
+## Historical artifact migration
 
-- New experiments use the canonical layout above. Existing frozen collections may temporarily require ignored old-path checkpoint/config/metric aliases and exact copies of old root `provenance.json` records. These are compatibility artifacts on the home cluster, not a second documentation or source tree. The canonical tracked manifest is `provenance/manifest.json`.
-- Preserve these old-path artifacts until every frozen collection referencing their hashes has been retained or explicitly migrated. Then remove the aliases, old records, and their transitional ignore rules. Do not change frozen worktrees to adopt the new layout in place.
-- Checkpoints on an inaccessible home cluster retain their recorded existing location until a verified physical migration. Record the canonical destination and migration status without claiming it already exists.
+- Preserve exact historical configurations, manifests, and source commits in the
+  canonical experiment record and Git history. Historical absolute paths describe
+  the original execution; current locations belong in `provenance/manifest.json`.
+- Retire old-path compatibility aliases, duplicate root manifests, transitional
+  ignore rules, and superseded execution checkouts once all their consumers are
+  finished or explicitly migrated. Reproduce historical implementations by
+  exporting their recorded Git commits instead of retaining extra source trees.
+- Checkpoints on an inaccessible home cluster retain their recorded existing
+  location until a verified physical migration. Record the canonical destination
+  and migration status without claiming it already exists.
