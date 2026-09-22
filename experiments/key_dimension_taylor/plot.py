@@ -171,7 +171,6 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
                 row = line[column]
                 value = values[row_index, column]
                 annotation = f"{value:.4f}" if np.isfinite(value) else row["status"].upper()
-                annotation += " *" if row["reused"] else ""
                 color = "white" if np.isfinite(value) and norm(value) > 0.58 else "black"
                 axis.text(x, row_index, annotation, ha="center", va="center", fontsize=9, color=color)
         axis.set_xticks(np.arange(-0.5, len(columns), 1), minor=True)
@@ -182,7 +181,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
     axes[0].set_title("Taylor degree")
     axes[1].set_title("Reference")
     figure.colorbar(image, cax=figure.add_subplot(layout[0, 2]), label="Terminal held-out perplexity (linear scale)")
-    figure.suptitle("Joint dK × Taylor degree · 19,074 updates · seed 0\n* Reused historical result")
+    figure.suptitle("Joint dK × Taylor degree · 19,074 updates · seed 0")
     save(figure, "terminal_ppl_heatmap")
 
     deltas = np.array([[row["delta_ppl_vs_softmax"] if row["delta_ppl_vs_softmax"] != "" else np.nan for row in line[:n_degrees]] for line in grid])
@@ -196,13 +195,12 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
         for j, row in enumerate(line[:n_degrees]):
             value = deltas[i, j]
             annotation = f"{value:+.4f}" if np.isfinite(value) else row["status"].upper() if row["status"] != "complete" else "NO REF"
-            annotation += " *" if row["reused"] else ""
             axis.text(j, i, annotation, ha="center", va="center", fontsize=9,
                       color="white" if np.isfinite(value) and abs(value) > 0.65 * extent else "black")
     axis.set_xticks(range(n_degrees), [f"m={degree}" for degree in degrees])
     axis.set_yticks(range(len(widths)), [str(width) for width in widths])
     axis.set_ylabel("Query/key dimension per head (dK)")
-    axis.set_title("Terminal perplexity − softmax at the same dK\nNegative is better; * reused historical result")
+    axis.set_title("Terminal perplexity − softmax at the same dK\nNegative is better")
     figure.colorbar(image, ax=axis, label="Δ perplexity (linear scale)")
     save(figure, "delta_ppl_heatmap")
 
@@ -231,7 +229,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None) -> list[dict]:
     lines = ["# Joint key dimension × Taylor degree", "", f"Source: `{manifest['source_commit']}`. Sweep identity: `{manifest['identity']}`.", "",
              f"Status: {sum(row['status'] == 'complete' for row in rows)} complete, {sum(row['status'] == 'pending' for row in rows)} pending, {sum(row['status'] == 'incomplete' for row in rows)} incomplete, and {sum(row['status'] == 'failed' for row in rows)} numerical failures. Of the incomplete cells, {sum(row['execution_status'] == 'interrupted' for row in rows)} have a recorded infrastructure or validation interruption.", "",
              "The primary endpoint is held-out NLL/perplexity at 19,074 updates (10,000,269,312 prediction tokens), independently of the retained validation-best checkpoint. All runs use seed 0; this comparison does not estimate seed variation.", "",
-             f"The grid uses ascending dK rows ({', '.join(map(str, widths))}), Taylor degrees {', '.join(map(str, degrees))}, and a separate softmax column with the same linear color scale. Asterisks mark reused results. Failed, pending, and incomplete cells have no imputed perplexity.", "",
+             f"The grid uses ascending dK rows ({', '.join(map(str, widths))}), Taylor degrees {', '.join(map(str, degrees))}, and a separate softmax column with the same linear color scale. Heatmaps omit reuse markers; asterisks in the table and learning curves mark reused results. Failed, pending, and incomplete cells have no imputed perplexity.", "",
              "FAILED means a recorded numerical failure. Infrastructure interruptions and failed restore/audit validation remain INCOMPLETE, with `execution_status=interrupted`, `failure_kind`, and error details in the CSV. They do not establish a scientific numerical failure. A validated completion supersedes earlier resolved interruptions.", "",
              "Reused dK=64 Taylor results come from `polynomial_attention`. Softmax references come from `key_dimension`; its dK=64 softmax endpoint is **14.689767074685026**. The separate `polynomial_attention` softmax result, **14.69417664861716**, is historical context and is not used in this grid or its deltas. Each delta subtracts the softmax endpoint at the same width.", "",
              "Original source commits, resolved configurations, and artifact checksums remain in `sweep.json`. Historical hardware histories remain attached to their source provenance; throughput across these runs is not a matched hardware benchmark.", "",
