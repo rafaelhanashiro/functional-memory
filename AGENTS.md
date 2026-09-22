@@ -6,6 +6,8 @@ Within the Overleaf project, `notes/` contains standalone literature-review and 
 
 Keep the local Overleaf clone only under `overleaf/` in the primary repository checkout, excluded from Git by the root `.gitignore`. Do not copy or clone it into experiment worktrees. Create worktrees with `git worktree add`; any filesystem-based checkout copy must explicitly exclude `overleaf/`. When working in an experiment worktree, read the write-up from the primary checkout's path.
 
+Treat the Overleaf project as read-only unless the user explicitly instructs you to edit it. Reading or referencing the write-up, running experiments, and updating repository documentation do not authorize changes to any Overleaf files. Do not edit, generate, rename, move, or delete files inside `overleaf/`, or commit or push changes to its separate repository, without that explicit instruction.
+
 Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits, and operational commands before launching or migrating experiments.
 
 ## Canonical scaffold and runtime separation
