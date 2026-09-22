@@ -29,4 +29,4 @@ The root PyTorch environment serves state-rank analysis; `scaffolds/transformer/
 
 Completed collections, including concluded numerical-failure studies, are retained here with their original source history. Their temporary branches and execution checkouts are retired after artifact verification. The unfinished unnormalized-attention experiment remains on `codex/unnormalized-attention-250m` in `worktrees/unnormalized_attention/`; it uses the canonical shared scaffold. Historical source commits can be exported from Git when reproducing an original execution.
 
-The main write-up is `overleaf/iclr/iclr2027_conference.tex`.
+The main research notes are `overleaf/iclr2027_conference.tex`. The Overleaf project lives directly in the local, Git-ignored `overleaf/` directory and uses the ICLR LaTeX format for notes; it is not an ICLR submission.

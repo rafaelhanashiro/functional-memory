@@ -1,4 +1,4 @@
-"""Inspect the state in Section 3.2 of overleaf/iclr/iclr2027_conference.tex.
+"""Inspect the state in Section 3.2 of overleaf/iclr2027_conference.tex.
 
 Llama, all KV heads: uv run scaffolds/state_rank/spectrum.py --layer 8 --tokens 512 --output results/run
 Select one Llama KV head: uv run scaffolds/state_rank/spectrum.py --layer 8 --kv-head 0
