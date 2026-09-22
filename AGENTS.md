@@ -4,6 +4,13 @@ Whenever the user mentions the "write-up," always use `overleaf/iclr/iclr2027_co
 
 Keep one successful Slurm log per retained experiment at `results/logs/<experiment>/slurm-<job_id>.out`, matching its metadata. Remove superseded logs and failed-run logs once debugging is resolved.
 
+## Experiment home cluster
+
+- Assign each experiment one home cluster before launching it. Keep its sweep runs, resumptions, checkpoints, and retained Slurm logs on that cluster by default; different experiments may have different home clusters.
+- Record the home cluster and artifact root in the experiment's provenance, along with checkpoint and log paths. A clone on another cluster shares committed code, configurations, and scientific results; it does not provide the checkpoints, datasets, environments, or other ignored artifacts.
+- When migrating an experiment, transfer and verify the required checkpoints and supporting artifacts, make the matching data and environment available, and update its home cluster and artifact locations before continuing. Avoid running the same run concurrently on both clusters.
+- Git ignoring a checkpoint only excludes it from version control. During training, retain the latest resumable checkpoint and the validation-best checkpoint as needed; apply the validation-best-only retention rule after the experiment is complete.
+
 ## Experiment lifecycle and retention
 
 - Develop and run each new experiment on a dedicated branch in a separate working checkout. A sweep can share one branch, with separate directories for its individual runs. Keep the experiment separate from `main` until it is complete and its results have been reviewed.
