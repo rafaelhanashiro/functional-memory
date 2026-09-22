@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from experiments.key_dimension.configs import config_to_dict, load_config, save_config, validate_config
+from experiments.key_dimension.configs.loader import config_dicts_equal
 
 KEY_DIMENSIONS = (2, 4, 8, 16, 32, 64, 128)
 
@@ -59,9 +60,10 @@ def make_manifest(base, project_root: Path, execution_root: Path, source_commit:
         }
         for name in ("train_manifest", "eval_manifest")
     }
-    lock_sha256 = hashlib.sha256((execution_root / "experiments/key_dimension/uv.lock").read_bytes()).hexdigest()
+    lock_sha256 = hashlib.sha256((execution_root / "experiments/shared_transformer/uv.lock").read_bytes()).hexdigest()
     identity_payload = {
         "source_commit": source_commit,
+        "dependency_lock_path": "experiments/shared_transformer/uv.lock",
         "dependency_lock_sha256": lock_sha256,
         "data_identity": data_identity,
         "configs": [config_to_dict(config) for _, config in runs],
@@ -70,6 +72,7 @@ def make_manifest(base, project_root: Path, execution_root: Path, source_commit:
     return {
         "schema_version": 1,
         "source_commit": source_commit,
+        "dependency_lock_path": "experiments/shared_transformer/uv.lock",
         "dependency_lock_sha256": lock_sha256,
         "project_root": str(project_root.resolve()),
         "execution_root": str(execution_root.resolve()),
@@ -132,7 +135,7 @@ def submit_sweep(manifest: dict, base, manifest_path: Path | None = None) -> dic
     dimensions = [run["qk_head_dim"] for run in manifest["runs"]]
     for (_, config), run in zip(resolve_runs(base, project_root, manifest["source_commit"], dimensions), manifest["runs"], strict=True):
         config_path = Path(run["config_path"])
-        if config_path.exists() and config_to_dict(load_config(config_path)) != run["config"]:
+        if config_path.exists() and not config_dicts_equal(config_to_dict(load_config(config_path)), run["config"]):
             raise ValueError(f"Refusing to overwrite a different run config: {config_path}")
         if any((config_path.parent / name).exists() for name in ("launch.json", "metadata.json", "completion.json")):
             raise ValueError(f"Run already has launch or training records; inspect/resume it: {config_path.parent}")

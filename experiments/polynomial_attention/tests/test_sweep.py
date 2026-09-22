@@ -29,7 +29,7 @@ def make_test_manifest(tmp_path, *, gpu_count=2, backend="blocked"):
         path = tmp_path / f"{name}.json"
         path.write_text('{"dataset": "test"}')
         setattr(base.data, name, str(path))
-    lock = tmp_path / "execution/experiments/polynomial_attention/uv.lock"
+    lock = tmp_path / "execution/experiments/shared_transformer/uv.lock"
     lock.parent.mkdir(parents=True)
     lock.write_text("test locked dependencies\n")
     return base, make_manifest(base, tmp_path / "project", tmp_path / "execution", "a" * 40,
@@ -62,7 +62,7 @@ def test_fixed_backbone_sweep_and_exact_prediction_budget(tmp_path):
 def test_preflight_identity_includes_data_and_dependency_lock(tmp_path):
     base, manifest = make_test_manifest(tmp_path)
     execution_root = Path(manifest["execution_root"])
-    lock = execution_root / "experiments/polynomial_attention/uv.lock"
+    lock = execution_root / "experiments/shared_transformer/uv.lock"
     lock.write_text("changed locked dependencies\n")
     changed_lock = make_manifest(base, Path(manifest["project_root"]), execution_root, "a" * 40)
     assert changed_lock["identity"] != manifest["identity"]
@@ -326,7 +326,7 @@ def test_aggregate_preserves_retained_control_source_and_rejects_wrong_metrics(t
 
 def test_launcher_bootstraps_without_python_on_compute_node_path(tmp_path):
     project = tmp_path / "project"
-    interpreter = project / ".envs/polynomial_attention/bin/python"
+    interpreter = project / ".envs/shared_transformer/bin/python"
     interpreter.parent.mkdir(parents=True)
     interpreter.symlink_to(sys.executable)
     manifest = project / "results/polynomial_attention/sweep.json"
@@ -345,7 +345,7 @@ def test_launcher_bootstraps_without_python_on_compute_node_path(tmp_path):
 @pytest.mark.parametrize("preflight_status", [0, 19])
 def test_launcher_preserves_allocation_and_submits_only_after_success(tmp_path, preflight_status):
     project = tmp_path / "project"
-    interpreter = project / ".envs/polynomial_attention/bin/python"
+    interpreter = project / ".envs/shared_transformer/bin/python"
     interpreter.parent.mkdir(parents=True)
     calls = tmp_path / "python-calls"
     interpreter.write_text(

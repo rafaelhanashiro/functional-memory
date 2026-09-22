@@ -140,3 +140,16 @@ def test_cudnn_production_context_forward_and_backward_are_finite(qk_dim):
     assert bool(jnp.all(jnp.isfinite(output)))
     assert bool(jnp.all(jnp.isfinite(gradient)))
     assert float(jnp.linalg.norm(gradient.astype(jnp.float32))) > 0
+
+
+def test_direct_constructor_keeps_manual_dropout_default():
+    options = dict(hidden_size=16, num_heads=2, num_kv_heads=2,
+                   qk_head_dim=4, value_head_dim=4, dropout=0.1)
+    implicit = MultiHeadAttention(**options, rngs=nnx.Rngs(8))
+    explicit = MultiHeadAttention(**options, backend="manual", rngs=nnx.Rngs(8))
+    x = jnp.arange(3 * 16, dtype=jnp.float32).reshape(1, 3, 16) / 48
+    rng = jax.random.key(19)
+    np.testing.assert_array_equal(
+        implicit(x, deterministic=False, rngs=rng),
+        explicit(x, deterministic=False, rngs=rng),
+    )

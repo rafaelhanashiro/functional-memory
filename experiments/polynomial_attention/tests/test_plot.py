@@ -179,3 +179,17 @@ def test_retained_best_and_terminal_metrics_must_match_validation_history(tmp_pa
         run[field].update(validation_nll=2.0, validation_perplexity=7.39)
     with pytest.raises(ValueError, match="validation-best|terminal metrics"):
         aggregate(manifest, manifest_path=manifest_path)
+
+
+def test_retained_plot_checks_recorded_shared_dependency_lock(tmp_path):
+    manifest_path, manifest = retained_fixture(tmp_path)
+    old_lock = tmp_path / "experiments/polynomial_attention/uv.lock"
+    new_lock = tmp_path / "experiments/shared_transformer/uv.lock"
+    new_lock.parent.mkdir(parents=True)
+    old_lock.rename(new_lock)
+    manifest["dependency_lock_path"] = str(new_lock.relative_to(tmp_path))
+    rows = aggregate(manifest, manifest_path=manifest_path)
+    assert rows[0]["status"] == "complete"
+    new_lock.write_text("changed dependency lock\n")
+    with pytest.raises(ValueError, match="checksum"):
+        aggregate(manifest, manifest_path=manifest_path)

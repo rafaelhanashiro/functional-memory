@@ -1,14 +1,13 @@
 /overleaf/
-/.venv/
 /.envs/
 /worktrees/
-**/.venv/
-**/.pytest_cache/
+.venv/
+.pytest_cache/
 __pycache__/
-/.pytest_cache/
 /.cache/
+/checkpoints/
 /results/logs/
-# Shared artifact rules for every experiment, including checkpoint symlinks.
+# Legacy runtime locations remain ignored until active experiments migrate.
 /experiments/*/checkpoints
 /results/**/checkpoints
 /results/**/wandb/

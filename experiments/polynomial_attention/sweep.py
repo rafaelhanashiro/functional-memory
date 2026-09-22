@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from experiments.polynomial_attention.configs import ATTENTION_DEGREES, config_to_dict, load_config, save_config, validate_config
+from experiments.polynomial_attention.configs.loader import config_dicts_equal
 
 
 def scheduler_profile(gpu_count: int = 2, *, node: str | None = None) -> dict:
@@ -105,6 +106,8 @@ def manifest_identity_payload(manifest: dict) -> dict:
     payload = {key: manifest[key] for key in (
         "source_commit", "dependency_lock_sha256", "data_identity", "scheduler",
     )}
+    if "dependency_lock_path" in manifest:
+        payload["dependency_lock_path"] = manifest["dependency_lock_path"]
     payload["configs"] = [run["config"] for run in manifest["runs"]]
     if manifest.get("schema_version", 2) >= 3:
         payload["retained_runs"] = [
@@ -118,7 +121,7 @@ def validate_retained_run(run: dict) -> None:
     """Accept the existing completed uniform-attention control without relabeling it."""
     if not run.get("retained_completed") or run["attention_degree"] != 0:
         raise ValueError("Only the completed degree-zero control can be retained")
-    if config_to_dict(load_config(run["config_path"])) != run["config"]:
+    if not config_dicts_equal(config_to_dict(load_config(run["config_path"])), run["config"]):
         raise ValueError(f"Retained run config changed: {run['name']}")
     completion = Path(run["workdir"]) / "completion.json"
     if hashlib.sha256(completion.read_bytes()).hexdigest() != run["retained_completion_sha256"]:
@@ -141,9 +144,10 @@ def make_manifest(base, project_root: Path, execution_root: Path, source_commit:
         }
         for name in ("train_manifest", "eval_manifest")
     }
-    lock_sha256 = hashlib.sha256((execution_root / "experiments/polynomial_attention/uv.lock").read_bytes()).hexdigest()
+    lock_sha256 = hashlib.sha256((execution_root / "experiments/shared_transformer/uv.lock").read_bytes()).hexdigest()
     identity_payload = {
         "source_commit": source_commit,
+        "dependency_lock_path": "experiments/shared_transformer/uv.lock",
         "dependency_lock_sha256": lock_sha256,
         "data_identity": data_identity,
         "scheduler": scheduler,
@@ -153,6 +157,7 @@ def make_manifest(base, project_root: Path, execution_root: Path, source_commit:
     manifest = {
         "schema_version": 2,
         "source_commit": source_commit,
+        "dependency_lock_path": "experiments/shared_transformer/uv.lock",
         "dependency_lock_sha256": lock_sha256,
         "project_root": str(project_root.resolve()),
         "execution_root": str(execution_root.resolve()),
@@ -189,7 +194,7 @@ def make_manifest(base, project_root: Path, execution_root: Path, source_commit:
         for config in (original, current):
             config["model"].pop("attention_backend")
             config["train"].pop("source_commit")
-        if original != current:
+        if not config_dicts_equal(original, current):
             raise ValueError("Retained degree-zero control has a different scientific recipe")
         manifest["schema_version"] = 3
         manifest["runs"][0] = retained
@@ -241,10 +246,10 @@ def prepare_sweep(manifest: dict, base) -> dict:
         if run.get("retained_completed"):
             validate_retained_run(run)
             continue
-        if config_to_dict(config) != run["config"]:
+        if not config_dicts_equal(config_to_dict(config), run["config"]):
             raise ValueError(f"Resolved config differs from persisted sweep: {run['name']}")
         config_path = Path(run["config_path"])
-        if config_path.exists() and config_to_dict(load_config(config_path)) != run["config"]:
+        if config_path.exists() and not config_dicts_equal(config_to_dict(load_config(config_path)), run["config"]):
             raise ValueError(f"Refusing to overwrite a different run config: {config_path}")
         save_config(config, config_path)
         report_path = config_path.parent / "REPORT.md"

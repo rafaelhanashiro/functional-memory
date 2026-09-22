@@ -80,7 +80,7 @@ def test_max_sequence_length_is_enforced():
         model(jnp.ones((1, 17), dtype=jnp.int32))
 
 
-def test_all_parameter_tensors_identical_across_degrees_and_reference():
+def test_compatibility_backbone_initialization_is_identical_across_fixed_degrees():
     cfg = _small_config()
     reference_cfg = ReferenceModelConfig(**{
         name: value for name, value in vars(cfg).items() if name != "attention_degree"

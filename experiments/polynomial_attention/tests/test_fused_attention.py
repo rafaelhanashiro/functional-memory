@@ -267,7 +267,9 @@ def test_finite_large_kernel_and_values_do_not_overflow_numerator(degree, score_
 def test_model_fused_dispatch_retains_real_output_when_collecting_diagnostics(monkeypatch, degree):
     from flax import nnx
     from experiments.polynomial_attention.models.components import attention as attention_module
-    from experiments.polynomial_attention.models.components import fused_attention as fused_module
+    from experiments.shared_transformer.attention import softmax as softmax_module
+    from experiments.shared_transformer.attention.backends import reference as reference_module
+    from experiments.shared_transformer.attention.backends import fused_taylor as fused_module
 
     settings = dict(hidden_size=16, num_heads=2, num_kv_heads=2, qk_head_dim=4,
                     value_head_dim=6, attention_degree=degree)
@@ -296,8 +298,8 @@ def test_model_fused_dispatch_retains_real_output_when_collecting_diagnostics(mo
         return jnp.full_like(v, -11), {"normalizer_min": jnp.asarray(7.0)}
 
     monkeypatch.setattr(fused_module, "fused_polynomial_attention", fast)
-    monkeypatch.setattr(attention_module, "padded_dot_product_attention", fast)
-    monkeypatch.setattr(attention_module, "blocked_dot_product_attention", diagnostics)
+    monkeypatch.setattr(softmax_module, "padded_dot_product_attention", fast)
+    monkeypatch.setattr(reference_module, "blocked_dot_product_attention", diagnostics)
     x = jnp.arange(3 * 16, dtype=jnp.float32).reshape(1, 3, 16) / 48
     expected = layer.o_proj(jnp.full((1, 3, 12), 3, dtype=jnp.float32))
     plain = layer(x)
@@ -306,7 +308,10 @@ def test_model_fused_dispatch_retains_real_output_when_collecting_diagnostics(mo
     assert [kind for kind, _ in calls] == ["fast", "fast", "diagnostics"]
     expected_fast_kwargs = {"backend": "cudnn"} if degree is None else {"attention_degree": degree}
     assert calls[0][1] == calls[1][1] == expected_fast_kwargs
-    assert calls[2][1] == {"attention_degree": degree, "return_diagnostics": True}
+    expected_diagnostic_kwargs = {"return_diagnostics": True}
+    if degree is not None:
+        expected_diagnostic_kwargs["attention_degree"] = degree
+    assert calls[2][1] == expected_diagnostic_kwargs
     np.testing.assert_array_equal(plain, expected)
     np.testing.assert_array_equal(output, expected)
     assert float(observed_diagnostics["normalizer_min"]) == 7.0

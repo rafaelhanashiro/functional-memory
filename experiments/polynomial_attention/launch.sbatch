@@ -19,9 +19,9 @@ case "$MANIFEST" in
   /*/results/polynomial_attention/sweep.json) PROJECT_ROOT="${MANIFEST%/results/polynomial_attention/sweep.json}" ;;
   *) echo "Expected absolute canonical results/polynomial_attention/sweep.json path: $MANIFEST" >&2; exit 1 ;;
 esac
-BOOTSTRAP_PYTHON="${PROJECT_ROOT}/.envs/polynomial_attention/bin/python"
+BOOTSTRAP_PYTHON="${PROJECT_ROOT}/.envs/shared_transformer/bin/python"
 if [[ ! -x "$BOOTSTRAP_PYTHON" ]]; then
-  echo "Missing isolated polynomial-attention interpreter: $BOOTSTRAP_PYTHON" >&2
+  echo "Missing shared Transformer interpreter: $BOOTSTRAP_PYTHON" >&2
   exit 1
 fi
 BOOTSTRAP_OUTPUT="$("$BOOTSTRAP_PYTHON" - "$MANIFEST" "$RUN_NAME" "$PROJECT_ROOT" <<'PY'
@@ -56,7 +56,7 @@ if [[ "$(git rev-parse HEAD)" != "$EXPECTED_COMMIT" ]] || [[ -n "$(git status --
   exit 1
 fi
 export POLYNOMIAL_ATTENTION_SOURCE_COMMIT="$EXPECTED_COMMIT"
-export UV_PROJECT_ENVIRONMENT="${PROJECT_ROOT}/.envs/polynomial_attention"
+export UV_PROJECT_ENVIRONMENT="${PROJECT_ROOT}/.envs/shared_transformer"
 export UV_CACHE_DIR="${CACHE_ROOT}/uv"
 export UV_LINK_MODE=copy
 export JAX_COMPILATION_CACHE_DIR="${CACHE_ROOT}/jax"
@@ -72,7 +72,7 @@ export PYTHONPATH="${EXECUTION_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 export MPLBACKEND=Agg
 # The locked environment is installed before submission; jobs never resolve or
 # mutate dependencies while another run may be using the same interpreter.
-PYTHON="${PROJECT_ROOT}/.envs/polynomial_attention/bin/python"
+PYTHON="${PROJECT_ROOT}/.envs/shared_transformer/bin/python"
 echo "mode=$MODE run=$RUN_NAME slurm_job_id=$SLURM_JOB_ID restart=${SLURM_RESTART_COUNT:-0} source_commit=$EXPECTED_COMMIT"
 if [[ "$MODE" == preflight || "$MODE" == preflight-and-submit ]]; then
   "$PYTHON" -m experiments.polynomial_attention.preflight "$MANIFEST"

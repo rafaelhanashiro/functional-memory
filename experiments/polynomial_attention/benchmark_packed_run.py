@@ -46,9 +46,9 @@ def benchmark(args) -> dict:
     root = Path(__file__).resolve().parents[2]
     for relative in (
         "experiments/polynomial_attention/benchmark_packed_run.py",
-        "experiments/polynomial_attention/training/loop.py",
-        "experiments/polynomial_attention/training/distributed.py",
-        "experiments/polynomial_attention/models/architectures/transformer.py",
+        "experiments/shared_transformer/training/loop.py",
+        "experiments/shared_transformer/training/distributed.py",
+        "experiments/shared_transformer/models/architectures/transformer.py",
     ):
         source["source_sha256"][relative] = hashlib.sha256((root / relative).read_bytes()).hexdigest()
     report = {
@@ -83,7 +83,7 @@ def benchmark(args) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=Path("experiments/polynomial_attention/configs/base.yaml"))
+    parser.add_argument("--config", type=Path, default=Path("experiments/shared_transformer/configs/base.yaml"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--workdir", type=Path, required=True)
     parser.add_argument("--degree", type=degree_argument, default=16)

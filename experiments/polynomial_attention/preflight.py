@@ -14,6 +14,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from experiments.polynomial_attention.configs import config_to_dict, load_config
+from experiments.polynomial_attention.configs.loader import config_dicts_equal
 from experiments.polynomial_attention.sweep import ATTENTION_DEGREES, run_name, validate_scheduler_profile, write_json
 
 PREFLIGHT_CHECKS = ("attention-cpu", "attention-gpu", "initialization", *[run_name(m) for m in ATTENTION_DEGREES])
@@ -43,14 +44,14 @@ def verify_manifest(manifest: dict) -> None:
     dirty = subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=normal"], cwd=execution_root, text=True)
     if dirty:
         raise ValueError("Frozen execution checkout is no longer clean")
-    lock_sha = hashlib.sha256((execution_root / "experiments/polynomial_attention/uv.lock").read_bytes()).hexdigest()
+    lock_sha = hashlib.sha256((execution_root / manifest.get("dependency_lock_path", "experiments/polynomial_attention/uv.lock")).read_bytes()).hexdigest()
     if lock_sha != manifest["dependency_lock_sha256"]:
         raise ValueError("Dependency lock changed since sweep resolution")
     for identity in manifest["data_identity"].values():
         if hashlib.sha256(Path(identity["path"]).read_bytes()).hexdigest() != identity["sha256"]:
             raise ValueError(f"Data manifest changed: {identity['path']}")
     for run in manifest["runs"]:
-        if config_to_dict(load_config(run["config_path"])) != run["config"]:
+        if not config_dicts_equal(config_to_dict(load_config(run["config_path"])), run["config"]):
             raise ValueError(f"Run config changed: {run['config_path']}")
         if run["config"]["model"]["attention_degree"] != run["attention_degree"]:
             raise ValueError(f"Run degree does not match resolved config: {run['name']}")
@@ -174,7 +175,7 @@ def run_preflight(manifest: dict, *, check_only: bool = False, check_hardware: b
                 continue
             junit_path = attempt / f"{stage}.xml"
             subprocess.run([
-                sys.executable, "-m", "pytest", "-c", "experiments/polynomial_attention/pyproject.toml",
+                sys.executable, "-m", "pytest", "-c", "experiments/shared_transformer/pyproject.toml",
                 f"experiments/polynomial_attention/tests/{test_file}", "-q", "-m", "not gpu" if marker == "cpu" else "gpu",
                 f"--junitxml={junit_path}",
             ], cwd=manifest["execution_root"], env=dict(os.environ, JAX_PLATFORMS="cpu" if marker == "cpu" else "cuda"), check=True)

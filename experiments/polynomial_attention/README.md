@@ -1,5 +1,11 @@
 # Taylor degree and learned attention performance
 
+This experiment uses the shared Transformer implementation in
+[`experiments/shared_transformer`](../shared_transformer/README.md). Its configuration,
+sweep, preflight, plots, and retention policy stay in this experiment directory.
+Use the shared locked environment for new runs; reproduce historical runs from
+the source revision and dependency lock recorded in their provenance.
+
 This completed collection trained **six models from scratch** with attention
 degrees **0, 2, 4, 8, 16** and an **exact-softmax control**. The only scientific
 sweep variable was the attention kernel: no frozen-checkpoint replacement or
@@ -141,11 +147,11 @@ from checkpoints.
 Run from the repository root:
 
 ```bash
-export UV_PROJECT_ENVIRONMENT="$PWD/.envs/polynomial_attention"
+export UV_PROJECT_ENVIRONMENT="$PWD/.envs/shared_transformer"
 export UV_CACHE_DIR="$PWD/.cache/uv"
-uv sync --project experiments/polynomial_attention --locked --extra cuda
-JAX_PLATFORMS=cpu uv run --project experiments/polynomial_attention --locked --extra cuda python -m pytest \
-  -c experiments/polynomial_attention/pyproject.toml experiments/polynomial_attention/tests -m 'not gpu'
+uv sync --project experiments/shared_transformer --locked --extra cuda
+JAX_PLATFORMS=cpu uv run --project experiments/shared_transformer --locked --extra cuda python -m pytest \
+  -c experiments/shared_transformer/pyproject.toml experiments/polynomial_attention/tests -m 'not gpu'
 ```
 
 The Kennel configuration reads the original packed corpus directly from NFS at
@@ -233,7 +239,7 @@ nonfinite training losses fail with retained diagnostics. Throughput is recorded
 but does not determine the training budget.
 
 ```bash
-uv run --project experiments/polynomial_attention --locked --extra cuda python -m \
+uv run --project experiments/shared_transformer --locked --extra cuda python -m \
   experiments.polynomial_attention.plot --manifest results/polynomial_attention/provenance.json
 ```
 

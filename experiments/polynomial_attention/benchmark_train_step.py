@@ -235,10 +235,10 @@ def benchmark(args) -> dict:
     root = Path(__file__).resolve().parents[2]
     for relative in (
         "experiments/polynomial_attention/benchmark_train_step.py",
-        "experiments/polynomial_attention/training/distributed.py",
-        "experiments/polynomial_attention/training/state.py",
-        "experiments/polynomial_attention/models/architectures/transformer.py",
-        "experiments/polynomial_attention/configs/base.py",
+        "experiments/shared_transformer/training/distributed.py",
+        "experiments/shared_transformer/training/state.py",
+        "experiments/shared_transformer/models/architectures/transformer.py",
+        "experiments/shared_transformer/configs/base.py",
     ):
         report["provenance"]["source_sha256"][relative] = hashlib.sha256((root / relative).read_bytes()).hexdigest()
     write_report(args.output, report)
@@ -318,7 +318,7 @@ def benchmark(args) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--config", type=Path, default=Path("experiments/polynomial_attention/configs/base.yaml"))
+    parser.add_argument("--config", type=Path, default=Path("experiments/shared_transformer/configs/base.yaml"))
     parser.add_argument("--degrees", type=degree_argument, nargs="+", default=[2, 16],
                         help="Nonnegative even polynomial degrees or 'softmax' (fused backend uses cuDNN)")
     parser.add_argument("--implementations", choices=("blocked", "fused"), nargs="+", default=["blocked", "fused"])
