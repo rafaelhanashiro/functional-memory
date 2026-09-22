@@ -1,0 +1,30 @@
+data:
+  source: synthetic
+  batch_size: 4
+  sequence_length: 9
+  synthetic_vocab_size: 32
+model:
+  vocab_size: 32
+  max_seq_len: 8
+  num_layers: 2
+  hidden_size: 16
+  num_heads: 2
+  num_kv_heads: 2
+  qk_head_dim: 4
+  value_head_dim: 8
+  intermediate_size: 24
+  tie_embeddings: false
+  attention_degree: 2
+  quadratic_mode: positive
+  quadratic_sharing: global
+optim:
+  total_steps: 4
+  warmup_steps: 0
+train:
+  source_commit: auto
+  dtype: float32
+  micro_batch_size: 2
+  log_every: 1
+  eval_every: 2
+  eval_batches: 1
+  ckpt_every: 2

@@ -1,24 +1,22 @@
 /overleaf/
-/.venv/
 /.envs/
 /worktrees/
-**/.venv/
-**/.pytest_cache/
+.venv/
+.pytest_cache/
 __pycache__/
-/.pytest_cache/
 /.cache/
+/checkpoints/
 /results/logs/
-/results/key_dimension/**/checkpoints
-/experiments/key_dimension/checkpoints/
-/results/key_dimension/**/wandb/
-/results/polynomial_attention/**/checkpoints/
-/experiments/polynomial_attention/checkpoints/
-/results/polynomial_attention/**/wandb/
-/results/unnormalized_attention/250m-exp-seed0/
-/results/unnormalized_attention/**/checkpoints/
-/experiments/unnormalized_attention/checkpoints/
-/results/unnormalized_attention/**/wandb/
+# Legacy runtime locations remain ignored until active experiments migrate.
+/experiments/
+/results/**/checkpoints
+/results/**/wandb/
 *.log
 slurm-*.out
 slurm-*.err
 /results/state_rank/**/metrics.npz
+# Frozen control records still used by unretained collections; remove after migration.
+/results/key_dimension/provenance.json
+/results/polynomial_attention/provenance.json
+/results/key_dimension/200m-*/
+/results/polynomial_attention/200m-*/

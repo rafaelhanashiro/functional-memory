@@ -53,5 +53,7 @@
         "sha256": "41d9d3c0568905b5d60e89b5b978744d3e053cf6f21659e8de7ea510e559e7a8"
       }
     }
-  ]
+  ],
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory"
 }

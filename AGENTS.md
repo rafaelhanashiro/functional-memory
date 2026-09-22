@@ -2,13 +2,43 @@
 
 Whenever the user mentions the "write-up," always use `overleaf/iclr/iclr2027_conference.tex` as the reference. This is the main write-up.
 
-Keep one successful Slurm log per retained experiment at `results/logs/<experiment>/slurm-<job_id>.out`, matching its metadata. Remove superseded logs and failed-run logs once debugging is resolved.
+Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits, and operational commands before launching or migrating experiments.
+
+## Canonical scaffold and runtime separation
+
+- Experiments sharing a model family must use one shared model, attention, data pipeline, optimizer, trainer, evaluation, and checkpoint implementation. Keep cluster names, GPU-model workarounds, and transport policy out of model definitions, optimizer logic, and scientific recipes.
+- Generic device placement, replication, sharding, and gradient synchronization belong in the shared training runtime, such as `training/distributed.py`. Host staging is a generic transfer option implemented there; it must not require a separate scaffold for each GPU model. The trainer calls these helpers rather than implementing hardware branches itself.
+- Launcher scripts (Slurm `.sbatch`/shell scripts or Python submission scripts), separate from model and runtime modules, select cluster resources and execution settings such as host staging and `NCCL_P2P_DISABLE`, then invoke the same trainer. Document cluster policy in `CLUSTERS.md` and the generic runtime interface in the scaffold README.
+- Keep device-capability checks and implementation selection in attention backends and the runtime. Hardware-specific kernels are allowed behind the shared attention interface; they must preserve the requested mathematics and explicit numerical-failure behavior.
+- Record selected runtime settings, resolved backends, and hardware in execution provenance separately from scientific hyperparameters. Preserve historical provenance and frozen execution checkouts. A layout refactor alone does not qualify a hardware/runtime combination; validate changes before using them for production.
+
+## Canonical repository layout
+
+- Organize reusable code by capability under `scaffolds/`: `scaffolds/transformer/` owns model, attention, data, training, evaluation, checkpointing, and reusable sweep/analysis machinery; `scaffolds/state_rank/` owns state-spectrum analysis. Experiments sharing a scaffold must use that implementation rather than copy it. Small scientific sweep/analysis adapters may live under a scaffold's `studies/`; add one only when configuration alone cannot express the experiment.
+- Each experiment or sweep has one record under `results/<experiment>/`. Its **single canonical `README.md`** contains the question, method, home cluster, artifact locations, exact reproduction commands, findings, and limitations. Keep this narrative in one place; do not create competing scaffold experiment READMEs, per-run reports, or nested narrative READMEs. Scaffold READMEs document reusable software APIs only. Plotting may update a marked generated-results section but must preserve authored documentation.
+- Store exact scientific recipes under `results/<experiment>/configs/`, run metrics and metadata under `runs/<run>/`, and figures under `figures/`. Keep small summaries at the experiment root. Specialized numerical evidence may use descriptive subdirectories. Configurations retained from an executed source revision remain byte-identical; document historical paths and overrides rather than silently rewriting them.
+- Keep the canonical provenance manifest at `results/<experiment>/provenance/manifest.json`. Record source commits, resolved configurations and hashes, seeds, home cluster, artifact root, and selected checkpoints. Provenance is the authoritative machine-readable record; summarize its important locations in the experiment README.
+- Store checkpoints separately at `checkpoints/<experiment>/<run>/<step>/` on the experiment's home cluster. For completed pretraining retain only one validation-best checkpoint per run, which need not be the latest or final checkpoint. Preserve terminal metrics independently. Other experiments retain no checkpoints or intermediate data unless indispensable for reproduction or use.
+- Retain one successful Slurm log per retained run, benchmark, or validation under `results/logs/<experiment>/.../slurm-<job_id>.out`, matching metadata. Remove superseded and failed-run logs after debugging is resolved.
+- The root `README.md` is the experiment index; `CLUSTERS.md` documents cluster operations. Keep datasets outside the repository. Environments, temporary caches, execution worktrees, checkpoints, and logs are local artifacts, not Git contents.
+
+## Experiment home cluster
+
+- Assign each experiment one home cluster before launching it. Keep its sweep runs, resumptions, checkpoints, and retained logs there by default; different experiments may have different home clusters.
+- Record the home cluster and artifact root in provenance and the README. A clone shares committed code, configurations, and scientific results; it does not provide ignored artifacts. Report unavailable or unverified external checkpoints accurately instead of claiming they were moved or checked.
+- When migrating an experiment, transfer and verify required checkpoints and supporting artifacts, provide the matching data and environment, and update its recorded locations before continuing. Avoid running the same run concurrently on both clusters.
+- Git ignoring checkpoints only excludes them from version control. During training retain the latest resumable checkpoint and validation best as needed; apply best-only cleanup after completion.
 
 ## Experiment lifecycle and retention
 
-- Develop and run each new experiment on a dedicated branch in a separate working checkout. A sweep can share one branch, with separate directories for its individual runs. Keep the experiment separate from `main` until it is complete and its results have been reviewed.
-- Before merging a retained experiment, clean up temporary files, intermediate checkpoints, caches, and redundant outputs. Keep `main` and the retained experiment directories minimal.
-- Store the scaffold code and configuration needed to rerun the experiment under `experiments/<experiment>/`. For pretraining, retain only one validation-best checkpoint per run under `experiments/<experiment>/checkpoints/<run>/`; "best" does not mean latest or final. Other experiments should retain no checkpoints or intermediate data by default. Keep additional data only when needed to reproduce or use the experiment.
-- Store scientific results, including metrics, figures, and reports, under `results/<experiment>/`, separate from the scaffold and checkpoints. Preserve terminal metrics even when the retained best checkpoint is from an earlier step. Keep a small provenance manifest recording resolved configurations, seeds, source commits, and the selected checkpoints. Retain Slurm logs as specified above.
-- Do not add large artifacts such as checkpoints, datasets, or caches to Git. Keep them on disk or shared storage and ensure their paths are ignored by Git.
-- Once cleanup is complete, merge the retained experiment into `main`. Before removing the temporary checkout, ensure that its best checkpoints, results, and any indispensable data are safely retained outside that checkout. Then remove the experiment checkout and delete the merged branch. No Git tag is required.
+- Develop and run each new experiment on a dedicated branch in a separate working checkout. A sweep may share one branch. Keep unfinished or unreviewed experiment records separate from `main`; shared scaffold maintenance can be integrated independently without changing frozen execution checkouts.
+- Freeze the execution source, environment, manifests, and referenced artifacts while jobs can run or requeue. A layout migration must preserve historical source commits and checksummed references. Do not rewrite frozen manifests or scientific controls to make a refactor pass.
+- Before merging a retained experiment, remove temporary files, intermediate checkpoints, caches, redundant outputs, and duplicated documentation. Preserve the canonical README, exact recipes, provenance, scientific metrics/figures, selected checkpoints, and matching logs.
+- Maintain artifact exclusions in the committed root `.gitignore`, using shared patterns. Do not use `.git/info/exclude` or machine-local global exclusions for repository artifacts. Exclude checkpoint directories and any runtime checkpoint symlinks.
+- After cleanup and review, merge the retained experiment into `main`. Confirm indispensable artifacts live safely outside its temporary checkout, then remove the checkout and delete the merged branch. No Git tag is required.
+
+## Legacy artifact migration
+
+- New experiments use the canonical layout above. Existing frozen collections may temporarily require ignored old-path checkpoint/config/metric aliases and exact copies of old root `provenance.json` records. These are compatibility artifacts on the home cluster, not a second documentation or source tree. The canonical tracked manifest is `provenance/manifest.json`.
+- Preserve these old-path artifacts until every frozen collection referencing their hashes has been retained or explicitly migrated. Then remove the aliases, old records, and their transitional ignore rules. Do not change frozen worktrees to adopt the new layout in place.
+- Checkpoints on an inaccessible home cluster retain their recorded existing location until a verified physical migration. Record the canonical destination and migration status without claiming it already exists.

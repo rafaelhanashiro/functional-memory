@@ -1,0 +1,82 @@
+# Cluster reference
+
+Last checked: **2026-09-22**. Kennel details combine the supplied wiki PDFs with
+live Slurm checks; ORCD details come from its official documentation, without a
+live account check. Recheck limits before launching a large sweep.
+
+Each experiment has one home cluster. Record its cluster and artifact paths in
+provenance; Git shares code and small results, not checkpoints or datasets.
+See [AGENTS.md](AGENTS.md) for retention and migration rules.
+
+## Kennel (CSAIL)
+
+- **Login:** `ssh rafah@kennel.csail.mit.edu`. The login node has no GPUs;
+  run experiments through Slurm, not directly on compute nodes.
+- **Repository:** `/data/cl/u/rafah/home/projects/functional-memory`.
+- **Datasets:** `/data/cl/u/rafah/home/datasets` (alongside `projects`);
+  packed FineWeb is in `fineweb_12b`.
+- **Storage:** keep persistent files on NFS under `/data/cl/u/rafah`.
+  Avoid AFS for jobs because authentication expires. `/data/cl/scratch` is
+  expendable; node-local `/scratch` is for temporary, I/O-heavy data.
+  Current training configs read FineWeb from NFS; stage locally when needed.
+- **Quota:** personal quota and backup coverage are unverified. `df` reports
+  filesystem free space, not a guaranteed personal allocation.
+
+| Partition | Time limit | Use |
+| --- | --- | --- |
+| `debug` | 2 hours | Quick checks; at most 2 GPUs per user |
+| `standard` | 24 hours | Normal jobs; at most 4 GPUs per user |
+| `long` | 7 days | Longer/larger jobs; avoid monopolizing the cluster |
+| `sweep` | 7 days | Low-priority sweeps using spare capacity |
+
+GPU types currently include A6000, A100, H100, and B300; use `sinfo` to inspect
+nodes before choosing hardware. General priority is `debug > standard > long > sweep`.
+Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
+60 seconds (the supplied PDFs say 120); `sweep` has no grace period.
+
+## ORCD / Engaging (MIT)
+
+- **Login:** `ssh rafah@orcd-login.mit.edu`, using MIT authentication/Duo.
+  See the [SSH guide](https://orcd-docs.mit.edu/accessing-orcd/ssh-login/).
+- **Paths:** record the current checkout and dataset paths in each experiment.
+  Historical key-dimension configs use `/home/rafah/projects/ofm/datasets/fineweb_12b`;
+  verify that location before reusing them.
+
+| Storage | Documented default quota | Intended use / backup |
+| --- | --- | --- |
+| `/home/rafah` | 200 GB | Code and important files; snapshots |
+| `/home/rafah/orcd/pool` | 1 TB | Larger datasets; no backup |
+| `/home/rafah/orcd/scratch` | 1 TB | Active-job data; no backup |
+
+Check **your actual usage and quota** with `cat ~/orcd/.quota` (updated every
+30 minutes). Scratch may be deleted after six months without logging in;
+keep retained checkpoints in durable storage with a backup plan.
+Source: [filesystems](https://orcd-docs.mit.edu/filesystems-file-transfer/filesystems/).
+
+| GPU partition | Documented time limit | Base GPU allowance |
+| --- | --- | --- |
+| `mit_normal_gpu` | 6 hours | 2 GPUs |
+| `mit_preemptable` | 48 hours | 4 GPUs; checkpoint and use `--requeue` |
+
+Documented GPU types include L40S, A100, H100, and H200, depending on partition.
+Account/group entitlements may differ; verify before submitting. Sources:
+[scheduler](https://orcd-docs.mit.edu/running-jobs/overview/),
+[GPU requests](https://orcd-docs.mit.edu/running-jobs/requesting-resources/).
+[Full documentation](https://orcd-docs.mit.edu/); help: `orcd-help-engaging@mit.edu`.
+
+## Everyday use
+
+```bash
+sinfo -o '%P %l %G'                         # Partitions, time limits, GPU types
+scontrol show partition standard           # Kennel; substitute an ORCD partition there
+squeue -u "$USER"                           # Your queued/running jobs
+sacct -j JOB_ID -o JobID,State,Elapsed,ExitCode
+```
+
+Install each experiment's locked environment as described in its README before
+submission. Keep environments and caches outside Git; do not modify an environment
+while jobs use it. Use the experiment's launcher, with cluster-appropriate resources.
+
+To move an experiment, transfer required artifacts separately (for example with
+`rsync`), verify checksums, recreate the environment, and update provenance before
+resuming. Keep the original artifacts until the transferred copy is verified.
