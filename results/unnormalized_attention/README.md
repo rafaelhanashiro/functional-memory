@@ -4,7 +4,8 @@ This experiment asks what changes when a 250M Transformer uses causal
 `exp(QKᵀ / sqrt(d_K)) V` without dividing attention weights by their row sum.
 **Status: setup and validation only; no completed unnormalized result is retained.**
 The original source snapshot is `7a3e584`, before migration to the shared scaffold.
-Live ORCD jobs and their ignored outputs have not been inspected or transferred.
+ORCD job state and ignored outputs have not been independently inspected or
+transferred; the user reports that runs are paused or finished.
 
 **Home cluster: ORCD / Engaging.** The recorded project root is
 `/home/rafah/projects/functional_memory`; the packed corpus is under
@@ -103,6 +104,8 @@ GPU acceptance must run in the intended allocation. It includes fused forward/VJ
 tests, exact initialization verification, 20 full-context/full-microbatch updates,
 validation, and a one-update checkpoint-resume check while preserving the full
 learning-rate horizon. CPU validation alone does not establish GPU qualification.
+Qualification is bound to source, recipe, hardware, and transfer/allocator
+settings; changing these runtime settings invalidates cached acceptance.
 
 ## Prepare a new run on the home cluster
 
@@ -153,8 +156,12 @@ no unintended duplicate experiment is active before launching. Do not transfer
 ORCD job-selector helpers containing ORCD job IDs. No such launch or transfer was
 performed by this refactor.
 
-Use the portable allocation adapter with Kennel resource policy, four identical
-H100s or H200s, and corresponding `GPU_COUNT`/`GPU_TYPE` arguments. Four-device
+Use `scaffolds/transformer/studies/unnormalized_attention/run_kennel.sh` with
+the same arguments as the portable adapter. It sources the shared Kennel runtime
+policy for host staging/NCCL and records that execution choice separately from
+the scientific recipe. The ORCD adapter defaults to host staging disabled.
+Use four identical H100s or H200s, and corresponding `GPU_COUNT`/`GPU_TYPE`
+arguments. Four-device
 acceptance is supported. Preserve scheduler-provided device visibility; the
 adapter requires a real Slurm job ID. The exact packed corpus has 90 training
 shards, one evaluation shard, and two manifests totaling 24,031,780,324 bytes

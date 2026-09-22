@@ -33,6 +33,20 @@ def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def runtime_identity():
+    """Qualification follows execution choices separately from the recipe."""
+    host_staging = os.environ.get("TRANSFORMER_HOST_STAGING", "0")
+    if host_staging not in ("0", "1"):
+        raise ValueError("TRANSFORMER_HOST_STAGING must be resolved to 0 or 1 before preflight")
+    return {
+        "TRANSFORMER_HOST_STAGING": host_staging,
+        **{key: os.environ.get(key) for key in (
+            "NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION",
+            "XLA_PYTHON_CLIENT_PREALLOCATE", "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS",
+        )},
+    }
+
+
 def identity(config_path, gpu_count, gpu_type):
     source = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     dirty = subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=normal"], cwd=ROOT, text=True)
@@ -54,6 +68,7 @@ def identity(config_path, gpu_count, gpu_type):
             for split, path in (("train", config.data.train_manifest), ("eval", config.data.eval_manifest))
         },
         "gpu_count": gpu_count, "gpu_type": gpu_type.upper(),
+        "runtime": runtime_identity(),
     }
     payload["identity"] = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
     return payload

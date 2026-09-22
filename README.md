@@ -11,7 +11,6 @@ Reusable code is organized by capability under `scaffolds/`. Each retained exper
 | Odd Taylor attention | [Signed-kernel numerical failures](results/odd_taylor_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Key dimension × Taylor degree | [Joint sweep and hardware validation](results/key_dimension_taylor/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Shared scaffold validation | [Correctness and sampled performance](results/shared_transformer_validation/README.md) | [Transformer](scaffolds/transformer/README.md) |
-
 | Unnormalized attention (setup; no retained result) | [Exponential attention](results/unnormalized_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 
 ```text

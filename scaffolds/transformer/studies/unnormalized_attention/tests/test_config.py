@@ -204,3 +204,48 @@ def test_pilot_does_not_use_production_checkpoint_directory(tmp_path, monkeypatc
     assert result["checkpoints"] is None
     assert result["horizon"] == config.optim.total_steps
     assert result["stop_after_step"] == 20 and result["resume"] is True
+
+
+@pytest.mark.parametrize("family", ["learned_quadratic_attention", "odd_taylor_attention", "key_dimension_taylor"])
+def test_historical_controls_default_to_normalized_without_rewriting(family):
+    import copy
+    import importlib
+    from scaffolds.transformer.configs import config_to_dict
+    recipe = importlib.import_module(f"scaffolds.transformer.studies.{family}.sweep").scientific_recipe
+    current = config_to_dict(Config())
+    historical = copy.deepcopy(current)
+    historical["model"].pop("attention_normalization")
+    args = ({key: {"sha256": key} for key in ("train_manifest", "eval_manifest")},) if family == "key_dimension_taylor" else ()
+    assert recipe(historical, *args) == recipe(current, *args)
+    assert "attention_normalization" not in historical["model"]
+    current["model"]["attention_normalization"] = False
+    assert recipe(historical, *args) != recipe(current, *args)
+
+
+@pytest.mark.parametrize("setting,value", [
+    ("TRANSFORMER_HOST_STAGING", "1"), ("NCCL_P2P_DISABLE", "1"),
+    ("XLA_PYTHON_CLIENT_MEM_FRACTION", ".90"),
+    ("XLA_PYTHON_CLIENT_PREALLOCATE", "false"),
+    ("XLA_PYTHON_CLIENT_ALLOCATOR", "platform"), ("XLA_FLAGS", "--test-runtime-change"),
+])
+def test_preflight_cache_requires_same_runtime(tmp_path, monkeypatch, setting, value):
+    from scaffolds.transformer.studies.unnormalized_attention import preflight
+    config = Config()
+    config.model.attention_normalization = False
+    config.train.source_commit = "auto"
+    monkeypatch.setattr(preflight, "load_config", lambda path: config)
+    monkeypatch.setattr(preflight, "sha256", lambda path: "fixture-sha256")
+    monkeypatch.setattr(preflight.subprocess, "check_output",
+                        lambda args, **kwargs: "frozen\n" if args[1] == "rev-parse" else "")
+    for key in preflight.runtime_identity():
+        monkeypatch.delenv(key, raising=False)
+    original = preflight.identity(tmp_path / "config.yaml", 2, "H100")
+    monkeypatch.setenv("TRANSFORMER_HOST_STAGING", "0")
+    assert preflight.identity(tmp_path / "config.yaml", 2, "H100") == original
+    cache = tmp_path / "success.json"
+    preflight.record(cache, original)
+    assert preflight.passed(cache, original)
+    monkeypatch.setenv(setting, value)
+    changed = preflight.identity(tmp_path / "config.yaml", 2, "H100")
+    assert changed["config"] == original["config"]
+    assert not preflight.passed(cache, changed)

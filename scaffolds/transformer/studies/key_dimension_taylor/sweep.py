@@ -75,6 +75,8 @@ def selected_values(values, allowed, label):
 
 def scientific_recipe(config: dict, data_identity: dict) -> dict:
     recipe = copy.deepcopy(config)
+    # Historical normalized controls predate this explicit mechanism field.
+    recipe["model"].setdefault("attention_normalization", True)
     for key in ("attention_degree", "attention_backend", "qk_head_dim", "quadratic_mode", "quadratic_sharing"):
         recipe["model"].pop(key, None)
     for key in ("source_commit", "workdir", "checkpoint_dir", "wandb_project", "wandb_run_name", "wandb_entity", "wandb_mode"):
