@@ -6,6 +6,8 @@
 __pycache__/
 /.cache/
 /checkpoints/
+# Existing checkpoints on other home clusters remain ignored until migrated.
+/experiments/**/checkpoints/
 /results/logs/
 /results/**/checkpoints
 /results/**/wandb/

@@ -226,7 +226,7 @@
         "metadata_sha256": "ca208d090f0a14d4fc4d4ce84c0ca5244080e7ea724085c85641e7629e1bf80f",
         "retention_reason": "validation_best",
         "inventory": {
-          "path": "results/learned_quadratic_attention/provenance/checkpoints/200m-positive-global-seed0.json",
+          "path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-positive-global-seed0.json",
           "sha256": "5bcd066713cd56e571f8c5d76607b0d7572c2b0cfa87c59bccc5ef50a369b3a9"
         }
       },
@@ -317,7 +317,7 @@
         "metadata_sha256": "83a9fcf682fdfc2691db8563fbb84fa53fcd4ba6152a82e48856faa3a131dac2",
         "retention_reason": "validation_best",
         "inventory": {
-          "path": "results/learned_quadratic_attention/provenance/checkpoints/200m-positive-per-head-seed0.json",
+          "path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-positive-per-head-seed0.json",
           "sha256": "99770e303d38264abd0554fb624f86fdb582921e9a63b49a8dab2391a00e3910"
         }
       },
@@ -408,7 +408,7 @@
         "metadata_sha256": "ca208d090f0a14d4fc4d4ce84c0ca5244080e7ea724085c85641e7629e1bf80f",
         "retention_reason": "diagnostic exception: best finite learned state before concluded numerical failure",
         "inventory": {
-          "path": "results/learned_quadratic_attention/provenance/checkpoints/200m-unrestricted-global-seed0.json",
+          "path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-unrestricted-global-seed0.json",
           "sha256": "de82ec3e96da9bd40e93920cb7b4226a7005b96c04ee935514f5d585b46c8d1a"
         }
       },
@@ -498,7 +498,7 @@
         "metadata_sha256": "83a9fcf682fdfc2691db8563fbb84fa53fcd4ba6152a82e48856faa3a131dac2",
         "retention_reason": "diagnostic exception: best finite learned state before concluded numerical failure",
         "inventory": {
-          "path": "results/learned_quadratic_attention/provenance/checkpoints/200m-unrestricted-per-head-seed0.json",
+          "path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-unrestricted-per-head-seed0.json",
           "sha256": "90674e9eaef7edbbdbb4a8df7df767094c5f476f47ff2e6e9385ba9e77242d23"
         }
       },
