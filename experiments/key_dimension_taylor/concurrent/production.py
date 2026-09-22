@@ -36,7 +36,7 @@ def _run(policy: dict, manifest: dict, name: str) -> dict:
     candidates = [run for run in manifest["runs"] if run["name"] == name and not run.get("retained_completed", False)]
     if len(candidates) != 1 or name not in policy["assignments"]:
         raise ValueError("Production requires a known active coordinate assigned by this policy")
-    if policy["assignments"][name] not in ("h100", "b300"):
+    if policy["assignments"][name] not in ("h100", "b300", "a6000"):
         raise ValueError("Unsupported assigned production profile")
     return candidates[0]
 
@@ -63,6 +63,8 @@ def _segment(policy: dict, manifest: dict, run: dict, index: int) -> tuple[dict,
         expected = {"identity": manifest["identity"], "source_commit": manifest["source_commit"], "status": "passed"}
         if any(shared.get(key) != value or qualification.get(key) != value for key, value in expected.items()):
             raise RuntimeError("H100 production lacks its matching original preflight")
+    elif profile_name == "a6000":
+        qualification = common.load_a6000_qualification(policy, manifest, run)
     else:
         root = Path(policy["qualification_root"]) / profile_name
         kernels = _read(root / "kernels.json")
@@ -77,7 +79,7 @@ def _segment(policy: dict, manifest: dict, run: dict, index: int) -> tuple[dict,
     if any(qualification.get(key) != run[key] for key in ("qk_head_dim", "attention_degree")):
         raise RuntimeError("Qualification belongs to another scientific coordinate")
     runtime = qualification["runtime"]
-    # Both authorized profiles have eight-hour allocations and retain 20% headroom.
+    # Every authorized profile has eight-hour allocations and 20% headroom.
     if (runtime.get("limit_seconds") != 8 * 3600 or runtime.get("allocation_fraction") != 0.8
             or runtime.get("usable_seconds") != 0.8 * 8 * 3600):
         raise RuntimeError("Qualification changed the authorized wall-time budget")
@@ -106,7 +108,10 @@ def _base(policy: dict, manifest: dict, run: dict, index: int) -> dict:
             "slurm_restart_count": int(os.environ.get("SLURM_RESTART_COUNT", "0")),
             "actual_node": os.environ.get("SLURMD_NODENAME", socket.gethostname()),
             "actual_node_list": os.environ.get("SLURM_JOB_NODELIST"),
-            "actual_partition": os.environ.get("SLURM_JOB_PARTITION")}
+            "actual_partition": os.environ.get("SLURM_JOB_PARTITION"),
+            **common.execution_provenance(policy),
+            **({"qualification_reference": policy["a6000_qualifications"][run["name"]]}
+               if policy["assignments"][run["name"]] == "a6000" else {})}
 
 
 def _lock_fd(handle) -> int:
@@ -131,7 +136,7 @@ def launch_worker(policy: dict, run: dict, worker: str, end_step: int, output: P
                "--worker", worker, "--end-step", str(end_step), "--output", str(output)]
     # Inherit both the launcher's process group and the open flock descriptor.
     # The latter keeps a replacement out even if this parent exits before its child.
-    process = subprocess.run(command, cwd=policy["training_root"], env=common.training_env(policy),
+    process = subprocess.run(command, cwd=policy.get("runtime_root", policy["training_root"]), env=common.training_env(policy),
                              pass_fds=(lock_fd,), check=False)
     if process.returncode:
         failure = _read(output) if output.exists() else {}
@@ -173,6 +178,9 @@ def _record_launch(root: Path, base: dict, policy: dict, manifest: dict, hardwar
                     orchestrator_commit=policy["orchestrator_commit"], execution_profile=base["profile"],
                     execution_hardware=hardware, actual_node=base["actual_node"],
                     actual_partition=base["actual_partition"], slurm_job_id=base["slurm_job_id"], log_path=str(log_path))
+    metadata.update(common.execution_provenance(policy))
+    if "qualification_reference" in base:
+        metadata["qualification_reference"] = base["qualification_reference"]
     common.write_json(metadata_path, metadata)
 
 
@@ -262,7 +270,7 @@ def run_segment(policy: dict, manifest: dict, run_name: str, index: int, *, poli
             receipt = {**base, **segment, "format": "key-dimension-taylor-concurrent-segment",
                        "index": index, "hardware": hardware, "status": "complete",
                        "completed_before_attempt": completed_before, "final_step": result["final_step"],
-                       "qualification_identity": qualification["identity"],
+                       "qualification_identity": qualification.get("identity", qualification.get("original_policy_identity")),
                        "completed_utc": datetime.now(UTC).isoformat()}
             common.write_json(attempt_root / "receipt.json", receipt)
             common.write_json(attempt_root / "attempt.json", receipt)

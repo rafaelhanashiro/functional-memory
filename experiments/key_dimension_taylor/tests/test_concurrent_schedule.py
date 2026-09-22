@@ -111,6 +111,47 @@ class SlurmFixture:
         return subprocess.CompletedProcess(command, 0)
 
 
+def test_a6000_submission_has_independent_resume_chains_without_node_pin(amendment, monkeypatch):
+    path, policy, manifest, ledger = amendment
+    profile = policy["profiles"].pop("b300")
+    profile.pop("node")
+    profile.update(gpu_type="a6000", allowed_nodes=["doodle", "terrier"])
+    policy["profiles"]["a6000"] = profile
+    policy["assignments"] = {run["name"]: "a6000" for run in manifest["runs"]}
+    slurm = SlurmFixture(monkeypatch, amendment)
+    schedule.migrate(path, policy, manifest, ledger)
+    checked = []
+    def qualify(p, m, run):
+        checked.append(run["name"])
+        return {"status": "passed", "runtime": {"segments": [{}, {}, {}]}}
+    monkeypatch.setattr(common, "load_a6000_qualification", qualify)
+    jobs = schedule.submit_profile(path, policy, manifest, ledger, "a6000")
+    assert checked == [run["name"] for run in manifest["runs"]]
+    assert len(jobs) == 6
+    commands = [command for command in slurm.calls if command[0] == "sbatch"]
+    for index, command in enumerate(commands):
+        assert "--gres=gpu:a6000:4" in command and "--partition=sweep" in command
+        assert "--time=08:00:00" in command
+        assert not any(item.startswith("--nodelist=") for item in command)
+        dependencies = [item for item in command if item.startswith("--dependency=")]
+        assert dependencies == ([] if index % 3 == 0 else [f"--dependency=afterok:{jobs[index - 1]}"])
+    assert schedule.submit_profile(path, policy, manifest, ledger, "a6000") == jobs
+    assert len([command for command in slurm.calls if command[0] == "sbatch"]) == 6
+
+
+def test_a6000_failed_qualification_cannot_submit(amendment, monkeypatch):
+    path, policy, manifest, ledger = amendment
+    policy["assignments"] = {run["name"]: "a6000" for run in manifest["runs"]}
+    slurm = SlurmFixture(monkeypatch, amendment)
+    schedule.migrate(path, policy, manifest, ledger)
+    def reject(*args):
+        raise ValueError("Qualification checksum changed")
+    monkeypatch.setattr(common, "load_a6000_qualification", reject)
+    with pytest.raises(ValueError, match="checksum"):
+        schedule.submit_profile(path, policy, manifest, ledger, "a6000")
+    assert not any(command[0] == "sbatch" for command in slurm.calls)
+
+
 @pytest.mark.parametrize("mutate", ["profile", "assignment", "source", "checkpoint_recipe"])
 def test_policy_hash_rejects_any_unrecorded_execution_change(amendment, monkeypatch, mutate):
     _, policy, manifest, _ = amendment

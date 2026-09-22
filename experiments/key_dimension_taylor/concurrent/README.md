@@ -1,10 +1,11 @@
-# Concurrent H100 and B300 execution amendment
+# Concurrent hardware execution amendments
 
 The original sweep manifest, training source, configurations, dependencies, data,
 seeds, and token budgets remain authoritative. This adapter adds a separately
 hashed execution policy and records its own frozen source commit. Invoke these
-scripts directly: scientific modules and worker subprocesses must import from the
-original `training_root`, never from this orchestration checkout.
+scripts directly. Original workers import from `training_root`; an explicitly
+qualified runtime amendment instead executes its separately frozen `runtime_root`.
+Workers never import training code from the orchestration checkout.
 
 On 2026-09-21 the user requested concurrent B300 allocations alongside H100s.
 Remaining lower-degree coordinates are assigned to four B300s on `akita` in
@@ -54,3 +55,37 @@ The execution amendment and mutable job ledger live under
 `results/key_dimension_taylor/`, outside either frozen checkout. Keep both
 checkouts until all jobs and possible requeues finish. Complete the existing
 review, retention, and merge lifecycle afterward.
+
+## A6000 host-staging amendment
+
+On 2026-09-22 the user requested moving the remaining queued H100 coordinates to
+available A6000s. All 20 Cartesian configurations passed full-model 32-update
+pilots, evaluation, checkpoint save, and fresh-process update 33 under runtime
+`26faf4e00f7d2b6e54055a26343eb7b8f9d379eb`. This runtime enables verified host
+placement, disables NCCL peer-to-peer transport, and permits a 90% GPU allocator
+pool. Model mathematics, original configurations, and the full training schedule
+remain unchanged.
+
+`schedule.py --policy NEW_PATH --prepare-a6000 MANIFEST --a6000-names NAME,NAME,...`
+creates a separate immutable execution policy. It references the original pilot
+records by path and checksum; it does not rewrite their validation-only policy
+as production authorization. `--migrate --submit a6000` transfers ownership only
+from the explicitly selected pending jobs, then queues independent four-A6000
+chains in `sweep`. Jobs do not pin a hostname. Only segments of the same run have
+dependencies. Eight-hour allocations retain 20% timing headroom and use the
+pilot's checkpoint-aligned segmentation.
+
+For this amendment, `source_commit` in the unchanged scientific configuration,
+metrics, and completion records identifies the original scientific/configuration
+source (`4d942ea...`). **The actual executed training checkout is separately
+identified by `runtime_commit` and `runtime_root` in execution provenance.**
+The orchestration commit is a third, distinct source. Reports must show this
+distinction; A6000 execution must not be described as using unchanged training
+code. Every attempt records the runtime settings and checksummed qualification.
+
+A6000 pilot estimates for the three migrated coordinates are approximately
+19–22 hours each, slower than four H100s. Starting concurrently avoids leaving
+the A6000s idle; it does not establish that completing entirely on A6000s gives
+the shortest sweep finish time. Durable 500-update checkpoints preserve the
+option of a separately recorded handoff to faster hardware. This amendment
+does not automatically migrate running jobs or create duplicate training copies.

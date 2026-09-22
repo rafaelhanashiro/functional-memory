@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import hashlib
 import json
 import subprocess
 import sys
@@ -58,6 +59,73 @@ def prepare(path: Path, manifest_path: Path, b300_names: set[str]) -> dict:
               "scientific_changes": [], "cross_coordinate_dependencies": False}
     policy["identity"] = common.policy_identity(policy)
     common.verify_policy(policy, manifest)
+    common.write_json(path, policy)
+    common.write_json(ledger_path(path), {"identity": policy["identity"], "jobs": {}, "migration": {}, "created_utc": utc()})
+    return policy
+
+
+def prepare_a6000(path: Path, manifest_path: Path, names: list[str]) -> dict:
+    """Qualify an explicit migration from pending owners using retained pilots."""
+    if path.exists() or not names or len(names) != len(set(names)):
+        raise ValueError("Use a new policy path and distinct explicit A6000 run names")
+    manifest = json.loads(manifest_path.read_text())
+    project = Path(manifest["project_root"])
+    root = Path(__file__).resolve().parents[3]
+    previous_path = project / "results/key_dimension_taylor/execution-policy.json"
+    previous = json.loads(previous_path.read_text())
+    previous_ledger = json.loads(ledger_path(previous_path).read_text())
+    if (previous["identity"] != common.policy_identity(previous)
+            or previous_ledger["identity"] != previous["identity"]
+            or previous["training_identity"] != manifest["identity"]):
+        raise ValueError("Previous execution policy provenance changed")
+    by_name = {run["name"]: run for run in manifest["runs"] if not run.get("retained_completed")}
+    if not set(names) <= by_name.keys():
+        raise ValueError("A6000 migration requires active Cartesian coordinates")
+    entries = previous_ledger["jobs"]
+    previous_jobs = [entry["slurm_job_id"] for entry in entries.values()]
+    states = common.job_states(previous_jobs)
+    superseded, qualifications, runtime_roots, runtime_commits = {}, {}, set(), set()
+    check_root = project / "results/key_dimension_taylor/hardware_checks/a6000_host_staging"
+    for name in names:
+        owned = [entry["slurm_job_id"] for entry in entries.values()
+                 if entry["run_name"] == name and states.get(entry["slurm_job_id"]) not in common.TERMINAL]
+        if not owned or any(states.get(job) != "PENDING" for job in owned):
+            raise RuntimeError(f"Migration requires only pending owners: {name}")
+        superseded[name] = owned
+        paths = list(check_root.glob(f"*/checks/{name}.json"))
+        if len(paths) != 1:
+            raise ValueError(f"Expected one retained A6000 qualification for {name}")
+        check = json.loads(paths[0].read_text())
+        qualifications[name] = {"path": str(paths[0]), "sha256": hashlib.sha256(paths[0].read_bytes()).hexdigest()}
+        runtime_roots.add(check["runtime_root"])
+        runtime_commits.add(check["runtime_commit"])
+    if len(runtime_roots) != 1 or len(runtime_commits) != 1:
+        raise ValueError("A6000 pilots must share one frozen validated runtime")
+    profile = dict(manifest["scheduler"])
+    profile.pop("node", None)
+    profile.update(gpu_type="a6000", partition="sweep", allowed_nodes=["doodle", "terrier"])
+    policy = {
+        "format": "key-dimension-taylor-execution-amendment", "version": 2,
+        "created_utc": utc(), "training_manifest": str(manifest_path.resolve()),
+        "training_identity": manifest["identity"], "source_commit": manifest["source_commit"],
+        "training_root": manifest["execution_root"], "orchestrator_root": str(root),
+        "orchestrator_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip(),
+        "runtime_root": runtime_roots.pop(), "runtime_commit": runtime_commits.pop(),
+        "runtime_environment": {"NCCL_P2P_DISABLE": "1", "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+                                "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90", "XLA_PYTHON_CLIENT_PREALLOCATE": "false"},
+        "profiles": {"a6000": profile}, "assignments": {name: "a6000" for name in names},
+        "a6000_qualifications": qualifications, "superseded_jobs": superseded,
+        "legacy_renderer_jobs": [job for job in previous_jobs if states.get(job) in {"RUNNING", "COMPLETING"}],
+        "supersedes_policy": {"path": str(previous_path), "sha256": hashlib.sha256(previous_path.read_bytes()).hexdigest(),
+                              "identity": previous["identity"]},
+        "authorization": "User requested moving queued runs onto validated A6000s on 2026-09-22",
+        "scientific_changes": [], "cross_coordinate_dependencies": False,
+        "source_commit_semantics": "Original scientific configuration source; runtime_commit records the actual executed training checkout",
+    }
+    policy["identity"] = common.policy_identity(policy)
+    common.verify_policy(policy, manifest)
+    for name in names:
+        common.load_a6000_qualification(policy, manifest, by_name[name])
     common.write_json(path, policy)
     common.write_json(ledger_path(path), {"identity": policy["identity"], "jobs": {}, "migration": {}, "created_utc": utc()})
     return policy
@@ -121,11 +189,13 @@ def submit_held(path: Path, policy: dict, manifest: dict, ledger: dict, *, key: 
     log_dir.mkdir(parents=True, exist_ok=True)
     if job is None:
         command = ["sbatch", "--parsable", "--hold", "--nodes=1", "--ntasks=1", "--requeue",
-                   "--signal=B:TERM@120", f"--partition={profile['partition']}", f"--nodelist={profile['node']}",
+                   "--signal=B:TERM@120", f"--partition={profile['partition']}",
                    f"--gres=gpu:{profile['gpu_type']}:4", f"--time={profile['production_time']}",
                    f"--cpus-per-task={profile['cpus_per_task']}", f"--mem={profile['memory']}",
                    f"--comment={comment}", f"--job-name=dkt-{profile_name}-{run_name}-s{segment}",
                    f"--output={log_dir}/slurm-%j.out", f"--error={log_dir}/slurm-%j.out"]
+        if profile.get("node"):
+            command += [f"--nodelist={profile['node']}"]
         if dependency:
             command += [f"--dependency=afterok:{dependency}", "--kill-on-invalid-dep=yes"]
         command += [str(Path(policy["orchestrator_root"]) / "experiments/key_dimension_taylor/concurrent/launch.sbatch"),
@@ -175,6 +245,15 @@ def submit_profile(path: Path, policy: dict, manifest: dict, ledger: dict, profi
         if assigned != profile_name:
             continue
         common.assert_legacy_jobs_terminal(policy, manifest, name)
+        if profile_name == "a6000":
+            run = next(run for run in manifest["runs"] if run["name"] == name)
+            check = common.load_a6000_qualification(policy, manifest, run)
+            previous = None
+            for index, _ in enumerate(check["runtime"]["segments"]):
+                previous = submit_held(path, policy, manifest, ledger, key=f"{name}:{index}",
+                                       profile_name=profile_name, run_name=name, segment=index, dependency=previous)
+                jobs.append(previous)
+            continue
         if profile_name == "h100":
             from experiments.key_dimension_taylor.preflight import eligible_runs
             if name not in eligible_runs(manifest):
@@ -213,11 +292,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--policy", type=Path, required=True)
     parser.add_argument("--prepare", type=Path, metavar="MANIFEST")
+    parser.add_argument("--prepare-a6000", type=Path, metavar="MANIFEST")
+    parser.add_argument("--a6000-names", default="")
     parser.add_argument("--b300-names", default="")
     parser.add_argument("--migrate", action="store_true")
-    parser.add_argument("--submit", choices=("h100", "b300", "qualification"))
+    parser.add_argument("--submit", choices=("h100", "b300", "a6000", "qualification"))
     args = parser.parse_args()
     with common.locked(args.policy.with_suffix(".scheduler.lock")):
+        if args.prepare_a6000:
+            print(json.dumps(prepare_a6000(args.policy, args.prepare_a6000,
+                                          [name for name in args.a6000_names.split(",") if name]), indent=2))
+            return
         if args.prepare:
             print(json.dumps(prepare(args.policy, args.prepare, set(args.b300_names.split(","))), indent=2))
             return

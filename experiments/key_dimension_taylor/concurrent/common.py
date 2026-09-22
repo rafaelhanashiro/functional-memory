@@ -2,17 +2,178 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import fcntl
 import getpass
 import hashlib
 import importlib
 import json
+import math
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+
+A6000_RUNTIME_ENVIRONMENT = {
+    "NCCL_P2P_DISABLE": "1", "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90", "XLA_PYTHON_CLIENT_PREALLOCATE": "false",
+}
+
+
+def _verify_checkout(root: Path, commit: str) -> None:
+    if (subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip() != commit
+            or subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=normal"], cwd=root, text=True)):
+        raise ValueError(f"Frozen execution checkout changed: {root}")
+
+
+def _reference_bytes(reference: dict) -> bytes:
+    contents = Path(reference["path"]).read_bytes()
+    if hashlib.sha256(contents).hexdigest() != reference["sha256"]:
+        raise ValueError(f"Qualification reference checksum changed: {reference['path']}")
+    return contents
+
+
+def _reference_json(reference: dict) -> dict:
+    return json.loads(_reference_bytes(reference))
+
+
+def execution_provenance(policy: dict) -> dict:
+    """Keep the immutable scientific/config source distinct from executed code."""
+    return {"original_scientific_source_commit": policy["source_commit"],
+            "runtime_root": policy.get("runtime_root", policy["training_root"]),
+            "runtime_commit": policy.get("runtime_commit", policy["source_commit"]),
+            "runtime_environment": policy.get("runtime_environment", {})}
+
+
+def validate_runtime_segments(runtime: dict, total: int) -> None:
+    if (runtime.get("limit_seconds") != 28800 or runtime.get("allocation_fraction") != 0.8
+            or runtime.get("usable_seconds") != 23040):
+        raise RuntimeError("Qualification changed the authorized wall-time budget")
+    cursor = 0
+    for segment in runtime["segments"]:
+        start, end, seconds = segment["start_step"], segment["end_step"], segment["projected_seconds"]
+        if (type(start) is not int or type(end) is not int or start != cursor or not start < end <= total
+                or (end != total and end % 500 != 0) or not math.isfinite(seconds)
+                or not 0 < seconds <= runtime["usable_seconds"]):
+            raise RuntimeError("Qualification contains an invalid or oversized checkpoint segment")
+        cursor = end
+    if cursor != total:
+        raise ValueError("Qualification has an incomplete segment schedule")
+
+
+def _original_preflight(policy: dict):
+    root = Path(policy["training_root"]).resolve()
+    sys.path.insert(0, str(root))
+    module = importlib.import_module("experiments.key_dimension_taylor.preflight")
+    if not Path(module.__file__).resolve().is_relative_to(root):
+        raise ValueError("Scientific imports escaped the frozen training checkout")
+    return module
+
+
+def load_a6000_qualification(policy: dict, manifest: dict, run: dict) -> dict:
+    """Validate original host-staging evidence without copying or relabeling it."""
+    if policy["assignments"].get(run["name"]) != "a6000":
+        raise ValueError("A6000 qualification requires an A6000-assigned coordinate")
+    record = _reference_json(policy["a6000_qualifications"][run["name"]])
+    expected = {"format": "key-dimension-taylor-a6000-host-staging", "status": "passed",
+                "validation_only": True, "production_submission": False,
+                "runtime_commit": policy["runtime_commit"], "runtime_root": policy["runtime_root"],
+                "original_scientific_source_commit": manifest["source_commit"],
+                **{key: run[key] for key in ("name", "qk_head_dim", "attention_degree", "parameter_count")}}
+    if any(record.get(key) != value for key, value in expected.items()):
+        raise ValueError("A6000 qualification source, coordinate, or status differs")
+    if policy.get("runtime_environment") != A6000_RUNTIME_ENVIRONMENT:
+        raise ValueError("A6000 execution environment differs from the qualified workaround")
+    environment = record.get("environment", {})
+    if (any(environment.get(key) != value for key, value in A6000_RUNTIME_ENVIRONMENT.items())
+            or environment.get("POLYNOMIAL_ATTENTION_SOURCE_COMMIT") != policy["runtime_commit"]
+            or environment.get("PYTHONPATH") != policy["runtime_root"]
+            or environment.get("JAX_PLATFORMS") != "cuda" or environment.get("XLA_FLAGS") not in (None, "")):
+        raise ValueError("A6000 qualification used a different execution environment")
+    original = _reference_json(record["original_policy"])
+    if (policy_identity(original) != original.get("identity")
+            or original.get("identity") != record.get("original_policy_identity")
+            or original.get("production_submission") is not False
+            or original.get("training_identity") != manifest["identity"]
+            or original.get("source_commit") != manifest["source_commit"]
+            or original.get("training_manifest") != policy["training_manifest"]
+            or original.get("training_root") != policy["training_root"]
+            or original.get("dependency_lock_sha256") != manifest["dependency_lock_sha256"]
+            or original.get("data_identity") != manifest["data_identity"]):
+        raise ValueError("Original validation policy does not match this scientific sweep")
+    _verify_checkout(Path(original["orchestrator_root"]), original["orchestrator_commit"])
+    candidates = [item for item in original["runs"] if item["name"] == run["name"]]
+    if len(candidates) != 1:
+        raise ValueError("Original validation policy omitted or duplicated this coordinate")
+    validation_run = candidates[0]
+    if (any(validation_run.get(key) != run[key] for key in ("qk_head_dim", "attention_degree", "parameter_count"))
+            or record.get("resolved_original_config") != validation_run["config"]
+            or record.get("data_identity") != manifest["data_identity"]
+            or record.get("dependency_lock_sha256") != manifest["dependency_lock_sha256"]
+            or record["original_config"] != {"path": validation_run["config_path"], "sha256": validation_run["config_sha256"]}):
+        raise ValueError("A6000 qualification changed its configuration or data")
+    _reference_bytes(record["original_config"])
+    for reference in original.get("reference_files", []):
+        _reference_bytes(reference)
+    kernels = _reference_json(record["kernel_reference"])
+    if (kernels.get("status") != "passed" or kernels.get("tests_passed") != 105
+            or kernels.get("identity") != original["identity"] or kernels.get("profile") != "a6000"
+            or kernels.get("source_commit") != manifest["source_commit"]
+            or kernels.get("orchestrator_commit") != original["orchestrator_commit"]
+            or run["name"] not in kernels.get("eligible_runs", [])):
+        raise ValueError("A6000 requires its matching 105-case kernel qualification")
+    runtime_root, original_root = Path(policy["runtime_root"]), Path(policy["training_root"])
+    _verify_checkout(runtime_root, policy["runtime_commit"])
+    for relative in ("experiments/polynomial_attention/models/components/attention.py",
+                     "experiments/polynomial_attention/models/components/fused_attention.py"):
+        if (runtime_root / relative).read_bytes() != (original_root / relative).read_bytes():
+            raise ValueError("Runtime kernel changed since the original kernel qualification")
+    if hashlib.sha256((runtime_root / "experiments/polynomial_attention/uv.lock").read_bytes()).hexdigest() != manifest["dependency_lock_sha256"]:
+        raise ValueError("A6000 runtime dependency lock differs")
+    preflight = _original_preflight(policy)
+    if preflight.scientific_recipe(validation_run["config"], manifest["data_identity"]) != preflight.scientific_recipe(run["config"], manifest["data_identity"]):
+        raise ValueError("A6000 pilot changed the scientific recipe")
+    initial, resumed = record["initial"], record["resumed"]
+    expected_config = copy.deepcopy(validation_run["config"])
+    expected_config["train"].update(source_commit=policy["runtime_commit"],
+                                    workdir=str(Path(record["attempt_path"]) / "workdir"),
+                                    wandb_mode="disabled", eval_every=32, eval_batches=1)
+    for outcome, start, end in ((initial, 0, 32), (resumed, 32, 33)):
+        if (outcome.get("start_step") != start or outcome.get("final_step") != end
+                or outcome.get("restored_step") != (start or None)
+                or outcome.get("data_start_sequence") != start * run["config"]["data"]["batch_size"]
+                or outcome.get("data_parallel_devices") != 4 or outcome.get("attention_degree") != run["attention_degree"]):
+            raise ValueError("A6000 pilot changed its update budget, restart, or data cursor")
+        if outcome.get("resolved_config") != expected_config:
+            raise ValueError("A6000 worker changed its resolved scientific configuration")
+        hardware = outcome.get("hardware", {})
+        kinds = hardware.get("device_kinds", [])
+        if (hardware.get("gpu_count") != 4 or len(kinds) != 4 or any("a6000" not in kind.lower() for kind in kinds)
+                or hardware.get("node") not in policy["profiles"]["a6000"]["allowed_nodes"]
+                or hardware.get("partition") != policy["profiles"]["a6000"]["partition"]):
+            raise ValueError("A6000 pilot ran on incompatible hardware")
+    preflight.validate_resume_audit(initial, resumed)
+    validation = record["initial_last_committed_validation"]
+    if (validation != record.get("resumed_last_committed_validation")
+            or validation.get("step") != 32 or validation.get("source_commit") != policy["runtime_commit"]
+            or any(validation.get(key) != run[key] for key in ("qk_head_dim", "attention_degree", "parameter_count"))
+            or not all(math.isfinite(validation.get(key, math.nan)) for key in ("validation_nll", "validation_perplexity"))
+            or validation.get("attention_diagnostics", {}).get("valid") is not True):
+        raise ValueError("A6000 pilot lacks its matching finite step-32 evaluation")
+    parity = record["h100_initialization_and_input_parity"]
+    reference = _reference_json(parity["reference"])
+    if (parity.get("status") != "passed" or reference.get("status") != "passed"
+            or reference.get("identity") != manifest["identity"] or reference.get("source_commit") != manifest["source_commit"]
+            or any(initial["checkpoint_audit"][key] != reference["initial"]["checkpoint_audit"][key]
+                   or parity.get(key) != initial["checkpoint_audit"][key] for key in ("start_state_sha256", "first_update"))):
+        raise ValueError("A6000 initialization or inputs differ from original H100 qualification")
+    if record["runtime"] != preflight.projected_runtime(run, initial, resumed, policy["profiles"]["a6000"]):
+        raise ValueError("A6000 qualified runtime no longer matches its synchronized pilot timings")
+    validate_runtime_segments(record["runtime"], run["config"]["optim"]["total_steps"])
+    return record
 
 
 def write_json(path: Path, value: dict) -> None:
@@ -80,20 +241,39 @@ def verify_policy(policy: dict, manifest: dict) -> None:
     for profile in policy["profiles"].values():
         if profile["gpu_count"] != 4 or profile["production_time"] != "08:00:00":
             raise ValueError("Execution amendment changed the four-device/eight-hour recipe")
+    if "a6000" in policy["assignments"].values():
+        if (set(policy["assignments"].values()) != {"a6000"}
+                or policy.get("runtime_environment") != A6000_RUNTIME_ENVIRONMENT
+                or set(policy.get("a6000_qualifications", {})) != set(policy["assignments"])
+                or policy["profiles"]["a6000"].get("gpu_type") != "a6000"
+                or policy["profiles"]["a6000"].get("partition") != "sweep"
+                or not set(policy["profiles"]["a6000"].get("allowed_nodes", []))
+                or not set(policy["profiles"]["a6000"]["allowed_nodes"]) <= {"doodle", "terrier"}):
+            raise ValueError("A6000 requires a separate qualified runtime-only amendment")
+        _verify_checkout(Path(policy["runtime_root"]), policy["runtime_commit"])
+    elif any(key in policy for key in ("runtime_root", "runtime_commit", "runtime_environment", "a6000_qualifications")):
+        raise ValueError("Host-staging runtime is reserved for the A6000 amendment")
 
 
 def training_env(policy: dict) -> dict:
-    root = Path(policy["training_root"])
+    root = Path(policy.get("runtime_root", policy["training_root"]))
     manifest = json.loads(Path(policy["training_manifest"]).read_text())
     cache = Path(manifest["project_root"]) / ".cache/key_dimension_taylor/concurrent"
     for suffix in ("jax", "xdg", "tmp"):
         (cache / suffix).mkdir(parents=True, exist_ok=True)
-    return dict(os.environ, PYTHONPATH=str(root), JAX_PLATFORMS="cuda",
-                POLYNOMIAL_ATTENTION_SOURCE_COMMIT=manifest["source_commit"],
+    env = dict(os.environ, PYTHONPATH=str(root), JAX_PLATFORMS="cuda",
+                POLYNOMIAL_ATTENTION_SOURCE_COMMIT=policy.get("runtime_commit", manifest["source_commit"]),
                 JAX_COMPILATION_CACHE_DIR=str(cache / "jax"), XDG_CACHE_HOME=str(cache / "xdg"),
                 TMPDIR=str(cache / "tmp"), XLA_PYTHON_CLIENT_PREALLOCATE="false",
                 OMP_NUM_THREADS=os.environ.get("SLURM_CPUS_PER_TASK", "32"),
                 MKL_NUM_THREADS=os.environ.get("SLURM_CPUS_PER_TASK", "32"), MPLBACKEND="Agg")
+    if "runtime_root" in policy:
+        if policy.get("runtime_environment") != A6000_RUNTIME_ENVIRONMENT:
+            raise ValueError("A6000 runtime environment differs from qualification")
+        if env.get("XLA_FLAGS"):
+            raise ValueError("A6000 qualification did not use custom XLA_FLAGS")
+        env.update(policy["runtime_environment"])
+    return env
 
 
 def check_hardware(profile: dict) -> dict:
@@ -105,7 +285,8 @@ def check_hardware(profile: dict) -> dict:
         raise RuntimeError(f"Allocation does not match hardware profile: {devices}")
     node = os.environ.get("SLURMD_NODENAME") or os.environ.get("SLURM_JOB_NODELIST")
     partition = os.environ.get("SLURM_JOB_PARTITION")
-    if node != profile["node"] or partition != profile["partition"]:
+    allowed_nodes = profile.get("allowed_nodes", [profile.get("node")])
+    if node not in allowed_nodes or partition != profile["partition"]:
         raise RuntimeError(f"Unexpected node/partition: {node}/{partition}")
     return {"devices": [str(device) for device in devices],
             "device_kinds": [device.device_kind for device in devices],
@@ -151,17 +332,25 @@ def render_report(policy: dict, manifest: dict) -> None:
             aggregate(manifest, output_dir=staging)
             report = staging / "README.md"
             appendix = ["", "## Concurrent execution amendment", "",
-                        "Remaining coordinates run independently on H100 and B300 allocations. "
-                        "The scientific configuration and frozen training code are unchanged. "
+                        "Remaining coordinates run independently on their qualified allocations. "
+                        "The scientific configuration is unchanged. "
                         "Hardware can affect floating-point trajectories and throughput.", "",
-                        f"Training source: `{policy['source_commit']}`. "
+                        f"Original scientific/config source: `{policy['source_commit']}`. "
+                        f"Executed runtime source: `{policy.get('runtime_commit', policy['source_commit'])}`. "
                         f"Orchestration source: `{policy['orchestrator_commit']}`. "
                         f"Execution policy: `{policy['identity']}`.", "",
                         "| Coordinate | Assigned GPUs | Node | Partition |",
                         "|---|---|---|---|"]
             for name, profile_name in policy["assignments"].items():
                 profile = policy["profiles"][profile_name]
-                appendix.append(f"| {name} | 4 {profile['gpu_type'].upper()} | {profile['node']} | {profile['partition']} |")
+                node = profile.get("node") or ", ".join(profile.get("allowed_nodes", []))
+                appendix.append(f"| {name} | 4 {profile['gpu_type'].upper()} | {node} | {profile['partition']} |")
+            if "runtime_root" in policy:
+                appendix += ["", "A6000 workers execute the separately frozen host-staging runtime. "
+                             "Canonical configurations and metric source fields identify the original scientific recipe; "
+                             "the actual executed source, environment, and hashed qualification references are preserved "
+                             "in each allocation's execution provenance.", "",
+                             f"Runtime environment: `{json.dumps(policy['runtime_environment'], sort_keys=True)}`."]
             appendix += ["", "Actual allocations, restart counts, and qualification evidence are retained "
                          "in each run's `execution_attempts/` and the separate execution-policy ledger. "
                          "Completed and historical reference runs retain their original provenance.", ""]
