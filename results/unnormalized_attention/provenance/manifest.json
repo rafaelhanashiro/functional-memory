@@ -2,10 +2,10 @@
   "format": "functional-memory-experiment-setup",
   "version": 1,
   "experiment": "unnormalized_attention",
-  "status": "setup_only_no_retained_training_result",
-  "home_cluster": "orcd",
-  "artifact_root": "/home/rafah/projects/functional_memory",
-  "artifact_availability": "Original ORCD jobs/checkpoints/logs have not been inspected or transferred; a clone does not provide ignored artifacts.",
+  "status": "prepared_for_fresh_kennel_run",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifact_availability": "Fresh Kennel run; local corpus verified by full SHA256 checks on 2026-09-22. No ORCD checkpoint migration or continuation is claimed.",
   "original_source_commit": "7a3e584fd199b2edbc595cf7053b620401309216",
   "shared_scaffold_base_commit": "9ca0904c167855a548ea028403eca7a9e4727171",
   "reference_initialization_source_commit": "c2b0d6e5514995cbe7b5e564f902201cfde1ba4e",
@@ -55,10 +55,27 @@
     "status": "paths for a future qualified run, not transferred artifacts"
   },
   "kennel_handoff": {
-    "status": "independent fresh run proposed; no launch or migration performed",
-    "home_cluster_assignment": "Required before launch; do not concurrently duplicate the ORCD run unintentionally"
+    "status": "User authorized independent fresh Kennel execution on 2026-09-22; prefer four B300s, fall back to four H100s if delayed.",
+    "home_cluster_assignment": "kennel",
+    "restart_from_step": 0
   },
-  "runs": [],
+  "runs": [
+    {
+      "name": "250m-exp-seed0-kennel",
+      "seed": 0,
+      "home_cluster": "kennel",
+      "start": "fresh initialization, no remote checkpoint restore",
+      "status": "prepared",
+      "config": {
+        "path": "results/unnormalized_attention/configs/250m-exp-seed0-kennel.yaml",
+        "sha256": "1c3f9cff11f1cdafdb97847010f5e71fcd097375bb7f5c669b5b1e3ab2e90723"
+      },
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_attention/runs/250m-exp-seed0-kennel",
+      "checkpoint_directory": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_attention/250m-exp-seed0-kennel",
+      "log_pattern": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_attention/250m-exp-seed0-kennel/slurm-<job_id>.out",
+      "selected_checkpoint": null
+    }
+  ],
   "initialization_validation": {
     "path": "results/unnormalized_attention/validation/initialization.json",
     "sha256": "14b9fc326de7472b77aa7a43faa6485208f5391ab1a964d8dd0652b2af1f48dd"
@@ -67,5 +84,35 @@
   "refactor_validation": {
     "path": "results/unnormalized_attention/validation/refactor.json",
     "sha256": "8f23b81a91f436ae2c4b9178af87e2246782e0b34ee4442ff7d4724d253e33cf"
+  },
+  "historical_home_cluster": {
+    "cluster": "orcd",
+    "artifact_root": "/home/rafah/projects/functional_memory",
+    "artifacts_transferred": false,
+    "status": "Original ORCD artifacts remain uninspected; user reports all previous runs paused or finished."
+  },
+  "active_config": {
+    "path": "results/unnormalized_attention/configs/250m-exp-seed0-kennel.yaml",
+    "sha256": "1c3f9cff11f1cdafdb97847010f5e71fcd097375bb7f5c669b5b1e3ab2e90723"
+  },
+  "execution_records": {
+    "submission_directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/unnormalized_attention/submissions",
+    "qualification_directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/unnormalized_attention/preflight",
+    "run_metadata": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_attention/runs/250m-exp-seed0-kennel/metadata.json",
+    "note": "The frozen source commit and resolved backend/runtime are recorded by the launcher and shared trainer. Preserve this checkout and environment while jobs may run or requeue."
+  },
+  "data_manifests": {
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    }
+  },
+  "local_data_validation": {
+    "path": "results/unnormalized_attention/validation/kennel-data.json",
+    "sha256": "41967ee1841836f2288c00dd9b67ab866ecd19dd7fe983b639b80bf5cd791e3f"
   }
 }

@@ -2,15 +2,17 @@
 
 This experiment asks what changes when a 250M Transformer uses causal
 `exp(QKᵀ / sqrt(d_K)) V` without dividing attention weights by their row sum.
-**Status: setup and validation only; no completed unnormalized result is retained.**
+**Status: prepared for a fresh Kennel run; production starts only after GPU acceptance passes.**
 The original source snapshot is `7a3e584`, before migration to the shared scaffold.
 ORCD job state and ignored outputs have not been independently inspected or
 transferred; the user reports that runs are paused or finished.
 
-**Home cluster: ORCD / Engaging.** The recorded project root is
-`/home/rafah/projects/functional_memory`; the packed corpus is under
-`/home/rafah/projects/ofm/datasets/fineweb_12b`. A clone provides code and the
-records here, not remote checkpoints, environments, logs, or datasets. The
+**Home cluster: Kennel.** The artifact root is
+`/data/cl/u/rafah/home/projects/functional-memory`; the packed corpus is under
+`/data/cl/u/rafah/home/datasets/fineweb_12b`. The fresh run is
+`250m-exp-seed0-kennel`. Original ORCD artifacts retain their recorded remote
+locations and have not been transferred. A clone provides code and records,
+not checkpoints, environments, logs, or datasets. The
 [provenance manifest](provenance/manifest.json) records source/configuration
 identities and historical versus proposed artifact locations.
 
@@ -113,7 +115,7 @@ learning-rate horizon. CPU validation alone does not establish GPU qualification
 Qualification is bound to source, recipe, hardware, and transfer/allocator
 settings; changing these runtime settings invalidates cached acceptance.
 
-## Prepare a new run on the home cluster
+## Historical ORCD launch interface
 
 Consult [cluster operations](../../CLUSTERS.md). Freeze a clean dedicated source
 checkout and its environment before submitting. Copy `configs/base.yaml` to a
@@ -153,23 +155,48 @@ and data cursor. Keep latest and validation best while training can resume;
 after review retain only validation best, terminal metrics, exact recipes,
 provenance, and the matching successful log.
 
-## Kennel handoff
+## Kennel launch
 
-The original handoff describes an **independent fresh run**, not a resumed ORCD
-run. Kennel compatibility and production qualification have not been established
-by the documentation. Assign a separate run identity/home cluster and verify that
-no unintended duplicate experiment is active before launching. Do not transfer
-ORCD job-selector helpers containing ORCD job IDs. No such launch or transfer was
-performed by this refactor.
+The user authorized this fresh Kennel run after reporting that earlier runs were
+paused or finished. This starts from seed 0 and does not resume an ORCD checkpoint.
+The [Kennel recipe](configs/250m-exp-seed0-kennel.yaml) preserves the scientific
+recipe; only local data/output paths and the run label differ.
 
-Use `scaffolds/transformer/studies/unnormalized_attention/run_kennel.sh` with
-the same arguments as the portable adapter. It sources the shared Kennel runtime
-policy for host staging/NCCL and records that execution choice separately from
-the scientific recipe. The ORCD adapter defaults to host staging disabled.
-Use four identical H100s or H200s, and corresponding `GPU_COUNT`/`GPU_TYPE`
-arguments. Four-device
-acceptance is supported. Preserve scheduler-provided device visibility; the
-adapter requires a real Slurm job ID. The exact packed corpus has 90 training
+Use four B300s in `long` with a 48-hour allocation. H100 is the fallback if B300
+availability delays execution; it must pass the same acceptance on its own hardware.
+The scheduler and transport settings are selected by `launch_kennel.sbatch` and
+`run_kennel.sh`, using the shared Kennel runtime helper. One Python process uses
+all four GPUs; global batch 256, microbatch 64, and four accumulation steps stay
+unchanged. Acceptance runs first, then production starts automatically.
+
+Exact submission from the frozen experiment checkout:
+
+```bash
+PROJECT_ROOT=/data/cl/u/rafah/home/projects/functional-memory
+EXECUTION_ROOT="$PROJECT_ROOT/worktrees/unnormalized_attention"
+SOURCE_COMMIT="$(git -C "$EXECUTION_ROOT" rev-parse HEAD)"
+CONFIG="$EXECUTION_ROOT/results/unnormalized_attention/configs/250m-exp-seed0-kennel.yaml"
+LOG_DIR="$PROJECT_ROOT/results/logs/unnormalized_attention/250m-exp-seed0-kennel"
+mkdir -p "$LOG_DIR"
+sbatch --output="$LOG_DIR/slurm-%j.out" \
+  "$EXECUTION_ROOT/scaffolds/transformer/studies/unnormalized_attention/launch_kennel.sbatch" \
+  "$EXECUTION_ROOT" "$PROJECT_ROOT" "$SOURCE_COMMIT" "$CONFIG" 4 B300
+```
+
+For an H100 fallback, add `--gres=gpu:h100:4` to `sbatch` and replace the final
+`B300` argument with `H100`. Do not run both copies concurrently. Preserve the
+source checkout and shared environment unchanged while the job can run or requeue.
+Slurm allocation/source/config records are under
+`<artifact-root>/.cache/unnormalized_attention/submissions/`; matching acceptance
+records are under `preflight/` beside it. Training metrics and resolved runtime
+metadata live in `results/unnormalized_attention/runs/250m-exp-seed0-kennel/`,
+checkpoints in `checkpoints/unnormalized_attention/250m-exp-seed0-kennel/`, and
+logs in `results/logs/unnormalized_attention/250m-exp-seed0-kennel/` at the durable
+artifact root. The provenance manifest records these locations. Checkpoints keep
+latest and validation best while resumable. Copy retained metrics and acceptance
+evidence into this experiment's record after the execution is stopped.
+
+The exact packed corpus has 90 training
 shards, one evaluation shard, and two manifests totaling 24,031,780,324 bytes
 (22.38 GiB). Expected manifest SHA256 values are:
 
