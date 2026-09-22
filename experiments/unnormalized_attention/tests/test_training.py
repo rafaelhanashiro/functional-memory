@@ -251,8 +251,11 @@ def test_distributed_accumulation_matches_single_device(tmp_path):
     # This precision setting is confined to the test, not the training recipe.
     with jax.default_matmul_precision("highest"):
         cfg = tiny_config(tmp_path)
+        device_count = jax.local_device_count()
+        cfg.data.batch_size = 2 * device_count
+        cfg.train.micro_batch_size = device_count
         state = create_state(cfg, jax.random.PRNGKey(0))
-        batch = np.arange(20, dtype=np.int32).reshape(4, 5) % 16
+        batch = np.arange(cfg.data.batch_size * 5, dtype=np.int32).reshape(cfg.data.batch_size, 5) % 16
         expected, expected_loss, expected_norm = loop.train_step(state, jnp.asarray(batch), jax.random.PRNGKey(1))
         layout = resolve_batch_layout(cfg)
         distributed = make_data_parallel_functions(state, tuple(jax.local_devices()))

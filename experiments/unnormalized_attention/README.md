@@ -58,6 +58,10 @@ Row sums are measured for inspection, never used as an unnormalized denominator.
 
 ## Slurm execution
 
+For a fresh run on another cluster, see [the Kennel handoff](KENNEL.md) and
+`run_allocated.sh`, which accept external data/config/output paths and leave
+partition/account/resource selection to that cluster's submission script.
+
 Develop and run in a dedicated branch and checkout. Both environment bootstrap
 and execution use Slurm. From that checkout, substituting its absolute path:
 
