@@ -18,7 +18,9 @@
   "status": "complete",
   "retention_note": "Canonical retained measurements; batch wrappers, temporary checkouts, caches, and transient outputs are not required artifacts. Original execution details remain in Git history and the successful Slurm log.",
   "artifact_sha256": {
-    "REPORT.md": "8518de37e840488f5ed07ba378bfdb3c8505945db58be05c4b655e1eeb88936b",
     "benchmark.json": "37bb0f80f22b90b2ca73af2925e0e2342cc5b8ffac5b3980f70665236461a43a"
-  }
+  },
+  "narrative_report": "results/polynomial_attention/README.md#blocked-baseline-complete-updates",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory"
 }

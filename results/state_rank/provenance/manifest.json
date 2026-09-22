@@ -1,0 +1,263 @@
+{
+  "schema_version": 1,
+  "experiment": "state_rank",
+  "home_cluster": "ORCD/Engaging",
+  "home_cluster_evidence": "Original mit_preemptable/L40S launch recipe, node2902/node4200 hostnames, and /home/rafah/projects/functional_memory paths; inferred, not live-verified during migration.",
+  "artifact_root": "/home/rafah/projects/functional_memory",
+  "artifact_root_verification": "Historical recorded root; current remote availability unverified.",
+  "repository_relative_results": "results/state_rank",
+  "checkpoint_retention": "none",
+  "scaffold": "scaffolds/state_rank",
+  "documentation": "results/state_rank/README.md",
+  "historical_path_relocations": {
+    "results/llama-3.2-1b-l8-kvall-t512": "results/state_rank/historical/llama-3.2-1b-l8-kvall-t512",
+    "results/gated-deltanet-1.3b-l12-hall-t512": "results/state_rank/historical/gated-deltanet-1.3b-l12-hall-t512",
+    "results/state_rank/random_vs_pretrained/config.json": "results/state_rank/configs/random_vs_pretrained.resolved.json",
+    "results/state_rank/random_vs_pretrained_deltanet/config.json": "results/state_rank/configs/random_vs_pretrained_deltanet.resolved.json",
+    "results/state_rank/unified_comparison/config.json": "results/state_rank/configs/unified_comparison.resolved.json",
+    "experiments/state_rank/configs/random_vs_pretrained.json": "results/state_rank/configs/random_vs_pretrained.json",
+    "experiments/state_rank/configs/random_vs_pretrained_deltanet.json": "results/state_rank/configs/random_vs_pretrained_deltanet.json",
+    "experiments/state_rank/configs/unified_rank_analysis.json": "results/state_rank/configs/unified_rank_analysis.json",
+    "experiments/state_rank": "scaffolds/state_rank"
+  },
+  "path_semantics": "Run manifests and measurement metadata are immutable historical records. Their absolute execution/log paths refer to original home-cluster execution. Current repository locations are recorded here. Exact recipe files may retain historical baseline names, which the scaffold resolves using the relocation map.",
+  "comparisons": [
+    {
+      "name": "random_vs_pretrained",
+      "source_commit": "c5308deb23ed5e30b77a3d3491d482032322a235",
+      "historical_manifest": {
+        "path": "results/state_rank/random_vs_pretrained/manifest.json",
+        "sha256": "664ac265d00f458915f125e8fc8b4486775df670735432ca5015d9d8b877c887",
+        "path_semantics": "Original immutable execution paths; not current checkout paths."
+      },
+      "resolved_config": {
+        "path": "results/state_rank/configs/random_vs_pretrained.resolved.json",
+        "sha256": "f4e2151054528e7959ed257c97a1485b8577bc514925923ca641b8388e38fab5"
+      },
+      "inputs": {
+        "path": "results/state_rank/random_vs_pretrained/inputs.json",
+        "sha256": "8ac90c69b0c3503e3a505d6bcf317af31ad0f2f3c04853e699bb6cf504a497ed"
+      },
+      "baseline_directory": "results/state_rank/historical/llama-3.2-1b-l8-kvall-t512",
+      "conditions": [
+        {
+          "name": "pretrained",
+          "seed": null,
+          "metadata": "results/state_rank/random_vs_pretrained/pretrained/metadata.json",
+          "metrics": {
+            "path": "results/state_rank/random_vs_pretrained/pretrained/metrics.npz",
+            "sha256": "301f093ce6b83bf11f79335f4554629b784d98eb2288212d5171686711d9537b",
+            "storage": "Ignored archive on home cluster; availability not live-verified"
+          },
+          "slurm_job_id": "23045242",
+          "slurm_log": "results/logs/state_rank/random_vs_pretrained/pretrained/slurm-23045242.out"
+        },
+        {
+          "name": "random-seed0",
+          "seed": 0,
+          "metadata": "results/state_rank/random_vs_pretrained/random-seed0/metadata.json",
+          "metrics": {
+            "path": "results/state_rank/random_vs_pretrained/random-seed0/metrics.npz",
+            "sha256": "7877a2ca7c23963802629d09e1127364eeaa6d303c10aeca2582047fe4027dda",
+            "storage": "Ignored archive on home cluster; availability not live-verified"
+          },
+          "slurm_job_id": "23045243",
+          "slurm_log": "results/logs/state_rank/random_vs_pretrained/random-seed0/slurm-23045243.out"
+        },
+        {
+          "name": "random-seed1",
+          "seed": 1,
+          "metadata": "results/state_rank/random_vs_pretrained/random-seed1/metadata.json",
+          "metrics": {
+            "path": "results/state_rank/random_vs_pretrained/random-seed1/metrics.npz",
+            "sha256": "dffe43350b3b9580774e2697322e1ccb6566fda5a7e69f24c1c7180b6a6a6749",
+            "storage": "Ignored archive on home cluster; availability not live-verified"
+          },
+          "slurm_job_id": "23045244",
+          "slurm_log": "results/logs/state_rank/random_vs_pretrained/random-seed1/slurm-23045244.out"
+        },
+        {
+          "name": "random-seed2",
+          "seed": 2,
+          "metadata": "results/state_rank/random_vs_pretrained/random-seed2/metadata.json",
+          "metrics": {
+            "path": "results/state_rank/random_vs_pretrained/random-seed2/metrics.npz",
+            "sha256": "06b6f2e11ef867d73e4968452a4305eb5a653b3ab12cf93d797dc764479cc606",
+            "storage": "Ignored archive on home cluster; availability not live-verified"
+          },
+          "slurm_job_id": "23045246",
+          "slurm_log": "results/logs/state_rank/random_vs_pretrained/random-seed2/slurm-23045246.out"
+        },
+        {
+          "name": "random-seed3",
+          "seed": 3,
+          "metadata": "results/state_rank/random_vs_pretrained/random-seed3/metadata.json",
+          "metrics": {
+            "path": "results/state_rank/random_vs_pretrained/random-seed3/metrics.npz",
+            "sha256": "c6558e11999c2b3028ecdd89a6bf7a09e78871aeaa1c99d9e16cd2760784eaca",
+            "storage": "Ignored archive on home cluster; availability not live-verified"
+          },
+          "slurm_job_id": "23045247",
+          "slurm_log": "results/logs/state_rank/random_vs_pretrained/random-seed3/slurm-23045247.out"
+        },
+        {
+          "name": "random-seed4",
+          "seed": 4,
+          "metadata": "results/state_rank/random_vs_pretrained/random-seed4/metadata.json",
+          "metrics": {
+            "path": "results/state_rank/random_vs_pretrained/random-seed4/metrics.npz",
+            "sha256": "919ec11bcc3551b87bab0e4a599854c132f45e86da6adfa7c21ff8656826f3ab",
+            "storage": "Ignored archive on home cluster; availability not live-verified"
+          },
+          "slurm_job_id": "23045248",
+          "slurm_log": "results/logs/state_rank/random_vs_pretrained/random-seed4/slurm-23045248.out"
+        }
+      ]
+    },
+    {
+      "name": "random_vs_pretrained_deltanet",
+      "source_commit": "449739a463ae0a7805756fb8e20a7fe7e6843377",
+      "historical_manifest": {
+        "path": "results/state_rank/random_vs_pretrained_deltanet/manifest.json",
+        "sha256": "1e31fc27a254a61b2acd48ca679efea365fbd932943fd395022d5463db078b27",
+        "path_semantics": "Original immutable execution paths; not current checkout paths."
+      },
+      "resolved_config": {
+        "path": "results/state_rank/configs/random_vs_pretrained_deltanet.resolved.json",
+        "sha256": "9ec495aae1797b6c37b8f98fd046252337a66863f696a786e8dcedbaf67a58ab"
+      },
+      "inputs": {
+        "path": "results/state_rank/random_vs_pretrained_deltanet/inputs.json",
+        "sha256": "986feaf726cdef35ccbba48857b537831cd9ecdac5a0bb12a335d3fee7da0c4f"
+      },
+      "baseline_directory": "results/state_rank/historical/gated-deltanet-1.3b-l12-hall-t512",
+      "conditions": [
+        {
+          "name": "pretrained",
+          "seed": null,
+          "metadata": "results/state_rank/random_vs_pretrained_deltanet/pretrained/metadata.json",
+          "metrics": {
+            "path": "results/state_rank/random_vs_pretrained_deltanet/pretrained/metrics.npz",
+            "sha256": "35faa97d7f0d1613c9154856041bf4d3d1ad39fce3b7ae504d6443462a40e32c",
+            "storage": "Ignored archive on home cluster; availability not live-verified"
+          },
+          "slurm_job_id": "23127764",
+          "slurm_log": "results/logs/state_rank/random_vs_pretrained_deltanet/pretrained/slurm-23127764.out"
+        },
+        {
+          "name": "random-seed0",
+          "seed": 0,
+          "metadata": "results/state_rank/random_vs_pretrained_deltanet/random-seed0/metadata.json",
+          "metrics": {
+            "path": "results/state_rank/random_vs_pretrained_deltanet/random-seed0/metrics.npz",
+            "sha256": "d6d3584d9fa4ba5ce945a81a2f83d9b6e34f75a39f8825bafd7cd474507b5b49",
+            "storage": "Ignored archive on home cluster; availability not live-verified"
+          },
+          "slurm_job_id": "23127765",
+          "slurm_log": "results/logs/state_rank/random_vs_pretrained_deltanet/random-seed0/slurm-23127765.out"
+        },
+        {
+          "name": "random-seed1",
+          "seed": 1,
+          "metadata": "results/state_rank/random_vs_pretrained_deltanet/random-seed1/metadata.json",
+          "metrics": {
+            "path": "results/state_rank/random_vs_pretrained_deltanet/random-seed1/metrics.npz",
+            "sha256": "4448f58a02ec733eba7a5b058057065b685583b71b951e489e0d06cceab979f0",
+            "storage": "Ignored archive on home cluster; availability not live-verified"
+          },
+          "slurm_job_id": "23127766",
+          "slurm_log": "results/logs/state_rank/random_vs_pretrained_deltanet/random-seed1/slurm-23127766.out"
+        },
+        {
+          "name": "random-seed2",
+          "seed": 2,
+          "metadata": "results/state_rank/random_vs_pretrained_deltanet/random-seed2/metadata.json",
+          "metrics": {
+            "path": "results/state_rank/random_vs_pretrained_deltanet/random-seed2/metrics.npz",
+            "sha256": "2fba6bfa4fe56b153b5297fb1cfe4c6a9c8d7e55a35023c95b21c668b772eb00",
+            "storage": "Ignored archive on home cluster; availability not live-verified"
+          },
+          "slurm_job_id": "23127767",
+          "slurm_log": "results/logs/state_rank/random_vs_pretrained_deltanet/random-seed2/slurm-23127767.out"
+        },
+        {
+          "name": "random-seed3",
+          "seed": 3,
+          "metadata": "results/state_rank/random_vs_pretrained_deltanet/random-seed3/metadata.json",
+          "metrics": {
+            "path": "results/state_rank/random_vs_pretrained_deltanet/random-seed3/metrics.npz",
+            "sha256": "dde1b31d42dc850adf08fe60e6a02d9b161e8e27b3e43871dbf093a65b57faa9",
+            "storage": "Ignored archive on home cluster; availability not live-verified"
+          },
+          "slurm_job_id": "23127768",
+          "slurm_log": "results/logs/state_rank/random_vs_pretrained_deltanet/random-seed3/slurm-23127768.out"
+        },
+        {
+          "name": "random-seed4",
+          "seed": 4,
+          "metadata": "results/state_rank/random_vs_pretrained_deltanet/random-seed4/metadata.json",
+          "metrics": {
+            "path": "results/state_rank/random_vs_pretrained_deltanet/random-seed4/metrics.npz",
+            "sha256": "d8f22e573d266a8cdf081abbb74616ea170100e657f1efd1d4c3708cb8cbc0c8",
+            "storage": "Ignored archive on home cluster; availability not live-verified"
+          },
+          "slurm_job_id": "23127769",
+          "slurm_log": "results/logs/state_rank/random_vs_pretrained_deltanet/random-seed4/slurm-23127769.out"
+        }
+      ]
+    }
+  ],
+  "historical_pretrained": [
+    {
+      "name": "gated-deltanet-1.3b-l12-hall-t512",
+      "directory": "results/state_rank/historical/gated-deltanet-1.3b-l12-hall-t512",
+      "source_commit": "6ff0e8b6e31077c11552487899c66a3596f19a32",
+      "slurm_job_id": "22691159",
+      "spectra_sha256": "bf8bb6148b627821bdb1526d9773583d9bea36424e05484d60f9a5bc0e2e0bae",
+      "storage": "Existing tracked Git LFS artifact",
+      "log_path": null,
+      "log_note": "Successful job ID is recorded; retained log location was not supplied by historical metadata."
+    },
+    {
+      "name": "llama-3.2-1b-l8-kvall-t512",
+      "directory": "results/state_rank/historical/llama-3.2-1b-l8-kvall-t512",
+      "source_commit": "6ff0e8b6e31077c11552487899c66a3596f19a32",
+      "slurm_job_id": "22698446",
+      "spectra_sha256": "ed64ae5582797460a12eb3326bde20df5b621381b5b12f35fdb490904b949aa0",
+      "storage": "Existing tracked Git LFS artifact",
+      "log_path": null,
+      "log_note": "Successful job ID is recorded; retained log location was not supplied by historical metadata."
+    }
+  ],
+  "unified_analysis": {
+    "directory": "results/state_rank/unified_comparison",
+    "provenance": "results/state_rank/unified_comparison/provenance.json",
+    "generator_source_commit": "8479e538ad1e628417c5c670610ac3fa0e3e79cb"
+  },
+  "configs": [
+    {
+      "path": "results/state_rank/configs/random_vs_pretrained.json",
+      "sha256": "b4e45ba5e1fa1083dd90cdb039f3caddf0fad38944765709162a452a1b581506"
+    },
+    {
+      "path": "results/state_rank/configs/random_vs_pretrained.resolved.json",
+      "sha256": "f4e2151054528e7959ed257c97a1485b8577bc514925923ca641b8388e38fab5"
+    },
+    {
+      "path": "results/state_rank/configs/random_vs_pretrained_deltanet.json",
+      "sha256": "7698c2bbcf1e7e065113664ed94ca6535b55d9ab2e3d9b791255cc3a7d088e62"
+    },
+    {
+      "path": "results/state_rank/configs/random_vs_pretrained_deltanet.resolved.json",
+      "sha256": "9ec495aae1797b6c37b8f98fd046252337a66863f696a786e8dcedbaf67a58ab"
+    },
+    {
+      "path": "results/state_rank/configs/unified_comparison.resolved.json",
+      "sha256": "99b7fc930eaa1200f31c43c27a7ad26c7660c5a0d6547f72ba3f862a3d6ff729"
+    },
+    {
+      "path": "results/state_rank/configs/unified_rank_analysis.json",
+      "sha256": "74ab1cf1954a8d8eea7cb6060fa3122f41ac6c1231b54b49ee3a8e0518497456"
+    }
+  ]
+}

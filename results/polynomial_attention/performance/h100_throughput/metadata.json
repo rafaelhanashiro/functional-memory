@@ -34,7 +34,6 @@
     "note": "Interactive allocation released after all successful steps; its allocation status is cancelled. Exploratory JSON captures exact file hashes of the working source. Canonical final validation above used a clean committed checkout."
   },
   "artifact_sha256": {
-    "REPORT.md": "9c9cc400616ddc499792625fb5963173fbeb23f9f58575a5ab651c9763553c1c",
     "baseline-profile-summary.json": "8440ee27233f54e1de974dedf890f1535067d8afa5fee8d7941a6e20e8663770",
     "baseline-train-step.json": "6e96ec1977488ba3b834d1e5eae7b13f5f70a22db7def5c0dce0d1bfbe0d2b53",
     "gpu-tests.xml": "e1a5bf01e6f2ca64b383993cefde98485b751b031f504010d69608c8c2dcdb8a",
@@ -50,5 +49,8 @@
   "profile_summary_paths": [
     "baseline-profile-summary.json",
     "profile-summary.json"
-  ]
+  ],
+  "narrative_report": "results/polynomial_attention/README.md#optimized-h100-throughput",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory"
 }

@@ -36,7 +36,6 @@
     "warning_source": "https://github.com/jax-ml/jax/blob/jax-v0.10.0/jax_plugins/cuda/__init__.py#L276-L290"
   },
   "artifact_sha256": {
-    "REPORT.md": "3e2e95ca693a5a7a701f19d4aa763dc2f97aacf502c18e90e0a4eb36fe923173",
     "comparison.json": "01e5a7740d0c322df5c20cabb16fce379d5a2292259147ab2bf1b7db021113d1",
     "gpu-tests.xml": "736add695547078a3e7912578762ba5b9ab5568c86a6eeb25ac7d75ece8fdd63",
     "train-step.json": "041191442a66e4a05bc7720f720fc1c58d04ea989e91b6725fc1658f5ba5917d"
@@ -60,5 +59,8 @@
   },
   "retention_note": "Canonical retained measurements; batch wrappers, temporary checkouts, caches, and transient outputs are not required artifacts. Original execution details remain in Git history and the successful Slurm log.",
   "comparison_path": "comparison.json",
-  "h100_reference_path": "../h100_throughput/train-step.json"
+  "h100_reference_path": "../h100_throughput/train-step.json",
+  "narrative_report": "results/polynomial_attention/README.md#b300-comparison-and-continuation",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory"
 }
