@@ -1,0 +1,158 @@
+{
+  "format": "functional-memory-experiment-setup",
+  "version": 2,
+  "experiment": "unnormalized_taylor_attention",
+  "status": "prepared",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "documentation": "results/unnormalized_taylor_attention/README.md",
+  "scaffold": "scaffolds/transformer",
+  "study_tools": "scaffolds/transformer/studies/unnormalized_attention",
+  "branch": "claude/unnormalized-taylor-attention",
+  "branch_base_commit": "3b0d311655b033545d0c211467fd600376e0fdeb",
+  "scientific_change": "Causal p_m(QK^T / sqrt(d_K)) V with fixed unshifted Taylor truncation p_m(x) = sum_{n<=m} x^n / n! and no attention row normalization; m in {1, 2, 3, 4}.",
+  "recipe": {
+    "base": {
+      "path": "results/unnormalized_attention/configs/base.yaml",
+      "sha256": "230434a1933389a0992752aeb61eed8f9080acb0649a0a89f5de5956672aca56"
+    },
+    "change": "model.attention_degree = m; output locations only otherwise",
+    "parameter_count": 199906304,
+    "training_updates": 19074,
+    "prediction_tokens": 10000269312
+  },
+  "comparison_controls": {
+    "normalized_taylor_m2": {
+      "run": "results/polynomial_attention/runs/200m-m002-seed0",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "terminal_step": 19074,
+      "validation_nll": 2.7900009751319885,
+      "validation_perplexity": 16.281035677939382
+    },
+    "normalized_taylor_m4": {
+      "run": "results/polynomial_attention/runs/200m-m004-seed0",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "terminal_step": 19074,
+      "validation_nll": 2.7069559693336487,
+      "validation_perplexity": 14.983595500270773
+    },
+    "normalized_softmax": {
+      "run": "results/polynomial_attention/runs/200m-softmax-seed0",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "terminal_step": 19074,
+      "validation_nll": 2.6874512689454213,
+      "validation_perplexity": 14.69417664861716
+    },
+    "normalized_taylor_m1": {
+      "run": "results/odd_taylor_attention/runs/200m-m001-seed0",
+      "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+      "status": "numerical-failure",
+      "failure_update": 9
+    },
+    "normalized_taylor_m3": {
+      "run": "results/odd_taylor_attention/runs/200m-m003-seed0",
+      "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+      "status": "numerical-failure",
+      "failure_update": 17
+    },
+    "unnormalized_exponential": {
+      "run": "results/unnormalized_attention/runs/200m-exp-seed0-kennel",
+      "source_commit": "3b0d311655b033545d0c211467fd600376e0fdeb",
+      "status": "running on Kennel as Slurm job 201002 when this sweep was prepared"
+    }
+  },
+  "shared_dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "49d54eb7a7eb344655fc1aeb2d5de16806dc8a2c60025c9181b24687db2c53d8"
+  },
+  "reference_initialization_source_commit": "c2b0d6e5514995cbe7b5e564f902201cfde1ba4e",
+  "runs": [
+    {
+      "name": "200m-m001-seed0",
+      "attention_degree": 1,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "start": "fresh initialization",
+      "status": "prepared",
+      "hardware_plan": "4x NVIDIA B300 or 4x H100 in the Kennel sweep partition; A100/A6000 nodes excluded; resolved type recorded per attempt",
+      "config": {
+        "path": "results/unnormalized_taylor_attention/configs/200m-m001-seed0.yaml",
+        "sha256": "12796c85f26d22039f0a7dffc6dc47085d8e0f8b9fc07065f9e407fd0914504b"
+      },
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_taylor_attention/runs/200m-m001-seed0",
+      "checkpoint_directory": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_taylor_attention/200m-m001-seed0",
+      "log_pattern": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m001-seed0/slurm-<job_id>.out",
+      "selected_checkpoint": null
+    },
+    {
+      "name": "200m-m002-seed0",
+      "attention_degree": 2,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "start": "fresh initialization",
+      "status": "prepared",
+      "hardware_plan": "4x NVIDIA B300 or 4x H100 in the Kennel sweep partition; A100/A6000 nodes excluded; resolved type recorded per attempt",
+      "config": {
+        "path": "results/unnormalized_taylor_attention/configs/200m-m002-seed0.yaml",
+        "sha256": "9abff2eca2ab0a1a7eaaa3d4f7c73ecf7842ee964b3542911fbf953e4aab01da"
+      },
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_taylor_attention/runs/200m-m002-seed0",
+      "checkpoint_directory": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_taylor_attention/200m-m002-seed0",
+      "log_pattern": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m002-seed0/slurm-<job_id>.out",
+      "selected_checkpoint": null
+    },
+    {
+      "name": "200m-m003-seed0",
+      "attention_degree": 3,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "start": "fresh initialization",
+      "status": "prepared",
+      "hardware_plan": "4x NVIDIA B300 or 4x H100 in the Kennel sweep partition; A100/A6000 nodes excluded; resolved type recorded per attempt",
+      "config": {
+        "path": "results/unnormalized_taylor_attention/configs/200m-m003-seed0.yaml",
+        "sha256": "f50659751a138e352caefc3738abcf6843edcb5e9ed3e6fff5bf08e2876a0853"
+      },
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_taylor_attention/runs/200m-m003-seed0",
+      "checkpoint_directory": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_taylor_attention/200m-m003-seed0",
+      "log_pattern": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m003-seed0/slurm-<job_id>.out",
+      "selected_checkpoint": null
+    },
+    {
+      "name": "200m-m004-seed0",
+      "attention_degree": 4,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "start": "fresh initialization",
+      "status": "prepared",
+      "hardware_plan": "4x NVIDIA B300 or 4x H100 in the Kennel sweep partition; A100/A6000 nodes excluded; resolved type recorded per attempt",
+      "config": {
+        "path": "results/unnormalized_taylor_attention/configs/200m-m004-seed0.yaml",
+        "sha256": "ea46fe300c08a9cabdc5e0d11b99a076178e52c40c9ae16d1f44b9378101dac4"
+      },
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_taylor_attention/runs/200m-m004-seed0",
+      "checkpoint_directory": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_taylor_attention/200m-m004-seed0",
+      "log_pattern": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m004-seed0/slurm-<job_id>.out",
+      "selected_checkpoint": null
+    }
+  ],
+  "execution_records": {
+    "submission_directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/unnormalized_taylor_attention/submissions",
+    "qualification_directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/unnormalized_taylor_attention/preflight",
+    "note": "The launcher and shared trainer record the frozen source commit and resolved backend/runtime. Preserve the execution checkout and environment while jobs may run or requeue."
+  },
+  "data_manifests": {
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    }
+  },
+  "local_data_validation": {
+    "path": "results/unnormalized_attention/validation/kennel-data.json",
+    "sha256": "41967ee1841836f2288c00dd9b67ab866ecd19dd7fe983b639b80bf5cd791e3f"
+  }
+}

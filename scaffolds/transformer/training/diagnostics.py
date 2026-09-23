@@ -21,6 +21,13 @@ M0_PARAMETER_NOTE = (
     "model and parameter count; their task-loss gradients are zero, but AdamW weight "
     "decay still updates them."
 )
+M0_UNNORMALIZED_PARAMETER_NOTE = M0_PARAMETER_NOTE.replace("averaging", "sums")
+# Row sums of unnormalized kernels, and ratios formed from them, are measurements
+# only. They may be zero or infinite while the attention output stays finite.
+UNNORMALIZED_MEASUREMENTS = frozenset((
+    "weight_sum_min", "weight_sum_max", "min_abs_weight_sum",
+    "cancellation_ratio_max", "cancellation_ratio_mean",
+))
 
 
 def attention_identity(config) -> dict:
@@ -30,16 +37,19 @@ def attention_identity(config) -> dict:
     identity = {
         "attention_degree": degree,
         "attention_normalization": normalized,
-        "attention_kernel": ("exp_unnormalized" if not normalized else
+        "attention_kernel": (("exp_unnormalized" if degree is None else "taylor_unnormalized") if not normalized else
                              "learned_quadratic" if mode != "fixed" else "softmax" if degree is None else "taylor"),
         "attention_backend": config.model.attention_backend,
         "attention_backend_requested": getattr(config, "_attention_backend_request", config.model.attention_backend),
         "attention_implementation": config.model.attention_backend,
         "query_block_size": QUERY_BLOCK_SIZE,
-        "m0_qk_parameter_note": M0_PARAMETER_NOTE if degree == 0 else None,
+        "m0_qk_parameter_note": (None if degree != 0 else M0_PARAMETER_NOTE if normalized
+                                 else M0_UNNORMALIZED_PARAMETER_NOTE),
     }
     if not normalized:
-        identity.update(attention_formula="causal_exp(QK^T / sqrt(d_k)) V",
+        formula = ("causal_exp(QK^T / sqrt(d_k)) V" if degree is None else
+                   f"causal_p_{degree}(QK^T / sqrt(d_k)) V, p_m(x) = sum_(n<=m) x^n / n!")
+        identity.update(attention_formula=formula,
                         attention_score_scale="1/sqrt(d_k)", attention_output_normalization=False)
     if hasattr(config, "_attention_backend_resume_request"):
         identity["attention_backend_resume_requested"] = config._attention_backend_resume_request
@@ -54,7 +64,7 @@ def attention_identity(config) -> dict:
         })
     if config.model.attention_backend == "fused":
         if not normalized:
-            from scaffolds.transformer.attention.backends.fused_exponential import _tile_sizes
+            from scaffolds.transformer.attention.backends.fused_unnormalized import _tile_sizes
         else:
             from scaffolds.transformer.models.components.fused_attention import _tile_sizes
         block_q, block_k = ((None, None) if degree is None and normalized else
@@ -156,7 +166,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
             diagnostic_only_sum = (not config.model.attention_normalization
-                                   and name in ("weight_sum_min", "weight_sum_max"))
+                                   and name in UNNORMALIZED_MEASUREMENTS)
             if not math.isfinite(number) and not diagnostic_only_sum:
                 issues.append(f"layer {index}: nonfinite {name}")
             elif name.startswith("invalid_") and number != 0:
@@ -188,7 +198,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         "step": int(state.step),
         **attention_identity(config),
         "sample": provenance,
-        "kernel_values": ("unshifted_exp" if not config.model.attention_normalization else
+        "kernel_values": (("unshifted_exp" if config.model.attention_degree is None else "unshifted_taylor")
+                          if not config.model.attention_normalization else
                           "unshifted_learned_quadratic" if config.model.quadratic_mode != "fixed" else
                           "row_max_shifted_exp" if config.model.attention_degree is None else "unshifted_taylor"),
         "layers": layers,

@@ -1,4 +1,4 @@
-"""GPU gates for the tiled exp attention forward and explicit custom VJP."""
+"""GPU gates for the tiled unnormalized exp/Taylor forward and explicit custom VJP."""
 
 from functools import partial
 import math
@@ -10,8 +10,8 @@ import pytest
 
 from scaffolds.transformer.models.components.attention import blocked_dot_product_attention
 blocked_dot_product_attention = partial(blocked_dot_product_attention, attention_normalization=False)
-from scaffolds.transformer.attention.backends.fused_exponential import fused_unnormalized_attention
-from scaffolds.transformer.studies.unnormalized_attention.tests.test_attention import _dense_reference
+from scaffolds.transformer.attention.backends.fused_unnormalized import fused_unnormalized_attention
+from scaffolds.transformer.studies.unnormalized_attention.tests.test_attention import TAYLOR_DEGREES, _dense_reference
 
 
 pytestmark = pytest.mark.gpu
@@ -43,10 +43,11 @@ def _compiled_forward_and_vjp(attend):
     return jax.jit(partial(_forward_and_vjp, attend))
 
 
-def _fp64_forward_and_vjp(operands, cotangent):
+def _fp64_forward_and_vjp(operands, cotangent, degree=None):
     with jax.enable_x64(), jax.default_matmul_precision("highest"):
         operands64 = tuple(x.astype(jnp.float64) for x in operands)
-        output, grads = _compiled_forward_and_vjp(_dense_reference)(operands64, cotangent.astype(jnp.float64))
+        dense = partial(_dense_reference, attention_degree=degree)
+        output, grads = _compiled_forward_and_vjp(dense)(operands64, cotangent.astype(jnp.float64))
         return jax.tree.map(lambda x: np.asarray(x, dtype=np.float64), (output, grads))
 
 
@@ -213,3 +214,107 @@ def test_normalized_control_matches_cudnn():
     cudnn = _compiled_forward_and_vjp(partial(padded_dot_product_attention, backend="cudnn"))
     _assert_result(blocked(operands, cotangent), cudnn(operands, cotangent),
                    output_rtol=0.006, gradient_rtols=(0.03, 0.03, 0.02), label="normalized cuDNN control")
+
+
+def _taylor(function, degree):
+    return partial(function, attention_degree=degree)
+
+
+@pytest.mark.parametrize("degree", TAYLOR_DEGREES)
+@pytest.mark.parametrize("shape", [(2, 17, 3, 7, 5), (1, 131, 2, 33, 65)])
+def test_fp32_taylor_outputs_and_vjp_match_blocked_and_independent_fp64(shape, degree):
+    operands, cotangent = _inputs(shape, seed=190 + degree)
+    # Broad scores make odd truncations change sign inside every tile.
+    operands = (2 * operands[0], 2 * operands[1], operands[2])
+    fused = _compiled_forward_and_vjp(_taylor(fused_unnormalized_attention, degree))
+    blocked = _compiled_forward_and_vjp(
+        partial(blocked_dot_product_attention, attention_degree=degree, query_block_size=32))
+    with jax.default_matmul_precision("highest"):
+        actual = fused(operands, cotangent)
+        assert actual[0].dtype == jnp.float32
+        assert all(grad.dtype == jnp.float32 for grad in actual[1])
+        reference = blocked(operands, cotangent)
+        dense64 = _fp64_forward_and_vjp(operands, cotangent, degree)
+    for label, expected in (("blocked", reference), ("dense FP64", dense64)):
+        if degree == 0:
+            # A constant kernel has exactly zero score gradients.
+            _assert_relative(actual[0], expected[0], rtol=3e-5, name=f"{label} degree-0 output")
+            _assert_relative(actual[1][2], expected[1][2], rtol=1e-4, name=f"{label} degree-0 dv")
+            for grad in actual[1][:2]:
+                np.testing.assert_array_equal(grad, jnp.zeros_like(grad))
+            continue
+        _assert_result(actual, expected, output_rtol=3e-5, gradient_rtols=(1e-4,) * 3,
+                       label=f"{label}, degree={degree}")
+
+
+@pytest.mark.parametrize("degree", (1, 2, 3, 4))
+def test_bf16_production_context_taylor_outputs_and_vjp_match_blocked(degree):
+    operands, cotangent = _inputs((1, 2048, 4, 64, 64), dtype=jnp.bfloat16, seed=92)
+    fused = _compiled_forward_and_vjp(_taylor(fused_unnormalized_attention, degree))
+    blocked = _compiled_forward_and_vjp(_taylor(blocked_dot_product_attention, degree))
+    actual = fused(operands, cotangent)
+    reference = blocked(operands, cotangent)
+    assert actual[0].dtype == jnp.bfloat16
+    assert all(grad.dtype == jnp.bfloat16 for grad in actual[1])
+    _assert_result(actual, reference, output_rtol=0.006, gradient_rtols=(0.025, 0.025, 0.015),
+                   label=f"BF16 production context, degree={degree}")
+    prefix = tuple(x[:, :129, :1] for x in operands)
+    prefix_cotangent = cotangent[:, :129, :1]
+    prefix_actual = fused(prefix, prefix_cotangent)
+    dense64 = _fp64_forward_and_vjp(prefix, prefix_cotangent, degree)
+    _assert_result(prefix_actual, dense64, output_rtol=0.006, gradient_rtols=(0.025, 0.025, 0.015),
+                   label=f"BF16 prefix vs dense FP64, degree={degree}")
+
+
+@pytest.mark.parametrize("degree", (1, 4))
+def test_taylor_causal_outputs_and_vjp_ignore_future_tokens(degree):
+    operands, cotangent = _inputs((1, 131, 2, 33, 5), dtype=jnp.bfloat16, seed=93)
+    prefix = 65
+    fused = _compiled_forward_and_vjp(_taylor(fused_unnormalized_attention, degree))
+    restricted_cotangent = cotangent.at[:, prefix:].set(0)
+    output, grads = fused(operands, restricted_cotangent)
+    q, k, v = operands
+    changed = (q.at[:, prefix:].multiply(-2), k.at[:, prefix:].multiply(3), v.at[:, prefix:].add(2))
+    changed_output, _ = fused(changed, restricted_cotangent)
+    np.testing.assert_array_equal(changed_output[:, :prefix], output[:, :prefix])
+    for name, grad in zip("qkv", grads, strict=True):
+        assert bool(jnp.all(jnp.isfinite(grad))), name
+        np.testing.assert_array_equal(grad[:, prefix:], jnp.zeros_like(grad[:, prefix:]), err_msg=f"future d{name}")
+
+
+@pytest.mark.parametrize("degree", TAYLOR_DEGREES)
+def test_taylor_zero_scores_are_prefix_sum(degree):
+    (q, k, v), cotangent = _inputs((2, 131, 3, 7, 5))
+    q = jnp.zeros_like(q)
+    output, grads = _compiled_forward_and_vjp(_taylor(fused_unnormalized_attention, degree))((q, k, v), cotangent)
+    _assert_relative(output, jnp.cumsum(v, axis=1), rtol=2e-6, name="zero-score prefix sum")
+    expected_dv = jnp.flip(jnp.cumsum(jnp.flip(cotangent, axis=1), axis=1), axis=1)
+    _assert_relative(grads[2], expected_dv, rtol=2e-6, name="zero-score reverse prefix sum dV")
+    np.testing.assert_array_equal(grads[1], jnp.zeros_like(k))
+    assert bool(np.linalg.norm(np.asarray(grads[0])) > 0) == (degree > 0)
+
+
+@pytest.mark.parametrize("degree,expected", [(1, [-6.0, 4.0]), (3, [-6.0, -6.0 + 5.0 * 8.0 / 3.0])])
+def test_odd_taylor_signed_weights_and_zero_sums_stay_finite(degree, expected):
+    q = jnp.ones((1, 2, 1, 1), dtype=jnp.float32)
+    k = jnp.asarray([-3.0, 1.0], dtype=jnp.float32).reshape(q.shape)
+    v = jnp.asarray([3.0, 5.0], dtype=jnp.float32).reshape(q.shape)
+    output = jax.jit(_taylor(fused_unnormalized_attention, degree))(q, k, v)
+    np.testing.assert_allclose(np.asarray(output).reshape(-1), expected, rtol=1e-6)
+    reference = blocked_dot_product_attention(q, k, v, attention_degree=degree)
+    np.testing.assert_allclose(output, reference, rtol=1e-6)
+
+
+# A finite 1e30 score is a finite degree-one kernel but overflows degree two.
+@pytest.mark.parametrize("degree,bad_score", [
+    (1, np.inf), (1, -np.inf), (1, np.nan), (2, 1e30), (2, np.inf), (2, -np.inf), (2, np.nan),
+])
+def test_invalid_taylor_scores_or_kernel_poison_only_affected_rows(degree, bad_score):
+    q = jnp.ones((1, 3, 1, 1), dtype=jnp.float32)
+    k = jnp.asarray([0.0, 0.0, bad_score], dtype=jnp.float32).reshape(q.shape)
+    v = jnp.asarray([3.0, 7.0, 11.0], dtype=jnp.float32).reshape(q.shape)
+    output = jax.jit(_taylor(fused_unnormalized_attention, degree))(q, k, v)
+    reference = blocked_dot_product_attention(q, k, v, attention_degree=degree)
+    np.testing.assert_array_equal(jnp.isnan(output), jnp.isnan(reference))
+    np.testing.assert_array_equal(output[:, :2].reshape(-1), [3.0, 10.0])
+    assert bool(jnp.all(jnp.isnan(output[:, 2:])))

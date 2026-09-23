@@ -29,11 +29,14 @@ def attention_core(
     if not isinstance(attention_normalization, bool):
         raise ValueError("attention_normalization must be a boolean")
     if not attention_normalization:
-        from scaffolds.transformer.attention.exponential import exponential_attention
+        from scaffolds.transformer.attention.unnormalized import unnormalized_attention
 
-        if attention_degree is not None or quadratic_mode != "fixed" or coefficients is not None:
-            raise ValueError("Unnormalized attention requires the exact exponential kernel")
-        return exponential_attention(q, k, v, backend=backend, return_diagnostics=return_diagnostics)
+        if quadratic_mode != "fixed" or coefficients is not None:
+            raise ValueError("Unnormalized attention requires the exponential or a fixed Taylor kernel")
+        return unnormalized_attention(
+            q, k, v, attention_degree=attention_degree, backend=backend,
+            return_diagnostics=return_diagnostics,
+        )
     if quadratic_mode != "fixed":
         from scaffolds.transformer.attention.learned_quadratic import learned_quadratic_attention
 

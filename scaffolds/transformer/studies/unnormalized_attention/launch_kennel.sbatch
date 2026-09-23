@@ -15,18 +15,41 @@ EXPECTED_COMMIT="${3:?Expected frozen source commit}"
 CONFIG="${4:?Expected absolute resolved recipe}"
 GPU_COUNT="${5:-4}"
 GPU_TYPE="${6:-B300}"
+# Recipes live at results/<experiment>/configs/<run>.yaml; state follows the experiment.
+if [[ "$(basename "$(dirname "$CONFIG")")" != configs ]]; then
+  echo "Expected a recipe at results/<experiment>/configs/<run>.yaml: $CONFIG" >&2
+  exit 1
+fi
+EXPERIMENT="$(basename "$(dirname "$(dirname "$CONFIG")")")"
+STATE_ROOT="$PROJECT_ROOT/.cache/$EXPERIMENT"
 cd "$EXECUTION_ROOT"
 if [[ "$(git rev-parse HEAD)" != "$EXPECTED_COMMIT" ]]; then
   echo "Frozen execution checkout changed: $EXECUTION_ROOT" >&2
   exit 1
 fi
+# GPU_TYPE=auto accepts whichever qualified type Slurm allocated; submissions
+# choose eligible nodes. Acceptance remains keyed to the resolved type.
+if [[ "$GPU_TYPE" == auto ]]; then
+  GPU_NAMES="$(nvidia-smi --query-gpu=name --format=csv,noheader | sort -u)"
+  if [[ "$(wc -l <<<"$GPU_NAMES")" != 1 ]]; then
+    echo "Mixed GPU types in one allocation: $GPU_NAMES" >&2
+    exit 1
+  fi
+  case "$GPU_NAMES" in
+    *B300*) GPU_TYPE=B300 ;;
+    *H200*) GPU_TYPE=H200 ;;
+    *H100*) GPU_TYPE=H100 ;;
+    *) echo "GPU_TYPE=auto accepts only B300, H200, or H100; got $GPU_NAMES" >&2; exit 1 ;;
+  esac
+  echo "resolved_gpu_type=$GPU_TYPE"
+fi
 PYTHON="$PROJECT_ROOT/.envs/shared_transformer/bin/python"
-"$PYTHON" - "$PROJECT_ROOT" "$EXPECTED_COMMIT" "$CONFIG" "$GPU_COUNT" "$GPU_TYPE" <<'PY'
+"$PYTHON" - "$PROJECT_ROOT" "$EXPECTED_COMMIT" "$CONFIG" "$GPU_COUNT" "$GPU_TYPE" "$STATE_ROOT" <<'PY'
 import hashlib, json, os, subprocess, sys
 from datetime import UTC, datetime
 from pathlib import Path
-root, source, config, gpu_count, gpu_type = sys.argv[1:]
-directory = Path(root) / '.cache/unnormalized_attention/submissions'
+root, source, config, gpu_count, gpu_type, state_root = sys.argv[1:]
+directory = Path(state_root) / 'submissions'
 directory.mkdir(parents=True, exist_ok=True)
 job = os.environ['SLURM_JOB_ID']
 restart = os.environ.get('SLURM_RESTART_COUNT', '0')
@@ -43,4 +66,4 @@ value = {
 (directory / f'{job}-{restart}.json').write_text(json.dumps(value, indent=2) + '\n')
 PY
 exec bash "$EXECUTION_ROOT/scaffolds/transformer/studies/unnormalized_attention/run_kennel.sh" \
-  "$CONFIG" "$PROJECT_ROOT/.cache/unnormalized_attention" "$GPU_COUNT" "$GPU_TYPE" "$PYTHON"
+  "$CONFIG" "$STATE_ROOT" "$GPU_COUNT" "$GPU_TYPE" "$PYTHON"

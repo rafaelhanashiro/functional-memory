@@ -30,7 +30,11 @@ See [AGENTS.md](AGENTS.md) for retention and migration rules.
 | `sweep` | 7 days | Low-priority sweeps using spare capacity |
 
 GPU types currently include A6000, A100, H100, and B300; use `sinfo` to inspect
-nodes before choosing hardware. General priority is `debug > standard > long > sweep`.
+nodes before choosing hardware. On 2026-09-22 they were: `akita` 8×B300;
+`dogo` and `mastiff` 8×H100 each; `collie` 2×A100 and `samoyed` 10×A100;
+`doodle` 9×A6000 and `terrier` 10×A6000. Nodes define no Slurm features, so
+accept either B300 or H100 by requesting `--gres=gpu:N` and excluding the
+A100/A6000 nodes; A6000 training is markedly slower in this project's tests. General priority is `debug > standard > long > sweep`.
 Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
 60 seconds (the supplied PDFs say 120); `sweep` has no grace period.
 

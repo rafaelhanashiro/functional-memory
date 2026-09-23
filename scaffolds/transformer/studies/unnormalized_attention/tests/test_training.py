@@ -217,7 +217,7 @@ def test_nonfinite_gradient_with_finite_loss_persists_failure(tmp_path, monkeypa
         return loss, jax.tree.map(lambda value: jnp.full_like(value, jnp.inf), grads)
 
     monkeypatch.setattr(loop, "loss_and_grads", nonfinite_gradient)
-    with pytest.raises(FloatingPointError, match="attention update|unnormalized-exponential update"):
+    with pytest.raises(FloatingPointError, match="unnormalized-attention update"):
         loop.run_training(cfg)
     failure = json.loads((tmp_path / "numerical_failure_step_00000001.json").read_text())
     assert math.isfinite(failure["update_numerics"]["forward_loss"])
@@ -271,3 +271,33 @@ def test_distributed_accumulation_matches_single_device(tmp_path):
         sample, provenance = diagnostic_tools.fixed_diagnostic_sample(cfg)
         report = diagnostic_tools.attention_diagnostics(actual, cfg, sample, provenance)
         assert report["valid"] and report["sample"]["num_sequences"] == 1
+
+
+@pytest.mark.parametrize("degree", (1, 2, 3, 4))
+def test_unnormalized_taylor_training_completes_with_recorded_kernel(tmp_path, degree):
+    cfg = tiny_config(tmp_path)
+    cfg.model = replace(cfg.model, attention_degree=degree)
+    loop.run_training(cfg)
+    rows = [json.loads(line) for line in (tmp_path / "metrics.jsonl").read_text().splitlines()]
+    assert [row["step"] for row in rows] == [2, 4]
+    assert all(row["attention_diagnostics"]["valid"] for row in rows)
+    assert rows[-1]["attention_kernel"] == "taylor_unnormalized"
+    assert rows[-1]["attention_diagnostics"]["kernel_values"] == "unshifted_taylor"
+    assert json.loads((tmp_path / "completion.json").read_text())["final_step"] == 4
+
+
+def test_odd_unnormalized_taylor_cancellation_measurements_are_diagnostic_only(tmp_path, monkeypatch):
+    cfg = tiny_config(tmp_path)
+    cfg.model = replace(cfg.model, attention_degree=1)
+    state = SimpleNamespace(graphdef=None, params={}, step=0)
+    sample, provenance = diagnostic_tools.fixed_diagnostic_sample(cfg)
+    raw = diagnostic_layer(kernel_min=-2.0, weight_sum_min=-1.0, min_abs_weight_sum=0.0,
+                           cancellation_ratio_max=float("inf"), cancellation_ratio_mean=float("inf"),
+                           negative_kernel_count=3)
+    monkeypatch.setattr(diagnostic_tools, "_diagnostic_step", lambda *args: (raw,))
+    report = diagnostic_tools.attention_diagnostics(state, cfg, sample, provenance)
+    assert report["valid"], report["issues"]
+    assert report["layers"][0]["cancellation_ratio_max"] == "Infinity"
+    json.dumps(report, allow_nan=False)
+    raw["invalid_output_count"] = 1
+    assert not diagnostic_tools.attention_diagnostics(state, cfg, sample, provenance)["valid"]

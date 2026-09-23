@@ -67,8 +67,8 @@ class ModelConfig:
         if not isinstance(self.attention_normalization, bool):
             raise ValueError("model.attention_normalization must be a boolean")
         if not self.attention_normalization:
-            if self.attention_degree is not None or self.quadratic_mode != "fixed":
-                raise ValueError("Unnormalized attention requires the exact exponential kernel")
+            if self.quadratic_mode != "fixed":
+                raise ValueError("Unnormalized attention requires the exponential or a fixed Taylor kernel")
             if self.attention_backend not in ("auto", "blocked", "fused"):
                 raise ValueError("Unnormalized attention requires backend='auto', 'blocked' or 'fused'")
         if self.attention_backend in ("manual", "xla", "cudnn") and self.attention_degree is not None:

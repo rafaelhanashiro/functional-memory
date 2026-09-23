@@ -36,9 +36,8 @@ class MultiHeadAttention(nnx.Module):
         _validate_degree(attention_degree)
         if not isinstance(attention_normalization, bool):
             raise ValueError("attention_normalization must be a boolean")
-        if not attention_normalization and (
-                attention_degree is not None or quadratic_mode != "fixed" or backend not in ("blocked", "fused")):
-            raise ValueError("Unnormalized attention requires an exponential blocked/fused backend")
+        if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused")):
+            raise ValueError("Unnormalized attention requires a fixed exp/Taylor kernel and a blocked/fused backend")
         if quadratic_mode not in ("fixed", "positive", "unrestricted"):
             raise ValueError(f"Unknown quadratic mode: {quadratic_mode}")
         if quadratic_mode != "fixed" and attention_degree != 2:

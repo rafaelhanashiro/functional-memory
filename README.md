@@ -28,6 +28,6 @@ See [AGENTS.md](AGENTS.md) for canonical structure and retention rules and [CLUS
 
 The root PyTorch environment serves state-rank analysis; `scaffolds/transformer/pyproject.toml` and its lock define the separate JAX environment. Run the state-rank CPU checks with `uv run --frozen python -m pytest`; Transformer checks are documented in the shared scaffold README.
 
-Completed collections, including concluded numerical-failure studies, are retained here with their original source history. Their temporary branches and execution checkouts are retired after artifact verification. The unfinished unnormalized-attention experiment remains on `codex/unnormalized-attention-250m` in `worktrees/unnormalized_attention/`; it uses the canonical shared scaffold. Historical source commits can be exported from Git when reproducing an original execution.
+Completed collections, including concluded numerical-failure studies, are retained here with their original source history. Their temporary branches and execution checkouts are retired after artifact verification. The unfinished unnormalized-attention experiment remains on `codex/unnormalized-attention-250m` in `worktrees/unnormalized_attention/`; it uses the canonical shared scaffold. The unfinished unnormalized Taylor sweep builds on it on `claude/unnormalized-taylor-attention` in `worktrees/unnormalized_taylor_attention/`. Historical source commits can be exported from Git when reproducing an original execution.
 
 The main write-up is `overleaf/iclr/iclr2027_conference.tex`.
