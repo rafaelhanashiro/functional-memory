@@ -21,6 +21,18 @@ DATA_AXIS = "data"
 HOST_STAGING_ENV = "TRANSFORMER_HOST_STAGING"
 
 
+def single_device_call(function, *args, device):
+    """Run an explicitly local operation under a one-device shard-map context.
+
+    Custom kernels can require explicit manual sharding even when a diagnostic
+    uses only one device from a larger allocation. Arguments must already be
+    placed on that device. Call inside a cached jit to reuse its executable.
+    """
+    mesh = Mesh(np.asarray([device]), ("local",))
+    mapped = jax.shard_map(function, mesh=mesh, in_specs=P(), out_specs=P(), check_vma=False)
+    return mapped(*args)
+
+
 def _host_staging_enabled() -> bool:
     value = os.environ.get(HOST_STAGING_ENV, "0")
     if value not in ("0", "1"):

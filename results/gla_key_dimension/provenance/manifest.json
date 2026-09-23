@@ -1,0 +1,253 @@
+{
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "098b75b9bc2e27abf3ca873f20bc2bd2887aa6f03c2ae0ab8de11d6d5002b6f7"
+  },
+  "development_validation": [
+    {
+      "path": "results/gla_key_dimension/validation/cpu.json",
+      "sha256": "6a42767f83126a314dc77037385445afeb54e412fa72faa307f1172537eae08a"
+    },
+    {
+      "path": "results/gla_key_dimension/validation/ofm_parity.json",
+      "sha256": "215120321803f854df909b4813f5c69ccc07bd79f724ad048ef6e6347ee5b107"
+    }
+  ],
+  "execution_root": null,
+  "experiment": "gla_key_dimension",
+  "format": "functional-memory-gla-key-dimension",
+  "home_cluster": "kennel",
+  "implementation_sources": {
+    "path": "scaffolds/transformer/attention/backends/gla_sources.json",
+    "sha256": "4e709fc4855989b02b3f8a0cf113d14358d2d50d7b72d33647dbca4fca9f58c9"
+  },
+  "key_dimensions": [
+    8,
+    16,
+    32,
+    64,
+    128
+  ],
+  "limitations": [
+    "No GLA training or GPU qualification has been run.",
+    "Single seed; dK changes trainable parameter count and recurrent state size.",
+    "GLA adds data-dependent decay gates and gated normalized output; differences from softmax are architectural, not only state size."
+  ],
+  "prediction_tokens": 10000269312,
+  "qualification": {
+    "gpu_count": 4,
+    "pilot_steps": 32,
+    "production_backend": "fused",
+    "resume_step": 33,
+    "status": "pending"
+  },
+  "runs": [
+    {
+      "checkpoint_dir": "checkpoints/gla_key_dimension/200m-dk008-gla-seed0",
+      "name": "200m-dk008-gla-seed0",
+      "parameter_count": 192237824,
+      "qk_head_dim": 8,
+      "resolved_config": {
+        "path": "results/gla_key_dimension/configs/200m-dk008-gla-seed0.yaml",
+        "sha256": "8d52c3b97f7417e45b855c9d7d7e198a863fde4fc387939208df873e0790e687"
+      },
+      "seed": 0,
+      "selected_checkpoint": null,
+      "source_commit": null,
+      "state_elements_per_layer": 8192,
+      "status": "planned",
+      "value_head_dim": 64,
+      "workdir": "results/gla_key_dimension/runs/200m-dk008-gla-seed0"
+    },
+    {
+      "checkpoint_dir": "checkpoints/gla_key_dimension/200m-dk016-gla-seed0",
+      "name": "200m-dk016-gla-seed0",
+      "parameter_count": 194881024,
+      "qk_head_dim": 16,
+      "resolved_config": {
+        "path": "results/gla_key_dimension/configs/200m-dk016-gla-seed0.yaml",
+        "sha256": "f0382ad6e325232885f2cc9a4066ac1a8140d4cad893c124839ff868930d8964"
+      },
+      "seed": 0,
+      "selected_checkpoint": null,
+      "source_commit": null,
+      "state_elements_per_layer": 16384,
+      "status": "planned",
+      "value_head_dim": 64,
+      "workdir": "results/gla_key_dimension/runs/200m-dk016-gla-seed0"
+    },
+    {
+      "checkpoint_dir": "checkpoints/gla_key_dimension/200m-dk032-gla-seed0",
+      "name": "200m-dk032-gla-seed0",
+      "parameter_count": 200167424,
+      "qk_head_dim": 32,
+      "resolved_config": {
+        "path": "results/gla_key_dimension/configs/200m-dk032-gla-seed0.yaml",
+        "sha256": "513ca3a5cc8d1e4d30dc7e23ae7e5308bdfce55348eecfba3a96b955eb658e35"
+      },
+      "seed": 0,
+      "selected_checkpoint": null,
+      "source_commit": null,
+      "state_elements_per_layer": 32768,
+      "status": "planned",
+      "value_head_dim": 64,
+      "workdir": "results/gla_key_dimension/runs/200m-dk032-gla-seed0"
+    },
+    {
+      "checkpoint_dir": "checkpoints/gla_key_dimension/200m-dk064-gla-seed0",
+      "name": "200m-dk064-gla-seed0",
+      "parameter_count": 210740224,
+      "qk_head_dim": 64,
+      "resolved_config": {
+        "path": "results/gla_key_dimension/configs/200m-dk064-gla-seed0.yaml",
+        "sha256": "764cda18732aa6dd11d1f222300011395977078366588c999360eabeb0ccbb16"
+      },
+      "seed": 0,
+      "selected_checkpoint": null,
+      "source_commit": null,
+      "state_elements_per_layer": 65536,
+      "status": "planned",
+      "value_head_dim": 64,
+      "workdir": "results/gla_key_dimension/runs/200m-dk064-gla-seed0"
+    },
+    {
+      "checkpoint_dir": "checkpoints/gla_key_dimension/200m-dk128-gla-seed0",
+      "name": "200m-dk128-gla-seed0",
+      "parameter_count": 231885824,
+      "qk_head_dim": 128,
+      "resolved_config": {
+        "path": "results/gla_key_dimension/configs/200m-dk128-gla-seed0.yaml",
+        "sha256": "428e732b90084b5fd719c17cdde852417c04ea9643e628b6dcf07791aae73fdb"
+      },
+      "seed": 0,
+      "selected_checkpoint": null,
+      "source_commit": null,
+      "state_elements_per_layer": 131072,
+      "status": "planned",
+      "value_head_dim": 64,
+      "workdir": "results/gla_key_dimension/runs/200m-dk128-gla-seed0"
+    }
+  ],
+  "schema_version": 1,
+  "seed": 0,
+  "softmax_controls": [
+    {
+      "metrics": {
+        "path": "results/key_dimension/runs/200m-dk008-seed0/metrics.jsonl",
+        "sha256": "75bcb65689ba5618be5403794f17c34c4eb8001557db8ae0f6c4bfe336be144a"
+      },
+      "name": "200m-dk008-seed0",
+      "parameter_count": 181556224,
+      "qk_head_dim": 8,
+      "resolved_config": {
+        "path": "results/key_dimension/configs/200m-dk008-seed0.yaml",
+        "sha256": "72b85f5cab8de9ebcdf3d7f0c0dedb02ff803077606e827a4b10d0531c7d5f97"
+      },
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.815727804388319,
+        "validation_perplexity": 16.70532956917316
+      }
+    },
+    {
+      "metrics": {
+        "path": "results/key_dimension/runs/200m-dk016-seed0/metrics.jsonl",
+        "sha256": "5d19fb18cdc2f5b7ee0b5b90c7bb2fa622ff653c8fd3c51cf7d5b8c18dd74b14"
+      },
+      "name": "200m-dk016-seed0",
+      "parameter_count": 184177664,
+      "qk_head_dim": 16,
+      "resolved_config": {
+        "path": "results/key_dimension/configs/200m-dk016-seed0.yaml",
+        "sha256": "76f6759e4e36738801e2bcf4e2178d12b3493329f713af698bcbc8d3480e5bbf"
+      },
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.745754207883562,
+        "validation_perplexity": 15.576357314635974
+      }
+    },
+    {
+      "metrics": {
+        "path": "results/key_dimension/runs/200m-dk032-seed0/metrics.jsonl",
+        "sha256": "5a199dbb81f4caeccf79af40454c7eef997ebe0f3698d75211df6e553b2913d3"
+      },
+      "name": "200m-dk032-seed0",
+      "parameter_count": 189420544,
+      "qk_head_dim": 32,
+      "resolved_config": {
+        "path": "results/key_dimension/configs/200m-dk032-seed0.yaml",
+        "sha256": "9c39237a5b7d47bc8a5f29513de8a2ade0e214bd662a79424143cf60c1f19bbb"
+      },
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.707067149026053,
+        "validation_perplexity": 14.985261464418581
+      }
+    },
+    {
+      "metrics": {
+        "path": "results/key_dimension/runs/200m-dk064-seed0/metrics.jsonl",
+        "sha256": "97ed5129bbd6f81363b0d617c1d22b10d718d00ded6734f25e616fb4f4612c76"
+      },
+      "name": "200m-dk064-seed0",
+      "parameter_count": 199906304,
+      "qk_head_dim": 64,
+      "resolved_config": {
+        "path": "results/key_dimension/configs/200m-dk064-seed0.yaml",
+        "sha256": "62de3f135734f9a42e2aa6aeaea1628ca04d7a37e901fec6ffa9e2d30b9093e3"
+      },
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.6871511340141296,
+        "validation_perplexity": 14.689767074685026
+      }
+    },
+    {
+      "metrics": {
+        "path": "results/key_dimension/runs/200m-dk128-seed0/metrics.jsonl",
+        "sha256": "93ef9664a46cc56e40f2279f18cab2891840228af66a10dd532deac63ebfe720"
+      },
+      "name": "200m-dk128-seed0",
+      "parameter_count": 220877824,
+      "qk_head_dim": 128,
+      "resolved_config": {
+        "path": "results/key_dimension/configs/200m-dk128-seed0.yaml",
+        "sha256": "be0001128ecc3d892701189d70e93b9ca392c06533fb41285306d89a3f90cc5e"
+      },
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.6656709483691623,
+        "validation_perplexity": 14.377592933058489
+      }
+    }
+  ],
+  "source_commit": null,
+  "source_status": "pending_clean_frozen_execution_commit",
+  "status": "planned_not_qualified",
+  "taylor_reference": {
+    "path": "results/key_dimension_taylor/provenance/manifest.json",
+    "sha256": "5642fd99b541635fa1782c439617b7b2599558174141e2406aac66f97ece5331"
+  }
+}

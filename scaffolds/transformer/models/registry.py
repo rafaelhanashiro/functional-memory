@@ -26,6 +26,11 @@ def model_parameter_count(config: ModelConfig) -> int:
     h = config.hidden_size
     embedding = config.vocab_size * h
     attention = 2 * h * config.num_heads * (config.qk_head_dim + config.value_head_dim)
+    if config.attention_mechanism == "gla":
+        key_dim = config.num_heads * config.qk_head_dim
+        value_dim = config.num_heads * config.value_head_dim
+        # Output gate, low-rank vector decay (including bias), and head RMSNorm.
+        attention += h * value_dim + h * config.gla_gate_rank + config.gla_gate_rank * key_dim + key_dim + value_dim
     feed_forward = 3 * h * config.intermediate_size
     return (
         embedding * (1 if config.tie_embeddings else 2)

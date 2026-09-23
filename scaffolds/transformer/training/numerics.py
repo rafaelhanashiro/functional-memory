@@ -10,7 +10,7 @@ def is_odd_taylor(model) -> bool:
 
 def requires_update_checks(model) -> bool:
     """Operators whose gradients may overflow before their forward loss does."""
-    return is_odd_taylor(model) or not model.attention_normalization
+    return model.attention_mechanism == "gla" or is_odd_taylor(model) or not model.attention_normalization
 
 
 def update_numerics(grads, updated_params, loss):

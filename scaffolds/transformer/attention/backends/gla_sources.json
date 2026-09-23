@@ -1,0 +1,40 @@
+{
+  "format": "gla-vendored-sources",
+  "version": 1,
+  "ofm": {
+    "repository": "https://github.com/rafaelhanashiro/ofm",
+    "commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+    "files": {
+      "models/architectures/gla.py": "5217e9a1eed9fd64d1a6ed477208a57ba2cf751ff74dd299c23ba09aaefab9c9",
+      "models/kernels/chunked_gla_triton.py": "08207b92b092f49b79ba8ca773f247f5ccd3d474d396eec83b8eded5cea0ea6a",
+      "models/components/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269"
+    },
+    "license_note": "OFM repository has no tracked license; reused at repository owner request. Kernel retains upstream FLA attribution."
+  },
+  "ejkernel": {
+    "repository": "https://github.com/erfanzar/ejkernel",
+    "commit": "a63669747509f671ecbb503f8ba6c90d53af42ec",
+    "license": "Apache-2.0",
+    "files": {
+      "ejkernel/callib/_triton_call.py": "4af719cdbcdde6da8182cc76ebb2646d40bdd7bb707a226eb42fc3defd0f3fc5",
+      "ejkernel/callib/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    }
+  },
+  "adaptations": [
+    "GLA attention module uses shared scaffold RoPE and shared Block/LM/trainer, explicit per-head dimensions, blocked/fused backend names, and GLA diagnostics.",
+    "OFM associative reference exposed as standalone function returning fp32 final state.",
+    "OFM kernel bridge import points to the vendored minimal ejkernel bridge.",
+    "Kernel tile dimensions clamp to at least 16 for narrow d_K sweeps; exact dimensions remain masked.",
+    "Bridge utility file copied byte-identically; minimal package exports only triton_call. The bridge detects JAX 0.10 shard_map using public get_abstract_mesh().manual_axes, with the upstream fallback for older JAX."
+  ],
+  "dependencies": {
+    "jax": "0.10.0",
+    "triton": "3.6.0"
+  },
+  "runtime_notes": [
+    "Set EJKERNEL_TRITON_CACHE_DIR to experiment runtime cache path.",
+    "OFM launcher disables XLA GPU command buffers with --xla_gpu_enable_command_buffer=.",
+    "The upstream bridge rejects unsharded multi-device invocations; shared runtime must invoke it per device."
+  ]
+}

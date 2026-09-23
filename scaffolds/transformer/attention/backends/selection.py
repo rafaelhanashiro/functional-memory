@@ -24,7 +24,7 @@ def _cuda_compute_capability():
     return min(majors) if majors else None
 
 
-def resolve_attention_backend(model_config, *, dtype="float32", platform=None) -> str:
+def resolve_attention_backend(model_config, *, dtype="float32", platform=None, sequence_length=None) -> str:
     """Return a concrete backend without changing scientific configuration.
 
     ``platform`` is a deterministic platform override for selection tests. Actual
@@ -38,6 +38,22 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None) -
         raise ValueError("Attention requires float32 or bfloat16 computation")
     actual_platform = _runtime_platform() if platform is None else platform
     gpu = actual_platform in ("gpu", "cuda")
+    if model_config.attention_mechanism == "gla":
+        if request not in ("auto", "blocked", "fused"):
+            raise ValueError("GLA requires backend='auto', 'blocked' or 'fused'")
+        length = model_config.max_seq_len if sequence_length is None else sequence_length
+        fits_gla = (length % 64 == 0 and model_config.gla_chunk_size == 64
+                    and model_config.gla_inner_chunk_size == 16)
+        capability = (8 if platform is not None else _cuda_compute_capability()) if gpu else None
+        supports_gla = capability is not None and capability >= 8
+        if request == "auto":
+            return "fused" if fits_gla and supports_gla else "blocked"
+        if request == "fused":
+            if not fits_gla:
+                raise ValueError("Fused GLA requires sequence length divisible by 64 and chunk sizes 64/16")
+            if not supports_gla:
+                raise ValueError("Fused GLA requires an Ampere-or-newer NVIDIA GPU")
+        return request
     polynomial = model_config.attention_degree is not None
     unnormalized = not model_config.attention_normalization
     custom_kernel = polynomial or unnormalized
@@ -74,7 +90,8 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None) -
 def resolve_config_backend(config, *, platform=None) -> str:
     """Resolve in place and retain the user's request outside serialized configs."""
     request = config.model.attention_backend
-    resolved = resolve_attention_backend(config.model, dtype=config.train.dtype, platform=platform)
+    resolved = resolve_attention_backend(config.model, dtype=config.train.dtype, platform=platform,
+                                         sequence_length=config.data.sequence_length - 1)
     if not hasattr(config, "_attention_backend_request"):
         config._attention_backend_request = request
     config.model.attention_backend = resolved

@@ -1,6 +1,7 @@
 """Shared Transformer settings; experiments vary geometry and attention rules."""
 
 from dataclasses import dataclass, field
+import math
 from pathlib import Path
 from typing import Literal
 
@@ -45,6 +46,12 @@ class ModelConfig:
     attention_backend: Literal["auto", "blocked", "fused", "manual", "xla", "cudnn"] = "auto"
     attention_degree: int | None = None
     attention_normalization: bool = True
+    attention_mechanism: Literal["dot_product", "gla"] = "dot_product"
+    gla_gate_rank: int = 16
+    gla_gate_tau: float = 16.0
+    gla_chunk_size: int = 64
+    gla_inner_chunk_size: int = 16
+    gla_use_rope: bool = True
     quadratic_mode: Literal["fixed", "positive", "unrestricted"] = "fixed"
     quadratic_sharing: Literal["global", "per_head"] = "global"
 
@@ -60,12 +67,33 @@ class ModelConfig:
                 raise ValueError(f"model.{name} must be a positive integer")
         if self.num_kv_heads != self.num_heads:
             raise ValueError("This scaffold uses full MHA: num_kv_heads must equal num_heads")
-        if self.qk_head_dim % 2:
+        if self.attention_mechanism not in ("dot_product", "gla"):
+            raise ValueError(f"Unknown attention mechanism: {self.attention_mechanism}")
+        if self.qk_head_dim % 2 and (self.attention_mechanism != "gla" or self.gla_use_rope):
             raise ValueError("model.qk_head_dim must be even for RoPE")
         if self.attention_backend not in ("auto", "blocked", "fused", "manual", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
         if not isinstance(self.attention_normalization, bool):
             raise ValueError("model.attention_normalization must be a boolean")
+        if self.attention_mechanism == "gla":
+            if self.attention_degree is not None or self.quadratic_mode != "fixed":
+                raise ValueError("GLA cannot use Taylor degrees or learned quadratic modes")
+            if not self.attention_normalization:
+                raise ValueError("attention_normalization is a dot-product option; GLA requires its default true")
+            if self.attention_backend not in ("auto", "blocked", "fused"):
+                raise ValueError("GLA requires backend='auto', 'blocked' or 'fused'")
+        for name in ("gla_gate_rank", "gla_chunk_size", "gla_inner_chunk_size"):
+            value = getattr(self, name)
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+                raise ValueError(f"model.{name} must be a positive integer")
+        if (not isinstance(self.gla_gate_tau, (int, float)) or isinstance(self.gla_gate_tau, bool)
+                or not math.isfinite(self.gla_gate_tau) or self.gla_gate_tau <= 0):
+            raise ValueError("model.gla_gate_tau must be finite and positive")
+        if not isinstance(self.gla_use_rope, bool):
+            raise ValueError("model.gla_use_rope must be a boolean")
+        if self.attention_mechanism == "gla" and self.attention_backend == "fused":
+            if (self.gla_chunk_size, self.gla_inner_chunk_size) != (64, 16):
+                raise ValueError("Fused GLA requires chunk size 64 and inner chunk size 16")
         if not self.attention_normalization:
             if self.quadratic_mode != "fixed":
                 raise ValueError("Unnormalized attention requires the exponential or a fixed Taylor kernel")
@@ -158,13 +186,17 @@ def validate_config(config: Config) -> None:
         raise ValueError("Packed data requires train_manifest and eval_manifest")
     if train.dtype not in ("float32", "bfloat16"):
         raise ValueError("train.dtype must be float32 or bfloat16")
-    if (config.model.attention_backend in ("fused", "cudnn") and config.model.attention_degree is None
+    if (config.model.attention_mechanism == "dot_product"
+            and config.model.attention_backend in ("fused", "cudnn") and config.model.attention_degree is None
             and config.model.attention_normalization and train.dtype != "bfloat16"):
         raise ValueError("Fused exact-softmax attention uses cuDNN and requires train.dtype=bfloat16")
     if config.model.attention_backend == "fused" and (
             config.model.attention_degree is not None or not config.model.attention_normalization):
         if max(config.model.qk_head_dim, config.model.value_head_dim) > 128:
             raise ValueError("Fused attention supports Q/K and value head dimensions up to 128")
+    if config.model.attention_mechanism == "gla" and config.model.attention_backend == "fused":
+        if (data.sequence_length - 1) % 64:
+            raise ValueError("Fused GLA requires prediction sequence length divisible by 64")
     if train.wandb_mode not in ("online", "offline", "disabled"):
         raise ValueError("Invalid train.wandb_mode")
     if not 0 <= optim.warmup_steps <= optim.total_steps:
