@@ -2,7 +2,7 @@
   "format": "functional-memory-experiment-setup",
   "version": 2,
   "experiment": "unnormalized_attention",
-  "status": "canonical_200m_run_prepared",
+  "status": "completed",
   "home_cluster": "kennel",
   "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
   "artifact_availability": "Kennel artifacts only; local corpus verified by full SHA256 checks on 2026-09-22. Original ORCD artifacts were never inspected or transferred.",
@@ -52,15 +52,36 @@
       "seed": 0,
       "home_cluster": "kennel",
       "start": "fresh initialization",
-      "status": "prepared",
+      "status": "completed",
       "config": {
         "path": "results/unnormalized_attention/configs/200m-exp-seed0-kennel.yaml",
         "sha256": "7600c655c3d9d9eb1cec4f49255367659ee1b99b4d291ffe2e9bd15263c71107"
       },
-      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_attention/runs/200m-exp-seed0-kennel",
-      "checkpoint_directory": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_attention/200m-exp-seed0-kennel",
-      "log_pattern": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_attention/200m-exp-seed0-kennel/slurm-<job_id>.out",
-      "selected_checkpoint": null
+      "selected_checkpoint": {
+        "step": 19074,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_attention/200m-exp-seed0-kennel/19074",
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "verified_present_utc": "2026-09-23T04:02:00Z"
+      },
+      "source_commit": "3b0d311655b033545d0c211467fd600376e0fdeb",
+      "slurm_job_id": "201002",
+      "hardware": "4x NVIDIA B300 on akita, one process, fused Pallas/Triton exponential kernel",
+      "parameter_count": 199906304,
+      "training_updates": 19074,
+      "prediction_tokens": 10000269312,
+      "terminal_validation_nll": 2.8598174708230153,
+      "terminal_validation_perplexity": 17.45833998930364,
+      "best_validation": {
+        "selection_rule": "lowest_validation_nll",
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.8598174708230153,
+        "validation_perplexity": 17.45833998930364
+      },
+      "completed_utc": "2026-09-23T03:47:47.095549+00:00",
+      "run_record": "results/unnormalized_attention/runs/200m-exp-seed0-kennel",
+      "acceptance_evidence": "results/unnormalized_attention/validation/200m-exp-seed0-kennel",
+      "log": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_attention/200m-exp-seed0-kennel/slurm-201002.out"
     },
     {
       "name": "250m-exp-seed0-kennel",
@@ -132,9 +153,7 @@
     }
   ],
   "execution_records": {
-    "submission_directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/unnormalized_attention/submissions",
-    "qualification_directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/unnormalized_attention/preflight",
-    "note": "The launcher and shared trainer record the frozen source commit and resolved backend/runtime. Preserve the execution checkout and environment while jobs may run or requeue."
+    "status": "Execution checkout and cache removed after completion; acceptance and submission records are copied under validation/. Reproduce by exporting or checking out each run's source_commit."
   },
   "data_manifests": {
     "train": {
@@ -149,5 +168,9 @@
   "local_data_validation": {
     "path": "results/unnormalized_attention/validation/kennel-data.json",
     "sha256": "41967ee1841836f2288c00dd9b67ab866ecd19dd7fe983b639b80bf5cd791e3f"
+  },
+  "summary": {
+    "path": "results/unnormalized_attention/summary.csv",
+    "sha256": "6737d43665f0258db962acf700514c0af34a57ba66ed1c18f808662bc653fdf5"
   }
 }

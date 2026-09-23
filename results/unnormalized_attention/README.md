@@ -4,9 +4,9 @@ This experiment asks what changes when a Transformer uses causal
 `exp(QKᵀ / sqrt(d_K)) V` without dividing attention weights by their row sum.
 The canonical run uses the repository's **200M sweep recipe**, so it compares
 directly with the 200M softmax controls and Taylor/key-dimension sweeps.
-**Status: the 200M run `200m-exp-seed0-kennel` is prepared for Kennel.** A
-completed 250M run is documented [below](#supplementary-250m-run) as a
-supplementary scale point.
+**Status: completed.** Removing row normalization costs **0.172 nats** at 200M:
+terminal validation PPL **17.46** versus 14.69 for softmax. A completed 250M run
+is documented [below](#supplementary-250m-run) as a supplementary scale point.
 
 **Home cluster: Kennel.** The artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`; the packed corpus is under
@@ -14,6 +14,40 @@ supplementary scale point.
 not checkpoints, environments, logs, or datasets. The
 [provenance manifest](provenance/manifest.json) is the authoritative record of
 sources, configurations, runs, and artifact locations.
+
+## Results
+
+| Run | Terminal val NLL | Terminal val PPL | Softmax control NLL / PPL | Gap (nats) |
+| --- | ---: | ---: | ---: | ---: |
+| `200m-exp-seed0-kennel` | 2.859817 | 17.4583 | 2.687451 / 14.6942 | +0.1724 |
+
+Validation was best at the terminal update 19,074. The gap to the matched
+softmax control narrows during training but does not close:
+
+| Update | 1,000 | 2,000 | 5,000 | 10,000 | 15,000 | 19,074 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Unnormalized NLL | 5.285 | 4.434 | 3.437 | 3.052 | 2.906 | 2.860 |
+| Softmax NLL | 4.458 | 3.609 | 3.020 | 2.806 | 2.720 | 2.687 |
+| Gap | 0.827 | 0.825 | 0.417 | 0.246 | 0.186 | 0.172 |
+
+The unnormalized model also ends behind normalized Taylor attention of degree 2
+(PPL 16.28) and 4 (14.98) from [polynomial attention](../polynomial_attention/README.md).
+The gap matches the 0.174 nats measured at 250M against the external OFM
+baseline. All 20 evaluations reported valid diagnostics with zero invalid
+scores, kernels, weight sums, or outputs. Maximum row weight sums on the fixed
+diagnostic sequence peaked at 668,232 (layer 8, update 2,000, maximum score
+13.4) and fell to at most 3,466 (layer 9) at completion, far from FP32 overflow.
+One seed does not estimate seed variation.
+
+The run used source `3b0d311`, Slurm job `201002`, and four B300s on `akita`
+(2026-09-22), taking 2 h 28 min including acceptance, with no restarts, at about
+1.33M training tokens per second. Records: metrics and completion in
+[`runs/200m-exp-seed0-kennel/`](runs/200m-exp-seed0-kennel/), GPU acceptance
+and allocation in [`validation/200m-exp-seed0-kennel/`](validation/200m-exp-seed0-kennel/),
+a [terminal summary](summary.csv), the log at
+`results/logs/unnormalized_attention/200m-exp-seed0-kennel/slurm-201002.out`, and
+the retained step-19,074 checkpoint (2.1 GB) under
+`checkpoints/unnormalized_attention/200m-exp-seed0-kennel/` at the artifact root.
 
 ## Scientific recipe
 
@@ -104,15 +138,18 @@ transfer/allocator settings; changing any of them reruns acceptance.
 
 ## Kennel launch
 
-Use four B300s in `long`. One Python process uses all four GPUs; global batch 256,
-microbatch 64, and four accumulation steps stay unchanged. The scheduler and
-transport settings are selected by `launch_kennel.sbatch` and `run_kennel.sh`,
-using the shared Kennel runtime helper. Acceptance runs first, then production
-starts automatically. Exact submission from the frozen experiment checkout:
+The run used four B300s in `long`. One Python process uses all four GPUs;
+global batch 256, microbatch 64, and four accumulation steps stay unchanged. The
+scheduler and transport settings are selected by `launch_kennel.sbatch` and
+`run_kennel.sh`, using the shared Kennel runtime helper. Acceptance runs first,
+then production starts automatically. To reproduce, create a dedicated
+execution checkout of the recorded source and submit from it, with fresh output
+paths if the original run record should be kept:
 
 ```bash
 PROJECT_ROOT=/data/cl/u/rafah/home/projects/functional-memory
-EXECUTION_ROOT="$PROJECT_ROOT/worktrees/unnormalized_attention"
+EXECUTION_ROOT="$PROJECT_ROOT/worktrees/unnormalized_attention-3b0d311"
+git -C "$PROJECT_ROOT" worktree add --detach "$EXECUTION_ROOT" 3b0d311655b033545d0c211467fd600376e0fdeb
 SOURCE_COMMIT="$(git -C "$EXECUTION_ROOT" rev-parse HEAD)"
 RUN=200m-exp-seed0-kennel
 CONFIG="$EXECUTION_ROOT/results/unnormalized_attention/configs/$RUN.yaml"
@@ -137,8 +174,9 @@ metadata live in `results/unnormalized_attention/runs/<run>/`, checkpoints in
 `checkpoints/unnormalized_attention/<run>/`, and logs in
 `results/logs/unnormalized_attention/<run>/` at the durable artifact root.
 Checkpoints keep latest and validation best while resumable; after completion
-only the validation-best checkpoint is retained. Copy retained metrics and
-acceptance evidence into this record after the execution stops.
+only the validation-best checkpoint is retained. Retained metrics and
+acceptance evidence are copied into this record after the execution stops, and
+the execution checkout is then removed.
 
 The exact packed corpus has 90 training shards, one evaluation shard, and two
 manifests totaling 24,031,780,324 bytes (22.38 GiB), verified in
@@ -170,7 +208,8 @@ current code has no path dedicated to it.
   worse. No normalized 250M model has been trained with this repository's code,
   so a codebase difference cannot be excluded at that scale.
 - **Records:** metrics and completion in [`runs/250m-exp-seed0-kennel/`](runs/250m-exp-seed0-kennel/);
-  CPU validation, GPU acceptance, and allocation in
+  CPU validation, GPU acceptance, allocation, the post-pilot walltime reduction
+  from 48 to 8 hours, and the cuBLAS-warning assessment in
   [`validation/250m-exp-seed0-kennel/`](validation/250m-exp-seed0-kennel/); the
   log at `results/logs/unnormalized_attention/250m-exp-seed0-kennel/slurm-200875.out`
   and the retained step-21,935 checkpoint (2.7 GB) under
