@@ -31,7 +31,9 @@ Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits
 
 ## Experiment home cluster
 
-- Assign each experiment one home cluster before launching it. Keep its sweep runs, resumptions, checkpoints, and retained logs there by default; different experiments may have different home clusters.
+- For a new experiment, the cluster from which the user requests it is its home cluster, unless the user explicitly specifies another cluster. Determine the current cluster from the session's execution environment. Do not inherit the home cluster from related experiments, comparison baselines, or their historical configurations, and do not ask the user to choose a cluster when the request's location already establishes it.
+- Before continuing an existing experiment, check its recorded home cluster in provenance and its canonical README. If the request comes from a different cluster, tell the user which cluster they are on and which cluster owns the experiment, and flag the mismatch as a likely request-location mistake before launching or resuming. Do not silently change clusters or interpret the request as permission to migrate; migration requires an explicit user instruction.
+- Keep each experiment's sweep runs, resumptions, checkpoints, and retained logs on its home cluster by default; different experiments may have different home clusters.
 - Record the home cluster and artifact root in provenance and the README. A clone shares committed code, configurations, and scientific results; it does not provide ignored artifacts. Report unavailable or unverified external checkpoints accurately instead of claiming they were moved or checked.
 - When migrating an experiment, transfer and verify required checkpoints and supporting artifacts, provide the matching data and environment, and update its recorded locations before continuing. Avoid running the same run concurrently on both clusters.
 - Git ignoring checkpoints only excludes them from version control. During training retain the latest resumable checkpoint and validation best as needed; apply best-only cleanup after completion.
