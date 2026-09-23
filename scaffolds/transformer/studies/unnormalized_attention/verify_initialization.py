@@ -1,4 +1,4 @@
-"""Verify the 250M initialization against the independent in-repository OFM port."""
+"""Verify initialization against the independent in-repository OFM port."""
 
 from __future__ import annotations
 
@@ -17,7 +17,6 @@ import tempfile
 from pathlib import Path
 
 
-EXPECTED_PARAMETER_COUNT = 253_654_016
 REFERENCE_COMMIT = "c2b0d6e5514995cbe7b5e564f902201cfde1ba4e"
 OFM_SOURCE_COMMIT = "32ea743b7b3aed1d631116dfaa3c4b85101baf32"
 ROOT = Path(__file__).resolve().parents[4]
@@ -62,7 +61,10 @@ def verify_initialization(config_path: str | Path) -> dict:
 
     if jax.default_backend() != "cpu":
         raise RuntimeError("Initialization verification must run on the CPU")
+    from scaffolds.transformer.models import model_parameter_count
+
     config = load_config(config_path)
+    expected_parameter_count = model_parameter_count(config.model)
     # Export immutable independent source, not a current compatibility adapter.
     with tempfile.TemporaryDirectory(prefix="ofm-initialization-reference-") as directory:
         archive = subprocess.check_output(["git", "archive", REFERENCE_COMMIT, "experiments/key_dimension"], cwd=ROOT)
@@ -100,10 +102,10 @@ def verify_initialization(config_path: str | Path) -> dict:
     jax.clear_caches()
 
     for name, fingerprint in (("experiment", actual), ("reference", reference)):
-        if fingerprint["parameter_count"] != EXPECTED_PARAMETER_COUNT:
+        if fingerprint["parameter_count"] != expected_parameter_count:
             raise AssertionError(
                 f"{name} parameter count {fingerprint['parameter_count']} "
-                f"does not match canonical 250M count {EXPECTED_PARAMETER_COUNT}"
+                f"does not match the recipe count {expected_parameter_count}"
             )
     if actual != reference:
         raise AssertionError(
@@ -131,8 +133,8 @@ def verify_initialization(config_path: str | Path) -> dict:
         "scaffold_genealogy": (
             "The key_dimension scaffold ports OFM's Transformer; "
             "polynomial_attention preserves its parameter constructors, and "
-            "unnormalized_attention derives from that scaffold at the canonical "
-            "14-layer 250M geometry. This check establishes exact initial "
+            "unnormalized_attention derives from that scaffold. This check "
+            "establishes exact initial "
             "parameter identity with the independent in-repository "
             "key_dimension port exported from its frozen Git commit, without "
             "importing the adjacent OFM repository."

@@ -1,5 +1,5 @@
-# Canonical OFM 250M Transformer, removing only attention row normalization.
-# Port source: 32ea743b7b3aed1d631116dfaa3c4b85101baf32.
+# 200M Transformer matching the repository's 200M sweep controls, removing only
+# attention row normalization.
 data:
   source: packed
   dataset_name: HuggingFaceFW/fineweb-edu
@@ -7,8 +7,8 @@ data:
   split: train
   tokenizer_name: NousResearch/Llama-2-7b-hf
   text_field: text
-  train_manifest: /home/rafah/projects/ofm/datasets/fineweb_12b/train/manifest.json
-  eval_manifest: /home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json
+  train_manifest: /path/to/fineweb_12b/train/manifest.json
+  eval_manifest: /path/to/fineweb_12b/eval/manifest.json
   batch_size: 256
   sequence_length: 2049
   shuffle_seed: 0
@@ -18,7 +18,7 @@ model:
   kind: transformer
   vocab_size: 32000
   max_seq_len: 2048
-  num_layers: 14
+  num_layers: 10
   hidden_size: 1024
   num_heads: 16
   num_kv_heads: 16
@@ -42,15 +42,15 @@ optim:
   beta2: 0.95
   grad_clip_norm: 1.0
   warmup_steps: 2000
-  # 21,935 * 256 * 2,048 = 11,500,257,280 prediction tokens.
-  total_steps: 21935
+  # 19,074 * 256 * 2,048 = 10,000,269,312 prediction tokens.
+  total_steps: 19074
 
 train:
   seed: 0
   source_commit: auto
   dtype: bfloat16
-  workdir: results/unnormalized_attention/runs/250m-exp-seed0
-  checkpoint_dir: checkpoints/unnormalized_attention/250m-exp-seed0
+  workdir: results/unnormalized_attention/runs/200m-exp-seed0
+  checkpoint_dir: checkpoints/unnormalized_attention/200m-exp-seed0
   micro_batch_size: 64
   log_every: 10
   eval_every: 1000
@@ -58,4 +58,4 @@ train:
   ckpt_every: 500
   wandb_mode: disabled
   wandb_project: functional-memory-unnormalized-attention
-  wandb_run_name: 250m-exp-seed0
+  wandb_run_name: 200m-exp-seed0

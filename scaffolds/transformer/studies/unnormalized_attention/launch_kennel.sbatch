@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=unnorm-250m
+#SBATCH --job-name=unnormalized-attention
 #SBATCH --partition=long
 #SBATCH --nodes=1
 #SBATCH --ntasks=1

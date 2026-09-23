@@ -126,7 +126,7 @@ def worker(args, experiment):
         config.train.wandb_mode = "disabled"
         config.train.eval_every = 20
         config.train.eval_batches = 1
-        # Preserve model, context, batch, seed, LR, warmup, and 21,935-step horizon.
+        # Preserve model, context, batch, seed, LR, warmup, and full step horizon.
         return run_training(config, resume=True, stop_after_step=args.stop_after_step)
     raise ValueError(args.worker)
 
@@ -185,10 +185,13 @@ def run(args, experiment):
             if not steady or any(not math.isfinite(x) or x <= 0 for x in steady):
                 raise RuntimeError("Pilot has no valid synchronized steady update timing")
             config = experiment["config"]
+            total_steps = config["optim"]["total_steps"]
+            evaluations = total_steps // config["train"]["eval_every"] + 1
+            checkpoints = total_steps // config["train"]["ckpt_every"] + 1
             # Include compilation once plus conservative evaluation/checkpoint costs.
-            projected = (timing["runtime_seconds"] + max(steady) * config["optim"]["total_steps"]
-                         + max(timing["evaluation_seconds"]) * config["train"]["eval_batches"] * 23
-                         + max(timing["checkpoint_seconds"]) * 44)
+            projected = (timing["runtime_seconds"] + max(steady) * total_steps
+                         + max(timing["evaluation_seconds"]) * config["train"]["eval_batches"] * evaluations
+                         + max(timing["checkpoint_seconds"]) * checkpoints)
             if projected > 46 * 3600:
                 raise RuntimeError(f"Pilot projects beyond a 48h allocation: {projected / 3600:.2f} hours")
             record(path, experiment, outcome=outcome, validation=validation, projected_hours=projected / 3600)

@@ -15,9 +15,9 @@ from scaffolds.transformer.training.diagnostics import attention_identity
 BASE_CONFIG = Path(__file__).resolve().parents[5] / "results/unnormalized_attention/configs/base.yaml"
 
 
-def test_baseline_matches_ofm_250m_budget_and_geometry():
+def test_recipe_matches_200m_sweep_budget_and_geometry():
     config = load_config(BASE_CONFIG)
-    assert config.model.num_layers == 14
+    assert config.model.num_layers == 10
     assert config.model.hidden_size == 1024
     assert config.model.num_heads == config.model.num_kv_heads == 16
     assert config.model.qk_head_dim == config.model.value_head_dim == 64
@@ -29,8 +29,8 @@ def test_baseline_matches_ofm_250m_budget_and_geometry():
     assert config.model.attention_backend == "auto"
     assert config.model.attention_normalization is False
     assert config.train.seed == config.data.shuffle_seed == 0
-    assert config.optim.total_steps == 21935
-    assert config.optim.total_steps * config.data.batch_size * (config.data.sequence_length - 1) == 11_500_257_280
+    assert config.optim.total_steps == 19074
+    assert config.optim.total_steps * config.data.batch_size * (config.data.sequence_length - 1) == 10_000_269_312
     assert config.train.eval_batches * config.data.batch_size == 1792
     assert config.data.batch_size == 256 and config.train.micro_batch_size == 64
     assert config.optim.learning_rate == pytest.approx(3e-4)
@@ -42,11 +42,11 @@ def test_baseline_matches_ofm_250m_budget_and_geometry():
 
 
 @pytest.mark.parametrize("normalized", (False, True))
-def test_250m_parameter_count_is_unchanged(normalized):
+def test_200m_parameter_count_is_unchanged(normalized):
     cfg = replace(load_config(BASE_CONFIG).model, attention_normalization=normalized, attention_backend="blocked")
     params = jax.eval_shape(lambda: nnx.state(build_model(cfg, 0), nnx.Param))
     count = sum(leaf.size for leaf in jax.tree.leaves(params))
-    assert count == model_parameter_count(cfg) == 253_654_016
+    assert count == model_parameter_count(cfg) == 199_906_304
     assert all(leaf.dtype == jnp.float32 for leaf in jax.tree.leaves(params))
 
 

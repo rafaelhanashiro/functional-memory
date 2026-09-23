@@ -1,105 +1,140 @@
 {
   "format": "functional-memory-experiment-setup",
-  "version": 1,
+  "version": 2,
   "experiment": "unnormalized_attention",
-  "status": "prepared_for_fresh_kennel_run",
+  "status": "canonical_200m_run_prepared",
   "home_cluster": "kennel",
   "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
-  "artifact_availability": "Fresh Kennel run; local corpus verified by full SHA256 checks on 2026-09-22. No ORCD checkpoint migration or continuation is claimed.",
-  "original_source_commit": "7a3e584fd199b2edbc595cf7053b620401309216",
-  "shared_scaffold_base_commit": "9ca0904c167855a548ea028403eca7a9e4727171",
-  "reference_initialization_source_commit": "c2b0d6e5514995cbe7b5e564f902201cfde1ba4e",
-  "historical_config": {
-    "path": "results/unnormalized_attention/configs/historical.yaml",
-    "sha256": "06a40e9c68d57750262ac911862cc0c579dd1d926c2872d8129e0b53554d07da"
+  "artifact_availability": "Kennel artifacts only; local corpus verified by full SHA256 checks on 2026-09-22. Original ORCD artifacts were never inspected or transferred.",
+  "documentation": "results/unnormalized_attention/README.md",
+  "scaffold": "scaffolds/transformer",
+  "study_tools": "scaffolds/transformer/studies/unnormalized_attention",
+  "scientific_change": "Remove attention row normalization; use causal unshifted exp(QK^T / sqrt(d_K)) V.",
+  "canonical_recipe": {
+    "config": {
+      "path": "results/unnormalized_attention/configs/base.yaml",
+      "sha256": "230434a1933389a0992752aeb61eed8f9080acb0649a0a89f5de5956672aca56"
+    },
+    "matches": "the repository's 200M sweep recipe except attention normalization",
+    "seed": 0,
+    "parameter_count": 199906304,
+    "training_updates": 19074,
+    "prediction_tokens": 10000269312
   },
-  "historical_dependency_lock": {
-    "path": "results/unnormalized_attention/configs/historical.uv.lock",
-    "sha256": "41063490b1dc8b3ff00c2731a7b7bb4383094a14379061a5856c645a93b322f9"
-  },
-  "canonical_config": {
-    "path": "results/unnormalized_attention/configs/base.yaml",
-    "sha256": "607dabf4d8b8837fde3d937de60a3460ce082002151d2f58c5980f25a8ccf596"
-  },
+  "comparison_controls": [
+    {
+      "run": "results/polynomial_attention/runs/200m-softmax-seed0",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "home_cluster": "kennel",
+      "terminal_step": 19074,
+      "validation_nll": 2.6874512689454213,
+      "validation_perplexity": 14.69417664861716
+    },
+    {
+      "run": "results/key_dimension/runs/200m-dk064-seed0",
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "home_cluster": "orcd",
+      "terminal_step": 19074,
+      "validation_nll": 2.6871511340141296,
+      "validation_perplexity": 14.689767074685026
+    }
+  ],
   "shared_dependency_lock": {
     "path": "scaffolds/transformer/uv.lock",
     "sha256": "49d54eb7a7eb344655fc1aeb2d5de16806dc8a2c60025c9181b24687db2c53d8"
   },
-  "baseline": {
-    "path": "results/unnormalized_attention/baseline.json",
-    "sha256": "9649b178ef3d1ead3d52f79a78d8014133a629127df19945df1ce97fcbd7e69a"
-  },
-  "documentation": "results/unnormalized_attention/README.md",
-  "scaffold": "scaffolds/transformer",
-  "study_tools": "scaffolds/transformer/studies/unnormalized_attention",
-  "seed": 0,
-  "parameter_count": 253654016,
-  "training_updates": 21935,
-  "prediction_tokens": 11500257280,
-  "scientific_change": "Remove attention row normalization; use causal unshifted exp(QK^T / sqrt(d_K)) V.",
-  "canonical_config_changes": [
-    "attention_backend: fused -> auto; resolved execution choice is pinned on resume",
-    "workdir: results/unnormalized_attention/runs/250m-exp-seed0",
-    "checkpoint_dir: checkpoints/unnormalized_attention/250m-exp-seed0"
-  ],
-  "historical_artifacts": {
-    "workdir": "<original-execution-checkout>/results/unnormalized_attention/250m-exp-seed0",
-    "checkpoint_directory": "<original-execution-checkout>/results/unnormalized_attention/250m-exp-seed0/checkpoints",
-    "availability": "not inspected"
-  },
-  "proposed_artifacts": {
-    "workdir": "results/unnormalized_attention/runs/250m-exp-seed0",
-    "checkpoint_directory": "checkpoints/unnormalized_attention/250m-exp-seed0",
-    "successful_log": "results/logs/unnormalized_attention/250m-exp-seed0/slurm-<job_id>.out",
-    "selected_checkpoint": null,
-    "status": "paths for a future qualified run, not transferred artifacts"
-  },
-  "kennel_handoff": {
-    "status": "User authorized independent fresh Kennel execution on 2026-09-22; prefer four B300s, fall back to four H100s if delayed.",
-    "home_cluster_assignment": "kennel",
-    "restart_from_step": 0
-  },
+  "reference_initialization_source_commit": "c2b0d6e5514995cbe7b5e564f902201cfde1ba4e",
+  "shared_scaffold_base_commit": "9ca0904c167855a548ea028403eca7a9e4727171",
   "runs": [
     {
-      "name": "250m-exp-seed0-kennel",
+      "name": "200m-exp-seed0-kennel",
+      "role": "canonical",
       "seed": 0,
       "home_cluster": "kennel",
-      "start": "fresh initialization, no remote checkpoint restore",
+      "start": "fresh initialization",
       "status": "prepared",
+      "config": {
+        "path": "results/unnormalized_attention/configs/200m-exp-seed0-kennel.yaml",
+        "sha256": "7600c655c3d9d9eb1cec4f49255367659ee1b99b4d291ffe2e9bd15263c71107"
+      },
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_attention/runs/200m-exp-seed0-kennel",
+      "checkpoint_directory": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_attention/200m-exp-seed0-kennel",
+      "log_pattern": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_attention/200m-exp-seed0-kennel/slurm-<job_id>.out",
+      "selected_checkpoint": null
+    },
+    {
+      "name": "250m-exp-seed0-kennel",
+      "role": "supplementary 250M scale point; documented in the README, no dedicated code path",
+      "seed": 0,
+      "home_cluster": "kennel",
+      "start": "fresh initialization",
+      "status": "completed",
+      "source_commit": "51c647459205854447ee31fc54b9bde8813f819c",
+      "slurm_job_id": "200875",
+      "hardware": "4x NVIDIA B300 on akita, one process, fused Pallas/Triton exponential kernel",
       "config": {
         "path": "results/unnormalized_attention/configs/250m-exp-seed0-kennel.yaml",
         "sha256": "1c3f9cff11f1cdafdb97847010f5e71fcd097375bb7f5c669b5b1e3ab2e90723"
       },
-      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_attention/runs/250m-exp-seed0-kennel",
-      "checkpoint_directory": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_attention/250m-exp-seed0-kennel",
-      "log_pattern": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_attention/250m-exp-seed0-kennel/slurm-<job_id>.out",
-      "selected_checkpoint": null
+      "parameter_count": 253654016,
+      "training_updates": 21935,
+      "prediction_tokens": 11500257280,
+      "terminal_validation_nll": 2.765264621802739,
+      "terminal_validation_perplexity": 15.883242486813428,
+      "best_validation": {
+        "selection_rule": "lowest_validation_nll",
+        "step": 21935,
+        "training_tokens": 11500257280,
+        "validation_nll": 2.765264621802739,
+        "validation_perplexity": 15.883242486813428
+      },
+      "completed_utc": "2026-09-22T23:25:54.992433+00:00",
+      "run_record": "results/unnormalized_attention/runs/250m-exp-seed0-kennel",
+      "acceptance_evidence": "results/unnormalized_attention/validation/250m-exp-seed0-kennel",
+      "log": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_attention/250m-exp-seed0-kennel/slurm-200875.out",
+      "selected_checkpoint": {
+        "step": 21935,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_attention/250m-exp-seed0-kennel/21935",
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "verified_present_utc": "2026-09-23T01:05:00Z"
+      },
+      "comparison_baseline": {
+        "source_repository": "ofm",
+        "source_commit": "32ea743b7b3aed1d631116dfaa3c4b85101baf32",
+        "source_config": "configs/experiments/transformer_250m.yaml",
+        "source_report": "/home/rafah/projects/ofm/runs/250m/transformer_250m/REPORT.md",
+        "status": "complete",
+        "parameter_count": 253654016,
+        "seed": 0,
+        "training_tokens": 11500257280,
+        "terminal_step": 21935,
+        "validation_best_step": 21935,
+        "terminal_validation_nll_reported": 2.591487,
+        "terminal_validation_perplexity_reported": 13.3496,
+        "gpu_type": "H200",
+        "gpu_count": 2,
+        "attention_backend": "cudnn",
+        "notes": "Historical report metrics are rounded; no new softmax training run is implied."
+      },
+      "historical_origin": {
+        "original_source_commit": "7a3e584fd199b2edbc595cf7053b620401309216",
+        "historical_config": {
+          "path": "results/unnormalized_attention/configs/historical.yaml",
+          "sha256": "06a40e9c68d57750262ac911862cc0c579dd1d926c2872d8129e0b53554d07da"
+        },
+        "historical_dependency_lock": {
+          "path": "results/unnormalized_attention/configs/historical.uv.lock",
+          "sha256": "41063490b1dc8b3ff00c2731a7b7bb4383094a14379061a5856c645a93b322f9"
+        },
+        "orcd_artifact_root": "/home/rafah/projects/functional_memory",
+        "orcd_artifacts": "never inspected or transferred; the user reports those runs paused or finished"
+      }
     }
   ],
-  "initialization_validation": {
-    "path": "results/unnormalized_attention/validation/initialization.json",
-    "sha256": "14b9fc326de7472b77aa7a43faa6485208f5391ab1a964d8dd0652b2af1f48dd"
-  },
-  "shared_implementation_source_commit": "a532dfb812417bd729c3c17de39aa7e7c094859d",
-  "refactor_validation": {
-    "path": "results/unnormalized_attention/validation/refactor.json",
-    "sha256": "8f23b81a91f436ae2c4b9178af87e2246782e0b34ee4442ff7d4724d253e33cf"
-  },
-  "historical_home_cluster": {
-    "cluster": "orcd",
-    "artifact_root": "/home/rafah/projects/functional_memory",
-    "artifacts_transferred": false,
-    "status": "Original ORCD artifacts remain uninspected; user reports all previous runs paused or finished."
-  },
-  "active_config": {
-    "path": "results/unnormalized_attention/configs/250m-exp-seed0-kennel.yaml",
-    "sha256": "1c3f9cff11f1cdafdb97847010f5e71fcd097375bb7f5c669b5b1e3ab2e90723"
-  },
   "execution_records": {
     "submission_directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/unnormalized_attention/submissions",
     "qualification_directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/unnormalized_attention/preflight",
-    "run_metadata": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_attention/runs/250m-exp-seed0-kennel/metadata.json",
-    "note": "The frozen source commit and resolved backend/runtime are recorded by the launcher and shared trainer. Preserve this checkout and environment while jobs may run or requeue."
+    "note": "The launcher and shared trainer record the frozen source commit and resolved backend/runtime. Preserve the execution checkout and environment while jobs may run or requeue."
   },
   "data_manifests": {
     "train": {
