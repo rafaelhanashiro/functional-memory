@@ -20,6 +20,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         config.qk_head_dim, config.value_head_dim, rope_theta=config.rope_theta,
         dropout=config.dropout, backend=config.attention_backend,
         attention_degree=config.attention_degree, quadratic_mode=config.quadratic_mode,
+        attention_normalization=config.attention_normalization,
         rngs=rngs,
     )
 
@@ -29,9 +30,15 @@ class MultiHeadAttention(nnx.Module):
         self, hidden_size: int, num_heads: int, num_kv_heads: int,
         qk_head_dim: int, value_head_dim: int, rope_theta: float = 10000.0,
         dropout: float = 0.0, backend: AttentionBackend = "blocked",
-        attention_degree: int | None = None, quadratic_mode: str = "fixed", *, rngs: nnx.Rngs,
+        attention_degree: int | None = None, quadratic_mode: str = "fixed",
+        attention_normalization: bool = True, *, rngs: nnx.Rngs,
     ):
         _validate_degree(attention_degree)
+        if not isinstance(attention_normalization, bool):
+            raise ValueError("attention_normalization must be a boolean")
+        if not attention_normalization and (
+                attention_degree is not None or quadratic_mode != "fixed" or backend not in ("blocked", "fused")):
+            raise ValueError("Unnormalized attention requires an exponential blocked/fused backend")
         if quadratic_mode not in ("fixed", "positive", "unrestricted"):
             raise ValueError(f"Unknown quadratic mode: {quadratic_mode}")
         if quadratic_mode != "fixed" and attention_degree != 2:
@@ -56,6 +63,7 @@ class MultiHeadAttention(nnx.Module):
         self.rope_theta = rope_theta
         self.backend = backend
         self.attention_degree = attention_degree
+        self.attention_normalization = attention_normalization
         self.quadratic_mode = quadratic_mode
         self.dtype = jnp.float32
         # Preserve the reference constructor order/default initialization exactly.
@@ -90,6 +98,7 @@ class MultiHeadAttention(nnx.Module):
             parameters = {**parameters, "coefficients": coefficients}
         result = attention_core(
             q, k, v, backend=self.backend, attention_degree=self.attention_degree,
+            attention_normalization=self.attention_normalization,
             quadratic_mode=self.quadratic_mode, **parameters,
             return_diagnostics=return_diagnostics, dropout=self.dropout,
             deterministic=deterministic, rngs=rngs, weights_dtype=x.dtype,

@@ -56,6 +56,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
     for value in (left, right):
         value = copy.deepcopy(value)
         value.setdefault("model", {}).setdefault("attention_degree", None)
+        value["model"].setdefault("attention_normalization", True)
         value["model"].setdefault("quadratic_mode", "fixed")
         value["model"].setdefault("quadratic_sharing", "global")
         value.setdefault("train", {}).setdefault("checkpoint_dir", None)

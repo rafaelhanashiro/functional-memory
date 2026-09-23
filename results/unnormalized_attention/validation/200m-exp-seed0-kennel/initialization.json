@@ -1,0 +1,71 @@
+{
+  "completed_utc": "2026-09-23T01:21:24.089069+00:00",
+  "identity": "f670d8e6a12d5b1e76f1f48e7a8704f6529cf13344320b1c418fcfeb440534ca",
+  "result": {
+    "backend": "cpu",
+    "canonical_ofm_run_source_commit": "32ea743b7b3aed1d631116dfaa3c4b85101baf32",
+    "experiment": {
+      "parameter_count": 199906304,
+      "parameter_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+      "parameter_tensor_count": 93
+    },
+    "experiment_model_config": {
+      "attention_backend": "auto",
+      "attention_degree": null,
+      "attention_normalization": false,
+      "dropout": 0.0,
+      "hidden_size": 1024,
+      "intermediate_size": 3008,
+      "kind": "transformer",
+      "max_seq_len": 2048,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "num_layers": 10,
+      "qk_head_dim": 64,
+      "quadratic_mode": "fixed",
+      "quadratic_sharing": "global",
+      "remat": false,
+      "rms_norm_eps": 1e-06,
+      "rope_theta": 10000.0,
+      "tie_embeddings": false,
+      "value_head_dim": 64,
+      "vocab_size": 32000
+    },
+    "hash_format": "SHA-256 of each JAX flattened parameter path, shape, and C-order FP32 bytes, in tree order",
+    "parameter_count": 199906304,
+    "parameter_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+    "reference": {
+      "parameter_count": 199906304,
+      "parameter_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+      "parameter_tensor_count": 93
+    },
+    "reference_model_config": {
+      "attention_backend": "cudnn",
+      "dropout": 0.0,
+      "hidden_size": 1024,
+      "intermediate_size": 3008,
+      "kind": "transformer",
+      "max_seq_len": 2048,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "num_layers": 10,
+      "qk_head_dim": 64,
+      "remat": false,
+      "rms_norm_eps": 1e-06,
+      "rope_theta": 10000.0,
+      "tie_embeddings": false,
+      "value_head_dim": 64,
+      "vocab_size": 32000
+    },
+    "reference_module": "experiments.key_dimension.models",
+    "reference_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+    "reference_source_commit": "c2b0d6e5514995cbe7b5e564f902201cfde1ba4e",
+    "scaffold_genealogy": "The key_dimension scaffold ports OFM's Transformer; polynomial_attention preserves its parameter constructors, and unnormalized_attention derives from that scaffold. This check establishes exact initial parameter identity with the independent in-repository key_dimension port exported from its frozen Git commit, without importing the adjacent OFM repository.",
+    "seed": 0,
+    "status": "passed"
+  },
+  "slurm_job_id": "201002",
+  "slurm_restart_count": "0",
+  "source_commit": "3b0d311655b033545d0c211467fd600376e0fdeb",
+  "status": "passed"
+}

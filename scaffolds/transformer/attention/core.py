@@ -16,6 +16,7 @@ def attention_core(
     *,
     backend: str = "blocked",
     attention_degree: int | None = None,
+    attention_normalization: bool = True,
     quadratic_mode: str = "fixed",
     coefficients: jax.Array | None = None,
     return_diagnostics: bool = False,
@@ -25,6 +26,14 @@ def attention_core(
     weights_dtype=None,
 ):
     """Apply the mechanism selected by the existing flat model configuration."""
+    if not isinstance(attention_normalization, bool):
+        raise ValueError("attention_normalization must be a boolean")
+    if not attention_normalization:
+        from scaffolds.transformer.attention.exponential import exponential_attention
+
+        if attention_degree is not None or quadratic_mode != "fixed" or coefficients is not None:
+            raise ValueError("Unnormalized attention requires the exact exponential kernel")
+        return exponential_attention(q, k, v, backend=backend, return_diagnostics=return_diagnostics)
     if quadratic_mode != "fixed":
         from scaffolds.transformer.attention.learned_quadratic import learned_quadratic_attention
 

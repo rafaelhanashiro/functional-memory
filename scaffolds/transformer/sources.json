@@ -6,5 +6,6 @@
   "learned_quadratic_attention": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
   "odd_taylor_attention": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
   "note": "Original scientific implementations and validated transfer-runtime source remain reachable in Git history; retained artifacts use the canonical results/checkpoints layout.",
-  "runtime_transfer": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb"
+  "runtime_transfer": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+  "unnormalized_attention": "7a3e584fd199b2edbc595cf7053b620401309216"
 }

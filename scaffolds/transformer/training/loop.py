@@ -58,7 +58,7 @@ from scaffolds.transformer.training.metrics import (
     write_json_atomic,
 )
 from scaffolds.transformer.training.optim import make_learning_rate_schedule
-from scaffolds.transformer.training.numerics import checked_update_loss, is_odd_taylor, update_numerics
+from scaffolds.transformer.training.numerics import checked_update_loss, requires_update_checks, update_numerics
 from scaffolds.transformer.training.randomness import model_forward_rngs
 from scaffolds.transformer.training.state import TrainState, create_state
 
@@ -487,7 +487,7 @@ def _fail_numerics(config, state, step, message, sample, provenance, *, diagnost
     }
     if loss is not None:
         failure["loss"] = json_number(loss)
-        if is_odd_taylor(config.model):
+        if requires_update_checks(config.model):
             failure["checked_quantities"] = ["forward_loss", "global_gradient_norm", "updated_parameters"]
             failure["loss_note"] = "A NaN loss scalar also signals an invalid gradient norm or parameter update."
         elif config.model.quadratic_mode != "fixed":
@@ -558,7 +558,7 @@ def _update_audit(step, batches, rng):
 def _run_training(config, manager, layout, devices, *, resume, end_step, audit_checkpoint=False):
     runtime_start = time.perf_counter()
     timing = {"train_step_seconds": [], "evaluation_seconds": [], "checkpoint_seconds": []}
-    check_all_gradients = is_odd_taylor(config.model)
+    check_all_gradients = requires_update_checks(config.model)
     completion_path = config.train.workdir / "completion.json"
     latest_before = manager.latest_step()
     validated_train_manifest = None
@@ -680,7 +680,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             if len(timing["train_step_seconds"]) < 8:
                 timing["train_step_seconds"].append(time.perf_counter() - train_step_start)
             if not math.isfinite(loss_value):
-                quantity = ("training loss or signed-Taylor update" if check_all_gradients else
+                quantity = ("training loss or unnormalized-exponential update" if not config.model.attention_normalization else
+                            "training loss or signed-Taylor update" if check_all_gradients else
                             "training loss" if config.model.quadratic_mode == "fixed" else
                             "training loss or learned-quadratic update")
                 _fail_numerics(config, state, step,

@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "verified_utc": "2026-09-22T20:06:43Z",
+  "dataset_root": "/data/cl/u/rafah/home/datasets/fineweb_12b",
+  "verification": "SHA256 of both manifests and all shard file contents against each manifest entry",
+  "shard_count": 91,
+  "shard_bytes": 24031761422,
+  "elapsed_seconds": 201.31,
+  "splits": {
+    "train": {
+      "shards": 90,
+      "sequences": 5859375,
+      "manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    "eval": {
+      "shards": 1,
+      "sequences": 4888,
+      "manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    }
+  }
+}

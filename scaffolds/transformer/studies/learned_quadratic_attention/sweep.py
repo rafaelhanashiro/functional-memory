@@ -55,6 +55,8 @@ def parameter_count(model) -> int:
 def scientific_recipe(config: dict) -> dict:
     """Compare training recipes without execution identities or polynomial shape."""
     recipe = copy.deepcopy(config)
+    # Historical normalized controls predate this explicit mechanism field.
+    recipe["model"].setdefault("attention_normalization", True)
     for key in ("attention_degree", "quadratic_mode", "quadratic_sharing"):
         recipe["model"].pop(key, None)
     for key in ("source_commit", "workdir", "checkpoint_dir", "wandb_project", "wandb_run_name", "wandb_entity", "wandb_mode"):

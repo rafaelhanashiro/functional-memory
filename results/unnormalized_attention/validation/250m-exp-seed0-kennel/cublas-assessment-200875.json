@@ -1,0 +1,10 @@
+{
+  "job_id": "200875",
+  "assessment": "The installed cuBLAS12.9.2 patch includes the concurrent TMEM fix, while JAX0.10.0 warns across the broader version range. Warning alone is not grounds to switch hardware; current-mechanism qualification remains mandatory.",
+  "installed_package": "nvidia-cublas-cu12==12.9.2.10",
+  "reported_runtime_version": 120902,
+  "vendor_patch_notes": "https://docs.nvidia.com/cuda/cublas-patch-release-notes/#cublas-patch-release-12-9-2",
+  "jax_warning_source": "https://github.com/jax-ml/jax/blob/jax-v0.10.0/jax_plugins/cuda/__init__.py#L276-L290",
+  "previous_local_assessment": "results/polynomial_attention/performance/b300/metadata.json",
+  "environment_modified": false
+}

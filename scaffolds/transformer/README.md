@@ -43,8 +43,8 @@ full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 `attention/multihead.py` owns Q/K/V projections, RoPE, head layout, and the output
 projection. `attention/core.py` dispatches complete operations on post-RoPE
 `[batch, time, heads, channels]` arrays. Q/K use `d_K`; the output has V's shape
-and dtype. Mechanisms live in `softmax.py`, `taylor.py`, and
-`learned_quadratic.py`. Their implementations live under `attention/backends/`.
+and dtype. Mechanisms live in `softmax.py`, `taylor.py`,
+`learned_quadratic.py`, and `exponential.py`. Their implementations live under `attention/backends/`.
 Fused kernels consume Q/K/V directly and retain their custom backward passes.
 The interface does not require a materialized attention matrix.
 
@@ -52,7 +52,8 @@ The existing scientific configuration fields remain supported:
 
 | Settings | Mechanism |
 |---|---|
-| `attention_degree: null` | Exact softmax |
+| `attention_degree: null`, `attention_normalization: true` (default) | Exact softmax |
+| `attention_degree: null`, `attention_normalization: false` | Unnormalized causal `exp(QKᵀ / sqrt(d_K)) V` |
 | `attention_degree: 0` | Uniform causal-prefix averaging |
 | Nonnegative `attention_degree`, `quadratic_mode: fixed` | Fixed Taylor polynomial; odd degrees permit signed weights |
 | `attention_degree: 2`, `quadratic_mode: positive` | Learned `0.5 * (1 + (a*s+b)^2)` |
@@ -79,7 +80,7 @@ and the training loop do not need separate copies.
 
 The shared configuration defaults to `attention_backend: auto`; ordinary recipes
 can omit it. CPU execution selects the blocked reference. Supported NVIDIA GPU
-polynomial/learned shapes select the fused kernels; exact softmax selects an
+polynomial, learned, and unnormalized-exponential shapes select the fused kernels; exact softmax selects an
 appropriate public JAX implementation. Unsupported shapes use the reference when
 automatic selection is requested. Explicit overrides are validated and never
 silently replaced.
@@ -91,7 +92,9 @@ cannot run on the current device. Explicit backend choices in historical recipes
 are preserved.
 
 Softmax uses stable score shifting. Taylor and learned polynomials use unshifted
-scores. Signed mechanisms retain their existing signed-normalizer rules; the
+scores. Unnormalized exponentials also use unshifted scores and never divide by
+a row sum. Nonfinite outputs, gradients, and updated parameters are surfaced as
+failures; diagnostic-only weight sums may underflow or overflow. Signed mechanisms retain their existing signed-normalizer rules; the
 scaffold does not add clipping or denominator epsilon.
 
 ## Environment and training API
@@ -142,7 +145,7 @@ polynomial study's canonical retained manifest and regenerates its figures.
 Consult that experiment's `results/<experiment>/README.md` for its exact command.
 
 The `key_dimension`, `polynomial_attention`, `learned_quadratic_attention`,
-`odd_taylor_attention`, and `key_dimension_taylor` study adapters all use this
+`odd_taylor_attention`, `key_dimension_taylor`, and `unnormalized_attention` study adapters all use this
 same training implementation. Their retained historical runs and currently frozen
 execution checkouts still identify the source revisions that actually ran them.
 

@@ -44,6 +44,7 @@ class ModelConfig:
     remat: bool = False
     attention_backend: Literal["auto", "blocked", "fused", "manual", "xla", "cudnn"] = "auto"
     attention_degree: int | None = None
+    attention_normalization: bool = True
     quadratic_mode: Literal["fixed", "positive", "unrestricted"] = "fixed"
     quadratic_sharing: Literal["global", "per_head"] = "global"
 
@@ -63,6 +64,13 @@ class ModelConfig:
             raise ValueError("model.qk_head_dim must be even for RoPE")
         if self.attention_backend not in ("auto", "blocked", "fused", "manual", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
+        if not isinstance(self.attention_normalization, bool):
+            raise ValueError("model.attention_normalization must be a boolean")
+        if not self.attention_normalization:
+            if self.attention_degree is not None or self.quadratic_mode != "fixed":
+                raise ValueError("Unnormalized attention requires the exact exponential kernel")
+            if self.attention_backend not in ("auto", "blocked", "fused"):
+                raise ValueError("Unnormalized attention requires backend='auto', 'blocked' or 'fused'")
         if self.attention_backend in ("manual", "xla", "cudnn") and self.attention_degree is not None:
             raise ValueError(f"Backend {self.attention_backend!r} supports exact softmax only")
         if self.quadratic_mode not in ("fixed", "positive", "unrestricted"):
@@ -150,9 +158,11 @@ def validate_config(config: Config) -> None:
         raise ValueError("Packed data requires train_manifest and eval_manifest")
     if train.dtype not in ("float32", "bfloat16"):
         raise ValueError("train.dtype must be float32 or bfloat16")
-    if config.model.attention_backend in ("fused", "cudnn") and config.model.attention_degree is None and train.dtype != "bfloat16":
+    if (config.model.attention_backend in ("fused", "cudnn") and config.model.attention_degree is None
+            and config.model.attention_normalization and train.dtype != "bfloat16"):
         raise ValueError("Fused exact-softmax attention uses cuDNN and requires train.dtype=bfloat16")
-    if config.model.attention_backend == "fused" and config.model.attention_degree is not None:
+    if config.model.attention_backend == "fused" and (
+            config.model.attention_degree is not None or not config.model.attention_normalization):
         if max(config.model.qk_head_dim, config.model.value_head_dim) > 128:
             raise ValueError("Fused attention supports Q/K and value head dimensions up to 128")
     if train.wandb_mode not in ("online", "offline", "disabled"):
