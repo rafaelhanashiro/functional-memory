@@ -83,7 +83,7 @@ def test_defaults_are_tiny_synthetic_and_round_trip(tmp_path):
     ("model:\n  num_kv_heads: 2\n", "full MHA"),
     ("model:\n  attention_backend: fast\n", "backend"),
     ("model:\n  dropout: 0.1\n", "dropout=0"),
-    ("model:\n  attention_degree: 2\n  attention_normalization: false\n", "exact exponential"),
+    ("model:\n  attention_degree: 2\n  quadratic_mode: positive\n  attention_normalization: false\n", "fixed Taylor"),
     ("model:\n  attention_normalization: 0\n", "boolean"),
     ("model:\n  attention_normalization: null\n", "boolean"),
     ('model:\n  attention_normalization: "false"\n', "boolean"),
@@ -249,3 +249,41 @@ def test_preflight_cache_requires_same_runtime(tmp_path, monkeypatch, setting, v
     changed = preflight.identity(tmp_path / "config.yaml", 2, "H100")
     assert changed["config"] == original["config"]
     assert not preflight.passed(cache, changed)
+
+
+@pytest.mark.parametrize("degree", (1, 2, 3, 4))
+def test_unnormalized_taylor_identity_and_automatic_backend(tmp_path, degree):
+    from scaffolds.transformer.attention.backends.selection import resolve_attention_backend
+    config = Config()
+    config.model = ModelConfig(attention_backend="fused", attention_normalization=False, attention_degree=degree)
+    validate_config(config)
+    path = tmp_path / "taylor.yaml"
+    save_config(config, path)
+    assert load_config(path).model.attention_degree == degree
+    identity = attention_identity(config)
+    assert identity["attention_kernel"] == "taylor_unnormalized"
+    assert identity["attention_formula"].startswith(f"causal_p_{degree}(QK^T / sqrt(d_k)) V")
+    assert identity["attention_implementation"] == "pallas_triton"
+    assert identity["attention_output_normalization"] is False
+    assert identity["m0_qk_parameter_note"] is None
+    assert identity.get("attention_signed", False) is bool(degree % 2)
+    model = replace(config.model, attention_backend="auto")
+    assert resolve_attention_backend(model, platform="gpu", dtype="bfloat16") == "fused"
+    assert resolve_attention_backend(model, platform="cpu", dtype="bfloat16") == "blocked"
+
+
+@pytest.mark.parametrize("degree", (1, 2, 3, 4))
+def test_unnormalized_taylor_recipes_change_only_the_kernel_and_locations(degree):
+    from scaffolds.transformer.configs import config_to_dict
+    run = f"200m-m{degree:03d}-seed0"
+    path = BASE_CONFIG.parents[2] / "unnormalized_taylor_attention/configs" / f"{run}.yaml"
+    base, taylor = (config_to_dict(load_config(p)) for p in (BASE_CONFIG, path))
+    assert taylor["model"].pop("attention_degree") == degree
+    assert base["model"].pop("attention_degree") is None
+    assert taylor["train"]["workdir"].endswith(f"results/unnormalized_taylor_attention/runs/{run}")
+    assert taylor["train"]["checkpoint_dir"].endswith(f"checkpoints/unnormalized_taylor_attention/{run}")
+    for section, key in (("data", "train_manifest"), ("data", "eval_manifest"), ("train", "workdir"),
+                         ("train", "checkpoint_dir"), ("train", "wandb_project"), ("train", "wandb_run_name")):
+        base[section].pop(key)
+        taylor[section].pop(key)
+    assert taylor == base

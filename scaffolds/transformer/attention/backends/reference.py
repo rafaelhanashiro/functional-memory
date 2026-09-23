@@ -35,13 +35,15 @@ def blocked_dot_product_attention(
     their rows with NaN. Even Taylor and positive learned kernels must stay
     positive; odd Taylor and unrestricted quadratics permit signed/zero kernels
     and negative nonzero normalizers. Stable exact exponentials may underflow to zero.
+    Without normalization, the exponential or fixed Taylor kernel multiplies V
+    directly; its row sum is measured but never divided by.
     Diagnostics exclude padded queries and masked future entries.
     """
     _validate_degree(attention_degree)
     if not isinstance(attention_normalization, bool):
         raise ValueError("attention_normalization must be a boolean")
-    if not attention_normalization and (attention_degree is not None or quadratic_mode != "fixed"):
-        raise ValueError("Unnormalized attention requires the exact exponential kernel")
+    if not attention_normalization and quadratic_mode != "fixed":
+        raise ValueError("Unnormalized attention requires the exponential or a fixed Taylor kernel")
     if quadratic_mode not in ("fixed", "positive", "unrestricted"):
         raise ValueError(f"Unknown quadratic mode: {quadratic_mode}")
     if quadratic_mode != "fixed" and (attention_degree != 2 or coefficients is None):
@@ -84,7 +86,7 @@ def blocked_dot_product_attention(
             "bqhd,bkhd->bhqk", query, k,
             preferred_element_type=jnp.float32,
         ) * (1.0 / math.sqrt(qk_dim))
-        if not attention_normalization:
+        if not attention_normalization and attention_degree is None:
             # A row shift changes the unnormalized operator. Underflow to zero
             # is allowed; a nonfinite causal exponential poisons the output.
             kernel = jnp.exp(jnp.where(causal, scores, 0.0))
@@ -148,7 +150,8 @@ def blocked_dot_product_attention(
             actual = actual_rows[None, None, :, None]
             cancellation = jnp.sum(jnp.abs(kernel), axis=-1, keepdims=True) / jnp.abs(normalizer)
             diagnostics.update({
-                "min_abs_normalizer": jnp.min(jnp.where(actual, jnp.abs(normalizer), jnp.inf)),
+                ("min_abs_normalizer" if attention_normalization else "min_abs_weight_sum"):
+                    jnp.min(jnp.where(actual, jnp.abs(normalizer), jnp.inf)),
                 "negative_weight_count": jnp.sum(measured & (weights < 0), dtype=jnp.int32),
                 "negative_kernel_count": jnp.sum(measured & (kernel < 0), dtype=jnp.int32),
                 "causal_entry_count": jnp.sum(measured, dtype=jnp.int32) * batch * heads,
@@ -165,7 +168,7 @@ def blocked_dot_product_attention(
     if return_diagnostics:
         output_blocks, per_block = result
         diagnostics = {
-            name: (jnp.min(values) if name.endswith("_min") or name == "min_abs_normalizer" else
+            name: (jnp.min(values) if name.endswith("_min") or name.startswith("min_abs_") else
                    jnp.max(values) if name.endswith("_max") else jnp.sum(values))
             for name, values in per_block.items()
         }

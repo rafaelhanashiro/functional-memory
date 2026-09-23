@@ -1,4 +1,4 @@
-"""Mathematical and numerical contracts for the blocked exponential reference."""
+"""Mathematical and numerical contracts for the blocked unnormalized reference."""
 
 import math
 from functools import partial
@@ -18,12 +18,21 @@ from scaffolds.transformer.models.components.attention import (
 
 
 blocked_dot_product_attention = partial(blocked_dot_product_attention, attention_normalization=False)
+TAYLOR_DEGREES = (0, 1, 2, 3, 4)
 
 
-def _dense_reference(q, k, v, attention_normalization=False):
-    """Independent dense expression; reference callers execute this in FP64."""
+def _dense_reference(q, k, v, attention_normalization=False, attention_degree=None):
+    """Independent dense expression; reference callers execute this in FP64.
+
+    Taylor kernels use the explicit power sum, not the implementations' Horner form.
+    """
     scores = jnp.einsum("bthd,bshd->bhts", q, k) / math.sqrt(q.shape[-1])
     causal = jnp.tril(jnp.ones(scores.shape[-2:], dtype=bool))
+    if attention_degree is not None:
+        if attention_normalization:
+            raise ValueError("The dense reference covers unnormalized Taylor kernels only")
+        kernel = sum(scores ** n / math.factorial(n) for n in range(attention_degree + 1))
+        return jnp.einsum("bhts,bshd->bthd", jnp.where(causal, kernel, 0.0), v)
     if attention_normalization:
         scores -= jnp.max(jnp.where(causal, scores, -jnp.inf), axis=-1, keepdims=True)
     weights = jnp.where(causal, jnp.exp(scores), 0.0)
@@ -187,7 +196,7 @@ def test_unnormalized_mode_cannot_silently_dispatch_to_softmax(backend):
 def test_model_fused_dispatch_retains_real_output_when_collecting_diagnostics(monkeypatch, normalized):
     from flax import nnx
     from scaffolds.transformer.models.components import attention as attention_module
-    from scaffolds.transformer.attention.backends import fused_exponential as fused_module
+    from scaffolds.transformer.attention.backends import fused_unnormalized as fused_module
     from scaffolds.transformer.attention.backends import reference as reference_module
     from scaffolds.transformer.attention import softmax as softmax_module
 
@@ -216,10 +225,116 @@ def test_model_fused_dispatch_retains_real_output_when_collecting_diagnostics(mo
     plain = layer(x)
     output, observed_diagnostics = layer(x, return_diagnostics=True)
     assert [kind for kind, _ in calls] == ["fast", "fast", "diagnostics"]
-    expected_fast_kwargs = {"backend": "cudnn"} if normalized else {}
+    expected_fast_kwargs = {"backend": "cudnn"} if normalized else {"attention_degree": None}
     assert calls[0][1] == calls[1][1] == expected_fast_kwargs
     assert calls[2][1] == ({"return_diagnostics": True} if normalized else
-                           {"attention_normalization": False, "return_diagnostics": True})
+                           {"attention_degree": None, "attention_normalization": False,
+                            "return_diagnostics": True})
     np.testing.assert_array_equal(plain, expected)
     np.testing.assert_array_equal(output, expected)
     assert float(observed_diagnostics["weight_sum_min"]) == 7.0
+
+
+def _broad_inputs(time=13):
+    # Scores with standard deviation near 2 make odd truncations change sign.
+    q, k, v = _inputs(time=time)
+    return 2 * q, 2 * k, v
+
+
+@pytest.mark.parametrize("degree", TAYLOR_DEGREES)
+def test_unnormalized_taylor_outputs_and_qkv_gradients_match_dense_fp64(degree):
+    q, k, v = _broad_inputs()
+    cotangent = jnp.asarray(np.random.default_rng(9).normal(size=v.shape), dtype=v.dtype)
+
+    def blocked(q, k, v):
+        return blocked_dot_product_attention(q, k, v, attention_degree=degree, query_block_size=4)
+
+    def dense(q, k, v):
+        return _dense_reference(q, k, v, attention_degree=degree)
+
+    with jax.default_matmul_precision("highest"):
+        actual = blocked(q, k, v)
+        actual_grads = jax.grad(lambda q, k, v: jnp.sum(blocked(q, k, v) * cotangent), argnums=(0, 1, 2))(q, k, v)
+        with jax.enable_x64():
+            q64, k64, v64 = (x.astype(jnp.float64) for x in (q, k, v))
+            expected = dense(q64, k64, v64)
+            expected_grads = jax.grad(
+                lambda q, k, v: jnp.sum(dense(q, k, v) * cotangent.astype(jnp.float64)), argnums=(0, 1, 2),
+            )(q64, k64, v64)
+    scale = float(np.max(np.abs(expected)))
+    np.testing.assert_allclose(actual, expected, atol=3e-6 * scale, rtol=3e-5)
+    for observed, reference in zip(actual_grads, expected_grads, strict=True):
+        grad_scale = float(np.max(np.abs(reference)))
+        np.testing.assert_allclose(observed, reference, atol=8e-6 * max(grad_scale, 1.0), rtol=5e-5)
+    if degree == 0:
+        np.testing.assert_array_equal(actual_grads[0], jnp.zeros_like(q))
+        np.testing.assert_array_equal(actual_grads[1], jnp.zeros_like(k))
+
+
+@pytest.mark.parametrize("degree", TAYLOR_DEGREES)
+def test_unnormalized_taylor_zero_scores_are_prefix_sum(degree):
+    q, k, v = _inputs()
+    actual, diag = blocked_dot_product_attention(
+        jnp.zeros_like(q), k, v, attention_degree=degree, query_block_size=4, return_diagnostics=True,
+    )
+    np.testing.assert_allclose(actual, jnp.cumsum(v, axis=1), atol=2e-6, rtol=2e-6)
+    assert float(diag["kernel_min"]) == float(diag["kernel_max"]) == 1
+    assert float(diag["weight_sum_min"]) == 1
+    assert float(diag["weight_sum_max"]) == v.shape[1]
+
+
+@pytest.mark.parametrize("degree,expected", [(1, [-6.0, 4.0]), (3, [-6.0, -6.0 + 5.0 * 8.0 / 3.0])])
+def test_odd_unnormalized_taylor_keeps_signed_weights_and_zero_sums(degree, expected):
+    # p_1(-3) = p_3(-3) = -2; with degree one, the second row's weights sum to zero.
+    q = jnp.ones((1, 2, 1, 1))
+    k = jnp.array([-3.0, 1.0]).reshape(q.shape)
+    v = jnp.array([3.0, 5.0]).reshape(q.shape)
+    output, diag = blocked_dot_product_attention(
+        q, k, v, attention_degree=degree, query_block_size=1, return_diagnostics=True,
+    )
+    np.testing.assert_allclose(output.reshape(-1), expected, rtol=1e-6)
+    assert float(diag["kernel_min"]) == -2
+    assert int(diag["negative_kernel_count"]) == 2
+    assert all(int(value) == 0 for name, value in diag.items() if name.startswith("invalid_"))
+    if degree == 1:
+        assert float(diag["min_abs_weight_sum"]) == 0
+        assert bool(jnp.isinf(diag["cancellation_ratio_max"]))
+    assert "min_abs_normalizer" not in diag
+
+
+@pytest.mark.parametrize("degree", (2, 4))
+def test_even_unnormalized_taylor_kernels_stay_positive(degree):
+    q, k, v = _broad_inputs(time=QUERY_BLOCK_SIZE + 3)
+    _, diag = blocked_dot_product_attention(q, k, v, attention_degree=degree, return_diagnostics=True)
+    assert float(diag["score_min"]) < -2
+    assert float(diag["kernel_min"]) > 0
+    assert all(int(value) == 0 for name, value in diag.items() if name.endswith("_count"))
+
+
+def test_unnormalized_taylor_score_offset_does_not_cancel():
+    q = jnp.ones((1, 5, 1, 1))
+    k = jnp.linspace(-1, 1, 5).reshape(q.shape)
+    v = jnp.arange(1, 6, dtype=jnp.float32).reshape(q.shape)
+    original = blocked_dot_product_attention(q, k, v, attention_degree=2)
+    shifted = blocked_dot_product_attention(q, k + 2, v, attention_degree=2)
+    expected = _dense_reference(q, k + 2, v, attention_degree=2)
+    np.testing.assert_allclose(shifted, expected, rtol=2e-6)
+    assert not np.allclose(shifted, original)
+
+
+def test_mha_initialization_is_independent_of_the_unnormalized_kernel():
+    settings = dict(hidden_size=16, num_heads=2, num_kv_heads=2, qk_head_dim=4, value_head_dim=6)
+    layers = [MultiHeadAttention(**settings, attention_normalization=False, attention_degree=degree,
+                                 rngs=nnx.Rngs(19)) for degree in (None, *TAYLOR_DEGREES)]
+    reference, reference_tree = jax.tree.flatten(nnx.state(layers[0], nnx.Param))
+    for layer in layers[1:]:
+        leaves, tree = jax.tree.flatten(nnx.state(layer, nnx.Param))
+        assert tree == reference_tree
+        for actual, expected in zip(leaves, reference, strict=True):
+            np.testing.assert_array_equal(actual, expected)
+
+
+def test_unnormalized_attention_rejects_learned_quadratic_kernels():
+    with pytest.raises(ValueError, match="fixed exp/Taylor kernel"):
+        MultiHeadAttention(16, 2, 2, 4, 4, attention_degree=2, quadratic_mode="positive",
+                           attention_normalization=False, rngs=nnx.Rngs(19))

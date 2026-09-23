@@ -1,0 +1,14 @@
+{
+  "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+  "config_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/unnormalized_taylor_attention/results/unnormalized_taylor_attention/configs/200m-m002-seed0.yaml",
+  "config_sha256": "9abff2eca2ab0a1a7eaaa3d4f7c73ecf7842ee964b3542911fbf953e4aab01da",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "slurm_job_id": "201012",
+  "slurm_restart_count": "0",
+  "slurm_partition": "sweep",
+  "gpu_count": 4,
+  "gpu_type": "H100",
+  "started_utc": "2026-09-23T02:34:05.050939+00:00",
+  "allocation": "JobId=201012 JobName=unnorm-taylor-m2 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20068 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:02 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-09-22T22:34:02 EligibleTime=2026-09-22T22:34:02 AccrueTime=2026-09-22T22:34:02 StartTime=2026-09-22T22:34:03 EndTime=2026-09-24T22:34:03 Deadline=N/A PreemptEligibleTime=2026-09-22T22:34:03 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-09-22T22:34:03 Scheduler=Main Partition=sweep AllocNode:Sid=kennel:3205583 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=mastiff BatchHost=mastiff NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/unnormalized_taylor_attention/scaffolds/transformer/studies/unnormalized_attention/launch_kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/unnormalized_taylor_attention StdErr=/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m002-seed0/slurm-201012.out StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m002-seed0/slurm-201012.out Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32"
+}

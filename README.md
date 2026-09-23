@@ -12,6 +12,7 @@ Reusable code is organized by capability under `scaffolds/`. Each retained exper
 | Key dimension × Taylor degree | [Joint sweep and hardware validation](results/key_dimension_taylor/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Shared scaffold validation | [Correctness and sampled performance](results/shared_transformer_validation/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Unnormalized attention | [Unnormalized exponential attention at 200M and 250M](results/unnormalized_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
+| Unnormalized Taylor attention | [Degrees 1–4 without row normalization](results/unnormalized_taylor_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 
 ```text
 scaffolds/<capability>/                 reusable code, tests, and environment definition

@@ -1,0 +1,20 @@
+{
+  "device_kinds": [
+    "NVIDIA H100 PCIe",
+    "NVIDIA H100 PCIe",
+    "NVIDIA H100 PCIe",
+    "NVIDIA H100 PCIe"
+  ],
+  "devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "versions": {
+    "flax": "0.12.7",
+    "jax": "0.10.0",
+    "optax": "0.2.8",
+    "orbax-checkpoint": "0.11.40"
+  }
+}
