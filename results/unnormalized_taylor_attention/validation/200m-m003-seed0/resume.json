@@ -1,0 +1,45 @@
+{
+  "completed_utc": "2026-09-23T02:47:25.833758+00:00",
+  "identity": "9b386ff08e792b00722d1702462056a61f0c5144a127c6e79de1a6974c33f094",
+  "outcome": {
+    "attention_backend": "fused",
+    "attention_backend_requested": "auto",
+    "attention_backend_resume_requested": "auto",
+    "attention_degree": 3,
+    "attention_formula": "causal_p_3(QK^T / sqrt(d_k)) V, p_m(x) = sum_(n<=m) x^n / n!",
+    "attention_implementation": "pallas_triton",
+    "attention_kernel": "taylor_unnormalized",
+    "attention_normalization": false,
+    "attention_output_normalization": false,
+    "attention_score_scale": "1/sqrt(d_k)",
+    "attention_signed": true,
+    "best_checkpoint_after": 20,
+    "data_parallel_devices": 4,
+    "data_start_sequence": 5120,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 21,
+    "final_step": 21,
+    "key_block_size": 64,
+    "latest_checkpoint_after": 21,
+    "latest_checkpoint_before": 20,
+    "m0_qk_parameter_note": null,
+    "query_block_size": 64,
+    "restored": true,
+    "restored_step": 20,
+    "start_step": 20,
+    "timing": {
+      "checkpoint_seconds": [],
+      "evaluation_seconds": [],
+      "runtime_seconds": 129.43271175800328,
+      "train_step_seconds": [
+        11.064856835000683
+      ]
+    },
+    "training_tokens": 11010048
+  },
+  "slurm_job_id": "201013",
+  "slurm_restart_count": "0",
+  "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+  "status": "passed"
+}

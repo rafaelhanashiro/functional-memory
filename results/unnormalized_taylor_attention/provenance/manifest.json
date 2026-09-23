@@ -2,7 +2,7 @@
   "format": "functional-memory-experiment-setup",
   "version": 2,
   "experiment": "unnormalized_taylor_attention",
-  "status": "prepared",
+  "status": "completed",
   "home_cluster": "kennel",
   "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
   "documentation": "results/unnormalized_taylor_attention/README.md",
@@ -58,7 +58,9 @@
     "unnormalized_exponential": {
       "run": "results/unnormalized_attention/runs/200m-exp-seed0-kennel",
       "source_commit": "3b0d311655b033545d0c211467fd600376e0fdeb",
-      "status": "running on Kennel as Slurm job 201002 when this sweep was prepared"
+      "terminal_step": 19074,
+      "validation_nll": 2.8598174708230153,
+      "validation_perplexity": 17.45833998930364
     }
   },
   "shared_dependency_lock": {
@@ -73,16 +75,36 @@
       "seed": 0,
       "home_cluster": "kennel",
       "start": "fresh initialization",
-      "status": "prepared",
-      "hardware_plan": "4x NVIDIA B300 or 4x H100 in the Kennel sweep partition; A100/A6000 nodes excluded; resolved type recorded per attempt",
+      "status": "completed",
       "config": {
         "path": "results/unnormalized_taylor_attention/configs/200m-m001-seed0.yaml",
         "sha256": "12796c85f26d22039f0a7dffc6dc47085d8e0f8b9fc07065f9e407fd0914504b"
       },
-      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_taylor_attention/runs/200m-m001-seed0",
-      "checkpoint_directory": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_taylor_attention/200m-m001-seed0",
-      "log_pattern": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m001-seed0/slurm-<job_id>.out",
-      "selected_checkpoint": null
+      "selected_checkpoint": {
+        "step": 19074,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_taylor_attention/200m-m001-seed0/19074",
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "verified_present_utc": "2026-09-23T14:39:00Z"
+      },
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "slurm_job_id": "201011",
+      "hardware": "4x NVIDIA B300 akita, sweep partition",
+      "training_updates": 19074,
+      "prediction_tokens": 10000269312,
+      "terminal_validation_nll": 3.033512370926993,
+      "terminal_validation_perplexity": 20.770056765297024,
+      "best_validation": {
+        "selection_rule": "lowest_validation_nll",
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 3.033512370926993,
+        "validation_perplexity": 20.770056765297024
+      },
+      "completed_utc": "2026-09-23T09:05:25.820752+00:00",
+      "run_record": "results/unnormalized_taylor_attention/runs/200m-m001-seed0",
+      "acceptance_evidence": "results/unnormalized_taylor_attention/validation/200m-m001-seed0",
+      "log": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m001-seed0/slurm-201011.out",
+      "attempts": "Slurm attempt 0 on H100 node dogo was preempted during CPU acceptance before any training update; attempt 1 requeued onto B300 node akita, passed acceptance, and trained from scratch."
     },
     {
       "name": "200m-m002-seed0",
@@ -90,16 +112,35 @@
       "seed": 0,
       "home_cluster": "kennel",
       "start": "fresh initialization",
-      "status": "prepared",
-      "hardware_plan": "4x NVIDIA B300 or 4x H100 in the Kennel sweep partition; A100/A6000 nodes excluded; resolved type recorded per attempt",
+      "status": "completed",
       "config": {
         "path": "results/unnormalized_taylor_attention/configs/200m-m002-seed0.yaml",
         "sha256": "9abff2eca2ab0a1a7eaaa3d4f7c73ecf7842ee964b3542911fbf953e4aab01da"
       },
-      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_taylor_attention/runs/200m-m002-seed0",
-      "checkpoint_directory": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_taylor_attention/200m-m002-seed0",
-      "log_pattern": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m002-seed0/slurm-<job_id>.out",
-      "selected_checkpoint": null
+      "selected_checkpoint": {
+        "step": 19074,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_taylor_attention/200m-m002-seed0/19074",
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "verified_present_utc": "2026-09-23T14:39:00Z"
+      },
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "slurm_job_id": "201012",
+      "hardware": "4x NVIDIA H100 mastiff, sweep partition",
+      "training_updates": 19074,
+      "prediction_tokens": 10000269312,
+      "terminal_validation_nll": 3.1572411145482744,
+      "terminal_validation_perplexity": 23.50565697562782,
+      "best_validation": {
+        "selection_rule": "lowest_validation_nll",
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 3.1572411145482744,
+        "validation_perplexity": 23.50565697562782
+      },
+      "completed_utc": "2026-09-23T07:44:09.213810+00:00",
+      "run_record": "results/unnormalized_taylor_attention/runs/200m-m002-seed0",
+      "acceptance_evidence": "results/unnormalized_taylor_attention/validation/200m-m002-seed0",
+      "log": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m002-seed0/slurm-201012.out"
     },
     {
       "name": "200m-m003-seed0",
@@ -107,16 +148,35 @@
       "seed": 0,
       "home_cluster": "kennel",
       "start": "fresh initialization",
-      "status": "prepared",
-      "hardware_plan": "4x NVIDIA B300 or 4x H100 in the Kennel sweep partition; A100/A6000 nodes excluded; resolved type recorded per attempt",
+      "status": "completed",
       "config": {
         "path": "results/unnormalized_taylor_attention/configs/200m-m003-seed0.yaml",
         "sha256": "f50659751a138e352caefc3738abcf6843edcb5e9ed3e6fff5bf08e2876a0853"
       },
-      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_taylor_attention/runs/200m-m003-seed0",
-      "checkpoint_directory": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_taylor_attention/200m-m003-seed0",
-      "log_pattern": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m003-seed0/slurm-<job_id>.out",
-      "selected_checkpoint": null
+      "selected_checkpoint": {
+        "step": 19074,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_taylor_attention/200m-m003-seed0/19074",
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "verified_present_utc": "2026-09-23T14:39:00Z"
+      },
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "slurm_job_id": "201013",
+      "hardware": "4x NVIDIA H100 mastiff, sweep partition",
+      "training_updates": 19074,
+      "prediction_tokens": 10000269312,
+      "terminal_validation_nll": 3.0076456921441213,
+      "terminal_validation_perplexity": 20.239693320274547,
+      "best_validation": {
+        "selection_rule": "lowest_validation_nll",
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 3.0076456921441213,
+        "validation_perplexity": 20.239693320274547
+      },
+      "completed_utc": "2026-09-23T07:34:14.407517+00:00",
+      "run_record": "results/unnormalized_taylor_attention/runs/200m-m003-seed0",
+      "acceptance_evidence": "results/unnormalized_taylor_attention/validation/200m-m003-seed0",
+      "log": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m003-seed0/slurm-201013.out"
     },
     {
       "name": "200m-m004-seed0",
@@ -124,22 +184,39 @@
       "seed": 0,
       "home_cluster": "kennel",
       "start": "fresh initialization",
-      "status": "prepared",
-      "hardware_plan": "4x NVIDIA B300 or 4x H100 in the Kennel sweep partition; A100/A6000 nodes excluded; resolved type recorded per attempt",
+      "status": "completed",
       "config": {
         "path": "results/unnormalized_taylor_attention/configs/200m-m004-seed0.yaml",
         "sha256": "ea46fe300c08a9cabdc5e0d11b99a076178e52c40c9ae16d1f44b9378101dac4"
       },
-      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/unnormalized_taylor_attention/runs/200m-m004-seed0",
-      "checkpoint_directory": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_taylor_attention/200m-m004-seed0",
-      "log_pattern": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m004-seed0/slurm-<job_id>.out",
-      "selected_checkpoint": null
+      "selected_checkpoint": {
+        "step": 19074,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_taylor_attention/200m-m004-seed0/19074",
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "verified_present_utc": "2026-09-23T14:39:00Z"
+      },
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "slurm_job_id": "201014",
+      "hardware": "4x NVIDIA B300 akita, sweep partition",
+      "training_updates": 19074,
+      "prediction_tokens": 10000269312,
+      "terminal_validation_nll": 3.0662785853658403,
+      "terminal_validation_perplexity": 21.46188530439321,
+      "best_validation": {
+        "selection_rule": "lowest_validation_nll",
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 3.0662785853658403,
+        "validation_perplexity": 21.46188530439321
+      },
+      "completed_utc": "2026-09-23T06:49:43.111999+00:00",
+      "run_record": "results/unnormalized_taylor_attention/runs/200m-m004-seed0",
+      "acceptance_evidence": "results/unnormalized_taylor_attention/validation/200m-m004-seed0",
+      "log": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m004-seed0/slurm-201014.out"
     }
   ],
   "execution_records": {
-    "submission_directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/unnormalized_taylor_attention/submissions",
-    "qualification_directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/unnormalized_taylor_attention/preflight",
-    "note": "The launcher and shared trainer record the frozen source commit and resolved backend/runtime. Preserve the execution checkout and environment while jobs may run or requeue."
+    "status": "Execution checkout and cache removed after completion; acceptance and submission records are copied under validation/. Reproduce by checking out source_commit 972d223d89c2542028dec761569c25dbd7379b36."
   },
   "data_manifests": {
     "train": {
@@ -154,5 +231,9 @@
   "local_data_validation": {
     "path": "results/unnormalized_attention/validation/kennel-data.json",
     "sha256": "41967ee1841836f2288c00dd9b67ab866ecd19dd7fe983b639b80bf5cd791e3f"
+  },
+  "summary": {
+    "path": "results/unnormalized_taylor_attention/summary.csv",
+    "sha256": "06387bd21af934b67770c326399c89ec9e713b109699326f32ad34c077eb0d61"
   }
 }
