@@ -47,6 +47,11 @@ Explicit environment settings can override these choices for isolated diagnostic
 The shared runtime owns placement and replica verification; model and optimizer
 code do not select hardware policy.
 
+Node CUDA toolkits differ: on 2026-09-24 `dogo` had CUDA 12.6 in `/usr/local/cuda`
+and `akita` CUDA 13.0. jaxlib assembles Triton custom-call PTX with that `ptxas`
+unless `CUDA_HOME` names another toolkit; the GLA launcher points it at the locked
+environment's `nvidia/cuda_nvcc` (CUDA 12.9), since 12.6 rejects Triton 3.6's PTX.
+
 The retained joint-sweep checks cover all 20 B300 and host-staged A6000
 configurations and 16 new H100 configurations. On `samoyed`, direct peer transfers
 corrupted replicas and batches; the host-staged A100 pilot passed training,

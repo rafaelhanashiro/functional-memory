@@ -15,6 +15,10 @@ GPU_AVAILABLE = importlib.util.find_spec("triton") is not None and any(
 pytestmark = [pytest.mark.gpu, pytest.mark.skipif(not GPU_AVAILABLE, reason="Requires GPU and Triton")]
 
 
+def rms(value):
+    return float(jnp.sqrt(jnp.mean(jnp.square(value.astype(jnp.float32)))))
+
+
 def relative_rms(actual, expected):
     actual, expected = actual.astype(jnp.float32), expected.astype(jnp.float32)
     return float(jnp.sqrt(jnp.mean(jnp.square(actual - expected))) /
@@ -55,9 +59,15 @@ def test_fused_strong_and_zero_decay_preserve_finite_outputs_and_gradients(log_d
         assert relative_rms(observed, reference) < 1e-3
     actual_grad = jax.jit(jax.grad(partial(recurrence_loss, chunked_gla), argnums=(0, 1, 2, 3)))(*args)
     expected_grad = jax.jit(jax.grad(partial(recurrence_loss, sequential_gla), argnums=(0, 1, 2, 3)))(*args)
-    for observed, reference in zip(actual_grad, expected_grad, strict=True):
+    for observed, reference in zip(actual_grad[:3], expected_grad[:3], strict=True):
         assert bool(jnp.all(jnp.isfinite(observed)))
         assert relative_rms(observed, reference) < 5e-3
+    # Strong decay drives the exact log-decay gradient toward zero (about 1e-51 at
+    # log_alpha=-100, which is 0 in FP32), so compare its error with the input-gradient scale.
+    observed, reference = actual_grad[3], expected_grad[3]
+    assert bool(jnp.all(jnp.isfinite(observed)))
+    scale = max(rms(gradient) for gradient in (reference, *expected_grad[:2]))
+    assert rms(observed.astype(jnp.float32) - reference.astype(jnp.float32)) < 5e-3 * scale
 
 
 def test_fused_rejects_partial_outer_chunk():

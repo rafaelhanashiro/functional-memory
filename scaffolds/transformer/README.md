@@ -102,6 +102,12 @@ fail. Launchers configure bridge caching and XLA options separately from recipes
 Training resolves the backend from the actual prediction length. Direct model
 construction with `auto` resolves from `max_seq_len`; use `blocked` for inference
 at arbitrary lengths that do not satisfy the fused kernel's chunk constraint.
+The bridge hands Triton's PTX (ISA 8.7 with Triton 3.6) to jaxlib, which assembles
+it with the first `ptxas` among its CUDA roots; that is a node's `/usr/local/cuda`
+unless `CUDA_HOME` names another toolkit, so launchers set `CUDA_HOME` to the
+environment's `nvidia/cuda_nvcc`. Operands are converted to FP32 before launch:
+with BF16 operands upcast inside the kernel, Triton 3.6 on B300 computed the FP32
+products at TF32-level precision. The fused kernel passes its GPU tests on H100 and B300.
 
 The OFM mixed-precision behavior is retained: RoPE promotes Q/K to FP32 and the
 fused kernel returns reads in Q's dtype, while the reference module casts its

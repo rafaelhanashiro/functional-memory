@@ -1,11 +1,12 @@
-# Gated linear attention key-width sweep
+# Gated linear attention across key width
 
-This planned experiment measures terminal held-out perplexity for a gated linear
-attention (GLA) state-space baseline at **dK={8,16,32,64,128}**, matching the five
-rows of the [Taylor heatmap](../key_dimension_taylor/README.md). The implementation
-and CPU checks are complete; no production runs or GPU qualifications have been
-completed. The execution source revision remains pending
-until the implementation is tested, committed, and frozen.
+How does a gated linear attention (GLA) state-space baseline scale with key width,
+compared with softmax and truncated-Taylor attention on the same 200M backbone?
+This sweep trains GLA at **d_K ∈ {8, 16, 32, 64, 128}**, matching the rows of the
+[dK × Taylor-degree record](../key_dimension_taylor/README.md), and measures
+terminal held-out perplexity after 10.0B training tokens.
+
+**Status:** planned; acceptance and training run on Kennel from a frozen checkout.
 
 ## Scientific comparison
 
@@ -68,126 +69,88 @@ after accumulation/device averaging. No learning-rate or gate sweep is included.
 Evaluation every 1,000 updates and at completion uses the first seven fixed
 held-out global batches: 1,792 records and 3,670,016 prediction tokens. The
 primary endpoint is exponential mean token NLL at the common terminal training
-budget. Validation-best metrics remain separate. Historical width-matched
-softmax endpoints are pinned in the manifest, including dK64 PPL
-`14.689767074685026`; the different polynomial-study softmax result is not the
-reference. Taylor results are linked by their canonical manifest checksum.
+budget. Validation-best metrics remain separate. Width-matched softmax and
+row-normalized Taylor (m=2, 4, 8, 16) endpoints from the
+[dK × Taylor record](../key_dimension_taylor/README.md) are pinned by checksum in
+the manifest; the dK=64 softmax reference is `200m-dk064-seed0` (PPL 14.690).
 One seed cannot establish statistical significance.
 
 ## Home cluster and artifacts
 
-The proposed home cluster is **Kennel**, with durable artifact root
-`/data/cl/u/rafah/home/projects/functional-memory`. Dataset manifests are under
-`/data/cl/u/rafah/home/datasets/fineweb_12b`. These are planned locations, not
-claims of verified current access or existing GLA artifacts. The launcher uses
-four H100s on dogo by default; B300s on akita require their own qualification.
-Consult [CLUSTERS.md](../../CLUSTERS.md) and live scheduler limits before launch.
+- **Home cluster:** Kennel. **Artifact root:** `/data/cl/u/rafah/home/projects/functional-memory`.
+- **Data:** packed FineWeb-Edu at `/data/cl/u/rafah/home/datasets/fineweb_12b`; the train
+  and eval manifests match the dK × Taylor corpus checksums exactly.
+- **Hardware:** four B300s (`akita`) or four H100s (`dogo`, `mastiff`) per run, whichever
+  are free in the low-priority `sweep` partition; acceptance is keyed to the allocated type.
+- **Record:** recipes in [`configs/`](configs/), metrics and completion in `runs/<run>/`,
+  and the authoritative [provenance manifest](provenance/manifest.json).
+- **Artifacts outside Git:** the validation-best checkpoint per run under
+  `checkpoints/gla_key_dimension/<run>/<step>/` and one successful log per run under
+  `logs/gla_key_dimension/<run>/slurm-<job_id>.out`, both at the artifact root.
 
-| Artifact | Location relative to the artifact root |
-| --- | --- |
-| Single scientific record | `results/gla_key_dimension/README.md` |
-| Exact recipes | `results/gla_key_dimension/configs/<run>.yaml` |
-| Authoritative provenance | `results/gla_key_dimension/provenance/manifest.json` |
-| Submission evidence | `results/gla_key_dimension/provenance/execution/` |
-| Per-run metrics and metadata | `results/gla_key_dimension/runs/<run>/` |
-| GPU acceptance evidence | `results/gla_key_dimension/validation/<identity>/<run>/` |
-| Checkpoints | `checkpoints/gla_key_dimension/<run>/<step>/` |
-| Matching scheduler logs | `results/logs/gla_key_dimension/<run>/slurm-<job>.out` |
+## Implementation and runtime
 
-The execution worktree and dedicated environment remain frozen while jobs can
-run or requeue. Runtime transfer policy is selected by the shared Kennel launcher
-helper; the model never chooses cluster policy. Recipes request `auto`; the
-experiment's qualification and production adapter explicitly require `fused` and
-record this resolution in run metadata. The launcher disables XLA command buffers
-for the upstream custom-call bridge and records this setting with qualification.
+The model is the shared Transformer with `model.attention_mechanism: gla`
+(`scaffolds/transformer/attention/gla.py`). Every recipe pins
+`attention_backend: fused`, the chunked Triton kernels in
+`attention/backends/chunked_gla_triton.py`, called through the vendored ejkernel
+custom-call bridge; the blocked associative reference serves CPU tests and
+diagnostics. The kernels convert Q, K, V, and the output cotangent to FP32 before
+launch; they compute in FP32 regardless, and with BF16 operands upcast inside the
+kernel Triton 3.6 on B300 ran the FP32 matrix products at TF32-level precision
+(4e-4 relative output error in the production mixed-dtype case, against 1e-7 on
+H100). With FP32 operands both GPU types match an FP64 recurrence to about 1e-7.
+Two runtime settings are set by the study's `run_allocated.sh` and recorded with
+acceptance, not in the recipes:
 
-## Prepare, qualify, and launch
+- `CUDA_HOME` names the environment's locked CUDA 12.9 toolkit. jaxlib assembles
+  the bridge's Triton PTX with the first `ptxas` among its CUDA roots, which is
+  otherwise a node's `/usr/local/cuda`; `dogo`'s CUDA 12.6 cannot assemble
+  Triton 3.6's PTX 8.7.
+- `--xla_gpu_enable_command_buffer=` keeps the custom call outside XLA command buffers.
 
-CPU development evidence is retained in [validation/cpu.json](validation/cpu.json)
-and [validation/ofm_parity.json](validation/ofm_parity.json). The final focused
-suite passed 50 tests with two CPU devices, including the sequential recurrence
-oracle, all GLA parameter gradients, BF16/rematerialization, checkpoint resume,
-bridge tracing, shared diagnostics, and launch guards. Seven frozen-source tests
-also passed for historical softmax and unnormalized attention. The earlier broad
-shared CPU suite passed 251 tests (12 skipped). These checks do not qualify a GPU
-kernel or production model allocation.
+Acceptance runs inside each production allocation and is keyed to the source,
+recipe, dependency lock, data manifests, GPU type and count, and runtime settings:
+GLA CPU tests (recurrence oracle, all gradients, bridge tracing, configuration, and
+recipe controls); fused-kernel GPU tests against the sequential recurrence for
+every production width, extreme decays, and mixed FP32/BF16 operands; an
+initialization hash; a 20-update full-recipe pilot with validation and valid
+diagnostics on the fused backend; and an exact fresh-process resume at update 21
+(state, next batch, and RNG hashes). Matching passed stages are reused on requeue;
+training then resumes its latest checkpoint.
 
-The optional source-extraction audit compares initialized parameters, outputs,
-and all parameter gradients exactly with the recorded OFM Git revision in FP32
-and BF16, each with and without RoPE. It reads OFM without modifying it:
+## Reproduction
 
-```bash
-JAX_PLATFORMS=cpu .envs/gla/bin/python \
-  -m scaffolds.transformer.studies.gla_key_dimension.verify_ofm \
-  --ofm-root /path/to/ofm
-```
-
-Develop in a dedicated `git worktree add` checkout. Do not copy `overleaf/` into
-it. After reviewing and committing the implementation, run from that frozen
-checkout on Kennel. The artifact root must not be inside the execution checkout,
-and its GLA experiment manifest must not already exist: freezing refuses to
-overwrite another experiment record. Keep the environment fixed after installation.
+From a frozen checkout of the recorded source commit, with the shared environment
+synchronized (`uv sync --project scaffolds/transformer --locked --extra cuda` into
+`$PROJECT_ROOT/.envs/shared_transformer`):
 
 ```bash
-export UV_PROJECT_ENVIRONMENT="$PWD/.envs/gla"
-export UV_CACHE_DIR="$PWD/.cache/uv"
-uv sync --project scaffolds/transformer --locked --extra cuda
-export GLA_PYTHON="$UV_PROJECT_ENVIRONMENT/bin/python"
-export GLA_ARTIFACT_ROOT=/data/cl/u/rafah/home/projects/functional-memory
-export GLA_MANIFEST="$GLA_ARTIFACT_ROOT/results/gla_key_dimension/provenance/manifest.json"
-
-JAX_PLATFORMS=cpu "$GLA_PYTHON" -m pytest \
-  -c scaffolds/transformer/pyproject.toml \
-  scaffolds/transformer/tests scaffolds/transformer/studies/gla_key_dimension/tests \
-  --import-mode=importlib -m 'not gpu'
-
-"$GLA_PYTHON" -m scaffolds.transformer.studies.gla_key_dimension.sweep freeze \
-  --execution-root "$PWD" --artifact-root "$GLA_ARTIFACT_ROOT"
-
-# Inspect scheduler commands, then submit qualification for all five widths.
-"$GLA_PYTHON" -m scaffolds.transformer.studies.gla_key_dimension.sweep submit \
-  --manifest "$GLA_MANIFEST" --mode preflight --dry-run
-"$GLA_PYTHON" -m scaffolds.transformer.studies.gla_key_dimension.sweep submit \
-  --manifest "$GLA_MANIFEST" --mode preflight
-
-# Run only after the five qualification jobs have passed.
-"$GLA_PYTHON" -m scaffolds.transformer.studies.gla_key_dimension.sweep submit \
-  --manifest "$GLA_MANIFEST" --mode train --dry-run
-"$GLA_PYTHON" -m scaffolds.transformer.studies.gla_key_dimension.sweep submit \
-  --manifest "$GLA_MANIFEST" --mode train
+PROJECT_ROOT=/data/cl/u/rafah/home/projects/functional-memory
+EXECUTION_ROOT="$PROJECT_ROOT/worktrees/gla_key_dimension-<commit>"
+git -C "$PROJECT_ROOT" worktree add --detach "$EXECUTION_ROOT" <source-commit>
+SOURCE_COMMIT="$(git -C "$EXECUTION_ROOT" rev-parse HEAD)"
+for DK in 008 016 032 064 128; do
+  RUN="200m-dk${DK}-gla-seed0"
+  LOG_DIR="$PROJECT_ROOT/logs/gla_key_dimension/$RUN"
+  mkdir -p "$LOG_DIR"
+  sbatch --job-name="gla-dk${DK}" --partition=sweep --gres=gpu:4 \
+    --exclude=collie,samoyed,doodle,terrier --output="$LOG_DIR/slurm-%j.out" \
+    "$EXECUTION_ROOT/scaffolds/transformer/studies/gla_key_dimension/launch_kennel.sbatch" \
+    "$EXECUTION_ROOT" "$PROJECT_ROOT" "$SOURCE_COMMIT" \
+    "$EXECUTION_ROOT/results/gla_key_dimension/configs/$RUN.yaml" 4 auto
+done
 ```
 
-Add `--run-name 200m-dk008-gla-seed0` to operate on one coordinate. Add
-`--node akita --gpu b300` to choose B300 allocations before qualification.
-One frozen manifest supports one qualified runtime per coordinate. Changing
-hardware after qualification requires an explicitly prepared new frozen identity;
-existing H100 evidence cannot authorize B300 execution or be overwritten.
-Source, recipes, data manifests, dependency lock,
-hardware, transfer policy, and kernel environment are checked before training.
-Actual submission records and run metadata carry job IDs and runtime settings;
-none are populated by the planning record.
+CPU checks from any checkout:
 
-Each qualification runs GLA GPU output/gradient tests, 32 updates of the full
-production model/context/microbatch, one global validation batch, a checkpoint,
-and a fresh-process restore to step 33. The LR horizon remains 19,074; only pilot
-evaluation/checkpoint cadence and output paths differ. Independent state, data
-cursor, and RNG hashes must match across restore. The pilot does not estimate
-final perplexity. It requires its own source/runtime acceptance even if the
-same hardware previously ran Taylor attention.
+```bash
+JAX_PLATFORMS=cpu "$PROJECT_ROOT/.envs/shared_transformer/bin/python" -m pytest \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m 'not gpu' \
+  scaffolds/transformer/tests/test_gla.py scaffolds/transformer/tests/test_gla_bridge.py \
+  scaffolds/transformer/tests/test_gla_integration.py scaffolds/transformer/studies/gla_key_dimension/tests
+```
 
-Qualification checkpoints are disposable and live under the artifact root's
-`.cache/gla_key_dimension/`; remove them after retaining the acceptance evidence.
-Qualification jobs do not requeue: failed or preempted attempts preserve their
-evidence for inspection and must be resolved before explicitly preparing a retry.
-All selected GPU tests must pass without skips. A per-run lock prevents concurrent
-production workers from writing the same metrics or checkpoints. Production resumes its latest checkpoint on
-Slurm requeue, retaining the original recipe and data cursor. Keep latest and
-validation-best checkpoints during training; after completion/review retain only
-validation best and the independent terminal metrics. Record numerical failures
-as failures with their stopping step, last valid metrics, diagnostics, and one
-matching log. Keep one successful log per retained validation and training run.
+## Findings
 
-No findings or figures exist yet. After the sweep, summarize width-matched
-terminal NLL/PPL and deltas to softmax/Taylor, retain the canonical evidence, then
-review/merge the experiment and retire its temporary worktree and branch once
-durable artifacts are safe.
+Pending.

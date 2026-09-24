@@ -704,6 +704,16 @@ def _validate_and_dimensions(
     )
 
 
+def _fp32_operands(*arrays: jax.Array) -> tuple[jax.Array, ...]:
+    """Upcast operands before launch; every kernel loads them as FP32 anyway.
+
+    With BF16 operands upcast inside the kernel, Triton 3.6 on sm_103 (B300)
+    lowers the FP32 IEEE products at TF32-level precision. The conversion is
+    exact, so the requested arithmetic is unchanged on every GPU.
+    """
+    return tuple(array.astype(jnp.float32) for array in arrays)
+
+
 def _gate_prefix(log_alpha: jax.Array, num_chunks: int, chunk_size: int) -> jax.Array:
     batch, _, heads, key_dim = log_alpha.shape
     gate_chunks = log_alpha.astype(jnp.float32).reshape(
@@ -723,6 +733,8 @@ def chunked_gla_forward_intermediates(
     dot_precision: str = "ieee",
 ) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array]:
     """Return output, final state, boundary states, and local score matrices."""
+    output_dtype = q.dtype
+    q, k, v = _fp32_operands(q, k, v)
     (
         batch,
         seq_len,
@@ -817,7 +829,7 @@ def chunked_gla_forward_intermediates(
         DOT_IEEE=dot_ieee,
     )
     return (
-        output_fp32.astype(q.dtype),
+        output_fp32.astype(output_dtype),
         boundary_states[:, -1],
         boundary_states,
         local_matrix,
@@ -862,6 +874,8 @@ def chunked_gla_backward(
     dot_precision: str = "ieee",
 ) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array]:
     """Run the explicit chunked backward for Q, K, V, and log-alpha."""
+    dtypes = q.dtype, k.dtype, v.dtype
+    q, k, v, do = _fp32_operands(q, k, v, do)
     (
         batch,
         seq_len,
@@ -1023,7 +1037,7 @@ def chunked_gla_backward(
         BV=bv,
         DOT_IEEE=dot_ieee,
     )
-    return dq_fp32.astype(q.dtype), dk_fp32.astype(k.dtype), dv_fp32.astype(v.dtype), dg
+    return dq_fp32.astype(dtypes[0]), dk_fp32.astype(dtypes[1]), dv_fp32.astype(dtypes[2]), dg
 
 
 def chunked_gla_forward_backward(
