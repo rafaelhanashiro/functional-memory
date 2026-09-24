@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=random-rank
-#SBATCH --partition=mit_preemptable
+#SBATCH --partition=standard
 #SBATCH --time=01:00:00
 #SBATCH --requeue
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
-#SBATCH --gres=gpu:l40s:1
+#SBATCH --gres=gpu:h100:1
 set -euo pipefail
 
 EXECUTION_ROOT="${1:?Expected frozen execution checkout}"
@@ -31,6 +31,8 @@ export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export MPLBACKEND=Agg
 export PYTHONUNBUFFERED=1
+# Kennel jobs use models pre-downloaded at their pinned revisions; never fetch mid-run.
+export HF_HUB_OFFLINE=1
 PYTHON="${PROJECT_ROOT}/.venv/bin/python"
 echo "condition=$CONDITION source=$EXPECTED_COMMIT job=$SLURM_JOB_ID restart=${SLURM_RESTART_COUNT:-0}"
 if [[ "$DRIVER" == compare_deltanet && "$CONDITION" == pretrained ]]; then
