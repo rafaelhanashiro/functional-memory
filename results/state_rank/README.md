@@ -36,7 +36,7 @@ uv run --frozen python -m pytest scaffolds/state_rank/tests
 
 For Slurm, synchronize the environment first and use `.venv/bin/python` with
 the same script arguments. Keep the successful combined log at
-`results/logs/<experiment>/slurm-<job_id>.out`.
+`logs/<experiment>/slurm-<job_id>.out`.
 
 Retained results live under `results/state_rank/`, with the two original
 pretrained collections under `historical/`. Relocation preserves numerical
@@ -90,7 +90,9 @@ Jobs execute from the frozen clean checkout and save scientific outputs outside
 it under `results/state_rank/random_vs_pretrained/`. A preempted condition restarts
 from its deterministic seed; complete, checksum-verified conditions are skipped.
 One successful matching log per condition is retained under
-`results/logs/state_rank/random_vs_pretrained/<condition>/slurm-<job_id>.out`.
+`results/logs/state_rank/random_vs_pretrained/<condition>/slurm-<job_id>.out` on
+ORCD; its canonical destination, `logs/state_rank/random_vs_pretrained/`, awaits a
+verified migration. New launches write to `logs/`.
 
 Each condition retains scalar rank/norm curves at every token and normalized
 spectra at prefixes 1, 2, 8, 32, 128, and 512. Metrics have axes
@@ -158,7 +160,8 @@ seed-0 conditions gate the remaining conditions.
 
 Results are written outside the checkout under
 `results/state_rank/random_vs_pretrained_deltanet/`, with one matching successful
-log per condition under `results/logs/state_rank/random_vs_pretrained_deltanet/`.
+log per condition under `results/logs/state_rank/random_vs_pretrained_deltanet/`
+on ORCD, likewise awaiting migration to `logs/`.
 The same plotting command above accepts this results directory. Rank curves,
 selected spectra, state energies, resolved configurations, and provenance are
 retained; no checkpoints, raw recurrent states, or convolution buffers are

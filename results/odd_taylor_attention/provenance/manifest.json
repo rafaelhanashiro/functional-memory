@@ -67,7 +67,7 @@
       },
       "slurm_job_id": "199648",
       "slurm_log": {
-        "path": "results/logs/polynomial_attention/200m-m002-seed0/slurm-199648.out",
+        "path": "logs/polynomial_attention/200m-m002-seed0/slurm-199648.out",
         "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6"
       },
       "execution_attempts": [
@@ -95,7 +95,7 @@
       "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
       "source_provenance": {
         "path": "results/polynomial_attention/provenance/manifest.json",
-        "sha256": "1b79a196a9242e1172f674c0539c8b4575bc2f69ebc2bdb57bad389f7671d75c"
+        "sha256": "5cb2e6aabcc5192a074455e44f6f5fb8b4844a6f4d723c19583186215b2c4573"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
@@ -136,7 +136,7 @@
       },
       "slurm_job_id": "199869",
       "slurm_log": {
-        "path": "results/logs/polynomial_attention/200m-softmax-seed0/slurm-199869.out",
+        "path": "logs/polynomial_attention/200m-softmax-seed0/slurm-199869.out",
         "sha256": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277"
       },
       "execution_attempts": [
@@ -180,7 +180,7 @@
       "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
       "source_provenance": {
         "path": "results/polynomial_attention/provenance/manifest.json",
-        "sha256": "1b79a196a9242e1172f674c0539c8b4575bc2f69ebc2bdb57bad389f7671d75c"
+        "sha256": "5cb2e6aabcc5192a074455e44f6f5fb8b4844a6f4d723c19583186215b2c4573"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
@@ -255,7 +255,7 @@
         "sha256": "1d662f284738636a85c945c556d43333859568173800d51e2e52deb2215f45e7"
       },
       "slurm_log": {
-        "path": "results/logs/odd_taylor_attention/200m-m001-seed0/slurm-200230.out",
+        "path": "logs/odd_taylor_attention/200m-m001-seed0/slurm-200230.out",
         "sha256": "7c4abfcae5ec25601b715f4a8a48b5636768d62c2066667caee10b5b36f91251"
       },
       "log_outcome": "indispensable_scientific_numerical_failure"
@@ -327,7 +327,7 @@
         "sha256": "9b4d1ec3df322cc91c2395559045d295398bb1e1e06ee1c2e1c1d84c4e97a313"
       },
       "slurm_log": {
-        "path": "results/logs/odd_taylor_attention/200m-m003-seed0/slurm-200231.out",
+        "path": "logs/odd_taylor_attention/200m-m003-seed0/slurm-200231.out",
         "sha256": "7bfdf554755e545b0302a0b9d729a087a1c8abedf86464a145d21ec63d60a20a"
       },
       "log_outcome": "indispensable_scientific_numerical_failure"
@@ -342,7 +342,7 @@
         "sha256": "fe91563f830c86f2c16156ecfd704be6e7116e7a3fecd16c3e1f20afc51e15f7"
       },
       "slurm_log": {
-        "path": "results/logs/odd_taylor_attention/preflight/slurm-200224.out",
+        "path": "logs/odd_taylor_attention/preflight/slurm-200224.out",
         "sha256": "b262d23005a3e66ba0c7f3bd40be4cb913e614bf2843359c7d897218b67f3678"
       },
       "accounting": {
@@ -357,7 +357,7 @@
       "name": "diagnostic_replay_m1",
       "status": "successful_diagnostic_of_failed_training",
       "slurm_log": {
-        "path": "results/logs/odd_taylor_attention/diagnostic/m1/slurm-200497.out",
+        "path": "logs/odd_taylor_attention/diagnostic/m1/slurm-200497.out",
         "sha256": "2ccd32ae17b5fcc797b9909650d3554f1f425cbb63605b35c9c9d1f9980b5e92"
       },
       "accounting": {
@@ -376,7 +376,7 @@
       "name": "diagnostic_replay_m3",
       "status": "successful_diagnostic_of_failed_training",
       "slurm_log": {
-        "path": "results/logs/odd_taylor_attention/diagnostic/m3/slurm-200498.out",
+        "path": "logs/odd_taylor_attention/diagnostic/m3/slurm-200498.out",
         "sha256": "d62ca955274329b2563d8e63e5b00dd245e27caf62445b9dc931d7ded16225b8"
       },
       "accounting": {
@@ -399,7 +399,7 @@
         "sha256": "05589221925b62fed5c450ceb918ee431e55076fdfdf6d86da599a0ca77f59ca"
       },
       "slurm_log": {
-        "path": "results/logs/odd_taylor_attention/development/slurm-200214.out",
+        "path": "logs/odd_taylor_attention/development/slurm-200214.out",
         "sha256": "6ba70ab50a7c16b124cbfe96052ac648f4abc8842b66a071c4111f75c8a267ba"
       },
       "accounting": {
@@ -413,27 +413,27 @@
   ],
   "retained_logs": [
     {
-      "path": "results/logs/odd_taylor_attention/200m-m001-seed0/slurm-200230.out",
+      "path": "logs/odd_taylor_attention/200m-m001-seed0/slurm-200230.out",
       "sha256": "7c4abfcae5ec25601b715f4a8a48b5636768d62c2066667caee10b5b36f91251"
     },
     {
-      "path": "results/logs/odd_taylor_attention/200m-m003-seed0/slurm-200231.out",
+      "path": "logs/odd_taylor_attention/200m-m003-seed0/slurm-200231.out",
       "sha256": "7bfdf554755e545b0302a0b9d729a087a1c8abedf86464a145d21ec63d60a20a"
     },
     {
-      "path": "results/logs/odd_taylor_attention/preflight/slurm-200224.out",
+      "path": "logs/odd_taylor_attention/preflight/slurm-200224.out",
       "sha256": "b262d23005a3e66ba0c7f3bd40be4cb913e614bf2843359c7d897218b67f3678"
     },
     {
-      "path": "results/logs/odd_taylor_attention/diagnostic/m1/slurm-200497.out",
+      "path": "logs/odd_taylor_attention/diagnostic/m1/slurm-200497.out",
       "sha256": "2ccd32ae17b5fcc797b9909650d3554f1f425cbb63605b35c9c9d1f9980b5e92"
     },
     {
-      "path": "results/logs/odd_taylor_attention/diagnostic/m3/slurm-200498.out",
+      "path": "logs/odd_taylor_attention/diagnostic/m3/slurm-200498.out",
       "sha256": "d62ca955274329b2563d8e63e5b00dd245e27caf62445b9dc931d7ded16225b8"
     },
     {
-      "path": "results/logs/odd_taylor_attention/development/slurm-200214.out",
+      "path": "logs/odd_taylor_attention/development/slurm-200214.out",
       "sha256": "6ba70ab50a7c16b124cbfe96052ac648f4abc8842b66a071c4111f75c8a267ba"
     }
   ],

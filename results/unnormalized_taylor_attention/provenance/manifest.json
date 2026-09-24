@@ -103,7 +103,7 @@
       "completed_utc": "2026-09-23T09:05:25.820752+00:00",
       "run_record": "results/unnormalized_taylor_attention/runs/200m-m001-seed0",
       "acceptance_evidence": "results/unnormalized_taylor_attention/validation/200m-m001-seed0",
-      "log": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m001-seed0/slurm-201011.out",
+      "log": "/data/cl/u/rafah/home/projects/functional-memory/logs/unnormalized_taylor_attention/200m-m001-seed0/slurm-201011.out",
       "attempts": "Slurm attempt 0 on H100 node dogo was preempted during CPU acceptance before any training update; attempt 1 requeued onto B300 node akita, passed acceptance, and trained from scratch."
     },
     {
@@ -140,7 +140,7 @@
       "completed_utc": "2026-09-23T07:44:09.213810+00:00",
       "run_record": "results/unnormalized_taylor_attention/runs/200m-m002-seed0",
       "acceptance_evidence": "results/unnormalized_taylor_attention/validation/200m-m002-seed0",
-      "log": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m002-seed0/slurm-201012.out"
+      "log": "/data/cl/u/rafah/home/projects/functional-memory/logs/unnormalized_taylor_attention/200m-m002-seed0/slurm-201012.out"
     },
     {
       "name": "200m-m003-seed0",
@@ -176,7 +176,7 @@
       "completed_utc": "2026-09-23T07:34:14.407517+00:00",
       "run_record": "results/unnormalized_taylor_attention/runs/200m-m003-seed0",
       "acceptance_evidence": "results/unnormalized_taylor_attention/validation/200m-m003-seed0",
-      "log": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m003-seed0/slurm-201013.out"
+      "log": "/data/cl/u/rafah/home/projects/functional-memory/logs/unnormalized_taylor_attention/200m-m003-seed0/slurm-201013.out"
     },
     {
       "name": "200m-m004-seed0",
@@ -212,7 +212,7 @@
       "completed_utc": "2026-09-23T06:49:43.111999+00:00",
       "run_record": "results/unnormalized_taylor_attention/runs/200m-m004-seed0",
       "acceptance_evidence": "results/unnormalized_taylor_attention/validation/200m-m004-seed0",
-      "log": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_taylor_attention/200m-m004-seed0/slurm-201014.out"
+      "log": "/data/cl/u/rafah/home/projects/functional-memory/logs/unnormalized_taylor_attention/200m-m004-seed0/slurm-201014.out"
     }
   ],
   "execution_records": {

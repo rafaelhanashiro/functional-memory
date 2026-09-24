@@ -28,7 +28,7 @@ def submit(manifest_path):
     # afterok dependencies gate every later condition on both having passed.
     for condition in manifest["conditions"]:
         name = condition["name"]
-        log_directory = Path(manifest["project_root"]) / "results/logs" / experiment / name
+        log_directory = Path(manifest["project_root"]) / "logs" / experiment / name
         log_directory.mkdir(parents=True, exist_ok=True)
         command = ["sbatch", "--parsable", f"--job-name=rank-{name}",
                    f"--output={log_directory}/slurm-%j.out", f"--error={log_directory}/slurm-%j.out"]

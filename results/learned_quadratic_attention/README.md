@@ -165,7 +165,7 @@ instructions. The current shared environment uses the scaffold's own lock.
 | Correctness and preflight evidence | `results/learned_quadratic_attention/validation/` |
 | Canonical manifest and checkpoint inventories | `results/learned_quadratic_attention/provenance/` |
 | Retained checkpoint, when one exists | `checkpoints/learned_quadratic_attention/<run>/<step>/` |
-| Matching Slurm logs | `results/logs/learned_quadratic_attention/.../slurm-<job_id>.out` |
+| Matching Slurm logs | `logs/learned_quadratic_attention/.../slurm-<job_id>.out` |
 
 A Git clone shares recipes, scientific evidence and shared code. It does not
 include checkpoint tensors, datasets, environments or Slurm logs, which remain

@@ -191,8 +191,8 @@ For additional scale, the local attention Jacobian with respect to the row's sco
 
 Successful diagnostic jobs **200497** (7m05s, degree 1 and initial degree-3
 screen) and **200498** (2m19s, extended degree 3) are retained at
-`results/logs/odd_taylor_attention/diagnostic/m1/slurm-200497.out` and
-`results/logs/odd_taylor_attention/diagnostic/m3/slurm-200498.out`. Their success
+`logs/odd_taylor_attention/diagnostic/m1/slurm-200497.out` and
+`logs/odd_taylor_attention/diagnostic/m3/slurm-200498.out`. Their success
 means invalid training updates were captured and explained, not that training
 completed. [Replay provenance](analysis/replay_provenance.json) records exact
 source/input hashes, retained log checksums, and hashes of removed scratch
@@ -228,7 +228,7 @@ instructions. The current shared environment uses the scaffold's own lock.
 | Correctness and preflight evidence | `results/odd_taylor_attention/validation/` |
 | Canonical manifest and checkpoint inventories | `results/odd_taylor_attention/provenance/` |
 | Retained checkpoint, when one exists | `checkpoints/odd_taylor_attention/<run>/<step>/` |
-| Matching Slurm logs | `results/logs/odd_taylor_attention/.../slurm-<job_id>.out` |
+| Matching Slurm logs | `logs/odd_taylor_attention/.../slurm-<job_id>.out` |
 
 A Git clone shares recipes, scientific evidence and shared code. It does not
 include checkpoint tensors, datasets, environments or Slurm logs, which remain

@@ -67,7 +67,7 @@
       },
       "slurm_job_id": "199648",
       "slurm_log": {
-        "path": "results/logs/polynomial_attention/200m-m002-seed0/slurm-199648.out",
+        "path": "logs/polynomial_attention/200m-m002-seed0/slurm-199648.out",
         "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6"
       },
       "execution_attempts": [
@@ -95,7 +95,7 @@
       "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
       "source_provenance": {
         "path": "results/polynomial_attention/provenance/manifest.json",
-        "sha256": "1b79a196a9242e1172f674c0539c8b4575bc2f69ebc2bdb57bad389f7671d75c"
+        "sha256": "5cb2e6aabcc5192a074455e44f6f5fb8b4844a6f4d723c19583186215b2c4573"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
@@ -136,7 +136,7 @@
       },
       "slurm_job_id": "199869",
       "slurm_log": {
-        "path": "results/logs/polynomial_attention/200m-softmax-seed0/slurm-199869.out",
+        "path": "logs/polynomial_attention/200m-softmax-seed0/slurm-199869.out",
         "sha256": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277"
       },
       "execution_attempts": [
@@ -180,7 +180,7 @@
       "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
       "source_provenance": {
         "path": "results/polynomial_attention/provenance/manifest.json",
-        "sha256": "1b79a196a9242e1172f674c0539c8b4575bc2f69ebc2bdb57bad389f7671d75c"
+        "sha256": "5cb2e6aabcc5192a074455e44f6f5fb8b4844a6f4d723c19583186215b2c4573"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
@@ -274,7 +274,7 @@
         "sha256": "91ba49de861c9f80eda85734feafbb7302d6078f795ea82edab602baa67c9fdb"
       },
       "slurm_log": {
-        "path": "results/logs/learned_quadratic_attention/200m-positive-global-seed0/slurm-199895.out",
+        "path": "logs/learned_quadratic_attention/200m-positive-global-seed0/slurm-199895.out",
         "sha256": "1694d0f2ac8a1bdc55388afe2988dca35ea940c73e9d73214851cf21d12df743"
       },
       "log_outcome": "successful_training"
@@ -365,7 +365,7 @@
         "sha256": "c6af67563639a89efcc83e46aa24c33015f7e7271ae158d9483c5d7c0c07232f"
       },
       "slurm_log": {
-        "path": "results/logs/learned_quadratic_attention/200m-positive-per-head-seed0/slurm-199896.out",
+        "path": "logs/learned_quadratic_attention/200m-positive-per-head-seed0/slurm-199896.out",
         "sha256": "c8f3c5ec1b552a9276af7b4a789b3e9041decbdb691d7f087045800dbc43956f"
       },
       "log_outcome": "successful_training"
@@ -455,7 +455,7 @@
         "error": "FloatingPointError: Nonfinite training loss or learned-quadratic update at step 2324: nan"
       },
       "slurm_log": {
-        "path": "results/logs/learned_quadratic_attention/200m-unrestricted-global-seed0/slurm-199897.out",
+        "path": "logs/learned_quadratic_attention/200m-unrestricted-global-seed0/slurm-199897.out",
         "sha256": "ee103efb3e51a3b07643ba8dffa9c1aec28f56226742955196ede064b1a9e8c8"
       },
       "log_outcome": "indispensable_scientific_numerical_failure"
@@ -545,7 +545,7 @@
         "error": "FloatingPointError: Nonfinite training loss or learned-quadratic update at step 4187: nan"
       },
       "slurm_log": {
-        "path": "results/logs/learned_quadratic_attention/200m-unrestricted-per-head-seed0/slurm-199898.out",
+        "path": "logs/learned_quadratic_attention/200m-unrestricted-per-head-seed0/slurm-199898.out",
         "sha256": "9975c6981efdb5d8931e5d40e90b6369731f8b94104cfe9617ab64b013fe70b8"
       },
       "log_outcome": "indispensable_scientific_numerical_failure"
@@ -560,7 +560,7 @@
         "sha256": "017656a418f77a1110fa7fc366171ac9eba0a84f5fbadfcffe182ef6f0ced052"
       },
       "slurm_log": {
-        "path": "results/logs/learned_quadratic_attention/preflight/slurm-199894.out",
+        "path": "logs/learned_quadratic_attention/preflight/slurm-199894.out",
         "sha256": "ff07dbf4844dce71dc0274c10745e1490184b969cb7949434d9c117f45052d22"
       },
       "accounting": {
@@ -574,23 +574,23 @@
   ],
   "retained_logs": [
     {
-      "path": "results/logs/learned_quadratic_attention/200m-positive-global-seed0/slurm-199895.out",
+      "path": "logs/learned_quadratic_attention/200m-positive-global-seed0/slurm-199895.out",
       "sha256": "1694d0f2ac8a1bdc55388afe2988dca35ea940c73e9d73214851cf21d12df743"
     },
     {
-      "path": "results/logs/learned_quadratic_attention/200m-positive-per-head-seed0/slurm-199896.out",
+      "path": "logs/learned_quadratic_attention/200m-positive-per-head-seed0/slurm-199896.out",
       "sha256": "c8f3c5ec1b552a9276af7b4a789b3e9041decbdb691d7f087045800dbc43956f"
     },
     {
-      "path": "results/logs/learned_quadratic_attention/200m-unrestricted-global-seed0/slurm-199897.out",
+      "path": "logs/learned_quadratic_attention/200m-unrestricted-global-seed0/slurm-199897.out",
       "sha256": "ee103efb3e51a3b07643ba8dffa9c1aec28f56226742955196ede064b1a9e8c8"
     },
     {
-      "path": "results/logs/learned_quadratic_attention/200m-unrestricted-per-head-seed0/slurm-199898.out",
+      "path": "logs/learned_quadratic_attention/200m-unrestricted-per-head-seed0/slurm-199898.out",
       "sha256": "9975c6981efdb5d8931e5d40e90b6369731f8b94104cfe9617ab64b013fe70b8"
     },
     {
-      "path": "results/logs/learned_quadratic_attention/preflight/slurm-199894.out",
+      "path": "logs/learned_quadratic_attention/preflight/slurm-199894.out",
       "sha256": "ff07dbf4844dce71dc0274c10745e1490184b969cb7949434d9c117f45052d22"
     }
   ],

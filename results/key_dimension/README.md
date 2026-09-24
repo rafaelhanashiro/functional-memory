@@ -97,7 +97,7 @@ checkpoint, data identity, and successful Slurm log for every run.
 | Current shared Transformer implementation | `scaffolds/transformer/` |
 | Study-specific sweep, preflight and plot tools | `scaffolds/transformer/studies/key_dimension/` |
 | Canonical checkpoint layout | `checkpoints/key_dimension/<run>/<step>/` |
-| Successful retained training log | `results/logs/key_dimension/<run>/slurm-<job_id>.out` |
+| Successful retained training log | `results/logs/key_dimension/<run>/slurm-<job_id>.out` on ORCD; canonical destination `logs/key_dimension/<run>/`, not yet migrated |
 
 The home cluster is **ORCD**; its recorded artifact root is
 `/home/rafah/projects/functional_memory`. Relative checkpoint and log locations are

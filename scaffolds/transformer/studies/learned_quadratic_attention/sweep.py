@@ -274,7 +274,7 @@ def prepare_sweep(manifest: dict, base) -> dict:
 
 
 def scheduler_log_options(project_root: Path, name: str) -> list[str]:
-    log_dir = project_root / "results/logs" / EXPERIMENT / name
+    log_dir = project_root / "logs" / EXPERIMENT / name
     log_dir.mkdir(parents=True, exist_ok=True)
     return [f"--output={log_dir}/slurm-%j.out", f"--error={log_dir}/slurm-%j.out", "--open-mode=append"]
 
@@ -292,7 +292,7 @@ def submit_preflight(manifest: dict, base, *, launch: bool = False) -> dict:
     manifest["jobs"]["preflight"] = job_id
     manifest["launch_after_preflight"] = launch
     manifest["preflight_submitted_utc"] = datetime.now(UTC).isoformat()
-    manifest["preflight_log_path"] = str(root / "results/logs" / EXPERIMENT / "preflight" / f"slurm-{job_id}.out")
+    manifest["preflight_log_path"] = str(root / "logs" / EXPERIMENT / "preflight" / f"slurm-{job_id}.out")
     write_json(manifest_path(root), manifest)
     return manifest
 
@@ -324,7 +324,7 @@ def submit_sweep(manifest: dict, base) -> dict:
             "quadratic_mode": run["quadratic_mode"], "quadratic_sharing": run["quadratic_sharing"],
             "slurm_job_id": job_id, "dependency_job_id": previous,
             "dependency_type": dependency_type if previous else None,
-            "log_path": str(root / "results/logs" / EXPERIMENT / run["name"] / f"slurm-{job_id}.out"),
+            "log_path": str(root / "logs" / EXPERIMENT / run["name"] / f"slurm-{job_id}.out"),
             "data_identity": manifest["data_identity"], "scheduler": manifest["scheduler"],
         })
         write_json(manifest_path(root), manifest)

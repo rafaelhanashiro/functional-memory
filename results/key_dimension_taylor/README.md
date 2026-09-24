@@ -184,7 +184,7 @@ scientific metrics/configurations were verified. A Git clone supplies no
 checkpoints, datasets, environments, or ignored logs.
 
 One successful terminal log per new run and eleven successful validation-harness
-logs remain under `results/logs/key_dimension_taylor/`, indexed with SHA256 in
+logs remain under `logs/key_dimension_taylor/`, indexed with SHA256 in
 the manifest. Superseded jobs, pilot checkpoints, compilation caches, duplicate
 per-run reports, and mutable launch queues are not retained outputs. Exact
 historical JSON records can mention removed execution paths or previously kept

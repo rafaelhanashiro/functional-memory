@@ -46,7 +46,7 @@
       "source_commit": "5e871d2659373272e26668e10911922c7201678a",
       "source_provenance": {
         "path": "results/key_dimension/provenance/manifest.json",
-        "sha256": "de89e30d53a93486048e58074844c7830dfe24e1186c69cf38a62adcab1814ac"
+        "sha256": "8284090d1f508c3923a5d0fed8946cfa05d666b5f95174436d711233c6785c9c"
       },
       "terminal": {
         "step": 19074,
@@ -113,7 +113,7 @@
       "source_commit": "5e871d2659373272e26668e10911922c7201678a",
       "source_provenance": {
         "path": "results/key_dimension/provenance/manifest.json",
-        "sha256": "de89e30d53a93486048e58074844c7830dfe24e1186c69cf38a62adcab1814ac"
+        "sha256": "8284090d1f508c3923a5d0fed8946cfa05d666b5f95174436d711233c6785c9c"
       },
       "terminal": {
         "step": 19074,
@@ -180,7 +180,7 @@
       "source_commit": "5e871d2659373272e26668e10911922c7201678a",
       "source_provenance": {
         "path": "results/key_dimension/provenance/manifest.json",
-        "sha256": "de89e30d53a93486048e58074844c7830dfe24e1186c69cf38a62adcab1814ac"
+        "sha256": "8284090d1f508c3923a5d0fed8946cfa05d666b5f95174436d711233c6785c9c"
       },
       "terminal": {
         "step": 19074,
@@ -247,7 +247,7 @@
       "source_commit": "5e871d2659373272e26668e10911922c7201678a",
       "source_provenance": {
         "path": "results/key_dimension/provenance/manifest.json",
-        "sha256": "de89e30d53a93486048e58074844c7830dfe24e1186c69cf38a62adcab1814ac"
+        "sha256": "8284090d1f508c3923a5d0fed8946cfa05d666b5f95174436d711233c6785c9c"
       },
       "terminal": {
         "step": 19074,
@@ -314,7 +314,7 @@
       "source_commit": "5e871d2659373272e26668e10911922c7201678a",
       "source_provenance": {
         "path": "results/key_dimension/provenance/manifest.json",
-        "sha256": "de89e30d53a93486048e58074844c7830dfe24e1186c69cf38a62adcab1814ac"
+        "sha256": "8284090d1f508c3923a5d0fed8946cfa05d666b5f95174436d711233c6785c9c"
       },
       "terminal": {
         "step": 19074,
@@ -1288,163 +1288,163 @@
   ],
   "retained_logs": [
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk008-m002-seed0/slurm-200505.out",
+      "path": "logs/key_dimension_taylor/200m-dk008-m002-seed0/slurm-200505.out",
       "sha256": "2f985e90e79a4c417568bc115915eb78e274ef7b8a2b12cb23b4a82c8c906c4f",
       "size_bytes": 1500954,
       "slurm_job_id": "200505"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk008-m004-seed0/slurm-200506.out",
+      "path": "logs/key_dimension_taylor/200m-dk008-m004-seed0/slurm-200506.out",
       "sha256": "380c822469b4a58166b3bf7d82c3a8ccf42229acc6de89bf5091839cb4144a9d",
       "size_bytes": 1502524,
       "slurm_job_id": "200506"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk008-m008-seed0/slurm-200507.out",
+      "path": "logs/key_dimension_taylor/200m-dk008-m008-seed0/slurm-200507.out",
       "sha256": "61dcb92acdbe871bb978600490ad79a03fc43e4c1adb9e7124534f8d02363595",
       "size_bytes": 1505355,
       "slurm_job_id": "200507"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk008-m016-seed0/slurm-200508.out",
+      "path": "logs/key_dimension_taylor/200m-dk008-m016-seed0/slurm-200508.out",
       "sha256": "4988278174b30a8b572438ee4fe824cd2d2a05dc15dd388c9631a648e515b62b",
       "size_bytes": 1511563,
       "slurm_job_id": "200508"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk016-m002-seed0/slurm-200509.out",
+      "path": "logs/key_dimension_taylor/200m-dk016-m002-seed0/slurm-200509.out",
       "sha256": "0bf48780d87cdb8679e8f0ccff746b829856ba6173ced38b85e1bbe30b65e8be",
       "size_bytes": 1501416,
       "slurm_job_id": "200509"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk016-m004-seed0/slurm-200510.out",
+      "path": "logs/key_dimension_taylor/200m-dk016-m004-seed0/slurm-200510.out",
       "sha256": "7ed9b707ae621b81b28a0b068de253c586fb1e6d042aa7b4299f16dbbcfac0f5",
       "size_bytes": 1502749,
       "slurm_job_id": "200510"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk016-m008-seed0/slurm-200511.out",
+      "path": "logs/key_dimension_taylor/200m-dk016-m008-seed0/slurm-200511.out",
       "sha256": "2dc3fa52773a29ac4e8a38c0d47dfb0f6e83511c30d8749ab605eb92944017db",
       "size_bytes": 1505570,
       "slurm_job_id": "200511"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk016-m016-seed0/slurm-200729.out",
+      "path": "logs/key_dimension_taylor/200m-dk016-m016-seed0/slurm-200729.out",
       "sha256": "86dc98ef115400e58fcfcc7da754ff875bd74d2f5caddb90cf538d57f0273e34",
       "size_bytes": 1517027,
       "slurm_job_id": "200729"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
+      "path": "logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
       "sha256": "086036d00705b13dc3e5e3bfa775ba31e46a676cdd62c9077759d8da9fe82c16",
       "size_bytes": 1495071,
       "slurm_job_id": "200734"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk032-m004-seed0/slurm-200735.out",
+      "path": "logs/key_dimension_taylor/200m-dk032-m004-seed0/slurm-200735.out",
       "sha256": "8f7b70321e9728e3a0524fa77f86006e4e9477ae4314f41896e7bb53d8c2d433",
       "size_bytes": 1498420,
       "slurm_job_id": "200735"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk032-m008-seed0/slurm-200736.out",
+      "path": "logs/key_dimension_taylor/200m-dk032-m008-seed0/slurm-200736.out",
       "sha256": "0c1599e33b10cb67f9a6f2b5cc0594196eb3ba9f59900f24c5ad07f8a52844ef",
       "size_bytes": 1505813,
       "slurm_job_id": "200736"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200809.out",
+      "path": "logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200809.out",
       "sha256": "9dfec51b1b132b6a821ed8e760d703c2d7c463f60eaf4c1cdbd9053c00b902de",
       "size_bytes": 1478606,
       "slurm_job_id": "200809"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk128-m002-seed0/slurm-200737.out",
+      "path": "logs/key_dimension_taylor/200m-dk128-m002-seed0/slurm-200737.out",
       "sha256": "7558588effd3c4d38e1e9801a9612c1f55c822707c7e42da213622e82c45d245",
       "size_bytes": 1513425,
       "slurm_job_id": "200737"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk128-m004-seed0/slurm-200738.out",
+      "path": "logs/key_dimension_taylor/200m-dk128-m004-seed0/slurm-200738.out",
       "sha256": "34fa98404a3f9e2766a9b638c004b02cb6fe0996e4129e132fd1f62404f9c4a1",
       "size_bytes": 1514023,
       "slurm_job_id": "200738"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk128-m008-seed0/slurm-200808.out",
+      "path": "logs/key_dimension_taylor/200m-dk128-m008-seed0/slurm-200808.out",
       "sha256": "ad5143f251eb95275202495644dcd9950cd0cf0d3dc1fc0da965dd23bea9e130",
       "size_bytes": 1475020,
       "slurm_job_id": "200808"
     },
     {
-      "path": "results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200807.out",
+      "path": "logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200807.out",
       "sha256": "1b57e1f58b20648d80fbeabc244176e30aa7a86045400ef18690301990cea780",
       "size_bytes": 1482397,
       "slurm_job_id": "200807"
     },
     {
-      "path": "results/logs/key_dimension_taylor/a100_diagnosis/slurm-200853.out",
+      "path": "logs/key_dimension_taylor/a100_diagnosis/slurm-200853.out",
       "sha256": "21beff33da1733c0046bd59f6efa0b306977a0ea7d5f9d05967c8780df494977",
       "size_bytes": 468,
       "slurm_job_id": "200853"
     },
     {
-      "path": "results/logs/key_dimension_taylor/b300-preflight/slurm-200733.out",
+      "path": "logs/key_dimension_taylor/b300-preflight/slurm-200733.out",
       "sha256": "647c276dfef46286078484456a55962e01d7256dab345bcd3f7f36b5584c0d8d",
       "size_bytes": 21138,
       "slurm_job_id": "200733"
     },
     {
-      "path": "results/logs/key_dimension_taylor/hardware-a100/slurm-200754.out",
+      "path": "logs/key_dimension_taylor/hardware-a100/slurm-200754.out",
       "sha256": "7d9f296862880a8ec3719ccea4250a4442ea5e94a2ccd3411c96a0e3b99ca60b",
       "size_bytes": 1788,
       "slurm_job_id": "200754"
     },
     {
-      "path": "results/logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200781.out",
+      "path": "logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200781.out",
       "sha256": "eaccefb0f3f8c3c780ffb2a7ce6daf0c1c0547e67ee01a0179529785e57cb724",
       "size_bytes": 3601,
       "slurm_job_id": "200781"
     },
     {
-      "path": "results/logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200782.out",
+      "path": "logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200782.out",
       "sha256": "c442c7a9be377ad30b4737d51fa1c04d6fa39b5beb6492389c08beb8ea86d799",
       "size_bytes": 3600,
       "slurm_job_id": "200782"
     },
     {
-      "path": "results/logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200783.out",
+      "path": "logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200783.out",
       "sha256": "0ab3629b6e3e820b9f30ddfae8916b31fbc7c982b2623a5a595c11ad53cbf0e5",
       "size_bytes": 18001,
       "slurm_job_id": "200783"
     },
     {
-      "path": "results/logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200784.out",
+      "path": "logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200784.out",
       "sha256": "b504daf7ed76c48a54a246c945548d1a9358a6c0eac529ffb22b3e30c6f712e4",
       "size_bytes": 18001,
       "slurm_job_id": "200784"
     },
     {
-      "path": "results/logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200785.out",
+      "path": "logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200785.out",
       "sha256": "294857177defe97f549a19912eb5a9b60b9af7695731f82a2a0efb289698fb55",
       "size_bytes": 14401,
       "slurm_job_id": "200785"
     },
     {
-      "path": "results/logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200786.out",
+      "path": "logs/key_dimension_taylor/hardware-a6000-host-staging/slurm-200786.out",
       "sha256": "64b9d1d68244170eb90d7c183a394f778317e45dcdd3369d2897932048d7b8a0",
       "size_bytes": 14401,
       "slurm_job_id": "200786"
     },
     {
-      "path": "results/logs/key_dimension_taylor/hardware-b300/slurm-200753.out",
+      "path": "logs/key_dimension_taylor/hardware-b300/slurm-200753.out",
       "sha256": "c709c7ca5b0ca466b6d39425184276508cede4e23ed4f76a4722459b58407a1e",
       "size_bytes": 1517,
       "slurm_job_id": "200753"
     },
     {
-      "path": "results/logs/key_dimension_taylor/preflight/slurm-200502.out",
+      "path": "logs/key_dimension_taylor/preflight/slurm-200502.out",
       "sha256": "3d8b98ab5959907c1fbb46d64a23d624f19ab400a5af178030b6535180be19b3",
       "size_bytes": 201411,
       "slurm_job_id": "200502"
@@ -1520,7 +1520,7 @@
       },
       "slurm_job_id": "200505",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk008-m002-seed0/slurm-200505.out",
+        "path": "logs/key_dimension_taylor/200m-dk008-m002-seed0/slurm-200505.out",
         "sha256": "2f985e90e79a4c417568bc115915eb78e274ef7b8a2b12cb23b4a82c8c906c4f"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -1592,7 +1592,7 @@
       },
       "slurm_job_id": "200506",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk008-m004-seed0/slurm-200506.out",
+        "path": "logs/key_dimension_taylor/200m-dk008-m004-seed0/slurm-200506.out",
         "sha256": "380c822469b4a58166b3bf7d82c3a8ccf42229acc6de89bf5091839cb4144a9d"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -1664,7 +1664,7 @@
       },
       "slurm_job_id": "200507",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk008-m008-seed0/slurm-200507.out",
+        "path": "logs/key_dimension_taylor/200m-dk008-m008-seed0/slurm-200507.out",
         "sha256": "61dcb92acdbe871bb978600490ad79a03fc43e4c1adb9e7124534f8d02363595"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -1736,7 +1736,7 @@
       },
       "slurm_job_id": "200508",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk008-m016-seed0/slurm-200508.out",
+        "path": "logs/key_dimension_taylor/200m-dk008-m016-seed0/slurm-200508.out",
         "sha256": "4988278174b30a8b572438ee4fe824cd2d2a05dc15dd388c9631a648e515b62b"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -1808,7 +1808,7 @@
       },
       "slurm_job_id": "200509",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk016-m002-seed0/slurm-200509.out",
+        "path": "logs/key_dimension_taylor/200m-dk016-m002-seed0/slurm-200509.out",
         "sha256": "0bf48780d87cdb8679e8f0ccff746b829856ba6173ced38b85e1bbe30b65e8be"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -1880,7 +1880,7 @@
       },
       "slurm_job_id": "200510",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk016-m004-seed0/slurm-200510.out",
+        "path": "logs/key_dimension_taylor/200m-dk016-m004-seed0/slurm-200510.out",
         "sha256": "7ed9b707ae621b81b28a0b068de253c586fb1e6d042aa7b4299f16dbbcfac0f5"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -1952,7 +1952,7 @@
       },
       "slurm_job_id": "200511",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk016-m008-seed0/slurm-200511.out",
+        "path": "logs/key_dimension_taylor/200m-dk016-m008-seed0/slurm-200511.out",
         "sha256": "2dc3fa52773a29ac4e8a38c0d47dfb0f6e83511c30d8749ab605eb92944017db"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -2026,7 +2026,7 @@
       },
       "slurm_job_id": "200729",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk016-m016-seed0/slurm-200729.out",
+        "path": "logs/key_dimension_taylor/200m-dk016-m016-seed0/slurm-200729.out",
         "sha256": "86dc98ef115400e58fcfcc7da754ff875bd74d2f5caddb90cf538d57f0273e34"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -2100,7 +2100,7 @@
       },
       "slurm_job_id": "200734",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
+        "path": "logs/key_dimension_taylor/200m-dk032-m002-seed0/slurm-200734.out",
         "sha256": "086036d00705b13dc3e5e3bfa775ba31e46a676cdd62c9077759d8da9fe82c16"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -2174,7 +2174,7 @@
       },
       "slurm_job_id": "200735",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk032-m004-seed0/slurm-200735.out",
+        "path": "logs/key_dimension_taylor/200m-dk032-m004-seed0/slurm-200735.out",
         "sha256": "8f7b70321e9728e3a0524fa77f86006e4e9477ae4314f41896e7bb53d8c2d433"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -2248,7 +2248,7 @@
       },
       "slurm_job_id": "200736",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk032-m008-seed0/slurm-200736.out",
+        "path": "logs/key_dimension_taylor/200m-dk032-m008-seed0/slurm-200736.out",
         "sha256": "0c1599e33b10cb67f9a6f2b5cc0594196eb3ba9f59900f24c5ad07f8a52844ef"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -2327,7 +2327,7 @@
       },
       "slurm_job_id": "200809",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200809.out",
+        "path": "logs/key_dimension_taylor/200m-dk032-m016-seed0/slurm-200809.out",
         "sha256": "9dfec51b1b132b6a821ed8e760d703c2d7c463f60eaf4c1cdbd9053c00b902de"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -2376,13 +2376,13 @@
       },
       "slurm_job_id": "199648",
       "slurm_log": {
-        "path": "results/logs/polynomial_attention/200m-m002-seed0/slurm-199648.out",
+        "path": "logs/polynomial_attention/200m-m002-seed0/slurm-199648.out",
         "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6"
       },
       "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
       "source_provenance": {
         "path": "results/polynomial_attention/provenance/manifest.json",
-        "sha256": "1b79a196a9242e1172f674c0539c8b4575bc2f69ebc2bdb57bad389f7671d75c"
+        "sha256": "5cb2e6aabcc5192a074455e44f6f5fb8b4844a6f4d723c19583186215b2c4573"
       },
       "terminal": {
         "step": 19074,
@@ -2430,13 +2430,13 @@
       },
       "slurm_job_id": "199649",
       "slurm_log": {
-        "path": "results/logs/polynomial_attention/200m-m004-seed0/slurm-199649.out",
+        "path": "logs/polynomial_attention/200m-m004-seed0/slurm-199649.out",
         "sha256": "c91f16f7ae3b36a2fabc64d6214b4df6379b2958553ac2178e6bf525e50a08ea"
       },
       "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
       "source_provenance": {
         "path": "results/polynomial_attention/provenance/manifest.json",
-        "sha256": "1b79a196a9242e1172f674c0539c8b4575bc2f69ebc2bdb57bad389f7671d75c"
+        "sha256": "5cb2e6aabcc5192a074455e44f6f5fb8b4844a6f4d723c19583186215b2c4573"
       },
       "terminal": {
         "step": 19074,
@@ -2484,13 +2484,13 @@
       },
       "slurm_job_id": "199650",
       "slurm_log": {
-        "path": "results/logs/polynomial_attention/200m-m008-seed0/slurm-199650.out",
+        "path": "logs/polynomial_attention/200m-m008-seed0/slurm-199650.out",
         "sha256": "81bcf948faefae264cb7a955960acd5ce7672b96d59ff85d1fdcfdbfb45cd90b"
       },
       "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
       "source_provenance": {
         "path": "results/polynomial_attention/provenance/manifest.json",
-        "sha256": "1b79a196a9242e1172f674c0539c8b4575bc2f69ebc2bdb57bad389f7671d75c"
+        "sha256": "5cb2e6aabcc5192a074455e44f6f5fb8b4844a6f4d723c19583186215b2c4573"
       },
       "terminal": {
         "step": 19074,
@@ -2538,13 +2538,13 @@
       },
       "slurm_job_id": "199651",
       "slurm_log": {
-        "path": "results/logs/polynomial_attention/200m-m016-seed0/slurm-199651.out",
+        "path": "logs/polynomial_attention/200m-m016-seed0/slurm-199651.out",
         "sha256": "7ccc0811022235c69dbfb3179d5a5cce8e432b398c4867ec7c1371d17b687dd7"
       },
       "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
       "source_provenance": {
         "path": "results/polynomial_attention/provenance/manifest.json",
-        "sha256": "1b79a196a9242e1172f674c0539c8b4575bc2f69ebc2bdb57bad389f7671d75c"
+        "sha256": "5cb2e6aabcc5192a074455e44f6f5fb8b4844a6f4d723c19583186215b2c4573"
       },
       "terminal": {
         "step": 19074,
@@ -2617,7 +2617,7 @@
       },
       "slurm_job_id": "200737",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk128-m002-seed0/slurm-200737.out",
+        "path": "logs/key_dimension_taylor/200m-dk128-m002-seed0/slurm-200737.out",
         "sha256": "7558588effd3c4d38e1e9801a9612c1f55c822707c7e42da213622e82c45d245"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -2691,7 +2691,7 @@
       },
       "slurm_job_id": "200738",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk128-m004-seed0/slurm-200738.out",
+        "path": "logs/key_dimension_taylor/200m-dk128-m004-seed0/slurm-200738.out",
         "sha256": "34fa98404a3f9e2766a9b638c004b02cb6fe0996e4129e132fd1f62404f9c4a1"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -2770,7 +2770,7 @@
       },
       "slurm_job_id": "200808",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk128-m008-seed0/slurm-200808.out",
+        "path": "logs/key_dimension_taylor/200m-dk128-m008-seed0/slurm-200808.out",
         "sha256": "ad5143f251eb95275202495644dcd9950cd0cf0d3dc1fc0da965dd23bea9e130"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
@@ -2849,7 +2849,7 @@
       },
       "slurm_job_id": "200807",
       "slurm_log": {
-        "path": "results/logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200807.out",
+        "path": "logs/key_dimension_taylor/200m-dk128-m016-seed0/slurm-200807.out",
         "sha256": "1b57e1f58b20648d80fbeabc244176e30aa7a86045400ef18690301990cea780"
       },
       "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",

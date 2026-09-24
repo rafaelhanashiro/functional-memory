@@ -41,7 +41,7 @@ def finalize_run(manifest: dict, name: str) -> dict:
     job_id = str(completion.get("slurm_job_id", ""))
     if not job_id.isdigit():
         raise ValueError("Completed production run has no valid Slurm job ID")
-    log_dir = project_root / "results" / "logs" / "key_dimension_taylor" / name
+    log_dir = project_root / "logs" / "key_dimension_taylor" / name
     selected_log = log_dir / f"slurm-{job_id}.out"
     if not selected_log.is_file():
         raise ValueError("Completed production run's matching Slurm log is missing")

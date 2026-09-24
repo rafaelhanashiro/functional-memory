@@ -74,7 +74,7 @@ scratch on B300 after automatic requeue; both submission records are retained.
 No run resumed from a checkpoint. Records: metrics and completion in
 [`runs/`](runs/), acceptance and allocations in [`validation/`](validation/), a
 [terminal summary](summary.csv), one log per run at
-`results/logs/unnormalized_taylor_attention/<run>/slurm-<job_id>.out`, and each
+`logs/unnormalized_taylor_attention/<run>/slurm-<job_id>.out`, and each
 run's retained step-19,074 checkpoint (2.1 GB) under
 `checkpoints/unnormalized_taylor_attention/<run>/` at the artifact root.
 
@@ -168,7 +168,7 @@ SOURCE_COMMIT="$(git -C "$EXECUTION_ROOT" rev-parse HEAD)"
 for DEGREE in 1 2 3 4; do
   RUN="200m-m00${DEGREE}-seed0"
   CONFIG="$EXECUTION_ROOT/results/unnormalized_taylor_attention/configs/$RUN.yaml"
-  LOG_DIR="$PROJECT_ROOT/results/logs/unnormalized_taylor_attention/$RUN"
+  LOG_DIR="$PROJECT_ROOT/logs/unnormalized_taylor_attention/$RUN"
   mkdir -p "$LOG_DIR"
   sbatch --job-name="unnorm-taylor-m${DEGREE}" --partition=sweep --gres=gpu:4 \
     --exclude=collie,samoyed,doodle,terrier --output="$LOG_DIR/slurm-%j.out" \
@@ -182,7 +182,7 @@ The launcher records Slurm allocation, source, and configuration under
 acceptance under `preflight/` beside it. Metrics and resolved runtime metadata
 live in `results/unnormalized_taylor_attention/runs/<run>/`, checkpoints in
 `checkpoints/unnormalized_taylor_attention/<run>/`, and logs in
-`results/logs/unnormalized_taylor_attention/<run>/` at the artifact root.
+`logs/unnormalized_taylor_attention/<run>/` at the artifact root.
 Preserve the source checkout and shared environment while jobs can run or
 requeue. After completion, only each run's validation-best checkpoint is
 retained, metrics and acceptance evidence are copied into this record, and the

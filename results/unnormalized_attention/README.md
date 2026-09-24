@@ -45,7 +45,7 @@ The run used source `3b0d311`, Slurm job `201002`, and four B300s on `akita`
 [`runs/200m-exp-seed0-kennel/`](runs/200m-exp-seed0-kennel/), GPU acceptance
 and allocation in [`validation/200m-exp-seed0-kennel/`](validation/200m-exp-seed0-kennel/),
 a [terminal summary](summary.csv), the log at
-`results/logs/unnormalized_attention/200m-exp-seed0-kennel/slurm-201002.out`, and
+`logs/unnormalized_attention/200m-exp-seed0-kennel/slurm-201002.out`, and
 the retained step-19,074 checkpoint (2.1 GB) under
 `checkpoints/unnormalized_attention/200m-exp-seed0-kennel/` at the artifact root.
 
@@ -153,7 +153,7 @@ git -C "$PROJECT_ROOT" worktree add --detach "$EXECUTION_ROOT" 3b0d311655b033545
 SOURCE_COMMIT="$(git -C "$EXECUTION_ROOT" rev-parse HEAD)"
 RUN=200m-exp-seed0-kennel
 CONFIG="$EXECUTION_ROOT/results/unnormalized_attention/configs/$RUN.yaml"
-LOG_DIR="$PROJECT_ROOT/results/logs/unnormalized_attention/$RUN"
+LOG_DIR="$PROJECT_ROOT/logs/unnormalized_attention/$RUN"
 mkdir -p "$LOG_DIR"
 sbatch --job-name=unnorm-200m --output="$LOG_DIR/slurm-%j.out" \
   "$EXECUTION_ROOT/scaffolds/transformer/studies/unnormalized_attention/launch_kennel.sbatch" \
@@ -172,7 +172,7 @@ Slurm allocation/source/config records are under
 records are under `preflight/` beside it. Training metrics and resolved runtime
 metadata live in `results/unnormalized_attention/runs/<run>/`, checkpoints in
 `checkpoints/unnormalized_attention/<run>/`, and logs in
-`results/logs/unnormalized_attention/<run>/` at the durable artifact root.
+`logs/unnormalized_attention/<run>/` at the durable artifact root.
 Checkpoints keep latest and validation best while resumable; after completion
 only the validation-best checkpoint is retained. Retained metrics and
 acceptance evidence are copied into this record after the execution stops, and
@@ -211,7 +211,7 @@ current code has no path dedicated to it.
   CPU validation, GPU acceptance, allocation, the post-pilot walltime reduction
   from 48 to 8 hours, and the cuBLAS-warning assessment in
   [`validation/250m-exp-seed0-kennel/`](validation/250m-exp-seed0-kennel/); the
-  log at `results/logs/unnormalized_attention/250m-exp-seed0-kennel/slurm-200875.out`
+  log at `logs/unnormalized_attention/250m-exp-seed0-kennel/slurm-200875.out`
   and the retained step-21,935 checkpoint (2.7 GB) under
   `checkpoints/unnormalized_attention/250m-exp-seed0-kennel/` at the artifact root.
 - **Origin:** the mechanism was first written as a standalone experiment at

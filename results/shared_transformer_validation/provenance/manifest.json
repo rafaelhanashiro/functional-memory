@@ -84,7 +84,7 @@
   ],
   "slurm_logs": [
     {
-      "path": "results/logs/shared_transformer_validation/benchmark/slurm-200760.out",
+      "path": "logs/shared_transformer_validation/benchmark/slurm-200760.out",
       "sha256": "21026001bff9ca98114b3ab8d8b57530a2f3ea1d8993d74c9b02f96488952250",
       "slurm_job_id": "200760",
       "capture": "srun stdout/stderr",
@@ -92,7 +92,7 @@
       "exit_code": "0:0"
     },
     {
-      "path": "results/logs/shared_transformer_validation/gpu_validation/slurm-200759.out",
+      "path": "logs/shared_transformer_validation/gpu_validation/slurm-200759.out",
       "sha256": "f275da17d23635b0f60d749c6882daa245ce35a3678e991eb131be0bee16d6c5",
       "slurm_job_id": "200759",
       "capture": "srun stdout/stderr",

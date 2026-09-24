@@ -159,7 +159,7 @@ experiment READMEs or per-run narrative reports.
 During training, checkpoints retain the latest resumable state and validation best.
 After review, keep only the validation-best checkpoint at
 `checkpoints/<experiment>/<run>/<step>/`, terminal metrics independently, and the
-matching successful log under `results/logs/<experiment>/`. Checkpoints, logs,
+matching successful log under `logs/<experiment>/`. Checkpoints, logs,
 environments, and caches remain on the home cluster and are ignored by Git.
 
 ## Validation and frozen execution

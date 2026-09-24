@@ -22,7 +22,7 @@ results/<experiment>/provenance/        authoritative manifest and execution pro
 results/<experiment>/runs/<run>/        metrics and metadata
 results/<experiment>/figures/           figures
 checkpoints/<experiment>/<run>/         home-cluster artifacts, ignored by Git
-results/logs/<experiment>/              retained logs, ignored by Git
+logs/<experiment>/                      retained Slurm logs, ignored by Git
 ```
 
 See [AGENTS.md](AGENTS.md) for canonical structure and retention rules and [CLUSTERS.md](CLUSTERS.md) for cluster operations. Pulling this repository does not transfer checkpoints, datasets, logs, caches, or environments. Source commits in provenance preserve the exact executed implementations.

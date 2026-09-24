@@ -116,7 +116,7 @@ def submit_job(command: list[str], execution_root: Path, dependency: str | None 
 
 
 def scheduler_log_options(project_root: Path, name: str) -> list[str]:
-    log_dir = project_root / "results/logs/key_dimension" / name
+    log_dir = project_root / "logs/key_dimension" / name
     log_dir.mkdir(parents=True, exist_ok=True)
     log_pattern = log_dir / "slurm-%j.out"
     return [f"--output={log_pattern}", f"--error={log_pattern}", "--open-mode=append"]
@@ -176,7 +176,7 @@ def submit_sweep(manifest: dict, base, manifest_path: Path | None = None) -> dic
             "sweep_identity": manifest["identity"],
             "slurm_job_id": job_id,
             "dependency_job_id": previous,
-            "log_path": str(project_root / "results/logs/key_dimension" / run["name"] / f"slurm-{job_id}.out"),
+            "log_path": str(project_root / "logs/key_dimension" / run["name"] / f"slurm-{job_id}.out"),
             "data_identity": manifest["data_identity"],
         })
         write_json(manifest_path, manifest)

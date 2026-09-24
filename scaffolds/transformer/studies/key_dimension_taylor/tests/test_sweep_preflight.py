@@ -67,7 +67,7 @@ def make_fixture(tmp_path, widths=sweep.KEY_DIMENSIONS, degrees=sweep.DEGREES):
             checkpoint.mkdir(parents=True)
             metadata = checkpoint / "_CHECKPOINT_METADATA"
             metadata.write_text('{"fixture": true}')
-            log = root / "results/logs" / experiment / name / "slurm-99.out"
+            log = root / "logs" / experiment / name / "slurm-99.out"
             log.parent.mkdir(parents=True)
             log.write_text("complete\n")
             def artifact(path):

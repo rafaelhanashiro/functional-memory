@@ -46,7 +46,7 @@ EXPECTED_COMMIT="${LOCATIONS[2]}"
 CONFIG_PATH="${LOCATIONS[3]:-}"
 BASE_CONFIG_PATH="${LOCATIONS[4]:-}"
 GPU_COUNT="${LOCATIONS[5]}"
-LOG_DIR="${PROJECT_ROOT}/results/logs/polynomial_attention/${RUN_NAME}"
+LOG_DIR="${PROJECT_ROOT}/logs/polynomial_attention/${RUN_NAME}"
 CACHE_ROOT="${PROJECT_ROOT}/.cache/polynomial_attention"
 mkdir -p "$LOG_DIR" "$CACHE_ROOT/uv" "$CACHE_ROOT/jax" "$CACHE_ROOT/tmp" "${PROJECT_ROOT}/.envs"
 exec >>"${LOG_DIR}/slurm-${SLURM_JOB_ID}.out" 2>&1

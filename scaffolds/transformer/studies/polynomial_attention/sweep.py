@@ -226,7 +226,7 @@ def submit_job(command: list[str], execution_root: Path, dependency: str | None 
 
 
 def scheduler_log_options(project_root: Path, name: str) -> list[str]:
-    log_dir = project_root / "results/logs/polynomial_attention" / name
+    log_dir = project_root / "logs/polynomial_attention" / name
     log_dir.mkdir(parents=True, exist_ok=True)
     log_pattern = log_dir / "slurm-%j.out"
     return [f"--output={log_pattern}", f"--error={log_pattern}", "--open-mode=append"]
@@ -276,7 +276,7 @@ def submit_preflight(manifest: dict, base, *, launch: bool = False) -> dict:
     manifest["jobs"]["preflight"] = job_id
     manifest["launch_after_preflight"] = launch
     manifest["preflight_submitted_utc"] = datetime.now(UTC).isoformat()
-    manifest["preflight_log_path"] = str(project_root / "results/logs/polynomial_attention/preflight" / f"slurm-{job_id}.out")
+    manifest["preflight_log_path"] = str(project_root / "logs/polynomial_attention/preflight" / f"slurm-{job_id}.out")
     write_json(manifest_path, manifest)
     return manifest
 
@@ -327,7 +327,7 @@ def submit_sweep(manifest: dict, base, *, queue_after_preflight: bool = False) -
             "dependency_job_id": previous,
             "dependency_type": dependency_type if previous else None,
             "preflight_dependency_job_id": preflight_job if queue_after_preflight else None,
-            "log_path": str(project_root / "results/logs/polynomial_attention" / run["name"] / f"slurm-{job_id}.out"),
+            "log_path": str(project_root / "logs/polynomial_attention" / run["name"] / f"slurm-{job_id}.out"),
             "data_identity": manifest["data_identity"],
             "scheduler": manifest["scheduler"],
         })

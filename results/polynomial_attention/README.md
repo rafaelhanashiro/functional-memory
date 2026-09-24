@@ -204,7 +204,7 @@ checkpoint, data identity, and successful Slurm log for every run.
 | Current shared Transformer implementation | `scaffolds/transformer/` |
 | Study-specific sweep, preflight and plot tools | `scaffolds/transformer/studies/polynomial_attention/` |
 | Canonical checkpoint layout | `checkpoints/polynomial_attention/<run>/<step>/` |
-| Successful retained training log | `results/logs/polynomial_attention/<run>/slurm-<job_id>.out` |
+| Successful retained training log | `logs/polynomial_attention/<run>/slurm-<job_id>.out` |
 
 The home cluster is **Kennel**; its recorded artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`. Relative checkpoint and log locations are

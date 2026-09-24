@@ -63,7 +63,7 @@ def test_submits_serial_success_dependencies_and_persists_every_job(launch_fixtu
         index = len(submissions)
         name = manifest["conditions"][index]["name"]
         job_id = str(1200 + index)
-        expected_log = Path(manifest["project_root"]) / "results/logs/state_rank/random_vs_pretrained" / name / "slurm-%j.out"
+        expected_log = Path(manifest["project_root"]) / "logs/state_rank/random_vs_pretrained" / name / "slurm-%j.out"
         assert f"--job-name=rank-{name}" in command
         assert f"--output={expected_log}" in command
         assert f"--error={expected_log}" in command
@@ -98,7 +98,7 @@ def test_refuses_dirty_execution_checkout_before_any_submission(launch_fixture, 
     with pytest.raises(ValueError, match="Commit the tested scaffold"):
         launch_comparison.submit(path)
     assert path.read_bytes() == before
-    assert not (path.parent / "results/logs").exists()
+    assert not (path.parent / "logs").exists()
 
 
 def test_refuses_execution_commit_drift_before_submission(launch_fixture):
@@ -163,7 +163,7 @@ def test_deltanet_routes_driver_and_keeps_distinct_logs(launch_fixture, monkeypa
         assert "--cpus-per-task=8" in command
         assert "--time=02:00:00" in command
         output = next(part for part in command if part.startswith("--output="))
-        assert "/results/logs/state_rank/random_vs_pretrained_deltanet/" in output
+        assert "/logs/state_rank/random_vs_pretrained_deltanet/" in output
         submissions.append(command)
         return subprocess.CompletedProcess(command, 0, stdout=f"{1300 + len(submissions)}\n", stderr="")
 

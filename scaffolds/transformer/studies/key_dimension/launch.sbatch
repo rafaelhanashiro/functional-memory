@@ -42,7 +42,7 @@ PROJECT_ROOT="${LOCATIONS[0]}"
 EXECUTION_ROOT="${LOCATIONS[1]}"
 EXPECTED_COMMIT="${LOCATIONS[2]}"
 CONFIG_PATH="${LOCATIONS[3]:-}"
-LOG_DIR="${PROJECT_ROOT}/results/logs/key_dimension/${RUN_NAME}"
+LOG_DIR="${PROJECT_ROOT}/logs/key_dimension/${RUN_NAME}"
 CACHE_ROOT="${PROJECT_ROOT}/.cache/key_dimension"
 mkdir -p "$LOG_DIR" "$CACHE_ROOT/uv" "$CACHE_ROOT/jax" "$CACHE_ROOT/tmp" "${PROJECT_ROOT}/.envs"
 exec >>"${LOG_DIR}/slurm-${SLURM_JOB_ID}.out" 2>&1

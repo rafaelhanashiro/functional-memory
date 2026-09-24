@@ -20,7 +20,7 @@ def retention_fixture(root):
     write_json(workdir / "best_validation.json", records[1])
     write_json(workdir / "metadata.json", {"slurm_job_id": "102", "status": "complete"})
     write_json(workdir / "launch.json", {"segments": [{"slurm_job_id": "101"}, {"slurm_job_id": "102"}]})
-    logs = root / "results" / "logs" / "key_dimension_taylor" / run["name"]
+    logs = root / "logs" / "key_dimension_taylor" / run["name"]
     logs.mkdir(parents=True)
     for job in ("100", "101", "102"):
         (logs / f"slurm-{job}.out").write_text(f"job {job}\n")

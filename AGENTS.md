@@ -26,7 +26,7 @@ Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits
 - Keep the canonical provenance manifest at `results/<experiment>/provenance/manifest.json`. Record source commits, resolved configurations and hashes, seeds, home cluster, artifact root, and selected checkpoints. Provenance is the authoritative machine-readable record; summarize its important locations in the experiment README.
 - Store checkpoints separately at `checkpoints/<experiment>/<run>/<step>/` on the experiment's home cluster. For completed pretraining retain only one validation-best checkpoint per run, which need not be the latest or final checkpoint. Preserve terminal metrics independently. Other experiments retain no checkpoints or intermediate data unless indispensable for reproduction or use.
 - A concluded numerical failure is a scientific result: record its stopping step, last valid metrics, failure diagnostics, and one matching failure log. Do not label it as a completed training run. Retain a diagnostic checkpoint only when justified in provenance and the README.
-- Retain one successful Slurm log per retained run, benchmark, or validation under `results/logs/<experiment>/.../slurm-<job_id>.out`, matching metadata. Remove superseded and failed-run logs after debugging is resolved.
+- Retain one successful Slurm log per retained run, benchmark, or validation under `logs/<experiment>/.../slurm-<job_id>.out` on the experiment's home cluster, beside `checkpoints/` and outside `results/`, matching metadata. Remove superseded and failed-run logs after debugging is resolved.
 - The root `README.md` is the experiment index; `CLUSTERS.md` documents cluster operations. Keep datasets outside the repository. Environments, temporary caches, execution worktrees, checkpoints, and logs are local artifacts, not Git contents.
 
 ## Experiment home cluster
@@ -43,7 +43,7 @@ Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits
 - Develop and run each new experiment on a dedicated branch in a separate working checkout. A sweep may share one branch. Keep unfinished or unreviewed experiment records separate from `main`; shared scaffold maintenance can be integrated independently without changing frozen execution checkouts.
 - Freeze the execution source, environment, manifests, and referenced artifacts while jobs can run or requeue. A layout migration must preserve historical source commits and checksummed references. Do not rewrite frozen manifests or scientific controls to make a refactor pass.
 - Before merging a retained experiment, remove temporary files, intermediate checkpoints, caches, redundant outputs, and duplicated documentation. Preserve the canonical README, exact recipes, provenance, scientific metrics/figures, selected checkpoints, and matching logs.
-- Maintain artifact exclusions in the committed root `.gitignore`, using shared patterns. Do not use `.git/info/exclude` or machine-local global exclusions for repository artifacts. Exclude checkpoint directories and any runtime checkpoint symlinks.
+- Maintain artifact exclusions in the committed root `.gitignore`, using shared patterns. Do not use `.git/info/exclude` or machine-local global exclusions for repository artifacts. Exclude checkpoint and log directories and any runtime checkpoint symlinks.
 - After cleanup and review, merge the retained experiment into `main`. Confirm indispensable artifacts live safely outside its temporary checkout, then remove the checkout and delete the merged branch. No Git tag is required.
 
 ## Historical artifact migration
@@ -55,6 +55,6 @@ Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits
   ignore rules, and superseded execution checkouts once all their consumers are
   finished or explicitly migrated. Reproduce historical implementations by
   exporting their recorded Git commits instead of retaining extra source trees.
-- Checkpoints on an inaccessible home cluster retain their recorded existing
+- Checkpoints and logs on an inaccessible home cluster retain their recorded existing
   location until a verified physical migration. Record the canonical destination
   and migration status without claiming it already exists.

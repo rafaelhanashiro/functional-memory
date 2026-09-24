@@ -441,5 +441,10 @@
     "home_cluster_evidence": "Historical absolute dataset, result and successful log paths identify ORCD.",
     "checkpoint_and_log_status": "Recorded on ORCD at retention; not reverified or physically relocated from Kennel."
   },
-  "documentation": "results/key_dimension/README.md"
+  "documentation": "results/key_dimension/README.md",
+  "log_migration": {
+    "recorded_location": "results/logs/ on the ORCD home cluster, as listed in this manifest",
+    "canonical_destination": "logs/key_dimension/<run>/slurm-<job_id>.out",
+    "status": "not migrated; the ORCD logs were not inspected on 2026-09-24 and keep their recorded paths until a verified transfer"
+  }
 }

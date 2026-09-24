@@ -306,7 +306,7 @@ def prepare_sweep(manifest: dict) -> dict:
 
 
 def scheduler_log_options(root: Path, name: str) -> list[str]:
-    log_dir = root / "results/logs" / EXPERIMENT / name
+    log_dir = root / "logs" / EXPERIMENT / name
     log_dir.mkdir(parents=True, exist_ok=True)
     return [f"--output={log_dir}/slurm-%j.out", f"--error={log_dir}/slurm-%j.out", "--open-mode=append"]
 
@@ -324,7 +324,7 @@ def submit_preflight(manifest: dict, *, launch: bool = False) -> dict:
     manifest["jobs"]["preflight"] = job
     manifest["launch_after_preflight"] = launch
     manifest["preflight_submitted_utc"] = datetime.now(UTC).isoformat()
-    manifest["preflight_log_path"] = str(root / "results/logs" / EXPERIMENT / "preflight" / f"slurm-{job}.out")
+    manifest["preflight_log_path"] = str(root / "logs" / EXPERIMENT / "preflight" / f"slurm-{job}.out")
     write_json(manifest_path(root), manifest)
     return manifest
 
@@ -358,7 +358,7 @@ def submit_sweep(manifest: dict) -> dict:
             launches = json.loads(launch_path.read_text()) if launch_path.exists() else {"source_commit": manifest["source_commit"], "sweep_identity": manifest["identity"], "segments": []}
             launches["segments"].append({**segment, "index": index, "slurm_job_id": job,
                 "dependency_job_id": previous, "dependency_type": dependency_type if previous else None,
-                "log_path": str(root / "results/logs" / EXPERIMENT / run["name"] / f"slurm-{job}.out")})
+                "log_path": str(root / "logs" / EXPERIMENT / run["name"] / f"slurm-{job}.out")})
             write_json(launch_path, launches)
             write_json(manifest_path(root), manifest)
             previous, dependency_type = job, "afterok"

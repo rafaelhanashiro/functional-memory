@@ -259,5 +259,10 @@
       "path": "results/state_rank/configs/unified_rank_analysis.json",
       "sha256": "74ab1cf1954a8d8eea7cb6060fa3122f41ac6c1231b54b49ee3a8e0518497456"
     }
-  ]
+  ],
+  "log_migration": {
+    "recorded_location": "results/logs/ on the ORCD home cluster, as listed in this manifest",
+    "canonical_destination": "logs/state_rank/<comparison>/<condition>/slurm-<job_id>.out",
+    "status": "not migrated; the ORCD logs were not inspected on 2026-09-24 and keep their recorded paths until a verified transfer"
+  }
 }

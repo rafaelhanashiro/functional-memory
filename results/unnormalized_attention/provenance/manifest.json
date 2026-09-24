@@ -81,7 +81,7 @@
       "completed_utc": "2026-09-23T03:47:47.095549+00:00",
       "run_record": "results/unnormalized_attention/runs/200m-exp-seed0-kennel",
       "acceptance_evidence": "results/unnormalized_attention/validation/200m-exp-seed0-kennel",
-      "log": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_attention/200m-exp-seed0-kennel/slurm-201002.out"
+      "log": "/data/cl/u/rafah/home/projects/functional-memory/logs/unnormalized_attention/200m-exp-seed0-kennel/slurm-201002.out"
     },
     {
       "name": "250m-exp-seed0-kennel",
@@ -112,7 +112,7 @@
       "completed_utc": "2026-09-22T23:25:54.992433+00:00",
       "run_record": "results/unnormalized_attention/runs/250m-exp-seed0-kennel",
       "acceptance_evidence": "results/unnormalized_attention/validation/250m-exp-seed0-kennel",
-      "log": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/unnormalized_attention/250m-exp-seed0-kennel/slurm-200875.out",
+      "log": "/data/cl/u/rafah/home/projects/functional-memory/logs/unnormalized_attention/250m-exp-seed0-kennel/slurm-200875.out",
       "selected_checkpoint": {
         "step": 21935,
         "path": "/data/cl/u/rafah/home/projects/functional-memory/checkpoints/unnormalized_attention/250m-exp-seed0-kennel/21935",

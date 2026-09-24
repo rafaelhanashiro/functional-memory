@@ -21,7 +21,7 @@ revisions. Retained successful outputs include 16 frozen-source parity cases,
 cases. Counts are from their separate executions and are not additive coverage.
 The H100 GPU-validation allocation 200759 and benchmark allocation 200760 both
 completed with exit code 0:0; captured Slurm-step stdout/stderr is retained under
-`results/logs/shared_transformer_validation/`, outside Git.
+`logs/shared_transformer_validation/`, outside Git.
 
 The canonical runtime integration additionally passed 20 CPU tests: four-device
 replica integrity, corruption rejection, exact checkpoint continuation, execution

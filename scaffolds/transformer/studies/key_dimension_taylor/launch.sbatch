@@ -41,7 +41,7 @@ mapfile -t LOCATIONS <<< "$BOOTSTRAP_OUTPUT"
 EXECUTION_ROOT="${LOCATIONS[0]}"
 EXPECTED_COMMIT="${LOCATIONS[1]}"
 CONFIG_PATH="${LOCATIONS[2]:-}"
-LOG_DIR="${PROJECT_ROOT}/results/logs/key_dimension_taylor/${RUN_NAME}"
+LOG_DIR="${PROJECT_ROOT}/logs/key_dimension_taylor/${RUN_NAME}"
 CACHE_ROOT="${PROJECT_ROOT}/.cache/key_dimension_taylor"
 mkdir -p "$LOG_DIR" "$CACHE_ROOT/jax" "$CACHE_ROOT/tmp"
 exec >>"${LOG_DIR}/slurm-${SLURM_JOB_ID}.out" 2>&1

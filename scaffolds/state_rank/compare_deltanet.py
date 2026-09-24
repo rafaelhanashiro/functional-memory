@@ -292,7 +292,7 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
         "fla_revision": spectrum.FLA_REVISION,
         "package_versions": {name: importlib.metadata.version(name) for name in
                              ("torch", "transformers", "numpy", "matplotlib", "flash-linear-attention", "triton")},
-        "log_path": str(Path(manifest["project_root"]) / "results/logs" / EXPERIMENT / condition_name / f"slurm-{job_id}.out") if job_id else None,
+        "log_path": str(Path(manifest["project_root"]) / "logs" / EXPERIMENT / condition_name / f"slurm-{job_id}.out") if job_id else None,
         "checkpoint_retention": "none",
         "initialization_details": INITIALIZATION_DETAILS if condition["weights"] == "random" else None,
     }

@@ -240,7 +240,7 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
         "gpu": torch.cuda.get_device_name() if device.type == "cuda" else None,
         "inputs_sha256": manifest["inputs_sha256"], "dependency_lock_sha256": manifest["dependency_lock_sha256"],
         "package_versions": {name: importlib.metadata.version(name) for name in ("torch", "transformers", "numpy", "matplotlib")},
-        "log_path": str(Path(manifest["project_root"]) / "results/logs/state_rank/random_vs_pretrained" / condition_name / f"slurm-{job_id}.out") if job_id else None,
+        "log_path": str(Path(manifest["project_root"]) / "logs/state_rank/random_vs_pretrained" / condition_name / f"slurm-{job_id}.out") if job_id else None,
     }
     write_json(metadata_path, metadata)
     started = time.monotonic()
