@@ -193,3 +193,17 @@ def test_completed_archive_provenance_and_checksum_are_verified(tmp_path):
         path.write_text(json.dumps({**metadata, field: value}))
         with pytest.raises(ValueError, match=message):
             load_conditions(tmp_path)
+
+
+def test_figure_exports_are_byte_identical_when_regenerated(tmp_path):
+    import matplotlib.pyplot as plt
+    from scaffolds.state_rank.plot_comparison import _save_figure
+
+    for name in ("first", "second"):
+        figure, axis = plt.subplots(layout="constrained")
+        axis.plot([0, 1], [1, 0])
+        (tmp_path / name).mkdir()
+        _save_figure(figure, tmp_path / name, "figure")
+        plt.close(figure)
+    for suffix in ("png", "pdf"):
+        assert (tmp_path / f"first/figure.{suffix}").read_bytes() == (tmp_path / f"second/figure.{suffix}").read_bytes()

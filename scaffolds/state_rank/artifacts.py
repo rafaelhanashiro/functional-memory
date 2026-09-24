@@ -15,9 +15,12 @@ HISTORICAL_COLLECTIONS = {
 
 
 def retained_path(project_root: Path, configured_path: str) -> Path:
-    """Resolve relocated baselines without modifying exact historical recipes."""
+    """Resolve relocated baselines without modifying exact historical recipes.
+
+    The two pretrained collections are retained as runs of the state-rank record.
+    """
     if configured_path in HISTORICAL_COLLECTIONS:
-        return project_root / "results/state_rank/historical" / Path(configured_path).name
+        return project_root / "results/state_rank/runs" / Path(configured_path).name
     return project_root / configured_path
 
 
