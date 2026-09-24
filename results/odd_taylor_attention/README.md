@@ -82,7 +82,7 @@ Training reads `/data/cl/u/rafah/home/datasets/fineweb_12b` directly on NFS.
 The train/eval manifests, tokenizer identity and shard checksums are recorded
 in canonical provenance. No node-local staging was required. The original
 fixed quadratic and softmax controls remain the independently retained
-[polynomial collection](../polynomial_attention/README.md); they are referenced,
+degree sweep, now retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); they are referenced,
 not copied or relabeled. In particular, softmax's recorded H100/B300 history
 means control throughput is not a matched-hardware comparison.
 
@@ -109,8 +109,8 @@ evidence; wrapper exit errors are not the mechanism. Step-2 held-out pilot
 diagnostics found maximum cancellation ratios **16,681.3** (degree 1) and
 **693,707.1** (degree 3), with minimum absolute row sums **0.0060674** and
 **0.00160217**. These sampled diagnostics came from one held-out sequence, not
-the failing production batch. [Structured analysis](analysis/failure_analysis.json)
-and exact pilot metric records preserve this distinction.
+the failing production batch. The structured failure analysis (in the manifest's `retired_records`)
+and the pilot metric records in `runs/<run>/pilot-metrics.jsonl` preserve this distinction.
 
 Negative-weight fractions are measured after signed normalization. The sampled
 held-out diagnostics and one seed per degree do not establish a failure-time
@@ -194,7 +194,7 @@ screen) and **200498** (2m19s, extended degree 3) are retained at
 `logs/odd_taylor_attention/diagnostic/m1/slurm-200497.out` and
 `logs/odd_taylor_attention/diagnostic/m3/slurm-200498.out`. Their success
 means invalid training updates were captured and explained, not that training
-completed. [Replay provenance](analysis/replay_provenance.json) records exact
+completed. Replay provenance, folded into the manifest's `retired_records`, records exact
 source/input hashes, retained log checksums, and hashes of removed scratch
 evidence. The former diagnostic log paths in that historical JSON are preserved;
 canonical log locations are in the current manifest.
@@ -213,9 +213,9 @@ The home cluster is **Kennel** and the durable artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`. The authoritative [manifest](provenance/manifest.json) records
 source `2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c`, seeds, exact configuration and metric hashes,
 data identity, runtime hardware, selected checkpoints and successful training/validation logs and indispensable numerical-failure logs.
-The [original launch record](provenance/historical_launch.json) is preserved
-byte-identically, including its historical control hashes and old absolute
-paths. Exact executed recipes and their historical dependency lock also keep
+The original launch record is summarized in the manifest's `retired_records`,
+with its SHA256 and a commit containing the exact file, including its historical
+control hashes and old absolute paths. Exact executed recipes and their historical dependency lock also keep
 their original bytes; their old workdirs are historical, not current output
 instructions. The current shared environment uses the scaffold's own lock.
 
@@ -224,9 +224,7 @@ instructions. The current shared environment uses the scaffold's own lock.
 | Exact recipes and historical lock | `results/odd_taylor_attention/configs/` |
 | Committed metrics, metadata and failure/completion evidence | `results/odd_taylor_attention/runs/<run>/` |
 | Figures | `results/odd_taylor_attention/figures/` |
-| Small numerical summaries and diagnostics | `results/odd_taylor_attention/analysis/` |
-| Correctness and preflight evidence | `results/odd_taylor_attention/validation/` |
-| Canonical manifest and checkpoint inventories | `results/odd_taylor_attention/provenance/` |
+| Canonical manifest: pre-launch acceptance, execution and folded diagnostics | `results/odd_taylor_attention/provenance/manifest.json` |
 | Retained checkpoint, when one exists | `checkpoints/odd_taylor_attention/<run>/<step>/` |
 | Matching Slurm logs | `logs/odd_taylor_attention/.../slurm-<job_id>.out` |
 

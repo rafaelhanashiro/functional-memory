@@ -13,7 +13,7 @@ import yaml
 
 from scaffolds.transformer.configs import config_to_dict, load_config, save_config, validate_config
 from scaffolds.transformer.configs.loader import config_dicts_equal
-from scaffolds.transformer.studies.polynomial_attention.sweep import (
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.sweep import (
     scheduler_options as historical_scheduler_options, scheduler_profile as historical_scheduler_profile, submit_job, write_json,
 )
 

@@ -69,8 +69,8 @@ observations, not terminal 10B-token results.
 At completion, positive/global has `a=2.8825173378`, `b=0.9651518464`.
 For head/layer sharing, `a` has mean 1.99759, standard deviation 0.67644 and
 range 0.84989–3.71649; `b` has mean 1.05346, standard deviation 0.15129 and
-range 0.46925–1.31322. The retained [per-head statistics](analysis/per_head_coefficient_statistics.json)
-and [figure](figures/per_head_coefficients.pdf) supplement raw/effective
+range 0.46925–1.31322. The [per-head figure](figures/per_head_coefficients.pdf), regenerated from the terminal
+metrics record, supplements raw/effective
 coefficient histories. Head indices apply only within this trained model.
 Raw coefficients must be interpreted with score scales: Q/K rescaling can
 absorb some coefficient changes, and overall polynomial scale cancels in
@@ -101,7 +101,7 @@ Training reads `/data/cl/u/rafah/home/datasets/fineweb_12b` directly on NFS.
 The train/eval manifests, tokenizer identity and shard checksums are recorded
 in canonical provenance. No node-local staging was required. The original
 fixed quadratic and softmax controls remain the independently retained
-[polynomial collection](../polynomial_attention/README.md); they are referenced,
+degree sweep, now retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); they are referenced,
 not copied or relabeled. In particular, softmax's recorded H100/B300 history
 means control throughput is not a matched-hardware comparison.
 
@@ -121,8 +121,8 @@ before restart: 260/285 leaves, maximum parameter difference 1.527369e-7, with
 finite NLLs 10.8814556599 and 10.8814499378. Step 3 differed in 276 leaves,
 maximum parameter difference 3.455207e-7. Coefficients were bitwise equal while
 optimizer moments differed. The nondeterministic primitive was not conclusively
-identified. The [diagnosis](validation/resume_diagnosis.json) preserves those
-measurements. The replacement gate checks exact live state, durable checkpoint,
+identified. The diagnosis, folded into the
+[provenance manifest](provenance/manifest.json) (`retired_records`), preserves those measurements. The replacement gate checks exact live state, durable checkpoint,
 fresh-process restored parameters/optimizer/update count, and next batch/RNG;
 CPU tests separately require uninterrupted/resumed trajectory identity. It
 uses no floating-point tolerance and does not change production arithmetic.
@@ -150,9 +150,9 @@ The home cluster is **Kennel** and the durable artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`. The authoritative [manifest](provenance/manifest.json) records
 source `2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb`, seeds, exact configuration and metric hashes,
 data identity, runtime hardware, selected checkpoints and successful training/validation logs and indispensable numerical-failure logs.
-The [original launch record](provenance/historical_launch.json) is preserved
-byte-identically, including its historical control hashes and old absolute
-paths. Exact executed recipes and their historical dependency lock also keep
+The original launch record is summarized in the manifest's `retired_records`,
+with its SHA256 and a commit containing the exact file, including its historical
+control hashes and old absolute paths. Exact executed recipes and their historical dependency lock also keep
 their original bytes; their old workdirs are historical, not current output
 instructions. The current shared environment uses the scaffold's own lock.
 
@@ -161,9 +161,7 @@ instructions. The current shared environment uses the scaffold's own lock.
 | Exact recipes and historical lock | `results/learned_quadratic_attention/configs/` |
 | Committed metrics, metadata and failure/completion evidence | `results/learned_quadratic_attention/runs/<run>/` |
 | Figures | `results/learned_quadratic_attention/figures/` |
-| Small numerical summaries and diagnostics | `results/learned_quadratic_attention/analysis/` |
-| Correctness and preflight evidence | `results/learned_quadratic_attention/validation/` |
-| Canonical manifest and checkpoint inventories | `results/learned_quadratic_attention/provenance/` |
+| Canonical manifest: pre-launch acceptance, execution, folded diagnostics and checkpoint inventories | `results/learned_quadratic_attention/provenance/manifest.json` |
 | Retained checkpoint, when one exists | `checkpoints/learned_quadratic_attention/<run>/<step>/` |
 | Matching Slurm logs | `logs/learned_quadratic_attention/.../slurm-<job_id>.out` |
 

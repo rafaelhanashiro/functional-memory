@@ -22,7 +22,27 @@ Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits
 
 - Organize reusable code by capability under `scaffolds/`: `scaffolds/transformer/` owns model, attention, data, training, evaluation, checkpointing, and reusable sweep/analysis machinery; `scaffolds/state_rank/` owns state-spectrum analysis. Experiments sharing a scaffold must use that implementation rather than copy it. Small scientific sweep/analysis adapters may live under a scaffold's `studies/`; add one only when configuration alone cannot express the experiment.
 - Each experiment or sweep has one record under `results/<experiment>/`. Its **single canonical `README.md`** contains the question, method, home cluster, artifact locations, exact reproduction commands, findings, and limitations. Keep this narrative in one place; do not create competing scaffold experiment READMEs, per-run reports, or nested narrative READMEs. Scaffold READMEs document reusable software APIs only. Plotting may update a marked generated-results section but must preserve authored documentation.
-- Store exact scientific recipes under `results/<experiment>/configs/`, run metrics and metadata under `runs/<run>/`, and figures under `figures/`. Keep small summaries at the experiment root. Specialized numerical evidence may use descriptive subdirectories. Configurations retained from an executed source revision remain byte-identical; document historical paths and overrides rather than silently rewriting them.
+- Store exact scientific recipes under `results/<experiment>/configs/`, run metrics and metadata under `runs/<run>/`, and figures under `figures/`. Configurations retained from an executed source revision remain byte-identical; document historical paths and overrides rather than silently rewriting them.
+- An experiment record `results/<experiment>/` contains only: `README.md`,
+  `configs/`, `runs/<run>/`, `provenance/manifest.json`, and optionally a derived
+  `summary.csv` and `figures/`. Do not add other subdirectories such as
+  `validation/`, `evidence/`, `performance/`, or `analysis/`.
+- Scientific results (training and validation metrics, terminal and best
+  evaluations) live only in `runs/<run>/`. Summaries, README tables, and figures
+  are derived from those files and must be regenerable from them.
+- `provenance/manifest.json` is the single authoritative record of how the
+  experiment and each run were executed: source commit, resolved configuration
+  and hash, seed, home cluster, artifact root, data manifest hashes, hardware
+  (GPU type and count, node), partition, Slurm job IDs and attempts (including
+  preemptions and requeues), runtime settings (e.g. host staging,
+  `NCCL_P2P_DISABLE`), resolved attention backend, a summary of pre-launch
+  acceptance (tests passed, initialization hash, pilot and resume outcomes),
+  selected checkpoint, and log path. The trainer's `runs/<run>/metadata.json`
+  is raw output that the manifest summarizes; do not copy per-attempt Slurm or
+  preflight files into the record.
+- Hardware qualification and kernel or throughput benchmarks describe the shared
+  scaffold and runtime, not an experiment's question; retain them in
+  `results/shared_transformer_validation/`.
 - Keep the canonical provenance manifest at `results/<experiment>/provenance/manifest.json`. Record source commits, resolved configurations and hashes, seeds, home cluster, artifact root, and selected checkpoints. Provenance is the authoritative machine-readable record; summarize its important locations in the experiment README.
 - Store checkpoints separately at `checkpoints/<experiment>/<run>/<step>/` on the experiment's home cluster. For completed pretraining retain only one validation-best checkpoint per run, which need not be the latest or final checkpoint. Preserve terminal metrics independently. Other experiments retain no checkpoints or intermediate data unless indispensable for reproduction or use.
 - A concluded numerical failure is a scientific result: record its stopping step, last valid metrics, failure diagnostics, and one matching failure log. Do not label it as a completed training run. Retain a diagnostic checkpoint only when justified in provenance and the README.

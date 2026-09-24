@@ -10,7 +10,7 @@ from scaffolds.transformer.training.checkpointing import checkpoint_directory
 
 
 @pytest.mark.parametrize("study", [
-    "polynomial_attention", "learned_quadratic_attention",
+    "key_dimension_taylor.degree_sweep", "learned_quadratic_attention",
     "odd_taylor_attention", "key_dimension_taylor",
 ])
 def test_pilot_overrides_production_checkpoint_directory(tmp_path, monkeypatch, study):

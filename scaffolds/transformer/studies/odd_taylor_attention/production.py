@@ -99,7 +99,7 @@ def launch_worker(manifest: dict, run: dict, worker: str, output: Path) -> dict:
 
 def run_production(manifest: dict, run: dict) -> dict:
     from scaffolds.transformer.studies.odd_taylor_attention.preflight import run_preflight
-    from scaffolds.transformer.studies.polynomial_attention.plot import committed_records
+    from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import committed_records
     run_preflight(manifest, check_only=True, run_name=run["name"])
     root = Path(run["workdir"])
     gate_path = root / "stability_gate.json"

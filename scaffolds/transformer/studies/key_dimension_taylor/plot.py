@@ -7,9 +7,9 @@ import hashlib
 import json
 from pathlib import Path
 
-from scaffolds.transformer.studies.polynomial_attention.plot import committed_records
-from scaffolds.transformer.studies.polynomial_attention.plot import default_manifest_path, update_results_readme
-from scaffolds.transformer.studies.polynomial_attention.plot import artifact_path, checked_artifact, check_dependency_lock, retained_root
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import committed_records
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import default_manifest_path, update_results_readme
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import artifact_path, checked_artifact, check_dependency_lock, retained_root
 
 EXPERIMENT = "key_dimension_taylor"
 WIDTHS = (8, 16, 32, 64, 128)
@@ -65,7 +65,8 @@ def summarize_run(run: dict) -> tuple[dict, list[dict]]:
         "run": run["name"], "qk_head_dim": run["qk_head_dim"], "attention_degree": degree,
         "kernel": "softmax" if degree is None else f"m={degree}",
         "value_head_dim": run["value_head_dim"], "parameter_count": run["parameter_count"],
-        "reused": bool(run.get("retained_completed")), "original_experiment": run.get("original_experiment", EXPERIMENT),
+        # Reused cells were trained by the earlier width or degree sweeps, not the joint sweep.
+        "reused": run.get("original_experiment", EXPERIMENT) != EXPERIMENT, "original_experiment": run.get("original_experiment", EXPERIMENT),
         "source_commit": source, "status": status, "execution_status": raw_status, "failure_kind": failure_kind, "error": error,
         "unavailable_historical_artifacts": json.dumps(run.get("unavailable_historical_artifacts", []), sort_keys=True),
         "terminal_step": "", "training_tokens": "", "terminal_nll": "", "terminal_ppl": "",
@@ -104,7 +105,14 @@ def summarize_run(run: dict) -> tuple[dict, list[dict]]:
     return row, records
 
 
-def grid_rows(rows: list[dict], *, widths=WIDTHS, degrees=DEGREES) -> list[list[dict]]:
+def placeholder_row(width: int, degree: int | None) -> dict:
+    """An untrained coordinate of a partial grid; never imputed."""
+    return {"run": "", "qk_head_dim": width, "attention_degree": degree,
+            "kernel": "softmax" if degree is None else f"m={degree}", "status": "not run",
+            "terminal_ppl": "", "delta_ppl_vs_softmax": ""}
+
+
+def grid_rows(rows: list[dict], *, widths=WIDTHS, degrees=DEGREES, allow_missing=False) -> list[list[dict]]:
     """Return ascending widths and degrees, with the softmax reference last."""
     widths, degrees = tuple(sorted(widths)), tuple(sorted(degrees))
     if not widths or not degrees or len(set(widths)) != len(widths) or len(set(degrees)) != len(degrees):
@@ -117,7 +125,9 @@ def grid_rows(rows: list[dict], *, widths=WIDTHS, degrees=DEGREES) -> list[list[
         cells[key] = row
     expected = {(width, degree) for width in widths for degree in (*degrees, None)}
     if set(cells) != expected:
-        raise ValueError(f"Joint grid is incomplete: {sorted(expected - set(cells), key=str)}")
+        if not allow_missing:
+            raise ValueError(f"Joint grid is incomplete: {sorted(expected - set(cells), key=str)}")
+        cells.update({key: placeholder_row(*key) for key in expected - set(cells)})
     for width in widths:
         reference = cells[width, None]
         for degree in degrees:
@@ -150,7 +160,8 @@ def summarize_retained_run(run: dict, root: Path) -> tuple[dict, list[dict]]:
     if row["status"] != "complete" or final is None or any(final[key] != value for key, value in terminal.items()):
         raise ValueError(f"Retained terminal metrics do not match: {run['name']}")
     selected = run["selected_checkpoint"]
-    artifact_path(root, selected["path"])
+    if selected.get("path"):  # Absent when the checkpoint was deliberately not retained.
+        artifact_path(root, selected["path"])
     best = next((record for record in records if record["step"] == selected["step"]), None)
     if (best is None or best["validation_nll"] != min(record["validation_nll"] for record in records)
             or any(best[key] != selected[key] for key in ("validation_nll", "validation_perplexity"))):
@@ -174,17 +185,22 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     output_dir.mkdir(parents=True, exist_ok=True)
     figures_dir = output_dir / "figures"
     figures_dir.mkdir(exist_ok=True)
-    summaries = [(summarize_retained_run(run, root) if retained else summarize_run(run))
-                 for run in [*manifest["runs"], *manifest["controls"]]]
+    all_runs = [*manifest["runs"], *manifest.get("controls", [])]
+    summaries = [(summarize_retained_run(run, root) if retained else summarize_run(run)) for run in all_runs]
+    in_grid = [run.get("grid_cell", True) for run in all_runs]
     widths = tuple(sorted(manifest.get("key_dimensions", {run["qk_head_dim"] for run in manifest["runs"]})))
-    degrees = tuple(sorted(manifest.get("degrees", {run["attention_degree"] for run in manifest["runs"]})))
+    degrees = tuple(sorted(manifest.get("degrees", {run["attention_degree"] for run in manifest["runs"]
+                                                    if run["attention_degree"] is not None})))
     n_degrees = len(degrees)
-    grid = grid_rows([row for row, _ in summaries], widths=widths, degrees=degrees)
-    rows = [row for line in grid for row in line]
+    grid = grid_rows([row for (row, _), keep in zip(summaries, in_grid) if keep], widths=widths, degrees=degrees,
+                     allow_missing=manifest.get("grid_coverage") == "partial")
+    grid_members = [row for line in grid for row in line if row["run"]]
+    extras = [row for (row, _), keep in zip(summaries, in_grid) if not keep]
+    rows = sorted(grid_members + extras, key=lambda row: (row["qk_head_dim"], 99 if row["attention_degree"] is None else row["attention_degree"], row["run"]))
     with (output_dir / "summary.csv").open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer = csv.DictWriter(handle, fieldnames=[*rows[0], "grid_cell"])
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows([{**row, "grid_cell": row in grid_members} for row in rows])
 
     def save(figure, name):
         for extension in ("png", "pdf"):
@@ -194,10 +210,18 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     values = np.array([[row["terminal_ppl"] if row["status"] == "complete" else np.nan for row in line] for line in grid])
     finite = values[np.isfinite(values)]
     minimum, maximum = (float(finite.min()), float(finite.max())) if len(finite) else (0.0, 1.0)
-    if minimum == maximum:
-        minimum, maximum = minimum - 0.5, maximum + 0.5
-    norm = Normalize(minimum, maximum)
-    cmap = plt.colormaps["viridis_r"].copy()
+    # A far outlier (degree 0) would flatten every other cell. Cap the color scale
+    # at 1.5x the median; larger cells take the over-range color, the colorbar
+    # shows the extension, and each cell still prints its exact value.
+    capped = [value for value in finite if value <= 1.5 * float(np.median(finite))] if len(finite) else []
+    top = max(capped) if capped else maximum
+    if minimum == top:
+        minimum, top = minimum - 0.5, top + 0.5
+    norm = Normalize(minimum, top)
+    from matplotlib.colors import ListedColormap
+    # One hue, light to dark; the lightest step stays distinct from gray untrained cells.
+    cmap = ListedColormap(plt.colormaps["Blues"](np.linspace(0.18, 0.92, 256)))
+    cmap.set_over(plt.colormaps["Blues"](1.0))
     cmap.set_bad("#eeeeee")
     figure = plt.figure(figsize=(10, 6.5), layout="constrained")
     layout = figure.add_gridspec(1, 3, width_ratios=(n_degrees, 1, 0.13), wspace=0.10)
@@ -211,7 +235,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
             for x, column in enumerate(columns):
                 row = line[column]
                 value = values[row_index, column]
-                annotation = f"{value:.4f}" if np.isfinite(value) else row["status"].upper()
+                annotation = f"{value:.4f}" if np.isfinite(value) else "—" if row["status"] == "not run" else row["status"].upper()
                 color = "white" if np.isfinite(value) and norm(value) > 0.58 else "black"
                 axis.text(x, row_index, annotation, ha="center", va="center", fontsize=9, color=color)
         axis.set_xticks(np.arange(-0.5, len(columns), 1), minor=True)
@@ -221,28 +245,37 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     axes[0].set_ylabel("Query/key dimension per head (dK)")
     axes[0].set_title("Taylor degree")
     axes[1].set_title("Reference")
-    figure.colorbar(image, cax=figure.add_subplot(layout[0, 2]), label="Terminal held-out perplexity (linear scale)")
+    figure.colorbar(image, cax=figure.add_subplot(layout[0, 2]), extend="max" if maximum > top else "neither",
+                    label="Terminal held-out perplexity (linear scale" + (f"; ▲ above {top:.1f}" if maximum > top else "") + ")")
     figure.suptitle("Joint dK × Taylor degree · 19,074 updates · seed 0")
     save(figure, "terminal_ppl_heatmap")
 
     deltas = np.array([[row["delta_ppl_vs_softmax"] if row["delta_ppl_vs_softmax"] != "" else np.nan for row in line[:n_degrees]] for line in grid])
-    available = np.abs(deltas[np.isfinite(deltas)])
+    # Scale deltas over the cells within the terminal-perplexity color range; the
+    # same over-range outliers take the extreme colors and keep printed values.
+    in_range = np.isfinite(deltas) & (values[:, :n_degrees] <= top)
+    available = np.abs(deltas[in_range]) if in_range.any() else np.abs(deltas[np.isfinite(deltas)])
     extent = max(float(available.max()) if len(available) else 1.0, 1e-8)
+    beyond = bool(np.any(np.abs(deltas[np.isfinite(deltas)]) > extent))
     figure, axis = plt.subplots(figsize=(8, 5.5), layout="constrained")
     delta_cmap = plt.colormaps["RdBu_r"].copy()
+    delta_cmap.set_over(plt.colormaps["RdBu_r"](1.0))
+    delta_cmap.set_under(plt.colormaps["RdBu_r"](0.0))
     delta_cmap.set_bad("#eeeeee")
     image = axis.imshow(deltas, cmap=delta_cmap, norm=TwoSlopeNorm(0.0, -extent, extent), aspect="auto")
     for i, line in enumerate(grid):
         for j, row in enumerate(line[:n_degrees]):
             value = deltas[i, j]
-            annotation = f"{value:+.4f}" if np.isfinite(value) else row["status"].upper() if row["status"] != "complete" else "NO REF"
+            annotation = (f"{value:+.4f}" if np.isfinite(value) else "—" if row["status"] == "not run"
+                          else row["status"].upper() if row["status"] != "complete" else "NO REF")
             axis.text(j, i, annotation, ha="center", va="center", fontsize=9,
                       color="white" if np.isfinite(value) and abs(value) > 0.65 * extent else "black")
     axis.set_xticks(range(n_degrees), [f"m={degree}" for degree in degrees])
     axis.set_yticks(range(len(widths)), [str(width) for width in widths])
     axis.set_ylabel("Query/key dimension per head (dK)")
     axis.set_title("Terminal perplexity − softmax at the same dK\nNegative is better")
-    figure.colorbar(image, ax=axis, label="Δ perplexity (linear scale)")
+    figure.colorbar(image, ax=axis, extend="both" if beyond else "neither",
+                    label="Δ perplexity (linear scale" + (f"; arrows beyond ±{extent:.2f}" if beyond else "") + ")")
     save(figure, "delta_ppl_heatmap")
 
     curve_rows = (len(widths) + 3) // 3
@@ -252,10 +285,11 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
             if row["qk_head_dim"] != width or not records:
                 continue
             degree = row["attention_degree"]
+            outside = row in extras
             axis.plot([record["training_tokens"] / 1e9 for record in records], [record["validation_perplexity"] for record in records],
-                      label=row["kernel"] + (" *" if row["reused"] else ""),
+                      label=row["kernel"] + (" *" if row["reused"] else "") + (" (outside grid)" if outside else ""),
                       color="black" if degree is None else f"C{degrees.index(degree)}",
-                      linestyle="-" if row["status"] == "complete" else "--")
+                      linestyle=":" if outside else "-" if row["status"] == "complete" else "--")
         axis.set_title(f"dK={width}")
         axis.set_xlabel("Prediction tokens (billions)")
         axis.set_ylabel("Held-out perplexity")
@@ -264,32 +298,47 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
             axis.legend(fontsize=8)
     for axis in list(axes.flat)[len(widths):]:
         axis.axis("off")
-    axes.flat[len(widths)].text(0, 0.8, "* Reused historical run\nDashed curves: incomplete or failed\nEndpoints require 19,074 updates", va="top")
+    if len(widths) < axes.size:
+        axes.flat[len(widths)].text(0, 0.8, "* Trained by the earlier width or degree sweep\nDashed curves: incomplete or failed\n"
+                                    "Dotted curves: retained outside the grid\nEndpoints require 19,074 updates", va="top")
     save(figure, "learning_curves")
 
-    lines = ["# Joint key dimension × Taylor degree", "", f"Source: `{manifest['source_commit']}`. Sweep identity: `{manifest['identity']}`.", "",
-             f"Status: {sum(row['status'] == 'complete' for row in rows)} complete, {sum(row['status'] == 'pending' for row in rows)} pending, {sum(row['status'] == 'incomplete' for row in rows)} incomplete, and {sum(row['status'] == 'failed' for row in rows)} numerical failures. Of the incomplete cells, {sum(row['execution_status'] == 'interrupted' for row in rows)} have a recorded infrastructure or validation interruption.", "",
-             "The primary endpoint is held-out NLL/perplexity at 19,074 updates (10,000,269,312 prediction tokens), independently of the retained validation-best checkpoint. All runs use seed 0; this comparison does not estimate seed variation.", "",
-             f"The grid uses ascending dK rows ({', '.join(map(str, widths))}), Taylor degrees {', '.join(map(str, degrees))}, and a separate softmax column with the same linear color scale. Heatmaps omit reuse markers; asterisks in the table and learning curves mark reused results. Failed, pending, and incomplete cells have no imputed perplexity.", "",
-             "FAILED means a recorded numerical failure. Infrastructure interruptions and failed restore/audit validation remain INCOMPLETE, with `execution_status=interrupted`, `failure_kind`, and error details in the CSV. They do not establish a scientific numerical failure. A validated completion supersedes earlier resolved interruptions.", "",
-             "Reused dK=64 Taylor results come from `polynomial_attention`. Softmax references come from `key_dimension`; its dK=64 softmax endpoint is **14.689767074685026**. The separate `polynomial_attention` softmax result, **14.69417664861716**, is historical context and is not used in this grid or its deltas. Each delta subtracts the softmax endpoint at the same width.", "",
-             f"Original source commits, resolved configurations, and artifact checksums remain in `{'provenance/manifest.json' if retained else 'sweep.json'}`. Historical hardware histories remain attached to their source provenance; throughput across these runs is not a matched hardware benchmark.", "",
-             "| dK | Kernel | Origin | Status | Terminal NLL | Terminal PPL | Δ PPL vs softmax |", "|---:|---|---|---|---:|---:|---:|"]
-    for row in rows:
-        nll, ppl = (f"{row['terminal_nll']:.6f}", f"{row['terminal_ppl']:.4f}") if row["status"] == "complete" else ("—", "—")
-        delta = f"{row['delta_ppl_vs_softmax']:+.4f}" if row["delta_ppl_vs_softmax"] != "" else "—"
-        lines.append(f"| {row['qk_head_dim']} | {row['kernel']}{' *' if row['reused'] else ''} | {row['original_experiment']} | {row['status']} | {nll} | {ppl} | {delta} |")
+    count = {status: sum(row["status"] == status for row in rows) for status in ("complete", "pending", "incomplete", "failed")}
+    header = "| dK | " + " | ".join(f"m={degree}" for degree in degrees) + " | Softmax |"
+    table = [header, "|" + "---:|" * (n_degrees + 2)]
+    for width, line in zip(widths, grid):
+        cells = [f"{row['terminal_ppl']:.4f}" if row["status"] == "complete" else "—" if row["status"] == "not run" else row["status"].upper()
+                 for row in line]
+        table.append(f"| {width} | " + " | ".join(cells) + " |")
+    references = {width: line[-1] for width, line in zip(widths, grid)}
+    lines = [f"Terminal held-out perplexity at 19,074 updates (10,000,269,312 prediction tokens), seed 0. "
+             f"{count['complete']} of {len(rows)} retained runs are complete"
+             + (f"; {count['pending']} pending, {count['incomplete']} incomplete, {count['failed']} numerical failures" if len(rows) != count["complete"] else "")
+             + ". A dash marks a coordinate that was never trained; nothing is imputed.", "", *table, ""]
+    if extras:
+        lines += ["Runs retained outside the grid: " + "; ".join(
+            f"`{row['run']}` ({row['kernel']}, dK={row['qk_head_dim']}, PPL {row['terminal_ppl']:.4f})" for row in extras)
+            + ". The grid uses one softmax reference per width"
+            + (f"; at dK=64 it is `{references[64]['run']}` (PPL {references[64]['terminal_ppl']:.4f})" if 64 in references and references[64]["run"] else "")
+            + ".", ""]
+    lines += ["Each delta in the CSV and delta heatmap subtracts the softmax endpoint at the same width. "
+              "`original_experiment` in the CSV records which sweep trained each run; heatmaps do not mark it. "
+              "FAILED means a recorded numerical failure; interrupted or unaudited runs remain INCOMPLETE. "
+              f"Source commits, exact recipes, and artifact checksums are in `{'provenance/manifest.json' if retained else 'sweep.json'}`.", ""]
     failures = [row for row in rows if row["error"]]
     if failures:
-        lines += ["", "Recorded failures or interruptions:", "", *[f"- `{row['run']}` ({row['failure_kind'] or row['execution_status']}): {row['error']}" for row in failures]]
-    unavailable = [(run, artifact) for run in [*manifest["runs"], *manifest["controls"]]
-                   for artifact in run.get("unavailable_historical_artifacts", [])]
+        lines += ["Recorded failures or interruptions:", "", *[f"- `{row['run']}` ({row['failure_kind'] or row['execution_status']}): {row['error']}" for row in failures], ""]
+    unretained = [run["name"] for run in all_runs if run.get("artifacts_retained")]
+    if unretained:
+        lines += [f"Checkpoints and logs are not retained for {len(unretained)} runs trained on another cluster "
+                  f"({', '.join(f'`{name}`' for name in unretained)}); their metrics, completion records, metadata, and recipes are retained and checksum-verified.", ""]
+    unavailable = [(run, artifact) for run in all_runs for artifact in run.get("unavailable_historical_artifacts", [])]
     if unavailable:
-        lines += ["", "Unavailable historical artifacts:", "",
-                  "The following historical artifacts are absent from this cluster. Their original paths and recorded hashes are preserved in the provenance; their contents have not been locally revalidated. The available scientific metrics and completion records were checksum-verified.", ""]
-        lines += [f"- `{run['name']}`: {artifact.get('kind', 'artifact')} `{artifact['path']}`; recorded SHA256 `{artifact.get('sha256', artifact.get('metadata_sha256', 'not recorded'))}`."
-                  for run, artifact in unavailable]
-    lines += ["", "[Summary CSV](summary.csv) · [Terminal heatmap](figures/terminal_ppl_heatmap.pdf) · [Delta heatmap](figures/delta_ppl_heatmap.pdf) · [Learning curves](figures/learning_curves.pdf)", ""]
+        lines += ["Unavailable historical artifacts: these are absent from this cluster; their recorded hashes are "
+                  "preserved in provenance, but their contents have not been locally revalidated.", "",
+                  *[f"- `{run['name']}`: {artifact.get('kind', 'artifact')} `{artifact['path']}`; recorded SHA256 "
+                    f"`{artifact.get('sha256', artifact.get('metadata_sha256', 'not recorded'))}`." for run, artifact in unavailable], ""]
+    lines += ["[Summary CSV](summary.csv) · [Terminal heatmap](figures/terminal_ppl_heatmap.pdf) · [Delta heatmap](figures/delta_ppl_heatmap.pdf) · [Learning curves](figures/learning_curves.pdf)", ""]
     update_results_readme(output_dir / "README.md", lines)
     return rows
 

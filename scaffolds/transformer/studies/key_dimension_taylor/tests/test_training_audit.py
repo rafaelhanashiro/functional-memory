@@ -8,9 +8,9 @@ import jax
 import numpy as np
 import pytest
 
-from scaffolds.transformer.studies.polynomial_attention.sweep import parameter_count
-from scaffolds.transformer.studies.polynomial_attention.tests.test_training import tiny_config
-from scaffolds.transformer.studies.polynomial_attention.tests.packed_fixtures import PackedSequenceWriter
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.sweep import parameter_count
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.tests.test_training import tiny_config
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.tests.packed_fixtures import PackedSequenceWriter
 from scaffolds.transformer.training import loop
 from scaffolds.transformer.training.checkpointing import state_sha256
 from scaffolds.transformer.training.state import create_state

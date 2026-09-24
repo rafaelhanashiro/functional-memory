@@ -11,10 +11,10 @@ import pytest
 import yaml
 
 from scaffolds.transformer.configs import config_to_dict, load_config
-from scaffolds.transformer.studies.polynomial_attention.preflight import record_success
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.preflight import record_success
 from scaffolds.transformer.studies.key_dimension_taylor import preflight, production, sweep
 
-BASE = Path(__file__).resolve().parents[5] / "results/polynomial_attention/configs/base.yaml"
+BASE = Path(__file__).resolve().parents[5] / "results/key_dimension_taylor/configs/polynomial_attention-base.yaml"
 
 
 def make_fixture(tmp_path, widths=sweep.KEY_DIMENSIONS, degrees=sweep.DEGREES):
@@ -287,7 +287,7 @@ def test_all_preflight_gates_route_correctly_and_pilot_failure_is_independent(tm
         xml.write_text('<testsuite>' + '<testcase name="check"/>' * count + '</testsuite>')
     monkeypatch.setattr(preflight, "launch_worker", worker)
     monkeypatch.setattr(preflight.subprocess, "run", command)
-    monkeypatch.setattr("scaffolds.transformer.studies.polynomial_attention.plot.committed_records", lambda root: [{"step": 32, "validation_nll": 3., "validation_perplexity": 20.}])
+    monkeypatch.setattr("scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot.committed_records", lambda root: [{"step": 32, "validation_nll": 3., "validation_perplexity": 20.}])
     preflight.run_preflight(manifest)
     assert preflight.preflight_complete(manifest)
     assert preflight.eligible_runs(manifest) == {manifest["runs"][1]["name"]}

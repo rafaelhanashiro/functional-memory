@@ -141,13 +141,16 @@ source commits stay immutable in their retained experiment records.
 adapters for a scientific question. They call the shared model, attention, data,
 and training implementation. Use configuration alone when sufficient; a new
 experiment does not need another copy of the training stack. For example,
-`python -m scaffolds.transformer.studies.polynomial_attention.plot` uses the
-polynomial study's canonical retained manifest and regenerates its figures.
+`python -m scaffolds.transformer.studies.key_dimension_taylor.plot` verifies the
+dK × Taylor-degree record's canonical manifest and regenerates its figures.
 Consult that experiment's `results/<experiment>/README.md` for its exact command.
 
-The `key_dimension`, `polynomial_attention`, `learned_quadratic_attention`,
-`odd_taylor_attention`, `key_dimension_taylor`, and `unnormalized_attention` study adapters all use this
-same training implementation. Their retained historical runs and currently frozen
+The `key_dimension_taylor`, `learned_quadratic_attention`, `odd_taylor_attention`, and
+`unnormalized_attention` study adapters all use this same training implementation.
+`key_dimension_taylor` also carries the degree-sweep helpers (`degree_sweep/`) and
+width-sweep configuration defaults (`width_sweep_configs/`) that its runs and the
+learned/odd adapters build on. Kernel and throughput benchmark scripts live in
+`scaffolds/transformer/benchmarks/`. Their retained historical runs and currently frozen
 execution checkouts still identify the source revisions that actually ran them.
 
 Each experiment has one scientific README under `results/<experiment>/`, with

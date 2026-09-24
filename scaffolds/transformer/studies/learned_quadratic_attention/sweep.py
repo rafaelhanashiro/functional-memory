@@ -11,7 +11,7 @@ from pathlib import Path
 
 from scaffolds.transformer.configs import config_to_dict, load_config, save_config, validate_config
 from scaffolds.transformer.configs.loader import config_dicts_equal
-from scaffolds.transformer.studies.polynomial_attention.sweep import (
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.sweep import (
     scheduler_options, scheduler_profile as historical_scheduler_profile,
     submit_job, validate_scheduler_profile, write_json,
 )
@@ -65,7 +65,8 @@ def scientific_recipe(config: dict) -> dict:
 
 
 def historical_controls(project_root: Path) -> list[dict]:
-    retained_path = project_root / "results/polynomial_attention/provenance/manifest.json"
+    # The degree-sweep controls are retained in the merged dK x degree record.
+    retained_path = project_root / "results/key_dimension_taylor/provenance/manifest.json"
     if retained_path.exists():
         return retained_controls(project_root, retained_path)
     original_manifest = project_root / "results/polynomial_attention/sweep.json"
@@ -91,8 +92,9 @@ def retained_controls(project_root: Path, provenance_path: Path) -> list[dict]:
     import yaml
     provenance = json.loads(provenance_path.read_text())
     if (provenance.get("format") != "functional-memory-retained-experiment" or
-            provenance.get("experiment") != "polynomial_attention" or provenance.get("schema_version") != 1):
+            provenance.get("experiment") != "key_dimension_taylor" or provenance.get("schema_version") != 1):
         raise ValueError("Unsupported historical retention manifest")
+    historical_sweep = provenance["absorbed_experiments"]["polynomial_attention"]["historical_sweep"]
     def artifact_path(relative: str) -> Path:
         path = Path(relative)
         if path.is_absolute() or ".." in path.parts:
@@ -108,7 +110,8 @@ def retained_controls(project_root: Path, provenance_path: Path) -> list[dict]:
                     raise ValueError(f"Historical retained {key} checksum changed: {name}")
         config_path = artifact_path(retained["resolved_config"]["path"])
         metrics_path = artifact_path(retained["metrics"]["path"])
-        completion_path = artifact_path(retained["completion"])
+        completion = retained["completion"]
+        completion_path = artifact_path(completion["path"] if isinstance(completion, dict) else completion)
         if completion_path.parent != metrics_path.parent or completion_path.name != "completion.json" or metrics_path.name != "metrics.jsonl":
             raise ValueError("Historical control artifacts must retain their canonical result names")
         config = yaml.safe_load(config_path.read_text())
@@ -126,11 +129,11 @@ def retained_controls(project_root: Path, provenance_path: Path) -> list[dict]:
         run = {**retained, "config": config, "config_path": str(config_path), "workdir": str(metrics_path.parent),
                "training_tokens": retained["terminal"]["training_tokens"], "retained_completed": True,
                "provenance_sha256": {str(path): sha256(path) for path in paths},
-               "original_sweep_identity": provenance["historical_sweep"]["identity"],
-               "historical_sweep": copy.deepcopy(provenance["historical_sweep"]),
+               "original_sweep_identity": historical_sweep["identity"],
+               "historical_sweep": copy.deepcopy(historical_sweep),
                "retained_provenance": retained}
         validate_control(run)
-        from scaffolds.transformer.studies.polynomial_attention.plot import summarize_run
+        from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import summarize_run
         row, records = summarize_run(run, retained["source_commit"])
         final = next(record for record in records if record["step"] == retained["terminal"]["step"])
         if any(final[field] != retained["terminal"][field] for field in retained["terminal"]):
@@ -164,7 +167,7 @@ def validate_control(run: dict) -> None:
         raise ValueError(f"Historical config differs from original manifest: {run['name']}")
     if raw["model"].get("quadratic_mode", "fixed") != "fixed":
         raise ValueError("Historical controls must use fixed attention")
-    from scaffolds.transformer.studies.polynomial_attention.plot import summarize_run
+    from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import summarize_run
     row, _ = summarize_run(run, run["config"]["train"]["source_commit"])
     if row["status"] != "complete":
         raise ValueError(f"Historical control is not complete: {run['name']}")

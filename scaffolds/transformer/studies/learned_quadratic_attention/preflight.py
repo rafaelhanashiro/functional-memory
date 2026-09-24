@@ -15,8 +15,8 @@ from pathlib import Path
 
 from scaffolds.transformer.configs import config_to_dict, load_config
 from scaffolds.transformer.configs.loader import config_dicts_equal
-from scaffolds.transformer.studies.polynomial_attention.preflight import passed_check, record_success, require_passing_tests
-from scaffolds.transformer.studies.polynomial_attention.sweep import write_json
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.preflight import passed_check, record_success, require_passing_tests
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.sweep import write_json
 from scaffolds.transformer.studies.learned_quadratic_attention.sweep import (
     CONTROL_NAMES, VARIANTS, identity_payload, manifest_path, parameter_count,
     scientific_recipe, scheduler_profile, sha256, validate_control,
@@ -202,7 +202,8 @@ def validate_resume_audit(initial: dict, resumed: dict) -> None:
 def retain_preflight_evidence(manifest: dict) -> None:
     """Keep small reproducibility evidence after temporary pilot caches are gone."""
     source = Path(manifest["preflight_dir"])
-    destination = Path(manifest["project_root"]) / "results/learned_quadratic_attention/preflight" / manifest["identity"]
+    # Outside results/: the retained manifest summarizes acceptance; raw checks are not record files.
+    destination = Path(manifest["project_root"]) / ".cache/learned_quadratic_attention/preflight-retained" / manifest["identity"]
     destination.mkdir(parents=True, exist_ok=True)
     for name in (*SHARED_CHECKS, *[run["name"] for run in manifest["runs"]]):
         record = json.loads((source / "checks" / f"{name}.json").read_text())
@@ -280,7 +281,7 @@ def run_preflight(manifest: dict, *, check_only: bool = False, check_hardware: b
                 if initial["final_step"] != 2 or initial["data_parallel_devices"] != manifest["scheduler"]["gpu_count"]:
                     raise RuntimeError(f"Pilot did not complete two updates on the required devices: {initial}")
                 runtime = projected_runtime(run, initial, manifest["scheduler"])
-                from scaffolds.transformer.studies.polynomial_attention.plot import committed_records
+                from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import committed_records
                 validation = next((row for row in committed_records(workdir) if row["step"] == 2), None)
                 if validation is None:
                     raise RuntimeError("Pilot is missing committed step-two validation")
@@ -324,7 +325,7 @@ def worker_result(manifest: dict, worker: str, name: str, workdir: Path | None, 
     import jax
     import numpy as np
     if worker == "hardware":
-        from scaffolds.transformer.studies.polynomial_attention.preflight import worker_result as historical_worker
+        from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.preflight import worker_result as historical_worker
         return historical_worker(manifest, worker, name, workdir, stop)
     if worker == "initialization":
         from flax import nnx

@@ -1,9 +1,0 @@
-{
-  "completed_utc": "2026-09-23T02:37:49.838526+00:00",
-  "identity": "48d4df71b0fa6b4081f93c39886e2d9c3afc3eda7e267ffbfe3dd520a1e28c2a",
-  "slurm_job_id": "201012",
-  "slurm_restart_count": "0",
-  "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
-  "status": "passed",
-  "tests_passed": 49
-}

@@ -6,9 +6,9 @@ import csv
 import json
 from pathlib import Path
 
-from scaffolds.transformer.studies.polynomial_attention.plot import summarize_run as historical_summary
-from scaffolds.transformer.studies.polynomial_attention.plot import default_manifest_path, update_results_readme
-from scaffolds.transformer.studies.polynomial_attention.plot import RETAINED_FORMAT
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import summarize_run as historical_summary
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import default_manifest_path, update_results_readme
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import RETAINED_FORMAT
 from scaffolds.transformer.studies.learned_quadratic_attention.plot import retained_plot_manifest
 from scaffolds.transformer.studies.odd_taylor_attention.sweep import EXPERIMENT, validate_control
 

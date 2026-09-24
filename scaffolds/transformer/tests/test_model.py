@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from flax import nnx
 
-from scaffolds.transformer.studies.key_dimension.configs import ModelConfig as ReferenceModelConfig
+from scaffolds.transformer.studies.key_dimension_taylor.width_sweep_configs import ModelConfig as ReferenceModelConfig
 from scaffolds.transformer.models import build_model as build_reference_model
 from scaffolds.transformer.configs import ATTENTION_DEGREES, ModelConfig, load_config
 from scaffolds.transformer.models import build_model, model_parameter_count

@@ -10,10 +10,10 @@ import pytest
 import yaml
 
 from scaffolds.transformer.configs import config_to_dict, load_config
-from scaffolds.transformer.studies.polynomial_attention.preflight import record_success
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.preflight import record_success
 from scaffolds.transformer.studies.odd_taylor_attention import preflight, sweep
 
-BASE = Path(__file__).resolve().parents[5] / "results/polynomial_attention/configs/base.yaml"
+BASE = Path(__file__).resolve().parents[5] / "results/key_dimension_taylor/configs/polynomial_attention-base.yaml"
 
 
 def make_test_manifest(tmp_path):
@@ -113,7 +113,7 @@ def test_portable_retained_controls_preserve_provenance_and_validate_hashes(tmp_
     retained_runs = []
     for control in manifest["controls"]:
         old_path = Path(control["config_path"])
-        new_path = root / "results/polynomial_attention/configs" / f"{control['name']}.yaml"
+        new_path = root / "results/key_dimension_taylor/configs" / f"{control['name']}.yaml"
         new_path.parent.mkdir(parents=True, exist_ok=True)
         old_path.rename(new_path)
         record = json.loads((Path(control["workdir"]) / "metrics.jsonl").read_text())
@@ -123,23 +123,25 @@ def test_portable_retained_controls_preserve_provenance_and_validate_hashes(tmp_
             "resolved_config": {"path": str(new_path.relative_to(root)), "sha256": sweep.sha256(new_path)},
             "metrics": {"path": str((Path(control["workdir"]) / "metrics.jsonl").relative_to(root)),
                         "sha256": sweep.sha256(Path(control["workdir"]) / "metrics.jsonl")},
-            "completion": str((Path(control["workdir"]) / "completion.json").relative_to(root)),
-            "selected_checkpoint": {"path": f"checkpoints/polynomial_attention/{control['name']}/{record['step']}",
+            "completion": {"path": str((Path(control["workdir"]) / "completion.json").relative_to(root)),
+                           "sha256": sweep.sha256(Path(control["workdir"]) / "completion.json")},
+            "selected_checkpoint": {"path": f"checkpoints/key_dimension_taylor/{control['name']}/{record['step']}",
                                     **{key: record[key] for key in ("step", "validation_nll", "validation_perplexity")}},
             "terminal": {key: record[key] for key in ("step", "training_tokens", "validation_nll", "validation_perplexity")},
             "execution_attempts": [{"gpu_kind": "B300", "gpu_count": 4, "status": "complete"}],
         })
     provenance = {"format": "functional-memory-retained-experiment", "schema_version": 1,
-                  "experiment": "polynomial_attention", "historical_sweep": {"identity": "original", "source_commit": "b" * 40},
+                  "experiment": "key_dimension_taylor",
+                  "absorbed_experiments": {"polynomial_attention": {"historical_sweep": {"identity": "original", "source_commit": "b" * 40}}},
                   "runs": retained_runs}
-    path = root / "results/polynomial_attention/provenance/manifest.json"
+    path = root / "results/key_dimension_taylor/provenance/manifest.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(provenance))
     controls = sweep.historical_controls(root)
     assert [control["name"] for control in controls] == list(sweep.CONTROL_NAMES)
     assert all(control["original_sweep_identity"] == "original" for control in controls)
     assert controls[1]["retained_provenance"]["execution_attempts"][0]["gpu_kind"] == "B300"
-    assert controls[0]["config_path"].endswith("results/polynomial_attention/configs/200m-m002-seed0.yaml")
+    assert controls[0]["config_path"].endswith("results/key_dimension_taylor/configs/200m-m002-seed0.yaml")
     assert str(path) in controls[0]["provenance_sha256"]
     metrics = root / retained_runs[0]["metrics"]["path"]
     metrics.write_text(metrics.read_text() + "\n")
@@ -323,7 +325,7 @@ def mock_preflight_workers(monkeypatch, manifest, *, numerical_run=None, wrong_r
         junit.write_text('<testsuite>' + '<testcase name="check"/>' * 4 + '</testsuite>')
     monkeypatch.setattr(preflight, "launch_worker", worker)
     monkeypatch.setattr(preflight.subprocess, "run", pytest_command)
-    monkeypatch.setattr("scaffolds.transformer.studies.polynomial_attention.plot.committed_records", lambda path: [{"step": 2, "validation_nll": 2., "validation_perplexity": 7.4}])
+    monkeypatch.setattr("scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot.committed_records", lambda path: [{"step": 2, "validation_nll": 2., "validation_perplexity": 7.4}])
     return calls
 
 
@@ -338,7 +340,7 @@ def test_numeric_pilot_failure_does_not_suppress_other_variants(tmp_path, monkey
     for run in manifest["runs"][1:]:
         assert ("pilot", run["name"], 2) in calls
         assert calls.count(("pilot", run["name"], 3)) == 1
-    retained = Path(manifest["project_root"]) / "results/odd_taylor_attention/preflight" / manifest["identity"]
+    retained = Path(manifest["project_root"]) / ".cache/odd_taylor_attention/preflight-retained" / manifest["identity"]
     assert (retained / "success.json").exists()
     assert (retained / "attention-fused-gpu.xml").exists()
     assert json.loads((retained / "provenance.json").read_text())["eligible_runs"] == sorted(preflight.eligible_runs(manifest))
@@ -525,7 +527,7 @@ def test_production_continues_only_after_validated_stability_restart(tmp_path, m
     run = manifest["runs"][0]
     outcome, validation = stage_fixture(manifest, run)
     monkeypatch.setattr(preflight, "run_preflight", lambda *args, **kwargs: None)
-    monkeypatch.setattr("scaffolds.transformer.studies.polynomial_attention.plot.committed_records", lambda root: [validation])
+    monkeypatch.setattr("scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot.committed_records", lambda root: [validation])
     calls = []
     def worker(manifest, run, worker, output):
         calls.append(worker)

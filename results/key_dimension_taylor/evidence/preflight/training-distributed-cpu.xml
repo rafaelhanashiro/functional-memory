@@ -1,1 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="5.193" timestamp="2026-09-20T23:48:48.347245-04:00" hostname="dogo.csail.mit.edu"><testcase classname="tests.test_training" name="test_distributed_accumulation_matches_single_device" time="3.614" /></testsuite></testsuites>

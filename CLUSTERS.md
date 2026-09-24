@@ -52,7 +52,7 @@ configurations and 16 new H100 configurations. On `samoyed`, direct peer transfe
 corrupted replicas and batches; the host-staged A100 pilot passed training,
 evaluation, and fresh-process resume for `d_K=8,m=4`. This does not qualify the
 remaining A100 grid or a new attention mechanism. Evidence and limitations are
-recorded in `results/key_dimension_taylor/README.md`.
+recorded in `results/shared_transformer_validation/README.md`.
 
 ## ORCD / Engaging (MIT)
 

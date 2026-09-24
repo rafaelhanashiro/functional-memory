@@ -72,7 +72,7 @@ Elapsed times include acceptance. The m=1 job was first preempted on H100 node
 `dogo` during CPU acceptance, before any training update, and then ran from
 scratch on B300 after automatic requeue; both submission records are retained.
 No run resumed from a checkpoint. Records: metrics and completion in
-[`runs/`](runs/), acceptance and allocations in [`validation/`](validation/), a
+[`runs/`](runs/), acceptance and allocations in the [provenance manifest](provenance/manifest.json), a
 [terminal summary](summary.csv), one log per run at
 `logs/unnormalized_taylor_attention/<run>/slurm-<job_id>.out`, and each
 run's retained step-19,074 checkpoint (2.1 GB) under
@@ -106,7 +106,7 @@ numerical-failure record.
 Existing 200M comparison points, all seed 0 with the same recipe apart from
 the attention kernel:
 
-Normalized Taylor results in the table above come from [polynomial attention](../polynomial_attention/README.md)
+Normalized Taylor results in the table above come from the [dK × Taylor-degree record](../key_dimension_taylor/README.md)
 and [odd Taylor attention](../odd_taylor_attention/README.md); the normalized
 exponential is the exact-softmax control. The two existing softmax controls,
 trained on different clusters and kernels, agree within 0.0003 nats, so
@@ -185,8 +185,9 @@ live in `results/unnormalized_taylor_attention/runs/<run>/`, checkpoints in
 `logs/unnormalized_taylor_attention/<run>/` at the artifact root.
 Preserve the source checkout and shared environment while jobs can run or
 requeue. After completion, only each run's validation-best checkpoint is
-retained, metrics and acceptance evidence are copied into this record, and the
-execution checkout and cache are removed.
+retained, run metrics are copied into `runs/<run>/`, acceptance and allocation
+records are summarized in the manifest, and the execution checkout and cache
+are removed.
 
 ## Limitations
 

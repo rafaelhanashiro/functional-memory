@@ -28,8 +28,9 @@
   "scientific_failure_policy": "Numerical failures are concluded scientific outcomes, not completed 10B-token runs; no terminal validation is imputed.",
   "checkpoint_selection": "Lowest committed validation NLL; latest on exact ties. Failed learned best states retained as explicitly documented diagnostic exceptions.",
   "historical_launch": {
-    "path": "results/learned_quadratic_attention/provenance/historical_launch.json",
-    "sha256": "0d68621e2c3446aaafefb8c58e7c0c9452d63bdd1365b908a939a8700d02bfd7"
+    "sha256": "0d68621e2c3446aaafefb8c58e7c0c9452d63bdd1365b908a939a8700d02bfd7",
+    "original_path": "results/learned_quadratic_attention/provenance/historical_launch.json",
+    "retired_to": "retired_records"
   },
   "controls": [
     {
@@ -42,16 +43,16 @@
       "seed": 0,
       "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
       "resolved_config": {
-        "path": "results/polynomial_attention/configs/200m-m002-seed0.yaml",
+        "path": "results/key_dimension_taylor/configs/200m-m002-seed0.yaml",
         "sha256": "7b07128485d77ac24292ae01b1a3a7b60131f2a22def078e22acffdd7eadb308"
       },
       "metrics": {
-        "path": "results/polynomial_attention/runs/200m-m002-seed0/metrics.jsonl",
+        "path": "results/key_dimension_taylor/runs/200m-m002-seed0/metrics.jsonl",
         "sha256": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77"
       },
-      "completion": "results/polynomial_attention/runs/200m-m002-seed0/completion.json",
+      "completion": "results/key_dimension_taylor/runs/200m-m002-seed0/completion.json",
       "selected_checkpoint": {
-        "path": "checkpoints/polynomial_attention/200m-m002-seed0/19074",
+        "path": "checkpoints/key_dimension_taylor/200m-m002-seed0/19074",
         "step": 19074,
         "validation_nll": 2.7900009751319885,
         "validation_perplexity": 16.281035677939382,
@@ -67,7 +68,7 @@
       },
       "slurm_job_id": "199648",
       "slurm_log": {
-        "path": "logs/polynomial_attention/200m-m002-seed0/slurm-199648.out",
+        "path": "logs/key_dimension_taylor/200m-m002-seed0/slurm-199648.out",
         "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6"
       },
       "execution_attempts": [
@@ -87,19 +88,21 @@
       "home_cluster": "kennel",
       "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
       "metadata": {
-        "path": "results/polynomial_attention/runs/200m-m002-seed0/metadata.json",
+        "path": "results/key_dimension_taylor/runs/200m-m002-seed0/metadata.json",
         "sha256": "754692f8fad41a85d630883aab228c6aab7a947b29871cade89968d2e52cb296"
       },
       "status": "complete",
       "retained_completed": true,
       "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
       "source_provenance": {
-        "path": "results/polynomial_attention/provenance/manifest.json",
-        "sha256": "5cb2e6aabcc5192a074455e44f6f5fb8b4844a6f4d723c19583186215b2c4573"
+        "path": "results/key_dimension_taylor/provenance/manifest.json",
+        "sha256": "36adc5c226203459d91feadd2a18ef3561fdf06a61d82cd67996aa4c0c3fc491"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
-      "quadratic_sharing": "none"
+      "quadratic_sharing": "none",
+      "original_experiment": "polynomial_attention",
+      "retained_in": "results/key_dimension_taylor (merged 2026-09-24)"
     },
     {
       "name": "200m-softmax-seed0",
@@ -111,16 +114,16 @@
       "seed": 0,
       "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
       "resolved_config": {
-        "path": "results/polynomial_attention/configs/200m-softmax-seed0.yaml",
+        "path": "results/key_dimension_taylor/configs/200m-softmax-seed0.yaml",
         "sha256": "ca4071773c7ad128d732a04e40bccec54e0d8fe505aef29ebfde331fd338b09a"
       },
       "metrics": {
-        "path": "results/polynomial_attention/runs/200m-softmax-seed0/metrics.jsonl",
+        "path": "results/key_dimension_taylor/runs/200m-softmax-seed0/metrics.jsonl",
         "sha256": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262"
       },
-      "completion": "results/polynomial_attention/runs/200m-softmax-seed0/completion.json",
+      "completion": "results/key_dimension_taylor/runs/200m-softmax-seed0/completion.json",
       "selected_checkpoint": {
-        "path": "checkpoints/polynomial_attention/200m-softmax-seed0/19074",
+        "path": "checkpoints/key_dimension_taylor/200m-softmax-seed0/19074",
         "step": 19074,
         "validation_nll": 2.6874512689454213,
         "validation_perplexity": 14.69417664861716,
@@ -136,7 +139,7 @@
       },
       "slurm_job_id": "199869",
       "slurm_log": {
-        "path": "logs/polynomial_attention/200m-softmax-seed0/slurm-199869.out",
+        "path": "logs/key_dimension_taylor/200m-softmax-seed0/slurm-199869.out",
         "sha256": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277"
       },
       "execution_attempts": [
@@ -172,19 +175,21 @@
       "home_cluster": "kennel",
       "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
       "metadata": {
-        "path": "results/polynomial_attention/runs/200m-softmax-seed0/metadata.json",
+        "path": "results/key_dimension_taylor/runs/200m-softmax-seed0/metadata.json",
         "sha256": "a825624689312dece250e1be687f654b2dfcb5dee5d543a34ec62773eda87b8d"
       },
       "status": "complete",
       "retained_completed": true,
       "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
       "source_provenance": {
-        "path": "results/polynomial_attention/provenance/manifest.json",
-        "sha256": "5cb2e6aabcc5192a074455e44f6f5fb8b4844a6f4d723c19583186215b2c4573"
+        "path": "results/key_dimension_taylor/provenance/manifest.json",
+        "sha256": "36adc5c226203459d91feadd2a18ef3561fdf06a61d82cd67996aa4c0c3fc491"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
-      "quadratic_sharing": "none"
+      "quadratic_sharing": "none",
+      "original_experiment": "polynomial_attention",
+      "retained_in": "results/key_dimension_taylor (merged 2026-09-24)"
     }
   ],
   "runs": [
@@ -226,8 +231,9 @@
         "metadata_sha256": "ca208d090f0a14d4fc4d4ce84c0ca5244080e7ea724085c85641e7629e1bf80f",
         "retention_reason": "validation_best",
         "inventory": {
-          "path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-positive-global-seed0.json",
-          "sha256": "5bcd066713cd56e571f8c5d76607b0d7572c2b0cfa87c59bccc5ef50a369b3a9"
+          "sha256": "5bcd066713cd56e571f8c5d76607b0d7572c2b0cfa87c59bccc5ef50a369b3a9",
+          "original_path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-positive-global-seed0.json",
+          "retired_to": "retired_records"
         }
       },
       "terminal": {
@@ -277,7 +283,19 @@
         "path": "logs/learned_quadratic_attention/200m-positive-global-seed0/slurm-199895.out",
         "sha256": "1694d0f2ac8a1bdc55388afe2988dca35ea940c73e9d73214851cf21d12df743"
       },
-      "log_outcome": "successful_training"
+      "log_outcome": "successful_training",
+      "acceptance": {
+        "sweep_preflight_job": "199894",
+        "completed_utc": "2026-09-18T23:14:23.831213+00:00",
+        "resume": {
+          "final_step": 3,
+          "restored_step": 2,
+          "runtime_seconds": 52.19,
+          "data_parallel_devices": 4,
+          "attention_implementation": "pallas_triton"
+        },
+        "status": "passed"
+      }
     },
     {
       "name": "200m-positive-per-head-seed0",
@@ -317,8 +335,9 @@
         "metadata_sha256": "83a9fcf682fdfc2691db8563fbb84fa53fcd4ba6152a82e48856faa3a131dac2",
         "retention_reason": "validation_best",
         "inventory": {
-          "path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-positive-per-head-seed0.json",
-          "sha256": "99770e303d38264abd0554fb624f86fdb582921e9a63b49a8dab2391a00e3910"
+          "sha256": "99770e303d38264abd0554fb624f86fdb582921e9a63b49a8dab2391a00e3910",
+          "original_path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-positive-per-head-seed0.json",
+          "retired_to": "retired_records"
         }
       },
       "terminal": {
@@ -368,7 +387,19 @@
         "path": "logs/learned_quadratic_attention/200m-positive-per-head-seed0/slurm-199896.out",
         "sha256": "c8f3c5ec1b552a9276af7b4a789b3e9041decbdb691d7f087045800dbc43956f"
       },
-      "log_outcome": "successful_training"
+      "log_outcome": "successful_training",
+      "acceptance": {
+        "sweep_preflight_job": "199894",
+        "completed_utc": "2026-09-18T23:17:01.287059+00:00",
+        "resume": {
+          "final_step": 3,
+          "restored_step": 2,
+          "runtime_seconds": 58.69,
+          "data_parallel_devices": 4,
+          "attention_implementation": "pallas_triton"
+        },
+        "status": "passed"
+      }
     },
     {
       "name": "200m-unrestricted-global-seed0",
@@ -408,8 +439,9 @@
         "metadata_sha256": "ca208d090f0a14d4fc4d4ce84c0ca5244080e7ea724085c85641e7629e1bf80f",
         "retention_reason": "diagnostic exception: best finite learned state before concluded numerical failure",
         "inventory": {
-          "path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-unrestricted-global-seed0.json",
-          "sha256": "de82ec3e96da9bd40e93920cb7b4226a7005b96c04ee935514f5d585b46c8d1a"
+          "sha256": "de82ec3e96da9bd40e93920cb7b4226a7005b96c04ee935514f5d585b46c8d1a",
+          "original_path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-unrestricted-global-seed0.json",
+          "retired_to": "retired_records"
         }
       },
       "terminal": null,
@@ -458,7 +490,19 @@
         "path": "logs/learned_quadratic_attention/200m-unrestricted-global-seed0/slurm-199897.out",
         "sha256": "ee103efb3e51a3b07643ba8dffa9c1aec28f56226742955196ede064b1a9e8c8"
       },
-      "log_outcome": "indispensable_scientific_numerical_failure"
+      "log_outcome": "indispensable_scientific_numerical_failure",
+      "acceptance": {
+        "sweep_preflight_job": "199894",
+        "completed_utc": "2026-09-18T23:19:37.450275+00:00",
+        "resume": {
+          "final_step": 3,
+          "restored_step": 2,
+          "runtime_seconds": 57.58,
+          "data_parallel_devices": 4,
+          "attention_implementation": "pallas_triton"
+        },
+        "status": "passed"
+      }
     },
     {
       "name": "200m-unrestricted-per-head-seed0",
@@ -498,8 +542,9 @@
         "metadata_sha256": "83a9fcf682fdfc2691db8563fbb84fa53fcd4ba6152a82e48856faa3a131dac2",
         "retention_reason": "diagnostic exception: best finite learned state before concluded numerical failure",
         "inventory": {
-          "path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-unrestricted-per-head-seed0.json",
-          "sha256": "90674e9eaef7edbbdbb4a8df7df767094c5f476f47ff2e6e9385ba9e77242d23"
+          "sha256": "90674e9eaef7edbbdbb4a8df7df767094c5f476f47ff2e6e9385ba9e77242d23",
+          "original_path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-unrestricted-per-head-seed0.json",
+          "retired_to": "retired_records"
         }
       },
       "terminal": null,
@@ -548,7 +593,19 @@
         "path": "logs/learned_quadratic_attention/200m-unrestricted-per-head-seed0/slurm-199898.out",
         "sha256": "9975c6981efdb5d8931e5d40e90b6369731f8b94104cfe9617ab64b013fe70b8"
       },
-      "log_outcome": "indispensable_scientific_numerical_failure"
+      "log_outcome": "indispensable_scientific_numerical_failure",
+      "acceptance": {
+        "sweep_preflight_job": "199894",
+        "completed_utc": "2026-09-18T23:22:13.232404+00:00",
+        "resume": {
+          "final_step": 3,
+          "restored_step": 2,
+          "runtime_seconds": 57.73,
+          "data_parallel_devices": 4,
+          "attention_implementation": "pallas_triton"
+        },
+        "status": "passed"
+      }
     }
   ],
   "validation_records": [
@@ -556,8 +613,9 @@
       "name": "production_preflight",
       "status": "passed",
       "record": {
-        "path": "results/learned_quadratic_attention/validation/preflight/success.json",
-        "sha256": "017656a418f77a1110fa7fc366171ac9eba0a84f5fbadfcffe182ef6f0ced052"
+        "sha256": "017656a418f77a1110fa7fc366171ac9eba0a84f5fbadfcffe182ef6f0ced052",
+        "original_path": "results/learned_quadratic_attention/validation/preflight/success.json",
+        "retired_to": "retired_records"
       },
       "slurm_log": {
         "path": "logs/learned_quadratic_attention/preflight/slurm-199894.out",
@@ -601,84 +659,3979 @@
   },
   "evidence": [
     {
-      "path": "results/learned_quadratic_attention/analysis/per_head_coefficient_statistics.json",
-      "sha256": "f8f25523d519170f9886f03dd49a1f703813046884571a7595ea67e18dbde6d7"
+      "sha256": "f8f25523d519170f9886f03dd49a1f703813046884571a7595ea67e18dbde6d7",
+      "original_path": "results/learned_quadratic_attention/analysis/per_head_coefficient_statistics.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/cpu-tests.xml",
-      "sha256": "ac1fedac69de1f7507da65f3a4b915248f5c38ea9c67691c8da46e47ae879c87"
+      "sha256": "ac1fedac69de1f7507da65f3a4b915248f5c38ea9c67691c8da46e47ae879c87",
+      "original_path": "results/learned_quadratic_attention/validation/cpu-tests.xml",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/distributed-tests.xml",
-      "sha256": "dbf6f83c63adbbb583d57d3a0714cb9d41a505564024042df7b754897ba109cd"
+      "sha256": "dbf6f83c63adbbb583d57d3a0714cb9d41a505564024042df7b754897ba109cd",
+      "original_path": "results/learned_quadratic_attention/validation/distributed-tests.xml",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/metadata.json",
-      "sha256": "4b176da024905e25a4d8dc74e7c22357969e646b82cb4a112f29edee03600b78"
+      "sha256": "4b176da024905e25a4d8dc74e7c22357969e646b82cb4a112f29edee03600b78",
+      "original_path": "results/learned_quadratic_attention/validation/metadata.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/preflight/attention-cpu.xml",
-      "sha256": "181616474dab54c73bc10b1594f8fe605df3e58ab5ee63f2091908982498ff8a"
+      "sha256": "181616474dab54c73bc10b1594f8fe605df3e58ab5ee63f2091908982498ff8a",
+      "original_path": "results/learned_quadratic_attention/validation/preflight/attention-cpu.xml",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/preflight/attention-fused-gpu.xml",
-      "sha256": "b1229f0a37490c62cfd6a5a9820fe5e750ab4ea928ab170fb2e13ce81e99c94c"
+      "sha256": "b1229f0a37490c62cfd6a5a9820fe5e750ab4ea928ab170fb2e13ce81e99c94c",
+      "original_path": "results/learned_quadratic_attention/validation/preflight/attention-fused-gpu.xml",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/preflight/checks/200m-positive-global-seed0.json",
-      "sha256": "a00246d5dcaf15c9047348202dd8e561f4f30d96906e692fe08880baeb17c55d"
+      "sha256": "a00246d5dcaf15c9047348202dd8e561f4f30d96906e692fe08880baeb17c55d",
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/200m-positive-global-seed0.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/preflight/checks/200m-positive-per-head-seed0.json",
-      "sha256": "6ab96d891923486ce5d9c87b18796a60267fbb8fc16e6c3915f9148323e94826"
+      "sha256": "6ab96d891923486ce5d9c87b18796a60267fbb8fc16e6c3915f9148323e94826",
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/200m-positive-per-head-seed0.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/preflight/checks/200m-unrestricted-global-seed0.json",
-      "sha256": "a3297f553f4eda011bc86235b87c04c917b3344b9c12d14c6f1988c2f1236721"
+      "sha256": "a3297f553f4eda011bc86235b87c04c917b3344b9c12d14c6f1988c2f1236721",
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/200m-unrestricted-global-seed0.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/preflight/checks/200m-unrestricted-per-head-seed0.json",
-      "sha256": "7628fff10782efb599e56c22220f849bfe9f2171c814ab051dbabfb49a9eb709"
+      "sha256": "7628fff10782efb599e56c22220f849bfe9f2171c814ab051dbabfb49a9eb709",
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/200m-unrestricted-per-head-seed0.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/preflight/checks/attention-cpu.json",
-      "sha256": "e196445a822a14bbe71ee42fade2a526f49bd60b3cbda3c6642db1215e499b55"
+      "sha256": "e196445a822a14bbe71ee42fade2a526f49bd60b3cbda3c6642db1215e499b55",
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/attention-cpu.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/preflight/checks/attention-fused-gpu.json",
-      "sha256": "ca6de58eb07aad3fc30bceaf2891554c8ad36640461f2243819aab43e28b1fab"
+      "sha256": "ca6de58eb07aad3fc30bceaf2891554c8ad36640461f2243819aab43e28b1fab",
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/attention-fused-gpu.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/preflight/checks/initialization.json",
-      "sha256": "b0412102c175df20fc8e06da583243b2bfcff03a74eaf9af4d36a18b3708cb7b"
+      "sha256": "b0412102c175df20fc8e06da583243b2bfcff03a74eaf9af4d36a18b3708cb7b",
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/initialization.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/preflight/provenance.json",
-      "sha256": "143a552198ac6453773c367880771a19d5398ce327c85fcf0340f11725682394"
+      "sha256": "143a552198ac6453773c367880771a19d5398ce327c85fcf0340f11725682394",
+      "original_path": "results/learned_quadratic_attention/validation/preflight/provenance.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/preflight/success.json",
-      "sha256": "017656a418f77a1110fa7fc366171ac9eba0a84f5fbadfcffe182ef6f0ced052"
+      "sha256": "017656a418f77a1110fa7fc366171ac9eba0a84f5fbadfcffe182ef6f0ced052",
+      "original_path": "results/learned_quadratic_attention/validation/preflight/success.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/resume-audit-metadata.json",
-      "sha256": "81fa7484f8292a3c8d0d11120441836210c35f5d7af3268a0a9b82ebf948ffd9"
+      "sha256": "81fa7484f8292a3c8d0d11120441836210c35f5d7af3268a0a9b82ebf948ffd9",
+      "original_path": "results/learned_quadratic_attention/validation/resume-audit-metadata.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/resume-audit-tests.xml",
-      "sha256": "91c6376bb5cb7d04b487757b20d8f315d6d827f491627c7c216375897dd2b2f1"
+      "sha256": "91c6376bb5cb7d04b487757b20d8f315d6d827f491627c7c216375897dd2b2f1",
+      "original_path": "results/learned_quadratic_attention/validation/resume-audit-tests.xml",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/resume_diagnosis.json",
-      "sha256": "3204ee6973417b254428044981bddeecbe17490513d20c748a3a0525905d1114"
+      "sha256": "3204ee6973417b254428044981bddeecbe17490513d20c748a3a0525905d1114",
+      "original_path": "results/learned_quadratic_attention/validation/resume_diagnosis.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/scaffold-metadata.json",
-      "sha256": "68d3ed13f9b23a615b0fda71086c5a5c26bcf4a27fd2bdf36266a5a410eb3dbf"
+      "sha256": "68d3ed13f9b23a615b0fda71086c5a5c26bcf4a27fd2bdf36266a5a410eb3dbf",
+      "original_path": "results/learned_quadratic_attention/validation/scaffold-metadata.json",
+      "retired_to": "retired_records"
     },
     {
-      "path": "results/learned_quadratic_attention/validation/scaffold-tests.xml",
-      "sha256": "575d2e2eecbad12dc1a4a3997e9fd661b55b93c80805d6d4c8f9560f29c1dfc0"
+      "sha256": "575d2e2eecbad12dc1a4a3997e9fd661b55b93c80805d6d4c8f9560f29c1dfc0",
+      "original_path": "results/learned_quadratic_attention/validation/scaffold-tests.xml",
+      "retired_to": "retired_records"
     }
-  ]
+  ],
+  "sweep_acceptance": {
+    "status": "passed",
+    "completed_utc": "2026-09-18T23:22:13.781778+00:00",
+    "slurm_job_id": "199894",
+    "slurm_restart_count": "0",
+    "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+    "hardware": {
+      "backend": "gpu",
+      "device_kinds": [
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3"
+      ],
+      "devices": [
+        "cuda:0",
+        "cuda:1",
+        "cuda:2",
+        "cuda:3"
+      ]
+    },
+    "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+    "tests": {
+      "attention-cpu": {
+        "tests": 41,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 70.28,
+        "testcases": 41
+      },
+      "attention-fused-gpu": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 34.36,
+        "testcases": 15
+      }
+    },
+    "initialization": {
+      "completed_utc": "2026-09-18T23:12:04.006451+00:00",
+      "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+      "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+      "initializations": {
+        "200m-positive-global-seed0": {
+          "backbone_parameter_count": 199906304,
+          "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+          "coefficient_count": 2,
+          "coefficient_shape": [
+            2
+          ],
+          "initial_coefficient_pair": [
+            1.0,
+            1.0
+          ],
+          "parameter_count": 199906306
+        },
+        "200m-positive-per-head-seed0": {
+          "backbone_parameter_count": 199906304,
+          "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+          "coefficient_count": 320,
+          "coefficient_shape": [
+            10,
+            16,
+            2
+          ],
+          "initial_coefficient_pair": [
+            1.0,
+            1.0
+          ],
+          "parameter_count": 199906624
+        },
+        "200m-unrestricted-global-seed0": {
+          "backbone_parameter_count": 199906304,
+          "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+          "coefficient_count": 2,
+          "coefficient_shape": [
+            2
+          ],
+          "initial_coefficient_pair": [
+            1.0,
+            0.5
+          ],
+          "parameter_count": 199906306
+        },
+        "200m-unrestricted-per-head-seed0": {
+          "backbone_parameter_count": 199906304,
+          "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+          "coefficient_count": 320,
+          "coefficient_shape": [
+            10,
+            16,
+            2
+          ],
+          "initial_coefficient_pair": [
+            1.0,
+            0.5
+          ],
+          "parameter_count": 199906624
+        },
+        "fixed": {
+          "backbone_parameter_count": 199906304,
+          "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+          "coefficient_count": 0,
+          "coefficient_shape": null,
+          "initial_coefficient_pair": null,
+          "parameter_count": 199906304
+        }
+      },
+      "slurm_job_id": "199894",
+      "slurm_restart_count": "0",
+      "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+      "status": "passed"
+    }
+  },
+  "retired_records": [
+    {
+      "original_path": "results/learned_quadratic_attention/analysis/per_head_coefficient_statistics.json",
+      "sha256": "f8f25523d519170f9886f03dd49a1f703813046884571a7595ea67e18dbde6d7",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "source_metrics": "/data/cl/u/rafah/home/projects/functional-memory/results/learned_quadratic_attention/200m-positive-per-head-seed0/metrics.jsonl",
+        "source_metrics_sha256": "9b3a83c92043812a46ff8711288e087c9b64e4001b5385243b79f94a33d7b26f",
+        "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+        "step": 19074,
+        "statistics": {
+          "a": {
+            "mean": 1.9975874342024327,
+            "std": 0.6764425186183591,
+            "median": 1.9160534739494324,
+            "min": 0.8498919606208801,
+            "max": 3.716487407684326,
+            "layer_means": [
+              1.0198879800736904,
+              1.549989603459835,
+              1.7753182910382748,
+              1.8940894901752472,
+              1.8981020897626877,
+              1.9663105085492134,
+              2.422975592315197,
+              2.6006304249167442,
+              2.492019943892956,
+              2.356550417840481
+            ]
+          },
+          "b": {
+            "mean": 1.0534586660563945,
+            "std": 0.15128896415751852,
+            "median": 1.091805100440979,
+            "min": 0.4692460298538208,
+            "max": 1.3132169246673584,
+            "layer_means": [
+              0.8906243965029716,
+              1.0632555410265923,
+              1.0803608447313309,
+              1.1046912297606468,
+              1.1068048849701881,
+              1.1211344860494137,
+              0.9623977355659008,
+              1.0469356253743172,
+              1.066013403236866,
+              1.0923685133457184
+            ]
+          }
+        },
+        "note": "Head indices are within this trained model. Raw a varies with score scale; diagnostic logs do not contain per-head score moments."
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/cpu-tests.xml",
+      "sha256": "ac1fedac69de1f7507da65f3a4b915248f5c38ea9c67691c8da46e47ae879c87",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "junit_summary": {
+          "tests": 245,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 5,
+          "seconds": 142.92,
+          "testcases": 245
+        }
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/distributed-tests.xml",
+      "sha256": "dbf6f83c63adbbb583d57d3a0714cb9d41a505564024042df7b754897ba109cd",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "junit_summary": {
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 11.54,
+          "testcases": 5
+        }
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/metadata.json",
+      "sha256": "4b176da024905e25a4d8dc74e7c22357969e646b82cb4a112f29edee03600b78",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "source_commit": "a4d479f288fa8b37f04727e8bb8629b2da1d448f",
+        "cpu_tests_passed": 240,
+        "cpu_tests_skipped_requires_multiple_devices": 5,
+        "distributed_tests_passed": 5,
+        "artifacts_sha256": {
+          "cpu-tests.xml": "ac1fedac69de1f7507da65f3a4b915248f5c38ea9c67691c8da46e47ae879c87",
+          "distributed-tests.xml": "dbf6f83c63adbbb583d57d3a0714cb9d41a505564024042df7b754897ba109cd"
+        },
+        "note": "The five distributed checks skipped by the single-device suite passed separately with two CPU devices."
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/preflight/attention-cpu.xml",
+      "sha256": "181616474dab54c73bc10b1594f8fe605df3e58ab5ee63f2091908982498ff8a",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "junit_summary": {
+          "tests": 41,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 70.28,
+          "testcases": 41
+        }
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/preflight/attention-fused-gpu.xml",
+      "sha256": "b1229f0a37490c62cfd6a5a9820fe5e750ab4ea928ab170fb2e13ce81e99c94c",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "junit_summary": {
+          "tests": 15,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 34.36,
+          "testcases": 15
+        }
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/200m-positive-global-seed0.json",
+      "sha256": "a00246d5dcaf15c9047348202dd8e561f4f30d96906e692fe08880baeb17c55d",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "completed_utc": "2026-09-18T23:14:23.831213+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+        "outcome": {
+          "attention_backend": "fused",
+          "attention_degree": 2,
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "learned_quadratic",
+          "best_checkpoint_after": 2,
+          "checkpoint_audit": {
+            "checkpoint_state_sha256": "3da554a9d0977b378074e594be85682628a7c7853c818a512a950ccf3fe13ef1",
+            "final_state_sha256": "3da554a9d0977b378074e594be85682628a7c7853c818a512a950ccf3fe13ef1",
+            "first_update": {
+              "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+              "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+              "step": 1
+            },
+            "next_update": {
+              "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+              "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+              "step": 3
+            },
+            "start_state_sha256": "bf1bc4598d001a94e1a8785db69ecdff86121aa5b463754e04599b79818f9d82"
+          },
+          "data_parallel_devices": 4,
+          "data_start_sequence": 0,
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "end_step": 2,
+          "final_step": 2,
+          "key_block_size": 64,
+          "latest_checkpoint_after": 2,
+          "latest_checkpoint_before": null,
+          "m0_qk_parameter_note": null,
+          "quadratic_mode": "positive",
+          "quadratic_parameter_count": 2,
+          "quadratic_sharing": "global",
+          "query_block_size": 64,
+          "restored": false,
+          "restored_step": null,
+          "start_step": 0,
+          "timing": {
+            "checkpoint_seconds": [
+              22.002038831822574
+            ],
+            "evaluation_seconds": [
+              2.676281302701682
+            ],
+            "runtime_seconds": 53.64605575008318,
+            "train_step_seconds": [
+              5.298429453745484,
+              0.4948139735497534
+            ]
+          },
+          "training_tokens": 1048576
+        },
+        "quadratic_mode": "positive",
+        "quadratic_sharing": "global",
+        "resume_validation": "exact_live_durable_restart_state_and_next_batch_rng",
+        "resumed": {
+          "attention_backend": "fused",
+          "attention_degree": 2,
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "learned_quadratic",
+          "best_checkpoint_after": 2,
+          "checkpoint_audit": {
+            "checkpoint_state_sha256": "c89cde92f8e9262eda25c86bed8e6c84cd13cedffb0855b183646b9bca1f5610",
+            "final_state_sha256": "c89cde92f8e9262eda25c86bed8e6c84cd13cedffb0855b183646b9bca1f5610",
+            "first_update": {
+              "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+              "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+              "step": 3
+            },
+            "next_update": {
+              "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+              "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+              "step": 4
+            },
+            "start_state_sha256": "3da554a9d0977b378074e594be85682628a7c7853c818a512a950ccf3fe13ef1"
+          },
+          "data_parallel_devices": 4,
+          "data_start_sequence": 512,
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "end_step": 3,
+          "final_step": 3,
+          "key_block_size": 64,
+          "latest_checkpoint_after": 3,
+          "latest_checkpoint_before": 2,
+          "m0_qk_parameter_note": null,
+          "quadratic_mode": "positive",
+          "quadratic_parameter_count": 2,
+          "quadratic_sharing": "global",
+          "query_block_size": 64,
+          "restored": true,
+          "restored_step": 2,
+          "start_step": 2,
+          "timing": {
+            "checkpoint_seconds": [],
+            "evaluation_seconds": [],
+            "runtime_seconds": 52.18721027625725,
+            "train_step_seconds": [
+              5.301482347771525
+            ]
+          },
+          "training_tokens": 1572864
+        },
+        "runtime": {
+          "checkpoint_seconds": 858.0795144410804,
+          "evaluation_seconds": 374.67938237823546,
+          "limit_seconds": 28800,
+          "projected_total_seconds": 10724.486684057396,
+          "required_seconds_with_margin": 11796.935352463137,
+          "startup_seconds": 53.64605575008318,
+          "steady_train_step_seconds": 0.4948139735497534,
+          "training_seconds": 9438.081731487997
+        },
+        "slurm_job_id": "199894",
+        "slurm_restart_count": "0",
+        "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+        "status": "passed",
+        "validation_nll": 10.881454706192017,
+        "validation_perplexity": 53180.90626910843
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/200m-positive-per-head-seed0.json",
+      "sha256": "6ab96d891923486ce5d9c87b18796a60267fbb8fc16e6c3915f9148323e94826",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "completed_utc": "2026-09-18T23:17:01.287059+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+        "outcome": {
+          "attention_backend": "fused",
+          "attention_degree": 2,
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "learned_quadratic",
+          "best_checkpoint_after": 2,
+          "checkpoint_audit": {
+            "checkpoint_state_sha256": "2749c6d715a13d5fdcc0dce99a09a84fe0458286ce37cd69e334d0e3e3af5661",
+            "final_state_sha256": "2749c6d715a13d5fdcc0dce99a09a84fe0458286ce37cd69e334d0e3e3af5661",
+            "first_update": {
+              "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+              "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+              "step": 1
+            },
+            "next_update": {
+              "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+              "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+              "step": 3
+            },
+            "start_state_sha256": "0c1121eeeefb72a10b04207e6629334e3868305b904be005368d5880bf6bae36"
+          },
+          "data_parallel_devices": 4,
+          "data_start_sequence": 0,
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "end_step": 2,
+          "final_step": 2,
+          "key_block_size": 64,
+          "latest_checkpoint_after": 2,
+          "latest_checkpoint_before": null,
+          "m0_qk_parameter_note": null,
+          "quadratic_mode": "positive",
+          "quadratic_parameter_count": 320,
+          "quadratic_sharing": "per_head",
+          "query_block_size": 64,
+          "restored": false,
+          "restored_step": null,
+          "start_step": 0,
+          "timing": {
+            "checkpoint_seconds": [
+              22.34289692528546
+            ],
+            "evaluation_seconds": [
+              6.940651999786496
+            ],
+            "runtime_seconds": 63.66089130891487,
+            "train_step_seconds": [
+              11.022895146161318,
+              0.4904244667850435
+            ]
+          },
+          "training_tokens": 1048576
+        },
+        "quadratic_mode": "positive",
+        "quadratic_sharing": "per_head",
+        "resume_validation": "exact_live_durable_restart_state_and_next_batch_rng",
+        "resumed": {
+          "attention_backend": "fused",
+          "attention_degree": 2,
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "learned_quadratic",
+          "best_checkpoint_after": 2,
+          "checkpoint_audit": {
+            "checkpoint_state_sha256": "1b11cf78f56109e7b57421788c445eef364d60d9a271b8576d9446ba8ef876ab",
+            "final_state_sha256": "1b11cf78f56109e7b57421788c445eef364d60d9a271b8576d9446ba8ef876ab",
+            "first_update": {
+              "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+              "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+              "step": 3
+            },
+            "next_update": {
+              "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+              "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+              "step": 4
+            },
+            "start_state_sha256": "2749c6d715a13d5fdcc0dce99a09a84fe0458286ce37cd69e334d0e3e3af5661"
+          },
+          "data_parallel_devices": 4,
+          "data_start_sequence": 512,
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "end_step": 3,
+          "final_step": 3,
+          "key_block_size": 64,
+          "latest_checkpoint_after": 3,
+          "latest_checkpoint_before": 2,
+          "m0_qk_parameter_note": null,
+          "quadratic_mode": "positive",
+          "quadratic_parameter_count": 320,
+          "quadratic_sharing": "per_head",
+          "query_block_size": 64,
+          "restored": true,
+          "restored_step": 2,
+          "start_step": 2,
+          "timing": {
+            "checkpoint_seconds": [],
+            "evaluation_seconds": [],
+            "runtime_seconds": 58.68511082511395,
+            "train_step_seconds": [
+              11.223757422994822
+            ]
+          },
+          "training_tokens": 1572864
+        },
+        "runtime": {
+          "checkpoint_seconds": 871.3729800861329,
+          "evaluation_seconds": 971.6912799701095,
+          "limit_seconds": 28800,
+          "projected_total_seconds": 11261.081430823077,
+          "required_seconds_with_margin": 12387.189573905385,
+          "startup_seconds": 63.66089130891487,
+          "steady_train_step_seconds": 0.4904244667850435,
+          "training_seconds": 9354.35627945792
+        },
+        "slurm_job_id": "199894",
+        "slurm_restart_count": "0",
+        "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+        "status": "passed",
+        "validation_nll": 10.881449937820435,
+        "validation_perplexity": 53180.652683390865
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/200m-unrestricted-global-seed0.json",
+      "sha256": "a3297f553f4eda011bc86235b87c04c917b3344b9c12d14c6f1988c2f1236721",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "completed_utc": "2026-09-18T23:19:37.450275+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+        "outcome": {
+          "attention_backend": "fused",
+          "attention_degree": 2,
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "learned_quadratic",
+          "best_checkpoint_after": 2,
+          "checkpoint_audit": {
+            "checkpoint_state_sha256": "c75d2181e8a619cb01e53777040037bf0f5e711a271fa32f05a16c7fbb5b3ebd",
+            "final_state_sha256": "c75d2181e8a619cb01e53777040037bf0f5e711a271fa32f05a16c7fbb5b3ebd",
+            "first_update": {
+              "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+              "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+              "step": 1
+            },
+            "next_update": {
+              "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+              "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+              "step": 3
+            },
+            "start_state_sha256": "510b6cdde35c7e81fce8e391ccc1d0a7957a9b8789f041f19a60cc9b66f1462a"
+          },
+          "data_parallel_devices": 4,
+          "data_start_sequence": 0,
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "end_step": 2,
+          "final_step": 2,
+          "key_block_size": 64,
+          "latest_checkpoint_after": 2,
+          "latest_checkpoint_before": null,
+          "m0_qk_parameter_note": null,
+          "quadratic_mode": "unrestricted",
+          "quadratic_parameter_count": 2,
+          "quadratic_sharing": "global",
+          "query_block_size": 64,
+          "restored": false,
+          "restored_step": null,
+          "start_step": 0,
+          "timing": {
+            "checkpoint_seconds": [
+              22.544840443879366
+            ],
+            "evaluation_seconds": [
+              6.7200762857683
+            ],
+            "runtime_seconds": 64.54625548096374,
+            "train_step_seconds": [
+              10.992137649096549,
+              0.4934667330235243
+            ]
+          },
+          "training_tokens": 1048576
+        },
+        "quadratic_mode": "unrestricted",
+        "quadratic_sharing": "global",
+        "resume_validation": "exact_live_durable_restart_state_and_next_batch_rng",
+        "resumed": {
+          "attention_backend": "fused",
+          "attention_degree": 2,
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "learned_quadratic",
+          "best_checkpoint_after": 2,
+          "checkpoint_audit": {
+            "checkpoint_state_sha256": "347694cb5a2af92d5c2f96940f392c70506dc73b6a603ced6581a87894908a32",
+            "final_state_sha256": "347694cb5a2af92d5c2f96940f392c70506dc73b6a603ced6581a87894908a32",
+            "first_update": {
+              "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+              "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+              "step": 3
+            },
+            "next_update": {
+              "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+              "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+              "step": 4
+            },
+            "start_state_sha256": "c75d2181e8a619cb01e53777040037bf0f5e711a271fa32f05a16c7fbb5b3ebd"
+          },
+          "data_parallel_devices": 4,
+          "data_start_sequence": 512,
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "end_step": 3,
+          "final_step": 3,
+          "key_block_size": 64,
+          "latest_checkpoint_after": 3,
+          "latest_checkpoint_before": 2,
+          "m0_qk_parameter_note": null,
+          "quadratic_mode": "unrestricted",
+          "quadratic_parameter_count": 2,
+          "quadratic_sharing": "global",
+          "query_block_size": 64,
+          "restored": true,
+          "restored_step": 2,
+          "start_step": 2,
+          "timing": {
+            "checkpoint_seconds": [],
+            "evaluation_seconds": [],
+            "runtime_seconds": 57.58106131711975,
+            "train_step_seconds": [
+              10.990881504956633
+            ]
+          },
+          "training_tokens": 1572864
+        },
+        "runtime": {
+          "checkpoint_seconds": 879.2487773112953,
+          "evaluation_seconds": 940.810680007562,
+          "limit_seconds": 28800,
+          "projected_total_seconds": 11296.990178490523,
+          "required_seconds_with_margin": 12426.689196339577,
+          "startup_seconds": 64.54625548096374,
+          "steady_train_step_seconds": 0.4934667330235243,
+          "training_seconds": 9412.384465690702
+        },
+        "slurm_job_id": "199894",
+        "slurm_restart_count": "0",
+        "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+        "status": "passed",
+        "validation_nll": 10.881486892700195,
+        "validation_perplexity": 53182.61800433025
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/200m-unrestricted-per-head-seed0.json",
+      "sha256": "7628fff10782efb599e56c22220f849bfe9f2171c814ab051dbabfb49a9eb709",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "completed_utc": "2026-09-18T23:22:13.232404+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+        "outcome": {
+          "attention_backend": "fused",
+          "attention_degree": 2,
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "learned_quadratic",
+          "best_checkpoint_after": 2,
+          "checkpoint_audit": {
+            "checkpoint_state_sha256": "eb6a063193fe33aab042c5dc3a75fd6e0fc8b2096a3f43ef2c6bc09312c328eb",
+            "final_state_sha256": "eb6a063193fe33aab042c5dc3a75fd6e0fc8b2096a3f43ef2c6bc09312c328eb",
+            "first_update": {
+              "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+              "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+              "step": 1
+            },
+            "next_update": {
+              "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+              "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+              "step": 3
+            },
+            "start_state_sha256": "6a90843f89d7f641fe7f6d071be40e7c1d61eb6c477276600d2224ebbcca5866"
+          },
+          "data_parallel_devices": 4,
+          "data_start_sequence": 0,
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "end_step": 2,
+          "final_step": 2,
+          "key_block_size": 64,
+          "latest_checkpoint_after": 2,
+          "latest_checkpoint_before": null,
+          "m0_qk_parameter_note": null,
+          "quadratic_mode": "unrestricted",
+          "quadratic_parameter_count": 320,
+          "quadratic_sharing": "per_head",
+          "query_block_size": 64,
+          "restored": false,
+          "restored_step": null,
+          "start_step": 0,
+          "timing": {
+            "checkpoint_seconds": [
+              22.097647681832314
+            ],
+            "evaluation_seconds": [
+              6.88442200422287
+            ],
+            "runtime_seconds": 63.987554552033544,
+            "train_step_seconds": [
+              10.915447512175888,
+              0.48870747769251466
+            ]
+          },
+          "training_tokens": 1048576
+        },
+        "quadratic_mode": "unrestricted",
+        "quadratic_sharing": "per_head",
+        "resume_validation": "exact_live_durable_restart_state_and_next_batch_rng",
+        "resumed": {
+          "attention_backend": "fused",
+          "attention_degree": 2,
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "learned_quadratic",
+          "best_checkpoint_after": 2,
+          "checkpoint_audit": {
+            "checkpoint_state_sha256": "19a38e4e848a60ecfe474c506b7c16dad050b9565957d0efed2ae5556d4d7f5f",
+            "final_state_sha256": "19a38e4e848a60ecfe474c506b7c16dad050b9565957d0efed2ae5556d4d7f5f",
+            "first_update": {
+              "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+              "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+              "step": 3
+            },
+            "next_update": {
+              "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+              "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+              "step": 4
+            },
+            "start_state_sha256": "eb6a063193fe33aab042c5dc3a75fd6e0fc8b2096a3f43ef2c6bc09312c328eb"
+          },
+          "data_parallel_devices": 4,
+          "data_start_sequence": 512,
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "end_step": 3,
+          "final_step": 3,
+          "key_block_size": 64,
+          "latest_checkpoint_after": 3,
+          "latest_checkpoint_before": 2,
+          "m0_qk_parameter_note": null,
+          "quadratic_mode": "unrestricted",
+          "quadratic_parameter_count": 320,
+          "quadratic_sharing": "per_head",
+          "query_block_size": 64,
+          "restored": true,
+          "restored_step": 2,
+          "start_step": 2,
+          "timing": {
+            "checkpoint_seconds": [],
+            "evaluation_seconds": [],
+            "runtime_seconds": 57.72699199011549,
+            "train_step_seconds": [
+              10.885152953211218
+            ]
+          },
+          "training_tokens": 1572864
+        },
+        "runtime": {
+          "checkpoint_seconds": 861.8082595914602,
+          "evaluation_seconds": 963.8190805912018,
+          "limit_seconds": 28800,
+          "projected_total_seconds": 11211.22132424172,
+          "required_seconds_with_margin": 12332.343456665893,
+          "startup_seconds": 63.987554552033544,
+          "steady_train_step_seconds": 0.48870747769251466,
+          "training_seconds": 9321.606429507025
+        },
+        "slurm_job_id": "199894",
+        "slurm_restart_count": "0",
+        "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+        "status": "passed",
+        "validation_nll": 10.88145923614502,
+        "validation_perplexity": 53181.14717666013
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/attention-cpu.json",
+      "sha256": "e196445a822a14bbe71ee42fade2a526f49bd60b3cbda3c6642db1215e499b55",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "completed_utc": "2026-09-18T23:10:59.100780+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+        "junit_path": "/data/cl/u/rafah/home/projects/functional-memory/results/learned_quadratic_attention/preflight/833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48/attention-cpu.xml",
+        "slurm_job_id": "199894",
+        "slurm_restart_count": "0",
+        "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+        "status": "passed",
+        "tests_passed": 41
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/attention-fused-gpu.json",
+      "sha256": "ca6de58eb07aad3fc30bceaf2891554c8ad36640461f2243819aab43e28b1fab",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "completed_utc": "2026-09-18T23:11:35.427346+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+        "junit_path": "/data/cl/u/rafah/home/projects/functional-memory/results/learned_quadratic_attention/preflight/833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48/attention-fused-gpu.xml",
+        "slurm_job_id": "199894",
+        "slurm_restart_count": "0",
+        "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+        "status": "passed",
+        "tests_passed": 15
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/preflight/checks/initialization.json",
+      "sha256": "b0412102c175df20fc8e06da583243b2bfcff03a74eaf9af4d36a18b3708cb7b",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "completed_utc": "2026-09-18T23:12:04.006451+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+        "initializations": {
+          "200m-positive-global-seed0": {
+            "backbone_parameter_count": 199906304,
+            "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+            "coefficient_count": 2,
+            "coefficient_shape": [
+              2
+            ],
+            "initial_coefficient_pair": [
+              1.0,
+              1.0
+            ],
+            "parameter_count": 199906306
+          },
+          "200m-positive-per-head-seed0": {
+            "backbone_parameter_count": 199906304,
+            "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+            "coefficient_count": 320,
+            "coefficient_shape": [
+              10,
+              16,
+              2
+            ],
+            "initial_coefficient_pair": [
+              1.0,
+              1.0
+            ],
+            "parameter_count": 199906624
+          },
+          "200m-unrestricted-global-seed0": {
+            "backbone_parameter_count": 199906304,
+            "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+            "coefficient_count": 2,
+            "coefficient_shape": [
+              2
+            ],
+            "initial_coefficient_pair": [
+              1.0,
+              0.5
+            ],
+            "parameter_count": 199906306
+          },
+          "200m-unrestricted-per-head-seed0": {
+            "backbone_parameter_count": 199906304,
+            "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+            "coefficient_count": 320,
+            "coefficient_shape": [
+              10,
+              16,
+              2
+            ],
+            "initial_coefficient_pair": [
+              1.0,
+              0.5
+            ],
+            "parameter_count": 199906624
+          },
+          "fixed": {
+            "backbone_parameter_count": 199906304,
+            "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+            "coefficient_count": 0,
+            "coefficient_shape": null,
+            "initial_coefficient_pair": null,
+            "parameter_count": 199906304
+          }
+        },
+        "slurm_job_id": "199894",
+        "slurm_restart_count": "0",
+        "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+        "status": "passed"
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/preflight/provenance.json",
+      "sha256": "143a552198ac6453773c367880771a19d5398ce327c85fcf0340f11725682394",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "data_identity": {
+          "eval_manifest": {
+            "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+            "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+          },
+          "train_manifest": {
+            "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+            "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+          }
+        },
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "eligible_runs": [
+          "200m-positive-global-seed0",
+          "200m-positive-per-head-seed0",
+          "200m-unrestricted-global-seed0",
+          "200m-unrestricted-per-head-seed0"
+        ],
+        "execution_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/learned_quadratic_attention",
+        "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+        "log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/learned_quadratic_attention/preflight/slurm-199894.out",
+        "scheduler": {
+          "cpus_per_task": 32,
+          "gpu_count": 4,
+          "gpu_type": "h100",
+          "memory": "256G",
+          "node": "dogo",
+          "partition": "standard",
+          "preflight_time": "02:00:00",
+          "production_time": "08:00:00"
+        },
+        "slurm_job_id": "199894",
+        "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb"
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/preflight/success.json",
+      "sha256": "017656a418f77a1110fa7fc366171ac9eba0a84f5fbadfcffe182ef6f0ced052",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "checks": [
+          "attention-cpu",
+          "attention-fused-gpu",
+          "initialization",
+          "200m-positive-global-seed0",
+          "200m-positive-per-head-seed0",
+          "200m-unrestricted-global-seed0",
+          "200m-unrestricted-per-head-seed0"
+        ],
+        "completed_utc": "2026-09-18T23:22:13.781778+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "hardware": {
+          "backend": "gpu",
+          "device_kinds": [
+            "NVIDIA H100 80GB HBM3",
+            "NVIDIA H100 80GB HBM3",
+            "NVIDIA H100 80GB HBM3",
+            "NVIDIA H100 80GB HBM3"
+          ],
+          "devices": [
+            "cuda:0",
+            "cuda:1",
+            "cuda:2",
+            "cuda:3"
+          ]
+        },
+        "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+        "slurm_job_id": "199894",
+        "slurm_restart_count": "0",
+        "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+        "status": "passed"
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/resume-audit-metadata.json",
+      "sha256": "81fa7484f8292a3c8d0d11120441836210c35f5d7af3268a0a9b82ebf948ffd9",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "source_commit": "e4ddb749a3f129e120be6f9e8841cb51de8ceefa",
+        "passed": 46,
+        "skipped_requires_multiple_devices": 5,
+        "artifacts_sha256": {
+          "resume-audit-tests.xml": "91c6376bb5cb7d04b487757b20d8f315d6d827f491627c7c216375897dd2b2f1"
+        },
+        "note": "Validates revised exact checkpoint/state/input/RNG audits, CPU uninterrupted equivalence, and legacy training behavior. Prior GPU kernels and production numerical recipe are unchanged."
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/resume-audit-tests.xml",
+      "sha256": "91c6376bb5cb7d04b487757b20d8f315d6d827f491627c7c216375897dd2b2f1",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "junit_summary": {
+          "tests": 51,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 5,
+          "seconds": 33.12,
+          "testcases": 51
+        }
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/resume_diagnosis.json",
+      "sha256": "3204ee6973417b254428044981bddeecbe17490513d20c748a3a0525905d1114",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "schema_version": 1,
+        "diagnosed_at_utc": "2026-09-18T23:03:31Z",
+        "experiment": "learned_quadratic_attention",
+        "run_name": "200m-positive-global-seed0",
+        "slurm_job_id": "199891",
+        "source_commit": "a4d479f288fa8b37f04727e8bb8629b2da1d448f",
+        "preflight_identity": "81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71",
+        "attempt_directory": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba",
+        "outcome": "Independent training trajectories already differed before the checkpoint resume; CPU restores reproduce the worker state hashes exactly.",
+        "method": {
+          "platform": "cpu",
+          "cpu_affinity_cores": 8,
+          "environment_python": "/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+          "restoration": "orbax.StandardCheckpointer with each run's saved config and freshly initialized TrainState template",
+          "config_parsing": "json.loads followed by _update_dataclass; PyYAML misparses exponent-only JSON floats",
+          "comparison": "All 285 leaves checked for identical tree path, shape, dtype and array equality; differing arrays compared in float64.",
+          "state_sha256_encoding": "Ordered tree paths, shapes, dtypes and C-order raw bytes, matching the GPU worker algorithm.",
+          "numerical_finiteness": "The recorded pilot workers reject nonfinite state leaves before hashing; all CPU hashes with recorded worker counterparts reproduce those finite-checked hashes. All computed discrepancy statistics were finite."
+        },
+        "worker_results": {
+          "initial_step2": {
+            "path": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0-step2.json",
+            "state_sha256": "0a83bac4ac75226417816bd6af50317e1b60bd91a2b2282aeb0cf4984545caaf"
+          },
+          "resumed_step3": {
+            "path": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0-resume.json",
+            "state_sha256": "47c6ade80d6c201cdac074acb9649d26f2334c78f232e156aa93dd419809b398",
+            "restored_step": 2,
+            "data_start_sequence": 512,
+            "final_step": 3,
+            "data_parallel_devices": 4
+          },
+          "uninterrupted_step3": {
+            "path": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0-uninterrupted.json",
+            "state_sha256": "c4f33fa193197d071cc395613e5c65b13cbcbc3db3d24fac68431e2a5d48a552"
+          }
+        },
+        "step2_validation_nll": {
+          "initial_run": 10.881455659866333,
+          "independent_uninterrupted_run": 10.881449937820435
+        },
+        "comparisons": [
+          {
+            "step": 2,
+            "left_checkpoint": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0/checkpoints/2/default",
+            "right_checkpoint": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0-uninterrupted/checkpoints/2/default",
+            "left_cpu_sha256": "0a83bac4ac75226417816bd6af50317e1b60bd91a2b2282aeb0cf4984545caaf",
+            "right_cpu_sha256": "20aa45984e9f57503c117ba00ba9a16648876ad2c1f8e205c5525fba9271336f",
+            "total_leaves": 285,
+            "bitwise_equal_leaves": 25,
+            "differing_leaves": 260,
+            "all_paths_shapes_dtypes_identical": true,
+            "quadratic_coefficient_parameters_bitwise_equal": true,
+            "groups": {
+              "params": {
+                "differing_leaves": 72,
+                "differing_elements": 438001,
+                "compared_elements_in_differing_leaves": 199884800,
+                "max_absolute_difference": 1.5273690223693848e-07,
+                "max_difference_relative_to_leaf_peak": 9.017698971788767e-07,
+                "relative_l2_over_differing_leaves": 3.311671293304076e-09
+              },
+              "adam_mu": {
+                "differing_leaves": 94,
+                "differing_elements": 185190086,
+                "compared_elements_in_differing_leaves": 199906306,
+                "max_absolute_difference": 2.3589469492435455e-05,
+                "max_difference_relative_to_leaf_peak": 0.009668140292429848,
+                "relative_l2_over_differing_leaves": 0.0012100162402445011
+              },
+              "adam_nu": {
+                "differing_leaves": 94,
+                "differing_elements": 185270288,
+                "compared_elements_in_differing_leaves": 199906306,
+                "max_absolute_difference": 1.5623891158611514e-07,
+                "max_difference_relative_to_leaf_peak": 0.009721843995038866,
+                "relative_l2_over_differing_leaves": 0.00526908591176294
+              }
+            },
+            "largest_absolute_leaf_difference": {
+              "dtype": "float32",
+              "maxabs": 2.3589469492435455e-05,
+              "num_diff": 18126122,
+              "numel": 32768000,
+              "path": "(GetAttrKey(name='opt_state'), SequenceKey(idx=1), SequenceKey(idx=0), GetAttrKey(name='mu'), DictKey(key='token_embedding'), DictKey(key='embedding'), GetAttrKey(name='value'))",
+              "rel_to_peak": 0.009668140292429848,
+              "rms": 1.0315832320737238e-05,
+              "rmsdiff": 3.9767717610137434e-08,
+              "shape": [
+                32000,
+                1024
+              ]
+            },
+            "coefficient_moment_differences": [
+              {
+                "dtype": "float32",
+                "maxabs": 3.0850060284137726e-09,
+                "num_diff": 2,
+                "numel": 2,
+                "path": "(GetAttrKey(name='opt_state'), SequenceKey(idx=1), SequenceKey(idx=0), GetAttrKey(name='mu'), DictKey(key='quadratic_coefficients'), GetAttrKey(name='value'))",
+                "rel_to_peak": 8.940077863017765e-06,
+                "rms": 0.0002702874155597235,
+                "rmsdiff": 2.429777694021096e-09,
+                "shape": [
+                  2
+                ],
+                "values": [
+                  [
+                    -0.00034507596865296364,
+                    0.00016441760817542672
+                  ],
+                  [
+                    -0.0003450728836469352,
+                    0.00016441609477624297
+                  ]
+                ]
+              },
+              {
+                "dtype": "float32",
+                "maxabs": 5.7696070143720135e-12,
+                "num_diff": 2,
+                "numel": 2,
+                "path": "(GetAttrKey(name='opt_state'), SequenceKey(idx=1), SequenceKey(idx=0), GetAttrKey(name='nu'), DictKey(key='quadratic_coefficients'), GetAttrKey(name='value'))",
+                "rel_to_peak": 1.7142004023557674e-05,
+                "rms": 2.435488244554515e-07,
+                "rmsdiff": 4.189925377361354e-12,
+                "shape": [
+                  2
+                ],
+                "values": [
+                  [
+                    3.3657715903245844e-07,
+                    7.312917205126723e-08
+                  ],
+                  [
+                    3.3657138942544407e-07,
+                    7.312782202006929e-08
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "step": 3,
+            "left_checkpoint": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0/checkpoints/3/default",
+            "right_checkpoint": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/81ba6702ce4df9a4834a592587b9c72ad81a012b7871990100ba11901cf9bb71/attempts/199891-0-c3a86cba/200m-positive-global-seed0-uninterrupted/checkpoints/3/default",
+            "left_cpu_sha256": "47c6ade80d6c201cdac074acb9649d26f2334c78f232e156aa93dd419809b398",
+            "right_cpu_sha256": "c4f33fa193197d071cc395613e5c65b13cbcbc3db3d24fac68431e2a5d48a552",
+            "total_leaves": 285,
+            "bitwise_equal_leaves": 9,
+            "differing_leaves": 276,
+            "all_paths_shapes_dtypes_identical": true,
+            "quadratic_coefficient_parameters_bitwise_equal": true,
+            "groups": {
+              "params": {
+                "differing_leaves": 88,
+                "differing_elements": 29998028,
+                "compared_elements_in_differing_leaves": 199901184,
+                "max_absolute_difference": 3.4552067518234253e-07,
+                "max_difference_relative_to_leaf_peak": 2.2605298569660263e-06,
+                "relative_l2_over_differing_leaves": 2.7748719226078095e-08
+              },
+              "adam_mu": {
+                "differing_leaves": 94,
+                "differing_elements": 186329177,
+                "compared_elements_in_differing_leaves": 199906306,
+                "max_absolute_difference": 2.1130312234163284e-05,
+                "max_difference_relative_to_leaf_peak": 0.006145915966582319,
+                "relative_l2_over_differing_leaves": 0.001042440032919297
+              },
+              "adam_nu": {
+                "differing_leaves": 94,
+                "differing_elements": 186331001,
+                "compared_elements_in_differing_leaves": 199906306,
+                "max_absolute_difference": 2.1271353034535423e-07,
+                "max_difference_relative_to_leaf_peak": 0.009255486586883353,
+                "relative_l2_over_differing_leaves": 0.004343291387404426
+              }
+            },
+            "largest_absolute_leaf_difference": {
+              "dtype": "float32",
+              "maxabs": 2.1130312234163284e-05,
+              "num_diff": 19202390,
+              "numel": 32768000,
+              "path": "(GetAttrKey(name='opt_state'), SequenceKey(idx=1), SequenceKey(idx=0), GetAttrKey(name='mu'), DictKey(key='token_embedding'), DictKey(key='embedding'), GetAttrKey(name='value'))",
+              "rel_to_peak": 0.006145915966582319,
+              "rms": 1.4616318550383414e-05,
+              "rmsdiff": 4.6891438570671647e-08,
+              "shape": [
+                32000,
+                1024
+              ]
+            },
+            "coefficient_moment_differences": [
+              {
+                "dtype": "float32",
+                "maxabs": 2.1455343812704086e-07,
+                "num_diff": 2,
+                "numel": 2,
+                "path": "(GetAttrKey(name='opt_state'), SequenceKey(idx=1), SequenceKey(idx=0), GetAttrKey(name='mu'), DictKey(key='quadratic_coefficients'), GetAttrKey(name='value'))",
+                "rel_to_peak": 0.00043447117396916527,
+                "rms": 0.00038550732117707684,
+                "rmsdiff": 1.603278539884895e-07,
+                "shape": [
+                  2
+                ],
+                "values": [
+                  [
+                    -0.0004938266356475651,
+                    0.00023101308033801615
+                  ],
+                  [
+                    -0.0004936120822094381,
+                    0.0002309397532371804
+                  ]
+                ]
+              },
+              {
+                "dtype": "float32",
+                "maxabs": 3.9329961509793065e-10,
+                "num_diff": 2,
+                "numel": 2,
+                "path": "(GetAttrKey(name='opt_state'), SequenceKey(idx=1), SequenceKey(idx=0), GetAttrKey(name='nu'), DictKey(key='quadratic_coefficients'), GetAttrKey(name='value'))",
+                "rel_to_peak": 0.0008064934436710547,
+                "rms": 3.5257883189038446e-07,
+                "rmsdiff": 2.8143068915958543e-10,
+                "shape": [
+                  2
+                ],
+                "values": [
+                  [
+                    4.87666227400041e-07,
+                    1.0394862215434841e-07
+                  ],
+                  [
+                    4.87272927784943e-07,
+                    1.0388761495505605e-07
+                  ]
+                ]
+              }
+            ]
+          }
+        ],
+        "interpretation": {
+          "pre_resume_evidence": "The two step-2 checkpoints already differ in 260/285 leaves; this comparison precedes any resumed update.",
+          "serialization_artifact_excluded": "CPU hashes exactly match GPU worker hashes for initial step 2, resumed step 3 and uninterrupted step 3; paths, dtypes and shapes match between each state pair.",
+          "coefficient_parameters": "Bitwise equal between runs at both compared steps; their Adam moments differ.",
+          "possible_origin": "The largest optimizer discrepancies are in token-embedding moments and exist before resume, consistent with GPU gradient accumulation variability.",
+          "caveat": "The actual nondeterministic primitive has not been conclusively located. These observations do not independently establish exact checkpoint round-trip fidelity or isolate the effect of resume on continuation.",
+          "recommended_gate": "Check live pre-save versus restored state exactly, separately from independently generated GPU trajectory comparison."
+        },
+        "checkpoint_retention": {
+          "status": "preserved",
+          "policy": "Keep these diagnostic checkpoints until the replacement validation gate passes; this diagnosis did not modify or delete checkpoints."
+        }
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/scaffold-metadata.json",
+      "sha256": "68d3ed13f9b23a615b0fda71086c5a5c26bcf4a27fd2bdf36266a5a410eb3dbf",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+        "passed": 27,
+        "artifacts_sha256": {
+          "scaffold-tests.xml": "575d2e2eecbad12dc1a4a3997e9fd661b55b93c80805d6d4c8f9560f29c1dfc0"
+        }
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/validation/scaffold-tests.xml",
+      "sha256": "575d2e2eecbad12dc1a4a3997e9fd661b55b93c80805d6d4c8f9560f29c1dfc0",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "junit_summary": {
+          "tests": 27,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 2.39,
+          "testcases": 27
+        }
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-positive-global-seed0.json",
+      "sha256": "5bcd066713cd56e571f8c5d76607b0d7572c2b0cfa87c59bccc5ef50a369b3a9",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "checkpoint_path": "checkpoints/learned_quadratic_attention/200m-positive-global-seed0/19074",
+        "files": [
+          {
+            "path": "_CHECKPOINT_METADATA",
+            "size_bytes": 366,
+            "sha256": "12344c9bad3e8a0b816b841e1a00fb41140bd3cfe5c1949ecc7f40ed79946fe5"
+          },
+          {
+            "path": "default/_METADATA",
+            "size_bytes": 143639,
+            "sha256": "ca208d090f0a14d4fc4d4ce84c0ca5244080e7ea724085c85641e7629e1bf80f"
+          },
+          {
+            "path": "default/_sharding",
+            "size_bytes": 88337,
+            "sha256": "39ba182e958a6e5adaa76dcc8f506331a16d81c9aae33e97eca5258867048cd5"
+          },
+          {
+            "path": "default/array_metadatas/process_0",
+            "size_bytes": 49652,
+            "sha256": "42a3a744fabd036fb799db55b07094fdef00db5a9710fedff3fb93a416404afd"
+          },
+          {
+            "path": "default/d/c4a6d7b91f7a79c319dc1c30f0d0966f",
+            "size_bytes": 3454,
+            "sha256": "3e7e2ac44d93ee8044b7e0b5f6caf3d4edb4d1c76910e40db22e2275c849756e"
+          },
+          {
+            "path": "default/manifest.ocdbt",
+            "size_bytes": 118,
+            "sha256": "953724f2d0c0697c307bf029c474dfe3ae112ad8baedc4e57fee081163cb3c02"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/652bb8286131f060b57ecb800719f24b",
+            "size_bytes": 195,
+            "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/96c36311b28b5e0ee2a98325b289a0ae",
+            "size_bytes": 780,
+            "sha256": "40588e0583e8faa5b6eafb876cb5af4b5fb8dd53301f283bfd8295b19eacbd64"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/97293719b5e5dccd675528e032320e4b",
+            "size_bytes": 2099859456,
+            "sha256": "ed17d0a1ae995b1f65dc2d7f3d199a6821e7c0fb9e0d0fb6690e3d52ca6c6f07"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/a3b64298451bfd6a1eb59f7dd6b5ef90",
+            "size_bytes": 99172352,
+            "sha256": "93223d18ef5fcdbe47f372c3a02dd2c548b12e8aea7e4cbe672dddd995e2217a"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/ca991268c4d5898ba4a64bf45af1e5d5",
+            "size_bytes": 4145,
+            "sha256": "d01cfed4cf149d7670bb979d5d8c6e0dbd65c6772bb024686c02dc6e5ca33fc6"
+          },
+          {
+            "path": "default/ocdbt.process_0/manifest.ocdbt",
+            "size_bytes": 312,
+            "sha256": "a2a43528d537f51694cd897e1dbd4f66699260f868d7429d25247a096960f3b5"
+          },
+          {
+            "path": "metrics/metrics",
+            "size_bytes": 139,
+            "sha256": "d7f7a5cae949ec2bbda04440cdfd530de1c1b2cac56b882104eb3d191f8173ce"
+          }
+        ]
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-positive-per-head-seed0.json",
+      "sha256": "99770e303d38264abd0554fb624f86fdb582921e9a63b49a8dab2391a00e3910",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "checkpoint_path": "checkpoints/learned_quadratic_attention/200m-positive-per-head-seed0/19074",
+        "files": [
+          {
+            "path": "_CHECKPOINT_METADATA",
+            "size_bytes": 366,
+            "sha256": "b904f5c242df2affb0866f0ad2e78bd1ba5ab19d4235856f38c8277b33cebb2c"
+          },
+          {
+            "path": "default/_METADATA",
+            "size_bytes": 143663,
+            "sha256": "83a9fcf682fdfc2691db8563fbb84fa53fcd4ba6152a82e48856faa3a131dac2"
+          },
+          {
+            "path": "default/_sharding",
+            "size_bytes": 88337,
+            "sha256": "39ba182e958a6e5adaa76dcc8f506331a16d81c9aae33e97eca5258867048cd5"
+          },
+          {
+            "path": "default/array_metadatas/process_0",
+            "size_bytes": 49700,
+            "sha256": "7d4b5034c6f872b3d601bed40dfa9837f79911bd27761c622b1d145bdcce3f81"
+          },
+          {
+            "path": "default/d/6683e88f0a9a4478caaeb61221efc84c",
+            "size_bytes": 3275,
+            "sha256": "436670df509b118c787c3b60270c8975d33d11f2456618073a0510f804e9b5fc"
+          },
+          {
+            "path": "default/manifest.ocdbt",
+            "size_bytes": 118,
+            "sha256": "5f0048b42cf5d69f31d4dc89a106616b92ee1ffc9fd06b21450859cdc5202f51"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/5cebac7dc0f0ac6ccd5aa09d34522332",
+            "size_bytes": 195,
+            "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/634b6e2d4c7b3b22d013e75f9e7de135",
+            "size_bytes": 1273950208,
+            "sha256": "437a22b98f5707c34b7d4e087eded5158361b48a30e26a5339696f8e6c47cf08"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/b7dd5429e83f087f90c7f1fe5a64f97c",
+            "size_bytes": 643,
+            "sha256": "7d5d2092143cb75fef80a224d08834780edc882781e712ad7ae4cca58cc3e9f9"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/cb4aa1da12a406f8ceada4dc3c615a1c",
+            "size_bytes": 621527040,
+            "sha256": "a3b63a415501a7748714702517d6e14cf33c719c719a45d5f282a64881894b1f"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/dff2371719e28fcdadd2660b2e672367",
+            "size_bytes": 303599616,
+            "sha256": "d12091daa4603256d196bd9665742c416b20d6246321a5d2d402a441b830bc34"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/f09f69d0c73481a82bb8514e49a8bbca",
+            "size_bytes": 768,
+            "sha256": "58239031f4e06f8ba44c1db9d6a363f4f621df613848789b4002ad0fb97efee4"
+          },
+          {
+            "path": "default/ocdbt.process_0/manifest.ocdbt",
+            "size_bytes": 362,
+            "sha256": "9ef946411525371f166ebb81c6bf81b4664905b36f0ebe27024e633a5df80b11"
+          },
+          {
+            "path": "metrics/metrics",
+            "size_bytes": 139,
+            "sha256": "a6963c227f5660164d88444646d78fb8fcc7078bdd3e6af68dfe319e93ae826f"
+          }
+        ]
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-unrestricted-global-seed0.json",
+      "sha256": "de82ec3e96da9bd40e93920cb7b4226a7005b96c04ee935514f5d585b46c8d1a",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "checkpoint_path": "checkpoints/learned_quadratic_attention/200m-unrestricted-global-seed0/2000",
+        "files": [
+          {
+            "path": "_CHECKPOINT_METADATA",
+            "size_bytes": 366,
+            "sha256": "a6e4fec973346c9474b10934f7126382a28f36d0ff17c20503bd85c1e17204dd"
+          },
+          {
+            "path": "default/_METADATA",
+            "size_bytes": 143639,
+            "sha256": "ca208d090f0a14d4fc4d4ce84c0ca5244080e7ea724085c85641e7629e1bf80f"
+          },
+          {
+            "path": "default/_sharding",
+            "size_bytes": 88337,
+            "sha256": "39ba182e958a6e5adaa76dcc8f506331a16d81c9aae33e97eca5258867048cd5"
+          },
+          {
+            "path": "default/array_metadatas/process_0",
+            "size_bytes": 49652,
+            "sha256": "42a3a744fabd036fb799db55b07094fdef00db5a9710fedff3fb93a416404afd"
+          },
+          {
+            "path": "default/d/b76a04b2a13a898ea7be91c888171f55",
+            "size_bytes": 3311,
+            "sha256": "375659ccf6671d2c3cd47e23ad5f8f742b8714a7193a56c8ba06d8a5adc65e01"
+          },
+          {
+            "path": "default/manifest.ocdbt",
+            "size_bytes": 118,
+            "sha256": "d83d09a8bbd58fbac9f6129a67b573516987c196b5d399535e475188364cf8bf"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/5b4d70cc34119e4bd515ee1f8a67360f",
+            "size_bytes": 195,
+            "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/a4e65c6fbac4b1ad513f81717d18e592",
+            "size_bytes": 1391177728,
+            "sha256": "b9ebdbe8e3058f08b73b8a450743a5eefe1fd0af8b27d1ce7e5d3ddb62187ce8"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/b0ad7d870149bb46e7a0c70be3336e0e",
+            "size_bytes": 4087,
+            "sha256": "54b22e4f9a01dfe7d495fb6826d0ad3a64f51d38306690718a8f8ce2fa8f04f7"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/cfa6eb6d6e69281b6a756686ad04d0fd",
+            "size_bytes": 588,
+            "sha256": "30ae16cd348e0b78f1bfde940e7a718a79903b98a8da798dba1d90826ebd931d"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/e91fb5fce3bb565a704cfdb449eff625",
+            "size_bytes": 746,
+            "sha256": "6c3d4abaad9c82a171e14124dca284d62b66d71827c21c14307cfd6425fdde8b"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/e9efc7b7f49480a5e72aada109efcec3",
+            "size_bytes": 816164864,
+            "sha256": "490d40233db30132382e234d396954e8c094e062db4dc49be67e456ace821d86"
+          },
+          {
+            "path": "default/ocdbt.process_0/manifest.ocdbt",
+            "size_bytes": 344,
+            "sha256": "48a6707af6b77c678c1392251a1f5261844fb134498dcd5e225d5de3c6092882"
+          },
+          {
+            "path": "metrics/metrics",
+            "size_bytes": 136,
+            "sha256": "fc829cebf55cde59625d0f78aee439cddf6b8e59e64e5c30eec67916135bcb0e"
+          }
+        ]
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/provenance/checkpoint_inventories/200m-unrestricted-per-head-seed0.json",
+      "sha256": "90674e9eaef7edbbdbb4a8df7df767094c5f476f47ff2e6e9385ba9e77242d23",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "checkpoint_path": "checkpoints/learned_quadratic_attention/200m-unrestricted-per-head-seed0/2000",
+        "files": [
+          {
+            "path": "_CHECKPOINT_METADATA",
+            "size_bytes": 366,
+            "sha256": "c6ff4da01bbd615e2772a57043954ae7f173e83be667aade6cc44d62657c0262"
+          },
+          {
+            "path": "default/_METADATA",
+            "size_bytes": 143663,
+            "sha256": "83a9fcf682fdfc2691db8563fbb84fa53fcd4ba6152a82e48856faa3a131dac2"
+          },
+          {
+            "path": "default/_sharding",
+            "size_bytes": 88337,
+            "sha256": "39ba182e958a6e5adaa76dcc8f506331a16d81c9aae33e97eca5258867048cd5"
+          },
+          {
+            "path": "default/array_metadatas/process_0",
+            "size_bytes": 49700,
+            "sha256": "7d4b5034c6f872b3d601bed40dfa9837f79911bd27761c622b1d145bdcce3f81"
+          },
+          {
+            "path": "default/d/fcc83437c092bed8191d2c86b4ffcb7e",
+            "size_bytes": 3492,
+            "sha256": "91315787780c0c315a0f826275903d2b61c894145a25e73286417c0fd0bc59e2"
+          },
+          {
+            "path": "default/manifest.ocdbt",
+            "size_bytes": 118,
+            "sha256": "6e6bb17d2d4f8db849befd1cf274c4a32aec92a1d7d6276c6798b536c3d8ede0"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/06768c5c7766d781102ae2b82b5affcb",
+            "size_bytes": 4094,
+            "sha256": "984438c2cd6c43e9d84fc1fc1d9721ca0ef89ae5963dd59c70ee3bb8d0a3f9d1"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/1a05724e7185c0d3857bfb3823958f21",
+            "size_bytes": 195,
+            "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/938e0555a6b1ed83719f61f6113b401e",
+            "size_bytes": 1112047616,
+            "sha256": "f9b6adc34fad820082182c29be9907b179648309b98771ce8b977fad8fa4f628"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/a5180c01df422a98ec1024ed3a5e84ac",
+            "size_bytes": 1095274496,
+            "sha256": "40a20230c1c276b3a00f515f65e4aba1bed5491e04d90e9f7da8c0b6c91f0159"
+          },
+          {
+            "path": "default/ocdbt.process_0/d/cf4af820efac11eefa91e89d4735760d",
+            "size_bytes": 729,
+            "sha256": "9b35a1c618f949b31ae8ff35a340bc4dd75090be773f3911328e5b820792ac6e"
+          },
+          {
+            "path": "default/ocdbt.process_0/manifest.ocdbt",
+            "size_bytes": 317,
+            "sha256": "f6e0ae14d214f4ee18049e83589016c40cb44305c79d2d63734270506ccbeac8"
+          },
+          {
+            "path": "metrics/metrics",
+            "size_bytes": 137,
+            "sha256": "2e98399a5364fb991fb0adec787a69fd50a23c6bda016d500d5ed872deee65ed"
+          }
+        ]
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/provenance/historical_launch.json",
+      "sha256": "0d68621e2c3446aaafefb8c58e7c0c9452d63bdd1365b908a939a8700d02bfd7",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "controls": [
+          {
+            "attention_backend": "fused",
+            "attention_degree": 2,
+            "completion": "results/polynomial_attention/200m-m002-seed0/completion.json",
+            "config": {
+              "data": {
+                "batch_size": 256,
+                "dataset_config": "sample-100BT",
+                "dataset_name": "HuggingFaceFW/fineweb-edu",
+                "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+                "sequence_length": 2049,
+                "shuffle_seed": 0,
+                "source": "packed",
+                "split": "train",
+                "synthetic_vocab_size": 32000,
+                "text_field": "text",
+                "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+                "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+              },
+              "model": {
+                "attention_backend": "fused",
+                "attention_degree": 2,
+                "dropout": 0.0,
+                "hidden_size": 1024,
+                "intermediate_size": 3008,
+                "kind": "transformer",
+                "max_seq_len": 2048,
+                "num_heads": 16,
+                "num_kv_heads": 16,
+                "num_layers": 10,
+                "qk_head_dim": 64,
+                "remat": false,
+                "rms_norm_eps": 1e-06,
+                "rope_theta": 10000.0,
+                "tie_embeddings": false,
+                "value_head_dim": 64,
+                "vocab_size": 32000
+              },
+              "optim": {
+                "beta1": 0.9,
+                "beta2": 0.95,
+                "grad_clip_norm": 1.0,
+                "learning_rate": 0.0003,
+                "min_learning_rate": 3e-05,
+                "total_steps": 19074,
+                "warmup_steps": 2000,
+                "weight_decay": 0.1
+              },
+              "train": {
+                "ckpt_every": 500,
+                "dtype": "bfloat16",
+                "eval_batches": 7,
+                "eval_every": 1000,
+                "log_every": 10,
+                "micro_batch_size": 64,
+                "seed": 0,
+                "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+                "wandb_entity": null,
+                "wandb_mode": "disabled",
+                "wandb_project": "functional-memory-polynomial-attention",
+                "wandb_run_name": "200m-m002-seed0",
+                "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/200m-m002-seed0"
+              }
+            },
+            "config_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/polynomial_attention/configs/runs/200m-m002-seed0.yaml",
+            "execution_attempts": [
+              {
+                "elapsed_seconds": 10094,
+                "ended_local": "2026-09-18T04:01:54",
+                "exit_code": "0:0",
+                "gpu_count": 4,
+                "gpu_kind": "H100 SXM",
+                "node": "dogo",
+                "slurm_job_id": "199648",
+                "started_local": "2026-09-18T01:13:40",
+                "status": "complete",
+                "timezone": "America/New_York"
+              }
+            ],
+            "historical_sweep": {
+              "git_history_commit": "e5ba3c618af230adaa5f3d5796e1b4c280b9535b",
+              "identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
+              "original_manifest_sha256": "cc7f94660dc9760908a79cfef82232b979a21270a7fe07c82421e9208342c3c2",
+              "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7"
+            },
+            "metrics": {
+              "path": "results/polynomial_attention/200m-m002-seed0/metrics.jsonl",
+              "sha256": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77"
+            },
+            "name": "200m-m002-seed0",
+            "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
+            "parameter_count": 199906304,
+            "provenance_sha256": {
+              "/data/cl/u/rafah/home/projects/functional-memory/experiments/polynomial_attention/configs/runs/200m-m002-seed0.yaml": "7b07128485d77ac24292ae01b1a3a7b60131f2a22def078e22acffdd7eadb308",
+              "/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention/200m-m002-seed0/slurm-199648.out": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6",
+              "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/200m-m002-seed0/completion.json": "8f2764571b28f0acedf562653c5f5bfd4ef825a056f91a4b8143993814dc92db",
+              "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/200m-m002-seed0/metadata.json": "5fb28b7a3ad190e52ea387ccf89a9015ff1563483d5957d1ad33283b004d9944",
+              "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/200m-m002-seed0/metrics.jsonl": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77",
+              "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/provenance.json": "7358cffaefa13bd2bbc74cb469dfd721ea72d3d1fbab49bee497034cf2fb5fed"
+            },
+            "qk_head_dim": 64,
+            "resolved_config": {
+              "path": "experiments/polynomial_attention/configs/runs/200m-m002-seed0.yaml",
+              "sha256": "7b07128485d77ac24292ae01b1a3a7b60131f2a22def078e22acffdd7eadb308"
+            },
+            "retained_completed": true,
+            "retained_provenance": {
+              "attention_backend": "fused",
+              "attention_degree": 2,
+              "completion": "results/polynomial_attention/200m-m002-seed0/completion.json",
+              "execution_attempts": [
+                {
+                  "elapsed_seconds": 10094,
+                  "ended_local": "2026-09-18T04:01:54",
+                  "exit_code": "0:0",
+                  "gpu_count": 4,
+                  "gpu_kind": "H100 SXM",
+                  "node": "dogo",
+                  "slurm_job_id": "199648",
+                  "started_local": "2026-09-18T01:13:40",
+                  "status": "complete",
+                  "timezone": "America/New_York"
+                }
+              ],
+              "metrics": {
+                "path": "results/polynomial_attention/200m-m002-seed0/metrics.jsonl",
+                "sha256": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77"
+              },
+              "name": "200m-m002-seed0",
+              "parameter_count": 199906304,
+              "qk_head_dim": 64,
+              "resolved_config": {
+                "path": "experiments/polynomial_attention/configs/runs/200m-m002-seed0.yaml",
+                "sha256": "7b07128485d77ac24292ae01b1a3a7b60131f2a22def078e22acffdd7eadb308"
+              },
+              "seed": 0,
+              "selected_checkpoint": {
+                "file_count": 12,
+                "metadata_sha256": "4d49559fc7c83e403cf9fa54d61ccaa725af944863a4f38308795a9541b9d0a0",
+                "path": "experiments/polynomial_attention/checkpoints/200m-m002-seed0/19074",
+                "size_bytes": 2199258055,
+                "step": 19074,
+                "validation_nll": 2.7900009751319885,
+                "validation_perplexity": 16.281035677939382
+              },
+              "slurm_job_id": "199648",
+              "slurm_log": {
+                "path": "results/logs/polynomial_attention/200m-m002-seed0/slurm-199648.out",
+                "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6"
+              },
+              "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+              "terminal": {
+                "step": 19074,
+                "training_tokens": 10000269312,
+                "validation_nll": 2.7900009751319885,
+                "validation_perplexity": 16.281035677939382
+              },
+              "value_head_dim": 64
+            },
+            "seed": 0,
+            "selected_checkpoint": {
+              "file_count": 12,
+              "metadata_sha256": "4d49559fc7c83e403cf9fa54d61ccaa725af944863a4f38308795a9541b9d0a0",
+              "path": "experiments/polynomial_attention/checkpoints/200m-m002-seed0/19074",
+              "size_bytes": 2199258055,
+              "step": 19074,
+              "validation_nll": 2.7900009751319885,
+              "validation_perplexity": 16.281035677939382
+            },
+            "slurm_job_id": "199648",
+            "slurm_log": {
+              "path": "results/logs/polynomial_attention/200m-m002-seed0/slurm-199648.out",
+              "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6"
+            },
+            "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+            "terminal": {
+              "step": 19074,
+              "training_tokens": 10000269312,
+              "validation_nll": 2.7900009751319885,
+              "validation_perplexity": 16.281035677939382
+            },
+            "training_tokens": 10000269312,
+            "value_head_dim": 64,
+            "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/200m-m002-seed0"
+          },
+          {
+            "attention_backend": "fused",
+            "attention_degree": null,
+            "completion": "results/polynomial_attention/200m-softmax-seed0/completion.json",
+            "config": {
+              "data": {
+                "batch_size": 256,
+                "dataset_config": "sample-100BT",
+                "dataset_name": "HuggingFaceFW/fineweb-edu",
+                "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+                "sequence_length": 2049,
+                "shuffle_seed": 0,
+                "source": "packed",
+                "split": "train",
+                "synthetic_vocab_size": 32000,
+                "text_field": "text",
+                "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+                "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+              },
+              "model": {
+                "attention_backend": "fused",
+                "attention_degree": null,
+                "dropout": 0.0,
+                "hidden_size": 1024,
+                "intermediate_size": 3008,
+                "kind": "transformer",
+                "max_seq_len": 2048,
+                "num_heads": 16,
+                "num_kv_heads": 16,
+                "num_layers": 10,
+                "qk_head_dim": 64,
+                "remat": false,
+                "rms_norm_eps": 1e-06,
+                "rope_theta": 10000.0,
+                "tie_embeddings": false,
+                "value_head_dim": 64,
+                "vocab_size": 32000
+              },
+              "optim": {
+                "beta1": 0.9,
+                "beta2": 0.95,
+                "grad_clip_norm": 1.0,
+                "learning_rate": 0.0003,
+                "min_learning_rate": 3e-05,
+                "total_steps": 19074,
+                "warmup_steps": 2000,
+                "weight_decay": 0.1
+              },
+              "train": {
+                "ckpt_every": 500,
+                "dtype": "bfloat16",
+                "eval_batches": 7,
+                "eval_every": 1000,
+                "log_every": 10,
+                "micro_batch_size": 64,
+                "seed": 0,
+                "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+                "wandb_entity": null,
+                "wandb_mode": "disabled",
+                "wandb_project": "functional-memory-polynomial-attention",
+                "wandb_run_name": "200m-softmax-seed0",
+                "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/200m-softmax-seed0"
+              }
+            },
+            "config_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/polynomial_attention/configs/runs/200m-softmax-seed0.yaml",
+            "execution_attempts": [
+              {
+                "elapsed_seconds": 3777,
+                "ended_local": "2026-09-18T14:55:32",
+                "exit_code": "0:0",
+                "gpu_count": 4,
+                "gpu_kind": "H100 SXM",
+                "last_observed_step": 9282,
+                "node": "dogo",
+                "slurm_job_id": "199652",
+                "started_local": "2026-09-18T13:52:35",
+                "status": "cancelled_for_validated_hardware_migration",
+                "timezone": "America/New_York"
+              },
+              {
+                "elapsed_seconds": 2334,
+                "ended_local": "2026-09-18T15:35:04",
+                "exit_code": "0:0",
+                "gpu_count": 4,
+                "gpu_kind": "B300 SXM6 AC",
+                "node": "akita",
+                "packed_data_start_sequence": 2304000,
+                "replayed_uncheckpointed_updates": 282,
+                "restored_step": 9000,
+                "slurm_job_id": "199869",
+                "started_local": "2026-09-18T14:56:10",
+                "status": "complete",
+                "timezone": "America/New_York"
+              }
+            ],
+            "historical_sweep": {
+              "git_history_commit": "e5ba3c618af230adaa5f3d5796e1b4c280b9535b",
+              "identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
+              "original_manifest_sha256": "cc7f94660dc9760908a79cfef82232b979a21270a7fe07c82421e9208342c3c2",
+              "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7"
+            },
+            "metrics": {
+              "path": "results/polynomial_attention/200m-softmax-seed0/metrics.jsonl",
+              "sha256": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262"
+            },
+            "name": "200m-softmax-seed0",
+            "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
+            "parameter_count": 199906304,
+            "provenance_sha256": {
+              "/data/cl/u/rafah/home/projects/functional-memory/experiments/polynomial_attention/configs/runs/200m-softmax-seed0.yaml": "ca4071773c7ad128d732a04e40bccec54e0d8fe505aef29ebfde331fd338b09a",
+              "/data/cl/u/rafah/home/projects/functional-memory/results/logs/polynomial_attention/200m-softmax-seed0/slurm-199869.out": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277",
+              "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/200m-softmax-seed0/completion.json": "6947209ede4c4b83809197278ec86f970b22eb0ebd7bb64b3189907ace8c8712",
+              "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/200m-softmax-seed0/metadata.json": "5edaa6301e03162d4395b7c58914eae7732347fa46681fac3e5892070d6be91e",
+              "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/200m-softmax-seed0/metrics.jsonl": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262",
+              "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/provenance.json": "7358cffaefa13bd2bbc74cb469dfd721ea72d3d1fbab49bee497034cf2fb5fed"
+            },
+            "qk_head_dim": 64,
+            "resolved_config": {
+              "path": "experiments/polynomial_attention/configs/runs/200m-softmax-seed0.yaml",
+              "sha256": "ca4071773c7ad128d732a04e40bccec54e0d8fe505aef29ebfde331fd338b09a"
+            },
+            "retained_completed": true,
+            "retained_provenance": {
+              "attention_backend": "fused",
+              "attention_degree": null,
+              "completion": "results/polynomial_attention/200m-softmax-seed0/completion.json",
+              "execution_attempts": [
+                {
+                  "elapsed_seconds": 3777,
+                  "ended_local": "2026-09-18T14:55:32",
+                  "exit_code": "0:0",
+                  "gpu_count": 4,
+                  "gpu_kind": "H100 SXM",
+                  "last_observed_step": 9282,
+                  "node": "dogo",
+                  "slurm_job_id": "199652",
+                  "started_local": "2026-09-18T13:52:35",
+                  "status": "cancelled_for_validated_hardware_migration",
+                  "timezone": "America/New_York"
+                },
+                {
+                  "elapsed_seconds": 2334,
+                  "ended_local": "2026-09-18T15:35:04",
+                  "exit_code": "0:0",
+                  "gpu_count": 4,
+                  "gpu_kind": "B300 SXM6 AC",
+                  "node": "akita",
+                  "packed_data_start_sequence": 2304000,
+                  "replayed_uncheckpointed_updates": 282,
+                  "restored_step": 9000,
+                  "slurm_job_id": "199869",
+                  "started_local": "2026-09-18T14:56:10",
+                  "status": "complete",
+                  "timezone": "America/New_York"
+                }
+              ],
+              "metrics": {
+                "path": "results/polynomial_attention/200m-softmax-seed0/metrics.jsonl",
+                "sha256": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262"
+              },
+              "name": "200m-softmax-seed0",
+              "parameter_count": 199906304,
+              "qk_head_dim": 64,
+              "resolved_config": {
+                "path": "experiments/polynomial_attention/configs/runs/200m-softmax-seed0.yaml",
+                "sha256": "ca4071773c7ad128d732a04e40bccec54e0d8fe505aef29ebfde331fd338b09a"
+              },
+              "seed": 0,
+              "selected_checkpoint": {
+                "file_count": 18,
+                "metadata_sha256": "fa8681bab9517fa0b9fad89ccd85a12cf734c86b9f95736df8a3022dca2ca00c",
+                "path": "experiments/polynomial_attention/checkpoints/200m-softmax-seed0/19074",
+                "size_bytes": 2196497053,
+                "step": 19074,
+                "validation_nll": 2.6874512689454213,
+                "validation_perplexity": 14.69417664861716
+              },
+              "slurm_job_id": "199869",
+              "slurm_log": {
+                "path": "results/logs/polynomial_attention/200m-softmax-seed0/slurm-199869.out",
+                "sha256": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277"
+              },
+              "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+              "terminal": {
+                "step": 19074,
+                "training_tokens": 10000269312,
+                "validation_nll": 2.6874512689454213,
+                "validation_perplexity": 14.69417664861716
+              },
+              "value_head_dim": 64
+            },
+            "seed": 0,
+            "selected_checkpoint": {
+              "file_count": 18,
+              "metadata_sha256": "fa8681bab9517fa0b9fad89ccd85a12cf734c86b9f95736df8a3022dca2ca00c",
+              "path": "experiments/polynomial_attention/checkpoints/200m-softmax-seed0/19074",
+              "size_bytes": 2196497053,
+              "step": 19074,
+              "validation_nll": 2.6874512689454213,
+              "validation_perplexity": 14.69417664861716
+            },
+            "slurm_job_id": "199869",
+            "slurm_log": {
+              "path": "results/logs/polynomial_attention/200m-softmax-seed0/slurm-199869.out",
+              "sha256": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277"
+            },
+            "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+            "terminal": {
+              "step": 19074,
+              "training_tokens": 10000269312,
+              "validation_nll": 2.6874512689454213,
+              "validation_perplexity": 14.69417664861716
+            },
+            "training_tokens": 10000269312,
+            "value_head_dim": 64,
+            "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/polynomial_attention/200m-softmax-seed0"
+          }
+        ],
+        "data_identity": {
+          "eval_manifest": {
+            "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+            "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+          },
+          "train_manifest": {
+            "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+            "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+          }
+        },
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "execution_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/learned_quadratic_attention",
+        "experiment": "learned_quadratic_attention",
+        "identity": "833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+        "jobs": {
+          "200m-positive-global-seed0": "199895",
+          "200m-positive-per-head-seed0": "199896",
+          "200m-unrestricted-global-seed0": "199897",
+          "200m-unrestricted-per-head-seed0": "199898",
+          "preflight": "199894"
+        },
+        "launch_after_preflight": true,
+        "preflight_dir": "/data/cl/u/rafah/home/projects/functional-memory/.cache/learned_quadratic_attention/preflight/833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48",
+        "preflight_log_path": "/data/cl/u/rafah/home/projects/functional-memory/results/logs/learned_quadratic_attention/preflight/slurm-199894.out",
+        "preflight_submitted_utc": "2026-09-18T23:09:40.820060+00:00",
+        "production_submitted_utc": "2026-09-18T23:22:19.290323+00:00",
+        "project_root": "/data/cl/u/rafah/home/projects/functional-memory",
+        "runs": [
+          {
+            "attention_degree": 2,
+            "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/experiments/learned_quadratic_attention/checkpoints/200m-positive-global-seed0",
+            "coefficient_count": 2,
+            "config": {
+              "data": {
+                "batch_size": 256,
+                "dataset_config": "sample-100BT",
+                "dataset_name": "HuggingFaceFW/fineweb-edu",
+                "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+                "sequence_length": 2049,
+                "shuffle_seed": 0,
+                "source": "packed",
+                "split": "train",
+                "synthetic_vocab_size": 32000,
+                "text_field": "text",
+                "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+                "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+              },
+              "model": {
+                "attention_backend": "fused",
+                "attention_degree": 2,
+                "dropout": 0.0,
+                "hidden_size": 1024,
+                "intermediate_size": 3008,
+                "kind": "transformer",
+                "max_seq_len": 2048,
+                "num_heads": 16,
+                "num_kv_heads": 16,
+                "num_layers": 10,
+                "qk_head_dim": 64,
+                "quadratic_mode": "positive",
+                "quadratic_sharing": "global",
+                "remat": false,
+                "rms_norm_eps": 1e-06,
+                "rope_theta": 10000.0,
+                "tie_embeddings": false,
+                "value_head_dim": 64,
+                "vocab_size": 32000
+              },
+              "optim": {
+                "beta1": 0.9,
+                "beta2": 0.95,
+                "grad_clip_norm": 1.0,
+                "learning_rate": 0.0003,
+                "min_learning_rate": 3e-05,
+                "total_steps": 19074,
+                "warmup_steps": 2000,
+                "weight_decay": 0.1
+              },
+              "train": {
+                "ckpt_every": 500,
+                "dtype": "bfloat16",
+                "eval_batches": 7,
+                "eval_every": 1000,
+                "log_every": 10,
+                "micro_batch_size": 64,
+                "seed": 0,
+                "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+                "wandb_entity": null,
+                "wandb_mode": "disabled",
+                "wandb_project": "functional-memory-learned-quadratic-attention",
+                "wandb_run_name": "200m-positive-global-seed0",
+                "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/learned_quadratic_attention/200m-positive-global-seed0"
+              }
+            },
+            "config_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/learned_quadratic_attention/configs/200m-positive-global-seed0.yaml",
+            "name": "200m-positive-global-seed0",
+            "parameter_count": 199906306,
+            "qk_head_dim": 64,
+            "quadratic_mode": "positive",
+            "quadratic_sharing": "global",
+            "training_tokens": 10000269312,
+            "value_head_dim": 64,
+            "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/learned_quadratic_attention/200m-positive-global-seed0"
+          },
+          {
+            "attention_degree": 2,
+            "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/experiments/learned_quadratic_attention/checkpoints/200m-positive-per-head-seed0",
+            "coefficient_count": 320,
+            "config": {
+              "data": {
+                "batch_size": 256,
+                "dataset_config": "sample-100BT",
+                "dataset_name": "HuggingFaceFW/fineweb-edu",
+                "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+                "sequence_length": 2049,
+                "shuffle_seed": 0,
+                "source": "packed",
+                "split": "train",
+                "synthetic_vocab_size": 32000,
+                "text_field": "text",
+                "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+                "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+              },
+              "model": {
+                "attention_backend": "fused",
+                "attention_degree": 2,
+                "dropout": 0.0,
+                "hidden_size": 1024,
+                "intermediate_size": 3008,
+                "kind": "transformer",
+                "max_seq_len": 2048,
+                "num_heads": 16,
+                "num_kv_heads": 16,
+                "num_layers": 10,
+                "qk_head_dim": 64,
+                "quadratic_mode": "positive",
+                "quadratic_sharing": "per_head",
+                "remat": false,
+                "rms_norm_eps": 1e-06,
+                "rope_theta": 10000.0,
+                "tie_embeddings": false,
+                "value_head_dim": 64,
+                "vocab_size": 32000
+              },
+              "optim": {
+                "beta1": 0.9,
+                "beta2": 0.95,
+                "grad_clip_norm": 1.0,
+                "learning_rate": 0.0003,
+                "min_learning_rate": 3e-05,
+                "total_steps": 19074,
+                "warmup_steps": 2000,
+                "weight_decay": 0.1
+              },
+              "train": {
+                "ckpt_every": 500,
+                "dtype": "bfloat16",
+                "eval_batches": 7,
+                "eval_every": 1000,
+                "log_every": 10,
+                "micro_batch_size": 64,
+                "seed": 0,
+                "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+                "wandb_entity": null,
+                "wandb_mode": "disabled",
+                "wandb_project": "functional-memory-learned-quadratic-attention",
+                "wandb_run_name": "200m-positive-per-head-seed0",
+                "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/learned_quadratic_attention/200m-positive-per-head-seed0"
+              }
+            },
+            "config_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/learned_quadratic_attention/configs/200m-positive-per-head-seed0.yaml",
+            "name": "200m-positive-per-head-seed0",
+            "parameter_count": 199906624,
+            "qk_head_dim": 64,
+            "quadratic_mode": "positive",
+            "quadratic_sharing": "per_head",
+            "training_tokens": 10000269312,
+            "value_head_dim": 64,
+            "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/learned_quadratic_attention/200m-positive-per-head-seed0"
+          },
+          {
+            "attention_degree": 2,
+            "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/experiments/learned_quadratic_attention/checkpoints/200m-unrestricted-global-seed0",
+            "coefficient_count": 2,
+            "config": {
+              "data": {
+                "batch_size": 256,
+                "dataset_config": "sample-100BT",
+                "dataset_name": "HuggingFaceFW/fineweb-edu",
+                "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+                "sequence_length": 2049,
+                "shuffle_seed": 0,
+                "source": "packed",
+                "split": "train",
+                "synthetic_vocab_size": 32000,
+                "text_field": "text",
+                "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+                "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+              },
+              "model": {
+                "attention_backend": "fused",
+                "attention_degree": 2,
+                "dropout": 0.0,
+                "hidden_size": 1024,
+                "intermediate_size": 3008,
+                "kind": "transformer",
+                "max_seq_len": 2048,
+                "num_heads": 16,
+                "num_kv_heads": 16,
+                "num_layers": 10,
+                "qk_head_dim": 64,
+                "quadratic_mode": "unrestricted",
+                "quadratic_sharing": "global",
+                "remat": false,
+                "rms_norm_eps": 1e-06,
+                "rope_theta": 10000.0,
+                "tie_embeddings": false,
+                "value_head_dim": 64,
+                "vocab_size": 32000
+              },
+              "optim": {
+                "beta1": 0.9,
+                "beta2": 0.95,
+                "grad_clip_norm": 1.0,
+                "learning_rate": 0.0003,
+                "min_learning_rate": 3e-05,
+                "total_steps": 19074,
+                "warmup_steps": 2000,
+                "weight_decay": 0.1
+              },
+              "train": {
+                "ckpt_every": 500,
+                "dtype": "bfloat16",
+                "eval_batches": 7,
+                "eval_every": 1000,
+                "log_every": 10,
+                "micro_batch_size": 64,
+                "seed": 0,
+                "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+                "wandb_entity": null,
+                "wandb_mode": "disabled",
+                "wandb_project": "functional-memory-learned-quadratic-attention",
+                "wandb_run_name": "200m-unrestricted-global-seed0",
+                "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/learned_quadratic_attention/200m-unrestricted-global-seed0"
+              }
+            },
+            "config_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/learned_quadratic_attention/configs/200m-unrestricted-global-seed0.yaml",
+            "name": "200m-unrestricted-global-seed0",
+            "parameter_count": 199906306,
+            "qk_head_dim": 64,
+            "quadratic_mode": "unrestricted",
+            "quadratic_sharing": "global",
+            "training_tokens": 10000269312,
+            "value_head_dim": 64,
+            "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/learned_quadratic_attention/200m-unrestricted-global-seed0"
+          },
+          {
+            "attention_degree": 2,
+            "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/experiments/learned_quadratic_attention/checkpoints/200m-unrestricted-per-head-seed0",
+            "coefficient_count": 320,
+            "config": {
+              "data": {
+                "batch_size": 256,
+                "dataset_config": "sample-100BT",
+                "dataset_name": "HuggingFaceFW/fineweb-edu",
+                "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+                "sequence_length": 2049,
+                "shuffle_seed": 0,
+                "source": "packed",
+                "split": "train",
+                "synthetic_vocab_size": 32000,
+                "text_field": "text",
+                "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+                "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+              },
+              "model": {
+                "attention_backend": "fused",
+                "attention_degree": 2,
+                "dropout": 0.0,
+                "hidden_size": 1024,
+                "intermediate_size": 3008,
+                "kind": "transformer",
+                "max_seq_len": 2048,
+                "num_heads": 16,
+                "num_kv_heads": 16,
+                "num_layers": 10,
+                "qk_head_dim": 64,
+                "quadratic_mode": "unrestricted",
+                "quadratic_sharing": "per_head",
+                "remat": false,
+                "rms_norm_eps": 1e-06,
+                "rope_theta": 10000.0,
+                "tie_embeddings": false,
+                "value_head_dim": 64,
+                "vocab_size": 32000
+              },
+              "optim": {
+                "beta1": 0.9,
+                "beta2": 0.95,
+                "grad_clip_norm": 1.0,
+                "learning_rate": 0.0003,
+                "min_learning_rate": 3e-05,
+                "total_steps": 19074,
+                "warmup_steps": 2000,
+                "weight_decay": 0.1
+              },
+              "train": {
+                "ckpt_every": 500,
+                "dtype": "bfloat16",
+                "eval_batches": 7,
+                "eval_every": 1000,
+                "log_every": 10,
+                "micro_batch_size": 64,
+                "seed": 0,
+                "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+                "wandb_entity": null,
+                "wandb_mode": "disabled",
+                "wandb_project": "functional-memory-learned-quadratic-attention",
+                "wandb_run_name": "200m-unrestricted-per-head-seed0",
+                "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/learned_quadratic_attention/200m-unrestricted-per-head-seed0"
+              }
+            },
+            "config_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/learned_quadratic_attention/configs/200m-unrestricted-per-head-seed0.yaml",
+            "name": "200m-unrestricted-per-head-seed0",
+            "parameter_count": 199906624,
+            "qk_head_dim": 64,
+            "quadratic_mode": "unrestricted",
+            "quadratic_sharing": "per_head",
+            "training_tokens": 10000269312,
+            "value_head_dim": 64,
+            "workdir": "/data/cl/u/rafah/home/projects/functional-memory/results/learned_quadratic_attention/200m-unrestricted-per-head-seed0"
+          }
+        ],
+        "scheduler": {
+          "cpus_per_task": 32,
+          "gpu_count": 4,
+          "gpu_type": "h100",
+          "memory": "256G",
+          "node": "dogo",
+          "partition": "standard",
+          "preflight_time": "02:00:00",
+          "production_time": "08:00:00"
+        },
+        "schema_version": 1,
+        "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb"
+      }
+    },
+    {
+      "original_path": "results/learned_quadratic_attention/coefficients.jsonl",
+      "sha256": "f4a04374e262f2855cc8dcf6d39eee7596b63341a40a50701562819a49312747",
+      "in_git_at": "c6512b9",
+      "digest": {
+        "jsonl_rows": 46,
+        "first": {
+          "effective": [
+            1.0259842437848832,
+            1.075638276474976,
+            0.5499203234171617
+          ],
+          "effective_coefficient_names": [
+            "constant",
+            "linear",
+            "quadratic"
+          ],
+          "finite": true,
+          "raw": [
+            1.048732876777649,
+            1.0256551504135132
+          ],
+          "raw_parameter_names": [
+            "a",
+            "b"
+          ],
+          "run": "200m-positive-global-seed0",
+          "step": 1000,
+          "training_tokens": 524288000
+        },
+        "last": {
+          "effective": [
+            [
+              [
+                1.0,
+                1.0961452722549438,
+                0.43311744928359985
+              ],
+              [
+                1.0,
+                1.1291382312774658,
+                0.40682902932167053
+              ],
+              [
+                1.0,
+                1.111333966255188,
+                0.41072678565979004
+              ],
+              [
+                1.0,
+                1.0882707834243774,
+                0.41374829411506653
+              ],
+              [
+                1.0,
+                1.1182529926300049,
+                0.4233470559120178
+              ],
+              [
+                1.0,
+                1.1175957918167114,
+                0.4060298800468445
+              ],
+              [
+                1.0,
+                1.111519455909729,
+                0.4167118966579437
+              ],
+              [
+                1.0,
+                1.1603288650512695,
+                0.40747275948524475
+              ],
+              [
+                1.0,
+                1.1069135665893555,
+                0.4260905086994171
+              ],
+              [
+                1.0,
+                1.1253527402877808,
+                0.3835303485393524
+              ],
+              [
+                1.0,
+                1.1198341846466064,
+                0.3909388780593872
+              ],
+              [
+                1.0,
+                1.1266998052597046,
+                0.41118037700653076
+              ],
+              [
+                1.0,
+                1.1183840036392212,
+                0.4077073335647583
+              ],
+              [
+                1.0,
+                1.1294337511062622,
+                0.4295489490032196
+              ],
+              [
+                1.0,
+                1.1442890167236328,
+                0.3956199884414673
+              ],
+              [
+                1.0,
+                1.1141759157180786,
+                0.42040351033210754
+              ]
+            ],
+            [
+              [
+                1.0,
+                1.2336432933807373,
+                0.3988700211048126
+              ],
+              [
+                1.0,
+                1.1712440252304077,
+                0.4099486172199249
+              ],
+              [
+                1.0,
+                1.1798847913742065,
+                0.3998264670372009
+              ],
+              [
+                1.0,
+                1.2029887437820435,
+                0.41842541098594666
+              ],
+              [
+                1.0,
+                1.1947165727615356,
+                0.406980961561203
+              ],
+              [
+                1.0,
+                1.0456750392913818,
+                0.5056937336921692
+              ],
+              [
+                1.0,
+                1.2296781539916992,
+                0.36218494176864624
+              ],
+              [
+                1.0,
+                1.2394869327545166,
+                0.3877178728580475
+              ],
+              [
+                1.0,
+                1.083316683769226,
+                0.4618559181690216
+              ],
+              [
+                1.0,
+                1.1639034748077393,
+                0.4312346279621124
+              ],
+              [
+                1.0,
+                1.100268840789795,
+                0.468153715133667
+              ],
+              [
+                1.0,
+                1.166370153427124,
+                0.43020930886268616
+              ],
+              [
+                1.0,
+                1.1541128158569336,
+                0.42700231075286865
+              ],
+              [
+                1.0,
+                1.2244864702224731,
+                0.36671873927116394
+              ],
+              [
+                1.0,
+                1.258131980895996,
+                0.34624120593070984
+              ],
+              [
+                1.0,
+                1.1810909509658813,
+                0.4192105829715729
+              ]
+            ],
+            [
+              [
+                1.0,
+                1.1563901901245117,
+                0.4247637093067169
+              ],
+              [
+                1.0,
+                1.1788524389266968,
+                0.43924480676651
+              ],
+              [
+                1.0,
+                1.2486542463302612,
+                0.34208205342292786
+              ],
+              [
+                1.0,
+                1.2847239971160889,
+                0.30211177468299866
+              ],
+              [
+                1.0,
+                1.2657818794250488,
+                0.3262651264667511
+              ],
+              [
+                1.0,
+                1.2789703607559204,
+                0.3209154009819031
+              ],
+              [
+                1.0,
+                1.2686541080474854,
+                0.33851388096809387
+              ],
+              [
+                1.0,
+                1.2439838647842407,
+                0.3430866599082947
+              ],
+              [
+                1.0,
+                1.2661292552947998,
+                0.338076114654541
+              ],
+              [
+                1.0,
+                1.2435716390609741,
+                0.3777950704097748
+              ],
+              [
+                1.0,
+                1.298302412033081,
+                0.27399179339408875
+              ],
+              [
+                1.0,
+                1.2732372283935547,
+                0.31266486644744873
+              ],
+              [
+                1.0,
+                1.277268886566162,
+                0.3158908486366272
+              ],
+              [
+                1.0,
+                1.1704845428466797,
+                0.44321295619010925
+              ],
+              [
+                1.0,
+                1.2714647054672241,
+                0.3051859736442566
+              ],
+              [
+                1.0,
+                1.2583049535751343,
+                0.34445303678512573
+              ]
+            ],
+            [
+              [
+                1.0,
+                1.2518706321716309,
+                0.34255486726760864
+              ],
+              [
+                1.0,
+                1.096618413925171,
+                0.4740581512451172
+              ],
+              [
+                1.0,
+                1.2969123125076294,
+                0.28901273012161255
+              ],
+              [
+                1.0,
+                1.2660024166107178,
+                0.32526832818984985
+              ],
+              [
+                1.0,
+                1.3036322593688965,
+                0.31493398547172546
+              ],
+              [
+                1.0,
+                1.2607662677764893,
+                0.3301697373390198
+              ],
+              [
+                1.0,
+                1.2721599340438843,
+                0.3130715787410736
+              ],
+              [
+                1.0,
+                1.2590281963348389,
+                0.32022514939308167
+              ],
+              [
+                1.0,
+                1.2564992904663086,
+                0.35288864374160767
+              ],
+              [
+                1.0,
+                1.2226438522338867,
+                0.40411898493766785
+              ],
+              [
+                1.0,
+                1.2745981216430664,
+                0.3056952953338623
+              ],
+              [
+                1.0,
+                1.2656978368759155,
+                0.3066880702972412
+              ],
+              [
+                1.0,
+                1.3283638954162598,
+                0.2569541335105896
+              ],
+              [
+                1.0,
+                1.28485906124115,
+                0.2938329577445984
+              ],
+              [
+                1.0,
+                1.2167408466339111,
+                0.39139267802238464
+              ],
+              [
+                1.0,
+                1.1244070529937744,
+                0.44616270065307617
+              ]
+            ],
+            [
+              [
+                1.0,
+                1.2933330535888672,
+                0.30429765582084656
+              ],
+              [
+                1.0,
+                1.2751555442810059,
+                0.31480568647384644
+              ],
+              [
+                1.0,
+                1.2995197772979736,
+                0.2442360818386078
+              ],
+              [
+                1.0,
+                1.3245707750320435,
+                0.24878302216529846
+              ],
+              [
+                1.0,
+                1.224931240081787,
+                0.3823380172252655
+              ],
+              [
+                1.0,
+                1.276368260383606,
+                0.27606695890426636
+              ],
+              [
+                1.0,
+                1.2729394435882568,
+                0.3208064138889313
+              ],
+              [
+                1.0,
+                1.2905800342559814,
+                0.31014907360076904
+              ],
+              [
+                1.0,
+                1.3127957582473755,
+                0.28780272603034973
+              ],
+              [
+                1.0,
+                1.2786710262298584,
+                0.33296510577201843
+              ],
+              [
+                1.0,
+                1.1888368129730225,
+                0.42097076773643494
+              ],
+              [
+                1.0,
+                1.3073755502700806,
+                0.2767018973827362
+              ],
+              [
+                1.0,
+                1.2758660316467285,
+                0.30968111753463745
+              ],
+              [
+                1.0,
+                1.2668886184692383,
+                0.3342539668083191
+              ],
+              [
+                1.0,
+                1.245379090309143,
+                0.349468857049942
+              ],
+              [
+                1.0,
+                1.2060205936431885,
+                0.4018125534057617
+              ]
+            ],
+            [
+              [
+                1.0,
+                1.2918537855148315,
+                0.3177708685398102
+              ],
+              [
+                1.0,
+                1.305881142616272,
+                0.2621843218803406
+              ],
+              [
+                1.0,
+                1.2369965314865112,
+                0.3317258954048157
+              ],
+              [
+                1.0,
+                1.2604376077651978,
+                0.31299740076065063
+              ],
+              [
+                1.0,
+                1.2938461303710938,
+                0.30737361311912537
+              ],
+              [
+                1.0,
+                1.2698285579681396,
+                0.3166562020778656
+              ],
+              [
+                1.0,
+                1.197723388671875,
+                0.30154961347579956
+              ],
+              [
+                1.0,
+                1.2797276973724365,
+                0.34450092911720276
+              ],
+              [
+                1.0,
+                1.2730815410614014,
+                0.2854461669921875
+              ],
+              [
+                1.0,
+                1.247439980506897,
+                0.2964927554130554
+              ],
+              [
+                1.0,
+                1.2942736148834229,
+                0.2681535482406616
+              ],
+              [
+                1.0,
+                1.139883041381836,
+                0.4311116635799408
+              ],
+              [
+                1.0,
+                1.1606935262680054,
+                0.4324978291988373
+              ],
+              [
+                1.0,
+                1.2498204708099365,
+                0.3171396255493164
+              ],
+              [
+                1.0,
+                1.281952142715454,
+                0.2764042019844055
+              ],
+              [
+                1.0,
+                1.2579240798950195,
+                0.33773040771484375
+              ]
+            ],
+            [
+              [
+                1.0,
+                1.289003610610962,
+                0.4061111509799957
+              ],
+              [
+                1.0,
+                1.251060962677002,
+                0.36135897040367126
+              ],
+              [
+                1.0,
+                1.2813479900360107,
+                0.2742678225040436
+              ],
+              [
+                1.0,
+                1.3014072179794312,
+                0.2841982841491699
+              ],
+              [
+                1.0,
+                1.3051420450210571,
+                0.34826889634132385
+              ],
+              [
+                1.0,
+                1.2835906744003296,
+                0.2615688741207123
+              ],
+              [
+                1.0,
+                1.3219325542449951,
+                0.2727738916873932
+              ],
+              [
+                1.0,
+                1.2020740509033203,
+                0.40918242931365967
+              ],
+              [
+                1.0,
+                1.314002275466919,
+                0.3117552101612091
+              ],
+              [
+                1.0,
+                1.3098810911178589,
+                0.2955722212791443
+              ],
+              [
+                1.0,
+                1.2511093616485596,
+                0.34504637122154236
+              ],
+              [
+                1.0,
+                1.3165946006774902,
+                0.26888954639434814
+              ],
+              [
+                1.0,
+                1.2133818864822388,
+                0.4220234453678131
+              ],
+              [
+                1.0,
+                1.2778958082199097,
+                0.26453858613967896
+              ],
+              [
+                1.0,
+                1.3228070735931396,
+                0.29441219568252563
+              ],
+              [
+                1.0,
+                1.1922177076339722,
+                0.4329504370689392
+              ]
+            ],
+            [
+              [
+                1.0,
+                1.2583954334259033,
+                0.4199826717376709
+              ],
+              [
+                1.0,
+                1.2901711463928223,
+                0.31733542680740356
+              ],
+              [
+                1.0,
+                1.3163725137710571,
+                0.3253662586212158
+              ],
+              [
+                1.0,
+                1.1214648485183716,
+                0.4093911349773407
+              ],
+              [
+                1.0,
+                1.3008664846420288,
+                0.31715717911720276
+              ],
+              [
+                1.0,
+                1.3134989738464355,
+                0.3053273558616638
+              ],
+              [
+                1.0,
+                1.3221076726913452,
+                0.3222618103027344
+              ],
+              [
+                1.0,
+                1.3013339042663574,
+                0.276011198759079
+              ],
+              [
+                1.0,
+                1.1011807918548584,
+                0.5063970685005188
+              ],
+              [
+                1.0,
+                1.302811861038208,
+                0.27279818058013916
+              ],
+              [
+                1.0,
+                1.3019208908081055,
+                0.2606314420700073
+              ],
+              [
+                1.0,
+                1.297960638999939,
+                0.2606755197048187
+              ],
+              [
+                1.0,
+                1.3159688711166382,
+                0.27248987555503845
+              ],
+              [
+                1.0,
+                1.3333773612976074,
+                0.27182093262672424
+              ],
+              [
+                1.0,
+                1.2909647226333618,
+                0.24396981298923492
+              ],
+              [
+                1.0,
+                1.2964887619018555,
+                0.2633279263973236
+              ]
+            ],
+            [
+              [
+                1.0,
+                1.303221583366394,
+                0.29005974531173706
+              ],
+              [
+                1.0,
+                1.3031108379364014,
+                0.2791115641593933
+              ],
+              [
+                1.0,
+                1.040074348449707,
+                0.49388930201530457
+              ],
+              [
+                1.0,
+                1.2740232944488525,
+                0.32570770382881165
+              ],
+              [
+                1.0,
+                1.322130560874939,
+                0.30952486395835876
+              ],
+              [
+                1.0,
+                1.2893407344818115,
+                0.27388864755630493
+              ],
+              [
+                1.0,
+                1.3279813528060913,
+                0.2773246169090271
+              ],
+              [
+                1.0,
+                1.2853859663009644,
+                0.2784278094768524
+              ],
+              [
+                1.0,
+                1.2738542556762695,
+                0.3461116552352905
+              ],
+              [
+                1.0,
+                1.3107306957244873,
+                0.3658689856529236
+              ],
+              [
+                1.0,
+                1.284213662147522,
+                0.43953728675842285
+              ],
+              [
+                1.0,
+                1.304796814918518,
+                0.2853466868400574
+              ],
+              [
+                1.0,
+                1.312662124633789,
+                0.289119690656662
+              ],
+              [
+                1.0,
+                1.2754946947097778,
+                0.3147079646587372
+              ],
+              [
+                1.0,
+                1.1409367322921753,
+                0.6714891791343689
+              ],
+              [
+                1.0,
+                1.2126039266586304,
+                0.3534250557422638
+              ]
+            ],
+            [
+              [
+                1.0,
+                1.2841907739639282,
+                0.2971731126308441
+              ],
+              [
+                1.0,
+                1.2677665948867798,
+                0.2938082814216614
+              ],
+              [
+                1.0,
+                1.3437206745147705,
+                0.4323195815086365
+              ],
+              [
+                1.0,
+                1.2873648405075073,
+                0.29117128252983093
+              ],
+              [
+                1.0,
+                1.2933028936386108,
+                0.2931510806083679
+              ],
+              [
+                1.0,
+                1.2645620107650757,
+                0.3323305547237396
+              ],
+              [
+                1.0,
+                1.3123250007629395,
+                0.2876564562320709
+              ],
+              [
+                1.0,
+                1.2715123891830444,
+                0.28401023149490356
+              ],
+              [
+                1.0,
+                1.1367216110229492,
+                0.475957453250885
+              ],
+              [
+                1.0,
+                1.2591006755828857,
+                0.31822440028190613
+              ],
+              [
+                1.0,
+                1.2866102457046509,
+                0.29055026173591614
+              ],
+              [
+                1.0,
+                1.286254644393921,
+                0.2918452322483063
+              ],
+              [
+                1.0,
+                1.28899085521698,
+                0.33410003781318665
+              ],
+              [
+                1.0,
+                1.3019623756408691,
+                0.28765061497688293
+              ],
+              [
+                1.0,
+                1.3038275241851807,
+                0.28850728273391724
+              ],
+              [
+                1.0,
+                1.0972347259521484,
+                0.504406750202179
+              ]
+            ]
+          ],
+          "effective_coefficient_names": [
+            "constant",
+            "linear",
+            "quadratic"
+          ],
+          "finite": true,
+          "raw": [
+            [
+              [
+                1.0961452722549438,
+                0.43311744928359985
+              ],
+              [
+                1.1291382312774658,
+                0.40682902932167053
+              ],
+              [
+                1.111333966255188,
+                0.41072678565979004
+              ],
+              [
+                1.0882707834243774,
+                0.41374829411506653
+              ],
+              [
+                1.1182529926300049,
+                0.4233470559120178
+              ],
+              [
+                1.1175957918167114,
+                0.4060298800468445
+              ],
+              [
+                1.111519455909729,
+                0.4167118966579437
+              ],
+              [
+                1.1603288650512695,
+                0.40747275948524475
+              ],
+              [
+                1.1069135665893555,
+                0.4260905086994171
+              ],
+              [
+                1.1253527402877808,
+                0.3835303485393524
+              ],
+              [
+                1.1198341846466064,
+                0.3909388780593872
+              ],
+              [
+                1.1266998052597046,
+                0.41118037700653076
+              ],
+              [
+                1.1183840036392212,
+                0.4077073335647583
+              ],
+              [
+                1.1294337511062622,
+                0.4295489490032196
+              ],
+              [
+                1.1442890167236328,
+                0.3956199884414673
+              ],
+              [
+                1.1141759157180786,
+                0.42040351033210754
+              ]
+            ],
+            [
+              [
+                1.2336432933807373,
+                0.3988700211048126
+              ],
+              [
+                1.1712440252304077,
+                0.4099486172199249
+              ],
+              [
+                1.1798847913742065,
+                0.3998264670372009
+              ],
+              [
+                1.2029887437820435,
+                0.41842541098594666
+              ],
+              [
+                1.1947165727615356,
+                0.406980961561203
+              ],
+              [
+                1.0456750392913818,
+                0.5056937336921692
+              ],
+              [
+                1.2296781539916992,
+                0.36218494176864624
+              ],
+              [
+                1.2394869327545166,
+                0.3877178728580475
+              ],
+              [
+                1.083316683769226,
+                0.4618559181690216
+              ],
+              [
+                1.1639034748077393,
+                0.4312346279621124
+              ],
+              [
+                1.100268840789795,
+                0.468153715133667
+              ],
+              [
+                1.166370153427124,
+                0.43020930886268616
+              ],
+              [
+                1.1541128158569336,
+                0.42700231075286865
+              ],
+              [
+                1.2244864702224731,
+                0.36671873927116394
+              ],
+              [
+                1.258131980895996,
+                0.34624120593070984
+              ],
+              [
+                1.1810909509658813,
+                0.4192105829715729
+              ]
+            ],
+            [
+              [
+                1.1563901901245117,
+                0.4247637093067169
+              ],
+              [
+                1.1788524389266968,
+                0.43924480676651
+              ],
+              [
+                1.2486542463302612,
+                0.34208205342292786
+              ],
+              [
+                1.2847239971160889,
+                0.30211177468299866
+              ],
+              [
+                1.2657818794250488,
+                0.3262651264667511
+              ],
+              [
+                1.2789703607559204,
+                0.3209154009819031
+              ],
+              [
+                1.2686541080474854,
+                0.33851388096809387
+              ],
+              [
+                1.2439838647842407,
+                0.3430866599082947
+              ],
+              [
+                1.2661292552947998,
+                0.338076114654541
+              ],
+              [
+                1.2435716390609741,
+                0.3777950704097748
+              ],
+              [
+                1.298302412033081,
+                0.27399179339408875
+              ],
+              [
+                1.2732372283935547,
+                0.31266486644744873
+              ],
+              [
+                1.277268886566162,
+                0.3158908486366272
+              ],
+              [
+                1.1704845428466797,
+                0.44321295619010925
+              ],
+              [
+                1.2714647054672241,
+                0.3051859736442566
+              ],
+              [
+                1.2583049535751343,
+                0.34445303678512573
+              ]
+            ],
+            [
+              [
+                1.2518706321716309,
+                0.34255486726760864
+              ],
+              [
+                1.096618413925171,
+                0.4740581512451172
+              ],
+              [
+                1.2969123125076294,
+                0.28901273012161255
+              ],
+              [
+                1.2660024166107178,
+                0.32526832818984985
+              ],
+              [
+                1.3036322593688965,
+                0.31493398547172546
+              ],
+              [
+                1.2607662677764893,
+                0.3301697373390198
+              ],
+              [
+                1.2721599340438843,
+                0.3130715787410736
+              ],
+              [
+                1.2590281963348389,
+                0.32022514939308167
+              ],
+              [
+                1.2564992904663086,
+                0.35288864374160767
+              ],
+              [
+                1.2226438522338867,
+                0.40411898493766785
+              ],
+              [
+                1.2745981216430664,
+                0.3056952953338623
+              ],
+              [
+                1.2656978368759155,
+                0.3066880702972412
+              ],
+              [
+                1.3283638954162598,
+                0.2569541335105896
+              ],
+              [
+                1.28485906124115,
+                0.2938329577445984
+              ],
+              [
+                1.2167408466339111,
+                0.39139267802238464
+              ],
+              [
+                1.1244070529937744,
+                0.44616270065307617
+              ]
+            ],
+            [
+              [
+                1.2933330535888672,
+                0.30429765582084656
+              ],
+              [
+                1.2751555442810059,
+                0.31480568647384644
+              ],
+              [
+                1.2995197772979736,
+                0.2442360818386078
+              ],
+              [
+                1.3245707750320435,
+                0.24878302216529846
+              ],
+              [
+                1.224931240081787,
+                0.3823380172252655
+              ],
+              [
+                1.276368260383606,
+                0.27606695890426636
+              ],
+              [
+                1.2729394435882568,
+                0.3208064138889313
+              ],
+              [
+                1.2905800342559814,
+                0.31014907360076904
+              ],
+              [
+                1.3127957582473755,
+                0.28780272603034973
+              ],
+              [
+                1.2786710262298584,
+                0.33296510577201843
+              ],
+              [
+                1.1888368129730225,
+                0.42097076773643494
+              ],
+              [
+                1.3073755502700806,
+                0.2767018973827362
+              ],
+              [
+                1.2758660316467285,
+                0.30968111753463745
+              ],
+              [
+                1.2668886184692383,
+                0.3342539668083191
+              ],
+              [
+                1.245379090309143,
+                0.349468857049942
+              ],
+              [
+                1.2060205936431885,
+                0.4018125534057617
+              ]
+            ],
+            [
+              [
+                1.2918537855148315,
+                0.3177708685398102
+              ],
+              [
+                1.305881142616272,
+                0.2621843218803406
+              ],
+              [
+                1.2369965314865112,
+                0.3317258954048157
+              ],
+              [
+                1.2604376077651978,
+                0.31299740076065063
+              ],
+              [
+                1.2938461303710938,
+                0.30737361311912537
+              ],
+              [
+                1.2698285579681396,
+                0.3166562020778656
+              ],
+              [
+                1.197723388671875,
+                0.30154961347579956
+              ],
+              [
+                1.2797276973724365,
+                0.34450092911720276
+              ],
+              [
+                1.2730815410614014,
+                0.2854461669921875
+              ],
+              [
+                1.247439980506897,
+                0.2964927554130554
+              ],
+              [
+                1.2942736148834229,
+                0.2681535482406616
+              ],
+              [
+                1.139883041381836,
+                0.4311116635799408
+              ],
+              [
+                1.1606935262680054,
+                0.4324978291988373
+              ],
+              [
+                1.2498204708099365,
+                0.3171396255493164
+              ],
+              [
+                1.281952142715454,
+                0.2764042019844055
+              ],
+              [
+                1.2579240798950195,
+                0.33773040771484375
+              ]
+            ],
+            [
+              [
+                1.289003610610962,
+                0.4061111509799957
+              ],
+              [
+                1.251060962677002,
+                0.36135897040367126
+              ],
+              [
+                1.2813479900360107,
+                0.2742678225040436
+              ],
+              [
+                1.3014072179794312,
+                0.2841982841491699
+              ],
+              [
+                1.3051420450210571,
+                0.34826889634132385
+              ],
+              [
+                1.2835906744003296,
+                0.2615688741207123
+              ],
+              [
+                1.3219325542449951,
+                0.2727738916873932
+              ],
+              [
+                1.2020740509033203,
+                0.40918242931365967
+              ],
+              [
+                1.314002275466919,
+                0.3117552101612091
+              ],
+              [
+                1.3098810911178589,
+                0.2955722212791443
+              ],
+              [
+                1.2511093616485596,
+                0.34504637122154236
+              ],
+              [
+                1.3165946006774902,
+                0.26888954639434814
+              ],
+              [
+                1.2133818864822388,
+                0.4220234453678131
+              ],
+              [
+                1.2778958082199097,
+                0.26453858613967896
+              ],
+              [
+                1.3228070735931396,
+                0.29441219568252563
+              ],
+              [
+                1.1922177076339722,
+                0.4329504370689392
+              ]
+            ],
+            [
+              [
+                1.2583954334259033,
+                0.4199826717376709
+              ],
+              [
+                1.2901711463928223,
+                0.31733542680740356
+              ],
+              [
+                1.3163725137710571,
+                0.3253662586212158
+              ],
+              [
+                1.1214648485183716,
+                0.4093911349773407
+              ],
+              [
+                1.3008664846420288,
+                0.31715717911720276
+              ],
+              [
+                1.3134989738464355,
+                0.3053273558616638
+              ],
+              [
+                1.3221076726913452,
+                0.3222618103027344
+              ],
+              [
+                1.3013339042663574,
+                0.276011198759079
+              ],
+              [
+                1.1011807918548584,
+                0.5063970685005188
+              ],
+              [
+                1.302811861038208,
+                0.27279818058013916
+              ],
+              [
+                1.3019208908081055,
+                0.2606314420700073
+              ],
+              [
+                1.297960638999939,
+                0.2606755197048187
+              ],
+              [
+                1.3159688711166382,
+                0.27248987555503845
+              ],
+              [
+                1.3333773612976074,
+                0.27182093262672424
+              ],
+              [
+                1.2909647226333618,
+                0.24396981298923492
+              ],
+              [
+                1.2964887619018555,
+                0.2633279263973236
+              ]
+            ],
+            [
+              [
+                1.303221583366394,
+                0.29005974531173706
+              ],
+              [
+                1.3031108379364014,
+                0.2791115641593933
+              ],
+              [
+                1.040074348449707,
+                0.49388930201530457
+              ],
+              [
+                1.2740232944488525,
+                0.32570770382881165
+              ],
+              [
+                1.322130560874939,
+                0.30952486395835876
+              ],
+              [
+                1.2893407344818115,
+                0.27388864755630493
+              ],
+              [
+                1.3279813528060913,
+                0.2773246169090271
+              ],
+              [
+                1.2853859663009644,
+                0.2784278094768524
+              ],
+              [
+                1.2738542556762695,
+                0.3461116552352905
+              ],
+              [
+                1.3107306957244873,
+                0.3658689856529236
+              ],
+              [
+                1.284213662147522,
+                0.43953728675842285
+              ],
+              [
+                1.304796814918518,
+                0.2853466868400574
+              ],
+              [
+                1.312662124633789,
+                0.289119690656662
+              ],
+              [
+                1.2754946947097778,
+                0.3147079646587372
+              ],
+              [
+                1.1409367322921753,
+                0.6714891791343689
+              ],
+              [
+                1.2126039266586304,
+                0.3534250557422638
+              ]
+            ],
+            [
+              [
+                1.2841907739639282,
+                0.2971731126308441
+              ],
+              [
+                1.2677665948867798,
+                0.2938082814216614
+              ],
+              [
+                1.3437206745147705,
+                0.4323195815086365
+              ],
+              [
+                1.2873648405075073,
+                0.29117128252983093
+              ],
+              [
+                1.2933028936386108,
+                0.2931510806083679
+              ],
+              [
+                1.2645620107650757,
+                0.3323305547237396
+              ],
+              [
+                1.3123250007629395,
+                0.2876564562320709
+              ],
+              [
+                1.2715123891830444,
+                0.28401023149490356
+              ],
+              [
+                1.1367216110229492,
+                0.475957453250885
+              ],
+              [
+                1.2591006755828857,
+                0.31822440028190613
+              ],
+              [
+                1.2866102457046509,
+                0.29055026173591614
+              ],
+              [
+                1.286254644393921,
+                0.2918452322483063
+              ],
+              [
+                1.28899085521698,
+                0.33410003781318665
+              ],
+              [
+                1.3019623756408691,
+                0.28765061497688293
+              ],
+              [
+                1.3038275241851807,
+                0.28850728273391724
+              ],
+              [
+                1.0972347259521484,
+                0.504406750202179
+              ]
+            ]
+          ],
+          "raw_parameter_names": [
+            "b",
+            "c"
+          ],
+          "run": "200m-unrestricted-per-head-seed0",
+          "step": 4000,
+          "training_tokens": 2097152000
+        }
+      }
+    }
+  ],
+  "record_layout_migration": {
+    "date": "2026-09-24",
+    "in_git_at": "c6512b9",
+    "note": "validation/, analysis/, and extra provenance files were folded into this manifest (sweep_acceptance, per-run acceptance, retired_records); pilot metric series moved into runs/<run>/."
+  }
 }

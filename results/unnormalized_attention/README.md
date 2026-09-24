@@ -31,7 +31,7 @@ softmax control narrows during training but does not close:
 | Gap | 0.827 | 0.825 | 0.417 | 0.246 | 0.186 | 0.172 |
 
 The unnormalized model also ends behind normalized Taylor attention of degree 2
-(PPL 16.28) and 4 (14.98) from [polynomial attention](../polynomial_attention/README.md).
+(PPL 16.28) and 4 (14.98) in the [dK × Taylor-degree record](../key_dimension_taylor/README.md).
 The gap matches the 0.174 nats measured at 250M against the external OFM
 baseline. All 20 evaluations reported valid diagnostics with zero invalid
 scores, kernels, weight sums, or outputs. Maximum row weight sums on the fixed
@@ -43,7 +43,7 @@ The run used source `3b0d311`, Slurm job `201002`, and four B300s on `akita`
 (2026-09-22), taking 2 h 28 min including acceptance, with no restarts, at about
 1.33M training tokens per second. Records: metrics and completion in
 [`runs/200m-exp-seed0-kennel/`](runs/200m-exp-seed0-kennel/), GPU acceptance
-and allocation in [`validation/200m-exp-seed0-kennel/`](validation/200m-exp-seed0-kennel/),
+and allocation summarized in the [provenance manifest](provenance/manifest.json),
 a [terminal summary](summary.csv), the log at
 `logs/unnormalized_attention/200m-exp-seed0-kennel/slurm-201002.out`, and
 the retained step-19,074 checkpoint (2.1 GB) under
@@ -71,8 +71,8 @@ existing softmax controls, both trained with this repository's code:
 
 | Control | Cluster, attention backend | Terminal val NLL | Terminal val PPL |
 | --- | --- | --- | --- |
-| [`polynomial_attention/200m-softmax-seed0`](../polynomial_attention/README.md) | Kennel (H100, then B300), fused | 2.687451 | 14.6942 |
-| [`key_dimension/200m-dk064-seed0`](../key_dimension/README.md) | ORCD, cuDNN | 2.687151 | 14.6898 |
+| [`200m-softmax-seed0`](../key_dimension_taylor/README.md) (degree sweep) | Kennel (H100, then B300), fused | 2.687451 | 14.6942 |
+| [`200m-dk064-seed0`](../key_dimension_taylor/README.md) (width sweep) | ORCD, cuDNN | 2.687151 | 14.6898 |
 
 They differ by 0.0003 nats despite different clusters, GPU counts, kernels, and
 source revisions, which bounds hardware/kernel effects far below the gaps
@@ -174,13 +174,13 @@ metadata live in `results/unnormalized_attention/runs/<run>/`, checkpoints in
 `checkpoints/unnormalized_attention/<run>/`, and logs in
 `logs/unnormalized_attention/<run>/` at the durable artifact root.
 Checkpoints keep latest and validation best while resumable; after completion
-only the validation-best checkpoint is retained. Retained metrics and
-acceptance evidence are copied into this record after the execution stops, and
-the execution checkout is then removed.
+only the validation-best checkpoint is retained. After the execution stops,
+run metrics are copied into `runs/<run>/`, acceptance and allocation records are
+summarized in the manifest, and the execution checkout is then removed.
 
 The exact packed corpus has 90 training shards, one evaluation shard, and two
 manifests totaling 24,031,780,324 bytes (22.38 GiB), verified in
-[`validation/kennel-data.json`](validation/kennel-data.json). Expected manifest
+the manifest's `data_manifests.kennel_verification`. Expected manifest
 SHA256 values are:
 
 - Train: `9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4`.
@@ -210,7 +210,7 @@ current code has no path dedicated to it.
 - **Records:** metrics and completion in [`runs/250m-exp-seed0-kennel/`](runs/250m-exp-seed0-kennel/);
   CPU validation, GPU acceptance, allocation, the post-pilot walltime reduction
   from 48 to 8 hours, and the cuBLAS-warning assessment in
-  [`validation/250m-exp-seed0-kennel/`](validation/250m-exp-seed0-kennel/); the
+  the [provenance manifest](provenance/manifest.json); the
   log at `logs/unnormalized_attention/250m-exp-seed0-kennel/slurm-200875.out`
   and the retained step-21,935 checkpoint (2.7 GB) under
   `checkpoints/unnormalized_attention/250m-exp-seed0-kennel/` at the artifact root.

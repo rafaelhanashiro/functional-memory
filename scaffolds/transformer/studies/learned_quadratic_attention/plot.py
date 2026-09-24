@@ -6,9 +6,9 @@ import csv
 import json
 from pathlib import Path
 
-from scaffolds.transformer.studies.polynomial_attention.plot import summarize_run as historical_summary
-from scaffolds.transformer.studies.polynomial_attention.plot import default_manifest_path, update_results_readme
-from scaffolds.transformer.studies.polynomial_attention.plot import (
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import summarize_run as historical_summary
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import default_manifest_path, update_results_readme
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import (
     RETAINED_FORMAT, artifact_path, check_dependency_lock, checked_artifact,
     committed_records, retained_root, summarize_retained_run,
 )
@@ -161,7 +161,6 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     save(figure, "learning_curves")
 
     figure, axes = plt.subplots(2, 2, figsize=(11, 7), squeeze=False)
-    coefficients = []
     for axis, run, (_, records) in zip(axes.flat, manifest["runs"], summaries[len(manifest["controls"]):], strict=True):
         events = [record for record in records if "coefficients" in record.get("attention_diagnostics", {})]
         if events:
@@ -172,14 +171,36 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
                 axis.plot(x, raw[:, :, index].mean(axis=1), label=f"{name} mean")
                 axis.fill_between(x, raw[:, :, index].min(axis=1), raw[:, :, index].max(axis=1), alpha=0.15)
             axis.legend()
-            coefficients.extend({"run": run["name"], "step": record["step"], "training_tokens": record["training_tokens"],
-                                 **record["attention_diagnostics"]["coefficients"]} for record in events)
         axis.set_title(label(run))
         axis.set_xlabel("Prediction tokens (billions)")
         axis.set_ylabel("Raw coefficient; band = head/layer range")
         axis.grid(alpha=0.2)
     save(figure, "coefficient_trajectories")
-    (output_dir / "coefficients.jsonl").write_text("".join(json.dumps(record, sort_keys=True) + "\n" for record in coefficients))
+
+    # Final per-layer/head coefficients of completed per-head positive runs, from
+    # their terminal metrics records. Both parameters are initialized at 1.
+    from matplotlib.colors import TwoSlopeNorm
+    per_head = [(run, records) for run, (row, records) in zip(manifest["runs"], summaries[len(manifest["controls"]):])
+                if run["config"]["model"].get("quadratic_sharing") == "per_head" and run["config"]["model"].get("quadratic_mode") == "positive"
+                and row["status"] == "complete" and records and "coefficients" in records[-1].get("attention_diagnostics", {})]
+    if per_head:
+        figure, axes = plt.subplots(len(per_head), 2, figsize=(13, 4.8 * len(per_head)), squeeze=False)
+        for (run, records), line in zip(per_head, axes):
+            raw = np.asarray(records[-1]["attention_diagnostics"]["coefficients"]["raw"])
+            layers, heads = raw.shape[:2]
+            panels = (("a: score multiplier (initialized at 1)", raw[..., 0], plt.colormaps["Blues"], None),
+                      ("b: shape parameter (initialized at 1)", raw[..., 1], plt.colormaps["RdBu_r"],
+                       TwoSlopeNorm(1.0, min(float(raw[..., 1].min()), 0.999), max(float(raw[..., 1].max()), 1.001))))
+            for axis, (title, values, cmap, norm) in zip(line, panels):
+                image = axis.imshow(values, cmap=cmap, norm=norm, aspect="auto")
+                axis.set_xticks(range(heads), [str(head + 1) for head in range(heads)])
+                axis.set_yticks(range(layers), [str(layer + 1) for layer in range(layers)])
+                axis.set_xlabel("Head")
+                axis.set_ylabel("Layer")
+                axis.set_title(f"{label(run)} · {title}")
+                figure.colorbar(image, ax=axis, shrink=0.85)
+        figure.suptitle(f"Final learned coefficients at {records[-1]['training_tokens'] / 1e9:.0f}B tokens, seed 0")
+        save(figure, "per_head_coefficients")
 
     figure, axes = plt.subplots(2, 2, figsize=(11, 7))
     diagnostics = (("negative_weight_fraction", max, "Max negative-weight fraction"),

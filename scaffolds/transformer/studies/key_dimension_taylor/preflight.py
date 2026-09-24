@@ -15,7 +15,7 @@ from pathlib import Path
 
 from scaffolds.transformer.configs import config_to_dict, load_config
 from scaffolds.transformer.configs.loader import config_dicts_equal
-from scaffolds.transformer.studies.polynomial_attention.preflight import passed_check, record_success, require_passing_tests
+from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.preflight import passed_check, record_success, require_passing_tests
 from scaffolds.transformer.studies.key_dimension_taylor.sweep import (
     ALLOCATION_FRACTION, CHECKPOINT_BOUNDARY, EXPERIMENT, PILOT_STEPS, active_runs,
     identity_payload, manifest_path, parameter_count, run_name, scheduler_profile,
@@ -193,7 +193,8 @@ def validate_resume_audit(initial: dict, resumed: dict) -> None:
 
 def retain_preflight_evidence(manifest: dict) -> None:
     source = Path(manifest["preflight_dir"])
-    destination = Path(manifest["project_root"]) / "results" / EXPERIMENT / "preflight" / manifest["identity"]
+    # Outside results/: the retained manifest summarizes acceptance; raw checks are not record files.
+    destination = Path(manifest["project_root"]) / ".cache" / EXPERIMENT / "preflight-retained" / manifest["identity"]
     destination.mkdir(parents=True, exist_ok=True)
     for name in (*SHARED_CHECKS, *[run["name"] for run in active_runs(manifest)]):
         record = json.loads((source / "checks" / f"{name}.json").read_text())
@@ -271,7 +272,7 @@ def run_preflight(manifest: dict, *, check_only=False, check_hardware=False, run
                 initial = launch_worker(manifest, "pilot", attempt / f"{stage}-initial.json", name=stage, workdir=workdir)
                 if initial["final_step"] != PILOT_STEPS or initial["data_parallel_devices"] != manifest["scheduler"]["gpu_count"]:
                     raise RuntimeError("Pilot lost full update budget or allocation")
-                from scaffolds.transformer.studies.polynomial_attention.plot import committed_records
+                from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.plot import committed_records
                 validation = next((row for row in committed_records(workdir) if row["step"] == PILOT_STEPS), None)
                 if validation is None or not all(math.isfinite(validation[key]) for key in ("validation_nll", "validation_perplexity")):
                     raise NumericalPilotFailure("Pilot lacks finite committed validation")
@@ -308,14 +309,14 @@ def run_preflight(manifest: dict, *, check_only=False, check_hardware=False, run
 def worker_result(manifest: dict, worker: str, name: str, workdir: Path | None, stop: int) -> dict:
     import jax
     if worker == "hardware":
-        from scaffolds.transformer.studies.polynomial_attention.preflight import worker_result as original_worker
+        from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.preflight import worker_result as original_worker
         return original_worker(manifest, worker, name, workdir, stop)
     if worker == "initialization":
         import numpy as np
         from flax import nnx
         if name.startswith("reference-dk"):
             width = int(name.removeprefix("reference-dk"))
-            from scaffolds.transformer.studies.key_dimension.configs import load_config as original_config
+            from scaffolds.transformer.studies.key_dimension_taylor.width_sweep_configs import load_config as original_config
             from scaffolds.transformer.models import build_model
             config = original_config(next(run["config_path"] for run in manifest["controls"] if run["qk_head_dim"] == width))
         else:

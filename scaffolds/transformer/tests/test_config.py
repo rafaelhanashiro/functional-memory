@@ -83,7 +83,7 @@ def test_invalid_qk_dimensions_rejected_at_construction(qk_dim):
 def test_scientific_recipe_matches_original_softmax_reference():
     import yaml
 
-    original = yaml.safe_load((Path(__file__).resolve().parents[3] / "results/key_dimension/configs/base.yaml").read_text())
+    original = yaml.safe_load((Path(__file__).resolve().parents[3] / "results/key_dimension_taylor/configs/key_dimension-base.yaml").read_text())
     current = yaml.safe_load(BASE_CONFIG.read_text())
     current["model"].pop("attention_degree")
     for config in (original, current):

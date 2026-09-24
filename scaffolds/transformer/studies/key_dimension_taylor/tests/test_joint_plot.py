@@ -131,9 +131,31 @@ def test_aggregate_exports_annotated_grid_curves_and_terminal_csv(tmp_path):
     assert csv_rows[4]["kernel"] == "softmax"
     assert csv_rows[0]["terminal_ppl"] != csv_rows[0]["best_ppl"]
     report = (output / "README.md").read_text()
-    assert "14.689767074685026" in report
-    assert "14.69417664861716" in report
-    assert "is not used in this grid" in report
+    assert "| dK | m=2 | m=4 | m=8 | m=16 | Softmax |" in report
+    assert f"{rows[0]['terminal_ppl']:.4f}" in report
+    assert "subtracts the softmax endpoint at the same width" in report
+
+
+def test_partial_grid_marks_untrained_cells_and_keeps_outside_runs(tmp_path):
+    import copy
+    manifest = make_manifest(tmp_path)
+    missing = manifest["runs"].pop(0)
+    extra = copy.deepcopy(manifest["controls"][0])
+    extra.update(name="duplicate-softmax", grid_cell=False)
+    manifest["runs"].append(extra)
+    output = tmp_path / "partial"
+    output.mkdir()
+    with pytest.raises(ValueError, match="incomplete"):
+        aggregate(manifest, output)
+    manifest["grid_coverage"] = "partial"
+    rows = aggregate(manifest, output)
+    assert missing["name"] not in {row["run"] for row in rows}
+    assert "duplicate-softmax" in {row["run"] for row in rows}
+    csv_rows = {row["run"]: row for row in csv.DictReader((output / "summary.csv").open())}
+    assert csv_rows["duplicate-softmax"]["grid_cell"] == "False"
+    report = (output / "README.md").read_text()
+    assert "| — |" in report
+    assert "Runs retained outside the grid: `duplicate-softmax`" in report
 
 
 def retained_manifest(root):
@@ -184,7 +206,7 @@ def test_retained_manifest_uses_portable_paths_preserves_readme_and_selection(tm
     report = (output / "README.md").read_text()
     assert report.startswith(authored) and report.endswith("Authored limitations.\n")
     assert "provenance/manifest.json" in report
-    assert "Heatmaps omit reuse markers" in report
+    assert "heatmaps do not mark it" in report
     assert len(list(output.rglob("README.md"))) == 1
     assert not list(output.rglob("REPORT.md"))
     assert not list(output.glob("*.png"))

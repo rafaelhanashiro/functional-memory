@@ -5,12 +5,10 @@ Reusable code is organized by capability under `scaffolds/`. Each retained exper
 | Experiment | Canonical documentation | Scaffold |
 | --- | --- | --- |
 | State rank | [State-rank analysis](results/state_rank/README.md) | [State-spectrum analysis](scaffolds/state_rank/) |
-| Key dimension | [Query/key-width sweep](results/key_dimension/README.md) | [Transformer](scaffolds/transformer/README.md) |
-| Polynomial attention | [Taylor-degree sweep](results/polynomial_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Learned quadratic attention | [Coefficient-learning results and numerical failures](results/learned_quadratic_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Odd Taylor attention | [Signed-kernel numerical failures](results/odd_taylor_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
-| Key dimension × Taylor degree | [Joint sweep and hardware validation](results/key_dimension_taylor/README.md) | [Transformer](scaffolds/transformer/README.md) |
-| Shared scaffold validation | [Correctness and sampled performance](results/shared_transformer_validation/README.md) | [Transformer](scaffolds/transformer/README.md) |
+| Query/key dimension × Taylor degree | [Width, degree, and joint sweeps](results/key_dimension_taylor/README.md) | [Transformer](scaffolds/transformer/README.md) |
+| Shared scaffold validation | [Correctness, kernel and throughput benchmarks, and hardware qualification](results/shared_transformer_validation/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Unnormalized attention | [Unnormalized exponential attention at 200M and 250M](results/unnormalized_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Unnormalized Taylor attention | [Degrees 1–4 without row normalization](results/unnormalized_taylor_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 
