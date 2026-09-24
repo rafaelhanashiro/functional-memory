@@ -205,7 +205,9 @@ def _save_figure(figure, results: Path, name: str) -> None:
     figure.canvas.draw()
     figure.set_layout_engine("none")
     for extension in ("png", "pdf"):
-        figure.savefig(results / f"{name}.{extension}", dpi=180, bbox_inches="tight")
+        # Omit the PDF creation timestamp so regenerated figures are byte-identical.
+        metadata = {"CreationDate": None} if extension == "pdf" else None
+        figure.savefig(results / f"{name}.{extension}", dpi=180, bbox_inches="tight", metadata=metadata)
 
 
 def _plot_figures(results: Path, conditions: list[Condition], comparison_layer: int) -> None:

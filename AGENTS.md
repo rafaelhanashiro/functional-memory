@@ -40,6 +40,10 @@ Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits
   selected checkpoint, and log path. The trainer's `runs/<run>/metadata.json`
   is raw output that the manifest summarizes; do not copy per-attempt Slurm or
   preflight files into the record.
+- Commit results, not data. Numerical archives, raw arrays, and datasets (for example
+  `metrics.npz` or `spectra.npz`) stay at the experiment's home-cluster artifact root
+  beside their committed run metadata, ignored by Git; the manifest records their
+  paths and SHA256. Metrics logs, summaries, figures, and provenance are committed.
 - Hardware qualification and kernel or throughput benchmarks describe the shared
   scaffold and runtime, not an experiment's question; retain them in
   `results/shared_transformer_validation/`.

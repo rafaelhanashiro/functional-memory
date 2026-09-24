@@ -10,7 +10,7 @@ def test_historical_recipe_resolves_relocated_baseline_without_rewriting(tmp_pat
     original = recipe.read_bytes()
     old_path = "results/llama-3.2-1b-l8-kvall-t512"
     assert retained_path(tmp_path, old_path) == (
-        tmp_path / "results/state_rank/historical/llama-3.2-1b-l8-kvall-t512"
+        tmp_path / "results/state_rank/runs/llama-3.2-1b-l8-kvall-t512"
     )
     assert recipe.read_bytes() == original
     assert retained_path(tmp_path, "results/custom") == tmp_path / "results/custom"

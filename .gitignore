@@ -16,4 +16,5 @@ __pycache__/
 *.log
 slurm-*.out
 slurm-*.err
-/results/state_rank/**/metrics.npz
+# Numerical data archives stay at the home-cluster artifact root; Git holds results only.
+/results/**/*.npz

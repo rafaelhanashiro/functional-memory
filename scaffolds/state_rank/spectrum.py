@@ -46,6 +46,8 @@ RANK_TOL = 1e-4
 CACHE_RTOL = 2e-4
 PSD_RTOL = 1e-10
 DIRECT_RTOL = 1e-9
+# Omit the PDF creation timestamp so regenerated figures are byte-identical.
+FIGURE_METADATA = {"png": None, "pdf": {"CreationDate": None}}
 
 
 def iter_article_bodies(rows):
@@ -355,7 +357,7 @@ def plot_results(results, titles, output, context=None, layer=None, model_name=N
 
     def save(figure, name):
         for suffix in ("png", "pdf"):
-            figure.savefig(output / f"{name}.{suffix}", dpi=180, bbox_inches="tight")
+            figure.savefig(output / f"{name}.{suffix}", dpi=180, bbox_inches="tight", metadata=FIGURE_METADATA[suffix])
         plt.close(figure)
 
     figure, axes = plt.subplots(count, 1, figsize=(10, 2.2 * count), sharex=True, constrained_layout=True)
@@ -466,7 +468,7 @@ def plot_aggregate(results, output, layer=None, model_name="Gated DeltaNet"):
         handles, labels = legend_axis.get_legend_handles_labels()
         figure.legend(handles, labels, loc="outside lower center", ncol=5, fontsize=8)
         for suffix in ("png", "pdf"):
-            figure.savefig(output / f"{name}.{suffix}", dpi=180, bbox_inches="tight")
+            figure.savefig(output / f"{name}.{suffix}", dpi=180, bbox_inches="tight", metadata=FIGURE_METADATA[suffix])
         plt.close(figure)
 
     figure, axes = plt.subplots(4, 1, figsize=(10, 11), sharex=True, constrained_layout=True)
@@ -529,7 +531,8 @@ def main():
         parser.error("--kv-head is for Llama; use --head for Gated DeltaNet")
     if args.output is None:
         name = f"gated-deltanet-1.3b-l{args.layer}-h{args.head if args.head is not None else 'all'}" if gdn else f"llama-3.2-1b-l{args.layer}-kv{args.kv_head if args.kv_head is not None else 'all'}"
-        args.output = Path(f"results/state_rank/historical/{name}-t{args.tokens}")
+        # Execute outside the record; retain spectra, inputs, and metadata under runs/.
+        args.output = Path(f".cache/state_rank/spectrum/{name}-t{args.tokens}")
     if args.tokens < 2:
         parser.error("--tokens must be at least 2")
     if args.output.exists():
