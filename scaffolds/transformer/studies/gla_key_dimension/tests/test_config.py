@@ -105,3 +105,26 @@ def test_kennel_launcher_accepts_only_qualified_b300_or_h100():
     assert "#SBATCH --gres=gpu:4" in launcher and "#SBATCH --exclude=collie,samoyed,doodle,terrier" in launcher
     assert 'GPU_TYPE="${6:-auto}"' in launcher and "*B300*) GPU_TYPE=B300" in launcher and "*H100*) GPU_TYPE=H100" in launcher
     assert "--requeue" in launcher
+
+
+def test_summary_uses_completed_runs_and_width_matched_comparisons(tmp_path):
+    from scaffolds.transformer.studies.gla_key_dimension import plot
+
+    record = tmp_path / "record"
+    (record / "provenance").mkdir(parents=True)
+    (record / "provenance/manifest.json").write_text(json.dumps(manifest()))
+    run = record / "runs/200m-dk016-gla-seed0"
+    run.mkdir(parents=True)
+    (run / "completion.json").write_text(json.dumps({"final_step": 19074, "training_tokens": 10_000_269_312,
+                                                     "validation_nll": 2.8, "validation_perplexity": 16.4}))
+    (run / "best_validation.json").write_text(json.dumps({"step": 19074, "validation_perplexity": 16.4}))
+    rows = {row["run"]: row for row in plot.gla_rows(manifest(), record)}
+    assert rows["200m-dk008-gla-seed0"]["status"] == "incomplete"
+    completed = rows["200m-dk016-gla-seed0"]
+    softmax = next(c for c in manifest()["comparisons"]["runs"] if c["name"] == "200m-dk016-seed0")
+    assert completed["softmax_perplexity"] == softmax["terminal"]["validation_perplexity"]
+    assert completed["delta_perplexity_vs_softmax"] == pytest.approx(16.4 - completed["softmax_perplexity"])
+    (run / "completion.json").write_text(json.dumps({"final_step": 1000, "training_tokens": 524_288_000,
+                                                     "validation_nll": 3.0, "validation_perplexity": 20.0}))
+    with pytest.raises(ValueError, match="full training budget"):
+        plot.gla_rows(manifest(), record)
