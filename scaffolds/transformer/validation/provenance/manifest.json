@@ -226,6 +226,22 @@
       "sha256": "0b4824df695b04205f680373e3a9e97bfff4d5b202f37e534798f910013ad429",
       "size_bytes": 12169,
       "slurm_job_id": "199635"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/learned-polynomial-kernel/slurm-201993.out",
+      "sha256": "c657ba23917d9efde360d4e0ea750924d38d2ea340970ff6b38c0919e29323fc",
+      "slurm_job_id": "201993",
+      "capture": "sbatch stdout/stderr, pre-launch fused learned-polynomial GPU tests on one akita B300",
+      "state": "COMPLETED",
+      "exit_code": "0:0"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/learned-polynomial-kernel/slurm-201994.out",
+      "sha256": "c496a92f1e1c860f3d4582fd2e92b2fd3b5994984482b7c3d8358d3390e60faa",
+      "slurm_job_id": "201994",
+      "capture": "sbatch stdout/stderr, pre-launch fused learned-polynomial GPU tests on one dogo H100",
+      "state": "COMPLETED",
+      "exit_code": "0:0"
     }
   ],
   "source_limitation": "Raw benchmark source_commit captured the surrounding checkout parent while the extraction was uncommitted. The preserved frozen snapshot matches all 53 Python files at 2e0e88d. The final shared implementation is committed at d493a41; an immutable hash of its benchmark-time dirty tree was not recorded.",
@@ -311,7 +327,11 @@
       "tests": "scaffolds/transformer/tests/test_learned_polynomial_fused_attention.py (26 GPU cases) plus 46 learned-polynomial CPU tests",
       "pre_launch": {
         "h100": "26 passed, job 201994 (dogo)",
-        "b300": "26 passed, job 201993 (akita)"
+        "b300": "26 passed, job 201993 (akita)",
+        "logs": [
+          "scaffolds/transformer/validation/logs/learned-polynomial-kernel/slurm-201993.out",
+          "scaffolds/transformer/validation/logs/learned-polynomial-kernel/slurm-201994.out"
+        ]
       },
       "h100": {
         "jobs": [
