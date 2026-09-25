@@ -1,0 +1,288 @@
+{
+  "attention_backend": "fused",
+  "attention_backend_requested": "fused",
+  "attention_diagnostics": {
+    "attention_backend": "fused",
+    "attention_backend_requested": "fused",
+    "attention_formula": "S_t=diag(sigmoid(g_t)^(1/tau)) S_{t-1}+k_t v_t^T; y_t=q_t^T S_t",
+    "attention_implementation": "chunked_gla_triton",
+    "attention_kernel": "gla",
+    "attention_mechanism": "gla",
+    "attention_output_normalization": "per_head_rmsnorm_then_silu_output_gate",
+    "attention_score_scale": "1",
+    "diagnostic_backend": "fused",
+    "format": "shared-transformer-attention-diagnostics",
+    "gla_chunk_size": 64,
+    "gla_gate_rank": 16,
+    "gla_gate_tau": 16.0,
+    "gla_initial_state": "zero_each_sequence",
+    "gla_inner_chunk_size": 16,
+    "gla_kernel_dot_precision": "ieee",
+    "gla_state_dtype": "float32",
+    "gla_state_elements_per_layer": 32768,
+    "gla_use_rope": true,
+    "issues": [],
+    "kernel_values": "vector_gated_recurrence",
+    "layers": [
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 0,
+        "log_decay_max": -5.125782892249762e-22,
+        "log_decay_min": -4.90625,
+        "read_abs_max": 1627.3841552734375
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 1,
+        "log_decay_max": -1.2222300949105147e-09,
+        "log_decay_min": -1.171875,
+        "read_abs_max": 82745.9765625
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 2,
+        "log_decay_max": -1.861453997828709e-17,
+        "log_decay_min": -3.28125,
+        "read_abs_max": 19406.7578125
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 3,
+        "log_decay_max": -1.3742244990996648e-35,
+        "log_decay_min": -5.0,
+        "read_abs_max": 5225.9990234375
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 4,
+        "log_decay_max": -4.896901433610809e-14,
+        "log_decay_min": -4.3125,
+        "read_abs_max": 1257.866455078125
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 5,
+        "log_decay_max": -0.0,
+        "log_decay_min": -5.875,
+        "read_abs_max": 3246.370361328125
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 6,
+        "log_decay_max": -1.254237806942817e-19,
+        "log_decay_min": -4.96875,
+        "read_abs_max": 1117.304443359375
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 7,
+        "log_decay_max": -0.0,
+        "log_decay_min": -5.1875,
+        "read_abs_max": 3064.48046875
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 8,
+        "log_decay_max": -3.784122425001309e-40,
+        "log_decay_min": -5.90625,
+        "read_abs_max": 1372.85009765625
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 9,
+        "log_decay_max": -0.0,
+        "log_decay_min": -5.375,
+        "read_abs_max": 1634.4805908203125
+      }
+    ],
+    "sample": {
+      "diagnostic_pass_contributes_to_validation_loss": false,
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "num_sequences": 1,
+      "prediction_tokens": 2048,
+      "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+      "selection": "first_heldout_sequence",
+      "sequence_index": 0,
+      "source": "packed"
+    },
+    "step": 19074,
+    "valid": true,
+    "version": 1
+  },
+  "attention_formula": "S_t=diag(sigmoid(g_t)^(1/tau)) S_{t-1}+k_t v_t^T; y_t=q_t^T S_t",
+  "attention_implementation": "chunked_gla_triton",
+  "attention_kernel": "gla",
+  "attention_mechanism": "gla",
+  "attention_output_normalization": "per_head_rmsnorm_then_silu_output_gate",
+  "attention_score_scale": "1",
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "diagnostic_backend": "fused",
+  "diagnostic_sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "error": null,
+  "execution_runtime": {
+    "batch_transfer": "host_to_shard",
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      }
+    ],
+    "environment": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct"
+  },
+  "gla_chunk_size": 64,
+  "gla_gate_rank": 16,
+  "gla_gate_tau": 16.0,
+  "gla_initial_state": "zero_each_sequence",
+  "gla_inner_chunk_size": 16,
+  "gla_kernel_dot_precision": "ieee",
+  "gla_state_dtype": "float32",
+  "gla_state_elements_per_layer": 32768,
+  "gla_use_rope": true,
+  "next_train_sequence": 4882944,
+  "parameter_count": 200167424,
+  "qk_head_dim": 32,
+  "retained_best_checkpoint_step": 19074,
+  "retained_terminal_checkpoint_step": 19074,
+  "rng_state": {
+    "completed_updates": 19074,
+    "seed": 0
+  },
+  "runtime_history": [
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 2,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 3,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "201794",
+      "timestamp_utc": "2026-09-24T22:10:55.155432+00:00"
+    }
+  ],
+  "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "seed": 0,
+  "slurm_job_id": "201794",
+  "slurm_restart_count": 0,
+  "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+  "status": "complete",
+  "step": 19074,
+  "target_steps": 19074,
+  "target_tokens": 10000269312,
+  "training_tokens": 10000269312,
+  "updated_utc": "2026-09-25T01:21:38.386995+00:00",
+  "validation_nll": 2.785285081182207,
+  "validation_perplexity": 16.204436798347036,
+  "value_head_dim": 64
+}

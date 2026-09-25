@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import math
 from dataclasses import replace
+from functools import partial
 
 import jax
 import jax.numpy as jnp
@@ -31,6 +32,32 @@ UNNORMALIZED_MEASUREMENTS = frozenset((
 
 
 def attention_identity(config) -> dict:
+    if config.model.attention_mechanism == "gla":
+        model = config.model
+        identity = {
+            "attention_mechanism": "gla",
+            "attention_kernel": "gla",
+            "attention_backend": model.attention_backend,
+            "attention_backend_requested": getattr(config, "_attention_backend_request", model.attention_backend),
+            "attention_implementation": ("chunked_gla_triton" if model.attention_backend == "fused"
+                                         else "chunkwise_associative_scan"),
+            "attention_formula": "S_t=diag(sigmoid(g_t)^(1/tau)) S_{t-1}+k_t v_t^T; y_t=q_t^T S_t",
+            "attention_score_scale": "1",
+            "attention_output_normalization": "per_head_rmsnorm_then_silu_output_gate",
+            "gla_gate_rank": model.gla_gate_rank,
+            "gla_gate_tau": model.gla_gate_tau,
+            "gla_chunk_size": model.gla_chunk_size,
+            "gla_inner_chunk_size": model.gla_inner_chunk_size,
+            "gla_use_rope": model.gla_use_rope,
+            "gla_state_elements_per_layer": model.num_heads * model.qk_head_dim * model.value_head_dim,
+            "gla_initial_state": "zero_each_sequence",
+            "gla_state_dtype": "float32",
+            "gla_kernel_dot_precision": "ieee" if model.attention_backend == "fused" else None,
+            "diagnostic_backend": model.attention_backend,
+        }
+        if hasattr(config, "_attention_backend_resume_request"):
+            identity["attention_backend_resume_requested"] = config._attention_backend_resume_request
+        return identity
     degree = config.model.attention_degree
     mode = config.model.quadratic_mode
     normalized = config.model.attention_normalization
@@ -142,6 +169,13 @@ def _diagnostic_step(graphdef, params, inputs):
     return diagnostics
 
 
+@partial(nnx.jit, static_argnums=(3,))
+def _mapped_diagnostic_step(graphdef, params, inputs, device):
+    from scaffolds.transformer.training.distributed import single_device_call
+
+    return single_device_call(partial(_diagnostic_step, graphdef), params, inputs, device=device)
+
+
 def json_number(value):
     """Keep failure reports valid JSON even when device results are nonfinite."""
     number = float(value)
@@ -158,7 +192,10 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     device = jax.local_devices()[0]
     params = jax.tree.map(lambda value: jax.device_put(value, device), state.params)
     inputs = jax.device_put(jnp.asarray(sample[:, :-1], dtype=jnp.int32), device)
-    raw_layers = jax.device_get(_diagnostic_step(state.graphdef, params, inputs))
+    raw_layers = jax.device_get(
+        _mapped_diagnostic_step(state.graphdef, params, inputs, device)
+        if jax.local_device_count() > 1 else _diagnostic_step(state.graphdef, params, inputs)
+    )
     layers, issues = [], []
     for index, raw in enumerate(raw_layers):
         layer = {"layer": index}
@@ -172,7 +209,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
             elif name.startswith("invalid_") and number != 0:
                 issues.append(f"layer {index}: {name}={int(number)}")
         sum_key = "normalizer_min" if config.model.attention_normalization else "weight_sum_min"
-        for name in ("kernel_min", sum_key):
+        positivity_fields = () if config.model.attention_mechanism == "gla" else ("kernel_min", sum_key)
+        for name in positivity_fields:
             value = float(raw[name])
             if is_odd_taylor(config.model) or config.model.quadratic_mode == "unrestricted":
                 # Signed kernels and negative nonzero sums are permitted. Exact
@@ -198,7 +236,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         "step": int(state.step),
         **attention_identity(config),
         "sample": provenance,
-        "kernel_values": (("unshifted_exp" if config.model.attention_degree is None else "unshifted_taylor")
+        "kernel_values": ("vector_gated_recurrence" if config.model.attention_mechanism == "gla" else
+                          ("unshifted_exp" if config.model.attention_degree is None else "unshifted_taylor")
                           if not config.model.attention_normalization else
                           "unshifted_learned_quadratic" if config.model.quadratic_mode != "fixed" else
                           "row_max_shifted_exp" if config.model.attention_degree is None else "unshifted_taylor"),

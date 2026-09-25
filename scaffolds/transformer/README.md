@@ -77,6 +77,51 @@ and defining its numerical diagnostics. A fused implementation must differentiat
 all trainable array arguments. Data loading, the Transformer residual/MLP blocks,
 and the training loop do not need separate copies.
 
+### Gated linear attention
+
+`attention_mechanism: gla` replaces the attention module inside the same residual
+blocks. `kind: transformer` continues to select the shared language-model backbone;
+the default mechanism `dot_product` preserves all existing recipes. GLA uses
+`qk_head_dim` and `value_head_dim` independently. Its vector-gated recurrence is
+`S_t = diag(sigmoid(g_t) ** (1 / tau)) S_{t-1} + k_t v_t^T`, followed by the
+inclusive read `q_t^T S_t`, per-head RMSNorm, a SiLU output gate, and an output
+projection. Each sequence starts with zero state. No score scaling or attention
+row normalization is applied. The OFM defaults are gate rank 16, tau 16, RoPE
+enabled, and outer/inner chunks 64/16, exposed by `gla_gate_rank`, `gla_gate_tau`,
+`gla_use_rope`, `gla_chunk_size`, and `gla_inner_chunk_size`.
+
+GLA accepts `attention_backend: auto`, `blocked` (the OFM chunkwise associative
+scan reference), and `fused` (the repository-owned OFM chunked Triton forward and
+custom backward). The fused path requires an Ampere-or-newer NVIDIA GPU, prediction
+length divisible by 64, and chunk sizes 64/16. The CUDA extra installs pinned
+Triton; the minimal JAX/Triton bridge is vendored with its license and source
+provenance. The operation and its module retain the original OFM arithmetic;
+key tiles below 16 are padded so narrow keys can use Triton matrix products.
+Automatic CPU execution uses the reference; explicit unsupported fused requests
+fail. Launchers configure bridge caching and XLA options separately from recipes.
+Training resolves the backend from the actual prediction length. Direct model
+construction with `auto` resolves from `max_seq_len`; use `blocked` for inference
+at arbitrary lengths that do not satisfy the fused kernel's chunk constraint.
+The bridge hands Triton's PTX (ISA 8.7 with Triton 3.6) to jaxlib, which assembles
+it with the first `ptxas` among its CUDA roots; that is a node's `/usr/local/cuda`
+unless `CUDA_HOME` names another toolkit, so launchers set `CUDA_HOME` to the
+environment's `nvidia/cuda_nvcc`. Operands are converted to FP32 before launch:
+with BF16 operands upcast inside the kernel, Triton 3.6 on B300 computed the FP32
+products at TF32-level precision. The fused kernel passes its GPU tests on H100 and B300.
+
+The OFM mixed-precision behavior is retained: RoPE promotes Q/K to FP32 and the
+fused kernel returns reads in Q's dtype, while the reference module casts its
+completed read to the configured compute dtype before head normalization.
+Both accumulate recurrent state in FP32. Their BF16 paths are therefore not
+claimed to be bitwise identical; production pins the fused implementation.
+
+GLA diagnostics report finite projections, decay gates, recurrence reads, and
+outputs. They do not impose positive dot products or invent attention row sums.
+Training checks gradient and updated-parameter finiteness every step. Runtime
+metadata records the actual recurrence backend, gate settings, zero-state policy,
+and state size. All checkpointing, optimizer state, data cursors, mixed precision,
+and distributed training continue through the shared runtime.
+
 ## Execution selection and resumption
 
 The shared configuration defaults to `attention_backend: auto`; ordinary recipes
@@ -145,8 +190,8 @@ experiment does not need another copy of the training stack. For example,
 dK × Taylor-degree record's canonical manifest and regenerates its figures.
 Consult that experiment's `results/<experiment>/README.md` for its exact command.
 
-The `key_dimension_taylor`, `learned_quadratic_attention`, `odd_taylor_attention`, and
-`unnormalized_attention` study adapters all use this same training implementation.
+The `key_dimension_taylor`, `learned_quadratic_attention`, `odd_taylor_attention`,
+`unnormalized_attention`, and `gla_key_dimension` study adapters all use this same training implementation.
 `key_dimension_taylor` also carries the degree-sweep helpers (`degree_sweep/`) and
 width-sweep configuration defaults (`width_sweep_configs/`) that its runs and the
 learned/odd adapters build on. Kernel and throughput benchmark scripts live in

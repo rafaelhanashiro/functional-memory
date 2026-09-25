@@ -289,7 +289,36 @@
       "production_complete": true,
       "runtime_source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320"
     },
-    "scope": "Qualification of the shared runtime on A100, A6000, and B300 for the 20 joint dK x Taylor-degree recipes; moved from key_dimension_taylor on 2026-09-24."
+    "scope": "Qualification of the shared runtime on A100, A6000, and B300 for the 20 joint dK x Taylor-degree recipes; moved from key_dimension_taylor on 2026-09-24.",
+    "gla_fused_kernel": {
+      "scope": "Chunked Triton GLA kernels (attention/backends/chunked_gla_triton.py) for the GLA d_K sweep recipes",
+      "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+      "tests": "scaffolds/transformer/tests/test_gla_kernel.py (21 GPU cases) plus 49 GLA CPU tests",
+      "h100": {
+        "jobs": [
+          "201793 (attempt 0)",
+          "201794"
+        ],
+        "gpu_tests_passed": 21,
+        "full_recipe_pilot_and_resume": "passed"
+      },
+      "b300": {
+        "jobs": [
+          "201792",
+          "201793 (attempt 1)",
+          "201795",
+          "201796"
+        ],
+        "gpu_tests_passed": 21,
+        "full_recipe_pilot_and_resume": "passed"
+      },
+      "defects_fixed": [
+        "jaxlib assembled bridge PTX with the node /usr/local/cuda ptxas; dogo CUDA 12.6 rejects Triton 3.6 PTX 8.7 (20/21 H100 cases failed). Launchers pin CUDA_HOME to the locked nvidia/cuda_nvcc (CUDA 12.9).",
+        "BF16 operands upcast in-kernel made Triton 3.6 on sm_103 lower IEEE FP32 products at TF32-level precision (12/21 B300 cases failed; mixed-case output error 4.0e-4 vs FP64, H100 1.5e-7). Operands are converted to FP32 before launch.",
+        "Extreme-decay test compared a log-decay gradient that underflows to zero by relative error; it now uses the input-gradient scale."
+      ],
+      "evidence": "GLA provenance manifest (results/gla_key_dimension/provenance/manifest.json), per-run acceptance"
+    }
   },
   "runs": [
     {

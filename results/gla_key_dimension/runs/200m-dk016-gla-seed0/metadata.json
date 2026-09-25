@@ -1,0 +1,326 @@
+{
+  "attention_backend": "fused",
+  "attention_backend_requested": "fused",
+  "attention_backend_resume_requested": "fused",
+  "attention_diagnostics": {
+    "attention_backend": "fused",
+    "attention_backend_requested": "fused",
+    "attention_backend_resume_requested": "fused",
+    "attention_formula": "S_t=diag(sigmoid(g_t)^(1/tau)) S_{t-1}+k_t v_t^T; y_t=q_t^T S_t",
+    "attention_implementation": "chunked_gla_triton",
+    "attention_kernel": "gla",
+    "attention_mechanism": "gla",
+    "attention_output_normalization": "per_head_rmsnorm_then_silu_output_gate",
+    "attention_score_scale": "1",
+    "diagnostic_backend": "fused",
+    "format": "shared-transformer-attention-diagnostics",
+    "gla_chunk_size": 64,
+    "gla_gate_rank": 16,
+    "gla_gate_tau": 16.0,
+    "gla_initial_state": "zero_each_sequence",
+    "gla_inner_chunk_size": 16,
+    "gla_kernel_dot_precision": "ieee",
+    "gla_state_dtype": "float32",
+    "gla_state_elements_per_layer": 16384,
+    "gla_use_rope": true,
+    "issues": [],
+    "kernel_values": "vector_gated_recurrence",
+    "layers": [
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 0,
+        "log_decay_max": -8.560929625380325e-27,
+        "log_decay_min": -3.6875,
+        "read_abs_max": 5986.1435546875
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 1,
+        "log_decay_max": -5.5489158867815316e-14,
+        "log_decay_min": -1.7578125,
+        "read_abs_max": 52691.66015625
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 2,
+        "log_decay_max": -8.40025604631478e-10,
+        "log_decay_min": -3.796875,
+        "read_abs_max": 18522.00390625
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 3,
+        "log_decay_max": -1.1135455634350828e-31,
+        "log_decay_min": -3.890625,
+        "read_abs_max": 10704.81640625
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 4,
+        "log_decay_max": -4.8632080787009235e-21,
+        "log_decay_min": -4.96875,
+        "read_abs_max": 937.0142822265625
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 5,
+        "log_decay_max": -0.0,
+        "log_decay_min": -5.78125,
+        "read_abs_max": 2444.300048828125
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 6,
+        "log_decay_max": -6.759963682573256e-13,
+        "log_decay_min": -4.9375,
+        "read_abs_max": 820.3992309570312
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 7,
+        "log_decay_max": -0.0,
+        "log_decay_min": -5.40625,
+        "read_abs_max": 1941.9189453125
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 8,
+        "log_decay_max": -9.388199712016337e-24,
+        "log_decay_min": -5.21875,
+        "read_abs_max": 696.5262451171875
+      },
+      {
+        "invalid_gate_count": 0,
+        "invalid_head_output_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 9,
+        "log_decay_max": -5.192466211881394e-27,
+        "log_decay_min": -4.96875,
+        "read_abs_max": 1586.193115234375
+      }
+    ],
+    "sample": {
+      "diagnostic_pass_contributes_to_validation_loss": false,
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "num_sequences": 1,
+      "prediction_tokens": 2048,
+      "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+      "selection": "first_heldout_sequence",
+      "sequence_index": 0,
+      "source": "packed"
+    },
+    "step": 19074,
+    "valid": true,
+    "version": 1
+  },
+  "attention_formula": "S_t=diag(sigmoid(g_t)^(1/tau)) S_{t-1}+k_t v_t^T; y_t=q_t^T S_t",
+  "attention_implementation": "chunked_gla_triton",
+  "attention_kernel": "gla",
+  "attention_mechanism": "gla",
+  "attention_output_normalization": "per_head_rmsnorm_then_silu_output_gate",
+  "attention_score_scale": "1",
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "diagnostic_backend": "fused",
+  "diagnostic_sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "error": null,
+  "execution_runtime": {
+    "batch_transfer": "host_to_shard",
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA B300 SXM6 AC",
+        "platform": "gpu"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA B300 SXM6 AC",
+        "platform": "gpu"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA B300 SXM6 AC",
+        "platform": "gpu"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA B300 SXM6 AC",
+        "platform": "gpu"
+      }
+    ],
+    "environment": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct"
+  },
+  "gla_chunk_size": 64,
+  "gla_gate_rank": 16,
+  "gla_gate_tau": 16.0,
+  "gla_initial_state": "zero_each_sequence",
+  "gla_inner_chunk_size": 16,
+  "gla_kernel_dot_precision": "ieee",
+  "gla_state_dtype": "float32",
+  "gla_state_elements_per_layer": 16384,
+  "gla_use_rope": true,
+  "next_train_sequence": 4882944,
+  "parameter_count": 194881024,
+  "qk_head_dim": 16,
+  "retained_best_checkpoint_step": 19074,
+  "retained_terminal_checkpoint_step": 19074,
+  "rng_state": {
+    "completed_updates": 19074,
+    "seed": 0
+  },
+  "runtime_history": [
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 2,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 3,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "201793",
+      "timestamp_utc": "2026-09-24T22:10:56.679122+00:00"
+    },
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA B300 SXM6 AC",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA B300 SXM6 AC",
+            "platform": "gpu"
+          },
+          {
+            "id": 2,
+            "kind": "NVIDIA B300 SXM6 AC",
+            "platform": "gpu"
+          },
+          {
+            "id": 3,
+            "kind": "NVIDIA B300 SXM6 AC",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "201793",
+      "timestamp_utc": "2026-09-25T01:25:37.056775+00:00"
+    }
+  ],
+  "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "seed": 0,
+  "slurm_job_id": "201793",
+  "slurm_restart_count": 1,
+  "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+  "status": "complete",
+  "step": 19074,
+  "target_steps": 19074,
+  "target_tokens": 10000269312,
+  "training_tokens": 10000269312,
+  "updated_utc": "2026-09-25T02:34:08.334531+00:00",
+  "validation_nll": 2.8160622119903564,
+  "validation_perplexity": 16.710916892545267,
+  "value_head_dim": 64
+}

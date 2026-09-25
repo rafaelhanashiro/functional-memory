@@ -680,7 +680,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             if len(timing["train_step_seconds"]) < 8:
                 timing["train_step_seconds"].append(time.perf_counter() - train_step_start)
             if not math.isfinite(loss_value):
-                quantity = ("training loss or unnormalized-attention update" if not config.model.attention_normalization else
+                quantity = ("training loss or GLA update" if config.model.attention_mechanism == "gla" else
+                            "training loss or unnormalized-attention update" if not config.model.attention_normalization else
                             "training loss or signed-Taylor update" if check_all_gradients else
                             "training loss" if config.model.quadratic_mode == "fixed" else
                             "training loss or learned-quadratic update")

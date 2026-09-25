@@ -15,6 +15,18 @@ AttentionBackend = Literal["blocked", "fused", "manual", "auto", "xla", "cudnn"]
 
 def attention_from_config(config, *, rngs: nnx.Rngs):
     """Construct the configured module without exposing mechanism fields to blocks."""
+    if config.attention_mechanism == "gla":
+        from scaffolds.transformer.attention.gla import GatedLinearAttention
+
+        return GatedLinearAttention(
+            config.hidden_size, config.num_heads,
+            config.num_heads * config.qk_head_dim, config.num_heads * config.value_head_dim,
+            gate_rank=config.gla_gate_rank, gate_tau=config.gla_gate_tau,
+            chunk_size=config.gla_chunk_size, inner_chunk_size=config.gla_inner_chunk_size,
+            rope_theta=config.rope_theta, rms_norm_eps=config.rms_norm_eps,
+            dropout=config.dropout, use_rope=config.gla_use_rope,
+            backend=config.attention_backend, rngs=rngs,
+        )
     return MultiHeadAttention(
         config.hidden_size, config.num_heads, config.num_kv_heads,
         config.qk_head_dim, config.value_head_dim, rope_theta=config.rope_theta,
