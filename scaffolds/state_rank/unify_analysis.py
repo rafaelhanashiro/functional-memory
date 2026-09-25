@@ -195,7 +195,7 @@ def generate(config_path: Path, project_root: Path, output: Path | None = None) 
     source_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=SOURCE_ROOT, text=True).strip()
     source_files = [Path(__file__), Path(__file__).with_name("unified_metrics.py"),
                     Path(__file__).with_name("unified_plots.py"), Path(__file__).with_name("plot_comparison.py"),
-                    Path(__file__).with_name("artifacts.py"),
+                    Path(__file__).with_name("reports.py"),
                     config_path, SOURCE_ROOT / "scaffolds/state_rank/uv.lock"]
     provenance = {
         "schema_version": 2, "kind": "derived-state-rank-comparison", "created_utc": datetime.now(timezone.utc).isoformat(),
