@@ -1,9 +1,7 @@
-"""Once the run completes, the committed summary, figure, and README results block regenerate byte-identically."""
+"""Before completion the report writes nothing; afterwards the committed outputs regenerate byte-identically."""
 from pathlib import Path
 import subprocess
 import sys
-
-import pytest
 
 from scaffolds.transformer.analysis import regeneration_differences
 from experiments.decay_policy_baseline.adapter.analysis import report
@@ -12,9 +10,18 @@ RECORD = Path(__file__).resolve().parents[2]
 ROOT = RECORD.parents[1]
 
 
-def test_regeneration_reproduces_committed_outputs(tmp_path):
-    if not report.completed(RECORD):
-        pytest.skip("the run has not completed yet")
-    subprocess.run([sys.executable, "-m", "experiments.decay_policy_baseline.adapter.analysis.report",
-                    "--output", str(tmp_path)], cwd=ROOT, check=True, env={"PYTHONPATH": str(ROOT), "MPLBACKEND": "Agg"})
-    assert regeneration_differences(RECORD, tmp_path) == []
+def regenerate(output: Path) -> str:
+    result = subprocess.run([sys.executable, "-m", "experiments.decay_policy_baseline.adapter.analysis.report",
+                             "--output", str(output)], cwd=ROOT, check=True, text=True, capture_output=True,
+                            env={"PYTHONPATH": str(ROOT), "MPLBACKEND": "Agg"})
+    return result.stdout
+
+
+def test_regeneration_reproduces_committed_outputs_or_waits_for_the_run(tmp_path):
+    stdout = regenerate(tmp_path)
+    if report.completed(RECORD):
+        assert regeneration_differences(RECORD, tmp_path) == []
+    else:
+        # No summary, figure, or README block may be fabricated from a pending run.
+        assert stdout.startswith("pending:")
+        assert not list(tmp_path.rglob("*"))
