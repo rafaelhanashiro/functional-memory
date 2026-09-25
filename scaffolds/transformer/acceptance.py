@@ -171,8 +171,18 @@ def matches_softmax_initialization(config) -> dict:
     return {"softmax_counterpart_parameter_sha256": expected["parameter_sha256"]}
 
 
+def entry_module(spec: AcceptanceSpec) -> str:
+    """The adapter's importable module name, also when it runs as `python -m` (`__name__ == "__main__"`)."""
+    if spec.entry_module != "__main__":
+        return spec.entry_module
+    main_spec = getattr(sys.modules["__main__"], "__spec__", None)
+    if main_spec is None:
+        raise RuntimeError("Run the adapter's acceptance with python -m <module>")
+    return main_spec.name
+
+
 def _run_worker(spec, args, name, output, *, stop, cpu=False) -> dict:
-    command = [sys.executable, "-m", spec.entry_module, str(args.config), "--directory", str(args.directory),
+    command = [sys.executable, "-m", entry_module(spec), str(args.config), "--directory", str(args.directory),
                "--gpu-count", str(args.gpu_count), "--gpu-type", args.gpu_type, "--worker", name,
                "--output", str(output), "--stop-after-step", str(stop)]
     subprocess.run(command, cwd=ROOT, env=dict(os.environ, JAX_PLATFORMS="cpu" if cpu else "cuda"), check=True)

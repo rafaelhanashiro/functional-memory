@@ -138,18 +138,20 @@ identity, and validation-best selection against the manifest, and rewrites only 
 marked results block; figures regenerate byte-identically.
 
 The exact executed code for each run is at its recorded source commit
-(`git show <commit>:<path>`). To rerun cells with the current scaffold, create a
-worktree and branch, sync its environment, and submit from its root, for example:
+(`git show <commit>:<path>`).
+
+A rerun with the current scaffold is a new experiment with its own worktree, branch,
+and record (see [AGENTS.md](../../AGENTS.md)); never relaunch into this record's `runs/`.
+Copy the recipes from `configs/` with outputs under `experiments/<new>/` and
+`train.source_commit: auto`, give the new adapter an acceptance spec like
+[this one's](adapter/execution/acceptance.py), then submit each cell from the worktree root:
 
 ```bash
-git worktree add -b rerun/key_dimension_taylor worktrees/key_dimension_taylor main
-cd worktrees/key_dimension_taylor
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-RUN=200m-dk008-m002-seed0
-mkdir -p "experiments/key_dimension_taylor/logs/$RUN"
-sbatch --job-name="$RUN" --output="experiments/key_dimension_taylor/logs/$RUN/slurm-%j.out" \
-  scaffolds/transformer/launchers/kennel.sbatch experiments.key_dimension_taylor.adapter.execution.acceptance \
-  "experiments/key_dimension_taylor/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 B300,H100
+mkdir -p "experiments/<new>/logs/$RUN"
+sbatch --job-name="$RUN" --output="experiments/<new>/logs/$RUN/slurm-%j.out" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.<new>.adapter.execution.acceptance \
+  "experiments/<new>/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 B300,H100
 ```
 
 Recipes point to the Kennel corpus at `/data/cl/u/rafah/home/datasets/fineweb_12b`.

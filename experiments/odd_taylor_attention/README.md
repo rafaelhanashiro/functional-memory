@@ -241,19 +241,20 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.odd_taylor_at
 The plotter verifies retained hashes and semantic identities against the manifest
 and updates only the marked generated-results section of this README.
 
-This collection used four H100 SXM GPUs on `dogo`. To rerun a degree with the
-current scaffold, create a worktree and branch, sync its environment, and submit
-from its root (see [CLUSTERS.md](../../CLUSTERS.md) for allocation policy):
+This collection used four H100 SXM GPUs on `dogo`.
+
+A rerun with the current scaffold is a new experiment with its own worktree, branch,
+and record (see [AGENTS.md](../../AGENTS.md)); never relaunch into this record's `runs/`.
+Copy the recipes from `configs/` with outputs under `experiments/<new>/` and
+`train.source_commit: auto`, give the new adapter an acceptance spec like
+[this one's](adapter/execution/acceptance.py), then submit each degree from the worktree root:
 
 ```bash
-git worktree add -b rerun/odd_taylor_attention worktrees/odd_taylor_attention main
-cd worktrees/odd_taylor_attention
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-RUN=200m-m003-seed0
-mkdir -p "experiments/odd_taylor_attention/logs/$RUN"
-sbatch --job-name="$RUN" --output="experiments/odd_taylor_attention/logs/$RUN/slurm-%j.out" \
-  scaffolds/transformer/launchers/kennel.sbatch experiments.odd_taylor_attention.adapter.execution.acceptance \
-  "experiments/odd_taylor_attention/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 H100
+mkdir -p "experiments/<new>/logs/$RUN"
+sbatch --job-name="$RUN" --output="experiments/<new>/logs/$RUN/slurm-%j.out" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.<new>.adapter.execution.acceptance \
+  "experiments/<new>/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 H100
 ```
 
 The recipes train the full schedule directly. The original runs used a

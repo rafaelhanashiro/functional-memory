@@ -71,8 +71,21 @@ def test_passed_acceptance_requires_the_same_runtime(tmp_path, monkeypatch, sett
 def test_acceptance_uses_the_launch_commit_even_after_analysis_commits(tmp_path, monkeypatch):
     from scaffolds.transformer.configs import Config
 
-    monkeypatch.setattr(preflight, "load_config", lambda path: Config())
+    config = Config()
+    config.train.source_commit = "auto"
+    monkeypatch.setattr(preflight, "load_config", lambda path: config)
     monkeypatch.setattr(preflight, "sha256", lambda path: "fixture-sha256")
     monkeypatch.setenv("SHARED_TRANSFORMER_SOURCE_COMMIT", "b" * 40)
     spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=())
     assert preflight.identity(spec, tmp_path / "config.yaml", 4, "B300")["source_commit"] == "b" * 40
+
+
+def test_workers_reinvoke_the_adapter_module_when_it_runs_as_main(monkeypatch):
+    import sys
+    from types import ModuleType, SimpleNamespace
+
+    main = ModuleType("__main__")
+    main.__spec__ = SimpleNamespace(name="experiments.demo.adapter.execution.acceptance")
+    monkeypatch.setitem(sys.modules, "__main__", main)
+    assert preflight.entry_module(preflight.AcceptanceSpec("__main__", ())) == main.__spec__.name
+    assert preflight.entry_module(preflight.AcceptanceSpec("named.module", ())) == "named.module"

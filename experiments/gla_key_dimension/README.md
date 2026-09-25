@@ -123,27 +123,27 @@ training then resumes its latest checkpoint.
 ## Reproduction
 
 The exact executed code is at the source commit recorded for each run
-(`git show <commit>:<path>`). To rerun with the current scaffold, create a worktree
-and branch, sync its environment, and submit from its root:
+(`git show <commit>:<path>`).
+
+A rerun with the current scaffold is a new experiment with its own worktree, branch,
+and record (see [AGENTS.md](../../AGENTS.md)); never relaunch into this record's `runs/`.
+Copy the recipes from `configs/` with outputs under `experiments/<new>/` and
+`train.source_commit: auto`, give the new adapter an acceptance spec like
+[this one's](adapter/execution/acceptance.py), then submit each run from the worktree root:
 
 ```bash
-git worktree add -b rerun/gla_key_dimension worktrees/gla_key_dimension main
-cd worktrees/gla_key_dimension
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-for DK in 008 016 032 064 128; do
-  RUN="200m-dk${DK}-gla-seed0"
-  mkdir -p "experiments/gla_key_dimension/logs/$RUN"
-  sbatch --job-name="$RUN" --output="experiments/gla_key_dimension/logs/$RUN/slurm-%j.out" \
-    scaffolds/transformer/launchers/kennel.sbatch experiments.gla_key_dimension.adapter.execution.acceptance \
-    "experiments/gla_key_dimension/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 B300,H100
-done
+mkdir -p "experiments/<new>/logs/$RUN"
+sbatch --job-name="$RUN" --output="experiments/<new>/logs/$RUN/slurm-%j.out" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.<new>.adapter.execution.acceptance \
+  "experiments/<new>/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 B300,H100
 ```
 
 Regenerate `summary.csv` and the figure from `runs/`, and run the CPU checks:
 
 ```bash
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.gla_key_dimension.adapter.analysis.plot
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest \
+JAX_PLATFORMS=cpu PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m pytest \
   -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m 'not gpu' \
   scaffolds/transformer/tests/test_gla.py scaffolds/transformer/tests/test_gla_bridge.py \
   scaffolds/transformer/tests/test_gla_integration.py experiments/gla_key_dimension/adapter/tests

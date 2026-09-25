@@ -182,19 +182,20 @@ and updates only the marked generated-results section of this README. Completed
 controls keep their own source commits and terminal metrics; incomplete validation
 histories are plotted without a terminal bar.
 
-This collection used four H100 SXM GPUs on `dogo`. To rerun a variant with the
-current scaffold, create a worktree and branch, sync its environment, and submit
-from its root (see [CLUSTERS.md](../../CLUSTERS.md) for allocation policy):
+This collection used four H100 SXM GPUs on `dogo`.
+
+A rerun with the current scaffold is a new experiment with its own worktree, branch,
+and record (see [AGENTS.md](../../AGENTS.md)); never relaunch into this record's `runs/`.
+Copy the recipes from `configs/` with outputs under `experiments/<new>/` and
+`train.source_commit: auto`, give the new adapter an acceptance spec like
+[this one's](adapter/execution/acceptance.py), then submit each variant from the worktree root:
 
 ```bash
-git worktree add -b rerun/learned_quadratic_attention worktrees/learned_quadratic_attention main
-cd worktrees/learned_quadratic_attention
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-RUN=200m-positive-global-seed0
-mkdir -p "experiments/learned_quadratic_attention/logs/$RUN"
-sbatch --job-name="$RUN" --output="experiments/learned_quadratic_attention/logs/$RUN/slurm-%j.out" \
-  scaffolds/transformer/launchers/kennel.sbatch experiments.learned_quadratic_attention.adapter.execution.acceptance \
-  "experiments/learned_quadratic_attention/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 H100
+mkdir -p "experiments/<new>/logs/$RUN"
+sbatch --job-name="$RUN" --output="experiments/<new>/logs/$RUN/slurm-%j.out" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.<new>.adapter.execution.acceptance \
+  "experiments/<new>/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 H100
 ```
 
 The launcher runs the shared acceptance stages (tests, initialization, pilot, and

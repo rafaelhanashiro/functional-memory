@@ -141,18 +141,20 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.unnormalized_
 The run used four B300s in `long`. One Python process uses all four GPUs;
 global batch 256, microbatch 64, and four accumulation steps stay unchanged.
 The shared Kennel launcher selects scheduler and transport settings, runs
-acceptance, then starts production. To rerun, create a worktree and branch,
-sync its environment, and submit from its root:
+acceptance, then starts production.
+
+A rerun with the current scaffold is a new experiment with its own worktree, branch,
+and record (see [AGENTS.md](../../AGENTS.md)); never relaunch into this record's `runs/`.
+Copy the recipes from `configs/` with outputs under `experiments/<new>/` and
+`train.source_commit: auto`, give the new adapter an acceptance spec like
+[this one's](adapter/execution/acceptance.py), then submit the run from the worktree root:
 
 ```bash
-git worktree add -b rerun/unnormalized_attention worktrees/unnormalized_attention main
-cd worktrees/unnormalized_attention
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-RUN=200m-exp-seed0-kennel
-mkdir -p "experiments/unnormalized_attention/logs/$RUN"
-sbatch --job-name="$RUN" --partition=long --output="experiments/unnormalized_attention/logs/$RUN/slurm-%j.out" \
-  scaffolds/transformer/launchers/kennel.sbatch experiments.unnormalized_attention.adapter.execution.acceptance \
-  "experiments/unnormalized_attention/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 B300
+mkdir -p "experiments/<new>/logs/$RUN"
+sbatch --job-name="$RUN" --output="experiments/<new>/logs/$RUN/slurm-%j.out" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.<new>.adapter.execution.acceptance \
+  "experiments/<new>/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 B300
 ```
 
 For an H100 fallback, pass `H100` as the final argument; it must pass the same
@@ -160,9 +162,8 @@ acceptance on its own hardware. Do not run both copies concurrently, and keep th
 frozen execution set unchanged while the job can run or requeue. Resubmitting the
 same recipe resumes the latest complete checkpoint, optimizer, and data cursor.
 
-Allocation and acceptance records are written under
-`experiments/unnormalized_attention/logs/<run>/` beside the Slurm log; training
-metrics and resolved runtime metadata go to `runs/<run>/` and checkpoints to
+Allocation and acceptance records are written under the experiment's
+`logs/<run>/` beside the Slurm log; training metrics and resolved runtime metadata go to `runs/<run>/` and checkpoints to
 `checkpoints/<run>/`. Checkpoints keep latest and validation best while resumable;
 after completion only the validation-best checkpoint is retained, and the manifest
 summarizes the acceptance and allocation records.

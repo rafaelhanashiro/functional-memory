@@ -164,25 +164,23 @@ and the launcher records the allocated type. One Python process per run uses
 global batch 256, microbatch 64, and four accumulation steps. Acceptance is
 keyed to the resolved GPU type, so a requeue onto the other type reruns it
 before resuming the latest checkpoint; matching passed stages are reused.
-To rerun, create a worktree and branch, sync its environment, and submit from
-its root:
+
+A rerun with the current scaffold is a new experiment with its own worktree, branch,
+and record (see [AGENTS.md](../../AGENTS.md)); never relaunch into this record's `runs/`.
+Copy the recipes from `configs/` with outputs under `experiments/<new>/` and
+`train.source_commit: auto`, give the new adapter an acceptance spec like
+[this one's](adapter/execution/acceptance.py), then submit each degree from the worktree root:
 
 ```bash
-git worktree add -b rerun/unnormalized_taylor_attention worktrees/unnormalized_taylor_attention main
-cd worktrees/unnormalized_taylor_attention
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-for DEGREE in 1 2 3 4; do
-  RUN="200m-m00${DEGREE}-seed0"
-  mkdir -p "experiments/unnormalized_taylor_attention/logs/$RUN"
-  sbatch --job-name="$RUN" --output="experiments/unnormalized_taylor_attention/logs/$RUN/slurm-%j.out" \
-    scaffolds/transformer/launchers/kennel.sbatch experiments.unnormalized_taylor_attention.adapter.execution.acceptance \
-    "experiments/unnormalized_taylor_attention/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 B300,H100
-done
+mkdir -p "experiments/<new>/logs/$RUN"
+sbatch --job-name="$RUN" --output="experiments/<new>/logs/$RUN/slurm-%j.out" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.<new>.adapter.execution.acceptance \
+  "experiments/<new>/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 B300,H100
 ```
 
-The launcher records each Slurm allocation and acceptance under
-`experiments/unnormalized_taylor_attention/logs/<run>/` beside the Slurm log;
-metrics and resolved runtime metadata go to `runs/<run>/` and checkpoints to
+The launcher records each Slurm allocation and acceptance under the
+experiment's `logs/<run>/` beside the Slurm log; metrics and resolved runtime metadata go to `runs/<run>/` and checkpoints to
 `checkpoints/<run>/`. Keep the frozen execution set unchanged while jobs can run
 or requeue. After completion, only each run's validation-best checkpoint is
 retained and the manifest summarizes the acceptance and allocation records.
