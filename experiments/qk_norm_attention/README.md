@@ -17,9 +17,12 @@ this costs against standard softmax and how far the scales move. Bounded scores
 are also the regime in which the repository's polynomial (Taylor) kernels
 approximate the exponential, so this baseline anchors later QK-norm polynomial runs.
 
-**Status: running.** Requested 2026-09-25 from Kennel and submitted the same day
-as Slurm job 202156 at launch commit `4b5c69c`; see the
-[provenance manifest](provenance/manifest.json) for progress.
+**Status: running.** Requested 2026-09-25 from Kennel and submitted the same day;
+the first submission (job 202156, launch commit `4b5c69c`) was preempted twice
+during acceptance and then failed acceptance on B300 because its GPU stage
+included the softmax-backends width-256 cuDNN cases, a known B300 limit unrelated
+to this recipe. The relaunch drops those cases; see the
+[provenance manifest](provenance/manifest.json) for the current job and progress.
 
 **Home cluster: Kennel.** The artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`. While the run executes, its
@@ -103,8 +106,8 @@ counts, the weight-decay exclusion, configuration validation and round trips,
 diagnostics and their W&B mirror, and training with checkpoint resume. GPU tests,
 run by the launcher's acceptance in the production allocation, check that cuDNN
 softmax and the fused kernels consume the cosine operands exactly as the blocked
-reference does at the full 2,048-token BF16 context, and cuDNN softmax against the
-manual reference at every production width. Acceptance then verifies the
+reference does at the full 2,048-token BF16 context, and the exact-softmax cuDNN
+control against the blocked reference. Acceptance then verifies the
 initialization against the softmax control, runs 20 full-recipe updates with
 validation, and checks a one-update checkpoint resume. Before launch the five GPU
 gates passed on one B300 (`akita`, job 202131) and the full scaffold CPU suite
