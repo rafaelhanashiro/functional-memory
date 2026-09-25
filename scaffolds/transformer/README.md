@@ -71,6 +71,35 @@ blocked reference evaluates them by Horner's rule, and
 `attention/backends/fused_learned_polynomial.py` is the fused kernel, whose custom
 backward also returns each head's coefficient gradient `sum_{i>=j} S_ij^r (dY_i · V_j)`.
 
+### QK-norm (cosine scores)
+
+`qk_norm: true` composes with every dot-product mechanism above and changes only
+the score. Q and K are unit-normalized per head in FP32,
+`x̂ = x / sqrt(||x||² + qk_norm_eps)`, and the score becomes
+
+```text
+s_ij = exp(γ) · <q_i, k_j> / (||q_i|| ||k_j||),   |s_ij| <= exp(γ)
+```
+
+The kernels are untouched: `attention/multihead.py` feeds the mechanism
+`q' = exp(γ) sqrt(d_K) q̂` and `k' = k̂` (`attention/qk_norm.py`), whose
+`q'·k' / sqrt(d_K)` is the cosine score, so the blocked reference, the fused
+Pallas/Triton kernels, cuDNN softmax, and all diagnostics see `s_ij` directly. The
+normalization precedes RoPE, which is orthogonal, so the order is immaterial. The
+log scale `γ` is the `qk_norm_log_scale` array, `[1]` with `qk_norm_sharing: global`
+or `[num_layers, num_heads, 1]` with `per_head` (default), FP32, without weight
+decay, initialized at `log(qk_norm_initial_scale)`; `null` (default) selects
+`sqrt(d_K)`, the scale of RMSNorm-style QK-norm at initialization. The learned scale
+is log-parametrized so the optimizer moves it multiplicatively and it stays positive
+(a negative scale is a sign flip that the key projection absorbs). Because cosine
+scores ignore Q/K magnitudes, the model can sharpen attention only through `γ`,
+and rescaling the Q or K projection leaves the operator unchanged. Every
+validation records `γ` and `exp(γ)` for each layer and head in `metrics.jsonl`
+under `attention_diagnostics.qk_norm_scale`; W&B receives their mean, minimum,
+and maximum. Recipes and metadata identify the option with `qk_norm`,
+`qk_norm_sharing`, `qk_norm_initial_scale`, and `qk_norm_eps`. GLA and degree 0
+do not accept it.
+
 `AttentionParameterSpec` declares initialization, sharing, the forward argument,
 and weight-decay policy. The model registers each array once and selects the
 appropriate device-array arguments for each layer. Gradients from shared uses
@@ -238,7 +267,7 @@ JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 \
 ```
 
 The suite covers independent FP64 attention and gradient references, signed and
-unnormalized kernels, learned parameter sharing, optimizer exclusions, distributed
+unnormalized kernels, QK-norm cosine scores, learned parameter sharing, optimizer exclusions, distributed
 accumulation, packed-data cursors, interruption and resume, checkpoint audits,
 acceptance, and retention. GPU-marked tests (`-m gpu`, in a GPU allocation) exercise
 the fused forward and backward implementations.

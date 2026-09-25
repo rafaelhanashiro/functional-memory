@@ -103,6 +103,8 @@ def attention_identity(config) -> dict:
             "quadratic_parameter_count": (2 if config.model.quadratic_sharing == "global" else
                                           2 * config.model.num_layers * config.model.num_heads),
         })
+    if config.model.qk_norm:
+        identity.update(qk_norm_identity(config.model))
     if config.model.attention_backend == "fused":
         if not normalized:
             from scaffolds.transformer.attention.backends.fused_unnormalized import _tile_sizes
@@ -126,6 +128,26 @@ def attention_identity(config) -> dict:
     return identity
 
 
+def qk_norm_identity(model) -> dict:
+    """Cosine-score facts recorded beside the mechanism's own identity."""
+    from scaffolds.transformer.attention.qk_norm import initial_scale
+
+    return {
+        "qk_norm": True,
+        "qk_norm_sharing": model.qk_norm_sharing,
+        "qk_norm_initial_scale": initial_scale(model),
+        "qk_norm_eps": model.qk_norm_eps,
+        "qk_norm_parameter_count": 1 if model.qk_norm_sharing == "global" else model.num_layers * model.num_heads,
+        "attention_score_formula": "exp(gamma) * <q, k> / (||q|| ||k||), gamma learned, |score| <= exp(gamma)",
+    }
+
+
+def _serializable(array):
+    if array.ndim == 0:
+        return json_number(array)
+    return [_serializable(value) for value in array]
+
+
 def quadratic_coefficient_report(params, config) -> dict:
     """Record both optimizer parameters and the polynomial they currently define."""
     raw = np.asarray(jax.device_get(params["quadratic_coefficients"][...]), dtype=np.float64)
@@ -136,17 +158,11 @@ def quadratic_coefficient_report(params, config) -> dict:
     else:
         effective = np.stack((np.ones_like(first), first, second), axis=-1)
         names = ["b", "c"]
-
-    def serializable(array):
-        if array.ndim == 0:
-            return json_number(array)
-        return [serializable(value) for value in array]
-
     return {
         "raw_parameter_names": names,
-        "raw": serializable(raw),
+        "raw": _serializable(raw),
         "effective_coefficient_names": ["constant", "linear", "quadratic"],
-        "effective": serializable(effective),
+        "effective": _serializable(effective),
         "finite": bool(np.all(np.isfinite(raw)) and np.all(np.isfinite(effective))),
     }
 
@@ -159,18 +175,26 @@ def polynomial_coefficient_report(params, config) -> dict:
     raw = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
     names = [COEFFICIENT_NAMES[order] if order < len(COEFFICIENT_NAMES) else f"degree_{order}"
              for order in range(raw.shape[-1])]
-
-    def serializable(array):
-        if array.ndim == 0:
-            return json_number(array)
-        return [serializable(value) for value in array]
-
     return {
         "raw_parameter_names": [f"c{order}" for order in range(raw.shape[-1])],
-        "raw": serializable(raw),
+        "raw": _serializable(raw),
         "effective_coefficient_names": names,
-        "effective": serializable(raw),
+        "effective": _serializable(raw),
         "finite": bool(np.all(np.isfinite(raw))),
+    }
+
+
+def qk_norm_scale_report(params, config) -> dict:
+    """Record the log scales gamma and the score bounds exp(gamma), shared ([1]) or per layer and head ([L, H, 1])."""
+    raw = np.asarray(jax.device_get(params["qk_norm_log_scale"][...]), dtype=np.float64)
+    with np.errstate(over="ignore"):
+        effective = np.exp(raw)
+    return {
+        "raw_parameter_names": ["gamma"],
+        "raw": _serializable(raw),
+        "effective_coefficient_names": ["alpha"],
+        "effective": _serializable(effective),
+        "finite": bool(np.all(np.isfinite(raw)) and np.all(np.isfinite(effective))),
     }
 
 
@@ -271,6 +295,11 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         coefficient_report = polynomial_coefficient_report(params, config)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite polynomial coefficients")
+    scale_report = None
+    if config.model.qk_norm:
+        scale_report = qk_norm_scale_report(params, config)
+        if not scale_report["finite"]:
+            issues.append("Nonfinite QK-norm scales")
     report = {
         "format": "shared-transformer-attention-diagnostics",
         "version": 1,
@@ -289,4 +318,6 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     }
     if coefficient_report is not None:
         report["coefficients"] = coefficient_report
+    if scale_report is not None:
+        report["qk_norm_scale"] = scale_report
     return report

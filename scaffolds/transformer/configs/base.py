@@ -58,6 +58,13 @@ class ModelConfig:
     # sum_r c_r s^r, starting from the Taylor values 1/r!.
     attention_coefficients: Literal["fixed", "learned"] = "fixed"
     attention_coefficient_sharing: Literal["global", "per_head"] = "global"
+    # Cosine scores for any dot-product mechanism: s = exp(gamma) * cos(q, k) with a
+    # learned log scale gamma per layer and head (or one shared), initialized at
+    # log(qk_norm_initial_scale); null selects sqrt(qk_head_dim).
+    qk_norm: bool = False
+    qk_norm_sharing: Literal["global", "per_head"] = "per_head"
+    qk_norm_initial_scale: float | None = None
+    qk_norm_eps: float = 1e-6
 
     def __post_init__(self):
         if self.kind != "transformer":
@@ -128,6 +135,22 @@ class ModelConfig:
                 raise ValueError("Learned polynomial coefficients require attention_normalization=false")
             if self.attention_degree is None or self.attention_degree < 1:
                 raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
+        if not isinstance(self.qk_norm, bool):
+            raise ValueError("model.qk_norm must be a boolean")
+        if self.qk_norm_sharing not in ("global", "per_head"):
+            raise ValueError(f"Unknown QK-norm sharing: {self.qk_norm_sharing}")
+        for name in ("qk_norm_initial_scale", "qk_norm_eps"):
+            value = getattr(self, name)
+            if name == "qk_norm_initial_scale" and value is None:
+                continue
+            if (not isinstance(value, (int, float)) or isinstance(value, bool)
+                    or not math.isfinite(value) or value <= 0):
+                raise ValueError(f"model.{name} must be finite and positive")
+        if self.qk_norm:
+            if self.attention_mechanism != "dot_product":
+                raise ValueError("QK-norm is a dot-product attention option; GLA does not support it")
+            if self.attention_degree == 0:
+                raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
         if not 0 <= self.dropout < 1:
             raise ValueError("model.dropout must be in [0, 1)")
         if self.dropout != 0 and self.attention_backend != "manual":
