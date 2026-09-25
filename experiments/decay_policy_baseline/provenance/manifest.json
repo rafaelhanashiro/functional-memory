@@ -1,0 +1,72 @@
+{
+  "format": "functional-memory-experiment-setup",
+  "version": 2,
+  "experiment": "decay_policy_baseline",
+  "status": "running",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "execution_checkout": "worktrees/decay_policy_baseline",
+  "documentation": "experiments/decay_policy_baseline/README.md",
+  "scaffold": "scaffolds/transformer",
+  "branch": "claude/decay-policy-baseline",
+  "branch_base_commit": "8bdc5e22be0ff7b42e412062569985136a883b0d",
+  "launch_commit": "f8d4f0dd2ebea2a93a9d675375b9b917c9086c69",
+  "frozen_execution_set_sha256": "eca8969ca150cbc1a7a2ff40884ae92da72037c8cd610b85d4c5d72dd90c6cc4",
+  "scientific_change": "The retained 200M exact-softmax reference (d_K = 64, seed 0) retrained under the canonical weight-decay policy exclude_embeddings_norms_biases_v1 (AdamW decay 0.1 on projection matrices including the output vocabulary projection; none on the token embedding, RMSNorm scales, or biases); recipe otherwise identical to the control",
+  "requested": {
+    "date": "2026-09-25",
+    "from_cluster": "kennel",
+    "purpose": "decide whether old-policy records stay comparable to new runs or are rerun per experiment"
+  },
+  "shared_dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+  },
+  "data_identity": {
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    }
+  },
+  "comparison_controls": {
+    "softmax_decay_all_parameters": {
+      "run": "experiments/key_dimension_taylor/runs/200m-softmax-seed0",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "weight_decay_policy": "AdamW decay 0.1 on every parameter (pre-cb31558 scaffold)",
+      "validation_nll": 2.6874512689454213,
+      "validation_perplexity": 14.69417664861716
+    }
+  },
+  "runs": [
+    {
+      "name": "200m-softmax-seed0",
+      "attention_kernel": "softmax",
+      "qk_head_dim": 64,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/decay_policy_baseline/configs/200m-softmax-seed0.yaml",
+        "sha256": "e47598022fe93bd7bc0d7b1755ceeb34037c1b1e5e027d033d23166b3c2b747d"
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "parameter_count": 199906304,
+      "source_commit": "f8d4f0dd2ebea2a93a9d675375b9b917c9086c69",
+      "slurm_job_ids": [
+        202148
+      ],
+      "submission": "sbatch --gres=gpu:h100:4 through scaffolds/transformer/launchers/kennel.sbatch (sweep partition, 4 H100, requeue, append-mode log) from the worktree root",
+      "run_record": "experiments/decay_policy_baseline/runs/200m-softmax-seed0",
+      "log_directory": "experiments/decay_policy_baseline/logs/200m-softmax-seed0",
+      "checkpoint_directory": "experiments/decay_policy_baseline/checkpoints/200m-softmax-seed0"
+    }
+  ],
+  "pre_launch_validation": {
+    "cpu_tests": "At the launch commit: adapter tests, test_parameter_policy, and test_config passed (54 passed, 1 skipped: the regeneration test waits for the run). Acceptance in the allocation runs the declared CPU, distributed CPU, and cuDNN GPU tests, initialization, pilot, and resume before training.",
+    "scaffold_state": "Branch base 8bdc5e2 (main), which includes the selective-decay policy (cb31558) and its 305-test validation recorded in that commit."
+  }
+}
