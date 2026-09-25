@@ -1,0 +1,157 @@
+{
+  "format": "functional-memory-experiment-setup",
+  "version": 2,
+  "experiment": "learned_unnormalized_taylor",
+  "status": "running",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "execution_checkout": "worktrees/learned_unnormalized_taylor",
+  "documentation": "experiments/learned_unnormalized_taylor/README.md",
+  "scaffold": "scaffolds/transformer",
+  "branch": "claude/learned-unnormalized-taylor",
+  "branch_base_commit": "573122b02c951e7fd2e3213ca9e66f31ae6a9d3b",
+  "launch_commit": "788a085e24225872495199e8040ec1167070a691",
+  "frozen_execution_set_sha256": "0b198131b38d6469e704720ed8e232f5c9a67c5877a035d383320cddeb38d275",
+  "scientific_change": "Unnormalized causal p_{l,h}(QK^T / sqrt(d_K)) V with p_{l,h}(x) = sum_{r<=m} c_{l,h,r} x^r; all m+1 coefficients learned per layer and head from the Taylor values 1/r!, unrestricted, FP32, no weight decay, backbone learning-rate schedule",
+  "requested": {
+    "date": "2026-09-25",
+    "from_cluster": "kennel",
+    "degrees": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "sharing": "per_head",
+    "coefficients": "unrestricted, including the constant"
+  },
+  "shared_dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+  },
+  "data_identity": {
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    }
+  },
+  "comparison_controls": {
+    "unnormalized_fixed_taylor_m1": {
+      "run": "experiments/unnormalized_taylor_attention/runs/200m-m001-seed0",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "validation_nll": 3.033512370926993,
+      "validation_perplexity": 20.770056765297024
+    },
+    "unnormalized_fixed_taylor_m2": {
+      "run": "experiments/unnormalized_taylor_attention/runs/200m-m002-seed0",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "validation_nll": 3.1572411145482744,
+      "validation_perplexity": 23.50565697562782
+    },
+    "unnormalized_fixed_taylor_m3": {
+      "run": "experiments/unnormalized_taylor_attention/runs/200m-m003-seed0",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "validation_nll": 3.0076456921441213,
+      "validation_perplexity": 20.239693320274547
+    },
+    "unnormalized_fixed_taylor_m4": {
+      "run": "experiments/unnormalized_taylor_attention/runs/200m-m004-seed0",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "validation_nll": 3.0662785853658403,
+      "validation_perplexity": 21.46188530439321
+    }
+  },
+  "runs": [
+    {
+      "name": "200m-m001-seed0",
+      "attention_degree": 1,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/learned_unnormalized_taylor/configs/200m-m001-seed0.yaml",
+        "sha256": "58e145c5a33d0ce215c9eb14009e4272b7be949b7e1ed5f9ae332b74b34fb04d"
+      },
+      "parameter_count": 199906624,
+      "coefficient_count": 320,
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "slurm_job_ids": [
+        201997
+      ],
+      "run_record": "experiments/learned_unnormalized_taylor/runs/200m-m001-seed0",
+      "log_directory": "experiments/learned_unnormalized_taylor/logs/200m-m001-seed0",
+      "checkpoint_directory": "experiments/learned_unnormalized_taylor/checkpoints/200m-m001-seed0"
+    },
+    {
+      "name": "200m-m002-seed0",
+      "attention_degree": 2,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/learned_unnormalized_taylor/configs/200m-m002-seed0.yaml",
+        "sha256": "2cc55d1ef2f3d8da5950ba0bc98e83710cf35cd3804c89cd835c1cf26150c312"
+      },
+      "parameter_count": 199906784,
+      "coefficient_count": 480,
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "slurm_job_ids": [
+        201998
+      ],
+      "run_record": "experiments/learned_unnormalized_taylor/runs/200m-m002-seed0",
+      "log_directory": "experiments/learned_unnormalized_taylor/logs/200m-m002-seed0",
+      "checkpoint_directory": "experiments/learned_unnormalized_taylor/checkpoints/200m-m002-seed0"
+    },
+    {
+      "name": "200m-m003-seed0",
+      "attention_degree": 3,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/learned_unnormalized_taylor/configs/200m-m003-seed0.yaml",
+        "sha256": "b6ba5fdd26874038d79a5bfba0806069f075e3a4d6b5fead87462022a0d3c8bc"
+      },
+      "parameter_count": 199906944,
+      "coefficient_count": 640,
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "slurm_job_ids": [
+        201999
+      ],
+      "run_record": "experiments/learned_unnormalized_taylor/runs/200m-m003-seed0",
+      "log_directory": "experiments/learned_unnormalized_taylor/logs/200m-m003-seed0",
+      "checkpoint_directory": "experiments/learned_unnormalized_taylor/checkpoints/200m-m003-seed0"
+    },
+    {
+      "name": "200m-m004-seed0",
+      "attention_degree": 4,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/learned_unnormalized_taylor/configs/200m-m004-seed0.yaml",
+        "sha256": "cc4cd2a6cd9ab37b5df964cba1ef85d69f29a5fc5977ce0739951115e331f876"
+      },
+      "parameter_count": 199907104,
+      "coefficient_count": 800,
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "slurm_job_ids": [
+        202000
+      ],
+      "run_record": "experiments/learned_unnormalized_taylor/runs/200m-m004-seed0",
+      "log_directory": "experiments/learned_unnormalized_taylor/logs/200m-m004-seed0",
+      "checkpoint_directory": "experiments/learned_unnormalized_taylor/checkpoints/200m-m004-seed0"
+    }
+  ],
+  "pre_launch_validation": {
+    "cpu_tests": "Full CPU scaffold suite at the pre-fix tree: 505 passed, 12 skipped, 1 failed (the fixed unnormalized path passed a new keyword to the reference). After restoring the fixed path's exact call, the affected files (unnormalized attention and both learned-polynomial files) passed 89/89 and the adapter tests 9/9 at the launch commit.",
+    "gpu_tests": {
+      "H100": "26 passed (slurm 201994, dogo)",
+      "B300": "26 passed (slurm 201993, akita)"
+    }
+  }
+}
