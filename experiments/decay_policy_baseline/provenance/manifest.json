@@ -58,9 +58,10 @@
       "source_commit": "126d72a90dea0624a9acc3914255ecaf19998442",
       "slurm_job_ids": [
         202148,
-        202161
+        202161,
+        202186
       ],
-      "submission": "202148: sbatch --gres=gpu:h100:4 at launch commit f8d4f0d, cancelled while pending (four H100s were not expected before the next day); 202161: resubmitted through scaffolds/transformer/launchers/kennel.sbatch (sweep partition, any 4 B300 or H100, requeue, append-mode log)",
+      "submission": "202148: sbatch --gres=gpu:h100:4 at launch commit f8d4f0d, cancelled while pending (four H100s were not expected before the next day); 202161: resubmitted through scaffolds/transformer/launchers/kennel.sbatch (sweep partition, any 4 B300 or H100, requeue, append-mode log); 202161 cancelled while pending (its 2-day limit could not backfill around a higher-priority 8-H100 reservation); 202186: same launch commit, resubmitted with --time=08:00:00 (acceptance plus training need about 3.5 h on 4 H100)",
       "run_record": "experiments/decay_policy_baseline/runs/200m-softmax-seed0",
       "log_directory": "experiments/decay_policy_baseline/logs/200m-softmax-seed0",
       "checkpoint_directory": "experiments/decay_policy_baseline/checkpoints/200m-softmax-seed0",
