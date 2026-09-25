@@ -19,12 +19,12 @@ import numpy as np
 import torch
 
 from scaffolds.state_rank.random_models import build_random_llama, load_saved_inputs, parameter_fingerprint
-from scaffolds.state_rank.artifacts import CONFIG_DIRECTORY, retained_path, resolved_config_path
+from scaffolds.state_rank.reports import resolved_config_path
 
-DEFAULT_CONFIG = CONFIG_DIRECTORY / "random_vs_pretrained.json"
 # Retained ORCD baselines were measured on L40S; the Kennel H100 rerun reached
 # 2.058e-5 with identical discrete ranks, so reproduction allows 5e-5 (was 2e-5).
 NORMALIZED_SPECTRUM_ATOL = 5e-5
+DEPENDENCY_LOCK = Path(__file__).resolve().parent / "uv.lock"
 METRICS = ("participation_ratio", "threshold_rank", "energy_rank90", "energy_rank99",
            "log_trace", "key_norms", "value_norms")
 
@@ -50,7 +50,8 @@ def write_json(path, value):
 
 
 def source_commit():
-    return subprocess.check_output(
+    """The launch commit exported by the launcher, or HEAD when run directly."""
+    return os.environ.get("STATE_RANK_SOURCE_COMMIT") or subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parent, text=True,
     ).strip()
 
@@ -83,7 +84,7 @@ def prepare_manifest(config_path, project_root, output=None):
     prefixes = config["spectrum_prefixes"]
     if not prefixes or prefixes != sorted(set(prefixes)) or any(type(t) is not int or not 1 <= t <= config["tokens"] for t in prefixes):
         raise ValueError("Spectrum prefixes must be sorted distinct in-range integers")
-    baseline = retained_path(project_root, config["baseline_directory"])
+    baseline = project_root / config["baseline_directory"]
     old_metadata = json.loads((baseline / "metadata.json").read_text())
     if (old_metadata["model"] != config["model_id"]
             or old_metadata["model_revision"] != config["model_revision"]
@@ -94,7 +95,7 @@ def prepare_manifest(config_path, project_root, output=None):
     provenance = {
         "config": config,
         "source_commit": source_commit(),
-        "dependency_lock_sha256": sha256_file(project_root / "uv.lock"),
+        "dependency_lock_sha256": sha256_file(DEPENDENCY_LOCK),
         "inputs_sha256": sha256_file(baseline / "inputs.json"),
         "baseline_metadata_sha256": sha256_file(baseline / "metadata.json"),
         "baseline_spectra_sha256": sha256_file(baseline / "spectra.npz"),
@@ -136,7 +137,7 @@ def validate_manifest(manifest):
     project_root = Path(manifest["project_root"])
     baseline = Path(manifest["baseline_directory"])
     for path, field in (
-        (project_root / "uv.lock", "dependency_lock_sha256"),
+        (DEPENDENCY_LOCK, "dependency_lock_sha256"),
         (Path(manifest["output_directory"]) / "inputs.json", "inputs_sha256"),
         (baseline / "metadata.json", "baseline_metadata_sha256"),
         (baseline / "spectra.npz", "baseline_spectra_sha256"),
@@ -301,7 +302,7 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--output", type=Path)
     parser.add_argument("--manifest", type=Path)

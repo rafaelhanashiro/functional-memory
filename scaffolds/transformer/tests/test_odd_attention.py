@@ -10,8 +10,8 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from scaffolds.transformer.models.components import fused_attention as fused
-from scaffolds.transformer.models.components.attention import blocked_dot_product_attention
+from scaffolds.transformer.attention.backends import fused_taylor as fused
+from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 from scaffolds.transformer.tests.test_fused_attention import (
     _assert_result, _compiled_forward_and_vjp, _fp64_forward_and_vjp, _inputs,
 )

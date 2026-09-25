@@ -86,7 +86,7 @@ def test_checkpoint_audit_rejects_finite_restoration_corruption(tmp_path, monkey
         loop.run_training(config, stop_after_step=1, audit_checkpoint=True)
 
 
-def test_historical_config_defaults_do_not_rewrite_original(tmp_path):
+def test_run_config_without_quadratic_fields_resumes_unchanged(tmp_path):
     config = tiny_config(tmp_path)
     loop.ensure_run_config(config, resume=True)
     path = tmp_path / "config.json"
@@ -118,15 +118,15 @@ def test_finite_large_nll_is_a_structured_numerical_failure(tmp_path):
 
 @pytest.mark.parametrize("tied", [False, True])
 def test_retention_keeps_best_and_completed_run_is_idempotent(tmp_path, monkeypatch, tied):
-    from scaffolds.transformer.studies.learned_quadratic_attention.retention import finalize_run
+    from scaffolds.transformer.retention import finalize_run
 
     name = "test-positive-global"
-    config = tiny_config(tmp_path / "results" / "learned_quadratic_attention" / name)
+    config = tiny_config(tmp_path / "experiments" / "learned_quadratic_attention" / "runs" / name)
     config.model.attention_degree = 2
     config.model.quadratic_mode = "positive"
     config.train.source_commit = "a" * 40
     config.train.workdir.mkdir(parents=True)
-    canonical = tmp_path / "checkpoints" / "learned_quadratic_attention" / name
+    canonical = tmp_path / "experiments" / "learned_quadratic_attention" / "checkpoints" / name
     canonical.mkdir(parents=True)
     (config.train.workdir / "checkpoints").symlink_to(canonical, target_is_directory=True)
     actual_evaluate = loop.evaluate
@@ -142,16 +142,12 @@ def test_retention_keeps_best_and_completed_run_is_idempotent(tmp_path, monkeypa
     assert outcome["retained_best_checkpoint_step"] == expected_best
     completion_path = config.train.workdir / "completion.json"
     original = completion_path.read_bytes()
-    manifest = {"project_root": str(tmp_path), "source_commit": config.train.source_commit, "runs": [{
-        "name": name, "workdir": str(config.train.workdir),
-        "config": loop._serializable_config(config), "training_tokens": 64,
-    }]}
-    retention = finalize_run(manifest, name)
+    retention = finalize_run(config)
     assert retention["completion_sha256"] == hashlib.sha256(original).hexdigest()
     assert sorted(path.name for path in canonical.iterdir() if path.name.isdigit()) == [str(expected_best)]
     assert completion_path.read_bytes() == original
     assert loop.run_training(config)["final_step"] == 4
-    assert finalize_run(manifest, name) == retention
+    assert finalize_run(config) == retention
     metadata = json.loads((config.train.workdir / "metadata.json").read_text())
     assert metadata["retained_terminal_checkpoint_step"] == (4 if tied else None)
     assert metadata["status"] == "complete"

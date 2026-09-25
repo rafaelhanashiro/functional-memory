@@ -12,7 +12,7 @@ import subprocess
 
 import numpy as np
 
-from scaffolds.state_rank.artifacts import CONFIG_DIRECTORY, resolved_config_path, write_report_section
+from scaffolds.state_rank.reports import resolved_config_path, write_report_section
 from scaffolds.state_rank.plot_comparison import RANK_METRICS
 from scaffolds.state_rank.unified_metrics import (
     ModelAnalysis, comparison_statistics, load_analysis, write_summaries,
@@ -21,7 +21,6 @@ from scaffolds.state_rank.unified_plots import plot_analysis, plot_depth_compari
 
 
 SOURCE_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG = CONFIG_DIRECTORY / "unified_rank_analysis.json"
 
 
 def sha256(path: Path) -> str:
@@ -149,10 +148,10 @@ def write_report(output: Path, analyses: list[ModelAnalysis], statistics: dict, 
         "- [Per-layer terminal summaries](depth_summary.csv): sequence/head means and fractions of state width for each model and seed.",
         f"- [Detailed comparisons](comparison_statistics.json), [resolved configuration]({os.path.relpath(resolved_config_path(output), output)}), "
         "[provenance](provenance.json), and [postprocessing validation](validation.json).",
-        "- Full token curves remain in the original immutable `metrics.npz` archives; no duplicate archives or checkpoints were created.",
-        "- The original successful Slurm logs are recorded in provenance. This CPU postprocessing required no Slurm job.", "",
+        "- Full token curves remain in the comparison runs' `metrics.npz` archives; no duplicate archives or checkpoints were created.",
+        "- The comparisons' successful Slurm logs are recorded in provenance. This CPU postprocessing required no Slurm job.", "",
         "Reproduce from the repository root with a fresh output directory:", "", "```bash",
-        "uv run --frozen python -m scaffolds.state_rank.unify_analysis --output /path/to/new-results",
+        "PYTHONPATH=. scaffolds/state_rank/.venv/bin/python -m scaffolds.state_rank.unify_analysis --config CONFIG --output /path/to/new-results",
         "```", "",
     ]
     write_report_section(output, "unified-comparison", "\n".join(lines))
@@ -197,7 +196,7 @@ def generate(config_path: Path, project_root: Path, output: Path | None = None) 
     source_files = [Path(__file__), Path(__file__).with_name("unified_metrics.py"),
                     Path(__file__).with_name("unified_plots.py"), Path(__file__).with_name("plot_comparison.py"),
                     Path(__file__).with_name("artifacts.py"),
-                    config_path, SOURCE_ROOT / "uv.lock"]
+                    config_path, SOURCE_ROOT / "scaffolds/state_rank/uv.lock"]
     provenance = {
         "schema_version": 2, "kind": "derived-state-rank-comparison", "created_utc": datetime.now(timezone.utc).isoformat(),
         "plot_aggregation": resolved["plot_aggregation"],
@@ -220,7 +219,7 @@ def generate(config_path: Path, project_root: Path, output: Path | None = None) 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--project-root", type=Path, default=SOURCE_ROOT)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()

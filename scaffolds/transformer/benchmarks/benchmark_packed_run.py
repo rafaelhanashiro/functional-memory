@@ -17,7 +17,7 @@ import jax
 
 from scaffolds.transformer.benchmarks.benchmark_attention import provenance, write_report
 from scaffolds.transformer.benchmarks.benchmark_train_step import degree_argument
-from scaffolds.transformer.studies.key_dimension_taylor.degree_sweep.configs import config_to_dict, load_config, validate_config
+from scaffolds.transformer.configs import config_to_dict, load_config, validate_config
 from scaffolds.transformer.training.loop import run_training
 
 

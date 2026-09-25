@@ -138,16 +138,20 @@ class TrainConfig:
     seed: int = 0
     source_commit: str = ""
     dtype: Literal["float32", "bfloat16"] = "float32"
-    workdir: Path = Path("results/shared_transformer/smoke")
+    workdir: Path = Path(".cache/transformer/smoke")
     checkpoint_dir: Path | None = None
     micro_batch_size: int = 2
     log_every: int = 10
     eval_every: int = 10
     eval_batches: int = 1
     ckpt_every: int = 10
-    wandb_project: str = "functional-memory-shared-transformer"
-    wandb_entity: str | None = None
-    wandb_run_name: str = "smoke-transformer"
+    # W&B mirrors committed metrics; launchers choose the mode. Name and group
+    # default to the run and experiment of experiments/<experiment>/runs/<run>.
+    wandb_project: str = "functional-memory"
+    wandb_entity: str | None = "rafah-massachusetts-institute-of-technology"
+    wandb_run_name: str | None = None
+    wandb_group: str | None = None
+    wandb_dir: Path | None = None
     wandb_mode: Literal["online", "offline", "disabled"] = "disabled"
 
 

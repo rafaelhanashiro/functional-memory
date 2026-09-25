@@ -49,12 +49,9 @@ train:
   seed: 0
   source_commit: auto
   dtype: bfloat16
-  workdir: results/shared_transformer/200m-softmax-seed0
+  workdir: experiments/example/runs/200m-softmax-seed0
   micro_batch_size: 64
   log_every: 10
   eval_every: 1000
   eval_batches: 7
   ckpt_every: 500
-  wandb_mode: disabled
-  wandb_project: functional-memory-shared-transformer
-  wandb_run_name: 200m-softmax-seed0

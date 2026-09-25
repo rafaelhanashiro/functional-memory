@@ -12,7 +12,7 @@ from flax import nnx
 
 from scaffolds.transformer.configs import Config, ModelConfig, load_config
 from scaffolds.transformer.models import build_model, model_parameter_count
-from scaffolds.transformer.models.components.attention import blocked_dot_product_attention
+from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 from scaffolds.transformer.training.checkpointing import (
     make_checkpoint_manager, restore_latest_checkpoint, save_checkpoint,
 )

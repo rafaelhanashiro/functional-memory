@@ -1,0 +1,1860 @@
+{
+  "format": "functional-memory-retained-experiment",
+  "schema_version": 1,
+  "experiment": "odd_taylor_attention",
+  "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+  "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+  "collection_status": "concluded",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "scaffold": "scaffolds/transformer",
+  "study_tools": "experiments/odd_taylor_attention/adapter",
+  "data_identity": {
+    "eval_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train_manifest": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+  "run_budget": {
+    "updates": 19074,
+    "prediction_tokens": 10000269312,
+    "validation_tokens": 3670016
+  },
+  "scientific_failure_policy": "Numerical failures are concluded scientific outcomes, not completed 10B-token runs; no terminal validation is imputed.",
+  "checkpoint_selection": "Lowest committed validation NLL; latest on exact ties. Failed learned best states retained as explicitly documented diagnostic exceptions.",
+  "controls": [
+    {
+      "name": "200m-m002-seed0",
+      "attention_degree": 2,
+      "attention_backend": "fused",
+      "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "parameter_count": 199906304,
+      "seed": 0,
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "resolved_config": {
+        "path": "experiments/key_dimension_taylor/configs/200m-m002-seed0.yaml",
+        "sha256": "743ed8cdb72d44990969e3a89a7163d1004ea8fe9c9f2bce854301afe95bc9b9"
+      },
+      "metrics": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metrics.jsonl",
+        "sha256": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77"
+      },
+      "completion": "experiments/key_dimension_taylor/runs/200m-m002-seed0/completion.json",
+      "selected_checkpoint": {
+        "path": "experiments/key_dimension_taylor/checkpoints/200m-m002-seed0/19074",
+        "step": 19074,
+        "validation_nll": 2.7900009751319885,
+        "validation_perplexity": 16.281035677939382,
+        "metadata_sha256": "4d49559fc7c83e403cf9fa54d61ccaa725af944863a4f38308795a9541b9d0a0",
+        "file_count": 12,
+        "size_bytes": 2199258055
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.7900009751319885,
+        "validation_perplexity": 16.281035677939382
+      },
+      "slurm_job_id": "199648",
+      "slurm_log": {
+        "path": "experiments/key_dimension_taylor/logs/200m-m002-seed0/slurm-199648.out",
+        "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6"
+      },
+      "execution_attempts": [
+        {
+          "slurm_job_id": "199648",
+          "gpu_kind": "H100 SXM",
+          "gpu_count": 4,
+          "node": "dogo",
+          "status": "complete",
+          "elapsed_seconds": 10094,
+          "started_local": "2026-09-18T01:13:40",
+          "ended_local": "2026-09-18T04:01:54",
+          "timezone": "America/New_York",
+          "exit_code": "0:0"
+        }
+      ],
+      "home_cluster": "kennel",
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "metadata": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metadata.json",
+        "sha256": "754692f8fad41a85d630883aab228c6aab7a947b29871cade89968d2e52cb296"
+      },
+      "status": "complete",
+      "retained_completed": true,
+      "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
+      "source_provenance": {
+        "path": "experiments/key_dimension_taylor/provenance/manifest.json",
+        "sha256": "b370478de94789ebc4b115587f3eb353db581690519f4f5c3f425e51082295c4"
+      },
+      "coefficient_count": 0,
+      "quadratic_mode": "fixed",
+      "quadratic_sharing": "none",
+      "original_experiment": "polynomial_attention",
+      "retained_in": "experiments/key_dimension_taylor"
+    },
+    {
+      "name": "200m-softmax-seed0",
+      "attention_degree": null,
+      "attention_backend": "fused",
+      "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "parameter_count": 199906304,
+      "seed": 0,
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "resolved_config": {
+        "path": "experiments/key_dimension_taylor/configs/200m-softmax-seed0.yaml",
+        "sha256": "c5ab869c72d62bcdb18dee4a46f0814f31cf3ee1f0857303664b527420d9f010"
+      },
+      "metrics": {
+        "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metrics.jsonl",
+        "sha256": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262"
+      },
+      "completion": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/completion.json",
+      "selected_checkpoint": {
+        "path": "experiments/key_dimension_taylor/checkpoints/200m-softmax-seed0/19074",
+        "step": 19074,
+        "validation_nll": 2.6874512689454213,
+        "validation_perplexity": 14.69417664861716,
+        "metadata_sha256": "fa8681bab9517fa0b9fad89ccd85a12cf734c86b9f95736df8a3022dca2ca00c",
+        "file_count": 18,
+        "size_bytes": 2196497053
+      },
+      "terminal": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.6874512689454213,
+        "validation_perplexity": 14.69417664861716
+      },
+      "slurm_job_id": "199869",
+      "slurm_log": {
+        "path": "experiments/key_dimension_taylor/logs/200m-softmax-seed0/slurm-199869.out",
+        "sha256": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277"
+      },
+      "execution_attempts": [
+        {
+          "slurm_job_id": "199652",
+          "gpu_kind": "H100 SXM",
+          "gpu_count": 4,
+          "node": "dogo",
+          "elapsed_seconds": 3777,
+          "status": "cancelled_for_validated_hardware_migration",
+          "last_observed_step": 9282,
+          "started_local": "2026-09-18T13:52:35",
+          "ended_local": "2026-09-18T14:55:32",
+          "timezone": "America/New_York",
+          "exit_code": "0:0"
+        },
+        {
+          "slurm_job_id": "199869",
+          "gpu_kind": "B300 SXM6 AC",
+          "gpu_count": 4,
+          "node": "akita",
+          "elapsed_seconds": 2334,
+          "status": "complete",
+          "restored_step": 9000,
+          "packed_data_start_sequence": 2304000,
+          "replayed_uncheckpointed_updates": 282,
+          "started_local": "2026-09-18T14:56:10",
+          "ended_local": "2026-09-18T15:35:04",
+          "timezone": "America/New_York",
+          "exit_code": "0:0"
+        }
+      ],
+      "home_cluster": "kennel",
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "metadata": {
+        "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metadata.json",
+        "sha256": "a825624689312dece250e1be687f654b2dfcb5dee5d543a34ec62773eda87b8d"
+      },
+      "status": "complete",
+      "retained_completed": true,
+      "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
+      "source_provenance": {
+        "path": "experiments/key_dimension_taylor/provenance/manifest.json",
+        "sha256": "b370478de94789ebc4b115587f3eb353db581690519f4f5c3f425e51082295c4"
+      },
+      "coefficient_count": 0,
+      "quadratic_mode": "fixed",
+      "quadratic_sharing": "none",
+      "original_experiment": "polynomial_attention",
+      "retained_in": "experiments/key_dimension_taylor"
+    }
+  ],
+  "runs": [
+    {
+      "name": "200m-m001-seed0",
+      "attention_degree": 1,
+      "parameter_count": 199906304,
+      "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "quadratic_mode": "fixed",
+      "quadratic_sharing": "global",
+      "coefficient_count": 0,
+      "status": "numerical-failure",
+      "seed": 0,
+      "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+      "home_cluster": "kennel",
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_backend": "fused",
+      "resolved_config": {
+        "path": "experiments/odd_taylor_attention/configs/200m-m001-seed0.yaml",
+        "sha256": "5057d9f8a826036fde9e498e062127027e0215fb15e8f4bde075847d10929e3e"
+      },
+      "metadata": {
+        "path": "experiments/odd_taylor_attention/runs/200m-m001-seed0/metadata.json",
+        "sha256": "0757ad980b5c370cded0c6c54cc7a564356466ddc58539c41b124b0d0d47aa3c"
+      },
+      "metrics": null,
+      "completion": null,
+      "selected_checkpoint": null,
+      "terminal": null,
+      "slurm_job_id": "200230",
+      "execution": {
+        "scheduler": {
+          "cpus_per_task": 32,
+          "gpu_count": 4,
+          "gpu_type": "h100",
+          "memory": "256G",
+          "node": "dogo",
+          "partition": "standard",
+          "preflight_time": "02:00:00",
+          "production_time": "08:00:00"
+        },
+        "resolved_backend": "pallas_triton",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "accounting": {
+          "job_id": "200230",
+          "state": "FAILED",
+          "elapsed": "00:00:48",
+          "node": "dogo",
+          "exit_code": "1:0"
+        }
+      },
+      "failure": {
+        "path": "experiments/odd_taylor_attention/runs/200m-m001-seed0/numerical_failure_step_00000009.json",
+        "sha256": "19d77d1a471f71230ea20afb4f3124a4206f1ae2b271b3734e974c4446369a57",
+        "step": 9,
+        "completed_finite_updates": 8,
+        "attempted_training_tokens": 4718592,
+        "error": "FloatingPointError: Nonfinite training loss or signed-Taylor update at step 9: nan"
+      },
+      "launcher_failure": {
+        "path": "experiments/odd_taylor_attention/runs/200m-m001-seed0/production_failure.json",
+        "sha256": "1d662f284738636a85c945c556d43333859568173800d51e2e52deb2215f45e7"
+      },
+      "slurm_log": {
+        "path": "experiments/odd_taylor_attention/logs/200m-m001-seed0/slurm-200230.out",
+        "sha256": "7c4abfcae5ec25601b715f4a8a48b5636768d62c2066667caee10b5b36f91251"
+      },
+      "log_outcome": "indispensable_scientific_numerical_failure",
+      "acceptance": {
+        "sweep_preflight_job": "200224",
+        "completed_utc": "2026-09-19T21:42:41.865314+00:00",
+        "resume": {
+          "final_step": 3,
+          "restored_step": 2,
+          "runtime_seconds": 58.3,
+          "data_parallel_devices": 4,
+          "attention_implementation": "pallas_triton"
+        },
+        "status": "passed"
+      }
+    },
+    {
+      "name": "200m-m003-seed0",
+      "attention_degree": 3,
+      "parameter_count": 199906304,
+      "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "quadratic_mode": "fixed",
+      "quadratic_sharing": "global",
+      "coefficient_count": 0,
+      "status": "numerical-failure",
+      "seed": 0,
+      "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+      "home_cluster": "kennel",
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "attention_backend": "fused",
+      "resolved_config": {
+        "path": "experiments/odd_taylor_attention/configs/200m-m003-seed0.yaml",
+        "sha256": "ed7dca384e79b20b96e980c599116e147d825cb508d0bd6d2252931f0fbd5799"
+      },
+      "metadata": {
+        "path": "experiments/odd_taylor_attention/runs/200m-m003-seed0/metadata.json",
+        "sha256": "360df6a9c73b0c21240c0ce5a51500507b15eef5af0d48798a5f0e8fbc80af77"
+      },
+      "metrics": null,
+      "completion": null,
+      "selected_checkpoint": null,
+      "terminal": null,
+      "slurm_job_id": "200231",
+      "execution": {
+        "scheduler": {
+          "cpus_per_task": 32,
+          "gpu_count": 4,
+          "gpu_type": "h100",
+          "memory": "256G",
+          "node": "dogo",
+          "partition": "standard",
+          "preflight_time": "02:00:00",
+          "production_time": "08:00:00"
+        },
+        "resolved_backend": "pallas_triton",
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "accounting": {
+          "job_id": "200231",
+          "state": "FAILED",
+          "elapsed": "00:00:51",
+          "node": "dogo",
+          "exit_code": "1:0"
+        }
+      },
+      "failure": {
+        "path": "experiments/odd_taylor_attention/runs/200m-m003-seed0/numerical_failure_step_00000017.json",
+        "sha256": "c0f5a136568c040aabd692d9d6636d6355a6b75957938c3cb6cdf771bd5fe0b2",
+        "step": 17,
+        "completed_finite_updates": 16,
+        "attempted_training_tokens": 8912896,
+        "error": "FloatingPointError: Nonfinite training loss or signed-Taylor update at step 17: nan"
+      },
+      "launcher_failure": {
+        "path": "experiments/odd_taylor_attention/runs/200m-m003-seed0/production_failure.json",
+        "sha256": "9b4d1ec3df322cc91c2395559045d295398bb1e1e06ee1c2e1c1d84c4e97a313"
+      },
+      "slurm_log": {
+        "path": "experiments/odd_taylor_attention/logs/200m-m003-seed0/slurm-200231.out",
+        "sha256": "7bfdf554755e545b0302a0b9d729a087a1c8abedf86464a145d21ec63d60a20a"
+      },
+      "log_outcome": "indispensable_scientific_numerical_failure",
+      "acceptance": {
+        "sweep_preflight_job": "200224",
+        "completed_utc": "2026-09-19T21:46:00.713506+00:00",
+        "resume": {
+          "final_step": 3,
+          "restored_step": 2,
+          "runtime_seconds": 58.24,
+          "data_parallel_devices": 4,
+          "attention_implementation": "pallas_triton"
+        },
+        "status": "passed"
+      }
+    }
+  ],
+  "validation_records": [
+    {
+      "name": "production_preflight",
+      "status": "passed",
+      "record": {
+        "sha256": "fe91563f830c86f2c16156ecfd704be6e7116e7a3fecd16c3e1f20afc51e15f7"
+      },
+      "slurm_log": {
+        "path": "experiments/odd_taylor_attention/logs/preflight/slurm-200224.out",
+        "sha256": "b262d23005a3e66ba0c7f3bd40be4cb913e614bf2843359c7d897218b67f3678"
+      },
+      "accounting": {
+        "job_id": "200224",
+        "state": "COMPLETED",
+        "elapsed": "00:13:10",
+        "node": "dogo",
+        "exit_code": "0:0"
+      }
+    },
+    {
+      "name": "diagnostic_replay_m1",
+      "status": "successful_diagnostic_of_failed_training",
+      "slurm_log": {
+        "path": "experiments/odd_taylor_attention/logs/diagnostic/m1/slurm-200497.out",
+        "sha256": "2ccd32ae17b5fcc797b9909650d3554f1f425cbb63605b35c9c9d1f9980b5e92"
+      },
+      "accounting": {
+        "job_id": "200497",
+        "state": "COMPLETED",
+        "elapsed": "00:07:05",
+        "node": "dogo",
+        "exit_code": "0:0"
+      },
+      "record": {
+        "sha256": "8bd7e9fa82a70360aa32134ab0b8e8ee2a4c0062f75563b1834d1cc7994cbdfa"
+      }
+    },
+    {
+      "name": "diagnostic_replay_m3",
+      "status": "successful_diagnostic_of_failed_training",
+      "slurm_log": {
+        "path": "experiments/odd_taylor_attention/logs/diagnostic/m3/slurm-200498.out",
+        "sha256": "d62ca955274329b2563d8e63e5b00dd245e27caf62445b9dc931d7ded16225b8"
+      },
+      "accounting": {
+        "job_id": "200498",
+        "state": "COMPLETED",
+        "elapsed": "00:02:19",
+        "node": "dogo",
+        "exit_code": "0:0"
+      },
+      "record": {
+        "sha256": "8bd7e9fa82a70360aa32134ab0b8e8ee2a4c0062f75563b1834d1cc7994cbdfa"
+      }
+    },
+    {
+      "name": "development_gpu_validation",
+      "status": "passed",
+      "record": {
+        "sha256": "05589221925b62fed5c450ceb918ee431e55076fdfdf6d86da599a0ca77f59ca"
+      },
+      "slurm_log": {
+        "path": "experiments/odd_taylor_attention/logs/development/slurm-200214.out",
+        "sha256": "6ba70ab50a7c16b124cbfe96052ac648f4abc8842b66a071c4111f75c8a267ba"
+      },
+      "accounting": {
+        "job_id": "200214",
+        "state": "COMPLETED",
+        "elapsed": "00:03:07",
+        "node": "dogo",
+        "exit_code": "0:0"
+      }
+    }
+  ],
+  "retained_logs": [
+    {
+      "path": "experiments/odd_taylor_attention/logs/200m-m001-seed0/slurm-200230.out",
+      "sha256": "7c4abfcae5ec25601b715f4a8a48b5636768d62c2066667caee10b5b36f91251"
+    },
+    {
+      "path": "experiments/odd_taylor_attention/logs/200m-m003-seed0/slurm-200231.out",
+      "sha256": "7bfdf554755e545b0302a0b9d729a087a1c8abedf86464a145d21ec63d60a20a"
+    },
+    {
+      "path": "experiments/odd_taylor_attention/logs/preflight/slurm-200224.out",
+      "sha256": "b262d23005a3e66ba0c7f3bd40be4cb913e614bf2843359c7d897218b67f3678"
+    },
+    {
+      "path": "experiments/odd_taylor_attention/logs/diagnostic/m1/slurm-200497.out",
+      "sha256": "2ccd32ae17b5fcc797b9909650d3554f1f425cbb63605b35c9c9d1f9980b5e92"
+    },
+    {
+      "path": "experiments/odd_taylor_attention/logs/diagnostic/m3/slurm-200498.out",
+      "sha256": "d62ca955274329b2563d8e63e5b00dd245e27caf62445b9dc931d7ded16225b8"
+    },
+    {
+      "path": "experiments/odd_taylor_attention/logs/development/slurm-200214.out",
+      "sha256": "6ba70ab50a7c16b124cbfe96052ac648f4abc8842b66a071c4111f75c8a267ba"
+    }
+  ],
+  "artifact_availability": "Checkpoints and logs live on Kennel under artifact_root; Git supplies only code, exact recipes and scientific evidence.",
+  "dependency_lock": {
+    "sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c"
+  },
+  "evidence": [
+    {
+      "path": "experiments/odd_taylor_attention/analysis/200m-m001-seed0-pilot-metrics.jsonl",
+      "sha256": "537f282697762ca28e0fa2ad3adfa6d971182a42fffa32c93bc847841a56618a"
+    },
+    {
+      "path": "experiments/odd_taylor_attention/analysis/200m-m003-seed0-pilot-metrics.jsonl",
+      "sha256": "c64af252062f15c58b557115782a6382088bdd7088b7af4fc7802200683d2dd1"
+    },
+    {
+      "sha256": "47e4dd7b276cc829c2bdd1f35f24903f72fbe2645345f7f9eae3addfb7a96d53"
+    },
+    {
+      "sha256": "8bd7e9fa82a70360aa32134ab0b8e8ee2a4c0062f75563b1834d1cc7994cbdfa"
+    },
+    {
+      "sha256": "2f9eca5dbac679ea5563d95bb40f4192b0ad86fe821963709ea7d5ca47805aba"
+    },
+    {
+      "sha256": "d415e73cb4c78a87966e0ff14a05c96a9e399747cedd0221663b0082c25e3e3f"
+    },
+    {
+      "sha256": "e92db63a3dbb7758f9132ab30b181b20fa563b98e51ff6eb0b5d84cb449c8015"
+    },
+    {
+      "sha256": "05589221925b62fed5c450ceb918ee431e55076fdfdf6d86da599a0ca77f59ca"
+    },
+    {
+      "sha256": "0aabb1cc99137e1e43d070a97b5a92fa2a1e3920997e2bc99eded2f652b19ca8"
+    },
+    {
+      "sha256": "fc404afe06993f315d5dc0815992d270aeb8a235a7ddf6d2c0be6b2ca3c17fc5"
+    },
+    {
+      "sha256": "31e9833e2218c2e7324b42e9b070f0a019977a028ac4d0897d37963fbc7222fb"
+    },
+    {
+      "sha256": "4b2d27de22dcc9b87be0ac9ce8f9db7b75a850a8c8c84997ca99cb7e65bb13f7"
+    },
+    {
+      "sha256": "232340b27454fc0799370467bb8b2e0dd856aceedc25a7dfeb1ea024d8ea2101"
+    },
+    {
+      "sha256": "5092c231bb4366ae629e607184ab7a47f0b4f755f0163be72e3ee0fb54964377"
+    },
+    {
+      "sha256": "168cbd6e1db596cf341a6cc3e2ecf12f02951e0e1b83a09b20a2d27126ae9012"
+    },
+    {
+      "sha256": "3d04fdbb5d49bff652d3402ead2aa48ac2227b332554218383c211fd00c41bae"
+    },
+    {
+      "sha256": "784e549f56fe934f30d604bcb3b3c9db91ebbbdf759d9a198d48a47db8d6ff6a"
+    },
+    {
+      "sha256": "27b20a73f4537487a3b72960cfe653d26ad5cb616b89dbc3668a75198bec6799"
+    },
+    {
+      "sha256": "fe91563f830c86f2c16156ecfd704be6e7116e7a3fecd16c3e1f20afc51e15f7"
+    },
+    {
+      "sha256": "2b8e150a26f3ee77092d03986ee44431188168cbd00d4c18726b59a281b736d0"
+    }
+  ],
+  "sweep_acceptance": {
+    "status": "passed",
+    "completed_utc": "2026-09-19T21:46:01.213459+00:00",
+    "slurm_job_id": "200224",
+    "slurm_restart_count": "0",
+    "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+    "hardware": {
+      "backend": "gpu",
+      "device_kinds": [
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3"
+      ],
+      "devices": [
+        "cuda:0",
+        "cuda:1",
+        "cuda:2",
+        "cuda:3"
+      ]
+    },
+    "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+    "tests": {
+      "attention-cpu": {
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 82.83,
+        "testcases": 29
+      },
+      "attention-distributed-cpu": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 6.75,
+        "testcases": 2
+      },
+      "attention-fused-gpu": {
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 59.1,
+        "testcases": 18
+      }
+    },
+    "initialization": {
+      "completed_utc": "2026-09-19T21:36:10.846359+00:00",
+      "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+      "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+      "initializations": {
+        "200m-m001-seed0": {
+          "backbone_parameter_count": 199906304,
+          "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+          "coefficient_count": 0,
+          "coefficient_shape": null,
+          "initial_coefficient_pair": null,
+          "parameter_count": 199906304
+        },
+        "200m-m003-seed0": {
+          "backbone_parameter_count": 199906304,
+          "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+          "coefficient_count": 0,
+          "coefficient_shape": null,
+          "initial_coefficient_pair": null,
+          "parameter_count": 199906304
+        },
+        "fixed": {
+          "backbone_parameter_count": 199906304,
+          "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+          "coefficient_count": 0,
+          "coefficient_shape": null,
+          "initial_coefficient_pair": null,
+          "parameter_count": 199906304
+        }
+      },
+      "slurm_job_id": "200224",
+      "slurm_restart_count": "0",
+      "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+      "status": "passed"
+    }
+  },
+  "execution_evidence": [
+    {
+      "name": "analysis/failure_analysis",
+      "facts": {
+        "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+        "sweep_identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+        "diagnostic_scope": "Step-2 pilot; blocked diagnostic on first held-out sequence, not the failing production batch. Layer indices are zero-based.",
+        "runs": [
+          {
+            "name": "200m-m001-seed0",
+            "attention_degree": 1,
+            "pilot_metrics_path": "experiments/odd_taylor_attention/analysis/200m-m001-seed0-pilot-metrics.jsonl",
+            "pilot_metrics_sha256": "537f282697762ca28e0fa2ad3adfa6d971182a42fffa32c93bc847841a56618a",
+            "pilot_step": 2,
+            "pilot_validation_nll": 10.887937545776367,
+            "pilot_validation_batches": 1,
+            "pilot_validation_sequences": 256,
+            "score_range": [
+              -6.910562992095947,
+              6.6015305519104
+            ],
+            "negative_weight_fraction_range_across_layers": [
+              0.136362224817276,
+              0.18491186201572418
+            ],
+            "min_abs_normalizer": 0.006067395210266113,
+            "cancellation_ratio_max": 16681.298828125,
+            "max_cancellation_layer": 5,
+            "completed_finite_updates": 8,
+            "failure_step": 9,
+            "attempted_training_tokens": 4718592,
+            "failure_record_path": "experiments/odd_taylor_attention/200m-m001-seed0/numerical_failure_step_00000009.json",
+            "failure_update_numerics": {
+              "forward_loss": "NaN",
+              "global_gradient_norm": "NaN",
+              "updated_parameter_norm": "NaN"
+            }
+          },
+          {
+            "name": "200m-m003-seed0",
+            "attention_degree": 3,
+            "pilot_metrics_path": "experiments/odd_taylor_attention/analysis/200m-m003-seed0-pilot-metrics.jsonl",
+            "pilot_metrics_sha256": "c64af252062f15c58b557115782a6382088bdd7088b7af4fc7802200683d2dd1",
+            "pilot_step": 2,
+            "pilot_validation_nll": 10.882905721664429,
+            "pilot_validation_batches": 1,
+            "pilot_validation_sequences": 256,
+            "score_range": [
+              -6.51219367980957,
+              6.311980724334717
+            ],
+            "negative_weight_fraction_range_across_layers": [
+              0.04466024786233902,
+              0.08057260513305664
+            ],
+            "min_abs_normalizer": 0.0016021728515625,
+            "cancellation_ratio_max": 693707.0625,
+            "max_cancellation_layer": 5,
+            "completed_finite_updates": 16,
+            "failure_step": 17,
+            "attempted_training_tokens": 8912896,
+            "failure_record_path": "experiments/odd_taylor_attention/200m-m003-seed0/numerical_failure_step_00000017.json",
+            "failure_update_numerics": {
+              "forward_loss": "NaN",
+              "global_gradient_norm": "NaN",
+              "updated_parameter_norm": "NaN"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "analysis/replay_provenance",
+      "facts": {
+        "date": "2026-09-20",
+        "base_source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+        "original_sweep_identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+        "data_identity": {
+          "eval_manifest": {
+            "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+            "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+          },
+          "train_manifest": {
+            "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+            "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+          }
+        },
+        "temporary_scripts_sha256": {
+          "diagnostic_replay.py": "f0f6bacb8e45c4017cef05386d633c3536c640c6571f7f1f6fb6c5687fa619e5",
+          "diagnostic_kernel.py": "538ef526370a830f43e323bba9b56a149164d8723fbe69d75dd616cbfd694af7",
+          "diagnostic_trace.py": "6949b92c9dd495fe1e683b37bff84f820ceeb67b90950b48a9394739315a1785"
+        },
+        "runs": {
+          "1": {
+            "slurm_job_id": "200497",
+            "slurm_state": "COMPLETED",
+            "slurm_exit_code": "0:0",
+            "elapsed": "00:07:05",
+            "config_sha256": "e4ace05aaa8891704202e5a7827e9651ca3202f961e24192f9024727b98fd717",
+            "failure": {
+              "step": 15,
+              "learning_rate": 2.100015990436077e-06,
+              "checked_loss": "nan",
+              "forward_loss": "nan",
+              "global_gradient_norm": "nan",
+              "updated_parameter_norm": "nan",
+              "seconds": 0.4643224119208753,
+              "batch_sha256": "a816c093e8c11b46530cfa146408e6329417098ce47e57f5a81ce57f9c0c141a",
+              "rng_sha256": "f63712b30abbc78d7c0bc4d5dd1251870590c8b5aac3df1c05e59549f5d2f1d6",
+              "preupdate_parameter_sha256": "6df94ba4c7c6cc234c967f6fc33c95296a9d11c30c19d92cceda837ccc71a151",
+              "preupdate_completed_step": 14,
+              "degree": 1
+            },
+            "selected_shard": {
+              "accumulation_index": 2,
+              "original_device_index": 1,
+              "global_microbatch_start": 16,
+              "screen_loss": "NaN"
+            },
+            "log_sha256": "2ccd32ae17b5fcc797b9909650d3554f1f425cbb63605b35c9c9d1f9980b5e92",
+            "removed_evidence_sha256": {
+              "trace.json": "2a0c14516f4cb4e1b5bf17dec4399f80dc8eddd0ea983519f242bedf5e187ba6",
+              "updates.jsonl": "77835948500d74c89ea2347638ec0ac5db8d7352770bcf444a5a171dbabc5266",
+              "attention_rows.npz": "07dd3cfc23fbc5f368594987a13a6d2368115b60a6ebe75d04436993037fd20e"
+            }
+          },
+          "3": {
+            "slurm_job_id": "200498",
+            "slurm_state": "COMPLETED",
+            "slurm_exit_code": "0:0",
+            "elapsed": "00:02:19",
+            "config_sha256": "047c1afcf36e645e825c72a2c8cff559740724b783b2096ab643c32d101e6dea",
+            "failure": {
+              "step": 135,
+              "learning_rate": 2.0100007532164454e-05,
+              "checked_loss": "nan",
+              "forward_loss": "nan",
+              "global_gradient_norm": "nan",
+              "updated_parameter_norm": "nan",
+              "seconds": 0.4864614000543952,
+              "batch_sha256": "eb9087217e00fd674ab1570e436ad25550792330043fe085262d7752f375d016",
+              "rng_sha256": "b67c9c8d143273383347ac600896154a3ad2e805be65e831efa48b29a9fe3283",
+              "preupdate_parameter_sha256": "04cbe6d72d3540a087fd6896e7df86ea2456e3459344d605153f65a7c6d9383c",
+              "preupdate_completed_step": 134,
+              "degree": 3
+            },
+            "selected_shard": {
+              "accumulation_index": 1,
+              "original_device_index": 3,
+              "global_microbatch_start": 48,
+              "screen_loss": "NaN"
+            },
+            "log_sha256": "d62ca955274329b2563d8e63e5b00dd245e27caf62445b9dc931d7ded16225b8",
+            "removed_evidence_sha256": {
+              "trace.json": "bcbe15cc349bb51f2c8cbfda2f56800326f711525e94277da2f0e4485562ba04",
+              "updates.jsonl": "f9b02c1039d8bfae1acc94d0b039db774c864f86738de386f3766cb216297930",
+              "attention_rows.npz": "82148ce276295846eae52392e0bb79b2ec3155a34ab585151e42011b06356a64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "validation/cpu-tests",
+      "facts": {
+        "junit_summary": {
+          "tests": 331,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 7,
+          "seconds": 172.14,
+          "testcases": 331
+        }
+      }
+    },
+    {
+      "name": "validation/distributed-tests",
+      "facts": {
+        "junit_summary": {
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 14.78,
+          "testcases": 7
+        }
+      }
+    },
+    {
+      "name": "validation/gpu-tests",
+      "facts": {
+        "junit_summary": {
+          "tests": 18,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 154.5,
+          "testcases": 18
+        }
+      }
+    },
+    {
+      "name": "validation/metadata",
+      "facts": {
+        "source_commit": "4c624873b2b298a6f14051bf89ad75216966d79b",
+        "cpu_tests_passed": 324,
+        "cpu_tests_skipped_requires_multiple_devices": 7,
+        "distributed_tests_passed": 7,
+        "gpu_tests_passed": 18,
+        "gpu_slurm_job_id": "200214",
+        "gpu_log_path": "experiments/odd_taylor_attention/logs/development/slurm-200214.out",
+        "artifacts_sha256": {
+          "cpu-tests.xml": "2f9eca5dbac679ea5563d95bb40f4192b0ad86fe821963709ea7d5ca47805aba",
+          "distributed-tests.xml": "d415e73cb4c78a87966e0ff14a05c96a9e399747cedd0221663b0082c25e3e3f",
+          "gpu-tests.xml": "e92db63a3dbb7758f9132ab30b181b20fa563b98e51ff6eb0b5d84cb449c8015"
+        },
+        "note": "All seven multi-device tests skipped in the single-device suite passed separately with two CPU devices. GPU checks include FP64 Q/K/V gradients and production per-device shape.",
+        "preflight_routing_fix": {
+          "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+          "scaffold_tests_passed": 46,
+          "scaffold_junit_sha256": "2b8e150a26f3ee77092d03986ee44431188168cbd00d4c18726b59a281b736d0",
+          "preflight_job_id": "200224",
+          "note": "Single-device and two-device CPU gates are separate; neither permits skipped tests. Attention/training implementation unchanged from the full validation source."
+        }
+      }
+    },
+    {
+      "name": "validation/preflight/attention-cpu",
+      "facts": {
+        "junit_summary": {
+          "tests": 29,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 82.83,
+          "testcases": 29
+        }
+      }
+    },
+    {
+      "name": "validation/preflight/attention-distributed-cpu",
+      "facts": {
+        "junit_summary": {
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 6.75,
+          "testcases": 2
+        }
+      }
+    },
+    {
+      "name": "validation/preflight/attention-fused-gpu",
+      "facts": {
+        "junit_summary": {
+          "tests": 18,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 59.1,
+          "testcases": 18
+        }
+      }
+    },
+    {
+      "name": "validation/preflight/checks/200m-m001-seed0",
+      "facts": {
+        "attention_degree": 1,
+        "completed_utc": "2026-09-19T21:42:41.865314+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+        "outcome": {
+          "attention_backend": "fused",
+          "attention_degree": 1,
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "taylor",
+          "attention_signed": true,
+          "best_checkpoint_after": 2,
+          "checkpoint_audit": {
+            "checkpoint_state_sha256": "1c030f5f49758b4c9c96e3e1abb0637394922204f4db2b712b048f1d7188e00c",
+            "final_state_sha256": "1c030f5f49758b4c9c96e3e1abb0637394922204f4db2b712b048f1d7188e00c",
+            "first_update": {
+              "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+              "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+              "step": 1
+            },
+            "next_update": {
+              "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+              "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+              "step": 3
+            },
+            "start_state_sha256": "609d2f978a015b93c8749b5a2faf4513c0b946da31e6e0ff8c3f98959e4b1bc5"
+          },
+          "data_parallel_devices": 4,
+          "data_start_sequence": 0,
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "end_step": 2,
+          "final_step": 2,
+          "key_block_size": 64,
+          "latest_checkpoint_after": 2,
+          "latest_checkpoint_before": null,
+          "m0_qk_parameter_note": null,
+          "query_block_size": 64,
+          "restored": false,
+          "restored_step": null,
+          "start_step": 0,
+          "timing": {
+            "checkpoint_seconds": [
+              22.768072289880365
+            ],
+            "evaluation_seconds": [
+              12.25090653123334
+            ],
+            "runtime_seconds": 300.5343589298427,
+            "train_step_seconds": [
+              26.813753386959434,
+              0.45524157816544175
+            ]
+          },
+          "training_tokens": 1048576
+        },
+        "resume_validation": "exact_live_durable_restart_state_and_next_batch_rng",
+        "resumed": {
+          "attention_backend": "fused",
+          "attention_degree": 1,
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "taylor",
+          "attention_signed": true,
+          "best_checkpoint_after": 2,
+          "checkpoint_audit": {
+            "checkpoint_state_sha256": "9838ba18987c4514be8b901cd1d659dce7a2876ba42a250ea137bc8709a5b4e1",
+            "final_state_sha256": "9838ba18987c4514be8b901cd1d659dce7a2876ba42a250ea137bc8709a5b4e1",
+            "first_update": {
+              "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+              "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+              "step": 3
+            },
+            "next_update": {
+              "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+              "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+              "step": 4
+            },
+            "start_state_sha256": "1c030f5f49758b4c9c96e3e1abb0637394922204f4db2b712b048f1d7188e00c"
+          },
+          "data_parallel_devices": 4,
+          "data_start_sequence": 512,
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "end_step": 3,
+          "final_step": 3,
+          "key_block_size": 64,
+          "latest_checkpoint_after": 3,
+          "latest_checkpoint_before": 2,
+          "m0_qk_parameter_note": null,
+          "query_block_size": 64,
+          "restored": true,
+          "restored_step": 2,
+          "start_step": 2,
+          "timing": {
+            "checkpoint_seconds": [],
+            "evaluation_seconds": [],
+            "runtime_seconds": 58.301057640928775,
+            "train_step_seconds": [
+              11.092377095948905
+            ]
+          },
+          "training_tokens": 1572864
+        },
+        "runtime": {
+          "checkpoint_seconds": 887.9548193053342,
+          "evaluation_seconds": 1715.1269143726677,
+          "limit_seconds": 28800,
+          "projected_total_seconds": 12187.962672395166,
+          "required_seconds_with_margin": 13406.758939634683,
+          "startup_seconds": 901.6030767895281,
+          "steady_train_step_seconds": 0.45524157816544175,
+          "training_seconds": 8683.277861927636
+        },
+        "slurm_job_id": "200224",
+        "slurm_restart_count": "0",
+        "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+        "status": "passed",
+        "validation_nll": 10.887937545776367,
+        "validation_perplexity": 53526.78949476015
+      }
+    },
+    {
+      "name": "validation/preflight/checks/200m-m003-seed0",
+      "facts": {
+        "attention_degree": 3,
+        "completed_utc": "2026-09-19T21:46:00.713506+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+        "outcome": {
+          "attention_backend": "fused",
+          "attention_degree": 3,
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "taylor",
+          "attention_signed": true,
+          "best_checkpoint_after": 2,
+          "checkpoint_audit": {
+            "checkpoint_state_sha256": "b54a1f01813bef947fb31785ef3d982652c0764f878f16659bc671caed95f336",
+            "final_state_sha256": "b54a1f01813bef947fb31785ef3d982652c0764f878f16659bc671caed95f336",
+            "first_update": {
+              "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+              "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+              "step": 1
+            },
+            "next_update": {
+              "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+              "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+              "step": 3
+            },
+            "start_state_sha256": "609d2f978a015b93c8749b5a2faf4513c0b946da31e6e0ff8c3f98959e4b1bc5"
+          },
+          "data_parallel_devices": 4,
+          "data_start_sequence": 0,
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "end_step": 2,
+          "final_step": 2,
+          "key_block_size": 64,
+          "latest_checkpoint_after": 2,
+          "latest_checkpoint_before": null,
+          "m0_qk_parameter_note": null,
+          "query_block_size": 64,
+          "restored": false,
+          "restored_step": null,
+          "start_step": 0,
+          "timing": {
+            "checkpoint_seconds": [
+              22.463343675713986
+            ],
+            "evaluation_seconds": [
+              6.843466001097113
+            ],
+            "runtime_seconds": 64.21107160206884,
+            "train_step_seconds": [
+              10.981237940024585,
+              0.4789598588831723
+            ]
+          },
+          "training_tokens": 1048576
+        },
+        "resume_validation": "exact_live_durable_restart_state_and_next_batch_rng",
+        "resumed": {
+          "attention_backend": "fused",
+          "attention_degree": 3,
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "taylor",
+          "attention_signed": true,
+          "best_checkpoint_after": 2,
+          "checkpoint_audit": {
+            "checkpoint_state_sha256": "b53f3ec042c7d6327e35efb4ccb87eb0823e3871362da08b0bf8df84fb8a0dc1",
+            "final_state_sha256": "b53f3ec042c7d6327e35efb4ccb87eb0823e3871362da08b0bf8df84fb8a0dc1",
+            "first_update": {
+              "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+              "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+              "step": 3
+            },
+            "next_update": {
+              "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+              "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+              "step": 4
+            },
+            "start_state_sha256": "b54a1f01813bef947fb31785ef3d982652c0764f878f16659bc671caed95f336"
+          },
+          "data_parallel_devices": 4,
+          "data_start_sequence": 512,
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "end_step": 3,
+          "final_step": 3,
+          "key_block_size": 64,
+          "latest_checkpoint_after": 3,
+          "latest_checkpoint_before": 2,
+          "m0_qk_parameter_note": null,
+          "query_block_size": 64,
+          "restored": true,
+          "restored_step": 2,
+          "start_step": 2,
+          "timing": {
+            "checkpoint_seconds": [],
+            "evaluation_seconds": [],
+            "runtime_seconds": 58.24181034741923,
+            "train_step_seconds": [
+              11.440141934901476
+            ]
+          },
+          "training_tokens": 1572864
+        },
+        "runtime": {
+          "checkpoint_seconds": 876.0704033528455,
+          "evaluation_seconds": 958.0852401535958,
+          "limit_seconds": 28800,
+          "projected_total_seconds": 11162.469206650276,
+          "required_seconds_with_margin": 12278.716127315305,
+          "startup_seconds": 192.63321480620652,
+          "steady_train_step_seconds": 0.4789598588831723,
+          "training_seconds": 9135.680348337628
+        },
+        "slurm_job_id": "200224",
+        "slurm_restart_count": "0",
+        "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+        "status": "passed",
+        "validation_nll": 10.882905721664429,
+        "validation_perplexity": 53258.12859879045
+      }
+    },
+    {
+      "name": "validation/preflight/checks/attention-cpu",
+      "facts": {
+        "completed_utc": "2026-09-19T21:34:43.940171+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+        "junit_path": "experiments/odd_taylor_attention/preflight/babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e/attention-cpu.xml",
+        "slurm_job_id": "200224",
+        "slurm_restart_count": "0",
+        "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+        "status": "passed",
+        "tests_passed": 29
+      }
+    },
+    {
+      "name": "validation/preflight/checks/attention-distributed-cpu",
+      "facts": {
+        "completed_utc": "2026-09-19T21:34:51.911873+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+        "junit_path": "experiments/odd_taylor_attention/preflight/babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e/attention-distributed-cpu.xml",
+        "slurm_job_id": "200224",
+        "slurm_restart_count": "0",
+        "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+        "status": "passed",
+        "tests_passed": 2
+      }
+    },
+    {
+      "name": "validation/preflight/checks/attention-fused-gpu",
+      "facts": {
+        "completed_utc": "2026-09-19T21:35:52.525839+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+        "junit_path": "experiments/odd_taylor_attention/preflight/babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e/attention-fused-gpu.xml",
+        "slurm_job_id": "200224",
+        "slurm_restart_count": "0",
+        "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+        "status": "passed",
+        "tests_passed": 18
+      }
+    },
+    {
+      "name": "validation/preflight/checks/initialization",
+      "facts": {
+        "completed_utc": "2026-09-19T21:36:10.846359+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+        "initializations": {
+          "200m-m001-seed0": {
+            "backbone_parameter_count": 199906304,
+            "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+            "coefficient_count": 0,
+            "coefficient_shape": null,
+            "initial_coefficient_pair": null,
+            "parameter_count": 199906304
+          },
+          "200m-m003-seed0": {
+            "backbone_parameter_count": 199906304,
+            "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+            "coefficient_count": 0,
+            "coefficient_shape": null,
+            "initial_coefficient_pair": null,
+            "parameter_count": 199906304
+          },
+          "fixed": {
+            "backbone_parameter_count": 199906304,
+            "backbone_sha256": "9ff6182266e3e9e67a03b9c5b4fb23e4f80ebf715839bbf9f90f04c18011ad18",
+            "coefficient_count": 0,
+            "coefficient_shape": null,
+            "initial_coefficient_pair": null,
+            "parameter_count": 199906304
+          }
+        },
+        "slurm_job_id": "200224",
+        "slurm_restart_count": "0",
+        "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+        "status": "passed"
+      }
+    },
+    {
+      "name": "validation/preflight/provenance",
+      "facts": {
+        "data_identity": {
+          "eval_manifest": {
+            "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+            "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+          },
+          "train_manifest": {
+            "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+            "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+          }
+        },
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "eligible_runs": [
+          "200m-m001-seed0",
+          "200m-m003-seed0"
+        ],
+        "execution_root": "worktrees/odd_taylor_attention",
+        "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+        "log_path": "experiments/odd_taylor_attention/logs/preflight/slurm-200224.out",
+        "scheduler": {
+          "cpus_per_task": 32,
+          "gpu_count": 4,
+          "gpu_type": "h100",
+          "memory": "256G",
+          "node": "dogo",
+          "partition": "standard",
+          "preflight_time": "02:00:00",
+          "production_time": "08:00:00"
+        },
+        "slurm_job_id": "200224",
+        "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c"
+      }
+    },
+    {
+      "name": "validation/preflight/success",
+      "facts": {
+        "checks": [
+          "attention-cpu",
+          "attention-distributed-cpu",
+          "attention-fused-gpu",
+          "initialization",
+          "200m-m001-seed0",
+          "200m-m003-seed0"
+        ],
+        "completed_utc": "2026-09-19T21:46:01.213459+00:00",
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "hardware": {
+          "backend": "gpu",
+          "device_kinds": [
+            "NVIDIA H100 80GB HBM3",
+            "NVIDIA H100 80GB HBM3",
+            "NVIDIA H100 80GB HBM3",
+            "NVIDIA H100 80GB HBM3"
+          ],
+          "devices": [
+            "cuda:0",
+            "cuda:1",
+            "cuda:2",
+            "cuda:3"
+          ]
+        },
+        "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+        "slurm_job_id": "200224",
+        "slurm_restart_count": "0",
+        "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+        "status": "passed"
+      }
+    },
+    {
+      "name": "validation/scaffold-tests",
+      "facts": {
+        "junit_summary": {
+          "tests": 46,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 2.11,
+          "testcases": 46
+        }
+      }
+    },
+    {
+      "name": "launch",
+      "facts": {
+        "controls": [
+          {
+            "attention_backend": "fused",
+            "attention_degree": 2,
+            "completion": "experiments/key_dimension_taylor/200m-m002-seed0/completion.json",
+            "config": {
+              "data": {
+                "batch_size": 256,
+                "dataset_config": "sample-100BT",
+                "dataset_name": "HuggingFaceFW/fineweb-edu",
+                "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+                "sequence_length": 2049,
+                "shuffle_seed": 0,
+                "source": "packed",
+                "split": "train",
+                "synthetic_vocab_size": 32000,
+                "text_field": "text",
+                "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+                "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+              },
+              "model": {
+                "attention_backend": "fused",
+                "attention_degree": 2,
+                "dropout": 0.0,
+                "hidden_size": 1024,
+                "intermediate_size": 3008,
+                "kind": "transformer",
+                "max_seq_len": 2048,
+                "num_heads": 16,
+                "num_kv_heads": 16,
+                "num_layers": 10,
+                "qk_head_dim": 64,
+                "remat": false,
+                "rms_norm_eps": 1e-06,
+                "rope_theta": 10000.0,
+                "tie_embeddings": false,
+                "value_head_dim": 64,
+                "vocab_size": 32000
+              },
+              "optim": {
+                "beta1": 0.9,
+                "beta2": 0.95,
+                "grad_clip_norm": 1.0,
+                "learning_rate": 0.0003,
+                "min_learning_rate": 3e-05,
+                "total_steps": 19074,
+                "warmup_steps": 2000,
+                "weight_decay": 0.1
+              },
+              "train": {
+                "ckpt_every": 500,
+                "dtype": "bfloat16",
+                "eval_batches": 7,
+                "eval_every": 1000,
+                "log_every": 10,
+                "micro_batch_size": 64,
+                "seed": 0,
+                "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+                "wandb_entity": null,
+                "wandb_mode": "disabled",
+                "wandb_project": "functional-memory-polynomial-attention",
+                "wandb_run_name": "200m-m002-seed0",
+                "workdir": "experiments/key_dimension_taylor/200m-m002-seed0"
+              }
+            },
+            "config_path": "experiments/polynomial_attention/configs/runs/200m-m002-seed0.yaml",
+            "execution_attempts": [
+              {
+                "elapsed_seconds": 10094,
+                "ended_local": "2026-09-18T04:01:54",
+                "exit_code": "0:0",
+                "gpu_count": 4,
+                "gpu_kind": "H100 SXM",
+                "node": "dogo",
+                "slurm_job_id": "199648",
+                "started_local": "2026-09-18T01:13:40",
+                "status": "complete",
+                "timezone": "America/New_York"
+              }
+            ],
+            "metrics": {
+              "path": "experiments/key_dimension_taylor/200m-m002-seed0/metrics.jsonl",
+              "sha256": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77"
+            },
+            "name": "200m-m002-seed0",
+            "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
+            "parameter_count": 199906304,
+            "provenance_sha256": {
+              "experiments/polynomial_attention/configs/runs/200m-m002-seed0.yaml": "7b07128485d77ac24292ae01b1a3a7b60131f2a22def078e22acffdd7eadb308",
+              "experiments/key_dimension_taylor/logs/200m-m002-seed0/slurm-199648.out": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6",
+              "experiments/key_dimension_taylor/200m-m002-seed0/completion.json": "8f2764571b28f0acedf562653c5f5bfd4ef825a056f91a4b8143993814dc92db",
+              "experiments/key_dimension_taylor/200m-m002-seed0/metadata.json": "5fb28b7a3ad190e52ea387ccf89a9015ff1563483d5957d1ad33283b004d9944",
+              "experiments/key_dimension_taylor/200m-m002-seed0/metrics.jsonl": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77",
+              "experiments/key_dimension_taylor/provenance.json": "7358cffaefa13bd2bbc74cb469dfd721ea72d3d1fbab49bee497034cf2fb5fed"
+            },
+            "qk_head_dim": 64,
+            "retained_completed": true,
+            "retained_provenance": {
+              "attention_backend": "fused",
+              "attention_degree": 2,
+              "completion": "experiments/key_dimension_taylor/200m-m002-seed0/completion.json",
+              "execution_attempts": [
+                {
+                  "elapsed_seconds": 10094,
+                  "ended_local": "2026-09-18T04:01:54",
+                  "exit_code": "0:0",
+                  "gpu_count": 4,
+                  "gpu_kind": "H100 SXM",
+                  "node": "dogo",
+                  "slurm_job_id": "199648",
+                  "started_local": "2026-09-18T01:13:40",
+                  "status": "complete",
+                  "timezone": "America/New_York"
+                }
+              ],
+              "metrics": {
+                "path": "experiments/key_dimension_taylor/200m-m002-seed0/metrics.jsonl",
+                "sha256": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77"
+              },
+              "name": "200m-m002-seed0",
+              "parameter_count": 199906304,
+              "qk_head_dim": 64,
+              "seed": 0,
+              "selected_checkpoint": {
+                "file_count": 12,
+                "metadata_sha256": "4d49559fc7c83e403cf9fa54d61ccaa725af944863a4f38308795a9541b9d0a0",
+                "path": "experiments/polynomial_attention/checkpoints/200m-m002-seed0/19074",
+                "size_bytes": 2199258055,
+                "step": 19074,
+                "validation_nll": 2.7900009751319885,
+                "validation_perplexity": 16.281035677939382
+              },
+              "slurm_job_id": "199648",
+              "slurm_log": {
+                "path": "experiments/key_dimension_taylor/logs/200m-m002-seed0/slurm-199648.out",
+                "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6"
+              },
+              "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+              "terminal": {
+                "step": 19074,
+                "training_tokens": 10000269312,
+                "validation_nll": 2.7900009751319885,
+                "validation_perplexity": 16.281035677939382
+              },
+              "value_head_dim": 64
+            },
+            "seed": 0,
+            "selected_checkpoint": {
+              "file_count": 12,
+              "metadata_sha256": "4d49559fc7c83e403cf9fa54d61ccaa725af944863a4f38308795a9541b9d0a0",
+              "path": "experiments/polynomial_attention/checkpoints/200m-m002-seed0/19074",
+              "size_bytes": 2199258055,
+              "step": 19074,
+              "validation_nll": 2.7900009751319885,
+              "validation_perplexity": 16.281035677939382
+            },
+            "slurm_job_id": "199648",
+            "slurm_log": {
+              "path": "experiments/key_dimension_taylor/logs/200m-m002-seed0/slurm-199648.out",
+              "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6"
+            },
+            "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+            "terminal": {
+              "step": 19074,
+              "training_tokens": 10000269312,
+              "validation_nll": 2.7900009751319885,
+              "validation_perplexity": 16.281035677939382
+            },
+            "training_tokens": 10000269312,
+            "value_head_dim": 64,
+            "workdir": "experiments/key_dimension_taylor/200m-m002-seed0"
+          },
+          {
+            "attention_backend": "fused",
+            "attention_degree": null,
+            "completion": "experiments/key_dimension_taylor/200m-softmax-seed0/completion.json",
+            "config": {
+              "data": {
+                "batch_size": 256,
+                "dataset_config": "sample-100BT",
+                "dataset_name": "HuggingFaceFW/fineweb-edu",
+                "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+                "sequence_length": 2049,
+                "shuffle_seed": 0,
+                "source": "packed",
+                "split": "train",
+                "synthetic_vocab_size": 32000,
+                "text_field": "text",
+                "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+                "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+              },
+              "model": {
+                "attention_backend": "fused",
+                "attention_degree": null,
+                "dropout": 0.0,
+                "hidden_size": 1024,
+                "intermediate_size": 3008,
+                "kind": "transformer",
+                "max_seq_len": 2048,
+                "num_heads": 16,
+                "num_kv_heads": 16,
+                "num_layers": 10,
+                "qk_head_dim": 64,
+                "remat": false,
+                "rms_norm_eps": 1e-06,
+                "rope_theta": 10000.0,
+                "tie_embeddings": false,
+                "value_head_dim": 64,
+                "vocab_size": 32000
+              },
+              "optim": {
+                "beta1": 0.9,
+                "beta2": 0.95,
+                "grad_clip_norm": 1.0,
+                "learning_rate": 0.0003,
+                "min_learning_rate": 3e-05,
+                "total_steps": 19074,
+                "warmup_steps": 2000,
+                "weight_decay": 0.1
+              },
+              "train": {
+                "ckpt_every": 500,
+                "dtype": "bfloat16",
+                "eval_batches": 7,
+                "eval_every": 1000,
+                "log_every": 10,
+                "micro_batch_size": 64,
+                "seed": 0,
+                "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+                "wandb_entity": null,
+                "wandb_mode": "disabled",
+                "wandb_project": "functional-memory-polynomial-attention",
+                "wandb_run_name": "200m-softmax-seed0",
+                "workdir": "experiments/key_dimension_taylor/200m-softmax-seed0"
+              }
+            },
+            "config_path": "experiments/polynomial_attention/configs/runs/200m-softmax-seed0.yaml",
+            "execution_attempts": [
+              {
+                "elapsed_seconds": 3777,
+                "ended_local": "2026-09-18T14:55:32",
+                "exit_code": "0:0",
+                "gpu_count": 4,
+                "gpu_kind": "H100 SXM",
+                "last_observed_step": 9282,
+                "node": "dogo",
+                "slurm_job_id": "199652",
+                "started_local": "2026-09-18T13:52:35",
+                "status": "cancelled_for_validated_hardware_migration",
+                "timezone": "America/New_York"
+              },
+              {
+                "elapsed_seconds": 2334,
+                "ended_local": "2026-09-18T15:35:04",
+                "exit_code": "0:0",
+                "gpu_count": 4,
+                "gpu_kind": "B300 SXM6 AC",
+                "node": "akita",
+                "packed_data_start_sequence": 2304000,
+                "replayed_uncheckpointed_updates": 282,
+                "restored_step": 9000,
+                "slurm_job_id": "199869",
+                "started_local": "2026-09-18T14:56:10",
+                "status": "complete",
+                "timezone": "America/New_York"
+              }
+            ],
+            "metrics": {
+              "path": "experiments/key_dimension_taylor/200m-softmax-seed0/metrics.jsonl",
+              "sha256": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262"
+            },
+            "name": "200m-softmax-seed0",
+            "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
+            "parameter_count": 199906304,
+            "provenance_sha256": {
+              "experiments/polynomial_attention/configs/runs/200m-softmax-seed0.yaml": "ca4071773c7ad128d732a04e40bccec54e0d8fe505aef29ebfde331fd338b09a",
+              "experiments/key_dimension_taylor/logs/200m-softmax-seed0/slurm-199869.out": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277",
+              "experiments/key_dimension_taylor/200m-softmax-seed0/completion.json": "6947209ede4c4b83809197278ec86f970b22eb0ebd7bb64b3189907ace8c8712",
+              "experiments/key_dimension_taylor/200m-softmax-seed0/metadata.json": "5edaa6301e03162d4395b7c58914eae7732347fa46681fac3e5892070d6be91e",
+              "experiments/key_dimension_taylor/200m-softmax-seed0/metrics.jsonl": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262",
+              "experiments/key_dimension_taylor/provenance.json": "7358cffaefa13bd2bbc74cb469dfd721ea72d3d1fbab49bee497034cf2fb5fed"
+            },
+            "qk_head_dim": 64,
+            "retained_completed": true,
+            "retained_provenance": {
+              "attention_backend": "fused",
+              "attention_degree": null,
+              "completion": "experiments/key_dimension_taylor/200m-softmax-seed0/completion.json",
+              "execution_attempts": [
+                {
+                  "elapsed_seconds": 3777,
+                  "ended_local": "2026-09-18T14:55:32",
+                  "exit_code": "0:0",
+                  "gpu_count": 4,
+                  "gpu_kind": "H100 SXM",
+                  "last_observed_step": 9282,
+                  "node": "dogo",
+                  "slurm_job_id": "199652",
+                  "started_local": "2026-09-18T13:52:35",
+                  "status": "cancelled_for_validated_hardware_migration",
+                  "timezone": "America/New_York"
+                },
+                {
+                  "elapsed_seconds": 2334,
+                  "ended_local": "2026-09-18T15:35:04",
+                  "exit_code": "0:0",
+                  "gpu_count": 4,
+                  "gpu_kind": "B300 SXM6 AC",
+                  "node": "akita",
+                  "packed_data_start_sequence": 2304000,
+                  "replayed_uncheckpointed_updates": 282,
+                  "restored_step": 9000,
+                  "slurm_job_id": "199869",
+                  "started_local": "2026-09-18T14:56:10",
+                  "status": "complete",
+                  "timezone": "America/New_York"
+                }
+              ],
+              "metrics": {
+                "path": "experiments/key_dimension_taylor/200m-softmax-seed0/metrics.jsonl",
+                "sha256": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262"
+              },
+              "name": "200m-softmax-seed0",
+              "parameter_count": 199906304,
+              "qk_head_dim": 64,
+              "seed": 0,
+              "selected_checkpoint": {
+                "file_count": 18,
+                "metadata_sha256": "fa8681bab9517fa0b9fad89ccd85a12cf734c86b9f95736df8a3022dca2ca00c",
+                "path": "experiments/polynomial_attention/checkpoints/200m-softmax-seed0/19074",
+                "size_bytes": 2196497053,
+                "step": 19074,
+                "validation_nll": 2.6874512689454213,
+                "validation_perplexity": 14.69417664861716
+              },
+              "slurm_job_id": "199869",
+              "slurm_log": {
+                "path": "experiments/key_dimension_taylor/logs/200m-softmax-seed0/slurm-199869.out",
+                "sha256": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277"
+              },
+              "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+              "terminal": {
+                "step": 19074,
+                "training_tokens": 10000269312,
+                "validation_nll": 2.6874512689454213,
+                "validation_perplexity": 14.69417664861716
+              },
+              "value_head_dim": 64
+            },
+            "seed": 0,
+            "selected_checkpoint": {
+              "file_count": 18,
+              "metadata_sha256": "fa8681bab9517fa0b9fad89ccd85a12cf734c86b9f95736df8a3022dca2ca00c",
+              "path": "experiments/polynomial_attention/checkpoints/200m-softmax-seed0/19074",
+              "size_bytes": 2196497053,
+              "step": 19074,
+              "validation_nll": 2.6874512689454213,
+              "validation_perplexity": 14.69417664861716
+            },
+            "slurm_job_id": "199869",
+            "slurm_log": {
+              "path": "experiments/key_dimension_taylor/logs/200m-softmax-seed0/slurm-199869.out",
+              "sha256": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277"
+            },
+            "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+            "terminal": {
+              "step": 19074,
+              "training_tokens": 10000269312,
+              "validation_nll": 2.6874512689454213,
+              "validation_perplexity": 14.69417664861716
+            },
+            "training_tokens": 10000269312,
+            "value_head_dim": 64,
+            "workdir": "experiments/key_dimension_taylor/200m-softmax-seed0"
+          }
+        ],
+        "data_identity": {
+          "eval_manifest": {
+            "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+            "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+          },
+          "train_manifest": {
+            "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+            "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+          }
+        },
+        "dependency_lock_sha256": "e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c",
+        "execution_root": "worktrees/odd_taylor_attention",
+        "experiment": "odd_taylor_attention",
+        "identity": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+        "jobs": {
+          "200m-m001-seed0": "200230",
+          "200m-m003-seed0": "200231",
+          "preflight": "200224"
+        },
+        "launch_after_preflight": true,
+        "preflight_dir": "babbaf53f23a45d5b2205a593d34f7cd395a5b9713bd624881d17ffb30a5ac1e",
+        "preflight_log_path": "experiments/odd_taylor_attention/logs/preflight/slurm-200224.out",
+        "preflight_submitted_utc": "2026-09-19T21:31:52.545155+00:00",
+        "production_submitted_utc": "2026-09-19T21:46:21.590626+00:00",
+        "project_root": "/data/cl/u/rafah/home/projects/functional-memory",
+        "runs": [
+          {
+            "attention_degree": 1,
+            "checkpoint_dir": "experiments/odd_taylor_attention/checkpoints/200m-m001-seed0",
+            "coefficient_count": 0,
+            "config": {
+              "data": {
+                "batch_size": 256,
+                "dataset_config": "sample-100BT",
+                "dataset_name": "HuggingFaceFW/fineweb-edu",
+                "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+                "sequence_length": 2049,
+                "shuffle_seed": 0,
+                "source": "packed",
+                "split": "train",
+                "synthetic_vocab_size": 32000,
+                "text_field": "text",
+                "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+                "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+              },
+              "model": {
+                "attention_backend": "fused",
+                "attention_degree": 1,
+                "dropout": 0.0,
+                "hidden_size": 1024,
+                "intermediate_size": 3008,
+                "kind": "transformer",
+                "max_seq_len": 2048,
+                "num_heads": 16,
+                "num_kv_heads": 16,
+                "num_layers": 10,
+                "qk_head_dim": 64,
+                "quadratic_mode": "fixed",
+                "quadratic_sharing": "global",
+                "remat": false,
+                "rms_norm_eps": 1e-06,
+                "rope_theta": 10000.0,
+                "tie_embeddings": false,
+                "value_head_dim": 64,
+                "vocab_size": 32000
+              },
+              "optim": {
+                "beta1": 0.9,
+                "beta2": 0.95,
+                "grad_clip_norm": 1.0,
+                "learning_rate": 0.0003,
+                "min_learning_rate": 3e-05,
+                "total_steps": 19074,
+                "warmup_steps": 2000,
+                "weight_decay": 0.1
+              },
+              "train": {
+                "ckpt_every": 500,
+                "dtype": "bfloat16",
+                "eval_batches": 7,
+                "eval_every": 1000,
+                "log_every": 10,
+                "micro_batch_size": 64,
+                "seed": 0,
+                "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+                "wandb_entity": null,
+                "wandb_mode": "disabled",
+                "wandb_project": "functional-memory-odd-taylor-attention",
+                "wandb_run_name": "200m-m001-seed0",
+                "workdir": "experiments/odd_taylor_attention/200m-m001-seed0"
+              }
+            },
+            "config_path": "experiments/odd_taylor_attention/configs/200m-m001-seed0.yaml",
+            "name": "200m-m001-seed0",
+            "parameter_count": 199906304,
+            "qk_head_dim": 64,
+            "quadratic_mode": "fixed",
+            "quadratic_sharing": "global",
+            "training_tokens": 10000269312,
+            "value_head_dim": 64,
+            "workdir": "experiments/odd_taylor_attention/200m-m001-seed0"
+          },
+          {
+            "attention_degree": 3,
+            "checkpoint_dir": "experiments/odd_taylor_attention/checkpoints/200m-m003-seed0",
+            "coefficient_count": 0,
+            "config": {
+              "data": {
+                "batch_size": 256,
+                "dataset_config": "sample-100BT",
+                "dataset_name": "HuggingFaceFW/fineweb-edu",
+                "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+                "sequence_length": 2049,
+                "shuffle_seed": 0,
+                "source": "packed",
+                "split": "train",
+                "synthetic_vocab_size": 32000,
+                "text_field": "text",
+                "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+                "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+              },
+              "model": {
+                "attention_backend": "fused",
+                "attention_degree": 3,
+                "dropout": 0.0,
+                "hidden_size": 1024,
+                "intermediate_size": 3008,
+                "kind": "transformer",
+                "max_seq_len": 2048,
+                "num_heads": 16,
+                "num_kv_heads": 16,
+                "num_layers": 10,
+                "qk_head_dim": 64,
+                "quadratic_mode": "fixed",
+                "quadratic_sharing": "global",
+                "remat": false,
+                "rms_norm_eps": 1e-06,
+                "rope_theta": 10000.0,
+                "tie_embeddings": false,
+                "value_head_dim": 64,
+                "vocab_size": 32000
+              },
+              "optim": {
+                "beta1": 0.9,
+                "beta2": 0.95,
+                "grad_clip_norm": 1.0,
+                "learning_rate": 0.0003,
+                "min_learning_rate": 3e-05,
+                "total_steps": 19074,
+                "warmup_steps": 2000,
+                "weight_decay": 0.1
+              },
+              "train": {
+                "ckpt_every": 500,
+                "dtype": "bfloat16",
+                "eval_batches": 7,
+                "eval_every": 1000,
+                "log_every": 10,
+                "micro_batch_size": 64,
+                "seed": 0,
+                "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+                "wandb_entity": null,
+                "wandb_mode": "disabled",
+                "wandb_project": "functional-memory-odd-taylor-attention",
+                "wandb_run_name": "200m-m003-seed0",
+                "workdir": "experiments/odd_taylor_attention/200m-m003-seed0"
+              }
+            },
+            "config_path": "experiments/odd_taylor_attention/configs/200m-m003-seed0.yaml",
+            "name": "200m-m003-seed0",
+            "parameter_count": 199906304,
+            "qk_head_dim": 64,
+            "quadratic_mode": "fixed",
+            "quadratic_sharing": "global",
+            "training_tokens": 10000269312,
+            "value_head_dim": 64,
+            "workdir": "experiments/odd_taylor_attention/200m-m003-seed0"
+          }
+        ],
+        "scheduler": {
+          "cpus_per_task": 32,
+          "gpu_count": 4,
+          "gpu_type": "h100",
+          "memory": "256G",
+          "node": "dogo",
+          "partition": "standard",
+          "preflight_time": "02:00:00",
+          "production_time": "08:00:00"
+        },
+        "schema_version": 1,
+        "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+        "stability_steps": 5000
+      }
+    }
+  ]
+}

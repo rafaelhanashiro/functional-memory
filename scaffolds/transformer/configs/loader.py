@@ -38,15 +38,16 @@ def _update_dataclass(target: Any, values: dict[str, Any], *, context: str) -> N
                 raise ValueError(f"Config section {context}.{key} must be a mapping")
             _update_dataclass(current, value, context=f"{context}.{key}")
         else:
-            path_value = isinstance(current, Path) or key == "checkpoint_dir"
+            path_value = isinstance(current, Path) or key in ("checkpoint_dir", "wandb_dir")
             setattr(target, key, Path(value) if path_value and value is not None else value)
 
 
 def config_to_dict(config: Config) -> dict[str, Any]:
     values = asdict(config)
     values["train"]["workdir"] = str(config.train.workdir)
-    if config.train.checkpoint_dir is not None:
-        values["train"]["checkpoint_dir"] = str(config.train.checkpoint_dir)
+    for key in ("checkpoint_dir", "wandb_dir"):
+        if getattr(config.train, key) is not None:
+            values["train"][key] = str(getattr(config.train, key))
     return values
 
 
@@ -65,6 +66,10 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("quadratic_mode", "fixed")
         value["model"].setdefault("quadratic_sharing", "global")
         value.setdefault("train", {}).setdefault("checkpoint_dir", None)
+        for key in ("wandb_group", "wandb_dir"):
+            value["train"].setdefault(key, None)
+        # The W&B mirror mode is an execution setting; wandb_run.json pins the run's identity.
+        value["train"].pop("wandb_mode", None)
         normalized.append(value)
     return normalized[0] == normalized[1]
 

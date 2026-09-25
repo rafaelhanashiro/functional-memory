@@ -121,7 +121,7 @@ def test_compare_baseline_checks_keys_and_each_rank(tiny_case, perturbation):
 @pytest.fixture
 def comparison_project(tmp_path, monkeypatch):
     """An on-disk provenance fixture without a model or dataset download."""
-    baseline = tmp_path / "results/retained"
+    baseline = tmp_path / "experiments/demo/runs/retained"
     baseline.mkdir(parents=True)
     inputs = [{"title": "Saved", "token_ids": [1, 2, 3, 4, 5]}]
     (baseline / "inputs.json").write_text(json.dumps(inputs, indent=2) + "\n")
@@ -129,13 +129,14 @@ def comparison_project(tmp_path, monkeypatch):
     (baseline / "metadata.json").write_text(json.dumps(metadata))
     np.savez_compressed(baseline / "spectra.npz", token_ids=np.array([inputs[0]["token_ids"]]))
     (tmp_path / "uv.lock").write_text("version = 1\nrevision = 3\n")
+    monkeypatch.setattr(compare_random, "DEPENDENCY_LOCK", tmp_path / "uv.lock")
     config = {
         "schema_version": 1, "model_id": metadata["model"], "model_revision": metadata["model_revision"],
-        "baseline_directory": "results/retained", "baseline_layer": 0,
+        "baseline_directory": "experiments/demo/runs/retained", "baseline_layer": 0,
         "layers": [0, 1], "seeds": [0, 2], "tokens": 5, "input_count": 1,
         "spectrum_prefixes": [1, 3, 5], "model_dtype": "float32", "analysis_dtype": "float64",
         "attention_implementation": "eager", "allow_tf32": False,
-        "output_directory": "results/state_rank/random_vs_pretrained",
+        "output_directory": "experiments/demo/random_vs_pretrained",
     }
     config_path = tmp_path / "comparison.json"
     config_path.write_text(json.dumps(config))

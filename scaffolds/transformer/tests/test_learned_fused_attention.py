@@ -13,7 +13,7 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from scaffolds.transformer.models.components import fused_quadratic_attention as fused
+from scaffolds.transformer.attention.backends import fused_quadratic as fused
 
 
 MODES = ("positive", "unrestricted")
@@ -265,7 +265,7 @@ def test_gpu_causality_and_padding_do_not_contribute_coefficient_gradients(requi
 @pytest.mark.gpu
 @pytest.mark.parametrize("mode", MODES)
 def test_gpu_full_production_shape_bf16_matches_blocked(require_gpu, mode):
-    from scaffolds.transformer.models.components.attention import blocked_dot_product_attention
+    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
     # Four-GPU production has sixteen sequences per device/microbatch.
     operands, cotangent = _inputs((16, 2048, 16, 64, 64), mode=mode, dtype=jnp.bfloat16, seed=433)
     actual = _evaluate(partial(fused.fused_quadratic_attention, quadratic_mode=mode), operands, cotangent)

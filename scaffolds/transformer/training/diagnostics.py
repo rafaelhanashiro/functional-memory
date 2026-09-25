@@ -13,7 +13,7 @@ from flax import nnx
 
 from scaffolds.transformer.data.loaders import make_eval_iterator
 from scaffolds.transformer.data.packed import manifest_fingerprint
-from scaffolds.transformer.models.components.attention import QUERY_BLOCK_SIZE
+from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE
 from scaffolds.transformer.training.numerics import is_odd_taylor
 
 
@@ -93,7 +93,7 @@ def attention_identity(config) -> dict:
         if not normalized:
             from scaffolds.transformer.attention.backends.fused_unnormalized import _tile_sizes
         else:
-            from scaffolds.transformer.models.components.fused_attention import _tile_sizes
+            from scaffolds.transformer.attention.backends.fused_taylor import _tile_sizes
         block_q, block_k = ((None, None) if degree is None and normalized else
                            _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
         identity.update({

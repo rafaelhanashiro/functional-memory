@@ -7,8 +7,6 @@ import numpy as np
 import pytest
 from flax import nnx
 
-from scaffolds.transformer.studies.key_dimension_taylor.width_sweep_configs import ModelConfig as ReferenceModelConfig
-from scaffolds.transformer.models import build_model as build_reference_model
 from scaffolds.transformer.configs import ATTENTION_DEGREES, ModelConfig, load_config
 from scaffolds.transformer.models import build_model, model_parameter_count
 
@@ -80,13 +78,9 @@ def test_max_sequence_length_is_enforced():
         model(jnp.ones((1, 17), dtype=jnp.int32))
 
 
-def test_compatibility_backbone_initialization_is_identical_across_fixed_degrees():
+def test_backbone_initialization_is_identical_across_fixed_degrees():
     cfg = _small_config()
-    reference_cfg = ReferenceModelConfig(**{
-        name: value for name, value in vars(cfg).items()
-        if name not in ("attention_degree", "quadratic_mode", "quadratic_sharing")
-    } | {"attention_backend": "xla"})
-    reference = build_reference_model(reference_cfg, 0)
+    reference = build_model(replace(cfg, attention_degree=None, attention_backend="xla"), 0)
     expected, expected_tree = jax.tree.flatten(nnx.state(reference, nnx.Param))
     for degree in ATTENTION_DEGREES:
         model = build_model(replace(cfg, attention_degree=degree), 0)

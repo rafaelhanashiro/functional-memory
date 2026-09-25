@@ -15,7 +15,7 @@ from pathlib import Path
 
 import numpy as np
 
-from scaffolds.state_rank.artifacts import write_report_section
+from scaffolds.state_rank.reports import write_report_section
 
 
 RANK_METRICS = (

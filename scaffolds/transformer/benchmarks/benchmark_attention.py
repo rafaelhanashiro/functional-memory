@@ -27,7 +27,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from scaffolds.transformer.models.components.attention import blocked_dot_product_attention
+from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 
 
 def write_report(path: Path, report: dict) -> None:
@@ -148,7 +148,7 @@ def attention_function(name: str, degree: int):
     else:
         # Import lazily so the blocked baseline can run while a fused kernel
         # is being developed, and --help does not need a completed kernel.
-        from scaffolds.transformer.models.components.fused_attention import fused_polynomial_attention
+        from scaffolds.transformer.attention.backends.fused_taylor import fused_polynomial_attention
         implementation = fused_polynomial_attention
 
     def forward(q, k, v):

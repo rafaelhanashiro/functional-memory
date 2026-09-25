@@ -1,0 +1,32 @@
+[project]
+name = "functional-memory"
+version = "0.1.0"
+description = "Tokenwise spectra of a language model's attention state"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "torch==2.7.1",
+    "transformers==4.57.6",
+    "datasets",
+    "numpy",
+    "matplotlib",
+    "flash-linear-attention",
+]
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["../.."]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }
+flash-linear-attention = { git = "https://github.com/fla-org/flash-linear-attention.git", rev = "516143e31fce09925e6c39ac37148444bad176c4" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
