@@ -23,13 +23,11 @@ versus 20.77) and improved degrees 2–4 substantially: m=2 23.51 → 20.06, m=3
 and the models stopped inflating their scores.
 
 **Home cluster: Kennel.** The artifact root is
-`/data/cl/u/rafah/home/projects/functional-memory`. While the runs execute, their
-records, logs, and checkpoints live in this experiment's worktree
-(`worktrees/learned_unnormalized_taylor/experiments/learned_unnormalized_taylor/`);
-at completion the retained artifacts move to the same paths in the primary
-checkout. The [provenance manifest](provenance/manifest.json) is the authoritative
-record of sources, configurations, runs, and artifact locations. The packed corpus
-is under `/data/cl/u/rafah/home/datasets/fineweb_12b`.
+`/data/cl/u/rafah/home/projects/functional-memory`; retained checkpoints and logs
+are under this directory there (see [Artifacts](#artifacts)). The
+[provenance manifest](provenance/manifest.json) is the authoritative record of
+sources, configurations, runs, and artifact locations. The packed corpus is under
+`/data/cl/u/rafah/home/datasets/fineweb_12b`.
 
 ## Results
 

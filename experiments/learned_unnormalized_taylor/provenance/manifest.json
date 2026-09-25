@@ -5,7 +5,6 @@
   "status": "completed",
   "home_cluster": "kennel",
   "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
-  "execution_checkout": "worktrees/learned_unnormalized_taylor",
   "documentation": "experiments/learned_unnormalized_taylor/README.md",
   "scaffold": "scaffolds/transformer",
   "branch": "claude/learned-unnormalized-taylor",
@@ -922,9 +921,9 @@
   },
   "artifact_locations": {
     "runs": "experiments/learned_unnormalized_taylor/runs/<run> (committed)",
-    "checkpoints": "experiments/learned_unnormalized_taylor/checkpoints/<run>/19074 (ignored; primary checkout)",
-    "logs": "experiments/learned_unnormalized_taylor/logs/<run>/slurm-<job>.out (ignored; primary checkout)",
-    "note": "Artifacts executed in worktrees/learned_unnormalized_taylor and were moved to the same repository-relative paths in the primary checkout after completion; checksums above were verified after the move."
+    "checkpoints": "experiments/learned_unnormalized_taylor/checkpoints/<run>/19074 (ignored, on Kennel under artifact_root)",
+    "logs": "experiments/learned_unnormalized_taylor/logs/<run>/slurm-<job>.out (ignored, on Kennel under artifact_root)",
+    "verified": "every checkpoint file and log hashed at these locations; see each run's selected_checkpoint and log"
   },
   "summary": {
     "path": "experiments/learned_unnormalized_taylor/summary.csv",
