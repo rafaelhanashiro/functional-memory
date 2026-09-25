@@ -83,7 +83,7 @@ def test_nonfinite_update_is_a_structured_numerical_failure(tmp_path, monkeypatc
         return state, jnp.asarray(jnp.nan, dtype=loss.dtype), numerics
 
     monkeypatch.setattr(loop, "accumulated_train_step", poisoned_step)
-    with pytest.raises(FloatingPointError, match="unnormalized-attention update at step 1"):
+    with pytest.raises(FloatingPointError, match="optimizer update at step 1"):
         loop.run_training(config)
     report = json.loads((tmp_path / "numerical_failure_step_00000001.json").read_text())
     assert report["attention_kernel"] == "learned_polynomial_unnormalized"

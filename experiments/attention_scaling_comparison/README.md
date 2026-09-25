@@ -46,6 +46,18 @@ Other execution states are labeled **INCOMPLETE** if encountered when regenerati
 [PDF](figures/combined_terminal_ppl.pdf) · [Cell-level data and source checksums](summary.csv) · [Provenance](provenance/manifest.json)
 <!-- END GENERATED RESULTS -->
 
+## Snapshot under the original weight-decay policy
+
+Every run in this figure trained under the scaffold's original optimizer policy,
+in which AdamW's decay applied to all parameters, including the token embedding
+and RMSNorm scales. Commit `cb31558` made the policy that excludes embeddings,
+normalization scales, and biases canonical for new runs. As the source records are
+retrained under it, the figure and `summary.csv` above will change with them.
+[`figures/combined_terminal_ppl-original-decay.png`](figures/combined_terminal_ppl-original-decay.png)
+([PDF](figures/combined_terminal_ppl-original-decay.pdf)) and
+[`summary-original-decay.csv`](summary-original-decay.csv) are frozen copies of the
+2026-09-25 state under the original policy; regeneration does not rewrite them.
+
 ## Findings
 
 The dense fixed normalized grid shows that increasing degree narrows the

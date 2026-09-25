@@ -181,11 +181,11 @@ def test_nonfinite_loss_between_log_events_persists_failure(tmp_path, monkeypatc
     actual_step = loop.accumulated_train_step
 
     def nonfinite_second_step(*args, **kwargs):
-        state, loss = actual_step(*args, **kwargs)
-        return state, jnp.nan if int(state.step) == 2 else loss
+        state, loss, *numerics = actual_step(*args, **kwargs)
+        return state, jnp.nan if int(state.step) == 2 else loss, *numerics
 
     monkeypatch.setattr(loop, "accumulated_train_step", nonfinite_second_step)
-    with pytest.raises(FloatingPointError, match="training loss at step 2"):
+    with pytest.raises(FloatingPointError, match="training loss or optimizer update at step 2"):
         loop.run_training(cfg)
     failure = json.loads((tmp_path / "numerical_failure_step_00000002.json").read_text())
     assert failure["step"] == 2 and failure["loss"] == "NaN"

@@ -1,6 +1,7 @@
 import jax
 import optax
 from functools import partial
+from flax import nnx
 
 from scaffolds.transformer.configs import Config
 from scaffolds.transformer.attention.parameters import attention_parameter_specs
@@ -28,16 +29,30 @@ def make_optimizer(config: Config):
             b1=config.optim.beta1,
             b2=config.optim.beta2,
             weight_decay=config.optim.weight_decay,
-            # Mechanisms declare optimizer policy with their parameter ownership.
-            # The callable preserves the NNX State tree shape expected by Optax.
-            mask=(partial(attention_weight_decay_mask, excluded_names=excluded) if excluded else None),
+            mask=partial(attention_weight_decay_mask, excluded_names=excluded),
         ),
     )
 
 
 def attention_weight_decay_mask(params, *, excluded_names):
+    """Exclude biases, role-tagged parameters, and mechanism-owned exceptions.
+
+    Embeddings and normalization modules mark their parameters with
+    ``weight_decay=False``. This handles multidimensional normalization scales
+    without assuming that every matrix should decay. Biases follow NNX's
+    ``bias`` parameter name, wherever the module lives in the model tree.
+    """
+    def mask_parameter(path, parameter):
+        keys = tuple(entry.key for entry in path if isinstance(entry, jax.tree_util.DictKey))
+        decay = not keys or (keys[0] not in excluded_names and keys[-1] != "bias")
+        if isinstance(parameter, nnx.Param):
+            decay = decay and parameter.get_metadata("weight_decay", True)
+        # Keep variable wrappers and their metadata so the mask has exactly the
+        # same tree structure as parameters, gradients, and optimizer moments.
+        return jax.tree.map(lambda _: decay, parameter)
+
     return jax.tree.map_with_path(
-        lambda path, _: getattr(path[0], "key", None) not in excluded_names, params,
+        mask_parameter, params, is_leaf=lambda value: isinstance(value, nnx.Param),
     )
 
 

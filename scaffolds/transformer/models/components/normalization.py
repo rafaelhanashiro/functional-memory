@@ -5,7 +5,7 @@ from flax import nnx
 
 class RMSNorm(nnx.Module):
     def __init__(self, hidden_size: int, eps: float = 1e-6):
-        self.scale = nnx.Param(jnp.ones((hidden_size,)))
+        self.scale = nnx.Param(jnp.ones((hidden_size,)), weight_decay=False)
         self.eps = eps
 
     def __call__(self, x: jax.Array) -> jax.Array:

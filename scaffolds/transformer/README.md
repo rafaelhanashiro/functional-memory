@@ -6,6 +6,31 @@ Scientific recipes, findings, and reproduction records belong to
 `experiments/<experiment>/`. This README describes the reusable software API.
 State-rank analysis uses the independent `scaffolds/state_rank/` capability.
 
+## Embeddings and optimizer policy
+
+The input token embedding and output vocabulary projection are always independent
+trainable arrays. `model.tie_embeddings` must be `false`; `true` is rejected.
+Supporting tied embeddings requires a scaffold change, rather than a recipe toggle.
+
+AdamW applies weight decay to projection weights, including the independent output
+vocabulary projection. It excludes input embeddings, all RMSNorm scales (including
+GLA's per-head scales), all biases (including the GLA retention-gate bias), and
+attention parameters whose `AttentionParameterSpec` disables decay. Excluded
+parameters still receive ordinary Adam gradient updates. These rules apply to every
+attention mechanism and are not experiment-specific options.
+
+Embeddings and normalization modules mark their parameters with NNX metadata
+`weight_decay=False`; bias parameters use NNX's `bias` name. New modules must retain
+these roles rather than infer decay from tensor dimensions. The optimizer preserves
+the parameter tree and masks only AdamW's decoupled decay term. FP32 parameters and
+Adam moments are retained with BF16 computation; clipping follows gradient averaging.
+
+Resolved configurations record
+`optim.weight_decay_policy: exclude_embeddings_norms_biases_v1`. The trainer refuses
+to resume a run with an absent or different policy identifier. Reproduce or resume
+historical runs using their recorded source commit; loading an old recipe for a new
+run uses the canonical policy. Existing scientific records are unchanged.
+
 ## Model, runtime, and launch scripts
 
 The model and trainer share one implementation across clusters. Generic device
@@ -173,11 +198,23 @@ when the caller requests `auto`. A resumed run fails if its pinned implementatio
 cannot run on the current device. Explicit backend choices in recipes are
 preserved.
 
+An unfinished run may resume only when its latest checkpoint covers its recorded
+committed progress. Missing or older checkpoints cause an error before progress
+metadata or metrics are overwritten. Restore the matching artifacts or use a new
+run directory; an existing scientific record is never reused for a fresh restart.
+An initialized run without committed progress can still start from step zero, and
+completed runs retain their existing validation-best-only handling.
+
 Softmax uses stable score shifting. Taylor and learned polynomials use unshifted
 scores. Unnormalized exponential and Taylor kernels also use unshifted scores
 and never divide by a row sum. Nonfinite outputs, gradients, and updated parameters are surfaced as
 failures; diagnostic-only weight sums may underflow or overflow. Signed mechanisms retain their existing signed-normalizer rules; the
-scaffold does not add clipping or denominator epsilon.
+scaffold does not add clipping or denominator epsilon. Every attention mechanism
+checks the gradient norm and all updated weights on every training step, including
+gradient accumulation and distributed execution. An invalid update stops before
+validation or checkpointing and writes a numerical-failure diagnostic. The legacy
+`check_all_gradients` step argument controls additional returned diagnostics only;
+it cannot disable these checks.
 
 ## Environment and training API
 

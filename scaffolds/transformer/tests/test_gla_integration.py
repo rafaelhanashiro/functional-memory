@@ -65,9 +65,9 @@ def test_gla_fused_config_does_not_inherit_softmax_dtype_constraint(tmp_path):
     assert restored.model.gla_use_rope is True
 
 
-@pytest.mark.parametrize("key_dim,tied", [(2, False), (8, False), (8, True)])
-def test_gla_parameter_count_matches_shared_model_with_independent_key_width(tmp_path, key_dim, tied):
-    config = gla_config(tmp_path, qk_head_dim=key_dim, tie_embeddings=tied)
+@pytest.mark.parametrize("key_dim", (2, 8))
+def test_gla_parameter_count_matches_shared_model_with_independent_key_width(tmp_path, key_dim):
+    config = gla_config(tmp_path, qk_head_dim=key_dim)
     model = build_model(config.model, 0)
     assert isinstance(model, TransformerLM)
     params = nnx.state(model, nnx.Param)
