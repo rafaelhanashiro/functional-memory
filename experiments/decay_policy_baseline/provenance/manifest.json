@@ -10,7 +10,7 @@
   "scaffold": "scaffolds/transformer",
   "branch": "claude/decay-policy-baseline",
   "branch_base_commit": "8bdc5e22be0ff7b42e412062569985136a883b0d",
-  "launch_commit": "126d72a90dea0624a9acc3914255ecaf19998442",
+  "launch_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
   "frozen_execution_set_sha256": "4f2f713944033bc0e8aadaff6049f6832a14eded3452f54ed91e288657d64203",
   "scientific_change": "The retained 200M exact-softmax reference (d_K = 64, seed 0) retrained under the canonical weight-decay policy exclude_embeddings_norms_biases_v1 (AdamW decay 0.1 on projection matrices including the output vocabulary projection; none on the token embedding, RMSNorm scales, or biases); recipe otherwise identical to the control",
   "requested": {
@@ -55,13 +55,14 @@
       },
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
       "parameter_count": 199906304,
-      "source_commit": "126d72a90dea0624a9acc3914255ecaf19998442",
+      "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
       "slurm_job_ids": [
         202148,
         202161,
-        202186
+        202186,
+        202190
       ],
-      "submission": "202148: sbatch --gres=gpu:h100:4 at launch commit f8d4f0d, cancelled while pending (four H100s were not expected before the next day); 202161: resubmitted through scaffolds/transformer/launchers/kennel.sbatch (sweep partition, any 4 B300 or H100, requeue, append-mode log); 202161 cancelled while pending (its 2-day limit could not backfill around a higher-priority 8-H100 reservation); 202186: same launch commit, resubmitted with --time=08:00:00 (acceptance plus training need about 3.5 h on 4 H100)",
+      "submission": "202148: sbatch --gres=gpu:h100:4 at launch commit f8d4f0d, cancelled while pending (four H100s were not expected before the next day); 202161: resubmitted through scaffolds/transformer/launchers/kennel.sbatch (sweep partition, any 4 B300 or H100, requeue, append-mode log); 202161 cancelled while pending (its 2-day limit could not backfill around a higher-priority 8-H100 reservation); 202186: same launch commit, resubmitted with --time=08:00:00 (acceptance plus training need about 3.5 h on 4 H100); 202186 (launch commit 126d72a) started on dogo and failed acceptance's cpu-tests stage because the adapter's regeneration test skipped before completion; 202190: launch commit 381f1fd with that test fixed, --time=08:00:00, any 4 B300 or H100",
       "run_record": "experiments/decay_policy_baseline/runs/200m-softmax-seed0",
       "log_directory": "experiments/decay_policy_baseline/logs/200m-softmax-seed0",
       "checkpoint_directory": "experiments/decay_policy_baseline/checkpoints/200m-softmax-seed0",
