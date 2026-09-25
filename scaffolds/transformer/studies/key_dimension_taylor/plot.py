@@ -195,7 +195,14 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     grid = grid_rows([row for (row, _), keep in zip(summaries, in_grid) if keep], widths=widths, degrees=degrees,
                      allow_missing=manifest.get("grid_coverage") == "partial")
     grid_members = [row for line in grid for row in line if row["run"]]
+    grid_run_names = {row["run"] for row in grid_members}
     extras = [row for (row, _), keep in zip(summaries, in_grid) if not keep]
+    references = {line[-1]["qk_head_dim"]: line[-1] for line in grid}
+    for row in extras:
+        reference = references.get(row["qk_head_dim"])
+        if (row["attention_degree"] is not None and row["status"] == "complete"
+                and reference is not None and reference["status"] == "complete"):
+            row["delta_ppl_vs_softmax"] = row["terminal_ppl"] - reference["terminal_ppl"]
     rows = sorted(grid_members + extras, key=lambda row: (row["qk_head_dim"], 99 if row["attention_degree"] is None else row["attention_degree"], row["run"]))
     with (output_dir / "summary.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=[*rows[0], "grid_cell"])
@@ -282,14 +289,13 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     figure, axes = plt.subplots(curve_rows, 3, figsize=(14, 4 * curve_rows), layout="constrained", squeeze=False)
     for axis, width in zip(axes.flat, widths):
         for row, records in summaries:
-            if row["qk_head_dim"] != width or not records:
+            if row["run"] not in grid_run_names or row["qk_head_dim"] != width or not records:
                 continue
             degree = row["attention_degree"]
-            outside = row in extras
             axis.plot([record["training_tokens"] / 1e9 for record in records], [record["validation_perplexity"] for record in records],
-                      label=row["kernel"] + (" *" if row["reused"] else "") + (" (outside grid)" if outside else ""),
+                      label=row["kernel"] + (" *" if row["reused"] else ""),
                       color="black" if degree is None else f"C{degrees.index(degree)}",
-                      linestyle=":" if outside else "-" if row["status"] == "complete" else "--")
+                      linestyle="-" if row["status"] == "complete" else "--")
         axis.set_title(f"dK={width}")
         axis.set_xlabel("Prediction tokens (billions)")
         axis.set_ylabel("Held-out perplexity")
@@ -300,7 +306,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
         axis.axis("off")
     if len(widths) < axes.size:
         axes.flat[len(widths)].text(0, 0.8, "* Trained by the earlier width or degree sweep\nDashed curves: incomplete or failed\n"
-                                    "Dotted curves: retained outside the grid\nEndpoints require 19,074 updates", va="top")
+                                    "Endpoints require 19,074 updates", va="top")
     save(figure, "learning_curves")
 
     count = {status: sum(row["status"] == status for row in rows) for status in ("complete", "pending", "incomplete", "failed")}
@@ -314,7 +320,10 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     lines = [f"Terminal held-out perplexity at 19,074 updates (10,000,269,312 prediction tokens), seed 0. "
              f"{count['complete']} of {len(rows)} retained runs are complete"
              + (f"; {count['pending']} pending, {count['incomplete']} incomplete, {count['failed']} numerical failures" if len(rows) != count["complete"] else "")
-             + ". A dash marks a coordinate that was never trained; nothing is imputed.", "", *table, ""]
+             + f". The heatmap shows the {len(widths) * (n_degrees + 1)}-cell joint comparison;"
+             + " other retained runs remain in the CSV and manifest."
+             + (" A dash marks a coordinate that was never trained; nothing is imputed." if manifest.get("grid_coverage") == "partial" else ""),
+             "", *table, ""]
     if extras:
         lines += ["Runs retained outside the grid: " + "; ".join(
             f"`{row['run']}` ({row['kernel']}, dK={row['qk_head_dim']}, PPL {row['terminal_ppl']:.4f})" for row in extras)

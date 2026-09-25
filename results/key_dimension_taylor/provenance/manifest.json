@@ -1864,7 +1864,6 @@
     }
   },
   "degrees": [
-    0,
     2,
     4,
     8,
@@ -1876,6 +1875,7 @@
   },
   "experiment": "key_dimension_taylor",
   "figure_rendering": {
+    "scope": "Historical September 22 rendering; these hashes do not describe the current regenerated figures.",
     "rendered_utc": "2026-09-22T17:20:16.785876+00:00",
     "plot_source_commit": "84b9f2296442d2f99b857cd6e4d3ec1e8c6576ea",
     "change": "Remove reuse asterisks and reuse legend from heatmap presentation; preserve provenance in report and manifest",
@@ -1893,14 +1893,11 @@
   "home_cluster": "kennel",
   "identity": "7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3",
   "key_dimensions": [
-    2,
-    4,
     8,
     16,
     32,
     64,
-    128,
-    256
+    128
   ],
   "retained_logs": [
     {
@@ -2061,6 +2058,7 @@
         "path": "results/key_dimension_taylor/runs/200m-dk002-seed0/metrics.jsonl",
         "sha256": "78c17abc6e22dac7594aeda267650e783557ee60d3ed56eee5b4e2ddaee6b0a9"
       },
+      "grid_cell": false,
       "name": "200m-dk002-seed0",
       "parameter_count": 179590144,
       "qk_head_dim": 2,
@@ -2114,6 +2112,7 @@
         "path": "results/key_dimension_taylor/runs/200m-dk004-seed0/metrics.jsonl",
         "sha256": "aebe6bbbf26df5a2603520c77f169aafa393070d4f8952d3365e2f50d2c2867c"
       },
+      "grid_cell": false,
       "name": "200m-dk004-seed0",
       "parameter_count": 180245504,
       "qk_head_dim": 4,
@@ -3461,6 +3460,7 @@
       "artifacts_retained": "2026-09-24: ORCD checkpoints and logs for the key_dimension runs are not retained, by user decision; metrics, completion, metadata, and configs are retained in Git."
     },
     {
+      "grid_cell": false,
       "name": "200m-m000-seed0",
       "attention_degree": 0,
       "attention_backend": "blocked",
@@ -4375,6 +4375,7 @@
         "path": "results/key_dimension_taylor/runs/200m-dk256-seed0/metrics.jsonl",
         "sha256": "3c02bd12a7fdc21745dfeb26f5c83698c6e1c51f1710e83c22288a57cd49b979"
       },
+      "grid_cell": false,
       "name": "200m-dk256-seed0",
       "parameter_count": 262820864,
       "qk_head_dim": 256,
@@ -15627,5 +15628,5 @@
     "folded_here": "Sweep preflight checks, execution policy, and figure-rendering records; see retired_records, sweep_acceptance, per-run acceptance, and execution_policy.",
     "in_git_at": "c6512b9"
   },
-  "grid_coverage": "partial"
+  "grid_coverage": "full"
 }
