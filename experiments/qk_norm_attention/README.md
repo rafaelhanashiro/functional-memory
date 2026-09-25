@@ -17,9 +17,9 @@ this costs against standard softmax and how far the scales move. Bounded scores
 are also the regime in which the repository's polynomial (Taylor) kernels
 approximate the exponential, so this baseline anchors later QK-norm polynomial runs.
 
-**Status: running.** Requested 2026-09-25 from Kennel; see the
-[provenance manifest](provenance/manifest.json) for the launch commit, job, and
-progress.
+**Status: running.** Requested 2026-09-25 from Kennel and submitted the same day
+as Slurm job 202156 at launch commit `4b5c69c`; see the
+[provenance manifest](provenance/manifest.json) for progress.
 
 **Home cluster: Kennel.** The artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`. While the run executes, its
@@ -56,15 +56,16 @@ selective weight decay (`exclude_embeddings_norms_biases_v1`: no decay on the
 input embedding, RMSNorm scales, biases, or the log scales). The existing softmax
 control (terminal perplexity 14.6942, source `1a8836a`) trained with decay on
 every parameter, so the comparison below confounds QK-norm with the policy
-change until the control is retrained under the canonical policy, which the
-[attention scaling comparison](../attention_scaling_comparison/README.md) plans.
+change until the control retrained under the canonical policy completes: the
+`decay_policy_baseline` experiment's `200m-softmax-seed0` (Slurm job 202148,
+submitted 2026-09-25 from its own worktree) is that control.
 
 Controls, seed 0, same backbone and budget:
 
 | Kernel | Score | Decay policy | Terminal PPL |
 | --- | --- | --- | ---: |
 | Softmax ([key_dimension_taylor](../key_dimension_taylor/README.md)) | `q·k / sqrt(d_K)` | all parameters | 14.6942 |
-| Softmax, canonical policy | `q·k / sqrt(d_K)` | selective | pending |
+| Softmax (`decay_policy_baseline`, job 202148) | `q·k / sqrt(d_K)` | canonical selective | pending |
 
 ## Implementation
 

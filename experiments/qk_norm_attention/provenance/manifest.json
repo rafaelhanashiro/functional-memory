@@ -1,0 +1,107 @@
+{
+  "format": "functional-memory-experiment-setup",
+  "version": 2,
+  "experiment": "qk_norm_attention",
+  "status": "running",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "execution_checkout": "worktrees/qk_norm_attention",
+  "documentation": "experiments/qk_norm_attention/README.md",
+  "scaffold": "scaffolds/transformer",
+  "branch": "qk-norm-attention",
+  "branch_base_commit": "8bdc5e22be0ff7b42e412062569985136a883b0d",
+  "scaffold_change_commit": "dd6f2f47e18cb931d8c186d084749bbbd481174f",
+  "launch_commit": "4b5c69cef73eeb3bf8d0ea6ad3611208aad45cb3",
+  "frozen_execution_set_sha256": "00a2f12c81079ca1809ae34c25926cb226d0f1c656a74691c69515272b7ec0a1",
+  "scientific_change": "Exact softmax attention over QK-norm cosine scores s_ij = exp(gamma_{l,h}) <q_i, k_j> / (||q_i|| ||k_j||), |s_ij| <= exp(gamma_{l,h}); one log scale gamma per layer and head, learned from log(sqrt(d_K)) = log 8, FP32, no weight decay, backbone learning-rate schedule; Q/K unit-normalized per head in FP32 before RoPE with eps 1e-6; everything else the 200M softmax control",
+  "requested": {
+    "date": "2026-09-25",
+    "from_cluster": "kennel",
+    "mechanism": "exact softmax, d_K = 64",
+    "qk_norm": "cosine scores with a learned per-head log scale",
+    "scale_parametrization": "alpha = exp(gamma), gamma learned",
+    "initial_scale": 8.0
+  },
+  "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+  "shared_dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+  },
+  "data_identity": {
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    }
+  },
+  "comparison_controls": {
+    "softmax_original_decay": {
+      "run": "experiments/key_dimension_taylor/runs/200m-softmax-seed0",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "weight_decay_policy": "all parameters (before exclude_embeddings_norms_biases_v1)",
+      "validation_nll": 2.6874512689454213,
+      "validation_perplexity": 14.69417664861716,
+      "note": "Same backbone, budget, and data; differs from this run in the score and in the decay policy."
+    },
+    "softmax_canonical_decay": {
+      "run": "experiments/decay_policy_baseline/runs/200m-softmax-seed0",
+      "branch": "claude/decay-policy-baseline",
+      "execution_checkout": "worktrees/decay_policy_baseline",
+      "slurm_job_id": "202148",
+      "status": "submitted 2026-09-25, pending at this run's launch",
+      "note": "The clean control: the same recipe as this run without qk_norm, under the canonical policy."
+    }
+  },
+  "runs": [
+    {
+      "name": "200m-qk-softmax-seed0",
+      "attention_kernel": "softmax",
+      "attention_degree": null,
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
+      "qk_norm_initial_scale": 8.0,
+      "qk_norm_eps": 1e-06,
+      "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/qk_norm_attention/configs/200m-qk-softmax-seed0.yaml",
+        "sha256": "9378195aa81b45cada1fdd7f22819f8cd7e2dc94ecd0de3b2ae6221644da9441"
+      },
+      "parameter_count": 199906464,
+      "qk_norm_parameter_count": 160,
+      "source_commit": "4b5c69cef73eeb3bf8d0ea6ad3611208aad45cb3",
+      "slurm_job_ids": [
+        202156
+      ],
+      "partition": "sweep",
+      "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+      "submitted_utc": "2026-09-25T20:38:19+00:00",
+      "run_record": "experiments/qk_norm_attention/runs/200m-qk-softmax-seed0",
+      "log_directory": "experiments/qk_norm_attention/logs/200m-qk-softmax-seed0",
+      "checkpoint_directory": "experiments/qk_norm_attention/checkpoints/200m-qk-softmax-seed0"
+    }
+  ],
+  "pre_launch_validation": {
+    "cpu_tests": "Full scaffold CPU suite at the scaffold-change tree dd6f2f4 (before merging main): 552 passed, 12 skipped, 0 failed. After merging main 8bdc5e2 (selective weight decay, universal update checks, resume guard): 195 targeted tests passed, 6 skipped, 0 failed (test_qk_norm, test_parameter_policy, test_model, test_config, test_update_numerics, test_resume_guard, test_training); the adapter's 3 configuration tests passed at the launch tree.",
+    "gpu_tests": {
+      "B300": "5 passed (slurm 202131, akita, 44 s) at the scaffold-change tree: cuDNN softmax and the fused Taylor, unnormalized, and learned-polynomial kernels consume the cosine operands as the blocked reference does at the 2,048-token BF16 context, including the log-scale gradient",
+      "log": {
+        "path": "scaffolds/transformer/validation/logs/qk-norm-scores/slurm-202131.out",
+        "sha256": "4b96c3616f86d0401dc5b6012aced27ca951ef1008b218fb25608d7c980d2da3",
+        "location": "primary checkout on Kennel, ignored by Git; to be entered in the scaffold validation record with this run's acceptance"
+      }
+    },
+    "acceptance": "Runs in the production allocation before training: the adapter's CPU tests, GPU tests, the softmax-backbone initialization check, a 20-update full-recipe pilot on the fused (cuDNN) backend, and an exact fresh-process resume."
+  },
+  "artifact_locations": {
+    "runs": "experiments/qk_norm_attention/runs/<run> (committed at completion)",
+    "checkpoints": "experiments/qk_norm_attention/checkpoints/<run>/<step> (ignored; in the execution checkout while running, then under artifact_root)",
+    "logs": "experiments/qk_norm_attention/logs/<run>/slurm-<job>.out (ignored; in the execution checkout while running, then under artifact_root)"
+  }
+}
