@@ -158,6 +158,41 @@ def test_partial_grid_marks_untrained_cells_and_keeps_outside_runs(tmp_path):
     assert "Runs retained outside the grid: `duplicate-softmax`" in report
 
 
+def test_focused_heatmap_retains_supplemental_historical_runs(tmp_path):
+    import copy
+
+    manifest = make_manifest(tmp_path)
+    manifest.update(key_dimensions=list(WIDTHS), degrees=list(DEGREES), grid_coverage="full")
+    supplemental = [make_run(tmp_path, width, None, reused=True, terminal_ppl=22 + width / 100)
+                    for width in (2, 4, 256)]
+    supplemental.append(make_run(tmp_path, 64, 0, reused=True, terminal_ppl=47.0))
+    duplicate = copy.deepcopy(manifest["controls"][3])
+    duplicate.update(name="alternate-softmax-64", grid_cell=False)
+    supplemental.append(duplicate)
+    for run in supplemental:
+        run["grid_cell"] = False
+    manifest["runs"].extend(supplemental)
+
+    output = tmp_path / "focused"
+    output.mkdir()
+    rows = aggregate(manifest, output)
+    assert len(rows) == 30
+    csv_rows = list(csv.DictReader((output / "summary.csv").open()))
+    assert sum(row["grid_cell"] == "True" for row in csv_rows) == 25
+    assert sum(row["grid_cell"] == "False" for row in csv_rows) == 5
+    by_name = {row["run"]: row for row in csv_rows}
+    degree_zero = by_name["200m-dk064-m000-seed0"]
+    reference = by_name["200m-dk064-softmax-seed0"]
+    assert float(degree_zero["delta_ppl_vs_softmax"]) == pytest.approx(
+        float(degree_zero["terminal_ppl"]) - float(reference["terminal_ppl"]))
+    report = (output / "README.md").read_text()
+    assert "25-cell joint comparison" in report
+    assert "| dK | m=2 | m=4 | m=8 | m=16 | Softmax |" in report
+    assert "| 2 |" not in report and "| 256 |" not in report
+    assert "`200m-dk064-m000-seed0`" in report
+    assert (output / "figures/terminal_ppl_heatmap.png").exists()
+
+
 def retained_manifest(root):
     import yaml
 
