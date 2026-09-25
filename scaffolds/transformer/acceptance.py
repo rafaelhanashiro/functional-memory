@@ -179,6 +179,50 @@ def matches_softmax_initialization(config) -> dict:
     return {"softmax_counterpart_parameter_sha256": expected["parameter_sha256"]}
 
 
+def matches_softmax_backbone_initialization(config) -> dict:
+    """Require the exact-softmax control's backbone weights plus declared initial mechanism parameters.
+
+    Mechanisms that add trainable attention arrays register them without drawing
+    random numbers, so every other parameter must equal the softmax control's and
+    each added array must hold its declared initial value.
+    """
+    from dataclasses import replace
+
+    import jax
+    import numpy as np
+    from flax import nnx
+
+    from scaffolds.transformer.attention.parameters import attention_parameter_specs
+    from scaffolds.transformer.models import build_model
+
+    def flat_parameters(current):
+        current.model.attention_backend = "blocked"
+        rng = jax.random.PRNGKey(current.train.seed)
+        model = build_model(current.model, nnx.Rngs(params=rng, dropout=jax.random.fold_in(rng, 0)))
+        return {path: np.asarray(value[...]) for path, value in nnx.to_flat_state(nnx.state(model, nnx.Param))}
+
+    specs = attention_parameter_specs(config.model)
+    control = replace(config, model=replace(
+        config.model, attention_degree=None, attention_normalization=True, quadratic_mode="fixed",
+        attention_coefficients="fixed"))
+    actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
+    added = {(spec.name,) for spec in specs}
+    if set(actual) - set(expected) != added or set(expected) - set(actual):
+        raise RuntimeError(f"Unexpected parameter names beyond the softmax control: {sorted(set(actual) ^ set(expected))}")
+    for path, value in expected.items():
+        if not np.array_equal(actual[path], value):
+            raise RuntimeError(f"Backbone parameter {path} differs from the exact-softmax control")
+    for spec in specs:
+        initial = np.asarray(spec.initial, dtype=np.float32)
+        if not np.array_equal(actual[(spec.name,)], np.broadcast_to(initial, actual[(spec.name,)].shape)):
+            raise RuntimeError(f"{spec.name} does not hold its declared initial value")
+    return {
+        "softmax_counterpart_parameter_sha256": initialization_facts(control)["parameter_sha256"],
+        "mechanism_parameters": {spec.name: {"shape": list(actual[(spec.name,)].shape), "initial": list(spec.initial),
+                                             "weight_decay": spec.weight_decay} for spec in specs},
+    }
+
+
 def entry_module(spec: AcceptanceSpec) -> str:
     """The adapter's importable module name, also when it runs as `python -m` (`__name__ == "__main__"`)."""
     if spec.entry_module != "__main__":

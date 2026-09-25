@@ -55,6 +55,7 @@ The existing scientific configuration fields remain supported:
 | `attention_degree: null`, `attention_normalization: true` (default) | Exact softmax |
 | `attention_degree: null`, `attention_normalization: false` | Unnormalized causal `exp(QKᵀ / sqrt(d_K)) V` |
 | Nonnegative `attention_degree`, `attention_normalization: false` | Unnormalized fixed Taylor `p_m(QKᵀ / sqrt(d_K)) V`; odd degrees permit signed weights |
+| `attention_degree: m >= 1`, `attention_normalization: false`, `attention_coefficients: learned` | Unnormalized `sum_r c_r (QKᵀ / sqrt(d_K))^r V` with every coefficient learned from `1/r!`; signed |
 | `attention_degree: 0` | Uniform causal-prefix averaging |
 | Nonnegative `attention_degree`, `quadratic_mode: fixed` | Fixed Taylor polynomial; odd degrees permit signed weights |
 | `attention_degree: 2`, `quadratic_mode: positive` | Learned `0.5 * (1 + (a*s+b)^2)` |
@@ -63,6 +64,12 @@ The existing scientific configuration fields remain supported:
 `qk_head_dim` controls projection geometry independently of the mechanism.
 `quadratic_sharing: global` stores one pair across all layers and heads;
 `per_head` stores `[num_layers, num_heads, 2]`. Each layer keeps its own projections.
+Learned polynomial coefficients are the `polynomial_coefficients` array: `[m + 1]`
+with `attention_coefficient_sharing: global`, `[num_layers, num_heads, m + 1]` with
+`per_head`, FP32, without weight decay. They require unnormalized attention; the
+blocked reference evaluates them by Horner's rule, and
+`attention/backends/fused_learned_polynomial.py` is the fused kernel, whose custom
+backward also returns each head's coefficient gradient `sum_{i>=j} S_ij^r (dY_i · V_j)`.
 
 `AttentionParameterSpec` declares initialization, sharing, the forward argument,
 and weight-decay policy. The model registers each array once and selects the
