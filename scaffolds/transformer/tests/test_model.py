@@ -88,3 +88,48 @@ def test_backbone_initialization_is_identical_across_fixed_degrees():
         assert actual_tree == expected_tree
         for observed, baseline in zip(actual, expected, strict=True):
             np.testing.assert_array_equal(observed, baseline)
+
+
+# Query/key widths of the dK records; every other weight has the same shape at each width.
+KEY_DIMENSIONS = (2, 4, 8, 16, 32, 64, 128)
+EXPECTED_COUNTS = (179_590_144, 180_245_504, 181_556_224, 184_177_664, 189_420_544, 199_906_304, 220_877_824)
+
+
+@pytest.mark.parametrize("qk_dim,expected", list(zip(KEY_DIMENSIONS, EXPECTED_COUNTS, strict=True)))
+def test_production_parameter_counts_across_key_dimensions(qk_dim, expected):
+    cfg = replace(load_config(BASE_CONFIG).model, qk_head_dim=qk_dim)
+    # Trace real NNX initialization without allocating seven 200M parameter sets.
+    params = jax.eval_shape(lambda: nnx.state(build_model(cfg, 7), nnx.Param))
+    count = sum(leaf.size for leaf in jax.tree.leaves(params))
+    assert count == expected
+    assert model_parameter_count(cfg) == count
+
+
+@pytest.mark.parametrize("qk_dim", KEY_DIMENSIONS)
+def test_forward_backward_and_causality_across_key_dimensions(qk_dim):
+    cfg = _small_config(qk_head_dim=qk_dim, attention_backend="xla")
+    model = build_model(cfg, nnx.Rngs(0))
+    tokens = jnp.arange(16).reshape(2, 8)
+    logits = model(tokens)
+    assert logits.shape == (2, 8, 128)
+    graph, params = nnx.split(model, nnx.Param)
+    grads = jax.grad(lambda candidate: jnp.square(nnx.merge(graph, candidate)(tokens)).mean())(params)
+    assert all(bool(jnp.all(jnp.isfinite(leaf))) for leaf in jax.tree.leaves(grads))
+    altered = tokens.at[:, 5:].set(127)
+    np.testing.assert_allclose(model(altered)[:, :5], logits[:, :5], atol=1e-6, rtol=1e-6)
+
+
+def test_shared_weights_have_identical_initialization_across_key_dimensions():
+    small, large = (build_model(_small_config(qk_head_dim=dim), 0) for dim in (2, 64))
+    small_params = jax.tree_util.tree_flatten_with_path(nnx.state(small, nnx.Param))[0]
+    large_params = jax.tree_util.tree_flatten_with_path(nnx.state(large, nnx.Param))[0]
+    assert [path for path, _ in small_params] == [path for path, _ in large_params]
+    compared = 0
+    for path, small_value in small_params:
+        large_value = dict(large_params)[path]
+        if "q_proj" in jax.tree_util.keystr(path) or "k_proj" in jax.tree_util.keystr(path):
+            assert small_value.shape != large_value.shape
+        else:
+            np.testing.assert_array_equal(small_value[...], large_value[...])
+            compared += 1
+    assert compared > 10
