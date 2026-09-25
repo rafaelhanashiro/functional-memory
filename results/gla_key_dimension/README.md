@@ -6,7 +6,7 @@ This sweep trains GLA at **d_K ∈ {8, 16, 32, 64, 128}**, matching the rows of 
 [dK × Taylor-degree record](../key_dimension_taylor/README.md), and measures
 terminal held-out perplexity after 10.0B training tokens.
 
-**Status:** planned; acceptance and training run on Kennel from a frozen checkout.
+**Status:** complete. All five runs trained for 10.0B tokens on Kennel B300s and H100s.
 
 ## Scientific comparison
 
@@ -127,8 +127,8 @@ synchronized (`uv sync --project scaffolds/transformer --locked --extra cuda` in
 
 ```bash
 PROJECT_ROOT=/data/cl/u/rafah/home/projects/functional-memory
-EXECUTION_ROOT="$PROJECT_ROOT/worktrees/gla_key_dimension-<commit>"
-git -C "$PROJECT_ROOT" worktree add --detach "$EXECUTION_ROOT" <source-commit>
+EXECUTION_ROOT="$PROJECT_ROOT/worktrees/gla_key_dimension-4af147e"
+git -C "$PROJECT_ROOT" worktree add --detach "$EXECUTION_ROOT" 4af147ea64c89bcb0f8086d1e3a963c7ecbcec77
 SOURCE_COMMIT="$(git -C "$EXECUTION_ROOT" rev-parse HEAD)"
 for DK in 008 016 032 064 128; do
   RUN="200m-dk${DK}-gla-seed0"
@@ -153,4 +153,60 @@ JAX_PLATFORMS=cpu "$PROJECT_ROOT/.envs/shared_transformer/bin/python" -m pytest 
 
 ## Findings
 
-Pending.
+All five runs completed the full 19,074 updates (10.0B prediction tokens) without
+numerical failures; attention diagnostics stayed valid, and every run's
+validation-best checkpoint is its terminal one. Terminal held-out perplexity,
+with the width-matched softmax and row-normalized Taylor runs from the
+[dK × Taylor record](../key_dimension_taylor/README.md):
+
+| d_K | Parameters | GLA | Softmax | GLA − softmax | Taylor m=2 | m=4 | m=8 | m=16 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 8 | 192.2M | **17.22** | 16.71 | +0.52 | 20.58 | 18.18 | 17.18 | 16.85 |
+| 16 | 194.9M | **16.71** | 15.58 | +1.13 | 18.50 | 16.51 | 15.80 | 15.63 |
+| 32 | 200.2M | **16.20** | 14.99 | +1.22 | 17.17 | 15.57 | 15.07 | 15.02 |
+| 64 | 210.7M | **15.90** | 14.69 | +1.21 | 16.28 | 14.98 | 14.68 | 14.71 |
+| 128 | 231.9M | **15.44** | 14.38 | +1.06 | 15.72 | 14.53 | 14.36 | 14.38 |
+
+![Terminal perplexity versus d_K](figures/perplexity_vs_key_dimension.png)
+
+[PDF](figures/perplexity_vs_key_dimension.pdf) · [summary.csv](summary.csv)
+
+- **GLA improves steadily with key width**, from 17.22 at d_K=8 to 15.44 at d_K=128
+  (−1.79 overall; 0.3–0.5 per doubling). Softmax improves more over the same range
+  (16.71 → 14.38, −2.33), so wider keys help the recurrent state less than they help
+  exact attention.
+- **GLA trails softmax at every width.** The gap is 0.52 at d_K=8 and 1.06–1.22 from
+  d_K=16 to 128, even though GLA has more trainable parameters at each width (gates,
+  output gate, and head normalization).
+- **Against truncated Taylor attention**, GLA beats degree 2 at every width. At
+  d_K=8 it beats degree 4 and matches degree 8 (17.22 vs 17.18); from d_K=16 on,
+  degree 4 is better, and GLA sits between degrees 2 and 4.
+- At the narrowest width the ranking compresses: GLA is within 0.52 of softmax and
+  ahead of low-degree Taylor, whose approximation error is largest there.
+
+One seed per width cannot establish statistical significance; differences of a few
+hundredths (for example GLA versus Taylor m=8 at d_K=8) are within plausible seed
+variation.
+
+## Execution
+
+Source `4af147e` from a frozen checkout; partition `sweep`; acceptance passed in every
+allocation (49 CPU and 21 GPU kernel tests, initialization hash, pilot, and exact
+resume). Initialization hashes agree across GPU types for the run that used both.
+
+| Run | Slurm job | Hardware | Elapsed |
+| --- | ---: | --- | ---: |
+| `200m-dk008-gla-seed0` | 201792 | 4×B300 `akita` | 01:49:11 |
+| `200m-dk016-gla-seed0` | 201793 | 4×H100 `dogo` (preempted) → 4×B300 `akita` | 01:14:27 + 01:15:24 |
+| `200m-dk032-gla-seed0` | 201794 | 4×H100 `dogo` | 03:26:18 |
+| `200m-dk064-gla-seed0` | 201795 | 4×B300 `akita` | 03:06:17 |
+| `200m-dk128-gla-seed0` | 201796 | 4×B300 `akita` | 04:46:04 |
+
+`200m-dk016-gla-seed0` was preempted on H100 at update 6,732 and resumed on B300 from
+its update-6,500 checkpoint after B300 acceptance; the fused kernel agrees across the
+two types to about 1e-7. Slurm truncated that job's log on requeue, so its retained log
+covers the B300 attempt. The kernel is compute-inefficient (IEEE FP32 products on CUDA
+cores; see [shared scaffold validation](../shared_transformer_validation/README.md)),
+which affects wall time only. Per-run acceptance, attempts, checkpoints (validation-best
+step 19,074, 2.1–2.6 GB each) and log checksums are in the
+[provenance manifest](provenance/manifest.json).

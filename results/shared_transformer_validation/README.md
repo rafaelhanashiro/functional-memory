@@ -160,6 +160,45 @@ explanation, not a proven cause. This is one coordinate, not full A100
 qualification. Kennel launcher policy based on these results is in
 [`CLUSTERS.md`](../../CLUSTERS.md).
 
+## Fused GLA kernel qualification on H100 and B300
+
+The chunked Triton GLA kernels (`attention/backends/chunked_gla_triton.py`) first
+ran on GPUs for the [GLA d_K sweep](../gla_key_dimension/README.md). Their 21
+GPU tests (`tests/test_gla_kernel.py`) compare fused outputs, final states, and
+all four gradients with a sequential FP32 recurrence for d_K 2–128 (and a 76/152
+case), zero and extreme decays, and mixed FP32/BF16 operands. Two defects were
+found and fixed before production:
+
+- **Toolkit.** jaxlib assembles the bridge's Triton PTX with the first `ptxas`
+  among its CUDA roots, normally a node's `/usr/local/cuda`. `dogo`'s CUDA 12.6
+  rejects Triton 3.6's PTX 8.7, so 20 of 21 cases failed on H100. Launchers set
+  `CUDA_HOME` to the locked environment's CUDA 12.9 `nvidia/cuda_nvcc`.
+- **B300 precision.** With BF16 operands upcast inside the kernel, Triton 3.6 on
+  sm_103 lowered the IEEE FP32 products at TF32-level precision: 12 of 21 cases
+  failed, and in the production mixed case (FP32 Q/K after RoPE, BF16 V) the
+  output error against an FP64 recurrence was 4.0e-4 on B300 versus 1.5e-7 on
+  H100. Operands now enter the kernels as FP32 (an exact conversion); both GPU
+  types then match the FP64 recurrence to about 1e-7 in FP32 and agree with each
+  other at printed precision.
+
+A third failure was a test defect: at log α = −100 the exact log-decay gradient is
+about 1e-51 (0 in FP32), so a relative-error threshold judged 5e-13 of noise; that
+gradient is now compared with the input-gradient scale.
+
+Every production allocation then passed the sweep's acceptance at source `4af147e`
+(49 GLA CPU tests, 21 kernel tests, a 20-update full-recipe pilot on the fused
+backend, and an exact fresh-process resume): H100 in jobs 201793 (first attempt)
+and 201794; B300 in jobs 201792, 201793 (after requeue), 201795, and 201796.
+Per-run evidence is summarized in the GLA provenance manifest.
+
+The kernel is slow rather than wrong. On one H100 at the per-device production
+shape (16 × 2,048 tokens, 16 heads, d_V 64), fused GLA forward+backward took 3.9,
+9.9, and 25.9 ms for d_K 8, 64, and 128, against about 1.0–1.4 ms forward for all
+of a layer's dense matmuls. Its IEEE FP32 products run on CUDA cores rather than
+tensor cores, and its backward grows faster than its forward in d_K; end-to-end
+B300 throughput fell from 1.68M tokens/s at d_K 8 to 0.61M at d_K 128. This was a
+development measurement, not a retained benchmark run.
+
 ## Reproduction
 
 From the canonical checkout and locked shared environment:
