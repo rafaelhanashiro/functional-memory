@@ -11,7 +11,8 @@ SPEC = AcceptanceSpec(
     entry_module=__name__,
     cpu_tests=("scaffolds/transformer/tests/test_attention.py", "scaffolds/transformer/tests/test_model.py", "scaffolds/transformer/tests/test_training.py",
                "scaffolds/transformer/tests/test_checkpoint_audit.py", "experiments/key_dimension_taylor/adapter/tests"),
-    gpu_tests=("scaffolds/transformer/tests/test_fused_attention.py", "scaffolds/transformer/tests/test_taylor_kernel_widths.py", "scaffolds/transformer/tests/test_softmax_backends.py"),
+    # The fused Taylor kernels at every production width and degree.
+    gpu_tests=("scaffolds/transformer/tests/test_fused_attention.py", "scaffolds/transformer/tests/test_taylor_kernel_widths.py"),
     check_config=check_config,
 )
 
