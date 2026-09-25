@@ -10,8 +10,8 @@
   "scaffold": "scaffolds/transformer",
   "branch": "claude/decay-policy-baseline",
   "branch_base_commit": "8bdc5e22be0ff7b42e412062569985136a883b0d",
-  "launch_commit": "f8d4f0dd2ebea2a93a9d675375b9b917c9086c69",
-  "frozen_execution_set_sha256": "eca8969ca150cbc1a7a2ff40884ae92da72037c8cd610b85d4c5d72dd90c6cc4",
+  "launch_commit": "126d72a90dea0624a9acc3914255ecaf19998442",
+  "frozen_execution_set_sha256": "4f2f713944033bc0e8aadaff6049f6832a14eded3452f54ed91e288657d64203",
   "scientific_change": "The retained 200M exact-softmax reference (d_K = 64, seed 0) retrained under the canonical weight-decay policy exclude_embeddings_norms_biases_v1 (AdamW decay 0.1 on projection matrices including the output vocabulary projection; none on the token embedding, RMSNorm scales, or biases); recipe otherwise identical to the control",
   "requested": {
     "date": "2026-09-25",
@@ -55,14 +55,16 @@
       },
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
       "parameter_count": 199906304,
-      "source_commit": "f8d4f0dd2ebea2a93a9d675375b9b917c9086c69",
+      "source_commit": "126d72a90dea0624a9acc3914255ecaf19998442",
       "slurm_job_ids": [
-        202148
+        202148,
+        202161
       ],
-      "submission": "sbatch --gres=gpu:h100:4 through scaffolds/transformer/launchers/kennel.sbatch (sweep partition, 4 H100, requeue, append-mode log) from the worktree root",
+      "submission": "202148: sbatch --gres=gpu:h100:4 at launch commit f8d4f0d, cancelled while pending (four H100s were not expected before the next day); 202161: resubmitted through scaffolds/transformer/launchers/kennel.sbatch (sweep partition, any 4 B300 or H100, requeue, append-mode log)",
       "run_record": "experiments/decay_policy_baseline/runs/200m-softmax-seed0",
       "log_directory": "experiments/decay_policy_baseline/logs/200m-softmax-seed0",
-      "checkpoint_directory": "experiments/decay_policy_baseline/checkpoints/200m-softmax-seed0"
+      "checkpoint_directory": "experiments/decay_policy_baseline/checkpoints/200m-softmax-seed0",
+      "acceptance_gpu_tests": "cuDNN softmax parity and production-context checks at d_K = 2, 4, 8, 16, 32, 64, 128"
     }
   ],
   "pre_launch_validation": {
