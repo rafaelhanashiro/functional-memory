@@ -6,6 +6,7 @@ Reusable code is organized by capability under `scaffolds/`. Each experiment und
 | --- | --- | --- |
 | State rank | [State-rank analysis](experiments/state_rank/README.md) | [State-spectrum analysis](scaffolds/state_rank/) |
 | Learned quadratic attention | [Coefficient-learning results and numerical failures](experiments/learned_quadratic_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
+| Learned-coefficient unnormalized Taylor attention | [Per-head learned kernel coefficients without normalization](experiments/learned_unnormalized_taylor/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Odd Taylor attention | [Signed-kernel numerical failures](experiments/odd_taylor_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Query/key dimension × Taylor degree | [Width, degree, and joint sweeps](experiments/key_dimension_taylor/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | GLA key dimension | [Gated linear attention across d_K](experiments/gla_key_dimension/README.md) | [Transformer](scaffolds/transformer/README.md) |

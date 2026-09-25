@@ -54,6 +54,10 @@ class ModelConfig:
     gla_use_rope: bool = True
     quadratic_mode: Literal["fixed", "positive", "unrestricted"] = "fixed"
     quadratic_sharing: Literal["global", "per_head"] = "global"
+    # Unnormalized degree-m kernels may learn every coefficient c_0..c_m of
+    # sum_r c_r s^r, starting from the Taylor values 1/r!.
+    attention_coefficients: Literal["fixed", "learned"] = "fixed"
+    attention_coefficient_sharing: Literal["global", "per_head"] = "global"
 
     def __post_init__(self):
         if self.kind != "transformer":
@@ -113,6 +117,17 @@ class ModelConfig:
             or self.attention_degree < 0
         ):
             raise ValueError("model.attention_degree must be null or a nonnegative integer")
+        if self.attention_coefficients not in ("fixed", "learned"):
+            raise ValueError(f"Unknown attention coefficients: {self.attention_coefficients}")
+        if self.attention_coefficient_sharing not in ("global", "per_head"):
+            raise ValueError(f"Unknown attention coefficient sharing: {self.attention_coefficient_sharing}")
+        if self.attention_coefficients == "learned":
+            if self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed":
+                raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")
+            if self.attention_normalization:
+                raise ValueError("Learned polynomial coefficients require attention_normalization=false")
+            if self.attention_degree is None or self.attention_degree < 1:
+                raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
         if not 0 <= self.dropout < 1:
             raise ValueError("model.dropout must be in [0, 1)")
         if self.dropout != 0 and self.attention_backend != "manual":

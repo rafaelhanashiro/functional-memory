@@ -7,6 +7,7 @@ import jax.numpy as jnp
 
 from scaffolds.transformer.attention.taylor import _taylor_polynomial, _validate_degree
 from scaffolds.transformer.attention.learned_quadratic import _quadratic_polynomial
+from scaffolds.transformer.attention.unnormalized import _learned_polynomial
 
 QUERY_BLOCK_SIZE = 128
 
@@ -20,6 +21,7 @@ def blocked_dot_product_attention(
     attention_normalization: bool = True,
     coefficients: jax.Array | None = None,
     quadratic_mode: str = "fixed",
+    polynomial_coefficients: jax.Array | None = None,
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
 ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array]]:
@@ -35,8 +37,9 @@ def blocked_dot_product_attention(
     their rows with NaN. Even Taylor and positive learned kernels must stay
     positive; odd Taylor and unrestricted quadratics permit signed/zero kernels
     and negative nonzero normalizers. Stable exact exponentials may underflow to zero.
-    Without normalization, the exponential or fixed Taylor kernel multiplies V
-    directly; its row sum is measured but never divided by.
+    Without normalization, the exponential, fixed Taylor, or learned polynomial
+    kernel multiplies V directly; its row sum is measured but never divided by.
+    Learned polynomial coefficients ([m+1] or [heads, m+1]) permit signed kernels.
     Diagnostics exclude padded queries and masked future entries.
     """
     _validate_degree(attention_degree)
@@ -50,7 +53,12 @@ def blocked_dot_product_attention(
         raise ValueError("Learned quadratic attention requires degree=2 and coefficients")
     if quadratic_mode == "fixed" and coefficients is not None:
         raise ValueError("Fixed attention does not accept learned coefficients")
-    signed = quadratic_mode == "unrestricted" or (
+    if polynomial_coefficients is not None:
+        if attention_normalization or quadratic_mode != "fixed":
+            raise ValueError("Learned polynomial coefficients require unnormalized attention without a quadratic mode")
+        if attention_degree is None or attention_degree < 1:
+            raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
+    signed = polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (
         quadratic_mode == "fixed" and attention_degree is not None and attention_degree % 2 == 1
     )
     extended_diagnostics = quadratic_mode != "fixed" or signed
@@ -63,6 +71,9 @@ def blocked_dot_product_attention(
     batch, time, heads, qk_dim = q.shape
     if coefficients is not None and coefficients.shape not in ((2,), (heads, 2)):
         raise ValueError("Quadratic coefficients must have shape (2,) or (heads, 2)")
+    if polynomial_coefficients is not None and polynomial_coefficients.shape not in (
+            (attention_degree + 1,), (heads, attention_degree + 1)):
+        raise ValueError("Polynomial coefficients must have shape (m+1,) or (heads, m+1)")
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -100,7 +111,8 @@ def blocked_dot_product_attention(
         else:
             # Evaluate masked positions at zero, never at masking sentinels.
             safe_scores = jnp.where(causal, scores, 0.0)
-            kernel = (_taylor_polynomial(safe_scores, attention_degree) if quadratic_mode == "fixed"
+            kernel = (_learned_polynomial(safe_scores, polynomial_coefficients) if polynomial_coefficients is not None
+                      else _taylor_polynomial(safe_scores, attention_degree) if quadratic_mode == "fixed"
                       else _quadratic_polynomial(safe_scores, coefficients, quadratic_mode))
             invalid_kernel = ~jnp.isfinite(kernel)
             if not signed:

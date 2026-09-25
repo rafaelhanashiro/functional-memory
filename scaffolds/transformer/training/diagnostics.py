@@ -14,7 +14,7 @@ from flax import nnx
 from scaffolds.transformer.data.loaders import make_eval_iterator
 from scaffolds.transformer.data.packed import manifest_fingerprint
 from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE
-from scaffolds.transformer.training.numerics import is_odd_taylor
+from scaffolds.transformer.training.numerics import has_learned_polynomial, is_odd_taylor, is_signed_kernel
 
 
 M0_PARAMETER_NOTE = (
@@ -61,10 +61,13 @@ def attention_identity(config) -> dict:
     degree = config.model.attention_degree
     mode = config.model.quadratic_mode
     normalized = config.model.attention_normalization
+    learned_polynomial = has_learned_polynomial(config.model)
     identity = {
         "attention_degree": degree,
         "attention_normalization": normalized,
-        "attention_kernel": (("exp_unnormalized" if degree is None else "taylor_unnormalized") if not normalized else
+        "attention_kernel": (("exp_unnormalized" if degree is None else
+                              "learned_polynomial_unnormalized" if learned_polynomial else "taylor_unnormalized")
+                             if not normalized else
                              "learned_quadratic" if mode != "fixed" else "softmax" if degree is None else "taylor"),
         "attention_backend": config.model.attention_backend,
         "attention_backend_requested": getattr(config, "_attention_backend_request", config.model.attention_backend),
@@ -75,13 +78,24 @@ def attention_identity(config) -> dict:
     }
     if not normalized:
         formula = ("causal_exp(QK^T / sqrt(d_k)) V" if degree is None else
+                   f"causal_p_{degree}(QK^T / sqrt(d_k)) V, p(x) = sum_(r<={degree}) c_r x^r, "
+                   f"learned c ({config.model.attention_coefficient_sharing}) initialized at 1/r!"
+                   if learned_polynomial else
                    f"causal_p_{degree}(QK^T / sqrt(d_k)) V, p_m(x) = sum_(n<=m) x^n / n!")
         identity.update(attention_formula=formula,
                         attention_score_scale="1/sqrt(d_k)", attention_output_normalization=False)
     if hasattr(config, "_attention_backend_resume_request"):
         identity["attention_backend_resume_requested"] = config._attention_backend_resume_request
-    if is_odd_taylor(config.model) or mode == "unrestricted":
+    if is_signed_kernel(config.model):
         identity["attention_signed"] = True
+    if learned_polynomial:
+        identity.update({
+            "attention_coefficients": "learned",
+            "attention_coefficient_sharing": config.model.attention_coefficient_sharing,
+            "attention_coefficient_count": (degree + 1) * (
+                1 if config.model.attention_coefficient_sharing == "global"
+                else config.model.num_layers * config.model.num_heads),
+        })
     if mode != "fixed":
         identity.update({
             "quadratic_mode": mode,
@@ -134,6 +148,29 @@ def quadratic_coefficient_report(params, config) -> dict:
         "effective_coefficient_names": ["constant", "linear", "quadratic"],
         "effective": serializable(effective),
         "finite": bool(np.all(np.isfinite(raw)) and np.all(np.isfinite(effective))),
+    }
+
+
+COEFFICIENT_NAMES = ("constant", "linear", "quadratic", "cubic", "quartic")
+
+
+def polynomial_coefficient_report(params, config) -> dict:
+    """Record the learned coefficients c_0..c_m, shared ([m+1]) or per layer and head ([L, H, m+1])."""
+    raw = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
+    names = [COEFFICIENT_NAMES[order] if order < len(COEFFICIENT_NAMES) else f"degree_{order}"
+             for order in range(raw.shape[-1])]
+
+    def serializable(array):
+        if array.ndim == 0:
+            return json_number(array)
+        return [serializable(value) for value in array]
+
+    return {
+        "raw_parameter_names": [f"c{order}" for order in range(raw.shape[-1])],
+        "raw": serializable(raw),
+        "effective_coefficient_names": names,
+        "effective": serializable(raw),
+        "finite": bool(np.all(np.isfinite(raw))),
     }
 
 
@@ -212,7 +249,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         positivity_fields = () if config.model.attention_mechanism == "gla" else ("kernel_min", sum_key)
         for name in positivity_fields:
             value = float(raw[name])
-            if is_odd_taylor(config.model) or config.model.quadratic_mode == "unrestricted":
+            if is_signed_kernel(config.model):
                 # Signed kernels and negative nonzero sums are permitted. Exact
                 # zeros are detected in invalid_normalizer_count, not extrema.
                 continue
@@ -230,6 +267,10 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         coefficient_report = quadratic_coefficient_report(params, config)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite quadratic coefficients")
+    elif has_learned_polynomial(config.model):
+        coefficient_report = polynomial_coefficient_report(params, config)
+        if not coefficient_report["finite"]:
+            issues.append("Nonfinite polynomial coefficients")
     report = {
         "format": "shared-transformer-attention-diagnostics",
         "version": 1,
@@ -237,7 +278,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         **attention_identity(config),
         "sample": provenance,
         "kernel_values": ("vector_gated_recurrence" if config.model.attention_mechanism == "gla" else
-                          ("unshifted_exp" if config.model.attention_degree is None else "unshifted_taylor")
+                          ("unshifted_exp" if config.model.attention_degree is None else
+                           "unshifted_learned_polynomial" if has_learned_polynomial(config.model) else "unshifted_taylor")
                           if not config.model.attention_normalization else
                           "unshifted_learned_quadratic" if config.model.quadratic_mode != "fixed" else
                           "row_max_shifted_exp" if config.model.attention_degree is None else "unshifted_taylor"),

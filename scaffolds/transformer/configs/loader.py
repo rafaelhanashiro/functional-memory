@@ -65,6 +65,8 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
             value["model"].setdefault(key, default)
         value["model"].setdefault("quadratic_mode", "fixed")
         value["model"].setdefault("quadratic_sharing", "global")
+        value["model"].setdefault("attention_coefficients", "fixed")
+        value["model"].setdefault("attention_coefficient_sharing", "global")
         value.setdefault("train", {}).setdefault("checkpoint_dir", None)
         for key in ("wandb_group", "wandb_dir"):
             value["train"].setdefault(key, None)

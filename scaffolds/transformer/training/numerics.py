@@ -8,6 +8,15 @@ def is_odd_taylor(model) -> bool:
     return model.attention_degree is not None and model.attention_degree % 2 == 1
 
 
+def has_learned_polynomial(model) -> bool:
+    return getattr(model, "attention_coefficients", "fixed") == "learned"
+
+
+def is_signed_kernel(model) -> bool:
+    """Kernels whose weights may be negative or zero by design."""
+    return is_odd_taylor(model) or model.quadratic_mode == "unrestricted" or has_learned_polynomial(model)
+
+
 def requires_update_checks(model) -> bool:
     """Operators whose gradients may overflow before their forward loss does."""
     return model.attention_mechanism == "gla" or is_odd_taylor(model) or not model.attention_normalization

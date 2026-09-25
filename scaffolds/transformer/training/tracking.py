@@ -14,6 +14,8 @@ import os
 import uuid
 from pathlib import Path
 
+import numpy as np
+
 from scaffolds.transformer.configs import Config, config_to_dict
 from scaffolds.transformer.training.metrics import write_json_atomic
 
@@ -117,8 +119,21 @@ def attention_metrics(diagnostics: dict) -> dict:
             if key != "layer" and isinstance(value, (int, float)) and not isinstance(value, bool):
                 payload[f"{prefix}/layer{layer['layer']:02d}/{key}"] = value
     coefficients = diagnostics.get("coefficients") or {}
-    for name, value in zip(coefficients.get("effective_coefficient_names", ()), coefficients.get("effective", ())):
-        payload[f"{prefix}/coefficients/{name}"] = value
+    names = coefficients.get("effective_coefficient_names", ())
+    try:
+        # The last axis indexes coefficients; nonfinite values arrive as JSON strings.
+        values = np.asarray(coefficients.get("effective", ()), dtype=np.float64)
+    except (TypeError, ValueError):
+        values = None
+    if names and values is not None and values.ndim >= 1 and values.shape[-1] == len(names):
+        for index, name in enumerate(names):
+            column = values[..., index]
+            if column.ndim == 0:
+                payload[f"{prefix}/coefficients/{name}"] = float(column)
+            else:
+                # Per-layer/head coefficients are summarized; metrics.jsonl keeps every value.
+                for statistic, reduce in (("mean", np.mean), ("min", np.min), ("max", np.max)):
+                    payload[f"{prefix}/coefficients/{name}/{statistic}"] = float(reduce(column))
     return payload
 
 
