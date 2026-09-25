@@ -5,20 +5,17 @@ Code is organized by capability, shared by experiments that need the same machin
 | Capability | Interface | Environment |
 | --- | --- | --- |
 | [Transformer](transformer/README.md) | `python -m scaffolds.transformer.train CONFIG.yaml` | `transformer/pyproject.toml` and its locked JAX environment |
-| [State spectrum](state_rank/) | `python -m scaffolds.state_rank.spectrum` and `unify_analysis` | Root `pyproject.toml` and its locked PyTorch environment |
+| [State spectrum](state_rank/) | `python -m scaffolds.state_rank.spectrum`, the comparison drivers, and `unify_analysis` | `state_rank/pyproject.toml` and its locked PyTorch environment |
+| [Launch helpers](launch/) | `python3 scaffolds/launch/frozen.py check` | Standard library only |
 
 An experiment's question, exact recipes, reproduction commands, home cluster,
 findings, and artifact locations belong in its single
-`results/<experiment>/README.md`. Scientific configurations and results stay in
-that experiment's record; checkpoints live separately under
-`checkpoints/<experiment>/<run>/` and are ignored by Git.
+`experiments/<experiment>/README.md`. The experiment's `adapter/` configures these
+capabilities (launch, acceptance, and analysis); it imports scaffold code, and no
+scaffold imports experiment code. Nothing in a scaffold is named after one
+experiment. A scaffold may keep one record about itself, `validation/`, for its
+correctness checks, benchmarks, and hardware qualification.
 
-A capability may expose small `studies/` adapters when a scientific sweep requires
-extra orchestration or analysis. Adapters use the common implementation; they are
-not copies of the model, data pipeline, or training loop. Scaffold documentation
-explains reusable APIs rather than repeating experiment narratives.
-
-Develop and test changes in separate checkouts. Keep active experiment execution
-checkouts and their dependency environments frozen. Retained provenance records
-the original source commits, including implementations predating this layout.
-See [repository guidance](../AGENTS.md) for retention and migration rules.
+Each worktree syncs its own environment from a scaffold's lock with
+`uv sync --project scaffolds/<capability> --locked --link-mode hardlink`.
+See [repository guidance](../AGENTS.md) for the layout and experiment lifecycle.

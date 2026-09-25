@@ -189,7 +189,7 @@ def test_gla_packed_training_and_fresh_resume_match_uninterrupted(tmp_path):
     json.dumps(records, allow_nan=False)
 
 
-def test_historical_dot_product_run_config_keeps_original_bytes_and_rejects_gla(tmp_path):
+def test_run_config_without_gla_fields_resumes_unchanged_and_rejects_gla(tmp_path):
     config = tiny_config(tmp_path)
     assert config.model.attention_mechanism == "dot_product"
     loop.ensure_run_config(config, resume=True)

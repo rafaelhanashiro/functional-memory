@@ -170,13 +170,13 @@ def test_odd_finite_loss_invalid_gradient_persists_scientific_failure(tmp_path, 
 @pytest.mark.parametrize("degree", [1, 3])
 @pytest.mark.parametrize("tied", [False, True])
 def test_odd_best_only_retention_preserves_terminal_metrics_and_resume_is_idempotent(tmp_path, monkeypatch, degree, tied):
-    from scaffolds.transformer.studies.odd_taylor_attention.retention import finalize_run
+    from scaffolds.transformer.retention import finalize_run
 
     name = f"test-m{degree:03d}"
-    config = odd_config(tmp_path / "results" / "odd_taylor_attention" / name, degree)
+    config = odd_config(tmp_path / "experiments" / "odd_taylor_attention" / "runs" / name, degree)
     config.train.source_commit = "a" * 40
     config.train.workdir.mkdir(parents=True)
-    canonical = tmp_path / "checkpoints" / "odd_taylor_attention" / name
+    canonical = tmp_path / "experiments" / "odd_taylor_attention" / "checkpoints" / name
     canonical.mkdir(parents=True)
     (config.train.workdir / "checkpoints").symlink_to(canonical, target_is_directory=True)
     monkeypatch.setattr(loop, "evaluate", lambda state, *args, **kwargs: 3.0 if tied or int(state.step) == 2 else 4.0)
@@ -185,11 +185,7 @@ def test_odd_best_only_retention_preserves_terminal_metrics_and_resume_is_idempo
     assert outcome["retained_best_checkpoint_step"] == expected_best
     original = (config.train.workdir / "completion.json").read_bytes()
     original_metrics = (config.train.workdir / "metrics.jsonl").read_bytes()
-    manifest = {"project_root": str(tmp_path), "source_commit": config.train.source_commit, "runs": [{
-        "name": name, "workdir": str(config.train.workdir),
-        "config": loop._serializable_config(config), "training_tokens": 64,
-    }]}
-    record = finalize_run(manifest, name)
+    record = finalize_run(config)
     assert record["completion_sha256"] == hashlib.sha256(original).hexdigest()
     assert sorted(path.name for path in canonical.iterdir() if path.name.isdigit()) == [str(expected_best)]
     assert (config.train.workdir / "completion.json").read_bytes() == original
@@ -198,7 +194,7 @@ def test_odd_best_only_retention_preserves_terminal_metrics_and_resume_is_idempo
     metadata = json.loads((config.train.workdir / "metadata.json").read_text())
     assert metadata["retained_terminal_checkpoint_step"] == (4 if tied else None)
     assert metadata["status"] == "complete"
-    assert finalize_run(manifest, name) == record
+    assert finalize_run(config) == record
 
 
 @pytest.mark.skipif(jax.local_device_count() < 2, reason="requires two JAX devices")

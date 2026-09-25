@@ -1,0 +1,1535 @@
+{
+  "format": "functional-memory-software-validation",
+  "schema_version": 1,
+  "experiment": "shared_transformer_validation",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "status": "retained",
+  "implementation_commit": "d493a41ac3b6785c95f02c6e6102313024697c59",
+  "frozen_benchmark_source": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+  "selected_checkpoints": [],
+  "files": [
+    {
+      "path": "scaffolds/transformer/validation/configs/global.yaml",
+      "sha256": "2a505114a72b21cad6b9559d1aac0edfe251abcabe3d50e9bb82ee4cec4dc303"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/global-frozen/benchmark.json",
+      "sha256": "200dbcd1132c2c4ee725c61dde41be592cc4c36af413fe058d7aa713fef3c6ae"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/global-shared/benchmark.json",
+      "sha256": "d57c4d1fa12f402365c738179fcd777485a23c4bb0f9ecf832b19f033a9055e1"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/per_head.yaml",
+      "sha256": "348e6e571295fa7980f89f8b465d4823320c36de2d65749506f3f15ff7b675cf"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/per_head-frozen/benchmark.json",
+      "sha256": "62f23004be3abae7fe8a4c266dba3d045062d5e7fe626d4d66d35dca7cf45e97"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/per_head-shared/benchmark.json",
+      "sha256": "e62ab5726e77f908ff992c1c2bfc351425e1f5333b00fef61f8d390c9f8d488f"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/taylor.yaml",
+      "sha256": "53822f525c723e7d75b9717b32952c4d8d0e0351a1677808238812aefc013cc9"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/taylor-frozen/benchmark.json",
+      "sha256": "3c32440502c3d4570dfa25bfbe0b638c8d4178be6f6a3e69eb978ab8ab75aea6"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/taylor-shared/benchmark.json",
+      "sha256": "01003451c057042bb7a74af35108a52d04e8ff9044b6a4fdcb23c90d59387316"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk008-m002-seed0.yaml",
+      "sha256": "f57ea1f708c97e6d33606f52043a941b53cdfe45e5c7c0dec269485eea5d7294"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk008-m004-seed0.yaml",
+      "sha256": "b47919d73bcf7d962994e9f70509459e5057e6def7821e53648207819b1901ea"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk008-m008-seed0.yaml",
+      "sha256": "b81849825adfcb4db22fd4450baef0ae3e753f34eefb3c726d614e666c9e2d49"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk008-m016-seed0.yaml",
+      "sha256": "770888d99ce2b864dc92f976c2295f870a461b65b8f0c31b7321272f26bc9d23"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk016-m002-seed0.yaml",
+      "sha256": "4d39d5bfeedae4054381b2be9eb4d3f1c32d0cdebe26661f506ae6345a4fa790"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk016-m004-seed0.yaml",
+      "sha256": "8be5bb6f0f360240303ecbc7d333b0294593253039aa175aed88840fa184b496"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk016-m008-seed0.yaml",
+      "sha256": "538fae0b153f181cca2f99bd7eef2c82d77d76899c65154570cae754be670d84"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk016-m016-seed0.yaml",
+      "sha256": "c10176237be808e5fe6ed1532616bb8d77565ecb1954ea98f5fd7e685592fdec"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk032-m002-seed0.yaml",
+      "sha256": "59f2d677dc8965f0fdbc099ab7b57fbe787749dc3c061d2b7a87e83ca98a5692"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk032-m004-seed0.yaml",
+      "sha256": "21ab162661afcad8c1f175a9c849bde94ae7e15a1a9ae9b424f2a768c3afee0b"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk032-m008-seed0.yaml",
+      "sha256": "e97c540e5f8110df215851ed4a2bfbb68362837b691c872f9611d090b9732e47"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk032-m016-seed0.yaml",
+      "sha256": "1ced6477c1cc97fb41c60bbd902d1e850a7ef1c56de4a558aaa7ea9aedcc4a8f"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk064-m002-seed0.yaml",
+      "sha256": "5af9a91b04328af2c22e3553fbf55886260473d6294a11f5a9b47203376d6400"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk064-m004-seed0.yaml",
+      "sha256": "6d636b7c704aea70e459f43cfa85ec795c0cf1fe5b67f11418b9e1fcd0627086"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk064-m008-seed0.yaml",
+      "sha256": "eb56566a1aeb9fe7d863b34112eb38dbe8f219823e33f00a17a3f859f4005847"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk064-m016-seed0.yaml",
+      "sha256": "93f2d73401b042c803efc566f6d0f8d2f40de0fd3cbd9e266bba96d115aae487"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk128-m002-seed0.yaml",
+      "sha256": "c432a20ffbb1bc986974b0a439fca17c4f8d305c736d0aa17564468f76653b6d"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk128-m004-seed0.yaml",
+      "sha256": "0bafcd536e3fb766151e168719039d54a1702ae7c9ccb193fe0bbe9a81d5d403"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk128-m008-seed0.yaml",
+      "sha256": "7a94f72882ce39ecd6d4e4ad766db0e61717f5705e6092074e8ab2a4c60e4c5c"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk128-m016-seed0.yaml",
+      "sha256": "3c61965e0c6f2aecbc67c960e32ef2391e8c6785c8fdb7981f50c832ee3021ca"
+    }
+  ],
+  "slurm_logs": [
+    {
+      "path": "scaffolds/transformer/validation/logs/benchmark/slurm-200760.out",
+      "sha256": "21026001bff9ca98114b3ab8d8b57530a2f3ea1d8993d74c9b02f96488952250",
+      "slurm_job_id": "200760",
+      "capture": "srun stdout/stderr",
+      "state": "COMPLETED",
+      "exit_code": "0:0"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/gpu_validation/slurm-200759.out",
+      "sha256": "f275da17d23635b0f60d749c6882daa245ce35a3678e991eb131be0bee16d6c5",
+      "slurm_job_id": "200759",
+      "capture": "srun stdout/stderr",
+      "state": "COMPLETED",
+      "exit_code": "0:0"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/kdt-a100-transport/slurm-200853.out",
+      "sha256": "21beff33da1733c0046bd59f6efa0b306977a0ea7d5f9d05967c8780df494977",
+      "size_bytes": 468,
+      "slurm_job_id": "200853"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/kdt-b300-initial/slurm-200733.out",
+      "sha256": "647c276dfef46286078484456a55962e01d7256dab345bcd3f7f36b5584c0d8d",
+      "size_bytes": 21138,
+      "slurm_job_id": "200733"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/kdt-a100-native/slurm-200754.out",
+      "sha256": "7d9f296862880a8ec3719ccea4250a4442ea5e94a2ccd3411c96a0e3b99ca60b",
+      "size_bytes": 1788,
+      "slurm_job_id": "200754"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200781.out",
+      "sha256": "eaccefb0f3f8c3c780ffb2a7ce6daf0c1c0547e67ee01a0179529785e57cb724",
+      "size_bytes": 3601,
+      "slurm_job_id": "200781"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200782.out",
+      "sha256": "c442c7a9be377ad30b4737d51fa1c04d6fa39b5beb6492389c08beb8ea86d799",
+      "size_bytes": 3600,
+      "slurm_job_id": "200782"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200783.out",
+      "sha256": "0ab3629b6e3e820b9f30ddfae8916b31fbc7c982b2623a5a595c11ad53cbf0e5",
+      "size_bytes": 18001,
+      "slurm_job_id": "200783"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200784.out",
+      "sha256": "b504daf7ed76c48a54a246c945548d1a9358a6c0eac529ffb22b3e30c6f712e4",
+      "size_bytes": 18001,
+      "slurm_job_id": "200784"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200785.out",
+      "sha256": "294857177defe97f549a19912eb5a9b60b9af7695731f82a2a0efb289698fb55",
+      "size_bytes": 14401,
+      "slurm_job_id": "200785"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200786.out",
+      "sha256": "64b9d1d68244170eb90d7c183a394f778317e45dcdd3369d2897932048d7b8a0",
+      "size_bytes": 14401,
+      "slurm_job_id": "200786"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/kdt-b300-native/slurm-200753.out",
+      "sha256": "c709c7ca5b0ca466b6d39425184276508cede4e23ed4f76a4722459b58407a1e",
+      "size_bytes": 1517,
+      "slurm_job_id": "200753"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/taylor-attention-kernel/slurm-199626.out",
+      "sha256": "473f714c8878e2f5e20832fe6be175b87b959a4b24efe217a3e415b6b366b6d5",
+      "size_bytes": 7146,
+      "slurm_job_id": "199626"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/taylor-train-step-b300/slurm-199854.out",
+      "sha256": "4faa220179780e3c0d3ae21cf03c452ee08a3966b7299fcf237c8a0dbf33ea63",
+      "size_bytes": 9264,
+      "slurm_job_id": "199854"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/taylor-blocked-baseline/slurm-199623.out",
+      "sha256": "e7c921b243699f2f6a0447845fd24a6450abbc2b5bef7759329970db336333ca",
+      "size_bytes": 1606,
+      "slurm_job_id": "199623"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/taylor-throughput-h100/slurm-199635.out",
+      "sha256": "0b4824df695b04205f680373e3a9e97bfff4d5b202f37e534798f910013ad429",
+      "size_bytes": 12169,
+      "slurm_job_id": "199635"
+    }
+  ],
+  "source_limitation": "Raw benchmark source_commit captured the surrounding checkout parent while the extraction was uncommitted. The preserved frozen snapshot matches all 53 Python files at 2e0e88d. The final shared implementation is committed at d493a41; an immutable hash of its benchmark-time dirty tree was not recorded.",
+  "runtime_integration_commit": "66a8b965cb11d12a6c6f7313ec19d1d5ff56a989",
+  "hardware_qualification": {
+    "a100_host_staging": {
+      "full_grid_qualified": false,
+      "job": "200853",
+      "passed_coordinates": [
+        {
+          "attention_degree": 4,
+          "qk_head_dim": 8
+        }
+      ],
+      "runtime_source_commit": "a1f1b2f04a3a625d8f48735aad0c990a09dbcc01"
+    },
+    "a100_native": {
+      "failed": 19,
+      "job": "200754",
+      "passed": 1,
+      "runtime_source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320"
+    },
+    "a6000_host_staging": {
+      "failed": 0,
+      "jobs": [
+        "200781",
+        "200782",
+        "200783",
+        "200784",
+        "200785",
+        "200786"
+      ],
+      "passed": 20,
+      "runtime_source_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb"
+    },
+    "b300_native": {
+      "failed": 0,
+      "jobs": [
+        "200733",
+        "200753"
+      ],
+      "passed": 20,
+      "runtime_source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320"
+    },
+    "h100": {
+      "preflight_job_id": "200502",
+      "production_complete": true,
+      "runtime_source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320"
+    },
+    "scope": "Qualification of the shared runtime on A100, A6000, and B300 for the 20 joint dK x Taylor-degree recipes.",
+    "gla_fused_kernel": {
+      "scope": "Chunked Triton GLA kernels (attention/backends/chunked_gla_triton.py) for the GLA d_K sweep recipes",
+      "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+      "tests": "scaffolds/transformer/tests/test_gla_kernel.py (21 GPU cases) plus 49 GLA CPU tests",
+      "h100": {
+        "jobs": [
+          "201793 (attempt 0)",
+          "201794"
+        ],
+        "gpu_tests_passed": 21,
+        "full_recipe_pilot_and_resume": "passed"
+      },
+      "b300": {
+        "jobs": [
+          "201792",
+          "201793 (attempt 1)",
+          "201795",
+          "201796"
+        ],
+        "gpu_tests_passed": 21,
+        "full_recipe_pilot_and_resume": "passed"
+      },
+      "defects_fixed": [
+        "jaxlib assembled bridge PTX with the node /usr/local/cuda ptxas; dogo CUDA 12.6 rejects Triton 3.6 PTX 8.7 (20/21 H100 cases failed). Launchers pin CUDA_HOME to the locked nvidia/cuda_nvcc (CUDA 12.9).",
+        "BF16 operands upcast in-kernel made Triton 3.6 on sm_103 lower IEEE FP32 products at TF32-level precision (12/21 B300 cases failed; mixed-case output error 4.0e-4 vs FP64, H100 1.5e-7). Operands are converted to FP32 before launch.",
+        "Extreme-decay test compared a log-decay gradient that underflows to zero by relative error; it now uses the input-gradient scale."
+      ],
+      "evidence": "GLA provenance manifest (experiments/gla_key_dimension/provenance/manifest.json), per-run acceptance"
+    }
+  },
+  "runs": [
+    {
+      "name": "global-frozen",
+      "description": "Shared-scaffold versus frozen-source training-step benchmark",
+      "origin": "shared_transformer_validation",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/global-frozen/benchmark.json",
+          "sha256": "200dbcd1132c2c4ee725c61dde41be592cc4c36af413fe058d7aa713fef3c6ae"
+        }
+      ]
+    },
+    {
+      "name": "global-shared",
+      "description": "Shared-scaffold versus frozen-source training-step benchmark",
+      "origin": "shared_transformer_validation",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/global-shared/benchmark.json",
+          "sha256": "d57c4d1fa12f402365c738179fcd777485a23c4bb0f9ecf832b19f033a9055e1"
+        }
+      ]
+    },
+    {
+      "name": "per_head-frozen",
+      "description": "Shared-scaffold versus frozen-source training-step benchmark",
+      "origin": "shared_transformer_validation",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/per_head-frozen/benchmark.json",
+          "sha256": "62f23004be3abae7fe8a4c266dba3d045062d5e7fe626d4d66d35dca7cf45e97"
+        }
+      ]
+    },
+    {
+      "name": "per_head-shared",
+      "description": "Shared-scaffold versus frozen-source training-step benchmark",
+      "origin": "shared_transformer_validation",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/per_head-shared/benchmark.json",
+          "sha256": "e62ab5726e77f908ff992c1c2bfc351425e1f5333b00fef61f8d390c9f8d488f"
+        }
+      ]
+    },
+    {
+      "name": "taylor-frozen",
+      "description": "Shared-scaffold versus frozen-source training-step benchmark",
+      "origin": "shared_transformer_validation",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-frozen/benchmark.json",
+          "sha256": "3c32440502c3d4570dfa25bfbe0b638c8d4178be6f6a3e69eb978ab8ab75aea6"
+        }
+      ]
+    },
+    {
+      "name": "taylor-shared",
+      "description": "Shared-scaffold versus frozen-source training-step benchmark",
+      "origin": "shared_transformer_validation",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-shared/benchmark.json",
+          "sha256": "01003451c057042bb7a74af35108a52d04e8ff9044b6a4fdcb23c90d59387316"
+        }
+      ]
+    },
+    {
+      "name": "taylor-attention-kernel",
+      "description": "Fused Taylor attention kernel benchmark (H100)",
+      "slurm_jobs": "199626",
+      "origin": "polynomial_attention/performance",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-attention-kernel/benchmark.json",
+          "sha256": "5ed546b2269b67198e8fbb0cddef79221ee52b9d4c24ed5b8eaca6ef4c59570b"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-attention-kernel/metadata.json",
+          "sha256": "35b44b2f643e8203edfa11076ebf786ccafd218fef13415a461d6e0c7ca64d9d"
+        }
+      ],
+      "folded_attempt_records": [
+        "experiments/key_dimension_taylor/performance/attention_kernel/cpu-tests.xml",
+        "experiments/key_dimension_taylor/performance/attention_kernel/distributed-tests.xml",
+        "experiments/key_dimension_taylor/performance/attention_kernel/gpu-tests.xml"
+      ]
+    },
+    {
+      "name": "taylor-train-step-b300",
+      "description": "Taylor training-step throughput on B300",
+      "slurm_jobs": "199854",
+      "origin": "polynomial_attention/performance",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-train-step-b300/comparison.json",
+          "sha256": "01e5a7740d0c322df5c20cabb16fce379d5a2292259147ab2bf1b7db021113d1"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-train-step-b300/metadata.json",
+          "sha256": "d9b3e0df37b26073f5c5d6bb038d7c6f4f97820eae39ac52f53328a6accc8cae"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-train-step-b300/train-step.json",
+          "sha256": "041191442a66e4a05bc7720f720fc1c58d04ea989e91b6725fc1658f5ba5917d"
+        }
+      ],
+      "folded_attempt_records": [
+        "experiments/key_dimension_taylor/performance/b300/gpu-tests.xml"
+      ]
+    },
+    {
+      "name": "taylor-blocked-baseline",
+      "description": "Blocked-reference Taylor training-step baseline",
+      "slurm_jobs": "199623",
+      "origin": "polynomial_attention/performance",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-blocked-baseline/benchmark.json",
+          "sha256": "37bb0f80f22b90b2ca73af2925e0e2342cc5b8ffac5b3980f70665236461a43a"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-blocked-baseline/metadata.json",
+          "sha256": "9c0d3d50a662e1c0d26f85292d71f809441d40d8162cf0ad9283818fb3b08068"
+        }
+      ],
+      "folded_attempt_records": []
+    },
+    {
+      "name": "taylor-throughput-h100",
+      "description": "Taylor training throughput, profiling, and tile tuning on H100",
+      "slurm_jobs": "199635",
+      "origin": "polynomial_attention/performance",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-throughput-h100/baseline-profile-summary.json",
+          "sha256": "8440ee27233f54e1de974dedf890f1535067d8afa5fee8d7941a6e20e8663770"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-throughput-h100/baseline-train-step.json",
+          "sha256": "6e96ec1977488ba3b834d1e5eae7b13f5f70a22db7def5c0dce0d1bfbe0d2b53"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-throughput-h100/metadata.json",
+          "sha256": "ea18ba9d029b2377a037154b2e23bfe0379567adcd9b1c60f2bfcd75c4b50d32"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-throughput-h100/microbatch128.json",
+          "sha256": "754cacf3ce3e4b7f7bb21b2bd8de0ec4fee190004c225495d12b513e44546953"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-throughput-h100/packed-pilot.json",
+          "sha256": "853641a4f94db9fc0c5a7e924eb769c10fcb883dd6076856b4e56cdde6c456b3"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-throughput-h100/packed-validation-metrics.jsonl",
+          "sha256": "bbf06442b94a3fd0fb5f56e694c1a5849440be277d9557cf21faf1b6739ad5ef"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-throughput-h100/profile-summary.json",
+          "sha256": "bf5403ea06a605b9267f77d6f9c89922fca0b13e8eacda079bc794f1b41cec40"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-throughput-h100/runtime-estimate.json",
+          "sha256": "d8fd704177e26c1e279659047831bb3fdb25eb573d30712afe72037acd0680bb"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-throughput-h100/tile-tuning.json",
+          "sha256": "699a162a0b496625ae9d54cbcb156a6a6c44ea9245395a49d2b79ece13ac3cc5"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/taylor-throughput-h100/train-step.json",
+          "sha256": "84d580cc8c558181571c1c55af512626d7f26e01e1dc719881a93f8d8eaf918c"
+        }
+      ],
+      "folded_attempt_records": [
+        "experiments/key_dimension_taylor/performance/h100_throughput/gpu-tests.xml"
+      ]
+    },
+    {
+      "name": "kdt-a100-native",
+      "description": "A100 native-transfer qualification of the 20 joint-grid recipes",
+      "slurm_jobs": "200754",
+      "origin": "key_dimension_taylor/evidence",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk008-m002-seed0.json",
+          "sha256": "769e0f252d7269c193715ac2c2b7b8a2ce0229ffb01c6da75dd2effee57a5fa0"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk008-m004-seed0.json",
+          "sha256": "07fe347ea36c801b8008c0adead8351eae0096d718bb5c397538ab07c1b65342"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk008-m008-seed0.json",
+          "sha256": "8cab5a8374abd81543bc68dfb90a3cec80b0a5360a71a1cd37a39f43ceae530b"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk008-m016-seed0.json",
+          "sha256": "8b910d3856c05b7df84646932a336a5d42377bb39614190cf4b0770e3bf88f28"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk016-m002-seed0.json",
+          "sha256": "a22319c15af1d49a83122c7d9dbf1fb6e1e9ea7cd8ed9652044d2f89bc766a7e"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk016-m004-seed0.json",
+          "sha256": "a3ef96a0ec0abeda02f6abacbe652f6519dc1a97694a8dd727e34cbcfa27d53b"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk016-m008-seed0.json",
+          "sha256": "fc4705ba3a49f267168ccee6e567a37705c1864616231ffb8618da38893559ea"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk016-m016-seed0.json",
+          "sha256": "7a2d4b8d492c144ec0aa8606c830ae1bd1be857c04ac8f34c9758b6e7fa1afea"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk032-m002-seed0.json",
+          "sha256": "afa1b01921ca8eba7c4c34297233d70f859e99051d5b3260f3906ad712a0b652"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk032-m004-seed0.json",
+          "sha256": "0bc25516404054f7376fa1f37dfb84e65a36f4a5080514dc86670c3423d1fc2f"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk032-m008-seed0.json",
+          "sha256": "5ddabc8c37c7ce775d5d15dce4f2e2e8a4f016095a03098778044f299337e9aa"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk032-m016-seed0.json",
+          "sha256": "a0f9db49ec11cc7f8577bf8bb67ad8724385981e85d4e9e6df70204dccc058eb"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk064-m002-seed0.json",
+          "sha256": "317cce68da0859af5a7a7bf41154706828c56b085c80ac0e1182a16327756bd3"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk064-m004-seed0.json",
+          "sha256": "1777028430f963521fa3253cd914804169a744f990f5234800e08c84ff9df38c"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk064-m008-seed0.json",
+          "sha256": "47d392026119a01dd8da94f61ed140a1a95a4374eb69d60068146ed10279ed07"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk064-m016-seed0.json",
+          "sha256": "0369f16fea6368b68103442f195cc88e8e3f84d6f62c155292000d8d3680bad7"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk128-m002-seed0.json",
+          "sha256": "6283f8590ce06feda6e01522f4814551789326f8f8333b421340979db8f84503"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk128-m004-seed0.json",
+          "sha256": "f60f288d6ffaff71b7a575f8758909e518761864a980d73340f4d2962c6cc44a"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk128-m008-seed0.json",
+          "sha256": "47e96fe0d2d8e78d25b6e97c2541b83c74cfcfedbfa4cb15198862326e8f2bd1"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/checks-200m-dk128-m016-seed0.json",
+          "sha256": "f5953ea9bbf650dc006751ec1b9d75c670122ecabf52ea1742a63d860ff59cdb"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/kernels.json",
+          "sha256": "5e6c6de92ad19d91500e53d33032ea6e97bd222764ed7f3033a779ca23fd840d"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-native/pilots-shard0.json",
+          "sha256": "6d0c58f994974e7bfadd1c0019a55bb7f6e572bdfe80d514216450cf254f9e2e"
+        }
+      ],
+      "folded_attempt_records": [
+        "experiments/key_dimension_taylor/evidence/a100_native/attempts/kernels-200754-0-268b9a7f/kernels.xml"
+      ]
+    },
+    {
+      "name": "kdt-a100-transport",
+      "description": "A100 peer-transfer, host-staging, and NCCL transport diagnosis",
+      "slurm_jobs": "200853",
+      "origin": "key_dimension_taylor/evidence",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-transport/both-200m-dk008-m004-seed0-probe-32.json",
+          "sha256": "fe7e9f97b90ab239f2d5b8a33056f33c29ca78296741728c2d36626c8cbf0068"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-transport/both-200m-dk008-m004-seed0-probe-33.json",
+          "sha256": "a83424b835fd2c5c4573235861e4c4193f9ec8f6a72e1b9c5c8ee2a753ac2cd8"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-transport/cuda_peer_copy.json",
+          "sha256": "40b5d08c1c5c344e262547d824b2c0ed1b807d6ce012bc142bdd73a08f98ebd2"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-transport/host_only-200m-dk008-m004-seed0-probe-32.json",
+          "sha256": "07f754b1845ab3a8348e40723a7b6f27f70b65d890e5bb4fbc018429504ff2fa"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-transport/host_only-200m-dk008-m004-seed0-probe-33.json",
+          "sha256": "19227d9e06e7cef6dd73d6f2d54895a1402e5fc87f05c11642588df28423e18c"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-transport/host_pcie.json",
+          "sha256": "2f5792978e86acb509b65163ac79fe209ac2acc33ddaf8777c147cb2cd5097af"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-transport/invalid_label_loss.json",
+          "sha256": "c32b818a45889c6888d80a7bfe868515ffb0dd7ebddb709c44519bbe483a78cb"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-transport/iommu_domains.json",
+          "sha256": "1835563ce16e89f330ae0833057fdbd74723a117734df63c666345779d2ee520"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-transport/native-200m-dk008-m004-seed0-probe-32.json",
+          "sha256": "d91405c7371f5bb2621eb5ea71ac391a4e857c39f709ec7674391eb6e6e848d4"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-transport/nccl_only-200m-dk008-m004-seed0-probe-32.json",
+          "sha256": "ddeb37c2c84ceaf439d65c27af09c411d629f97b09e62bc5a587fc375e19c88d"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-transport/summary.json",
+          "sha256": "38f664a0fc9696660f02ce4ebea601e2c44a15ad09ec09f9f32995b39d836761"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a100-transport/validation.json",
+          "sha256": "46cbabd899ad9700d1e284e331bc77ba28bbf2e6057fd505acbb2316ea105f22"
+        }
+      ],
+      "folded_attempt_records": [
+        "experiments/key_dimension_taylor/evidence/a100_transport/allocation.json",
+        "experiments/key_dimension_taylor/evidence/a100_transport/launch.json"
+      ]
+    },
+    {
+      "name": "kdt-a6000-host-staging",
+      "description": "A6000 host-staged qualification of the 20 joint-grid recipes",
+      "slurm_jobs": "200781-200786",
+      "origin": "key_dimension_taylor/evidence",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-0-checks-200m-dk008-m004-seed0.json",
+          "sha256": "02eb93f407d45b61a0ca95ab4c0c7c6bb98f00ff8368b216eb42f2f7b4e66385"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-0-checks-200m-dk016-m004-seed0.json",
+          "sha256": "b80b31ead8448abb30f772b327bd35430eca34304932cbd45cd27bf4496af430"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-0-checks-200m-dk032-m004-seed0.json",
+          "sha256": "22f5bc978c99cff7d4666930903ecc2954828325ce5e1df5337e64c6dedf9be7"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-0-checks-200m-dk064-m004-seed0.json",
+          "sha256": "d16e6218a8813fae83934459a4992db2529861f9a241693c2443203f2aa74b6c"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-0-checks-200m-dk128-m004-seed0.json",
+          "sha256": "5b3d405815df69168e5d5fd576843beac808d1c4e506cde7e8a39df0c518e15c"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-0-summary-200783.json",
+          "sha256": "d84ba7bcdd2a8b4246539368008bd593853b2fd143e270b6fc097ecfb35cf3d0"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-1-checks-200m-dk008-m008-seed0.json",
+          "sha256": "3e4803a4266345e6eee2ab6742b8ae6f42a7f71aa454acc69674cf62913fbbf2"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-1-checks-200m-dk016-m008-seed0.json",
+          "sha256": "166cfed1f0dc95ca19e4e715df1cae9dac840fd5f6da46fb65ba20525de99ea6"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-1-checks-200m-dk032-m008-seed0.json",
+          "sha256": "1168e4949a61ff7e3531d708a6cfc9534ff797d1fa3ecca87a34ea9d81ec2d67"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-1-checks-200m-dk064-m008-seed0.json",
+          "sha256": "62e37d3ac089121e409d07637681b2d5c7192305cd80bf0c15d35abe3274aa95"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-1-checks-200m-dk128-m008-seed0.json",
+          "sha256": "95e980d1a4e42c015bdd405cd1fc7116d24294b1f3a47b906887ad12aa17c6ee"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-1-summary-200784.json",
+          "sha256": "cd911216ef7ae878a230e3445847dc3c2aa93953651b86536c98fc3e76ac0e0b"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-2-checks-200m-dk008-m016-seed0.json",
+          "sha256": "38b5a296f26acf1d4b002dddb83e67a50304267f80185ef98f87671ed00685ee"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-2-checks-200m-dk016-m016-seed0.json",
+          "sha256": "e532c8125633f4ea9972db9fcc53c65adfffc0326cc2c4107585a58f7b17c49d"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-2-checks-200m-dk032-m016-seed0.json",
+          "sha256": "1e5f8fba0a9ef7053cc4908022159cc4017e108ae0827f502f7cdb327e750c05"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-2-checks-200m-dk064-m016-seed0.json",
+          "sha256": "986528d02894fbe9cd2858f78b1a9296a554b309649023de5e4ed93cb9451279"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-2-summary-200785.json",
+          "sha256": "c24b6ca1d27928edd0ff7abcd13231ff1408ac3e6de460f72d2a5c7924579d55"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-3-checks-200m-dk016-m002-seed0.json",
+          "sha256": "ca4a7178c0ab52147db68a4fc559f0da3ced0527c88e2476b7c78418167e3b28"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-3-checks-200m-dk032-m002-seed0.json",
+          "sha256": "4b1bfd0b6cfa65dec7e5854caa25c61715c6fa8ddd3aeabd9a0048987ee2be10"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-3-checks-200m-dk064-m002-seed0.json",
+          "sha256": "8cb0c2f93ae9d550abae94232018a07d9ca7f8fdc2b8b49ff4fc52518a84e69f"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-3-checks-200m-dk128-m002-seed0.json",
+          "sha256": "389e58cc9ad3eff644e0ee53e39975e716bac2aeaa4dc99bf39fcba58b9cdbb7"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/grid-3-summary-200786.json",
+          "sha256": "9088cc202dfd90acf97c2161d42016bf63f4b7e77126abe7378d367ea6842ef4"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/memory-pool-adjustment.json",
+          "sha256": "67fd5190382fe604951891a6ac9b31187399353e4541b798c7c8db0c741cbc7c"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/pilot-large-checks-200m-dk128-m016-seed0.json",
+          "sha256": "6ec331146f267a5b02edcc9f29d964546013dac4b97d09a71f991c6eec23e867"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/pilot-large-summary-200782.json",
+          "sha256": "b121646159974fecb3b64dbb335aaf1a06dab0e06e4d7cd1f30bb88dd3411ec7"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/pilot-small-checks-200m-dk008-m002-seed0.json",
+          "sha256": "298b07ad19d2e405684acd100eb11f91ea589790a0a0900c9be2e1e504caadf4"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/pilot-small-summary-200781.json",
+          "sha256": "a9e0ff211cbb89dc63d794aa32d32bfab4acc8df0a8a86fa59559860e92a99f5"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-host-staging/summary.json",
+          "sha256": "848220fe34cde80fcf949d4d78ba0cc9e054485500b50d7249c12cc4664c705e"
+        }
+      ],
+      "folded_attempt_records": [
+        "experiments/key_dimension_taylor/evidence/a6000_host_staging/cache_cleanup.json",
+        "experiments/key_dimension_taylor/evidence/a6000_host_staging/jobs.json"
+      ]
+    },
+    {
+      "name": "kdt-a6000-transport",
+      "description": "A6000 communication, peer-copy fix, and transport pilot",
+      "slurm_jobs": "200762-200776",
+      "origin": "key_dimension_taylor/evidence",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-communication-200762-default.json",
+          "sha256": "86df1fe8375aab23539e441da26fe3cc0ae532a7a72b1bd40336bde284602d17"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-communication-200762-p2p_disabled.json",
+          "sha256": "6c2eceaac93c9c1a89b50253a1c8e2552687be9637a802f9a8fba9cbb70b7aa9"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-communication-200762-record.json",
+          "sha256": "5a6b6ec7578e9b3bb7d10189fbd5c449f8c4e9cbe062e56f4c939ca96432fee0"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-peer-copy-fix-kernels-200776.json",
+          "sha256": "d73ae656661c8e0f786405c8619641f287576dc40b22d8e8998d6e734e1ab04e"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-peer-copy-fix-record.json",
+          "sha256": "eac7c75008a89ac3c7bdf3391ae74b4535e4ec7823f94094081a8820fb47a542"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-peer-copy-fix-transfers-200772-transfers.json",
+          "sha256": "62dc3f2b32f12235f99b79ba383995d307da5204fd452fc46819c2766a03d119"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-peer-copy-fix-transfers-200774-transfers.json",
+          "sha256": "5a6cc4dfe9cd567bb5f954c362ef2446a4fd08062baf44ff11034f277376f210"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-transport-pilot-200764-evidence-config.json",
+          "sha256": "d5bd3c7f3cf0a802725b2ba9e5f7b2ab7ff5d3a8d3cf5f019851f882485e129f"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-transport-pilot-200764-evidence-data_identity.json",
+          "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-transport-pilot-200764-evidence-metadata.json",
+          "sha256": "61c0bcba6fd76d9a4ee3c64370cb7e6f416e62c94f33c2b6abe4f5bffb6894ac"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-transport-pilot-200764-evidence-numerical_failure_step_00000032.json",
+          "sha256": "575f098773bc3a1941159d836a5a04a6ab486e0a0854a9daaa9949b54747cbf8"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-transport-pilot-200764-initial.json",
+          "sha256": "85c18be0a91ddf3a43319767d21462a954cca91a295639e988eb872aa5e2d4cb"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-transport-pilot-200764-result.json",
+          "sha256": "b27e10c6c34733df194f2808e0561c080ad618a069737fdccfdd3a68fd735e63"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-a6000-transport/a6000-transport-pilot-200764.json",
+          "sha256": "c0fdbc47af3aea654e855c820e3119432131b6746b12be0dcfc939a2706a5b77"
+        }
+      ],
+      "folded_attempt_records": [
+        "experiments/key_dimension_taylor/evidence/a6000_transport/a6000-peer-copy-fix/attempts/200773/distributed.json",
+        "experiments/key_dimension_taylor/evidence/a6000_transport/a6000-peer-copy-fix/attempts/200773/operator.json",
+        "experiments/key_dimension_taylor/evidence/a6000_transport/cleanup.json"
+      ]
+    },
+    {
+      "name": "kdt-b300-initial",
+      "description": "Initial B300 kernel and pilot qualification",
+      "slurm_jobs": "200733",
+      "origin": "key_dimension_taylor/evidence",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-initial/checks-200m-dk032-m002-seed0.json",
+          "sha256": "bde839dd49de2cb6083feec5b18611d0690e09b93f0cadfe5b64a0e75e577812"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-initial/checks-200m-dk032-m004-seed0.json",
+          "sha256": "75b413abd1c838723546914dff726cc5b34e09b837020112db0dc9267b205983"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-initial/checks-200m-dk032-m008-seed0.json",
+          "sha256": "9665a026fe8d85d9d2bd8db52ed5619007f4e95d254d6bd99d89ab919ee13e14"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-initial/checks-200m-dk128-m002-seed0.json",
+          "sha256": "9216571bf69f74bd6b40abc81d0383f0e8a9a54a938ff2ca8b5d15cc4d65502b"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-initial/checks-200m-dk128-m004-seed0.json",
+          "sha256": "822258aa080d9df3c20bcba04c5efc455bec322e6db6bff55717a97c1d3c587c"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-initial/kernels.json",
+          "sha256": "ea3a5c9ec430ff73ad159c68b16b0c3a5411e115372c126c305849e585ba9274"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-initial/success.json",
+          "sha256": "21a030717abeb1ee84d7404d0770f63ef7da9c3b1a2185151b15829a1f1c2b60"
+        }
+      ],
+      "folded_attempt_records": [
+        "experiments/key_dimension_taylor/evidence/b300_initial/attempts/200733-0-f6e0b4f9/kernels.xml"
+      ]
+    },
+    {
+      "name": "kdt-b300-native",
+      "description": "B300 native qualification of the 20 joint-grid recipes",
+      "slurm_jobs": "200753",
+      "origin": "key_dimension_taylor/evidence",
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk008-m002-seed0.json",
+          "sha256": "c0e64f2dfca4668ca0d2a19705ce33d8c564ba3301819c9d19e83b848b7083da"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk008-m004-seed0.json",
+          "sha256": "062de37eddbc3a3b2e69c88c7bab813bb29573dd109e4a895e51e32336fbaf1e"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk008-m008-seed0.json",
+          "sha256": "258e2c527013217dd456e1ec5e073b316e87c5100639d5d2cc8b4debfb93e456"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk008-m016-seed0.json",
+          "sha256": "eafaee012b233e9b8935e50ed8204b82cbe6c9f2639ad9162676a0e73474a349"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk016-m002-seed0.json",
+          "sha256": "21cd8b50425fd18d9d5e9058c9ad7f99ceb37878f68e40636d774de132d9ae9c"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk016-m004-seed0.json",
+          "sha256": "231f54c11e942a242154e23b44e1f16242679797eacb25dd9a56d73b07672cdf"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk016-m008-seed0.json",
+          "sha256": "f49f9b1f96fdf2565e07f2c26f1a0d1be4224e6393c46f74856eda4dc363df48"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk016-m016-seed0.json",
+          "sha256": "4d8560a73e5625bb35e2ac241133bb6f34ee86f6c776e9360166b4c12a7663b6"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk032-m002-seed0.json",
+          "sha256": "a6cde9ba2197a9a8925a33af6210f3b816faf96c58e1815df9c00704176906a6"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk032-m004-seed0.json",
+          "sha256": "e67b154e972b1ebd9ea4f9d93a212f1211f4d18ab2883b2dda83886a56c3242d"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk032-m008-seed0.json",
+          "sha256": "3a6697806d228e5eea4abe89a2f384748e4e423b663a533b2d6536e494252ae0"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk032-m016-seed0.json",
+          "sha256": "5a03fdd53dd9a1a2901d49047a3af71caff4d631bb46c47bc54cadcf72259f9a"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk064-m002-seed0.json",
+          "sha256": "3acd07a16f77811c7d30e6538b7429e12c47314d8db4090cdaa497619baf2303"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk064-m004-seed0.json",
+          "sha256": "7cbd78090611275135a0f8dfae6492afb25006f43eac0b2335914d4db9fd3931"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk064-m008-seed0.json",
+          "sha256": "ee58099e6035c635f17a0e6d8048f7f5d71c3a056efcc678facd5cac086e3a7b"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk064-m016-seed0.json",
+          "sha256": "811724802edeffaf8927fbbe39fafa42ac6f61fd3547331d7ec955390cd9ddb4"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk128-m002-seed0.json",
+          "sha256": "c93fbb69bc2b6a8e73e0cd16ead73073c70b2515af10aa860d9c3388c2a1ceaf"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk128-m004-seed0.json",
+          "sha256": "2c6e28e5879cfbe7d2938425ab0a2dd74d36784666b71d685d253b73d9d2deb2"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk128-m008-seed0.json",
+          "sha256": "80721352d9936ec9b4a54b066088703035248808378b821870cc577a0c883913"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/checks-200m-dk128-m016-seed0.json",
+          "sha256": "78e5f45ae6d0f3912eb419c92938b5b4aabeb829a00f4b5b604027ad69e3876d"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/kernels.json",
+          "sha256": "c33e08268bc5e84204c1df0c0a1dfc9a31e3f18866884b104ab4989d16732784"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/kdt-b300-native/pilots-shard0.json",
+          "sha256": "e90370f74c530eba6316f2dcc93a897c065e85142087959df348027b3028b9b9"
+        }
+      ],
+      "folded_attempt_records": []
+    }
+  ],
+  "execution_evidence": [
+    {
+      "name": "performance/attention_kernel/cpu-tests",
+      "facts": {
+        "junit_summary": {
+          "tests": 152,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 1,
+          "seconds": 78.71,
+          "testcases": 152
+        }
+      }
+    },
+    {
+      "name": "performance/attention_kernel/distributed-tests",
+      "facts": {
+        "junit_summary": {
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 5.02,
+          "testcases": 1
+        }
+      }
+    },
+    {
+      "name": "performance/attention_kernel/gpu-tests",
+      "facts": {
+        "junit_summary": {
+          "tests": 46,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 103.51,
+          "testcases": 46
+        }
+      }
+    },
+    {
+      "name": "performance/b300/gpu-tests",
+      "facts": {
+        "junit_summary": {
+          "tests": 56,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 220.85,
+          "testcases": 56
+        }
+      }
+    },
+    {
+      "name": "performance/h100_throughput/gpu-tests",
+      "facts": {
+        "junit_summary": {
+          "tests": 56,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 129.53,
+          "testcases": 56
+        }
+      }
+    },
+    {
+      "name": "evidence/a100_native/attempts/kernels-200754-0-268b9a7f/kernels",
+      "facts": {
+        "junit_summary": {
+          "tests": 105,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 549.83,
+          "testcases": 105
+        }
+      }
+    },
+    {
+      "name": "evidence/a100_transport/allocation",
+      "facts": {
+        "job": "200853",
+        "node": "samoyed.csail.mit.edu",
+        "inventory": "index, name, uuid, driver_version\n0, NVIDIA A100 80GB PCIe, GPU-662d5c11-bfb4-323a-b7a5-c1f1ffa9f463, 560.35.05\n1, NVIDIA A100 80GB PCIe, GPU-3c9875c1-034b-7ac4-f54d-2f42850493b5, 560.35.05\n2, NVIDIA A100 80GB PCIe, GPU-a6700dbe-a8b8-aec9-928e-f0d4bb094a32, 560.35.05\n3, NVIDIA A100 80GB PCIe, GPU-866c81e6-513b-66eb-4c4e-06adea27bc1a, 560.35.05\n",
+        "topology": "\t\u001b[4mGPU0\tGPU1\tGPU2\tGPU3\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \tNODE\tNODE\tNODE\t76-83,204-211\t1\t\tN/A\nGPU1\tNODE\t X \tNODE\tNODE\t76-83,204-211\t1\t\tN/A\nGPU2\tNODE\tNODE\t X \tPHB\t76-83,204-211\t1\t\tN/A\nGPU3\tNODE\tNODE\tPHB\t X \t76-83,204-211\t1\t\tN/A\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection travers... [780 chars; full text in c6512b9]",
+        "source_commit": "a1f1b2f04a3a625d8f48735aad0c990a09dbcc01",
+        "home_cluster": "csail-kennel",
+        "artifact_root": "experiments/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f",
+        "production_submission": false
+      }
+    },
+    {
+      "name": "evidence/a100_transport/launch",
+      "facts": {
+        "job": "200853",
+        "command": [
+          "sbatch",
+          "--parsable",
+          "--partition=sweep",
+          "--nodes=1",
+          "--ntasks=1",
+          "--gres=gpu:a100:4",
+          "--cpus-per-task=32",
+          "--mem=256G",
+          "--time=01:00:00",
+          "--job-name=dkt-a100-diagnosis",
+          "--output=experiments/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/slurm-%j.out",
+          "--error=experiments/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f/slurm-%j.out",
+          "experiments/key_dimension_taylor/a100_diagnostics/launch.sbatch",
+          "--output",
+          "experiments/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f",
+          "--commit",
+          "a1f1b2f04a3a625d8f48735aad0c990a09dbcc01"
+        ],
+        "source_commit": "a1f1b2f04a3a625d8f48735aad0c990a09dbcc01",
+        "artifact_root": "experiments/key_dimension_taylor/hardware_checks/a100_diagnosis/transport-controls-a1f1b2f",
+        "home_cluster": "csail-kennel",
+        "created_utc": "2026-09-22T17:19:17.994507+00:00",
+        "production_submission": false,
+        "scope": "Four environment ablations, isolated32+33updatepilots, allstateandbatchreplicasverified"
+      }
+    },
+    {
+      "name": "evidence/a6000_host_staging/jobs",
+      "facts": {
+        "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+        "jobs": [
+          {
+            "shard": "pilot-small",
+            "node": "doodle",
+            "names": [
+              "200m-dk008-m002-seed0"
+            ],
+            "slurm_job_id": "200778",
+            "submitted_utc": "2026-09-22T03:41:34.474816+00:00",
+            "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-small",
+            "command": [
+              "sbatch",
+              "--parsable",
+              "--nodelist=doodle",
+              "--time=00:40:00",
+              "--job-name=dkt-a6000-pilot-small",
+              "--output=experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-%j.out",
+              "--export=ALL,HOST_STAGING_RUNTIME_ROOT=/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix,HOST_STAGING_PYTHON=/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+              "experiments/key_dimension_taylor/hardware_checks/host_staging.sbatch",
+              "--policy",
+              "experiments/key_dimension_taylor/hardware_checks/policy.json",
+              "--runtime-commit",
+              "af7e0219483f68fd18f319311eddff67ebd17dee",
+              "--names",
+              "200m-dk008-m002-seed0",
+              "--output-root",
+              "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-small"
+            ],
+            "status": "superseded",
+            "stopped_utc": "2026-09-22T03:46:59.515388+00:00",
+            "reason": "Retry with larger JAX memory pool: small pilot passed verified replica placement then GPU0 could not allocate an18.75GiB training buffer under default75% pool; other ranks waited. Large pilot stopped before training for same execution-profile adjustment.",
+            "runtime_commit": "af7e0219483f68fd18f319311eddff67ebd17dee"
+          },
+          {
+            "shard": "pilot-large",
+            "node": "terrier",
+            "names": [
+              "200m-dk128-m016-seed0"
+            ],
+            "slurm_job_id": "200779",
+            "submitted_utc": "2026-09-22T03:41:34.486774+00:00",
+            "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large",
+            "command": [
+              "sbatch",
+              "--parsable",
+              "--nodelist=terrier",
+              "--time=00:40:00",
+              "--job-name=dkt-a6000-pilot-large",
+              "--output=experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-%j.out",
+              "--export=ALL,HOST_STAGING_RUNTIME_ROOT=/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix,HOST_STAGING_PYTHON=/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+              "experiments/key_dimension_taylor/hardware_checks/host_staging.sbatch",
+              "--policy",
+              "experiments/key_dimension_taylor/hardware_checks/policy.json",
+              "--runtime-commit",
+              "af7e0219483f68fd18f319311eddff67ebd17dee",
+              "--names",
+              "200m-dk128-m016-seed0",
+              "--output-root",
+              "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large"
+            ],
+            "status": "superseded",
+            "stopped_utc": "2026-09-22T03:46:59.515403+00:00",
+            "reason": "Retry with larger JAX memory pool: small pilot passed verified replica placement then GPU0 could not allocate an18.75GiB training buffer under default75% pool; other ranks waited. Large pilot stopped before training for same execution-profile adjustment.",
+            "runtime_commit": "af7e0219483f68fd18f319311eddff67ebd17dee"
+          },
+          {
+            "shard": "pilot-small-memory90",
+            "node": "doodle",
+            "names": [
+              "200m-dk008-m002-seed0"
+            ],
+            "slurm_job_id": "200781",
+            "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+            "submitted_utc": "2026-09-22T03:48:25.188912+00:00",
+            "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-small",
+            "log_path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200781.out",
+            "environment": {
+              "NCCL_P2P_DISABLE": "1",
+              "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+              "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+              "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+            },
+            "command": [
+              "sbatch",
+              "--parsable",
+              "--nodelist=doodle",
+              "--time=00:40:00",
+              "--job-name=dkt-a6000-pilot-small-memory90",
+              "--output=experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-%j.out",
+              "--export=ALL,HOST_STAGING_RUNTIME_ROOT=/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix,HOST_STAGING_PYTHON=/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+              "experiments/key_dimension_taylor/hardware_checks/host_staging.sbatch",
+              "--policy",
+              "experiments/key_dimension_taylor/hardware_checks/policy.json",
+              "--runtime-commit",
+              "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+              "--names",
+              "200m-dk008-m002-seed0",
+              "--output-root",
+              "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-small"
+            ]
+          },
+          {
+            "shard": "pilot-large-memory90",
+            "node": "terrier",
+            "names": [
+              "200m-dk128-m016-seed0"
+            ],
+            "slurm_job_id": "200782",
+            "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+            "submitted_utc": "2026-09-22T03:48:25.203823+00:00",
+            "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large",
+            "log_path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200782.out",
+            "environment": {
+              "NCCL_P2P_DISABLE": "1",
+              "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+              "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+              "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+            },
+            "command": [
+              "sbatch",
+              "--parsable",
+              "--nodelist=terrier",
+              "--time=00:40:00",
+              "--job-name=dkt-a6000-pilot-large-memory90",
+              "--output=experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-%j.out",
+              "--export=ALL,HOST_STAGING_RUNTIME_ROOT=/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix,HOST_STAGING_PYTHON=/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+              "experiments/key_dimension_taylor/hardware_checks/host_staging.sbatch",
+              "--policy",
+              "experiments/key_dimension_taylor/hardware_checks/policy.json",
+              "--runtime-commit",
+              "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+              "--names",
+              "200m-dk128-m016-seed0",
+              "--output-root",
+              "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large"
+            ]
+          },
+          {
+            "shard": "grid-0",
+            "names": [
+              "200m-dk008-m004-seed0",
+              "200m-dk016-m004-seed0",
+              "200m-dk032-m004-seed0",
+              "200m-dk064-m004-seed0",
+              "200m-dk128-m004-seed0"
+            ],
+            "slurm_job_id": "200783",
+            "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+            "submitted_utc": "2026-09-22T03:53:33.188013+00:00",
+            "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0",
+            "log_path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200783.out",
+            "environment": {
+              "NCCL_P2P_DISABLE": "1",
+              "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+              "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+              "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+            },
+            "command": [
+              "sbatch",
+              "--parsable",
+              "--job-name=dkt-a6000-grid-0",
+              "--output=experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-%j.out",
+              "--export=ALL,HOST_STAGING_RUNTIME_ROOT=/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix,HOST_STAGING_PYTHON=/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+              "experiments/key_dimension_taylor/hardware_checks/host_staging.sbatch",
+              "--policy",
+              "experiments/key_dimension_taylor/hardware_checks/policy.json",
+              "--runtime-commit",
+              "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+              "--names",
+              "200m-dk008-m004-seed0",
+              "200m-dk016-m004-seed0",
+              "200m-dk032-m004-seed0",
+              "200m-dk064-m004-seed0",
+              "200m-dk128-m004-seed0",
+              "--output-root",
+              "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0"
+            ]
+          },
+          {
+            "shard": "grid-1",
+            "names": [
+              "200m-dk008-m008-seed0",
+              "200m-dk016-m008-seed0",
+              "200m-dk032-m008-seed0",
+              "200m-dk064-m008-seed0",
+              "200m-dk128-m008-seed0"
+            ],
+            "slurm_job_id": "200784",
+            "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+            "submitted_utc": "2026-09-22T03:53:33.201778+00:00",
+            "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-1",
+            "log_path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200784.out",
+            "environment": {
+              "NCCL_P2P_DISABLE": "1",
+              "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+              "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+              "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+            },
+            "command": [
+              "sbatch",
+              "--parsable",
+              "--job-name=dkt-a6000-grid-1",
+              "--output=experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-%j.out",
+              "--export=ALL,HOST_STAGING_RUNTIME_ROOT=/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix,HOST_STAGING_PYTHON=/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+              "experiments/key_dimension_taylor/hardware_checks/host_staging.sbatch",
+              "--policy",
+              "experiments/key_dimension_taylor/hardware_checks/policy.json",
+              "--runtime-commit",
+              "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+              "--names",
+              "200m-dk008-m008-seed0",
+              "200m-dk016-m008-seed0",
+              "200m-dk032-m008-seed0",
+              "200m-dk064-m008-seed0",
+              "200m-dk128-m008-seed0",
+              "--output-root",
+              "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-1"
+            ]
+          },
+          {
+            "shard": "grid-2",
+            "names": [
+              "200m-dk008-m016-seed0",
+              "200m-dk016-m016-seed0",
+              "200m-dk032-m016-seed0",
+              "200m-dk064-m016-seed0"
+            ],
+            "slurm_job_id": "200785",
+            "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+            "submitted_utc": "2026-09-22T03:53:33.214708+00:00",
+            "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-2",
+            "log_path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200785.out",
+            "environment": {
+              "NCCL_P2P_DISABLE": "1",
+              "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+              "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+              "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+            },
+            "command": [
+              "sbatch",
+              "--parsable",
+              "--job-name=dkt-a6000-grid-2",
+              "--output=experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-%j.out",
+              "--export=ALL,HOST_STAGING_RUNTIME_ROOT=/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix,HOST_STAGING_PYTHON=/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+              "experiments/key_dimension_taylor/hardware_checks/host_staging.sbatch",
+              "--policy",
+              "experiments/key_dimension_taylor/hardware_checks/policy.json",
+              "--runtime-commit",
+              "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+              "--names",
+              "200m-dk008-m016-seed0",
+              "200m-dk016-m016-seed0",
+              "200m-dk032-m016-seed0",
+              "200m-dk064-m016-seed0",
+              "--output-root",
+              "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-2"
+            ]
+          },
+          {
+            "shard": "grid-3",
+            "names": [
+              "200m-dk016-m002-seed0",
+              "200m-dk032-m002-seed0",
+              "200m-dk064-m002-seed0",
+              "200m-dk128-m002-seed0"
+            ],
+            "slurm_job_id": "200786",
+            "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+            "submitted_utc": "2026-09-22T03:53:33.226489+00:00",
+            "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-3",
+            "log_path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200786.out",
+            "environment": {
+              "NCCL_P2P_DISABLE": "1",
+              "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
+              "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+              "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+            },
+            "command": [
+              "sbatch",
+              "--parsable",
+              "--job-name=dkt-a6000-grid-3",
+              "--output=experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-%j.out",
+              "--export=ALL,HOST_STAGING_RUNTIME_ROOT=/data/cl/u/rafah/home/projects/functional-memory/worktrees/a6000_attention_fix,HOST_STAGING_PYTHON=/data/cl/u/rafah/home/projects/functional-memory/.envs/polynomial_attention/bin/python",
+              "experiments/key_dimension_taylor/hardware_checks/host_staging.sbatch",
+              "--policy",
+              "experiments/key_dimension_taylor/hardware_checks/policy.json",
+              "--runtime-commit",
+              "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
+              "--names",
+              "200m-dk016-m002-seed0",
+              "200m-dk032-m002-seed0",
+              "200m-dk064-m002-seed0",
+              "200m-dk128-m002-seed0",
+              "--output-root",
+              "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-3"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "evidence/a6000_transport/a6000-peer-copy-fix/attempts/200773/distributed",
+      "facts": {
+        "case": "distributed",
+        "status": "failed",
+        "node": "doodle.csail.mit.edu",
+        "job_id": "200773",
+        "source": "worktrees/a6000_attention_fix",
+        "source_commit": "d303e3a90c77673ffb08c61a1e77b936bb3d5dc3",
+        "environment": {
+          "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+          "NCCL_P2P_DISABLE": "1",
+          "XLA_FLAGS": null
+        },
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "config_sha256": "330beb6a8fb3b07ef774174e46e38796d6aead9f16088082e16eb4553030d522",
+        "backend": "fused",
+        "stage": "failed",
+        "elapsed_seconds": 237.2274379208684,
+        "params_sha256": "307bceee6adc3fa4331b5a504b92b312c9e95d26c7080273e73e40d1bfa352fc",
+        "state_sha256": "06c23688f2a9bc2b3ceb395de87502ba047e63fd0f3b66dfd2b98443e9234295",
+        "parameter_count": 181556224,
+        "first_train_batch_sha256": "554f9dfd9e7f884aeedb98121404794c22d27d1f126793f9b102623b27245b9d",
+        "first_eval_batch_sha256": "a19a3df1d4c2eefd1ee0cbab65c3329eea171c2a88ea07303b9fb83cf0240c7f",
+        "train_batch_shape": [
+          256,
+          2049
+        ],
+        "eval_batch_shape": [
+          256,
+          2049
+        ],
+        "per_device_microbatch": 16,
+        "context_length": 2048,
+        "replicated_param_hashes": {
+          "cuda:0": "327d566e65435b27efa503ac8808c000dc5c50c9f02f5ed27df9610219e0cee7",
+          "cuda:1": "9e40cb7cf02dc62490ddee4ef9b10bfc15144ecbe5d01a276e22abec9d2d3205",
+          "cuda:2": "9e40cb7cf02dc62490ddee4ef9b10bfc15144ecbe5d01a276e22abec9d2d3205",
+          "cuda:3": "9e40cb7cf02dc62490ddee4ef9b10bfc15144ecbe5d01a276e22abec9d2d3205"
+        },
+        "replicated_param_mismatches": {
+          "cuda:0": 0,
+          "cuda:1": 181556202,
+          "cuda:2": 181556202,
+          "cuda:3": 181556202
+        },
+        "replicated_param_nonfinite": {
+          "cuda:0": 0,
+          "cuda:1": 0,
+          "cuda:2": 0,
+          "cuda:3": 0
+        },
+        "error": "RuntimeError: Replicated parameters differ from original initial parameters",
+        "traceback": "Traceback (most recent call last):\n  File \"/data/cl/u/rafah/home/projects/functional-memory/.cache/key_dimension_taylor/a6000_fix/parity.py\", line 105, in main\n    raise RuntimeError('Replicated parameters differ from original initial parameters')\nRuntimeError: Replicated parameters differ from original initial parameters\n"
+      }
+    },
+    {
+      "name": "evidence/a6000_transport/a6000-peer-copy-fix/attempts/200773/operator",
+      "facts": {
+        "status": "cancelled",
+        "recorded_utc": "2026-09-22T03:35:23.778591+00:00",
+        "reason": "Stopped after more than 80 seconds without progress at replicating_state. Separate computed-buffer probe200774 already reproduced stale cross-device copies; initial source-state fingerprint matched H100 exactly. No model forward was reached."
+      }
+    },
+    {
+      "name": "evidence/b300_initial/attempts/200733-0-f6e0b4f9/kernels",
+      "facts": {
+        "junit_summary": {
+          "tests": 105,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 688.46,
+          "testcases": 105
+        }
+      }
+    },
+    {
+      "name": "validation/canonical-runtime-cpu",
+      "facts": {
+        "text_bytes": 100
+      }
+    },
+    {
+      "name": "validation/frozen-parity-tests",
+      "facts": {
+        "text_bytes": 111
+      }
+    },
+    {
+      "name": "validation/legacy-adapter-single-cpu-tests",
+      "facts": {
+        "text_bytes": 1724
+      }
+    },
+    {
+      "name": "validation/legacy-distributed-tests",
+      "facts": {
+        "text_bytes": 114
+      }
+    },
+    {
+      "name": "validation/new-adapter-comparison-tests",
+      "facts": {
+        "text_bytes": 180
+      }
+    },
+    {
+      "name": "validation/shared-cpu-tests-final",
+      "facts": {
+        "text_bytes": 2385
+      }
+    },
+    {
+      "name": "validation/shared-distributed-tests",
+      "facts": {
+        "text_bytes": 115
+      }
+    },
+    {
+      "name": "validation/shared-gpu-tests",
+      "facts": {
+        "text_bytes": 303
+      }
+    }
+  ]
+}

@@ -12,6 +12,7 @@ dependencies = [
     "pyyaml==6.0.3",
     "tqdm==4.67.3",
     "matplotlib>=3.9.4",
+    "wandb==0.30.0",
 ]
 
 [project.optional-dependencies]
@@ -19,11 +20,13 @@ cuda = ["jax[cuda12]==0.10.0", "nvidia-cudnn-cu12==9.22.0.52", "triton==3.6.0"]
 
 [dependency-groups]
 dev = ["pytest>=8.3.0"]
+# Saved W&B workspace views, built by experiment analysis code.
+views = ["wandb-workspaces==0.4.11"]
 
 [tool.uv]
 package = false
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "studies"]
+testpaths = ["tests"]
 pythonpath = ["../.."]
 markers = ["gpu: requires a CUDA device"]

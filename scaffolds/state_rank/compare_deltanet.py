@@ -16,9 +16,8 @@ import torch
 from scaffolds.state_rank import compare_random as common
 from scaffolds.state_rank import random_models, spectrum
 
-from scaffolds.state_rank.artifacts import CONFIG_DIRECTORY, retained_path, resolved_config_path
+from scaffolds.state_rank.reports import resolved_config_path
 
-DEFAULT_CONFIG = CONFIG_DIRECTORY / "random_vs_pretrained_deltanet.json"
 METRICS = ("participation_ratio", "threshold_rank", "energy_rank90", "energy_rank99", "log_trace")
 EXPERIMENT = "state_rank/random_vs_pretrained_deltanet"
 INITIALIZATION_DETAILS = {
@@ -76,7 +75,7 @@ def prepare_manifest(config_path, project_root, output=None):
     project_root = Path(project_root).resolve()
     config = json.loads(Path(config_path).read_text())
     validate_config(config)
-    baseline = retained_path(project_root, config["baseline_directory"])
+    baseline = project_root / config["baseline_directory"]
     old_metadata = json.loads((baseline / "metadata.json").read_text())
     required = {"model": config["model_id"], "model_revision": config["model_revision"],
                 "layer": config["baseline_layer"], "tokens": config["tokens"],
@@ -90,7 +89,7 @@ def prepare_manifest(config_path, project_root, output=None):
     output = Path(output).resolve() if output else project_root / config["output_directory"]
     provenance = {
         "config": config, "source_commit": common.source_commit(),
-        "dependency_lock_sha256": common.sha256_file(project_root / "uv.lock"),
+        "dependency_lock_sha256": common.sha256_file(common.DEPENDENCY_LOCK),
         "inputs_sha256": common.sha256_file(baseline / "inputs.json"),
         "baseline_metadata_sha256": common.sha256_file(baseline / "metadata.json"),
         "baseline_spectra_sha256": common.sha256_file(baseline / "spectra.npz"),
@@ -362,7 +361,7 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--output", type=Path)
     parser.add_argument("--manifest", type=Path)

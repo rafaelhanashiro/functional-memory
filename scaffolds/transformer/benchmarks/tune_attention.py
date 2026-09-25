@@ -26,7 +26,7 @@ import jax.numpy as jnp
 import numpy as np
 
 from scaffolds.transformer.benchmarks.benchmark_attention import error_norms, provenance, time_program, write_report
-from scaffolds.transformer.models.components import fused_attention as kernel
+from scaffolds.transformer.attention.backends import fused_taylor as kernel
 
 
 BASELINE = (64, 64, 4, 2)

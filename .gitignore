@@ -1,20 +1,17 @@
 /overleaf/
-/.envs/
 /worktrees/
+/.cache/
 .venv/
 .pytest_cache/
 __pycache__/
-/.cache/
-/checkpoints/
-/logs/
-# Existing checkpoints on other home clusters remain ignored until migrated.
-/experiments/**/checkpoints/
-# Logs on other home clusters keep their recorded paths until migrated.
-/results/logs/
-/results/**/checkpoints
-/results/**/wandb/
+# Experiment and scaffold-validation artifacts stay on their home cluster.
+/experiments/*/logs/
+/experiments/*/checkpoints/
+/experiments/*/runs/*/checkpoints
+/scaffolds/*/validation/logs/
+wandb/
 *.log
 slurm-*.out
 slurm-*.err
 # Numerical data archives stay at the home-cluster artifact root; Git holds results only.
-/results/**/*.npz
+/experiments/**/*.npz

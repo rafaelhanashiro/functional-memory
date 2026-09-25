@@ -3,7 +3,7 @@
 This package owns the JAX/Flax Transformer, data pipeline, optimizer, distributed
 training, evaluation, and checkpoint machinery used by the pretraining experiments.
 Scientific recipes, findings, and reproduction records belong to
-`results/<experiment>/`. This README describes the reusable software API.
+`experiments/<experiment>/`. This README describes the reusable software API.
 State-rank analysis uses the independent `scaffolds/state_rank/` capability.
 
 ## Model, runtime, and launch scripts
@@ -134,8 +134,8 @@ silently replaced.
 The requested and resolved implementations are recorded in run metadata. The
 resolved backend is stored in the run configuration and reused on resume, even
 when the caller requests `auto`. A resumed run fails if its pinned implementation
-cannot run on the current device. Explicit backend choices in historical recipes
-are preserved.
+cannot run on the current device. Explicit backend choices in recipes are
+preserved.
 
 Softmax uses stable score shifting. Taylor and learned polynomials use unshifted
 scores. Unnormalized exponential and Taylor kernels also use unshifted scores
@@ -145,100 +145,93 @@ scaffold does not add clipping or denominator epsilon.
 
 ## Environment and training API
 
-Run from a dedicated development checkout. This shared JAX environment is separate
-from the root PyTorch environment used for state-rank analysis:
+Each worktree syncs its own environment from this scaffold's lock; hardlinks share
+package files with the uv cache, so an additional environment costs almost no disk:
 
 ```bash
-export UV_PROJECT_ENVIRONMENT="$PWD/.envs/shared_transformer"
-export UV_CACHE_DIR="$PWD/.cache/uv"
-uv sync --project scaffolds/transformer --locked --extra cuda
+uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
 
 # Tiny synthetic CPU check; both outputs are disposable.
-JAX_PLATFORMS=cpu .envs/shared_transformer/bin/python -m scaffolds.transformer.train \
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m scaffolds.transformer.train \
   scaffolds/transformer/configs/smoke.yaml \
-  --workdir "$PWD/.cache/shared-smoke/results" \
-  --checkpoint-dir "$PWD/.cache/shared-smoke/checkpoints"
+  --workdir .cache/smoke/run --checkpoint-dir .cache/smoke/checkpoints
 ```
 
-For a new experiment, start with `configs/base.yaml`, store its exact resolved
-recipe in `results/<experiment>/configs/`, and set the data manifests and scientific
-parameters. Keep `train.source_commit: auto` until the tested execution checkout
-is committed and frozen. Record its home cluster and artifact root in the
-experiment's provenance. Inside the required GPU allocation, the common CLI is:
+For a new experiment, start with `configs/base.yaml`, store its exact recipe in
+`experiments/<experiment>/configs/`, and set the data manifests and scientific
+parameters. Recipes use repository-relative outputs,
+`experiments/<experiment>/runs/<run>` and `experiments/<experiment>/checkpoints/<run>`,
+so a run writes inside the worktree that launched it. Keep `train.source_commit: auto`;
+launchers export the launch commit. Inside a GPU allocation the common CLI is:
 
 ```bash
-.envs/shared_transformer/bin/python -m scaffolds.transformer.train \
-  results/my_experiment/configs/run.yaml \
-  --workdir results/my_experiment/runs/run \
-  --checkpoint-dir checkpoints/my_experiment/run
+scaffolds/transformer/.venv/bin/python -m scaffolds.transformer.train \
+  experiments/my_experiment/configs/run.yaml
 ```
 
 `--attention-degree` accepts a nonnegative degree or `softmax`; `--qk-head-dim`
 selects the projection width. `--checkpoint-dir` separates large model state from
 scientific records. `--stop-after-step` writes a resumable checkpoint while keeping
 the recipe's full learning-rate horizon. Resume is the default, and Slurm requeue
-also resumes; `--no-resume` applies only to a fresh attempt. Historical recipes and
-source commits stay immutable in their retained experiment records.
+also resumes; `--no-resume` applies only to a fresh attempt.
 
-## Scientific study adapters
+### Weights & Biases
 
-`studies/` contains small configuration, scheduling, validation, and analysis
-adapters for a scientific question. They call the shared model, attention, data,
-and training implementation. Use configuration alone when sufficient; a new
-experiment does not need another copy of the training stack. For example,
-`python -m scaffolds.transformer.studies.key_dimension_taylor.plot` verifies the
-dK × Taylor-degree record's canonical manifest and regenerates its figures.
-Consult that experiment's `results/<experiment>/README.md` for its exact command.
+`training/tracking.py` mirrors committed metrics to the private W&B project
+`rafah-massachusetts-institute-of-technology/functional-memory`; `runs/<run>/metrics.jsonl`
+remains the authoritative record, and a W&B failure never stops training. For a workdir
+`experiments/<experiment>/runs/<run>`, the W&B group is the experiment, the name is the
+run, and local W&B files go to `experiments/<experiment>/logs/<run>/wandb/`
+(`train.wandb_group`, `wandb_run_name`, and `wandb_dir` override these). Tags give the
+attention kernel, d_K, degree, GPU count and type, and cluster; the config holds the
+full recipe plus a separate `runtime` section. Metrics use `train/` (every log step
+and each validation window), `val/`, and `attention/<kernel>/layerNN/<statistic>`
+against a `step` axis, so updates relogged after a resume are kept; terminal and
+validation-best metrics go to the run summary. `wandb_run.json` in the run directory
+pins the W&B run id across requeues.
 
-The `key_dimension_taylor`, `learned_quadratic_attention`, `odd_taylor_attention`,
-`unnormalized_attention`, and `gla_key_dimension` study adapters all use this same training implementation.
-`key_dimension_taylor` also carries the degree-sweep helpers (`degree_sweep/`) and
-width-sweep configuration defaults (`width_sweep_configs/`) that its runs and the
-learned/odd adapters build on. Kernel and throughput benchmark scripts live in
-`scaffolds/transformer/benchmarks/`. Their retained historical runs and currently frozen
-execution checkouts still identify the source revisions that actually ran them.
+Recipes leave `train.wandb_mode` at `disabled`; the Kennel launcher passes
+`--wandb-mode online` (set `TRANSFORMER_WANDB_MODE=offline` or `disabled` when
+submitting to change it), and acceptance pilots never log. Saved workspace views are
+experiment analysis code built with the `views` dependency group
+(`uv sync --project scaffolds/transformer --locked --extra cuda --group views`).
 
-Each experiment has one scientific README under `results/<experiment>/`, with
-recipes in `configs/`, run metrics in `runs/`, figures in `figures/`, and the
-canonical manifest at `provenance/manifest.json`. Plotting updates marked result
-sections without replacing authored methods. Study adapters do not own competing
-experiment READMEs or per-run narrative reports.
+## Launch, acceptance, retention, and analysis
 
-During training, checkpoints retain the latest resumable state and validation best.
-After review, keep only the validation-best checkpoint at
-`checkpoints/<experiment>/<run>/<step>/`, terminal metrics independently, and the
-matching successful log under `logs/<experiment>/`. Checkpoints, logs,
-environments, and caches remain on the home cluster and are ignored by Git.
+Experiments configure these shared modules from their own `adapter/`:
 
-## Validation and frozen execution
+- `launchers/kennel.sbatch` runs any experiment on Kennel: it resolves the allocated
+  GPU type, checks the frozen execution set against the launch commit
+  (`scaffolds/launch/frozen.py`), uses the worktree's environment, pins `CUDA_HOME`
+  to the locked CUDA toolkit, runs acceptance, then trains; logs append across requeues.
+- `acceptance.py` runs identity-keyed acceptance in the production allocation: CPU
+  tests, distributed CPU tests on two forced host devices, and single-GPU kernel tests
+  (no skips), an initialization hash, a full-recipe pilot, and an exact fresh-process
+  resume. An adapter supplies an `AcceptanceSpec` (tests, recipe check,
+  required backend, initialization check, runtime environment) and nothing else.
+- `retention.py` prunes a completed run to its validation-best checkpoint and records
+  the selection.
+- `analysis.py` reads committed validation events and retained artifacts and saves
+  figures deterministically, so summaries and figures regenerate byte-identically.
+
+Kernel and throughput benchmark scripts live in `benchmarks/`; their results and the
+scaffold's hardware qualification live in [`validation/`](validation/README.md).
+
+## Tests
 
 ```bash
-JAX_PLATFORMS=cpu \
-  .envs/shared_transformer/bin/python -m pytest \
-  -c scaffolds/transformer/pyproject.toml \
-  scaffolds/transformer/tests scaffolds/transformer/studies --import-mode=importlib -m 'not gpu'
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest \
+  -c scaffolds/transformer/pyproject.toml scaffolds/transformer/tests \
+  --import-mode=importlib -m 'not gpu'
 
 JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 \
-  .envs/shared_transformer/bin/python -m pytest \
-  -c scaffolds/transformer/pyproject.toml \
-  scaffolds/transformer/tests --import-mode=importlib -m 'not gpu' -k distributed
+  scaffolds/transformer/.venv/bin/python -m pytest \
+  -c scaffolds/transformer/pyproject.toml scaffolds/transformer/tests \
+  --import-mode=importlib -m 'not gpu' -k distributed
 ```
 
-The shared suite covers independent FP64 attention/gradient references, signed
-normalizers, learned parameter sharing, optimizer exclusions, distributed
-accumulation, packed-data cursors, and interruption/resume. Frozen-source parity
-tests export the recorded historical commits into temporary directories and
-compare initialization, logits, every parameter gradient, optimizer updates,
-and restoration/continuation of original checkpoints. They require local Git
-history, but never read or write a live experiment checkout or checkpoint.
-GPU-marked tests exercise the actual fused forward/backward implementations.
-
-Run shared-scaffold validation in its own checkout and environment. Existing jobs
-continue using their frozen source, environment, manifests, and artifact paths
-until they finish or are explicitly migrated. Integrating a shared scaffold on
-`main` does not update an active execution checkout. Future runs freeze a source
-revision containing the canonical scaffold; source-parity fixtures deliberately
-load historical packages from their original Git commits.
-
-The extraction sources are recorded in `sources.json`; historical scientific
-results continue to identify their original source commits.
+The suite covers independent FP64 attention and gradient references, signed and
+unnormalized kernels, learned parameter sharing, optimizer exclusions, distributed
+accumulation, packed-data cursors, interruption and resume, checkpoint audits,
+acceptance, and retention. GPU-marked tests (`-m gpu`, in a GPU allocation) exercise
+the fused forward and backward implementations.

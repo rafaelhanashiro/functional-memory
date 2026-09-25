@@ -1,2 +1,3 @@
 # Preserve exact scientific CSV bytes used by provenance checksums.
-results/**/*.csv -text whitespace=cr-at-eol
+experiments/**/*.csv -text whitespace=cr-at-eol
+scaffolds/*/validation/**/*.csv -text whitespace=cr-at-eol

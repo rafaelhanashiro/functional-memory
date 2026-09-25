@@ -80,22 +80,6 @@ def test_invalid_qk_dimensions_rejected_at_construction(qk_dim):
         ModelConfig(qk_head_dim=qk_dim)
 
 
-def test_scientific_recipe_matches_original_softmax_reference():
-    import yaml
-
-    original = yaml.safe_load((Path(__file__).resolve().parents[3] / "results/key_dimension_taylor/configs/key_dimension-base.yaml").read_text())
-    current = yaml.safe_load(BASE_CONFIG.read_text())
-    current["model"].pop("attention_degree")
-    for config in (original, current):
-        config["model"].pop("attention_backend")
-        # The same immutable corpus lives at a different absolute path on Kennel.
-        for key in ("train_manifest", "eval_manifest"):
-            config["data"].pop(key)
-        for key in ("workdir", "wandb_project", "wandb_run_name"):
-            config["train"].pop(key)
-    assert current == original
-
-
 @pytest.mark.parametrize("degree", (0, 2, 4, 8, 16, None))
 def test_degree_round_trip(tmp_path, degree):
     config = Config()

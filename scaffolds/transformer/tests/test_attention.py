@@ -7,12 +7,9 @@ import pytest
 from flax import nnx
 
 from scaffolds.transformer.configs import ATTENTION_DEGREES
-from scaffolds.transformer.models.components.attention import (
-    QUERY_BLOCK_SIZE,
-    _taylor_polynomial,
-    blocked_dot_product_attention,
-    padded_dot_product_attention,
-)
+from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE, blocked_dot_product_attention
+from scaffolds.transformer.attention.taylor import _taylor_polynomial
+from scaffolds.transformer.attention.softmax import padded_dot_product_attention
 
 
 def _dense_reference(q, k, v, degree):

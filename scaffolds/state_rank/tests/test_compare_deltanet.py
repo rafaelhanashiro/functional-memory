@@ -123,6 +123,7 @@ def test_analyze_model_stacks_input_axis_checks_full_baseline_then_discards_it(m
 def project(tmp_path, monkeypatch):
     baseline = tmp_path / 'baseline';baseline.mkdir()
     (tmp_path/'uv.lock').write_text('version=1\n')
+    monkeypatch.setattr(common, 'DEPENDENCY_LOCK', tmp_path/'uv.lock')
     metadata = {'model': 'test/gdn', 'model_revision': 'b'*40, 'layer': 0, 'tokens': 3,
                 'model_dtype':'float32','analysis_dtype':'float64','attention_implementation':'fused_recurrent',
                 'threshold_rank_singular_tolerance': spectrum.RANK_TOL}

@@ -49,15 +49,16 @@ code do not select hardware policy.
 
 Node CUDA toolkits differ: on 2026-09-24 `dogo` had CUDA 12.6 in `/usr/local/cuda`
 and `akita` CUDA 13.0. jaxlib assembles Triton custom-call PTX with that `ptxas`
-unless `CUDA_HOME` names another toolkit; the GLA launcher points it at the locked
-environment's `nvidia/cuda_nvcc` (CUDA 12.9), since 12.6 rejects Triton 3.6's PTX.
+unless `CUDA_HOME` names another toolkit; `scaffolds/transformer/launchers/kennel.sbatch`
+points it at the locked environment's `nvidia/cuda_nvcc` (CUDA 12.9), since 12.6
+rejects Triton 3.6's PTX.
 
 The retained joint-sweep checks cover all 20 B300 and host-staged A6000
 configurations and 16 new H100 configurations. On `samoyed`, direct peer transfers
 corrupted replicas and batches; the host-staged A100 pilot passed training,
 evaluation, and fresh-process resume for `d_K=8,m=4`. This does not qualify the
 remaining A100 grid or a new attention mechanism. Evidence and limitations are
-recorded in `results/shared_transformer_validation/README.md`.
+recorded in `scaffolds/transformer/validation/README.md`.
 
 ## ORCD / Engaging (MIT)
 
@@ -98,9 +99,11 @@ squeue -u "$USER"                           # Your queued/running jobs
 sacct -j JOB_ID -o JobID,State,Elapsed,ExitCode
 ```
 
-Install each experiment's locked environment as described in its README before
-submission. Keep environments and caches outside Git; do not modify an environment
-while jobs use it. Use the experiment's launcher, with cluster-appropriate resources.
+Submit from the experiment's worktree after syncing that worktree's own environment
+(`uv sync --project scaffolds/<capability> --locked --link-mode hardlink`). Environments
+and caches stay outside Git; never modify an environment while jobs use it. Transformer
+experiments submit `scaffolds/transformer/launchers/kennel.sbatch` with their adapter's
+acceptance module; each README gives the exact command.
 
 To move an experiment, transfer required artifacts separately (for example with
 `rsync`), verify checksums, recreate the environment, and update provenance before

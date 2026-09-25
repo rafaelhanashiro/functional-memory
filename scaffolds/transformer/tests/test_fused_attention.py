@@ -13,10 +13,8 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from scaffolds.transformer.models.components.attention import (
-    blocked_dot_product_attention,
-)
-from scaffolds.transformer.models.components.fused_attention import (
+from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+from scaffolds.transformer.attention.backends.fused_taylor import (
     fused_polynomial_attention,
 )
 from scaffolds.transformer.tests.test_attention import _dense_reference
@@ -266,7 +264,7 @@ def test_finite_large_kernel_and_values_do_not_overflow_numerator(degree, score_
 @pytest.mark.parametrize("degree", (None, 0, 16))
 def test_model_fused_dispatch_retains_real_output_when_collecting_diagnostics(monkeypatch, degree):
     from flax import nnx
-    from scaffolds.transformer.models.components import attention as attention_module
+    from scaffolds.transformer.attention import multihead as attention_module
     from scaffolds.transformer.attention import softmax
     from scaffolds.transformer.attention.backends import reference as reference_backend
     from scaffolds.transformer.attention.backends import fused_taylor as fused_module
@@ -355,7 +353,7 @@ def test_bf16_broad_scores_and_small_vjp_match_fp64(degree):
 def test_mixed_fp32_bf16_dot_preserves_fp32_mantissa_and_finite_range(scale_case):
     from jax.experimental import pallas as pl
     from jax.experimental.pallas import triton as plt
-    from scaffolds.transformer.models.components.fused_attention import _dot
+    from scaffolds.transformer.attention.backends.fused_taylor import _dot
 
     rng = np.random.default_rng(185)
     a = rng.uniform(-2, 2, (16, 64)).astype(np.float32)

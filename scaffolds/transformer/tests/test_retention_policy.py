@@ -16,9 +16,9 @@ def test_explicit_checkpoint_storage_roundtrips_and_resumes(tmp_path):
     from scaffolds.transformer.training.checkpointing import restore_latest_checkpoint
     import jax
 
-    config = tiny_config(tmp_path / "results/example/runs/run")
+    config = tiny_config(tmp_path / "experiments/example/runs/run")
     config.train.checkpoint_dir = tmp_path / "checkpoints/example/run"
-    config_path = tmp_path / "results/example/configs/run.yaml"
+    config_path = tmp_path / "experiments/example/configs/run.yaml"
     save_config(config, config_path)
     restored_config = load_config(config_path)
     assert restored_config.train.checkpoint_dir == config.train.checkpoint_dir

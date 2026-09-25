@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "output": "experiments/state_rank/unified_comparison",
+  "models": [
+    {
+      "key": "llama",
+      "label": "Llama",
+      "results": "experiments/state_rank/random_vs_pretrained",
+      "layer": 8
+    },
+    {
+      "key": "gated-deltanet",
+      "label": "Gated DeltaNet",
+      "results": "experiments/state_rank/random_vs_pretrained_deltanet",
+      "layer": 12
+    }
+  ]
+}

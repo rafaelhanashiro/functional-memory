@@ -35,6 +35,7 @@ from scaffolds.transformer.training.checkpointing import (
     save_checkpoint,
     state_sha256,
 )
+from scaffolds.transformer.training import tracking
 from scaffolds.transformer.training.distributed import (
     BatchLayout,
     DataParallelFunctions,
@@ -160,96 +161,6 @@ def eval_step(
 
 def _serializable_config(config: Config) -> dict:
     return config_to_dict(config)
-
-
-def maybe_init_wandb(config: Config) -> tuple[object | None, str | None]:
-    if config.train.wandb_mode == "disabled":
-        return None, None
-
-    run_id = None
-    try:
-        identity_path = config.train.workdir / "wandb_run.json"
-        expected_identity = {
-            "entity": config.train.wandb_entity,
-            "project": config.train.wandb_project,
-            "run_name": config.train.wandb_run_name,
-        }
-        if identity_path.exists():
-            identity = json.loads(identity_path.read_text(encoding="utf-8"))
-            for key, value in expected_identity.items():
-                if identity.get(key) != value:
-                    raise ValueError(
-                        f"W&B {key} changed from {identity.get(key)!r} to {value!r}"
-                    )
-            run_id = str(identity["run_id"])
-        else:
-            run_id = uuid.uuid4().hex
-            write_json_atomic(
-                identity_path,
-                {**expected_identity, "run_id": run_id},
-            )
-
-        import wandb
-
-        run = wandb.init(
-            project=config.train.wandb_project,
-            entity=config.train.wandb_entity,
-            name=config.train.wandb_run_name,
-            id=run_id,
-            resume="allow",
-            mode=config.train.wandb_mode,
-            dir=str(config.train.workdir),
-            config=_serializable_config(config),
-            settings=wandb.Settings(init_timeout=30),
-        )
-    except Exception as error:
-        print(
-            f"wandb_init_failed={type(error).__name__}: {error}; "
-            "continuing_with_local_metrics=true",
-            flush=True,
-        )
-        return None, run_id
-    return run, run_id
-
-
-def safe_wandb_log(wandb_run, record: dict) -> None:
-    if wandb_run is None:
-        return
-    payload = {
-        "train/nll_sample_mean": record["train_nll_sample_mean"],
-        "train/ppl_from_mean_nll": record["train_perplexity_from_mean_nll"],
-        "train/learning_rate": record["learning_rate"],
-        "train/tokens": record["training_tokens"],
-        "train/tokens_per_second": record["tokens_per_second"],
-        "train/tokens_per_second_per_device": record[
-            "tokens_per_second_per_device"
-        ],
-        "val/nll": record["validation_nll"],
-        "val/ppl": record["validation_perplexity"],
-        "val/is_best": record["is_best"],
-        "model/parameter_count": record["parameter_count"],
-    }
-    try:
-        wandb_run.log(payload, step=int(record["step"]))
-    except Exception as error:
-        print(
-            f"wandb_log_failed_step={record['step']} "
-            f"error={type(error).__name__}: {error}; "
-            "local_metrics_committed=true",
-            flush=True,
-        )
-
-
-def safe_wandb_finish(wandb_run) -> None:
-    if wandb_run is None:
-        return
-    try:
-        wandb_run.finish()
-    except Exception as error:
-        print(
-            f"wandb_finish_failed={type(error).__name__}: {error}",
-            flush=True,
-        )
 
 
 def ensure_run_config(config: Config, *, resume: bool) -> None:
@@ -427,7 +338,7 @@ def _recover_pending_validation(*, metrics_store, latest_checkpoint_step, workdi
             write_json_atomic(workdir / "best_validation.json", _best_validation_record(record))
         metrics_store.commit(
             record, latest_checkpoint_step=latest_checkpoint_step,
-            mirror=lambda event: safe_wandb_log(wandb_run, event),
+            mirror=lambda event: tracking.log_validation(wandb_run, event),
         )
 
 
@@ -635,7 +546,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         config, validated_manifest=validated_eval_manifest,
     )
     _write_status(config, diagnostic_sample=diagnostic_provenance)
-    wandb_run, wandb_run_id = maybe_init_wandb(config)
+    wandb_run, wandb_run_id = tracking.init_run(
+        config, tracking.runtime_settings(layout.device_count, jax.devices()[0].device_kind))
     try:
         metrics_store = ValidationMetricsStore(config.train.workdir)
         _recover_pending_validation(metrics_store=metrics_store, latest_checkpoint_step=manager.latest_step(),
@@ -693,6 +605,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 train_losses.append(loss_value)
                 train_ppl = _perplexity(config, state, step, loss_value, diagnostic_sample, diagnostic_provenance)
                 print(f"step={step} train_nll={loss_value:.6f} train_ppl={train_ppl:.4f}", flush=True)
+                tracking.log_train(wandb_run, step, loss_value, train_ppl, float(schedule(step - 1)))
             if is_eval:
                 interval_seconds = time.perf_counter() - window_time
                 evaluation_start = time.perf_counter()
@@ -758,7 +671,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                     best_nll = eval_loss
                     write_json_atomic(config.train.workdir / "best_validation.json", _best_validation_record(record))
                 metrics_store.commit(record, latest_checkpoint_step=manager.latest_step(),
-                                     mirror=lambda event: safe_wandb_log(wandb_run, event))
+                                     mirror=lambda event: tracking.log_validation(wandb_run, event))
                 _write_status(config, step=step, training_tokens=step * tokens_per_step,
                               validation_nll=eval_loss, validation_perplexity=eval_ppl,
                               attention_diagnostics=diagnostics,
@@ -824,6 +737,10 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 "attention_diagnostics": terminal_record["attention_diagnostics"],
             }
             write_json_atomic(completion_path, completion)
+            best_path = config.train.workdir / "best_validation.json"
+            tracking.summarize_completion(
+                wandb_run, {**completion, "step": final_step},
+                json.loads(best_path.read_text()) if best_path.exists() else None)
             _write_status(config, status="complete", step=final_step, **{
                 key: completion[key] for key in (
                     "training_tokens", "validation_nll", "validation_perplexity",
@@ -838,4 +755,4 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                           rng_state={"seed": config.train.seed, "completed_updates": final_step})
         return result
     finally:
-        safe_wandb_finish(wandb_run)
+        tracking.finish(wandb_run)

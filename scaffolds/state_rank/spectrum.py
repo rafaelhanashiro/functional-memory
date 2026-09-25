@@ -1,9 +1,9 @@
 """Inspect the state in Section 3.2 of overleaf/iclr/iclr2027_conference.tex.
 
-Llama, all KV heads: uv run scaffolds/state_rank/spectrum.py --layer 8 --tokens 512 --output results/run
+Llama, all KV heads: uv run scaffolds/state_rank/spectrum.py --layer 8 --tokens 512 --output .cache/state_rank/spectrum/run
 Select one Llama KV head: uv run scaffolds/state_rank/spectrum.py --layer 8 --kv-head 0
 Gated DeltaNet: uv run scaffolds/state_rank/spectrum.py --model gated-deltanet --layer 12
-Refresh saved figures/metrics: uv run scaffolds/state_rank/spectrum.py --replot results/run
+Refresh saved figures/metrics: uv run scaffolds/state_rank/spectrum.py --replot .cache/state_rank/spectrum/run
 For Slurm, run uv sync --frozen first, then .venv/bin/python scaffolds/state_rank/spectrum.py.
 The saved eigenvalues describe the attention state before output processing.
 Threshold rank counts state singular values > 1e-4 times the largest.
