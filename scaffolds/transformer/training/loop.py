@@ -166,6 +166,11 @@ def _serializable_config(config: Config) -> dict:
 def ensure_run_config(config: Config, *, resume: bool) -> None:
     path = config.train.workdir / "config.json"
     existing = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+    if existing is not None and existing.get("optim", {}).get("weight_decay_policy") != config.optim.weight_decay_policy:
+        raise ValueError(
+            f"Run has a different or unrecorded weight-decay policy: {path}. "
+            "Resume with its original source checkout, or start a new run."
+        )
     request = config.model.attention_backend
     if existing is not None and request == "auto":
         pinned = existing.get("model", {}).get("attention_backend")

@@ -41,7 +41,8 @@ class ModelConfig:
     rope_theta: float = 10000.0
     rms_norm_eps: float = 1e-6
     dropout: float = 0.0
-    tie_embeddings: bool = True
+    # Retained for recipe compatibility; this scaffold requires separate weights.
+    tie_embeddings: bool = False
     remat: bool = False
     attention_backend: Literal["auto", "blocked", "fused", "manual", "xla", "cudnn"] = "auto"
     attention_degree: int | None = None
@@ -62,6 +63,8 @@ class ModelConfig:
     def __post_init__(self):
         if self.kind != "transformer":
             raise ValueError("The shared scaffold supports only kind=transformer")
+        if self.tie_embeddings is not False:
+            raise ValueError("model.tie_embeddings must be false: the shared scaffold requires untied embeddings")
         for name in (
             "vocab_size", "max_seq_len", "num_layers", "hidden_size", "num_heads",
             "num_kv_heads", "qk_head_dim", "value_head_dim", "intermediate_size",
@@ -141,6 +144,7 @@ class OptimConfig:
     learning_rate: float = 1e-3
     min_learning_rate: float = 1e-4
     weight_decay: float = 0.1
+    weight_decay_policy: Literal["exclude_embeddings_norms_biases_v1"] = "exclude_embeddings_norms_biases_v1"
     beta1: float = 0.9
     beta2: float = 0.95
     grad_clip_norm: float = 1.0
@@ -182,6 +186,8 @@ def validate_config(config: Config) -> None:
     """Validate loaded/overridden settings before allocating a model."""
     config.model.__post_init__()
     data, optim, train = config.data, config.optim, config.train
+    if optim.weight_decay_policy != "exclude_embeddings_norms_biases_v1":
+        raise ValueError("optim.weight_decay_policy must be exclude_embeddings_norms_biases_v1")
     if data.source not in ("synthetic", "packed"):
         raise ValueError("data.source must be synthetic or packed")
     for name, value in (

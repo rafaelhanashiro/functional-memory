@@ -69,21 +69,20 @@ class Block(nnx.Module):
 
 class TransformerLM(nnx.Module):
     def __init__(self, config: ModelConfig, *, rngs: nnx.Rngs):
+        config.__post_init__()
         if config.attention_backend == "auto":
             from scaffolds.transformer.attention.backends.selection import resolve_attention_backend
 
             config = replace(config, attention_backend=resolve_attention_backend(config))
         self.config = config
         self.token_embedding = nnx.Embed(config.vocab_size, config.hidden_size, rngs=rngs)
+        self.token_embedding.embedding.set_metadata(weight_decay=False)
         self.dropout = nnx.Dropout(config.dropout)
         self.layer_names = tuple(f"layers_{idx}" for idx in range(config.num_layers))
         for layer_name in self.layer_names:
             setattr(self, layer_name, Block(config, rngs=rngs))
         self.final_norm = RMSNorm(config.hidden_size, config.rms_norm_eps)
-        if config.tie_embeddings:
-            self.lm_head = None
-        else:
-            self.lm_head = nnx.Linear(config.hidden_size, config.vocab_size, use_bias=False, rngs=rngs)
+        self.lm_head = nnx.Linear(config.hidden_size, config.vocab_size, use_bias=False, rngs=rngs)
         self.attention_parameter_specs = attention_parameter_specs(config)
         initialize_attention_parameters(
             self, self.attention_parameter_specs,
@@ -123,10 +122,5 @@ class TransformerLM(nnx.Module):
 
         x = self.final_norm(x)
         with jax.named_scope("vocabulary_projection"):
-            if cfg.tie_embeddings:
-                logits = self.token_embedding.attend(x)
-            else:
-                if self.lm_head is None:
-                    raise ValueError("lm_head is not initialized when tie_embeddings=False")
-                logits = self.lm_head(x)
+            logits = self.lm_head(x)
         return (logits, tuple(diagnostics)) if return_diagnostics else logits

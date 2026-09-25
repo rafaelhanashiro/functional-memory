@@ -220,14 +220,14 @@ def test_shared_coefficient_gradient_sums_every_layer_and_head():
 
 
 @pytest.mark.parametrize("sharing", SHARINGS)
-def test_only_coefficient_array_is_excluded_from_weight_decay(tmp_path, sharing):
+def test_coefficient_array_and_backbone_exclusions_have_no_weight_decay(tmp_path, sharing):
     config = _config(tmp_path, 2, sharing)
     state = create_state(config, jax.random.PRNGKey(0))
     updated = state.apply_gradients(grads=jax.tree.map(jnp.zeros_like, state.params))
     before, after = dict(nnx.to_flat_state(state.params)), dict(nnx.to_flat_state(updated.params))
     decay = 1 - config.optim.learning_rate * config.optim.weight_decay
     for path, variable in before.items():
-        if path == ("polynomial_coefficients",):
+        if path == ("polynomial_coefficients",) or path[-1] in ("scale", "embedding", "bias"):
             np.testing.assert_array_equal(after[path][...], variable[...])
         else:
             np.testing.assert_allclose(after[path][...], variable[...] * decay, rtol=1e-6)

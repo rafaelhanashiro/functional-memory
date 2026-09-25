@@ -16,7 +16,7 @@ from scaffolds.transformer.attention.positional import apply_rope
 
 class HeadRMSNorm(nnx.Module):
     def __init__(self, num_heads: int, head_dim: int, eps: float = 1e-6):
-        self.scale = nnx.Param(jnp.ones((num_heads, head_dim)))
+        self.scale = nnx.Param(jnp.ones((num_heads, head_dim)), weight_decay=False)
         self.eps = eps
 
     def __call__(self, x: jax.Array) -> jax.Array:

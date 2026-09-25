@@ -36,8 +36,10 @@ def test_defaults_are_tiny_synthetic_and_round_trip(tmp_path):
     validate_config(config)
     assert config.model.hidden_size == 128
     assert config.model.num_layers == 2
+    assert config.model.tie_embeddings is False
     assert config.data.source == "synthetic"
     assert config.train.wandb_mode == "disabled"
+    assert config.optim.weight_decay_policy == "exclude_embeddings_norms_biases_v1"
     path = tmp_path / "config.yaml"
     save_config(config, path)
     assert asdict(load_config(path)) == asdict(config)
@@ -50,6 +52,9 @@ def test_defaults_are_tiny_synthetic_and_round_trip(tmp_path):
     ("model:\n  num_kv_heads: 2\n", "full MHA"),
     ("model:\n  attention_backend: fast\n", "backend"),
     ("model:\n  dropout: 0.1\n", "dropout=0"),
+    ("model:\n  tie_embeddings: true\n", "requires untied embeddings"),
+    ("model:\n  tie_embeddings: 0\n", "requires untied embeddings"),
+    ("optim:\n  weight_decay_policy: all_parameters\n", "weight_decay_policy"),
     ("model:\n  attention_degree: -2\n", "nonnegative integer"),
     ("model:\n  attention_degree: true\n", "nonnegative integer"),
     ("model:\n  attention_degree: 2.0\n", "nonnegative integer"),
@@ -78,6 +83,12 @@ def test_fixed_odd_degree_configs_are_valid(tmp_path, degree):
 def test_invalid_qk_dimensions_rejected_at_construction(qk_dim):
     with pytest.raises(ValueError):
         ModelConfig(qk_head_dim=qk_dim)
+
+
+@pytest.mark.parametrize("value", (True, None, 0, 1, "false"))
+def test_tied_or_nonboolean_embedding_setting_is_rejected(value):
+    with pytest.raises(ValueError, match="requires untied embeddings"):
+        ModelConfig(tie_embeddings=value)
 
 
 @pytest.mark.parametrize("degree", (0, 2, 4, 8, 16, None))

@@ -33,7 +33,7 @@ def model_parameter_count(config: ModelConfig) -> int:
         attention += h * value_dim + h * config.gla_gate_rank + config.gla_gate_rank * key_dim + key_dim + value_dim
     feed_forward = 3 * h * config.intermediate_size
     return (
-        embedding * (1 if config.tie_embeddings else 2)
+        2 * embedding
         + config.num_layers * (attention + feed_forward + 2 * h)
         + h
         + attention_parameter_count(config)

@@ -6,6 +6,31 @@ Scientific recipes, findings, and reproduction records belong to
 `experiments/<experiment>/`. This README describes the reusable software API.
 State-rank analysis uses the independent `scaffolds/state_rank/` capability.
 
+## Embeddings and optimizer policy
+
+The input token embedding and output vocabulary projection are always independent
+trainable arrays. `model.tie_embeddings` must be `false`; `true` is rejected.
+Supporting tied embeddings requires a scaffold change, rather than a recipe toggle.
+
+AdamW applies weight decay to projection weights, including the independent output
+vocabulary projection. It excludes input embeddings, all RMSNorm scales (including
+GLA's per-head scales), all biases (including the GLA retention-gate bias), and
+attention parameters whose `AttentionParameterSpec` disables decay. Excluded
+parameters still receive ordinary Adam gradient updates. These rules apply to every
+attention mechanism and are not experiment-specific options.
+
+Embeddings and normalization modules mark their parameters with NNX metadata
+`weight_decay=False`; bias parameters use NNX's `bias` name. New modules must retain
+these roles rather than infer decay from tensor dimensions. The optimizer preserves
+the parameter tree and masks only AdamW's decoupled decay term. FP32 parameters and
+Adam moments are retained with BF16 computation; clipping follows gradient averaging.
+
+Resolved configurations record
+`optim.weight_decay_policy: exclude_embeddings_norms_biases_v1`. The trainer refuses
+to resume a run with an absent or different policy identifier. Reproduce or resume
+historical runs using their recorded source commit; loading an old recipe for a new
+run uses the canonical policy. Existing scientific records are unchanged.
+
 ## Model, runtime, and launch scripts
 
 The model and trainer share one implementation across clusters. Generic device

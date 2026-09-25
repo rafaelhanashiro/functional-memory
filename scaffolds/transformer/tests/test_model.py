@@ -9,6 +9,7 @@ from flax import nnx
 
 from scaffolds.transformer.configs import ATTENTION_DEGREES, ModelConfig, load_config
 from scaffolds.transformer.models import build_model, model_parameter_count
+from scaffolds.transformer.models.architectures.transformer import TransformerLM
 
 
 BASE_CONFIG = Path(__file__).resolve().parents[1] / "configs/base.yaml"
@@ -19,6 +20,40 @@ def _small_config(**overrides):
                     num_heads=4, num_kv_heads=4, qk_head_dim=8, value_head_dim=8,
                     intermediate_size=64, tie_embeddings=False)
     return ModelConfig(**(settings | overrides))
+
+
+@pytest.mark.parametrize("construct", (
+    lambda config: build_model(config, 0),
+    lambda config: TransformerLM(config, rngs=nnx.Rngs(0)),
+    model_parameter_count,
+))
+def test_mutated_tied_config_cannot_bypass_model_validation(construct):
+    config = _small_config(attention_backend="xla")
+    config.tie_embeddings = True
+    with pytest.raises(ValueError, match="requires untied embeddings"):
+        construct(config)
+
+
+@pytest.mark.parametrize("mechanism", ("dot_product", "gla"))
+def test_input_embedding_and_output_projection_have_independent_task_gradients(mechanism):
+    config = _small_config(attention_mechanism=mechanism, attention_backend="blocked")
+    model = build_model(config, 0)
+    assert model.token_embedding.embedding is not model.lm_head.kernel
+    graph, params = nnx.split(model, nnx.Param)
+    tokens = jnp.array([[1, 2]], dtype=jnp.int32)
+
+    def loss(candidate):
+        logits = nnx.merge(graph, candidate)(tokens)
+        return -jax.nn.log_softmax(logits, axis=-1)[..., 3].mean()
+
+    grads = jax.grad(loss)(params)
+    embedding_grad = np.asarray(grads["token_embedding"]["embedding"][...])
+    projection_grad = np.asarray(grads["lm_head"]["kernel"][...])
+    assert np.any(embedding_grad[[1, 2]] != 0)
+    # A vocabulary entry absent from the input has no embedding gradient, while
+    # its independent output column still learns from the language-model loss.
+    np.testing.assert_array_equal(embedding_grad[3], np.zeros(config.hidden_size))
+    assert np.any(projection_grad[:, 3] != 0)
 
 
 @pytest.mark.parametrize("degree", ATTENTION_DEGREES)

@@ -128,13 +128,13 @@ def test_global_gradients_sum_over_all_heads_and_layers_with_remat(tmp_path, mod
 
 
 @pytest.mark.parametrize("mode,sharing", VARIANTS)
-def test_only_coefficient_array_is_excluded_from_weight_decay(tmp_path, mode, sharing):
+def test_coefficient_array_and_backbone_exclusions_have_no_weight_decay(tmp_path, mode, sharing):
     cfg = _config(tmp_path, mode, sharing)
     state = create_state(cfg, jax.random.PRNGKey(0))
     updated = state.apply_gradients(grads=jax.tree.map(jnp.zeros_like, state.params))
     before, after = dict(nnx.to_flat_state(state.params)), dict(nnx.to_flat_state(updated.params))
     for path, variable in before.items():
-        if path == ("quadratic_coefficients",):
+        if path == ("quadratic_coefficients",) or path[-1] in ("scale", "embedding", "bias"):
             np.testing.assert_array_equal(variable[...], after[path][...])
         else:
             np.testing.assert_allclose(after[path][...], variable[...] * (1-cfg.optim.learning_rate*cfg.optim.weight_decay),
