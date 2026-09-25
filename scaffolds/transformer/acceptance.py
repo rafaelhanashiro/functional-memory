@@ -32,7 +32,15 @@ import xml.etree.ElementTree as ET
 from scaffolds.transformer.configs import config_to_dict, load_config
 
 ROOT = Path(__file__).resolve().parents[2]
-CHECKS = ("cpu-tests", "gpu-tests", "initialization", "pilot", "resume")
+CHECKS = ("cpu-tests", "cpu-distributed-tests", "gpu-tests", "initialization", "pilot", "resume")
+# Test stages: name, pytest selection, and whether the tests run on CPU. Distributed
+# CPU tests need several JAX devices, so only that stage forces two host devices.
+TEST_STAGES = (
+    ("cpu-tests", ("-m", "not gpu", "-k", "not distributed"), True),
+    ("cpu-distributed-tests", ("-m", "not gpu", "-k", "distributed"), True),
+    ("gpu-tests", ("-m", "gpu"), False),
+)
+NO_TESTS_COLLECTED = 5
 RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHON_CLIENT_PREALLOCATE",
                 "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME")
 
@@ -230,21 +238,28 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
         return
     stage = "cpu-tests"
     try:
-        for stage, paths in (("cpu-tests", spec.cpu_tests), ("gpu-tests", spec.gpu_tests)):
+        for stage, selection, cpu in TEST_STAGES:
             path = directory / f"{stage}.json"
             if passed(path, experiment):
                 continue
+            paths = spec.cpu_tests if cpu else spec.gpu_tests
             if not paths:
                 record(path, experiment, tests_passed=0, note="no tests declared")
                 continue
             junit = directory / f"{stage}.xml"
-            env = dict(os.environ, JAX_PLATFORMS="cpu" if stage == "cpu-tests" else "cuda")
-            if stage == "gpu-tests":
+            env = dict(os.environ, JAX_PLATFORMS="cpu" if cpu else "cuda")
+            if stage == "cpu-distributed-tests":
+                env["XLA_FLAGS"] = f"{env.get('XLA_FLAGS', '')} --xla_force_host_platform_device_count=2".strip()
+            if not cpu:
                 # Kernel tests are single-device operations; the pilot uses every GPU.
                 env["CUDA_VISIBLE_DEVICES"] = env.get("CUDA_VISIBLE_DEVICES", "0").split(",")[0]
-            subprocess.run([sys.executable, "-m", "pytest", "-c", "scaffolds/transformer/pyproject.toml", *paths,
-                            "-q", "--import-mode=importlib", "-m", "not gpu" if stage == "cpu-tests" else "gpu",
-                            f"--junitxml={junit}"], cwd=ROOT, env=env, check=True)
+            result = subprocess.run([sys.executable, "-m", "pytest", "-c", "scaffolds/transformer/pyproject.toml", *paths,
+                                     "-q", "--import-mode=importlib", *selection, f"--junitxml={junit}"], cwd=ROOT, env=env)
+            if result.returncode == NO_TESTS_COLLECTED and stage == "cpu-distributed-tests":
+                record(path, experiment, tests_passed=0, note="no distributed tests among the declared CPU tests")
+                continue
+            if result.returncode != 0:
+                raise RuntimeError(f"Acceptance {stage} failed with pytest exit code {result.returncode}")
             record(path, experiment, tests_passed=require_passing_tests(junit))
         stage = "initialization"
         path = directory / f"{stage}.json"

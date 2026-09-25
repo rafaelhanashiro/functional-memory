@@ -6828,7 +6828,6 @@
         {
           "run_name": "200m-dk032-m016-seed0",
           "slurm_job_id": "200787",
-          "log_path": "experiments/key_dimension_taylor/logs/200m-dk032-m016-seed0/slurm-200787.out",
           "first_training_update": [
             "1",
             "10.873755",
@@ -6843,7 +6842,6 @@
         {
           "run_name": "200m-dk128-m008-seed0",
           "slurm_job_id": "200791",
-          "log_path": "experiments/key_dimension_taylor/logs/200m-dk128-m008-seed0/slurm-200791.out",
           "first_training_update": [
             "1",
             "10.880325",
@@ -6858,7 +6856,6 @@
         {
           "run_name": "200m-dk128-m016-seed0",
           "slurm_job_id": "200794",
-          "log_path": "experiments/key_dimension_taylor/logs/200m-dk128-m016-seed0/slurm-200794.out",
           "first_training_update": [
             "1",
             "10.880345",
@@ -6901,7 +6898,6 @@
             {
               "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk032-m016-seed0:0",
               "dependency_job_id": null,
-              "log_path": "experiments/key_dimension_taylor/logs/200m-dk032-m016-seed0/slurm-200787.out",
               "profile": "a6000",
               "released_utc": "2026-09-22T04:43:38.087155+00:00",
               "run_name": "200m-dk032-m016-seed0",
@@ -6912,7 +6908,6 @@
             {
               "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk032-m016-seed0:1",
               "dependency_job_id": "200787",
-              "log_path": "experiments/key_dimension_taylor/logs/200m-dk032-m016-seed0/slurm-200788.out",
               "profile": "a6000",
               "released_utc": "2026-09-22T04:43:38.254498+00:00",
               "run_name": "200m-dk032-m016-seed0",
@@ -6923,7 +6918,6 @@
             {
               "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk032-m016-seed0:2",
               "dependency_job_id": "200788",
-              "log_path": "experiments/key_dimension_taylor/logs/200m-dk032-m016-seed0/slurm-200789.out",
               "profile": "a6000",
               "released_utc": "2026-09-22T04:43:38.426343+00:00",
               "run_name": "200m-dk032-m016-seed0",
@@ -6934,7 +6928,6 @@
             {
               "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk032-m016-seed0:3",
               "dependency_job_id": "200789",
-              "log_path": "experiments/key_dimension_taylor/logs/200m-dk032-m016-seed0/slurm-200790.out",
               "profile": "a6000",
               "released_utc": "2026-09-22T04:43:38.598084+00:00",
               "run_name": "200m-dk032-m016-seed0",
@@ -6988,7 +6981,6 @@
             {
               "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m008-seed0:0",
               "dependency_job_id": null,
-              "log_path": "experiments/key_dimension_taylor/logs/200m-dk128-m008-seed0/slurm-200791.out",
               "profile": "a6000",
               "released_utc": "2026-09-22T04:43:38.944701+00:00",
               "run_name": "200m-dk128-m008-seed0",
@@ -6999,7 +6991,6 @@
             {
               "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m008-seed0:1",
               "dependency_job_id": "200791",
-              "log_path": "experiments/key_dimension_taylor/logs/200m-dk128-m008-seed0/slurm-200792.out",
               "profile": "a6000",
               "released_utc": "2026-09-22T04:43:39.122663+00:00",
               "run_name": "200m-dk128-m008-seed0",
@@ -7010,7 +7001,6 @@
             {
               "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m008-seed0:2",
               "dependency_job_id": "200792",
-              "log_path": "experiments/key_dimension_taylor/logs/200m-dk128-m008-seed0/slurm-200793.out",
               "profile": "a6000",
               "released_utc": "2026-09-22T04:43:39.299918+00:00",
               "run_name": "200m-dk128-m008-seed0",
@@ -7059,7 +7049,6 @@
             {
               "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m016-seed0:0",
               "dependency_job_id": null,
-              "log_path": "experiments/key_dimension_taylor/logs/200m-dk128-m016-seed0/slurm-200794.out",
               "profile": "a6000",
               "released_utc": "2026-09-22T04:43:39.641514+00:00",
               "run_name": "200m-dk128-m016-seed0",
@@ -7070,7 +7059,6 @@
             {
               "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m016-seed0:1",
               "dependency_job_id": "200794",
-              "log_path": "experiments/key_dimension_taylor/logs/200m-dk128-m016-seed0/slurm-200795.out",
               "profile": "a6000",
               "released_utc": "2026-09-22T04:43:39.812153+00:00",
               "run_name": "200m-dk128-m016-seed0",
@@ -7081,7 +7069,6 @@
             {
               "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m016-seed0:2",
               "dependency_job_id": "200795",
-              "log_path": "experiments/key_dimension_taylor/logs/200m-dk128-m016-seed0/slurm-200796.out",
               "profile": "a6000",
               "released_utc": "2026-09-22T04:43:39.992264+00:00",
               "run_name": "200m-dk128-m016-seed0",
@@ -7092,7 +7079,6 @@
             {
               "comment": "dkt:9f8571a5c40c9341ae33a47ba276af806ff1cb562378bce86cc8248fe7967ff0:200m-dk128-m016-seed0:3",
               "dependency_job_id": "200796",
-              "log_path": "experiments/key_dimension_taylor/logs/200m-dk128-m016-seed0/slurm-200797.out",
               "profile": "a6000",
               "released_utc": "2026-09-22T04:43:40.171398+00:00",
               "run_name": "200m-dk128-m016-seed0",
@@ -7340,15 +7326,12 @@
         ],
         "checkpoints": {
           "200m-dk032-m016-seed0": {
-            "path": "experiments/key_dimension_taylor/checkpoints/200m-dk032-m016-seed0/500",
             "step": 500
           },
           "200m-dk128-m008-seed0": {
-            "path": "experiments/key_dimension_taylor/checkpoints/200m-dk128-m008-seed0/500",
             "step": 500
           },
           "200m-dk128-m016-seed0": {
-            "path": "experiments/key_dimension_taylor/checkpoints/200m-dk128-m016-seed0/500",
             "step": 500
           }
         },
@@ -7368,19 +7351,16 @@
         },
         "handoffs": {
           "200m-dk032-m016-seed0": {
-            "checkpoint_path": "experiments/key_dimension_taylor/checkpoints/200m-dk032-m016-seed0/500",
             "checkpoint_step": 500,
             "path": "experiments/key_dimension_taylor/200m-dk032-m016-seed0/handoff.json",
             "sha256": "8514e2662891c3c7c5d083b5dd264a3822238cad109b8566fcef8163c2339ab4"
           },
           "200m-dk128-m008-seed0": {
-            "checkpoint_path": "experiments/key_dimension_taylor/checkpoints/200m-dk128-m008-seed0/500",
             "checkpoint_step": 500,
             "path": "experiments/key_dimension_taylor/200m-dk128-m008-seed0/handoff.json",
             "sha256": "25e1b976cfea34dada749ca2f5084be6047e62e38c379728bb54d75969c7b08f"
           },
           "200m-dk128-m016-seed0": {
-            "checkpoint_path": "experiments/key_dimension_taylor/checkpoints/200m-dk128-m016-seed0/500",
             "checkpoint_step": 500,
             "path": "experiments/key_dimension_taylor/200m-dk128-m016-seed0/handoff.json",
             "sha256": "95b7125f39e12369a66b1dbfa61cab4b1b9b3b7840102c0c5d333ccbe9f37e53"

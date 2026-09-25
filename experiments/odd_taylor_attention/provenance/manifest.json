@@ -91,7 +91,7 @@
       "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
       "source_provenance": {
         "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-        "sha256": "b370478de94789ebc4b115587f3eb353db581690519f4f5c3f425e51082295c4"
+        "sha256": "d3217493593ae9d815a8ecbbcbd7aa9f8b0a0cbeaa9ebf9de57ec1f09afbf221"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
@@ -178,7 +178,7 @@
       "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
       "source_provenance": {
         "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-        "sha256": "b370478de94789ebc4b115587f3eb353db581690519f4f5c3f425e51082295c4"
+        "sha256": "d3217493593ae9d815a8ecbbcbd7aa9f8b0a0cbeaa9ebf9de57ec1f09afbf221"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
@@ -1412,7 +1412,7 @@
               "selected_checkpoint": {
                 "file_count": 12,
                 "metadata_sha256": "4d49559fc7c83e403cf9fa54d61ccaa725af944863a4f38308795a9541b9d0a0",
-                "path": "experiments/polynomial_attention/checkpoints/200m-m002-seed0/19074",
+                "path": "experiments/key_dimension_taylor/checkpoints/200m-m002-seed0/19074",
                 "size_bytes": 2199258055,
                 "step": 19074,
                 "validation_nll": 2.7900009751319885,
@@ -1436,7 +1436,7 @@
             "selected_checkpoint": {
               "file_count": 12,
               "metadata_sha256": "4d49559fc7c83e403cf9fa54d61ccaa725af944863a4f38308795a9541b9d0a0",
-              "path": "experiments/polynomial_attention/checkpoints/200m-m002-seed0/19074",
+              "path": "experiments/key_dimension_taylor/checkpoints/200m-m002-seed0/19074",
               "size_bytes": 2199258055,
               "step": 19074,
               "validation_nll": 2.7900009751319885,
@@ -1615,7 +1615,7 @@
               "selected_checkpoint": {
                 "file_count": 18,
                 "metadata_sha256": "fa8681bab9517fa0b9fad89ccd85a12cf734c86b9f95736df8a3022dca2ca00c",
-                "path": "experiments/polynomial_attention/checkpoints/200m-softmax-seed0/19074",
+                "path": "experiments/key_dimension_taylor/checkpoints/200m-softmax-seed0/19074",
                 "size_bytes": 2196497053,
                 "step": 19074,
                 "validation_nll": 2.6874512689454213,
@@ -1639,7 +1639,7 @@
             "selected_checkpoint": {
               "file_count": 18,
               "metadata_sha256": "fa8681bab9517fa0b9fad89ccd85a12cf734c86b9f95736df8a3022dca2ca00c",
-              "path": "experiments/polynomial_attention/checkpoints/200m-softmax-seed0/19074",
+              "path": "experiments/key_dimension_taylor/checkpoints/200m-softmax-seed0/19074",
               "size_bytes": 2196497053,
               "step": 19074,
               "validation_nll": 2.6874512689454213,
@@ -1690,7 +1690,6 @@
         "runs": [
           {
             "attention_degree": 1,
-            "checkpoint_dir": "experiments/odd_taylor_attention/checkpoints/200m-m001-seed0",
             "coefficient_count": 0,
             "config": {
               "data": {
@@ -1766,7 +1765,6 @@
           },
           {
             "attention_degree": 3,
-            "checkpoint_dir": "experiments/odd_taylor_attention/checkpoints/200m-m003-seed0",
             "coefficient_count": 0,
             "config": {
               "data": {

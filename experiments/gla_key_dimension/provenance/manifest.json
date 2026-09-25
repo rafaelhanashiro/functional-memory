@@ -691,7 +691,7 @@
   "comparisons": {
     "record": {
       "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-      "sha256": "b370478de94789ebc4b115587f3eb353db581690519f4f5c3f425e51082295c4"
+      "sha256": "d3217493593ae9d815a8ecbbcbd7aa9f8b0a0cbeaa9ebf9de57ec1f09afbf221"
     },
     "note": "Seed-0 200M runs with the same data, optimizer, and backbone recipe at each d_K; softmax and row-normalized Taylor attention of degree 2, 4, 8, and 16.",
     "runs": [

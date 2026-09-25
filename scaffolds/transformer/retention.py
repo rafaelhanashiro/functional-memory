@@ -46,7 +46,7 @@ def finalize_run(config) -> dict:
     if selected["step"] != best["step"] or selected["validation_nll"] != best["validation_nll"]:
         raise ValueError("Selected checkpoint does not match the best committed validation")
     record = {
-        "format": "checkpoint-retention", "version": 1,
+        "format": "shared-transformer-checkpoint-retention", "version": 1,
         "source_commit": config.train.source_commit, "seed": config.train.seed,
         "completion_sha256": hashlib.sha256(completion_path.read_bytes()).hexdigest(),
         "selection_rule": "lowest_validation_nll_latest_on_tie", "best_checkpoint_step": best["step"],

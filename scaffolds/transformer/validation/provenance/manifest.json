@@ -1111,7 +1111,6 @@
             "slurm_job_id": "200778",
             "submitted_utc": "2026-09-22T03:41:34.474816+00:00",
             "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-small",
-            "log_path": "experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-200778.out",
             "command": [
               "sbatch",
               "--parsable",
@@ -1144,7 +1143,6 @@
             "slurm_job_id": "200779",
             "submitted_utc": "2026-09-22T03:41:34.486774+00:00",
             "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large",
-            "log_path": "experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-200779.out",
             "command": [
               "sbatch",
               "--parsable",
@@ -1178,7 +1176,7 @@
             "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
             "submitted_utc": "2026-09-22T03:48:25.188912+00:00",
             "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-small",
-            "log_path": "experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-200781.out",
+            "log_path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200781.out",
             "environment": {
               "NCCL_P2P_DISABLE": "1",
               "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
@@ -1214,7 +1212,7 @@
             "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
             "submitted_utc": "2026-09-22T03:48:25.203823+00:00",
             "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/pilot-large",
-            "log_path": "experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-200782.out",
+            "log_path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200782.out",
             "environment": {
               "NCCL_P2P_DISABLE": "1",
               "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
@@ -1253,7 +1251,7 @@
             "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
             "submitted_utc": "2026-09-22T03:53:33.188013+00:00",
             "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-0",
-            "log_path": "experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-200783.out",
+            "log_path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200783.out",
             "environment": {
               "NCCL_P2P_DISABLE": "1",
               "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
@@ -1294,7 +1292,7 @@
             "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
             "submitted_utc": "2026-09-22T03:53:33.201778+00:00",
             "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-1",
-            "log_path": "experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-200784.out",
+            "log_path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200784.out",
             "environment": {
               "NCCL_P2P_DISABLE": "1",
               "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
@@ -1334,7 +1332,7 @@
             "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
             "submitted_utc": "2026-09-22T03:53:33.214708+00:00",
             "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-2",
-            "log_path": "experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-200785.out",
+            "log_path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200785.out",
             "environment": {
               "NCCL_P2P_DISABLE": "1",
               "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",
@@ -1373,7 +1371,7 @@
             "runtime_commit": "26faf4e00f7d2b6e54055a26343eb7b8f9d379eb",
             "submitted_utc": "2026-09-22T03:53:33.226489+00:00",
             "output_root": "experiments/key_dimension_taylor/hardware_checks/a6000_host_staging/grid-3",
-            "log_path": "experiments/key_dimension_taylor/logs/hardware-a6000-host-staging/slurm-200786.out",
+            "log_path": "scaffolds/transformer/validation/logs/kdt-a6000-host-staging/slurm-200786.out",
             "environment": {
               "NCCL_P2P_DISABLE": "1",
               "POLYNOMIAL_ATTENTION_HOST_STAGING": "1",

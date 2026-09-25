@@ -204,9 +204,10 @@ Experiments configure these shared modules from their own `adapter/`:
   GPU type, checks the frozen execution set against the launch commit
   (`scaffolds/launch/frozen.py`), uses the worktree's environment, pins `CUDA_HOME`
   to the locked CUDA toolkit, runs acceptance, then trains; logs append across requeues.
-- `acceptance.py` runs identity-keyed acceptance in the production allocation: CPU and
-  GPU tests (no skips), an initialization hash, a full-recipe pilot, and an exact
-  fresh-process resume. An adapter supplies an `AcceptanceSpec` (tests, recipe check,
+- `acceptance.py` runs identity-keyed acceptance in the production allocation: CPU
+  tests, distributed CPU tests on two forced host devices, and single-GPU kernel tests
+  (no skips), an initialization hash, a full-recipe pilot, and an exact fresh-process
+  resume. An adapter supplies an `AcceptanceSpec` (tests, recipe check,
   required backend, initialization check, runtime environment) and nothing else.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
   the selection.
