@@ -1,0 +1,148 @@
+"""Regenerate the cross-mechanism d_K × Taylor-degree comparison."""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+import json
+from collections import Counter
+from pathlib import Path
+
+from .collect import collect_rows
+from .render import render_heatmap
+
+
+REPO_ROOT = Path(__file__).resolve().parents[4]
+EXPERIMENT = "attention_scaling_comparison"
+FIELDS = (
+    "panel", "column", "d_k", "status", "terminal_nll", "terminal_ppl", "failure_step",
+    "source_experiment", "source_run", "source_commit", "metrics_path", "metrics_sha256",
+    "completion_path", "completion_sha256", "failure_path", "failure_sha256",
+)
+
+
+def digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def reference(root: Path, path: Path) -> dict[str, str]:
+    try:
+        name = path.relative_to(root).as_posix()
+    except ValueError:
+        name = str(path)
+    return {"path": name, "sha256": digest(path)}
+
+
+def csv_row(row: dict) -> dict:
+    artifacts = row.get("artifacts") or {}
+    def artifact_field(kind: str, field: str) -> str:
+        return (artifacts.get(kind) or {}).get(field, "")
+
+    return {
+        "panel": row["panel"], "column": row["column"], "d_k": row["d_k"],
+        "status": row["status"], "terminal_nll": row.get("terminal_nll"),
+        "terminal_ppl": row.get("terminal_ppl"), "failure_step": row.get("failure_step"),
+        "source_experiment": row.get("experiment", ""), "source_run": row.get("run", ""),
+        "source_commit": row.get("source_commit", ""),
+        "metrics_path": artifact_field("metrics", "path"),
+        "metrics_sha256": artifact_field("metrics", "sha256"),
+        "completion_path": artifact_field("completion", "path"),
+        "completion_sha256": artifact_field("completion", "sha256"),
+        "failure_path": artifact_field("failure", "path"),
+        "failure_sha256": artifact_field("failure", "sha256"),
+    }
+
+
+def update_readme(path: Path, rows: list[dict]) -> None:
+    begin, end = "<!-- BEGIN GENERATED RESULTS -->", "<!-- END GENERATED RESULTS -->"
+    authored = path.read_text()
+    if authored.count(begin) != 1 or authored.count(end) != 1:
+        raise ValueError("README needs exactly one generated-results marker pair")
+    prefix, rest = authored.split(begin, 1)
+    _, suffix = rest.split(end, 1)
+    counts = Counter(row["status"] for row in rows)
+    block = (
+        f"{len(rows)} displayed coordinates: {counts['complete']} complete, "
+        f"{counts['numerical_failure']} numerical failures, "
+        f"{counts['not_run']} not run, and {counts['incomplete']} incomplete. "
+        "Only completed runs at the common 19,074-update endpoint receive a color "
+        "and a terminal PPL. A failed run is labeled with its failure update; "
+        "an untrained coordinate is marked NOT RUN.\n\n"
+        "![Combined terminal perplexity heatmap](figures/combined_terminal_ppl.png)\n\n"
+        "[PDF](figures/combined_terminal_ppl.pdf) · [Cell-level data and source checksums](summary.csv) "
+        "· [Provenance](provenance/manifest.json)\n"
+    )
+    path.write_text(prefix + begin + "\n" + block + end + suffix)
+
+
+def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
+          output_dir: Path | None = None) -> list[dict]:
+    repo_root = repo_root.resolve()
+    output_dir = output_dir or repo_root / "experiments" / EXPERIMENT
+    config_path = config_path or output_dir / "configs" / "heatmap.json"
+    config = json.loads(config_path.read_text())
+    rows = collect_rows(repo_root, config)
+    figure_paths = render_heatmap(rows, config, output_dir)
+
+    csv_path = output_dir / "summary.csv"
+    with csv_path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=FIELDS, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(csv_row(row) for row in rows)
+
+    readme_path = output_dir / "README.md"
+    update_readme(readme_path, rows)
+
+    source_rows = [
+        {"panel": row["panel"], "column": row["column"], "d_k": row["d_k"],
+         "experiment": row["experiment"], "run": row["run"], "status": row["status"],
+         "source_commit": row.get("source_commit"), "artifacts": row.get("artifacts", {})}
+        for row in rows if row["status"] != "not_run"
+    ]
+    status_counts = dict(sorted(Counter(row["status"] for row in rows).items()))
+    code = Path(__file__).resolve().parent
+    lock = repo_root / "scaffolds" / "transformer" / "uv.lock"
+    manifest = {
+        "schema_version": 1,
+        "experiment": EXPERIMENT,
+        "kind": "derived_comparison_no_new_training",
+        "home_cluster": "kennel",
+        "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+        "seed": config["seed"],
+        "data_identity": config["data_identity"],
+        "terminal_step": config["terminal_step"],
+        "training_tokens": config["training_tokens"],
+        "display_coordinates": {"d_k": config["d_k"], "panels": config["panels"]},
+        "source_manifests": config["source_manifests"],
+        "source_runs": source_rows,
+        "status_counts": status_counts,
+        "analysis": {
+            "config": reference(repo_root, config_path),
+            "dependency_lock": reference(repo_root, lock),
+            "code": {name: reference(repo_root, code / name)
+                     for name in ("collect.py", "render.py", "plot.py")},
+        },
+        "derived_artifacts": {
+            "summary_csv": reference(repo_root, csv_path),
+            "readme": reference(repo_root, readme_path),
+            **{name: reference(repo_root, path) for name, path in sorted(figure_paths.items())},
+        },
+    }
+    manifest_path = output_dir / "provenance" / "manifest.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
+    return rows
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
+    parser.add_argument("--config", type=Path)
+    parser.add_argument("--output-dir", type=Path)
+    args = parser.parse_args()
+    build(args.repo_root, config_path=args.config, output_dir=args.output_dir)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,497 @@
+{
+  "schema_version": 1,
+  "d_k": [
+    8,
+    16,
+    32,
+    64,
+    128
+  ],
+  "terminal_step": 19074,
+  "training_tokens": 10000269312,
+  "seed": 0,
+  "source_artifact_set_sha256": "46a3a59160a090950bd7a97c30c03fe870062a0dd3508d31db017936bcdc0fea",
+  "data_identity": {
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+  },
+  "panels": [
+    {
+      "id": "normalized_fixed",
+      "title": "Row-normalized Taylor · fixed",
+      "columns": [
+        {
+          "id": "m1",
+          "label": "m=1"
+        },
+        {
+          "id": "m2",
+          "label": "m=2"
+        },
+        {
+          "id": "m3",
+          "label": "m=3"
+        },
+        {
+          "id": "m4",
+          "label": "m=4"
+        },
+        {
+          "id": "m8",
+          "label": "m=8"
+        },
+        {
+          "id": "m16",
+          "label": "m=16"
+        }
+      ]
+    },
+    {
+      "id": "normalized_learned",
+      "title": "Row-normalized quadratic · learned",
+      "columns": [
+        {
+          "id": "positive_global",
+          "label": "positive\nglobal"
+        },
+        {
+          "id": "positive_per_head",
+          "label": "positive\nper head"
+        },
+        {
+          "id": "unrestricted_global",
+          "label": "signed\nglobal"
+        },
+        {
+          "id": "unrestricted_per_head",
+          "label": "signed\nper head"
+        }
+      ]
+    },
+    {
+      "id": "references",
+      "title": "Reference mechanisms",
+      "columns": [
+        {
+          "id": "softmax",
+          "label": "softmax"
+        },
+        {
+          "id": "gla",
+          "label": "GLA"
+        },
+        {
+          "id": "unnormalized_exp",
+          "label": "unnormalized\nexp"
+        }
+      ]
+    },
+    {
+      "id": "unnormalized_fixed",
+      "title": "Unnormalized Taylor · fixed",
+      "columns": [
+        {
+          "id": "m1",
+          "label": "m=1"
+        },
+        {
+          "id": "m2",
+          "label": "m=2"
+        },
+        {
+          "id": "m3",
+          "label": "m=3"
+        },
+        {
+          "id": "m4",
+          "label": "m=4"
+        },
+        {
+          "id": "m8",
+          "label": "m=8"
+        },
+        {
+          "id": "m16",
+          "label": "m=16"
+        }
+      ]
+    },
+    {
+      "id": "unnormalized_learned",
+      "title": "Unnormalized Taylor · learned per head",
+      "columns": [
+        {
+          "id": "m1",
+          "label": "m=1"
+        },
+        {
+          "id": "m2",
+          "label": "m=2"
+        },
+        {
+          "id": "m3",
+          "label": "m=3"
+        },
+        {
+          "id": "m4",
+          "label": "m=4"
+        },
+        {
+          "id": "m8",
+          "label": "m=8"
+        },
+        {
+          "id": "m16",
+          "label": "m=16"
+        }
+      ]
+    }
+  ],
+  "source_manifests": {
+    "key_dimension_taylor": {
+      "path": "experiments/key_dimension_taylor/provenance/manifest.json",
+      "sha256": "d3217493593ae9d815a8ecbbcbd7aa9f8b0a0cbeaa9ebf9de57ec1f09afbf221"
+    },
+    "odd_taylor_attention": {
+      "path": "experiments/odd_taylor_attention/provenance/manifest.json",
+      "sha256": "ec4ec1af20e1c297daf0881f32c1b9d344e5518e79662e4c326811a5dce2d217"
+    },
+    "learned_quadratic_attention": {
+      "path": "experiments/learned_quadratic_attention/provenance/manifest.json",
+      "sha256": "af47572aba410b3494dbfd356d34df7d7b194df857ce0eeba1e88fecde170ce7"
+    },
+    "unnormalized_taylor_attention": {
+      "path": "experiments/unnormalized_taylor_attention/provenance/manifest.json",
+      "sha256": "21beaa923d8721698d02a5239b6906fd12ee3c6993016fc935cd392655576097"
+    },
+    "learned_unnormalized_taylor": {
+      "path": "experiments/learned_unnormalized_taylor/provenance/manifest.json",
+      "sha256": "5fdef8ac232f269281380899b8af55ced7800b604d8fb289b172acf5243bca3d"
+    },
+    "gla_key_dimension": {
+      "path": "experiments/gla_key_dimension/provenance/manifest.json",
+      "sha256": "85b8dd905052c396196041cb7a53c21976675f0e1069460397ffd8cb7ab54207"
+    },
+    "unnormalized_attention": {
+      "path": "experiments/unnormalized_attention/provenance/manifest.json",
+      "sha256": "de400c9fbefb934b28bc0566038a572cfafea5c2ba80887e607a960d2c5e3924"
+    }
+  },
+  "cells": [
+    {
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk008-m002-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk008-m004-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk008-m008-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk008-m016-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk008-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "gla",
+      "d_k": 8,
+      "experiment": "gla_key_dimension",
+      "run": "200m-dk008-gla-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk016-m002-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk016-m004-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk016-m008-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk016-m016-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk016-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "gla",
+      "d_k": 16,
+      "experiment": "gla_key_dimension",
+      "run": "200m-dk016-gla-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk032-m002-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk032-m004-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk032-m008-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk032-m016-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk032-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "gla",
+      "d_k": 32,
+      "experiment": "gla_key_dimension",
+      "run": "200m-dk032-gla-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-m002-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-m004-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-m008-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-m016-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk064-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "gla",
+      "d_k": 64,
+      "experiment": "gla_key_dimension",
+      "run": "200m-dk064-gla-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk128-m002-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk128-m004-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk128-m008-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk128-m016-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk128-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "gla",
+      "d_k": 128,
+      "experiment": "gla_key_dimension",
+      "run": "200m-dk128-gla-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "odd_taylor_attention",
+      "run": "200m-m001-seed0"
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "odd_taylor_attention",
+      "run": "200m-m003-seed0"
+    },
+    {
+      "panel": "normalized_learned",
+      "column": "positive_global",
+      "d_k": 64,
+      "experiment": "learned_quadratic_attention",
+      "run": "200m-positive-global-seed0"
+    },
+    {
+      "panel": "normalized_learned",
+      "column": "positive_per_head",
+      "d_k": 64,
+      "experiment": "learned_quadratic_attention",
+      "run": "200m-positive-per-head-seed0"
+    },
+    {
+      "panel": "normalized_learned",
+      "column": "unrestricted_global",
+      "d_k": 64,
+      "experiment": "learned_quadratic_attention",
+      "run": "200m-unrestricted-global-seed0"
+    },
+    {
+      "panel": "normalized_learned",
+      "column": "unrestricted_per_head",
+      "d_k": 64,
+      "experiment": "learned_quadratic_attention",
+      "run": "200m-unrestricted-per-head-seed0"
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m001-seed0"
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "learned_unnormalized_taylor",
+      "run": "200m-m001-seed0"
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m002-seed0"
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "learned_unnormalized_taylor",
+      "run": "200m-m002-seed0"
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m003-seed0"
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "learned_unnormalized_taylor",
+      "run": "200m-m003-seed0"
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m004-seed0"
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "learned_unnormalized_taylor",
+      "run": "200m-m004-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "unnormalized_exp",
+      "d_k": 64,
+      "experiment": "unnormalized_attention",
+      "run": "200m-exp-seed0-kennel"
+    }
+  ]
+}

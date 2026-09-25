@@ -10,6 +10,7 @@ Reusable code is organized by capability under `scaffolds/`. Each experiment und
 | Odd Taylor attention | [Signed-kernel numerical failures](experiments/odd_taylor_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Query/key dimension × Taylor degree | [Width, degree, and joint sweeps](experiments/key_dimension_taylor/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | GLA key dimension | [Gated linear attention across d_K](experiments/gla_key_dimension/README.md) | [Transformer](scaffolds/transformer/README.md) |
+| Attention scaling comparison | [Combined d_K × m heatmap across attention mechanisms](experiments/attention_scaling_comparison/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Unnormalized attention | [Unnormalized exponential attention at 200M and 250M](experiments/unnormalized_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Unnormalized Taylor attention | [Degrees 1–4 without row normalization](experiments/unnormalized_taylor_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 

@@ -1,0 +1,1253 @@
+{
+  "schema_version": 1,
+  "experiment": "attention_scaling_comparison",
+  "kind": "derived_comparison_no_new_training",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "seed": 0,
+  "data_identity": {
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+  },
+  "terminal_step": 19074,
+  "training_tokens": 10000269312,
+  "display_coordinates": {
+    "d_k": [
+      8,
+      16,
+      32,
+      64,
+      128
+    ],
+    "panels": [
+      {
+        "id": "normalized_fixed",
+        "title": "Row-normalized Taylor · fixed",
+        "columns": [
+          {
+            "id": "m1",
+            "label": "m=1"
+          },
+          {
+            "id": "m2",
+            "label": "m=2"
+          },
+          {
+            "id": "m3",
+            "label": "m=3"
+          },
+          {
+            "id": "m4",
+            "label": "m=4"
+          },
+          {
+            "id": "m8",
+            "label": "m=8"
+          },
+          {
+            "id": "m16",
+            "label": "m=16"
+          }
+        ]
+      },
+      {
+        "id": "normalized_learned",
+        "title": "Row-normalized quadratic · learned",
+        "columns": [
+          {
+            "id": "positive_global",
+            "label": "positive\nglobal"
+          },
+          {
+            "id": "positive_per_head",
+            "label": "positive\nper head"
+          },
+          {
+            "id": "unrestricted_global",
+            "label": "signed\nglobal"
+          },
+          {
+            "id": "unrestricted_per_head",
+            "label": "signed\nper head"
+          }
+        ]
+      },
+      {
+        "id": "references",
+        "title": "Reference mechanisms",
+        "columns": [
+          {
+            "id": "softmax",
+            "label": "softmax"
+          },
+          {
+            "id": "gla",
+            "label": "GLA"
+          },
+          {
+            "id": "unnormalized_exp",
+            "label": "unnormalized\nexp"
+          }
+        ]
+      },
+      {
+        "id": "unnormalized_fixed",
+        "title": "Unnormalized Taylor · fixed",
+        "columns": [
+          {
+            "id": "m1",
+            "label": "m=1"
+          },
+          {
+            "id": "m2",
+            "label": "m=2"
+          },
+          {
+            "id": "m3",
+            "label": "m=3"
+          },
+          {
+            "id": "m4",
+            "label": "m=4"
+          },
+          {
+            "id": "m8",
+            "label": "m=8"
+          },
+          {
+            "id": "m16",
+            "label": "m=16"
+          }
+        ]
+      },
+      {
+        "id": "unnormalized_learned",
+        "title": "Unnormalized Taylor · learned per head",
+        "columns": [
+          {
+            "id": "m1",
+            "label": "m=1"
+          },
+          {
+            "id": "m2",
+            "label": "m=2"
+          },
+          {
+            "id": "m3",
+            "label": "m=3"
+          },
+          {
+            "id": "m4",
+            "label": "m=4"
+          },
+          {
+            "id": "m8",
+            "label": "m=8"
+          },
+          {
+            "id": "m16",
+            "label": "m=16"
+          }
+        ]
+      }
+    ]
+  },
+  "source_manifests": {
+    "key_dimension_taylor": {
+      "path": "experiments/key_dimension_taylor/provenance/manifest.json",
+      "sha256": "d3217493593ae9d815a8ecbbcbd7aa9f8b0a0cbeaa9ebf9de57ec1f09afbf221"
+    },
+    "odd_taylor_attention": {
+      "path": "experiments/odd_taylor_attention/provenance/manifest.json",
+      "sha256": "ec4ec1af20e1c297daf0881f32c1b9d344e5518e79662e4c326811a5dce2d217"
+    },
+    "learned_quadratic_attention": {
+      "path": "experiments/learned_quadratic_attention/provenance/manifest.json",
+      "sha256": "af47572aba410b3494dbfd356d34df7d7b194df857ce0eeba1e88fecde170ce7"
+    },
+    "unnormalized_taylor_attention": {
+      "path": "experiments/unnormalized_taylor_attention/provenance/manifest.json",
+      "sha256": "21beaa923d8721698d02a5239b6906fd12ee3c6993016fc935cd392655576097"
+    },
+    "learned_unnormalized_taylor": {
+      "path": "experiments/learned_unnormalized_taylor/provenance/manifest.json",
+      "sha256": "5fdef8ac232f269281380899b8af55ced7800b604d8fb289b172acf5243bca3d"
+    },
+    "gla_key_dimension": {
+      "path": "experiments/gla_key_dimension/provenance/manifest.json",
+      "sha256": "85b8dd905052c396196041cb7a53c21976675f0e1069460397ffd8cb7ab54207"
+    },
+    "unnormalized_attention": {
+      "path": "experiments/unnormalized_attention/provenance/manifest.json",
+      "sha256": "de400c9fbefb934b28bc0566038a572cfafea5c2ba80887e607a960d2c5e3924"
+    }
+  },
+  "source_runs": [
+    {
+      "panel": "normalized_fixed",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "odd_taylor_attention",
+      "run": "200m-m001-seed0",
+      "status": "numerical_failure",
+      "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/odd_taylor_attention/runs/200m-m001-seed0/metadata.json",
+          "sha256": "0757ad980b5c370cded0c6c54cc7a564356466ddc58539c41b124b0d0d47aa3c"
+        },
+        "failure": {
+          "path": "experiments/odd_taylor_attention/runs/200m-m001-seed0/numerical_failure_step_00000009.json",
+          "sha256": "19d77d1a471f71230ea20afb4f3124a4206f1ae2b271b3734e974c4446369a57"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk008-m002-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-m002-seed0/metadata.json",
+          "sha256": "d6d7ec00474997e28893114c2c122a6ce675b29607b8c55b11f19367b8921478"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-m002-seed0/metrics.jsonl",
+          "sha256": "c79a75cdd00d5955b95549106f03b91f687054c885e48bd9443fe54dbc6255d0"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-m002-seed0/completion.json",
+          "sha256": "b638327ad96544d53384058e9b09a4d975c6d08eafa062c53c66ac371f5fb6f8"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk016-m002-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-m002-seed0/metadata.json",
+          "sha256": "0a1359ff51ee59d684d6e8fdcce96e5429bbb8e93c9513b8dffc9953800d0e32"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-m002-seed0/metrics.jsonl",
+          "sha256": "3862a0101acccb80fd668e2575288bcea3469d643cc80967855eef3bbcd523b8"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-m002-seed0/completion.json",
+          "sha256": "2ee1db56f1f9926ad9e86a65b4cf870fd5273655ae47a6b24c673150663d5226"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk032-m002-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-m002-seed0/metadata.json",
+          "sha256": "59fb2268d9f473dce8b81697a07d8d4cd08bae26e537c902225d29c53dd78b79"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-m002-seed0/metrics.jsonl",
+          "sha256": "f211003390dd1e795100bb9520e0ed98fb6a75b31b3affd0af909c1ba8e5a888"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-m002-seed0/completion.json",
+          "sha256": "575519164ca70d973b0431b1a9719690ea6940073c1953c7d2450cf82fff84a0"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-m002-seed0",
+      "status": "complete",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metadata.json",
+          "sha256": "754692f8fad41a85d630883aab228c6aab7a947b29871cade89968d2e52cb296"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metrics.jsonl",
+          "sha256": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/completion.json",
+          "sha256": "b58da90a02f1bc1b0c0d6bf3b63584b7ab9df39f600e1c65b5e6d442211e59a7"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk128-m002-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-m002-seed0/metadata.json",
+          "sha256": "0d966aecc94b1b284ac9d34a6ec13a558e304bf66de3961136b3af7aae701172"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-m002-seed0/metrics.jsonl",
+          "sha256": "4731d3920a58201f8ca9ac8bf2568826a28a1a21d1f30e28c5c71e1023fc108d"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-m002-seed0/completion.json",
+          "sha256": "86c2c0b0576807eddcc8d86a227fa55786fb6ef51430d43ef4ed935591de40fd"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "odd_taylor_attention",
+      "run": "200m-m003-seed0",
+      "status": "numerical_failure",
+      "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/odd_taylor_attention/runs/200m-m003-seed0/metadata.json",
+          "sha256": "360df6a9c73b0c21240c0ce5a51500507b15eef5af0d48798a5f0e8fbc80af77"
+        },
+        "failure": {
+          "path": "experiments/odd_taylor_attention/runs/200m-m003-seed0/numerical_failure_step_00000017.json",
+          "sha256": "c0f5a136568c040aabd692d9d6636d6355a6b75957938c3cb6cdf771bd5fe0b2"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk008-m004-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-m004-seed0/metadata.json",
+          "sha256": "c7716e6a52b8991fc63f83c7c508e236b327884ecc300e78fa2735b38707d78a"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-m004-seed0/metrics.jsonl",
+          "sha256": "a9f1db65865e1012e6de36666075baa4ce09b323aafefaf481097b9046ac30dc"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-m004-seed0/completion.json",
+          "sha256": "ac246e4f4abc81e40fac17d3b36023901a867db2a5615c372b48291067addc1f"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk016-m004-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-m004-seed0/metadata.json",
+          "sha256": "c6ce19fb117c5f586990f0dd908c7b1c23055cb059ffaf2bfa94ff6f52643a65"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-m004-seed0/metrics.jsonl",
+          "sha256": "4e478beac647915ca8d55d6c791694faf0950e9925224bc7503e3487e1cbd91f"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-m004-seed0/completion.json",
+          "sha256": "33197f96e8c4fd2cf56747d7b6d0bc496a28ef70d73f06a67e7a3ec9aa7fbe4f"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk032-m004-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-m004-seed0/metadata.json",
+          "sha256": "27b3673a7fd90eecda8456d3b4fa732e35add0c3ec575c78a0884920e81945f8"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-m004-seed0/metrics.jsonl",
+          "sha256": "f860878f62bb69f799ef05265a5f17d94bb79afc4081252b1718352510fd7bc2"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-m004-seed0/completion.json",
+          "sha256": "458cf803729ed1cbee40502e81ba30a55f571f26bd8d5238181eddbf6f3319ee"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-m004-seed0",
+      "status": "complete",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/metadata.json",
+          "sha256": "3c38a793975e2bd1b4804b4001ea2c98a2acb679950c1c465f522c7a5d9a8514"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/metrics.jsonl",
+          "sha256": "9ced82fa7db159b5a93b569ac40b7d8139169bd38634040e781512209e92ee17"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/completion.json",
+          "sha256": "5aa158bc0661f8682353c4c9b19030c3935abc27c145f823709abdf98100ada1"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk128-m004-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-m004-seed0/metadata.json",
+          "sha256": "5dd6cb70953094f823ca36f1b4f2247e87f7c66ee4e5b5539169562d8f7acd88"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-m004-seed0/metrics.jsonl",
+          "sha256": "11e9ed1325c8009a3de91bec8e7247235da8426272b23149051c65d836ac5f5f"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-m004-seed0/completion.json",
+          "sha256": "981ff4663ee5fd768f671f2c2b13eec81bf57c997a6cab678cf6098dbc4bb778"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk008-m008-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-m008-seed0/metadata.json",
+          "sha256": "c471ab4663d7fa45b382381c35fe6adae58243bbfde9ee13b3fa0c79b7806ddc"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-m008-seed0/metrics.jsonl",
+          "sha256": "1ef52873252a1b44b4b927a94260ec2609ce14444014932f6375d7e015110383"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-m008-seed0/completion.json",
+          "sha256": "db4914e6be28857a12b2f9928646364bde3000069ea42473d25bd60eeef90be2"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk016-m008-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-m008-seed0/metadata.json",
+          "sha256": "c752714e541a6c131ffce357a635236fbb643881b6c70dab41546bb78e6f28ac"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-m008-seed0/metrics.jsonl",
+          "sha256": "6715d9d635bd2f01ea3cff26feaf34bea68455ed5acc31a860d84a635241a3bd"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-m008-seed0/completion.json",
+          "sha256": "93931b7a3f32c84149e428a35009c8491ab6d9fb4d560b105225a6a886f79587"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk032-m008-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-m008-seed0/metadata.json",
+          "sha256": "fffe7341524eaf5cdb3395311349728dff6f148dccb53ebaf8e91d687a1929ec"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-m008-seed0/metrics.jsonl",
+          "sha256": "ec578e7a8bfdd175a394d1261027f09237038121b2c6fa8e7baf6c75d4b4ba2a"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-m008-seed0/completion.json",
+          "sha256": "008c10a9fdd4060c259a88d52acec57e711070f02c88a657f31ad9dc4826c7d2"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-m008-seed0",
+      "status": "complete",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/metadata.json",
+          "sha256": "2525594087e15a5512a6bee1622b7a8ccdf1fce85df587d2a863ea2d8b0fc838"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/metrics.jsonl",
+          "sha256": "edeb0eaa9980c748808df22b18ffcd13c010662ad82c6a472e6445de397cd590"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/completion.json",
+          "sha256": "4c1e37050f64bce387de8266596309e13d8de381e8368965cb3926e1105a63a4"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk128-m008-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-m008-seed0/metadata.json",
+          "sha256": "530b1482b6f5d5445ade597efc1433ed93f0a5ac0165c0017d672a98f0f87de3"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-m008-seed0/metrics.jsonl",
+          "sha256": "b1729cd20fe5726ccc1ecf28c8b726f4e3516991a6359ec9c672756266977293"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-m008-seed0/completion.json",
+          "sha256": "665b83a1a693486f7ce7b1efead761db8d83b5a1b61080e3ab5c9eedbb9ffcd9"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk008-m016-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-m016-seed0/metadata.json",
+          "sha256": "ad120cc41070f8ca1d5586d500f5b20b0b53818d9bdaf3c1957d13e429712795"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-m016-seed0/metrics.jsonl",
+          "sha256": "3be0519b762c5638c54130bf105d3728df2aa4d236e4242304b543ed4faae858"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-m016-seed0/completion.json",
+          "sha256": "94c511b6b29ee085a200735d4b82afa2a6b347be35960e589411f752d4083f8a"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk016-m016-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-m016-seed0/metadata.json",
+          "sha256": "9ac76943b4a5f79636e63f28e63ec3102beccd49021b6519c654574343a1e9d7"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-m016-seed0/metrics.jsonl",
+          "sha256": "f9d0c35d52b0dc45c792f95d8d4c267a667d69fdf0f84a59e97bd50060a61ef5"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-m016-seed0/completion.json",
+          "sha256": "16293317ca700799fed3d197dc16f6193afd4cd009413efc166aaa708e423d5c"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk032-m016-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-m016-seed0/metadata.json",
+          "sha256": "cb20063c9a48a0b860da91eebc0957ac6925839657d7baea7c024a9c4a9beb04"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-m016-seed0/metrics.jsonl",
+          "sha256": "8169d4fd407a4eb02b6595f5071cbc7ed8b6392b437e9b1550743042a681c6d4"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-m016-seed0/completion.json",
+          "sha256": "b4467c4bb82e4634abc86e7869c8d315d64cb1747eb434eb01452b1f1b0affce"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-m016-seed0",
+      "status": "complete",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/metadata.json",
+          "sha256": "1169532305ca5500b6bf2fafdc99d75d79715bfb07cd1b9bd4545a80db63f8fa"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/metrics.jsonl",
+          "sha256": "3bb5eb752f69f69e4b0c00f04559093baad00d15541f5831f162e46aa3130e1a"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/completion.json",
+          "sha256": "d5a95945386136c1183a0f78d492cad4b261023cd5413e175c4ee01cbee4317d"
+        }
+      }
+    },
+    {
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk128-m016-seed0",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-m016-seed0/metadata.json",
+          "sha256": "9ef8cf24ca5855062781fd3385edc0b6ad18dad5a515c35afdd54b7808ee0be3"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-m016-seed0/metrics.jsonl",
+          "sha256": "1691a4090e4684df0b7a6c5691dcd633c45e6b2354537014e413d4be9060f61d"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-m016-seed0/completion.json",
+          "sha256": "97417db27cbab9d9aaa135a184513e3b0f09ebc9f311028e17fcccc53ca3ec6a"
+        }
+      }
+    },
+    {
+      "panel": "normalized_learned",
+      "column": "positive_global",
+      "d_k": 64,
+      "experiment": "learned_quadratic_attention",
+      "run": "200m-positive-global-seed0",
+      "status": "complete",
+      "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/learned_quadratic_attention/runs/200m-positive-global-seed0/metadata.json",
+          "sha256": "a063d5e8361ac26560b6ab6bd2bfea22f0e72ae5330f3cb58a1dd69612db586a"
+        },
+        "metrics": {
+          "path": "experiments/learned_quadratic_attention/runs/200m-positive-global-seed0/metrics.jsonl",
+          "sha256": "b48b4cebd91b6c98aaad06da5dd82d1ef59a61416fec306dfac17b9a83287068"
+        },
+        "completion": {
+          "path": "experiments/learned_quadratic_attention/runs/200m-positive-global-seed0/completion.json",
+          "sha256": "91ba49de861c9f80eda85734feafbb7302d6078f795ea82edab602baa67c9fdb"
+        }
+      }
+    },
+    {
+      "panel": "normalized_learned",
+      "column": "positive_per_head",
+      "d_k": 64,
+      "experiment": "learned_quadratic_attention",
+      "run": "200m-positive-per-head-seed0",
+      "status": "complete",
+      "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/learned_quadratic_attention/runs/200m-positive-per-head-seed0/metadata.json",
+          "sha256": "6429eccb59a45f085503e81380874037e13921612e02831c5c03731253798920"
+        },
+        "metrics": {
+          "path": "experiments/learned_quadratic_attention/runs/200m-positive-per-head-seed0/metrics.jsonl",
+          "sha256": "9b3a83c92043812a46ff8711288e087c9b64e4001b5385243b79f94a33d7b26f"
+        },
+        "completion": {
+          "path": "experiments/learned_quadratic_attention/runs/200m-positive-per-head-seed0/completion.json",
+          "sha256": "c6af67563639a89efcc83e46aa24c33015f7e7271ae158d9483c5d7c0c07232f"
+        }
+      }
+    },
+    {
+      "panel": "normalized_learned",
+      "column": "unrestricted_global",
+      "d_k": 64,
+      "experiment": "learned_quadratic_attention",
+      "run": "200m-unrestricted-global-seed0",
+      "status": "numerical_failure",
+      "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/learned_quadratic_attention/runs/200m-unrestricted-global-seed0/metadata.json",
+          "sha256": "1bfabf03c2511b04fc8a90227f84210e0a6b3bab0d4932e5e399f8432b295a14"
+        },
+        "failure": {
+          "path": "experiments/learned_quadratic_attention/runs/200m-unrestricted-global-seed0/numerical_failure_step_00002324.json",
+          "sha256": "53f15b0a1fa9f87ec1e1d83e575dcb21b7bb17f2386400e0abed7fafeca0bb4e"
+        }
+      }
+    },
+    {
+      "panel": "normalized_learned",
+      "column": "unrestricted_per_head",
+      "d_k": 64,
+      "experiment": "learned_quadratic_attention",
+      "run": "200m-unrestricted-per-head-seed0",
+      "status": "numerical_failure",
+      "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/learned_quadratic_attention/runs/200m-unrestricted-per-head-seed0/metadata.json",
+          "sha256": "dcae9ab9b346232aedd8d916ca2bcd3e155b6539f4e59893ecabdf1529e972c5"
+        },
+        "failure": {
+          "path": "experiments/learned_quadratic_attention/runs/200m-unrestricted-per-head-seed0/numerical_failure_step_00004187.json",
+          "sha256": "80c4e3b2eafebd3c66d3d355b723a0deaffe6f57091465e7e80c17e28c13411b"
+        }
+      }
+    },
+    {
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk008-seed0",
+      "status": "complete",
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-seed0/metadata.json",
+          "sha256": "12129013bc5c34ca4091759552d3a0567dcb3637b1d52df7bd5393c39687e49e"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-seed0/metrics.jsonl",
+          "sha256": "75bcb65689ba5618be5403794f17c34c4eb8001557db8ae0f6c4bfe336be144a"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk008-seed0/completion.json",
+          "sha256": "f32575a5214ca009c88f81b0dfc0ce2448b917463ee4941870762505f7b8d398"
+        }
+      }
+    },
+    {
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk016-seed0",
+      "status": "complete",
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-seed0/metadata.json",
+          "sha256": "01a30d87bb289c95bfbfcf5a1221f8711a05bebf3f24bf24752fb8f49bb48a74"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-seed0/metrics.jsonl",
+          "sha256": "5d19fb18cdc2f5b7ee0b5b90c7bb2fa622ff653c8fd3c51cf7d5b8c18dd74b14"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk016-seed0/completion.json",
+          "sha256": "9f7548222f69d86867db9a5281457b0197b3b7fe38a5007fc38f8433ffe37d4c"
+        }
+      }
+    },
+    {
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk032-seed0",
+      "status": "complete",
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-seed0/metadata.json",
+          "sha256": "e10e58ecfd4ca89d4b1acffcb3760a5a51527f734646b8d0a874b7f499cc5dda"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-seed0/metrics.jsonl",
+          "sha256": "5a199dbb81f4caeccf79af40454c7eef997ebe0f3698d75211df6e553b2913d3"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk032-seed0/completion.json",
+          "sha256": "7537c2875711264916f0853370c305321f5a90dab168f2d45b293307e4ccdfb6"
+        }
+      }
+    },
+    {
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk064-seed0",
+      "status": "complete",
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk064-seed0/metadata.json",
+          "sha256": "542cfc49057ab876943c3cfc6586a6a6f2f6564cfeaf02b75403d7bd26456359"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk064-seed0/metrics.jsonl",
+          "sha256": "97ed5129bbd6f81363b0d617c1d22b10d718d00ded6734f25e616fb4f4612c76"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk064-seed0/completion.json",
+          "sha256": "703df2d1448324a23bf0949e46ee21c0c1cc1d97e8ede01aa627c6f381cf9d80"
+        }
+      }
+    },
+    {
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-dk128-seed0",
+      "status": "complete",
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-seed0/metadata.json",
+          "sha256": "cc2ef5502f587920e3cb519041665bf7f7c0c4796abe8cf1491e1fa14b83668d"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-seed0/metrics.jsonl",
+          "sha256": "93ef9664a46cc56e40f2279f18cab2891840228af66a10dd532deac63ebfe720"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-dk128-seed0/completion.json",
+          "sha256": "46a0f3bed429f66d78f20d0f1e0df9de215d8e2d58a6c73b5dda5a936fdb80f7"
+        }
+      }
+    },
+    {
+      "panel": "references",
+      "column": "gla",
+      "d_k": 8,
+      "experiment": "gla_key_dimension",
+      "run": "200m-dk008-gla-seed0",
+      "status": "complete",
+      "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk008-gla-seed0/metadata.json",
+          "sha256": "ccc0b51cc03435106d342e96b751cc8c3cd9008ccd80a6abac5faca26b281230"
+        },
+        "metrics": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk008-gla-seed0/metrics.jsonl",
+          "sha256": "ec2fc9242bf79f4bb71f3304921863b75834050ae21623424453026b68d2157e"
+        },
+        "completion": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk008-gla-seed0/completion.json",
+          "sha256": "4c0dd5505c7aa9e24fe44ff874313717fabfe7e482cae5a4fea80a60d2a88835"
+        }
+      }
+    },
+    {
+      "panel": "references",
+      "column": "gla",
+      "d_k": 16,
+      "experiment": "gla_key_dimension",
+      "run": "200m-dk016-gla-seed0",
+      "status": "complete",
+      "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk016-gla-seed0/metadata.json",
+          "sha256": "6b27f0e7f32bb500c755e49a0110c1f94e3a4a81058cf625972e581197ada7cc"
+        },
+        "metrics": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk016-gla-seed0/metrics.jsonl",
+          "sha256": "e308007b1c50cb2d7d128168288d57fc68b837fd352e3b61635f19b8bee6f42b"
+        },
+        "completion": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk016-gla-seed0/completion.json",
+          "sha256": "34aa4bfb0acd6bad92bbff6e20a2ad68445dd3cb9c5d8897286f2d72cd32865f"
+        }
+      }
+    },
+    {
+      "panel": "references",
+      "column": "gla",
+      "d_k": 32,
+      "experiment": "gla_key_dimension",
+      "run": "200m-dk032-gla-seed0",
+      "status": "complete",
+      "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk032-gla-seed0/metadata.json",
+          "sha256": "b55dbd410b4c6a58d19f47b45fa9ef9f471b7fc4e2538c72ebbf1aad3ef6937f"
+        },
+        "metrics": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk032-gla-seed0/metrics.jsonl",
+          "sha256": "18e67631eba392ae43d49a8954ecd650f20decbc2a88f2bf555ddfe13c4fe022"
+        },
+        "completion": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk032-gla-seed0/completion.json",
+          "sha256": "2b815fe7bc64d22684a85fc501b220c22383f4b1b91f7424471d1ebb70101c7e"
+        }
+      }
+    },
+    {
+      "panel": "references",
+      "column": "gla",
+      "d_k": 64,
+      "experiment": "gla_key_dimension",
+      "run": "200m-dk064-gla-seed0",
+      "status": "complete",
+      "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk064-gla-seed0/metadata.json",
+          "sha256": "a705f2b2ced23f625ef518573579e3553bbf8c03597d7819e3d91a68b9dada42"
+        },
+        "metrics": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk064-gla-seed0/metrics.jsonl",
+          "sha256": "2b4d7a4c237812a26b1a00c4b333606ce5a1f4b35b032c17c4ea28a3e9e97ccb"
+        },
+        "completion": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk064-gla-seed0/completion.json",
+          "sha256": "05de4d576437bb73a5e090375b1b335c76686681787aa5c05f35c1031aa66817"
+        }
+      }
+    },
+    {
+      "panel": "references",
+      "column": "gla",
+      "d_k": 128,
+      "experiment": "gla_key_dimension",
+      "run": "200m-dk128-gla-seed0",
+      "status": "complete",
+      "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk128-gla-seed0/metadata.json",
+          "sha256": "d094e5e7838e9a54bfe3bd16b636bd5f027f43c40f834ca66012a0dee31cc7b4"
+        },
+        "metrics": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk128-gla-seed0/metrics.jsonl",
+          "sha256": "4d4866354dcd4e5a5fba308dd11d259464b1751d49bca7e4971a4da8823b8263"
+        },
+        "completion": {
+          "path": "experiments/gla_key_dimension/runs/200m-dk128-gla-seed0/completion.json",
+          "sha256": "660d2d778614a2a76baa4aaf22ce42cd0629130b4e3edb73873ec74df58b686b"
+        }
+      }
+    },
+    {
+      "panel": "references",
+      "column": "unnormalized_exp",
+      "d_k": 64,
+      "experiment": "unnormalized_attention",
+      "run": "200m-exp-seed0-kennel",
+      "status": "complete",
+      "source_commit": "3b0d311655b033545d0c211467fd600376e0fdeb",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_attention/runs/200m-exp-seed0-kennel/metadata.json",
+          "sha256": "4a44a8b4bf029d113b3c557915caa52ac945019232b0a31bdaae8c5b12698ffd"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_attention/runs/200m-exp-seed0-kennel/metrics.jsonl",
+          "sha256": "e0bbbdafb9f5cffd49bd080d91c48afcefdac97f18a57fc9dd7dc18360eaf483"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_attention/runs/200m-exp-seed0-kennel/completion.json",
+          "sha256": "52631eaef8b681efc2d5192ae2bfed975572d5b84013aea2e613dc498884e183"
+        }
+      }
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m001-seed0",
+      "status": "complete",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m001-seed0/metadata.json",
+          "sha256": "eb437be40040cb02ec8cc1bc5d77f11c99212e7c4c193424ff41566311ad0255"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m001-seed0/metrics.jsonl",
+          "sha256": "c9e00eac4a104437de18334561fdbea4d6f05b81696632dd2e7dbd605ccbae0d"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m001-seed0/completion.json",
+          "sha256": "bbf2419c6baad8701856e9a16ab7565fb45be8aebd9c5c6a2c6a918837f3e0b1"
+        }
+      }
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m002-seed0",
+      "status": "complete",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m002-seed0/metadata.json",
+          "sha256": "71639fd6adbccb60586b804767d2f38413b2cc1e019bbc41c677539f6be8bc22"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m002-seed0/metrics.jsonl",
+          "sha256": "a312d11551b69eb5e46e78d96c2571dc0e977151489ba5949e2f2485bb430854"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m002-seed0/completion.json",
+          "sha256": "26ebd93c6eca9126f59bbd92ed7664cda27061dcda766b2ea533a40e2fc645a3"
+        }
+      }
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m003-seed0",
+      "status": "complete",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m003-seed0/metadata.json",
+          "sha256": "8724696257a3a65e4961c83cb94db7dd57bcbfc18aaff02b63372483037c4862"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m003-seed0/metrics.jsonl",
+          "sha256": "41152673f2d2954257fadbe3d01e1d0b77f2570e6a7089aeaecbfa803e4826a8"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m003-seed0/completion.json",
+          "sha256": "ba04abc24913de43e687b544ed77a1c4afbd74ce3ef51fe41f04680affa69b7b"
+        }
+      }
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m004-seed0",
+      "status": "complete",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m004-seed0/metadata.json",
+          "sha256": "18063ebbaf4f8dcb71722aa2bf93bf8211798794ac4a79dbd5e0d1d23de4c009"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m004-seed0/metrics.jsonl",
+          "sha256": "9df4a551647e7e72cdb592f28906fba68f6a31aea1f9dc3e9ac55c3389e756fa"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m004-seed0/completion.json",
+          "sha256": "7e72531a9e58c7d68350fee38bca2e48e7c1dd0958c00a1694f5b931d5f5db8e"
+        }
+      }
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "learned_unnormalized_taylor",
+      "run": "200m-m001-seed0",
+      "status": "complete",
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/learned_unnormalized_taylor/runs/200m-m001-seed0/metadata.json",
+          "sha256": "82148de0a932d7d796840353454594f1fca8b7207b9d2cbe712e40cd524936ab"
+        },
+        "metrics": {
+          "path": "experiments/learned_unnormalized_taylor/runs/200m-m001-seed0/metrics.jsonl",
+          "sha256": "da1764d69f3cd33df4cfe3f2fb7cbf27df0127a866e8b3a037602e7c9c24d698"
+        },
+        "completion": {
+          "path": "experiments/learned_unnormalized_taylor/runs/200m-m001-seed0/completion.json",
+          "sha256": "bd8133505df4f0591ecfb395d2bed8d113af45947bca011ecc5b521717642044"
+        }
+      }
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "learned_unnormalized_taylor",
+      "run": "200m-m002-seed0",
+      "status": "complete",
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/learned_unnormalized_taylor/runs/200m-m002-seed0/metadata.json",
+          "sha256": "f06c73643628b09cd3f1a329447107d06780512258cf08abb84dad0c16f8512f"
+        },
+        "metrics": {
+          "path": "experiments/learned_unnormalized_taylor/runs/200m-m002-seed0/metrics.jsonl",
+          "sha256": "252427608c2cf1829127b54e045aa08d876cbe4cce9cac3148df8aa20cb1f53e"
+        },
+        "completion": {
+          "path": "experiments/learned_unnormalized_taylor/runs/200m-m002-seed0/completion.json",
+          "sha256": "731fe53e65fccc5b5cb0804a5fc8b98a06a91d631fcf6f0e7304b2c045ea9b03"
+        }
+      }
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "learned_unnormalized_taylor",
+      "run": "200m-m003-seed0",
+      "status": "complete",
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/learned_unnormalized_taylor/runs/200m-m003-seed0/metadata.json",
+          "sha256": "070f3597017e56d39eff625338143f8c494f3a4b031503a1f18f338e5693e6ae"
+        },
+        "metrics": {
+          "path": "experiments/learned_unnormalized_taylor/runs/200m-m003-seed0/metrics.jsonl",
+          "sha256": "1a54d9448a020962ea53260596eb0f82801d16a9a0f9ffc6ffd0a7340b04a3fa"
+        },
+        "completion": {
+          "path": "experiments/learned_unnormalized_taylor/runs/200m-m003-seed0/completion.json",
+          "sha256": "2711e78c3e8f7645498967ab0dc2db8aa92f42cce3dac3afa315bd50eeb7192c"
+        }
+      }
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "learned_unnormalized_taylor",
+      "run": "200m-m004-seed0",
+      "status": "complete",
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/learned_unnormalized_taylor/runs/200m-m004-seed0/metadata.json",
+          "sha256": "06d6162c021cf765071dab55b832c066db58872d7baad2e46ea2e5bc3cc5d7a6"
+        },
+        "metrics": {
+          "path": "experiments/learned_unnormalized_taylor/runs/200m-m004-seed0/metrics.jsonl",
+          "sha256": "992a12bdfebac250bf7e6f265b6b49ccd2c7190f13a0aaa59fa42345c4cf00b7"
+        },
+        "completion": {
+          "path": "experiments/learned_unnormalized_taylor/runs/200m-m004-seed0/completion.json",
+          "sha256": "3e24ed4327b801446971b2f152b35108058c5efddb1fc2aa465041c57619b833"
+        }
+      }
+    }
+  ],
+  "status_counts": {
+    "complete": 41,
+    "not_run": 80,
+    "numerical_failure": 4
+  },
+  "analysis": {
+    "config": {
+      "path": "experiments/attention_scaling_comparison/configs/heatmap.json",
+      "sha256": "b5f871c37a6d38ebacf700ddcd287484f86f9d45a989ac8304d79b1f5e06b51a"
+    },
+    "dependency_lock": {
+      "path": "scaffolds/transformer/uv.lock",
+      "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+    },
+    "code": {
+      "collect.py": {
+        "path": "experiments/attention_scaling_comparison/adapter/analysis/collect.py",
+        "sha256": "0759f47f491c34ba27b9794aec62e895d6912cdbd4fc833ed150234fd1433002"
+      },
+      "render.py": {
+        "path": "experiments/attention_scaling_comparison/adapter/analysis/render.py",
+        "sha256": "6cf22dc69c3b8d5f7c5ff42d77206fc9ae76528078565c7a259b7ec9791ad6b0"
+      },
+      "plot.py": {
+        "path": "experiments/attention_scaling_comparison/adapter/analysis/plot.py",
+        "sha256": "83b4ec983e4438410609094d1874574aa56e51d463727f6a9f8fe89d738f0473"
+      }
+    }
+  },
+  "derived_artifacts": {
+    "summary_csv": {
+      "path": "experiments/attention_scaling_comparison/summary.csv",
+      "sha256": "3971c1f626e19e03db4f9d1970cf91b2f770a8d67daf177135958deb033b08c2"
+    },
+    "readme": {
+      "path": "experiments/attention_scaling_comparison/README.md",
+      "sha256": "45eca691e62203664776f4bfe92e8f6886857b6fc5943bc3a8e97d0bba15f384"
+    },
+    "combined_terminal_ppl_pdf": {
+      "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.pdf",
+      "sha256": "dc7f5107e601d33dda7a7bc3ac05f00919a5a821a1c61af207fc18697bc00659"
+    },
+    "combined_terminal_ppl_png": {
+      "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.png",
+      "sha256": "0c9cd29e49106bdae9bb11bccbef8f393ecf5338d629fe5c15ca9ca993653d0e"
+    }
+  }
+}
