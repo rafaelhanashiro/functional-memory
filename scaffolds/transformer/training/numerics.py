@@ -1,4 +1,4 @@
-"""Surface invalid signed-kernel updates through the existing failure channel."""
+"""Surface invalid training updates through the existing failure channel."""
 
 import jax.numpy as jnp
 import optax
@@ -18,8 +18,8 @@ def is_signed_kernel(model) -> bool:
 
 
 def requires_update_checks(model) -> bool:
-    """Operators whose gradients may overflow before their forward loss does."""
-    return model.attention_mechanism == "gla" or is_odd_taylor(model) or not model.attention_normalization
+    """Every mechanism can have invalid gradients despite a finite forward loss."""
+    return True
 
 
 def update_numerics(grads, updated_params, loss):
@@ -30,16 +30,14 @@ def update_numerics(grads, updated_params, loss):
 def checked_update_loss(params, grads, updated_params, loss, *, check_all_gradients=False):
     """Reject gradient/parameter breakdown even when the forward loss was finite.
 
-    A signed attention denominator can make its derivative overflow before its
-    forward value does. The training loop already synchronizes/checks the loss
-    every update; poisoning that scalar avoids an additional host synchronization.
-    Historical fixed even-degree kernels keep their original execution path.
+    The training loop already synchronizes/checks the loss every update;
+    poisoning that scalar avoids an additional host synchronization. Checking
+    the gradient norm also rejects finite gradients whose norm overflows during
+    clipping, which would otherwise silently discard their update.
+
+    ``params`` and ``check_all_gradients`` remain accepted for existing callers.
+    The flag controls callers' diagnostic return shapes, never these checks.
     """
-    if not check_all_gradients and "quadratic_coefficients" not in params:
-        return loss
     finite = jnp.isfinite(optax.tree.norm(grads))
-    if check_all_gradients:
-        finite &= jnp.isfinite(optax.tree.norm(updated_params))
-    if "quadratic_coefficients" in params:
-        finite &= jnp.all(jnp.isfinite(updated_params["quadratic_coefficients"][...]))
+    finite &= jnp.isfinite(optax.tree.norm(updated_params))
     return jnp.where(finite, loss, jnp.asarray(jnp.nan, dtype=loss.dtype))

@@ -1,3 +1,4 @@
+import json
 import shutil
 from collections.abc import Mapping
 from typing import Any
@@ -19,6 +20,53 @@ def checkpoint_directory(config: Config):
     if config.train.checkpoint_dir is not None:
         return Path(config.train.checkpoint_dir)
     return config.train.workdir / "checkpoints"
+
+
+def validate_resume_progress(config: Config, latest_checkpoint_step: int | None) -> None:
+    """Reject missing saved state before a resume can overwrite the run record.
+
+    Validation records are committed only after their checkpoint is durable.
+    The metadata RNG clock is likewise written at checkpointed boundaries; the
+    top-level step of a numerical failure instead names an attempted update.
+    Pending validation is deliberately excluded because its save may have failed.
+    Completed runs, including best-only retention, have their own validation.
+    """
+    workdir = config.train.workdir
+    if (workdir / "completion.json").exists():
+        return
+
+    recorded_step = 0
+    metrics_path = workdir / "metrics.jsonl"
+    if metrics_path.exists():
+        for line in metrics_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            record = json.loads(line)
+            if record.get("event") == "validation":
+                step = record.get("checkpoint_step", record["step"])
+                recorded_step = max(recorded_step, int(step))
+
+    best_path = workdir / "best_validation.json"
+    if best_path.exists():
+        recorded_step = max(recorded_step, int(json.loads(best_path.read_text())["step"]))
+
+    metadata_path = workdir / "metadata.json"
+    if metadata_path.exists():
+        metadata = json.loads(metadata_path.read_text())
+        saved_rng_step = metadata.get("rng_state", {}).get("completed_updates", 0)
+        recorded_step = max(recorded_step, int(saved_rng_step))
+        if metadata.get("status") in {"running", "paused"}:
+            recorded_step = max(recorded_step, int(metadata.get("step", 0)))
+
+    available_step = latest_checkpoint_step if latest_checkpoint_step is not None else 0
+    if recorded_step > available_step:
+        available = "no checkpoint is available" if latest_checkpoint_step is None else (
+            f"the latest available checkpoint is step {latest_checkpoint_step}"
+        )
+        raise ValueError(
+            f"Cannot resume {workdir}: recorded completed progress is step {recorded_step}, "
+            f"but {available}. Restore the missing checkpoints or use a new run directory."
+        )
 
 
 def state_sha256(state) -> str:

@@ -169,11 +169,23 @@ when the caller requests `auto`. A resumed run fails if its pinned implementatio
 cannot run on the current device. Explicit backend choices in recipes are
 preserved.
 
+An unfinished run may resume only when its latest checkpoint covers its recorded
+committed progress. Missing or older checkpoints cause an error before progress
+metadata or metrics are overwritten. Restore the matching artifacts or use a new
+run directory; an existing scientific record is never reused for a fresh restart.
+An initialized run without committed progress can still start from step zero, and
+completed runs retain their existing validation-best-only handling.
+
 Softmax uses stable score shifting. Taylor and learned polynomials use unshifted
 scores. Unnormalized exponential and Taylor kernels also use unshifted scores
 and never divide by a row sum. Nonfinite outputs, gradients, and updated parameters are surfaced as
 failures; diagnostic-only weight sums may underflow or overflow. Signed mechanisms retain their existing signed-normalizer rules; the
-scaffold does not add clipping or denominator epsilon.
+scaffold does not add clipping or denominator epsilon. Every attention mechanism
+checks the gradient norm and all updated weights on every training step, including
+gradient accumulation and distributed execution. An invalid update stops before
+validation or checkpointing and writes a numerical-failure diagnostic. The legacy
+`check_all_gradients` step argument controls additional returned diagnostics only;
+it cannot disable these checks.
 
 ## Environment and training API
 

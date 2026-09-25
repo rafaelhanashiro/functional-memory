@@ -34,6 +34,7 @@ from scaffolds.transformer.training.checkpointing import (
     restore_latest_checkpoint,
     save_checkpoint,
     state_sha256,
+    validate_resume_progress,
 )
 from scaffolds.transformer.training import tracking
 from scaffolds.transformer.training.distributed import (
@@ -403,12 +404,8 @@ def _fail_numerics(config, state, step, message, sample, provenance, *, diagnost
     }
     if loss is not None:
         failure["loss"] = json_number(loss)
-        if requires_update_checks(config.model):
-            failure["checked_quantities"] = ["forward_loss", "global_gradient_norm", "updated_parameters"]
-            failure["loss_note"] = "A NaN loss scalar also signals an invalid gradient norm or parameter update."
-        elif config.model.quadratic_mode != "fixed":
-            failure["checked_quantities"] = ["forward_loss", "global_gradient_norm", "updated_coefficients"]
-            failure["loss_note"] = "A NaN loss scalar also signals an invalid gradient norm or coefficient update."
+        failure["checked_quantities"] = ["forward_loss", "global_gradient_norm", "updated_parameters"]
+        failure["loss_note"] = "A NaN loss scalar also signals an invalid gradient norm or parameter update."
     if numerical_metrics is not None:
         failure["update_numerics"] = dict(zip(
             ("forward_loss", "global_gradient_norm", "updated_parameter_norm"),
@@ -457,11 +454,15 @@ def run_training(config: Config, *, resume: bool = True, stop_after_step: int | 
         print(f"removed_stale_checkpoint_tmp={path}", flush=True)
     manager = make_checkpoint_manager(config)
     try:
-        return _run_training(config, manager, layout, devices, resume=resume, end_step=end_step,
-                             audit_checkpoint=audit_checkpoint)
-    except BaseException as error:
-        _write_status(config, status="failed", error=f"{type(error).__name__}: {error}")
-        raise
+        # Check before the run can overwrite progress metadata or reuse existing
+        # metric event IDs. A rejected resume leaves the scientific record intact.
+        validate_resume_progress(config, manager.latest_step())
+        try:
+            return _run_training(config, manager, layout, devices, resume=resume, end_step=end_step,
+                                 audit_checkpoint=audit_checkpoint)
+        except BaseException as error:
+            _write_status(config, status="failed", error=f"{type(error).__name__}: {error}")
+            raise
     finally:
         manager.wait_until_finished()
         manager.close()
@@ -597,13 +598,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             if len(timing["train_step_seconds"]) < 8:
                 timing["train_step_seconds"].append(time.perf_counter() - train_step_start)
             if not math.isfinite(loss_value):
-                quantity = ("training loss or GLA update" if config.model.attention_mechanism == "gla" else
-                            "training loss or unnormalized-attention update" if not config.model.attention_normalization else
-                            "training loss or signed-Taylor update" if check_all_gradients else
-                            "training loss" if config.model.quadratic_mode == "fixed" else
-                            "training loss or learned-quadratic update")
                 _fail_numerics(config, state, step,
-                               f"Nonfinite {quantity} at step {step}: {loss_value}",
+                               f"Nonfinite training loss or optimizer update at step {step}: {loss_value}",
                                diagnostic_sample, diagnostic_provenance, loss=loss_value,
                                numerical_metrics=numerical_metrics[0] if numerical_metrics else None)
             if is_log:

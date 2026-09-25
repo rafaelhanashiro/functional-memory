@@ -217,7 +217,7 @@ def test_nonfinite_gradient_with_finite_loss_persists_failure(tmp_path, monkeypa
         return loss, jax.tree.map(lambda value: jnp.full_like(value, jnp.inf), grads)
 
     monkeypatch.setattr(loop, "loss_and_grads", nonfinite_gradient)
-    with pytest.raises(FloatingPointError, match="unnormalized-attention update"):
+    with pytest.raises(FloatingPointError, match="optimizer update"):
         loop.run_training(cfg)
     failure = json.loads((tmp_path / "numerical_failure_step_00000001.json").read_text())
     assert math.isfinite(failure["update_numerics"]["forward_loss"])
