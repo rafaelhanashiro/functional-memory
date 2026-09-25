@@ -69,16 +69,16 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.decay_policy_
 
 The run was submitted from this experiment's worktree root with the shared Kennel
 launcher, which checks the frozen execution set against the launch commit, runs
-acceptance (CPU tests, distributed CPU tests, cuDNN softmax GPU tests,
+acceptance (CPU tests, distributed CPU tests, cuDNN softmax GPU tests at the production widths,
 initialization, a 20-update pilot, and an exact resume audit) in the allocation,
 then trains:
 
 ```bash
 RUN=200m-softmax-seed0
 mkdir -p "experiments/decay_policy_baseline/logs/$RUN"
-sbatch --job-name="$RUN" --gres=gpu:h100:4 --output="experiments/decay_policy_baseline/logs/$RUN/slurm-%j.out" \
+sbatch --job-name="$RUN" --output="experiments/decay_policy_baseline/logs/$RUN/slurm-%j.out" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.decay_policy_baseline.adapter.execution.acceptance \
-  "experiments/decay_policy_baseline/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 H100
+  "experiments/decay_policy_baseline/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 B300,H100
 ```
 
 ## Limitations

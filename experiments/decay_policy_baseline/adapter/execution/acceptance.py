@@ -20,8 +20,12 @@ SPEC = AcceptanceSpec(
                "scaffolds/transformer/tests/test_parameter_policy.py", "scaffolds/transformer/tests/test_config.py",
                "scaffolds/transformer/tests/test_training.py", "scaffolds/transformer/tests/test_checkpoint_audit.py",
                "experiments/decay_policy_baseline/adapter/tests"),
-    # cuDNN softmax against the manual reference at every width, on the allocation's GPU type.
-    gpu_tests=("scaffolds/transformer/tests/test_softmax_backends.py",),
+    # cuDNN softmax against the manual reference at the production widths, on the allocation's
+    # GPU type. d_K = 256 is excluded: cuDNN rejects it on B300 when d_K differs from d_V.
+    gpu_tests=tuple(f"scaffolds/transformer/tests/test_softmax_backends.py::{test}[{width}]"
+                    for test in ("test_cudnn_matches_manual_outputs_input_and_parameter_gradients",
+                                 "test_cudnn_production_context_forward_and_backward_are_finite")
+                    for width in (2, 4, 8, 16, 32, 64, 128)),
     check_config=check_config,
 )
 
