@@ -11,8 +11,8 @@
   "branch": "qk-norm-attention",
   "branch_base_commit": "8bdc5e22be0ff7b42e412062569985136a883b0d",
   "scaffold_change_commit": "dd6f2f47e18cb931d8c186d084749bbbd481174f",
-  "launch_commit": "4b5c69cef73eeb3bf8d0ea6ad3611208aad45cb3",
-  "frozen_execution_set_sha256": "00a2f12c81079ca1809ae34c25926cb226d0f1c656a74691c69515272b7ec0a1",
+  "launch_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
+  "frozen_execution_set_sha256": "bb64cdd2b310f84ba1bf0bad05ac7b8a3c53b51373625df9f0d6ec4bd0726700",
   "scientific_change": "Exact softmax attention over QK-norm cosine scores s_ij = exp(gamma_{l,h}) <q_i, k_j> / (||q_i|| ||k_j||), |s_ij| <= exp(gamma_{l,h}); one log scale gamma per layer and head, learned from log(sqrt(d_K)) = log 8, FP32, no weight decay, backbone learning-rate schedule; Q/K unit-normalized per head in FP32 before RoPE with eps 1e-6; everything else the 200M softmax control",
   "requested": {
     "date": "2026-09-25",
@@ -75,16 +75,48 @@
       },
       "parameter_count": 199906464,
       "qk_norm_parameter_count": 160,
-      "source_commit": "4b5c69cef73eeb3bf8d0ea6ad3611208aad45cb3",
+      "source_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
       "slurm_job_ids": [
-        202156
+        202156,
+        202215
       ],
       "partition": "sweep",
       "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
-      "submitted_utc": "2026-09-25T20:38:19+00:00",
+      "submitted_utc": "2026-09-25T22:13:06+00:00",
       "run_record": "experiments/qk_norm_attention/runs/200m-qk-softmax-seed0",
       "log_directory": "experiments/qk_norm_attention/logs/200m-qk-softmax-seed0",
-      "checkpoint_directory": "experiments/qk_norm_attention/checkpoints/200m-qk-softmax-seed0"
+      "checkpoint_directory": "experiments/qk_norm_attention/checkpoints/200m-qk-softmax-seed0",
+      "attempts": [
+        {
+          "slurm_job_id": "202156",
+          "restart": 0,
+          "node": "dogo",
+          "gpu_type": "H100",
+          "gpu_count": 4,
+          "outcome": "preempted 2026-09-25T17:50:16 local during acceptance cpu-tests; requeued"
+        },
+        {
+          "slurm_job_id": "202156",
+          "restart": 1,
+          "node": "dogo",
+          "gpu_type": "H100",
+          "gpu_count": 4,
+          "outcome": "preempted 2026-09-25T18:02:17 local during acceptance cpu-tests; requeued"
+        },
+        {
+          "slurm_job_id": "202156",
+          "restart": 2,
+          "node": "akita",
+          "gpu_type": "B300",
+          "gpu_count": 4,
+          "outcome": "acceptance cpu-tests (171) and cpu-distributed-tests (5) passed; gpu-tests failed 2 of 28: test_softmax_backends cuDNN cases at width 256 (B300 cuDNN rejects hidden_dim > 128 when d_qk != d_v), unrelated to this d_K = 64 recipe; the 5 QK-norm gates and the attention GPU tests passed; job exited FAILED 2026-09-25T18:11:50 local before initialization, pilot, or training; no run outputs"
+        },
+        {
+          "slurm_job_id": "202215",
+          "restart": 0,
+          "outcome": "submitted at launch commit aa5b6eb"
+        }
+      ]
     }
   ],
   "pre_launch_validation": {
@@ -103,5 +135,11 @@
     "runs": "experiments/qk_norm_attention/runs/<run> (committed at completion)",
     "checkpoints": "experiments/qk_norm_attention/checkpoints/<run>/<step> (ignored; in the execution checkout while running, then under artifact_root)",
     "logs": "experiments/qk_norm_attention/logs/<run>/slurm-<job>.out (ignored; in the execution checkout while running, then under artifact_root)"
+  },
+  "superseded_launch": {
+    "launch_commit": "4b5c69cef73eeb3bf8d0ea6ad3611208aad45cb3",
+    "frozen_execution_set_sha256": "00a2f12c81079ca1809ae34c25926cb226d0f1c656a74691c69515272b7ec0a1",
+    "slurm_job_id": "202156",
+    "difference": "adapter/execution/acceptance.py listed scaffolds/transformer/tests/test_softmax_backends.py among the GPU tests; the relaunch removes it (recipe, scaffold code, lock, and data unchanged)"
   }
 }
