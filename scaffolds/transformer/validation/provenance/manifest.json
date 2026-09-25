@@ -304,6 +304,43 @@
         "Extreme-decay test compared a log-decay gradient that underflows to zero by relative error; it now uses the input-gradient scale."
       ],
       "evidence": "GLA provenance manifest (experiments/gla_key_dimension/provenance/manifest.json), per-run acceptance"
+    },
+    "learned_polynomial_fused_kernel": {
+      "scope": "Fused unnormalized kernel with learned per-head coefficients (attention/backends/fused_learned_polynomial.py) for the learned_unnormalized_taylor recipes, degrees 1-4",
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "tests": "scaffolds/transformer/tests/test_learned_polynomial_fused_attention.py (26 GPU cases) plus 46 learned-polynomial CPU tests",
+      "pre_launch": {
+        "h100": "26 passed, job 201994 (dogo)",
+        "b300": "26 passed, job 201993 (akita)"
+      },
+      "h100": {
+        "jobs": [
+          "201998 (attempt 8)"
+        ],
+        "gpu_tests_passed": 74,
+        "full_recipe_pilot_and_resume": "passed"
+      },
+      "b300": {
+        "jobs": [
+          "201997",
+          "201999 (attempt 7)",
+          "202000 (attempt 5)"
+        ],
+        "gpu_tests_passed": 74,
+        "full_recipe_pilot_and_resume": "passed"
+      },
+      "defects_fixed": [],
+      "pilot_step_seconds_matched_b300": {
+        "m1": {
+          "learned": 0.3482,
+          "fixed": 0.3416
+        },
+        "m4": {
+          "learned": 0.4524,
+          "fixed": 0.4551
+        }
+      },
+      "evidence": "experiments/learned_unnormalized_taylor/provenance/manifest.json, per-run acceptance"
     }
   },
   "runs": [

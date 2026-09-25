@@ -199,6 +199,28 @@ tensor cores, and its backward grows faster than its forward in d_K; end-to-end
 B300 throughput fell from 1.68M tokens/s at d_K 8 to 0.61M at d_K 128. This was a
 development measurement, not a retained benchmark run.
 
+## Fused learned-polynomial kernel qualification on H100 and B300
+
+The fused unnormalized kernel with learned per-head coefficients
+(`attention/backends/fused_learned_polynomial.py`) first ran for the
+[learned-coefficient unnormalized Taylor sweep](../../../experiments/learned_unnormalized_taylor/README.md).
+It reuses the fixed unnormalized kernel's tiles and products and adds per-head
+coefficient gradients. Its 26 GPU tests (`tests/test_learned_polynomial_fused_attention.py`)
+compare the forward and all four VJPs, including the coefficients, with the blocked
+reference and an FP64 power sum for degrees 1–4 at odd widths and tile boundaries,
+full 2,048-token BF16 context, scores above 40, causality, invalid-score poisoning,
+and the fixed-coefficient kernel at Taylor values. Before launch they passed on one
+H100 (`dogo`, job 201994) and one B300 (`akita`, job 201993) at the pre-launch tree.
+No defects were found on either GPU type.
+
+Every production allocation then passed the sweep's acceptance at source `788a085`
+(114 CPU tests, 74 GPU tests including the fixed unnormalized kernel's 48, the
+initialization check, a 20-update full-recipe pilot on the fused backend, and an
+exact fresh-process resume): B300 in jobs 201997, 201999, and 202000 and H100 in job
+201998. On matched B300 allocations the pilots' steady update times, 0.348 s (m=1)
+and 0.452 s (m=4), were within 2% of the fixed-coefficient runs' 0.342 s and 0.455 s.
+These are pilot measurements, not a retained benchmark.
+
 ## Reproduction
 
 From a worktree with the scaffold environment synced
