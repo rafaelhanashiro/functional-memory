@@ -84,14 +84,19 @@ the score range the kernels see: [−4.8, 10.3] with QK-norm against [−16, 19]
 (and ±85 for degree 1). At |s| ≈ 18 the quartic term is twenty times what it is at
 |s| ≈ 8, so without QK-norm the largest kernel values reached 228, 805, and 6,470 for
 degrees 2–4 and the largest row weight sums 3,490, 2,590, and 16,500; with QK-norm
-they are 57, 167, and 644 and 727, 712, and 2,320. Degree 1 is the control for this
-reading: its scores shrank the most and it gained the least, because a linear
-kernel's score scale is interchangeable with the value and output scales. The
-learned scales barely moved from 8 (medians 7.8, 7.4, 8.4, 9.1; ranges 6.1–17.8)
-although Adam could have raised them by a factor of 22, whereas the same kernels
-without QK-norm inflated Q and K to ±17–19. QK-norm also removes per-token key
-magnitudes, and this sweep cannot separate that from the score bound; an
-unnormalized learned kernel with QK-norm at a large initial scale would.
+they are 57, 167, and 644 and 727, 712, and 2,320. A uniform rescaling of the
+scores is not what changed: learned coefficients absorb it at every degree
+(`s -> lambda s` is undone by `c_r -> c_r / lambda^r`), which is also why the learned
+scales barely moved from 8 (medians 7.8, 7.4, 8.4, 9.1; ranges 6.1–17.8) although
+Adam could have raised them by a factor of 22. What changed is the shape of the
+score distribution, whose tail the `s^m` term amplifies: the same kernels without
+QK-norm inflated Q and K until scores reached ±17–19, whereas cosines of unit
+vectors have no such tail. Degree 1 is the control for that reading: its output
+is linear in the scores, so it amplifies no tail, and it gained the least (0.43,
+close to the 0.21 that softmax itself gains from QK-norm) even though its scores
+shrank the most. QK-norm also removes per-token key magnitudes, and this sweep
+cannot separate that from the bounded range; an unnormalized learned kernel with
+QK-norm at a large initial scale would.
 
 **The normalized kernels fail by the same mechanism as before, and bounding the
 scores does not help.** Row normalization divides by the signed sum
