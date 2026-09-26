@@ -20,6 +20,7 @@ def attention_core(
     quadratic_mode: str = "fixed",
     coefficients: jax.Array | None = None,
     polynomial_coefficients: jax.Array | None = None,
+    polynomial_square_factors: jax.Array | None = None,
     return_diagnostics: bool = False,
     dropout=None,
     deterministic: bool = True,
@@ -34,17 +35,20 @@ def attention_core(
 
         if quadratic_mode != "fixed" or coefficients is not None:
             raise ValueError("Unnormalized attention requires the exponential or a fixed Taylor kernel")
+        if polynomial_square_factors is not None:
+            raise ValueError("A sum-of-squares kernel is implemented for row-normalized attention only")
         return unnormalized_attention(
             q, k, v, attention_degree=attention_degree, backend=backend,
             return_diagnostics=return_diagnostics, polynomial_coefficients=polynomial_coefficients,
         )
-    if polynomial_coefficients is not None:
+    if polynomial_coefficients is not None or polynomial_square_factors is not None:
         from scaffolds.transformer.attention.learned_polynomial import normalized_learned_polynomial_attention
 
         if quadratic_mode != "fixed" or coefficients is not None:
             raise ValueError("Learned polynomial coefficients exclude the learned quadratic modes")
         return normalized_learned_polynomial_attention(
             q, k, v, attention_degree=attention_degree, polynomial_coefficients=polynomial_coefficients,
+            polynomial_square_factors=polynomial_square_factors,
             backend=backend, return_diagnostics=return_diagnostics,
         )
     if quadratic_mode != "fixed":

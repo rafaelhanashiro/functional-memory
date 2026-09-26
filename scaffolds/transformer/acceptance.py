@@ -204,7 +204,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
     specs = attention_parameter_specs(config.model)
     control = replace(config, model=replace(
         config.model, attention_degree=None, attention_normalization=True, quadratic_mode="fixed",
-        attention_coefficients="fixed", qk_norm=False))
+        attention_coefficients="fixed", attention_coefficient_parameterization="direct", qk_norm=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
     added = {(spec.name,) for spec in specs}
     if set(actual) - set(expected) != added or set(expected) - set(actual):
