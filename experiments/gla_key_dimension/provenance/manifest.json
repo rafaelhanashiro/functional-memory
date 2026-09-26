@@ -691,7 +691,7 @@
   "comparisons": {
     "record": {
       "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-      "sha256": "d3217493593ae9d815a8ecbbcbd7aa9f8b0a0cbeaa9ebf9de57ec1f09afbf221"
+      "sha256": "dc96fd97bfde0a3d65e0470e96e4cd553e64b7b8f39d5ceac4f9877327a50c15"
     },
     "note": "Seed-0 200M runs with the same data, optimizer, and backbone recipe at each d_K; softmax and row-normalized Taylor attention of degree 2, 4, 8, and 16.",
     "runs": [
@@ -1011,25 +1011,26 @@
         }
       },
       {
-        "name": "200m-dk064-seed0",
+        "name": "200m-softmax-seed0",
         "qk_head_dim": 64,
         "kernel": "softmax",
         "attention_degree": null,
         "parameter_count": 199906304,
         "resolved_config": {
-          "path": "experiments/key_dimension_taylor/configs/200m-dk064-seed0.yaml",
-          "sha256": "54b17535349745950f5734d530e88ad7c3af3371847a6c51e30f6aa784c2e45b"
+          "path": "experiments/key_dimension_taylor/configs/200m-softmax-seed0.yaml",
+          "sha256": "f05ddef29734a3dd77db85fb2b353424ab46b8156b43826186d175f3ce127133"
         },
         "metrics": {
-          "path": "experiments/key_dimension_taylor/runs/200m-dk064-seed0/metrics.jsonl",
-          "sha256": "97ed5129bbd6f81363b0d617c1d22b10d718d00ded6734f25e616fb4f4612c76"
+          "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metrics.jsonl",
+          "sha256": "6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786"
         },
         "terminal": {
           "step": 19074,
           "training_tokens": 10000269312,
-          "validation_nll": 2.6871511340141296,
-          "validation_perplexity": 14.689767074685026
-        }
+          "validation_nll": 2.6854977863175526,
+          "validation_perplexity": 14.665499848737895
+        },
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
       },
       {
         "name": "200m-m002-seed0",

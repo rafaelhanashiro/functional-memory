@@ -72,7 +72,8 @@ primary endpoint is exponential mean token NLL at the common terminal training
 budget. Validation-best metrics remain separate. Width-matched softmax and
 row-normalized Taylor (m=2, 4, 8, 16) endpoints from the
 [dK × Taylor record](../key_dimension_taylor/README.md) are pinned by checksum in
-the manifest; the dK=64 softmax reference is `200m-dk064-seed0` (PPL 14.690).
+the manifest; the dK=64 softmax reference is `200m-softmax-seed0` (PPL 14.665), the
+repository's softmax baseline, trained under the selective weight-decay policy.
 One seed cannot establish statistical significance.
 
 ## Home cluster and artifacts
@@ -162,7 +163,7 @@ with the width-matched softmax and row-normalized Taylor runs from the
 | 8 | 192.2M | **17.22** | 16.71 | +0.52 | 20.58 | 18.18 | 17.18 | 16.85 |
 | 16 | 194.9M | **16.71** | 15.58 | +1.13 | 18.50 | 16.51 | 15.80 | 15.63 |
 | 32 | 200.2M | **16.20** | 14.99 | +1.22 | 17.17 | 15.57 | 15.07 | 15.02 |
-| 64 | 210.7M | **15.90** | 14.69 | +1.21 | 16.28 | 14.98 | 14.68 | 14.71 |
+| 64 | 210.7M | **15.90** | 14.67 | +1.23 | 16.28 | 14.98 | 14.68 | 14.71 |
 | 128 | 231.9M | **15.44** | 14.38 | +1.06 | 15.72 | 14.53 | 14.36 | 14.38 |
 
 ![Terminal perplexity versus d_K](figures/perplexity_vs_key_dimension.png)
@@ -173,7 +174,7 @@ with the width-matched softmax and row-normalized Taylor runs from the
   (−1.79 overall; 0.3–0.5 per doubling). Softmax improves more over the same range
   (16.71 → 14.38, −2.33), so wider keys help the recurrent state less than they help
   exact attention.
-- **GLA trails softmax at every width.** The gap is 0.52 at d_K=8 and 1.06–1.22 from
+- **GLA trails softmax at every width.** The gap is 0.52 at d_K=8 and 1.06–1.23 from
   d_K=16 to 128, even though GLA has more trainable parameters at each width (gates,
   output gate, and head normalization).
 - **Against truncated Taylor attention**, GLA beats degree 2 at every width. At

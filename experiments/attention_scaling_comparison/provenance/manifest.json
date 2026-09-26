@@ -155,19 +155,19 @@
   "source_manifests": {
     "key_dimension_taylor": {
       "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-      "sha256": "d3217493593ae9d815a8ecbbcbd7aa9f8b0a0cbeaa9ebf9de57ec1f09afbf221"
+      "sha256": "dc96fd97bfde0a3d65e0470e96e4cd553e64b7b8f39d5ceac4f9877327a50c15"
     },
     "odd_taylor_attention": {
       "path": "experiments/odd_taylor_attention/provenance/manifest.json",
-      "sha256": "ec4ec1af20e1c297daf0881f32c1b9d344e5518e79662e4c326811a5dce2d217"
+      "sha256": "603a09a3d71c0a97b20f6774c003ad42482e4e5bab4fd3ceb33763feb1bfedeb"
     },
     "learned_quadratic_attention": {
       "path": "experiments/learned_quadratic_attention/provenance/manifest.json",
-      "sha256": "af47572aba410b3494dbfd356d34df7d7b194df857ce0eeba1e88fecde170ce7"
+      "sha256": "e09e232e32b78899d9ccd4a1f8a0aebce363750f0e51e9dff91489bbc1a71801"
     },
     "unnormalized_taylor_attention": {
       "path": "experiments/unnormalized_taylor_attention/provenance/manifest.json",
-      "sha256": "21beaa923d8721698d02a5239b6906fd12ee3c6993016fc935cd392655576097"
+      "sha256": "d7e43386547f4a446fdac23efcff42a55a125bea5dcd23fa014f6fd91e96d6f6"
     },
     "learned_unnormalized_taylor": {
       "path": "experiments/learned_unnormalized_taylor/provenance/manifest.json",
@@ -175,11 +175,11 @@
     },
     "gla_key_dimension": {
       "path": "experiments/gla_key_dimension/provenance/manifest.json",
-      "sha256": "85b8dd905052c396196041cb7a53c21976675f0e1069460397ffd8cb7ab54207"
+      "sha256": "c9e000bfb1608fd9a60165dbe2cf7fe55cb2fa33fa89fe21b437ed5ac5421913"
     },
     "unnormalized_attention": {
       "path": "experiments/unnormalized_attention/provenance/manifest.json",
-      "sha256": "de400c9fbefb934b28bc0566038a572cfafea5c2ba80887e607a960d2c5e3924"
+      "sha256": "fd485e0bc616b9eedb5a92c573474bb75cbc0b321dbf80feee62c7f7dfeed771"
     }
   },
   "source_runs": [
@@ -839,21 +839,21 @@
       "column": "softmax",
       "d_k": 64,
       "experiment": "key_dimension_taylor",
-      "run": "200m-dk064-seed0",
+      "run": "200m-softmax-seed0",
       "status": "complete",
-      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
       "artifacts": {
         "metadata": {
-          "path": "experiments/key_dimension_taylor/runs/200m-dk064-seed0/metadata.json",
-          "sha256": "542cfc49057ab876943c3cfc6586a6a6f2f6564cfeaf02b75403d7bd26456359"
+          "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metadata.json",
+          "sha256": "d2a32e0c8045e8053595a1acb2d802b97987f8c7b6f7a9eefdef21066d315d42"
         },
         "metrics": {
-          "path": "experiments/key_dimension_taylor/runs/200m-dk064-seed0/metrics.jsonl",
-          "sha256": "97ed5129bbd6f81363b0d617c1d22b10d718d00ded6734f25e616fb4f4612c76"
+          "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metrics.jsonl",
+          "sha256": "6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786"
         },
         "completion": {
-          "path": "experiments/key_dimension_taylor/runs/200m-dk064-seed0/completion.json",
-          "sha256": "703df2d1448324a23bf0949e46ee21c0c1cc1d97e8ede01aa627c6f381cf9d80"
+          "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/completion.json",
+          "sha256": "7571ffbad1e5e9cf1b7f378ecad556b3f1f1e7d0d77671f8f5aa740331b9c8e0"
         }
       }
     },
@@ -1211,7 +1211,7 @@
   "analysis": {
     "config": {
       "path": "experiments/attention_scaling_comparison/configs/heatmap.json",
-      "sha256": "b5f871c37a6d38ebacf700ddcd287484f86f9d45a989ac8304d79b1f5e06b51a"
+      "sha256": "ed78593aafe422224423b61246d339c6fc5651def25d0a41e99e40f0894439b3"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
@@ -1235,19 +1235,19 @@
   "derived_artifacts": {
     "summary_csv": {
       "path": "experiments/attention_scaling_comparison/summary.csv",
-      "sha256": "3971c1f626e19e03db4f9d1970cf91b2f770a8d67daf177135958deb033b08c2"
+      "sha256": "06f7b9273cfb03b4f287f950a160a60f126103b877bf3476f3c6b0140ebed382"
     },
     "readme": {
       "path": "experiments/attention_scaling_comparison/README.md",
-      "sha256": "45eca691e62203664776f4bfe92e8f6886857b6fc5943bc3a8e97d0bba15f384"
+      "sha256": "d8e8ceabf3a4c37b6cd5704c8a025ecf763b3278052ad1b0e9bbd0c914485d74"
     },
     "combined_terminal_ppl_pdf": {
       "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.pdf",
-      "sha256": "dc7f5107e601d33dda7a7bc3ac05f00919a5a821a1c61af207fc18697bc00659"
+      "sha256": "b47094096751b26e72e996f3badf4ba37261cce4978f62004cea4bb87a064388"
     },
     "combined_terminal_ppl_png": {
       "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.png",
-      "sha256": "0c9cd29e49106bdae9bb11bccbef8f393ecf5338d629fe5c15ca9ca993653d0e"
+      "sha256": "18dda563456a6970eec189c79632cfc3b925c2306002421896b57009f925707e"
     }
   }
 }

@@ -38,10 +38,11 @@
     },
     "normalized_softmax": {
       "run": "experiments/key_dimension_taylor/runs/200m-softmax-seed0",
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
       "terminal_step": 19074,
-      "validation_nll": 2.6874512689454213,
-      "validation_perplexity": 14.69417664861716
+      "validation_nll": 2.6854977863175526,
+      "validation_perplexity": 14.665499848737895
     },
     "normalized_taylor_m1": {
       "run": "experiments/odd_taylor_attention/runs/200m-m001-seed0",

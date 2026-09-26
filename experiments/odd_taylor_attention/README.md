@@ -14,7 +14,7 @@ Fixed degree-one and degree-three Taylor models match the degree sweep's 200M-pa
 | Kernel | Parameters | Status | Terminal NLL | Terminal PPL | Failure step |
 |---|---:|---|---:|---:|---:|
 | Fixed Taylor m=2 | 199,906,304 | complete | 2.790001 | 16.2810 |  |
-| Exact softmax | 199,906,304 | complete | 2.687451 | 14.6942 |  |
+| Exact softmax | 199,906,304 | complete | 2.685498 | 14.6655 |  |
 | Fixed Taylor m=1 | 199,906,304 | numerical-failure | — | — | 9 |
 | Fixed Taylor m=3 | 199,906,304 | numerical-failure | — | — | 17 |
 
@@ -29,7 +29,7 @@ Odd-degree runs use four H100s on dogo. Control throughput reflects its recorded
 The fixed controls are degree-sweep runs retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in the provenance manifest:
 
 - Fixed Taylor m=2: `1a8836a75836671cdf83a3ab7763425a6a88cac7`; degree-sweep identity `6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a`.
-- Exact softmax: `1a8836a75836671cdf83a3ab7763425a6a88cac7`; degree-sweep identity `6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a`.
+- Exact softmax: `381f1fdf6caf2925a984e3932e58b6e70bfbc6b1`; softmax baseline retrained 2026-09-25 under the selective weight-decay policy.
 
 Recorded failures:
 

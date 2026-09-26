@@ -31,7 +31,7 @@ sources, configurations, runs, and artifact locations.
 | Taylor m=2 | 16.2810 | 3.157241 | 23.5057 |
 | Taylor m=3 | failed at update 17 | 3.007646 | 20.2397 |
 | Taylor m=4 | 14.9836 | 3.066279 | 21.4619 |
-| Exponential (`attention_degree: null`, m → ∞) | 14.6942 (softmax) | 2.859817 | 17.4583 |
+| Exponential (`attention_degree: null`, m → ∞) | 14.6655 (softmax) | 2.859817 | 17.4583 |
 
 Every run was best at its terminal update 19,074. Removing normalization makes
 the odd degrees trainable but costs every degree substantially: unnormalized m=2
@@ -108,9 +108,10 @@ the attention kernel:
 
 Normalized Taylor results in the table above come from the [dK × Taylor-degree record](../key_dimension_taylor/README.md)
 and [odd Taylor attention](../odd_taylor_attention/README.md); the normalized
-exponential is the exact-softmax control. The two existing softmax controls,
-trained on different clusters and kernels, agree within 0.0003 nats, so
-hardware differences between these runs are negligible at this resolution.
+exponential is the exact-softmax control, the repository's softmax baseline
+(source `381f1fd`), which trained under the scaffold's selective weight-decay
+policy; the runs here trained with decay on all parameters, a difference worth
+about 0.03 PPL in that baseline.
 
 ## Implementation
 
@@ -187,8 +188,8 @@ retained and the manifest summarizes the acceptance and allocation records.
 
 ## Limitations
 
-Each degree has one seed. Runs used B300 or H100 GPUs; the two softmax
-controls on different hardware agree within 0.0003 nats, far below the gaps
+Each degree has one seed. Runs used B300 or H100 GPUs, and the softmax control
+differs from them in weight-decay policy; both effects are far below the gaps
 here. Degree 0, an unnormalized causal prefix sum whose
 Q/K projections receive no attention gradient, is supported but not run.
 Diagnostics sample one held-out sequence per evaluation.

@@ -37,16 +37,8 @@
     }
   },
   "comparison_controls": {
-    "softmax_original_decay": {
+    "softmax": {
       "run": "experiments/key_dimension_taylor/runs/200m-softmax-seed0",
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
-      "weight_decay_policy": "all parameters (before exclude_embeddings_norms_biases_v1)",
-      "validation_nll": 2.6874512689454213,
-      "validation_perplexity": 14.69417664861716,
-      "note": "Same backbone, budget, and data; differs from this run in the score and in the decay policy."
-    },
-    "softmax_canonical_decay": {
-      "run": "experiments/decay_policy_baseline/runs/200m-softmax-seed0",
       "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
       "slurm_job_id": "202190",
@@ -54,7 +46,7 @@
       "validation_nll": 2.6854977863175526,
       "validation_perplexity": 14.665499848737895,
       "completed_utc": "2026-09-25T23:35:49.944451+00:00",
-      "note": "The clean control: the same recipe as this run without qk_norm, under the canonical policy; completed 2026-09-25 and merged into main as experiments/decay_policy_baseline."
+      "note": "The repository's softmax baseline: the same recipe and weight-decay policy as this run, without QK-norm."
     }
   },
   "runs": [

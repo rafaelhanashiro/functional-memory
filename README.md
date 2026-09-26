@@ -13,7 +13,6 @@ Reusable code is organized by capability under `scaffolds/`. Each experiment und
 | Attention scaling comparison | [Combined d_K × m heatmap across attention mechanisms](experiments/attention_scaling_comparison/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Unnormalized attention | [Unnormalized exponential attention at 200M and 250M](experiments/unnormalized_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Unnormalized Taylor attention | [Degrees 1–4 without row normalization](experiments/unnormalized_taylor_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
-| Softmax baseline under selective weight decay | [Does the canonical decay policy change the 200M softmax reference?](experiments/decay_policy_baseline/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | QK-norm attention | [Softmax over learned-scale cosine scores at 200M](experiments/qk_norm_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 
 ```text

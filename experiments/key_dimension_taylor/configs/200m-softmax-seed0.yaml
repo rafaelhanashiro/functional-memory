@@ -40,7 +40,7 @@ optim:
   total_steps: 19074
 train:
   seed: 0
-  source_commit: 1a8836a75836671cdf83a3ab7763425a6a88cac7
+  source_commit: 381f1fdf6caf2925a984e3932e58b6e70bfbc6b1
   dtype: bfloat16
   workdir: experiments/key_dimension_taylor/runs/200m-softmax-seed0
   checkpoint_dir: experiments/key_dimension_taylor/checkpoints/200m-softmax-seed0

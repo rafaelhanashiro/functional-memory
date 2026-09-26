@@ -83,7 +83,7 @@ carry the result.
 
 Degree 3 remains the best unnormalized polynomial (18.53) but trails the
 unnormalized exponential (17.46), and every unnormalized kernel stays well behind
-normalized attention (softmax 14.69; normalized degree-4 Taylor 14.98). Unlike the
+normalized attention (softmax 14.67; normalized degree-4 Taylor 14.98). Unlike the
 normalized learned quadratic, which failed once its kernel acquired real roots,
 signed kernels are harmless here because nothing divides by the row sum.
 
@@ -114,7 +114,7 @@ Controls, all seed 0 with the same backbone and budget:
 | Unnormalized, fixed Taylor coefficients | 20.7701 | 23.5057 | 20.2397 | 21.4619 |
 | Normalized, fixed Taylor coefficients | failed (update 9) | 16.2810 | failed (update 17) | 14.9836 |
 
-The unnormalized exponential ends at 17.4583 and softmax at 14.6942. The normalized
+The unnormalized exponential ends at 17.4583 and softmax at 14.6655. The normalized
 learned quadratic `1 + b s + c s^2` with per-head coefficients failed at update 4,187
 after its kernel acquired real roots ([learned quadratic attention](../learned_quadratic_attention/README.md)).
 
@@ -218,5 +218,6 @@ Each degree has one seed, and only per-head sharing was run. Coefficients used t
 backbone learning rate, which bounds how far they can move; three heads moved a
 coefficient by more than 1, at most 2.21 of the ≈3.1 possible. Kernel statistics come from one held-out diagnostic sequence
 per validation. Degree 2 trained on H100s and the others on B300s, as did their
-controls on mixed hardware; the two softmax controls on different hardware agree
-within 0.0003 nats, far below the differences reported here.
+controls on mixed hardware. The softmax baseline trained under the selective
+weight-decay policy, unlike the runs here; that difference (about 0.03 PPL in the
+baseline) is far below the differences reported here.
