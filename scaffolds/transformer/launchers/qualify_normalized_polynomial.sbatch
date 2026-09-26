@@ -53,6 +53,8 @@ if [[ "$PHASE" == kernel ]]; then
     --junitxml="$LOGS/tests.xml"
   "$PYTHON" - "$LOGS/tests.xml" "$RECORD/tests.json" <<'PY'
 import json, pathlib, sys, xml.etree.ElementTree as ET
+from scaffolds.transformer.acceptance import require_passing_tests
+require_passing_tests(pathlib.Path(sys.argv[1]))
 root = ET.parse(sys.argv[1]).getroot()
 suites = root.findall("testsuite") if root.tag == "testsuites" else [root]
 result = {key: sum(int(suite.get(key, 0)) for suite in suites) for key in ("tests", "failures", "errors", "skipped")}

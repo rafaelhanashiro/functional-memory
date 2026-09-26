@@ -42,8 +42,10 @@ def _inputs(shape, parameterization, degree, *, dtype=jnp.float32, seed=719):
     return (q, k, v, jnp.asarray(parameters, jnp.float32)), cotangent
 
 
-def _dense_reference(q, k, v, parameters, *, parameterization):
+def _dense_reference(q, k, v, parameters, *, parameterization, score_offset=None):
     scores = jnp.einsum("bthd,bshd->bhts", q, k) / math.sqrt(q.shape[-1])
+    if score_offset is not None:
+        scores = scores + score_offset
     degree = parameters.shape[-1] - 1
     parameters = jnp.broadcast_to(parameters, (q.shape[2], degree + 1))
     if parameterization == "direct":
@@ -240,7 +242,25 @@ def test_normalized_coefficient_gradients_do_not_form_overflowing_raw_powers(ker
     operands, cotangent = (q, k, v, parameters), jnp.ones_like(v)
     actual = _evaluate(kernel("direct"), operands, cotangent)
     reference = _fp64(partial(_dense_reference, parameterization="direct"), operands, cotangent)
-    _assert_result(actual, reference, output_tolerance=3e-5, gradient_tolerances=(3e-4,) * 4)
+    _assert_result((actual[0], actual[1][:3]), (reference[0], reference[1][:3]),
+                   output_tolerance=3e-5, gradient_tolerances=(3e-4,) * 3)
+    # dc16 subtracts contributions about 1852 times larger than their sum.
+    # Bound its absolute rounding error by the contribution magnitudes, keeping
+    # the ordinary relative bound for the better-conditioned coefficients.
+    q64, k64, v64, coefficients = (np.asarray(x, np.float64) for x in operands)
+    scores = np.einsum("bthd,bshd->bhts", q64, k64)
+    causal = np.tril(np.ones((3, 3), bool))
+    values = sum(coefficients[:, r][None, :, None, None] * scores ** r for r in range(17))
+    normalizer = np.sum(np.where(causal, values, 0), axis=-1, keepdims=True)
+    dp = (np.einsum("bthd,bshd->bhts", np.asarray(cotangent, np.float64), v64)
+          - np.einsum("bthd,bthd->bht", np.asarray(cotangent, np.float64), reference[0])[..., None]) / normalizer
+    magnitudes = np.stack([np.sum(np.where(causal, np.abs(dp * scores ** r), 0), axis=(0, 2, 3))
+                           for r in range(17)], axis=-1)
+    condition = magnitudes[0, -1] / abs(reference[1][3][0, -1])
+    assert 1000 < condition < 3000
+    bound = np.maximum(3e-4 * np.abs(reference[1][3]), 2 * np.finfo(np.float32).eps * magnitudes)
+    error = np.abs(np.asarray(actual[1][3], np.float64) - reference[1][3])
+    assert np.all(error <= bound), f"coefficient errors {error} exceed conditioning bounds {bound}"
 
 
 def test_normalized_sos_score_gradient_does_not_form_overflowing_raw_derivative(kernel):
@@ -274,7 +294,7 @@ def test_normalized_direct_score_gradient_does_not_form_overflowing_raw_derivati
 
 def test_sos_near_roots_use_factors_without_expansion_or_clipping(kernel):
     # The expanded FP32 polynomial can turn negative around its root at 20.
-    # Exact binary coefficients keep FP64 vs Horner factor evaluation controlled.
+    # Scores within 0.02 of the root expose one-ULP tensor-core score errors.
     q = jnp.ones((1, 67, 1, 1), jnp.float32)
     scores = np.concatenate(([19.5], np.linspace(19.98, 20.02, 66))).astype(np.float32)
     k = jnp.asarray(scores).reshape(q.shape)
@@ -283,8 +303,31 @@ def test_sos_near_roots_use_factors_without_expansion_or_clipping(kernel):
     parameters = jnp.asarray([[-60 / 64, -17 / 64, 1 / 64, -20 / 1024, 1 / 1024]], jnp.float32)
     operands = q, k, v, parameters
     actual = _evaluate(kernel("sum_of_squares"), operands, cotangent)
-    expected = _fp64(partial(_dense_reference, parameterization="sum_of_squares"), operands, cotangent)
-    _assert_result(actual, expected, output_tolerance=2e-5, gradient_tolerances=(3e-4,) * 4)
+    with jax.enable_x64(), jax.default_matmul_precision("highest"):
+        operands64 = tuple(x.astype(jnp.float64) for x in operands)
+
+        def oracle(offsets):
+            attend = partial(_dense_reference, parameterization="sum_of_squares", score_offset=offsets)
+            return _vjp(attend, operands64, cotangent.astype(jnp.float64))
+
+        offsets = jnp.zeros((67,), jnp.float64)
+        expected = oracle(offsets)
+        sensitivities = jax.jit(jax.jacfwd(oracle))(offsets)
+        # Q is exactly one, so every query's score error for a key is the same.
+        # Differentiate outputs and their VJPs with respect to independent score
+        # offsets. This gives an input-specific bound instead of relaxing every
+        # near-zero factor comparison. A factor of two covers the local
+        # linearization remainder; separate budgets cover FP32 evaluation.
+        ulps = jnp.asarray(np.spacing(scores), jnp.float64)
+        envelopes = jax.tree.map(lambda derivative: jnp.sum(jnp.abs(derivative) * ulps, axis=-1), sensitivities)
+        expected, envelopes = jax.tree.map(lambda x: np.asarray(x, np.float64), (expected, envelopes))
+    for index, (got, want, envelope) in enumerate(zip(jax.tree.leaves(actual), jax.tree.leaves(expected),
+                                                       jax.tree.leaves(envelopes), strict=True)):
+        got = np.asarray(got, np.float64)
+        evaluation_budget = 2e-5 if index == 0 else 1e-4
+        bound = 2 * envelope + evaluation_budget * np.max(np.abs(want))
+        assert np.isfinite(got).all(), f"nonfinite near-root result {index}"
+        assert np.all(np.abs(got - want) <= bound), f"near-root result {index} exceeds one-ULP conditioning bound"
 
 
 @pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares"))
