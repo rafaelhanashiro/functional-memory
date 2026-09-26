@@ -17,7 +17,7 @@ Each colored cell is a model evaluated after **19,074 optimizer updates** and
 **10,000,269,312 prediction tokens**. All plotted runs use seed 0 and the same
 packed FineWeb-Edu order and held-out evaluation set. Terminal validation loss
 and perplexity come from each source run's committed `metrics.jsonl` and
-`completion.json`. The [figure configuration](configs/heatmap.json) pins eight
+`completion.json`. The [figure configuration](configs/heatmap.json) pins nine
 source manifests by SHA256 and names every plotted run. The
 [comparison provenance](provenance/manifest.json) records the source commits,
 run-file hashes, and generated artifact hashes.
@@ -30,11 +30,12 @@ provenance and artifacts.
 ## Reading the figure
 
 The panels use one common linear perplexity color scale; lower perplexity is
-better. They distinguish five families:
+better. They distinguish six families:
 
 | Panel | Columns | Meaning |
 | --- | --- | --- |
 | Row-normalized Taylor, fixed | `m = 1, 2, 3, 4, 8, 16` | Fixed coefficients `1/r!`; causal row normalization |
+| Row-normalized Taylor, learned | `m = 1, 2, 3, 4, 8, 16` | Learned per-head coefficients with a signed causal row sum |
 | Row-normalized quadratic, learned | Positive/global, positive/per-head, unrestricted/global, unrestricted/per-head | Four degree-2 coefficient variants, initialized at the Taylor quadratic |
 | References | Softmax, softmax without QK-norm, GLA, unnormalized exponential | Different attention mechanisms; the second column is the plain-score softmax reference; GLA has no Taylor degree and no QK-norm |
 | Unnormalized Taylor, fixed | `m = 1, 2, 3, 4, 8, 16` | Fixed coefficients with no attention row division |
@@ -50,7 +51,7 @@ figure never fills a gap with a partial validation or an estimated perplexity.
 Other execution states are labeled **INCOMPLETE** if encountered when regenerating.
 
 <!-- BEGIN GENERATED RESULTS -->
-130 displayed coordinates: 42 complete, 4 numerical failures, 84 not run, and 0 incomplete. Only completed runs at the common 19,074-update endpoint receive a color and a terminal PPL. A failed run is labeled with its failure update; an untrained coordinate is marked NOT RUN. 44 of the 46 trained cells are outlined as legacy runs: they trained with weight decay on all parameters and, where it applies, without QK-norm, before those became the scaffold's defaults; each is replaced when its experiment is rerun. 2 cells already use the current defaults.
+160 displayed coordinates: 42 complete, 8 numerical failures, 110 not run, and 0 incomplete. Only completed runs at the common 19,074-update endpoint receive a color and a terminal PPL. A failed run is labeled with its failure update; an untrained coordinate is marked NOT RUN. 40 of the 50 trained cells are outlined as legacy runs: they trained with weight decay on all parameters and, where it applies, without QK-norm, before those became the scaffold's defaults; each is replaced when its experiment is rerun. 10 cells already use the current defaults.
 
 ![Combined terminal perplexity heatmap](figures/combined_terminal_ppl.png)
 
@@ -75,10 +76,15 @@ The two old-policy `d_K = 64` softmax runs retired on 2026-09-26 ended at PPL 14
 
 ## Findings
 
-Under the current defaults only the `d_K = 64` softmax references exist so far:
-QK-norm softmax at 14.4574 and plain softmax at 14.6655. Every other cell is a
-legacy run. The comparisons below are therefore among legacy runs, which share one
-training setup with each other.
+Under the current defaults, ten cells exist so far, all at `d_K = 64`: the two
+softmax references (QK-norm 14.4574, plain 14.6655); the learned per-head
+unnormalized Taylor kernels at m = 1–4 (20.279, 17.599, 16.330, 16.384, from the
+[QK-norm learned Taylor sweep](../qk_norm_learned_taylor/README.md)), each better
+than its legacy counterpart without QK-norm and with degrees 3 and 4 now within
+0.05 of each other; and the four row-normalized learned Taylor kernels, which all
+failed numerically (updates 27, 1,857, 318, and 1,456) once a kernel turned negative
+inside the bounded score range and a row sum crossed zero. Every other cell is a
+legacy run, so the comparisons below among them share one training setup.
 
 The dense fixed normalized grid shows that increasing degree narrows the
 softmax gap. At `d_K=8`, fixed `m=2` has PPL 20.5775, versus 16.8479 at

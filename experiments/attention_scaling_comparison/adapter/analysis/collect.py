@@ -101,6 +101,7 @@ def _mechanism(cell: dict, run: dict, metadata: dict, label: str) -> None:
     expected_kernel = {
         "unnormalized_fixed": "taylor_unnormalized",
         "unnormalized_learned": "learned_polynomial_unnormalized",
+        "normalized_learned_taylor": "learned_polynomial",
     }.get(panel)
     if panel == "references":
         expected_kernel = _REFERENCE_KERNELS.get(column)
@@ -109,7 +110,7 @@ def _mechanism(cell: dict, run: dict, metadata: dict, label: str) -> None:
         _optional_match(metadata, "attention_kernel", expected_kernel, f"{label} kernel")
     elif expected_kernel is not None:
         _match(metadata.get("attention_kernel"), expected_kernel, f"{label} kernel")
-    if panel == "unnormalized_learned":
+    if panel in ("unnormalized_learned", "normalized_learned_taylor"):
         _match(metadata.get("attention_coefficients"), "learned", f"{label} coefficients")
 
 

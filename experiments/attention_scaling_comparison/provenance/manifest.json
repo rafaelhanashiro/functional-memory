@@ -51,6 +51,36 @@
         ]
       },
       {
+        "id": "normalized_learned_taylor",
+        "title": "Row-normalized Taylor · learned per head",
+        "columns": [
+          {
+            "id": "m1",
+            "label": "m=1"
+          },
+          {
+            "id": "m2",
+            "label": "m=2"
+          },
+          {
+            "id": "m3",
+            "label": "m=3"
+          },
+          {
+            "id": "m4",
+            "label": "m=4"
+          },
+          {
+            "id": "m8",
+            "label": "m=8"
+          },
+          {
+            "id": "m16",
+            "label": "m=16"
+          }
+        ]
+      },
+      {
         "id": "normalized_learned",
         "title": "Row-normalized quadratic · learned",
         "columns": [
@@ -69,30 +99,6 @@
           {
             "id": "unrestricted_per_head",
             "label": "signed\nper head"
-          }
-        ]
-      },
-      {
-        "id": "references",
-        "title": "Reference mechanisms",
-        "columns": [
-          {
-            "id": "softmax",
-            "label": "softmax"
-          },
-          {
-            "id": "softmax_no_qk_norm",
-            "label": "softmax\nno QK-norm",
-            "qk_norm": false
-          },
-          {
-            "id": "gla",
-            "label": "GLA",
-            "qk_norm": null
-          },
-          {
-            "id": "unnormalized_exp",
-            "label": "unnormalized\nexp"
           }
         ]
       },
@@ -155,6 +161,30 @@
             "label": "m=16"
           }
         ]
+      },
+      {
+        "id": "references",
+        "title": "Reference mechanisms",
+        "columns": [
+          {
+            "id": "softmax",
+            "label": "softmax"
+          },
+          {
+            "id": "softmax_no_qk_norm",
+            "label": "softmax\nno QK-norm",
+            "qk_norm": false
+          },
+          {
+            "id": "gla",
+            "label": "GLA",
+            "qk_norm": null
+          },
+          {
+            "id": "unnormalized_exp",
+            "label": "unnormalized\nexp"
+          }
+        ]
       }
     ]
   },
@@ -190,6 +220,10 @@
     "qk_norm_attention": {
       "path": "experiments/qk_norm_attention/provenance/manifest.json",
       "sha256": "bb8900c813809e4398d2d5d643a0257a428919a086ca5c7a271d76ad82bdcd06"
+    },
+    "qk_norm_learned_taylor": {
+      "path": "experiments/qk_norm_learned_taylor/provenance/manifest.json",
+      "sha256": "07562fdf973f9c901af79b515653f76c6c92bdfc7961ab4c6f0a4ddb002c3834"
     }
   },
   "source_runs": [
@@ -846,6 +880,98 @@
       ]
     },
     {
+      "panel": "normalized_learned_taylor",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m001-normalized-seed0",
+      "status": "numerical_failure",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m001-normalized-seed0/metadata.json",
+          "sha256": "98917fd570c76bc95e7e72fe6d540ac681b2bad0fe5ad33815a7ca925c2d8a63"
+        },
+        "failure": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m001-normalized-seed0/numerical_failure_step_00000027.json",
+          "sha256": "9008aedef104d4c529649a95ec28adb7279b5dbacdf30f8cb0d51020e2895c27"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "panel": "normalized_learned_taylor",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m002-normalized-seed0",
+      "status": "numerical_failure",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m002-normalized-seed0/metadata.json",
+          "sha256": "5e4d79364dcac7a6e2f3fe8c1e05fe3e0060d3588c58a2ed53b49cce35d3a66f"
+        },
+        "failure": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m002-normalized-seed0/numerical_failure_step_00001857.json",
+          "sha256": "7d1f6785a73f7c70e8954c41648749aa0c27cf0bdc633d81917afc5f9e370dd4"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "panel": "normalized_learned_taylor",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m003-normalized-seed0",
+      "status": "numerical_failure",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m003-normalized-seed0/metadata.json",
+          "sha256": "82d844d521d1a962b9c56dd640b271ab074e01640b208f1eaeab53c37dc98744"
+        },
+        "failure": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m003-normalized-seed0/numerical_failure_step_00000318.json",
+          "sha256": "109ef08cd19f8c136dde40190a27bbb4def63da3d8065da5504239257207bbac"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "panel": "normalized_learned_taylor",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m004-normalized-seed0",
+      "status": "numerical_failure",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m004-normalized-seed0/metadata.json",
+          "sha256": "c80ed4398ea96fb3fd52ede1eb05e77370204c47b08799efa30a967f96c89279"
+        },
+        "failure": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m004-normalized-seed0/numerical_failure_step_00001456.json",
+          "sha256": "c966641492325599c0aa250357e707e2756216e28bd4a9b6e32352f1fdf8ca54"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
       "panel": "normalized_learned",
       "column": "positive_global",
       "d_k": 64,
@@ -956,6 +1082,234 @@
         "weight decay on all parameters",
         "no QK-norm"
       ]
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m001-seed0",
+      "status": "complete",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m001-seed0/metadata.json",
+          "sha256": "eb437be40040cb02ec8cc1bc5d77f11c99212e7c4c193424ff41566311ad0255"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m001-seed0/metrics.jsonl",
+          "sha256": "c9e00eac4a104437de18334561fdbea4d6f05b81696632dd2e7dbd605ccbae0d"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m001-seed0/completion.json",
+          "sha256": "bbf2419c6baad8701856e9a16ab7565fb45be8aebd9c5c6a2c6a918837f3e0b1"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m002-seed0",
+      "status": "complete",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m002-seed0/metadata.json",
+          "sha256": "71639fd6adbccb60586b804767d2f38413b2cc1e019bbc41c677539f6be8bc22"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m002-seed0/metrics.jsonl",
+          "sha256": "a312d11551b69eb5e46e78d96c2571dc0e977151489ba5949e2f2485bb430854"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m002-seed0/completion.json",
+          "sha256": "26ebd93c6eca9126f59bbd92ed7664cda27061dcda766b2ea533a40e2fc645a3"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m003-seed0",
+      "status": "complete",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m003-seed0/metadata.json",
+          "sha256": "8724696257a3a65e4961c83cb94db7dd57bcbfc18aaff02b63372483037c4862"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m003-seed0/metrics.jsonl",
+          "sha256": "41152673f2d2954257fadbe3d01e1d0b77f2570e6a7089aeaecbfa803e4826a8"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m003-seed0/completion.json",
+          "sha256": "ba04abc24913de43e687b544ed77a1c4afbd74ce3ef51fe41f04680affa69b7b"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m004-seed0",
+      "status": "complete",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m004-seed0/metadata.json",
+          "sha256": "18063ebbaf4f8dcb71722aa2bf93bf8211798794ac4a79dbd5e0d1d23de4c009"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m004-seed0/metrics.jsonl",
+          "sha256": "9df4a551647e7e72cdb592f28906fba68f6a31aea1f9dc3e9ac55c3389e756fa"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_taylor_attention/runs/200m-m004-seed0/completion.json",
+          "sha256": "7e72531a9e58c7d68350fee38bca2e48e7c1dd0958c00a1694f5b931d5f5db8e"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m001-unnormalized-seed0",
+      "status": "complete",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m001-unnormalized-seed0/metadata.json",
+          "sha256": "127347cf42e115e434861fdf71dd4953bf6ff78456dc4791e34117fe7fbc38e7"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m001-unnormalized-seed0/metrics.jsonl",
+          "sha256": "96c2730edd978ad36b3c3231281472aa0b6b69bb67e0dc4ce57bbc4d93762148"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m001-unnormalized-seed0/completion.json",
+          "sha256": "b6acc5d1abb93713070656b5b480ae172f6337ef58a929c7d1e092368fc220dc"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m002-unnormalized-seed0",
+      "status": "complete",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m002-unnormalized-seed0/metadata.json",
+          "sha256": "c03c5b0ffc0570283cbd614c1f91d89eefd49d8a4e545df662703f919c4be5c9"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m002-unnormalized-seed0/metrics.jsonl",
+          "sha256": "c363897b287024b7983a19fc18fcfc37333024bf51e1cc0497bc2f38efca3316"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m002-unnormalized-seed0/completion.json",
+          "sha256": "ac47989070e0f808a8c571ecefa872c726f044feaf7253746d33cfe7c2bf2304"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m003-unnormalized-seed0",
+      "status": "complete",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m003-unnormalized-seed0/metadata.json",
+          "sha256": "faf1dd2352b5085242eac12a72dbca644db69fa488dc409e5ce569b53ab719a5"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m003-unnormalized-seed0/metrics.jsonl",
+          "sha256": "9c4eb4a4d225634e8c03356f6577c760f74f4a084cec497ce6f8355bc53bb828"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m003-unnormalized-seed0/completion.json",
+          "sha256": "217422e572eb7e467596a9adaff9eae72b566c2064fcb2d911464308c5eebdda"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m004-unnormalized-seed0",
+      "status": "complete",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m004-unnormalized-seed0/metadata.json",
+          "sha256": "adc7407ef91c00164c036d8385f458b58ef90b1b38d623a84b1a418d0e0f7928"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m004-unnormalized-seed0/metrics.jsonl",
+          "sha256": "01fcd44375269da22ac332ae2c0150e85fff6b109cf51c410c37c10e2b0a8555"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_learned_taylor/runs/200m-qk-m004-unnormalized-seed0/completion.json",
+          "sha256": "7d973eb00c656efe0c7be0426d869a83142d8f95659f7043e82491a5767ec2cd"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "panel": "references",
@@ -1305,258 +1659,18 @@
         "weight decay on all parameters",
         "no QK-norm"
       ]
-    },
-    {
-      "panel": "unnormalized_fixed",
-      "column": "m1",
-      "d_k": 64,
-      "experiment": "unnormalized_taylor_attention",
-      "run": "200m-m001-seed0",
-      "status": "complete",
-      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/unnormalized_taylor_attention/runs/200m-m001-seed0/metadata.json",
-          "sha256": "eb437be40040cb02ec8cc1bc5d77f11c99212e7c4c193424ff41566311ad0255"
-        },
-        "metrics": {
-          "path": "experiments/unnormalized_taylor_attention/runs/200m-m001-seed0/metrics.jsonl",
-          "sha256": "c9e00eac4a104437de18334561fdbea4d6f05b81696632dd2e7dbd605ccbae0d"
-        },
-        "completion": {
-          "path": "experiments/unnormalized_taylor_attention/runs/200m-m001-seed0/completion.json",
-          "sha256": "bbf2419c6baad8701856e9a16ab7565fb45be8aebd9c5c6a2c6a918837f3e0b1"
-        }
-      },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
-    },
-    {
-      "panel": "unnormalized_fixed",
-      "column": "m2",
-      "d_k": 64,
-      "experiment": "unnormalized_taylor_attention",
-      "run": "200m-m002-seed0",
-      "status": "complete",
-      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/unnormalized_taylor_attention/runs/200m-m002-seed0/metadata.json",
-          "sha256": "71639fd6adbccb60586b804767d2f38413b2cc1e019bbc41c677539f6be8bc22"
-        },
-        "metrics": {
-          "path": "experiments/unnormalized_taylor_attention/runs/200m-m002-seed0/metrics.jsonl",
-          "sha256": "a312d11551b69eb5e46e78d96c2571dc0e977151489ba5949e2f2485bb430854"
-        },
-        "completion": {
-          "path": "experiments/unnormalized_taylor_attention/runs/200m-m002-seed0/completion.json",
-          "sha256": "26ebd93c6eca9126f59bbd92ed7664cda27061dcda766b2ea533a40e2fc645a3"
-        }
-      },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
-    },
-    {
-      "panel": "unnormalized_fixed",
-      "column": "m3",
-      "d_k": 64,
-      "experiment": "unnormalized_taylor_attention",
-      "run": "200m-m003-seed0",
-      "status": "complete",
-      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/unnormalized_taylor_attention/runs/200m-m003-seed0/metadata.json",
-          "sha256": "8724696257a3a65e4961c83cb94db7dd57bcbfc18aaff02b63372483037c4862"
-        },
-        "metrics": {
-          "path": "experiments/unnormalized_taylor_attention/runs/200m-m003-seed0/metrics.jsonl",
-          "sha256": "41152673f2d2954257fadbe3d01e1d0b77f2570e6a7089aeaecbfa803e4826a8"
-        },
-        "completion": {
-          "path": "experiments/unnormalized_taylor_attention/runs/200m-m003-seed0/completion.json",
-          "sha256": "ba04abc24913de43e687b544ed77a1c4afbd74ce3ef51fe41f04680affa69b7b"
-        }
-      },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
-    },
-    {
-      "panel": "unnormalized_fixed",
-      "column": "m4",
-      "d_k": 64,
-      "experiment": "unnormalized_taylor_attention",
-      "run": "200m-m004-seed0",
-      "status": "complete",
-      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/unnormalized_taylor_attention/runs/200m-m004-seed0/metadata.json",
-          "sha256": "18063ebbaf4f8dcb71722aa2bf93bf8211798794ac4a79dbd5e0d1d23de4c009"
-        },
-        "metrics": {
-          "path": "experiments/unnormalized_taylor_attention/runs/200m-m004-seed0/metrics.jsonl",
-          "sha256": "9df4a551647e7e72cdb592f28906fba68f6a31aea1f9dc3e9ac55c3389e756fa"
-        },
-        "completion": {
-          "path": "experiments/unnormalized_taylor_attention/runs/200m-m004-seed0/completion.json",
-          "sha256": "7e72531a9e58c7d68350fee38bca2e48e7c1dd0958c00a1694f5b931d5f5db8e"
-        }
-      },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
-    },
-    {
-      "panel": "unnormalized_learned",
-      "column": "m1",
-      "d_k": 64,
-      "experiment": "learned_unnormalized_taylor",
-      "run": "200m-m001-seed0",
-      "status": "complete",
-      "source_commit": "788a085e24225872495199e8040ec1167070a691",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/learned_unnormalized_taylor/runs/200m-m001-seed0/metadata.json",
-          "sha256": "82148de0a932d7d796840353454594f1fca8b7207b9d2cbe712e40cd524936ab"
-        },
-        "metrics": {
-          "path": "experiments/learned_unnormalized_taylor/runs/200m-m001-seed0/metrics.jsonl",
-          "sha256": "da1764d69f3cd33df4cfe3f2fb7cbf27df0127a866e8b3a037602e7c9c24d698"
-        },
-        "completion": {
-          "path": "experiments/learned_unnormalized_taylor/runs/200m-m001-seed0/completion.json",
-          "sha256": "bd8133505df4f0591ecfb395d2bed8d113af45947bca011ecc5b521717642044"
-        }
-      },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
-    },
-    {
-      "panel": "unnormalized_learned",
-      "column": "m2",
-      "d_k": 64,
-      "experiment": "learned_unnormalized_taylor",
-      "run": "200m-m002-seed0",
-      "status": "complete",
-      "source_commit": "788a085e24225872495199e8040ec1167070a691",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/learned_unnormalized_taylor/runs/200m-m002-seed0/metadata.json",
-          "sha256": "f06c73643628b09cd3f1a329447107d06780512258cf08abb84dad0c16f8512f"
-        },
-        "metrics": {
-          "path": "experiments/learned_unnormalized_taylor/runs/200m-m002-seed0/metrics.jsonl",
-          "sha256": "252427608c2cf1829127b54e045aa08d876cbe4cce9cac3148df8aa20cb1f53e"
-        },
-        "completion": {
-          "path": "experiments/learned_unnormalized_taylor/runs/200m-m002-seed0/completion.json",
-          "sha256": "731fe53e65fccc5b5cb0804a5fc8b98a06a91d631fcf6f0e7304b2c045ea9b03"
-        }
-      },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
-    },
-    {
-      "panel": "unnormalized_learned",
-      "column": "m3",
-      "d_k": 64,
-      "experiment": "learned_unnormalized_taylor",
-      "run": "200m-m003-seed0",
-      "status": "complete",
-      "source_commit": "788a085e24225872495199e8040ec1167070a691",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/learned_unnormalized_taylor/runs/200m-m003-seed0/metadata.json",
-          "sha256": "070f3597017e56d39eff625338143f8c494f3a4b031503a1f18f338e5693e6ae"
-        },
-        "metrics": {
-          "path": "experiments/learned_unnormalized_taylor/runs/200m-m003-seed0/metrics.jsonl",
-          "sha256": "1a54d9448a020962ea53260596eb0f82801d16a9a0f9ffc6ffd0a7340b04a3fa"
-        },
-        "completion": {
-          "path": "experiments/learned_unnormalized_taylor/runs/200m-m003-seed0/completion.json",
-          "sha256": "2711e78c3e8f7645498967ab0dc2db8aa92f42cce3dac3afa315bd50eeb7192c"
-        }
-      },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
-    },
-    {
-      "panel": "unnormalized_learned",
-      "column": "m4",
-      "d_k": 64,
-      "experiment": "learned_unnormalized_taylor",
-      "run": "200m-m004-seed0",
-      "status": "complete",
-      "source_commit": "788a085e24225872495199e8040ec1167070a691",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/learned_unnormalized_taylor/runs/200m-m004-seed0/metadata.json",
-          "sha256": "06d6162c021cf765071dab55b832c066db58872d7baad2e46ea2e5bc3cc5d7a6"
-        },
-        "metrics": {
-          "path": "experiments/learned_unnormalized_taylor/runs/200m-m004-seed0/metrics.jsonl",
-          "sha256": "992a12bdfebac250bf7e6f265b6b49ccd2c7190f13a0aaa59fa42345c4cf00b7"
-        },
-        "completion": {
-          "path": "experiments/learned_unnormalized_taylor/runs/200m-m004-seed0/completion.json",
-          "sha256": "3e24ed4327b801446971b2f152b35108058c5efddb1fc2aa465041c57619b833"
-        }
-      },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
     }
   ],
   "status_counts": {
     "complete": 42,
-    "not_run": 84,
-    "numerical_failure": 4,
-    "legacy": 44
+    "not_run": 110,
+    "numerical_failure": 8,
+    "legacy": 40
   },
   "analysis": {
     "config": {
       "path": "experiments/attention_scaling_comparison/configs/heatmap.json",
-      "sha256": "5729cfe61d1a37957dfcb32314e0d69b3a7eb2f914288b94fc36cb25f3efe98e"
+      "sha256": "b00589ffbea4dc56c7a827c5aa8f249387f0a7defc01b7571751d4a6587f81bf"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
@@ -1565,7 +1679,7 @@
     "code": {
       "collect.py": {
         "path": "experiments/attention_scaling_comparison/adapter/analysis/collect.py",
-        "sha256": "805e17af2b8aea6590496ebfac817dc60387fb8736f26b9e6a328709dd7c2160"
+        "sha256": "b5d5bb9bede4fadaff222610aae25b9c184d49a57938d62719c50be1c86877ef"
       },
       "render.py": {
         "path": "experiments/attention_scaling_comparison/adapter/analysis/render.py",
@@ -1580,19 +1694,19 @@
   "derived_artifacts": {
     "summary_csv": {
       "path": "experiments/attention_scaling_comparison/summary.csv",
-      "sha256": "419953d11c31b856ce4a6fdd0de760a573b58919e1789269ac2ac7035cd14322"
+      "sha256": "543d7c4250b2c3e9af8d067b0153178ad56b25f1cb26e68e06e59bb47c3d0f14"
     },
     "readme": {
       "path": "experiments/attention_scaling_comparison/README.md",
-      "sha256": "774fe4d0f806a6b194dec45caf29c850f851daada8c5a8c523e23472e4a66f0a"
+      "sha256": "11da721635ad3ac1c7cfd89e622d3a5016dd3b9c0357eff033a89badf83a2cb0"
     },
     "combined_terminal_ppl_pdf": {
       "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.pdf",
-      "sha256": "cf2a0acac0245a744658d0515babdd8443d2c30131177849381e762391a91e7f"
+      "sha256": "5cf1cc6c927bfdebece30ca1d4e97b450d3b7a554faef5a503d2648f7d27e2e5"
     },
     "combined_terminal_ppl_png": {
       "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.png",
-      "sha256": "596b1430a7188c1764919f1dacb32e928d46c378c462a19f793f1d367ec92687"
+      "sha256": "e2c7c4840a0f8e91e590c75078635c4b4a70f3d7b3c436e7552176973e270923"
     }
   }
 }

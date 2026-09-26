@@ -46,6 +46,36 @@
       ]
     },
     {
+      "id": "normalized_learned_taylor",
+      "title": "Row-normalized Taylor \u00b7 learned per head",
+      "columns": [
+        {
+          "id": "m1",
+          "label": "m=1"
+        },
+        {
+          "id": "m2",
+          "label": "m=2"
+        },
+        {
+          "id": "m3",
+          "label": "m=3"
+        },
+        {
+          "id": "m4",
+          "label": "m=4"
+        },
+        {
+          "id": "m8",
+          "label": "m=8"
+        },
+        {
+          "id": "m16",
+          "label": "m=16"
+        }
+      ]
+    },
+    {
       "id": "normalized_learned",
       "title": "Row-normalized quadratic \u00b7 learned",
       "columns": [
@@ -64,30 +94,6 @@
         {
           "id": "unrestricted_per_head",
           "label": "signed\nper head"
-        }
-      ]
-    },
-    {
-      "id": "references",
-      "title": "Reference mechanisms",
-      "columns": [
-        {
-          "id": "softmax",
-          "label": "softmax"
-        },
-        {
-          "id": "softmax_no_qk_norm",
-          "label": "softmax\nno QK-norm",
-          "qk_norm": false
-        },
-        {
-          "id": "gla",
-          "label": "GLA",
-          "qk_norm": null
-        },
-        {
-          "id": "unnormalized_exp",
-          "label": "unnormalized\nexp"
         }
       ]
     },
@@ -150,6 +156,30 @@
           "label": "m=16"
         }
       ]
+    },
+    {
+      "id": "references",
+      "title": "Reference mechanisms",
+      "columns": [
+        {
+          "id": "softmax",
+          "label": "softmax"
+        },
+        {
+          "id": "softmax_no_qk_norm",
+          "label": "softmax\nno QK-norm",
+          "qk_norm": false
+        },
+        {
+          "id": "gla",
+          "label": "GLA",
+          "qk_norm": null
+        },
+        {
+          "id": "unnormalized_exp",
+          "label": "unnormalized\nexp"
+        }
+      ]
     }
   ],
   "source_manifests": {
@@ -184,6 +214,10 @@
     "qk_norm_attention": {
       "path": "experiments/qk_norm_attention/provenance/manifest.json",
       "sha256": "bb8900c813809e4398d2d5d643a0257a428919a086ca5c7a271d76ad82bdcd06"
+    },
+    "qk_norm_learned_taylor": {
+      "path": "experiments/qk_norm_learned_taylor/provenance/manifest.json",
+      "sha256": "07562fdf973f9c901af79b515653f76c6c92bdfc7961ab4c6f0a4ddb002c3834"
     }
   },
   "cells": [
@@ -450,8 +484,8 @@
       "panel": "unnormalized_learned",
       "column": "m1",
       "d_k": 64,
-      "experiment": "learned_unnormalized_taylor",
-      "run": "200m-m001-seed0"
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m001-unnormalized-seed0"
     },
     {
       "panel": "unnormalized_fixed",
@@ -464,8 +498,8 @@
       "panel": "unnormalized_learned",
       "column": "m2",
       "d_k": 64,
-      "experiment": "learned_unnormalized_taylor",
-      "run": "200m-m002-seed0"
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m002-unnormalized-seed0"
     },
     {
       "panel": "unnormalized_fixed",
@@ -478,8 +512,8 @@
       "panel": "unnormalized_learned",
       "column": "m3",
       "d_k": 64,
-      "experiment": "learned_unnormalized_taylor",
-      "run": "200m-m003-seed0"
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m003-unnormalized-seed0"
     },
     {
       "panel": "unnormalized_fixed",
@@ -492,8 +526,8 @@
       "panel": "unnormalized_learned",
       "column": "m4",
       "d_k": 64,
-      "experiment": "learned_unnormalized_taylor",
-      "run": "200m-m004-seed0"
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m004-unnormalized-seed0"
     },
     {
       "panel": "references",
@@ -508,7 +542,35 @@
       "d_k": 64,
       "experiment": "qk_norm_attention",
       "run": "200m-qk-softmax-seed0"
+    },
+    {
+      "panel": "normalized_learned_taylor",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m001-normalized-seed0"
+    },
+    {
+      "panel": "normalized_learned_taylor",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m002-normalized-seed0"
+    },
+    {
+      "panel": "normalized_learned_taylor",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m003-normalized-seed0"
+    },
+    {
+      "panel": "normalized_learned_taylor",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m004-normalized-seed0"
     }
   ],
-  "source_artifact_set_sha256": "ab63edddad2fe66763152c52ffd07992cb38e6bd35e8f028a4ac1c9eda7c3947"
+  "source_artifact_set_sha256": "87a0746bbb38aa316a85cb40e9a42b2661a5ca3a4174b8f19ce0511a583529a5"
 }

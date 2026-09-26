@@ -199,13 +199,15 @@ def test_committed_comparison_sources() -> None:
     root = Path(__file__).resolve().parents[4]
     config = json.loads((root / "experiments/attention_scaling_comparison/configs/heatmap.json").read_text())
     rows = collect_rows(root, config)
-    assert len(rows) == 130
+    assert len(rows) == 160
     assert {status: sum(row["status"] == status for row in rows)
             for status in {row["status"] for row in rows}} == {
-                "complete": 42, "numerical_failure": 4, "not_run": 84}
+                "complete": 42, "numerical_failure": 8, "not_run": 110}
     current = {(row["panel"], row["column"], row["d_k"]) for row in rows
                if row["status"] != "not_run" and not row["legacy"]}
-    assert current == {("references", "softmax", 64), ("references", "softmax_no_qk_norm", 64)}
+    assert current == {("references", "softmax", 64), ("references", "softmax_no_qk_norm", 64),
+                       *((panel, f"m{d}", 64) for panel in ("unnormalized_learned", "normalized_learned_taylor")
+                         for d in (1, 2, 3, 4))}
     assert all(row["legacy"] for row in rows if row["status"] != "not_run"
                and (row["panel"], row["column"], row["d_k"]) not in current)
     failures = {(row["panel"], row["column"]): row["failure_step"]
@@ -213,7 +215,11 @@ def test_committed_comparison_sources() -> None:
     assert failures == {("normalized_fixed", "m1"): 9,
                         ("normalized_fixed", "m3"): 17,
                         ("normalized_learned", "unrestricted_global"): 2324,
-                        ("normalized_learned", "unrestricted_per_head"): 4187}
+                        ("normalized_learned", "unrestricted_per_head"): 4187,
+                        ("normalized_learned_taylor", "m1"): 27,
+                        ("normalized_learned_taylor", "m2"): 1857,
+                        ("normalized_learned_taylor", "m3"): 318,
+                        ("normalized_learned_taylor", "m4"): 1456}
     assert all(row["d_k"] == 64 for row in rows if row["status"] == "numerical_failure")
 
     mislabeled = json.loads(json.dumps(config))
