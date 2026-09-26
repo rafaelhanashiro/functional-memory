@@ -110,18 +110,12 @@
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
     },
     "softmax_canonical_decay": {
-      "run": "experiments/decay_policy_baseline/runs/200m-softmax-seed0",
+      "run": "experiments/key_dimension_taylor/runs/200m-softmax-seed0",
       "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
       "validation_nll": 2.6854977863175526,
       "validation_perplexity": 14.665499848737895,
-      "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
-    },
-    "softmax_original_decay": {
-      "run": "experiments/key_dimension_taylor/runs/200m-softmax-seed0",
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
-      "validation_nll": 2.6874512689454213,
-      "validation_perplexity": 14.69417664861716,
-      "weight_decay_policy": "all parameters"
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "note": "The repository's single softmax baseline since main commit 4601633 (formerly experiments/decay_policy_baseline)."
     },
     "normalized_fixed_taylor_no_qk_norm": {
       "m2": {
@@ -139,6 +133,13 @@
       "m1": "numerical failure at update 9 (experiments/odd_taylor_attention)",
       "m3": "numerical failure at update 17 (experiments/odd_taylor_attention)",
       "weight_decay_policy": "all parameters"
+    },
+    "softmax_original_decay_retired": {
+      "validation_perplexity": 14.69417664861716,
+      "validation_nll": 2.6874512689454213,
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "weight_decay_policy": "all parameters",
+      "note": "Retired from the repository in main commit 4601633 (run, checkpoint, and log removed); the value survives only in attention_scaling_comparison's frozen original-decay copy."
     }
   },
   "runs": [

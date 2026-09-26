@@ -3,8 +3,7 @@
 Until every run has concluded (a completion record or a numerical-failure record),
 the report writes nothing and prints ``pending``, so no derived output can be
 fabricated from partial runs. Controls are read as data: the learned-coefficient
-unnormalized Taylor runs without QK-norm, the QK-norm softmax baseline, and the
-canonical-decay softmax control. Kernel, sign, and scale statistics come from the
+unnormalized Taylor runs without QK-norm and the QK-norm softmax baseline. Kernel, sign, and scale statistics come from the
 per-layer, per-head arrays each validation records; a failed run reports its last
 valid validation and its stopping update.
 """
@@ -26,7 +25,6 @@ VARIANTS = ("unnormalized", "normalized")
 RUNS = tuple(f"200m-qk-m{degree:03d}-{variant}-seed0" for degree in DEGREES for variant in VARIANTS)
 LEARNED_CONTROLS = {degree: EXPERIMENTS / f"learned_unnormalized_taylor/runs/200m-m{degree:03d}-seed0" for degree in DEGREES}
 QK_SOFTMAX = EXPERIMENTS / "qk_norm_attention/runs/200m-qk-softmax-seed0"
-SOFTMAX_CANONICAL = EXPERIMENTS / "decay_policy_baseline/runs/200m-softmax-seed0"
 # Categorical slots 1-4 of the repository's figure palette, one per degree.
 DEGREE_COLORS = {1: "#2a78d6", 2: "#eb6834", 3: "#1baf7a", 4: "#eda100"}
 INK, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"
