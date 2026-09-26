@@ -1,0 +1,118 @@
+{
+  "format": "functional-memory-experiment-setup",
+  "version": 2,
+  "experiment": "nonnegative_learned_taylor",
+  "status": "running",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "execution_checkout": "worktrees/nonnegative_learned_taylor",
+  "documentation": "experiments/nonnegative_learned_taylor/README.md",
+  "scaffold": "scaffolds/transformer",
+  "branch": "claude/nonnegative-learned-taylor",
+  "branch_base_commit": "aedd097e92079455dd4f6b382b475b1783c4c248",
+  "launch_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
+  "frozen_execution_set_sha256": "e5a8da3132f2de76c8729e4b982ede885db711e8b86a01ccb2e759a106a04643",
+  "scientific_change": "Row-normalized causal p_{l,h}(s) V / rowsum with p = q1^2 + q2^2 (deg q1 = m/2, deg q2 = m/2 - 1), factors learned per layer and head and initialized so p = T_m; QK-norm cosine scores with per-head log scales; otherwise the QK-norm learned Taylor sweep's normalized recipe",
+  "requested": {
+    "date": "2026-09-26",
+    "from_cluster": "kennel",
+    "degrees": [
+      2,
+      4
+    ],
+    "sharing": "per_head",
+    "normalization": "row-normalized",
+    "partition_policy": "best resources and little wait among allowed partitions (not conference); long preempts only sweep"
+  },
+  "shared_dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+  },
+  "data_identity": {
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    }
+  },
+  "comparison_controls": {
+    "signed_direct_m2": {
+      "run": "experiments/qk_norm_learned_taylor/runs/200m-qk-m002-normalized-seed0",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "status": "numerical-failure",
+      "failure_step": 1857
+    },
+    "signed_direct_m4": {
+      "run": "experiments/qk_norm_learned_taylor/runs/200m-qk-m004-normalized-seed0",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "status": "numerical-failure",
+      "failure_step": 1456
+    },
+    "qk_norm_softmax": {
+      "run": "experiments/qk_norm_attention/runs/200m-qk-softmax-seed0",
+      "source_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
+      "validation_nll": 2.671205988952092,
+      "validation_perplexity": 14.457394141153632
+    },
+    "positive_quadratic_per_head_legacy": {
+      "run": "experiments/learned_quadratic_attention/runs/200m-positive-per-head-seed0",
+      "note": "0.5 (1 + (a s + b)^2) per head, without QK-norm and under decay on all parameters",
+      "validation_perplexity": 16.2125
+    }
+  },
+  "runs": [
+    {
+      "name": "200m-qk-m002-nonnegative-seed0",
+      "attention_degree": 2,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/nonnegative_learned_taylor/configs/200m-qk-m002-nonnegative-seed0.yaml",
+        "sha256": "5b9971e915ae24d11f3eab3513e1c9828491efb5081eaf7105d55e2210824ae7"
+      },
+      "parameter_count": 199906944,
+      "factor_count": 480,
+      "source_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
+      "slurm_job_ids": [
+        202604
+      ],
+      "submission": "sbatch --partition=long --time=1-00:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); started on dogo (H100) within a minute by preempting a sweep-partition job",
+      "run_record": "experiments/nonnegative_learned_taylor/runs/200m-qk-m002-nonnegative-seed0",
+      "log_directory": "experiments/nonnegative_learned_taylor/logs/200m-qk-m002-nonnegative-seed0",
+      "checkpoint_directory": "experiments/nonnegative_learned_taylor/checkpoints/200m-qk-m002-nonnegative-seed0"
+    },
+    {
+      "name": "200m-qk-m004-nonnegative-seed0",
+      "attention_degree": 4,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/nonnegative_learned_taylor/configs/200m-qk-m004-nonnegative-seed0.yaml",
+        "sha256": "8fb4ceab0f4eb570851c0105c2ea4843aa16920f255f15819316b5fcc08421ff"
+      },
+      "parameter_count": 199907264,
+      "factor_count": 800,
+      "source_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
+      "slurm_job_ids": [
+        202605
+      ],
+      "submission": "sbatch --partition=long --time=1-00:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); started on akita (B300) within a minute by preempting a sweep-partition job",
+      "run_record": "experiments/nonnegative_learned_taylor/runs/200m-qk-m004-nonnegative-seed0",
+      "log_directory": "experiments/nonnegative_learned_taylor/logs/200m-qk-m004-nonnegative-seed0",
+      "checkpoint_directory": "experiments/nonnegative_learned_taylor/checkpoints/200m-qk-m004-nonnegative-seed0"
+    }
+  ],
+  "pre_launch_validation": {
+    "cpu_tests": "767 passed, 13 skipped (full scaffold, launch helpers, and every JAX adapter) at the launch tree; the new sum-of-squares suite 24/24 on CPU",
+    "gpu_tests": {
+      "B300": "11 passed (sum-of-squares, direct normalized, QK-norm GPU cases; akita)",
+      "H100": "11 passed (dogo)"
+    },
+    "hardware_note": "A mastiff H100 reported CUDA_ERROR_ECC_UNCORRECTABLE during a test allocation; mastiff was excluded from these submissions"
+  }
+}
