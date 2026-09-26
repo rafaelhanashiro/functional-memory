@@ -1,24 +1,29 @@
 # Attention mechanisms across key width and Taylor degree
 
-This figure puts the completed 200M-reference attention experiments on one
-terminal held-out perplexity scale. Rows are per-head query/key widths
-`d_K = 8, 16, 32, 64, 128`. Columns are grouped by attention mechanism,
-normalization, coefficient policy, and Taylor degree. The comparison is a
-derived analysis of existing runs; it trains no new models.
+This record puts the completed 200M-reference attention experiments on one
+terminal held-out perplexity scale, in two figures. The **heatmap** covers the
+mechanisms trained across per-head query/key widths `d_K = 8, 16, 32, 64, 128`:
+row-normalized fixed Taylor kernels by degree, softmax, and GLA. The **degree
+chart** covers the polynomial families trained only at `d_K = 64`, as perplexity
+against degree `m = 1, 2, 3, 4`. The comparison is a derived analysis of existing
+runs; it trains no new models.
 
-The grid describes the target state of the repository's experiments: every
+Both figures describe the target state of the repository's experiments: every
 mechanism trained under the scaffold's current defaults (selective weight decay
 and QK-norm scores), plus one softmax run without QK-norm as the plain-score
-reference. Cells whose run predates those defaults are **outlined** as legacy runs;
-each is replaced, and its outline disappears, when its experiment is rerun. The
-outline is decided from each run's resolved configuration, not by hand.
+reference. Runs that predate those defaults are marked as **legacy**, outlined in
+the heatmap and drawn hollow with dashed connectors in the chart; each is
+replaced, and its mark disappears, when its experiment is rerun. Legacy status is
+decided from each run's resolved configuration, not by hand.
 
-Each colored cell is a model evaluated after **19,074 optimizer updates** and
+Each plotted value is a model evaluated after **19,074 optimizer updates** and
 **10,000,269,312 prediction tokens**. All plotted runs use seed 0 and the same
 packed FineWeb-Edu order and held-out evaluation set. Terminal validation loss
 and perplexity come from each source run's committed `metrics.jsonl` and
-`completion.json`. The [figure configuration](configs/heatmap.json) pins nine
-source manifests by SHA256 and names every plotted run. The
+`completion.json`. The two figure configurations,
+[`configs/heatmap.json`](configs/heatmap.json) and
+[`configs/degree_chart.json`](configs/degree_chart.json), pin their source
+manifests by SHA256 and name every plotted run. The
 [comparison provenance](provenance/manifest.json) records the source commits,
 run-file hashes, and generated artifact hashes.
 
@@ -27,44 +32,61 @@ run-file hashes, and generated artifact hashes.
 checkpoint or Slurm log. The source experiments retain their own training
 provenance and artifacts.
 
-## Reading the figure
+## Reading the figures
 
-The panels use one common linear perplexity color scale; lower perplexity is
-better. They distinguish six families:
+**Heatmap.** The panels share one linear perplexity color scale; lower is better.
 
 | Panel | Columns | Meaning |
 | --- | --- | --- |
 | Row-normalized Taylor, fixed | `m = 1, 2, 3, 4, 8, 16` | Fixed coefficients `1/r!`; causal row normalization |
-| Row-normalized Taylor, learned | `m = 1, 2, 3, 4, 8, 16` | Learned per-head coefficients with a signed causal row sum |
-| Row-normalized quadratic, learned | Positive/global, positive/per-head, unrestricted/global, unrestricted/per-head | Four degree-2 coefficient variants, initialized at the Taylor quadratic |
-| References | Softmax, softmax without QK-norm, GLA, unnormalized exponential | Different attention mechanisms; the second column is the plain-score softmax reference; GLA has no Taylor degree and no QK-norm |
-| Unnormalized Taylor, fixed | `m = 1, 2, 3, 4, 8, 16` | Fixed coefficients with no attention row division |
-| Unnormalized Taylor, learned | `m = 1, 2, 3, 4, 8, 16` | Learned per-head coefficients with no attention row division |
+| References | Softmax, softmax without QK-norm, GLA | Softmax with QK-norm (the default), the plain-score softmax reference, and GLA, which has no Taylor degree and no QK-norm |
 
-An **outlined** cell is a legacy run: trained with weight decay on all parameters
-and, for mechanisms that take it, without QK-norm. Its perplexity is shown on the
-common scale but is not comparable with cells trained under the current defaults
-beyond the size of those two effects (about 0.03 PPL for the decay policy and 0.21
-for QK-norm at the `d_K = 64` softmax). **FAIL** means a recorded scientific
-numerical failure at the annotated update; it has no terminal perplexity. **NOT RUN** means no run was trained at that coordinate. The
-figure never fills a gap with a partial validation or an estimated perplexity.
-Other execution states are labeled **INCOMPLETE** if encountered when regenerating.
+**FAIL** marks a recorded scientific numerical failure at the annotated update; it
+has no terminal perplexity. **NOT RUN** means no run was trained at that
+coordinate. The figure never fills a gap with a partial validation or an estimated
+perplexity; other execution states are labeled **INCOMPLETE** if encountered.
+
+**Degree chart.** One line per family on a shared linear perplexity axis, with
+horizontal reference levels for QK-norm softmax, softmax without QK-norm, and the
+unnormalized exponential. Numerical failures have no perplexity, so they appear
+in the strip below the axis at their degree, labeled with the failing update.
+Every learned family learns its coefficients per layer and head.
+
+| Family | Degrees | Meaning |
+| --- | --- | --- |
+| Row-normalized, learned | 1–4 | All `m + 1` coefficients learned from `1/r!`; signed kernel and row sum |
+| Row-normalized, learned nonnegative | 2, 4 | Kernel constrained nonnegative: the positive quadratic `0.5 (1 + (a s + b)^2)` or the sum of squares `q1^2 + q2^2`; odd degrees cannot be nonnegative on the real line |
+| Unnormalized, learned | 1–4 | All coefficients learned from `1/r!`; no row division |
+| Unnormalized, fixed Taylor | 1–4 | Fixed coefficients `1/r!`; no row division |
+
+A legacy run was trained with weight decay on all parameters and, for mechanisms
+that take it, without QK-norm. Its perplexity is comparable with current runs only
+up to the size of those two effects (about 0.03 PPL for the decay policy and 0.21
+for QK-norm at the `d_K = 64` softmax).
 
 <!-- BEGIN GENERATED RESULTS -->
-160 displayed coordinates: 42 complete, 8 numerical failures, 110 not run, and 0 incomplete. Only completed runs at the common 19,074-update endpoint receive a color and a terminal PPL. A failed run is labeled with its failure update; an untrained coordinate is marked NOT RUN. 40 of the 50 trained cells are outlined as legacy runs: they trained with weight decay on all parameters and, where it applies, without QK-norm, before those became the scaffold's defaults; each is replaced when its experiment is rerun. 10 cells already use the current defaults.
+45 displayed coordinates: 31 complete, 2 numerical failures, 12 not run, and 0 incomplete. Only completed runs at the common 19,074-update endpoint receive a color and a terminal PPL. A failed run is labeled with its failure update; an untrained coordinate is marked NOT RUN. 31 of the 33 trained cells are outlined as legacy runs: they trained with weight decay on all parameters and, where it applies, without QK-norm, before those became the scaffold's defaults; each is replaced when its experiment is rerun. 2 cells already use the current defaults.
 
 ![Combined terminal perplexity heatmap](figures/combined_terminal_ppl.png)
 
-[PDF](figures/combined_terminal_ppl.pdf) · [Cell-level data and source checksums](summary.csv) · [Provenance](provenance/manifest.json)
+[PDF](figures/combined_terminal_ppl.pdf)
+
+### Polynomial kernels at d_K = 64
+
+16 trained runs: 12 complete and 4 numerical failures; 6 are legacy runs, drawn hollow with dashed connectors. Numerical failures appear in the strip below the axis at their degree, labeled with the failing update. The nonnegative family exists only for even degrees, which are the only degrees at which a polynomial can be nonnegative on the real line.
+
+![Terminal perplexity against polynomial degree](figures/degree_chart.png)
+
+[PDF](figures/degree_chart.pdf) · [Cell-level data and source checksums](summary.csv) · [Provenance](provenance/manifest.json)
 <!-- END GENERATED RESULTS -->
 
 ## Snapshot under the original weight-decay policy
 
-Every run in this figure trained under the scaffold's original optimizer policy,
+Every run in the original heatmap trained under the scaffold's original optimizer policy,
 in which AdamW's decay applied to all parameters, including the token embedding
 and RMSNorm scales. Commit `cb31558` made the policy that excludes embeddings,
 normalization scales, and biases canonical for new runs. As the source records are
-retrained under it, the figure and `summary.csv` above will change with them.
+retrained under it, the figures and `summary.csv` above change with them.
 [`figures/combined_terminal_ppl-original-decay.png`](figures/combined_terminal_ppl-original-decay.png)
 ([PDF](figures/combined_terminal_ppl-original-decay.pdf)) and
 [`summary-original-decay.csv`](summary-original-decay.csv) are frozen copies of the
@@ -76,47 +98,42 @@ The two old-policy `d_K = 64` softmax runs retired on 2026-09-26 ended at PPL 14
 
 ## Findings
 
-Under the current defaults, ten cells exist so far, all at `d_K = 64`: the two
-softmax references (QK-norm 14.4574, plain 14.6655); the learned per-head
-unnormalized Taylor kernels at m = 1–4 (20.279, 17.599, 16.330, 16.384, from the
+Under the current defaults, ten runs exist so far, all at `d_K = 64`: the two
+softmax references (QK-norm 14.4574, plain 14.6655); the learned unnormalized
+Taylor kernels at m = 1–4 (20.279, 17.599, 16.330, 16.384, from the
 [QK-norm learned Taylor sweep](../qk_norm_learned_taylor/README.md)), each better
-than its legacy counterpart without QK-norm and with degrees 3 and 4 now within
-0.05 of each other; and the four row-normalized learned Taylor kernels, which all
+than the legacy fixed unnormalized kernel of the same degree, with degrees 3 and 4
+within 0.05 of each other; and the four row-normalized learned kernels, which all
 failed numerically (updates 27, 1,857, 318, and 1,456) once a kernel turned negative
-inside the bounded score range and a row sum crossed zero. Every other cell is a
-legacy run, so the comparisons below among them share one training setup.
+inside the bounded score range and a row sum crossed zero. The
+[nonnegative learned Taylor runs](../nonnegative_learned_taylor/README.md) at m = 2
+and 4 test whether constraining the kernel to be nonnegative removes that failure;
+until they conclude, the nonnegative family shows only the legacy positive quadratic
+(16.2125). Every other plotted value is a legacy run, so the comparisons below among
+them share one training setup.
 
-The dense fixed normalized grid shows that increasing degree narrows the
-softmax gap. At `d_K=8`, fixed `m=2` has PPL 20.5775, versus 16.8479 at
-`m=16` and 16.7053 for softmax. At `d_K=128`, fixed `m=8` reaches 14.3586,
-close to softmax's 14.3776. The difference of 0.0190 is a single-seed
-observation, not evidence of a reliable improvement.
+The fixed normalized grid shows that increasing degree narrows the softmax gap. At
+`d_K=8`, fixed `m=2` has PPL 20.5775, versus 16.8479 at `m=16` and 16.7053 for
+softmax. At `d_K=128`, fixed `m=8` reaches 14.3586, close to softmax's 14.3776. The
+difference of 0.0190 is a single-seed observation, not evidence of a reliable
+improvement. The fixed normalized `m=1` and `m=3` runs failed numerically at
+updates 9 and 17 when signed row sums became unstable.
 
-GLA has no degree axis. Its PPL decreases from 17.2239 at `d_K=8` to 15.4366
-at `d_K=128`; it beats fixed normalized `m=2` at each width but trails softmax
-at each width. GLA adds gates and head normalization, and parameter counts
-change with `d_K`, so the chart compares the observed models rather than
-isolating a single architectural effect.
+GLA has no degree axis. Its PPL decreases from 17.2239 at `d_K=8` to 15.4366 at
+`d_K=128`; it beats fixed normalized `m=2` at each width but trails softmax at each
+width. GLA adds gates and head normalization, and parameter counts change with
+`d_K`, so the heatmap compares the observed models rather than isolating a single
+architectural effect.
 
-The experiments that vary normalization or learn coefficients were run only at
-`d_K=64`. The fixed normalized `m=1` and `m=3` runs failed numerically at
-updates 9 and 17 when signed row sums became unstable. Their unnormalized
-counterparts finished, with PPL 20.7701 and 20.2397. Learned unnormalized
-Taylor coefficients improved all four fixed unnormalized endpoints; their best
-result is `m=3` at 18.5316, compared with 20.2397 for fixed `m=3`.
+The unnormalized exponential reference at `d_K=64` finishes at 17.4583; it does not
+divide by an attention row sum and is a different baseline from softmax.
 
-For normalized `m=2`, the learned positive global and per-head runs finished
-at 16.1890 and 16.2125, compared with 16.2810 for fixed Taylor. Both
-unrestricted learned variants failed, at updates 2,324 and 4,187. Their last
-partial validations are excluded from the heatmap. The unnormalized
-exponential reference at `d_K=64` finishes at 17.4583; it does not divide by
-an attention row sum and is a different baseline from softmax.
-
-The source record also includes a fixed normalized `m=0` run at `d_K=64`
-(PPL 47.0653) and softmax runs at `d_K=2, 4, 256`. They remain in the
-[source record](../key_dimension_taylor/README.md) but lie outside this
-comparison's declared width and degree range. Showing them as extra rows or a
-single extreme degree-zero cell would obscure the requested joint grid.
+The source records also include a fixed normalized `m=0` run at `d_K=64`
+(PPL 47.0653), softmax runs at `d_K=2, 4, 256`, and the globally shared learned
+quadratic variants (positive 16.1890; unrestricted, failed at update 2,324). They
+remain in their [source](../key_dimension_taylor/README.md)
+[records](../learned_quadratic_attention/README.md) but lie outside these figures:
+the heatmap's declared width and degree range, and the chart's per-head coefficients.
 
 ## Limits and reproduction
 
@@ -137,5 +154,6 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m \
 ```
 
 The renderer checks each pinned source manifest and the underlying run record,
-then writes the figure and [cell-level summary](summary.csv). No GPU, dataset,
-or source checkpoint is required.
+then writes both figures and the [cell-level summary](summary.csv), whose `figure`
+column says which figure each row belongs to. No GPU, dataset, or source
+checkpoint is required.

@@ -1,0 +1,256 @@
+{
+  "schema_version": 1,
+  "terminal_step": 19074,
+  "training_tokens": 10000269312,
+  "seed": 0,
+  "data_identity": {
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+  },
+  "title": "Polynomial attention kernels across Taylor degree at d_K = 64",
+  "d_k": [
+    64
+  ],
+  "panels": [
+    {
+      "id": "normalized_learned_taylor",
+      "title": "Row-normalized, learned",
+      "columns": [
+        {
+          "id": "m1",
+          "label": "m=1"
+        },
+        {
+          "id": "m2",
+          "label": "m=2"
+        },
+        {
+          "id": "m3",
+          "label": "m=3"
+        },
+        {
+          "id": "m4",
+          "label": "m=4"
+        }
+      ]
+    },
+    {
+      "id": "normalized_nonnegative",
+      "title": "Row-normalized, learned nonnegative",
+      "columns": [
+        {
+          "id": "m2",
+          "label": "m=2"
+        },
+        {
+          "id": "m4",
+          "label": "m=4"
+        }
+      ]
+    },
+    {
+      "id": "unnormalized_learned",
+      "title": "Unnormalized, learned",
+      "columns": [
+        {
+          "id": "m1",
+          "label": "m=1"
+        },
+        {
+          "id": "m2",
+          "label": "m=2"
+        },
+        {
+          "id": "m3",
+          "label": "m=3"
+        },
+        {
+          "id": "m4",
+          "label": "m=4"
+        }
+      ]
+    },
+    {
+      "id": "unnormalized_fixed",
+      "title": "Unnormalized, fixed Taylor",
+      "columns": [
+        {
+          "id": "m1",
+          "label": "m=1"
+        },
+        {
+          "id": "m2",
+          "label": "m=2"
+        },
+        {
+          "id": "m3",
+          "label": "m=3"
+        },
+        {
+          "id": "m4",
+          "label": "m=4"
+        }
+      ]
+    },
+    {
+      "id": "references",
+      "title": "Reference mechanisms",
+      "columns": [
+        {
+          "id": "softmax",
+          "label": "QK-norm softmax"
+        },
+        {
+          "id": "softmax_no_qk_norm",
+          "label": "softmax",
+          "qk_norm": false
+        },
+        {
+          "id": "unnormalized_exp",
+          "label": "unnormalized exp"
+        }
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m001-seed0"
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m001-unnormalized-seed0"
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m002-seed0"
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m002-unnormalized-seed0"
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m003-seed0"
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m003-unnormalized-seed0"
+    },
+    {
+      "panel": "unnormalized_fixed",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "200m-m004-seed0"
+    },
+    {
+      "panel": "unnormalized_learned",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m004-unnormalized-seed0"
+    },
+    {
+      "panel": "normalized_learned_taylor",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m001-normalized-seed0"
+    },
+    {
+      "panel": "normalized_learned_taylor",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m002-normalized-seed0"
+    },
+    {
+      "panel": "normalized_learned_taylor",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m003-normalized-seed0"
+    },
+    {
+      "panel": "normalized_learned_taylor",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "200m-qk-m004-normalized-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "softmax_no_qk_norm",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-softmax-seed0"
+    },
+    {
+      "panel": "references",
+      "column": "unnormalized_exp",
+      "d_k": 64,
+      "experiment": "unnormalized_attention",
+      "run": "200m-exp-seed0-kennel"
+    },
+    {
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 64,
+      "experiment": "qk_norm_attention",
+      "run": "200m-qk-softmax-seed0"
+    },
+    {
+      "panel": "normalized_nonnegative",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "learned_quadratic_attention",
+      "run": "200m-positive-per-head-seed0"
+    }
+  ],
+  "source_manifests": {
+    "key_dimension_taylor": {
+      "path": "experiments/key_dimension_taylor/provenance/manifest.json",
+      "sha256": "752c9c5134d2839fdc1b6a481313bb72e61f6aa9f75b2043b628c6543787ac9e"
+    },
+    "learned_quadratic_attention": {
+      "path": "experiments/learned_quadratic_attention/provenance/manifest.json",
+      "sha256": "4d5f0318febd6582eaafd60e308153fcbc81877f48074e46a95abdc796d0872d"
+    },
+    "unnormalized_taylor_attention": {
+      "path": "experiments/unnormalized_taylor_attention/provenance/manifest.json",
+      "sha256": "aa4dc7767e7ea580c776891e74de13cb78664b4fcca02f40d4ec18ab9c1efaa5"
+    },
+    "unnormalized_attention": {
+      "path": "experiments/unnormalized_attention/provenance/manifest.json",
+      "sha256": "990c644dad61f3ccb8eafbca07de71d0d7a9eb0a7b999bf60d1f7f73ffa34ee5"
+    },
+    "qk_norm_attention": {
+      "path": "experiments/qk_norm_attention/provenance/manifest.json",
+      "sha256": "bb8900c813809e4398d2d5d643a0257a428919a086ca5c7a271d76ad82bdcd06"
+    },
+    "qk_norm_learned_taylor": {
+      "path": "experiments/qk_norm_learned_taylor/provenance/manifest.json",
+      "sha256": "07562fdf973f9c901af79b515653f76c6c92bdfc7961ab4c6f0a4ddb002c3834"
+    }
+  },
+  "source_artifact_set_sha256": "ae7c213520bf55beb80860996bdf5bf44c71bb9b84557f66d753d6bd0311fb54"
+}

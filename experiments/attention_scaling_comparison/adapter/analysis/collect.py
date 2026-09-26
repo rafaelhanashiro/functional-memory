@@ -98,6 +98,17 @@ def _mechanism(cell: dict, run: dict, metadata: dict, label: str) -> None:
         for record in (run, metadata):
             _match(record.get("quadratic_mode"), mode, f"{label} quadratic mode")
             _match(record.get("quadratic_sharing"), sharing, f"{label} quadratic sharing")
+    if panel == "normalized_nonnegative":
+        # The positive quadratic 0.5 (1 + (a s + b)^2) or the sum of squares q1^2 + q2^2, per head.
+        kernel = metadata.get("attention_kernel")
+        if kernel == "learned_quadratic":
+            for record in (run, metadata):
+                _match(record.get("quadratic_mode"), "positive", f"{label} quadratic mode")
+                _match(record.get("quadratic_sharing"), "per_head", f"{label} quadratic sharing")
+        else:
+            _match(kernel, "learned_polynomial_sum_of_squares", f"{label} kernel")
+            _match(metadata.get("attention_coefficient_sharing"), "per_head", f"{label} coefficient sharing")
+        return
     expected_kernel = {
         "unnormalized_fixed": "taylor_unnormalized",
         "unnormalized_learned": "learned_polynomial_unnormalized",

@@ -21,43 +21,40 @@ def hashes(folder: Path) -> dict[str, str]:
             for path in folder.rglob("*") if path.is_file()}
 
 
-def test_combined_figure_is_source_checked_and_byte_reproducible(tmp_path):
+def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     output = tmp_path / "comparison"
     output.mkdir()
     shutil.copyfile(EXPERIMENT / "README.md", output / "README.md")
     config = EXPERIMENT / "configs" / "heatmap.json"
 
     rows = build(ROOT, config_path=config, output_dir=output)
-    assert len(rows) == 160
-    assert Counter(row["status"] for row in rows) == {
-        "complete": 42, "numerical_failure": 8, "not_run": 110}
-    assert sum(1 for row in rows if row["legacy"]) == 40
+    assert len(rows) == 45
+    assert Counter(row["status"] for row in rows) == {"complete": 31, "numerical_failure": 2, "not_run": 12}
+    assert sum(1 for row in rows if row["legacy"]) == 31
     by_cell = {(r["panel"], r["column"], r["d_k"]): r for r in rows}
     assert by_cell["normalized_fixed", "m1", 64]["failure_step"] == 9
     assert by_cell["normalized_fixed", "m3", 64]["failure_step"] == 17
-    assert by_cell["normalized_learned", "unrestricted_global", 64]["failure_step"] == 2324
-    assert by_cell["normalized_learned", "unrestricted_per_head", 64]["failure_step"] == 4187
-    assert by_cell["normalized_learned", "positive_global", 64]["terminal_ppl"] == pytest.approx(16.189034521301647)
     assert by_cell["references", "gla", 128]["terminal_ppl"] == pytest.approx(15.436583304097534)
     assert by_cell["references", "softmax", 64]["terminal_ppl"] == pytest.approx(14.457394141153632)
     assert by_cell["references", "softmax_no_qk_norm", 64]["terminal_ppl"] == pytest.approx(14.665499848737895)
     assert by_cell["references", "softmax", 8]["legacy"] is True
-    assert by_cell["unnormalized_learned", "m3", 64]["terminal_ppl"] == pytest.approx(16.330106671324174)
-    assert by_cell["unnormalized_learned", "m3", 64]["legacy"] is False
-    assert by_cell["normalized_learned_taylor", "m2", 64]["failure_step"] == 1857
-    assert by_cell["unnormalized_fixed", "m8", 64]["status"] == "not_run"
-    assert by_cell["unnormalized_fixed", "m8", 64]["terminal_ppl"] is None
 
     csv_rows = list(csv.DictReader((output / "summary.csv").open()))
-    assert len(csv_rows) == 160
-    assert {row["legacy"] for row in csv_rows} == {"true", "false"}
-    failed = [row for row in csv_rows if row["status"] == "numerical_failure"]
-    assert all(row["terminal_ppl"] == "" for row in failed)
+    assert Counter(row["figure"] for row in csv_rows) == {"heatmap": 45, "degree_chart": 17}
+    chart = {(row["panel"], row["column"]): row for row in csv_rows if row["figure"] == "degree_chart"}
+    assert float(chart["unnormalized_learned", "m3"]["terminal_ppl"]) == pytest.approx(16.330106671324174)
+    assert chart["normalized_learned_taylor", "m2"]["failure_step"] == "1857"
+    assert chart["normalized_nonnegative", "m2"]["legacy"] == "true"
+    assert chart["normalized_nonnegative", "m4"]["status"] == "not_run"
+    assert all(row["terminal_ppl"] == "" for row in csv_rows if row["status"] == "numerical_failure")
     provenance = json.loads((output / "provenance" / "manifest.json").read_text())
-    assert len(provenance["source_manifests"]) == 9
-    assert len(provenance["source_runs"]) == 50
-    assert provenance["status_counts"]["legacy"] == 40
-    assert (output / "figures" / "combined_terminal_ppl.pdf").stat().st_size > 1000
+    assert len(provenance["source_manifests"]) == 8
+    assert Counter(row["figure"] for row in provenance["source_runs"]) == {"heatmap": 33, "degree_chart": 16}
+    assert provenance["status_counts"]["heatmap"]["legacy"] == 31
+    assert provenance["status_counts"]["degree_chart"] == {"complete": 12, "legacy": 6, "not_run": 1,
+                                                          "numerical_failure": 4}
+    for name in ("combined_terminal_ppl", "degree_chart"):
+        assert (output / "figures" / f"{name}.pdf").stat().st_size > 1000
     first = hashes(output)
     build(ROOT, config_path=config, output_dir=output)
     assert hashes(output) == first
