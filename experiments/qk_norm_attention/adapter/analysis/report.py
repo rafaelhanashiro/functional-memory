@@ -1,9 +1,9 @@
 """Regenerate this record's summary, figures, and README results block from runs/.
 
-Controls are read as data: the original-decay softmax control of
-`key_dimension_taylor` and, once its record exists in this checkout, the
-canonical-decay softmax control of `decay_policy_baseline`. Scale statistics come
-from the per-layer, per-head exp(gamma) values each validation records.
+The control is read as data: the repository's softmax baseline in
+`key_dimension_taylor` (same recipe and weight-decay policy, without QK-norm).
+Scale statistics come from the per-layer, per-head exp(gamma) values each
+validation records.
 """
 from __future__ import annotations
 
@@ -18,18 +18,14 @@ from scaffolds.transformer.analysis import committed_records, save_figure, termi
 RECORD = Path(__file__).resolve().parents[2]
 EXPERIMENTS = RECORD.parent
 RUNS = ("200m-qk-softmax-seed0",)
-CONTROLS = {
-    "original_decay": ("Softmax, original decay", EXPERIMENTS / "key_dimension_taylor/runs/200m-softmax-seed0"),
-    "canonical_decay": ("Softmax, canonical decay", EXPERIMENTS / "decay_policy_baseline/runs/200m-softmax-seed0"),
-}
-# Categorical slots 1-3 of the repository's figure palette; layer depth uses one sequential hue.
-QK_NORM, ORIGINAL, CANONICAL = "#2a78d6", "#eb6834", "#1baf7a"
+CONTROLS = {"softmax": ("Softmax", EXPERIMENTS / "key_dimension_taylor/runs/200m-softmax-seed0")}
+# Categorical slots 1-2 of the repository's figure palette; layer depth uses one sequential hue.
+QK_NORM, SOFTMAX = "#2a78d6", "#eb6834"
 INK, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"
-CONTROL_COLORS = {"original_decay": ORIGINAL, "canonical_decay": CANONICAL}
+CONTROL_COLORS = {"softmax": SOFTMAX}
 FIELDS = ["run", "status", "parameters", "updates", "prediction_tokens", "terminal_validation_nll",
           "terminal_validation_perplexity", "best_step", "best_validation_perplexity",
-          "softmax_original_decay_perplexity", "change_vs_original_decay",
-          "softmax_canonical_decay_perplexity", "change_vs_canonical_decay",
+          "softmax_perplexity", "change_vs_softmax",
           "initial_scale", "terminal_scale_min", "terminal_scale_median", "terminal_scale_max",
           "terminal_layer_median_scales", "maximum_absolute_score", "source_commit", "slurm_job_id", "hardware"]
 
@@ -93,12 +89,9 @@ def rows(record: Path = RECORD) -> list[dict]:
         controls = {key: control_terminal_perplexity(key) for key in CONTROLS}
         row.update(
             run=name,
-            softmax_original_decay_perplexity=controls["original_decay"] if controls["original_decay"] is not None else "",
-            change_vs_original_decay=(terminal_ppl - controls["original_decay"]
-                                      if terminal_ppl != "" and controls["original_decay"] is not None else ""),
-            softmax_canonical_decay_perplexity=controls["canonical_decay"] if controls["canonical_decay"] is not None else "",
-            change_vs_canonical_decay=(terminal_ppl - controls["canonical_decay"]
-                                       if terminal_ppl != "" and controls["canonical_decay"] is not None else ""),
+            softmax_perplexity=controls["softmax"] if controls["softmax"] is not None else "",
+            change_vs_softmax=(terminal_ppl - controls["softmax"]
+                               if terminal_ppl != "" and controls["softmax"] is not None else ""),
             initial_scale=initial,
             terminal_scale_min=float(terminal.min()), terminal_scale_median=float(np.median(terminal)),
             terminal_scale_max=float(terminal.max()),
@@ -158,8 +151,8 @@ def figures(record: Path = RECORD, output: Path | None = None) -> None:
     axes[0].set_ylabel("Held-out perplexity (log scale)", color=INK, fontsize=9)
     axes[0].set_xlim(left=0)
     axes[0].legend(frameon=False, fontsize=8, labelcolor=INK, loc="upper right")
-    # The difference against the canonical-decay control, when that control is present.
-    reference = next((records for label, _, records in series if label == CONTROLS["canonical_decay"][0]), None)
+    # The difference against the softmax control, when it is present.
+    reference = next((records for label, _, records in series if label == CONTROLS["softmax"][0]), None)
     if reference is not None:
         by_step = {entry["step"]: entry["validation_perplexity"] for entry in reference}
         for label, color, records in series:
@@ -175,8 +168,8 @@ def figures(record: Path = RECORD, output: Path | None = None) -> None:
         axes[1].set_ylim(-0.75, 0.75)
         axes[1].set_xlim(left=0)
         axes[1].set_xlabel("Update (thousands)", color=INK, fontsize=9)
-        axes[1].set_ylabel("Perplexity minus canonical-decay softmax", color=INK, fontsize=9)
-        axes[1].set_title("Difference from the canonical-decay control (update 1,000: +5.7, clipped)",
+        axes[1].set_ylabel("Perplexity minus softmax", color=INK, fontsize=9)
+        axes[1].set_title("Difference from the softmax control (update 1,000: +5.7, clipped)",
                           color=INK, fontsize=9)
         axes[1].legend(frameon=False, fontsize=8, labelcolor=INK, loc="lower right")
     else:
@@ -239,21 +232,20 @@ def results_lines(table: list[dict]) -> list[str]:
 
     lines = [
         "Held-out perplexity at the terminal validation (19,074 updates, 10,000,269,312 prediction tokens; seed 0) "
-        "against the softmax controls: the original-decay control trained with weight decay on every parameter, "
-        "the canonical-decay control under the selective policy this run uses. Scales are the terminal "
+        "against the softmax control: the repository's softmax baseline, the same recipe and weight-decay policy "
+        "without QK-norm. Scales are the terminal "
         "validation's 160 layer-heads; the score bound is the largest exp(γ), and the largest |score| is over the "
         "fixed diagnostic sequence.",
         "",
-        "| Run | Status | Terminal PPL | Best PPL (update) | Softmax, original decay | Δ | Softmax, canonical decay | Δ "
+        "| Run | Status | Terminal PPL | Best PPL (update) | Softmax | Δ "
         "| exp(γ) min / median / max | Largest abs score |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "|---|---|---:|---:|---:|---:|---:|---:|",
     ]
     for row in table:
         lines.append(
             f"| {row['run']} | {row['status']} | {perplexity(row['terminal_validation_perplexity'])} "
             f"| {row['best_validation_perplexity']:.4f} ({row['best_step']:,}) "
-            f"| {perplexity(row['softmax_original_decay_perplexity'])} | {change(row['change_vs_original_decay'])} "
-            f"| {perplexity(row['softmax_canonical_decay_perplexity'])} | {change(row['change_vs_canonical_decay'])} "
+            f"| {perplexity(row['softmax_perplexity'])} | {change(row['change_vs_softmax'])} "
             f"| {row['terminal_scale_min']:.2f} / {row['terminal_scale_median']:.2f} / {row['terminal_scale_max']:.2f} "
             f"| {row['maximum_absolute_score']:.2f} |")
     lines += ["", "[Summary CSV](summary.csv) · [Learning curves](figures/learning_curves.pdf) · "

@@ -19,8 +19,8 @@ approximate the exponential, so this baseline anchors later QK-norm polynomial r
 
 **Status: completed.** The run trained the full 10B tokens without a numerical
 failure and ended at held-out perplexity **14.4574**, against 14.6655 for the
-softmax control under the same weight-decay policy (−0.208) and 14.6942 for the
-original softmax control (−0.237). It trailed the controls at update 1,000, led from
+softmax control under the same weight-decay policy (−0.208). It trailed the
+control at update 1,000, led from
 update 3,000 on, and its lead narrowed from about 0.5 to 0.2 over the second half.
 The learned scales grew from 8 to a median of 14.1, rising with depth (layer-1
 median 10.1, layers 7–10 about 16–17), and the largest score seen on the diagnostic
@@ -36,19 +36,17 @@ sources, configuration, the run, and artifact locations. The packed corpus is un
 ## Results
 
 <!-- BEGIN GENERATED RESULTS -->
-Held-out perplexity at the terminal validation (19,074 updates, 10,000,269,312 prediction tokens; seed 0) against the softmax controls: the original-decay control trained with weight decay on every parameter, the canonical-decay control under the selective policy this run uses. Scales are the terminal validation's 160 layer-heads; the score bound is the largest exp(γ), and the largest |score| is over the fixed diagnostic sequence.
+Held-out perplexity at the terminal validation (19,074 updates, 10,000,269,312 prediction tokens; seed 0) against the softmax control: the repository's softmax baseline, the same recipe and weight-decay policy without QK-norm. Scales are the terminal validation's 160 layer-heads; the score bound is the largest exp(γ), and the largest |score| is over the fixed diagnostic sequence.
 
-| Run | Status | Terminal PPL | Best PPL (update) | Softmax, original decay | Δ | Softmax, canonical decay | Δ | exp(γ) min / median / max | Largest abs score |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| 200m-qk-softmax-seed0 | complete | 14.4574 | 14.4574 (19,074) | 14.6942 | -0.2368 | 14.6655 | -0.2081 | 7.67 / 14.09 / 21.91 | 18.70 |
+| Run | Status | Terminal PPL | Best PPL (update) | Softmax | Δ | exp(γ) min / median / max | Largest abs score |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 200m-qk-softmax-seed0 | complete | 14.4574 | 14.4574 (19,074) | 14.6655 | -0.2081 | 7.67 / 14.09 / 21.91 | 18.70 |
 
 [Summary CSV](summary.csv) · [Learning curves](figures/learning_curves.pdf) · [Learned scales](figures/qk_norm_scales.pdf)
 <!-- END GENERATED RESULTS -->
 
-**QK-norm softmax beats both softmax controls by about 0.2 perplexity.** The two
-controls differ from each other by only 0.029 (14.6942 with decay on every
-parameter, 14.6655 under the canonical selective policy), so the change of decay
-policy is small next to the QK-norm effect. The gap opened early: QK-norm was 5.7
+**QK-norm softmax beats the softmax control by 0.21 perplexity.** The gap opened
+early: QK-norm was 5.7
 perplexity *behind* at update 1,000, level at 2,000, and 0.45–0.49 ahead from
 update 3,000 to 6,000; it then narrowed steadily to 0.21 at the end, so the
 advantage is largest mid-training and shrinking, not growing, at this budget
@@ -98,17 +96,13 @@ launcher's acceptance verified.
 
 **Weight-decay policy.** This run trained under the scaffold's canonical selective
 weight decay (`exclude_embeddings_norms_biases_v1`: no decay on the input
-embedding, RMSNorm scales, biases, or the log scales). The original softmax
-control (source `1a8836a`) trained with decay on every parameter; the
-[decay-policy baseline](../decay_policy_baseline/README.md) retrained the same
-recipe under the canonical policy and is the clean control.
+embedding, RMSNorm scales, biases, or the log scales), as did its control.
 
-Controls, seed 0, same backbone and budget:
+Control, seed 0, same backbone, budget, and decay policy:
 
-| Kernel | Score | Decay policy | Terminal PPL |
-| --- | --- | --- | ---: |
-| Softmax ([key_dimension_taylor](../key_dimension_taylor/README.md), job 199869) | `q·k / sqrt(d_K)` | all parameters | 14.6942 |
-| Softmax ([decay_policy_baseline](../decay_policy_baseline/README.md), job 202190) | `q·k / sqrt(d_K)` | canonical selective | 14.6655 |
+| Kernel | Score | Terminal PPL |
+| --- | --- | ---: |
+| Softmax ([key_dimension_taylor](../key_dimension_taylor/README.md) `200m-softmax-seed0`, source `381f1fd`, job 202190) | `q·k / sqrt(d_K)` | 14.6655 |
 
 ## Implementation
 

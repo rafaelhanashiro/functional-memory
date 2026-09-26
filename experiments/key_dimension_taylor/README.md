@@ -6,7 +6,7 @@ reference? This completed record holds **30 seed-0 runs** of the 200M reference
 Transformer at a common 10,000,269,312-token budget, from three sweeps. The
 heatmaps focus on the complete 25-cell joint comparison: `dK` 8, 16, 32, 64,
 and 128, crossed with `m` 2, 4, 8, and 16 plus one softmax reference per width.
-Five further runs from the width and degree sweeps remain in the record and summary CSV:
+Four further runs from the width and degree sweeps remain in the record and summary CSV:
 
 | Sweep | Coordinates | Runs | Executed |
 | --- | --- | ---: | --- |
@@ -27,26 +27,27 @@ of softmax at dK 64 and 128; degree 8 is slightly better there (by 0.0117 and
 0.0190), which one seed cannot establish as a reliable ordering. At dK 8, 16,
 and 32, degree 16 comes closest but remains 0.1426, 0.0537, and 0.0337 worse.
 Degree 0, uniform causal-prefix averaging, reaches only 47.07; its Q/K
-projections receive no attention gradient. The two dK=64 softmax runs, from the
-width and degree sweeps on different clusters, kernels, and sources, agree to
-0.0044 PPL (0.0003 nats).
+projections receive no attention gradient. The dK=64 softmax reference
+(`200m-softmax-seed0`, source `381f1fd`) is the repository's softmax baseline,
+retrained on 2026-09-25 under the scaffold's selective weight-decay policy; every
+other run here predates that policy and trained with decay on all parameters.
 
 <!-- BEGIN GENERATED RESULTS -->
-Terminal held-out perplexity at 19,074 updates (10,000,269,312 prediction tokens), seed 0. 30 of 30 retained runs are complete. The heatmap shows the 25-cell joint comparison; other retained runs remain in the CSV and manifest.
+Terminal held-out perplexity at 19,074 updates (10,000,269,312 prediction tokens), seed 0. 29 of 29 retained runs are complete. The heatmap shows the 25-cell joint comparison; other retained runs remain in the CSV and manifest.
 
 | dK | m=2 | m=4 | m=8 | m=16 | Softmax |
 |---:|---:|---:|---:|---:|---:|
 | 8 | 20.5775 | 18.1785 | 17.1790 | 16.8479 | 16.7053 |
 | 16 | 18.4989 | 16.5132 | 15.8001 | 15.6301 | 15.5764 |
 | 32 | 17.1717 | 15.5698 | 15.0712 | 15.0190 | 14.9853 |
-| 64 | 16.2810 | 14.9836 | 14.6781 | 14.7062 | 14.6898 |
+| 64 | 16.2810 | 14.9836 | 14.6781 | 14.7062 | 14.6655 |
 | 128 | 15.7202 | 14.5300 | 14.3586 | 14.3831 | 14.3776 |
 
-Runs retained outside the grid: `200m-dk002-seed0` (softmax, dK=2, PPL 22.3489); `200m-dk004-seed0` (softmax, dK=4, PPL 18.8928); `200m-m000-seed0` (m=0, dK=64, PPL 47.0653); `200m-softmax-seed0` (softmax, dK=64, PPL 14.6942); `200m-dk256-seed0` (softmax, dK=256, PPL 14.1736). The grid uses one softmax reference per width; at dK=64 it is `200m-dk064-seed0` (PPL 14.6898).
+Runs retained outside the grid: `200m-dk002-seed0` (softmax, dK=2, PPL 22.3489); `200m-dk004-seed0` (softmax, dK=4, PPL 18.8928); `200m-m000-seed0` (m=0, dK=64, PPL 47.0653); `200m-dk256-seed0` (softmax, dK=256, PPL 14.1736). The grid uses one softmax reference per width; at dK=64 it is `200m-softmax-seed0` (PPL 14.6655).
 
 Each delta in the CSV and delta heatmap subtracts the softmax endpoint at the same width. `original_experiment` in the CSV records which sweep trained each run; heatmaps do not mark it. FAILED means a recorded numerical failure; interrupted or unaudited runs remain INCOMPLETE. Source commits, exact recipes, and artifact checksums are in `provenance/manifest.json`.
 
-Checkpoints and logs are not retained for 8 runs trained on another cluster (`200m-dk002-seed0`, `200m-dk004-seed0`, `200m-dk008-seed0`, `200m-dk016-seed0`, `200m-dk032-seed0`, `200m-dk064-seed0`, `200m-dk128-seed0`, `200m-dk256-seed0`); their metrics, completion records, metadata, and recipes are retained and checksum-verified.
+Checkpoints and logs are not retained for 7 runs trained on another cluster (`200m-dk002-seed0`, `200m-dk004-seed0`, `200m-dk008-seed0`, `200m-dk016-seed0`, `200m-dk032-seed0`, `200m-dk128-seed0`, `200m-dk256-seed0`); their metrics, completion records, metadata, and recipes are retained and checksum-verified.
 
 [Summary CSV](summary.csv) · [Terminal heatmap](figures/terminal_ppl_heatmap.pdf) · [Delta heatmap](figures/delta_ppl_heatmap.pdf) · [Learning curves](figures/learning_curves.pdf)
 <!-- END GENERATED RESULTS -->
@@ -162,7 +163,8 @@ asserted.
 ## Limitations
 
 Every coordinate has one seed. The focused heatmap grid is complete; the other
-runs cover only softmax at dK 2, 4, and 256, m=0 at dK=64, and a
-second softmax at dK=64. Width changes parameter count. Hardware differed
-across sweeps and, for three joint runs, within a run; the two dK=64 softmax runs
-bound such effects far below the Taylor-degree gaps but do not remove them.
+runs cover only softmax at dK 2, 4, and 256 and m=0 at dK=64. Width changes
+parameter count. Hardware differed across sweeps and, for some runs, within a run.
+The dK=64 softmax reference differs from the rest of the record in its
+weight-decay policy; its comparisons at dK=64 therefore combine that policy change
+(about 0.03 PPL in the softmax baseline) with the mechanism differences.

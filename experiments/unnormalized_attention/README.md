@@ -4,8 +4,8 @@ This experiment asks what changes when a Transformer uses causal
 `exp(QKᵀ / sqrt(d_K)) V` without dividing attention weights by their row sum.
 The canonical run uses the repository's **200M sweep recipe**, so it compares
 directly with the 200M softmax controls and Taylor/key-dimension sweeps.
-**Status: completed.** Removing row normalization costs **0.172 nats** at 200M:
-terminal validation PPL **17.46** versus 14.69 for softmax. A completed 250M run
+**Status: completed.** Removing row normalization costs **0.174 nats** at 200M:
+terminal validation PPL **17.46** versus 14.67 for softmax. A completed 250M run
 is documented [below](#supplementary-250m-run) as a supplementary scale point.
 
 **Home cluster: Kennel.** The artifact root is
@@ -19,66 +19,18 @@ sources, configurations, runs, and artifact locations.
 
 | Run | Terminal val NLL | Terminal val PPL | Softmax control NLL / PPL | Gap (nats) |
 | --- | ---: | ---: | ---: | ---: |
-| `200m-exp-seed0-kennel` | 2.859817 | 17.4583 | 2.687451 / 14.6942 | +0.1724 |
+| `200m-exp-seed0-kennel` | 2.859817 | 17.4583 | 2.685498 / 14.6655 | +0.1743 |
 
-Validation was best at the terminal update 19,074. The gap to the matched
-softmax control narrows during training but does not close:
-
-| Update | 1,000 | 2,000 | 5,000 | 10,000 | 15,000 | 19,074 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Unnormalized NLL | 5.285 | 4.434 | 3.437 | 3.052 | 2.906 | 2.860 |
-| Softmax NLL | 4.458 | 3.609 | 3.020 | 2.806 | 2.720 | 2.687 |
-| Gap | 0.827 | 0.825 | 0.417 | 0.246 | 0.186 | 0.172 |
-
-The unnormalized model also ends behind normalized Taylor attention of degree 2
-(PPL 16.28) and 4 (14.98) in the [dK × Taylor-degree record](../key_dimension_taylor/README.md).
-The gap matches the 0.174 nats measured at 250M against the external OFM
-baseline. All 20 evaluations reported valid diagnostics with zero invalid
-scores, kernels, weight sums, or outputs. Maximum row weight sums on the fixed
-diagnostic sequence peaked at 668,232 (layer 8, update 2,000, maximum score
-13.4) and fell to at most 3,466 (layer 9) at completion, far from FP32 overflow.
-One seed does not estimate seed variation.
-
-The run used source `3b0d311`, Slurm job `201002`, and four B300s on `akita`
-(2026-09-22), taking 2 h 28 min including acceptance, with no restarts, at about
-1.33M training tokens per second. Records: metrics and completion in
-[`runs/200m-exp-seed0-kennel/`](runs/200m-exp-seed0-kennel/), GPU acceptance
-and allocation summarized in the [provenance manifest](provenance/manifest.json),
-a [terminal summary](summary.csv), the log at
-`logs/200m-exp-seed0-kennel/slurm-201002.out`, and the retained step-19,074
-checkpoint (2.1 GB) under `checkpoints/200m-exp-seed0-kennel/`; logs and
-checkpoints are ignored and stay on Kennel.
-
-## Scientific recipe
-
-The [canonical recipe](configs/base.yaml) has **199,906,304 parameters**: 10
-layers, width 1024, 16 full-MHA heads, `d_K=d_V=64`, SwiGLU width 3008,
-32,000-token untied embeddings, 2,048 prediction positions, RoPE base 10,000,
-RMSNorm epsilon `1e-6`, and no dropout. The block and final RMSNorm layers and
-vocabulary softmax remain unchanged.
-
-The seed is 0. Packed FineWeb data, tokenizer, sequence order, AdamW parameters,
-and learning-rate schedule match the 200M sweeps. Global batch 256, global
-microbatch 64, and four accumulation steps give **19,074 updates and
-10,000,269,312 prediction tokens**. Warmup lasts 2,000 updates; peak/minimum
-learning rates are `3e-4`/`3e-5`. Evaluation uses the first 1,792 held-out
-sequences every 1,000 updates and at completion. Parameters and optimizer state
-are FP32; model computation is BF16. Initial parameters are bit-identical to the
-independent in-repository port used by the 200M controls.
-
-Apart from normalization, the recipe is field-for-field identical to these
-existing softmax controls, both trained with this repository's code:
+Validation was best at the terminal update 19,074. The softmax control is the
+repository's softmax baseline, trained with this repository's code:
 
 | Control | Cluster, attention backend | Terminal val NLL | Terminal val PPL |
 | --- | --- | --- | --- |
-| [`200m-softmax-seed0`](../key_dimension_taylor/README.md) (degree sweep) | Kennel (H100, then B300), fused | 2.687451 | 14.6942 |
-| [`200m-dk064-seed0`](../key_dimension_taylor/README.md) (width sweep) | ORCD, cuDNN | 2.687151 | 14.6898 |
+| [`200m-softmax-seed0`](../key_dimension_taylor/README.md) (source `381f1fd`, selective weight decay) | Kennel (H100, then B300), cuDNN | 2.685498 | 14.6655 |
 
-They differ by 0.0003 nats despite different clusters, GPU counts, kernels, and
-source revisions, which bounds hardware/kernel effects far below the gaps
-measured here. Primary endpoint: terminal held-out perplexity at the matched
-token budget; best-checkpoint metrics are retained separately. Comparisons are
-single-seed.
+The control trained under the scaffold's selective weight-decay policy; this run
+trained with decay on all parameters, a difference worth about 0.03 PPL in the
+softmax baseline and far below the gap reported here.
 
 ## Implementation
 

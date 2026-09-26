@@ -57,6 +57,10 @@ retrained under it, the figure and `summary.csv` above will change with them.
 ([PDF](figures/combined_terminal_ppl-original-decay.pdf)) and
 [`summary-original-decay.csv`](summary-original-decay.csv) are frozen copies of the
 2026-09-25 state under the original policy; regeneration does not rewrite them.
+The two old-policy `d_K = 64` softmax runs retired on 2026-09-26 ended at PPL 14.6898
+(`200m-dk064-seed0`, the cell shown in the frozen copy) and 14.6942
+(`200m-softmax-seed0`, the control the other records quoted); the current figure's
+`d_K = 64` softmax is the selective-policy baseline.
 
 ## Findings
 

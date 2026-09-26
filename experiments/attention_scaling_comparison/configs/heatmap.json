@@ -10,7 +10,6 @@
   "terminal_step": 19074,
   "training_tokens": 10000269312,
   "seed": 0,
-  "source_artifact_set_sha256": "46a3a59160a090950bd7a97c30c03fe870062a0dd3508d31db017936bcdc0fea",
   "data_identity": {
     "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
     "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
@@ -18,7 +17,7 @@
   "panels": [
     {
       "id": "normalized_fixed",
-      "title": "Row-normalized Taylor · fixed",
+      "title": "Row-normalized Taylor \u00b7 fixed",
       "columns": [
         {
           "id": "m1",
@@ -48,7 +47,7 @@
     },
     {
       "id": "normalized_learned",
-      "title": "Row-normalized quadratic · learned",
+      "title": "Row-normalized quadratic \u00b7 learned",
       "columns": [
         {
           "id": "positive_global",
@@ -88,7 +87,7 @@
     },
     {
       "id": "unnormalized_fixed",
-      "title": "Unnormalized Taylor · fixed",
+      "title": "Unnormalized Taylor \u00b7 fixed",
       "columns": [
         {
           "id": "m1",
@@ -118,7 +117,7 @@
     },
     {
       "id": "unnormalized_learned",
-      "title": "Unnormalized Taylor · learned per head",
+      "title": "Unnormalized Taylor \u00b7 learned per head",
       "columns": [
         {
           "id": "m1",
@@ -150,19 +149,19 @@
   "source_manifests": {
     "key_dimension_taylor": {
       "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-      "sha256": "d3217493593ae9d815a8ecbbcbd7aa9f8b0a0cbeaa9ebf9de57ec1f09afbf221"
+      "sha256": "dc96fd97bfde0a3d65e0470e96e4cd553e64b7b8f39d5ceac4f9877327a50c15"
     },
     "odd_taylor_attention": {
       "path": "experiments/odd_taylor_attention/provenance/manifest.json",
-      "sha256": "ec4ec1af20e1c297daf0881f32c1b9d344e5518e79662e4c326811a5dce2d217"
+      "sha256": "603a09a3d71c0a97b20f6774c003ad42482e4e5bab4fd3ceb33763feb1bfedeb"
     },
     "learned_quadratic_attention": {
       "path": "experiments/learned_quadratic_attention/provenance/manifest.json",
-      "sha256": "af47572aba410b3494dbfd356d34df7d7b194df857ce0eeba1e88fecde170ce7"
+      "sha256": "e09e232e32b78899d9ccd4a1f8a0aebce363750f0e51e9dff91489bbc1a71801"
     },
     "unnormalized_taylor_attention": {
       "path": "experiments/unnormalized_taylor_attention/provenance/manifest.json",
-      "sha256": "21beaa923d8721698d02a5239b6906fd12ee3c6993016fc935cd392655576097"
+      "sha256": "d7e43386547f4a446fdac23efcff42a55a125bea5dcd23fa014f6fd91e96d6f6"
     },
     "learned_unnormalized_taylor": {
       "path": "experiments/learned_unnormalized_taylor/provenance/manifest.json",
@@ -170,11 +169,11 @@
     },
     "gla_key_dimension": {
       "path": "experiments/gla_key_dimension/provenance/manifest.json",
-      "sha256": "85b8dd905052c396196041cb7a53c21976675f0e1069460397ffd8cb7ab54207"
+      "sha256": "c9e000bfb1608fd9a60165dbe2cf7fe55cb2fa33fa89fe21b437ed5ac5421913"
     },
     "unnormalized_attention": {
       "path": "experiments/unnormalized_attention/provenance/manifest.json",
-      "sha256": "de400c9fbefb934b28bc0566038a572cfafea5c2ba80887e607a960d2c5e3924"
+      "sha256": "fd485e0bc616b9eedb5a92c573474bb75cbc0b321dbf80feee62c7f7dfeed771"
     }
   },
   "cells": [
@@ -337,7 +336,7 @@
       "column": "softmax",
       "d_k": 64,
       "experiment": "key_dimension_taylor",
-      "run": "200m-dk064-seed0"
+      "run": "200m-softmax-seed0"
     },
     {
       "panel": "references",
@@ -493,5 +492,6 @@
       "experiment": "unnormalized_attention",
       "run": "200m-exp-seed0-kennel"
     }
-  ]
+  ],
+  "source_artifact_set_sha256": "e9280a1f00fbc1628610ea39dee77e5cc4b7828a9feb06128e128488585f720f"
 }

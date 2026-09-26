@@ -168,7 +168,9 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
               "The stability plots use the fixed first held-out diagnostic sequence. Negative-weight fractions are computed after signed normalization; minimum absolute denominators and cancellation ratios expose near-zero signed sums.", "",
               "Odd-degree runs use four H100s on dogo. Control throughput reflects its recorded allocations, including hardware migration, and is not a matched hardware benchmark. Hardware histories are preserved in the control provenance.", "",
               "The fixed controls are degree-sweep runs retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in the provenance manifest:", ""]
-    lines += [f"- {label(run)}: `{run['config']['train']['source_commit']}`; degree-sweep identity `{run['original_sweep_identity']}`." for run in manifest["controls"]]
+    lines += [f"- {label(run)}: `{run['config']['train']['source_commit']}`; "
+              + (f"degree-sweep identity `{run['original_sweep_identity']}`." if run.get("original_sweep_identity")
+                 else f"{run.get('control_note', 'retained control')}.") for run in manifest["controls"]]
     failures = [row for row in rows if row["error"]]
     if failures:
         lines += ["", "Recorded failures:", "", *[f"- {row['kernel']}: {row['error']}" for row in failures]]

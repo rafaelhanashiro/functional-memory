@@ -91,7 +91,7 @@
       "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
       "source_provenance": {
         "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-        "sha256": "d3217493593ae9d815a8ecbbcbd7aa9f8b0a0cbeaa9ebf9de57ec1f09afbf221"
+        "sha256": "dc96fd97bfde0a3d65e0470e96e4cd553e64b7b8f39d5ceac4f9877327a50c15"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
@@ -107,84 +107,113 @@
       "value_head_dim": 64,
       "parameter_count": 199906304,
       "seed": 0,
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-softmax-seed0.yaml",
-        "sha256": "c5ab869c72d62bcdb18dee4a46f0814f31cf3ee1f0857303664b527420d9f010"
+        "sha256": "f05ddef29734a3dd77db85fb2b353424ab46b8156b43826186d175f3ce127133"
       },
       "metrics": {
         "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metrics.jsonl",
-        "sha256": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262"
+        "sha256": "6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786"
       },
       "completion": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/completion.json",
       "selected_checkpoint": {
         "path": "experiments/key_dimension_taylor/checkpoints/200m-softmax-seed0/19074",
         "step": 19074,
-        "validation_nll": 2.6874512689454213,
-        "validation_perplexity": 14.69417664861716,
-        "metadata_sha256": "fa8681bab9517fa0b9fad89ccd85a12cf734c86b9f95736df8a3022dca2ca00c",
-        "file_count": 18,
-        "size_bytes": 2196497053
+        "validation_nll": 2.6854977863175526,
+        "validation_perplexity": 14.665499848737895,
+        "file_count": 14,
+        "size_bytes": 2196658424,
+        "tree_sha256": "55e0e0e5b3e0129eb0876a45effa9258e104e9fde62ab5a87a8ed07dd86472d7"
       },
       "terminal": {
         "step": 19074,
         "training_tokens": 10000269312,
-        "validation_nll": 2.6874512689454213,
-        "validation_perplexity": 14.69417664861716
+        "validation_nll": 2.6854977863175526,
+        "validation_perplexity": 14.665499848737895
       },
-      "slurm_job_id": "199869",
+      "slurm_job_id": "202190",
       "slurm_log": {
-        "path": "experiments/key_dimension_taylor/logs/200m-softmax-seed0/slurm-199869.out",
-        "sha256": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277"
+        "path": "experiments/key_dimension_taylor/logs/200m-softmax-seed0/slurm-202190.out",
+        "sha256": "411d7234ce9b347c06fea1ad7c2a1323e2143411bdacb254ba3214637572e7de"
       },
       "execution_attempts": [
         {
-          "slurm_job_id": "199652",
-          "gpu_kind": "H100 SXM",
-          "gpu_count": 4,
+          "slurm_job_id": "202186",
+          "restart": "0",
+          "partition": "sweep",
           "node": "dogo",
-          "elapsed_seconds": 3777,
-          "status": "cancelled_for_validated_hardware_migration",
-          "last_observed_step": 9282,
-          "started_local": "2026-09-18T13:52:35",
-          "ended_local": "2026-09-18T14:55:32",
-          "timezone": "America/New_York",
-          "exit_code": "0:0"
+          "gpu_type": "H100",
+          "gpu_count": 4,
+          "started_utc": "2026-09-25T21:20:12Z",
+          "ended_utc": "2026-09-25T21:24:50Z",
+          "launch_commit": "126d72a90dea0624a9acc3914255ecaf19998442",
+          "outcome": "failed acceptance cpu-tests: the adapter's regeneration test skipped before completion (fixed in 381f1fd)"
         },
         {
-          "slurm_job_id": "199869",
-          "gpu_kind": "B300 SXM6 AC",
+          "slurm_job_id": "202190",
+          "restart": "0",
+          "partition": "sweep",
+          "node": "dogo",
+          "gpu_type": "H100",
           "gpu_count": 4,
+          "started_utc": "2026-09-25T21:26:41Z",
+          "ended_utc": "2026-09-25T21:30:58Z",
+          "outcome": "passed cpu-tests and cpu-distributed-tests; preempted"
+        },
+        {
+          "slurm_job_id": "202190",
+          "restart": "1",
+          "partition": "sweep",
+          "node": "dogo",
+          "gpu_type": "H100",
+          "gpu_count": 4,
+          "started_utc": "2026-09-25T21:49:15Z",
+          "ended_utc": "2026-09-25T21:50:16Z",
+          "outcome": "preempted during gpu-tests"
+        },
+        {
+          "slurm_job_id": "202190",
+          "restart": "2",
+          "partition": "sweep",
+          "node": "dogo",
+          "gpu_type": "H100",
+          "gpu_count": 4,
+          "started_utc": "2026-09-25T21:57:25Z",
+          "ended_utc": "2026-09-25T22:16:54Z",
+          "outcome": "passed H100 acceptance at 22:05:09Z; trained from a fresh initialization to about update 1,464 (checkpoint at 1,000, first validation at 1,000); preempted"
+        },
+        {
+          "slurm_job_id": "202190",
+          "restart": "3",
+          "partition": "sweep",
           "node": "akita",
-          "elapsed_seconds": 2334,
-          "status": "complete",
-          "restored_step": 9000,
-          "packed_data_start_sequence": 2304000,
-          "replayed_uncheckpointed_updates": 282,
-          "started_local": "2026-09-18T14:56:10",
-          "ended_local": "2026-09-18T15:35:04",
-          "timezone": "America/New_York",
-          "exit_code": "0:0"
+          "gpu_type": "B300",
+          "gpu_count": 4,
+          "started_utc": "2026-09-25T22:19:26Z",
+          "ended_utc": "2026-09-25T23:35:54Z",
+          "outcome": "passed B300 acceptance at 22:28:30Z; resumed from the update-1,000 checkpoint (data sequence 256,000) and completed all 19,074 updates"
         }
       ],
       "home_cluster": "kennel",
       "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
       "metadata": {
         "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metadata.json",
-        "sha256": "a825624689312dece250e1be687f654b2dfcb5dee5d543a34ec62773eda87b8d"
+        "sha256": "d2a32e0c8045e8053595a1acb2d802b97987f8c7b6f7a9eefdef21066d315d42"
       },
       "status": "complete",
       "retained_completed": true,
-      "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
       "source_provenance": {
         "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-        "sha256": "d3217493593ae9d815a8ecbbcbd7aa9f8b0a0cbeaa9ebf9de57ec1f09afbf221"
+        "sha256": "dc96fd97bfde0a3d65e0470e96e4cd553e64b7b8f39d5ceac4f9877327a50c15"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
       "quadratic_sharing": "none",
       "original_experiment": "polynomial_attention",
-      "retained_in": "experiments/key_dimension_taylor"
+      "retained_in": "experiments/key_dimension_taylor",
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "control_note": "softmax baseline retrained 2026-09-25 under the selective weight-decay policy"
     }
   ],
   "runs": [
@@ -2413,207 +2442,12 @@
             "workdir": "experiments/key_dimension_taylor/200m-m002-seed0"
           },
           {
-            "attention_backend": "fused",
             "attention_degree": null,
-            "completion": "experiments/key_dimension_taylor/200m-softmax-seed0/completion.json",
-            "config": {
-              "data": {
-                "batch_size": 256,
-                "dataset_config": "sample-100BT",
-                "dataset_name": "HuggingFaceFW/fineweb-edu",
-                "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
-                "sequence_length": 2049,
-                "shuffle_seed": 0,
-                "source": "packed",
-                "split": "train",
-                "synthetic_vocab_size": 32000,
-                "text_field": "text",
-                "tokenizer_name": "NousResearch/Llama-2-7b-hf",
-                "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
-              },
-              "model": {
-                "attention_backend": "fused",
-                "attention_degree": null,
-                "dropout": 0.0,
-                "hidden_size": 1024,
-                "intermediate_size": 3008,
-                "kind": "transformer",
-                "max_seq_len": 2048,
-                "num_heads": 16,
-                "num_kv_heads": 16,
-                "num_layers": 10,
-                "qk_head_dim": 64,
-                "remat": false,
-                "rms_norm_eps": 1e-06,
-                "rope_theta": 10000.0,
-                "tie_embeddings": false,
-                "value_head_dim": 64,
-                "vocab_size": 32000
-              },
-              "optim": {
-                "beta1": 0.9,
-                "beta2": 0.95,
-                "grad_clip_norm": 1.0,
-                "learning_rate": 0.0003,
-                "min_learning_rate": 3e-05,
-                "total_steps": 19074,
-                "warmup_steps": 2000,
-                "weight_decay": 0.1
-              },
-              "train": {
-                "ckpt_every": 500,
-                "dtype": "bfloat16",
-                "eval_batches": 7,
-                "eval_every": 1000,
-                "log_every": 10,
-                "micro_batch_size": 64,
-                "seed": 0,
-                "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
-                "wandb_entity": null,
-                "wandb_mode": "disabled",
-                "wandb_project": "functional-memory-polynomial-attention",
-                "wandb_run_name": "200m-softmax-seed0",
-                "workdir": "experiments/key_dimension_taylor/200m-softmax-seed0"
-              }
-            },
-            "config_path": "experiments/polynomial_attention/configs/runs/200m-softmax-seed0.yaml",
-            "execution_attempts": [
-              {
-                "elapsed_seconds": 3777,
-                "ended_local": "2026-09-18T14:55:32",
-                "exit_code": "0:0",
-                "gpu_count": 4,
-                "gpu_kind": "H100 SXM",
-                "last_observed_step": 9282,
-                "node": "dogo",
-                "slurm_job_id": "199652",
-                "started_local": "2026-09-18T13:52:35",
-                "status": "cancelled_for_validated_hardware_migration",
-                "timezone": "America/New_York"
-              },
-              {
-                "elapsed_seconds": 2334,
-                "ended_local": "2026-09-18T15:35:04",
-                "exit_code": "0:0",
-                "gpu_count": 4,
-                "gpu_kind": "B300 SXM6 AC",
-                "node": "akita",
-                "packed_data_start_sequence": 2304000,
-                "replayed_uncheckpointed_updates": 282,
-                "restored_step": 9000,
-                "slurm_job_id": "199869",
-                "started_local": "2026-09-18T14:56:10",
-                "status": "complete",
-                "timezone": "America/New_York"
-              }
-            ],
-            "metrics": {
-              "path": "experiments/key_dimension_taylor/200m-softmax-seed0/metrics.jsonl",
-              "sha256": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262"
-            },
             "name": "200m-softmax-seed0",
-            "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
             "parameter_count": 199906304,
-            "provenance_sha256": {
-              "experiments/polynomial_attention/configs/runs/200m-softmax-seed0.yaml": "ca4071773c7ad128d732a04e40bccec54e0d8fe505aef29ebfde331fd338b09a",
-              "experiments/key_dimension_taylor/logs/200m-softmax-seed0/slurm-199869.out": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277",
-              "experiments/key_dimension_taylor/200m-softmax-seed0/completion.json": "6947209ede4c4b83809197278ec86f970b22eb0ebd7bb64b3189907ace8c8712",
-              "experiments/key_dimension_taylor/200m-softmax-seed0/metadata.json": "5edaa6301e03162d4395b7c58914eae7732347fa46681fac3e5892070d6be91e",
-              "experiments/key_dimension_taylor/200m-softmax-seed0/metrics.jsonl": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262",
-              "experiments/key_dimension_taylor/provenance.json": "7358cffaefa13bd2bbc74cb469dfd721ea72d3d1fbab49bee497034cf2fb5fed"
-            },
             "qk_head_dim": 64,
-            "retained_completed": true,
-            "retained_provenance": {
-              "attention_backend": "fused",
-              "attention_degree": null,
-              "completion": "experiments/key_dimension_taylor/200m-softmax-seed0/completion.json",
-              "execution_attempts": [
-                {
-                  "elapsed_seconds": 3777,
-                  "ended_local": "2026-09-18T14:55:32",
-                  "exit_code": "0:0",
-                  "gpu_count": 4,
-                  "gpu_kind": "H100 SXM",
-                  "last_observed_step": 9282,
-                  "node": "dogo",
-                  "slurm_job_id": "199652",
-                  "started_local": "2026-09-18T13:52:35",
-                  "status": "cancelled_for_validated_hardware_migration",
-                  "timezone": "America/New_York"
-                },
-                {
-                  "elapsed_seconds": 2334,
-                  "ended_local": "2026-09-18T15:35:04",
-                  "exit_code": "0:0",
-                  "gpu_count": 4,
-                  "gpu_kind": "B300 SXM6 AC",
-                  "node": "akita",
-                  "packed_data_start_sequence": 2304000,
-                  "replayed_uncheckpointed_updates": 282,
-                  "restored_step": 9000,
-                  "slurm_job_id": "199869",
-                  "started_local": "2026-09-18T14:56:10",
-                  "status": "complete",
-                  "timezone": "America/New_York"
-                }
-              ],
-              "metrics": {
-                "path": "experiments/key_dimension_taylor/200m-softmax-seed0/metrics.jsonl",
-                "sha256": "e3975758226475c0dba86de8269c8a3087846e65ab69c1c16b48214cbde47262"
-              },
-              "name": "200m-softmax-seed0",
-              "parameter_count": 199906304,
-              "qk_head_dim": 64,
-              "seed": 0,
-              "selected_checkpoint": {
-                "file_count": 18,
-                "metadata_sha256": "fa8681bab9517fa0b9fad89ccd85a12cf734c86b9f95736df8a3022dca2ca00c",
-                "path": "experiments/key_dimension_taylor/checkpoints/200m-softmax-seed0/19074",
-                "size_bytes": 2196497053,
-                "step": 19074,
-                "validation_nll": 2.6874512689454213,
-                "validation_perplexity": 14.69417664861716
-              },
-              "slurm_job_id": "199869",
-              "slurm_log": {
-                "path": "experiments/key_dimension_taylor/logs/200m-softmax-seed0/slurm-199869.out",
-                "sha256": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277"
-              },
-              "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
-              "terminal": {
-                "step": 19074,
-                "training_tokens": 10000269312,
-                "validation_nll": 2.6874512689454213,
-                "validation_perplexity": 14.69417664861716
-              },
-              "value_head_dim": 64
-            },
             "seed": 0,
-            "selected_checkpoint": {
-              "file_count": 18,
-              "metadata_sha256": "fa8681bab9517fa0b9fad89ccd85a12cf734c86b9f95736df8a3022dca2ca00c",
-              "path": "experiments/key_dimension_taylor/checkpoints/200m-softmax-seed0/19074",
-              "size_bytes": 2196497053,
-              "step": 19074,
-              "validation_nll": 2.6874512689454213,
-              "validation_perplexity": 14.69417664861716
-            },
-            "slurm_job_id": "199869",
-            "slurm_log": {
-              "path": "experiments/key_dimension_taylor/logs/200m-softmax-seed0/slurm-199869.out",
-              "sha256": "0c96680ee13da024256225ac40b805727b10d79dd157e6bf3aa9cb4d83890277"
-            },
-            "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
-            "terminal": {
-              "step": 19074,
-              "training_tokens": 10000269312,
-              "validation_nll": 2.6874512689454213,
-              "validation_perplexity": 14.69417664861716
-            },
-            "training_tokens": 10000269312,
-            "value_head_dim": 64,
-            "workdir": "experiments/key_dimension_taylor/200m-softmax-seed0"
+            "value_head_dim": 64
           }
         ],
         "data_identity": {
