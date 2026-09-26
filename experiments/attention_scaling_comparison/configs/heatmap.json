@@ -17,7 +17,7 @@
   "panels": [
     {
       "id": "normalized_fixed",
-      "title": "Row-normalized Taylor \u00b7 fixed",
+      "title": "Normalized Taylor \u00b7 fixed",
       "columns": [
         {
           "id": "m1",

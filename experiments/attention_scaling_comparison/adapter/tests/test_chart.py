@@ -9,8 +9,8 @@ from experiments.attention_scaling_comparison.adapter.analysis.chart import _bui
 def _config():
     degrees = lambda *ds: [{"id": f"m{d}", "label": f"m={d}"} for d in ds]
     return {"d_k": [64], "panels": [
-        {"id": "normalized_learned_taylor", "title": "Row-normalized, learned", "columns": degrees(1, 2, 3, 4)},
-        {"id": "normalized_nonnegative", "title": "Row-normalized, learned nonnegative", "columns": degrees(2, 4)},
+        {"id": "normalized_learned_taylor", "title": "Normalized, learned", "columns": degrees(1, 2, 3, 4)},
+        {"id": "normalized_nonnegative", "title": "Normalized, learned nonnegative", "columns": degrees(2, 4)},
         {"id": "unnormalized_learned", "title": "Unnormalized, learned", "columns": degrees(1, 2, 3, 4)},
         {"id": "references", "title": "References", "columns": [
             {"id": "softmax", "label": "QK-norm softmax"}, {"id": "unnormalized_exp", "label": "unnormalized exp"}]},

@@ -3,7 +3,7 @@
 This record puts the completed 200M-reference attention experiments on one
 terminal held-out perplexity scale, in two figures. The **heatmap** covers the
 mechanisms trained across per-head query/key widths `d_K = 8, 16, 32, 64, 128`:
-row-normalized fixed Taylor kernels by degree, softmax, and GLA. The **degree
+normalized fixed Taylor kernels by degree, softmax, and GLA. The **degree
 chart** covers the polynomial families trained only at `d_K = 64`, as perplexity
 against degree `m = 1, 2, 3, 4`. The comparison is a derived analysis of existing
 runs; it trains no new models.
@@ -38,7 +38,7 @@ provenance and artifacts.
 
 | Panel | Columns | Meaning |
 | --- | --- | --- |
-| Row-normalized Taylor, fixed | `m = 1, 2, 3, 4, 8, 16` | Fixed coefficients `1/r!`; causal row normalization |
+| Normalized Taylor, fixed | `m = 1, 2, 3, 4, 8, 16` | Fixed coefficients `1/r!`; causal row normalization |
 | References | Softmax, softmax without QK-norm, GLA | Softmax with QK-norm (the default), the plain-score softmax reference, and GLA, which has no Taylor degree and no QK-norm |
 
 **FAIL** marks a recorded scientific numerical failure at the annotated update; it
@@ -54,8 +54,8 @@ Every learned family learns its coefficients per layer and head.
 
 | Family | Degrees | Meaning |
 | --- | --- | --- |
-| Row-normalized, learned | 1–4 | All `m + 1` coefficients learned from `1/r!`; signed kernel and row sum |
-| Row-normalized, learned nonnegative | 2, 4 | Kernel constrained nonnegative: the positive quadratic `0.5 (1 + (a s + b)^2)` or the sum of squares `q1^2 + q2^2`; odd degrees cannot be nonnegative on the real line |
+| Normalized, learned | 1–4 | All `m + 1` coefficients learned from `1/r!`; signed kernel and row sum |
+| Normalized, learned nonnegative | 2, 4 | Kernel constrained nonnegative: the positive quadratic `0.5 (1 + (a s + b)^2)` or the sum of squares `q1^2 + q2^2`; odd degrees cannot be nonnegative on the real line |
 | Unnormalized, learned | 1–4 | All coefficients learned from `1/r!`; no row division |
 | Unnormalized, fixed Taylor | 1–4 | Fixed coefficients `1/r!`; no row division |
 
@@ -103,7 +103,7 @@ softmax references (QK-norm 14.4574, plain 14.6655); the learned unnormalized
 Taylor kernels at m = 1–4 (20.279, 17.599, 16.330, 16.384, from the
 [QK-norm learned Taylor sweep](../qk_norm_learned_taylor/README.md)), each better
 than the legacy fixed unnormalized kernel of the same degree, with degrees 3 and 4
-within 0.05 of each other; and the four row-normalized learned kernels, which all
+within 0.05 of each other; and the four normalized learned kernels, which all
 failed numerically (updates 27, 1,857, 318, and 1,456) once a kernel turned negative
 inside the bounded score range and a row sum crossed zero. The
 [nonnegative learned Taylor runs](../nonnegative_learned_taylor/README.md) at m = 2

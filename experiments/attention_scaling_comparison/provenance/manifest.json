@@ -23,7 +23,7 @@
       "panels": [
         {
           "id": "normalized_fixed",
-          "title": "Row-normalized Taylor · fixed",
+          "title": "Normalized Taylor · fixed",
           "columns": [
             {
               "id": "m1",
@@ -80,7 +80,7 @@
       "panels": [
         {
           "id": "normalized_learned_taylor",
-          "title": "Row-normalized, learned",
+          "title": "Normalized, learned",
           "columns": [
             {
               "id": "m1",
@@ -102,7 +102,7 @@
         },
         {
           "id": "normalized_nonnegative",
-          "title": "Row-normalized, learned nonnegative",
+          "title": "Normalized, learned nonnegative",
           "columns": [
             {
               "id": "m2",
@@ -1687,11 +1687,11 @@
   "analysis": {
     "config": {
       "path": "experiments/attention_scaling_comparison/configs/heatmap.json",
-      "sha256": "f1a04b91c30d61c64f155630824c2546bc09d0be051a0b90e4815a9bca103634"
+      "sha256": "8fea92204e6089fe4d61fd2e32015e188b87580a20badea44d3f51cf2664b00e"
     },
     "chart_config": {
       "path": "experiments/attention_scaling_comparison/configs/degree_chart.json",
-      "sha256": "579173c53d1b78dce2df410c31ebba22d8c30da2dc85809fb626bd9e5a851798"
+      "sha256": "ea072cb652de727ca91cfc26bfe65878080e85311649d2525a242586bfd7bfb8"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
@@ -1723,23 +1723,23 @@
     },
     "readme": {
       "path": "experiments/attention_scaling_comparison/README.md",
-      "sha256": "b5f136eed3c8c29144294cf710f6816541b5b271946dd99d91bdc599c3c99e28"
+      "sha256": "8c0a8a8404fdcd26b2a96993377aa1d3eb3cb1ecbbcd8f185dda75c67e23a4e7"
     },
     "combined_terminal_ppl_pdf": {
       "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.pdf",
-      "sha256": "ef2d393b99442da982e9d8f0b7cd51b546d16bde2a488a7364af9a9567d5930d"
+      "sha256": "26ce0a7c50ea13813bce97d112898150d9f59b0a377a2692ffabee94839706f9"
     },
     "combined_terminal_ppl_png": {
       "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.png",
-      "sha256": "deee49b2ed6ab9d4f63a052083012a66b97a89197d57a7a9a12549e998f15524"
+      "sha256": "698d02a29540421246c5f0da2dcc1bbfe674ea0b37413697c281d0611bb0fb08"
     },
     "degree_chart_pdf": {
       "path": "experiments/attention_scaling_comparison/figures/degree_chart.pdf",
-      "sha256": "d19a5aa09616cb4a24b48d75448e540edce26e39dfeb609d41ddc53b80001079"
+      "sha256": "8123b97d918b8b7b9dc3170c01713d128c3d8812f9aff23fd747569a7585af2a"
     },
     "degree_chart_png": {
       "path": "experiments/attention_scaling_comparison/figures/degree_chart.png",
-      "sha256": "45a4cb185bee17edf27ec13231fd0f150ac78467a84d7248b5d4e6d332b67439"
+      "sha256": "3930afc4f8eee314a12d9fa89007e62cadcb3ea233cafaad26783e9d60e1b311"
     }
   }
 }

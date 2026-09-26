@@ -14,7 +14,7 @@
   "panels": [
     {
       "id": "normalized_learned_taylor",
-      "title": "Row-normalized, learned",
+      "title": "Normalized, learned",
       "columns": [
         {
           "id": "m1",
@@ -36,7 +36,7 @@
     },
     {
       "id": "normalized_nonnegative",
-      "title": "Row-normalized, learned nonnegative",
+      "title": "Normalized, learned nonnegative",
       "columns": [
         {
           "id": "m2",
