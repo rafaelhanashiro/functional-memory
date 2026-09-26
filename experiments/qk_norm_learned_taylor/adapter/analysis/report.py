@@ -272,11 +272,11 @@ def figures(record: Path = RECORD, output: Path | None = None) -> None:
                     axis.plot(grid, kernel, color=color, linewidth=0.6, alpha=0.3)
                 low, high = score_range(records[-1])
                 axis.axvspan(max(low, -6), min(high, 6), color=GRID, alpha=0.5, linewidth=0)
-                status = (f"failed at {failures[(degree, variant)]['step']:,}; shown at {records[-1]['step']:,}"
+                status = (f"failed {failures[(degree, variant)]['step']:,}, shown {records[-1]['step']:,}"
                           if failed[(degree, variant)] else f"update {records[-1]['step']:,}")
-                axis.set_title(f"m = {degree}, {variant}: {status}", color=INK, fontsize=9)
+                axis.set_title(f"m = {degree} {variant}: {status}", color=INK, fontsize=8.5)
             else:
-                axis.set_title(f"m = {degree}, {variant}: no validation", color=INK, fontsize=9)
+                axis.set_title(f"m = {degree} {variant}: failed before a validation", color=INK, fontsize=8.5)
             taylor = sum(grid ** order / math.factorial(order) for order in range(degree + 1))
             axis.plot(grid, taylor, color=INK, linewidth=1.2, linestyle=(0, (4, 3)))
             axis.axhline(0, color=MUTED, linewidth=0.8)
