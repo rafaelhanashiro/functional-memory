@@ -30,7 +30,7 @@ from scaffolds.transformer.attention.backends.fused_taylor import (
     NUM_STAGES, NUM_WARPS, _dot, _full_spec, _load, _norm_spec, _spec, _tile_sizes,
 )
 from scaffolds.transformer.attention.backends.fused_learned_polynomial import (
-    _coefficient_spec, _columns, _values, _values_and_derivative,
+    _coefficient_spec, _columns, _values,
 )
 
 
@@ -43,14 +43,29 @@ def _polynomial(scores, parameters, parameterization):
     return first * first + second * second
 
 
-def _polynomial_and_derivative(scores, parameters, parameterization):
+def _horner_and_scaled_derivative(scores, parameters, sensitivity):
+    # Differentiate the Horner recurrence after applying the normalized
+    # cotangent. The unscaled p'(s) may overflow while dp * p'(s) is finite.
+    value = jnp.zeros_like(scores) + parameters[-1]
+    derivative = jnp.zeros_like(scores)
+    for parameter in parameters[-2::-1]:
+        derivative = derivative * scores + sensitivity * value
+        value = value * scores + parameter
+    return value, derivative
+
+
+def _polynomial_and_scaled_derivative(scores, parameters, parameterization, sensitivity):
     if parameterization == "direct":
-        value, derivative = _values_and_derivative(scores, parameters)
+        value, derivative = _horner_and_scaled_derivative(scores, parameters, sensitivity)
         return value, derivative, None, None
     split = (len(parameters) + 1) // 2
-    first, dfirst = _values_and_derivative(scores, parameters[:split])
-    second, dsecond = _values_and_derivative(scores, parameters[split:])
-    return first * first + second * second, 2.0 * (first * dfirst + second * dsecond), first, second
+    first = _values(scores, parameters[:split])
+    second = _values(scores, parameters[split:])
+    # Scale each factor before differentiating its square. Forming either
+    # q*q' or 2*(q*q') first can overflow even for valid forward values.
+    _, dfirst = _horner_and_scaled_derivative(scores, parameters[:split], (sensitivity * first) * 2.0)
+    _, dsecond = _horner_and_scaled_derivative(scores, parameters[split:], (sensitivity * second) * 2.0)
+    return first * first + second * second, dfirst + dsecond, first, second
 
 
 def _forward_kernel(q_ref, k_ref, v_ref, *refs, count, parameterization, time, dq, dv, block_q, block_k):
@@ -139,9 +154,9 @@ def _dq_parameter_kernel(q_ref, k_ref, v_ref, *refs, count, parameterization, ti
         scores = _dot(q, k.T) * (1.0 / math.sqrt(dq))
         causal = (qi[:, None] >= ki[None, :]) & (qi[:, None] < time) & (ki[None, :] < time)
         safe_scores = jnp.where(causal, scores, 0.0)
-        _, derivative, first, second = _polynomial_and_derivative(safe_scores, parameters, parameterization)
         dp = (_dot(do, v.T) - delta[:, None]) / normalizer[:, None]
-        ds = jnp.where(causal, dp * derivative, 0.0)
+        _, ds, first, second = _polynomial_and_scaled_derivative(safe_scores, parameters, parameterization, dp)
+        ds = jnp.where(causal, ds, 0.0)
         grad_q += _dot(ds, k) * (1.0 / math.sqrt(dq))
         # Carry the normalized sensitivity through the power recurrence.
         # Forming s**r first could overflow even when dp * s**r is finite.
@@ -187,11 +202,11 @@ def _dkv_kernel(q_ref, k_ref, v_ref, *refs, count, parameterization, time, dq, d
         delta = jnp.sum(do.astype(jnp.float32) * output, axis=1)
         scores = _dot(q, k.T) * (1.0 / math.sqrt(dq))
         causal = (qi[:, None] >= ki[None, :]) & (qi[:, None] < time) & (ki[None, :] < time)
-        values, derivative, _, _ = _polynomial_and_derivative(jnp.where(causal, scores, 0.0), parameters, parameterization)
+        dp = (_dot(do, v.T) - delta[:, None]) / normalizer[:, None]
+        values, ds, _, _ = _polynomial_and_scaled_derivative(jnp.where(causal, scores, 0.0), parameters, parameterization, dp)
         weights = jnp.where(causal, values / normalizer[:, None], 0.0)
         grad_v += _dot(weights.T, do)
-        dp = (_dot(do, v.T) - delta[:, None]) / normalizer[:, None]
-        ds = jnp.where(causal, dp * derivative, 0.0)
+        ds = jnp.where(causal, ds, 0.0)
         grad_k += _dot(ds.T, q) * (1.0 / math.sqrt(dq))
         return grad_k, grad_v
 

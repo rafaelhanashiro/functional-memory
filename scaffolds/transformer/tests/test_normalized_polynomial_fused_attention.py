@@ -243,6 +243,35 @@ def test_normalized_coefficient_gradients_do_not_form_overflowing_raw_powers(ker
     _assert_result(actual, reference, output_tolerance=3e-5, gradient_tolerances=(3e-4,) * 4)
 
 
+def test_normalized_sos_score_gradient_does_not_form_overflowing_raw_derivative(kernel):
+    # p=(2+1e38*s)^2 has p'(0)=4e38, which overflows FP32, but
+    # (dO.V-dO.Y)/rowsum scales it down before the derivative is needed.
+    q = jnp.zeros((1, 2, 1, 1), jnp.float32)
+    k = jnp.asarray([0., 0.1], jnp.float32).reshape(q.shape)
+    v = jnp.asarray([0., 1.], jnp.float32).reshape(q.shape)
+    parameters = jnp.asarray([[2., 1e38, 0.]], jnp.float32)
+    cotangent = jnp.asarray([0., 1.], jnp.float32).reshape(q.shape)
+    actual = _evaluate(kernel("sum_of_squares"), (q, k, v, parameters), cotangent)
+    np.testing.assert_array_equal(actual[0].reshape(-1), [0., 0.5])
+    np.testing.assert_allclose(np.asarray(actual[1][0]).reshape(-1), [0., 2.5e36], rtol=2e-6, atol=0)
+    np.testing.assert_array_equal(actual[1][1], jnp.zeros_like(k))
+    np.testing.assert_array_equal(actual[1][2].reshape(-1), [0.5, 0.5])
+    np.testing.assert_array_equal(actual[1][3], jnp.zeros_like(parameters))
+
+
+def test_normalized_direct_score_gradient_does_not_form_overflowing_raw_derivative(kernel):
+    # p'(1)=6e38 overflows FP32 despite finite values and row sums. The
+    # nonzero exact Q/K/parameter gradients are smaller than 1e-37 here;
+    # CUDA can flush these subnormals, but it must not produce NaN or Inf.
+    q = jnp.asarray([0., 1.], jnp.float32).reshape(1, 2, 1, 1)
+    parameters = jnp.asarray([[1., 0., 3e38]], jnp.float32)
+    actual = _evaluate(kernel("direct"), (q, q, q, parameters), q)
+    np.testing.assert_array_equal(actual[0].reshape(-1), [0., 1.])
+    for gradient in (actual[1][0], actual[1][1], actual[1][3]):
+        np.testing.assert_allclose(gradient, 0, rtol=0, atol=1e-37)
+    np.testing.assert_allclose(actual[1][2].reshape(-1), [0., 1.], rtol=2e-6, atol=1e-37)
+
+
 def test_sos_near_roots_use_factors_without_expansion_or_clipping(kernel):
     # The expanded FP32 polynomial can turn negative around its root at 20.
     # Exact binary coefficients keep FP64 vs Horner factor evaluation controlled.
