@@ -30,14 +30,14 @@ def completed(record: Path = RECORD) -> bool:
 
 def rows(record: Path = RECORD, control: Path = CONTROL) -> list[dict]:
     manifest = json.loads((record / "provenance/manifest.json").read_text())
-    attempts = next((run for run in manifest["runs"] if run["name"] == RUN), {}).get("execution", {}).get("attempts", [])
-    node = attempts[-1]["node"] if attempts else ""
+    entry = next((run for run in manifest["runs"] if run["name"] == RUN), {})
+    # Preemptions can move a run between GPU types; the manifest states the full history.
+    hardware = entry.get("hardware_summary") or "4x " + (entry.get("execution", {}).get("attempts") or [{"gpu_type": "?"}])[-1]["gpu_type"]
     new, old = terminal_row(record / "runs" / RUN), terminal_row(control)
     result = []
     for row, policy, name in ((new, POLICY, RUN), (old, CONTROL_POLICY, f"key_dimension_taylor/{RUN}")):
         result.append({**row, "run": name, "weight_decay_policy": policy,
-                       "hardware": f"{row['gpu_count']}x{row['gpu_type']} {node}".strip() if row is new
-                       else f"{row['gpu_count']}x{row['gpu_type']}",
+                       "hardware": hardware if row is new else "H100 and B300 (see the source record)",
                        "nll_change_vs_control": (row["terminal_validation_nll"] - old["terminal_validation_nll"]
                                                  if row is new else ""),
                        "perplexity_change_vs_control": (row["terminal_validation_perplexity"]
