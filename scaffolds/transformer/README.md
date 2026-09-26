@@ -82,10 +82,21 @@ The existing scientific configuration fields remain supported:
 | Nonnegative `attention_degree`, `attention_normalization: false` | Unnormalized fixed Taylor `p_m(QKᵀ / sqrt(d_K)) V`; odd degrees permit signed weights |
 | `attention_degree: m >= 1`, `attention_normalization: false`, `attention_coefficients: learned` | Unnormalized `sum_r c_r (QKᵀ / sqrt(d_K))^r V` with every coefficient learned from `1/r!`; signed |
 | `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Row-normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; blocked reference only |
+| Even `attention_degree: m >= 2`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: sum_of_squares` | Row-normalized `(q1(s)^2 + q2(s)^2) V / rowsum` with `deg q1 = m/2`, `deg q2 = m/2 - 1` learned and initialized to reproduce `T_m` exactly; nonnegative weights, positive row sums; blocked reference only |
 | `attention_degree: 0` | Uniform causal-prefix averaging |
 | Nonnegative `attention_degree`, `quadratic_mode: fixed` | Fixed Taylor polynomial; odd degrees permit signed weights |
 | `attention_degree: 2`, `quadratic_mode: positive` | Learned `0.5 * (1 + (a*s+b)^2)` |
 | `attention_degree: 2`, `quadratic_mode: unrestricted` | Learned `1 + b*s + c*s^2` |
+
+With `attention_coefficient_parameterization: sum_of_squares` the learned array is
+`polynomial_square_factors` instead (`attention/nonnegative_polynomial.py`): the same
+`m + 1` values per layer and head, holding the ascending coefficients of `q1` then
+`q2`. Every polynomial of even degree that is nonnegative on the real line has this
+form, so the parameterization is complete and adds no parameters. The kernel is
+evaluated as `q1(s)^2 + q2(s)^2` rather than through expanded coefficients, whose
+cancellation near a zero minimum could round below zero. Kernel values may be
+exactly zero; a zero row sum is invalid. Diagnostics report the factors as raw
+parameters and the coefficients of `q1^2 + q2^2` as the effective ones.
 
 `qk_head_dim` controls projection geometry independently of the mechanism.
 `quadratic_sharing: global` stores one pair across all layers and heads;

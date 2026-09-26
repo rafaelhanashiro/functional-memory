@@ -68,6 +68,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         # Runs recorded before QK-norm existed trained without it, whatever the current default.
         value["model"].setdefault("qk_norm", False)
         value["model"].setdefault("attention_coefficients", "fixed")
+        value["model"].setdefault("attention_coefficient_parameterization", "direct")
         value["model"].setdefault("attention_coefficient_sharing", "global")
         for key, default in (("qk_norm", False), ("qk_norm_sharing", "per_head"),
                              ("qk_norm_initial_scale", None), ("qk_norm_eps", 1e-6)):

@@ -14,7 +14,9 @@ from flax import nnx
 from scaffolds.transformer.data.loaders import make_eval_iterator
 from scaffolds.transformer.data.packed import manifest_fingerprint
 from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE
-from scaffolds.transformer.training.numerics import has_learned_polynomial, is_odd_taylor, is_signed_kernel
+from scaffolds.transformer.training.numerics import (
+    has_learned_polynomial, has_sum_of_squares_kernel, is_odd_taylor, is_signed_kernel,
+)
 
 
 M0_PARAMETER_NOTE = (
@@ -69,6 +71,7 @@ def attention_identity(config) -> dict:
                               "learned_polynomial_unnormalized" if learned_polynomial else "taylor_unnormalized")
                              if not normalized else
                              "learned_quadratic" if mode != "fixed" else
+                             "learned_polynomial_sum_of_squares" if has_sum_of_squares_kernel(config.model) else
                              "learned_polynomial" if learned_polynomial else
                              "softmax" if degree is None else "taylor"),
         "attention_backend": config.model.attention_backend,
@@ -86,6 +89,12 @@ def attention_identity(config) -> dict:
                    f"causal_p_{degree}(QK^T / sqrt(d_k)) V, p_m(x) = sum_(n<=m) x^n / n!")
         identity.update(attention_formula=formula,
                         attention_score_scale="1/sqrt(d_k)", attention_output_normalization=False)
+    elif has_sum_of_squares_kernel(config.model):
+        identity.update(
+            attention_formula=(f"causal_p_{degree}(QK^T / sqrt(d_k)) V / rowsum, p(x) = q1(x)^2 + q2(x)^2, "
+                               f"deg q1 = {degree // 2}, deg q2 = {degree // 2 - 1}, learned "
+                               f"({config.model.attention_coefficient_sharing}) and initialized so p = T_{degree}"),
+            attention_score_scale="1/sqrt(d_k)", attention_output_normalization="positive_row_sum")
     elif learned_polynomial:
         identity.update(
             attention_formula=(f"causal_p_{degree}(QK^T / sqrt(d_k)) V / rowsum, p(x) = sum_(r<={degree}) c_r x^r, "
@@ -98,6 +107,7 @@ def attention_identity(config) -> dict:
     if learned_polynomial:
         identity.update({
             "attention_coefficients": "learned",
+            "attention_coefficient_parameterization": config.model.attention_coefficient_parameterization,
             "attention_coefficient_sharing": config.model.attention_coefficient_sharing,
             "attention_coefficient_count": (degree + 1) * (
                 1 if config.model.attention_coefficient_sharing == "global"
@@ -178,16 +188,29 @@ COEFFICIENT_NAMES = ("constant", "linear", "quadratic", "cubic", "quartic")
 
 
 def polynomial_coefficient_report(params, config) -> dict:
-    """Record the learned coefficients c_0..c_m, shared ([m+1]) or per layer and head ([L, H, m+1])."""
-    raw = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
+    """Record the learned coefficients c_0..c_m, shared ([m+1]) or per layer and head ([L, H, m+1]).
+
+    A sum-of-squares kernel records its square factors as the raw parameters and the
+    coefficients of q1^2 + q2^2 as the effective ones.
+    """
+    if has_sum_of_squares_kernel(config.model):
+        from scaffolds.transformer.attention.nonnegative_polynomial import effective_coefficients_numpy, factor_names
+
+        raw = np.asarray(jax.device_get(params["polynomial_square_factors"][...]), dtype=np.float64)
+        raw_names = factor_names(config.model.attention_degree)
+        effective = effective_coefficients_numpy(raw, config.model.attention_degree)
+    else:
+        raw = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
+        raw_names = [f"c{order}" for order in range(raw.shape[-1])]
+        effective = raw
     names = [COEFFICIENT_NAMES[order] if order < len(COEFFICIENT_NAMES) else f"degree_{order}"
-             for order in range(raw.shape[-1])]
+             for order in range(effective.shape[-1])]
     return {
-        "raw_parameter_names": [f"c{order}" for order in range(raw.shape[-1])],
+        "raw_parameter_names": raw_names,
         "raw": _serializable(raw),
         "effective_coefficient_names": names,
-        "effective": _serializable(raw),
-        "finite": bool(np.all(np.isfinite(raw))),
+        "effective": _serializable(effective),
+        "finite": bool(np.all(np.isfinite(raw)) and np.all(np.isfinite(effective))),
     }
 
 
@@ -284,9 +307,11 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                 # Signed kernels and negative nonzero sums are permitted. Exact
                 # zeros are detected in invalid_normalizer_count, not extrema.
                 continue
-            # Stable exact softmax may underflow individual weights to zero.
-            invalid = (value < 0 if (not config.model.attention_normalization or
-                                     name == "kernel_min" and config.model.attention_degree is None)
+            # Stable exact softmax may underflow individual weights to zero, and a sum of
+            # squares may be exactly zero at a common root; neither may be negative.
+            invalid = (value < 0 if (not config.model.attention_normalization or name == "kernel_min" and (
+                                         config.model.attention_degree is None
+                                         or has_sum_of_squares_kernel(config.model)))
                        else value <= 0)
             if math.isfinite(value) and invalid:
                 issues.append(f"layer {index}: invalid {name}={value}")
