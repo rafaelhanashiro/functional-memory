@@ -145,21 +145,44 @@ def figures(record: Path = RECORD, output: Path | None = None) -> None:
     series += [(label, CONTROL_COLORS[key], control_records(key)) for key, (label, _) in CONTROLS.items()
                if control_records(key)]
 
-    figure, axis = plt.subplots(figsize=(6.4, 3.6))
+    figure, axes = plt.subplots(1, 2, figsize=(10, 3.6))
     for label, color, records in series:
         steps = [entry["step"] / 1000 for entry in records]
         perplexities = [entry["validation_perplexity"] for entry in records]
-        axis.plot(steps, perplexities, color=color, label=label, **line)
-        axis.plot(steps[-1:], perplexities[-1:], "o", color=color, markersize=5, markeredgecolor="white",
-                  markeredgewidth=1.5)
-        axis.annotate(f"{perplexities[-1]:.2f}", (steps[-1], perplexities[-1]), xytext=(6, 0),
-                      textcoords="offset points", color=INK, fontsize=8, va="center")
-    _plain_log(axis)
-    axis.set_xlabel("Update (thousands)", color=INK, fontsize=9)
-    axis.set_ylabel("Held-out perplexity (log scale)", color=INK, fontsize=9)
-    axis.set_xlim(left=0)
-    _style(axis)
-    axis.legend(frameon=False, fontsize=8, labelcolor=INK, loc="upper right")
+        # Terminal values go in the legend: the curves end within 0.3 of one another.
+        axes[0].plot(steps, perplexities, color=color, label=f"{label} ({perplexities[-1]:.2f})", **line)
+        axes[0].plot(steps[-1:], perplexities[-1:], "o", color=color, markersize=5, markeredgecolor="white",
+                     markeredgewidth=1.5)
+    _plain_log(axes[0])
+    axes[0].set_xlabel("Update (thousands)", color=INK, fontsize=9)
+    axes[0].set_ylabel("Held-out perplexity (log scale)", color=INK, fontsize=9)
+    axes[0].set_xlim(left=0)
+    axes[0].legend(frameon=False, fontsize=8, labelcolor=INK, loc="upper right")
+    # The difference against the canonical-decay control, when that control is present.
+    reference = next((records for label, _, records in series if label == CONTROLS["canonical_decay"][0]), None)
+    if reference is not None:
+        by_step = {entry["step"]: entry["validation_perplexity"] for entry in reference}
+        for label, color, records in series:
+            if records is reference:
+                continue
+            common = [entry for entry in records if entry["step"] in by_step]
+            steps = [entry["step"] / 1000 for entry in common]
+            differences = [entry["validation_perplexity"] - by_step[entry["step"]] for entry in common]
+            axes[1].plot(steps, differences, color=color, label=label, **line)
+            axes[1].annotate(f"{differences[-1]:+.2f}", (steps[-1], differences[-1]), xytext=(6, 0),
+                             textcoords="offset points", color=INK, fontsize=8, va="center")
+        axes[1].axhline(0, color=MUTED, linewidth=0.8)
+        axes[1].set_ylim(-0.75, 0.75)
+        axes[1].set_xlim(left=0)
+        axes[1].set_xlabel("Update (thousands)", color=INK, fontsize=9)
+        axes[1].set_ylabel("Perplexity minus canonical-decay softmax", color=INK, fontsize=9)
+        axes[1].set_title("Difference from the canonical-decay control (update 1,000: +5.7, clipped)",
+                          color=INK, fontsize=9)
+        axes[1].legend(frameon=False, fontsize=8, labelcolor=INK, loc="lower right")
+    else:
+        axes[1].set_axis_off()
+    for axis in axes:
+        _style(axis)
     figure.tight_layout()
     save_figure(figure, directory / "learning_curves")
     plt.close(figure)

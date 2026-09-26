@@ -221,6 +221,28 @@ exact fresh-process resume): B300 in jobs 201997, 201999, and 202000 and H100 in
 and 0.452 s (m=4), were within 2% of the fixed-coefficient runs' 0.342 s and 0.455 s.
 These are pilot measurements, not a retained benchmark.
 
+## QK-norm cosine scores on B300
+
+QK-norm (`attention/qk_norm.py`) is a score option, not a kernel: the attention
+module unit-normalizes Q and K and pre-scales the queries so that the unchanged
+kernels compute `exp(gamma) cos(q, k)`. It first ran for the
+[QK-norm attention record](../../../experiments/qk_norm_attention/README.md)
+(exact softmax through cuDNN, `d_K = 64`). Its five GPU tests
+(`tests/test_qk_norm.py`) compare cuDNN softmax and the fused Taylor, unnormalized,
+and learned-polynomial kernels on cosine operands with the blocked reference at the
+full 2,048-token BF16 context, including the log-scale gradient; 44 CPU tests cover
+the mathematics against FP64. Before launch the GPU tests passed on one B300
+(`akita`, job 202131) at the scaffold-change tree `dd6f2f4`; the production
+allocation then passed the record's acceptance at source `aa5b6eb` (171 CPU tests,
+5 distributed, 12 GPU tests, the softmax-backbone initialization check, a 20-update
+full-recipe pilot on cuDNN at 0.202 s per update, and an exact resume) in job
+202215 on four B300s. H100 is not qualified for QK-norm: the first submission's two
+H100 attempts were preempted before their GPU stage. That first submission also
+exposed no defect in QK-norm; it failed on B300 because its GPU stage listed
+`tests/test_softmax_backends.py`, whose width-256 cuDNN cases B300 rejects
+(hidden dimension above 128 with `d_qk != d_v`), a known limit outside the
+recipe's widths.
+
 ## Reproduction
 
 From a worktree with the scaffold environment synced

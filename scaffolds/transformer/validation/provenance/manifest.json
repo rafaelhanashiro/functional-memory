@@ -242,6 +242,14 @@
       "capture": "sbatch stdout/stderr, pre-launch fused learned-polynomial GPU tests on one dogo H100",
       "state": "COMPLETED",
       "exit_code": "0:0"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/qk-norm-scores/slurm-202131.out",
+      "sha256": "4b96c3616f86d0401dc5b6012aced27ca951ef1008b218fb25608d7c980d2da3",
+      "slurm_job_id": "202131",
+      "capture": "sbatch stdout/stderr, pre-launch QK-norm cosine-score GPU tests on one akita B300",
+      "state": "COMPLETED",
+      "exit_code": "0:0"
     }
   ],
   "source_limitation": "Raw benchmark source_commit captured the surrounding checkout parent while the extraction was uncommitted. The preserved frozen snapshot matches all 53 Python files at 2e0e88d. The final shared implementation is committed at d493a41; an immutable hash of its benchmark-time dirty tree was not recorded.",
@@ -361,6 +369,36 @@
         }
       },
       "evidence": "experiments/learned_unnormalized_taylor/provenance/manifest.json, per-run acceptance"
+    },
+    "qk_norm_cosine_scores": {
+      "scope": "QK-norm cosine scores (attention/qk_norm.py): unit-normalized Q/K pre-scaled so the unchanged kernels compute exp(gamma) cos(q, k); qualified for exact softmax through cuDNN at d_K = 64 for the qk_norm_attention recipe",
+      "source_commit": {
+        "pre_launch": "dd6f2f47e18cb931d8c186d084749bbbd481174f",
+        "acceptance": "aa5b6eb34d8b57533cdfe04fe263906e69d30091"
+      },
+      "tests": "scaffolds/transformer/tests/test_qk_norm.py (5 GPU cases: cuDNN softmax and the fused Taylor, unnormalized, and learned-polynomial kernels on cosine operands at the 2,048-token BF16 context, including the log-scale gradient) plus 44 QK-norm CPU tests",
+      "pre_launch": {
+        "b300": "5 passed, job 202131 (akita)",
+        "logs": [
+          "scaffolds/transformer/validation/logs/qk-norm-scores/slurm-202131.out"
+        ]
+      },
+      "b300": {
+        "jobs": [
+          "202215"
+        ],
+        "gpu_tests_passed": 12,
+        "full_recipe_pilot_and_resume": "passed",
+        "pilot_step_seconds_median": 0.2022,
+        "note": "12 = the 5 QK-norm gates plus test_attention.py's 7 GPU cases (cuDNN softmax control at width 64 and the blocked bf16 context)"
+      },
+      "h100": {
+        "jobs": [],
+        "note": "Not qualified: job 202156's two H100 attempts were preempted during acceptance's CPU tests before the GPU stage."
+      },
+      "known_limitation_encountered": "job 202156 on B300 failed acceptance because its GPU stage included test_softmax_backends.py, whose width-256 cuDNN cases B300 rejects (hidden_dim > 128 with d_qk != d_v); unrelated to QK-norm, removed from the recipe's GPU stage",
+      "defects_fixed": [],
+      "evidence": "experiments/qk_norm_attention/provenance/manifest.json, run acceptance and pre_launch_validation"
     }
   },
   "runs": [
