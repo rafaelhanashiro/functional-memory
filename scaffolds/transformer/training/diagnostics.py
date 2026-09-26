@@ -68,7 +68,9 @@ def attention_identity(config) -> dict:
         "attention_kernel": (("exp_unnormalized" if degree is None else
                               "learned_polynomial_unnormalized" if learned_polynomial else "taylor_unnormalized")
                              if not normalized else
-                             "learned_quadratic" if mode != "fixed" else "softmax" if degree is None else "taylor"),
+                             "learned_quadratic" if mode != "fixed" else
+                             "learned_polynomial" if learned_polynomial else
+                             "softmax" if degree is None else "taylor"),
         "attention_backend": config.model.attention_backend,
         "attention_backend_requested": getattr(config, "_attention_backend_request", config.model.attention_backend),
         "attention_implementation": config.model.attention_backend,
@@ -84,6 +86,11 @@ def attention_identity(config) -> dict:
                    f"causal_p_{degree}(QK^T / sqrt(d_k)) V, p_m(x) = sum_(n<=m) x^n / n!")
         identity.update(attention_formula=formula,
                         attention_score_scale="1/sqrt(d_k)", attention_output_normalization=False)
+    elif learned_polynomial:
+        identity.update(
+            attention_formula=(f"causal_p_{degree}(QK^T / sqrt(d_k)) V / rowsum, p(x) = sum_(r<={degree}) c_r x^r, "
+                               f"learned c ({config.model.attention_coefficient_sharing}) initialized at 1/r!"),
+            attention_score_scale="1/sqrt(d_k)", attention_output_normalization="signed_row_sum")
     if hasattr(config, "_attention_backend_resume_request"):
         identity["attention_backend_resume_requested"] = config._attention_backend_resume_request
     if is_signed_kernel(config.model):
@@ -311,6 +318,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                            "unshifted_learned_polynomial" if has_learned_polynomial(config.model) else "unshifted_taylor")
                           if not config.model.attention_normalization else
                           "unshifted_learned_quadratic" if config.model.quadratic_mode != "fixed" else
+                          "unshifted_learned_polynomial" if has_learned_polynomial(config.model) else
                           "row_max_shifted_exp" if config.model.attention_degree is None else "unshifted_taylor"),
         "layers": layers,
         "valid": not issues,

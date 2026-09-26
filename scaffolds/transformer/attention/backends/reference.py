@@ -39,7 +39,8 @@ def blocked_dot_product_attention(
     and negative nonzero normalizers. Stable exact exponentials may underflow to zero.
     Without normalization, the exponential, fixed Taylor, or learned polynomial
     kernel multiplies V directly; its row sum is measured but never divided by.
-    Learned polynomial coefficients ([m+1] or [heads, m+1]) permit signed kernels.
+    Learned polynomial coefficients ([m+1] or [heads, m+1]) permit signed kernels;
+    with normalization they divide by the signed row sum like odd Taylor kernels.
     Diagnostics exclude padded queries and masked future entries.
     """
     _validate_degree(attention_degree)
@@ -54,8 +55,8 @@ def blocked_dot_product_attention(
     if quadratic_mode == "fixed" and coefficients is not None:
         raise ValueError("Fixed attention does not accept learned coefficients")
     if polynomial_coefficients is not None:
-        if attention_normalization or quadratic_mode != "fixed":
-            raise ValueError("Learned polynomial coefficients require unnormalized attention without a quadratic mode")
+        if quadratic_mode != "fixed":
+            raise ValueError("Learned polynomial coefficients exclude the learned quadratic modes")
         if attention_degree is None or attention_degree < 1:
             raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
     signed = polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (

@@ -81,6 +81,7 @@ The existing scientific configuration fields remain supported:
 | `attention_degree: null`, `attention_normalization: false` | Unnormalized causal `exp(QKᵀ / sqrt(d_K)) V` |
 | Nonnegative `attention_degree`, `attention_normalization: false` | Unnormalized fixed Taylor `p_m(QKᵀ / sqrt(d_K)) V`; odd degrees permit signed weights |
 | `attention_degree: m >= 1`, `attention_normalization: false`, `attention_coefficients: learned` | Unnormalized `sum_r c_r (QKᵀ / sqrt(d_K))^r V` with every coefficient learned from `1/r!`; signed |
+| `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Row-normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; blocked reference only |
 | `attention_degree: 0` | Uniform causal-prefix averaging |
 | Nonnegative `attention_degree`, `quadratic_mode: fixed` | Fixed Taylor polynomial; odd degrees permit signed weights |
 | `attention_degree: 2`, `quadratic_mode: positive` | Learned `0.5 * (1 + (a*s+b)^2)` |
@@ -91,10 +92,13 @@ The existing scientific configuration fields remain supported:
 `per_head` stores `[num_layers, num_heads, 2]`. Each layer keeps its own projections.
 Learned polynomial coefficients are the `polynomial_coefficients` array: `[m + 1]`
 with `attention_coefficient_sharing: global`, `[num_layers, num_heads, m + 1]` with
-`per_head`, FP32, without weight decay. They require unnormalized attention; the
-blocked reference evaluates them by Horner's rule, and
+`per_head`, FP32, without weight decay. The blocked reference evaluates them by
+Horner's rule with or without row normalization. Without normalization,
 `attention/backends/fused_learned_polynomial.py` is the fused kernel, whose custom
 backward also returns each head's coefficient gradient `sum_{i>=j} S_ij^r (dY_i · V_j)`.
+With normalization (`attention/learned_polynomial.py`) the weights divide by the
+signed row sum, as for odd Taylor and unrestricted quadratic kernels; there is no
+fused kernel, `attention_backend: auto` resolves to `blocked`, and `fused` is rejected.
 
 ### QK-norm (cosine scores)
 

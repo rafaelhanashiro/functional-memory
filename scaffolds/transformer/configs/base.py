@@ -55,8 +55,9 @@ class ModelConfig:
     gla_use_rope: bool = True
     quadratic_mode: Literal["fixed", "positive", "unrestricted"] = "fixed"
     quadratic_sharing: Literal["global", "per_head"] = "global"
-    # Unnormalized degree-m kernels may learn every coefficient c_0..c_m of
-    # sum_r c_r s^r, starting from the Taylor values 1/r!.
+    # Degree-m kernels may learn every coefficient c_0..c_m of sum_r c_r s^r,
+    # starting from the Taylor values 1/r!; without row normalization through the
+    # fused kernel, with it through the blocked reference (signed row sums).
     attention_coefficients: Literal["fixed", "learned"] = "fixed"
     attention_coefficient_sharing: Literal["global", "per_head"] = "global"
     # Cosine scores for any dot-product mechanism: s = exp(gamma) * cos(q, k) with a
@@ -134,8 +135,9 @@ class ModelConfig:
         if self.attention_coefficients == "learned":
             if self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed":
                 raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")
-            if self.attention_normalization:
-                raise ValueError("Learned polynomial coefficients require attention_normalization=false")
+            if self.attention_normalization and self.attention_backend == "fused":
+                raise ValueError("Normalized learned polynomial coefficients have no fused kernel; "
+                                 "use attention_backend blocked or auto")
             if self.attention_degree is None or self.attention_degree < 1:
                 raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
         if not isinstance(self.qk_norm, bool):
