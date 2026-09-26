@@ -1,0 +1,460 @@
+{
+  "format": "functional-memory-experiment-setup",
+  "version": 2,
+  "experiment": "qk_norm_learned_taylor",
+  "status": "running",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "execution_checkout": "worktrees/qk_norm_learned_taylor",
+  "documentation": "experiments/qk_norm_learned_taylor/README.md",
+  "scaffold": "scaffolds/transformer",
+  "branch": "qk-norm-learned-taylor",
+  "branch_base_commit": "f898c382039ad503a0afcc98610fe5c4dbc95805",
+  "launch_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+  "frozen_execution_set_sha256": "15729bb98f52a1b86173c1d2891b12b3165ba1961f72d1192fe370a717c0f156",
+  "scientific_change": "Learned per-head polynomial kernels p_{l,h}(s) = sum_{r<=m} c_{l,h,r} s^r, m = 1-4, initialized at the Taylor values 1/r!, over QK-norm cosine scores s = exp(gamma_{l,h}) cos(q, k) with gamma learned per layer and head from log(sqrt(d_K)); run without row normalization (fused kernel) and with signed row-sum normalization (blocked reference, the first normalized learned polynomials in the repository); canonical selective weight decay",
+  "requested": {
+    "date": "2026-09-26",
+    "from_cluster": "kennel",
+    "degrees": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "normalization": [
+      "unnormalized",
+      "normalized"
+    ],
+    "sharing": "per_head",
+    "coefficients": "unrestricted, including the constant",
+    "qk_norm_initial_scale": 8.0
+  },
+  "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+  "shared_dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+  },
+  "data_identity": {
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    }
+  },
+  "comparison_controls": {
+    "unnormalized_learned_no_qk_norm_m1": {
+      "run": "experiments/learned_unnormalized_taylor/runs/200m-m001-seed0",
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "validation_nll": 3.0307921767234802,
+      "validation_perplexity": 20.713634951214132,
+      "weight_decay_policy": "all parameters"
+    },
+    "unnormalized_fixed_taylor_no_qk_norm_m1": {
+      "run": "experiments/unnormalized_taylor_attention/runs/200m-m001-seed0",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "validation_nll": 3.033512370926993,
+      "validation_perplexity": 20.770056765297024,
+      "weight_decay_policy": "all parameters"
+    },
+    "unnormalized_learned_no_qk_norm_m2": {
+      "run": "experiments/learned_unnormalized_taylor/runs/200m-m002-seed0",
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "validation_nll": 2.9986991456576755,
+      "validation_perplexity": 20.059425552490385,
+      "weight_decay_policy": "all parameters"
+    },
+    "unnormalized_fixed_taylor_no_qk_norm_m2": {
+      "run": "experiments/unnormalized_taylor_attention/runs/200m-m002-seed0",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "validation_nll": 3.1572411145482744,
+      "validation_perplexity": 23.50565697562782,
+      "weight_decay_policy": "all parameters"
+    },
+    "unnormalized_learned_no_qk_norm_m3": {
+      "run": "experiments/learned_unnormalized_taylor/runs/200m-m003-seed0",
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "validation_nll": 2.919478850705283,
+      "validation_perplexity": 18.531627198301937,
+      "weight_decay_policy": "all parameters"
+    },
+    "unnormalized_fixed_taylor_no_qk_norm_m3": {
+      "run": "experiments/unnormalized_taylor_attention/runs/200m-m003-seed0",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "validation_nll": 3.0076456921441213,
+      "validation_perplexity": 20.239693320274547,
+      "weight_decay_policy": "all parameters"
+    },
+    "unnormalized_learned_no_qk_norm_m4": {
+      "run": "experiments/learned_unnormalized_taylor/runs/200m-m004-seed0",
+      "source_commit": "788a085e24225872495199e8040ec1167070a691",
+      "validation_nll": 3.002697936126164,
+      "validation_perplexity": 20.13979958454915,
+      "weight_decay_policy": "all parameters"
+    },
+    "unnormalized_fixed_taylor_no_qk_norm_m4": {
+      "run": "experiments/unnormalized_taylor_attention/runs/200m-m004-seed0",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "validation_nll": 3.0662785853658403,
+      "validation_perplexity": 21.46188530439321,
+      "weight_decay_policy": "all parameters"
+    },
+    "qk_norm_softmax": {
+      "run": "experiments/qk_norm_attention/runs/200m-qk-softmax-seed0",
+      "source_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
+      "validation_nll": 2.671205988952092,
+      "validation_perplexity": 14.457394141153632,
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+    },
+    "softmax_canonical_decay": {
+      "run": "experiments/decay_policy_baseline/runs/200m-softmax-seed0",
+      "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
+      "validation_nll": 2.6854977863175526,
+      "validation_perplexity": 14.665499848737895,
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+    },
+    "softmax_original_decay": {
+      "run": "experiments/key_dimension_taylor/runs/200m-softmax-seed0",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "validation_nll": 2.6874512689454213,
+      "validation_perplexity": 14.69417664861716,
+      "weight_decay_policy": "all parameters"
+    },
+    "normalized_fixed_taylor_no_qk_norm": {
+      "m2": {
+        "run": "experiments/key_dimension_taylor/runs/200m-m002-seed0",
+        "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+        "validation_nll": 2.7900009751319885,
+        "validation_perplexity": 16.281035677939382
+      },
+      "m4": {
+        "run": "experiments/key_dimension_taylor/runs/200m-m004-seed0",
+        "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+        "validation_nll": 2.7069559693336487,
+        "validation_perplexity": 14.983595500270773
+      },
+      "m1": "numerical failure at update 9 (experiments/odd_taylor_attention)",
+      "m3": "numerical failure at update 17 (experiments/odd_taylor_attention)",
+      "weight_decay_policy": "all parameters"
+    }
+  },
+  "runs": [
+    {
+      "name": "200m-qk-m001-unnormalized-seed0",
+      "attention_degree": 1,
+      "attention_normalization": false,
+      "attention_kernel": "learned_polynomial_unnormalized",
+      "attention_backend": "fused",
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
+      "qk_norm_initial_scale": 8.0,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/qk_norm_learned_taylor/configs/200m-qk-m001-unnormalized-seed0.yaml",
+        "sha256": "689a5a4d8f50e61752b5d871e2569f3794b77adff3dd7c07f9bf2a1e87166226"
+      },
+      "parameter_count": 199906784,
+      "coefficient_count": 320,
+      "qk_norm_parameter_count": 160,
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "slurm_job_ids": [
+        202337
+      ],
+      "partition": "sweep",
+      "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+      "submitted_utc": "2026-09-26T06:43:52+00:00",
+      "run_record": "experiments/qk_norm_learned_taylor/runs/200m-qk-m001-unnormalized-seed0",
+      "log_directory": "experiments/qk_norm_learned_taylor/logs/200m-qk-m001-unnormalized-seed0",
+      "checkpoint_directory": "experiments/qk_norm_learned_taylor/checkpoints/200m-qk-m001-unnormalized-seed0",
+      "attempts": [
+        {
+          "slurm_job_id": "202337",
+          "restart": 0,
+          "outcome": "submitted at launch commit 696ffb5"
+        }
+      ]
+    },
+    {
+      "name": "200m-qk-m001-normalized-seed0",
+      "attention_degree": 1,
+      "attention_normalization": true,
+      "attention_kernel": "learned_polynomial",
+      "attention_backend": "blocked",
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
+      "qk_norm_initial_scale": 8.0,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/qk_norm_learned_taylor/configs/200m-qk-m001-normalized-seed0.yaml",
+        "sha256": "3aaaf8031f6b5db0bc9825bdeb2f354e5b4a9d32c09112fee3e3d847e76d8fab"
+      },
+      "parameter_count": 199906784,
+      "coefficient_count": 320,
+      "qk_norm_parameter_count": 160,
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "slurm_job_ids": [
+        202338
+      ],
+      "partition": "sweep",
+      "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+      "submitted_utc": "2026-09-26T06:43:53+00:00",
+      "run_record": "experiments/qk_norm_learned_taylor/runs/200m-qk-m001-normalized-seed0",
+      "log_directory": "experiments/qk_norm_learned_taylor/logs/200m-qk-m001-normalized-seed0",
+      "checkpoint_directory": "experiments/qk_norm_learned_taylor/checkpoints/200m-qk-m001-normalized-seed0",
+      "attempts": [
+        {
+          "slurm_job_id": "202338",
+          "restart": 0,
+          "outcome": "submitted at launch commit 696ffb5"
+        }
+      ]
+    },
+    {
+      "name": "200m-qk-m002-unnormalized-seed0",
+      "attention_degree": 2,
+      "attention_normalization": false,
+      "attention_kernel": "learned_polynomial_unnormalized",
+      "attention_backend": "fused",
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
+      "qk_norm_initial_scale": 8.0,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/qk_norm_learned_taylor/configs/200m-qk-m002-unnormalized-seed0.yaml",
+        "sha256": "72a8871ff95672c5b9f5cd5d72821d5aaacc75d40d0185e0f23b77f5f29ebd86"
+      },
+      "parameter_count": 199906944,
+      "coefficient_count": 480,
+      "qk_norm_parameter_count": 160,
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "slurm_job_ids": [
+        202339
+      ],
+      "partition": "sweep",
+      "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+      "submitted_utc": "2026-09-26T06:43:53+00:00",
+      "run_record": "experiments/qk_norm_learned_taylor/runs/200m-qk-m002-unnormalized-seed0",
+      "log_directory": "experiments/qk_norm_learned_taylor/logs/200m-qk-m002-unnormalized-seed0",
+      "checkpoint_directory": "experiments/qk_norm_learned_taylor/checkpoints/200m-qk-m002-unnormalized-seed0",
+      "attempts": [
+        {
+          "slurm_job_id": "202339",
+          "restart": 0,
+          "outcome": "submitted at launch commit 696ffb5"
+        }
+      ]
+    },
+    {
+      "name": "200m-qk-m002-normalized-seed0",
+      "attention_degree": 2,
+      "attention_normalization": true,
+      "attention_kernel": "learned_polynomial",
+      "attention_backend": "blocked",
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
+      "qk_norm_initial_scale": 8.0,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/qk_norm_learned_taylor/configs/200m-qk-m002-normalized-seed0.yaml",
+        "sha256": "9d647d65d74cea6f4aaeca9d14f6708353cecbdce9666de064f735c28cbcea3b"
+      },
+      "parameter_count": 199906944,
+      "coefficient_count": 480,
+      "qk_norm_parameter_count": 160,
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "slurm_job_ids": [
+        202340
+      ],
+      "partition": "sweep",
+      "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+      "submitted_utc": "2026-09-26T06:43:53+00:00",
+      "run_record": "experiments/qk_norm_learned_taylor/runs/200m-qk-m002-normalized-seed0",
+      "log_directory": "experiments/qk_norm_learned_taylor/logs/200m-qk-m002-normalized-seed0",
+      "checkpoint_directory": "experiments/qk_norm_learned_taylor/checkpoints/200m-qk-m002-normalized-seed0",
+      "attempts": [
+        {
+          "slurm_job_id": "202340",
+          "restart": 0,
+          "outcome": "submitted at launch commit 696ffb5"
+        }
+      ]
+    },
+    {
+      "name": "200m-qk-m003-unnormalized-seed0",
+      "attention_degree": 3,
+      "attention_normalization": false,
+      "attention_kernel": "learned_polynomial_unnormalized",
+      "attention_backend": "fused",
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
+      "qk_norm_initial_scale": 8.0,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/qk_norm_learned_taylor/configs/200m-qk-m003-unnormalized-seed0.yaml",
+        "sha256": "8697b82b3212a01c2b19c06b9d446b05df79bdc1e09725fcc12bf50fb93a72ca"
+      },
+      "parameter_count": 199907104,
+      "coefficient_count": 640,
+      "qk_norm_parameter_count": 160,
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "slurm_job_ids": [
+        202341
+      ],
+      "partition": "sweep",
+      "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+      "submitted_utc": "2026-09-26T06:43:53+00:00",
+      "run_record": "experiments/qk_norm_learned_taylor/runs/200m-qk-m003-unnormalized-seed0",
+      "log_directory": "experiments/qk_norm_learned_taylor/logs/200m-qk-m003-unnormalized-seed0",
+      "checkpoint_directory": "experiments/qk_norm_learned_taylor/checkpoints/200m-qk-m003-unnormalized-seed0",
+      "attempts": [
+        {
+          "slurm_job_id": "202341",
+          "restart": 0,
+          "outcome": "submitted at launch commit 696ffb5"
+        }
+      ]
+    },
+    {
+      "name": "200m-qk-m003-normalized-seed0",
+      "attention_degree": 3,
+      "attention_normalization": true,
+      "attention_kernel": "learned_polynomial",
+      "attention_backend": "blocked",
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
+      "qk_norm_initial_scale": 8.0,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/qk_norm_learned_taylor/configs/200m-qk-m003-normalized-seed0.yaml",
+        "sha256": "24b668cef3454928157d57fec33380e1874268b77656ab1b995883e545d3b296"
+      },
+      "parameter_count": 199907104,
+      "coefficient_count": 640,
+      "qk_norm_parameter_count": 160,
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "slurm_job_ids": [
+        202342
+      ],
+      "partition": "sweep",
+      "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+      "submitted_utc": "2026-09-26T06:43:53+00:00",
+      "run_record": "experiments/qk_norm_learned_taylor/runs/200m-qk-m003-normalized-seed0",
+      "log_directory": "experiments/qk_norm_learned_taylor/logs/200m-qk-m003-normalized-seed0",
+      "checkpoint_directory": "experiments/qk_norm_learned_taylor/checkpoints/200m-qk-m003-normalized-seed0",
+      "attempts": [
+        {
+          "slurm_job_id": "202342",
+          "restart": 0,
+          "outcome": "submitted at launch commit 696ffb5"
+        }
+      ]
+    },
+    {
+      "name": "200m-qk-m004-unnormalized-seed0",
+      "attention_degree": 4,
+      "attention_normalization": false,
+      "attention_kernel": "learned_polynomial_unnormalized",
+      "attention_backend": "fused",
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
+      "qk_norm_initial_scale": 8.0,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/qk_norm_learned_taylor/configs/200m-qk-m004-unnormalized-seed0.yaml",
+        "sha256": "64c1a4e1956f3f130be158e50e97d31fa3b2b4a71cc55803dd0655f7570953e0"
+      },
+      "parameter_count": 199907264,
+      "coefficient_count": 800,
+      "qk_norm_parameter_count": 160,
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "slurm_job_ids": [
+        202343
+      ],
+      "partition": "sweep",
+      "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+      "submitted_utc": "2026-09-26T06:43:53+00:00",
+      "run_record": "experiments/qk_norm_learned_taylor/runs/200m-qk-m004-unnormalized-seed0",
+      "log_directory": "experiments/qk_norm_learned_taylor/logs/200m-qk-m004-unnormalized-seed0",
+      "checkpoint_directory": "experiments/qk_norm_learned_taylor/checkpoints/200m-qk-m004-unnormalized-seed0",
+      "attempts": [
+        {
+          "slurm_job_id": "202343",
+          "restart": 0,
+          "outcome": "submitted at launch commit 696ffb5"
+        }
+      ]
+    },
+    {
+      "name": "200m-qk-m004-normalized-seed0",
+      "attention_degree": 4,
+      "attention_normalization": true,
+      "attention_kernel": "learned_polynomial",
+      "attention_backend": "blocked",
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
+      "qk_norm_initial_scale": 8.0,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/qk_norm_learned_taylor/configs/200m-qk-m004-normalized-seed0.yaml",
+        "sha256": "f835cf2bae3a93955603c71176ee54131f14cf77e6b57855ffa5fcf3562200f4"
+      },
+      "parameter_count": 199907264,
+      "coefficient_count": 800,
+      "qk_norm_parameter_count": 160,
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "slurm_job_ids": [
+        202344
+      ],
+      "partition": "sweep",
+      "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+      "submitted_utc": "2026-09-26T06:43:53+00:00",
+      "run_record": "experiments/qk_norm_learned_taylor/runs/200m-qk-m004-normalized-seed0",
+      "log_directory": "experiments/qk_norm_learned_taylor/logs/200m-qk-m004-normalized-seed0",
+      "checkpoint_directory": "experiments/qk_norm_learned_taylor/checkpoints/200m-qk-m004-normalized-seed0",
+      "attempts": [
+        {
+          "slurm_job_id": "202344",
+          "restart": 0,
+          "outcome": "submitted at launch commit 696ffb5"
+        }
+      ]
+    }
+  ],
+  "pre_launch_validation": {
+    "cpu_tests": "Full scaffold CPU suite plus the adapter tests at the launch tree: 673 passed, 14 skipped, 0 failed (10 min). Targeted first: 170 learned-polynomial, normalized learned-polynomial, backend-resolution, and configuration tests.",
+    "gpu_tests": {
+      "B300": "35 passed (slurm 202336, akita, 71 s): the 26 fused learned-polynomial kernel cases, the 5 QK-norm cosine-operand gates, and 4 blocked normalized learned-polynomial cases at the 2,048-token BF16 context with FP64 prefix comparison (degree 1 compared at scale 2, where its signed row sums are well conditioned)",
+      "earlier_attempts": "jobs 202334 and 202335 failed only the new degree-1 FP64 prefix comparison at scale 8 (output 0.8% and constant-coefficient gradient 30% off FP64 through signed-row-sum cancellation); the test was reconditioned, not the code",
+      "log": {
+        "path": "scaffolds/transformer/validation/logs/normalized-learned-polynomial/slurm-202336.out",
+        "sha256": "2f31671700eb4e0740b381f1573a807f5adc18f1e9a96b1fa4d951c575eb0283",
+        "location": "primary checkout on Kennel, ignored by Git; to be entered in the scaffold validation record with the runs' acceptance"
+      }
+    },
+    "acceptance": "Runs in each production allocation before training: the adapter's CPU tests, GPU tests, the softmax-backbone initialization check, a 20-update full-recipe pilot on the recipe's explicit backend, and an exact fresh-process resume."
+  },
+  "artifact_locations": {
+    "runs": "experiments/qk_norm_learned_taylor/runs/<run> (committed at completion)",
+    "checkpoints": "experiments/qk_norm_learned_taylor/checkpoints/<run>/<step> (ignored; in the execution checkout while running, then under artifact_root)",
+    "logs": "experiments/qk_norm_learned_taylor/logs/<run>/slurm-<job>.out (ignored; in the execution checkout while running, then under artifact_root)"
+  }
+}
