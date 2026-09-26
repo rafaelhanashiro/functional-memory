@@ -244,14 +244,28 @@ def save_figure(figure, stem: Path, *, dpi: int = 180, **options) -> list[Path]:
 GPU_TYPES = ("B300", "H200", "H100", "A100", "A6000")
 
 
+def recorded_gpu_type(metadata: dict) -> str:
+    """The GPU type a run's metadata records; several types join with '/', none gives 'unrecorded'.
+
+    Current runs record device kinds under `execution_runtime`; older records kept only
+    a `hardware_history`, which is searched for known GPU names.
+    """
+    runtime = metadata.get("execution_runtime")
+    if runtime:
+        kinds = {device["kind"] for device in runtime["devices"]}
+        return next((name for name in GPU_TYPES if all(name in kind for kind in kinds)), "/".join(sorted(kinds)))
+    text = json.dumps(metadata.get("hardware_history", []))
+    found = [name for name in GPU_TYPES if name in text]
+    return "/".join(found) if found else "unrecorded"
+
+
 def terminal_row(run_directory: Path) -> dict:
     """Terminal and validation-best metrics of one completed run, from its run files."""
     run_directory = Path(run_directory)
     completion = json.loads((run_directory / "completion.json").read_text())
     best = json.loads((run_directory / "best_validation.json").read_text())
     metadata = json.loads((run_directory / "metadata.json").read_text())
-    kinds = {device["kind"] for device in metadata["execution_runtime"]["devices"]}
-    gpu_type = next((name for name in GPU_TYPES if all(name in kind for kind in kinds)), "/".join(sorted(kinds)))
+    gpu_type = recorded_gpu_type(metadata)
     return {
         "parameters": completion["parameter_count"], "updates": completion["final_step"],
         "prediction_tokens": completion["training_tokens"],

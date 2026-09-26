@@ -1,0 +1,313 @@
+{
+  "format": "functional-memory-experiment-setup",
+  "version": 2,
+  "experiment": "decay_policy_baseline",
+  "status": "completed",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "execution_checkout": "worktrees/decay_policy_baseline",
+  "documentation": "experiments/decay_policy_baseline/README.md",
+  "scaffold": "scaffolds/transformer",
+  "branch": "claude/decay-policy-baseline",
+  "branch_base_commit": "8bdc5e22be0ff7b42e412062569985136a883b0d",
+  "launch_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
+  "frozen_execution_set_sha256": "4f2f713944033bc0e8aadaff6049f6832a14eded3452f54ed91e288657d64203",
+  "scientific_change": "The retained 200M exact-softmax reference (d_K = 64, seed 0) retrained under the canonical weight-decay policy exclude_embeddings_norms_biases_v1 (AdamW decay 0.1 on projection matrices including the output vocabulary projection; none on the token embedding, RMSNorm scales, or biases); recipe otherwise identical to the control",
+  "requested": {
+    "date": "2026-09-25",
+    "from_cluster": "kennel",
+    "purpose": "decide whether old-policy records stay comparable to new runs or are rerun per experiment"
+  },
+  "shared_dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+  },
+  "data_identity": {
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    }
+  },
+  "comparison_controls": {
+    "softmax_decay_all_parameters": {
+      "run": "experiments/key_dimension_taylor/runs/200m-softmax-seed0",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "weight_decay_policy": "AdamW decay 0.1 on every parameter (pre-cb31558 scaffold)",
+      "validation_nll": 2.6874512689454213,
+      "validation_perplexity": 14.69417664861716
+    }
+  },
+  "runs": [
+    {
+      "name": "200m-softmax-seed0",
+      "attention_kernel": "softmax",
+      "qk_head_dim": 64,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "completed",
+      "config": {
+        "path": "experiments/decay_policy_baseline/configs/200m-softmax-seed0.yaml",
+        "sha256": "e47598022fe93bd7bc0d7b1755ceeb34037c1b1e5e027d033d23166b3c2b747d"
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "parameter_count": 199906304,
+      "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
+      "slurm_job_ids": [
+        202148,
+        202161,
+        202186,
+        202190
+      ],
+      "submission": "202148: sbatch --gres=gpu:h100:4 at launch commit f8d4f0d, cancelled while pending (four H100s were not expected before the next day); 202161: resubmitted through scaffolds/transformer/launchers/kennel.sbatch (sweep partition, any 4 B300 or H100, requeue, append-mode log); 202161 cancelled while pending (its 2-day limit could not backfill around a higher-priority 8-H100 reservation); 202186: same launch commit, resubmitted with --time=08:00:00 (acceptance plus training need about 3.5 h on 4 H100); 202186 (launch commit 126d72a) started on dogo and failed acceptance's cpu-tests stage because the adapter's regeneration test skipped before completion; 202190: launch commit 381f1fd with that test fixed, --time=08:00:00, any 4 B300 or H100",
+      "run_record": "experiments/decay_policy_baseline/runs/200m-softmax-seed0",
+      "acceptance_gpu_tests": "cuDNN softmax parity and production-context checks at d_K = 2, 4, 8, 16, 32, 64, 128",
+      "start": "fresh initialization",
+      "hardware": "4x NVIDIA H100 80GB HBM3 (dogo) for acceptance and updates 1-1,464; 4x NVIDIA B300 SXM6 AC (akita) from the update-1,000 checkpoint to 19,074; sweep partition",
+      "hardware_summary": "H100 dogo to update 1,000 checkpoint, then B300 akita",
+      "training_updates": 19074,
+      "prediction_tokens": 10000269312,
+      "terminal_validation_nll": 2.6854977863175526,
+      "terminal_validation_perplexity": 14.665499848737895,
+      "best_validation": {
+        "selection_rule": "lowest_validation_nll",
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.6854977863175526,
+        "validation_perplexity": 14.665499848737895
+      },
+      "completed_utc": "2026-09-25T23:35:49.944451+00:00",
+      "wandb": {
+        "run_id": "2a3a4d814bf242f8b5f9244bd06a8544",
+        "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/2a3a4d814bf242f8b5f9244bd06a8544"
+      },
+      "attempts": "202186 (launch commit 126d72a) failed acceptance's cpu-tests stage; 202190 (launch commit 381f1fd) was preempted three times by conference-partition jobs on dogo, requeued each time, and completed on akita",
+      "acceptance": {
+        "H100-4": {
+          "status": "passed",
+          "completed_utc": "2026-09-25T22:05:09.643361+00:00",
+          "identity": "e9563d6956f4f2a32da8886190818536b2bd829949c048aa4971a277329b3a90",
+          "slurm_job_id": "202190",
+          "slurm_restart_count": "2",
+          "device_kinds": [
+            "NVIDIA H100 80GB HBM3"
+          ],
+          "package_versions": {
+            "flax": "0.12.7",
+            "jax": "0.10.0",
+            "optax": "0.2.8",
+            "orbax-checkpoint": "0.11.40"
+          },
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "cpu_tests_passed": 158,
+          "cpu_distributed_tests_passed": 5,
+          "gpu_tests_passed": 14,
+          "gpu_tests": "cuDNN softmax parity and production-context checks at d_K = 2, 4, 8, 16, 32, 64, 128",
+          "initialization": {
+            "parameter_count": 199906304,
+            "parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+          },
+          "pilot": {
+            "final_step": 20,
+            "validation_nll": null,
+            "attention_implementation": "cudnn",
+            "checkpoint_state_sha256": "bf20fd67fbd5ac65b1fd0831d67dfeda10163b9d04aae12f399e20c7d57ecb98"
+          },
+          "resume": {
+            "final_step": 21,
+            "checkpoint_state_sha256": "d033b347f6cdc90eedc09eaf6f6e960e066eac91570fcc0953908cd089c4ed5a",
+            "audit": "live state equals durable checkpoint; next batch and RNG match the pilot's"
+          }
+        },
+        "B300-4": {
+          "status": "passed",
+          "completed_utc": "2026-09-25T22:28:30.316321+00:00",
+          "identity": "1a14d67465ca38d6f8b57bc3013b9ebdfd981ab8764988a2ce6a41d1732382a8",
+          "slurm_job_id": "202190",
+          "slurm_restart_count": "3",
+          "device_kinds": [
+            "NVIDIA B300 SXM6 AC"
+          ],
+          "package_versions": {
+            "flax": "0.12.7",
+            "jax": "0.10.0",
+            "optax": "0.2.8",
+            "orbax-checkpoint": "0.11.40"
+          },
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "cpu_tests_passed": 158,
+          "cpu_distributed_tests_passed": 5,
+          "gpu_tests_passed": 14,
+          "gpu_tests": "cuDNN softmax parity and production-context checks at d_K = 2, 4, 8, 16, 32, 64, 128",
+          "initialization": {
+            "parameter_count": 199906304,
+            "parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+          },
+          "pilot": {
+            "final_step": 20,
+            "validation_nll": null,
+            "attention_implementation": "cudnn",
+            "checkpoint_state_sha256": "f373300e6a610c5a61e7625d27376f42037b24a9d9d479715018400f391e071f"
+          },
+          "resume": {
+            "final_step": 21,
+            "checkpoint_state_sha256": "fea7e20ab218fc8eadb3bbc42a648c4023079edc504a62ec0e06875f9857a3e0",
+            "audit": "live state equals durable checkpoint; next batch and RNG match the pilot's"
+          }
+        }
+      },
+      "execution": {
+        "attempts": [
+          {
+            "slurm_job_id": "202186",
+            "restart": "0",
+            "partition": "sweep",
+            "node": "dogo",
+            "gpu_type": "H100",
+            "gpu_count": 4,
+            "started_utc": "2026-09-25T21:20:12Z",
+            "ended_utc": "2026-09-25T21:24:50Z",
+            "launch_commit": "126d72a90dea0624a9acc3914255ecaf19998442",
+            "outcome": "failed acceptance cpu-tests: the adapter's regeneration test skipped before completion (fixed in 381f1fd)"
+          },
+          {
+            "slurm_job_id": "202190",
+            "restart": "0",
+            "partition": "sweep",
+            "node": "dogo",
+            "gpu_type": "H100",
+            "gpu_count": 4,
+            "started_utc": "2026-09-25T21:26:41Z",
+            "ended_utc": "2026-09-25T21:30:58Z",
+            "outcome": "passed cpu-tests and cpu-distributed-tests; preempted"
+          },
+          {
+            "slurm_job_id": "202190",
+            "restart": "1",
+            "partition": "sweep",
+            "node": "dogo",
+            "gpu_type": "H100",
+            "gpu_count": 4,
+            "started_utc": "2026-09-25T21:49:15Z",
+            "ended_utc": "2026-09-25T21:50:16Z",
+            "outcome": "preempted during gpu-tests"
+          },
+          {
+            "slurm_job_id": "202190",
+            "restart": "2",
+            "partition": "sweep",
+            "node": "dogo",
+            "gpu_type": "H100",
+            "gpu_count": 4,
+            "started_utc": "2026-09-25T21:57:25Z",
+            "ended_utc": "2026-09-25T22:16:54Z",
+            "outcome": "passed H100 acceptance at 22:05:09Z; trained from a fresh initialization to about update 1,464 (checkpoint at 1,000, first validation at 1,000); preempted"
+          },
+          {
+            "slurm_job_id": "202190",
+            "restart": "3",
+            "partition": "sweep",
+            "node": "akita",
+            "gpu_type": "B300",
+            "gpu_count": 4,
+            "started_utc": "2026-09-25T22:19:26Z",
+            "ended_utc": "2026-09-25T23:35:54Z",
+            "outcome": "passed B300 acceptance at 22:28:30Z; resumed from the update-1,000 checkpoint (data sequence 256,000) and completed all 19,074 updates"
+          }
+        ],
+        "time_limit": "08:00:00 per attempt (chosen so the job could backfill)",
+        "final_devices": [
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC"
+        ],
+        "runtime_settings": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "batch_transfer": "host_to_shard",
+        "state_transfer": "direct",
+        "attention_backend_requested": "fused",
+        "attention_backend": "fused",
+        "attention_implementation": "cudnn"
+      },
+      "selected_checkpoint": {
+        "step": 19074,
+        "path": "experiments/decay_policy_baseline/checkpoints/200m-softmax-seed0/19074",
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "file_count": 14,
+        "bytes": 2196658424,
+        "tree_sha256": "55e0e0e5b3e0129eb0876a45effa9258e104e9fde62ab5a87a8ed07dd86472d7",
+        "files": {
+          "_CHECKPOINT_METADATA": "f83de306cf308f0612b1802b73039f5116f9a4605ced718f4097e0a00ca5de3f",
+          "default/_METADATA": "3da76512365bc62f5c45a1b36ce36a5d51af5094b7ce263c240f36220edc5854",
+          "default/_sharding": "14a016b3f2488acc2ac9d7a3a99d76486da2cc74f55af9037eaf3687930d7b8d",
+          "default/array_metadatas/process_0": "99805d0bfbc7688329f7495f47ced6019f7f1b2ca8c374133df6efab538baf89",
+          "default/d/2f80c43b48c0ce02edf8af98d93162bf": "509923d77150ccdf1922e67c1a6a1cd636fd3dbb0473ceccd290bb75acc0f0ed",
+          "default/manifest.ocdbt": "d60250d5c6ecc5b83d0bf53798ea6ac2185128d72798c45a1579d11c82eaf65c",
+          "default/ocdbt.process_0/d/0baa0b344c1b783a10e27e056dd8eee1": "16ee650ce812ed8fa263a6a6da214220f2e6aa704c66b12f1b284e3c8f9edc6b",
+          "default/ocdbt.process_0/d/10eb46d563e57d9b4c06e59f7a651aa8": "1148f6ae54d681627635b96c6d067fcc4b2c460e45cc6f9f91a1f90817520392",
+          "default/ocdbt.process_0/d/c95f489f6ead1425960a627f0aef735e": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+          "default/ocdbt.process_0/d/d756ba2e39d5e2cedb0844d13de00dde": "2766ba710c5a8b0df26b08d37bdd24cb08921f39d5addab91197e3c14bfa2d19",
+          "default/ocdbt.process_0/d/d9ef5f16895e7615bc8cf3c18f04eb58": "c427121e86abb90a62b6911343dbc1bdfd32b848e7f1663286d1b17069785d71",
+          "default/ocdbt.process_0/d/f90d45c7a029ab731669a11208b1fcf4": "a001eaeca249a739e4e8a880ded413b06bd03ce7066282e848873163f977dc2f",
+          "default/ocdbt.process_0/manifest.ocdbt": "5b5ab17aacabef1f8e15dbdaca5afbe63c2027b87e79e2823557b4aadc0dec8c",
+          "metrics/metrics": "29ecd3b6d16c9cb4f31d56e6a623145522cb71fd17895340341665b7497a3238"
+        }
+      },
+      "log": {
+        "path": "experiments/decay_policy_baseline/logs/200m-softmax-seed0/slurm-202190.out",
+        "sha256": "411d7234ce9b347c06fea1ad7c2a1323e2143411bdacb254ba3214637572e7de",
+        "note": "append-mode log holding all four attempts of job 202190; the failed 202186 log was removed after its cause was fixed"
+      },
+      "checkpoint_retention": {
+        "best_checkpoint_step": 19074,
+        "completion_sha256": "7571ffbad1e5e9cf1b7f378ecad556b3f1f1e7d0d77671f8f5aa740331b9c8e0",
+        "format": "shared-transformer-checkpoint-retention",
+        "seed": 0,
+        "selection_rule": "lowest_validation_nll_latest_on_tie",
+        "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
+        "terminal_metrics_preserved": true,
+        "terminal_step": 19074,
+        "validation_nll": 2.6854977863175526,
+        "version": 1
+      }
+    }
+  ],
+  "pre_launch_validation": {
+    "cpu_tests": "At the launch commit: adapter tests, test_parameter_policy, and test_config passed (54 passed, 1 skipped: the regeneration test waits for the run). Acceptance in the allocation runs the declared CPU, distributed CPU, and cuDNN GPU tests, initialization, pilot, and resume before training.",
+    "scaffold_state": "Branch base 8bdc5e2 (main), which includes the selective-decay policy (cb31558) and its 305-test validation recorded in that commit."
+  },
+  "artifact_locations": {
+    "runs": "experiments/decay_policy_baseline/runs/<run> (committed)",
+    "checkpoints": "experiments/decay_policy_baseline/checkpoints/<run>/19074 (ignored, on Kennel under artifact_root)",
+    "logs": "experiments/decay_policy_baseline/logs/<run>/slurm-<job>.out (ignored, on Kennel under artifact_root)",
+    "verified": "every checkpoint file and the log hashed at these locations; see selected_checkpoint and log"
+  },
+  "summary": {
+    "path": "experiments/decay_policy_baseline/summary.csv",
+    "generator": "experiments.decay_policy_baseline.adapter.analysis.report",
+    "terminal_nll_change_vs_control": -0.0019534826278686523,
+    "terminal_perplexity_change_vs_control": -0.028676799879265857
+  }
+}
