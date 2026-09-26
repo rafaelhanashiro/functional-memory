@@ -53,6 +53,8 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
     tags = [identity["attention_kernel"], f"dk{config.model.qk_head_dim}"]
     if identity.get("attention_degree") is not None:
         tags.append(f"m{identity['attention_degree']}")
+    if identity.get("qk_norm"):
+        tags.append("qk_norm")
     if runtime.get("gpu_type"):
         tags.append(f"{runtime.get('gpu_count', '')}x{runtime['gpu_type']}")
     if runtime.get("cluster"):
@@ -118,23 +120,29 @@ def attention_metrics(diagnostics: dict) -> dict:
         for key, value in layer.items():
             if key != "layer" and isinstance(value, (int, float)) and not isinstance(value, bool):
                 payload[f"{prefix}/layer{layer['layer']:02d}/{key}"] = value
-    coefficients = diagnostics.get("coefficients") or {}
-    names = coefficients.get("effective_coefficient_names", ())
-    try:
-        # The last axis indexes coefficients; nonfinite values arrive as JSON strings.
-        values = np.asarray(coefficients.get("effective", ()), dtype=np.float64)
-    except (TypeError, ValueError):
-        values = None
-    if names and values is not None and values.ndim >= 1 and values.shape[-1] == len(names):
-        for index, name in enumerate(names):
-            column = values[..., index]
-            if column.ndim == 0:
-                payload[f"{prefix}/coefficients/{name}"] = float(column)
-            else:
-                # Per-layer/head coefficients are summarized; metrics.jsonl keeps every value.
-                for statistic, reduce in (("mean", np.mean), ("min", np.min), ("max", np.max)):
-                    payload[f"{prefix}/coefficients/{name}/{statistic}"] = float(reduce(column))
+    for key in ("coefficients", "qk_norm_scale"):
+        _summarize_effective_values(payload, f"{prefix}/{key}", diagnostics.get(key) or {})
     return payload
+
+
+def _summarize_effective_values(payload: dict, prefix: str, report: dict) -> None:
+    """Mirror a parameter report's effective values: scalars directly, arrays as mean/min/max."""
+    names = report.get("effective_coefficient_names", ())
+    try:
+        # The last axis indexes named values; nonfinite values arrive as JSON strings.
+        values = np.asarray(report.get("effective", ()), dtype=np.float64)
+    except (TypeError, ValueError):
+        return
+    if not names or values.ndim < 1 or values.shape[-1] != len(names):
+        return
+    for index, name in enumerate(names):
+        column = values[..., index]
+        if column.ndim == 0:
+            payload[f"{prefix}/{name}"] = float(column)
+        else:
+            # Per-layer/head values are summarized; metrics.jsonl keeps every value.
+            for statistic, reduce in (("mean", np.mean), ("min", np.min), ("max", np.max)):
+                payload[f"{prefix}/{name}/{statistic}"] = float(reduce(column))
 
 
 def _log(run, payload: dict, step: int) -> None:

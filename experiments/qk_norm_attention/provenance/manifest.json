@@ -1,0 +1,315 @@
+{
+  "format": "functional-memory-experiment-setup",
+  "version": 2,
+  "experiment": "qk_norm_attention",
+  "status": "completed",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "documentation": "experiments/qk_norm_attention/README.md",
+  "scaffold": "scaffolds/transformer",
+  "branch": "qk-norm-attention",
+  "branch_base_commit": "8bdc5e22be0ff7b42e412062569985136a883b0d",
+  "scaffold_change_commit": "dd6f2f47e18cb931d8c186d084749bbbd481174f",
+  "launch_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
+  "frozen_execution_set_sha256": "bb64cdd2b310f84ba1bf0bad05ac7b8a3c53b51373625df9f0d6ec4bd0726700",
+  "scientific_change": "Exact softmax attention over QK-norm cosine scores s_ij = exp(gamma_{l,h}) <q_i, k_j> / (||q_i|| ||k_j||), |s_ij| <= exp(gamma_{l,h}); one log scale gamma per layer and head, learned from log(sqrt(d_K)) = log 8, FP32, no weight decay, backbone learning-rate schedule; Q/K unit-normalized per head in FP32 before RoPE with eps 1e-6; everything else the 200M softmax control",
+  "requested": {
+    "date": "2026-09-25",
+    "from_cluster": "kennel",
+    "mechanism": "exact softmax, d_K = 64",
+    "qk_norm": "cosine scores with a learned per-head log scale",
+    "scale_parametrization": "alpha = exp(gamma), gamma learned",
+    "initial_scale": 8.0
+  },
+  "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+  "shared_dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+  },
+  "data_identity": {
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    }
+  },
+  "comparison_controls": {
+    "softmax_original_decay": {
+      "run": "experiments/key_dimension_taylor/runs/200m-softmax-seed0",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "weight_decay_policy": "all parameters (before exclude_embeddings_norms_biases_v1)",
+      "validation_nll": 2.6874512689454213,
+      "validation_perplexity": 14.69417664861716,
+      "note": "Same backbone, budget, and data; differs from this run in the score and in the decay policy."
+    },
+    "softmax_canonical_decay": {
+      "run": "experiments/decay_policy_baseline/runs/200m-softmax-seed0",
+      "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "slurm_job_id": "202190",
+      "hardware": "4x NVIDIA H100 80GB HBM3 (dogo) for acceptance and updates 1-1,464; 4x NVIDIA B300 SXM6 AC (akita) from the update-1,000 checkpoint to 19,074; sweep partition",
+      "validation_nll": 2.6854977863175526,
+      "validation_perplexity": 14.665499848737895,
+      "completed_utc": "2026-09-25T23:35:49.944451+00:00",
+      "note": "The clean control: the same recipe as this run without qk_norm, under the canonical policy; completed 2026-09-25 and merged into main as experiments/decay_policy_baseline."
+    }
+  },
+  "runs": [
+    {
+      "name": "200m-qk-softmax-seed0",
+      "attention_kernel": "softmax",
+      "attention_degree": null,
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
+      "qk_norm_initial_scale": 8.0,
+      "qk_norm_eps": 1e-06,
+      "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "completed",
+      "config": {
+        "path": "experiments/qk_norm_attention/configs/200m-qk-softmax-seed0.yaml",
+        "sha256": "9378195aa81b45cada1fdd7f22819f8cd7e2dc94ecd0de3b2ae6221644da9441"
+      },
+      "parameter_count": 199906464,
+      "qk_norm_parameter_count": 160,
+      "source_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
+      "slurm_job_ids": [
+        202156,
+        202215
+      ],
+      "partition": "sweep",
+      "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+      "submitted_utc": "2026-09-25T22:13:06+00:00",
+      "run_record": "experiments/qk_norm_attention/runs/200m-qk-softmax-seed0",
+      "attempts": [
+        {
+          "slurm_job_id": "202156",
+          "restart": 0,
+          "node": "dogo",
+          "gpu_type": "H100",
+          "gpu_count": 4,
+          "outcome": "preempted 2026-09-25T17:50:16 local during acceptance cpu-tests; requeued"
+        },
+        {
+          "slurm_job_id": "202156",
+          "restart": 1,
+          "node": "dogo",
+          "gpu_type": "H100",
+          "gpu_count": 4,
+          "outcome": "preempted 2026-09-25T18:02:17 local during acceptance cpu-tests; requeued"
+        },
+        {
+          "slurm_job_id": "202156",
+          "restart": 2,
+          "node": "akita",
+          "gpu_type": "B300",
+          "gpu_count": 4,
+          "outcome": "acceptance cpu-tests (171) and cpu-distributed-tests (5) passed; gpu-tests failed 2 of 28: test_softmax_backends cuDNN cases at width 256 (B300 cuDNN rejects hidden_dim > 128 when d_qk != d_v), unrelated to this d_K = 64 recipe; the 5 QK-norm gates and the attention GPU tests passed; job exited FAILED 2026-09-25T18:11:50 local before initialization, pilot, or training; no run outputs"
+        },
+        {
+          "slurm_job_id": "202215",
+          "restart": 0,
+          "outcome": "passed acceptance on akita (4x B300) and trained all 19,074 updates from a fresh initialization without interruption",
+          "node": "akita",
+          "gpu_type": "B300",
+          "gpu_count": 4
+        }
+      ],
+      "start": "fresh initialization",
+      "slurm_job_id": "202215",
+      "hardware": "4x NVIDIA B300 akita, sweep partition",
+      "training_updates": 19074,
+      "prediction_tokens": 10000269312,
+      "terminal_validation_nll": 2.671205988952092,
+      "terminal_validation_perplexity": 14.457394141153632,
+      "best_validation": {
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.671205988952092,
+        "validation_perplexity": 14.457394141153632,
+        "selection_rule": "lowest_validation_nll_latest_on_tie"
+      },
+      "completed_utc": "2026-09-25T23:33:58.116982+00:00",
+      "wandb": {
+        "run_id": "8c6f3b4343ba4f70b2d9c9148814184d",
+        "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/8c6f3b4343ba4f70b2d9c9148814184d"
+      },
+      "acceptance": {
+        "B300-4": {
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "status": "passed",
+          "completed_utc": "2026-09-25T22:22:35.684204+00:00",
+          "identity": "582d1b7cec27a59250fe7a2f6017e7caf3f6aa95d356c4305d004ee55b547671",
+          "slurm_job_id": "202215",
+          "cpu_tests_passed": 171,
+          "cpu_distributed_tests_passed": 5,
+          "gpu_tests_passed": 12,
+          "initialization_parameter_count": 199906464,
+          "initialization_parameter_sha256": "4c16cf4d51d5817b3cf0b126ae82b50d2e7a30efab703960bbd41574501311e3",
+          "initialization_check": {
+            "mechanism_parameters": {
+              "qk_norm_log_scale": {
+                "initial": [
+                  2.0794415416798357
+                ],
+                "shape": [
+                  10,
+                  16,
+                  1
+                ],
+                "weight_decay": false
+              }
+            },
+            "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+          },
+          "pilot": {
+            "final_step": 20,
+            "attention_backend": "fused",
+            "attention_implementation": "cudnn",
+            "steady_step_seconds_median": 0.2022,
+            "projected_hours": 1.071
+          },
+          "resume": {
+            "restored_step": 20,
+            "final_step": 21,
+            "data_start_sequence": 5120
+          }
+        }
+      },
+      "execution": {
+        "attempts": [
+          {
+            "slurm_job_id": "202156",
+            "restart": 0,
+            "node": "dogo",
+            "gpu_type": "H100",
+            "gpu_count": 4,
+            "outcome": "preempted 2026-09-25T17:50:16 local during acceptance cpu-tests; requeued"
+          },
+          {
+            "slurm_job_id": "202156",
+            "restart": 1,
+            "node": "dogo",
+            "gpu_type": "H100",
+            "gpu_count": 4,
+            "outcome": "preempted 2026-09-25T18:02:17 local during acceptance cpu-tests; requeued"
+          },
+          {
+            "slurm_job_id": "202156",
+            "restart": 2,
+            "node": "akita",
+            "gpu_type": "B300",
+            "gpu_count": 4,
+            "outcome": "acceptance cpu-tests (171) and cpu-distributed-tests (5) passed; gpu-tests failed 2 of 28: test_softmax_backends cuDNN cases at width 256 (B300 cuDNN rejects hidden_dim > 128 when d_qk != d_v), unrelated to this d_K = 64 recipe; the 5 QK-norm gates and the attention GPU tests passed; job exited FAILED 2026-09-25T18:11:50 local before initialization, pilot, or training; no run outputs"
+          },
+          {
+            "slurm_job_id": "202215",
+            "restart": 0,
+            "outcome": "passed acceptance on akita (4x B300) and trained all 19,074 updates from a fresh initialization without interruption",
+            "node": "akita",
+            "gpu_type": "B300",
+            "gpu_count": 4
+          }
+        ],
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "device_kinds": [
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC"
+        ],
+        "runtime_settings": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "batch_transfer": "host_to_shard",
+        "state_transfer": "direct",
+        "attention_backend_requested": "fused",
+        "attention_backend": "fused",
+        "attention_implementation": "cudnn",
+        "runtime_history_entries": 1,
+        "wall_time": "1 h 20 min 57 s including acceptance (Slurm 2026-09-25T18:13:06 to 19:34:03 local); training 1 h 10 min 44 s"
+      },
+      "selected_checkpoint": {
+        "step": 19074,
+        "path": "experiments/qk_norm_attention/checkpoints/200m-qk-softmax-seed0/19074",
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "file_count": 13,
+        "bytes": 2196138283,
+        "tree_sha256": "964ecfdf45c15fa674e040fc07ea1132ad344090de94edd09cff7c6a65ba3411",
+        "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'",
+        "files": {
+          "_CHECKPOINT_METADATA": "f49f3323af6f5ad9002e637fe0b7598005f0598762da994ff473a30584deba8d",
+          "default/_METADATA": "20667583e745119f53780bde7ba488300e33f0f35d5fcdc7aba5ad5902bb840a",
+          "default/_sharding": "e42fb7a6fc049d6c676926fefc5c8bfb5783df4eb2164d1b30c6d07dbac3d7d0",
+          "default/array_metadatas/process_0": "d5ddef7a21b89ff75c68628d46d357caa3529df10d654baa0ac1b3557a7bc4b6",
+          "default/d/daa1b5b21f6db5c74a3c64733a4b488c": "6364b98824a565d05caf3557f70b246a43bec66e21bf5729ce4d48e5bb49e7b4",
+          "default/manifest.ocdbt": "52be58dc8ceed2f257485d5d9d58e61cb7215cff49bd0411ae965de498a6f71d",
+          "default/ocdbt.process_0/d/27e4361907fbb0b87b229ce939813440": "adee375e2d72b1f8f3e24af065b862bef0cfe73d4a75818694b95a5c1f0ccb6b",
+          "default/ocdbt.process_0/d/3da4b1b60a89a641c5cab572f7a59a53": "6a4f060124805b7aa7b667c52a0afe8a513640aba40efecdc9c6d87340daed36",
+          "default/ocdbt.process_0/d/4c02a693902a5f91ea4ab93c36be54f5": "2704bb75f1b4c155ecd939c393199ba4202827f3a1392fa3bbb024beda641bfb",
+          "default/ocdbt.process_0/d/6040aeb6c23996e2f4163dd3df57233a": "27e6deea9ec29fdd93e805764fd8a0b6cfb776a75b2c5c992b07d263ddc9a611",
+          "default/ocdbt.process_0/d/aea3bb718ca4f4aea3dbed2ba568cfb9": "1898fbfb5fbc716062199f00253ae0e4cbe9e927722b38ee032bff52e6417f2e",
+          "default/ocdbt.process_0/manifest.ocdbt": "95fda4f3bcfb55f27ec7c6396248e572c6b2a9e48295639a92a1e747cea6ffbd",
+          "metrics/metrics": "da44f663beb42cb76587867a5f7b067f5351a266f997a27bac4ffdd3e143d48a"
+        },
+        "verified_present_utc": "2026-09-26T02:20:35Z"
+      },
+      "log": {
+        "path": "experiments/qk_norm_attention/logs/200m-qk-softmax-seed0/slurm-202215.out",
+        "sha256": "107146e335eb13682380a0fb472dae5a004396f95bf521fe444351a6f2ee5ff3"
+      },
+      "retention": {
+        "path": "experiments/qk_norm_attention/runs/200m-qk-softmax-seed0/retention.json",
+        "sha256": "f5e810195fcc2bbe358eebafaf906db481dd42047bd6f463916ba77413013902"
+      }
+    }
+  ],
+  "pre_launch_validation": {
+    "cpu_tests": "Full scaffold CPU suite at the scaffold-change tree dd6f2f4 (before merging main): 552 passed, 12 skipped, 0 failed. After merging main 8bdc5e2 (selective weight decay, universal update checks, resume guard): 195 targeted tests passed, 6 skipped, 0 failed (test_qk_norm, test_parameter_policy, test_model, test_config, test_update_numerics, test_resume_guard, test_training); the adapter's 3 configuration tests passed at the launch tree.",
+    "gpu_tests": {
+      "B300": "5 passed (slurm 202131, akita, 44 s) at the scaffold-change tree: cuDNN softmax and the fused Taylor, unnormalized, and learned-polynomial kernels consume the cosine operands as the blocked reference does at the 2,048-token BF16 context, including the log-scale gradient",
+      "log": {
+        "path": "scaffolds/transformer/validation/logs/qk-norm-scores/slurm-202131.out",
+        "sha256": "4b96c3616f86d0401dc5b6012aced27ca951ef1008b218fb25608d7c980d2da3",
+        "location": "primary checkout on Kennel, ignored by Git; to be entered in the scaffold validation record with this run's acceptance"
+      }
+    },
+    "acceptance": "Runs in the production allocation before training: the adapter's CPU tests, GPU tests, the softmax-backbone initialization check, a 20-update full-recipe pilot on the fused (cuDNN) backend, and an exact fresh-process resume."
+  },
+  "artifact_locations": {
+    "runs": "experiments/qk_norm_attention/runs/<run> (committed)",
+    "checkpoints": "experiments/qk_norm_attention/checkpoints/<run>/19074 (ignored, on Kennel under artifact_root)",
+    "logs": "experiments/qk_norm_attention/logs/<run>/slurm-<job>.out (ignored, on Kennel under artifact_root)",
+    "verified": "checkpoint files and the log hashed at these locations; see the run's selected_checkpoint and log"
+  },
+  "superseded_launch": {
+    "launch_commit": "4b5c69cef73eeb3bf8d0ea6ad3611208aad45cb3",
+    "frozen_execution_set_sha256": "00a2f12c81079ca1809ae34c25926cb226d0f1c656a74691c69515272b7ec0a1",
+    "slurm_job_id": "202156",
+    "difference": "adapter/execution/acceptance.py listed scaffolds/transformer/tests/test_softmax_backends.py among the GPU tests; the relaunch removes it (recipe, scaffold code, lock, and data unchanged)"
+  },
+  "summary": {
+    "path": "experiments/qk_norm_attention/summary.csv",
+    "generator": "experiments.qk_norm_attention.adapter.analysis.report"
+  }
+}

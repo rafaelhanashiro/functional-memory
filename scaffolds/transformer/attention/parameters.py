@@ -17,16 +17,22 @@ class AttentionParameterSpec:
 
 
 def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
-    """Ask the configured mechanism which trainable arrays it needs."""
+    """Ask the configured mechanism, then the score option, which trainable arrays they need."""
     if getattr(config, "attention_coefficients", "fixed") == "learned":
         from scaffolds.transformer.attention.unnormalized import parameter_specs as polynomial_specs
 
-        return polynomial_specs(degree=config.attention_degree, sharing=config.attention_coefficient_sharing)
-    if config.quadratic_mode == "fixed":
-        return ()
-    from scaffolds.transformer.attention.learned_quadratic import parameter_specs
+        specs = polynomial_specs(degree=config.attention_degree, sharing=config.attention_coefficient_sharing)
+    elif config.quadratic_mode == "fixed":
+        specs = ()
+    else:
+        from scaffolds.transformer.attention.learned_quadratic import parameter_specs
 
-    return parameter_specs(mode=config.quadratic_mode, sharing=config.quadratic_sharing)
+        specs = parameter_specs(mode=config.quadratic_mode, sharing=config.quadratic_sharing)
+    if getattr(config, "qk_norm", False):
+        from scaffolds.transformer.attention.qk_norm import initial_scale, parameter_specs as qk_norm_specs
+
+        specs += qk_norm_specs(initial_scale=initial_scale(config), sharing=config.qk_norm_sharing)
+    return specs
 
 
 def initialize_attention_parameters(owner, specs, *, num_layers: int, num_heads: int) -> None:

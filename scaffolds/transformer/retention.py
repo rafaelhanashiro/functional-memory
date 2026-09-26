@@ -18,7 +18,8 @@ from scaffolds.transformer.training.checkpointing import checkpoint_directory
 from scaffolds.transformer.training.metrics import write_json_atomic
 
 # Completion fields that must agree with the recipe when the completion records them.
-IDENTITY_KEYS = ("attention_degree", "attention_mechanism", "quadratic_mode", "quadratic_sharing", "qk_head_dim")
+IDENTITY_KEYS = ("attention_degree", "attention_mechanism", "quadratic_mode", "quadratic_sharing", "qk_head_dim",
+                 "qk_norm", "qk_norm_sharing")
 
 
 def finalize_run(config) -> dict:

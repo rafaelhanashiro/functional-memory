@@ -7,6 +7,7 @@ import jax.numpy as jnp
 from flax import nnx
 
 from scaffolds.transformer.attention.core import attention_core
+from scaffolds.transformer.attention.qk_norm import cosine_score_operands
 from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
 
@@ -33,6 +34,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         dropout=config.dropout, backend=config.attention_backend,
         attention_degree=config.attention_degree, quadratic_mode=config.quadratic_mode,
         attention_normalization=config.attention_normalization,
+        qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         rngs=rngs,
     )
 
@@ -43,11 +45,16 @@ class MultiHeadAttention(nnx.Module):
         qk_head_dim: int, value_head_dim: int, rope_theta: float = 10000.0,
         dropout: float = 0.0, backend: AttentionBackend = "blocked",
         attention_degree: int | None = None, quadratic_mode: str = "fixed",
-        attention_normalization: bool = True, *, rngs: nnx.Rngs,
+        attention_normalization: bool = True, qk_norm: bool = False,
+        qk_norm_eps: float = 1e-6, *, rngs: nnx.Rngs,
     ):
         _validate_degree(attention_degree)
         if not isinstance(attention_normalization, bool):
             raise ValueError("attention_normalization must be a boolean")
+        if not isinstance(qk_norm, bool):
+            raise ValueError("qk_norm must be a boolean")
+        if qk_norm and attention_degree == 0:
+            raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
         if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused")):
             raise ValueError("Unnormalized attention requires a fixed exp/Taylor kernel and a blocked/fused backend")
         if quadratic_mode not in ("fixed", "positive", "unrestricted"):
@@ -76,6 +83,8 @@ class MultiHeadAttention(nnx.Module):
         self.attention_degree = attention_degree
         self.attention_normalization = attention_normalization
         self.quadratic_mode = quadratic_mode
+        self.qk_norm = qk_norm
+        self.qk_norm_eps = qk_norm_eps
         self.dtype = jnp.float32
         # Preserve the reference constructor order/default initialization exactly.
         self.q_proj = nnx.Linear(hidden_size, num_heads * qk_head_dim, use_bias=False, rngs=rngs)
@@ -91,18 +100,24 @@ class MultiHeadAttention(nnx.Module):
         attention_parameters: dict[str, jax.Array] | None = None,
     ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array]]:
         batch, seq_len, _ = x.shape
+        parameters = {} if attention_parameters is None else dict(attention_parameters)
+        log_scale = parameters.pop("qk_norm_log_scale", None)
+        if self.qk_norm != (log_scale is not None):
+            raise ValueError("QK-norm requires exactly its model-owned qk_norm_log_scale parameter")
         q, k, v = self.q_proj(x), self.k_proj(x), self.v_proj(x)
         if self.backend != "manual":
             q, k, v = (operand.astype(self.dtype) for operand in (q, k, v))
         q = q.reshape(batch, seq_len, self.num_heads, self.qk_head_dim)
         k = k.reshape(batch, seq_len, self.num_kv_heads, self.qk_head_dim)
         v = v.reshape(batch, seq_len, self.num_kv_heads, self.value_head_dim)
+        if self.qk_norm:
+            # Cosine scores: the mechanisms' q'.k'/sqrt(d_K) becomes exp(gamma) cos(q, k).
+            q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)
         positions = jnp.arange(seq_len)
         q = apply_rope(q, positions, self.rope_theta)
         k = apply_rope(k, positions, self.rope_theta)
         if self.backend != "manual":
             q, k = q.astype(self.dtype), k.astype(self.dtype)
-        parameters = {} if attention_parameters is None else attention_parameters
         if coefficients is not None:
             if "coefficients" in parameters:
                 raise ValueError("Coefficients were supplied twice")
