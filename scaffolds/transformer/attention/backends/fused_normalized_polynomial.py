@@ -44,13 +44,18 @@ def _polynomial(scores, parameters, parameterization):
 
 
 def _horner_and_scaled_derivative(scores, parameters, sensitivity):
-    # Differentiate the Horner recurrence after applying the normalized
-    # cotangent. The unscaled p'(s) may overflow while dp * p'(s) is finite.
+    # Reverse the Horner recurrence with its normalized cotangent. Visiting
+    # low powers first avoids both an overflowing raw p'(s) and underflow of
+    # dp * c_m before later powers of s could bring that product into range.
     value = jnp.zeros_like(scores) + parameters[-1]
-    derivative = jnp.zeros_like(scores)
+    intermediates = []
     for parameter in parameters[-2::-1]:
-        derivative = derivative * scores + sensitivity * value
+        intermediates.append(value)
         value = value * scores + parameter
+    derivative = jnp.zeros_like(scores)
+    for intermediate in intermediates[::-1]:
+        derivative += sensitivity * intermediate
+        sensitivity = sensitivity * scores
     return value, derivative
 
 
