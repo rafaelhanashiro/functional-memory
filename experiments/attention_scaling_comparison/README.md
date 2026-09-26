@@ -6,11 +6,18 @@ terminal held-out perplexity scale. Rows are per-head query/key widths
 normalization, coefficient policy, and Taylor degree. The comparison is a
 derived analysis of existing runs; it trains no new models.
 
+The grid describes the target state of the repository's experiments: every
+mechanism trained under the scaffold's current defaults (selective weight decay
+and QK-norm scores), plus one softmax run without QK-norm as the plain-score
+reference. Cells whose run predates those defaults are **outlined** as legacy runs;
+each is replaced, and its outline disappears, when its experiment is rerun. The
+outline is decided from each run's resolved configuration, not by hand.
+
 Each colored cell is a model evaluated after **19,074 optimizer updates** and
 **10,000,269,312 prediction tokens**. All plotted runs use seed 0 and the same
 packed FineWeb-Edu order and held-out evaluation set. Terminal validation loss
 and perplexity come from each source run's committed `metrics.jsonl` and
-`completion.json`. The [figure configuration](configs/heatmap.json) pins seven
+`completion.json`. The [figure configuration](configs/heatmap.json) pins eight
 source manifests by SHA256 and names every plotted run. The
 [comparison provenance](provenance/manifest.json) records the source commits,
 run-file hashes, and generated artifact hashes.
@@ -29,17 +36,21 @@ better. They distinguish five families:
 | --- | --- | --- |
 | Row-normalized Taylor, fixed | `m = 1, 2, 3, 4, 8, 16` | Fixed coefficients `1/r!`; causal row normalization |
 | Row-normalized quadratic, learned | Positive/global, positive/per-head, unrestricted/global, unrestricted/per-head | Four degree-2 coefficient variants, initialized at the Taylor quadratic |
-| References | Softmax, GLA, unnormalized exponential | Different attention mechanisms; GLA has no Taylor degree |
+| References | Softmax, softmax without QK-norm, GLA, unnormalized exponential | Different attention mechanisms; the second column is the plain-score softmax reference; GLA has no Taylor degree and no QK-norm |
 | Unnormalized Taylor, fixed | `m = 1, 2, 3, 4, 8, 16` | Fixed coefficients with no attention row division |
 | Unnormalized Taylor, learned | `m = 1, 2, 3, 4, 8, 16` | Learned per-head coefficients with no attention row division |
 
-**FAIL** means a recorded scientific numerical failure at the annotated update;
-it has no terminal perplexity. **NOT RUN** means no run was trained at that coordinate. The
+An **outlined** cell is a legacy run: trained with weight decay on all parameters
+and, for mechanisms that take it, without QK-norm. Its perplexity is shown on the
+common scale but is not comparable with cells trained under the current defaults
+beyond the size of those two effects (about 0.03 PPL for the decay policy and 0.21
+for QK-norm at the `d_K = 64` softmax). **FAIL** means a recorded scientific
+numerical failure at the annotated update; it has no terminal perplexity. **NOT RUN** means no run was trained at that coordinate. The
 figure never fills a gap with a partial validation or an estimated perplexity.
 Other execution states are labeled **INCOMPLETE** if encountered when regenerating.
 
 <!-- BEGIN GENERATED RESULTS -->
-125 displayed coordinates: 41 complete, 4 numerical failures, 80 not run, and 0 incomplete. Only completed runs at the common 19,074-update endpoint receive a color and a terminal PPL. A failed run is labeled with its failure update; an untrained coordinate is marked NOT RUN.
+130 displayed coordinates: 42 complete, 4 numerical failures, 84 not run, and 0 incomplete. Only completed runs at the common 19,074-update endpoint receive a color and a terminal PPL. A failed run is labeled with its failure update; an untrained coordinate is marked NOT RUN. 44 of the 46 trained cells are outlined as legacy runs: they trained with weight decay on all parameters and, where it applies, without QK-norm, before those became the scaffold's defaults; each is replaced when its experiment is rerun. 2 cells already use the current defaults.
 
 ![Combined terminal perplexity heatmap](figures/combined_terminal_ppl.png)
 
@@ -63,6 +74,11 @@ The two old-policy `d_K = 64` softmax runs retired on 2026-09-26 ended at PPL 14
 `d_K = 64` softmax is the selective-policy baseline.
 
 ## Findings
+
+Under the current defaults only the `d_K = 64` softmax references exist so far:
+QK-norm softmax at 14.4574 and plain softmax at 14.6655. Every other cell is a
+legacy run. The comparisons below are therefore among legacy runs, which share one
+training setup with each other.
 
 The dense fixed normalized grid shows that increasing degree narrows the
 softmax gap. At `d_K=8`, fixed `m=2` has PPL 20.5775, versus 16.8479 at

@@ -11,6 +11,11 @@ from pathlib import Path
 
 _COMPLETE = {"complete", "completed"}
 _NUMERICAL_FAILURE = {"numerical-failure", "numerical_failure"}
+# The scaffold's current defaults. Runs trained under anything else are shown as
+# legacy cells until their experiment is rerun.
+CANONICAL_WEIGHT_DECAY_POLICY = "exclude_embeddings_norms_biases_v1"
+_REFERENCE_KERNELS = {"softmax": "softmax", "softmax_no_qk_norm": "softmax",
+                      "gla": "gla", "unnormalized_exp": "exp_unnormalized"}
 
 
 def source_artifact_set_sha256(rows: list[dict]) -> str:
@@ -98,11 +103,40 @@ def _mechanism(cell: dict, run: dict, metadata: dict, label: str) -> None:
         "unnormalized_learned": "learned_polynomial_unnormalized",
     }.get(panel)
     if panel == "references":
-        expected_kernel = {"gla": "gla", "unnormalized_exp": "exp_unnormalized"}.get(column)
-    if expected_kernel is not None:
+        expected_kernel = _REFERENCE_KERNELS.get(column)
+    if expected_kernel == "softmax":
+        # Width-sweep softmax metadata predates the kernel field; its degree identity is checked above.
+        _optional_match(metadata, "attention_kernel", expected_kernel, f"{label} kernel")
+    elif expected_kernel is not None:
         _match(metadata.get("attention_kernel"), expected_kernel, f"{label} kernel")
     if panel == "unnormalized_learned":
         _match(metadata.get("attention_coefficients"), "learned", f"{label} coefficients")
+
+
+def _defaults_status(repo_root: Path, experiment: str, name: str, column: dict, label: str) -> dict:
+    """How a run relates to the current defaults: its resolved decay policy and QK-norm.
+
+    The trainer's `config.json` is the resolved configuration; runs recorded before it
+    existed trained with decay on all parameters and without QK-norm. A column may
+    declare `qk_norm: false` (a plain-score reference) or `qk_norm: null` (a mechanism
+    QK-norm does not apply to); otherwise QK-norm is expected.
+    """
+    config_path = repo_root / f"experiments/{experiment}/runs/{name}/config.json"
+    if config_path.exists():
+        config = _json(config_path)
+        policy = config.get("optim", {}).get("weight_decay_policy")
+        qk_norm = bool(config.get("model", {}).get("qk_norm", False))
+    else:
+        policy, qk_norm = None, False
+    expects = column.get("qk_norm", True)
+    reasons = []
+    if policy != CANONICAL_WEIGHT_DECAY_POLICY:
+        reasons.append("weight decay on all parameters")
+    if expects is True and not qk_norm:
+        reasons.append("no QK-norm")
+    if expects is False and qk_norm:
+        raise ValueError(f"{label} uses QK-norm but its column is the plain-score reference")
+    return {"weight_decay_policy": policy, "qk_norm": qk_norm, "legacy": bool(reasons), "legacy_reasons": reasons}
 
 
 def _data_identity(metadata: dict, expected: dict, label: str) -> None:
@@ -134,7 +168,7 @@ def _manifest_terminal(run: dict, step: int, tokens: int, nll: float, ppl: float
 
 
 def _collect_referenced(repo_root: Path, cell: dict, run: dict, step: int, tokens: int,
-                        seed: int, data_identity: dict) -> dict:
+                        seed: int, data_identity: dict, column: dict | None = None) -> dict:
     experiment, name = cell["experiment"], cell["run"]
     width, degree = cell["d_k"], _expected_degree(cell["panel"], cell["column"])
     label = f"{experiment}/{name}"
@@ -169,7 +203,8 @@ def _collect_referenced(repo_root: Path, cell: dict, run: dict, step: int, token
 
     result = {"status": status, "terminal_ppl": None, "terminal_nll": None,
               "failure_step": None, "experiment": experiment, "run": name,
-              "source_commit": source, "artifacts": {}}
+              "source_commit": source, "artifacts": {},
+              **_defaults_status(repo_root, experiment, name, column or {}, label)}
     if status == "incomplete":
         metadata_path = repo_root / f"experiments/{experiment}/runs/{name}/metadata.json"
         if metadata_path.exists():
@@ -288,6 +323,7 @@ def collect_rows(repo_root: Path, config: dict) -> list[dict]:
             indexed[name] = run
         manifests[experiment] = indexed
 
+    columns = {(panel["id"], column["id"]): column for panel in config["panels"] for column in panel["columns"]}
     references = {}
     used_runs = set()
     for cell in config["cells"]:
@@ -308,10 +344,12 @@ def collect_rows(repo_root: Path, config: dict) -> list[dict]:
         row = {"panel": panel, "column": column, "d_k": width,
                "status": "not_run", "terminal_ppl": None, "terminal_nll": None,
                "failure_step": None, "experiment": None, "run": None,
-               "source_commit": None, "artifacts": {}}
+               "source_commit": None, "artifacts": {}, "weight_decay_policy": None,
+               "qk_norm": None, "legacy": False, "legacy_reasons": []}
         if coordinate in references:
             cell, run = references[coordinate]
-            row.update(_collect_referenced(repo_root, cell, run, step, tokens, seed, data_identity))
+            row.update(_collect_referenced(repo_root, cell, run, step, tokens, seed, data_identity,
+                                           columns[(panel, column)]))
         rows.append(row)
     if expected_sha := config.get("source_artifact_set_sha256"):
         _match(source_artifact_set_sha256(rows), expected_sha, "Source artifact set SHA256")

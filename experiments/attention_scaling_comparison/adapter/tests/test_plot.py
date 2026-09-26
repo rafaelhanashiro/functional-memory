@@ -28,9 +28,10 @@ def test_combined_figure_is_source_checked_and_byte_reproducible(tmp_path):
     config = EXPERIMENT / "configs" / "heatmap.json"
 
     rows = build(ROOT, config_path=config, output_dir=output)
-    assert len(rows) == 125
+    assert len(rows) == 130
     assert Counter(row["status"] for row in rows) == {
-        "complete": 41, "numerical_failure": 4, "not_run": 80}
+        "complete": 42, "numerical_failure": 4, "not_run": 84}
+    assert sum(1 for row in rows if row["legacy"]) == 44
     by_cell = {(r["panel"], r["column"], r["d_k"]): r for r in rows}
     assert by_cell["normalized_fixed", "m1", 64]["failure_step"] == 9
     assert by_cell["normalized_fixed", "m3", 64]["failure_step"] == 17
@@ -38,16 +39,21 @@ def test_combined_figure_is_source_checked_and_byte_reproducible(tmp_path):
     assert by_cell["normalized_learned", "unrestricted_per_head", 64]["failure_step"] == 4187
     assert by_cell["normalized_learned", "positive_global", 64]["terminal_ppl"] == pytest.approx(16.189034521301647)
     assert by_cell["references", "gla", 128]["terminal_ppl"] == pytest.approx(15.436583304097534)
+    assert by_cell["references", "softmax", 64]["terminal_ppl"] == pytest.approx(14.457394141153632)
+    assert by_cell["references", "softmax_no_qk_norm", 64]["terminal_ppl"] == pytest.approx(14.665499848737895)
+    assert by_cell["references", "softmax", 8]["legacy"] is True
     assert by_cell["unnormalized_fixed", "m8", 64]["status"] == "not_run"
     assert by_cell["unnormalized_fixed", "m8", 64]["terminal_ppl"] is None
 
     csv_rows = list(csv.DictReader((output / "summary.csv").open()))
-    assert len(csv_rows) == 125
+    assert len(csv_rows) == 130
+    assert {row["legacy"] for row in csv_rows} == {"true", "false"}
     failed = [row for row in csv_rows if row["status"] == "numerical_failure"]
     assert all(row["terminal_ppl"] == "" for row in failed)
     provenance = json.loads((output / "provenance" / "manifest.json").read_text())
-    assert len(provenance["source_manifests"]) == 7
-    assert len(provenance["source_runs"]) == 45
+    assert len(provenance["source_manifests"]) == 8
+    assert len(provenance["source_runs"]) == 46
+    assert provenance["status_counts"]["legacy"] == 44
     assert (output / "figures" / "combined_terminal_ppl.pdf").stat().st_size > 1000
     first = hashes(output)
     build(ROOT, config_path=config, output_dir=output)

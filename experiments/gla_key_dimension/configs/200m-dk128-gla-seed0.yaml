@@ -35,6 +35,7 @@ model:
   gla_chunk_size: 64
   gla_inner_chunk_size: 16
   gla_use_rope: true
+  qk_norm: false
 optim:
   beta1: 0.9
   beta2: 0.95

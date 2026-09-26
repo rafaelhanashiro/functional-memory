@@ -11,7 +11,7 @@
   "files": [
     {
       "path": "scaffolds/transformer/validation/configs/global.yaml",
-      "sha256": "2a505114a72b21cad6b9559d1aac0edfe251abcabe3d50e9bb82ee4cec4dc303"
+      "sha256": "6c8189ba624443cce41bb98d3e6e7c1c69abfb79c1524fd9a1515163e713ce8f"
     },
     {
       "path": "scaffolds/transformer/validation/runs/global-frozen/benchmark.json",
@@ -23,7 +23,7 @@
     },
     {
       "path": "scaffolds/transformer/validation/configs/per_head.yaml",
-      "sha256": "348e6e571295fa7980f89f8b465d4823320c36de2d65749506f3f15ff7b675cf"
+      "sha256": "5c2f679f71fe5ce1c62d3960870278a8753afa32bd56d23fa5e6fedc2217c3db"
     },
     {
       "path": "scaffolds/transformer/validation/runs/per_head-frozen/benchmark.json",
@@ -35,7 +35,7 @@
     },
     {
       "path": "scaffolds/transformer/validation/configs/taylor.yaml",
-      "sha256": "53822f525c723e7d75b9717b32952c4d8d0e0351a1677808238812aefc013cc9"
+      "sha256": "4c4ff12d60e0b15cc28ff8c487db1f89c7708fd974527371104ea667d7ffb7a1"
     },
     {
       "path": "scaffolds/transformer/validation/runs/taylor-frozen/benchmark.json",
@@ -47,83 +47,83 @@
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk008-m002-seed0.yaml",
-      "sha256": "f57ea1f708c97e6d33606f52043a941b53cdfe45e5c7c0dec269485eea5d7294"
+      "sha256": "2278aaa8f3b167c4953feb2999726cb3a044fde7c2b4f317680de4c545396d69"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk008-m004-seed0.yaml",
-      "sha256": "b47919d73bcf7d962994e9f70509459e5057e6def7821e53648207819b1901ea"
+      "sha256": "157e99456ac00a0dfc4296d6aec41b69d28d91ff02b4f354d52b229a73d5e6f3"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk008-m008-seed0.yaml",
-      "sha256": "b81849825adfcb4db22fd4450baef0ae3e753f34eefb3c726d614e666c9e2d49"
+      "sha256": "abd0fee466a95bd54a995e7c8d3be3a1349e0cddc71b8eaa3ca8c47a0e0248b0"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk008-m016-seed0.yaml",
-      "sha256": "770888d99ce2b864dc92f976c2295f870a461b65b8f0c31b7321272f26bc9d23"
+      "sha256": "a9befd28dde72c43d609d6b20481ec75cde045b071acd4840817105e8e440e0b"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk016-m002-seed0.yaml",
-      "sha256": "4d39d5bfeedae4054381b2be9eb4d3f1c32d0cdebe26661f506ae6345a4fa790"
+      "sha256": "6db4020329d5b70d044bbbefb3bc0b03162a1072e51c587c8ab3bf464844d3f6"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk016-m004-seed0.yaml",
-      "sha256": "8be5bb6f0f360240303ecbc7d333b0294593253039aa175aed88840fa184b496"
+      "sha256": "f8410f44d1c603ae923a5f77e0c58c3bf62d77b43725376b668da24f7aa74a42"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk016-m008-seed0.yaml",
-      "sha256": "538fae0b153f181cca2f99bd7eef2c82d77d76899c65154570cae754be670d84"
+      "sha256": "1d7593bf3559cd37b812c0bc87ed67ca7ff71f928f59fb870cea9b7c4fa19d34"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk016-m016-seed0.yaml",
-      "sha256": "c10176237be808e5fe6ed1532616bb8d77565ecb1954ea98f5fd7e685592fdec"
+      "sha256": "33d76ee35ec64873c99a0f10da5040df218d34df2c1bbf8d4db2bb28950c397e"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk032-m002-seed0.yaml",
-      "sha256": "59f2d677dc8965f0fdbc099ab7b57fbe787749dc3c061d2b7a87e83ca98a5692"
+      "sha256": "1f204fc0f8f55eea57dcc60bc8cf27d0ca93c56a1ef6994c8ae4f83fb8beff0a"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk032-m004-seed0.yaml",
-      "sha256": "21ab162661afcad8c1f175a9c849bde94ae7e15a1a9ae9b424f2a768c3afee0b"
+      "sha256": "0db8c8792c971ddf96be66e0c2e12ec35c1db48b5e7b328c61dbae31dd703260"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk032-m008-seed0.yaml",
-      "sha256": "e97c540e5f8110df215851ed4a2bfbb68362837b691c872f9611d090b9732e47"
+      "sha256": "a34872236984e4ddb6455debd8b3b7c870b37106a0d31d429b9a20a4b31f26f0"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk032-m016-seed0.yaml",
-      "sha256": "1ced6477c1cc97fb41c60bbd902d1e850a7ef1c56de4a558aaa7ea9aedcc4a8f"
+      "sha256": "79681bd3170b3b84aba019b189efbf9fe3e2a4434b74846539d5daccb559d967"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk064-m002-seed0.yaml",
-      "sha256": "5af9a91b04328af2c22e3553fbf55886260473d6294a11f5a9b47203376d6400"
+      "sha256": "da93be7d8998c467a870ea019140dcee4752b9fa7323df150c33bd7ac049c3fb"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk064-m004-seed0.yaml",
-      "sha256": "6d636b7c704aea70e459f43cfa85ec795c0cf1fe5b67f11418b9e1fcd0627086"
+      "sha256": "8e905d2d9c377717b0715b46298f83030a256dc7157356d86a4b2a30c5bdc4f5"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk064-m008-seed0.yaml",
-      "sha256": "eb56566a1aeb9fe7d863b34112eb38dbe8f219823e33f00a17a3f859f4005847"
+      "sha256": "530f3ce795a0fe0312cfe797aca4b7f5c0a6290f6ee2aef2a84db8143d1f123f"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk064-m016-seed0.yaml",
-      "sha256": "93f2d73401b042c803efc566f6d0f8d2f40de0fd3cbd9e266bba96d115aae487"
+      "sha256": "f2b5d90ea992974a399a46465406090dea80ab89caded4de00c8db5a13d6c8e1"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk128-m002-seed0.yaml",
-      "sha256": "c432a20ffbb1bc986974b0a439fca17c4f8d305c736d0aa17564468f76653b6d"
+      "sha256": "b37615f7b356ed3adc2d72261f735368a03b280811750e9b8eea2843d309c0f8"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk128-m004-seed0.yaml",
-      "sha256": "0bafcd536e3fb766151e168719039d54a1702ae7c9ccb193fe0bbe9a81d5d403"
+      "sha256": "65318570b14ed0a22c7fc583217a62a721ae9846a547125a3a6c046d65ca48c9"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk128-m008-seed0.yaml",
-      "sha256": "7a94f72882ce39ecd6d4e4ad766db0e61717f5705e6092074e8ab2a4c60e4c5c"
+      "sha256": "d6f207730da71fa8ee48b298e56dea42318a4822d9c1073e5aef0bd469a6409b"
     },
     {
       "path": "scaffolds/transformer/validation/configs/kdt-qualification-200m-dk128-m016-seed0.yaml",
-      "sha256": "3c61965e0c6f2aecbc67c960e32ef2391e8c6785c8fdb7981f50c832ee3021ca"
+      "sha256": "e08f008330f6789a7f4061080cfea77d32761315758ba257c71e833b050da59e"
     }
   ],
   "slurm_logs": [

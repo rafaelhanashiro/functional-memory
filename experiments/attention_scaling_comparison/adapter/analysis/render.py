@@ -22,6 +22,9 @@ _STATUS_STYLE = {
     "not_run": ("#e5e8ec", "#929aa4", "//"),
     "incomplete": ("#f9e5ae", "#bb8b28", ".."),
 }
+# Runs that predate the current defaults keep their perplexity color and get this outline.
+_LEGACY_EDGE, _LEGACY_WIDTH, _LEGACY_INSET = "#b45309", 2.2, 0.07
+_LEGACY_LABEL = "Legacy run: decay on all parameters, no QK-norm (to be rerun)"
 
 
 def _coordinate_rows(rows: list[dict], config: dict) -> dict[tuple[str, str, int], dict]:
@@ -55,6 +58,8 @@ def _coordinate_rows(rows: list[dict], config: dict) -> dict[tuple[str, str, int
                 raise ValueError(f"Complete run needs a finite, positive terminal PPL: {key}")
         elif value is not None:
             raise ValueError(f"Non-complete run cannot supply terminal PPL: {key}")
+        if row.get("legacy") and status == "not_run":
+            raise ValueError(f"An untrained coordinate cannot be a legacy run: {key}")
         indexed[key] = row
     for key in expected - indexed.keys():
         indexed[key] = {"panel": key[0], "column": key[1], "d_k": key[2],
@@ -135,6 +140,13 @@ def _build_figure(rows: list[dict], config: dict):
                         origin="upper", aspect="auto", interpolation="none", zorder=2)
             for i, dk in enumerate(widths):
                 for j, column in enumerate(columns):
+                    if indexed[(panel["id"], column["id"], dk)].get("legacy"):
+                        axis.add_patch(Rectangle((j - 0.5 + _LEGACY_INSET, i - 0.5 + _LEGACY_INSET),
+                                                 1 - 2 * _LEGACY_INSET, 1 - 2 * _LEGACY_INSET, fill=False,
+                                                 edgecolor=_LEGACY_EDGE, linewidth=_LEGACY_WIDTH,
+                                                 gid="legacy", zorder=3.5))
+            for i, dk in enumerate(widths):
+                for j, column in enumerate(columns):
                     row = indexed[(panel["id"], column["id"], dk)]
                     label, font_size = _annotation(row)
                     if row["status"] == "complete":
@@ -173,14 +185,16 @@ def _build_figure(rows: list[dict], config: dict):
                 config.get("title", "Attention scaling across key dimension and expansion degree"),
                 fontsize=15, weight="bold", va="top", color="#172334")
     figure.text(left / figure_w, 1 - 0.66 / figure_h,
-                "Terminal validation perplexity across completed runs; each cell is one requested configuration",
+                "Terminal validation perplexity; each cell is one requested configuration. "
+                "Outlined cells predate the current defaults and will be rerun.",
                 fontsize=9.5, va="top", color="#475569")
     legend = [Patch(facecolor=face, edgecolor=edge, hatch=hatch, label=label)
               for (face, edge, hatch), label in zip(
                   _STATUS_STYLE.values(),
                   ("Numerical failure (step shown)", "Not run", "Incomplete"))]
+    legend.append(Patch(facecolor="white", edgecolor=_LEGACY_EDGE, linewidth=_LEGACY_WIDTH, label=_LEGACY_LABEL))
     figure.legend(handles=legend, loc="lower center", bbox_to_anchor=(0.48, 0.025),
-                  ncol=3, frameon=False, fontsize=9, columnspacing=2.5, handlelength=1.8)
+                  ncol=4, frameon=False, fontsize=9, columnspacing=2.0, handlelength=1.8)
     return figure
 
 

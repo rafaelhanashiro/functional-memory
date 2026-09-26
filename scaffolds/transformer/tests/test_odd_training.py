@@ -53,8 +53,8 @@ def test_odd_backbone_initialization_and_parameter_count_are_unchanged(tmp_path,
     base = load_config(Path(__file__).resolve().parents[1] / "configs/base.yaml").model
     production = replace(base, attention_degree=degree)
     shaped = jax.eval_shape(lambda: nnx.state(build_model(production, 0), nnx.Param))
-    assert sum(value.size for value in jax.tree.leaves(shaped)) == 199_906_304
-    assert model_parameter_count(production) == 199_906_304
+    assert sum(value.size for value in jax.tree.leaves(shaped)) == 199_906_304 + production.num_layers * production.num_heads
+    assert model_parameter_count(production) == 199_906_304 + production.num_layers * production.num_heads
 
 
 @pytest.mark.parametrize("degree", [1, 3])

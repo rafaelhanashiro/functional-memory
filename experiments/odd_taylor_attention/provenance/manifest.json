@@ -39,7 +39,7 @@
       "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-m002-seed0.yaml",
-        "sha256": "743ed8cdb72d44990969e3a89a7163d1004ea8fe9c9f2bce854301afe95bc9b9"
+        "sha256": "bde01797865b3323e2b81f07d0c6f44d2da1c6426e4db0b0a65232eee53edb5c"
       },
       "metrics": {
         "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metrics.jsonl",
@@ -91,7 +91,7 @@
       "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
       "source_provenance": {
         "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-        "sha256": "dc96fd97bfde0a3d65e0470e96e4cd553e64b7b8f39d5ceac4f9877327a50c15"
+        "sha256": "752c9c5134d2839fdc1b6a481313bb72e61f6aa9f75b2043b628c6543787ac9e"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
@@ -110,7 +110,7 @@
       "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-softmax-seed0.yaml",
-        "sha256": "f05ddef29734a3dd77db85fb2b353424ab46b8156b43826186d175f3ce127133"
+        "sha256": "4fcd6d27091f88b0cb0f1e7c8ac2c9a9ab2c61269c3f736bca16800d147eb861"
       },
       "metrics": {
         "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metrics.jsonl",
@@ -205,7 +205,7 @@
       "retained_completed": true,
       "source_provenance": {
         "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-        "sha256": "dc96fd97bfde0a3d65e0470e96e4cd553e64b7b8f39d5ceac4f9877327a50c15"
+        "sha256": "752c9c5134d2839fdc1b6a481313bb72e61f6aa9f75b2043b628c6543787ac9e"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
@@ -234,7 +234,7 @@
       "attention_backend": "fused",
       "resolved_config": {
         "path": "experiments/odd_taylor_attention/configs/200m-m001-seed0.yaml",
-        "sha256": "5057d9f8a826036fde9e498e062127027e0215fb15e8f4bde075847d10929e3e"
+        "sha256": "ee662f4a873cbfe22417309dd53b77a7555680640809f2f0b6d7dcc39e112a96"
       },
       "metadata": {
         "path": "experiments/odd_taylor_attention/runs/200m-m001-seed0/metadata.json",
@@ -318,7 +318,7 @@
       "attention_backend": "fused",
       "resolved_config": {
         "path": "experiments/odd_taylor_attention/configs/200m-m003-seed0.yaml",
-        "sha256": "ed7dca384e79b20b96e980c599116e147d825cb508d0bd6d2252931f0fbd5799"
+        "sha256": "12be14b2aea7b19a8819102721fa6a32912df12d5ac03adbe4cef79b946d4d05"
       },
       "metadata": {
         "path": "experiments/odd_taylor_attention/runs/200m-m003-seed0/metadata.json",

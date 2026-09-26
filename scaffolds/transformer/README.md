@@ -102,8 +102,11 @@ fused kernel, `attention_backend: auto` resolves to `blocked`, and `fused` is re
 
 ### QK-norm (cosine scores)
 
-`qk_norm: true` composes with every dot-product mechanism above and changes only
-the score. Q and K are unit-normalized per head in FP32,
+QK-norm is the scaffold's default for dot-product attention: a recipe that leaves
+`qk_norm` unset gets `true`, and states `qk_norm: false` to use plain `q·k / sqrt(d_K)`
+scores. GLA rejects `qk_norm: true`, and degree 0, which never reads Q or K, resolves
+it to `false`. It composes with every dot-product mechanism above and
+changes only the score. Q and K are unit-normalized per head in FP32,
 `x̂ = x / sqrt(||x||² + qk_norm_eps)`, and the score becomes
 
 ```text

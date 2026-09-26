@@ -93,10 +93,39 @@ def test_terminal_validation_and_failed_and_missing_cells(tmp_path: Path) -> Non
     completed = rows[2]
     assert (completed["terminal_nll"], completed["terminal_ppl"]) == (3.0, 20.086)
     assert set(completed["artifacts"]) == {"metadata", "metrics", "completion"}
+    # No resolved configuration: the run predates the current defaults on both counts.
+    assert completed["legacy"] is True
+    assert completed["legacy_reasons"] == ["weight decay on all parameters", "no QK-norm"]
+    assert (completed["weight_decay_policy"], completed["qk_norm"]) == (None, False)
+    assert rows[0]["legacy"] is False and rows[0]["legacy_reasons"] == []
     failed = rows[1]
     assert (failed["terminal_nll"], failed["terminal_ppl"], failed["failure_step"]) == (None, None, 7)
     assert set(failed["artifacts"]) == {"metadata", "failure"}
     assert rows[0]["artifacts"] == {}
+
+
+def test_current_defaults_are_read_from_the_resolved_configuration(tmp_path: Path) -> None:
+    config = _fixture(tmp_path)
+    run_dir = tmp_path / "experiments/toy_taylor/runs/dk8-m2-seed0"
+    resolved = {"optim": {"weight_decay_policy": "exclude_embeddings_norms_biases_v1"}, "model": {"qk_norm": True}}
+    _write(run_dir / "config.json", resolved)
+    config.pop("source_artifact_set_sha256", None)
+    row = collect_rows(tmp_path, config)[2]
+    assert (row["legacy"], row["legacy_reasons"], row["qk_norm"]) == (False, [], True)
+    assert row["weight_decay_policy"] == "exclude_embeddings_norms_biases_v1"
+
+    # A column that QK-norm does not apply to ignores it; a plain-score reference column rejects it.
+    config["panels"][0]["columns"][1]["qk_norm"] = None
+    assert collect_rows(tmp_path, config)[2]["legacy"] is False
+    config["panels"][0]["columns"][1]["qk_norm"] = False
+    with pytest.raises(ValueError, match="plain-score reference"):
+        collect_rows(tmp_path, config)
+
+    resolved["model"]["qk_norm"] = False
+    _write(run_dir / "config.json", resolved)
+    config["panels"][0]["columns"][1]["qk_norm"] = True
+    row = collect_rows(tmp_path, config)[2]
+    assert (row["legacy"], row["legacy_reasons"]) == (True, ["no QK-norm"])
 
 
 def test_rejects_mutated_source_and_reference_errors(tmp_path: Path) -> None:
@@ -170,10 +199,15 @@ def test_committed_comparison_sources() -> None:
     root = Path(__file__).resolve().parents[4]
     config = json.loads((root / "experiments/attention_scaling_comparison/configs/heatmap.json").read_text())
     rows = collect_rows(root, config)
-    assert len(rows) == 125
+    assert len(rows) == 130
     assert {status: sum(row["status"] == status for row in rows)
             for status in {row["status"] for row in rows}} == {
-                "complete": 41, "numerical_failure": 4, "not_run": 80}
+                "complete": 42, "numerical_failure": 4, "not_run": 84}
+    current = {(row["panel"], row["column"], row["d_k"]) for row in rows
+               if row["status"] != "not_run" and not row["legacy"]}
+    assert current == {("references", "softmax", 64), ("references", "softmax_no_qk_norm", 64)}
+    assert all(row["legacy"] for row in rows if row["status"] != "not_run"
+               and (row["panel"], row["column"], row["d_k"]) not in current)
     failures = {(row["panel"], row["column"]): row["failure_step"]
                 for row in rows if row["status"] == "numerical_failure"}
     assert failures == {("normalized_fixed", "m1"): 9,

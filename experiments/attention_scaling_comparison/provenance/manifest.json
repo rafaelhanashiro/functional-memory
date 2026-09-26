@@ -81,8 +81,14 @@
             "label": "softmax"
           },
           {
+            "id": "softmax_no_qk_norm",
+            "label": "softmax\nno QK-norm",
+            "qk_norm": false
+          },
+          {
             "id": "gla",
-            "label": "GLA"
+            "label": "GLA",
+            "qk_norm": null
           },
           {
             "id": "unnormalized_exp",
@@ -155,31 +161,35 @@
   "source_manifests": {
     "key_dimension_taylor": {
       "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-      "sha256": "dc96fd97bfde0a3d65e0470e96e4cd553e64b7b8f39d5ceac4f9877327a50c15"
+      "sha256": "752c9c5134d2839fdc1b6a481313bb72e61f6aa9f75b2043b628c6543787ac9e"
     },
     "odd_taylor_attention": {
       "path": "experiments/odd_taylor_attention/provenance/manifest.json",
-      "sha256": "603a09a3d71c0a97b20f6774c003ad42482e4e5bab4fd3ceb33763feb1bfedeb"
+      "sha256": "6fb2b1e05ddbfcbb7dbdfb5b99239b16bb98bd71dc329246a5fd91accb5e8d9c"
     },
     "learned_quadratic_attention": {
       "path": "experiments/learned_quadratic_attention/provenance/manifest.json",
-      "sha256": "e09e232e32b78899d9ccd4a1f8a0aebce363750f0e51e9dff91489bbc1a71801"
+      "sha256": "4d5f0318febd6582eaafd60e308153fcbc81877f48074e46a95abdc796d0872d"
     },
     "unnormalized_taylor_attention": {
       "path": "experiments/unnormalized_taylor_attention/provenance/manifest.json",
-      "sha256": "d7e43386547f4a446fdac23efcff42a55a125bea5dcd23fa014f6fd91e96d6f6"
+      "sha256": "aa4dc7767e7ea580c776891e74de13cb78664b4fcca02f40d4ec18ab9c1efaa5"
     },
     "learned_unnormalized_taylor": {
       "path": "experiments/learned_unnormalized_taylor/provenance/manifest.json",
-      "sha256": "5fdef8ac232f269281380899b8af55ced7800b604d8fb289b172acf5243bca3d"
+      "sha256": "701344360d0681913d928eb106f9ad9cf64195a032c57ab1f587c2e21ab3563f"
     },
     "gla_key_dimension": {
       "path": "experiments/gla_key_dimension/provenance/manifest.json",
-      "sha256": "c9e000bfb1608fd9a60165dbe2cf7fe55cb2fa33fa89fe21b437ed5ac5421913"
+      "sha256": "443f1e95641ad9e8b0b0cc8e4a3425cf20a5e004e0c7c93a3e79da45be273a99"
     },
     "unnormalized_attention": {
       "path": "experiments/unnormalized_attention/provenance/manifest.json",
-      "sha256": "fd485e0bc616b9eedb5a92c573474bb75cbc0b321dbf80feee62c7f7dfeed771"
+      "sha256": "990c644dad61f3ccb8eafbca07de71d0d7a9eb0a7b999bf60d1f7f73ffa34ee5"
+    },
+    "qk_norm_attention": {
+      "path": "experiments/qk_norm_attention/provenance/manifest.json",
+      "sha256": "bb8900c813809e4398d2d5d643a0257a428919a086ca5c7a271d76ad82bdcd06"
     }
   },
   "source_runs": [
@@ -200,7 +210,14 @@
           "path": "experiments/odd_taylor_attention/runs/200m-m001-seed0/numerical_failure_step_00000009.json",
           "sha256": "19d77d1a471f71230ea20afb4f3124a4206f1ae2b271b3734e974c4446369a57"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -223,7 +240,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk008-m002-seed0/completion.json",
           "sha256": "b638327ad96544d53384058e9b09a4d975c6d08eafa062c53c66ac371f5fb6f8"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -246,7 +270,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk016-m002-seed0/completion.json",
           "sha256": "2ee1db56f1f9926ad9e86a65b4cf870fd5273655ae47a6b24c673150663d5226"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -269,7 +300,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk032-m002-seed0/completion.json",
           "sha256": "575519164ca70d973b0431b1a9719690ea6940073c1953c7d2450cf82fff84a0"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -292,7 +330,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/completion.json",
           "sha256": "b58da90a02f1bc1b0c0d6bf3b63584b7ab9df39f600e1c65b5e6d442211e59a7"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -315,7 +360,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk128-m002-seed0/completion.json",
           "sha256": "86c2c0b0576807eddcc8d86a227fa55786fb6ef51430d43ef4ed935591de40fd"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -334,7 +386,14 @@
           "path": "experiments/odd_taylor_attention/runs/200m-m003-seed0/numerical_failure_step_00000017.json",
           "sha256": "c0f5a136568c040aabd692d9d6636d6355a6b75957938c3cb6cdf771bd5fe0b2"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -357,7 +416,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk008-m004-seed0/completion.json",
           "sha256": "ac246e4f4abc81e40fac17d3b36023901a867db2a5615c372b48291067addc1f"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -380,7 +446,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk016-m004-seed0/completion.json",
           "sha256": "33197f96e8c4fd2cf56747d7b6d0bc496a28ef70d73f06a67e7a3ec9aa7fbe4f"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -403,7 +476,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk032-m004-seed0/completion.json",
           "sha256": "458cf803729ed1cbee40502e81ba30a55f571f26bd8d5238181eddbf6f3319ee"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -426,7 +506,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/completion.json",
           "sha256": "5aa158bc0661f8682353c4c9b19030c3935abc27c145f823709abdf98100ada1"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -449,7 +536,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk128-m004-seed0/completion.json",
           "sha256": "981ff4663ee5fd768f671f2c2b13eec81bf57c997a6cab678cf6098dbc4bb778"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -472,7 +566,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk008-m008-seed0/completion.json",
           "sha256": "db4914e6be28857a12b2f9928646364bde3000069ea42473d25bd60eeef90be2"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -495,7 +596,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk016-m008-seed0/completion.json",
           "sha256": "93931b7a3f32c84149e428a35009c8491ab6d9fb4d560b105225a6a886f79587"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -518,7 +626,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk032-m008-seed0/completion.json",
           "sha256": "008c10a9fdd4060c259a88d52acec57e711070f02c88a657f31ad9dc4826c7d2"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -541,7 +656,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/completion.json",
           "sha256": "4c1e37050f64bce387de8266596309e13d8de381e8368965cb3926e1105a63a4"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -564,7 +686,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk128-m008-seed0/completion.json",
           "sha256": "665b83a1a693486f7ce7b1efead761db8d83b5a1b61080e3ab5c9eedbb9ffcd9"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -587,7 +716,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk008-m016-seed0/completion.json",
           "sha256": "94c511b6b29ee085a200735d4b82afa2a6b347be35960e589411f752d4083f8a"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -610,7 +746,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk016-m016-seed0/completion.json",
           "sha256": "16293317ca700799fed3d197dc16f6193afd4cd009413efc166aaa708e423d5c"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -633,7 +776,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk032-m016-seed0/completion.json",
           "sha256": "b4467c4bb82e4634abc86e7869c8d315d64cb1747eb434eb01452b1f1b0affce"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -656,7 +806,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/completion.json",
           "sha256": "d5a95945386136c1183a0f78d492cad4b261023cd5413e175c4ee01cbee4317d"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_fixed",
@@ -679,7 +836,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk128-m016-seed0/completion.json",
           "sha256": "97417db27cbab9d9aaa135a184513e3b0f09ebc9f311028e17fcccc53ca3ec6a"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_learned",
@@ -702,7 +866,14 @@
           "path": "experiments/learned_quadratic_attention/runs/200m-positive-global-seed0/completion.json",
           "sha256": "91ba49de861c9f80eda85734feafbb7302d6078f795ea82edab602baa67c9fdb"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_learned",
@@ -725,7 +896,14 @@
           "path": "experiments/learned_quadratic_attention/runs/200m-positive-per-head-seed0/completion.json",
           "sha256": "c6af67563639a89efcc83e46aa24c33015f7e7271ae158d9483c5d7c0c07232f"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_learned",
@@ -744,7 +922,14 @@
           "path": "experiments/learned_quadratic_attention/runs/200m-unrestricted-global-seed0/numerical_failure_step_00002324.json",
           "sha256": "53f15b0a1fa9f87ec1e1d83e575dcb21b7bb17f2386400e0abed7fafeca0bb4e"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "normalized_learned",
@@ -763,7 +948,14 @@
           "path": "experiments/learned_quadratic_attention/runs/200m-unrestricted-per-head-seed0/numerical_failure_step_00004187.json",
           "sha256": "80c4e3b2eafebd3c66d3d355b723a0deaffe6f57091465e7e80c17e28c13411b"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "references",
@@ -786,7 +978,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk008-seed0/completion.json",
           "sha256": "f32575a5214ca009c88f81b0dfc0ce2448b917463ee4941870762505f7b8d398"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "references",
@@ -809,7 +1008,14 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk016-seed0/completion.json",
           "sha256": "9f7548222f69d86867db9a5281457b0197b3b7fe38a5007fc38f8433ffe37d4c"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "references",
@@ -832,30 +1038,41 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk032-seed0/completion.json",
           "sha256": "7537c2875711264916f0853370c305321f5a90dab168f2d45b293307e4ccdfb6"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "references",
       "column": "softmax",
       "d_k": 64,
-      "experiment": "key_dimension_taylor",
-      "run": "200m-softmax-seed0",
+      "experiment": "qk_norm_attention",
+      "run": "200m-qk-softmax-seed0",
       "status": "complete",
-      "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
+      "source_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
       "artifacts": {
         "metadata": {
-          "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metadata.json",
-          "sha256": "d2a32e0c8045e8053595a1acb2d802b97987f8c7b6f7a9eefdef21066d315d42"
+          "path": "experiments/qk_norm_attention/runs/200m-qk-softmax-seed0/metadata.json",
+          "sha256": "fea4127b7425382d2be5f1f4946f60a4fe1f28c273c3d29e934f92cdd69eeeb6"
         },
         "metrics": {
-          "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metrics.jsonl",
-          "sha256": "6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786"
+          "path": "experiments/qk_norm_attention/runs/200m-qk-softmax-seed0/metrics.jsonl",
+          "sha256": "721add8f72c236ace218e41fe8acf2948acc15039e11374c265d2bed9c3c9e49"
         },
         "completion": {
-          "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/completion.json",
-          "sha256": "7571ffbad1e5e9cf1b7f378ecad556b3f1f1e7d0d77671f8f5aa740331b9c8e0"
+          "path": "experiments/qk_norm_attention/runs/200m-qk-softmax-seed0/completion.json",
+          "sha256": "de4e82ca58ec0c788d99898e3b2c7942e146766cd457c97d0281e914eaa702cb"
         }
-      }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "panel": "references",
@@ -878,7 +1095,41 @@
           "path": "experiments/key_dimension_taylor/runs/200m-dk128-seed0/completion.json",
           "sha256": "46a0f3bed429f66d78f20d0f1e0df9de215d8e2d58a6c73b5dda5a936fdb80f7"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "panel": "references",
+      "column": "softmax_no_qk_norm",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "200m-softmax-seed0",
+      "status": "complete",
+      "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metadata.json",
+          "sha256": "d2a32e0c8045e8053595a1acb2d802b97987f8c7b6f7a9eefdef21066d315d42"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metrics.jsonl",
+          "sha256": "6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/completion.json",
+          "sha256": "7571ffbad1e5e9cf1b7f378ecad556b3f1f1e7d0d77671f8f5aa740331b9c8e0"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": false,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "panel": "references",
@@ -901,7 +1152,13 @@
           "path": "experiments/gla_key_dimension/runs/200m-dk008-gla-seed0/completion.json",
           "sha256": "4c0dd5505c7aa9e24fe44ff874313717fabfe7e482cae5a4fea80a60d2a88835"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters"
+      ]
     },
     {
       "panel": "references",
@@ -924,7 +1181,13 @@
           "path": "experiments/gla_key_dimension/runs/200m-dk016-gla-seed0/completion.json",
           "sha256": "34aa4bfb0acd6bad92bbff6e20a2ad68445dd3cb9c5d8897286f2d72cd32865f"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters"
+      ]
     },
     {
       "panel": "references",
@@ -947,7 +1210,13 @@
           "path": "experiments/gla_key_dimension/runs/200m-dk032-gla-seed0/completion.json",
           "sha256": "2b815fe7bc64d22684a85fc501b220c22383f4b1b91f7424471d1ebb70101c7e"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters"
+      ]
     },
     {
       "panel": "references",
@@ -970,7 +1239,13 @@
           "path": "experiments/gla_key_dimension/runs/200m-dk064-gla-seed0/completion.json",
           "sha256": "05de4d576437bb73a5e090375b1b335c76686681787aa5c05f35c1031aa66817"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters"
+      ]
     },
     {
       "panel": "references",
@@ -993,7 +1268,13 @@
           "path": "experiments/gla_key_dimension/runs/200m-dk128-gla-seed0/completion.json",
           "sha256": "660d2d778614a2a76baa4aaf22ce42cd0629130b4e3edb73873ec74df58b686b"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters"
+      ]
     },
     {
       "panel": "references",
@@ -1016,7 +1297,14 @@
           "path": "experiments/unnormalized_attention/runs/200m-exp-seed0-kennel/completion.json",
           "sha256": "52631eaef8b681efc2d5192ae2bfed975572d5b84013aea2e613dc498884e183"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "unnormalized_fixed",
@@ -1039,7 +1327,14 @@
           "path": "experiments/unnormalized_taylor_attention/runs/200m-m001-seed0/completion.json",
           "sha256": "bbf2419c6baad8701856e9a16ab7565fb45be8aebd9c5c6a2c6a918837f3e0b1"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "unnormalized_fixed",
@@ -1062,7 +1357,14 @@
           "path": "experiments/unnormalized_taylor_attention/runs/200m-m002-seed0/completion.json",
           "sha256": "26ebd93c6eca9126f59bbd92ed7664cda27061dcda766b2ea533a40e2fc645a3"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "unnormalized_fixed",
@@ -1085,7 +1387,14 @@
           "path": "experiments/unnormalized_taylor_attention/runs/200m-m003-seed0/completion.json",
           "sha256": "ba04abc24913de43e687b544ed77a1c4afbd74ce3ef51fe41f04680affa69b7b"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "unnormalized_fixed",
@@ -1108,7 +1417,14 @@
           "path": "experiments/unnormalized_taylor_attention/runs/200m-m004-seed0/completion.json",
           "sha256": "7e72531a9e58c7d68350fee38bca2e48e7c1dd0958c00a1694f5b931d5f5db8e"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "unnormalized_learned",
@@ -1131,7 +1447,14 @@
           "path": "experiments/learned_unnormalized_taylor/runs/200m-m001-seed0/completion.json",
           "sha256": "bd8133505df4f0591ecfb395d2bed8d113af45947bca011ecc5b521717642044"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "unnormalized_learned",
@@ -1154,7 +1477,14 @@
           "path": "experiments/learned_unnormalized_taylor/runs/200m-m002-seed0/completion.json",
           "sha256": "731fe53e65fccc5b5cb0804a5fc8b98a06a91d631fcf6f0e7304b2c045ea9b03"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "unnormalized_learned",
@@ -1177,7 +1507,14 @@
           "path": "experiments/learned_unnormalized_taylor/runs/200m-m003-seed0/completion.json",
           "sha256": "2711e78c3e8f7645498967ab0dc2db8aa92f42cce3dac3afa315bd50eeb7192c"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     },
     {
       "panel": "unnormalized_learned",
@@ -1200,18 +1537,26 @@
           "path": "experiments/learned_unnormalized_taylor/runs/200m-m004-seed0/completion.json",
           "sha256": "3e24ed4327b801446971b2f152b35108058c5efddb1fc2aa465041c57619b833"
         }
-      }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
     }
   ],
   "status_counts": {
-    "complete": 41,
-    "not_run": 80,
-    "numerical_failure": 4
+    "complete": 42,
+    "not_run": 84,
+    "numerical_failure": 4,
+    "legacy": 44
   },
   "analysis": {
     "config": {
       "path": "experiments/attention_scaling_comparison/configs/heatmap.json",
-      "sha256": "ed78593aafe422224423b61246d339c6fc5651def25d0a41e99e40f0894439b3"
+      "sha256": "5729cfe61d1a37957dfcb32314e0d69b3a7eb2f914288b94fc36cb25f3efe98e"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
@@ -1220,34 +1565,34 @@
     "code": {
       "collect.py": {
         "path": "experiments/attention_scaling_comparison/adapter/analysis/collect.py",
-        "sha256": "0759f47f491c34ba27b9794aec62e895d6912cdbd4fc833ed150234fd1433002"
+        "sha256": "805e17af2b8aea6590496ebfac817dc60387fb8736f26b9e6a328709dd7c2160"
       },
       "render.py": {
         "path": "experiments/attention_scaling_comparison/adapter/analysis/render.py",
-        "sha256": "6cf22dc69c3b8d5f7c5ff42d77206fc9ae76528078565c7a259b7ec9791ad6b0"
+        "sha256": "eb623d90d074af0cd67acc493c56e1703528cf47399ae4f4ed0edb1a78cb8127"
       },
       "plot.py": {
         "path": "experiments/attention_scaling_comparison/adapter/analysis/plot.py",
-        "sha256": "83b4ec983e4438410609094d1874574aa56e51d463727f6a9f8fe89d738f0473"
+        "sha256": "4fe95fa9ea49267d8d6f24000822944b4c87ee79b0f6c1a57ca5bf072ac8d11e"
       }
     }
   },
   "derived_artifacts": {
     "summary_csv": {
       "path": "experiments/attention_scaling_comparison/summary.csv",
-      "sha256": "06f7b9273cfb03b4f287f950a160a60f126103b877bf3476f3c6b0140ebed382"
+      "sha256": "419953d11c31b856ce4a6fdd0de760a573b58919e1789269ac2ac7035cd14322"
     },
     "readme": {
       "path": "experiments/attention_scaling_comparison/README.md",
-      "sha256": "d8e8ceabf3a4c37b6cd5704c8a025ecf763b3278052ad1b0e9bbd0c914485d74"
+      "sha256": "774fe4d0f806a6b194dec45caf29c850f851daada8c5a8c523e23472e4a66f0a"
     },
     "combined_terminal_ppl_pdf": {
       "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.pdf",
-      "sha256": "b47094096751b26e72e996f3badf4ba37261cce4978f62004cea4bb87a064388"
+      "sha256": "cf2a0acac0245a744658d0515babdd8443d2c30131177849381e762391a91e7f"
     },
     "combined_terminal_ppl_png": {
       "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.png",
-      "sha256": "18dda563456a6970eec189c79632cfc3b925c2306002421896b57009f925707e"
+      "sha256": "596b1430a7188c1764919f1dacb32e928d46c378c462a19f793f1d367ec92687"
     }
   }
 }

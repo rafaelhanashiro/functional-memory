@@ -108,7 +108,8 @@ def test_backbone_is_bitwise_identical_and_production_added_counts(tmp_path, mod
     base = load_config(Path(__file__).resolve().parents[1] / "configs/base.yaml").model
     production = replace(base, attention_degree=2, quadratic_mode=mode, quadratic_sharing=sharing)
     params = jax.eval_shape(lambda: nnx.state(build_model(production, 0), nnx.Param))
-    assert sum(x.size for x in jax.tree.leaves(params)) == 199_906_304 + (2 if sharing == "global" else 320)
+    qk_norm_scales = production.num_layers * production.num_heads  # the base recipe's QK-norm log scales
+    assert sum(x.size for x in jax.tree.leaves(params)) == 199_906_304 + qk_norm_scales + (2 if sharing == "global" else 320)
     assert model_parameter_count(production) == sum(x.size for x in jax.tree.leaves(params))
     assert all(x.dtype == jnp.float32 for x in jax.tree.leaves(params))
 
@@ -134,7 +135,7 @@ def test_coefficient_array_and_backbone_exclusions_have_no_weight_decay(tmp_path
     updated = state.apply_gradients(grads=jax.tree.map(jnp.zeros_like, state.params))
     before, after = dict(nnx.to_flat_state(state.params)), dict(nnx.to_flat_state(updated.params))
     for path, variable in before.items():
-        if path == ("quadratic_coefficients",) or path[-1] in ("scale", "embedding", "bias"):
+        if path == ("quadratic_coefficients",) or path[-1] in ("scale", "embedding", "bias", "qk_norm_log_scale"):
             np.testing.assert_array_equal(variable[...], after[path][...])
         else:
             np.testing.assert_allclose(after[path][...], variable[...] * (1-cfg.optim.learning_rate*cfg.optim.weight_decay),

@@ -19,6 +19,7 @@ FIELDS = (
     "panel", "column", "d_k", "status", "terminal_nll", "terminal_ppl", "failure_step",
     "source_experiment", "source_run", "source_commit", "metrics_path", "metrics_sha256",
     "completion_path", "completion_sha256", "failure_path", "failure_sha256",
+    "weight_decay_policy", "qk_norm", "legacy", "legacy_reasons",
 )
 
 
@@ -51,6 +52,10 @@ def csv_row(row: dict) -> dict:
         "completion_sha256": artifact_field("completion", "sha256"),
         "failure_path": artifact_field("failure", "path"),
         "failure_sha256": artifact_field("failure", "sha256"),
+        "weight_decay_policy": row.get("weight_decay_policy") or "",
+        "qk_norm": "" if row.get("qk_norm") is None else str(bool(row["qk_norm"])).lower(),
+        "legacy": str(bool(row.get("legacy"))).lower(),
+        "legacy_reasons": "; ".join(row.get("legacy_reasons") or []),
     }
 
 
@@ -62,13 +67,19 @@ def update_readme(path: Path, rows: list[dict]) -> None:
     prefix, rest = authored.split(begin, 1)
     _, suffix = rest.split(end, 1)
     counts = Counter(row["status"] for row in rows)
+    trained = [row for row in rows if row["status"] != "not_run"]
+    legacy = [row for row in trained if row.get("legacy")]
     block = (
         f"{len(rows)} displayed coordinates: {counts['complete']} complete, "
         f"{counts['numerical_failure']} numerical failures, "
         f"{counts['not_run']} not run, and {counts['incomplete']} incomplete. "
         "Only completed runs at the common 19,074-update endpoint receive a color "
         "and a terminal PPL. A failed run is labeled with its failure update; "
-        "an untrained coordinate is marked NOT RUN.\n\n"
+        "an untrained coordinate is marked NOT RUN. "
+        f"{len(legacy)} of the {len(trained)} trained cells are outlined as legacy runs: they trained "
+        "with weight decay on all parameters and, where it applies, without QK-norm, before those "
+        "became the scaffold's defaults; each is replaced when its experiment is rerun. "
+        f"{len(trained) - len(legacy)} cells already use the current defaults.\n\n"
         "![Combined terminal perplexity heatmap](figures/combined_terminal_ppl.png)\n\n"
         "[PDF](figures/combined_terminal_ppl.pdf) · [Cell-level data and source checksums](summary.csv) "
         "· [Provenance](provenance/manifest.json)\n"
@@ -97,10 +108,13 @@ def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
     source_rows = [
         {"panel": row["panel"], "column": row["column"], "d_k": row["d_k"],
          "experiment": row["experiment"], "run": row["run"], "status": row["status"],
-         "source_commit": row.get("source_commit"), "artifacts": row.get("artifacts", {})}
+         "source_commit": row.get("source_commit"), "artifacts": row.get("artifacts", {}),
+         "weight_decay_policy": row.get("weight_decay_policy"), "qk_norm": row.get("qk_norm"),
+         "legacy": bool(row.get("legacy")), "legacy_reasons": row.get("legacy_reasons", [])}
         for row in rows if row["status"] != "not_run"
     ]
     status_counts = dict(sorted(Counter(row["status"] for row in rows).items()))
+    status_counts["legacy"] = sum(1 for row in rows if row.get("legacy"))
     code = Path(__file__).resolve().parent
     lock = repo_root / "scaffolds" / "transformer" / "uv.lock"
     manifest = {

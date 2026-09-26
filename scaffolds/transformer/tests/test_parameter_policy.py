@@ -57,7 +57,7 @@ def test_canonical_decay_groups_remain_trainable(mechanism):
     paths = set()
     for path, variable in nnx.to_flat_state(state.params):
         paths.add(path)
-        no_decay = path[-1] in ("embedding", "scale", "bias")
+        no_decay = path[-1] in ("embedding", "scale", "bias", "qk_norm_log_scale")
         decay = 0.0 if no_decay else config.optim.weight_decay
         np.testing.assert_allclose(zeros[path][...], variable[...] * (1 - config.optim.learning_rate * decay),
                                    rtol=1e-6, atol=1e-7)

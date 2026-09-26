@@ -73,7 +73,7 @@
       "status": "completed",
       "config": {
         "path": "experiments/learned_unnormalized_taylor/configs/200m-m001-seed0.yaml",
-        "sha256": "58e145c5a33d0ce215c9eb14009e4272b7be949b7e1ed5f9ae332b74b34fb04d"
+        "sha256": "74378235cc3d764426acd42669cf5a6e4da16218b96a68264167e0a1426b0d42"
       },
       "parameter_count": 199906624,
       "coefficient_count": 320,
@@ -227,7 +227,7 @@
       "status": "completed",
       "config": {
         "path": "experiments/learned_unnormalized_taylor/configs/200m-m002-seed0.yaml",
-        "sha256": "2cc55d1ef2f3d8da5950ba0bc98e83710cf35cd3804c89cd835c1cf26150c312"
+        "sha256": "6f35fb5a00751403a3fb6d278372b1ffccfda3583f6ee93886b205c7c8ce870a"
       },
       "parameter_count": 199906784,
       "coefficient_count": 480,
@@ -474,7 +474,7 @@
       "status": "completed",
       "config": {
         "path": "experiments/learned_unnormalized_taylor/configs/200m-m003-seed0.yaml",
-        "sha256": "b6ba5fdd26874038d79a5bfba0806069f075e3a4d6b5fead87462022a0d3c8bc"
+        "sha256": "b7325ed791884435dfc4127c91b90cac9b0fa7c0b538ea59f4b7a43e3db5e3e2"
       },
       "parameter_count": 199906944,
       "coefficient_count": 640,
@@ -707,7 +707,7 @@
       "status": "completed",
       "config": {
         "path": "experiments/learned_unnormalized_taylor/configs/200m-m004-seed0.yaml",
-        "sha256": "cc4cd2a6cd9ab37b5df964cba1ef85d69f29a5fc5977ce0739951115e331f876"
+        "sha256": "cff6152bc67230927a714aac852846ca25326d3a079f6c493d98d39bca839195"
       },
       "parameter_count": 199907104,
       "coefficient_count": 800,

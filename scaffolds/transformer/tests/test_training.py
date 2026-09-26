@@ -22,9 +22,10 @@ from scaffolds.transformer.train import should_resume
 
 def tiny_config(path):
     cfg = Config()
+    # The plain-score fixture: QK-norm has its own tests, and the GLA fixture derives from this one.
     cfg.model = ModelConfig(vocab_size=16, max_seq_len=4, num_layers=1, hidden_size=8,
                             num_heads=2, num_kv_heads=2, qk_head_dim=2, value_head_dim=4,
-                            intermediate_size=12, tie_embeddings=False)
+                            intermediate_size=12, tie_embeddings=False, qk_norm=False)
     cfg.data.synthetic_vocab_size, cfg.data.sequence_length, cfg.data.batch_size = 16, 5, 4
     cfg.train.micro_batch_size = 2
     cfg.train.workdir = path

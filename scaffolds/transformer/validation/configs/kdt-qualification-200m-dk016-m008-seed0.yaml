@@ -29,6 +29,7 @@ model:
   remat: false
   attention_backend: fused
   attention_degree: 8
+  qk_norm: false
 optim:
   learning_rate: 0.0003
   min_learning_rate: 3.0e-05

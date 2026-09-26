@@ -50,7 +50,7 @@ def test_tags_name_kernel_width_degree_and_hardware():
     config = Config()
     config.model.attention_degree = 4
     tags = tracking.run_tags(config, {"gpu_type": "B300", "gpu_count": 4, "cluster": "kennel"})
-    assert tags == ["taylor", f"dk{config.model.qk_head_dim}", "m4", "4xB300", "kennel"]
+    assert tags == ["taylor", f"dk{config.model.qk_head_dim}", "m4", "qk_norm", "4xB300", "kennel"]
 
 
 def test_offline_training_mirrors_metrics_and_pins_the_run(tmp_path, monkeypatch):

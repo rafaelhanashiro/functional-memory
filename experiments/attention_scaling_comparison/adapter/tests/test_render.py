@@ -22,9 +22,9 @@ def _config():
     }
 
 
-def _row(panel, column, width, status="not_run", value=None, failure_step=None):
+def _row(panel, column, width, status="not_run", value=None, failure_step=None, legacy=False):
     return {"panel": panel, "column": column, "d_k": width, "status": status,
-            "terminal_ppl": value, "failure_step": failure_step}
+            "terminal_ppl": value, "failure_step": failure_step, "legacy": legacy}
 
 
 def _axes(figure):
@@ -87,10 +87,33 @@ def test_failure_incomplete_and_missing_cells_have_distinct_marks():
         assert len({patches[index].get_hatch() for index in (0, 1, 2)}) == 3
         assert len(figure.legends) == 1
         assert [text.get_text() for text in figure.legends[0].get_texts()] == [
-            "Numerical failure (step shown)", "Not run", "Incomplete"]
+            "Numerical failure (step shown)", "Not run", "Incomplete",
+            "Legacy run: decay on all parameters, no QK-norm (to be rerun)"]
     finally:
         import matplotlib.pyplot as plt
         plt.close(figure)
+
+
+def test_legacy_runs_keep_their_color_and_get_an_outline():
+    config = _config()
+    rows = [
+        _row("references", "c0", 8, "complete", 12.5, legacy=True),
+        _row("references", "c1", 8, "complete", 13.5),
+        _row("references", "c2", 16, "numerical_failure", failure_step=7, legacy=True),
+    ]
+    figure = _build_figure(rows, config)
+    try:
+        axis = _axes(figure)["references"]
+        outlines = [patch for patch in axis.patches if patch.get_gid() == "legacy"]
+        assert [(round(patch.get_x() + 0.43), round(patch.get_y() + 0.43)) for patch in outlines] == [(0, 0), (2, 1)]
+        assert all(not patch.get_fill() for patch in outlines)
+        # The outline does not replace the perplexity color: the legacy cell is still drawn from the grid.
+        assert axis.images[0].get_array()[0, 0] == 12.5
+    finally:
+        import matplotlib.pyplot as plt
+        plt.close(figure)
+    with pytest.raises(ValueError, match="cannot be a legacy run"):
+        _build_figure([_row("references", "c0", 8, "not_run", legacy=True)], config)
 
 
 def test_png_and_pdf_regenerate_byte_identically(tmp_path):

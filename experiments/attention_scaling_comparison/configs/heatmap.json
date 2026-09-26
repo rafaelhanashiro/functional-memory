@@ -76,8 +76,14 @@
           "label": "softmax"
         },
         {
+          "id": "softmax_no_qk_norm",
+          "label": "softmax\nno QK-norm",
+          "qk_norm": false
+        },
+        {
           "id": "gla",
-          "label": "GLA"
+          "label": "GLA",
+          "qk_norm": null
         },
         {
           "id": "unnormalized_exp",
@@ -149,31 +155,35 @@
   "source_manifests": {
     "key_dimension_taylor": {
       "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-      "sha256": "dc96fd97bfde0a3d65e0470e96e4cd553e64b7b8f39d5ceac4f9877327a50c15"
+      "sha256": "752c9c5134d2839fdc1b6a481313bb72e61f6aa9f75b2043b628c6543787ac9e"
     },
     "odd_taylor_attention": {
       "path": "experiments/odd_taylor_attention/provenance/manifest.json",
-      "sha256": "603a09a3d71c0a97b20f6774c003ad42482e4e5bab4fd3ceb33763feb1bfedeb"
+      "sha256": "6fb2b1e05ddbfcbb7dbdfb5b99239b16bb98bd71dc329246a5fd91accb5e8d9c"
     },
     "learned_quadratic_attention": {
       "path": "experiments/learned_quadratic_attention/provenance/manifest.json",
-      "sha256": "e09e232e32b78899d9ccd4a1f8a0aebce363750f0e51e9dff91489bbc1a71801"
+      "sha256": "4d5f0318febd6582eaafd60e308153fcbc81877f48074e46a95abdc796d0872d"
     },
     "unnormalized_taylor_attention": {
       "path": "experiments/unnormalized_taylor_attention/provenance/manifest.json",
-      "sha256": "d7e43386547f4a446fdac23efcff42a55a125bea5dcd23fa014f6fd91e96d6f6"
+      "sha256": "aa4dc7767e7ea580c776891e74de13cb78664b4fcca02f40d4ec18ab9c1efaa5"
     },
     "learned_unnormalized_taylor": {
       "path": "experiments/learned_unnormalized_taylor/provenance/manifest.json",
-      "sha256": "5fdef8ac232f269281380899b8af55ced7800b604d8fb289b172acf5243bca3d"
+      "sha256": "701344360d0681913d928eb106f9ad9cf64195a032c57ab1f587c2e21ab3563f"
     },
     "gla_key_dimension": {
       "path": "experiments/gla_key_dimension/provenance/manifest.json",
-      "sha256": "c9e000bfb1608fd9a60165dbe2cf7fe55cb2fa33fa89fe21b437ed5ac5421913"
+      "sha256": "443f1e95641ad9e8b0b0cc8e4a3425cf20a5e004e0c7c93a3e79da45be273a99"
     },
     "unnormalized_attention": {
       "path": "experiments/unnormalized_attention/provenance/manifest.json",
-      "sha256": "fd485e0bc616b9eedb5a92c573474bb75cbc0b321dbf80feee62c7f7dfeed771"
+      "sha256": "990c644dad61f3ccb8eafbca07de71d0d7a9eb0a7b999bf60d1f7f73ffa34ee5"
+    },
+    "qk_norm_attention": {
+      "path": "experiments/qk_norm_attention/provenance/manifest.json",
+      "sha256": "bb8900c813809e4398d2d5d643a0257a428919a086ca5c7a271d76ad82bdcd06"
     }
   },
   "cells": [
@@ -333,7 +343,7 @@
     },
     {
       "panel": "references",
-      "column": "softmax",
+      "column": "softmax_no_qk_norm",
       "d_k": 64,
       "experiment": "key_dimension_taylor",
       "run": "200m-softmax-seed0"
@@ -491,7 +501,14 @@
       "d_k": 64,
       "experiment": "unnormalized_attention",
       "run": "200m-exp-seed0-kennel"
+    },
+    {
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 64,
+      "experiment": "qk_norm_attention",
+      "run": "200m-qk-softmax-seed0"
     }
   ],
-  "source_artifact_set_sha256": "e9280a1f00fbc1628610ea39dee77e5cc4b7828a9feb06128e128488585f720f"
+  "source_artifact_set_sha256": "ab63edddad2fe66763152c52ffd07992cb38e6bd35e8f028a4ac1c9eda7c3947"
 }

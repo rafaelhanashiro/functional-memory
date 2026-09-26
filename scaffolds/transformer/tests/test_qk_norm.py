@@ -280,7 +280,6 @@ def test_optimizer_excludes_the_log_scale_from_weight_decay():
 
 @pytest.mark.parametrize("updates,error", [
     (dict(attention_mechanism="gla", attention_degree=None, attention_normalization=True), "GLA"),
-    (dict(attention_degree=0), "degree 0"),
     (dict(qk_norm_eps=0.0), "qk_norm_eps"),
     (dict(qk_norm_eps=float("nan")), "qk_norm_eps"),
     (dict(qk_norm_initial_scale=-1.0), "qk_norm_initial_scale"),
@@ -293,6 +292,16 @@ def test_invalid_qk_norm_configurations_are_rejected(updates, error):
         _model_config(**updates)
 
 
+def test_qk_norm_resolves_from_the_mechanism_when_unset():
+    # Unset: on for dot-product kernels that read scores, off for GLA and degree 0.
+    assert _model_config().qk_norm is True
+    assert replace(_model_config(), qk_norm=None, attention_degree=0).qk_norm is False
+    assert replace(_model_config(), qk_norm=None, attention_mechanism="gla", attention_degree=None,
+                   attention_normalization=True).qk_norm is False
+    # Degree 0 never reads Q or K, so an explicit request resolves off instead of failing.
+    assert _model_config(attention_degree=0).qk_norm is False
+
+
 def test_recipes_round_trip_and_legacy_recipes_compare_equal(tmp_path):
     for initial in (None, 8.0):
         config = _config_for(_model_config(qk_norm_initial_scale=initial), tmp_path)
@@ -303,12 +312,18 @@ def test_recipes_round_trip_and_legacy_recipes_compare_equal(tmp_path):
         assert restored.model.qk_norm_initial_scale == initial
         assert restored.model.qk_norm_eps == 1e-6
         assert config_to_dict(restored) == config_to_dict(config)
-    legacy = config_to_dict(Config())
+    # A run recorded before QK-norm existed trained without it: it equals the plain
+    # configuration, not today's default, which is QK-norm on.
+    plain = Config()
+    plain.model = replace(plain.model, qk_norm=False)
+    legacy = config_to_dict(plain)
     for key in ("qk_norm", "qk_norm_sharing", "qk_norm_initial_scale", "qk_norm_eps"):
         legacy["model"].pop(key)
-    assert config_dicts_equal(legacy, config_to_dict(Config()))
+    assert config_dicts_equal(legacy, config_to_dict(plain))
+    assert not config_dicts_equal(legacy, config_to_dict(Config()))
     assert not config_dicts_equal(legacy, config_to_dict(_config_for(_model_config())))
-    assert "qk_norm" not in attention_identity(Config())
+    assert Config().model.qk_norm is True
+    assert "qk_norm" not in attention_identity(plain)
     identity = attention_identity(_config_for(_model_config("unnormalized_taylor3")))
     assert identity["qk_norm"] is True
     assert identity["attention_kernel"] == "taylor_unnormalized"

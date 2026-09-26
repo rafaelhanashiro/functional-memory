@@ -13,7 +13,7 @@
   "canonical_recipe": {
     "config": {
       "path": "experiments/unnormalized_attention/configs/base.yaml",
-      "sha256": "55e4eb62ee49249ffe716bfc65a2793c1794e02c7f3bfef30215298855dd1767"
+      "sha256": "528b620b9ede5afc5a9326d97622905b10df6916a8bc0ddf8d5a9afae2bb4ef8"
     },
     "matches": "the repository's 200M sweep recipe except attention normalization",
     "seed": 0,
@@ -47,7 +47,7 @@
       "status": "completed",
       "config": {
         "path": "experiments/unnormalized_attention/configs/200m-exp-seed0-kennel.yaml",
-        "sha256": "4a1f61a31beeb136409ab111f37762ab4faa3f9097daa3f55619e01f8f3f9093"
+        "sha256": "c875a6206009c3aa79fd19d5f63e530719f9eff063802f0dc25c945edf6138ca"
       },
       "selected_checkpoint": {
         "step": 19074,
@@ -167,7 +167,7 @@
       "hardware": "4x NVIDIA B300 on akita, one process, fused Pallas/Triton exponential kernel",
       "config": {
         "path": "experiments/unnormalized_attention/configs/250m-exp-seed0-kennel.yaml",
-        "sha256": "7d76e3710dc5ce8a434662a2ce2223d098d02f23ba5faaf9c0e68a26bf64e799"
+        "sha256": "67d0e4c0d514eda7120d50114c9612fd4d634c9fb5d775f1c2881a7619ae9f9f"
       },
       "parameter_count": 253654016,
       "training_updates": 21935,

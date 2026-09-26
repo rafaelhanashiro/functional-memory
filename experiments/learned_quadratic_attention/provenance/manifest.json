@@ -39,7 +39,7 @@
       "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-m002-seed0.yaml",
-        "sha256": "743ed8cdb72d44990969e3a89a7163d1004ea8fe9c9f2bce854301afe95bc9b9"
+        "sha256": "bde01797865b3323e2b81f07d0c6f44d2da1c6426e4db0b0a65232eee53edb5c"
       },
       "metrics": {
         "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metrics.jsonl",
@@ -91,7 +91,7 @@
       "original_sweep_identity": "6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a",
       "source_provenance": {
         "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-        "sha256": "dc96fd97bfde0a3d65e0470e96e4cd553e64b7b8f39d5ceac4f9877327a50c15"
+        "sha256": "752c9c5134d2839fdc1b6a481313bb72e61f6aa9f75b2043b628c6543787ac9e"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
@@ -110,7 +110,7 @@
       "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-softmax-seed0.yaml",
-        "sha256": "f05ddef29734a3dd77db85fb2b353424ab46b8156b43826186d175f3ce127133"
+        "sha256": "4fcd6d27091f88b0cb0f1e7c8ac2c9a9ab2c61269c3f736bca16800d147eb861"
       },
       "metrics": {
         "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metrics.jsonl",
@@ -205,7 +205,7 @@
       "retained_completed": true,
       "source_provenance": {
         "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-        "sha256": "dc96fd97bfde0a3d65e0470e96e4cd553e64b7b8f39d5ceac4f9877327a50c15"
+        "sha256": "752c9c5134d2839fdc1b6a481313bb72e61f6aa9f75b2043b628c6543787ac9e"
       },
       "coefficient_count": 0,
       "quadratic_mode": "fixed",
@@ -234,7 +234,7 @@
       "attention_backend": "fused",
       "resolved_config": {
         "path": "experiments/learned_quadratic_attention/configs/200m-positive-global-seed0.yaml",
-        "sha256": "a55721c9148ad6f7cdd534de4ab31a18e7e0d2e5abb052b7a6253bd6a875b51d"
+        "sha256": "13852dfeb45ecd4d75382eba74c52d19c077e58bbaa0ce030f272ccbb409e26c"
       },
       "metadata": {
         "path": "experiments/learned_quadratic_attention/runs/200m-positive-global-seed0/metadata.json",
@@ -336,7 +336,7 @@
       "attention_backend": "fused",
       "resolved_config": {
         "path": "experiments/learned_quadratic_attention/configs/200m-positive-per-head-seed0.yaml",
-        "sha256": "128174400c3c36e8e44e945767d3a9822ad4c210c3611710cb8e5f22d7af5930"
+        "sha256": "51e10e25dd79095191313e4dcc10da23893afc8e24d5246bcdca49a0f7cee800"
       },
       "metadata": {
         "path": "experiments/learned_quadratic_attention/runs/200m-positive-per-head-seed0/metadata.json",
@@ -438,7 +438,7 @@
       "attention_backend": "fused",
       "resolved_config": {
         "path": "experiments/learned_quadratic_attention/configs/200m-unrestricted-global-seed0.yaml",
-        "sha256": "5ff7c59cff5a54bc3de5e95d411ac7a82c09d8b2f0c8998d4a07913e7388266c"
+        "sha256": "3f1938b49328a689cdc4d645e91bd75eac5a2b3df2091af681137a1b51c88f89"
       },
       "metadata": {
         "path": "experiments/learned_quadratic_attention/runs/200m-unrestricted-global-seed0/metadata.json",
@@ -539,7 +539,7 @@
       "attention_backend": "fused",
       "resolved_config": {
         "path": "experiments/learned_quadratic_attention/configs/200m-unrestricted-per-head-seed0.yaml",
-        "sha256": "155a35c00ec0e9bfe530a5ad0151069e8e9a31e5c69026f0dd5863635eb8216b"
+        "sha256": "01ebc147ff08c7510b9ed2fcdea189766481edc4611cfa618a06dfa38252e4aa"
       },
       "metadata": {
         "path": "experiments/learned_quadratic_attention/runs/200m-unrestricted-per-head-seed0/metadata.json",

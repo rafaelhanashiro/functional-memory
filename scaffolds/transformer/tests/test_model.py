@@ -61,7 +61,7 @@ def test_production_parameter_count_and_fp32_storage(degree):
     cfg = replace(load_config(BASE_CONFIG).model, attention_degree=degree)
     params = jax.eval_shape(lambda: nnx.state(build_model(cfg, 0), nnx.Param))
     count = sum(leaf.size for leaf in jax.tree.leaves(params))
-    assert count == 199_906_304
+    assert count == 199_906_304 + (cfg.num_layers * cfg.num_heads if cfg.qk_norm else 0)
     assert model_parameter_count(cfg) == count
     assert all(leaf.dtype == jnp.float32 for leaf in jax.tree.leaves(params))
 
@@ -114,7 +114,7 @@ def test_max_sequence_length_is_enforced():
 
 
 def test_backbone_initialization_is_identical_across_fixed_degrees():
-    cfg = _small_config()
+    cfg = _small_config(qk_norm=False)  # degree 0 carries no QK-norm scale; compare the backbone alone
     reference = build_model(replace(cfg, attention_degree=None, attention_backend="xla"), 0)
     expected, expected_tree = jax.tree.flatten(nnx.state(reference, nnx.Param))
     for degree in ATTENTION_DEGREES:
@@ -127,7 +127,9 @@ def test_backbone_initialization_is_identical_across_fixed_degrees():
 
 # Query/key widths of the dK records; every other weight has the same shape at each width.
 KEY_DIMENSIONS = (2, 4, 8, 16, 32, 64, 128)
-EXPECTED_COUNTS = (179_590_144, 180_245_504, 181_556_224, 184_177_664, 189_420_544, 199_906_304, 220_877_824)
+# Softmax backbones per width, plus the 10 x 16 QK-norm log scales the base recipe now carries.
+EXPECTED_COUNTS = tuple(count + 160 for count in
+                        (179_590_144, 180_245_504, 181_556_224, 184_177_664, 189_420_544, 199_906_304, 220_877_824))
 
 
 @pytest.mark.parametrize("qk_dim,expected", list(zip(KEY_DIMENSIONS, EXPECTED_COUNTS, strict=True)))
@@ -164,6 +166,8 @@ def test_shared_weights_have_identical_initialization_across_key_dimensions():
         large_value = dict(large_params)[path]
         if "q_proj" in jax.tree_util.keystr(path) or "k_proj" in jax.tree_util.keystr(path):
             assert small_value.shape != large_value.shape
+        elif "qk_norm_log_scale" in jax.tree_util.keystr(path):
+            assert small_value.shape == large_value.shape  # initialized at log sqrt(d_K), so values differ by design
         else:
             np.testing.assert_array_equal(small_value[...], large_value[...])
             compared += 1

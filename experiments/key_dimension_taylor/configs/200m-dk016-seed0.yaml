@@ -28,6 +28,7 @@ model:
   tie_embeddings: false
   remat: false
   attention_backend: cudnn
+  qk_norm: false
 optim:
   learning_rate: 0.0003
   min_learning_rate: 3.0e-05

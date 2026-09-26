@@ -2047,7 +2047,7 @@
       "qk_head_dim": 2,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk002-seed0.yaml",
-        "sha256": "3be5f742d80793321cfa1839659523a77d8c636c14e31fa4081359dc474e53d2"
+        "sha256": "903d1480589fe71231e4743c5fb825482f614dce7eb3b8c054d0e02a93ccd14d"
       },
       "seed": 0,
       "selected_checkpoint": {
@@ -2098,7 +2098,7 @@
       "qk_head_dim": 4,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk004-seed0.yaml",
-        "sha256": "35092fe1ad5f83f471ad27aef0ed5d11a14bf7f3f8562ead33424d287d777aff"
+        "sha256": "a02d0c388b8b20fedb1b7698a1e122716da347724d33e02b0e57bf00c233e6c3"
       },
       "seed": 0,
       "selected_checkpoint": {
@@ -2179,7 +2179,7 @@
       "qk_head_dim": 8,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk008-m002-seed0.yaml",
-        "sha256": "6e3085f4af45f05d51b25c6bf1706c4fc63ca05cde045a7ea169c899628107a6"
+        "sha256": "b38662221dcc61f2cddcc97d7b2ed5b6d6c09368edbc3b9c3e83eac905c0c6f4"
       },
       "retained_completed": false,
       "seed": 0,
@@ -2273,7 +2273,7 @@
       "qk_head_dim": 8,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk008-m004-seed0.yaml",
-        "sha256": "d43833aac7ea008009e4932edbe4b2b8b04f49ff0ed58152e1445de7599371d8"
+        "sha256": "09d9e72cbaf1687944e6d02d8e19909519457a0d158166a48f2acddf23b35746"
       },
       "retained_completed": false,
       "seed": 0,
@@ -2367,7 +2367,7 @@
       "qk_head_dim": 8,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk008-m008-seed0.yaml",
-        "sha256": "ae8178be1e345f5ccb42fe01b2a874283c9bb8324adf75324fe42c435d9bce8d"
+        "sha256": "cefff36fb24e6be52c27efe85cc47defc4bd643b431267fd330428b06153f009"
       },
       "retained_completed": false,
       "seed": 0,
@@ -2461,7 +2461,7 @@
       "qk_head_dim": 8,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk008-m016-seed0.yaml",
-        "sha256": "615b637099a6c4feb6ba9e02a5a4a99e6b34d8f9e638624b96d22d902fffb385"
+        "sha256": "695b52701afe4d2744097a0c8960e901336f0aa454849e3604339d8705d54e18"
       },
       "retained_completed": false,
       "seed": 0,
@@ -2531,7 +2531,7 @@
       "qk_head_dim": 8,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk008-seed0.yaml",
-        "sha256": "6954747b92e06893cb46834d455d14ffabdd79bb9f4d35c9558e182f9e94a5ae"
+        "sha256": "d22f30cb34b18b765f7a7553134e45ebe95e2f74dc00e64013cd43e2f6e5aa2e"
       },
       "retained_completed": true,
       "seed": 0,
@@ -2605,7 +2605,7 @@
       "qk_head_dim": 16,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk016-m002-seed0.yaml",
-        "sha256": "09e0ae6a8bf1d9b259fc26e64ffdc1c7be1f5e454f2c654ce6f35cd5fd934089"
+        "sha256": "180e33775b84bfafa5f78c3d4750a68cdf341023a9254bd419056efd1574660e"
       },
       "retained_completed": false,
       "seed": 0,
@@ -2699,7 +2699,7 @@
       "qk_head_dim": 16,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk016-m004-seed0.yaml",
-        "sha256": "1ee105d4a9648ef8d07cc6aecd6d626ad5fa59f2c39b563f22c187aa9ebdfaa8"
+        "sha256": "b67f2f5eb4bb8ca46d7572b4e165c1554115d1d10c27bdb1fdd23a66c769c2c4"
       },
       "retained_completed": false,
       "seed": 0,
@@ -2793,7 +2793,7 @@
       "qk_head_dim": 16,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk016-m008-seed0.yaml",
-        "sha256": "eb94d5937f834d8ad9b60472f6b04a36d1311985030d2b561f42bf085b5095f2"
+        "sha256": "3b73606a09907577d9ded27bc7e93c8e0a023b707cad8bd45a1fa3d657a0d610"
       },
       "retained_completed": false,
       "seed": 0,
@@ -2889,7 +2889,7 @@
       "qk_head_dim": 16,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk016-m016-seed0.yaml",
-        "sha256": "e2c62c5352bf071a1d6e8499f1949087efd5a4a025aff9e87a7b592d2c05f265"
+        "sha256": "e028853aa49fc88f699367eb05aca654785690b799b9ea62124f023cfcfe8a92"
       },
       "retained_completed": false,
       "seed": 0,
@@ -2959,7 +2959,7 @@
       "qk_head_dim": 16,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk016-seed0.yaml",
-        "sha256": "6c90803e0c81b36a25b8f072f3ee29c26b4deea2a68facc2e527b404ab4d8d57"
+        "sha256": "23ffb22f1f5a787cf2955ebbda0f9fe0a96775f866496bca7d4c154080c19147"
       },
       "retained_completed": true,
       "seed": 0,
@@ -3035,7 +3035,7 @@
       "qk_head_dim": 32,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk032-m002-seed0.yaml",
-        "sha256": "6c073a31e72a360d5c468845fd10b97803654c6c3d820829c511951789179a8f"
+        "sha256": "460eaf9141894ae876e0bb21fdd7238f31784dc42918d1817f9a4e2cfa3cdac7"
       },
       "retained_completed": false,
       "seed": 0,
@@ -3131,7 +3131,7 @@
       "qk_head_dim": 32,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk032-m004-seed0.yaml",
-        "sha256": "511ef5a996305d7ee5ecd4188d38c77032a8947c8296ed6aadd865fa5df7d72d"
+        "sha256": "2cef918a1977e98a12d29179c2b4948875f9f2397b29639729d36bbe72d31301"
       },
       "retained_completed": false,
       "seed": 0,
@@ -3227,7 +3227,7 @@
       "qk_head_dim": 32,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk032-m008-seed0.yaml",
-        "sha256": "84f3610f23b729166134566c48c50f2bd1aa888b3679c74194f3d77d51ae312a"
+        "sha256": "4a757d25fe2e27609dcbee1a752ecff6def02c77735eca1a0c1537bef8e4f992"
       },
       "retained_completed": false,
       "seed": 0,
@@ -3328,7 +3328,7 @@
       "qk_head_dim": 32,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk032-m016-seed0.yaml",
-        "sha256": "ce7a38b1094619b775e8a56a74b8a6383745fec42fbbf6dc9e7353a89df5d63d"
+        "sha256": "5a032dfb9403ed7f56c88648d8593fd343c230a9e5cc4ac8d42de72eb00f26bf"
       },
       "retained_completed": false,
       "seed": 0,
@@ -3398,7 +3398,7 @@
       "qk_head_dim": 32,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk032-seed0.yaml",
-        "sha256": "14a45631d1528262d58d1bc8e548efe82c0d2fec1520f59d1030655a8b3367c7"
+        "sha256": "3dd81acf850d527d6452d7141db681a41dc58f34245f47262eb8152c16fb007e"
       },
       "retained_completed": true,
       "seed": 0,
@@ -3439,7 +3439,7 @@
       "source_commit": "2484f00e9a32f1571b330fff5788d9a86175235f",
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-m000-seed0.yaml",
-        "sha256": "e882087bf022166dd9af0f139a7bc6c8a65ac44f588b506d519e150092ba7471"
+        "sha256": "973da49c8c17367ab10f7901557dee8b01bc82f6cfec0e7b23e5bd61d219f04b"
       },
       "metrics": {
         "path": "experiments/key_dimension_taylor/runs/200m-m000-seed0/metrics.jsonl",
@@ -3514,7 +3514,7 @@
       "qk_head_dim": 64,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-m002-seed0.yaml",
-        "sha256": "743ed8cdb72d44990969e3a89a7163d1004ea8fe9c9f2bce854301afe95bc9b9"
+        "sha256": "bde01797865b3323e2b81f07d0c6f44d2da1c6426e4db0b0a65232eee53edb5c"
       },
       "retained_completed": true,
       "seed": 0,
@@ -3579,7 +3579,7 @@
       "qk_head_dim": 64,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-m004-seed0.yaml",
-        "sha256": "206f5f9e99ba0005894b715a66be71fd743572f062282080783e22bba65bf933"
+        "sha256": "212f1f5b7e900234c8eab12af41843cc20a76f95519a900fdd8e00777489f46b"
       },
       "retained_completed": true,
       "seed": 0,
@@ -3644,7 +3644,7 @@
       "qk_head_dim": 64,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-m008-seed0.yaml",
-        "sha256": "05c892179d330aa9bafb6dd9306a1a476a5ef5336f0962712749dffc9e0acb5d"
+        "sha256": "71474f93f14a87b85ccea25153a639abf33becfcd4be2628f67840dd095a35d5"
       },
       "retained_completed": true,
       "seed": 0,
@@ -3709,7 +3709,7 @@
       "qk_head_dim": 64,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-m016-seed0.yaml",
-        "sha256": "8211894056601ad66d6ae50a5766e352bdd73b25af9e80cf527a542bdf7b606a"
+        "sha256": "bc1f13ffed619695bb9675cabfb2e49b5bd78c2aa876fd4c0c237a4d97840fd4"
       },
       "retained_completed": true,
       "seed": 0,
@@ -3799,7 +3799,7 @@
       "qk_head_dim": 128,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk128-m002-seed0.yaml",
-        "sha256": "580fb2fb2041e4079f63cfe2b6c4707612002841f9c01c020451855804b84660"
+        "sha256": "0d1b3485b25f119261ae79f23c26cca9a8c35bdc38c754b33f003c364d8c8bda"
       },
       "retained_completed": false,
       "seed": 0,
@@ -3895,7 +3895,7 @@
       "qk_head_dim": 128,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk128-m004-seed0.yaml",
-        "sha256": "a7d2460b97b46dea85caff3b11d5e15c7d0aa670bb73acb8fb8ee93cc1c8d56d"
+        "sha256": "be73f3bd3896fcd2d0802f09f7a4fd0910853c515d6001e1ee6d21a9c820f0d3"
       },
       "retained_completed": false,
       "seed": 0,
@@ -3996,7 +3996,7 @@
       "qk_head_dim": 128,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk128-m008-seed0.yaml",
-        "sha256": "4eb756ece01f27cf764d8e545489508f34db99a453c5c2d7d7361340271eea18"
+        "sha256": "c93cc8a22924bcdb59e0ff8221c449752c242fbbd0c5b3668c181e47a0ab4864"
       },
       "retained_completed": false,
       "seed": 0,
@@ -4097,7 +4097,7 @@
       "qk_head_dim": 128,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk128-m016-seed0.yaml",
-        "sha256": "e1799f0cb9267b31d77b4807ed91ba03f67d4d9aaf8e0312404fb44e64211888"
+        "sha256": "94dfc6e8193ced072ac215a6146735e6a853da61bd811def096c28ec7acd71bf"
       },
       "retained_completed": false,
       "seed": 0,
@@ -4167,7 +4167,7 @@
       "qk_head_dim": 128,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk128-seed0.yaml",
-        "sha256": "69be6e5e0639a052c788a8e7a00de9807de9c17a5303d9eea588c0d7d286d1e9"
+        "sha256": "505fea1ae487bbce7f1293f7eed16b3b7212fb5592e7cfc1331e32a55a9eb83b"
       },
       "retained_completed": true,
       "seed": 0,
@@ -4211,7 +4211,7 @@
       "qk_head_dim": 256,
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-dk256-seed0.yaml",
-        "sha256": "1dffc670d042cf96167f8a7e84221506678b247e096c59ca7e9522c5a8e62a97"
+        "sha256": "99f2154a9caec43f74a57bbc6bdf5bbd6750f20664e94960a2285629da7d2c89"
       },
       "seed": 0,
       "selected_checkpoint": {
@@ -4259,7 +4259,7 @@
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-softmax-seed0.yaml",
-        "sha256": "f05ddef29734a3dd77db85fb2b353424ab46b8156b43826186d175f3ce127133"
+        "sha256": "4fcd6d27091f88b0cb0f1e7c8ac2c9a9ab2c61269c3f736bca16800d147eb861"
       },
       "metrics": {
         "path": "experiments/key_dimension_taylor/runs/200m-softmax-seed0/metrics.jsonl",

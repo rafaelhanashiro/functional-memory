@@ -31,6 +31,7 @@ model:
   attention_degree: 2
   quadratic_mode: positive
   quadratic_sharing: per_head
+  qk_norm: false
 optim:
   learning_rate: 0.0003
   min_learning_rate: 3.0e-05

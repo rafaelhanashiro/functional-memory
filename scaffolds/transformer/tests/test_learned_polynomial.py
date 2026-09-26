@@ -203,6 +203,7 @@ def test_backbone_is_the_fixed_taylor_initialization_and_production_counts(degre
                          attention_coefficients="learned", attention_coefficient_sharing=sharing)
     params = jax.eval_shape(lambda: nnx.state(build_model(production, 0), nnx.Param))
     added = (degree + 1) * (1 if sharing == "global" else production.num_layers * production.num_heads)
+    added += production.num_layers * production.num_heads  # the base recipe's QK-norm log scales
     assert sum(x.size for x in jax.tree.leaves(params)) == 199_906_304 + added == model_parameter_count(production)
     assert all(x.dtype == jnp.float32 for x in jax.tree.leaves(params))
 
@@ -227,7 +228,7 @@ def test_coefficient_array_and_backbone_exclusions_have_no_weight_decay(tmp_path
     before, after = dict(nnx.to_flat_state(state.params)), dict(nnx.to_flat_state(updated.params))
     decay = 1 - config.optim.learning_rate * config.optim.weight_decay
     for path, variable in before.items():
-        if path == ("polynomial_coefficients",) or path[-1] in ("scale", "embedding", "bias"):
+        if path == ("polynomial_coefficients",) or path[-1] in ("scale", "embedding", "bias", "qk_norm_log_scale"):
             np.testing.assert_array_equal(after[path][...], variable[...])
         else:
             np.testing.assert_allclose(after[path][...], variable[...] * decay, rtol=1e-6)

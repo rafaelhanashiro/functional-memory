@@ -63,7 +63,9 @@ class ModelConfig:
     # Cosine scores for any dot-product mechanism: s = exp(gamma) * cos(q, k) with a
     # learned log scale gamma per layer and head (or one shared), initialized at
     # log(qk_norm_initial_scale); null selects sqrt(qk_head_dim).
-    qk_norm: bool = False
+    # QK-norm is the default for dot-product attention: unset resolves to on, except for
+    # GLA (rejects it) and degree 0 (never reads Q/K). Plain scores need qk_norm: false.
+    qk_norm: bool | None = None
     qk_norm_sharing: Literal["global", "per_head"] = "per_head"
     qk_norm_initial_scale: float | None = None
     qk_norm_eps: float = 1e-6
@@ -140,6 +142,10 @@ class ModelConfig:
                                  "use attention_backend blocked or auto")
             if self.attention_degree is None or self.attention_degree < 1:
                 raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
+        if self.qk_norm is None:
+            self.qk_norm = self.attention_mechanism == "dot_product" and self.attention_degree != 0
+        elif self.attention_degree == 0:
+            self.qk_norm = False  # Degree 0 ignores Q and K, so QK-norm cannot apply.
         if not isinstance(self.qk_norm, bool):
             raise ValueError("model.qk_norm must be a boolean")
         if self.qk_norm_sharing not in ("global", "per_head"):
@@ -151,11 +157,8 @@ class ModelConfig:
             if (not isinstance(value, (int, float)) or isinstance(value, bool)
                     or not math.isfinite(value) or value <= 0):
                 raise ValueError(f"model.{name} must be finite and positive")
-        if self.qk_norm:
-            if self.attention_mechanism != "dot_product":
-                raise ValueError("QK-norm is a dot-product attention option; GLA does not support it")
-            if self.attention_degree == 0:
-                raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
+        if self.qk_norm and self.attention_mechanism != "dot_product":
+            raise ValueError("QK-norm is a dot-product attention option; GLA does not support it")
         if not 0 <= self.dropout < 1:
             raise ValueError("model.dropout must be in [0, 1)")
         if self.dropout != 0 and self.attention_backend != "manual":

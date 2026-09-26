@@ -29,6 +29,7 @@ model:
   tie_embeddings: false
   value_head_dim: 64
   vocab_size: 32000
+  qk_norm: false
 optim:
   beta1: 0.9
   beta2: 0.95
