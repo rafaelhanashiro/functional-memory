@@ -14,6 +14,7 @@ Reusable code is organized by capability under `scaffolds/`. Each experiment und
 | Unnormalized attention | [Unnormalized exponential attention at 200M and 250M](experiments/unnormalized_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | Unnormalized Taylor attention | [Degrees 1–4 without row normalization](experiments/unnormalized_taylor_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
 | QK-norm attention | [Softmax over learned-scale cosine scores at 200M](experiments/qk_norm_attention/README.md) | [Transformer](scaffolds/transformer/README.md) |
+| QK-norm learned Taylor kernels | [Learned polynomial kernels over cosine scores, with and without row normalization](experiments/qk_norm_learned_taylor/README.md) | [Transformer](scaffolds/transformer/README.md) |
 
 ```text
 scaffolds/<capability>/                   reusable code, tests, and environment definition

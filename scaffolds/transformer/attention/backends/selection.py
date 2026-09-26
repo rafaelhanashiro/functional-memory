@@ -57,18 +57,23 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
     polynomial = model_config.attention_degree is not None
     unnormalized = not model_config.attention_normalization
     custom_kernel = polynomial or unnormalized
+    # Learned coefficients under row normalization have only the blocked reference.
+    learned_normalized = (polynomial and not unnormalized
+                          and getattr(model_config, "attention_coefficients", "fixed") == "learned")
     width = max(model_config.qk_head_dim, model_config.value_head_dim)
     fits_fused = width <= 128
     capability = (8 if platform is not None else _cuda_compute_capability()) if gpu else None
     supports_triton = capability is not None and capability >= 8
     if request == "auto":
-        if not gpu:
+        if not gpu or learned_normalized:
             return "blocked"
         if not custom_kernel:
             return "cudnn" if dtype == "bfloat16" and fits_fused and supports_triton else "xla"
         return "fused" if fits_fused and supports_triton else "blocked"
     if custom_kernel and request in ("manual", "xla", "cudnn"):
         raise ValueError(f"Backend {request!r} supports exact softmax only")
+    if request == "fused" and learned_normalized:
+        raise ValueError("Normalized learned polynomial coefficients have no fused kernel; use blocked or auto")
     if request == "fused" and custom_kernel:
         if not fits_fused:
             raise ValueError("Fused attention supports Q/K and value head dimensions up to 128")

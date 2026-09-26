@@ -39,7 +39,14 @@ def attention_core(
             return_diagnostics=return_diagnostics, polynomial_coefficients=polynomial_coefficients,
         )
     if polynomial_coefficients is not None:
-        raise ValueError("Learned polynomial coefficients require unnormalized attention")
+        from scaffolds.transformer.attention.learned_polynomial import normalized_learned_polynomial_attention
+
+        if quadratic_mode != "fixed" or coefficients is not None:
+            raise ValueError("Learned polynomial coefficients exclude the learned quadratic modes")
+        return normalized_learned_polynomial_attention(
+            q, k, v, attention_degree=attention_degree, polynomial_coefficients=polynomial_coefficients,
+            backend=backend, return_diagnostics=return_diagnostics,
+        )
     if quadratic_mode != "fixed":
         from scaffolds.transformer.attention.learned_quadratic import learned_quadratic_attention
 

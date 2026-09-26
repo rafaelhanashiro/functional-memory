@@ -250,6 +250,14 @@
       "capture": "sbatch stdout/stderr, pre-launch QK-norm cosine-score GPU tests on one akita B300",
       "state": "COMPLETED",
       "exit_code": "0:0"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/normalized-learned-polynomial/slurm-202336.out",
+      "sha256": "2f31671700eb4e0740b381f1573a807f5adc18f1e9a96b1fa4d951c575eb0283",
+      "slurm_job_id": "202336",
+      "capture": "sbatch stdout/stderr, pre-launch GPU tests for the normalized learned-polynomial path, QK-norm operands, and the fused learned-polynomial kernel on one akita B300",
+      "state": "COMPLETED",
+      "exit_code": "0:0"
     }
   ],
   "source_limitation": "Raw benchmark source_commit captured the surrounding checkout parent while the extraction was uncommitted. The preserved frozen snapshot matches all 53 Python files at 2e0e88d. The final shared implementation is committed at d493a41; an immutable hash of its benchmark-time dirty tree was not recorded.",
@@ -399,6 +407,55 @@
       "known_limitation_encountered": "job 202156 on B300 failed acceptance because its GPU stage included test_softmax_backends.py, whose width-256 cuDNN cases B300 rejects (hidden_dim > 128 with d_qk != d_v); unrelated to QK-norm, removed from the recipe's GPU stage",
       "defects_fixed": [],
       "evidence": "experiments/qk_norm_attention/provenance/manifest.json, run acceptance and pre_launch_validation"
+    },
+    "normalized_learned_polynomial_and_qk_norm_sweep": {
+      "scope": "Row-normalized attention with learned polynomial coefficients (attention/learned_polynomial.py, blocked reference only) and QK-norm cosine scores composed with the fused learned-polynomial kernel, for the qk_norm_learned_taylor recipes (degrees 1-4, d_K = 64)",
+      "source_commit": {
+        "pre_launch": "1d9b30c (scaffold change; the tested tree equals the commit)",
+        "acceptance": "696ffb5ecb2a49a5be433a9abe1273f920a94a03"
+      },
+      "tests": "scaffolds/transformer/tests/test_learned_polynomial_normalized.py (4 GPU cases: blocked normalized learned kernel at the 2,048-token BF16 context on cosine operands with an FP64 prefix comparison) plus test_qk_norm.py (5) and test_learned_polynomial_fused_attention.py (26); 673 CPU tests",
+      "pre_launch": {
+        "b300": "35 passed, job 202336 (akita)",
+        "logs": [
+          "scaffolds/transformer/validation/logs/normalized-learned-polynomial/slurm-202336.out"
+        ],
+        "note": "jobs 202334 and 202335 failed only the new degree-1 FP64 prefix comparison at scale 8, where the signed row sums of 1 + s make the constant coefficient's gradient a difference of near-equal FP32 sums; the comparison was moved to scale 2"
+      },
+      "b300": {
+        "jobs": [
+          "202340 (m=2 normalized)",
+          "202342 (m=3 normalized)",
+          "202344 (m=4 normalized)",
+          "202343 (m=4 unnormalized)"
+        ],
+        "gpu_tests_passed": 83,
+        "full_recipe_pilot_and_resume": "passed",
+        "pilot_step_seconds_median": {
+          "blocked normalized m=2": 1.01,
+          "blocked normalized m=4": 1.03,
+          "fused unnormalized m=4": 0.46
+        }
+      },
+      "h100": {
+        "jobs": [
+          "202338 (m=1 normalized, dogo)",
+          "202380 (m=3 unnormalized, dogo)",
+          "202339 (m=2 unnormalized, dogo)",
+          "202337 (m=1 unnormalized, mastiff)"
+        ],
+        "gpu_tests_passed": 83,
+        "full_recipe_pilot_and_resume": "passed",
+        "pilot_step_seconds_median": {
+          "blocked normalized m=1": 1.97,
+          "fused unnormalized m=3": 0.48,
+          "fused unnormalized m=2": 0.46,
+          "fused unnormalized m=1 (mastiff, loaded)": 0.72
+        },
+        "note": "first H100 qualification of QK-norm; the earlier qk_norm_attention run qualified B300 only"
+      },
+      "defects_fixed": [],
+      "evidence": "experiments/qk_norm_learned_taylor/provenance/manifest.json, per-run acceptance"
     }
   },
   "runs": [
