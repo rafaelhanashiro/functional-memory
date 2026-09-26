@@ -243,6 +243,29 @@ exposed no defect in QK-norm; it failed on B300 because its GPU stage listed
 (hidden dimension above 128 with `d_qk != d_v`), a known limit outside the
 recipe's widths.
 
+## Normalized learned polynomials and QK-norm on B300 and H100
+
+Row-normalized attention with learned polynomial coefficients
+(`attention/learned_polynomial.py`) has only the blocked reference; QK-norm scores
+compose with every kernel as pre-scaled operands. Both first ran for the
+[QK-norm learned Taylor sweep](../../../experiments/qk_norm_learned_taylor/README.md).
+The new GPU cases (`tests/test_learned_polynomial_normalized.py`) run the blocked
+normalized kernel at the 2,048-token BF16 context on cosine operands and compare a
+causal prefix, including the coefficient and log-scale gradients, with FP64; the
+degree-1 comparison runs at scale 2 because at scale 8 the signed row sums of
+`1 + s` make the constant coefficient's gradient a difference of near-equal FP32
+sums (30% off FP64 on B300, a property of the kernel, not the code). Before launch
+these 4 cases, the 5 QK-norm gates, and the 26 fused learned-polynomial cases passed
+on one B300 (`akita`, job 202336; two earlier jobs failed only the scale-8 degree-1
+comparison). Every production allocation then passed the sweep's acceptance at
+source `696ffb5` (673-test CPU suite before launch; per allocation 202 CPU tests,
+5 distributed, 83 GPU tests, the softmax-backbone initialization check, a
+20-update pilot, and an exact resume): B300 in jobs 202340, 202342, 202343, and
+202344, and H100 in jobs 202337, 202338, 202339, and 202380, which is also the
+first H100 qualification of QK-norm. Pilot update times were 1.01–1.03 s for the
+blocked normalized kernels on four B300s (1.97 s on four H100s) against 0.46–0.48 s
+for the fused unnormalized kernel on either GPU.
+
 ## Reproduction
 
 From a worktree with the scaffold environment synced
