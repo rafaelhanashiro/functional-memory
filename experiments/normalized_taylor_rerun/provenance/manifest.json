@@ -1,0 +1,212 @@
+{
+  "format": "functional-memory-experiment-setup",
+  "version": 2,
+  "experiment": "normalized_taylor_rerun",
+  "status": "queued",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "execution_checkout": "worktrees/normalized_taylor_rerun",
+  "documentation": "experiments/normalized_taylor_rerun/README.md",
+  "scaffold": "scaffolds/transformer",
+  "branch": "claude/normalized-taylor-rerun",
+  "branch_base_commit": "7f3ede0063f8863f9ee65f86b848231d099c510c",
+  "launch_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+  "frozen_execution_set_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
+  "scientific_change": "The retained d_K = 64 row-normalized fixed Taylor recipe at m = 1, 2, 3, 4, 8, 16 under the scaffold's current defaults: per-head QK-norm cosine scores and selective weight decay",
+  "requested": {
+    "date": "2026-09-26",
+    "from_cluster": "kennel",
+    "purpose": "roll the heatmap's d_K = 64 normalized fixed Taylor column over to the current defaults; replace the legacy runs on completion"
+  },
+  "shared_dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+  },
+  "data_identity": {
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    }
+  },
+  "comparison_controls": {
+    "legacy_m1": {
+      "run": "experiments/odd_taylor_attention/runs/200m-m001-seed0",
+      "status": "numerical-failure",
+      "failure_step": 9
+    },
+    "legacy_m2": {
+      "run": "experiments/key_dimension_taylor/runs/200m-m002-seed0",
+      "status": "completed",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "validation_nll": 2.7900009751319885,
+      "validation_perplexity": 16.281035677939382
+    },
+    "legacy_m3": {
+      "run": "experiments/odd_taylor_attention/runs/200m-m003-seed0",
+      "status": "numerical-failure",
+      "failure_step": 17
+    },
+    "legacy_m4": {
+      "run": "experiments/key_dimension_taylor/runs/200m-m004-seed0",
+      "status": "completed",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "validation_nll": 2.7069559693336487,
+      "validation_perplexity": 14.983595500270773
+    },
+    "legacy_m8": {
+      "run": "experiments/key_dimension_taylor/runs/200m-m008-seed0",
+      "status": "completed",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "validation_nll": 2.6863556674548557,
+      "validation_perplexity": 14.678086502581763
+    },
+    "legacy_m16": {
+      "run": "experiments/key_dimension_taylor/runs/200m-m016-seed0",
+      "status": "completed",
+      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "validation_nll": 2.688271709850856,
+      "validation_perplexity": 14.70623729906033
+    },
+    "qk_norm_softmax": {
+      "run": "experiments/qk_norm_attention/runs/200m-qk-softmax-seed0",
+      "validation_perplexity": 14.457394141153632,
+      "source_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091"
+    }
+  },
+  "runs": [
+    {
+      "name": "200m-m001-seed0",
+      "attention_degree": 1,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/normalized_taylor_rerun/configs/200m-m001-seed0.yaml",
+        "sha256": "402c9f361c71672ff7e6a555bd876a96e871c90c4ec41b81ef6c6fc0eaa0066f"
+      },
+      "parameter_count": 199906464,
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "slurm_job_ids": [
+        202614
+      ],
+      "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free",
+      "replaces": "experiments/odd_taylor_attention/runs/200m-m001-seed0",
+      "run_record": "experiments/normalized_taylor_rerun/runs/200m-m001-seed0",
+      "log_directory": "experiments/normalized_taylor_rerun/logs/200m-m001-seed0",
+      "checkpoint_directory": "experiments/normalized_taylor_rerun/checkpoints/200m-m001-seed0"
+    },
+    {
+      "name": "200m-m002-seed0",
+      "attention_degree": 2,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/normalized_taylor_rerun/configs/200m-m002-seed0.yaml",
+        "sha256": "01cf28c4971fb5a04a9eccf4363201cd2e605f3c7c397ed729bceed3229abc79"
+      },
+      "parameter_count": 199906464,
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "slurm_job_ids": [
+        202616
+      ],
+      "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free",
+      "replaces": "experiments/key_dimension_taylor/runs/200m-m002-seed0",
+      "run_record": "experiments/normalized_taylor_rerun/runs/200m-m002-seed0",
+      "log_directory": "experiments/normalized_taylor_rerun/logs/200m-m002-seed0",
+      "checkpoint_directory": "experiments/normalized_taylor_rerun/checkpoints/200m-m002-seed0"
+    },
+    {
+      "name": "200m-m003-seed0",
+      "attention_degree": 3,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/normalized_taylor_rerun/configs/200m-m003-seed0.yaml",
+        "sha256": "a57d56146be76536d4fb39db1828a0cf7f4ba40998e2d7ef9642743745f0dba9"
+      },
+      "parameter_count": 199906464,
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "slurm_job_ids": [
+        202615
+      ],
+      "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free",
+      "replaces": "experiments/odd_taylor_attention/runs/200m-m003-seed0",
+      "run_record": "experiments/normalized_taylor_rerun/runs/200m-m003-seed0",
+      "log_directory": "experiments/normalized_taylor_rerun/logs/200m-m003-seed0",
+      "checkpoint_directory": "experiments/normalized_taylor_rerun/checkpoints/200m-m003-seed0"
+    },
+    {
+      "name": "200m-m004-seed0",
+      "attention_degree": 4,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/normalized_taylor_rerun/configs/200m-m004-seed0.yaml",
+        "sha256": "61207b1df57f94afb211e7e0c91c96732daaf68b9767e402782de4ef47d292a5"
+      },
+      "parameter_count": 199906464,
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "slurm_job_ids": [
+        202617
+      ],
+      "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free",
+      "replaces": "experiments/key_dimension_taylor/runs/200m-m004-seed0",
+      "run_record": "experiments/normalized_taylor_rerun/runs/200m-m004-seed0",
+      "log_directory": "experiments/normalized_taylor_rerun/logs/200m-m004-seed0",
+      "checkpoint_directory": "experiments/normalized_taylor_rerun/checkpoints/200m-m004-seed0"
+    },
+    {
+      "name": "200m-m008-seed0",
+      "attention_degree": 8,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/normalized_taylor_rerun/configs/200m-m008-seed0.yaml",
+        "sha256": "908d5c3ba60fe71f1738895b12aaea6923fb717a0398cc05614f5eddc9cc7f4b"
+      },
+      "parameter_count": 199906464,
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "slurm_job_ids": [
+        202618
+      ],
+      "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free",
+      "replaces": "experiments/key_dimension_taylor/runs/200m-m008-seed0",
+      "run_record": "experiments/normalized_taylor_rerun/runs/200m-m008-seed0",
+      "log_directory": "experiments/normalized_taylor_rerun/logs/200m-m008-seed0",
+      "checkpoint_directory": "experiments/normalized_taylor_rerun/checkpoints/200m-m008-seed0"
+    },
+    {
+      "name": "200m-m016-seed0",
+      "attention_degree": 16,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "submitted",
+      "config": {
+        "path": "experiments/normalized_taylor_rerun/configs/200m-m016-seed0.yaml",
+        "sha256": "b1d1a2eef343bb3a770d86f9ac790dcb4f99b95b8361dc117062f60154d5d1b5"
+      },
+      "parameter_count": 199906464,
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "slurm_job_ids": [
+        202619
+      ],
+      "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free",
+      "replaces": "experiments/key_dimension_taylor/runs/200m-m016-seed0",
+      "run_record": "experiments/normalized_taylor_rerun/runs/200m-m016-seed0",
+      "log_directory": "experiments/normalized_taylor_rerun/logs/200m-m016-seed0",
+      "checkpoint_directory": "experiments/normalized_taylor_rerun/checkpoints/200m-m016-seed0"
+    }
+  ],
+  "pre_launch_validation": {
+    "cpu_tests": "111 passed, 2 skipped (adapter tests, QK-norm, attention, odd training, acceptance) at the launch tree; acceptance repeats the declared CPU, distributed, and GPU tests in each allocation",
+    "scaffold_state": "main 7f3ede0: the scaffold that produced the QK-norm and learned Taylor records"
+  }
+}
