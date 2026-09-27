@@ -180,6 +180,11 @@
           "time": "2026-09-26T21:13-04:00",
           "partition": "sweep",
           "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue"
+        },
+        {
+          "time": "2026-09-27T01:57-04:00",
+          "partition": "long",
+          "reason": "the nonnegative learned Taylor runs concluded, so this user's long-partition jobs fell to zero; two sweep reruns returned to long, keeping three rerun jobs (12 GPUs) there"
         }
       ]
     },
@@ -283,6 +288,11 @@
           "time": "2026-09-26T21:13-04:00",
           "partition": "sweep",
           "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue"
+        },
+        {
+          "time": "2026-09-27T01:57-04:00",
+          "partition": "long",
+          "reason": "the nonnegative learned Taylor runs concluded, so this user's long-partition jobs fell to zero; two sweep reruns returned to long, keeping three rerun jobs (12 GPUs) there"
         }
       ]
     },
