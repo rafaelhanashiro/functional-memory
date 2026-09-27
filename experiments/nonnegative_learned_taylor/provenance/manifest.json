@@ -1,0 +1,347 @@
+{
+  "format": "functional-memory-experiment-setup",
+  "version": 2,
+  "experiment": "nonnegative_learned_taylor",
+  "status": "concluded",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "execution_checkout": "worktrees/nonnegative_learned_taylor",
+  "documentation": "experiments/nonnegative_learned_taylor/README.md",
+  "scaffold": "scaffolds/transformer",
+  "branch": "claude/nonnegative-learned-taylor",
+  "branch_base_commit": "aedd097e92079455dd4f6b382b475b1783c4c248",
+  "launch_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
+  "frozen_execution_set_sha256": "e5a8da3132f2de76c8729e4b982ede885db711e8b86a01ccb2e759a106a04643",
+  "scientific_change": "Row-normalized causal p_{l,h}(s) V / rowsum with p = q1^2 + q2^2 (deg q1 = m/2, deg q2 = m/2 - 1), factors learned per layer and head and initialized so p = T_m; QK-norm cosine scores with per-head log scales; otherwise the QK-norm learned Taylor sweep's normalized recipe",
+  "requested": {
+    "date": "2026-09-26",
+    "from_cluster": "kennel",
+    "degrees": [
+      2,
+      4
+    ],
+    "sharing": "per_head",
+    "normalization": "row-normalized",
+    "partition_policy": "best resources and little wait among allowed partitions (not conference); long preempts only sweep"
+  },
+  "shared_dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+  },
+  "data_identity": {
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    }
+  },
+  "comparison_controls": {
+    "signed_direct_m2": {
+      "run": "experiments/qk_norm_learned_taylor/runs/200m-qk-m002-normalized-seed0",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "status": "numerical-failure",
+      "failure_step": 1857
+    },
+    "signed_direct_m4": {
+      "run": "experiments/qk_norm_learned_taylor/runs/200m-qk-m004-normalized-seed0",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "status": "numerical-failure",
+      "failure_step": 1456
+    },
+    "qk_norm_softmax": {
+      "run": "experiments/qk_norm_attention/runs/200m-qk-softmax-seed0",
+      "source_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
+      "validation_nll": 2.671205988952092,
+      "validation_perplexity": 14.457394141153632
+    },
+    "positive_quadratic_per_head_legacy": {
+      "run": "experiments/learned_quadratic_attention/runs/200m-positive-per-head-seed0",
+      "note": "0.5 (1 + (a s + b)^2) per head, without QK-norm and under decay on all parameters",
+      "validation_perplexity": 16.2125
+    }
+  },
+  "runs": [
+    {
+      "name": "200m-qk-m002-nonnegative-seed0",
+      "attention_degree": 2,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "completed",
+      "config": {
+        "path": "experiments/nonnegative_learned_taylor/configs/200m-qk-m002-nonnegative-seed0.yaml",
+        "sha256": "1ff9ec14a0dee40935f1d03f260d3e40ae6a5047efd4a53f271330c548ea4fed"
+      },
+      "parameter_count": 199906944,
+      "factor_count": 480,
+      "source_commit": "270179ce9330e33bd2dacffb364aaf00e01e38f8",
+      "slurm_job_ids": [
+        202638
+      ],
+      "submission": "sbatch --partition=long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); started at 21:19:55 on dogo (H100) in the slot released by cancelling the blocked attempt; the pending normalized Taylor rerun m=1 (202614) was held for the swap and released once 202638 started",
+      "run_record": "experiments/nonnegative_learned_taylor/runs/200m-qk-m002-nonnegative-seed0",
+      "log_directory": "experiments/nonnegative_learned_taylor/logs/200m-qk-m002-nonnegative-seed0",
+      "checkpoint_directory": "experiments/nonnegative_learned_taylor/checkpoints/200m-qk-m002-nonnegative-seed0",
+      "launch_commit": "270179ce9330e33bd2dacffb364aaf00e01e38f8",
+      "execution_checkout": "worktrees/nonnegative_learned_taylor_fused",
+      "branch": "claude/nonnegative-learned-taylor-fused",
+      "frozen_execution_set_sha256": "a6eac0c38b2fe505c85c436bdb7e49884af58f082f63e34a82da0c107d387fb2",
+      "attention_backend": "fused",
+      "superseded_attempt": {
+        "attention_backend": "blocked",
+        "source_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
+        "config": {
+          "path": "experiments/nonnegative_learned_taylor/configs/200m-qk-m002-nonnegative-seed0.yaml",
+          "sha256": "5b9971e915ae24d11f3eab3513e1c9828491efb5081eaf7105d55e2210824ae7"
+        },
+        "execution_checkout": "worktrees/nonnegative_learned_taylor",
+        "slurm_job_id": 202604,
+        "attempts": [
+          {
+            "node": "dogo",
+            "start": "2026-09-26T19:06:59-04:00",
+            "end": "2026-09-26T19:46:21-04:00",
+            "outcome": "preempted by this user's own standard-partition job (normalized Taylor rerun m=1, 202614); requeued"
+          },
+          {
+            "node": "dogo",
+            "start": "2026-09-26T19:48:33-04:00",
+            "end": "2026-09-26T21:19:51-04:00",
+            "outcome": "resumed from the update-500 checkpoint; cancelled at update 2,940 to relaunch on the fused kernel"
+          }
+        ],
+        "throughput": "2.2 s/update on four H100 SXM",
+        "last_validation": {
+          "step": 2000,
+          "validation_nll": 4.052367,
+          "validation_perplexity": 57.5335
+        },
+        "artifacts": "deleted 2026-09-26 22:00 after the fused run passed update 3,000 with matching validation; none retained",
+        "validation": [
+          {
+            "step": 1000,
+            "validation_nll": 4.849587,
+            "validation_perplexity": 127.6876
+          },
+          {
+            "step": 2000,
+            "validation_nll": 4.052367,
+            "validation_perplexity": 57.5335
+          }
+        ]
+      },
+      "acceptance": {
+        "status": "passed",
+        "completed_utc": "2026-09-27T01:30:50Z",
+        "hardware": "4x NVIDIA H100 80GB HBM3 (dogo)",
+        "cpu_tests_passed": 141,
+        "cpu_distributed_tests": "none declared",
+        "gpu_tests_passed": 51,
+        "initialization_parameter_sha256": "8786c98702e97fdaf9631667c4c01a5029a4c5508999cdb7582e1635b0f92fdb",
+        "resolved_attention_backend": "fused (pallas_triton); diagnostics on the blocked reference",
+        "pilot": "20 updates, finite validation, valid diagnostics; steady 0.48-0.50 s/update",
+        "resume": "restored step 20 and trained step 21 on the fused backend"
+      },
+      "throughput": "0.50 s/update on four H100 SXM (2.2 s/update for the blocked attempt)",
+      "backend_agreement": "same seed and data order as the cancelled blocked attempt: training NLL 10.487346 vs 10.487302 at update 20, 8.231812 vs 8.231823 at 100, 6.955703 vs 6.955702 at 200; validation NLL 4.849204 vs 4.849587 at 1,000 and 4.054707 vs 4.052367 at 2,000 (fused vs blocked)",
+      "attempts": [
+        {
+          "slurm_job_id": 202638,
+          "node": "dogo",
+          "start": "2026-09-26T21:19:55-04:00",
+          "end": "2026-09-26T22:32:52-04:00",
+          "outcome": "preempted at update ~6,878 by another user's 2-GPU debug-partition job (202643), which outranks long and took the youngest long job on dogo; requeued"
+        },
+        {
+          "slurm_job_id": 202638,
+          "node": "dogo",
+          "start": "2026-09-26T22:42:15-04:00",
+          "outcome": "resumed from the update-6,500 checkpoint after the normalized Taylor rerun m=1 (202614), which had taken the freed slot at 22:39 and was still in acceptance, was requeued held and released; preempted at update ~14,570 by another 2-GPU debug-partition job (202663); requeued",
+          "end": "2026-09-26T23:59:49-04:00"
+        },
+        {
+          "slurm_job_id": 202638,
+          "node": "akita",
+          "start": "2026-09-27T01:01:30-04:00",
+          "outcome": "dogo stayed short of four free GPUs after the second preemption, so with the user's approval the normalized Taylor rerun m=3 (202615), which had just started on akita, was requeued held and m=2 resumed on four B300s (the launcher accepts either GPU type; the fused kernel is qualified on both); m=3 was given Dependency=afterany:202638; passed B300 acceptance at 01:13, resumed from update 14,500, and completed 19,074 updates",
+          "end": "2026-09-27T01:47:57-04:00"
+        }
+      ],
+      "hardware_summary": "4x H100 SXM (dogo) through update ~14,570, then 4x B300 (akita)",
+      "training_updates": 19074,
+      "prediction_tokens": 10000269312,
+      "terminal_validation_nll": 2.7835158109664917,
+      "terminal_validation_perplexity": 16.17579211851895,
+      "best_validation": {
+        "selection_rule": "lowest_validation_nll",
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.7835158109664917,
+        "validation_perplexity": 16.17579211851895
+      },
+      "selected_checkpoint": {
+        "step": 19074,
+        "path": "experiments/nonnegative_learned_taylor/checkpoints/200m-qk-m002-nonnegative-seed0/19074",
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "file_count": 16,
+        "bytes": 2200342995,
+        "tree_sha256": "8a78249695030325b84311691a7e75401f52d7547a7808b20098bc6de6673e90",
+        "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'",
+        "files": {
+          "_CHECKPOINT_METADATA": "4517bfec884c77c46788ac6ae4f37a94f8224fe7ca0b426ba03bfd6bc52edda8",
+          "default/_METADATA": "0f535a2238a0f6eb058184680f6b5598f370b35db89e6d25e645f94424221fbe",
+          "default/_sharding": "3c269aafbba06cb4d34ce5537bb9d14afacf43ff8d3d4be3e8d761e6db87661c",
+          "default/array_metadatas/process_0": "8095134c72ba369d138410e187ba7b0bcafe03ccd74b7cc9a417c703e34cc911",
+          "default/d/99cb985b910d91e01465ea9787b5eb8b": "2d72f0a07c1d0b671c75891b580e1fdcf281acf9a207dba929e5bc6f3bf925cb",
+          "default/manifest.ocdbt": "ba0af8b89055543e218badba327aea8cd0eee64a69d7f8a203deeadb65576d95",
+          "default/ocdbt.process_0/d/849b3c19f05144ccd833ab87490fc662": "b85a5e91bb26bf0069e98d228a5e0a1f232eff6bfe85188deafbbb62aca9dfcc",
+          "default/ocdbt.process_0/d/9df5718e832aa5b9586445e7794bab78": "77aacbfdbe55803c265d32f3e4e478865d17de34bdd2164a0cdaaa715eb51dee",
+          "default/ocdbt.process_0/d/a7bae56b45b1e0d93bf7c66a56475798": "840daeb07c53a8a3738421a8da05753479c6d55636ffbeafb4c0d762f72dac88",
+          "default/ocdbt.process_0/d/af561eaebf155ac012e03a0253ed7b30": "7a84a1cfd9d7b3a392055c62f9f06fb6fcd9a20d102eb87fc934bc0d94a35ed8",
+          "default/ocdbt.process_0/d/b778bf81272e9dadd4bc08a19f171b5b": "2b3cc528508048904c4abdcc48980884293b7555df053b11b86d342a1770bf13",
+          "default/ocdbt.process_0/d/c9f0b619a26b5c41a3cb7d08cc7998fc": "95a65d4e00d63f56c42eb0e075f8039133c4a0e64ecf533697b4834f4b59b21e",
+          "default/ocdbt.process_0/d/e8224b5d256b7cb2b5c2fdeead4434c6": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+          "default/ocdbt.process_0/d/faffb150508fd6735d14836dc14b2ef7": "44fe9759299b32963377ebc31af66308be56604e7f3af40494b2f7124b6a414d",
+          "default/ocdbt.process_0/manifest.ocdbt": "c98fe4192997d70f78f6a20ff7a26b7b30a433a617989aba5f71e384db15903c",
+          "metrics/metrics": "c46e8cad3ac81c6fd0403f65b068fe1df97264859cff28ab0c600be1ac3c4b42"
+        }
+      },
+      "log": {
+        "path": "experiments/nonnegative_learned_taylor/logs/200m-qk-m002-nonnegative-seed0/slurm-202638.out",
+        "sha256": "ba2e2cb07a7ca8cd208183687993d6d075b00d16b14eb4840e6a9ad6327498ac"
+      },
+      "retention": {
+        "path": "experiments/nonnegative_learned_taylor/runs/200m-qk-m002-nonnegative-seed0/retention.json",
+        "sha256": "a98dba0b2fbe54b409ecb128aa46b11b660fc703a8bb17d94f37c1e0ebf34813"
+      },
+      "wandb": {
+        "run_id": "fb0b427a2c034695beeb4d3be4e16613",
+        "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/fb0b427a2c034695beeb4d3be4e16613"
+      },
+      "completion": {
+        "path": "experiments/nonnegative_learned_taylor/runs/200m-qk-m002-nonnegative-seed0/completion.json",
+        "sha256": "3b79dd0968ca3b981fd728e6b91f84abe45d9dbad0fc49894695634b88ca986a"
+      }
+    },
+    {
+      "name": "200m-qk-m004-nonnegative-seed0",
+      "attention_degree": 4,
+      "seed": 0,
+      "home_cluster": "kennel",
+      "status": "completed",
+      "config": {
+        "path": "experiments/nonnegative_learned_taylor/configs/200m-qk-m004-nonnegative-seed0.yaml",
+        "sha256": "8fb4ceab0f4eb570851c0105c2ea4843aa16920f255f15819316b5fcc08421ff"
+      },
+      "parameter_count": 199907264,
+      "factor_count": 800,
+      "source_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
+      "slurm_job_ids": [
+        202605
+      ],
+      "submission": "sbatch --partition=long --time=1-00:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); started on akita (B300) within a minute by preempting a sweep-partition job",
+      "run_record": "experiments/nonnegative_learned_taylor/runs/200m-qk-m004-nonnegative-seed0",
+      "log_directory": "experiments/nonnegative_learned_taylor/logs/200m-qk-m004-nonnegative-seed0",
+      "checkpoint_directory": "experiments/nonnegative_learned_taylor/checkpoints/200m-qk-m004-nonnegative-seed0",
+      "launch_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
+      "execution_checkout": "worktrees/nonnegative_learned_taylor",
+      "branch": "claude/nonnegative-learned-taylor",
+      "frozen_execution_set_sha256": "e5a8da3132f2de76c8729e4b982ede885db711e8b86a01ccb2e759a106a04643",
+      "attention_backend": "blocked",
+      "attempts": [
+        {
+          "slurm_job_id": 202605,
+          "node": "akita",
+          "start": "2026-09-26T19:07:03-04:00",
+          "end": "2026-09-26T19:46:19-04:00",
+          "outcome": "preempted by this user's own standard-partition job (normalized Taylor rerun m=1, 202614); requeued"
+        },
+        {
+          "slurm_job_id": 202605,
+          "node": "akita",
+          "start": "2026-09-26T19:48:33-04:00",
+          "outcome": "resumed from the update-1,500 checkpoint; completed 19,074 updates",
+          "end": "2026-09-27T00:58:40-04:00"
+        }
+      ],
+      "training_updates": 19074,
+      "prediction_tokens": 10000269312,
+      "terminal_validation_nll": 2.6906952432223727,
+      "terminal_validation_perplexity": 14.741921579480255,
+      "best_validation": {
+        "selection_rule": "lowest_validation_nll",
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.6906952432223727,
+        "validation_perplexity": 14.741921579480255
+      },
+      "selected_checkpoint": {
+        "step": 19074,
+        "path": "experiments/nonnegative_learned_taylor/checkpoints/200m-qk-m004-nonnegative-seed0/19074",
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "file_count": 16,
+        "bytes": 2197272315,
+        "tree_sha256": "596119e1f33825cc17b740000a64dc528fa7a1f0858bd309458f8d1f206c3416",
+        "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'",
+        "files": {
+          "_CHECKPOINT_METADATA": "00d24a6d07f75b6663c2533c81fb1362f35b55b0820a5889674a1271c77fbe0d",
+          "default/_METADATA": "fabc946ae281f8ed514516d9b5b487442be9af5e68d4ddcd2d1183b44da42443",
+          "default/_sharding": "3c269aafbba06cb4d34ce5537bb9d14afacf43ff8d3d4be3e8d761e6db87661c",
+          "default/array_metadatas/process_0": "0c0fa14efcc621e0de44a97f13c04008473e1d13b370f5a8050972fd06e2e15a",
+          "default/d/bdedc88966148561d0c9cc222fc15312": "70150d6ea461c48d7fe30b9e7081023d4e6783dbdc16261bbe697fb289798bbd",
+          "default/manifest.ocdbt": "14e62ae603a81def76da1bec2d2c73b66fb1989abaae8431b1efbeabe1584bda",
+          "default/ocdbt.process_0/d/28c0dc9986c4f9af97851be2d62b6e06": "026b76ecc14be2bc2371e7272db2046035844575379a2fa3bfbeca0be84df534",
+          "default/ocdbt.process_0/d/4ee85c031ca6e56b06eb50161a770d85": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+          "default/ocdbt.process_0/d/783a7a5c8a4a6e5100c3a8016f6458d6": "cf1e40c1cb7db5bc8644ded99471c10ff29d940e7b37415de0ad5d897ef8e1b5",
+          "default/ocdbt.process_0/d/9213b13c0a1ae2a3156616aadc32ef94": "4b9d397380e9795d947c648a82b3932b4a0974bd24b2c3df4760665c2bdf2a5d",
+          "default/ocdbt.process_0/d/922ff89a57c965da3a1c59a49f2a09e5": "21e39fad17e55fe9a29a504041313def2628f7c89e712ff26a0192850890f1d7",
+          "default/ocdbt.process_0/d/b29d7332874472465f4595c01d4af18c": "83a8a550067d54fa5766cda5245d2bc1f5e6833605a8b7ed70c4b5dfc2030199",
+          "default/ocdbt.process_0/d/eb015284eaee846c673b12c2164ba9f7": "5220c0303f7d56d08be21a7d177ceea81875cb8550be9b61cee7191589fdf4dc",
+          "default/ocdbt.process_0/d/f8d6538c6ba1571891a2f8b146d27a42": "8b2f7c5faebe445265b5448b643e500a7de67be29e740661411d7e2c22d83b68",
+          "default/ocdbt.process_0/manifest.ocdbt": "eb935998ca549060c7e2e6fdbb7cb44c6d90e6795fb77d06639c7530ff13593a",
+          "metrics/metrics": "bf4e7e8127173e0fa97d271a1e445277ab040c666687cad9ea44abf59a2e8d77"
+        }
+      },
+      "log": {
+        "path": "experiments/nonnegative_learned_taylor/logs/200m-qk-m004-nonnegative-seed0/slurm-202605.out",
+        "sha256": "c3ce20b907b58d40b233a720169f0c62c077cbd31ab6999fe75347c9ce31ea68"
+      },
+      "retention": {
+        "path": "experiments/nonnegative_learned_taylor/runs/200m-qk-m004-nonnegative-seed0/retention.json",
+        "sha256": "0eb750cd91d6eb5a1db63e0291d410b991c2fa84c980a34c29aac0e51a1f0fce"
+      },
+      "wandb": {
+        "run_id": "74a27e5b86904340abeb4e156357055c",
+        "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/74a27e5b86904340abeb4e156357055c"
+      },
+      "completion": {
+        "path": "experiments/nonnegative_learned_taylor/runs/200m-qk-m004-nonnegative-seed0/completion.json",
+        "sha256": "bb3c734e7004a4b5482449ea4514efb13dff91e10e74460d2f8d71c1dcb2b9d2"
+      },
+      "hardware_summary": "4x B300 (akita)"
+    }
+  ],
+  "pre_launch_validation": {
+    "cpu_tests": "767 passed, 13 skipped (full scaffold, launch helpers, and every JAX adapter) at the launch tree; the new sum-of-squares suite 24/24 on CPU",
+    "gpu_tests": {
+      "B300": "11 passed (sum-of-squares, direct normalized, QK-norm GPU cases; akita)",
+      "H100": "11 passed (dogo)"
+    },
+    "hardware_note": "A mastiff H100 reported CUDA_ERROR_ECC_UNCORRECTABLE during a test allocation; mastiff was excluded from these submissions",
+    "fused_relaunch_cpu_tests": "187 passed, 51 skipped (GPU-only cases) at 270179c: the experiment's acceptance suites, the fused normalized polynomial tests, acceptance and backend-resolution tests; in-allocation acceptance runs the GPU cases on H100",
+    "fused_kernel_qualification": "scaffolds/transformer/validation (main fa9bdb2): sum-of-squares m=2/m=4 fused kernels qualified on H100 and B300"
+  },
+  "execution_note": "m=4 runs from the original checkout (worktrees/nonnegative_learned_taylor, branch claude/nonnegative-learned-taylor, launch aff55c3) on the blocked backend. m=2 was relaunched on the fused normalized polynomial kernel from a second checkout (worktrees/nonnegative_learned_taylor_fused, branch claude/nonnegative-learned-taylor-fused = the experiment branch with main's fused kernels merged), because the original checkout's frozen execution set cannot change while m=4 runs. The top-level launch fields describe the original launch; each run's execution fields are authoritative.",
+  "artifact_locations": {
+    "runs": "experiments/nonnegative_learned_taylor/runs/<run> (committed)",
+    "checkpoints": "experiments/nonnegative_learned_taylor/checkpoints/<run>/19074 (ignored, on Kennel under artifact_root)",
+    "logs": "experiments/nonnegative_learned_taylor/logs/<run>/slurm-<job>.out with acceptance/, submissions/, wandb/ (ignored, on Kennel under artifact_root)",
+    "verified": "checkpoint trees and logs hashed before and after moving from the execution worktrees into the primary checkout on 2026-09-27; identical; see each run's selected_checkpoint and log"
+  },
+  "summary": {
+    "path": "experiments/nonnegative_learned_taylor/summary.csv",
+    "generator": "experiments.nonnegative_learned_taylor.adapter.analysis.report"
+  }
+}
