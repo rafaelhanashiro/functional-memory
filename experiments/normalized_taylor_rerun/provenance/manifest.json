@@ -110,14 +110,14 @@
           "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released"
         },
         {
-          "time": "2026-09-26T21:03-04:00",
+          "time": "2026-09-26T21:13-04:00",
           "partition": "long",
           "reason": "kept on long as this sweep's one long-partition job; Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep"
         },
         {
           "time": "2026-09-26T21:19-04:00",
           "partition": "long",
-          "reason": "held for about ten seconds so the relaunched nonnegative m=2 (202638) took the dogo slot released by its cancelled blocked attempt; then released"
+          "reason": "held for about six seconds so the relaunched nonnegative m=2 (202638) took the dogo slot released by its cancelled blocked attempt; then released"
         }
       ],
       "attempts": [
@@ -163,7 +163,7 @@
           "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released"
         },
         {
-          "time": "2026-09-26T21:03-04:00",
+          "time": "2026-09-26T21:13-04:00",
           "partition": "sweep",
           "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue"
         }
@@ -201,7 +201,7 @@
           "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released"
         },
         {
-          "time": "2026-09-26T21:03-04:00",
+          "time": "2026-09-26T21:13-04:00",
           "partition": "standard",
           "req_node_list": "akita",
           "dependency": "afterany:202605",
@@ -251,7 +251,7 @@
           "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released"
         },
         {
-          "time": "2026-09-26T21:03-04:00",
+          "time": "2026-09-26T21:13-04:00",
           "partition": "sweep",
           "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue"
         }
@@ -289,7 +289,7 @@
           "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released"
         },
         {
-          "time": "2026-09-26T21:03-04:00",
+          "time": "2026-09-26T21:13-04:00",
           "partition": "sweep",
           "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue"
         }
@@ -327,7 +327,7 @@
           "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released"
         },
         {
-          "time": "2026-09-26T21:03-04:00",
+          "time": "2026-09-26T21:13-04:00",
           "partition": "sweep",
           "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue"
         }
