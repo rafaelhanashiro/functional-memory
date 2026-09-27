@@ -23,6 +23,15 @@ source-commit request to `auto`; execution resolves that request separately.
 Changing scientific settings requires a fresh allocation. A resume reuses the same
 ID and recipe; it does not call `create`.
 
+New dot-product Transformer runs use QK normalization unless the user explicitly
+requests plain QK scores. An omitted `model.qk_norm` resolves to `true`. A copied
+legacy recipe containing `qk_norm: false` is rejected by `create` unless
+`--allow-plain-qk` is supplied, so reusing an old recipe cannot silently disable the
+canonical default. For the usual rerun, change the input recipe to
+`model.qk_norm: true` before allocating. The flag leaves an explicitly requested
+plain-score recipe unchanged. GLA and degree-zero attention are exempt because they
+do not use QK normalization. Historical records and resumptions are unaffected.
+
 Commit prepared recipes and study membership before production launch. A study’s
 frozen execution set includes all of its registered input recipes. Allocate the
 whole sweep before any jobs can run or requeue.

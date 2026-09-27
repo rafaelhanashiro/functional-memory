@@ -117,6 +117,12 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 
 ## Scaffold and runtime separation
 
+- New dot-product Transformer experiments must enable QK normalization unless the
+  user explicitly requests plain QK scores. Set `model.qk_norm: true` in the frozen
+  recipe; do not inherit `false` when copying a legacy run. GLA and degree-zero
+  attention do not use QK normalization. Preserve historical recipes and resume
+  settings unchanged; a QK-normalized rerun receives a fresh run ID. Fresh CLI
+  allocation of an explicitly requested plain-score run requires `--allow-plain-qk`.
 - Experiments sharing a model family use one shared model, attention, data pipeline,
   optimizer, trainer, evaluation, and checkpoint implementation. Keep cluster names,
   GPU-model workarounds, and transport policy out of model definitions, optimizer

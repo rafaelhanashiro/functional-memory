@@ -59,6 +59,12 @@ class ModelConfig:
     # starting from the Taylor values 1/r!, with or without row normalization.
     # Both forms support fused kernels and the blocked reference.
     attention_coefficients: Literal["fixed", "learned"] = "fixed"
+    # Optional fixed ascending monomial coefficients c_0..c_m. None preserves
+    # the Taylor kernel; explicit values use the generic polynomial backends.
+    attention_fixed_coefficients: tuple[float, ...] | None = None
+    # Optional fixed factors [q1_0..q1_{m/2}, q2_0..q2_{m/2-1}] for
+    # p(s) = q1(s)^2 + q2(s)^2. Evaluated without expanding near real roots.
+    attention_fixed_square_factors: tuple[float, ...] | None = None
     attention_coefficient_sharing: Literal["global", "per_head"] = "global"
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
     # (even m, row-normalized only), so the kernel is nonnegative by construction.
@@ -144,9 +150,40 @@ class ModelConfig:
                 raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
         if self.attention_coefficient_parameterization not in ("direct", "sum_of_squares"):
             raise ValueError(f"Unknown coefficient parameterization: {self.attention_coefficient_parameterization}")
+        if self.attention_fixed_coefficients is not None and self.attention_fixed_square_factors is not None:
+            raise ValueError("Specify either model.attention_fixed_coefficients or attention_fixed_square_factors")
+        if self.attention_fixed_coefficients is not None:
+            if (self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed"
+                    or self.attention_coefficients != "fixed"
+                    or self.attention_coefficient_parameterization != "direct"):
+                raise ValueError("Fixed polynomial coefficients require fixed/direct dot-product attention without a quadratic mode")
+            if self.attention_degree is None or self.attention_degree < 1:
+                raise ValueError("Fixed polynomial coefficients require an integer attention_degree >= 1")
+            values = self.attention_fixed_coefficients
+            if not isinstance(values, (tuple, list)) or len(values) != self.attention_degree + 1:
+                raise ValueError("model.attention_fixed_coefficients must contain attention_degree + 1 coefficients")
+            if any(not isinstance(value, (int, float)) or isinstance(value, bool)
+                   or not math.isfinite(value) for value in values):
+                raise ValueError("model.attention_fixed_coefficients must contain finite numeric coefficients")
+            self.attention_fixed_coefficients = tuple(float(value) for value in values)
+        if self.attention_fixed_square_factors is not None:
+            if (self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed"
+                    or self.attention_coefficients != "fixed"
+                    or self.attention_coefficient_parameterization != "sum_of_squares"
+                    or not self.attention_normalization):
+                raise ValueError("Fixed square factors require normalized fixed/sum_of_squares dot-product attention without a quadratic mode")
+            if self.attention_degree is None or self.attention_degree < 2 or self.attention_degree % 2:
+                raise ValueError("Fixed square factors require an even attention_degree >= 2")
+            values = self.attention_fixed_square_factors
+            if not isinstance(values, (tuple, list)) or len(values) != self.attention_degree + 1:
+                raise ValueError("model.attention_fixed_square_factors must contain attention_degree + 1 factors")
+            if any(not isinstance(value, (int, float)) or isinstance(value, bool)
+                   or not math.isfinite(value) for value in values):
+                raise ValueError("model.attention_fixed_square_factors must contain finite numeric factors")
+            self.attention_fixed_square_factors = tuple(float(value) for value in values)
         if self.attention_coefficient_parameterization == "sum_of_squares":
-            if self.attention_coefficients != "learned":
-                raise ValueError("A sum-of-squares kernel parameterizes learned polynomial coefficients")
+            if self.attention_coefficients != "learned" and self.attention_fixed_square_factors is None:
+                raise ValueError("A sum-of-squares kernel requires learned polynomial coefficients or fixed square factors")
             if self.attention_degree is None or self.attention_degree < 2 or self.attention_degree % 2:
                 raise ValueError("A sum-of-squares kernel requires an even attention_degree >= 2")
             if not self.attention_normalization:

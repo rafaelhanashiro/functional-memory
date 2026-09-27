@@ -111,6 +111,7 @@ attempt = {
     "home_cluster": "kennel", "gpu_type": gpu_type, "gpu_count": int(gpu_count),
     "slurm_job_id": os.environ["SLURM_JOB_ID"], "slurm_restart_count": os.environ.get("SLURM_RESTART_COUNT", "0"),
     "slurm_partition": os.environ.get("SLURM_JOB_PARTITION"), "started_utc": datetime.now(UTC).isoformat(),
+    "acceptance_directory": str((run_root / ".runtime" / "acceptance" / f"{gpu_type}-{gpu_count}").resolve()),
     "allocation": subprocess.check_output(["scontrol", "show", "job", "-o", os.environ["SLURM_JOB_ID"]], text=True).strip(),
 }
 update_record(run_root, {

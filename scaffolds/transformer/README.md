@@ -88,6 +88,16 @@ The existing scientific configuration fields remain supported:
 | `attention_degree: 2`, `quadratic_mode: positive` | Learned `0.5 * (1 + (a*s+b)^2)` |
 | `attention_degree: 2`, `quadratic_mode: unrestricted` | Learned `1 + b*s + c*s^2` |
 
+Fixed polynomials beyond Taylor use `attention_coefficients: fixed` and
+`attention_fixed_coefficients: [c0, ..., cm]`, the ascending monomial coefficients.
+For an even-degree nonnegative normalized kernel, use
+`attention_coefficient_parameterization: sum_of_squares` and
+`attention_fixed_square_factors: [q1_0, ..., q1_{m/2}, q2_0, ..., q2_{m/2-1}]`
+instead. The kernel evaluates `q1(s)^2 + q2(s)^2` directly to avoid cancellation
+from expanding near a real root. These two fixed representations are mutually
+exclusive and create no polynomial parameters or optimizer state. They use the
+generic polynomial backends and the same default QK normalization.
+
 With `attention_coefficient_parameterization: sum_of_squares` the learned array is
 `polynomial_square_factors` instead (`attention/nonnegative_polynomial.py`): the same
 `m + 1` values per layer and head, holding the ascending coefficients of `q1` then
@@ -122,9 +132,14 @@ provides diagnostics while the fused output continues through subsequent layers.
 
 ### QK-norm (cosine scores)
 
-QK-norm is the scaffold's default for dot-product attention: a recipe that leaves
-`qk_norm` unset gets `true`, and states `qk_norm: false` to use plain `q·k / sqrt(d_K)`
-scores. GLA rejects `qk_norm: true`, and degree 0, which never reads Q or K, resolves
+QK-norm is required for new dot-product experiments unless the user explicitly
+requests plain QK scores. A recipe that leaves `qk_norm` unset gets `true`; frozen
+new recipes record `qk_norm: true`. To run an explicitly requested plain-score
+experiment, set `qk_norm: false` and pass `--allow-plain-qk` when allocating it with
+`python -m scaffolds.records create`. This prevents copied legacy recipes from
+silently retaining plain `q·k / sqrt(d_K)` scores. Historical recipes and resumptions
+retain their recorded settings. GLA rejects `qk_norm: true`, and degree 0, which
+never reads Q or K, resolves
 it to `false`. It composes with every dot-product mechanism above and
 changes only the score. Q and K are unit-normalized per head in FP32,
 `x̂ = x / sqrt(||x||² + qk_norm_eps)`, and the score becomes
@@ -150,7 +165,7 @@ validation records `γ` and `exp(γ)` for each layer and head in `metrics.jsonl`
 under `attention_diagnostics.qk_norm_scale`; W&B receives their mean, minimum,
 and maximum. Recipes and metadata identify the option with `qk_norm`,
 `qk_norm_sharing`, `qk_norm_initial_scale`, and `qk_norm_eps`. GLA and degree 0
-do not accept it.
+do not use it.
 
 `AttentionParameterSpec` declares initialization, sharing, the forward argument,
 and weight-decay policy. The model registers each array once and selects the

@@ -203,6 +203,68 @@ def test_cli_allocates_fully_resolved_fresh_transformer_recipe(tmp_path, monkeyp
     saved = yaml.safe_load((run / "config.yaml").read_text())
     assert saved["train"]["source_commit"] == "auto"
     assert saved["model"]["tie_embeddings"] is False
+    assert saved["model"]["qk_norm"] is True
     assert saved["optim"]["weight_decay_policy"] == "exclude_embeddings_norms_biases_v1"
     assert load_run(run)["label"] == "fresh"
+    validate_record(run)
+
+
+@pytest.mark.parametrize("train_section", ["", "train: {}\n"])
+def test_cli_rejects_copied_plain_qk_recipe_before_allocating(tmp_path, monkeypatch, capsys, train_section):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "legacy.yaml"
+    source.write_text("model:\n  qk_norm: false\n" + train_section)
+    original = source.read_bytes()
+    study = tmp_path / "study"
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source)])
+    with pytest.raises(SystemExit) as failure:
+        main()
+    assert failure.value.code == 2
+    assert "--allow-plain-qk" in capsys.readouterr().err
+    assert not study.exists()
+    assert source.read_bytes() == original
+
+
+def test_cli_resolves_model_only_recipe_to_canonical_qk_norm(tmp_path, monkeypatch, capsys):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    source.write_text("model:\n  attention_degree: 2\n")
+    study = tmp_path / "study"
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    saved = yaml.safe_load((run / "config.yaml").read_text())
+    assert saved["model"]["qk_norm"] is True
+    assert saved["train"]["source_commit"] == "auto"
+    validate_record(run)
+
+
+def test_cli_allows_explicit_plain_qk_opt_out(tmp_path, monkeypatch, capsys):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "plain.yaml"
+    source.write_text("model:\n  qk_norm: false\ntrain: {}\n")
+    study = tmp_path / "study"
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study),
+                                    "--config", str(source), "--allow-plain-qk"])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["qk_norm"] is False
+    validate_record(run)
+
+
+@pytest.mark.parametrize("model", [{"attention_mechanism": "gla", "qk_norm": False},
+                                  {"attention_degree": 0, "qk_norm": False}])
+def test_cli_qk_requirement_exempts_mechanisms_without_qk_normalization(tmp_path, monkeypatch, capsys, model):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    source.write_text(yaml.safe_dump({"model": model, "train": {}}))
+    study = tmp_path / "study"
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["qk_norm"] is False
     validate_record(run)

@@ -22,6 +22,14 @@ def load_config(path: str | Path, config_factory=Config) -> Config:
     if not isinstance(raw, dict):
         raise ValueError(f"Config file must contain a mapping: {config_path}")
     config = config_factory()
+    model_values = raw.get("model", {})
+    if (isinstance(model_values, dict) and "qk_norm" not in model_values
+            and model_values.get("attention_mechanism", config.model.attention_mechanism)
+            != config.model.attention_mechanism):
+        # The factory resolves the default before YAML changes the mechanism.
+        # Resolve it again for that mechanism; preserve explicit recipe choices
+        # and custom-factory defaults when the mechanism itself is unchanged.
+        config.model.qk_norm = None
     _update_dataclass(config, raw, context=str(config_path))
     validate_config(config)
     return config
@@ -44,6 +52,10 @@ def _update_dataclass(target: Any, values: dict[str, Any], *, context: str) -> N
 
 def config_to_dict(config: Config) -> dict[str, Any]:
     values = asdict(config)
+    if config.model.attention_fixed_coefficients is not None:
+        values["model"]["attention_fixed_coefficients"] = list(config.model.attention_fixed_coefficients)
+    if config.model.attention_fixed_square_factors is not None:
+        values["model"]["attention_fixed_square_factors"] = list(config.model.attention_fixed_square_factors)
     values["train"]["workdir"] = str(config.train.workdir)
     for key in ("checkpoint_dir", "wandb_dir"):
         if getattr(config.train, key) is not None:
@@ -68,6 +80,12 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         # Runs recorded before QK-norm existed trained without it, whatever the current default.
         value["model"].setdefault("qk_norm", False)
         value["model"].setdefault("attention_coefficients", "fixed")
+        fixed_coefficients = value["model"].setdefault("attention_fixed_coefficients", None)
+        if isinstance(fixed_coefficients, (tuple, list)):
+            value["model"]["attention_fixed_coefficients"] = list(fixed_coefficients)
+        fixed_square_factors = value["model"].setdefault("attention_fixed_square_factors", None)
+        if isinstance(fixed_square_factors, (tuple, list)):
+            value["model"]["attention_fixed_square_factors"] = list(fixed_square_factors)
         value["model"].setdefault("attention_coefficient_parameterization", "direct")
         value["model"].setdefault("attention_coefficient_sharing", "global")
         for key, default in (("qk_norm", False), ("qk_norm_sharing", "per_head"),

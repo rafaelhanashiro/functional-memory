@@ -15,6 +15,10 @@ def main() -> None:
     create.add_argument("--study", required=True, type=Path)
     create.add_argument("--config", required=True, type=Path)
     create.add_argument("--label")
+    create.add_argument(
+        "--allow-plain-qk", action="store_true",
+        help="explicitly opt a fresh dot-product experiment out of canonical QK normalization",
+    )
     for name in ("index", "validate"):
         command = commands.add_parser(name)
         command.add_argument("study", type=Path)
@@ -23,9 +27,17 @@ def main() -> None:
         recipe = yaml.safe_load(args.config.read_text())
         if not isinstance(recipe, dict):
             parser.error("--config must contain a YAML mapping")
-        if isinstance(recipe.get("model"), dict) and isinstance(recipe.get("train"), dict):
+        if isinstance(recipe.get("model"), dict):
             from scaffolds.transformer.configs import config_to_dict, load_config
             recipe = config_to_dict(load_config(args.config))
+            model = recipe["model"]
+            if (model["attention_mechanism"] == "dot_product"
+                    and model["attention_degree"] != 0
+                    and not model["qk_norm"] and not args.allow_plain_qk):
+                parser.error(
+                    "new dot-product runs require model.qk_norm: true; this recipe disables it. "
+                    "Use --allow-plain-qk only when plain QK scores were explicitly requested."
+                )
             recipe["train"]["source_commit"] = "auto"
         print(create_run(args.study, recipe, args.label))
     elif args.command == "index":

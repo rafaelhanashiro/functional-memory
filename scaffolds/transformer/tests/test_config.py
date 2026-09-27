@@ -2,6 +2,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 import pytest
+import yaml
 
 from scaffolds.transformer.configs import Config, ModelConfig, load_config, save_config, validate_config
 
@@ -21,6 +22,7 @@ def test_baseline_matches_approved_budget_and_geometry():
     assert config.model.dropout == 0
     assert config.model.attention_backend == "auto"
     assert config.model.attention_degree is None
+    assert config.model.qk_norm is True
     assert config.train.seed == config.data.shuffle_seed == 0
     assert config.optim.total_steps * config.data.batch_size * (config.data.sequence_length - 1) == 10_000_269_312
     assert config.train.eval_batches * config.data.batch_size == 1792
@@ -37,12 +39,61 @@ def test_defaults_are_tiny_synthetic_and_round_trip(tmp_path):
     assert config.model.hidden_size == 128
     assert config.model.num_layers == 2
     assert config.model.tie_embeddings is False
+    assert config.model.qk_norm is True
     assert config.data.source == "synthetic"
     assert config.train.wandb_mode == "disabled"
     assert config.optim.weight_decay_policy == "exclude_embeddings_norms_biases_v1"
     path = tmp_path / "config.yaml"
     save_config(config, path)
     assert asdict(load_config(path)) == asdict(config)
+
+
+@pytest.mark.parametrize("model", [
+    {},
+    {"attention_degree": 1},
+    {"attention_degree": 4},
+    {"attention_normalization": False},
+    {"attention_degree": 3, "attention_normalization": False},
+    {"attention_degree": 2, "quadratic_mode": "unrestricted"},
+    {"attention_degree": 4, "attention_coefficients": "learned"},
+    {"attention_degree": 3, "attention_coefficients": "learned", "attention_normalization": False},
+    {"attention_degree": 4, "attention_coefficients": "learned",
+     "attention_coefficient_parameterization": "sum_of_squares"},
+    {"attention_degree": 2, "attention_fixed_coefficients": [0.5, 1.0, 0.5]},
+    {"attention_degree": 2, "attention_fixed_square_factors": [1.0, 1.0, 0.0],
+     "attention_coefficient_parameterization": "sum_of_squares"},
+])
+def test_loaded_dot_product_families_default_to_qk_norm(tmp_path, model):
+    path = tmp_path / "recipe.yaml"
+    path.write_text(yaml.safe_dump({"model": model}))
+    assert load_config(path).model.qk_norm is True
+
+
+@pytest.mark.parametrize("model", [{"attention_mechanism": "gla"}, {"attention_degree": 0}])
+def test_loaded_mechanisms_without_qk_normalization_resolve_default_off(tmp_path, model):
+    path = tmp_path / "recipe.yaml"
+    path.write_text(yaml.safe_dump({"model": model}))
+    assert load_config(path).model.qk_norm is False
+
+
+def test_loading_explicit_plain_qk_remains_valid_for_historical_runs(tmp_path):
+    path = tmp_path / "recipe.yaml"
+    path.write_text("model:\n  attention_degree: 2\n  qk_norm: false\n")
+    assert load_config(path).model.qk_norm is False
+
+
+def test_loaded_gla_rejects_explicit_qk_norm_request(tmp_path):
+    path = tmp_path / "recipe.yaml"
+    path.write_text("model:\n  attention_mechanism: gla\n  qk_norm: true\n")
+    with pytest.raises(ValueError, match="GLA does not support"):
+        load_config(path)
+
+
+def test_degree_only_override_preserves_explicit_custom_factory_qk_setting(tmp_path):
+    path = tmp_path / "recipe.yaml"
+    path.write_text("model:\n  attention_degree: 2\n")
+    config = load_config(path, config_factory=lambda: Config(model=ModelConfig(qk_norm=False)))
+    assert config.model.qk_norm is False
 
 
 @pytest.mark.parametrize("body,error", [
