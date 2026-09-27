@@ -1,5 +1,10 @@
 # Fixed Hermite attention
 
+**Legacy raw-score cohort.** These recipes explicitly disable QK normalization.
+They remain preserved as executed and are excluded from the matched QK-normalized
+Hermite–Taylor comparison. The replacement cohort has new run IDs in
+`worktrees/hermite_qk_norm/experiments/hermite_attention/` of the primary checkout.
+
 Does a fixed Hermite approximation improve on fixed Taylor coefficients at the
 same degree, and does removing row normalization avoid failures caused by signed
 kernel sums near zero? This experiment trains **eight 200M models**: degrees
