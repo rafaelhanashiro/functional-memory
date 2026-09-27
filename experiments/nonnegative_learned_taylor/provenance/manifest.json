@@ -163,16 +163,19 @@
         },
         {
           "slurm_job_id": 202638,
-          "outcome": "pending until dogo has four free GPUs; the normalized Taylor rerun m=1 (202614) was given Dependency=after:202638 so the requeued run resumes first"
+          "node": "akita",
+          "start": "2026-09-27T01:01:30-04:00",
+          "outcome": "dogo stayed short of four free GPUs after the second preemption, so with the user's approval the normalized Taylor rerun m=3 (202615), which had just started on akita, was requeued held and m=2 resumed on four B300s (the launcher accepts either GPU type; the fused kernel is qualified on both); m=3 was given Dependency=afterany:202638"
         }
-      ]
+      ],
+      "hardware_summary": "4x H100 SXM (dogo) through update ~14,570, then 4x B300 (akita)"
     },
     {
       "name": "200m-qk-m004-nonnegative-seed0",
       "attention_degree": 4,
       "seed": 0,
       "home_cluster": "kennel",
-      "status": "submitted",
+      "status": "complete",
       "config": {
         "path": "experiments/nonnegative_learned_taylor/configs/200m-qk-m004-nonnegative-seed0.yaml",
         "sha256": "8fb4ceab0f4eb570851c0105c2ea4843aa16920f255f15819316b5fcc08421ff"
@@ -204,7 +207,8 @@
           "slurm_job_id": 202605,
           "node": "akita",
           "start": "2026-09-26T19:48:33-04:00",
-          "outcome": "resumed from the update-1,500 checkpoint; running"
+          "outcome": "resumed from the update-1,500 checkpoint; completed 19,074 updates",
+          "end": "2026-09-27T00:58:40-04:00"
         }
       ]
     }
