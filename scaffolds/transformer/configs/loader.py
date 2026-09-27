@@ -46,6 +46,8 @@ def config_to_dict(config: Config) -> dict[str, Any]:
     values = asdict(config)
     if config.model.attention_fixed_coefficients is not None:
         values["model"]["attention_fixed_coefficients"] = list(config.model.attention_fixed_coefficients)
+    if config.model.attention_fixed_square_factors is not None:
+        values["model"]["attention_fixed_square_factors"] = list(config.model.attention_fixed_square_factors)
     values["train"]["workdir"] = str(config.train.workdir)
     for key in ("checkpoint_dir", "wandb_dir"):
         if getattr(config.train, key) is not None:
@@ -73,6 +75,9 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         fixed_coefficients = value["model"].setdefault("attention_fixed_coefficients", None)
         if isinstance(fixed_coefficients, (tuple, list)):
             value["model"]["attention_fixed_coefficients"] = list(fixed_coefficients)
+        fixed_square_factors = value["model"].setdefault("attention_fixed_square_factors", None)
+        if isinstance(fixed_square_factors, (tuple, list)):
+            value["model"]["attention_fixed_square_factors"] = list(fixed_square_factors)
         value["model"].setdefault("attention_coefficient_parameterization", "direct")
         value["model"].setdefault("attention_coefficient_sharing", "global")
         for key, default in (("qk_norm", False), ("qk_norm_sharing", "per_head"),

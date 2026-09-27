@@ -73,7 +73,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if (resolved_backend == "fused" and model.get("attention_mechanism", "dot_product") == "dot_product"
             and model.get("attention_normalization", True)
             and (model.get("attention_coefficients") == "learned"
-                 or model.get("attention_fixed_coefficients") is not None)):
+                 or model.get("attention_fixed_coefficients") is not None
+                 or model.get("attention_fixed_square_factors") is not None)):
         paths.append(NORMALIZED_POLYNOMIAL_TESTS)
     return tuple(dict.fromkeys(paths))
 
@@ -186,7 +187,8 @@ def matches_softmax_initialization(config) -> dict:
 
     actual = initialization_facts(config)
     control = replace(config, model=replace(config.model, attention_degree=None, attention_normalization=True,
-                                           attention_fixed_coefficients=None))
+                                           attention_fixed_coefficients=None, attention_fixed_square_factors=None,
+                                           attention_coefficient_parameterization="direct"))
     expected = initialization_facts(control)
     if actual != expected:
         raise RuntimeError(f"Initialization differs from the exact-softmax counterpart: {actual} != {expected}")
@@ -219,6 +221,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
     control = replace(config, model=replace(
         config.model, attention_degree=None, attention_normalization=True, quadratic_mode="fixed",
         attention_coefficients="fixed", attention_fixed_coefficients=None,
+        attention_fixed_square_factors=None,
         attention_coefficient_parameterization="direct", qk_norm=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
     added = {(spec.name,) for spec in specs}

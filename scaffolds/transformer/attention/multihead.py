@@ -36,6 +36,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_degree=config.attention_degree, quadratic_mode=config.quadratic_mode,
         attention_normalization=config.attention_normalization,
         attention_fixed_coefficients=config.attention_fixed_coefficients,
+        attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         rngs=rngs,
     )
@@ -49,6 +50,7 @@ class MultiHeadAttention(nnx.Module):
         attention_degree: int | None = None, quadratic_mode: str = "fixed",
         attention_normalization: bool = True, qk_norm: bool = False,
         qk_norm_eps: float = 1e-6, *, attention_fixed_coefficients: tuple[float, ...] | None = None,
+        attention_fixed_square_factors: tuple[float, ...] | None = None,
         rngs: nnx.Rngs,
     ):
         _validate_degree(attention_degree)
@@ -74,6 +76,19 @@ class MultiHeadAttention(nnx.Module):
                    or not math.isfinite(value) for value in attention_fixed_coefficients):
                 raise ValueError("Fixed polynomial coefficients must be finite numeric values")
             attention_fixed_coefficients = tuple(float(value) for value in attention_fixed_coefficients)
+        if attention_fixed_square_factors is not None:
+            if attention_fixed_coefficients is not None:
+                raise ValueError("Specify either fixed polynomial coefficients or fixed square factors")
+            if (quadratic_mode != "fixed" or not attention_normalization or attention_degree is None
+                    or attention_degree < 2 or attention_degree % 2):
+                raise ValueError("Fixed square factors require normalized, even-degree attention without a quadratic mode")
+            if (not isinstance(attention_fixed_square_factors, (tuple, list))
+                    or len(attention_fixed_square_factors) != attention_degree + 1):
+                raise ValueError("Fixed square factors must contain attention_degree + 1 factors")
+            if any(not isinstance(value, (int, float)) or isinstance(value, bool)
+                   or not math.isfinite(value) for value in attention_fixed_square_factors):
+                raise ValueError("Fixed square factors must be finite numeric values")
+            attention_fixed_square_factors = tuple(float(value) for value in attention_fixed_square_factors)
         if min(hidden_size, num_heads, num_kv_heads, qk_head_dim, value_head_dim) <= 0:
             raise ValueError("Attention dimensions must be positive")
         if num_heads != num_kv_heads:
@@ -96,6 +111,7 @@ class MultiHeadAttention(nnx.Module):
         self.attention_degree = attention_degree
         # Python floats are static module data, never optimizer parameters.
         self.attention_fixed_coefficients = attention_fixed_coefficients
+        self.attention_fixed_square_factors = attention_fixed_square_factors
         self.attention_normalization = attention_normalization
         self.quadratic_mode = quadratic_mode
         self.qk_norm = qk_norm
@@ -141,6 +157,10 @@ class MultiHeadAttention(nnx.Module):
             if any(name in parameters for name in ("coefficients", "polynomial_coefficients", "polynomial_square_factors")):
                 raise ValueError("Fixed polynomial coefficients cannot be combined with supplied attention coefficients")
             parameters["polynomial_coefficients"] = jnp.asarray(self.attention_fixed_coefficients, dtype=jnp.float32)
+        if self.attention_fixed_square_factors is not None:
+            if any(name in parameters for name in ("coefficients", "polynomial_coefficients", "polynomial_square_factors")):
+                raise ValueError("Fixed square factors cannot be combined with supplied attention coefficients")
+            parameters["polynomial_square_factors"] = jnp.asarray(self.attention_fixed_square_factors, dtype=jnp.float32)
         result = attention_core(
             q, k, v, backend=self.backend, attention_degree=self.attention_degree,
             attention_normalization=self.attention_normalization,

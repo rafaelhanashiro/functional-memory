@@ -14,13 +14,18 @@ def has_fixed_polynomial(model) -> bool:
     return getattr(model, "attention_fixed_coefficients", None) is not None
 
 
+def has_fixed_square_factors(model) -> bool:
+    return getattr(model, "attention_fixed_square_factors", None) is not None
+
+
 def has_learned_polynomial(model) -> bool:
     return getattr(model, "attention_coefficients", "fixed") == "learned"
 
 
 def has_sum_of_squares_kernel(model) -> bool:
-    return (has_learned_polynomial(model)
-            and getattr(model, "attention_coefficient_parameterization", "direct") == "sum_of_squares")
+    return (has_fixed_square_factors(model)
+            or (has_learned_polynomial(model)
+                and getattr(model, "attention_coefficient_parameterization", "direct") == "sum_of_squares"))
 
 
 def is_signed_kernel(model) -> bool:

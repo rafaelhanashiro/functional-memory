@@ -83,6 +83,7 @@ The existing scientific configuration fields remain supported:
 | `attention_degree: m >= 1`, `attention_normalization: false`, `attention_coefficients: learned` | Unnormalized `sum_r c_r (QKᵀ / sqrt(d_K))^r V` with every coefficient learned from `1/r!`; signed |
 | `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Row-normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; fused or blocked |
 | `attention_degree: m >= 1`, `attention_fixed_coefficients: [c0, ..., cm]`, `attention_coefficients: fixed` | Explicit fixed `sum_r c_r s^r`, with or without row normalization; signed weights and row sums; fused or blocked |
+| Even `attention_degree: m >= 2`, `attention_fixed_square_factors: [q1_0, ..., q1_{m/2}, q2_0, ..., q2_{m/2-1}]`, `attention_coefficients: fixed`, `attention_coefficient_parameterization: sum_of_squares` | Explicit fixed `q1(s)^2 + q2(s)^2`, row-normalized; nonnegative weights; fused or blocked |
 | Even `attention_degree: m >= 2`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: sum_of_squares` | Row-normalized `(q1(s)^2 + q2(s)^2) V / rowsum` with `deg q1 = m/2`, `deg q2 = m/2 - 1` learned and initialized to reproduce `T_m` exactly; nonnegative weights, positive row sums; fused or blocked |
 | `attention_degree: 0` | Uniform causal-prefix averaging |
 | Nonnegative `attention_degree`, `quadratic_mode: fixed` | Fixed Taylor polynomial; odd degrees permit signed weights |
@@ -99,6 +100,16 @@ not divide by a row sum. There is no clipping, absolute-value normalization, or
 added denominator epsilon. Diagnostics and serialized recipes retain the actual
 coefficient vector; resumed recipes must match it exactly. A constant overall
 polynomial scale cancels only when row normalization is enabled.
+
+Explicit `attention_fixed_square_factors` use the same ascending `q1`, then `q2`
+layout as learned sum-of-squares factors, but remain immutable configuration shared
+across layers and heads. They require even degree, row normalization, and
+`attention_coefficient_parameterization: sum_of_squares`. Neither the factors nor
+their expanded coefficients are optimizer parameters. The blocked and fused
+backends evaluate the factors directly, so cancellation in an expanded polynomial
+does not turn a near-root positive weight into zero or a negative value. A truly
+zero row sum still fails explicitly; no denominator epsilon or fallback is used.
+Recipes and diagnostics record the factors and their effective coefficients.
 
 With `attention_coefficient_parameterization: sum_of_squares` the learned array is
 `polynomial_square_factors` instead (`attention/nonnegative_polynomial.py`): the same
