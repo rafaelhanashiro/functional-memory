@@ -246,7 +246,7 @@
       "attention_degree": 2,
       "seed": 0,
       "home_cluster": "kennel",
-      "status": "submitted",
+      "status": "completed",
       "config": {
         "path": "experiments/normalized_taylor_rerun/configs/200m-m002-seed0.yaml",
         "sha256": "01cf28c4971fb5a04a9eccf4363201cd2e605f3c7c397ed729bceed3229abc79"
@@ -375,8 +375,22 @@
         {
           "slurm_job_id": 202616,
           "outcome": "preempted on akita at 03:22 before its update-7,000 checkpoint; ten short attempts on dogo between 03:25 and 04:41 were preempted by debug-partition jobs (the dogo exclusion was added only to pending jobs); running on dogo since 04:56, resumed from the update-6,500 checkpoint"
+        },
+        {
+          "slurm_job_id": 202616,
+          "node": "dogo",
+          "start": "2026-09-27T04:56:24-04:00",
+          "end": "2026-09-27T07:08:06-04:00",
+          "outcome": "resumed from update 6,500 and completed 19,074 updates"
         }
-      ]
+      ],
+      "best_validation": {
+        "selection_rule": "lowest_validation_nll",
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.8040092502321516,
+        "validation_perplexity": 16.510709818133147
+      }
     },
     {
       "name": "200m-m003-seed0",
@@ -762,6 +776,11 @@
           "partition": "sweep",
           "exclude_removed": "dogo",
           "reason": "the debug burst ended (last debug job on dogo 04:56); dogo restored for pending jobs; 202617 was running and keeps the dogo exclusion until it next requeues"
+        },
+        {
+          "time": "2026-09-27T07:10-04:00",
+          "partition": "long",
+          "reason": "moved from sweep to long after the m=2 rerun completed, keeping three rerun jobs on long"
         }
       ],
       "slurm_attempts": {
