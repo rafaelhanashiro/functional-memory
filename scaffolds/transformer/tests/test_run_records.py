@@ -117,3 +117,20 @@ def test_finalization_updates_authoritative_record_and_hashes(tmp_path, monkeypa
     assert record["metrics"]["sha256"] == hashlib.sha256((run / "metrics.jsonl").read_bytes()).hexdigest()
     assert not (run / "checkpoints/4").exists()
     assert "metadata.json" in validate_record(run)["verified"]
+
+
+def test_record_update_failure_never_masks_a_recorded_failure(tmp_path, monkeypatch, capsys):
+    config = tiny_config(tmp_path / "run")
+    config.train.workdir.mkdir(parents=True)
+
+    def broken(*args, **kwargs):
+        raise OSError("record store unavailable")
+
+    monkeypatch.setattr(loop, "_update_run_record", broken)
+    # A failed status still lands in metadata.json and the original error stays the caller's to raise.
+    loop._write_status(config, status="failed", error="FloatingPointError: nonfinite loss")
+    assert json.loads((config.train.workdir / "metadata.json").read_text())["status"] == "failed"
+    assert "run_record_update_failed=OSError: record store unavailable" in capsys.readouterr().out
+    # Outside failure handling, bookkeeping errors surface.
+    with pytest.raises(OSError, match="record store unavailable"):
+        loop._write_status(config, status="running", step=0)

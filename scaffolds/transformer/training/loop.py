@@ -412,7 +412,14 @@ def _write_status(config: Config, **updates) -> None:
         if launch.get("log_path") is not None:
             metadata["log_path"] = launch["log_path"]
     write_json_atomic(path, metadata)
-    _update_run_record(config, metadata)
+    try:
+        _update_run_record(config, metadata)
+    except Exception as error:
+        if metadata.get("status") != "failed":
+            raise
+        # Bookkeeping must never replace the failure being recorded; metadata.json
+        # above already holds it, and the caller re-raises the original error.
+        print(f"run_record_update_failed={type(error).__name__}: {error}", flush=True)
 
 
 def _update_run_record(config: Config, metadata: dict) -> None:
@@ -437,12 +444,15 @@ def _update_run_record(config: Config, metadata: dict) -> None:
                 json.dumps(resolved, sort_keys=True, separators=(",", ":")).encode()
             ).hexdigest(),
             "raw_metadata": {"path": "metadata.json", "sha256": hashlib.sha256(raw_path.read_bytes()).hexdigest()},
-            "raw_config": {"path": "config.json", "sha256": hashlib.sha256((workdir / "config.json").read_bytes()).hexdigest()},
             "runtime": metadata["execution_runtime"],
             "runtime_history": metadata["runtime_history"],
             "attention_backend": config.model.attention_backend,
         },
     }
+    raw_config = workdir / "config.json"
+    if raw_config.exists():  # Written by ensure_run_config before training; absent for bare status writes.
+        changes["execution"]["raw_config"] = {"path": "config.json",
+                                              "sha256": hashlib.sha256(raw_config.read_bytes()).hexdigest()}
     for key in ("step", "training_tokens", "wandb_run_id", "retained_best_checkpoint_step",
                 "retained_terminal_checkpoint_step", "data_identity", "error", "numerical_failure_path"):
         if key in metadata:

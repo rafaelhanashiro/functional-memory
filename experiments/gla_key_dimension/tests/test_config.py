@@ -77,7 +77,8 @@ def test_comparison_points_reference_retained_key_dimension_taylor_runs():
 def test_summary_uses_completed_runs_and_width_matched_comparisons(tmp_path):
     from results.gla_key_dimension import plot
 
-    record = tmp_path / "record"
+    # Result selections match runs by study name, so the copy keeps the study's directory name.
+    record = tmp_path / "gla_key_dimension"
     record.mkdir()
     data = manifest()
     (record / "sweep.yaml").write_text(yaml.safe_dump({key: value for key, value in data.items() if key != "runs"}))

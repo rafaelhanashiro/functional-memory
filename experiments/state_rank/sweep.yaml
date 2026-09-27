@@ -40,61 +40,6 @@ kennel_execution:
       cpus: 4
       memory: 32G
       gating: pretrained and random-seed0 gate the remaining four conditions (afterok)
-      jobs:
-        pretrained:
-          slurm_job_id: '201744'
-          attempts: 1
-          slurm_restart_count: 0
-          node: dogo.csail.mit.edu
-          gpu: NVIDIA H100 80GB HBM3
-          elapsed_seconds: 46.2
-          parameter_sha256: 270990947595a37e636f45040fb0e9ccfb8fe7c7258218b292741958637e2cde
-          log_path: experiments/state_rank/logs/random_vs_pretrained/pretrained/slurm-201744.out
-        random-seed0:
-          slurm_job_id: '201745'
-          attempts: 1
-          slurm_restart_count: 0
-          node: dogo.csail.mit.edu
-          gpu: NVIDIA H100 80GB HBM3
-          elapsed_seconds: 61.2
-          parameter_sha256: 8d48427c9c2b822cf1cbb3054a83d17f01b246999043b25106e5c7c14aaa7d25
-          log_path: experiments/state_rank/logs/random_vs_pretrained/random-seed0/slurm-201745.out
-        random-seed1:
-          slurm_job_id: '201746'
-          attempts: 1
-          slurm_restart_count: 0
-          node: dogo.csail.mit.edu
-          gpu: NVIDIA H100 80GB HBM3
-          elapsed_seconds: 61.1
-          parameter_sha256: bc5f07d5846229a6ac6ed133acfe39673cce93e15ed0e7ee65354cc44f01edf9
-          log_path: experiments/state_rank/logs/random_vs_pretrained/random-seed1/slurm-201746.out
-        random-seed2:
-          slurm_job_id: '201747'
-          attempts: 1
-          slurm_restart_count: 0
-          node: dogo.csail.mit.edu
-          gpu: NVIDIA H100 80GB HBM3
-          elapsed_seconds: 60.3
-          parameter_sha256: 2297a2b3568ccb102f28c3251616deb2d97838bf793ac37d0cb1a67f69e9a558
-          log_path: experiments/state_rank/logs/random_vs_pretrained/random-seed2/slurm-201747.out
-        random-seed3:
-          slurm_job_id: '201748'
-          attempts: 1
-          slurm_restart_count: 0
-          node: dogo.csail.mit.edu
-          gpu: NVIDIA H100 80GB HBM3
-          elapsed_seconds: 60.7
-          parameter_sha256: ac03d2641b73af6636e656031290ef0786ac9dd8a04228adc16655ccc2a0ff42
-          log_path: experiments/state_rank/logs/random_vs_pretrained/random-seed3/slurm-201748.out
-        random-seed4:
-          slurm_job_id: '201749'
-          attempts: 1
-          slurm_restart_count: 0
-          node: dogo.csail.mit.edu
-          gpu: NVIDIA H100 80GB HBM3
-          elapsed_seconds: 60.4
-          parameter_sha256: 12b8ed5eef98e157e6db55ac3fc565b8f20663375f7070a0d350d074d508a78e
-          log_path: experiments/state_rank/logs/random_vs_pretrained/random-seed4/slurm-201749.out
       superseded_attempts:
       - slurm_job_id: '201736'
         condition: pretrained
@@ -111,6 +56,8 @@ kennel_execution:
         - '201741'
         conditions: random-seed0..4
         state: CANCELLED before starting (dependents of 201736)
+      per_run_execution: each run's record.json (execution_attempts, parameter_sha256,
+        log)
     random_vs_pretrained_deltanet:
       source_commit: 5424ec87bbdc392fb46f632b652058aefecad4c6
       execution_root: worktrees/state_rank-exec-5424ec8 (frozen detached worktree;
@@ -120,61 +67,8 @@ kennel_execution:
       cpus: 8
       memory: 48G
       gating: pretrained and random-seed0 gate the remaining four conditions (afterok)
-      jobs:
-        pretrained:
-          slurm_job_id: '201715'
-          attempts: 1
-          slurm_restart_count: 0
-          node: dogo.csail.mit.edu
-          gpu: NVIDIA H100 80GB HBM3
-          elapsed_seconds: 930.6
-          parameter_sha256: 81301c0a01f84e41784ee31ab91ce735d3a542c4afcb2c485b6c797fcf7b6fd0
-          log_path: experiments/state_rank/logs/random_vs_pretrained_deltanet/pretrained/slurm-201715.out
-        random-seed0:
-          slurm_job_id: '201716'
-          attempts: 1
-          slurm_restart_count: 0
-          node: dogo.csail.mit.edu
-          gpu: NVIDIA H100 80GB HBM3
-          elapsed_seconds: 855.6
-          parameter_sha256: bd6ee926a0a19c1a00ab270a0789683a78b0d71cce3e0b95ab35f6c8412ee172
-          log_path: experiments/state_rank/logs/random_vs_pretrained_deltanet/random-seed0/slurm-201716.out
-        random-seed1:
-          slurm_job_id: '201717'
-          attempts: 1
-          slurm_restart_count: 0
-          node: dogo.csail.mit.edu
-          gpu: NVIDIA H100 80GB HBM3
-          elapsed_seconds: 847.8
-          parameter_sha256: b267fe4913209305ced913a37dc62b41b21d7ca00a00592c11e23e91412e4c8f
-          log_path: experiments/state_rank/logs/random_vs_pretrained_deltanet/random-seed1/slurm-201717.out
-        random-seed2:
-          slurm_job_id: '201718'
-          attempts: 1
-          slurm_restart_count: 0
-          node: dogo.csail.mit.edu
-          gpu: NVIDIA H100 80GB HBM3
-          elapsed_seconds: 846.2
-          parameter_sha256: 33d05376667324dcbdf5aea7367eb02c8247d9d8d84054570335c0d15bf132dc
-          log_path: experiments/state_rank/logs/random_vs_pretrained_deltanet/random-seed2/slurm-201718.out
-        random-seed3:
-          slurm_job_id: '201719'
-          attempts: 1
-          slurm_restart_count: 0
-          node: dogo.csail.mit.edu
-          gpu: NVIDIA H100 80GB HBM3
-          elapsed_seconds: 854.0
-          parameter_sha256: fc2a2e4a98573145a800c2ed5312f82f4e2f044c1991180ef272db8c061dd60b
-          log_path: experiments/state_rank/logs/random_vs_pretrained_deltanet/random-seed3/slurm-201719.out
-        random-seed4:
-          slurm_job_id: '201720'
-          attempts: 1
-          slurm_restart_count: 0
-          node: dogo.csail.mit.edu
-          gpu: NVIDIA H100 80GB HBM3
-          elapsed_seconds: 851.7
-          parameter_sha256: b5765f4adbdd5d91dd769906ab63192471b2d2dfc16cb9162bf1f6303172d752
-          log_path: experiments/state_rank/logs/random_vs_pretrained_deltanet/random-seed4/slurm-201720.out
+      per_run_execution: each run's record.json (execution_attempts, parameter_sha256,
+        log)
   unified_analysis:
     source_commit: 279fdd63fa03054196762da2bc616eb1f8c30208
     slurm_job_id: '201750'

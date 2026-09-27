@@ -14,6 +14,17 @@
     "path": "experiments/state_rank/runs/r248ca889523a/config.yaml",
     "sha256": "1934a7d166ecf6cfdd5295e5778cb5549794f93e696b91506239bbe175884adc"
   },
+  "execution_attempts": [
+    {
+      "attempts": 1,
+      "elapsed_seconds": 855.6,
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "node": "dogo.csail.mit.edu",
+      "partition": "standard",
+      "slurm_job_id": "201716",
+      "slurm_restart_count": 0
+    }
+  ],
   "hardware": {
     "device": "cuda",
     "gpu": "NVIDIA H100 80GB HBM3",
@@ -28,6 +39,7 @@
   "log_path": "experiments/state_rank/runs/r248ca889523a/training.log",
   "metrics_sha256": "bb46ed792ba9780143d9053aba0431ee069151a46c7f0db080d0424897c4ffef",
   "name": "random_vs_pretrained_deltanet-random-seed0",
+  "parameter_sha256": "bd6ee926a0a19c1a00ab270a0789683a78b0d71cce3e0b95ab35f6c8412ee172",
   "record_schema_version": 1,
   "run_id": "r248ca889523a",
   "seed": 0,
