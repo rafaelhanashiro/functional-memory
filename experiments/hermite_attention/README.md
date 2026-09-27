@@ -78,6 +78,20 @@ numerical-failure record; it does not assert that a scheduler job is still runni
 An `acceptance-numerical-failure` is a failure of the short qualification pilot,
 reported separately from production and linked in provenance.
 
+The normalized degree-2 pilot had a nonfinite forward loss on its first update.
+Exactly, `p_2(s) = exp(1/2) (s+1)^2 / 2`: its weights cannot cancel by sign, but
+the kernel and row sum vanish at `s=-1`. The direct fused path evaluates the
+expanded coefficients with FP32 Horner arithmetic. A read-only CPU JAX probe of
+that same polynomial evaluator found 868 negative values among 2,001 FP32 scores
+in `[-1.00012, -0.99988]`; the factorized square had none. For example, at
+`s=-1.0001200437545776`, Horner returned `-3.754735e-9`, versus
+`+1.187945e-8` for the square. This reveals an avoidable numerical weakness
+near the root, but does not establish what caused the pilot failure: its saved
+attention diagnostics were collected after the attempted update, when scores
+and parameters were already NaN. A replay of the initial batch with pre-update
+row-sum and gradient measurements would separate an exact root, rounding near
+the root, and another cause.
+
 ## Implementation and acceptance
 
 The shared Transformer scaffold accepts `attention_coefficients: fixed` with an
