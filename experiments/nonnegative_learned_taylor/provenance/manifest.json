@@ -72,18 +72,54 @@
       "status": "submitted",
       "config": {
         "path": "experiments/nonnegative_learned_taylor/configs/200m-qk-m002-nonnegative-seed0.yaml",
-        "sha256": "5b9971e915ae24d11f3eab3513e1c9828491efb5081eaf7105d55e2210824ae7"
+        "sha256": "1ff9ec14a0dee40935f1d03f260d3e40ae6a5047efd4a53f271330c548ea4fed"
       },
       "parameter_count": 199906944,
       "factor_count": 480,
-      "source_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
+      "source_commit": "270179ce9330e33bd2dacffb364aaf00e01e38f8",
       "slurm_job_ids": [
-        202604
+        202638
       ],
-      "submission": "sbatch --partition=long --time=1-00:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); started on dogo (H100) within a minute by preempting a sweep-partition job",
+      "submission": "sbatch --partition=long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); started at 21:19:55 on dogo (H100) in the slot released by cancelling the blocked attempt; the pending normalized Taylor rerun m=1 (202614) was held for the swap and released once 202638 started",
       "run_record": "experiments/nonnegative_learned_taylor/runs/200m-qk-m002-nonnegative-seed0",
       "log_directory": "experiments/nonnegative_learned_taylor/logs/200m-qk-m002-nonnegative-seed0",
-      "checkpoint_directory": "experiments/nonnegative_learned_taylor/checkpoints/200m-qk-m002-nonnegative-seed0"
+      "checkpoint_directory": "experiments/nonnegative_learned_taylor/checkpoints/200m-qk-m002-nonnegative-seed0",
+      "launch_commit": "270179ce9330e33bd2dacffb364aaf00e01e38f8",
+      "execution_checkout": "worktrees/nonnegative_learned_taylor_fused",
+      "branch": "claude/nonnegative-learned-taylor-fused",
+      "frozen_execution_set_sha256": "a6eac0c38b2fe505c85c436bdb7e49884af58f082f63e34a82da0c107d387fb2",
+      "attention_backend": "fused",
+      "superseded_attempt": {
+        "attention_backend": "blocked",
+        "source_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
+        "config": {
+          "path": "experiments/nonnegative_learned_taylor/configs/200m-qk-m002-nonnegative-seed0.yaml",
+          "sha256": "5b9971e915ae24d11f3eab3513e1c9828491efb5081eaf7105d55e2210824ae7"
+        },
+        "execution_checkout": "worktrees/nonnegative_learned_taylor",
+        "slurm_job_id": 202604,
+        "attempts": [
+          {
+            "node": "dogo",
+            "start": "2026-09-26T19:06:59-04:00",
+            "end": "2026-09-26T19:46:21-04:00",
+            "outcome": "preempted by this user's own standard-partition job (normalized Taylor rerun m=1, 202614); requeued"
+          },
+          {
+            "node": "dogo",
+            "start": "2026-09-26T19:48:33-04:00",
+            "end": "2026-09-26T21:19:51-04:00",
+            "outcome": "resumed from the update-500 checkpoint; cancelled at update 2,940 to relaunch on the fused kernel"
+          }
+        ],
+        "throughput": "2.2 s/update on four H100 SXM",
+        "last_validation": {
+          "step": 2000,
+          "validation_nll": 4.052367,
+          "validation_perplexity": 57.5335
+        },
+        "artifacts": "run record, checkpoints 2000 and 2500, and log remain in the original checkout only as a fallback until the fused run passes acceptance; they are then deleted and not retained"
+      }
     },
     {
       "name": "200m-qk-m004-nonnegative-seed0",
@@ -104,7 +140,27 @@
       "submission": "sbatch --partition=long --time=1-00:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); started on akita (B300) within a minute by preempting a sweep-partition job",
       "run_record": "experiments/nonnegative_learned_taylor/runs/200m-qk-m004-nonnegative-seed0",
       "log_directory": "experiments/nonnegative_learned_taylor/logs/200m-qk-m004-nonnegative-seed0",
-      "checkpoint_directory": "experiments/nonnegative_learned_taylor/checkpoints/200m-qk-m004-nonnegative-seed0"
+      "checkpoint_directory": "experiments/nonnegative_learned_taylor/checkpoints/200m-qk-m004-nonnegative-seed0",
+      "launch_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
+      "execution_checkout": "worktrees/nonnegative_learned_taylor",
+      "branch": "claude/nonnegative-learned-taylor",
+      "frozen_execution_set_sha256": "e5a8da3132f2de76c8729e4b982ede885db711e8b86a01ccb2e759a106a04643",
+      "attention_backend": "blocked",
+      "attempts": [
+        {
+          "slurm_job_id": 202605,
+          "node": "akita",
+          "start": "2026-09-26T19:07:03-04:00",
+          "end": "2026-09-26T19:46:19-04:00",
+          "outcome": "preempted by this user's own standard-partition job (normalized Taylor rerun m=1, 202614); requeued"
+        },
+        {
+          "slurm_job_id": 202605,
+          "node": "akita",
+          "start": "2026-09-26T19:48:33-04:00",
+          "outcome": "resumed from the update-1,500 checkpoint; running"
+        }
+      ]
     }
   ],
   "pre_launch_validation": {
@@ -113,6 +169,9 @@
       "B300": "11 passed (sum-of-squares, direct normalized, QK-norm GPU cases; akita)",
       "H100": "11 passed (dogo)"
     },
-    "hardware_note": "A mastiff H100 reported CUDA_ERROR_ECC_UNCORRECTABLE during a test allocation; mastiff was excluded from these submissions"
-  }
+    "hardware_note": "A mastiff H100 reported CUDA_ERROR_ECC_UNCORRECTABLE during a test allocation; mastiff was excluded from these submissions",
+    "fused_relaunch_cpu_tests": "187 passed, 51 skipped (GPU-only cases) at 270179c: the experiment's acceptance suites, the fused normalized polynomial tests, acceptance and backend-resolution tests; in-allocation acceptance runs the GPU cases on H100",
+    "fused_kernel_qualification": "scaffolds/transformer/validation (main fa9bdb2): sum-of-squares m=2/m=4 fused kernels qualified on H100 and B300"
+  },
+  "execution_note": "m=4 runs from the original checkout (worktrees/nonnegative_learned_taylor, branch claude/nonnegative-learned-taylor, launch aff55c3) on the blocked backend. m=2 was relaunched on the fused normalized polynomial kernel from a second checkout (worktrees/nonnegative_learned_taylor_fused, branch claude/nonnegative-learned-taylor-fused = the experiment branch with main's fused kernels merged), because the original checkout's frozen execution set cannot change while m=4 runs. The top-level launch fields describe the original launch; each run's execution fields are authoritative."
 }
