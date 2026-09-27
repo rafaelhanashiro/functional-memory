@@ -452,6 +452,7 @@ def test_bf16_odd_widths_match_fp64(require_gpu, parameterization):
 @pytest.mark.gpu
 @pytest.mark.parametrize("parameterization,sharing", [("direct", "per_head"), ("sum_of_squares", "global")])
 def test_transformer_training_and_checkpoint_resume(require_gpu, tmp_path, parameterization, sharing):
+    from scaffolds.transformer.tests.packed_fixtures import PackedSequenceWriter
     from scaffolds.transformer.tests.test_training import tiny_config
     from scaffolds.transformer.training import loop
     from scaffolds.transformer.training.checkpointing import make_checkpoint_manager, restore_latest_checkpoint
@@ -469,6 +470,21 @@ def test_transformer_training_and_checkpoint_resume(require_gpu, tmp_path, param
     config.train.dtype = "bfloat16"
     config.optim.total_steps = 2
     config.optim.learning_rate, config.optim.min_learning_rate = 1e-3, 1e-4
+    # Exact independent replay needs deterministic gradient accumulation. Avoid
+    # repeated embedding indices within a microbatch: GPU scatter-add into a
+    # BF16 embedding gradient can otherwise depend on atomic update order.
+    # Distinct successive batches still detect a wrong resumed data cursor.
+    sequences = np.arange(40, dtype=np.int32).reshape(8, 5) % 16
+    for microbatch in sequences.reshape(-1, config.train.micro_batch_size, 5):
+        inputs = microbatch[:, :-1]
+        assert np.unique(inputs).size == inputs.size
+    assert not np.array_equal(sequences[:4], sequences[4:])
+    config.data.source = "packed"
+    for split, rows in (("train", sequences), ("eval", sequences[:4])):
+        writer = PackedSequenceWriter(tmp_path / split, sequence_length=5,
+                                       num_sequences=len(rows), shard_sequences=4)
+        writer.write(rows)
+        setattr(config.data, f"{split}_manifest", str(writer.finish()))
     initial = create_state(config, jax.random.PRNGKey(0))
     batch = jnp.asarray(np.arange(20).reshape(4, 5) % 16)
     loss, grads = loop.microbatch_loss_and_grads(initial, batch, jax.random.PRNGKey(1))
