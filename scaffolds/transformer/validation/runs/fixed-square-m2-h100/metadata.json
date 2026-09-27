@@ -1,0 +1,30 @@
+{
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_factored_m2",
+  "data": "Deterministic synthetic BF16 near-root vectors and seeded test arrays; no external dataset",
+  "devices": [
+    "cuda:0"
+  ],
+  "frozen_execution_set_sha256": "a7dd700465c38b8b9c50975ec1fd976fd210e36724f772789b22852817ff9034",
+  "gpu_count": 1,
+  "gpu_type": "NVIDIA H100 80GB HBM3",
+  "hardware": [
+    "NVIDIA H100 80GB HBM3, GPU-355f34a2-be0c-ba44-022b-1a056f643b80, 560.35.05"
+  ],
+  "home_cluster": "kennel",
+  "hostname": "dogo.csail.mit.edu",
+  "lock_sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559",
+  "partition": "debug",
+  "resolved_attention_backend": "fused",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_factored_m2/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "CUDA_VISIBLE_DEVICES": "0",
+    "JAX_PLATFORMS": "cuda",
+    "NCCL_P2P_DISABLE": null,
+    "TRANSFORMER_HOST_STAGING": "0",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "selected_checkpoints": [],
+  "slurm_job_id": "202912",
+  "source_commit": "faa198c95bfc5edb8302a0f032edff07a3d87392",
+  "started_utc": "2026-09-27T18:29:53.758086+00:00"
+}

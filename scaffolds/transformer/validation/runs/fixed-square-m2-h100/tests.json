@@ -1,0 +1,16 @@
+{
+  "deselected": 30,
+  "errors": 0,
+  "failures": 0,
+  "junit_xml_path": "scaffolds/transformer/validation/logs/fixed-square-m2-h100/tests.xml",
+  "junit_xml_sha256": "e8425ab9688dedf7494ef16b574533beeb888d95bd5211f762e2dabefac574cd",
+  "near_root_k_gradient_abs_max": 0.0,
+  "near_root_one_key_output": [
+    3.0,
+    -2.0
+  ],
+  "near_root_q_gradient_abs_max": 0.0,
+  "seconds": 166.333,
+  "skipped": 0,
+  "tests": 42
+}

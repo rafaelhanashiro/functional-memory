@@ -368,6 +368,27 @@ use both blocked and FP64 references. This record qualifies the single-H100
 kernels; production pilots and checkpoint/resume remain allocation acceptance
 checks. No checkpoints are retained for this qualification.
 
+## Fixed degree-two Hermite square factors
+
+The fixed degree-two Hermite kernel now accepts immutable square factors
+`[a, a, 0]`, where `a = sqrt(exp(1/2) / 2)`. The existing normalized
+sum-of-squares fused kernel evaluates `[a(1+s)]^2` without expanding it into
+monomials. The factorization changes floating-point evaluation, while the
+mathematical polynomial and the explicit failure on a zero row sum remain the
+same. The fixed factors add no trainable parameters.
+
+The new compiled regression uses a BF16 one-key row with FP32 score
+`-0.9998779296875`, close to the previous pilot's failing score. On one H100
+on `dogo`, it returned the value vector `[3, -2]`, with maximum absolute Q and
+K gradients both `0.0`; the test also requires the exact-root row to fail.
+Together with the existing normalized-polynomial fused suite, **42 GPU tests**
+passed with no failures or skips in debug job **202912**. The job completed
+with exit code `0:0` from committed source `faa198c95bfc5edb8302a0f032edff07a3d87392`;
+its frozen scaffold execution hash, hardware, runtime, exact command, test
+record, and retained log hash are in the [manifest](provenance/manifest.json).
+This qualifies the one-H100 kernel path. The two-H100 full-recipe pilot and
+fresh-process resume remain separate experiment acceptance checks.
+
 ## Reproduction
 
 From a worktree with the scaffold environment synced

@@ -204,6 +204,18 @@
     {
       "path": "scaffolds/transformer/validation/runs/fixed-polynomial-h100/tests.json",
       "sha256": "a3c1d9e0c28f0d884c4ee36151f736800b6506df5f9c22d8510e7314db2c22f9"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/fixed-square-m2-kernel.json",
+      "sha256": "46af0c4d40ad9252c235c7505547c9b8797722d9b513e2d6d2ded809bbede42d"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/fixed-square-m2-h100/metadata.json",
+      "sha256": "bba4c76ca1b507eb45af1471d751620184ee89b57b7647f60c935caf3e30fbbc"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/fixed-square-m2-h100/tests.json",
+      "sha256": "0dfa7b53a8cc38234138aa53cdc5ccdd804b18dae8762480b09e133b9ddb2cca"
     }
   ],
   "slurm_logs": [
@@ -367,6 +379,14 @@
       "path": "scaffolds/transformer/validation/logs/fixed-polynomial-h100/slurm-202695.out",
       "sha256": "701bd53e733a3869113b0b45452083b122258de82960543ab8ace99126dc95b3",
       "slurm_job_id": "202695",
+      "capture": "sbatch stdout/stderr",
+      "state": "COMPLETED",
+      "exit_code": "0:0"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/fixed-square-m2-h100/slurm-202912.out",
+      "sha256": "2b5e948f84b8fe47a3a8afac84dc53df8dfe972081c7f938d26a5695620f1a20",
+      "slurm_job_id": "202912",
       "capture": "sbatch stdout/stderr",
       "state": "COMPLETED",
       "exit_code": "0:0"
@@ -593,6 +613,17 @@
       ],
       "resolved_attention_backend": "fused",
       "evidence": "scaffolds/transformer/validation/provenance/manifest.json: execution_evidence/fixed_polynomial_coefficients"
+    },
+    "fixed_square_m2_hermite": {
+      "scope": "Immutable degree-two Hermite square factors evaluated by the existing normalized sum-of-squares fused kernel on one H100: BF16 one-key near-root output and Q/K/V gradients, exact-root invalid behavior, and the broad learned normalized-polynomial fused suite with independent output/gradient checks.",
+      "source_commits": [
+        "faa198c95bfc5edb8302a0f032edff07a3d87392"
+      ],
+      "validation_runs": [
+        "fixed-square-m2-h100"
+      ],
+      "resolved_attention_backend": "fused",
+      "evidence": "scaffolds/transformer/validation/provenance/manifest.json: execution_evidence/fixed_square_m2_hermite"
     }
   },
   "runs": [
@@ -2190,6 +2221,89 @@
         }
       },
       "scope": "Fixed ascending monomial coefficients in the existing fused direct polynomial backends, degrees 1-4, with and without row normalization: independent FP64 Hermite-recurrence output and Q/K/V-gradient checks, odd head widths and partial causal tiles, 2048-position BF16 checks against the blocked reference and an FP64 prefix, and exact-zero quadratic row failure semantics."
+    },
+    {
+      "name": "fixed-square-m2-h100",
+      "description": "Fixed square-factor degree-two Hermite kernel qualification",
+      "origin": "shared_transformer_validation",
+      "home_cluster": "kennel",
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_factored_m2",
+      "phase": "kernel",
+      "source_commit": "faa198c95bfc5edb8302a0f032edff07a3d87392",
+      "frozen_execution_set_sha256": "a7dd700465c38b8b9c50975ec1fd976fd210e36724f772789b22852817ff9034",
+      "lock_sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559",
+      "gpu_type": "NVIDIA H100 80GB HBM3",
+      "gpu_count": 1,
+      "hostname": "dogo.csail.mit.edu",
+      "partition": "debug",
+      "hardware": [
+        "NVIDIA H100 80GB HBM3, GPU-355f34a2-be0c-ba44-022b-1a056f643b80, 560.35.05"
+      ],
+      "runtime": {
+        "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_factored_m2/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+        "CUDA_VISIBLE_DEVICES": "0",
+        "JAX_PLATFORMS": "cuda",
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "started_utc": "2026-09-27T18:29:53.758086+00:00",
+      "slurm_job_id": "202912",
+      "scheduler": {
+        "slurm_job_id": "202912",
+        "state": "COMPLETED",
+        "elapsed": "00:02:56",
+        "exit_code": "0:0",
+        "node": "dogo",
+        "partition": "debug"
+      },
+      "resolved_attention_backend": "fused",
+      "resolved_configuration": {
+        "path": "scaffolds/transformer/validation/configs/fixed-square-m2-kernel.json",
+        "sha256": "46af0c4d40ad9252c235c7505547c9b8797722d9b513e2d6d2ded809bbede42d"
+      },
+      "data_manifest_hashes": {},
+      "data_provenance": "Deterministic synthetic BF16 near-root vectors and seeded test arrays; no external dataset",
+      "seed_policy": "Deterministic BF16 one-key fixture at score -0.9998779296875; other selected GPU tests use their committed synthetic seeds.",
+      "wandb_run_id": null,
+      "log": {
+        "path": "scaffolds/transformer/validation/logs/fixed-square-m2-h100/slurm-202912.out",
+        "sha256": "2b5e948f84b8fe47a3a8afac84dc53df8dfe972081c7f938d26a5695620f1a20",
+        "slurm_job_id": "202912",
+        "capture": "sbatch stdout/stderr",
+        "state": "COMPLETED",
+        "exit_code": "0:0"
+      },
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/fixed-square-m2-h100/metadata.json",
+          "sha256": "bba4c76ca1b507eb45af1471d751620184ee89b57b7647f60c935caf3e30fbbc"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/fixed-square-m2-h100/tests.json",
+          "sha256": "0dfa7b53a8cc38234138aa53cdc5ccdd804b18dae8762480b09e133b9ddb2cca"
+        }
+      ],
+      "selected_checkpoints": [],
+      "acceptance": {
+        "gpu_tests": {
+          "deselected": 30,
+          "errors": 0,
+          "failures": 0,
+          "junit_xml_sha256": "e8425ab9688dedf7494ef16b574533beeb888d95bd5211f762e2dabefac574cd",
+          "near_root_k_gradient_abs_max": 0.0,
+          "near_root_one_key_output": [
+            3.0,
+            -2.0
+          ],
+          "near_root_q_gradient_abs_max": 0.0,
+          "seconds": 166.333,
+          "skipped": 0,
+          "tests": 42,
+          "junit_xml_path": "scaffolds/transformer/validation/logs/fixed-square-m2-h100/tests.xml"
+        }
+      },
+      "scope": "Immutable degree-two Hermite square factors evaluated by the existing normalized sum-of-squares fused kernel on one H100: BF16 one-key near-root output and Q/K/V gradients, exact-root invalid behavior, and the broad learned normalized-polynomial fused suite with independent output/gradient checks."
     }
   ],
   "execution_evidence": [
@@ -3032,6 +3146,55 @@
           }
         ],
         "limitations": "Single-H100 kernel qualification; production allocation pilots and checkpoint/resume are separate acceptance checks."
+      }
+    },
+    {
+      "name": "fixed_square_m2_hermite",
+      "facts": {
+        "status": "qualified",
+        "home_cluster": "kennel",
+        "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_factored_m2",
+        "scope": "Immutable degree-two Hermite square factors evaluated by the existing normalized sum-of-squares fused kernel on one H100: BF16 one-key near-root output and Q/K/V gradients, exact-root invalid behavior, and the broad learned normalized-polynomial fused suite with independent output/gradient checks.",
+        "resolved_attention_backend": "fused",
+        "selected_checkpoints": [],
+        "attempts": [
+          {
+            "slurm_job_id": "202912",
+            "state": "COMPLETED",
+            "elapsed": "00:02:56",
+            "exit_code": "0:0",
+            "node": "dogo",
+            "partition": "debug",
+            "source_commit": "faa198c95bfc5edb8302a0f032edff07a3d87392",
+            "frozen_execution_set_sha256": "a7dd700465c38b8b9c50975ec1fd976fd210e36724f772789b22852817ff9034",
+            "outcome": "qualified",
+            "tests": {
+              "passed": 42,
+              "failed": 0,
+              "errors": 0,
+              "skipped": 0
+            }
+          }
+        ],
+        "runs": [
+          {
+            "name": "fixed-square-m2-h100",
+            "phase": "kernel",
+            "source_commit": "faa198c95bfc5edb8302a0f032edff07a3d87392",
+            "slurm_job_id": "202912",
+            "metadata": {
+              "path": "scaffolds/transformer/validation/runs/fixed-square-m2-h100/metadata.json",
+              "sha256": "bba4c76ca1b507eb45af1471d751620184ee89b57b7647f60c935caf3e30fbbc"
+            }
+          }
+        ],
+        "configs": [
+          {
+            "path": "scaffolds/transformer/validation/configs/fixed-square-m2-kernel.json",
+            "sha256": "46af0c4d40ad9252c235c7505547c9b8797722d9b513e2d6d2ded809bbede42d"
+          }
+        ],
+        "limitations": "Single-H100 kernel qualification; the two-H100 production-shape pilot and fresh-process resume remain experiment acceptance checks."
       }
     }
   ]

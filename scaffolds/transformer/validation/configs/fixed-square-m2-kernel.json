@@ -1,0 +1,29 @@
+{
+  "data_manifests": {},
+  "expected_gpu_tests": 42,
+  "fixture": "One-key BF16 Q/K with FP32 score -0.9998779296875; fused normalized output equals V and Q/K gradients remain near zero. Exact root remains invalid. Other selected GPU tests use seeded synthetic arrays.",
+  "gpu_test_paths": [
+    "scaffolds/transformer/tests/test_fixed_square_factors_fused.py",
+    "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
+  ],
+  "pytest_selector": "-m gpu",
+  "selected_checkpoints": [],
+  "slurm_job_id": "202912",
+  "source_commit": "faa198c95bfc5edb8302a0f032edff07a3d87392",
+  "submission_argv": [
+    "sbatch",
+    "--partition=debug",
+    "--nodelist=dogo",
+    "--gres=gpu:1",
+    "--cpus-per-task=4",
+    "--mem=48G",
+    "--time=01:00:00",
+    "--job-name=fixed-square-m2-h100",
+    "--open-mode=append",
+    "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_factored_m2/scaffolds/transformer/validation/logs/fixed-square-m2-h100/slurm-%j.out",
+    "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_factored_m2/scaffolds/transformer/validation/logs/fixed-square-m2-h100/qualify.sh",
+    "faa198c95bfc5edb8302a0f032edff07a3d87392"
+  ],
+  "submission_script": "#!/usr/bin/env bash\nset -euo pipefail\n\nLAUNCH_COMMIT=\"${1:?Expected committed source hash}\"\ncd \"${SLURM_SUBMIT_DIR:?Submit from the experiment worktree}\"\npython3 scaffolds/launch/frozen.py check --launch-commit \"$LAUNCH_COMMIT\" \\\n  --experiment shared_kernel_validation --scaffold transformer\n\nPYTHON=\"$PWD/scaffolds/transformer/.venv/bin/python\"\nRECORD=\"$PWD/scaffolds/transformer/validation/runs/fixed-square-m2-h100\"\nLOGS=\"$PWD/scaffolds/transformer/validation/logs/fixed-square-m2-h100\"\nmkdir -p \"$RECORD\" \"$LOGS\"\nexport PYTHONPATH=\"$PWD\" JAX_PLATFORMS=cuda PYTHONUNBUFFERED=1\nexport XLA_PYTHON_CLIENT_PREALLOCATE=false\nexport OMP_NUM_THREADS=\"${SLURM_CPUS_PER_TASK:-4}\"\nexport CUDA_HOME=\"$PWD/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc\"\nsource scaffolds/transformer/launchers/kennel_runtime.sh\n\n\"$PYTHON\" - \"$RECORD/metadata.json\" \"$LAUNCH_COMMIT\" <<'PY'\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\nimport socket\nimport subprocess\nimport sys\nfrom datetime import UTC, datetime\n\nimport jax\n\nfrom scaffolds.launch.frozen import frozen_hash\n\nroot = Path.cwd()\ncommit = sys.argv[2]\ndevices = jax.devices()\nmetadata = {\n    \"source_commit\": commit,\n    \"home_cluster\": \"kennel\",\n    \"artifact_root\": str(root),\n    \"hostname\": socket.gethostname(),\n    \"started_utc\": datetime.now(UTC).isoformat(),\n    \"slurm_job_id\": os.environ[\"SLURM_JOB_ID\"],\n    \"partition\": os.environ[\"SLURM_JOB_PARTITION\"],\n    \"gpu_count\": len(devices),\n    \"gpu_type\": devices[0].device_kind,\n    \"devices\": [str(device) for device in devices],\n    \"hardware\": subprocess.check_output(\n        [\"nvidia-smi\", \"--query-gpu=name,uuid,driver_version\", \"--format=csv,noheader\"],\n        text=True,\n    ).splitlines(),\n    \"runtime\": {key: os.environ.get(key) for key in (\n        \"CUDA_HOME\", \"JAX_PLATFORMS\", \"CUDA_VISIBLE_DEVICES\", \"TRANSFORMER_HOST_STAGING\",\n        \"NCCL_P2P_DISABLE\", \"XLA_PYTHON_CLIENT_PREALLOCATE\",\n    )},\n    \"frozen_execution_set_sha256\": frozen_hash(root, commit, \"shared_kernel_validation\", \"transformer\"),\n    \"lock_sha256\": hashlib.sha256((root / \"scaffolds/transformer/uv.lock\").read_bytes()).hexdigest(),\n    \"resolved_attention_backend\": \"fused\",\n    \"data\": \"Deterministic synthetic BF16 near-root vectors and seeded test arrays; no external dataset\",\n    \"selected_checkpoints\": [],\n}\nPath(sys.argv[1]).write_text(json.dumps(metadata, indent=2, sort_keys=True, allow_nan=False) + \"\\n\")\nprint(json.dumps(metadata, sort_keys=True))\nPY\n\n\"$PYTHON\" - <<'PY'\nimport jax\nimport jax.numpy as jnp\n\nfrom scaffolds.transformer.tests.test_fixed_square_factors import _attention, _near_root_inputs\n\nq, k, v = _near_root_inputs()\n\n@jax.jit\ndef diagnostic(q, k, v):\n    output, pullback = jax.vjp(lambda q, k, v: _attention(q, k, v, backend=\"fused\"), q, k, v)\n    return output, pullback(jnp.ones_like(output))\n\noutput, gradients = diagnostic(q, k, v)\nq_max = float(jnp.max(jnp.abs(gradients[0].astype(jnp.float32))))\nk_max = float(jnp.max(jnp.abs(gradients[1].astype(jnp.float32))))\nprint(f\"near_root_one_key_output={output.tolist()} q_gradient_abs_max={q_max} k_gradient_abs_max={k_max}\")\nassert q_max <= 1e-2 and k_max <= 1e-2\nPY\n\n\"$PYTHON\" -m pytest -c scaffolds/transformer/pyproject.toml --import-mode=importlib -q -m gpu \\\n  scaffolds/transformer/tests/test_fixed_square_factors_fused.py \\\n  scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py \\\n  --junitxml=\"$LOGS/tests.xml\"\n",
+  "submission_script_sha256": "3bfdea7abffcbb2af6e7caead6c4976ddec25077b4059c0b4e61a43ab8bf91ac"
+}
