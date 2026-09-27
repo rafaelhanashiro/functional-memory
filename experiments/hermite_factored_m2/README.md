@@ -52,7 +52,7 @@ endpoint. Validation-best checkpoint selection is recorded separately.
 <!-- BEGIN GENERATED RESULTS -->
 | Variant | Degree | Status | Last update | Terminal PPL | Failure update |
 | --- | ---: | --- | ---: | ---: | ---: |
-| normalized | 2 | not-started |  |  |  |
+| normalized | 2 | submitted |  |  |  |
 <!-- END GENERATED RESULTS -->
 
 The generated table uses only authoritative files under `runs/` for scientific

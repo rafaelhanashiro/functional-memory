@@ -1,2 +1,2 @@
 run,attention_degree,normalization,status,updates,prediction_tokens,terminal_validation_nll,terminal_validation_perplexity,best_step,best_validation_perplexity,last_valid_step,last_valid_perplexity,failure_step,failure_error,source_commit,slurm_job_id
-200m-normalized-factored-m002-seed0,2,normalized,not-started,,,,,,,,,,,,
+200m-normalized-factored-m002-seed0,2,normalized,submitted,,,,,,,,,,,,

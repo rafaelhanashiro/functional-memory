@@ -155,9 +155,11 @@
       "resolved_configuration_sha256": "32576865f5f27326971053ee9a58da33d919f6f8cf54425092af4ba478411b4e",
       "run_record": "experiments/hermite_factored_m2/runs/200m-normalized-factored-m002-seed0",
       "seed": 0,
-      "slurm_job_ids": [],
+      "slurm_job_ids": [
+        "202920"
+      ],
       "source_commit": "faa198c95bfc5edb8302a0f032edff07a3d87392",
-      "status": "not-started",
+      "status": "submitted",
       "target_prediction_tokens": 10000269312,
       "target_updates": 19074
     }
