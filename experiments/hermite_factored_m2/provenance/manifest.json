@@ -1,0 +1,79 @@
+{
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_factored_m2",
+  "branch": "codex/hermite-factored-m2",
+  "branch_base_commit": "e97152c99c26570f10ba17e21541de13098350ee",
+  "coefficient_convention": "Fixed square-factor coefficients [a, a, 0], a=sqrt(exp(1/2)/2), in ascending order",
+  "comparison_limitations": [
+    "The original expanded degree-two run failed the first acceptance pilot step; it has no production endpoint.",
+    "A successful two-step pilot does not establish stability over the full 10B-token training budget.",
+    "A single seed and GPU type do not establish performance or stability across configurations."
+  ],
+  "data_identity": {
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "documentation": "experiments/hermite_factored_m2/README.md",
+  "experiment": "hermite_factored_m2",
+  "format": "functional-memory-experiment-setup",
+  "home_cluster": "kennel",
+  "requested": {
+    "date": "2026-09-27",
+    "degrees": [
+      2
+    ],
+    "factorization": "square",
+    "from_cluster": "kennel",
+    "normalization": [
+      true
+    ],
+    "seeds": [
+      0
+    ]
+  },
+  "runs": [
+    {
+      "acceptance": {},
+      "artifacts": [],
+      "attention_degree": 2,
+      "attention_normalization": true,
+      "config": {
+        "path": "experiments/hermite_factored_m2/configs/200m-normalized-factored-m002-seed0.yaml",
+        "sha256": "bfd2b8a06047c4a12d9d369b271686dd5bcba222ad647aea20806f6854edf6ef"
+      },
+      "fixed_square_factors": [
+        0.9079430793557843,
+        0.9079430793557843,
+        0.0
+      ],
+      "home_cluster": "kennel",
+      "logs": [],
+      "name": "200m-normalized-factored-m002-seed0",
+      "planned_allocation": {
+        "gpu_count": 2,
+        "gpu_type": "H100",
+        "node": "dogo",
+        "partition": "sweep"
+      },
+      "run_record": "experiments/hermite_factored_m2/runs/200m-normalized-factored-m002-seed0",
+      "seed": 0,
+      "slurm_job_ids": [],
+      "status": "not-started",
+      "target_prediction_tokens": 10000269312,
+      "target_updates": 19074
+    }
+  ],
+  "scaffold": "scaffolds/transformer",
+  "scientific_change": "Evaluate fixed normalized degree-two Hermite p_2(s)=exp(1/2)*(s+1)^2/2 as a square of a linear factor",
+  "shared_dependency_lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+  },
+  "status": "prepared",
+  "version": 2
+}
