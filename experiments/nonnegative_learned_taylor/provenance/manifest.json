@@ -118,7 +118,19 @@
           "validation_nll": 4.052367,
           "validation_perplexity": 57.5335
         },
-        "artifacts": "run record, checkpoints 2000 and 2500, and log remain in the original checkout only as a fallback until the fused run passes acceptance; they are then deleted and not retained"
+        "artifacts": "deleted 2026-09-26 22:00 after the fused run passed update 3,000 with matching validation; none retained",
+        "validation": [
+          {
+            "step": 1000,
+            "validation_nll": 4.849587,
+            "validation_perplexity": 127.6876
+          },
+          {
+            "step": 2000,
+            "validation_nll": 4.052367,
+            "validation_perplexity": 57.5335
+          }
+        ]
       },
       "acceptance": {
         "status": "passed",
@@ -133,7 +145,7 @@
         "resume": "restored step 20 and trained step 21 on the fused backend"
       },
       "throughput": "0.50 s/update on four H100 SXM (2.2 s/update for the blocked attempt)",
-      "backend_agreement": "same seed and data order as the cancelled blocked attempt: training NLL 10.487346 vs 10.487302 at update 20, 8.231812 vs 8.231823 at 100, 6.955703 vs 6.955702 at 200"
+      "backend_agreement": "same seed and data order as the cancelled blocked attempt: training NLL 10.487346 vs 10.487302 at update 20, 8.231812 vs 8.231823 at 100, 6.955703 vs 6.955702 at 200; validation NLL 4.849204 vs 4.849587 at 1,000 and 4.054707 vs 4.052367 at 2,000 (fused vs blocked)"
     },
     {
       "name": "200m-qk-m004-nonnegative-seed0",
