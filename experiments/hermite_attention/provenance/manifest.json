@@ -954,12 +954,20 @@
           "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
         },
         {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m003-seed0/failure_context.json",
+          "sha256": "8afa0842f4144cc1762629056d5618b9a30e9158ce170872cde71cca31df9b3d"
+        },
+        {
           "path": "experiments/hermite_attention/runs/200m-normalized-m003-seed0/launch.json",
           "sha256": "abefd9ec148570b226619d55f0ce8d9da8722ab3bca9c12f6681b264eee5d84b"
         },
         {
           "path": "experiments/hermite_attention/runs/200m-normalized-m003-seed0/metadata.json",
-          "sha256": "96a5bf579eaee8c754f90eb04f17e16120637fcafcc55c4458a171fd925bc74b"
+          "sha256": "63eeec1eb3e77b1d4e36605d083f7ba40f3eafb89fcdca8aa14ff763eac5c94b"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m003-seed0/numerical_failure_step_00000608.json",
+          "sha256": "c8cdc27d4180487c421b91c0bdf06604574b79ab0853e13347f5ea7850f9d0b2"
         },
         {
           "path": "experiments/hermite_attention/runs/200m-normalized-m003-seed0/wandb_run.json",
@@ -979,6 +987,79 @@
         "sequence_length": 2049,
         "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
         "version": 2
+      },
+      "diagnostic_checkpoint": {
+        "files": [
+          {
+            "bytes": 275,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/_CHECKPOINT_METADATA",
+            "sha256": "859b48b7da27eef64f4d3520475d5a0e6ed590d0d37464f24b42fe2714b9f4c7"
+          },
+          {
+            "bytes": 142453,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/default/_METADATA",
+            "sha256": "3da76512365bc62f5c45a1b36ce36a5d51af5094b7ce263c240f36220edc5854"
+          },
+          {
+            "bytes": 80117,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/default/_sharding",
+            "sha256": "7a322803396f8f107e7b9532ee1f671799bbabac872865e04cce9fbc459808cf"
+          },
+          {
+            "bytes": 49203,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/default/array_metadatas/process_0",
+            "sha256": "99805d0bfbc7688329f7495f47ced6019f7f1b2ca8c374133df6efab538baf89"
+          },
+          {
+            "bytes": 3246,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/default/d/25168444fe44a56ceb5066c00a1c92ae",
+            "sha256": "125a4a252ba31cc63265441c89a8389533c71a4e0044ddcb2723d271e1f83a72"
+          },
+          {
+            "bytes": 118,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/default/manifest.ocdbt",
+            "sha256": "88a6c8f3a1714aa1b4fefdbef8e43044d7042e30cc04824d98c4fe27ad51177b"
+          },
+          {
+            "bytes": 591,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/default/ocdbt.process_0/d/245b21f4a1048ff98d5e775e8276c297",
+            "sha256": "747ccfae215380c6c726a4541ebc97c737242c640e13450b5062d745f328d6d1"
+          },
+          {
+            "bytes": 195,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/default/ocdbt.process_0/d/27d8003bfd497874cc242112069fb592",
+            "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e"
+          },
+          {
+            "bytes": 883150848,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/default/ocdbt.process_0/d/28e6b582324a4250b08133f4e65e8c7d",
+            "sha256": "35c052eda60e406ad028d68d999558e162d5295db747b4e62fd018abe2787b23"
+          },
+          {
+            "bytes": 615,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/default/ocdbt.process_0/d/604495a92db58f4cb865221a7ffcbb92",
+            "sha256": "1a8b5a31a7b867c89fa932c3c59062c25fb0ba725bf68f9f7afa015c08f56da0"
+          },
+          {
+            "bytes": 965410816,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/default/ocdbt.process_0/d/6486616a8e456b25b74f02cb5f57c937",
+            "sha256": "4dccd115ff1b082dd0e0ab6819b3926827df19ff5f0ee5fed185ce618724f2fb"
+          },
+          {
+            "bytes": 357789696,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/default/ocdbt.process_0/d/7e661ba024b69fe90dc5dcd8dd5fd820",
+            "sha256": "774cd965f5e78026ba9b500d6b89e265c3b452545ee66d47c80bd444f5375dff"
+          },
+          {
+            "bytes": 366,
+            "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500/default/ocdbt.process_0/manifest.ocdbt",
+            "sha256": "3fd55a10d3cc9b9824b5c4b74fff22b6b95deeda7cd908094d29af182b986ee8"
+          }
+        ],
+        "path": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0/500",
+        "purpose": "Exact checkpoint of parameters, optimizer, RNG, and data cursor preceding the first nonfinite update at step 608; retained to reproduce and diagnose the failure.",
+        "step": 500,
+        "tree_sha256": "2958110d8e10f21e01d5a82533dd14403cc0e4c075cec0933606acdce51b93cc"
       },
       "execution": {
         "attempts": [
@@ -1079,7 +1160,7 @@
       "logs": [
         {
           "path": "experiments/hermite_attention/logs/200m-normalized-m003-seed0/slurm-202698.out",
-          "sha256": "53e0c58bcabd0a26a9792fb91d90b4288fc321d07a360521e6b7569d7b0e0182"
+          "sha256": "9e0cc3fa866e81e5cdfe26b5c7fc5208e6400874a1db06479364e0d15f7b673f"
         }
       ],
       "name": "200m-normalized-m003-seed0",
@@ -1179,7 +1260,7 @@
         "202698"
       ],
       "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
-      "status": "incomplete",
+      "status": "numerical-failure",
       "submission": {
         "argv": [
           "sbatch",
@@ -1780,6 +1861,10 @@
       },
       "artifacts": [
         {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0/best_validation.json",
+          "sha256": "828cff45d6611e058b8cde5bfbc87f11fffca2ff06cf67f621997bddc9787b4f"
+        },
+        {
           "path": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0/config.json",
           "sha256": "5cdfe4ac76ab4c5199bc30e91caa4a66f07a41407258a45fb89e779a200cc59e"
         },
@@ -1793,7 +1878,11 @@
         },
         {
           "path": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0/metadata.json",
-          "sha256": "075a679a1b1e9c244e104c6ba3e32cc307886acb956eccd0449425868d15a94b"
+          "sha256": "0cfaac07c151a3747ce53c1c2de64ee183e497fe6ce81337746e67fb12aa7039"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0/metrics.jsonl",
+          "sha256": "4b0f030c8d79e5b8face5d92eceb7f54a550e49b3a564292093c9c41bc186864"
         },
         {
           "path": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0/wandb_run.json",
@@ -1911,7 +2000,7 @@
       "logs": [
         {
           "path": "experiments/hermite_attention/logs/200m-unnormalized-m001-seed0/slurm-202700.out",
-          "sha256": "e30544d56100d993693dd1248a55cbf8e79f2203552264d28fb2b6ed70ac22ed"
+          "sha256": "f32c27c6db2ed54430a4e3435a57a0c97fcfd158343aa9bb48d87c04bf67561f"
         }
       ],
       "name": "200m-unnormalized-m001-seed0",
@@ -2005,6 +2094,15 @@
       "resolved_configuration_sha256": "a5d5363d993fe97e6ca42001104f276543599930438fb1ecaa3c7894c88f16c2",
       "run_record": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0",
       "seed": 0,
+      "selected_checkpoint": {
+        "path": "experiments/hermite_attention/checkpoints/200m-unnormalized-m001-seed0/3000",
+        "present": true,
+        "selection_rule": "lowest_validation_nll",
+        "step": 3000,
+        "training_tokens": 1572864000,
+        "validation_nll": 4.2110165527888705,
+        "validation_perplexity": 67.42504610274122
+      },
       "slurm_job_ids": [
         "202700"
       ],
@@ -2500,7 +2598,79 @@
             "parameter_count": 199906304,
             "parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
           },
-          "passed_stages": [],
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "pilot": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "2402ca9f07c53d3a5d22253f65b58b3f5064854187f257ddd2bc6fe5751c833f",
+              "final_state_sha256": "2402ca9f07c53d3a5d22253f65b58b3f5064854187f257ddd2bc6fe5751c833f",
+              "first_update": {
+                "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+                "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+                "step": 1
+              },
+              "next_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "start_state_sha256": "609d2f978a015b93c8749b5a2faf4513c0b946da31e6e0ff8c3f98959e4b1bc5"
+            },
+            "data_start_sequence": 0,
+            "final_step": 2,
+            "projected_hours": 4.974687446559805,
+            "restored_step": null,
+            "timing": {
+              "checkpoint_seconds": [
+                21.975437031127512
+              ],
+              "evaluation_seconds": [
+                2.9199128448963165
+              ],
+              "runtime_seconds": 53.72014883486554,
+              "train_step_seconds": [
+                5.18166682170704,
+                0.8697349699214101
+              ]
+            },
+            "validation_nll": 10.871835947036743
+          },
+          "resume": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "5c3572d5202113d028a09c6002f4ff8a290763ff6b46dfce0a40bdbeaa3da9a0",
+              "final_state_sha256": "5c3572d5202113d028a09c6002f4ff8a290763ff6b46dfce0a40bdbeaa3da9a0",
+              "first_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "next_update": {
+                "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+                "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+                "step": 4
+              },
+              "start_state_sha256": "2402ca9f07c53d3a5d22253f65b58b3f5064854187f257ddd2bc6fe5751c833f"
+            },
+            "data_start_sequence": 512,
+            "final_step": 3,
+            "restored_step": 2,
+            "timing": {
+              "checkpoint_seconds": [],
+              "evaluation_seconds": [],
+              "runtime_seconds": 54.19034570083022,
+              "train_step_seconds": [
+                11.05600361712277
+              ]
+            }
+          },
           "runtime": {
             "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
             "NCCL_P2P_DISABLE": null,
@@ -2510,13 +2680,37 @@
             "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
             "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
           },
-          "status": "incomplete"
+          "status": "passed"
         }
       },
       "artifacts": [
         {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m003-seed0/best_validation.json",
+          "sha256": "ab657cf1397f227668a6490ed5044acc15be54726c7eeaf7f6e6587cbd1aa10d"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m003-seed0/config.json",
+          "sha256": "f2b9f4ebf421abe00fca59aafd5782172e29f23a3935d77fee256669fcfa11bc"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m003-seed0/data_identity.json",
+          "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+        },
+        {
           "path": "experiments/hermite_attention/runs/200m-unnormalized-m003-seed0/launch.json",
           "sha256": "3b18c68b41d5e976a197595d0f546116690f7df3286c78967f57159571a9a063"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m003-seed0/metadata.json",
+          "sha256": "9967dc28490188c5d67e11805b569831ec1f957a4b31044cf7785ce1f5968f8c"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m003-seed0/metrics.jsonl",
+          "sha256": "53f91f65b57a4f11c3ebc653f7088d0e8ecd0fcf86bebc4f8efa0c5ad6d58e56"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m003-seed0/wandb_run.json",
+          "sha256": "909b060d9e2d6b37ce47e226d607fdae1753623b679c28ab237b1613d2b3f22a"
         }
       ],
       "attention_degree": 3,
@@ -2524,6 +2718,14 @@
       "config": {
         "path": "experiments/hermite_attention/configs/200m-unnormalized-m003-seed0.yaml",
         "sha256": "90bf997f0eb6d1510f3dc844c2079f1e587fa3b72b3c5a00367374d066dc87c3"
+      },
+      "data_identity": {
+        "batch_size": 256,
+        "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+        "format": "ofm-packed-run-data",
+        "sequence_length": 2049,
+        "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+        "version": 2
       },
       "execution": {
         "attempts": [
@@ -2548,6 +2750,69 @@
             "slurm_restart_count": "1",
             "started_utc": "2026-09-27T07:57:54.989360+00:00",
             "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202702",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "2",
+            "started_utc": "2026-09-27T14:46:52.784118+00:00",
+            "time_limit": "2-00:00:00"
+          }
+        ],
+        "attention_backend": "fused",
+        "attention_backend_requested": "fused",
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "runtime_history": [
+          {
+            "runtime": {
+              "batch_transfer": "host_to_shard",
+              "devices": [
+                {
+                  "id": 0,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                },
+                {
+                  "id": 1,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                }
+              ],
+              "environment": {
+                "NCCL_P2P_DISABLE": null,
+                "TRANSFORMER_HOST_STAGING": "0",
+                "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+                "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+              },
+              "state_transfer": "direct"
+            },
+            "slurm_job_id": "202702",
+            "timestamp_utc": "2026-09-27T14:49:32.140644+00:00"
           }
         ]
       },
@@ -2561,7 +2826,7 @@
       "logs": [
         {
           "path": "experiments/hermite_attention/logs/200m-unnormalized-m003-seed0/slurm-202702.out",
-          "sha256": "76792a87e3d1294a85ee13ffbb579d07abef2144a3197ede144c0284fef77ce8"
+          "sha256": "e9394433ce05978c67ff51f7d5f621d8c2a255926d8a15b65aa6c09f89bdd56e"
         }
       ],
       "name": "200m-unnormalized-m003-seed0",
@@ -2634,7 +2899,7 @@
           "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
         },
         "train": {
-          "checkpoint_dir": "experiments/hermite_attention/checkpoints/200m-unnormalized-m003-seed0",
+          "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/checkpoints/200m-unnormalized-m003-seed0",
           "ckpt_every": 500,
           "dtype": "bfloat16",
           "eval_batches": 7,
@@ -2646,22 +2911,31 @@
           "wandb_dir": "experiments/hermite_attention/logs/200m-unnormalized-m003-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
-          "wandb_mode": "disabled",
+          "wandb_mode": "online",
           "wandb_project": "functional-memory",
           "wandb_run_name": "200m-unnormalized-m003-seed0",
-          "workdir": "experiments/hermite_attention/runs/200m-unnormalized-m003-seed0"
+          "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/runs/200m-unnormalized-m003-seed0"
         }
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
-      "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "272975f477861728e4953b4031dd3f51c5eec343bf760eca9c064f683559c6bf",
+      "resolved_configuration_origin": "trainer output",
+      "resolved_configuration_sha256": "e84377edbf4bd78152f61328b55de079f38bb3090f890844fca18101c814eb1d",
       "run_record": "experiments/hermite_attention/runs/200m-unnormalized-m003-seed0",
       "seed": 0,
+      "selected_checkpoint": {
+        "path": "experiments/hermite_attention/checkpoints/200m-unnormalized-m003-seed0/2000",
+        "present": true,
+        "selection_rule": "lowest_validation_nll",
+        "step": 2000,
+        "training_tokens": 1048576000,
+        "validation_nll": 4.3557179144450595,
+        "validation_perplexity": 77.92274712665682
+      },
       "slurm_job_ids": [
         "202702"
       ],
       "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
-      "status": "submitted",
+      "status": "incomplete",
       "submission": {
         "argv": [
           "sbatch",
@@ -2704,7 +2978,13 @@
         "time_limit": "2-00:00:00"
       },
       "target_prediction_tokens": 10000269312,
-      "target_updates": 19074
+      "target_updates": 19074,
+      "wandb": {
+        "entity": "rafah-massachusetts-institute-of-technology",
+        "project": "functional-memory",
+        "run_id": "9cfd49ad6058499b94298375dcc959b8",
+        "run_name": "200m-unnormalized-m003-seed0"
+      }
     },
     {
       "acceptance": {

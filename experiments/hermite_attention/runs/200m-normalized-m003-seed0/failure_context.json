@@ -1,0 +1,28 @@
+{
+  "diagnostic_checkpoint_purpose": "Reproduce the first nonfinite update at step 608 from the exact prior optimizer and data state.",
+  "diagnostic_checkpoint_retained": true,
+  "diagnostic_checkpoint_step": 500,
+  "failure_record": {
+    "path": "experiments/hermite_attention/runs/200m-normalized-m003-seed0/numerical_failure_step_00000608.json",
+    "sha256": "c8cdc27d4180487c421b91c0bdf06604574b79ab0853e13347f5ea7850f9d0b2"
+  },
+  "failure_step": 608,
+  "format": "hermite-production-numerical-failure-context",
+  "last_valid_training_measurement": {
+    "precision": "as printed in matching Slurm log",
+    "step": 600,
+    "train_nll": 7.494152,
+    "train_perplexity": 1797.5
+  },
+  "last_valid_validation": null,
+  "matching_failure_log": {
+    "path": "experiments/hermite_attention/logs/200m-normalized-m003-seed0/slurm-202698.out",
+    "sha256": "9e0cc3fa866e81e5cdfe26b5c7fc5208e6400874a1db06479364e0d15f7b673f"
+  },
+  "run": "200m-normalized-m003-seed0",
+  "slurm_job_id": "202698",
+  "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+  "status": "numerical-failure",
+  "validation_note": "Scheduled first at step 1000; failure occurred beforehand.",
+  "version": 1
+}

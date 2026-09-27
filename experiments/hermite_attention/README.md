@@ -62,11 +62,11 @@ metrics and checkpoint selection are recorded separately.
 | --- | ---: | --- | ---: | ---: | ---: |
 | normalized | 1 | numerical-failure | 173 |  | 173 |
 | normalized | 2 | acceptance-numerical-failure |  |  | 1 |
-| normalized | 3 | incomplete | 0 |  |  |
+| normalized | 3 | numerical-failure | 608 |  | 608 |
 | normalized | 4 | numerical-failure | 53 |  | 53 |
-| unnormalized | 1 | incomplete | 0 |  |  |
+| unnormalized | 1 | incomplete | 3000 |  |  |
 | unnormalized | 2 | incomplete | 0 |  |  |
-| unnormalized | 3 | submitted |  |  |  |
+| unnormalized | 3 | incomplete | 2000 |  |  |
 | unnormalized | 4 | incomplete | 0 |  |  |
 <!-- END GENERATED RESULTS -->
 
@@ -77,6 +77,15 @@ emitted metadata; it does not assert the job's current scheduler state.
 numerical-failure record; it does not assert that a scheduler job is still running.
 An `acceptance-numerical-failure` is a failure of the short qualification pilot,
 reported separately from production and linked in provenance.
+
+All four normalized variants have now failed: degree 2 on the first pilot update,
+and degrees 4, 1, and 3 during production at updates 53, 173, and 608. The
+two-update acceptance pilot therefore did not predict long-run stability.
+Degree 3's step-500 checkpoint is retained solely to replay the first nonfinite
+update at step 608 from its exact optimizer and data state; the manifest records
+its location and checksums. No held-out validation had been scheduled before
+any of these failures. Each production failure record links its matching log
+and last finite printed training measurement.
 
 The normalized degree-2 pilot had a nonfinite forward loss on its first update.
 Exactly, `p_2(s) = exp(1/2) (s+1)^2 / 2`: its weights cannot cancel by sign, but

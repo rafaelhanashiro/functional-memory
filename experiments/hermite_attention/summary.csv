@@ -1,9 +1,9 @@
 run,attention_degree,normalization,status,updates,prediction_tokens,terminal_validation_nll,terminal_validation_perplexity,best_step,best_validation_perplexity,last_valid_step,last_valid_perplexity,failure_step,failure_error,source_commit,slurm_job_id
 200m-normalized-m001-seed0,1,normalized,numerical-failure,173,90701824,,,,,,,173,Nonfinite training loss or optimizer update at step 173: nan,2f11d5a3df81e8b0ca7624977d12a92d42e01833,202704
 200m-normalized-m002-seed0,2,normalized,acceptance-numerical-failure,,,,,,,,,1,Nonfinite training loss or optimizer update at step 1: nan,2f11d5a3df81e8b0ca7624977d12a92d42e01833,202705
-200m-normalized-m003-seed0,3,normalized,incomplete,0,0,,,,,,,,,2f11d5a3df81e8b0ca7624977d12a92d42e01833,202698
+200m-normalized-m003-seed0,3,normalized,numerical-failure,608,318767104,,,,,,,608,Nonfinite training loss or optimizer update at step 608: nan,2f11d5a3df81e8b0ca7624977d12a92d42e01833,202698
 200m-normalized-m004-seed0,4,normalized,numerical-failure,53,27787264,,,,,,,53,Nonfinite training loss or optimizer update at step 53: nan,2f11d5a3df81e8b0ca7624977d12a92d42e01833,202699
-200m-unnormalized-m001-seed0,1,unnormalized,incomplete,0,0,,,,,,,,,2f11d5a3df81e8b0ca7624977d12a92d42e01833,202700
+200m-unnormalized-m001-seed0,1,unnormalized,incomplete,3000,1572864000,,,3000,67.42504610274122,3000,67.42504610274122,,,2f11d5a3df81e8b0ca7624977d12a92d42e01833,202700
 200m-unnormalized-m002-seed0,2,unnormalized,incomplete,0,0,,,,,,,,,2f11d5a3df81e8b0ca7624977d12a92d42e01833,202701
-200m-unnormalized-m003-seed0,3,unnormalized,submitted,,,,,,,,,,,,
+200m-unnormalized-m003-seed0,3,unnormalized,incomplete,2000,1048576000,,,2000,77.92274712665682,2000,77.92274712665682,,,2f11d5a3df81e8b0ca7624977d12a92d42e01833,202702
 200m-unnormalized-m004-seed0,4,unnormalized,incomplete,0,0,,,,,,,,,2f11d5a3df81e8b0ca7624977d12a92d42e01833,202703
