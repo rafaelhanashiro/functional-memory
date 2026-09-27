@@ -348,6 +348,26 @@ a global microbatch of 32, and four accumulation steps (batch 128), preserving t
 production per-device microbatch of 16. Its synthetic tokens are already on the
 devices. Memory numbers are compiler buffer estimates, not allocator peaks.
 
+## Fixed polynomial coefficients
+
+The existing generic polynomial kernels accept immutable monomial coefficients
+for degrees 1–4, with and without row normalization. H100 qualification passed
+**26 GPU tests** on `dogo` (debug partition, job **202695**, source
+`2f11d5a3df81e8b0ca7624977d12a92d42e01833`). The checks cover FP32 outputs and
+Q/K/V gradients against an independent FP64 Hermite recurrence, odd head widths
+and partial causal tiles, full-context BF16 against the blocked reference and an
+FP64 prefix, and the exact-zero quadratic row failure policy. Test counts,
+configuration, frozen execution hash, runtime, hardware, attempts, and artifact
+hashes are retained in the [manifest](provenance/manifest.json).
+
+The first qualification (job 202694) passed 18 tests and failed eight when XLA
+compiled the blocked FP32 reference at odd widths. The rerun retained the fused
+cases and independent FP64 oracle with unchanged shapes and tolerances; only the
+redundant blocked FP32 comparison was removed. Full-context BF16 comparisons still
+use both blocked and FP64 references. This record qualifies the single-H100
+kernels; production pilots and checkpoint/resume remain allocation acceptance
+checks. No checkpoints are retained for this qualification.
+
 ## Reproduction
 
 From a worktree with the scaffold environment synced

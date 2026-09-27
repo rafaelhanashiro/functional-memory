@@ -53,6 +53,11 @@ unless `CUDA_HOME` names another toolkit; `scaffolds/transformer/launchers/kenne
 points it at the locked environment's `nvidia/cuda_nvcc` (CUDA 12.9), since 12.6
 rejects Triton 3.6's PTX.
 
+On 2026-09-27, two-GPU Hermite acceptance jobs 202696 and 202697 on `mastiff`
+hit `CUDA_ERROR_ECC_UNCORRECTABLE` during CUDA initialization. Their replacements
+and the remaining Hermite jobs exclude `mastiff`; `dogo` passed the new kernel
+qualification in job 202695. Recheck device health before using the affected node.
+
 The retained joint-sweep checks cover all 20 B300 and host-staged A6000
 configurations and 16 new H100 configurations. On `samoyed`, direct peer transfers
 corrupted replicas and batches; the host-staged A100 pilot passed training,

@@ -21,7 +21,22 @@
   "documentation": "experiments/hermite_attention/README.md",
   "experiment": "hermite_attention",
   "format": "functional-memory-experiment-setup",
+  "frozen_execution_set_sha256": "5310a545191cf6ea26592f90d9c72bf8421e3c5b81c8b7ea5a44e4f2fb0656ce",
   "home_cluster": "kennel",
+  "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+  "prelaunch_kernel_qualification": {
+    "hardware": "1 NVIDIA H100 80GB on dogo",
+    "record": "scaffolds/transformer/validation/runs/fixed-polynomial-h100",
+    "scope": "Fused FP32/BF16 outputs and QKV gradients for all eight coefficient/normalization combinations, including signed and zero denominator behavior. Each production allocation still runs its own acceptance checks.",
+    "slurm_job_id": "202695",
+    "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+    "status": "passed",
+    "tests": {
+      "failed": 0,
+      "passed": 26,
+      "skipped": 0
+    }
+  },
   "requested": {
     "date": "2026-09-27",
     "degrees": [
@@ -41,21 +56,72 @@
   },
   "runs": [
     {
-      "acceptance": {},
-      "artifacts": [],
+      "acceptance": {
+        "H100-2": {
+          "hardware": {},
+          "identity": "0ce9a6dbd6debc35fa5ca8eb43bed5e4113257b69a4ddda5843551a7a406fd15",
+          "passed_stages": [],
+          "runtime": {
+            "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "status": "incomplete"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m001-seed0/launch.json",
+          "sha256": "71c112121bd3d1bf84f2bbd5bf110e4b659007b3333c58fc3dcc705dd37676e1"
+        }
+      ],
       "attention_degree": 1,
       "attention_normalization": true,
       "config": {
         "path": "experiments/hermite_attention/configs/200m-normalized-m001-seed0.yaml",
         "sha256": "51af93e856653fb3ec5b0edb98b28c0ffdc1a91cebd5e69b9a96722c8b9cb8d5"
       },
-      "execution": {},
+      "execution": {
+        "attempts": [
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "mastiff",
+            "slurm_job_id": "202696",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "0",
+            "started_utc": "2026-09-27T05:24:24.824815+00:00",
+            "time_limit": "2-00:00:00"
+          }
+        ]
+      },
       "fixed_coefficients": [
         1.6487212707001282,
         1.6487212707001282
       ],
       "home_cluster": "kennel",
-      "logs": [],
+      "infrastructure_failures": [
+        {
+          "log_path": "experiments/hermite_attention/logs/200m-normalized-m001-seed0/slurm-202696.out",
+          "log_sha256": "e3366d406a861a47b445b5f0d5186c57dad07103036be617eca3ca72038a735c",
+          "node": "mastiff",
+          "reason": "CUDA_ERROR_ECC_UNCORRECTABLE; only one of two allocated devices initializes",
+          "scientific_outcome": false,
+          "slurm_job_id": "202696",
+          "stage": "hardware initialization"
+        }
+      ],
+      "logs": [
+        {
+          "path": "experiments/hermite_attention/logs/200m-normalized-m001-seed0/slurm-202696.out",
+          "sha256": "e3366d406a861a47b445b5f0d5186c57dad07103036be617eca3ca72038a735c"
+        }
+      ],
       "name": "200m-normalized-m001-seed0",
       "parameter_count": 199906304,
       "resolved_configuration": {
@@ -132,7 +198,7 @@
           "log_every": 10,
           "micro_batch_size": 64,
           "seed": 0,
-          "source_commit": "auto",
+          "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
           "wandb_dir": "experiments/hermite_attention/logs/200m-normalized-m001-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
@@ -144,32 +210,145 @@
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
       "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "bcc8ca640dee30fe5b496255369c5ce12033aabc02040be55eb4d67687f880c9",
+      "resolved_configuration_sha256": "e22b8f1248de3ccf273b543a7a4e4d53291eaa6dc2e7f7a26ceaadf54361a082",
       "run_record": "experiments/hermite_attention/runs/200m-normalized-m001-seed0",
       "seed": 0,
-      "slurm_job_ids": [],
-      "source_commit": null,
-      "status": "not-started",
+      "slurm_job_ids": [
+        "202696",
+        "202704"
+      ],
+      "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "status": "submitted",
+      "submission": {
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--exclude=collie,samoyed,doodle,terrier,mastiff",
+          "--gres=gpu:2",
+          "--job-name=hermite-200m-normalized-m001-seed0",
+          "--output=experiments/hermite_attention/logs/200m-normalized-m001-seed0/slurm-%j.out",
+          "scaffolds/transformer/launchers/kennel.sbatch",
+          "experiments.hermite_attention.adapter.execution.acceptance",
+          "experiments/hermite_attention/configs/200m-normalized-m001-seed0.yaml",
+          "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+          "2",
+          "B300,H100"
+        ],
+        "excluded_nodes": [
+          "collie",
+          "samoyed",
+          "doodle",
+          "terrier",
+          "mastiff"
+        ],
+        "log_path": "experiments/hermite_attention/logs/200m-normalized-m001-seed0/slurm-202704.out",
+        "partition": "sweep",
+        "permitted_gpu_types": [
+          "B300",
+          "H100"
+        ],
+        "replaces_hardware_failure": "202696",
+        "requested_gpu_count": 2,
+        "submitted_utc": "2026-09-27T05:25:38.073315+00:00",
+        "time_limit": "2-00:00:00"
+      },
+      "submission_history": [
+        {
+          "argv": [
+            "sbatch",
+            "--parsable",
+            "--gres=gpu:2",
+            "--job-name=hermite-200m-normalized-m001-seed0",
+            "--output=experiments/hermite_attention/logs/200m-normalized-m001-seed0/slurm-%j.out",
+            "scaffolds/transformer/launchers/kennel.sbatch",
+            "experiments.hermite_attention.adapter.execution.acceptance",
+            "experiments/hermite_attention/configs/200m-normalized-m001-seed0.yaml",
+            "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "2",
+            "B300,H100"
+          ],
+          "log_path": "experiments/hermite_attention/logs/200m-normalized-m001-seed0/slurm-202696.out",
+          "partition": "sweep",
+          "permitted_gpu_types": [
+            "B300",
+            "H100"
+          ],
+          "requested_gpu_count": 2,
+          "submitted_utc": "2026-09-27T05:24:00.357898+00:00",
+          "time_limit": "2-00:00:00"
+        }
+      ],
       "target_prediction_tokens": 10000269312,
       "target_updates": 19074
     },
     {
-      "acceptance": {},
-      "artifacts": [],
+      "acceptance": {
+        "H100-2": {
+          "hardware": {},
+          "identity": "9dde76218fe45361f75b73649c3d12dcab06acc268387d98d51965ff82f137ca",
+          "passed_stages": [],
+          "runtime": {
+            "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "status": "incomplete"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m002-seed0/launch.json",
+          "sha256": "7fc46f0a175df63aeeb02146bfe277523a17d8c5c08f789c7d8258c5fb4ba1aa"
+        }
+      ],
       "attention_degree": 2,
       "attention_normalization": true,
       "config": {
         "path": "experiments/hermite_attention/configs/200m-normalized-m002-seed0.yaml",
         "sha256": "91dff5030a9af9ffe775384517000e2f242b52bb748dbf88e7f2fce4897a303b"
       },
-      "execution": {},
+      "execution": {
+        "attempts": [
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "mastiff",
+            "slurm_job_id": "202697",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "0",
+            "started_utc": "2026-09-27T05:24:53.978645+00:00",
+            "time_limit": "2-00:00:00"
+          }
+        ]
+      },
       "fixed_coefficients": [
         0.8243606353500641,
         1.6487212707001282,
         0.8243606353500641
       ],
       "home_cluster": "kennel",
-      "logs": [],
+      "infrastructure_failures": [
+        {
+          "log_path": "experiments/hermite_attention/logs/200m-normalized-m002-seed0/slurm-202697.out",
+          "log_sha256": "8444eab427b441cd0eb4cc844a8dd8a1262436575c0dbc5eac2b32fb7adaaf8f",
+          "node": "mastiff",
+          "reason": "CUDA_ERROR_ECC_UNCORRECTABLE; only one of two allocated devices initializes",
+          "scientific_outcome": false,
+          "slurm_job_id": "202697",
+          "stage": "hardware initialization"
+        }
+      ],
+      "logs": [
+        {
+          "path": "experiments/hermite_attention/logs/200m-normalized-m002-seed0/slurm-202697.out",
+          "sha256": "8444eab427b441cd0eb4cc844a8dd8a1262436575c0dbc5eac2b32fb7adaaf8f"
+        }
+      ],
       "name": "200m-normalized-m002-seed0",
       "parameter_count": 199906304,
       "resolved_configuration": {
@@ -247,7 +426,7 @@
           "log_every": 10,
           "micro_batch_size": 64,
           "seed": 0,
-          "source_commit": "auto",
+          "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
           "wandb_dir": "experiments/hermite_attention/logs/200m-normalized-m002-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
@@ -259,18 +438,85 @@
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
       "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "612c31b16565baa6b612d6296b3517878c5f4f01aea1a91b64e6c466c7a01008",
+      "resolved_configuration_sha256": "2254eb105197be5b54141f6f7c62340259bd939f7ef2d5d9b12f02988482c8b7",
       "run_record": "experiments/hermite_attention/runs/200m-normalized-m002-seed0",
       "seed": 0,
-      "slurm_job_ids": [],
-      "source_commit": null,
-      "status": "not-started",
+      "slurm_job_ids": [
+        "202697",
+        "202705"
+      ],
+      "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "status": "submitted",
+      "submission": {
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--exclude=collie,samoyed,doodle,terrier,mastiff",
+          "--gres=gpu:2",
+          "--job-name=hermite-200m-normalized-m002-seed0",
+          "--output=experiments/hermite_attention/logs/200m-normalized-m002-seed0/slurm-%j.out",
+          "scaffolds/transformer/launchers/kennel.sbatch",
+          "experiments.hermite_attention.adapter.execution.acceptance",
+          "experiments/hermite_attention/configs/200m-normalized-m002-seed0.yaml",
+          "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+          "2",
+          "B300,H100"
+        ],
+        "excluded_nodes": [
+          "collie",
+          "samoyed",
+          "doodle",
+          "terrier",
+          "mastiff"
+        ],
+        "log_path": "experiments/hermite_attention/logs/200m-normalized-m002-seed0/slurm-202705.out",
+        "partition": "sweep",
+        "permitted_gpu_types": [
+          "B300",
+          "H100"
+        ],
+        "replaces_hardware_failure": "202697",
+        "requested_gpu_count": 2,
+        "submitted_utc": "2026-09-27T05:25:38.102699+00:00",
+        "time_limit": "2-00:00:00"
+      },
+      "submission_history": [
+        {
+          "argv": [
+            "sbatch",
+            "--parsable",
+            "--gres=gpu:2",
+            "--job-name=hermite-200m-normalized-m002-seed0",
+            "--output=experiments/hermite_attention/logs/200m-normalized-m002-seed0/slurm-%j.out",
+            "scaffolds/transformer/launchers/kennel.sbatch",
+            "experiments.hermite_attention.adapter.execution.acceptance",
+            "experiments/hermite_attention/configs/200m-normalized-m002-seed0.yaml",
+            "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "2",
+            "B300,H100"
+          ],
+          "log_path": "experiments/hermite_attention/logs/200m-normalized-m002-seed0/slurm-202697.out",
+          "partition": "sweep",
+          "permitted_gpu_types": [
+            "B300",
+            "H100"
+          ],
+          "requested_gpu_count": 2,
+          "submitted_utc": "2026-09-27T05:24:00.374877+00:00",
+          "time_limit": "2-00:00:00"
+        }
+      ],
       "target_prediction_tokens": 10000269312,
       "target_updates": 19074
     },
     {
       "acceptance": {},
-      "artifacts": [],
+      "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m003-seed0/launch.json",
+          "sha256": "abefd9ec148570b226619d55f0ce8d9da8722ab3bca9c12f6681b264eee5d84b"
+        }
+      ],
       "attention_degree": 3,
       "attention_normalization": true,
       "config": {
@@ -364,7 +610,7 @@
           "log_every": 10,
           "micro_batch_size": 64,
           "seed": 0,
-          "source_commit": "auto",
+          "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
           "wandb_dir": "experiments/hermite_attention/logs/200m-normalized-m003-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
@@ -376,18 +622,66 @@
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
       "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "be09fec4df1a0e584d19eda47c095efa8354738852af167fc0af6c4a8f2eb07a",
+      "resolved_configuration_sha256": "b0dbc51a306301e06e4ff4a3db24bec37e022bb5f8c818db96e8ec2b984b3c86",
       "run_record": "experiments/hermite_attention/runs/200m-normalized-m003-seed0",
       "seed": 0,
-      "slurm_job_ids": [],
-      "source_commit": null,
-      "status": "not-started",
+      "slurm_job_ids": [
+        "202698"
+      ],
+      "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "status": "submitted",
+      "submission": {
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--gres=gpu:2",
+          "--job-name=hermite-200m-normalized-m003-seed0",
+          "--output=experiments/hermite_attention/logs/200m-normalized-m003-seed0/slurm-%j.out",
+          "scaffolds/transformer/launchers/kennel.sbatch",
+          "experiments.hermite_attention.adapter.execution.acceptance",
+          "experiments/hermite_attention/configs/200m-normalized-m003-seed0.yaml",
+          "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+          "2",
+          "B300,H100"
+        ],
+        "excluded_nodes": [
+          "collie",
+          "samoyed",
+          "doodle",
+          "terrier",
+          "mastiff"
+        ],
+        "log_path": "experiments/hermite_attention/logs/200m-normalized-m003-seed0/slurm-202698.out",
+        "partition": "sweep",
+        "permitted_gpu_types": [
+          "B300",
+          "H100"
+        ],
+        "requested_gpu_count": 2,
+        "runtime_resource_adjustment": {
+          "command": [
+            "scontrol",
+            "update",
+            "JobId=202698",
+            "ExcNodeList=collie,samoyed,doodle,terrier,mastiff"
+          ],
+          "reason": "Exclude mastiff after 202696 failed CUDA initialization with CUDA_ERROR_ECC_UNCORRECTABLE.",
+          "recorded_utc": "2026-09-27T05:25:07.428401+00:00"
+        },
+        "submitted_utc": "2026-09-27T05:24:00.389147+00:00",
+        "time_limit": "2-00:00:00"
+      },
       "target_prediction_tokens": 10000269312,
       "target_updates": 19074
     },
     {
       "acceptance": {},
-      "artifacts": [],
+      "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m004-seed0/launch.json",
+          "sha256": "8bea070c3c0b376ace80c2cc519b4b86193021ba2709fce9fd18eb9e1f1ed174"
+        }
+      ],
       "attention_degree": 4,
       "attention_normalization": true,
       "config": {
@@ -483,7 +777,7 @@
           "log_every": 10,
           "micro_batch_size": 64,
           "seed": 0,
-          "source_commit": "auto",
+          "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
           "wandb_dir": "experiments/hermite_attention/logs/200m-normalized-m004-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
@@ -495,18 +789,66 @@
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
       "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "2fc5f79229375330fd81ddc6e9e90072d00a062d98b5fd2484f3649c4f6e3008",
+      "resolved_configuration_sha256": "5016d737519387e6b95ce1a0a5554f49eeddd0b4f28d5fab7d1dbf2f8258c35b",
       "run_record": "experiments/hermite_attention/runs/200m-normalized-m004-seed0",
       "seed": 0,
-      "slurm_job_ids": [],
-      "source_commit": null,
-      "status": "not-started",
+      "slurm_job_ids": [
+        "202699"
+      ],
+      "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "status": "submitted",
+      "submission": {
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--gres=gpu:2",
+          "--job-name=hermite-200m-normalized-m004-seed0",
+          "--output=experiments/hermite_attention/logs/200m-normalized-m004-seed0/slurm-%j.out",
+          "scaffolds/transformer/launchers/kennel.sbatch",
+          "experiments.hermite_attention.adapter.execution.acceptance",
+          "experiments/hermite_attention/configs/200m-normalized-m004-seed0.yaml",
+          "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+          "2",
+          "B300,H100"
+        ],
+        "excluded_nodes": [
+          "collie",
+          "samoyed",
+          "doodle",
+          "terrier",
+          "mastiff"
+        ],
+        "log_path": "experiments/hermite_attention/logs/200m-normalized-m004-seed0/slurm-202699.out",
+        "partition": "sweep",
+        "permitted_gpu_types": [
+          "B300",
+          "H100"
+        ],
+        "requested_gpu_count": 2,
+        "runtime_resource_adjustment": {
+          "command": [
+            "scontrol",
+            "update",
+            "JobId=202699",
+            "ExcNodeList=collie,samoyed,doodle,terrier,mastiff"
+          ],
+          "reason": "Exclude mastiff after 202696 failed CUDA initialization with CUDA_ERROR_ECC_UNCORRECTABLE.",
+          "recorded_utc": "2026-09-27T05:25:07.447002+00:00"
+        },
+        "submitted_utc": "2026-09-27T05:24:00.404846+00:00",
+        "time_limit": "2-00:00:00"
+      },
       "target_prediction_tokens": 10000269312,
       "target_updates": 19074
     },
     {
       "acceptance": {},
-      "artifacts": [],
+      "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0/launch.json",
+          "sha256": "b51e3cea370138ba0904eeb4583c845cc8dfed37fc962cf7a1b21b69b3b3587c"
+        }
+      ],
       "attention_degree": 1,
       "attention_normalization": false,
       "config": {
@@ -596,7 +938,7 @@
           "log_every": 10,
           "micro_batch_size": 64,
           "seed": 0,
-          "source_commit": "auto",
+          "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
           "wandb_dir": "experiments/hermite_attention/logs/200m-unnormalized-m001-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
@@ -608,18 +950,66 @@
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
       "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "a907dad8bc9fec69fc4d60859588153e7e316e000f078fa4c8ccfc050a8823c3",
+      "resolved_configuration_sha256": "9fb25abe0762a8d12bee44b9d3fe0944e4ca5fb2630106d40f5b47ec28b64c32",
       "run_record": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0",
       "seed": 0,
-      "slurm_job_ids": [],
-      "source_commit": null,
-      "status": "not-started",
+      "slurm_job_ids": [
+        "202700"
+      ],
+      "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "status": "submitted",
+      "submission": {
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--gres=gpu:2",
+          "--job-name=hermite-200m-unnormalized-m001-seed0",
+          "--output=experiments/hermite_attention/logs/200m-unnormalized-m001-seed0/slurm-%j.out",
+          "scaffolds/transformer/launchers/kennel.sbatch",
+          "experiments.hermite_attention.adapter.execution.acceptance",
+          "experiments/hermite_attention/configs/200m-unnormalized-m001-seed0.yaml",
+          "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+          "2",
+          "B300,H100"
+        ],
+        "excluded_nodes": [
+          "collie",
+          "samoyed",
+          "doodle",
+          "terrier",
+          "mastiff"
+        ],
+        "log_path": "experiments/hermite_attention/logs/200m-unnormalized-m001-seed0/slurm-202700.out",
+        "partition": "sweep",
+        "permitted_gpu_types": [
+          "B300",
+          "H100"
+        ],
+        "requested_gpu_count": 2,
+        "runtime_resource_adjustment": {
+          "command": [
+            "scontrol",
+            "update",
+            "JobId=202700",
+            "ExcNodeList=collie,samoyed,doodle,terrier,mastiff"
+          ],
+          "reason": "Exclude mastiff after 202696 failed CUDA initialization with CUDA_ERROR_ECC_UNCORRECTABLE.",
+          "recorded_utc": "2026-09-27T05:25:07.468975+00:00"
+        },
+        "submitted_utc": "2026-09-27T05:24:00.418778+00:00",
+        "time_limit": "2-00:00:00"
+      },
       "target_prediction_tokens": 10000269312,
       "target_updates": 19074
     },
     {
       "acceptance": {},
-      "artifacts": [],
+      "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m002-seed0/launch.json",
+          "sha256": "b0f9aea9c980d039319488553af137be0efa55cc88cad34a09d5b99ee3d22b03"
+        }
+      ],
       "attention_degree": 2,
       "attention_normalization": false,
       "config": {
@@ -711,7 +1101,7 @@
           "log_every": 10,
           "micro_batch_size": 64,
           "seed": 0,
-          "source_commit": "auto",
+          "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
           "wandb_dir": "experiments/hermite_attention/logs/200m-unnormalized-m002-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
@@ -723,18 +1113,66 @@
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
       "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "01f4e4fd51ba50d03a778c740752bafda29d55d350024f6f4038307ceef4b6b5",
+      "resolved_configuration_sha256": "ab455b7ebd59a327974be459bad281e341bc7aa42c992a7491582946f7154851",
       "run_record": "experiments/hermite_attention/runs/200m-unnormalized-m002-seed0",
       "seed": 0,
-      "slurm_job_ids": [],
-      "source_commit": null,
-      "status": "not-started",
+      "slurm_job_ids": [
+        "202701"
+      ],
+      "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "status": "submitted",
+      "submission": {
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--gres=gpu:2",
+          "--job-name=hermite-200m-unnormalized-m002-seed0",
+          "--output=experiments/hermite_attention/logs/200m-unnormalized-m002-seed0/slurm-%j.out",
+          "scaffolds/transformer/launchers/kennel.sbatch",
+          "experiments.hermite_attention.adapter.execution.acceptance",
+          "experiments/hermite_attention/configs/200m-unnormalized-m002-seed0.yaml",
+          "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+          "2",
+          "B300,H100"
+        ],
+        "excluded_nodes": [
+          "collie",
+          "samoyed",
+          "doodle",
+          "terrier",
+          "mastiff"
+        ],
+        "log_path": "experiments/hermite_attention/logs/200m-unnormalized-m002-seed0/slurm-202701.out",
+        "partition": "sweep",
+        "permitted_gpu_types": [
+          "B300",
+          "H100"
+        ],
+        "requested_gpu_count": 2,
+        "runtime_resource_adjustment": {
+          "command": [
+            "scontrol",
+            "update",
+            "JobId=202701",
+            "ExcNodeList=collie,samoyed,doodle,terrier,mastiff"
+          ],
+          "reason": "Exclude mastiff after 202696 failed CUDA initialization with CUDA_ERROR_ECC_UNCORRECTABLE.",
+          "recorded_utc": "2026-09-27T05:25:07.488031+00:00"
+        },
+        "submitted_utc": "2026-09-27T05:24:00.432671+00:00",
+        "time_limit": "2-00:00:00"
+      },
       "target_prediction_tokens": 10000269312,
       "target_updates": 19074
     },
     {
       "acceptance": {},
-      "artifacts": [],
+      "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m003-seed0/launch.json",
+          "sha256": "3b18c68b41d5e976a197595d0f546116690f7df3286c78967f57159571a9a063"
+        }
+      ],
       "attention_degree": 3,
       "attention_normalization": false,
       "config": {
@@ -828,7 +1266,7 @@
           "log_every": 10,
           "micro_batch_size": 64,
           "seed": 0,
-          "source_commit": "auto",
+          "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
           "wandb_dir": "experiments/hermite_attention/logs/200m-unnormalized-m003-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
@@ -840,18 +1278,66 @@
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
       "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "aab392069dc8130fc4d114bbc140b16fd6a68cd84b0db3a02cf3352a0331fd5d",
+      "resolved_configuration_sha256": "272975f477861728e4953b4031dd3f51c5eec343bf760eca9c064f683559c6bf",
       "run_record": "experiments/hermite_attention/runs/200m-unnormalized-m003-seed0",
       "seed": 0,
-      "slurm_job_ids": [],
-      "source_commit": null,
-      "status": "not-started",
+      "slurm_job_ids": [
+        "202702"
+      ],
+      "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "status": "submitted",
+      "submission": {
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--gres=gpu:2",
+          "--job-name=hermite-200m-unnormalized-m003-seed0",
+          "--output=experiments/hermite_attention/logs/200m-unnormalized-m003-seed0/slurm-%j.out",
+          "scaffolds/transformer/launchers/kennel.sbatch",
+          "experiments.hermite_attention.adapter.execution.acceptance",
+          "experiments/hermite_attention/configs/200m-unnormalized-m003-seed0.yaml",
+          "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+          "2",
+          "B300,H100"
+        ],
+        "excluded_nodes": [
+          "collie",
+          "samoyed",
+          "doodle",
+          "terrier",
+          "mastiff"
+        ],
+        "log_path": "experiments/hermite_attention/logs/200m-unnormalized-m003-seed0/slurm-202702.out",
+        "partition": "sweep",
+        "permitted_gpu_types": [
+          "B300",
+          "H100"
+        ],
+        "requested_gpu_count": 2,
+        "runtime_resource_adjustment": {
+          "command": [
+            "scontrol",
+            "update",
+            "JobId=202702",
+            "ExcNodeList=collie,samoyed,doodle,terrier,mastiff"
+          ],
+          "reason": "Exclude mastiff after 202696 failed CUDA initialization with CUDA_ERROR_ECC_UNCORRECTABLE.",
+          "recorded_utc": "2026-09-27T05:25:07.511384+00:00"
+        },
+        "submitted_utc": "2026-09-27T05:24:00.449809+00:00",
+        "time_limit": "2-00:00:00"
+      },
       "target_prediction_tokens": 10000269312,
       "target_updates": 19074
     },
     {
       "acceptance": {},
-      "artifacts": [],
+      "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m004-seed0/launch.json",
+          "sha256": "4c0f4b52d212f83dc52f7993ec76475f304cb74fe5f4f7683646ac2382f7e098"
+        }
+      ],
       "attention_degree": 4,
       "attention_normalization": false,
       "config": {
@@ -947,7 +1433,7 @@
           "log_every": 10,
           "micro_batch_size": 64,
           "seed": 0,
-          "source_commit": "auto",
+          "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
           "wandb_dir": "experiments/hermite_attention/logs/200m-unnormalized-m004-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
@@ -959,17 +1445,145 @@
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
       "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "0059da80b8fd48ce34fab02bb5d49dc62e5f0b918794317af863c50008d74254",
+      "resolved_configuration_sha256": "c6e9de59d547ca330bb21232d6ffb554a3606feee48c43a4fc5eb7431bb40079",
       "run_record": "experiments/hermite_attention/runs/200m-unnormalized-m004-seed0",
       "seed": 0,
-      "slurm_job_ids": [],
-      "source_commit": null,
-      "status": "not-started",
+      "slurm_job_ids": [
+        "202703"
+      ],
+      "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "status": "submitted",
+      "submission": {
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--gres=gpu:2",
+          "--job-name=hermite-200m-unnormalized-m004-seed0",
+          "--output=experiments/hermite_attention/logs/200m-unnormalized-m004-seed0/slurm-%j.out",
+          "scaffolds/transformer/launchers/kennel.sbatch",
+          "experiments.hermite_attention.adapter.execution.acceptance",
+          "experiments/hermite_attention/configs/200m-unnormalized-m004-seed0.yaml",
+          "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+          "2",
+          "B300,H100"
+        ],
+        "excluded_nodes": [
+          "collie",
+          "samoyed",
+          "doodle",
+          "terrier",
+          "mastiff"
+        ],
+        "log_path": "experiments/hermite_attention/logs/200m-unnormalized-m004-seed0/slurm-202703.out",
+        "partition": "sweep",
+        "permitted_gpu_types": [
+          "B300",
+          "H100"
+        ],
+        "requested_gpu_count": 2,
+        "runtime_resource_adjustment": {
+          "command": [
+            "scontrol",
+            "update",
+            "JobId=202703",
+            "ExcNodeList=collie,samoyed,doodle,terrier,mastiff"
+          ],
+          "reason": "Exclude mastiff after 202696 failed CUDA initialization with CUDA_ERROR_ECC_UNCORRECTABLE.",
+          "recorded_utc": "2026-09-27T05:25:07.533499+00:00"
+        },
+        "submitted_utc": "2026-09-27T05:24:00.464449+00:00",
+        "time_limit": "2-00:00:00"
+      },
       "target_prediction_tokens": 10000269312,
       "target_updates": 19074
     }
   ],
   "scaffold": "scaffolds/transformer",
+  "scheduler_snapshot": {
+    "checked_utc": "2026-09-27T05:26:34.998445+00:00",
+    "jobs": [
+      {
+        "elapsed": "00:00:10",
+        "exit_code": "1:0",
+        "job_id": "202696",
+        "node": "mastiff",
+        "partition": "sweep",
+        "state": "FAILED"
+      },
+      {
+        "elapsed": "00:00:02",
+        "exit_code": "1:0",
+        "job_id": "202697",
+        "node": "mastiff",
+        "partition": "sweep",
+        "state": "FAILED"
+      },
+      {
+        "elapsed": "00:00:00",
+        "exit_code": "0:0",
+        "job_id": "202698",
+        "node": "None assigned",
+        "partition": "sweep",
+        "state": "PENDING"
+      },
+      {
+        "elapsed": "00:00:00",
+        "exit_code": "0:0",
+        "job_id": "202699",
+        "node": "None assigned",
+        "partition": "sweep",
+        "state": "PENDING"
+      },
+      {
+        "elapsed": "00:00:00",
+        "exit_code": "0:0",
+        "job_id": "202700",
+        "node": "None assigned",
+        "partition": "sweep",
+        "state": "PENDING"
+      },
+      {
+        "elapsed": "00:00:00",
+        "exit_code": "0:0",
+        "job_id": "202701",
+        "node": "None assigned",
+        "partition": "sweep",
+        "state": "PENDING"
+      },
+      {
+        "elapsed": "00:00:00",
+        "exit_code": "0:0",
+        "job_id": "202702",
+        "node": "None assigned",
+        "partition": "sweep",
+        "state": "PENDING"
+      },
+      {
+        "elapsed": "00:00:00",
+        "exit_code": "0:0",
+        "job_id": "202703",
+        "node": "None assigned",
+        "partition": "sweep",
+        "state": "PENDING"
+      },
+      {
+        "elapsed": "00:00:00",
+        "exit_code": "0:0",
+        "job_id": "202704",
+        "node": "None assigned",
+        "partition": "sweep",
+        "state": "PENDING"
+      },
+      {
+        "elapsed": "00:00:00",
+        "exit_code": "0:0",
+        "job_id": "202705",
+        "node": "None assigned",
+        "partition": "sweep",
+        "state": "PENDING"
+      }
+    ]
+  },
   "scientific_change": "Fixed exp(1/2) sum_(r<=m) He_r(s)/r!, raw scores s=q.k/sqrt(d_K), normalized and unnormalized",
   "shared_dependency_lock": {
     "path": "scaffolds/transformer/uv.lock",

@@ -60,17 +60,19 @@ metrics and checkpoint selection are recorded separately.
 <!-- BEGIN GENERATED RESULTS -->
 | Variant | Degree | Status | Last update | Terminal PPL | Failure update |
 | --- | ---: | --- | ---: | ---: | ---: |
-| normalized | 1 | not-started |  |  |  |
-| normalized | 2 | not-started |  |  |  |
-| normalized | 3 | not-started |  |  |  |
-| normalized | 4 | not-started |  |  |  |
-| unnormalized | 1 | not-started |  |  |  |
-| unnormalized | 2 | not-started |  |  |  |
-| unnormalized | 3 | not-started |  |  |  |
-| unnormalized | 4 | not-started |  |  |  |
+| normalized | 1 | submitted |  |  |  |
+| normalized | 2 | submitted |  |  |  |
+| normalized | 3 | submitted |  |  |  |
+| normalized | 4 | submitted |  |  |  |
+| unnormalized | 1 | submitted |  |  |  |
+| unnormalized | 2 | submitted |  |  |  |
+| unnormalized | 3 | submitted |  |  |  |
+| unnormalized | 4 | submitted |  |  |  |
 <!-- END GENERATED RESULTS -->
 
 The generated table uses only the authoritative run files for scientific metrics.
+`submitted` means a recorded Slurm submission exists and production has not yet
+emitted metadata; it does not assert the job's current scheduler state.
 `incomplete` means production has emitted metadata without a completion or
 numerical-failure record; it does not assert that a scheduler job is still running.
 An `acceptance-numerical-failure` is a failure of the short qualification pilot,
@@ -113,7 +115,7 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python \
 for CONFIG in experiments/hermite_attention/configs/*.yaml; do
   RUN=$(basename "$CONFIG" .yaml)
   mkdir -p "experiments/hermite_attention/logs/$RUN"
-  sbatch --gres=gpu:2 --job-name="$RUN" \
+  sbatch --gres=gpu:2 --exclude=collie,samoyed,doodle,terrier,mastiff --job-name="$RUN" \
     --output="experiments/hermite_attention/logs/$RUN/slurm-%j.out" \
     scaffolds/transformer/launchers/kennel.sbatch \
     experiments.hermite_attention.adapter.execution.acceptance \
@@ -125,6 +127,10 @@ The shared launcher uses Kennel's low-priority `sweep` partition, append-mode lo
 requeue, and a 48-hour limit. Two B300s or H100s are requested per run; global batch
 and accumulation remain fixed. The actual GPU type, count, node, runtime settings,
 partition, and every Slurm attempt are recorded. See [CLUSTERS.md](../../CLUSTERS.md).
+Initial jobs 202696 and 202697 failed CUDA initialization on `mastiff` with
+`CUDA_ERROR_ECC_UNCORRECTABLE`, before any model test or training. Their replacements
+are 202704 and 202705; all eight submissions exclude `mastiff`. These hardware
+failures are recorded in provenance and are not Hermite numerical outcomes.
 Do not relaunch a concluded run into the same directory. Later reproductions use a
 new worktree and record with rewritten output locations.
 
@@ -142,6 +148,24 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python \
 Omit `--refresh-provenance` to regenerate the CSV and README table solely from
 retained records, without accessing datasets or local logs. Add
 `--hash-checkpoints` during final retention to hash every selected checkpoint file.
+
+If a full-recipe qualification pilot stops numerically, retain its scientific
+evidence only after the corresponding Slurm job has concluded:
+
+```bash
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python \
+  -m experiments.hermite_attention.adapter.analysis.report \
+  --retain-qualification-failure "$RUN" --failure-job-id "$JOB_ID"
+```
+
+This checks Slurm accounting and refuses a live or requeueable job. It writes one
+`runs/<run>/qualification_failure.json` containing the actual pilot configuration,
+failure diagnostics, last available finite measurements, source commit, and hashes
+of the evidence and matching log. It does not copy per-attempt preflight files.
+The outcome stays `acceptance-numerical-failure`, with no production terminal
+perplexity: qualification uses the production model, data, batch, and optimizer,
+but a shortened evaluation interval and one held-out batch. Missing measurements
+stay absent. The matching failure log remains retained.
 
 ## Artifacts and retention
 

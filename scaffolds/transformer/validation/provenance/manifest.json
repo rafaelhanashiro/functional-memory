@@ -192,6 +192,18 @@
     {
       "path": "scaffolds/transformer/validation/runs/normalized-polynomial-cpu/tests.json",
       "sha256": "44142bc2dd60d09c9d54aa71bd1e72d3d00abc48d4133284d05aa12476fa6466"
+    },
+    {
+      "path": "scaffolds/transformer/validation/configs/fixed-polynomial-kernel.json",
+      "sha256": "be81b62b8856fb8da80ea7475323dc100f0d0d36c8b08f022b2f5c1008569e6e"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/fixed-polynomial-h100/metadata.json",
+      "sha256": "a28eb0905cee37dd43e79587faee5558f378f9cda58148ca424ad365114d654e"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/fixed-polynomial-h100/tests.json",
+      "sha256": "a3c1d9e0c28f0d884c4ee36151f736800b6506df5f9c22d8510e7314db2c22f9"
     }
   ],
   "slurm_logs": [
@@ -347,6 +359,14 @@
       "path": "scaffolds/transformer/validation/logs/normalized-polynomial-b300-updates/slurm-202626.out",
       "sha256": "ec03075493faada15260f4d917815f9e9dfa66d585030b9422c46611fe41663a",
       "slurm_job_id": "202626",
+      "capture": "sbatch stdout/stderr",
+      "state": "COMPLETED",
+      "exit_code": "0:0"
+    },
+    {
+      "path": "scaffolds/transformer/validation/logs/fixed-polynomial-h100/slurm-202695.out",
+      "sha256": "701bd53e733a3869113b0b45452083b122258de82960543ab8ace99126dc95b3",
+      "slurm_job_id": "202695",
       "capture": "sbatch stdout/stderr",
       "state": "COMPLETED",
       "exit_code": "0:0"
@@ -562,6 +582,17 @@
       ],
       "resolved_attention_backend": "fused",
       "evidence": "scaffolds/transformer/validation/provenance/manifest.json: execution_evidence/fused_normalized_learned_polynomial"
+    },
+    "fixed_polynomial_coefficients": {
+      "scope": "Fixed ascending monomial coefficients in the existing fused direct polynomial backends, degrees 1-4, with and without row normalization: independent FP64 Hermite-recurrence output and Q/K/V-gradient checks, odd head widths and partial causal tiles, 2048-position BF16 checks against the blocked reference and an FP64 prefix, and exact-zero quadratic row failure semantics.",
+      "source_commits": [
+        "2f11d5a3df81e8b0ca7624977d12a92d42e01833"
+      ],
+      "validation_runs": [
+        "fixed-polynomial-h100"
+      ],
+      "resolved_attention_backend": "fused",
+      "evidence": "scaffolds/transformer/validation/provenance/manifest.json: execution_evidence/fixed_polynomial_coefficients"
     }
   },
   "runs": [
@@ -2089,6 +2120,76 @@
           "data_provenance": "Synthetic uniform token IDs; no dataset manifests are read. The report configuration records token_sha256."
         }
       }
+    },
+    {
+      "name": "fixed-polynomial-h100",
+      "description": "Fixed polynomial kernel qualification",
+      "origin": "shared_transformer_validation",
+      "home_cluster": "kennel",
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention",
+      "phase": "kernel",
+      "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "frozen_execution_set_sha256": "5310a545191cf6ea26592f90d9c72bf8421e3c5b81c8b7ea5a44e4f2fb0656ce",
+      "lock_sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559",
+      "gpu_type": "NVIDIA H100 80GB HBM3",
+      "gpu_count": 1,
+      "hostname": "dogo.csail.mit.edu",
+      "partition": "debug",
+      "runtime": {
+        "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+        "JAX_PLATFORMS": "cuda",
+        "TRANSFORMER_HOST_STAGING": "0",
+        "NCCL_P2P_DISABLE": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "started_utc": "2026-09-27T05:21:58.822782+00:00",
+      "slurm_job_id": "202695",
+      "scheduler": {
+        "slurm_job_id": "202695",
+        "state": "COMPLETED",
+        "elapsed": "00:01:31",
+        "exit_code": "0:0",
+        "node": "dogo",
+        "partition": "debug"
+      },
+      "resolved_attention_backend": "fused",
+      "resolved_configuration": {
+        "path": "scaffolds/transformer/validation/configs/fixed-polynomial-kernel.json",
+        "sha256": "be81b62b8856fb8da80ea7475323dc100f0d0d36c8b08f022b2f5c1008569e6e"
+      },
+      "data_manifest_hashes": {},
+      "data_provenance": "Seeded synthetic arrays; no external dataset",
+      "seed_policy": "NumPy default_rng(902 + degree) for FP32; default_rng(917 + degree) for BF16; deterministic exact-zero fixture.",
+      "wandb_run_id": null,
+      "log": {
+        "path": "scaffolds/transformer/validation/logs/fixed-polynomial-h100/slurm-202695.out",
+        "sha256": "701bd53e733a3869113b0b45452083b122258de82960543ab8ace99126dc95b3",
+        "slurm_job_id": "202695",
+        "capture": "sbatch stdout/stderr",
+        "state": "COMPLETED",
+        "exit_code": "0:0"
+      },
+      "files": [
+        {
+          "path": "scaffolds/transformer/validation/runs/fixed-polynomial-h100/metadata.json",
+          "sha256": "a28eb0905cee37dd43e79587faee5558f378f9cda58148ca424ad365114d654e"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/fixed-polynomial-h100/tests.json",
+          "sha256": "a3c1d9e0c28f0d884c4ee36151f736800b6506df5f9c22d8510e7314db2c22f9"
+        }
+      ],
+      "selected_checkpoints": [],
+      "acceptance": {
+        "gpu_tests": {
+          "tests": 26,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 79.041
+        }
+      },
+      "scope": "Fixed ascending monomial coefficients in the existing fused direct polynomial backends, degrees 1-4, with and without row normalization: independent FP64 Hermite-recurrence output and Q/K/V-gradient checks, odd head widths and partial causal tiles, 2048-position BF16 checks against the blocked reference and an FP64 prefix, and exact-zero quadratic row failure semantics."
     }
   ],
   "execution_evidence": [
@@ -2864,6 +2965,73 @@
           }
         },
         "data_note": "GPU correctness tests use seeded synthetic arrays and a temporary packed-token fixture; benchmarks use resident synthetic arrays/tokens. No external dataset is read, and no checkpoints are retained."
+      }
+    },
+    {
+      "name": "fixed_polynomial_coefficients",
+      "facts": {
+        "status": "qualified",
+        "home_cluster": "kennel",
+        "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention",
+        "scope": "Fixed ascending monomial coefficients in the existing fused direct polynomial backends, degrees 1-4, with and without row normalization: independent FP64 Hermite-recurrence output and Q/K/V-gradient checks, odd head widths and partial causal tiles, 2048-position BF16 checks against the blocked reference and an FP64 prefix, and exact-zero quadratic row failure semantics.",
+        "resolved_attention_backend": "fused",
+        "selected_checkpoints": [],
+        "attempts": [
+          {
+            "slurm_job_id": "202694",
+            "source_commit": "1af4e72374b8f6d8f3572c89c27c47e65f7ba4b3",
+            "frozen_execution_set_sha256": "09244b963ed5e69024ef7747f14989a19de907f3430e66a51bd5e9fbd4fde6f3",
+            "state": "FAILED",
+            "exit_code": "1:0",
+            "elapsed": "00:01:32",
+            "node": "dogo",
+            "partition": "debug",
+            "outcome": "blocked_reference_compiler_failure",
+            "tests": {
+              "passed": 18,
+              "failed": 8,
+              "errors": 0,
+              "skipped": 0
+            },
+            "reason": "All eight failures occurred when XLA compiled the blocked GPU FP32 reference for shape [1,131,2,33,65], with layout_normalization.cc:431 ShapeUtil::ReshapeIsBitcast. The production fused calls compiled. The redundant blocked FP32 comparison was removed; the independent FP64 checks, shapes, and tolerances were unchanged, and full-context BF16 comparisons still use both blocked and FP64 references."
+          },
+          {
+            "slurm_job_id": "202695",
+            "state": "COMPLETED",
+            "elapsed": "00:01:31",
+            "exit_code": "0:0",
+            "node": "dogo",
+            "partition": "debug",
+            "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "outcome": "qualified",
+            "frozen_execution_set_sha256": "5310a545191cf6ea26592f90d9c72bf8421e3c5b81c8b7ea5a44e4f2fb0656ce",
+            "tests": {
+              "passed": 26,
+              "failed": 0,
+              "errors": 0,
+              "skipped": 0
+            }
+          }
+        ],
+        "runs": [
+          {
+            "name": "fixed-polynomial-h100",
+            "phase": "kernel",
+            "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "slurm_job_id": "202695",
+            "metadata": {
+              "path": "scaffolds/transformer/validation/runs/fixed-polynomial-h100/metadata.json",
+              "sha256": "a28eb0905cee37dd43e79587faee5558f378f9cda58148ca424ad365114d654e"
+            }
+          }
+        ],
+        "configs": [
+          {
+            "path": "scaffolds/transformer/validation/configs/fixed-polynomial-kernel.json",
+            "sha256": "be81b62b8856fb8da80ea7475323dc100f0d0d36c8b08f022b2f5c1008569e6e"
+          }
+        ],
+        "limitations": "Single-H100 kernel qualification; production allocation pilots and checkpoint/resume are separate acceptance checks."
       }
     }
   ]

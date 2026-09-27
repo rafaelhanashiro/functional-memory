@@ -1,0 +1,6 @@
+{
+  "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+  "home_cluster": "kennel",
+  "slurm_job_id": "202705",
+  "log_path": "experiments/hermite_attention/logs/200m-normalized-m002-seed0/slurm-202705.out"
+}

@@ -1,0 +1,32 @@
+{
+  "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+  "submission_argv": [
+    "sbatch",
+    "--parsable",
+    "--job-name=fixed-polynomial-qualification",
+    "--partition=debug",
+    "--nodes=1",
+    "--ntasks=1",
+    "--cpus-per-task=8",
+    "--mem=48G",
+    "--gres=gpu:1",
+    "--nodelist=dogo",
+    "--time=00:30:00",
+    "--open-mode=append",
+    "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/validation/logs/fixed-polynomial-h100/slurm-%j.out"
+  ],
+  "submission_script": "#!/bin/bash\nset -euo pipefail\ncd \"$SLURM_SUBMIT_DIR\"\npython3 scaffolds/launch/frozen.py check --launch-commit 2f11d5a3df81e8b0ca7624977d12a92d42e01833 --experiment hermite_attention --scaffold transformer\nexport PYTHONPATH=\"$PWD\" JAX_PLATFORMS=cuda OMP_NUM_THREADS=8 PYTHONUNBUFFERED=1 XLA_PYTHON_CLIENT_PREALLOCATE=false\nPYTHON=\"$PWD/scaffolds/transformer/.venv/bin/python\"\nexport CUDA_HOME=\"$(\"$PYTHON\" -c 'import importlib.util; print(next(iter(importlib.util.find_spec(\"nvidia.cuda_nvcc\").submodule_search_locations)))')\"\nsource scaffolds/transformer/launchers/kennel_runtime.sh\nnvidia-smi --query-gpu=name,driver_version --format=csv\n\"$PYTHON\" - <<'META'\nimport hashlib,json,os,pathlib,socket\nimport jax\nfrom datetime import datetime,UTC\nfrom scaffolds.launch.frozen import frozen_hash\nroot=pathlib.Path.cwd()\nmetadata={\"source_commit\":\"2f11d5a3df81e8b0ca7624977d12a92d42e01833\",\"home_cluster\":\"kennel\",\"artifact_root\":str(root),\"node\":socket.gethostname(),\"slurm_job_id\":os.environ[\"SLURM_JOB_ID\"],\"partition\":os.environ[\"SLURM_JOB_PARTITION\"],\"gpu_count\":len(jax.devices()),\"devices\":[str(x) for x in jax.devices()],\"gpu_type\":jax.devices()[0].device_kind,\"runtime\":{k:os.environ.get(k) for k in [\"CUDA_HOME\",\"JAX_PLATFORMS\",\"TRANSFORMER_HOST_STAGING\",\"NCCL_P2P_DISABLE\",\"XLA_PYTHON_CLIENT_PREALLOCATE\"]},\"frozen_execution_set_sha256\":frozen_hash(root,\"2f11d5a3df81e8b0ca7624977d12a92d42e01833\",\"hermite_attention\",\"transformer\"),\"lock_sha256\":hashlib.sha256((root/\"scaffolds/transformer/uv.lock\").read_bytes()).hexdigest(),\"started_utc\":datetime.now(UTC).isoformat(),\"resolved_attention_backend\":\"fused\",\"data\":\"Seeded synthetic arrays; no external dataset\",\"selected_checkpoints\":[]}\n(root/\"scaffolds/transformer/validation/runs/fixed-polynomial-h100/metadata.json\").write_text(json.dumps(metadata,indent=2)+\"\\n\")\nprint(json.dumps(metadata))\nMETA\n\"$PYTHON\" -m pytest -c scaffolds/transformer/pyproject.toml --import-mode=importlib -q scaffolds/transformer/tests/test_fixed_polynomial_fused.py --junitxml=scaffolds/transformer/validation/logs/fixed-polynomial-h100/pytest.xml\n",
+  "slurm_job_id": "202695",
+  "tests": "scaffolds/transformer/tests/test_fixed_polynomial_fused.py",
+  "expected_tests": 26,
+  "attempts": [
+    {
+      "slurm_job_id": "202694",
+      "source_commit": "1af4e72374b8f6d8f3572c89c27c47e65f7ba4b3",
+      "status": "failed",
+      "tests_passed": 18,
+      "tests_failed": 8,
+      "reason": "Blocked GPU reference compiler layout error at odd widths; independent FP64 checks retained for rerun."
+    }
+  ]
+}

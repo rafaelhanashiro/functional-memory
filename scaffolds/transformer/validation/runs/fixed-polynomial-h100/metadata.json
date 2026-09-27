@@ -1,0 +1,26 @@
+{
+  "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention",
+  "node": "dogo.csail.mit.edu",
+  "slurm_job_id": "202695",
+  "partition": "debug",
+  "gpu_count": 1,
+  "devices": [
+    "cuda:0"
+  ],
+  "gpu_type": "NVIDIA H100 80GB HBM3",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "JAX_PLATFORMS": "cuda",
+    "TRANSFORMER_HOST_STAGING": "0",
+    "NCCL_P2P_DISABLE": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "frozen_execution_set_sha256": "5310a545191cf6ea26592f90d9c72bf8421e3c5b81c8b7ea5a44e4f2fb0656ce",
+  "lock_sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559",
+  "started_utc": "2026-09-27T05:21:58.822782+00:00",
+  "resolved_attention_backend": "fused",
+  "data": "Seeded synthetic arrays; no external dataset",
+  "selected_checkpoints": []
+}
