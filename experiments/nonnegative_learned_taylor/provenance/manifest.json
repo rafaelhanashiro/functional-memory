@@ -119,7 +119,21 @@
           "validation_perplexity": 57.5335
         },
         "artifacts": "run record, checkpoints 2000 and 2500, and log remain in the original checkout only as a fallback until the fused run passes acceptance; they are then deleted and not retained"
-      }
+      },
+      "acceptance": {
+        "status": "passed",
+        "completed_utc": "2026-09-27T01:30:50Z",
+        "hardware": "4x NVIDIA H100 80GB HBM3 (dogo)",
+        "cpu_tests_passed": 141,
+        "cpu_distributed_tests": "none declared",
+        "gpu_tests_passed": 51,
+        "initialization_parameter_sha256": "8786c98702e97fdaf9631667c4c01a5029a4c5508999cdb7582e1635b0f92fdb",
+        "resolved_attention_backend": "fused (pallas_triton); diagnostics on the blocked reference",
+        "pilot": "20 updates, finite validation, valid diagnostics; steady 0.48-0.50 s/update",
+        "resume": "restored step 20 and trained step 21 on the fused backend"
+      },
+      "throughput": "0.50 s/update on four H100 SXM (2.2 s/update for the blocked attempt)",
+      "backend_agreement": "same seed and data order as the cancelled blocked attempt: training NLL 10.487346 vs 10.487302 at update 20, 8.231812 vs 8.231823 at 100, 6.955703 vs 6.955702 at 200"
     },
     {
       "name": "200m-qk-m004-nonnegative-seed0",
