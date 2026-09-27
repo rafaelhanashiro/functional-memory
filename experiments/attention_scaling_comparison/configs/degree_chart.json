@@ -222,18 +222,21 @@
       "panel": "normalized_nonnegative",
       "column": "m2",
       "d_k": 64,
-      "experiment": "learned_quadratic_attention",
-      "run": "200m-positive-per-head-seed0"
+      "experiment": "nonnegative_learned_taylor",
+      "run": "200m-qk-m002-nonnegative-seed0"
+    },
+    {
+      "panel": "normalized_nonnegative",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "nonnegative_learned_taylor",
+      "run": "200m-qk-m004-nonnegative-seed0"
     }
   ],
   "source_manifests": {
     "key_dimension_taylor": {
       "path": "experiments/key_dimension_taylor/provenance/manifest.json",
       "sha256": "752c9c5134d2839fdc1b6a481313bb72e61f6aa9f75b2043b628c6543787ac9e"
-    },
-    "learned_quadratic_attention": {
-      "path": "experiments/learned_quadratic_attention/provenance/manifest.json",
-      "sha256": "4d5f0318febd6582eaafd60e308153fcbc81877f48074e46a95abdc796d0872d"
     },
     "unnormalized_taylor_attention": {
       "path": "experiments/unnormalized_taylor_attention/provenance/manifest.json",
@@ -250,7 +253,11 @@
     "qk_norm_learned_taylor": {
       "path": "experiments/qk_norm_learned_taylor/provenance/manifest.json",
       "sha256": "07562fdf973f9c901af79b515653f76c6c92bdfc7961ab4c6f0a4ddb002c3834"
+    },
+    "nonnegative_learned_taylor": {
+      "path": "experiments/nonnegative_learned_taylor/provenance/manifest.json",
+      "sha256": "beedddf633de7a0b459539b7c513016c4b5dc69cc44fdc30f3949c82731536c4"
     }
   },
-  "source_artifact_set_sha256": "ae7c213520bf55beb80860996bdf5bf44c71bb9b84557f66d753d6bd0311fb54"
+  "source_artifact_set_sha256": "263da21771959bd98230f35d50ac6b807306b1dcc37814df02075fa9c38ba4b5"
 }

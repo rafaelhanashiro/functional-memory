@@ -197,10 +197,6 @@
       "path": "experiments/qk_norm_attention/provenance/manifest.json",
       "sha256": "bb8900c813809e4398d2d5d643a0257a428919a086ca5c7a271d76ad82bdcd06"
     },
-    "learned_quadratic_attention": {
-      "path": "experiments/learned_quadratic_attention/provenance/manifest.json",
-      "sha256": "4d5f0318febd6582eaafd60e308153fcbc81877f48074e46a95abdc796d0872d"
-    },
     "unnormalized_taylor_attention": {
       "path": "experiments/unnormalized_taylor_attention/provenance/manifest.json",
       "sha256": "aa4dc7767e7ea580c776891e74de13cb78664b4fcca02f40d4ec18ab9c1efaa5"
@@ -212,6 +208,10 @@
     "qk_norm_learned_taylor": {
       "path": "experiments/qk_norm_learned_taylor/provenance/manifest.json",
       "sha256": "07562fdf973f9c901af79b515653f76c6c92bdfc7961ab4c6f0a4ddb002c3834"
+    },
+    "nonnegative_learned_taylor": {
+      "path": "experiments/nonnegative_learned_taylor/provenance/manifest.json",
+      "sha256": "beedddf633de7a0b459539b7c513016c4b5dc69cc44fdc30f3949c82731536c4"
     }
   },
   "source_runs": [
@@ -1320,31 +1320,56 @@
       "panel": "normalized_nonnegative",
       "column": "m2",
       "d_k": 64,
-      "experiment": "learned_quadratic_attention",
-      "run": "200m-positive-per-head-seed0",
+      "experiment": "nonnegative_learned_taylor",
+      "run": "200m-qk-m002-nonnegative-seed0",
       "status": "complete",
-      "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+      "source_commit": "270179ce9330e33bd2dacffb364aaf00e01e38f8",
       "artifacts": {
         "metadata": {
-          "path": "experiments/learned_quadratic_attention/runs/200m-positive-per-head-seed0/metadata.json",
-          "sha256": "6429eccb59a45f085503e81380874037e13921612e02831c5c03731253798920"
+          "path": "experiments/nonnegative_learned_taylor/runs/200m-qk-m002-nonnegative-seed0/metadata.json",
+          "sha256": "f1013a01fa35b1b75bdd4f04740525ded99a3158155afa805f4116bdc8429bb5"
         },
         "metrics": {
-          "path": "experiments/learned_quadratic_attention/runs/200m-positive-per-head-seed0/metrics.jsonl",
-          "sha256": "9b3a83c92043812a46ff8711288e087c9b64e4001b5385243b79f94a33d7b26f"
+          "path": "experiments/nonnegative_learned_taylor/runs/200m-qk-m002-nonnegative-seed0/metrics.jsonl",
+          "sha256": "164da9dfe7ca5bff9e9207b85c55e6f81208c44b77478c5addd551f15a3d8939"
         },
         "completion": {
-          "path": "experiments/learned_quadratic_attention/runs/200m-positive-per-head-seed0/completion.json",
-          "sha256": "c6af67563639a89efcc83e46aa24c33015f7e7271ae158d9483c5d7c0c07232f"
+          "path": "experiments/nonnegative_learned_taylor/runs/200m-qk-m002-nonnegative-seed0/completion.json",
+          "sha256": "3b79dd0968ca3b981fd728e6b91f84abe45d9dbad0fc49894695634b88ca986a"
         }
       },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_nonnegative",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "nonnegative_learned_taylor",
+      "run": "200m-qk-m004-nonnegative-seed0",
+      "status": "complete",
+      "source_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/nonnegative_learned_taylor/runs/200m-qk-m004-nonnegative-seed0/metadata.json",
+          "sha256": "8354fbcf845dcb0a05ce5e4490b0c0727f6139c6e4df057fa00b2830c9447d35"
+        },
+        "metrics": {
+          "path": "experiments/nonnegative_learned_taylor/runs/200m-qk-m004-nonnegative-seed0/metrics.jsonl",
+          "sha256": "e56c31b577a252f4b88522c76b4939257669c2c66a466936c5a1ad78dfd90f4b"
+        },
+        "completion": {
+          "path": "experiments/nonnegative_learned_taylor/runs/200m-qk-m004-nonnegative-seed0/completion.json",
+          "sha256": "bb3c734e7004a4b5482449ea4514efb13dff91e10e74460d2f8d71c1dcb2b9d2"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "figure": "degree_chart",
@@ -1678,10 +1703,9 @@
       "legacy": 31
     },
     "degree_chart": {
-      "complete": 12,
-      "not_run": 1,
+      "complete": 13,
       "numerical_failure": 4,
-      "legacy": 6
+      "legacy": 5
     }
   },
   "analysis": {
@@ -1691,7 +1715,7 @@
     },
     "chart_config": {
       "path": "experiments/attention_scaling_comparison/configs/degree_chart.json",
-      "sha256": "ea072cb652de727ca91cfc26bfe65878080e85311649d2525a242586bfd7bfb8"
+      "sha256": "9e1e2ed072097a51b2a29068254abd5259c8002c613df6e7e16ff806a71c9994"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
@@ -1719,11 +1743,11 @@
   "derived_artifacts": {
     "summary_csv": {
       "path": "experiments/attention_scaling_comparison/summary.csv",
-      "sha256": "e93f11c2802d0b685826b14aa5c89cc803ba187fc0006c451cd0d820b4f99672"
+      "sha256": "90a7235a52b3650aff25b078de961bee5d171fd412393f5454744574d627fa0c"
     },
     "readme": {
       "path": "experiments/attention_scaling_comparison/README.md",
-      "sha256": "8c0a8a8404fdcd26b2a96993377aa1d3eb3cb1ecbbcd8f185dda75c67e23a4e7"
+      "sha256": "ef785da9d3e3486b5a2626e38008b133c7534c4fd3f6e6b0442d50469432df68"
     },
     "combined_terminal_ppl_pdf": {
       "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.pdf",
@@ -1735,11 +1759,11 @@
     },
     "degree_chart_pdf": {
       "path": "experiments/attention_scaling_comparison/figures/degree_chart.pdf",
-      "sha256": "8123b97d918b8b7b9dc3170c01713d128c3d8812f9aff23fd747569a7585af2a"
+      "sha256": "76767b3f92583bc28a6f4a4438e6b56b77358540de1155a5dd9f35cfc0b5710a"
     },
     "degree_chart_png": {
       "path": "experiments/attention_scaling_comparison/figures/degree_chart.png",
-      "sha256": "3930afc4f8eee314a12d9fa89007e62cadcb3ea233cafaad26783e9d60e1b311"
+      "sha256": "2ea012c1faf983ed9826177442096bbf62dc62a189f7c43a94ade7d667fed20a"
     }
   }
 }
