@@ -65,7 +65,7 @@ up to the size of those two effects (about 0.03 PPL for the decay policy and 0.2
 for QK-norm at the `d_K = 64` softmax).
 
 <!-- BEGIN GENERATED RESULTS -->
-45 displayed coordinates: 31 complete, 2 numerical failures, 12 not run, and 0 incomplete. Only completed runs at the common 19,074-update endpoint receive a color and a terminal PPL. A failed run is labeled with its failure update; an untrained coordinate is marked NOT RUN. 31 of the 33 trained cells are outlined as legacy runs: they trained with weight decay on all parameters and, where it applies, without QK-norm, before those became the scaffold's defaults; each is replaced when its experiment is rerun. 2 cells already use the current defaults.
+45 displayed coordinates: 31 complete, 2 numerical failures, 12 not run, and 0 incomplete. Only completed runs at the common 19,074-update endpoint receive a color and a terminal PPL. A failed run is labeled with its failure update; an untrained coordinate is marked NOT RUN. 25 of the 33 trained cells are outlined as legacy runs: they trained with weight decay on all parameters and, where it applies, without QK-norm, before those became the scaffold's defaults; each is replaced when its experiment is rerun. 8 cells already use the current defaults.
 
 ![Combined terminal perplexity heatmap](figures/combined_terminal_ppl.png)
 
@@ -98,9 +98,14 @@ The two old-policy `d_K = 64` softmax runs retired on 2026-09-26 ended at PPL 14
 
 ## Findings
 
-Under the current defaults, twelve runs exist so far, all at `d_K = 64`:
+Under the current defaults, eighteen runs exist so far, all at `d_K = 64`:
 
 - **Softmax references:** QK-norm 14.4574, plain 14.6655.
+- **Normalized fixed Taylor kernels, m = 1, 2, 3, 4, 8, 16:** the odd degrees failed
+  numerically at updates 31 and 419; odd polynomials are negative for low scores,
+  so their row sums can cross zero. The even degrees reached 16.511, 14.896,
+  14.498, and 14.454. Degree 16 ties QK-norm softmax (0.0035 lower, within
+  single-seed noise), and degree 8 is 0.04 above it.
 - **Unnormalized learned Taylor kernels, m = 1–4:** 20.279, 17.599, 16.330, 16.384,
   from the [QK-norm learned Taylor sweep](../qk_norm_learned_taylor/README.md). Each
   is better than the legacy fixed unnormalized kernel of the same degree, and
@@ -110,21 +115,21 @@ Under the current defaults, twelve runs exist so far, all at `d_K = 64`:
   row sum crossed zero.
 - **Nonnegative learned kernels, m = 2 and 4:** the
   [same normalized kernels written as a sum of squares](../nonnegative_learned_taylor/README.md)
-  trained without failure, reaching 16.176 and 14.742. The `m = 4` result is 0.28
-  above QK-norm softmax and the lowest in the chart. At this width only the heatmap's
-  legacy fixed normalized Taylor `m = 8` and `m = 16` are lower (14.678 and 14.706).
-  Both nonnegative kernels learned a touching root inside the score range: the zero
-  the signed kernels reached only by crossing it.
+  trained without failure, reaching 16.176 and 14.742, 0.33 and 0.15 below the
+  fixed Taylor kernels of the same degree. The `m = 4` result is 0.28 above QK-norm
+  softmax and the lowest in the degree chart; in the heatmap, fixed `m = 8` and
+  `m = 16` at the same width are lower. Both nonnegative kernels learned a touching
+  root inside the score range: the zero the signed kernels reached only by crossing
+  it.
 
 Every other plotted value is a legacy run, so the comparisons below among them share
 one training setup.
 
-The fixed normalized grid shows that increasing degree narrows the softmax gap. At
-`d_K=8`, fixed `m=2` has PPL 20.5775, versus 16.8479 at `m=16` and 16.7053 for
-softmax. At `d_K=128`, fixed `m=8` reaches 14.3586, close to softmax's 14.3776. The
-difference of 0.0190 is a single-seed observation, not evidence of a reliable
-improvement. The fixed normalized `m=1` and `m=3` runs failed numerically at
-updates 9 and 17 when signed row sums became unstable.
+At the other widths, the legacy fixed normalized grid shows that increasing degree
+narrows the softmax gap. At `d_K=8`, fixed `m=2` has PPL 20.5775, versus 16.8479 at
+`m=16` and 16.7053 for softmax. At `d_K=128`, fixed `m=8` reaches 14.3586, close to
+softmax's 14.3776. The difference of 0.0190 is a single-seed observation, not
+evidence of a reliable improvement.
 
 GLA has no degree axis. Its PPL decreases from 17.2239 at `d_K=8` to 15.4366 at
 `d_K=128`; it beats fixed normalized `m=2` at each width but trails softmax at each

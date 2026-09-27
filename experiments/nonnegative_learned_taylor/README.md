@@ -64,12 +64,13 @@ outputs.
 
 **`m = 4` comes within 0.28 of softmax.** It reached **14.7419**, against 14.4574 for
 QK-norm softmax and 14.6655 for softmax without QK-norm. That is 1.64 below the
-unnormalized learned `m = 4` kernel (16.3840) and 0.24 below the retained
-normalized fixed Taylor `m = 4` at `d_K = 64` (14.9835). That fixed Taylor run is a
-legacy run, with the original weight decay and no QK-norm, and its rerun under the
-current defaults is queued. `m = 2` reached **16.1758**, 1.72 above softmax,
-level with the earlier positive quadratic (16.2125, also legacy) and 1.42 below the
-unnormalized learned `m = 2` (17.5990).
+unnormalized learned `m = 4` kernel (16.3840) and 0.15 below the normalized fixed
+Taylor `m = 4` at `d_K = 64` under the same defaults (14.8963,
+[dK × Taylor-degree record](../key_dimension_taylor/README.md)). `m = 2` reached
+**16.1758**, 1.72 above softmax, 0.33 below the fixed Taylor `m = 2` under the same
+defaults (16.5107), level with the earlier positive quadratic (16.2125, a legacy run
+with the original weight decay and no QK-norm), and 1.42 below the unnormalized
+learned `m = 2` (17.5990).
 
 **Both kernels learned a touching root.** The factors moved each kernel onto a zero
 inside the reachable score range `|s| <= exp(gamma)`, which the signed kernels could

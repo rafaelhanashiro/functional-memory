@@ -691,7 +691,7 @@
   "comparisons": {
     "record": {
       "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-      "sha256": "752c9c5134d2839fdc1b6a481313bb72e61f6aa9f75b2043b628c6543787ac9e"
+      "sha256": "b821a7ba25f58b00076e7a9f941318e82976db5f9046892665d2247d8b71259e"
     },
     "note": "Seed-0 200M runs with the same data, optimizer, and backbone recipe at each d_K; softmax and row-normalized Taylor attention of degree 2, 4, 8, and 16.",
     "runs": [
@@ -1037,84 +1037,88 @@
         "qk_head_dim": 64,
         "kernel": "normalized Taylor m=2",
         "attention_degree": 2,
-        "parameter_count": 199906304,
+        "parameter_count": 199906464,
         "resolved_config": {
           "path": "experiments/key_dimension_taylor/configs/200m-m002-seed0.yaml",
-          "sha256": "bde01797865b3323e2b81f07d0c6f44d2da1c6426e4db0b0a65232eee53edb5c"
+          "sha256": "198ea98b1981e657f9286a9225c0e14594dfd2ccddc0ba6ff28c99952d899f74"
         },
         "metrics": {
           "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metrics.jsonl",
-          "sha256": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77"
+          "sha256": "afd284756057e498dfbc1279530e44e792627848f10663a0dcdd793a0f447bc3"
         },
         "terminal": {
           "step": 19074,
           "training_tokens": 10000269312,
-          "validation_nll": 2.7900009751319885,
-          "validation_perplexity": 16.281035677939382
-        }
+          "validation_nll": 2.8040092502321516,
+          "validation_perplexity": 16.510709818133147
+        },
+        "note": "current defaults (QK-norm, selective weight decay) since the 2026-09-27 fold-in; the GLA runs predate them"
       },
       {
         "name": "200m-m004-seed0",
         "qk_head_dim": 64,
         "kernel": "normalized Taylor m=4",
         "attention_degree": 4,
-        "parameter_count": 199906304,
+        "parameter_count": 199906464,
         "resolved_config": {
           "path": "experiments/key_dimension_taylor/configs/200m-m004-seed0.yaml",
-          "sha256": "212f1f5b7e900234c8eab12af41843cc20a76f95519a900fdd8e00777489f46b"
+          "sha256": "6a83ecf0ff6d4b3703a9fda03438f77b4e7bab86c06dbe97876fd8553c57c057"
         },
         "metrics": {
           "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/metrics.jsonl",
-          "sha256": "9ced82fa7db159b5a93b569ac40b7d8139169bd38634040e781512209e92ee17"
+          "sha256": "37ecdb24c15801f34f3df96c8311db2b1332cd934d8fca6197b12c4851d3104a"
         },
         "terminal": {
           "step": 19074,
           "training_tokens": 10000269312,
-          "validation_nll": 2.7069559693336487,
-          "validation_perplexity": 14.983595500270773
-        }
+          "validation_nll": 2.701114628996168,
+          "validation_perplexity": 14.896326352016782
+        },
+        "note": "current defaults (QK-norm, selective weight decay) since the 2026-09-27 fold-in; the GLA runs predate them"
       },
       {
         "name": "200m-m008-seed0",
         "qk_head_dim": 64,
         "kernel": "normalized Taylor m=8",
         "attention_degree": 8,
-        "parameter_count": 199906304,
+        "parameter_count": 199906464,
         "resolved_config": {
           "path": "experiments/key_dimension_taylor/configs/200m-m008-seed0.yaml",
-          "sha256": "71474f93f14a87b85ccea25153a639abf33becfcd4be2628f67840dd095a35d5"
+          "sha256": "96e5c7d5b5b11551ae8d2659f0377fda64ac868f906e65e477f24af16ba64053"
         },
         "metrics": {
           "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/metrics.jsonl",
-          "sha256": "edeb0eaa9980c748808df22b18ffcd13c010662ad82c6a472e6445de397cd590"
+          "sha256": "a6a6d987b7779241b5ddc6b15e43c5622cd1c40275d7f8dee98fd73d38d55b35"
         },
         "terminal": {
           "step": 19074,
           "training_tokens": 10000269312,
-          "validation_nll": 2.6863556674548557,
-          "validation_perplexity": 14.678086502581763
-        }
+          "validation_nll": 2.6739954692976817,
+          "validation_perplexity": 14.497779058238134
+        },
+        "note": "current defaults (QK-norm, selective weight decay) since the 2026-09-27 fold-in; the GLA runs predate them"
       },
       {
         "name": "200m-m016-seed0",
         "qk_head_dim": 64,
         "kernel": "normalized Taylor m=16",
         "attention_degree": 16,
-        "parameter_count": 199906304,
+        "parameter_count": 199906464,
         "resolved_config": {
           "path": "experiments/key_dimension_taylor/configs/200m-m016-seed0.yaml",
-          "sha256": "bc1f13ffed619695bb9675cabfb2e49b5bd78c2aa876fd4c0c237a4d97840fd4"
+          "sha256": "da587b97987d351fcf1c8c7c28570c09d9fada03afb96346b1c30159c4be5191"
         },
         "metrics": {
           "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/metrics.jsonl",
-          "sha256": "3bb5eb752f69f69e4b0c00f04559093baad00d15541f5831f162e46aa3130e1a"
+          "sha256": "97de74ec829f36a5a7ad73b25c93b456716259b188c94a7417e7c63b7a04e929"
         },
         "terminal": {
           "step": 19074,
           "training_tokens": 10000269312,
-          "validation_nll": 2.688271709850856,
-          "validation_perplexity": 14.70623729906033
-        }
+          "validation_nll": 2.670966259070805,
+          "validation_perplexity": 14.453928687175491
+        },
+        "note": "current defaults (QK-norm, selective weight decay) since the 2026-09-27 fold-in; the GLA runs predate them"
       },
       {
         "name": "200m-dk128-seed0",

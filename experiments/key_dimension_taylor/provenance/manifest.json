@@ -1993,34 +1993,34 @@
       "slurm_job_id": "199433"
     },
     {
-      "path": "experiments/key_dimension_taylor/logs/200m-m002-seed0/slurm-199648.out",
-      "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6",
-      "size_bytes": 1502768,
-      "slurm_job_id": "199648"
-    },
-    {
-      "path": "experiments/key_dimension_taylor/logs/200m-m004-seed0/slurm-199649.out",
-      "sha256": "c91f16f7ae3b36a2fabc64d6214b4df6379b2958553ac2178e6bf525e50a08ea",
-      "size_bytes": 1503793,
-      "slurm_job_id": "199649"
-    },
-    {
-      "path": "experiments/key_dimension_taylor/logs/200m-m008-seed0/slurm-199650.out",
-      "sha256": "81bcf948faefae264cb7a955960acd5ce7672b96d59ff85d1fdcfdbfb45cd90b",
-      "size_bytes": 1506000,
-      "slurm_job_id": "199650"
-    },
-    {
-      "path": "experiments/key_dimension_taylor/logs/200m-m016-seed0/slurm-199651.out",
-      "sha256": "7ccc0811022235c69dbfb3179d5a5cce8e432b398c4867ec7c1371d17b687dd7",
-      "size_bytes": 1511248,
-      "slurm_job_id": "199651"
-    },
-    {
       "path": "experiments/key_dimension_taylor/logs/200m-softmax-seed0/slurm-202190.out",
       "sha256": "411d7234ce9b347c06fea1ad7c2a1323e2143411bdacb254ba3214637572e7de",
       "size_bytes": 1496166,
       "slurm_job_id": "202190"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/logs/200m-m002-seed0/slurm-202616.out",
+      "sha256": "19659449e6ff46fe6d68dc59c92042ec7f0c0c7cb9b19919ab52613df548f6e0",
+      "size_bytes": 1480170,
+      "slurm_job_id": "202616"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/logs/200m-m004-seed0/slurm-202617.out",
+      "sha256": "223cd4ac300cefae1cac1d244d13be4e88dc52deaecb4e457f87842ccf639d5d",
+      "size_bytes": 1511823,
+      "slurm_job_id": "202617"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/logs/200m-m008-seed0/slurm-202618.out",
+      "sha256": "83c9ac7f7170c6139b397810eb8421f40e6ed447afd2de6ac5c3a807cbdf8df0",
+      "size_bytes": 1514010,
+      "slurm_job_id": "202618"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/logs/200m-m016-seed0/slurm-202619.out",
+      "sha256": "dbb161c82363ff49659bcefdb2f0112e79b427fce24f5195c4c659dc9ae38547",
+      "size_bytes": 1523380,
+      "slurm_job_id": "202619"
     }
   ],
   "retention": {
@@ -3493,264 +3493,958 @@
       "retained_completed": true
     },
     {
-      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
-      "attention_degree": 2,
-      "completion": {
-        "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/completion.json",
-        "sha256": "b58da90a02f1bc1b0c0d6bf3b63584b7ab9df39f600e1c65b5e6d442211e59a7"
-      },
-      "home_cluster": "kennel",
-      "metadata": {
-        "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metadata.json",
-        "sha256": "754692f8fad41a85d630883aab228c6aab7a947b29871cade89968d2e52cb296"
-      },
-      "metrics": {
-        "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metrics.jsonl",
-        "sha256": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77"
-      },
       "name": "200m-m002-seed0",
-      "original_experiment": "polynomial_attention",
-      "parameter_count": 199906304,
+      "attention_degree": 2,
+      "attention_backend": "fused",
       "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "parameter_count": 199906464,
+      "seed": 0,
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-m002-seed0.yaml",
-        "sha256": "bde01797865b3323e2b81f07d0c6f44d2da1c6426e4db0b0a65232eee53edb5c"
+        "sha256": "198ea98b1981e657f9286a9225c0e14594dfd2ccddc0ba6ff28c99952d899f74"
       },
-      "retained_completed": true,
-      "seed": 0,
-      "selected_checkpoint": {
-        "file_count": 12,
-        "metadata_sha256": "4d49559fc7c83e403cf9fa54d61ccaa725af944863a4f38308795a9541b9d0a0",
-        "path": "experiments/key_dimension_taylor/checkpoints/200m-m002-seed0/19074",
-        "size_bytes": 2199258055,
-        "step": 19074,
-        "validation_nll": 2.7900009751319885,
-        "validation_perplexity": 16.281035677939382
+      "executed_recipe": {
+        "path": "experiments/normalized_taylor_rerun/configs/200m-m002-seed0.yaml",
+        "sha256": "01cf28c4971fb5a04a9eccf4363201cd2e605f3c7c397ed729bceed3229abc79",
+        "commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+        "note": "the bytes that ran, at the launch commit; this record's recipe changes only its output paths and names the commit"
       },
-      "slurm_job_id": "199648",
+      "metadata": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metadata.json",
+        "sha256": "300ccab36e6488f7aa6731df6a034ef677812e118c471efe39049c83c95a1c40"
+      },
+      "slurm_job_id": "202616",
       "slurm_log": {
-        "path": "experiments/key_dimension_taylor/logs/200m-m002-seed0/slurm-199648.out",
-        "sha256": "8cb308f55c6b1db4ee8148d49729983712add456b8525adad0c8e372b29affc6"
+        "path": "experiments/key_dimension_taylor/logs/200m-m002-seed0/slurm-202616.out",
+        "sha256": "19659449e6ff46fe6d68dc59c92042ec7f0c0c7cb9b19919ab52613df548f6e0",
+        "note": "append-mode log holding every attempt of this job"
       },
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "execution_attempts": [
+        {
+          "slurm_job_id": 202616,
+          "outcome": "preempted on akita at 03:22 before its update-7,000 checkpoint; ten short attempts on dogo between 03:25 and 04:41 were preempted by debug-partition jobs (the dogo exclusion was added only to pending jobs); running on dogo since 04:56, resumed from the update-6,500 checkpoint"
+        },
+        {
+          "slurm_job_id": 202616,
+          "node": "dogo",
+          "start": "2026-09-27T04:56:24-04:00",
+          "end": "2026-09-27T07:08:06-04:00",
+          "outcome": "resumed from update 6,500 and completed 19,074 updates"
+        }
+      ],
+      "slurm_attempts": {
+        "source": "sacct -j 202616 -D -X (local time, 2026-09-27 05:25 snapshot)",
+        "attempts": [
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T02:16:56",
+            "end": "2026-09-27T03:22:54",
+            "node": "akita"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:25:06",
+            "end": "2026-09-27T03:28:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:30:55",
+            "end": "2026-09-27T03:34:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:38:38",
+            "end": "2026-09-27T03:41:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:46:54",
+            "end": "2026-09-27T03:48:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:51:22",
+            "end": "2026-09-27T03:53:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:55:54",
+            "end": "2026-09-27T03:57:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T04:02:24",
+            "end": "2026-09-27T04:04:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T04:14:54",
+            "end": "2026-09-27T04:17:53",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T04:39:39",
+            "end": "2026-09-27T04:40:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "RUNNING",
+            "start": "2026-09-27T04:56:24",
+            "end": null,
+            "node": "dogo"
+          }
+        ]
+      },
+      "partition_history": [
+        {
+          "time": "2026-09-26T19:45-04:00",
+          "partition": "standard,long",
+          "reason": "initial submission"
+        },
+        {
+          "time": "2026-09-26T19:48-04:00",
+          "partition": "long",
+          "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released"
+        },
+        {
+          "time": "2026-09-26T21:13-04:00",
+          "partition": "sweep",
+          "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue"
+        },
+        {
+          "time": "2026-09-27T01:57-04:00",
+          "partition": "long",
+          "reason": "the nonnegative learned Taylor runs concluded, so this user's long-partition jobs fell to zero; two sweep reruns returned to long, keeping three rerun jobs (12 GPUs) there"
+        },
+        {
+          "time": "2026-09-27T05:22-04:00",
+          "partition": "long",
+          "exclude_removed": "dogo",
+          "reason": "the debug burst ended (last debug job on dogo 04:56); dogo restored for pending jobs; 202617 was running and keeps the dogo exclusion until it next requeues"
+        }
+      ],
+      "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free. Partition changes are in partition_history",
+      "execution": {
+        "time_limit": "10:00:00 per attempt",
+        "final_devices": [
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "runtime_settings": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "batch_transfer": "host_to_shard",
+        "state_transfer": "direct",
+        "attention_backend_requested": "fused",
+        "attention_backend": "fused",
+        "attention_implementation": "pallas_triton"
+      },
+      "acceptance": {
+        "B300-4": {
+          "status": "passed",
+          "completed_utc": "2026-09-27T06:32:45.410008+00:00",
+          "identity": "901125b5a755be0c4556e4b37e0608c08051c3914771e3ee914eb1a404752b54",
+          "slurm_job_id": "202616",
+          "slurm_restart_count": "0",
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "cpu_tests_passed": 179,
+          "cpu_distributed_tests_passed": 7,
+          "gpu_tests_passed": 177,
+          "device_kinds": [
+            "NVIDIA B300 SXM6 AC"
+          ],
+          "attention_backend": null,
+          "initialization": {
+            "parameter_count": 199906464,
+            "parameter_sha256": "4c16cf4d51d5817b3cf0b126ae82b50d2e7a30efab703960bbd41574501311e3"
+          }
+        },
+        "H100-4": {
+          "status": "passed",
+          "completed_utc": "2026-09-27T09:15:53.511194+00:00",
+          "identity": "e828a5b2d2fa852e495ed3a081d3ef82bb2c0ae94dae38e39c168218daeec659",
+          "slurm_job_id": "202616",
+          "slurm_restart_count": "10",
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "cpu_tests_passed": 179,
+          "cpu_distributed_tests_passed": 7,
+          "gpu_tests_passed": 177,
+          "device_kinds": [
+            "NVIDIA H100 80GB HBM3"
+          ],
+          "attention_backend": null,
+          "initialization": {
+            "parameter_count": 199906464,
+            "parameter_sha256": "4c16cf4d51d5817b3cf0b126ae82b50d2e7a30efab703960bbd41574501311e3"
+          }
+        }
+      },
+      "wandb": {
+        "run_id": "f50426298c8047e6ae43a68ad33408e7",
+        "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/f50426298c8047e6ae43a68ad33408e7"
+      },
+      "launch_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "frozen_execution_set_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
+      "home_cluster": "kennel",
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "original_experiment": "normalized_taylor_rerun",
+      "original_branch": "claude/normalized-taylor-rerun",
+      "metrics": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metrics.jsonl",
+        "sha256": "afd284756057e498dfbc1279530e44e792627848f10663a0dcdd793a0f447bc3"
+      },
+      "completion": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/completion.json",
+        "sha256": "0c39c07e7276d68eec7965eb5c616b65e4e08ed46c5123555e67cff86604e06b"
+      },
+      "retention": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/retention.json",
+        "sha256": "d758f967ec107092270d03b71f1d79ce0f8b94c39d8ed732cbf72bc60b3ffae6"
+      },
       "terminal": {
         "step": 19074,
         "training_tokens": 10000269312,
-        "validation_nll": 2.7900009751319885,
-        "validation_perplexity": 16.281035677939382
+        "validation_nll": 2.8040092502321516,
+        "validation_perplexity": 16.510709818133147
       },
-      "unavailable_historical_artifacts": [],
-      "value_head_dim": 64,
-      "execution_attempts": [
-        {
-          "slurm_job_id": "199648",
-          "gpu_kind": "H100 SXM",
-          "gpu_count": 4,
-          "node": "dogo",
-          "status": "complete",
-          "elapsed_seconds": 10094,
-          "started_local": "2026-09-18T01:13:40",
-          "ended_local": "2026-09-18T04:01:54",
-          "timezone": "America/New_York",
-          "exit_code": "0:0"
+      "selected_checkpoint": {
+        "path": "experiments/key_dimension_taylor/checkpoints/200m-m002-seed0/19074",
+        "step": 19074,
+        "validation_nll": 2.8040092502321516,
+        "validation_perplexity": 16.510709818133147,
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "file_count": 12,
+        "size_bytes": 2199545175,
+        "tree_sha256": "cf9e3f2993a33bbd84a4f401b7d09c049c0c6e712ef2cb6e9d9186892780eca5",
+        "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'",
+        "files": {
+          "_CHECKPOINT_METADATA": "19cd88db21a7df3b27eecf32414389a87bd756b6f32b1f68c677ed32477f91e3",
+          "default/_METADATA": "20667583e745119f53780bde7ba488300e33f0f35d5fcdc7aba5ad5902bb840a",
+          "default/_sharding": "e42fb7a6fc049d6c676926fefc5c8bfb5783df4eb2164d1b30c6d07dbac3d7d0",
+          "default/array_metadatas/process_0": "d5ddef7a21b89ff75c68628d46d357caa3529df10d654baa0ac1b3557a7bc4b6",
+          "default/d/afc409e718c0cd7e4f6f2de0bfe572b7": "cb3ee1210fce1403bafa836f654587ce42b96cb65f12c7dbcaf8e2b13d2ed628",
+          "default/manifest.ocdbt": "4900ccb835944dd38a761a582a7da73b5f9812089fbbf12784389147c514d125",
+          "default/ocdbt.process_0/d/3892e9aece3b5ce50bff39e2cc5a584a": "dc549fad573028f8c759a89e45fe60260c81731cf69406ea3a1c0f4020d014e7",
+          "default/ocdbt.process_0/d/59430370d6de5179cd0d9e09dd3a5bd6": "8e20b424f52d3e014c91563f90229583a2ba81a088b6d9ea2e607acf5badaed3",
+          "default/ocdbt.process_0/d/6d42fc11d7d8bc9fcad536512a6a298b": "6c9cf8ef30dbac6b8d03f3dba057f352a49fe24461d5c4caf0df69995a0f97ea",
+          "default/ocdbt.process_0/d/bc677abb7f22fb91bbfdadd53ea6801f": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+          "default/ocdbt.process_0/manifest.ocdbt": "0be56644a84d8291122c081b542dec385b45340a8229b909f8f77d6079efb40b",
+          "metrics/metrics": "6e538795ad153c82995c72565133f5aa402a7cabf2ae8fe1ae51a3b9f5127f43"
         }
-      ],
-      "attention_backend": "fused"
+      },
+      "completed_utc": "2026-09-27T11:08:02.279313+00:00",
+      "status": "complete",
+      "retained_completed": true,
+      "grid_cell": true,
+      "grid_note": "Trained 2026-09-26/27 under the scaffold's current defaults (per-head QK-norm cosine scores and selective weight decay) in the normalized Taylor rerun and folded in, replacing the degree-sweep run of the same name. The dK=64 softmax reference uses selective decay without QK-norm; every other width is from the original sweeps."
     },
     {
-      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
-      "attention_degree": 4,
-      "completion": {
-        "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/completion.json",
-        "sha256": "5aa158bc0661f8682353c4c9b19030c3935abc27c145f823709abdf98100ada1"
-      },
-      "home_cluster": "kennel",
-      "metadata": {
-        "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/metadata.json",
-        "sha256": "3c38a793975e2bd1b4804b4001ea2c98a2acb679950c1c465f522c7a5d9a8514"
-      },
-      "metrics": {
-        "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/metrics.jsonl",
-        "sha256": "9ced82fa7db159b5a93b569ac40b7d8139169bd38634040e781512209e92ee17"
-      },
       "name": "200m-m004-seed0",
-      "original_experiment": "polynomial_attention",
-      "parameter_count": 199906304,
+      "attention_degree": 4,
+      "attention_backend": "fused",
       "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "parameter_count": 199906464,
+      "seed": 0,
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-m004-seed0.yaml",
-        "sha256": "212f1f5b7e900234c8eab12af41843cc20a76f95519a900fdd8e00777489f46b"
+        "sha256": "6a83ecf0ff6d4b3703a9fda03438f77b4e7bab86c06dbe97876fd8553c57c057"
       },
-      "retained_completed": true,
-      "seed": 0,
-      "selected_checkpoint": {
-        "file_count": 14,
-        "metadata_sha256": "cfe64ae9e8577a083045cec69f4bb292ff5f275a6a2832aa69340ad86db057b2",
-        "path": "experiments/key_dimension_taylor/checkpoints/200m-m004-seed0/19074",
-        "size_bytes": 2197043345,
-        "step": 19074,
-        "validation_nll": 2.7069559693336487,
-        "validation_perplexity": 14.983595500270773
+      "executed_recipe": {
+        "path": "experiments/normalized_taylor_rerun/configs/200m-m004-seed0.yaml",
+        "sha256": "61207b1df57f94afb211e7e0c91c96732daaf68b9767e402782de4ef47d292a5",
+        "commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+        "note": "the bytes that ran, at the launch commit; this record's recipe changes only its output paths and names the commit"
       },
-      "slurm_job_id": "199649",
+      "metadata": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/metadata.json",
+        "sha256": "10af0dd9289b98829d36b9967ecfa0cf161c22c91792c552c67ff5cd825e241e"
+      },
+      "slurm_job_id": "202617",
       "slurm_log": {
-        "path": "experiments/key_dimension_taylor/logs/200m-m004-seed0/slurm-199649.out",
-        "sha256": "c91f16f7ae3b36a2fabc64d6214b4df6379b2958553ac2178e6bf525e50a08ea"
+        "path": "experiments/key_dimension_taylor/logs/200m-m004-seed0/slurm-202617.out",
+        "sha256": "223cd4ac300cefae1cac1d244d13be4e88dc52deaecb4e457f87842ccf639d5d",
+        "note": "append-mode log holding every attempt of this job"
       },
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "execution_attempts": [
+        {
+          "slurm_job_id": 202617,
+          "node": "dogo",
+          "partition": "long",
+          "start": "2026-09-27T02:58:53-04:00",
+          "end": "2026-09-27T03:00:49-04:00",
+          "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued"
+        },
+        {
+          "slurm_job_id": 202617,
+          "node": "dogo",
+          "partition": "long",
+          "start": "2026-09-27T03:02:53-04:00",
+          "end": "2026-09-27T03:04:49-04:00",
+          "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued"
+        },
+        {
+          "slurm_job_id": 202617,
+          "node": "dogo",
+          "partition": "long",
+          "start": "2026-09-27T03:07:04-04:00",
+          "end": "2026-09-27T03:08:19-04:00",
+          "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued"
+        },
+        {
+          "slurm_job_id": 202617,
+          "node": "dogo",
+          "partition": "long",
+          "start": "2026-09-27T03:10:48-04:00",
+          "end": "2026-09-27T03:13:19-04:00",
+          "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued"
+        },
+        {
+          "slurm_job_id": 202617,
+          "outcome": "three further acceptance-stage preemptions on akita between 03:36 and 04:34; running on akita since 05:02"
+        },
+        {
+          "slurm_job_id": 202617,
+          "node": "akita",
+          "start": "2026-09-27T05:02:54-04:00",
+          "end": "2026-09-27T07:51:48-04:00",
+          "outcome": "passed acceptance and completed 19,074 updates from initialization"
+        }
+      ],
+      "slurm_attempts": {
+        "source": "sacct -j 202617 -D -X (local time, 2026-09-27 05:25 snapshot)",
+        "attempts": [
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T02:58:53",
+            "end": "2026-09-27T03:00:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:02:53",
+            "end": "2026-09-27T03:04:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:07:04",
+            "end": "2026-09-27T03:08:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:10:48",
+            "end": "2026-09-27T03:13:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:36:45",
+            "end": "2026-09-27T03:39:19",
+            "node": "akita"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T04:03:54",
+            "end": "2026-09-27T04:06:19",
+            "node": "akita"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T04:32:03",
+            "end": "2026-09-27T04:33:49",
+            "node": "akita"
+          },
+          {
+            "partition": "long",
+            "state": "RUNNING",
+            "start": "2026-09-27T05:02:54",
+            "end": null,
+            "node": "akita"
+          }
+        ]
+      },
+      "partition_history": [
+        {
+          "time": "2026-09-26T19:45-04:00",
+          "partition": "standard,long",
+          "reason": "initial submission"
+        },
+        {
+          "time": "2026-09-26T19:48-04:00",
+          "partition": "long",
+          "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released"
+        },
+        {
+          "time": "2026-09-26T21:13-04:00",
+          "partition": "sweep",
+          "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue"
+        },
+        {
+          "time": "2026-09-27T01:57-04:00",
+          "partition": "long",
+          "reason": "the nonnegative learned Taylor runs concluded, so this user's long-partition jobs fell to zero; two sweep reruns returned to long, keeping three rerun jobs (12 GPUs) there"
+        },
+        {
+          "time": "2026-09-27T03:18-04:00",
+          "partition": "long",
+          "exclude_added": "dogo",
+          "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends"
+        },
+        {
+          "time": "2026-09-27T05:22-04:00",
+          "partition": "long",
+          "exclude_removed": "dogo",
+          "reason": "the debug burst ended (last debug job on dogo 04:56); dogo restored for pending jobs; 202617 was running and keeps the dogo exclusion until it next requeues"
+        }
+      ],
+      "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free. Partition changes are in partition_history",
+      "execution": {
+        "time_limit": "10:00:00 per attempt",
+        "final_devices": [
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC"
+        ],
+        "runtime_settings": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "batch_transfer": "host_to_shard",
+        "state_transfer": "direct",
+        "attention_backend_requested": "fused",
+        "attention_backend": "fused",
+        "attention_implementation": "pallas_triton"
+      },
+      "acceptance": {
+        "B300-4": {
+          "status": "passed",
+          "completed_utc": "2026-09-27T09:19:58.729531+00:00",
+          "identity": "f9af19c0c1e1f479524937492ab7d2c9b1cf49de3f718121d48d6c6bd00600bf",
+          "slurm_job_id": "202617",
+          "slurm_restart_count": "7",
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "cpu_tests_passed": 179,
+          "cpu_distributed_tests_passed": 7,
+          "gpu_tests_passed": 177,
+          "device_kinds": [
+            "NVIDIA B300 SXM6 AC"
+          ],
+          "attention_backend": null,
+          "initialization": {
+            "parameter_count": 199906464,
+            "parameter_sha256": "4c16cf4d51d5817b3cf0b126ae82b50d2e7a30efab703960bbd41574501311e3"
+          }
+        },
+        "H100-4": {
+          "status": "incomplete (preempted before acceptance finished)"
+        }
+      },
+      "wandb": {
+        "run_id": "7c6a2acdf8a1469b89a352acd9010b17",
+        "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/7c6a2acdf8a1469b89a352acd9010b17"
+      },
+      "launch_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "frozen_execution_set_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
+      "home_cluster": "kennel",
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "original_experiment": "normalized_taylor_rerun",
+      "original_branch": "claude/normalized-taylor-rerun",
+      "metrics": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/metrics.jsonl",
+        "sha256": "37ecdb24c15801f34f3df96c8311db2b1332cd934d8fca6197b12c4851d3104a"
+      },
+      "completion": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/completion.json",
+        "sha256": "bedd0ddfa3867044335f7fe6d223f27941baf42df164eeb9924818258ccbd25d"
+      },
+      "retention": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/retention.json",
+        "sha256": "9734adabfcf8f277f617288775ab8d7c91010411eb03907a4a1fc7ce9432df52"
+      },
       "terminal": {
         "step": 19074,
         "training_tokens": 10000269312,
-        "validation_nll": 2.7069559693336487,
-        "validation_perplexity": 14.983595500270773
+        "validation_nll": 2.701114628996168,
+        "validation_perplexity": 14.896326352016782
       },
-      "unavailable_historical_artifacts": [],
-      "value_head_dim": 64,
-      "execution_attempts": [
-        {
-          "slurm_job_id": "199649",
-          "gpu_kind": "H100 SXM",
-          "gpu_count": 4,
-          "node": "dogo",
-          "status": "complete",
-          "elapsed_seconds": 10313,
-          "started_local": "2026-09-18T04:01:54",
-          "ended_local": "2026-09-18T06:53:47",
-          "timezone": "America/New_York",
-          "exit_code": "0:0"
+      "selected_checkpoint": {
+        "path": "experiments/key_dimension_taylor/checkpoints/200m-m004-seed0/19074",
+        "step": 19074,
+        "validation_nll": 2.701114628996168,
+        "validation_perplexity": 14.896326352016782,
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "file_count": 14,
+        "size_bytes": 2197244105,
+        "tree_sha256": "ea89bf0c29fed1bb8c269403507816d257e0633a1482b745c0511d49912f8f82",
+        "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'",
+        "files": {
+          "_CHECKPOINT_METADATA": "147d6e35b8f78639b6bd13b872ea6b3b31165d8a223f2a4be8eb9cad29a4048d",
+          "default/_METADATA": "20667583e745119f53780bde7ba488300e33f0f35d5fcdc7aba5ad5902bb840a",
+          "default/_sharding": "e42fb7a6fc049d6c676926fefc5c8bfb5783df4eb2164d1b30c6d07dbac3d7d0",
+          "default/array_metadatas/process_0": "d5ddef7a21b89ff75c68628d46d357caa3529df10d654baa0ac1b3557a7bc4b6",
+          "default/d/db8424882de7d618a7a77bcbb79b0a3f": "d61c6838bf1b33816fd6acefbe9d08888b2d17c91260b53a7811dadf6d725508",
+          "default/manifest.ocdbt": "cca61a55f0a32ea3c0820bab241a368a9a691c53caa30f9188501be6f6e59dc6",
+          "default/ocdbt.process_0/d/05e371d01f2fafd6d3dcb3412bba7946": "a8f3eb8d1672b1e44c01b4970f42e62c6f653bf18fe956d5be9e33bd757f9e85",
+          "default/ocdbt.process_0/d/744b0979230a30a72a00e47d18200c07": "c02c4038a4869e4cdf140ff72738fe221c5f93ef9ec8042d0666424882b0f0d6",
+          "default/ocdbt.process_0/d/748ec8a5af5c7bc4d4a81b2f7e984d44": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+          "default/ocdbt.process_0/d/829fd292370c199a7be20aa380244807": "fb3e05239f3fc2ebbb44c1d55f02116246bf4b270c6dd6fddfd5b33a5eb1dc97",
+          "default/ocdbt.process_0/d/e60705808226297407fa531655c204a4": "99ef42249ec857e2348efa772265e8df3d73c491e55dc94d6b1d186cd909ad2a",
+          "default/ocdbt.process_0/d/fbe35cc97accb888b73d792c74715297": "ea8d0f307a98293b68595c190b04c0d11b455e3d57f6d304a9e5473d83935bca",
+          "default/ocdbt.process_0/manifest.ocdbt": "4f9fc4c7c4aca228b3c27b1bafc3768862c9111194463c96568cfaec42333673",
+          "metrics/metrics": "d012680d13ef90da9a8ace10b9ef6d3fd6d9b3838a47338430be27481b472442"
         }
-      ],
-      "attention_backend": "fused"
+      },
+      "completed_utc": "2026-09-27T11:51:44.041288+00:00",
+      "status": "complete",
+      "retained_completed": true,
+      "grid_cell": true,
+      "grid_note": "Trained 2026-09-26/27 under the scaffold's current defaults (per-head QK-norm cosine scores and selective weight decay) in the normalized Taylor rerun and folded in, replacing the degree-sweep run of the same name. The dK=64 softmax reference uses selective decay without QK-norm; every other width is from the original sweeps."
     },
     {
-      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
-      "attention_degree": 8,
-      "completion": {
-        "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/completion.json",
-        "sha256": "4c1e37050f64bce387de8266596309e13d8de381e8368965cb3926e1105a63a4"
-      },
-      "home_cluster": "kennel",
-      "metadata": {
-        "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/metadata.json",
-        "sha256": "2525594087e15a5512a6bee1622b7a8ccdf1fce85df587d2a863ea2d8b0fc838"
-      },
-      "metrics": {
-        "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/metrics.jsonl",
-        "sha256": "edeb0eaa9980c748808df22b18ffcd13c010662ad82c6a472e6445de397cd590"
-      },
       "name": "200m-m008-seed0",
-      "original_experiment": "polynomial_attention",
-      "parameter_count": 199906304,
+      "attention_degree": 8,
+      "attention_backend": "fused",
       "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "parameter_count": 199906464,
+      "seed": 0,
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-m008-seed0.yaml",
-        "sha256": "71474f93f14a87b85ccea25153a639abf33becfcd4be2628f67840dd095a35d5"
+        "sha256": "96e5c7d5b5b11551ae8d2659f0377fda64ac868f906e65e477f24af16ba64053"
       },
-      "retained_completed": true,
-      "seed": 0,
-      "selected_checkpoint": {
-        "file_count": 14,
-        "metadata_sha256": "f4e8be44af24bc634f96677d0ba74874b332bb04a0af56e145a441992cd1b498",
-        "path": "experiments/key_dimension_taylor/checkpoints/200m-m008-seed0/19074",
-        "size_bytes": 2196216004,
-        "step": 19074,
-        "validation_nll": 2.6863556674548557,
-        "validation_perplexity": 14.678086502581763
+      "executed_recipe": {
+        "path": "experiments/normalized_taylor_rerun/configs/200m-m008-seed0.yaml",
+        "sha256": "908d5c3ba60fe71f1738895b12aaea6923fb717a0398cc05614f5eddc9cc7f4b",
+        "commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+        "note": "the bytes that ran, at the launch commit; this record's recipe changes only its output paths and names the commit"
       },
-      "slurm_job_id": "199650",
+      "metadata": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/metadata.json",
+        "sha256": "202873338c143c54528ec28e6c4c7c578feabd52c9e08b0f05e20fcd0f0f8108"
+      },
+      "slurm_job_id": "202618",
       "slurm_log": {
-        "path": "experiments/key_dimension_taylor/logs/200m-m008-seed0/slurm-199650.out",
-        "sha256": "81bcf948faefae264cb7a955960acd5ce7672b96d59ff85d1fdcfdbfb45cd90b"
+        "path": "experiments/key_dimension_taylor/logs/200m-m008-seed0/slurm-202618.out",
+        "sha256": "83c9ac7f7170c6139b397810eb8421f40e6ed447afd2de6ac5c3a807cbdf8df0",
+        "note": "append-mode log holding every attempt of this job"
       },
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "execution_attempts": [
+        {
+          "slurm_job_id": 202618,
+          "node": "dogo",
+          "partition": "sweep",
+          "start": "2026-09-27T03:14:54-04:00",
+          "end": "2026-09-27T03:15:18-04:00",
+          "outcome": "preempted within 24 s by a debug-partition job; requeued"
+        },
+        {
+          "slurm_job_id": 202618,
+          "node": "dogo",
+          "partition": "long",
+          "start": "2026-09-27T07:08:06-04:00",
+          "end": "2026-09-27T10:33:45-04:00",
+          "outcome": "passed acceptance and completed 19,074 updates from initialization"
+        }
+      ],
+      "slurm_attempts": {
+        "source": "sacct -j 202618 -D -X (local time, 2026-09-27 05:25 snapshot)",
+        "attempts": [
+          {
+            "partition": "sweep",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:14:54",
+            "end": "2026-09-27T03:15:18",
+            "node": "dogo"
+          }
+        ]
+      },
+      "partition_history": [
+        {
+          "time": "2026-09-26T19:45-04:00",
+          "partition": "standard,long",
+          "reason": "initial submission"
+        },
+        {
+          "time": "2026-09-26T19:48-04:00",
+          "partition": "long",
+          "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released"
+        },
+        {
+          "time": "2026-09-26T21:13-04:00",
+          "partition": "sweep",
+          "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue"
+        },
+        {
+          "time": "2026-09-27T03:18-04:00",
+          "partition": "sweep",
+          "exclude_added": "dogo",
+          "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends"
+        },
+        {
+          "time": "2026-09-27T05:22-04:00",
+          "partition": "long",
+          "exclude_removed": "dogo",
+          "reason": "the debug burst ended (last debug job on dogo 04:56); dogo restored for pending jobs; 202617 was running and keeps the dogo exclusion until it next requeues; moved from sweep to long after the m=1 rerun concluded, keeping three rerun jobs on long"
+        }
+      ],
+      "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free. Partition changes are in partition_history",
+      "execution": {
+        "time_limit": "10:00:00 per attempt",
+        "final_devices": [
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "runtime_settings": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "batch_transfer": "host_to_shard",
+        "state_transfer": "direct",
+        "attention_backend_requested": "fused",
+        "attention_backend": "fused",
+        "attention_implementation": "pallas_triton"
+      },
+      "acceptance": {
+        "H100-4": {
+          "status": "passed",
+          "completed_utc": "2026-09-27T11:22:51.925864+00:00",
+          "identity": "971e8b0c9767544e937b2cc1cfe5ee544c7c07e49a2ca2dab8781f41c7b166b3",
+          "slurm_job_id": "202618",
+          "slurm_restart_count": "1",
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "cpu_tests_passed": 179,
+          "cpu_distributed_tests_passed": 7,
+          "gpu_tests_passed": 177,
+          "device_kinds": [
+            "NVIDIA H100 80GB HBM3"
+          ],
+          "attention_backend": null,
+          "initialization": {
+            "parameter_count": 199906464,
+            "parameter_sha256": "4c16cf4d51d5817b3cf0b126ae82b50d2e7a30efab703960bbd41574501311e3"
+          }
+        }
+      },
+      "wandb": {
+        "run_id": "39aec472fdfb4fd8ae1f3038f8e8790c",
+        "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/39aec472fdfb4fd8ae1f3038f8e8790c"
+      },
+      "launch_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "frozen_execution_set_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
+      "home_cluster": "kennel",
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "original_experiment": "normalized_taylor_rerun",
+      "original_branch": "claude/normalized-taylor-rerun",
+      "metrics": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/metrics.jsonl",
+        "sha256": "a6a6d987b7779241b5ddc6b15e43c5622cd1c40275d7f8dee98fd73d38d55b35"
+      },
+      "completion": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/completion.json",
+        "sha256": "4891b76b4e7674df0b2ba311e8a0cfaab6133c155d1fa018171e1a7b9a153085"
+      },
+      "retention": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/retention.json",
+        "sha256": "652946fe5cb8a7baf8cf69d48a4f63efdc317be4b90f4cefce050fa66649b244"
+      },
       "terminal": {
         "step": 19074,
         "training_tokens": 10000269312,
-        "validation_nll": 2.6863556674548557,
-        "validation_perplexity": 14.678086502581763
+        "validation_nll": 2.6739954692976817,
+        "validation_perplexity": 14.497779058238134
       },
-      "unavailable_historical_artifacts": [],
-      "value_head_dim": 64,
-      "execution_attempts": [
-        {
-          "slurm_job_id": "199650",
-          "gpu_kind": "H100 SXM",
-          "gpu_count": 4,
-          "node": "dogo",
-          "status": "complete",
-          "elapsed_seconds": 11118,
-          "started_local": "2026-09-18T06:53:47",
-          "ended_local": "2026-09-18T09:59:05",
-          "timezone": "America/New_York",
-          "exit_code": "0:0"
+      "selected_checkpoint": {
+        "path": "experiments/key_dimension_taylor/checkpoints/200m-m008-seed0/19074",
+        "step": 19074,
+        "validation_nll": 2.6739954692976817,
+        "validation_perplexity": 14.497779058238134,
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "file_count": 13,
+        "size_bytes": 2196207461,
+        "tree_sha256": "8290ac1a19e123f5b9fdaa0209e2f384f27ba2e11b3b5c54911c1265f148e4ef",
+        "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'",
+        "files": {
+          "_CHECKPOINT_METADATA": "016ed28931fd79b5e55e77fd69275a06e30c7b8f55fec7857c4d03687670c619",
+          "default/_METADATA": "20667583e745119f53780bde7ba488300e33f0f35d5fcdc7aba5ad5902bb840a",
+          "default/_sharding": "e42fb7a6fc049d6c676926fefc5c8bfb5783df4eb2164d1b30c6d07dbac3d7d0",
+          "default/array_metadatas/process_0": "d5ddef7a21b89ff75c68628d46d357caa3529df10d654baa0ac1b3557a7bc4b6",
+          "default/d/bee0263c265007cf6e6ae0874aa1f726": "89ccf15928545f3ea900587eaffd2e643241783a6465680c443bf61e7da0d576",
+          "default/manifest.ocdbt": "c5598d951c5f0a15c62d8c2fa32c6edb7098d59f6c9a8189a29315e34cdfb756",
+          "default/ocdbt.process_0/d/313902412028819459ed2ecee673a5c2": "7541f80bd05c799748206e37150c652d3910fa02fa490013f2412c91752ecf5c",
+          "default/ocdbt.process_0/d/59649967e871c32047ab8e41ff990469": "bfce21b81b6b86ca82f3b820913c044d3364879757bd48e223cbf98b7899f264",
+          "default/ocdbt.process_0/d/aeb5603d572d50d8536a8ea10e63ed17": "49535aca9c45c623462f214ba6904cb79cad3356347813b38ec84b42b940e748",
+          "default/ocdbt.process_0/d/bf4ad754b4a4157c1c6ef3f6d8d7b69d": "94d3af7d89c3694176321cfe9a5e7d5e9b7476a39abb0e7f1e3c1106e6dbbb34",
+          "default/ocdbt.process_0/d/c720feab79e598101466a49d3c68ca07": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+          "default/ocdbt.process_0/manifest.ocdbt": "f8e83167977d50a98fdcc94e1ccb5db34e9f1c8eccf664f47a5c96c8f18f7c76",
+          "metrics/metrics": "dfab76fd848abcfbedf4363d051d52741fb051264b9ee6e16bc812f1e5ab8056"
         }
-      ],
-      "attention_backend": "fused"
+      },
+      "completed_utc": "2026-09-27T14:33:41.247365+00:00",
+      "status": "complete",
+      "retained_completed": true,
+      "grid_cell": true,
+      "grid_note": "Trained 2026-09-26/27 under the scaffold's current defaults (per-head QK-norm cosine scores and selective weight decay) in the normalized Taylor rerun and folded in, replacing the degree-sweep run of the same name. The dK=64 softmax reference uses selective decay without QK-norm; every other width is from the original sweeps."
     },
     {
-      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
-      "attention_degree": 16,
-      "completion": {
-        "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/completion.json",
-        "sha256": "d5a95945386136c1183a0f78d492cad4b261023cd5413e175c4ee01cbee4317d"
-      },
-      "home_cluster": "kennel",
-      "metadata": {
-        "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/metadata.json",
-        "sha256": "1169532305ca5500b6bf2fafdc99d75d79715bfb07cd1b9bd4545a80db63f8fa"
-      },
-      "metrics": {
-        "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/metrics.jsonl",
-        "sha256": "3bb5eb752f69f69e4b0c00f04559093baad00d15541f5831f162e46aa3130e1a"
-      },
       "name": "200m-m016-seed0",
-      "original_experiment": "polynomial_attention",
-      "parameter_count": 199906304,
+      "attention_degree": 16,
+      "attention_backend": "fused",
       "qk_head_dim": 64,
+      "value_head_dim": 64,
+      "parameter_count": 199906464,
+      "seed": 0,
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "qk_norm_sharing": "per_head",
       "resolved_config": {
         "path": "experiments/key_dimension_taylor/configs/200m-m016-seed0.yaml",
-        "sha256": "bc1f13ffed619695bb9675cabfb2e49b5bd78c2aa876fd4c0c237a4d97840fd4"
+        "sha256": "da587b97987d351fcf1c8c7c28570c09d9fada03afb96346b1c30159c4be5191"
       },
-      "retained_completed": true,
-      "seed": 0,
-      "selected_checkpoint": {
-        "file_count": 13,
-        "metadata_sha256": "d55fe67b6ada53cc7edbec49599155dd499039f1f441e02f58abbab23e20b318",
-        "path": "experiments/key_dimension_taylor/checkpoints/200m-m016-seed0/19074",
-        "size_bytes": 2196448790,
-        "step": 19074,
-        "validation_nll": 2.688271709850856,
-        "validation_perplexity": 14.70623729906033
+      "executed_recipe": {
+        "path": "experiments/normalized_taylor_rerun/configs/200m-m016-seed0.yaml",
+        "sha256": "b1d1a2eef343bb3a770d86f9ac790dcb4f99b95b8361dc117062f60154d5d1b5",
+        "commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+        "note": "the bytes that ran, at the launch commit; this record's recipe changes only its output paths and names the commit"
       },
-      "slurm_job_id": "199651",
+      "metadata": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/metadata.json",
+        "sha256": "02ed201d70063b26857dd9759688e157527f010edcc15707679bce7a5919e59a"
+      },
+      "slurm_job_id": "202619",
       "slurm_log": {
-        "path": "experiments/key_dimension_taylor/logs/200m-m016-seed0/slurm-199651.out",
-        "sha256": "7ccc0811022235c69dbfb3179d5a5cce8e432b398c4867ec7c1371d17b687dd7"
+        "path": "experiments/key_dimension_taylor/logs/200m-m016-seed0/slurm-202619.out",
+        "sha256": "dbb161c82363ff49659bcefdb2f0112e79b427fce24f5195c4c659dc9ae38547",
+        "note": "append-mode log holding every attempt of this job"
       },
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "execution_attempts": [],
+      "slurm_attempts": {
+        "source": "sacct -j 202619 -D -X (local time, 2026-09-27 05:25 snapshot)",
+        "attempts": []
+      },
+      "partition_history": [
+        {
+          "time": "2026-09-26T19:45-04:00",
+          "partition": "standard,long",
+          "reason": "initial submission"
+        },
+        {
+          "time": "2026-09-26T19:48-04:00",
+          "partition": "long",
+          "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released"
+        },
+        {
+          "time": "2026-09-26T21:13-04:00",
+          "partition": "sweep",
+          "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue"
+        },
+        {
+          "time": "2026-09-27T03:18-04:00",
+          "partition": "sweep",
+          "exclude_added": "dogo",
+          "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends"
+        },
+        {
+          "time": "2026-09-27T05:22-04:00",
+          "partition": "sweep",
+          "exclude_removed": "dogo",
+          "reason": "the debug burst ended (last debug job on dogo 04:56); dogo restored for pending jobs; 202617 was running and keeps the dogo exclusion until it next requeues"
+        },
+        {
+          "time": "2026-09-27T07:10-04:00",
+          "partition": "long",
+          "reason": "moved from sweep to long after the m=2 rerun completed, keeping three rerun jobs on long"
+        }
+      ],
+      "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free. Partition changes are in partition_history",
+      "execution": {
+        "time_limit": "10:00:00 per attempt",
+        "final_devices": [
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC"
+        ],
+        "runtime_settings": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "batch_transfer": "host_to_shard",
+        "state_transfer": "direct",
+        "attention_backend_requested": "fused",
+        "attention_backend": "fused",
+        "attention_implementation": "pallas_triton"
+      },
+      "acceptance": {
+        "B300-4": {
+          "status": "passed",
+          "completed_utc": "2026-09-27T12:11:36.051556+00:00",
+          "identity": "28287e79c22cc608176fc27ae36d04ce198b333a5609cd1a6506d1195cc70579",
+          "slurm_job_id": "202619",
+          "slurm_restart_count": "0",
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "cpu_tests_passed": 179,
+          "cpu_distributed_tests_passed": 7,
+          "gpu_tests_passed": 177,
+          "device_kinds": [
+            "NVIDIA B300 SXM6 AC"
+          ],
+          "attention_backend": null,
+          "initialization": {
+            "parameter_count": 199906464,
+            "parameter_sha256": "4c16cf4d51d5817b3cf0b126ae82b50d2e7a30efab703960bbd41574501311e3"
+          }
+        }
+      },
+      "wandb": {
+        "run_id": "f1cf20e6aec842b68b8b679bbe2e2770",
+        "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/f1cf20e6aec842b68b8b679bbe2e2770"
+      },
+      "launch_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "frozen_execution_set_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
+      "home_cluster": "kennel",
+      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+      "original_experiment": "normalized_taylor_rerun",
+      "original_branch": "claude/normalized-taylor-rerun",
+      "metrics": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/metrics.jsonl",
+        "sha256": "97de74ec829f36a5a7ad73b25c93b456716259b188c94a7417e7c63b7a04e929"
+      },
+      "completion": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/completion.json",
+        "sha256": "931ade1dffc3165778cf42142e37c74fb79211a948b42a9331d08197a1752e84"
+      },
+      "retention": {
+        "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/retention.json",
+        "sha256": "8fb55f2e94df22479fd7696b7889940a31668de8ac9e7b3842a83b087b181b9f"
+      },
       "terminal": {
         "step": 19074,
         "training_tokens": 10000269312,
-        "validation_nll": 2.688271709850856,
-        "validation_perplexity": 14.70623729906033
+        "validation_nll": 2.670966259070805,
+        "validation_perplexity": 14.453928687175491
       },
-      "unavailable_historical_artifacts": [],
-      "value_head_dim": 64,
-      "execution_attempts": [
-        {
-          "slurm_job_id": "199651",
-          "gpu_kind": "H100 SXM",
-          "gpu_count": 4,
-          "node": "dogo",
-          "status": "complete",
-          "elapsed_seconds": 14010,
-          "started_local": "2026-09-18T09:59:05",
-          "ended_local": "2026-09-18T13:52:35",
-          "timezone": "America/New_York",
-          "exit_code": "0:0"
+      "selected_checkpoint": {
+        "path": "experiments/key_dimension_taylor/checkpoints/200m-m016-seed0/19074",
+        "step": 19074,
+        "validation_nll": 2.670966259070805,
+        "validation_perplexity": 14.453928687175491,
+        "rule": "lowest validation NLL; also the terminal checkpoint",
+        "file_count": 13,
+        "size_bytes": 2196067679,
+        "tree_sha256": "876d5a4065ae2559001b946a7282722387cebf9f85e53b1d195b3a45197db2b7",
+        "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'",
+        "files": {
+          "_CHECKPOINT_METADATA": "2793aa07f63a21099ee1f2a4504d1726cbfb344d8b133157a637c69e009210df",
+          "default/_METADATA": "20667583e745119f53780bde7ba488300e33f0f35d5fcdc7aba5ad5902bb840a",
+          "default/_sharding": "e42fb7a6fc049d6c676926fefc5c8bfb5783df4eb2164d1b30c6d07dbac3d7d0",
+          "default/array_metadatas/process_0": "d5ddef7a21b89ff75c68628d46d357caa3529df10d654baa0ac1b3557a7bc4b6",
+          "default/d/0c05a27959b94bf63ffbbd629ffc384a": "852f797fca2b65d9fa5e81f840ba3e1e58b8669972ba59e45be72c10d930e58e",
+          "default/manifest.ocdbt": "0ce2e96071b84933b8803c2b652021d739a7850f9b0f26ac8b4711ac831efcf5",
+          "default/ocdbt.process_0/d/43e71bfa77d5b41785c1a2002ab1956a": "05878fabb8de318d636f28e470b5b6266c467f470d4bc7b0da226f2e1e69a4f8",
+          "default/ocdbt.process_0/d/7d84f16bbce02cc20178b694f15c366b": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+          "default/ocdbt.process_0/d/b3ebe4fa73e78133b46dfb9149402b3e": "f12160d5ec6c22bfbdb0e2e83419c1225a6164290fa02a5946f7d7d55a9b14a3",
+          "default/ocdbt.process_0/d/c985ca63e372e1efc72ce92d391dfa74": "beac21df2e886eaafa7bea017e673a52733be79e0d50f4bb327b3e42d257ab3c",
+          "default/ocdbt.process_0/d/f43fdafeed25d97434295f5263c3f1b5": "22c82d019d4833958b0bd8ad421e7b426daef3258727996eddaf678259e74123",
+          "default/ocdbt.process_0/manifest.ocdbt": "48b752c6b66824f23e635572dd64259e4bbdf7b9153aba066958e0390555ac2c",
+          "metrics/metrics": "7fc3427a57ed7b2c707524dca4a8ffa55ba1b4040a1de0362373e9a05406f09f"
         }
-      ],
-      "attention_backend": "fused"
+      },
+      "completed_utc": "2026-09-27T17:03:26.191827+00:00",
+      "status": "complete",
+      "retained_completed": true,
+      "grid_cell": true,
+      "grid_note": "Trained 2026-09-26/27 under the scaffold's current defaults (per-head QK-norm cosine scores and selective weight decay) in the normalized Taylor rerun and folded in, replacing the degree-sweep run of the same name. The dK=64 softmax reference uses selective decay without QK-norm; every other width is from the original sweeps."
     },
     {
       "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
@@ -4539,6 +5233,10 @@
     {
       "commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
       "role": "dK=64 softmax reference under the selective weight-decay policy (2026-09-25)"
+    },
+    {
+      "commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "role": "Normalized fixed Taylor rerun at dK=64 (m=2, 4, 8, 16) under QK-norm and selective weight decay"
     }
   ],
   "documentation": "experiments/key_dimension_taylor/README.md",
@@ -6701,6 +7399,45 @@
           }
         ]
       }
+    },
+    "normalized_taylor_rerun": {
+      "merged_utc": "2026-09-27",
+      "branch": "claude/normalized-taylor-rerun",
+      "branch_base_commit": "7f3ede0063f8863f9ee65f86b848231d099c510c",
+      "launch_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "frozen_execution_set_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
+      "shared_dependency_lock": {
+        "path": "scaffolds/transformer/uv.lock",
+        "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+      },
+      "data_identity": {
+        "train": {
+          "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+          "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+        },
+        "eval": {
+          "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+          "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+        }
+      },
+      "scientific_change": "The retained d_K = 64 row-normalized fixed Taylor recipe at m = 1, 2, 3, 4, 8, 16 under the scaffold's current defaults: per-head QK-norm cosine scores and selective weight decay",
+      "pre_launch_validation": {
+        "cpu_tests": "111 passed, 2 skipped (adapter tests, QK-norm, attention, odd training, acceptance) at the launch tree; acceptance repeats the declared CPU, distributed, and GPU tests in each allocation",
+        "scaffold_state": "main 7f3ede0: the scaffold that produced the QK-norm and learned Taylor records"
+      },
+      "runs_here": [
+        "200m-m002-seed0",
+        "200m-m004-seed0",
+        "200m-m008-seed0",
+        "200m-m016-seed0"
+      ],
+      "runs_elsewhere": {
+        "experiments/odd_taylor_attention": [
+          "200m-m001-seed0",
+          "200m-m003-seed0"
+        ]
+      },
+      "replaced": "the degree-sweep runs 200m-m00{2,4,8}-seed0 and 200m-m016-seed0 (source 1a8836a) with their checkpoints and logs; the record was retired after folding in; its history is in Git on the merged branch"
     }
   },
   "hardware_qualification_record": "scaffolds/transformer/validation/provenance/manifest.json#hardware_qualification",

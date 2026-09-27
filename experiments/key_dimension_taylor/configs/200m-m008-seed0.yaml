@@ -1,3 +1,6 @@
+# 200M Transformer at d_K = 64 with row-normalized fixed Taylor attention of degree 8,
+# p_8(s) = sum_(r<=8) s^r / r!, over QK-norm cosine scores, under the scaffold's current
+# defaults (QK-norm and selective weight decay). The retained d_K = 64 grid recipe otherwise.
 data:
   source: packed
   dataset_name: HuggingFaceFW/fineweb-edu
@@ -29,11 +32,16 @@ model:
   remat: false
   attention_backend: fused
   attention_degree: 8
-  qk_norm: false
+  # QK-norm cosine scores with per-head log scales from log(sqrt(d_K)), the scaffold default.
+  qk_norm: true
+  qk_norm_sharing: per_head
+  qk_norm_initial_scale: null
+  qk_norm_eps: 1.0e-06
 optim:
   learning_rate: 0.0003
   min_learning_rate: 3.0e-05
   weight_decay: 0.1
+  weight_decay_policy: exclude_embeddings_norms_biases_v1
   beta1: 0.9
   beta2: 0.95
   grad_clip_norm: 1.0
@@ -41,7 +49,7 @@ optim:
   total_steps: 19074
 train:
   seed: 0
-  source_commit: 1a8836a75836671cdf83a3ab7763425a6a88cac7
+  source_commit: a74e3863fdf1e1dd965252cd435712dec10c9a29
   dtype: bfloat16
   workdir: experiments/key_dimension_taylor/runs/200m-m008-seed0
   checkpoint_dir: experiments/key_dimension_taylor/checkpoints/200m-m008-seed0

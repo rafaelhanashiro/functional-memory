@@ -2,8 +2,8 @@
 
 Do fixed Taylor truncations of the exponential attention kernel train when the
 attention row normalization is removed? With normalization, the odd degrees
-failed numerically: degree 1 at update 9 and degree 3 at update 17, when signed
-row sums approached zero ([odd Taylor attention](../odd_taylor_attention/README.md)).
+fail numerically when signed row sums approach zero
+([odd Taylor attention](../odd_taylor_attention/README.md)).
 This sweep trains degrees **m = 1, 2, 3, 4** with
 
 ```text
@@ -12,7 +12,7 @@ y_i = sum_{j <= i} p_m(s_ij) v_j,   s_ij = q_i · k_j / sqrt(d_K),   p_m(x) = su
 
 and no denominator, so there is no near-zero row sum to divide by.
 **Status: completed.** All four degrees trained stably for the full 10B tokens,
-including degrees 1 and 3, whose normalized versions failed within 17 updates.
+including degrees 1 and 3, whose normalized versions fail numerically.
 Every truncation ends behind the unnormalized exponential (PPL 17.46), and odd
 degrees end ahead of even ones: m=3 20.24, m=1 20.77, m=4 21.46, m=2 23.51.
 
@@ -27,16 +27,19 @@ sources, configurations, runs, and artifact locations.
 
 | Attention (200M, seed 0) | Normalized terminal PPL | Unnormalized terminal NLL | Unnormalized terminal PPL |
 | --- | ---: | ---: | ---: |
-| Taylor m=1 | failed at update 9 | 3.033512 | 20.7701 |
-| Taylor m=2 | 16.2810 | 3.157241 | 23.5057 |
-| Taylor m=3 | failed at update 17 | 3.007646 | 20.2397 |
-| Taylor m=4 | 14.9836 | 3.066279 | 21.4619 |
+| Taylor m=1 | failed at update 31 | 3.033512 | 20.7701 |
+| Taylor m=2 | 16.5107 | 3.157241 | 23.5057 |
+| Taylor m=3 | failed at update 419 | 3.007646 | 20.2397 |
+| Taylor m=4 | 14.8963 | 3.066279 | 21.4619 |
 | Exponential (`attention_degree: null`, m → ∞) | 14.6655 (softmax) | 2.859817 | 17.4583 |
 
 Every run was best at its terminal update 19,074. Removing normalization makes
 the odd degrees trainable but costs every degree substantially: unnormalized m=2
-and m=4 end 0.367 and 0.359 nats behind their normalized versions, more than
-twice the 0.172-nat cost for the exponential. The ordering is not monotonic in
+and m=4 end 0.353 and 0.365 nats behind their normalized versions, about twice
+the 0.174-nat cost for the exponential. The normalized Taylor values come from
+runs with QK-norm and selective weight decay, which the runs here predate, so part
+of those two gaps reflects the setup (QK-norm alone improves softmax by 0.014
+nats). The ordering is not monotonic in
 degree; one seed per degree does not establish it across seeds. Validation NLL
 at matched updates:
 
@@ -107,11 +110,13 @@ Existing 200M comparison points, all seed 0 with the same recipe apart from
 the attention kernel:
 
 Normalized Taylor results in the table above come from the [dK × Taylor-degree record](../key_dimension_taylor/README.md)
-and [odd Taylor attention](../odd_taylor_attention/README.md); the normalized
-exponential is the exact-softmax control, the repository's softmax baseline
-(source `381f1fd`), which trained under the scaffold's selective weight-decay
-policy; the runs here trained with decay on all parameters, a difference worth
-about 0.03 PPL in that baseline.
+and [odd Taylor attention](../odd_taylor_attention/README.md), trained under the
+scaffold's current defaults (QK-norm cosine scores and selective weight decay).
+The normalized exponential is the exact-softmax control, the repository's softmax
+baseline (source `381f1fd`), trained under selective weight decay without QK-norm.
+The runs here trained with decay on all parameters and without QK-norm, so these
+comparisons include both changes: about 0.03 PPL for the decay policy and 0.21
+PPL for QK-norm in the softmax baseline.
 
 ## Implementation
 

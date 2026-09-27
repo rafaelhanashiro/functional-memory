@@ -116,29 +116,46 @@
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
       "note": "The repository's single softmax baseline since main commit 4601633 (formerly experiments/decay_policy_baseline)."
     },
-    "normalized_fixed_taylor_no_qk_norm": {
-      "m2": {
-        "run": "experiments/key_dimension_taylor/runs/200m-m002-seed0",
-        "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
-        "validation_nll": 2.7900009751319885,
-        "validation_perplexity": 16.281035677939382
-      },
-      "m4": {
-        "run": "experiments/key_dimension_taylor/runs/200m-m004-seed0",
-        "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
-        "validation_nll": 2.7069559693336487,
-        "validation_perplexity": 14.983595500270773
-      },
-      "m1": "numerical failure at update 9 (experiments/odd_taylor_attention)",
-      "m3": "numerical failure at update 17 (experiments/odd_taylor_attention)",
-      "weight_decay_policy": "all parameters"
-    },
     "softmax_original_decay_retired": {
       "validation_perplexity": 14.69417664861716,
       "validation_nll": 2.6874512689454213,
       "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
       "weight_decay_policy": "all parameters",
       "note": "Retired from the repository in main commit 4601633 (run, checkpoint, and log removed); the value survives only in attention_scaling_comparison's frozen original-decay copy."
+    },
+    "normalized_fixed_taylor": {
+      "m1": {
+        "run": "experiments/odd_taylor_attention/runs/200m-m001-seed0",
+        "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+        "qk_norm": true,
+        "status": "numerical-failure",
+        "failure_step": 31
+      },
+      "m2": {
+        "run": "experiments/key_dimension_taylor/runs/200m-m002-seed0",
+        "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+        "qk_norm": true,
+        "validation_nll": 2.8040092502321516,
+        "validation_perplexity": 16.510709818133147
+      },
+      "m3": {
+        "run": "experiments/odd_taylor_attention/runs/200m-m003-seed0",
+        "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+        "qk_norm": true,
+        "status": "numerical-failure",
+        "failure_step": 419
+      },
+      "m4": {
+        "run": "experiments/key_dimension_taylor/runs/200m-m004-seed0",
+        "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+        "qk_norm": true,
+        "validation_nll": 2.701114628996168,
+        "validation_perplexity": 14.896326352016782
+      }
     }
   },
   "runs": [

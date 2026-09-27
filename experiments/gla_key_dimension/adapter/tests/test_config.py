@@ -16,6 +16,10 @@ KEY_DIMENSIONS = (8, 16, 32, 64, 128)
 GLA_FIELDS = {"attention_mechanism", "attention_degree", "gla_gate_rank", "gla_gate_tau",
               "gla_chunk_size", "gla_inner_chunk_size", "gla_use_rope"}
 OUTPUT_FIELDS = {"workdir", "checkpoint_dir", "wandb_project", "wandb_run_name", "source_commit"}
+# The dK=64 Taylor recipes moved to the scaffold's current defaults (QK-norm and selective weight
+# decay) after the GLA runs executed; everything else they share must still match.
+CURRENT_DEFAULT_FIELDS = {"model": {"qk_norm", "qk_norm_sharing", "qk_norm_initial_scale", "qk_norm_eps"},
+                          "optim": {"weight_decay_policy"}}
 
 
 def taylor_control(key_dimension):
@@ -34,6 +38,10 @@ def test_recipes_preserve_dk_taylor_data_optimizer_backbone_and_cadence():
     for run in runs:
         path = ROOT / run["resolved_config"]["path"]
         candidate, control = yaml.safe_load(path.read_text()), taylor_control(run["qk_head_dim"])
+        if control["model"].get("qk_norm"):
+            for section, fields in CURRENT_DEFAULT_FIELDS.items():
+                for side in (candidate, control):
+                    side[section] = {k: v for k, v in side[section].items() if k not in fields}
         assert candidate["data"] == control["data"]
         assert candidate["optim"] == control["optim"]
         assert ({k: v for k, v in candidate["model"].items() if k not in GLA_FIELDS}
