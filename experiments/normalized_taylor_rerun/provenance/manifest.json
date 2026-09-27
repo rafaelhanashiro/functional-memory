@@ -220,6 +220,13 @@
           "req_node_list": "akita",
           "dependency": "afterany:202605",
           "reason": "uses this user's standard allowance (4 GPUs) on the B300s freed when nonnegative m=4 (202605) ends; pinned to akita so the standard job cannot preempt this user's long job on dogo"
+        },
+        {
+          "time": "2026-09-27T01:01-04:00",
+          "partition": "standard",
+          "req_node_list": "akita",
+          "dependency": "afterany:202638",
+          "reason": "takes akita back when nonnegative m=2 ends"
         }
       ],
       "attempts": [
@@ -230,6 +237,14 @@
           "start": "2026-09-26T19:46:25-04:00",
           "end": "2026-09-26T19:48:31-04:00",
           "outcome": "requeued (held) within acceptance during the partition correction"
+        },
+        {
+          "slurm_job_id": 202615,
+          "node": "akita",
+          "partition": "standard",
+          "start": "2026-09-27T00:58:40-04:00",
+          "end": "2026-09-27T01:01-04:00",
+          "outcome": "started when nonnegative m=4 ended; requeued held during acceptance, with the user's approval, so the stranded nonnegative m=2 (202638) could finish on akita"
         }
       ]
     },
