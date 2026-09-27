@@ -1,0 +1,37 @@
+{
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": {
+    "metadata": {
+      "path": "experiments/state_rank/runs/r2c419979b240/metadata.json",
+      "sha256": "2c10e491cc98d5fab80ee938e9d640bd5e54a12142a17ca92101a24b84a07c45"
+    },
+    "numerical_data": {
+      "path": "experiments/state_rank/runs/r2c419979b240/metrics.npz",
+      "sha256": "70fc78ff5098d25688fa4b6d23c1fe8f8ff1b475bd17ac5e805a30a3e0a545b8"
+    }
+  },
+  "config": {
+    "path": "experiments/state_rank/runs/r2c419979b240/config.yaml",
+    "sha256": "8c002a42e1e537bc17b60079096a111479a8d8d1ac588ae60af8513031f94f10"
+  },
+  "hardware": {
+    "device": "cuda",
+    "gpu": "NVIDIA H100 80GB HBM3",
+    "hostname": "dogo.csail.mit.edu"
+  },
+  "home_cluster": "kennel",
+  "label": "random_vs_pretrained-random-seed4",
+  "log": {
+    "path": "experiments/state_rank/runs/r2c419979b240/training.log",
+    "sha256": "2d78cd32ec128cbb0639d8305d4210fe4194bd756639b54250363e15ae385ecd"
+  },
+  "log_path": "experiments/state_rank/runs/r2c419979b240/training.log",
+  "metrics_sha256": "70fc78ff5098d25688fa4b6d23c1fe8f8ff1b475bd17ac5e805a30a3e0a545b8",
+  "name": "random_vs_pretrained-random-seed4",
+  "record_schema_version": 1,
+  "run_id": "r2c419979b240",
+  "seed": 4,
+  "slurm_job_id": "201749",
+  "source_commit": "279fdd63fa03054196762da2bc616eb1f8c30208",
+  "status": "completed"
+}

@@ -1,0 +1,322 @@
+{
+  "acceptance": {
+    "H100-4": {
+      "completed_utc": "2026-09-26T11:28:03.009316+00:00",
+      "cpu_distributed_tests_passed": 0,
+      "cpu_tests_passed": 202,
+      "gpu_tests_passed": 83,
+      "identity": "86dbbfb1aad2cbd0dc588935333d1196462a476dbe0f2804f0f0b98a762ce780",
+      "initialization_check": {
+        "mechanism_parameters": {
+          "polynomial_coefficients": {
+            "initial": [
+              1.0,
+              1.0,
+              0.5,
+              0.16666666666666666
+            ],
+            "shape": [
+              10,
+              16,
+              4
+            ],
+            "weight_decay": false
+          },
+          "qk_norm_log_scale": {
+            "initial": [
+              2.0794415416798357
+            ],
+            "shape": [
+              10,
+              16,
+              1
+            ],
+            "weight_decay": false
+          }
+        },
+        "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+      },
+      "initialization_parameter_count": 199907104,
+      "initialization_parameter_sha256": "cdc4eaefe93ac2ad6314d8a32b0628c1199597438a56a40dcee9a0039e0997fb",
+      "passed_stages": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "pilot": {
+        "attention_backend": "fused",
+        "attention_implementation": "pallas_triton",
+        "final_step": 20,
+        "projected_hours": 2.52,
+        "steady_step_seconds_median": 0.4755
+      },
+      "resume": {
+        "final_step": 21,
+        "restored_step": 20
+      },
+      "slurm_job_id": "202380",
+      "status": "passed"
+    }
+  },
+  "artifacts": [
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/best_validation.json",
+      "sha256": "fba4f7bfc916d1ab67430261dc37d54d7e3fa59c433237480012909917e00b5f"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/completion.json",
+      "sha256": "217422e572eb7e467596a9adaff9eae72b566c2064fcb2d911464308c5eebdda"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/config.json",
+      "sha256": "ada2a219f7111c6316dce017703963e2df5779482d7ad91ed28cef179c1a57bb"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/config.yaml",
+      "sha256": "e8e97f8ffb49eb47eb70ff454198cee98dfa1f54ca6dcb8bde15a2661624d263"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/metadata.json",
+      "sha256": "faf1dd2352b5085242eac12a72dbca644db69fa488dc409e5ce569b53ab719a5"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/metrics.jsonl",
+      "sha256": "9c4eb4a4d225634e8c03356f6577c760f74f4a084cec497ce6f8355bc53bb828"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/retention.json",
+      "sha256": "8a6925d668a1d340b59acd3c88e3651e1ded6f2b8e95ff5cad12b7540c532ca8"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/wandb_run.json",
+      "sha256": "80ba4d0f594596dd457ec81bbbc10500922852110c5068b4c2f0868f0ab2d94c"
+    }
+  ],
+  "attempts": [
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "acceptance cpu-tests stage failed 2026-09-26T04:12 local: 201 of 202 cases passed and the adapter's regeneration test skipped (no results yet), which acceptance counts as a failure; no run outputs; the test was changed to pass while the sweep is pending (adapter/tests is outside the frozen set)",
+      "restart": 0,
+      "slurm_job_id": "202341"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "node": "dogo",
+      "outcome": "passed acceptance and trained all 19,074 updates from a fresh initialization",
+      "restart": 0,
+      "slurm_job_id": "202380"
+    }
+  ],
+  "attention_backend": "fused",
+  "attention_degree": 3,
+  "attention_kernel": "learned_polynomial_unnormalized",
+  "attention_normalization": false,
+  "best_validation": {
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "step": 19074,
+    "training_tokens": 10000269312,
+    "validation_nll": 2.7930104391915456,
+    "validation_perplexity": 16.330106671324174
+  },
+  "coefficient_count": 640,
+  "completed_utc": "2026-09-26T14:17:30.887184+00:00",
+  "config": {
+    "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/config.yaml",
+    "recorded_sha256": "8697b82b3212a01c2b19c06b9d446b05df79bdc1e09725fcc12bf50fb93a72ca",
+    "sha256": "e8e97f8ffb49eb47eb70ff454198cee98dfa1f54ca6dcb8bde15a2661624d263"
+  },
+  "execution": {
+    "attempts": [
+      {
+        "gpu_count": 4,
+        "gpu_type": "B300",
+        "node": "akita",
+        "outcome": "acceptance cpu-tests stage failed 2026-09-26T04:12 local: 201 of 202 cases passed and the adapter's regeneration test skipped (no results yet), which acceptance counts as a failure; no run outputs; the test was changed to pass while the sweep is pending (adapter/tests is outside the frozen set)",
+        "restart": 0,
+        "slurm_job_id": "202341"
+      },
+      {
+        "gpu_count": 4,
+        "gpu_type": "H100",
+        "node": "dogo",
+        "outcome": "passed acceptance and trained all 19,074 updates from a fresh initialization",
+        "restart": 0,
+        "slurm_job_id": "202380"
+      }
+    ],
+    "attention_backend": "fused",
+    "attention_backend_requested": "fused",
+    "attention_implementation": "pallas_triton",
+    "batch_transfer": "host_to_shard",
+    "device_kinds": [
+      "NVIDIA H100 80GB HBM3"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "runtime_history_entries": 1,
+    "runtime_settings": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct",
+    "wall_time": "03:02:34 including acceptance (Slurm 2026-09-26T07:15:00 to 2026-09-26T10:17:34 local)"
+  },
+  "hardware": "4x NVIDIA H100 dogo, sweep partition",
+  "home_cluster": "kennel",
+  "label": "200m-qk-m003-unnormalized-seed0",
+  "log": {
+    "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/training.log",
+    "sha256": "7e87ecaa403eab6f80219596f053b1aa12fd1dcb2c9bd7fac94b3656a5a0b477"
+  },
+  "name": "200m-qk-m003-unnormalized-seed0",
+  "parameter_count": 199907104,
+  "partition": "sweep",
+  "prediction_tokens": 10000269312,
+  "qk_norm": true,
+  "qk_norm_initial_scale": 8.0,
+  "qk_norm_parameter_count": 160,
+  "qk_norm_sharing": "per_head",
+  "record_schema_version": 1,
+  "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+  "retention": {
+    "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/retention.json",
+    "sha256": "8a6925d668a1d340b59acd3c88e3651e1ded6f2b8e95ff5cad12b7540c532ca8"
+  },
+  "run_id": "r0470d7fcaae6",
+  "run_record": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6",
+  "seed": 0,
+  "selected_checkpoint": {
+    "bytes": 2206280905,
+    "file_count": 14,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "e870db7f1e398ae3fc7e4355d99b20aa71a746a0ad57794851dda0a1c4020e17",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "03c5fda1f0a8d6058dd61411afcf745fd24b840f0bd1b4f7258263da65fc913a",
+        "size_bytes": 144849
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "b05c2908d0d0f4155653fa0dbbc86bf0a8b774c8e4f8cbee8e21e7ce3c3297e4",
+        "size_bytes": 89217
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "0485a9cb6880a146f8587ef5dec1a454c5aaaa57fedee65d1c03d3c57240fcdf",
+        "size_bytes": 50185
+      },
+      {
+        "path": "default/d/a1dfcd0e1322f2dade01f2083918e696",
+        "sha256": "08d9ed6034e06407e51adc88c09f0dd0d7c7defdb6e39414f54020189baa7738",
+        "size_bytes": 5370
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "d0906fccccc0a3f09926d7e5b4b6bfdb1a4a98641cca4dffc7cec434518c0a11",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/0b892d11f26852153df01051520d3f4f",
+        "sha256": "a59ea9605ab8c12ed7a3850626a639d8bd1c44a5b71b1d20bdf9f72b0b18d2b6",
+        "size_bytes": 3893483
+      },
+      {
+        "path": "default/ocdbt.process_0/d/564fc7d6a863507f7e2bd0269b6cc59f",
+        "sha256": "338921da37a3f68904774e7f328f61d3fb2632bea04df80dfc9e9f87387a84f7",
+        "size_bytes": 1292328960
+      },
+      {
+        "path": "default/ocdbt.process_0/d/67170382298ae387f1b518228cc77eb7",
+        "sha256": "b8954f8ac14b6d9eb6f44fccbd7b113dce45faed4933b77d6dc7944ec6f2da75",
+        "size_bytes": 4279
+      },
+      {
+        "path": "default/ocdbt.process_0/d/9f3e1c2fa3c9de0d4ba674d4adf8c916",
+        "sha256": "481e5ba328361512f240d2dcf0513310a9400192adc0d8ab4f81033eeec73c06",
+        "size_bytes": 909762560
+      },
+      {
+        "path": "default/ocdbt.process_0/d/ac00cb4aa900f2bd9f2d9a8646e84de5",
+        "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+        "size_bytes": 195
+      },
+      {
+        "path": "default/ocdbt.process_0/d/cde753b0be76ba6aab08020761843234",
+        "sha256": "9a151406ca04772c97dc9122ccc282064320347eb740ecdc66b408275f1bfed2",
+        "size_bytes": 823
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "68d3b5686edb5f39e9bd8b4adbc910f5783c946eab183bdf7eae0423b88a29a9",
+        "size_bytes": 361
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "5d9cd9ac7b568680a89ccb05e6f7cd5a8215f513a4ddf9d6f696033d1966b824",
+        "size_bytes": 139
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/checkpoints/19074",
+    "recorded_files": {
+      "_CHECKPOINT_METADATA": "e870db7f1e398ae3fc7e4355d99b20aa71a746a0ad57794851dda0a1c4020e17",
+      "default/_METADATA": "03c5fda1f0a8d6058dd61411afcf745fd24b840f0bd1b4f7258263da65fc913a",
+      "default/_sharding": "b05c2908d0d0f4155653fa0dbbc86bf0a8b774c8e4f8cbee8e21e7ce3c3297e4",
+      "default/array_metadatas/process_0": "0485a9cb6880a146f8587ef5dec1a454c5aaaa57fedee65d1c03d3c57240fcdf",
+      "default/d/a1dfcd0e1322f2dade01f2083918e696": "08d9ed6034e06407e51adc88c09f0dd0d7c7defdb6e39414f54020189baa7738",
+      "default/manifest.ocdbt": "d0906fccccc0a3f09926d7e5b4b6bfdb1a4a98641cca4dffc7cec434518c0a11",
+      "default/ocdbt.process_0/d/0b892d11f26852153df01051520d3f4f": "a59ea9605ab8c12ed7a3850626a639d8bd1c44a5b71b1d20bdf9f72b0b18d2b6",
+      "default/ocdbt.process_0/d/564fc7d6a863507f7e2bd0269b6cc59f": "338921da37a3f68904774e7f328f61d3fb2632bea04df80dfc9e9f87387a84f7",
+      "default/ocdbt.process_0/d/67170382298ae387f1b518228cc77eb7": "b8954f8ac14b6d9eb6f44fccbd7b113dce45faed4933b77d6dc7944ec6f2da75",
+      "default/ocdbt.process_0/d/9f3e1c2fa3c9de0d4ba674d4adf8c916": "481e5ba328361512f240d2dcf0513310a9400192adc0d8ab4f81033eeec73c06",
+      "default/ocdbt.process_0/d/ac00cb4aa900f2bd9f2d9a8646e84de5": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+      "default/ocdbt.process_0/d/cde753b0be76ba6aab08020761843234": "9a151406ca04772c97dc9122ccc282064320347eb740ecdc66b408275f1bfed2",
+      "default/ocdbt.process_0/manifest.ocdbt": "68d3b5686edb5f39e9bd8b4adbc910f5783c946eab183bdf7eae0423b88a29a9",
+      "metrics/metrics": "5d9cd9ac7b568680a89ccb05e6f7cd5a8215f513a4ddf9d6f696033d1966b824"
+    },
+    "rule": "lowest validation NLL; also the terminal checkpoint",
+    "sha256": "a9fce50c3d83a4e3e0ac630ddd4a66e0735ae35a0c262b7525fe8c0a6180bdaa",
+    "size_bytes": 2206280905,
+    "step": 19074,
+    "tree_sha256": "e6bb2892f038c0844ffebc05cb97173ba5957351d10f4e95dec8dff3818682e3",
+    "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'",
+    "verified_present_utc": "2026-09-26T18:26:25Z"
+  },
+  "slurm_job_id": "202380",
+  "slurm_job_ids": [
+    202341,
+    202380
+  ],
+  "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+  "start": "fresh initialization",
+  "status": "completed",
+  "submitted_utc": "2026-09-26T06:43:53+00:00",
+  "terminal_validation_nll": 2.7930104391915456,
+  "terminal_validation_perplexity": 16.330106671324174,
+  "training_updates": 19074,
+  "wandb": {
+    "run_id": "3268df6689704f578191ecbd0cf09c8f",
+    "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/3268df6689704f578191ecbd0cf09c8f"
+  }
+}

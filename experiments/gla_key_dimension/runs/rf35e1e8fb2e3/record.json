@@ -1,0 +1,239 @@
+{
+  "acceptance": {
+    "B300": {
+      "completed_utc": "2026-09-24T22:18:53.915000+00:00",
+      "cpu_tests_passed": 49,
+      "devices": [
+        "NVIDIA B300 SXM6 AC",
+        "NVIDIA B300 SXM6 AC",
+        "NVIDIA B300 SXM6 AC",
+        "NVIDIA B300 SXM6 AC"
+      ],
+      "gpu_tests_passed": 21,
+      "identity": "8b7426d4c8608244f0acf3b1425f50485618e97955fc9ce557a04f321572c351",
+      "initialization": {
+        "parameter_count": 210740224,
+        "parameter_sha256": "bf6f29cb66ffc7cab669dae62c2abd8952bd581d1576c67d8ea3fffb4e149104"
+      },
+      "pilot": {
+        "attention_backend": "fused",
+        "diagnostics_valid": true,
+        "projected_hours": 3.4,
+        "updates": 20,
+        "validation_nll": 10.863628625869751
+      },
+      "resume": {
+        "data_start_sequence": 5120,
+        "final_step": 21,
+        "restored_step": 20,
+        "state_batch_rng_audit": "exact"
+      },
+      "slurm_job_id": "201795",
+      "slurm_restart_count": "0",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "optax": "0.2.8",
+        "orbax-checkpoint": "0.11.40",
+        "triton": "3.6.0"
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/best_validation.json",
+      "sha256": "69758a607f442e516ea590b59b68db2cedfc547549b6fec7545f79b75e602b40"
+    },
+    {
+      "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/completion.json",
+      "sha256": "05de4d576437bb73a5e090375b1b335c76686681787aa5c05f35c1031aa66817"
+    },
+    {
+      "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/config.json",
+      "sha256": "8ccf0a5b52aca6f5baf1377d2c6cef48987dc13ad257970713dfac827e6a2cf8"
+    },
+    {
+      "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/config.yaml",
+      "sha256": "e3a6c404996f88658237c84149ee5b046d70adc4599bd7d00f630b6e2f9a2aaa"
+    },
+    {
+      "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+    },
+    {
+      "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/metadata.json",
+      "sha256": "a705f2b2ced23f625ef518573579e3553bbf8c03597d7819e3d91a68b9dada42"
+    },
+    {
+      "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/metrics.jsonl",
+      "sha256": "2b4d7a4c237812a26b1a00c4b333606ce5a1f4b35b032c17c4ea28a3e9e97ccb"
+    }
+  ],
+  "best_validation": {
+    "selection_rule": "lowest_validation_nll",
+    "step": 19074,
+    "training_tokens": 10000269312,
+    "validation_nll": 2.766116406236376,
+    "validation_perplexity": 15.896777349093544
+  },
+  "checkpoint_dir": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/checkpoints",
+  "config": {
+    "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/config.yaml",
+    "sha256": "e3a6c404996f88658237c84149ee5b046d70adc4599bd7d00f630b6e2f9a2aaa"
+  },
+  "execution": {
+    "attempts": [
+      {
+        "elapsed": "03:06:17",
+        "gpu_type": "B300",
+        "node": "akita",
+        "partition": "sweep",
+        "slurm_restart_count": 0,
+        "started_utc": "2026-09-24T22:12:35.546307+00:00",
+        "state": "COMPLETED"
+      }
+    ],
+    "attention_backend": "fused",
+    "data_parallel_devices": 4,
+    "gpu_count": 4,
+    "runtime": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "slurm_job_id": "201795"
+  },
+  "initialization_sha256": "bf6f29cb66ffc7cab669dae62c2abd8952bd581d1576c67d8ea3fffb4e149104",
+  "label": "200m-dk064-gla-seed0",
+  "log_path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/training.log",
+  "log_sha256": "0c0dfe129a9bef08d7a3e4c13a24d713e097786bf8d53212fff9938621401d8a",
+  "name": "200m-dk064-gla-seed0",
+  "parameter_count": 210740224,
+  "qk_head_dim": 64,
+  "record_schema_version": 1,
+  "resolved_config": {
+    "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/config.yaml",
+    "recorded_sha256": "5f3ecd78fab430e24f72f73942eef86c974a2d4df1708a1d9546e98b21b7dc7e",
+    "sha256": "e3a6c404996f88658237c84149ee5b046d70adc4599bd7d00f630b6e2f9a2aaa"
+  },
+  "run_files": {
+    "best_validation.json": "69758a607f442e516ea590b59b68db2cedfc547549b6fec7545f79b75e602b40",
+    "completion.json": "05de4d576437bb73a5e090375b1b335c76686681787aa5c05f35c1031aa66817",
+    "config.json": "8ccf0a5b52aca6f5baf1377d2c6cef48987dc13ad257970713dfac827e6a2cf8",
+    "data_identity.json": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "metadata.json": "a705f2b2ced23f625ef518573579e3553bbf8c03597d7819e3d91a68b9dada42",
+    "metrics.jsonl": "2b4d7a4c237812a26b1a00c4b333606ce5a1f4b35b032c17c4ea28a3e9e97ccb"
+  },
+  "run_id": "rf35e1e8fb2e3",
+  "seed": 0,
+  "selected_checkpoint": {
+    "file_count": 17,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "5193f2cb17137dcd1e3fb30fc59ffb5e012c50eef384a4fd1ed6e87763d9b5cb",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "ffc7352286acefabd23b9f66f3b4d91a500e04e9c03c3cc523097067467e38a1",
+        "size_bytes": 220509
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "feda4c1b5a514d3f6bfe6b37a5ca89b680f5fb7260d6528e7d25ad17713a9da3",
+        "size_bytes": 134929
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "d6285bb2028b45ff52abd9895871363101fcd72b7524cae913c21ff6522b1ec0",
+        "size_bytes": 75703
+      },
+      {
+        "path": "default/d/0e0badbc417f2d38acda9aaa6e33d7a4",
+        "sha256": "0ddf252c239ba33c5988ce1a11a59aa4e1b00e91ee8fe6d08ea7e937d54937b6",
+        "size_bytes": 4518
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "224fc828eec03595bc4cc8bcc7bebaaaa35b71ec55bd06e61e4dc10375746e0d",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/1e805c02dedd2116741c91e4756d318f",
+        "sha256": "08291d8699de57b2604511bcd6659e013f1a4340785a0f3ef8f454e6e26ada6c",
+        "size_bytes": 791
+      },
+      {
+        "path": "default/ocdbt.process_0/d/1f64d4b594799108c4c98ae86b296c1c",
+        "sha256": "fb42502104a78c8711e11b0a016b7e657594a49425bf19b3ed9829291cb4475e",
+        "size_bytes": 502
+      },
+      {
+        "path": "default/ocdbt.process_0/d/1fdc5ad6ae242c7c16b941b9045d6eb3",
+        "sha256": "5fdc494a1697e3aeb0c8c4a0efab341557ff3ba6fad10f42313dacbdc7af5678",
+        "size_bytes": 730
+      },
+      {
+        "path": "default/ocdbt.process_0/d/3a25d349a4dc51ef2ec6b0c290daab30",
+        "sha256": "7d2c02ebb1a1c157db72a63e04f3a3bb4fafee349d8cb47de52d90e4e529f3bb",
+        "size_bytes": 495
+      },
+      {
+        "path": "default/ocdbt.process_0/d/4fad800c818a83e8fe9441e494125982",
+        "sha256": "cd8bf65667a19a6f930ae26f8c8575df6c4fc4d0d2fec2831e37efcc95bc4a87",
+        "size_bytes": 1434107904
+      },
+      {
+        "path": "default/ocdbt.process_0/d/5edfaa5537065aa88b4d01bbf78bbb1b",
+        "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+        "size_bytes": 195
+      },
+      {
+        "path": "default/ocdbt.process_0/d/78cb5bdcfee296fa6539f9d5306818fb",
+        "sha256": "f69a8779d7f1b168d0281ed73ab2bb0cbc9cf684389779c598fb8b5157cf24f0",
+        "size_bytes": 70234112
+      },
+      {
+        "path": "default/ocdbt.process_0/d/a136c01e7497d95fe1a8db2d8fb6a92e",
+        "sha256": "2d055f5f5028ee543464c4b17048856b90979064ebee1c5a27c853173adee6b0",
+        "size_bytes": 484
+      },
+      {
+        "path": "default/ocdbt.process_0/d/e8fd8267b81eeeb488acb1b9338be5fe",
+        "sha256": "4e16fbee28dee3937b0a8139a6ee729a100a78eb428e21aefba8fbc47bee0828",
+        "size_bytes": 816119808
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "059f48c73e77809f3a8fe4d2af686d2464ba8d0fbce2c4a25b978b7365d7a40a",
+        "size_bytes": 455
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "de90d836a97076b0da88dae030b1546e61c9be7618db9b7775425694cdaad998",
+        "size_bytes": 138
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/checkpoints/19074",
+    "selection": "validation-best (also terminal)",
+    "sha256": "a6f340cb0758d244fbe89068ae8231b6dfcdb7ed0e6e2833779a5913b16490b0",
+    "size_bytes": 2320901757,
+    "step": 19074,
+    "tree_sha256": "a6f340cb0758d244fbe89068ae8231b6dfcdb7ed0e6e2833779a5913b16490b0"
+  },
+  "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+  "state_elements_per_layer": 65536,
+  "status": "complete",
+  "terminal": {
+    "step": 19074,
+    "training_tokens": 10000269312,
+    "validation_nll": 2.766116406236376,
+    "validation_perplexity": 15.896777349093544
+  },
+  "value_head_dim": 64,
+  "workdir": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3"
+}

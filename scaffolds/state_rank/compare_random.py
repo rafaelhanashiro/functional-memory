@@ -66,7 +66,7 @@ def condition_specs(config):
 def prepare_manifest(config_path, project_root, output=None):
     """Resolve inputs and provenance before scheduling; refuse incompatible reuse."""
     project_root = Path(project_root).resolve()
-    config = json.loads(Path(config_path).read_text())
+    config = dict(config_path) if isinstance(config_path, dict) else json.loads(Path(config_path).read_text())
     if config["schema_version"] != 1:
         raise ValueError("Unsupported comparison configuration schema")
     if (config["model_dtype"] != "float32" or config["analysis_dtype"] != "float64"
@@ -124,17 +124,91 @@ def prepare_manifest(config_path, project_root, output=None):
     return path
 
 
-def validate_manifest(manifest):
+def manifest_identity(manifest):
+    """Hash immutable scientific inputs and the resolved execution identity."""
     protected = {key: manifest[key] for key in (
         "config", "source_commit", "dependency_lock_sha256", "inputs_sha256",
         "baseline_metadata_sha256", "baseline_spectra_sha256",
     )}
-    identity = hashlib.sha256(json.dumps(protected, sort_keys=True).encode()).hexdigest()
+    for key in ("run_directories", "run_config_sha256"):
+        if key in manifest:
+            protected[key] = manifest[key]
+    return hashlib.sha256(json.dumps(protected, sort_keys=True).encode()).hexdigest()
+
+
+def condition_directory(manifest, condition_name):
+    directories = manifest.get("run_directories")
+    return Path(directories[condition_name]) if directories is not None else Path(manifest["output_directory"]) / condition_name
+
+
+def write_condition_metadata(output, metadata):
+    """Keep raw analysis output and the canonical run summary together."""
+    write_json(output / "metadata.json", metadata)
+    if not (output / "record.json").exists():
+        return  # Standalone historical comparison workspaces remain readable.
+    from scaffolds.records import capture_artifacts, load_run, update_record
+
+    previous = load_run(output)
+    attempts = previous.get("attempts", [])
+    job_id, restart = metadata.get("slurm_job_id"), metadata.get("slurm_restart_count", 0)
+    if job_id:
+        current = {"slurm_job_id": job_id, "slurm_restart_count": restart,
+                   "started_utc": metadata.get("started_utc"),
+                   "slurm_partition": os.environ.get("SLURM_JOB_PARTITION")}
+        if attempts and (attempts[-1].get("slurm_job_id"), attempts[-1].get("slurm_restart_count", 0)) == (job_id, restart):
+            attempts = [*attempts[:-1], {**attempts[-1], **current}]
+        else:
+            attempts = [*attempts, current]
+    changes = {
+        "status": metadata["status"], "source_commit": metadata["source_commit"],
+        "weights": metadata.get("weights"), "seed": metadata.get("seed"),
+        "attempts": attempts, "log_path": str(output / "training.log"),
+        "execution": {"raw_metadata": {"path": "metadata.json", "sha256": sha256_file(output / "metadata.json")},
+                      "hardware": {key: metadata.get(key) for key in ("hostname", "device", "gpu")},
+                      "package_versions": metadata.get("package_versions", {})},
+    }
+    if metadata.get("metrics_sha256"):
+        changes["metrics"] = {"path": "metrics.npz", "sha256": metadata["metrics_sha256"]}
+    if metadata.get("validation"):
+        changes["validation"] = metadata["validation"]
+    if metadata.get("error"):
+        changes["error"] = metadata["error"]
+    if metadata["status"] in {"complete", "failed"}:
+        changes.update(capture_artifacts(output))
+    update_record(output, changes)
+
+
+def validate_manifest(manifest):
+    identity = manifest_identity(manifest)
     if manifest["identity"] != identity or manifest["conditions"] != condition_specs(manifest["config"]):
         raise ValueError("Comparison manifest identity or condition list was changed")
     if manifest["source_commit"] != source_commit():
         raise ValueError("Execution source commit differs from the frozen manifest")
-    project_root = Path(manifest["project_root"])
+    if "run_directories" in manifest:
+        import yaml
+        from scaffolds.records import load_run
+
+        conditions = {condition["name"]: condition for condition in manifest["conditions"]}
+        if set(manifest["run_directories"]) != set(conditions) or set(manifest.get("run_config_sha256", {})) != set(conditions):
+            raise ValueError("Canonical run directories must match every comparison condition")
+        for name, condition in conditions.items():
+            run = condition_directory(manifest, name)
+            record = load_run(run)
+            recipe_path = run / "config.yaml"
+            expected_hash = manifest["run_config_sha256"][name]
+            if sha256_file(recipe_path) != expected_hash or record["config"]["sha256"] != expected_hash:
+                raise ValueError(f"Canonical run configuration changed: {recipe_path}")
+            recipe = yaml.safe_load(recipe_path.read_text())
+            expected = {**manifest["config"], "condition": condition,
+                        "weights": condition["weights"], "seed": condition["seed"],
+                        "output_directory": recipe.get("output_directory")}
+            if recipe != expected:
+                raise ValueError(f"Canonical recipe differs from its comparison condition: {recipe_path}")
+            destination = Path(recipe["output_directory"])
+            if not destination.is_absolute():
+                destination = Path(manifest["execution_root"]) / destination
+            if destination.resolve() != run.resolve():
+                raise ValueError(f"Canonical recipe redirects its output: {recipe_path}")
     baseline = Path(manifest["baseline_directory"])
     for path, field in (
         (DEPENDENCY_LOCK, "dependency_lock_sha256"),
@@ -211,7 +285,7 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
     condition = next((c for c in manifest["conditions"] if c["name"] == condition_name), None)
     if condition is None:
         raise ValueError(f"Unknown condition: {condition_name}")
-    output = Path(manifest["output_directory"]) / condition_name
+    output = condition_directory(manifest, condition_name)
     metadata_path = output / "metadata.json"
     if metadata_path.exists():
         previous = json.loads(metadata_path.read_text())
@@ -220,6 +294,7 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
         if previous["status"] == "complete":
             if sha256_file(output / "metrics.npz") != previous["metrics_sha256"]:
                 raise ValueError("Completed metrics were changed")
+            write_condition_metadata(output, previous)
             print(f"already_complete={condition_name}", flush=True)
             return previous
     if require_cuda and not torch.cuda.is_available():
@@ -244,9 +319,9 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
         "gpu": torch.cuda.get_device_name() if device.type == "cuda" else None,
         "inputs_sha256": manifest["inputs_sha256"], "dependency_lock_sha256": manifest["dependency_lock_sha256"],
         "package_versions": {name: importlib.metadata.version(name) for name in ("torch", "transformers", "numpy", "matplotlib")},
-        "log_path": str(Path(manifest["project_root"]) / "logs/state_rank/random_vs_pretrained" / condition_name / f"slurm-{job_id}.out") if job_id else None,
+        "log_path": str(output / "training.log") if job_id else None,
     }
-    write_json(metadata_path, metadata)
+    write_condition_metadata(output, metadata)
     started = time.monotonic()
     try:
         model_config = AutoConfig.from_pretrained(config["model_id"], revision=config["model_revision"])
@@ -276,7 +351,7 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
         metadata["parameter_sha256"] = parameter_fingerprint(model)
         metadata["parameter_count"] = sum(p.numel() for p in model.parameters())
         metadata["model_config"] = model.config.to_dict()
-        write_json(metadata_path, metadata)
+        write_condition_metadata(output, metadata)
         model.to(device).eval()
         if condition["weights"] == "pretrained":
             with np.load(baseline_path) as baseline:
@@ -291,18 +366,18 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
                         metrics_sha256=sha256_file(output / "metrics.npz"), validation=validation,
                         metrics_shape=list(arrays["participation_ratio"].shape),
                         spectrum_shape=list(arrays["normalized_eigenvalues"].shape))
-        write_json(metadata_path, metadata)
+        write_condition_metadata(output, metadata)
         print(f"completed={condition_name} elapsed_seconds={metadata['elapsed_seconds']:.2f}", flush=True)
         return metadata
     except BaseException as error:
         metadata.update(status="failed", error=f"{type(error).__name__}: {error}", updated_utc=utc_now())
-        write_json(metadata_path, metadata)
+        write_condition_metadata(output, metadata)
         raise
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--config", type=Path)
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--output", type=Path)
     parser.add_argument("--manifest", type=Path)
@@ -311,6 +386,8 @@ def main():
     parser.add_argument("--require-cuda", action="store_true")
     args = parser.parse_args()
     if args.prepare:
+        if args.config is None:
+            parser.error("--prepare requires --config")
         print(prepare_manifest(args.config, args.project_root, args.output))
     elif args.manifest and args.condition:
         run_condition(args.manifest, args.condition, require_cuda=args.require_cuda)

@@ -1,0 +1,330 @@
+{
+  "acceptance": {
+    "B300-4": {
+      "completed_utc": "2026-09-25T09:40:00.596857+00:00",
+      "cpu_distributed_tests": "no distributed tests among the declared CPU tests",
+      "cpu_tests_passed": 114,
+      "gpu_tests_passed": 74,
+      "identity": "ac1c4365e4a47c225f622837ad216508ed0a78841a1930dea3f23b909578c6ed",
+      "initialization_check": {
+        "mechanism_parameters": {
+          "polynomial_coefficients": {
+            "initial": [
+              1.0,
+              1.0,
+              0.5,
+              0.16666666666666666,
+              0.041666666666666664
+            ],
+            "shape": [
+              10,
+              16,
+              5
+            ],
+            "weight_decay": false
+          }
+        },
+        "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+      },
+      "initialization_parameter_count": 199907104,
+      "initialization_parameter_sha256": "543383399421ab2d56516b9235980da22f4a5de87cc25d048011b7b8937a3ee1",
+      "passed_stages": [
+        "cpu-distributed-tests",
+        "cpu-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "pilot": {
+        "attention_backend": "fused",
+        "final_step": 20,
+        "projected_hours": 2.841,
+        "steady_step_seconds_median": 0.4524,
+        "validation_nll": 10.573869943618774
+      },
+      "resume": {
+        "data_start_sequence": 5120,
+        "final_step": 21,
+        "restored_step": 20
+      },
+      "status": "passed"
+    }
+  },
+  "artifacts": [
+    {
+      "path": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/best_validation.json",
+      "sha256": "cea51cf55564517b9cb5c8e8c219dc78fadcceb4ec85171405d25c08d0578051"
+    },
+    {
+      "path": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/completion.json",
+      "sha256": "3e24ed4327b801446971b2f152b35108058c5efddb1fc2aa465041c57619b833"
+    },
+    {
+      "path": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/config.json",
+      "sha256": "c8b6a3baf366961873bfdf7a4f43e05bdb412bc5f0545b4217626bfbfd323ce0"
+    },
+    {
+      "path": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/config.yaml",
+      "sha256": "c84be3b17a63073308b017ae8713a4770d763118478381b5e697f1d3809890ac"
+    },
+    {
+      "path": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+    },
+    {
+      "path": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/metadata.json",
+      "sha256": "06d6162c021cf765071dab55b832c066db58872d7baad2e46ea2e5bc3cc5d7a6"
+    },
+    {
+      "path": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/metrics.jsonl",
+      "sha256": "992a12bdfebac250bf7e6f265b6b49ccd2c7190f13a0aaa59fa42345c4cf00b7"
+    },
+    {
+      "path": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/retention.json",
+      "sha256": "1c694dfa9b0f71d95df52a1f44f19eb3ca9230ea15f1af8d3fa357571197bd15"
+    },
+    {
+      "path": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/wandb_run.json",
+      "sha256": "6f228d57185d157bdf73779ac03fe6f822869c501b1e96a27c85af15ee31777e"
+    }
+  ],
+  "attempts": "5 earlier attempts were preempted during acceptance before any training update; attempt 5 on B300 node akita reused the passed stages, completed acceptance, and trained uninterrupted from scratch.",
+  "attention_degree": 4,
+  "best_validation": {
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "step": 19074,
+    "training_tokens": 10000269312,
+    "validation_nll": 3.002697936126164,
+    "validation_perplexity": 20.13979958454915
+  },
+  "coefficient_count": 800,
+  "completed_utc": "2026-09-25T12:12:32.801843+00:00",
+  "config": {
+    "path": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/config.yaml",
+    "recorded_sha256": "cff6152bc67230927a714aac852846ca25326d3a079f6c493d98d39bca839195",
+    "sha256": "c84be3b17a63073308b017ae8713a4770d763118478381b5e697f1d3809890ac"
+  },
+  "execution": {
+    "attempts": [
+      {
+        "gpu_count": 4,
+        "gpu_type": "B300",
+        "node": "akita",
+        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+        "partition": "sweep",
+        "restart": "0",
+        "slurm_job_id": "202000",
+        "started_utc": "2026-09-25T07:57:33.654762+00:00",
+        "time_limit": "2-00:00:00"
+      },
+      {
+        "gpu_count": 4,
+        "gpu_type": "B300",
+        "node": "akita",
+        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+        "partition": "sweep",
+        "restart": "1",
+        "slurm_job_id": "202000",
+        "started_utc": "2026-09-25T08:11:29.912034+00:00",
+        "time_limit": "2-00:00:00"
+      },
+      {
+        "gpu_count": 4,
+        "gpu_type": "B300",
+        "node": "akita",
+        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+        "partition": "sweep",
+        "restart": "2",
+        "slurm_job_id": "202000",
+        "started_utc": "2026-09-25T08:39:57.517538+00:00",
+        "time_limit": "2-00:00:00"
+      },
+      {
+        "gpu_count": 4,
+        "gpu_type": "B300",
+        "node": "akita",
+        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+        "partition": "sweep",
+        "restart": "3",
+        "slurm_job_id": "202000",
+        "started_utc": "2026-09-25T08:55:56.108680+00:00",
+        "time_limit": "2-00:00:00"
+      },
+      {
+        "gpu_count": 4,
+        "gpu_type": "B300",
+        "node": "akita",
+        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+        "partition": "sweep",
+        "restart": "4",
+        "slurm_job_id": "202000",
+        "started_utc": "2026-09-25T08:58:52.501808+00:00",
+        "time_limit": "2-00:00:00"
+      },
+      {
+        "gpu_count": 4,
+        "gpu_type": "B300",
+        "node": "akita",
+        "outcome": "passed acceptance and trained all 19,074 updates from a fresh initialization",
+        "partition": "sweep",
+        "restart": "5",
+        "slurm_job_id": "202000",
+        "started_utc": "2026-09-25T09:35:23.035043+00:00",
+        "time_limit": "2-00:00:00"
+      }
+    ],
+    "attention_backend": "fused",
+    "attention_backend_requested": "auto",
+    "attention_implementation": "pallas_triton",
+    "batch_transfer": "host_to_shard",
+    "device_kinds": [
+      "NVIDIA B300 SXM6 AC",
+      "NVIDIA B300 SXM6 AC",
+      "NVIDIA B300 SXM6 AC",
+      "NVIDIA B300 SXM6 AC"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "runtime_settings": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct"
+  },
+  "hardware": "4x NVIDIA B300 SXM6 AC akita, sweep partition",
+  "home_cluster": "kennel",
+  "label": "200m-m004-seed0",
+  "log": {
+    "path": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/training.log",
+    "sha256": "4daa62532a121ff9be044f43cf89725ba9647983300897dc718a66f5a4558d0b"
+  },
+  "name": "200m-m004-seed0",
+  "parameter_count": 199907104,
+  "prediction_tokens": 10000269312,
+  "record_schema_version": 1,
+  "run_id": "rdce1f1f53cdf",
+  "run_record": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf",
+  "seed": 0,
+  "selected_checkpoint": {
+    "bytes": 2214908950,
+    "file_count": 14,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "5b55fff1b6f4fbee335f01fc5ac557d26d8658ed92ed8c24e0bbfaca780b7e30",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "72862dfa30c4c9727e6d0b7fe5e784910bc81a9f768b828149260b75fe52b649",
+        "size_bytes": 143669
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "6a3f680be34a241b76652132b3f5e9cfa057e35a9d49448b7167d2194fa30303",
+        "size_bytes": 88345
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "b43b37e68121d2c9d404ee3582f2ca0dfef4624fd46745df5e3826d7d0d13219",
+        "size_bytes": 49703
+      },
+      {
+        "path": "default/d/43daa798904079762ac6844e38d11a6f",
+        "sha256": "f5a3542a34266387656bc32c35234656d920801fb90e1f51ce0dd58700bd6a6c",
+        "size_bytes": 3498
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "470b31e7e8d3607935b32b7dd05ffcee4d1572d00eb987d5d781d34d9dbc9851",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/287eb50cd79b9db36a9834c8a1c30656",
+        "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+        "size_bytes": 195
+      },
+      {
+        "path": "default/ocdbt.process_0/d/31c4c41aa14cb558a172e9069d06b7e6",
+        "sha256": "3cb7825ee2b4a29ce93343abbc0abb08860c06a1fb4265887d270261f12f6fad",
+        "size_bytes": 691
+      },
+      {
+        "path": "default/ocdbt.process_0/d/93ee56047b978d6664d34dc5a07b72f4",
+        "sha256": "82f4b9533c1da99cd97f7ff7508247596a28731bc49d22ccc9e773d5db87f1c7",
+        "size_bytes": 1637695488
+      },
+      {
+        "path": "default/ocdbt.process_0/d/c52fbdc03c2bb25538d34eecea63867c",
+        "sha256": "e989425ee57b647d2509812659d9478389100ff1f29b63ef22b7aa93671a20fc",
+        "size_bytes": 38711296
+      },
+      {
+        "path": "default/ocdbt.process_0/d/cdb8a4f132cf24b015786d2c4fa8cc13",
+        "sha256": "988c9a609deb8e9a3bceb9f47a18e4a15d793bca0bdb46bef5812906bfb96917",
+        "size_bytes": 685
+      },
+      {
+        "path": "default/ocdbt.process_0/d/edc4690b33ead2f6813980b014600fd4",
+        "sha256": "5badf408258de6598f108cdb2b27a0e3a74a5a1c2d1408969e1181c21a816381",
+        "size_bytes": 538214400
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "07a84806fb067b9f82eca262629201357775e967de5f840a49f14611085b7cc4",
+        "size_bytes": 359
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "4ebd71700f8b1ba81070855d9e659d7d84926e1a68c5dcbaff4487e55bafee09",
+        "size_bytes": 137
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/checkpoints/19074",
+    "recorded_files": {
+      "_CHECKPOINT_METADATA": "5b55fff1b6f4fbee335f01fc5ac557d26d8658ed92ed8c24e0bbfaca780b7e30",
+      "default/_METADATA": "72862dfa30c4c9727e6d0b7fe5e784910bc81a9f768b828149260b75fe52b649",
+      "default/_sharding": "6a3f680be34a241b76652132b3f5e9cfa057e35a9d49448b7167d2194fa30303",
+      "default/array_metadatas/process_0": "b43b37e68121d2c9d404ee3582f2ca0dfef4624fd46745df5e3826d7d0d13219",
+      "default/d/43daa798904079762ac6844e38d11a6f": "f5a3542a34266387656bc32c35234656d920801fb90e1f51ce0dd58700bd6a6c",
+      "default/manifest.ocdbt": "470b31e7e8d3607935b32b7dd05ffcee4d1572d00eb987d5d781d34d9dbc9851",
+      "default/ocdbt.process_0/d/287eb50cd79b9db36a9834c8a1c30656": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+      "default/ocdbt.process_0/d/31c4c41aa14cb558a172e9069d06b7e6": "3cb7825ee2b4a29ce93343abbc0abb08860c06a1fb4265887d270261f12f6fad",
+      "default/ocdbt.process_0/d/93ee56047b978d6664d34dc5a07b72f4": "82f4b9533c1da99cd97f7ff7508247596a28731bc49d22ccc9e773d5db87f1c7",
+      "default/ocdbt.process_0/d/c52fbdc03c2bb25538d34eecea63867c": "e989425ee57b647d2509812659d9478389100ff1f29b63ef22b7aa93671a20fc",
+      "default/ocdbt.process_0/d/cdb8a4f132cf24b015786d2c4fa8cc13": "988c9a609deb8e9a3bceb9f47a18e4a15d793bca0bdb46bef5812906bfb96917",
+      "default/ocdbt.process_0/d/edc4690b33ead2f6813980b014600fd4": "5badf408258de6598f108cdb2b27a0e3a74a5a1c2d1408969e1181c21a816381",
+      "default/ocdbt.process_0/manifest.ocdbt": "07a84806fb067b9f82eca262629201357775e967de5f840a49f14611085b7cc4",
+      "metrics/metrics": "4ebd71700f8b1ba81070855d9e659d7d84926e1a68c5dcbaff4487e55bafee09"
+    },
+    "rule": "lowest validation NLL; also the terminal checkpoint",
+    "sha256": "1517292dc8166b9d3013335a0f60a3296b4882f7590305d5313af8cea876f3dd",
+    "size_bytes": 2214908950,
+    "step": 19074,
+    "tree_sha256": "c56b4bbdc5fb9cf8b4858929fefb426afe21ea76db6bedbab9efcabc7c023d93",
+    "verified_present_utc": "2026-09-25T14:11:24Z"
+  },
+  "slurm_job_id": "202000",
+  "slurm_job_ids": [
+    202000
+  ],
+  "source_commit": "788a085e24225872495199e8040ec1167070a691",
+  "start": "fresh initialization",
+  "status": "completed",
+  "terminal_validation_nll": 3.002697936126164,
+  "terminal_validation_perplexity": 20.13979958454915,
+  "training_updates": 19074,
+  "wandb": {
+    "run_id": "405ce9ce1a684e0ab1c695665cab991d",
+    "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/405ce9ce1a684e0ab1c695665cab991d"
+  }
+}

@@ -1,0 +1,125 @@
+schema_version: 1
+study: odd_taylor_attention
+metric: terminal_validation_perplexity
+secondary_metrics:
+- best_validation_perplexity
+- training_and_validation_history
+runs:
+- study: odd_taylor_attention
+  run_id: raa90edf82385
+  label: 200m-m001-seed0
+  sources:
+    config.json:
+      path: experiments/odd_taylor_attention/runs/raa90edf82385/config.json
+      sha256: 73da002eceff603f33d030199edb1fe03944bdd77cebc0d141f718e1fc64dac9
+    config.yaml:
+      path: experiments/odd_taylor_attention/runs/raa90edf82385/config.yaml
+      sha256: a5ff5d5fda842f0437c419f99f858d16f17cf19dec2091bc985846766cf25268
+    data_identity.json:
+      path: experiments/odd_taylor_attention/runs/raa90edf82385/data_identity.json
+      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
+    metadata.json:
+      path: experiments/odd_taylor_attention/runs/raa90edf82385/metadata.json
+      sha256: 7a5d971252905aec23e3a7c963eaff1616a9ec8dc9c8090fc9f701035aeed336
+    numerical_failure_step_00000031.json:
+      path: experiments/odd_taylor_attention/runs/raa90edf82385/numerical_failure_step_00000031.json
+      sha256: 43c29f7a64b34dbaa3fc192321836a476cc8c5ffb54f3ef953e82697b3a62143
+    record.json:
+      path: experiments/odd_taylor_attention/runs/raa90edf82385/record.json
+      sha256: fbc0e7bf4030bd93b1399a906e12956f9dec5e4cae4977d4328d1e6a30d2df89
+    wandb_run.json:
+      path: experiments/odd_taylor_attention/runs/raa90edf82385/wandb_run.json
+      sha256: 3bbf738c9afc6f6309209ec89bd68a2032d1bf71971eab4c17c1acb240be11a7
+- study: odd_taylor_attention
+  run_id: r8b46f1ad9453
+  label: 200m-m003-seed0
+  sources:
+    config.json:
+      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/config.json
+      sha256: 18539ceccc053d592d2ca78df2d5df1863261adc84efe8567405ba2320669bb6
+    config.yaml:
+      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/config.yaml
+      sha256: d10f16273afc5f387c7055c4b127057d142a7cec59fe253fb466bb3a011a7283
+    data_identity.json:
+      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/data_identity.json
+      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
+    metadata.json:
+      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/metadata.json
+      sha256: a8f14c5236955465209b27d86aab60381f691f71f20c068d8d2332dd9dacef82
+    numerical_failure_step_00000419.json:
+      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/numerical_failure_step_00000419.json
+      sha256: 4cdddfa0c4136fbb902b6a8375bc4efff6962eb79b1680616c7c3be8b7e722c6
+    record.json:
+      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/record.json
+      sha256: c45c234951e53b921b6732e2c4486e2e89ebc7f092fede882df2a76c81ebd07b
+    wandb_run.json:
+      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/wandb_run.json
+      sha256: b0dcfd68af7e8d43595f215ad92079923ac3b62e01d232c30a164afa0bedf7f4
+- study: key_dimension_taylor
+  run_id: r93c9d0814322
+  label: 200m-m002-seed0
+  sources:
+    best_validation.json:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/best_validation.json
+      sha256: 157ecf0d356530fe5053fa52197dc7cdf7be72103696568156189bfeef7ba98d
+    completion.json:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/completion.json
+      sha256: 0c39c07e7276d68eec7965eb5c616b65e4e08ed46c5123555e67cff86604e06b
+    config.json:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/config.json
+      sha256: 6c7b39ef0db40e0f070009fd907e2ec4f9873adecbf0cfa0f55bb1bf76791317
+    config.yaml:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/config.yaml
+      sha256: 742cf0d13516ae8318e06173466ba50c3a0df60a76e4e45147ac37cdddbc6bfe
+    data_identity.json:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/data_identity.json
+      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
+    metadata.json:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/metadata.json
+      sha256: 300ccab36e6488f7aa6731df6a034ef677812e118c471efe39049c83c95a1c40
+    metrics.jsonl:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/metrics.jsonl
+      sha256: afd284756057e498dfbc1279530e44e792627848f10663a0dcdd793a0f447bc3
+    record.json:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/record.json
+      sha256: fdaffd77a7e6dcf4a8e185dd6c807b19cd151f6cf3b2c7c8fd8c89845031b053
+    retention.json:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/retention.json
+      sha256: d758f967ec107092270d03b71f1d79ce0f8b94c39d8ed732cbf72bc60b3ffae6
+    wandb_run.json:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/wandb_run.json
+      sha256: 993615479090d946c0e75a62b95ec48281d4ce2e58844b6d497974bc81fe2d48
+- study: key_dimension_taylor
+  run_id: r50088d29f2b5
+  label: 200m-softmax-seed0
+  sources:
+    best_validation.json:
+      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/best_validation.json
+      sha256: e21b8b5fa7314c7d097d4421a03770ec0010b4db59ac967dcfe7acfdca01104c
+    completion.json:
+      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/completion.json
+      sha256: 7571ffbad1e5e9cf1b7f378ecad556b3f1f1e7d0d77671f8f5aa740331b9c8e0
+    config.json:
+      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/config.json
+      sha256: fecac496bf0712f2f27307ccb0678644c2323d4a411319fb1d174a15278aaa93
+    config.yaml:
+      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/config.yaml
+      sha256: d39c51225ff4843fe32ea5cb2a399df2c64e6d5808abf6f9600aa89fdadd861a
+    data_identity.json:
+      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/data_identity.json
+      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
+    metadata.json:
+      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/metadata.json
+      sha256: d2a32e0c8045e8053595a1acb2d802b97987f8c7b6f7a9eefdef21066d315d42
+    metrics.jsonl:
+      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/metrics.jsonl
+      sha256: 6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786
+    record.json:
+      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/record.json
+      sha256: bc5b80daffa45080f96b736b68749adc875bcc19e72692c8ca625ab93a7628d5
+    retention.json:
+      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/retention.json
+      sha256: 208d80975f73fae02b39a112744f60c214955b99c1203d5da4faf5e42b0fa2db
+    wandb_run.json:
+      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/wandb_run.json
+      sha256: 5f75d181ccdc6dc3c3ccd36e84d0989ccf89f3939d93348afbb8d661e7c46e34

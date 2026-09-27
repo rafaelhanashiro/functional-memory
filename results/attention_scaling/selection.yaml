@@ -1,0 +1,356 @@
+schema_version: 1
+d_k:
+- 8
+- 16
+- 32
+- 64
+- 128
+terminal_step: 19074
+training_tokens: 10000269312
+seed: 0
+data_identity:
+  train_manifest_sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
+  eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+panels:
+- id: normalized_fixed
+  title: Normalized Taylor · fixed
+  columns:
+  - id: m1
+    label: m=1
+  - id: m2
+    label: m=2
+  - id: m3
+    label: m=3
+  - id: m4
+    label: m=4
+  - id: m8
+    label: m=8
+  - id: m16
+    label: m=16
+- id: references
+  title: Reference mechanisms
+  columns:
+  - id: softmax
+    label: softmax
+  - id: softmax_no_qk_norm
+    label: 'softmax
+
+      no QK-norm'
+    qk_norm: false
+  - id: gla
+    label: GLA
+    qk_norm: null
+source_manifests:
+  key_dimension_taylor:
+    path: experiments/key_dimension_taylor/sweep.yaml
+    sha256: 640fdfd4e39d6f6101d9e1134df13c5850fec1459caa52a45ea312f7bccb1151
+  odd_taylor_attention:
+    path: experiments/odd_taylor_attention/sweep.yaml
+    sha256: f63138305fa5e3ec07d8b19408df5c3bc0377d2041c0f8a9434ddcdb029720a4
+  gla_key_dimension:
+    path: experiments/gla_key_dimension/sweep.yaml
+    sha256: ab373dd531499b6238e2bd21363627c41e5e0993c1f4b41a4da14bf09b529fc5
+  qk_norm_attention:
+    path: experiments/qk_norm_attention/sweep.yaml
+    sha256: 139017760f5b88a9d22ca39a9400b38767324597fa3ee93fa755d0c5abd65b16
+cells:
+- panel: normalized_fixed
+  column: m2
+  d_k: 8
+  experiment: key_dimension_taylor
+  run: rc3536d3ff6cd
+  label: 200m-dk008-m002-seed0
+- panel: normalized_fixed
+  column: m4
+  d_k: 8
+  experiment: key_dimension_taylor
+  run: r18aa3ef494f5
+  label: 200m-dk008-m004-seed0
+- panel: normalized_fixed
+  column: m8
+  d_k: 8
+  experiment: key_dimension_taylor
+  run: r0b5fb00b8649
+  label: 200m-dk008-m008-seed0
+- panel: normalized_fixed
+  column: m16
+  d_k: 8
+  experiment: key_dimension_taylor
+  run: r3961c167a16f
+  label: 200m-dk008-m016-seed0
+- panel: references
+  column: softmax
+  d_k: 8
+  experiment: key_dimension_taylor
+  run: ra92381785e78
+  label: 200m-dk008-seed0
+- panel: references
+  column: gla
+  d_k: 8
+  experiment: gla_key_dimension
+  run: ra6346b7a6cfc
+  label: 200m-dk008-gla-seed0
+- panel: normalized_fixed
+  column: m2
+  d_k: 16
+  experiment: key_dimension_taylor
+  run: r8a9bc098ce3a
+  label: 200m-dk016-m002-seed0
+- panel: normalized_fixed
+  column: m4
+  d_k: 16
+  experiment: key_dimension_taylor
+  run: r7ca127105528
+  label: 200m-dk016-m004-seed0
+- panel: normalized_fixed
+  column: m8
+  d_k: 16
+  experiment: key_dimension_taylor
+  run: rcaf4e954ca9a
+  label: 200m-dk016-m008-seed0
+- panel: normalized_fixed
+  column: m16
+  d_k: 16
+  experiment: key_dimension_taylor
+  run: rfe7378eb4b4f
+  label: 200m-dk016-m016-seed0
+- panel: references
+  column: softmax
+  d_k: 16
+  experiment: key_dimension_taylor
+  run: r51dc98ae4fd1
+  label: 200m-dk016-seed0
+- panel: references
+  column: gla
+  d_k: 16
+  experiment: gla_key_dimension
+  run: r6a5ffbb56ac3
+  label: 200m-dk016-gla-seed0
+- panel: normalized_fixed
+  column: m2
+  d_k: 32
+  experiment: key_dimension_taylor
+  run: r3a06ec7d5976
+  label: 200m-dk032-m002-seed0
+- panel: normalized_fixed
+  column: m4
+  d_k: 32
+  experiment: key_dimension_taylor
+  run: r52e627fffdfc
+  label: 200m-dk032-m004-seed0
+- panel: normalized_fixed
+  column: m8
+  d_k: 32
+  experiment: key_dimension_taylor
+  run: r35c90bbb045c
+  label: 200m-dk032-m008-seed0
+- panel: normalized_fixed
+  column: m16
+  d_k: 32
+  experiment: key_dimension_taylor
+  run: r74009ae25ff9
+  label: 200m-dk032-m016-seed0
+- panel: references
+  column: softmax
+  d_k: 32
+  experiment: key_dimension_taylor
+  run: r261f88db0c4b
+  label: 200m-dk032-seed0
+- panel: references
+  column: gla
+  d_k: 32
+  experiment: gla_key_dimension
+  run: r7d278821b92d
+  label: 200m-dk032-gla-seed0
+- panel: normalized_fixed
+  column: m2
+  d_k: 64
+  experiment: key_dimension_taylor
+  run: r93c9d0814322
+  label: 200m-m002-seed0
+- panel: normalized_fixed
+  column: m4
+  d_k: 64
+  experiment: key_dimension_taylor
+  run: ra9b651caa405
+  label: 200m-m004-seed0
+- panel: normalized_fixed
+  column: m8
+  d_k: 64
+  experiment: key_dimension_taylor
+  run: r4923c6939e74
+  label: 200m-m008-seed0
+- panel: normalized_fixed
+  column: m16
+  d_k: 64
+  experiment: key_dimension_taylor
+  run: r03d397da0bd0
+  label: 200m-m016-seed0
+- panel: references
+  column: softmax_no_qk_norm
+  d_k: 64
+  experiment: key_dimension_taylor
+  run: r50088d29f2b5
+  label: 200m-softmax-seed0
+- panel: references
+  column: gla
+  d_k: 64
+  experiment: gla_key_dimension
+  run: rf35e1e8fb2e3
+  label: 200m-dk064-gla-seed0
+- panel: normalized_fixed
+  column: m2
+  d_k: 128
+  experiment: key_dimension_taylor
+  run: r21a071c7cd15
+  label: 200m-dk128-m002-seed0
+- panel: normalized_fixed
+  column: m4
+  d_k: 128
+  experiment: key_dimension_taylor
+  run: rf4c43c0d0467
+  label: 200m-dk128-m004-seed0
+- panel: normalized_fixed
+  column: m8
+  d_k: 128
+  experiment: key_dimension_taylor
+  run: r58c25c5d4ce1
+  label: 200m-dk128-m008-seed0
+- panel: normalized_fixed
+  column: m16
+  d_k: 128
+  experiment: key_dimension_taylor
+  run: r0c924296d7d3
+  label: 200m-dk128-m016-seed0
+- panel: references
+  column: softmax
+  d_k: 128
+  experiment: key_dimension_taylor
+  run: rf3539f68224c
+  label: 200m-dk128-seed0
+- panel: references
+  column: gla
+  d_k: 128
+  experiment: gla_key_dimension
+  run: r03c03c3f84b2
+  label: 200m-dk128-gla-seed0
+- panel: normalized_fixed
+  column: m1
+  d_k: 64
+  experiment: odd_taylor_attention
+  run: raa90edf82385
+  label: 200m-m001-seed0
+- panel: normalized_fixed
+  column: m3
+  d_k: 64
+  experiment: odd_taylor_attention
+  run: r8b46f1ad9453
+  label: 200m-m003-seed0
+- panel: references
+  column: softmax
+  d_k: 64
+  experiment: qk_norm_attention
+  run: r1feece425074
+  label: 200m-qk-softmax-seed0
+metric: terminal_validation_perplexity
+source_records:
+  key_dimension_taylor/rc3536d3ff6cd:
+    path: experiments/key_dimension_taylor/runs/rc3536d3ff6cd/record.json
+    sha256: 0e100b0f3080817d6df174445c2f7b412c747fe9a8a219134202dc99fc658299
+  key_dimension_taylor/r18aa3ef494f5:
+    path: experiments/key_dimension_taylor/runs/r18aa3ef494f5/record.json
+    sha256: c1f480d10a08d6b4d7add1d0cab3cc782c933724c6fc5a98297d36329d5cf1de
+  key_dimension_taylor/r0b5fb00b8649:
+    path: experiments/key_dimension_taylor/runs/r0b5fb00b8649/record.json
+    sha256: 42e9922696ab1309d40d1a61715bfe19a29a3d4010387bdc2a76341d83ae5a6b
+  key_dimension_taylor/r3961c167a16f:
+    path: experiments/key_dimension_taylor/runs/r3961c167a16f/record.json
+    sha256: 1f763a3604486132a9c9fd1732969ed024ca262fceabedd4c758aca95b9f7735
+  key_dimension_taylor/ra92381785e78:
+    path: experiments/key_dimension_taylor/runs/ra92381785e78/record.json
+    sha256: 91343a05c6ea05816f7f687f5fd4b58c098f6bd79d9f451c5275bf1f7a732805
+  gla_key_dimension/ra6346b7a6cfc:
+    path: experiments/gla_key_dimension/runs/ra6346b7a6cfc/record.json
+    sha256: b92f94e26f074bf67d0d781b91be513fab5cc660c5d428b911a8b1f6458d19b9
+  key_dimension_taylor/r8a9bc098ce3a:
+    path: experiments/key_dimension_taylor/runs/r8a9bc098ce3a/record.json
+    sha256: d651ab8f98e1c562550da8282098280d76e527cb2e74d2b212054c4a26c0480a
+  key_dimension_taylor/r7ca127105528:
+    path: experiments/key_dimension_taylor/runs/r7ca127105528/record.json
+    sha256: c514d37eb437d98b995c6d3121e163a879859feb2812e010c2c99dd36e0749a4
+  key_dimension_taylor/rcaf4e954ca9a:
+    path: experiments/key_dimension_taylor/runs/rcaf4e954ca9a/record.json
+    sha256: 1c4b63ff1ab9fc535b6216b980f64c7fdde9312a8170edd1f8a810e8fd7162c4
+  key_dimension_taylor/rfe7378eb4b4f:
+    path: experiments/key_dimension_taylor/runs/rfe7378eb4b4f/record.json
+    sha256: 05743135a0f8383b0a6b259c56df3c8dbfbae51cb5a8f64f63a081a7680d3add
+  key_dimension_taylor/r51dc98ae4fd1:
+    path: experiments/key_dimension_taylor/runs/r51dc98ae4fd1/record.json
+    sha256: dd97414b69aa9c981c4a2480347af14fe2b58f3782f8874bd4b370f1789e9399
+  gla_key_dimension/r6a5ffbb56ac3:
+    path: experiments/gla_key_dimension/runs/r6a5ffbb56ac3/record.json
+    sha256: 0efdfb8ef97f05c569faa46c57ecbe11d928946f063d27773d118536bcc36f61
+  key_dimension_taylor/r3a06ec7d5976:
+    path: experiments/key_dimension_taylor/runs/r3a06ec7d5976/record.json
+    sha256: 759d0e9259a3e7506df0ee5c3ff9a62a17ed2ad4d4c66ab4399eaa156cff64fa
+  key_dimension_taylor/r52e627fffdfc:
+    path: experiments/key_dimension_taylor/runs/r52e627fffdfc/record.json
+    sha256: b23c5aca2cab4614616c718d20cd2ee41689cfb05fd08a0e3c8f61232dd0ca5f
+  key_dimension_taylor/r35c90bbb045c:
+    path: experiments/key_dimension_taylor/runs/r35c90bbb045c/record.json
+    sha256: 41551800ae33a6e45f5fd2113536f61fd05f46eb39752d2099f13e1ab8c5aaf5
+  key_dimension_taylor/r74009ae25ff9:
+    path: experiments/key_dimension_taylor/runs/r74009ae25ff9/record.json
+    sha256: 6d6e7657596a4624937a38014df3cfbf10d2189e8acd85b7d1e8c7cd2bdb2a01
+  key_dimension_taylor/r261f88db0c4b:
+    path: experiments/key_dimension_taylor/runs/r261f88db0c4b/record.json
+    sha256: 3c191807e83be2b0dc17c63f9292efdf479496fa6417019fb00ef026775ed91d
+  gla_key_dimension/r7d278821b92d:
+    path: experiments/gla_key_dimension/runs/r7d278821b92d/record.json
+    sha256: 64c5954666f42eb37147dffbc382720644a6d23ac72fb88833b9237789e2dc05
+  key_dimension_taylor/r93c9d0814322:
+    path: experiments/key_dimension_taylor/runs/r93c9d0814322/record.json
+    sha256: fdaffd77a7e6dcf4a8e185dd6c807b19cd151f6cf3b2c7c8fd8c89845031b053
+  key_dimension_taylor/ra9b651caa405:
+    path: experiments/key_dimension_taylor/runs/ra9b651caa405/record.json
+    sha256: ef0a667f647bf31b69c0b3c0d8de3134d763412cb14faaf3dc2b2425a99cf712
+  key_dimension_taylor/r4923c6939e74:
+    path: experiments/key_dimension_taylor/runs/r4923c6939e74/record.json
+    sha256: 528c12db65a6b2f7619a6b428724851d6e98a974ab4602055c0143b778fdd749
+  key_dimension_taylor/r03d397da0bd0:
+    path: experiments/key_dimension_taylor/runs/r03d397da0bd0/record.json
+    sha256: 6cbdc857b11073549be797978000dbdc2334365e77a18b50fd6539926e43b4dd
+  key_dimension_taylor/r50088d29f2b5:
+    path: experiments/key_dimension_taylor/runs/r50088d29f2b5/record.json
+    sha256: bc5b80daffa45080f96b736b68749adc875bcc19e72692c8ca625ab93a7628d5
+  gla_key_dimension/rf35e1e8fb2e3:
+    path: experiments/gla_key_dimension/runs/rf35e1e8fb2e3/record.json
+    sha256: 89d89904d5239aeebc21a681e9e29f00c2677ee136d39390dd293ee6c854f909
+  key_dimension_taylor/r21a071c7cd15:
+    path: experiments/key_dimension_taylor/runs/r21a071c7cd15/record.json
+    sha256: 6a5847a604fd915184e2dd174eeeef17a4c0c11172412679fc4ca0872171c885
+  key_dimension_taylor/rf4c43c0d0467:
+    path: experiments/key_dimension_taylor/runs/rf4c43c0d0467/record.json
+    sha256: b8ed652cf02bfa5a630a69b8e3319b21e3ccb6c6c0f0ae779a51f7fe8dcb3180
+  key_dimension_taylor/r58c25c5d4ce1:
+    path: experiments/key_dimension_taylor/runs/r58c25c5d4ce1/record.json
+    sha256: d2c92fb6d070dc907be7e3bd718aaa00c890c938fc131dacb9d964c5bbf4d8f7
+  key_dimension_taylor/r0c924296d7d3:
+    path: experiments/key_dimension_taylor/runs/r0c924296d7d3/record.json
+    sha256: 9e1918ff00a1dabdc06faf8ccf8f89beeec22c447e71bb7891c8dbf2a2267503
+  key_dimension_taylor/rf3539f68224c:
+    path: experiments/key_dimension_taylor/runs/rf3539f68224c/record.json
+    sha256: 48a348411fa8e821d182d51ea5d761c6b7df2cdd5dd37a0cc2e504758a168ea8
+  gla_key_dimension/r03c03c3f84b2:
+    path: experiments/gla_key_dimension/runs/r03c03c3f84b2/record.json
+    sha256: 678fe99fe864c9feb900f30b333fa92ed51bcc349757b669adf7ed6bb4384a44
+  odd_taylor_attention/raa90edf82385:
+    path: experiments/odd_taylor_attention/runs/raa90edf82385/record.json
+    sha256: fbc0e7bf4030bd93b1399a906e12956f9dec5e4cae4977d4328d1e6a30d2df89
+  odd_taylor_attention/r8b46f1ad9453:
+    path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/record.json
+    sha256: c45c234951e53b921b6732e2c4486e2e89ebc7f092fede882df2a76c81ebd07b
+  qk_norm_attention/r1feece425074:
+    path: experiments/qk_norm_attention/runs/r1feece425074/record.json
+    sha256: be7e056182124fa1ba22e912f12a8e5dc4271eddd9c79fd4101ea839a013b802
+source_artifact_set_sha256: 5060fd39a73f4d96c1594a77d6079ee785d0f940f632059f449a980266e334b3

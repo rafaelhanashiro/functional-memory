@@ -5,9 +5,8 @@
 .pytest_cache/
 __pycache__/
 # Experiment and scaffold-validation artifacts stay on their home cluster.
-/experiments/*/logs/
-/experiments/*/checkpoints/
-/experiments/*/runs/*/checkpoints
+/experiments/*/runs/*/checkpoints/
+/experiments/*/runs/*/.runtime/
 /scaffolds/*/validation/logs/
 wandb/
 *.log

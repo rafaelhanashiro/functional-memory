@@ -145,7 +145,7 @@ def test_workers_reinvoke_the_adapter_module_when_it_runs_as_main(monkeypatch):
     from types import ModuleType, SimpleNamespace
 
     main = ModuleType("__main__")
-    main.__spec__ = SimpleNamespace(name="experiments.demo.adapter.execution.acceptance")
+    main.__spec__ = SimpleNamespace(name="experiments.demo.acceptance")
     monkeypatch.setitem(sys.modules, "__main__", main)
     assert preflight.entry_module(preflight.AcceptanceSpec("__main__", ())) == main.__spec__.name
     assert preflight.entry_module(preflight.AcceptanceSpec("named.module", ())) == "named.module"

@@ -257,31 +257,45 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m scaffolds.transforme
   --workdir .cache/smoke/run --checkpoint-dir .cache/smoke/checkpoints
 ```
 
-For a new experiment, start with `configs/base.yaml`, store its exact recipe in
-`experiments/<experiment>/configs/`, and set the data manifests and scientific
-parameters. Recipes use repository-relative outputs,
-`experiments/<experiment>/runs/<run>` and `experiments/<experiment>/checkpoints/<run>`,
-so a run writes inside the worktree that launched it. Keep `train.source_commit: auto`;
-launchers export the launch commit. Inside a GPU allocation the common CLI is:
+For a new study, start with `configs/base.yaml`, set its data manifests and scientific
+parameters, and allocate a run with `scaffolds.records.create_run`. The study's
+`sweep.yaml` contains common setup and sweep axes; each allocated
+`experiments/<study>/runs/<run_id>/config.yaml` contains the complete input configuration.
+Commit that file before submission. Its bytes stay fixed throughout execution.
+Recipes use repository-relative `train.workdir` paths and the default colocated
+`checkpoints/`, so artifacts stay in the worktree that launched the run. Keep
+`train.source_commit: auto`; launchers export the launch commit. Inside a GPU
+allocation the common CLI is:
 
 ```bash
 scaffolds/transformer/.venv/bin/python -m scaffolds.transformer.train \
-  experiments/my_experiment/configs/run.yaml
+  experiments/my_experiment/runs/r0123456789ab/config.yaml
 ```
 
 `--attention-degree` accepts a nonnegative degree or `softmax`; `--qk-head-dim`
-selects the projection width. `--checkpoint-dir` separates large model state from
-scientific records. `--stop-after-step` writes a resumable checkpoint while keeping
+selects the projection width. Scientific overrides require allocating a fresh run;
+an existing run's complete recipe is checked before training. `--stop-after-step`
+writes a resumable checkpoint while keeping
 the recipe's full learning-rate horizon. Resume is the default, and Slurm requeue
-also resumes; `--no-resume` applies only to a fresh attempt.
+also resumes; `--no-resume` applies only to an uninitialized run. A fresh execution
+gets a fresh run ID even when its scientific settings match a previous run.
+
+`record.json` summarizes status, source, execution attempts, acceptance, runtime,
+resolved configuration and backend, data identity, and retained checkpoints.
+`config.json`, `metadata.json`, completion and retention files are raw trainer
+outputs retained for exact resume validation. Resolving `auto` settings updates
+these execution records while preserving `config.yaml`. Metrics stay in
+`metrics.jsonl`; logs, checkpoints and W&B files are colocated ignored artifacts.
+Shared helpers regenerate the study's `runs.csv` index. Figures and comparisons
+belong under `results/<comparison>/` and select run IDs explicitly.
 
 ### Weights & Biases
 
 `training/tracking.py` mirrors committed metrics to the private W&B project
-`rafah-massachusetts-institute-of-technology/functional-memory`; `runs/<run>/metrics.jsonl`
+`rafah-massachusetts-institute-of-technology/functional-memory`; `runs/<run_id>/metrics.jsonl`
 remains the authoritative record, and a W&B failure never stops training. For a workdir
-`experiments/<experiment>/runs/<run>`, the W&B group is the experiment, the name is the
-run, and local W&B files go to `experiments/<experiment>/logs/<run>/wandb/`
+`experiments/<experiment>/runs/<run_id>`, the W&B group is the experiment, the name is the
+run, and local W&B files go to `experiments/<experiment>/runs/<run_id>/wandb/`
 (`train.wandb_group`, `wandb_run_name`, and `wandb_dir` override these). Tags give the
 attention kernel, d_K, degree, GPU count and type, and cluster; the config holds the
 full recipe plus a separate `runtime` section. Metrics use `train/` (every log step
@@ -293,26 +307,35 @@ pins the W&B run id across requeues.
 Recipes leave `train.wandb_mode` at `disabled`; the Kennel launcher passes
 `--wandb-mode online` (set `TRANSFORMER_WANDB_MODE=offline` or `disabled` when
 submitting to change it), and acceptance pilots never log. Saved workspace views are
-experiment analysis code built with the `views` dependency group
+results code built with the `views` dependency group
 (`uv sync --project scaffolds/transformer --locked --extra cuda --group views`).
 
 ## Launch, acceptance, retention, and analysis
 
-Experiments configure these shared modules from their own `adapter/`:
+Studies configure these shared modules with execution modules at their root
+(for example `experiments/<study>/acceptance.py`):
 
 - `launchers/kennel.sbatch` runs any experiment on Kennel: it resolves the allocated
   GPU type, checks the frozen execution set against the launch commit
   (`scaffolds/launch/frozen.py`), uses the worktree's environment, pins `CUDA_HOME`
-  to the locked CUDA toolkit, runs acceptance, then trains; logs append across requeues.
+  to the locked CUDA toolkit, runs acceptance, then trains; `training.log` appends
+  across requeues. The frozen set includes study `sweep.yaml`, every run's
+  `config.yaml`, root execution modules, and shared record/launch helpers. Metrics,
+  records and `results/` remain editable while jobs run.
 - `acceptance.py` runs identity-keyed acceptance in the production allocation: CPU
   tests, distributed CPU tests on two forced host devices, and single-GPU kernel tests
   (no skips), an initialization hash, a full-recipe pilot, and an exact fresh-process
-  resume. An adapter supplies an `AcceptanceSpec` (tests, recipe check,
+  resume. A study execution module supplies an `AcceptanceSpec` (tests, recipe check,
   required backend, initialization check, runtime environment) and nothing else.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
   the selection.
 - `analysis.py` reads committed validation events and retained artifacts and saves
-  figures deterministically, so summaries and figures regenerate byte-identically.
+  figures deterministically. `verify_result_selection` checks pinned input hashes;
+  `selected_run_directory` resolves a plotting role through the explicit run ID in
+  `results/<comparison>/selection.yaml`; `load_selected_study` loads exactly those
+  runs and selected controls for aggregate plots. A new execution can replace a
+  plotted role by updating its selected ID and source hashes. Summaries and figures
+  regenerate byte-identically.
 
 Kernel and throughput benchmark scripts live in `benchmarks/`; their results and the
 scaffold's hardware qualification live in [`validation/`](validation/README.md).

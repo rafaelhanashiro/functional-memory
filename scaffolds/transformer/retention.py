@@ -16,6 +16,7 @@ import shutil
 from scaffolds.transformer.configs import load_config
 from scaffolds.transformer.training.checkpointing import checkpoint_directory
 from scaffolds.transformer.training.metrics import write_json_atomic
+from scaffolds.records import capture_artifacts, update_record
 
 # Completion fields that must agree with the recipe when the completion records them.
 IDENTITY_KEYS = ("attention_degree", "attention_mechanism", "quadratic_mode", "quadratic_sharing", "qk_head_dim",
@@ -66,6 +67,17 @@ def finalize_run(config) -> dict:
     metadata.update(checkpoint_retention=record,
                     retained_terminal_checkpoint_step=best["step"] if best["step"] == completion["final_step"] else None)
     write_json_atomic(metadata_path, metadata)
+    artifacts = capture_artifacts(workdir, checkpoint_directory=checkpoints / str(best["step"]))
+    artifacts["selected_checkpoint"].update(step=best["step"], validation_nll=best["validation_nll"])
+    update_record(workdir, {
+        **artifacts,
+        "status": "complete", "checkpoint_retention": record,
+        "retained_best_checkpoint_step": best["step"],
+        "retained_terminal_checkpoint_step": metadata["retained_terminal_checkpoint_step"],
+        "execution": {"raw_metadata": {
+            "path": "metadata.json", "sha256": hashlib.sha256(metadata_path.read_bytes()).hexdigest(),
+        }},
+    })
     return record
 
 

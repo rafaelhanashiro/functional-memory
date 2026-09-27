@@ -1,0 +1,208 @@
+from concurrent.futures import ThreadPoolExecutor
+import csv
+import hashlib
+import json
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+import yaml
+
+from scaffolds.records import (
+    capture_artifacts, create_run, load_run, load_study, regenerate_index, run_directory,
+    update_record, validate_record,
+)
+
+
+def recipe():
+    return {"model": {"attention_degree": 2, "qk_head_dim": 64, "attention_normalization": False}, "train": {"seed": 0}}
+
+
+def test_identical_recipes_get_distinct_ids_and_resume_keeps_identity(tmp_path):
+    study = tmp_path / "study"
+    first = create_run(study, recipe(), "same-label")
+    second = create_run(study, recipe(), "same-label")
+    assert first != second
+    assert len(first.name) == 13
+    assert load_run(first)["label"] == "same-label"
+    original = (first / "config.yaml").read_bytes()
+    update_record(first, {"attempts": [{"job_id": "12"}], "status": "running"})
+    record = update_record(first, {"attempts": [{"job_id": "12"}, {"job_id": "13"}], "status": "completed"})
+    assert record["run_id"] == first.name
+    assert (first / "config.yaml").read_bytes() == original
+    assert run_directory(study, first.name) == first
+    with pytest.raises(ValueError, match="found 2"):
+        run_directory(study, "same-label")
+    assert len(load_study(study / "sweep.yaml")["runs"]) == 2
+
+
+def test_collision_never_overwrites_existing_or_orphaned_run(tmp_path, monkeypatch):
+    import scaffolds.records as records
+    ids = iter(["a" * 32, "a" * 32, "b" * 32, "c" * 32])
+    monkeypatch.setattr(records.uuid, "uuid4", lambda: SimpleNamespace(hex=next(ids)))
+    study = tmp_path / "study"
+    first = create_run(study, recipe())
+    sentinel = first / "sentinel"
+    sentinel.write_text("preserve")
+    orphan = study / "runs" / ("r" + "b" * 12)
+    orphan.mkdir()
+    second = create_run(study, recipe())
+    assert second.name == "r" + "c" * 12
+    assert sentinel.read_text() == "preserve"
+    assert orphan.is_dir()
+
+
+def test_concurrent_registration_does_not_lose_runs(tmp_path):
+    study = tmp_path / "study"
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        runs = list(pool.map(lambda seed: create_run(study, {"train": {"seed": seed}}), range(8)))
+    assert len({run.name for run in runs}) == 8
+    assert set(load_study(study)["run_ids"]) == {run.name for run in runs}
+
+
+def test_index_reproduces_bytes_and_preserves_unknown_legacy_fields(tmp_path):
+    study = tmp_path / "study"
+    run = create_run(study, recipe(), "fixed-degree-two")
+    (run / "metrics.jsonl").write_text('\n'.join(json.dumps(x) for x in [
+        {"step": 20, "validation_nll": 2.0, "validation_perplexity": 7.0},
+        {"step": 10, "validation_nll": 3.0, "validation_perplexity": 20.0},
+    ]) + '\n')
+    update_record(run, {"status": "complete", "source_commit": "source", "execution": {"attempts": [{"gpu": "H100"}]}})
+    first = regenerate_index(study).read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+    with (study / "runs.csv").open() as stream:
+        row, = list(csv.DictReader(stream))
+    assert row["attention_normalization"] == "False"
+    assert row["qk_norm"] == ""
+    assert row["coefficient_mode"] == ""
+    assert row["terminal_step"] == "20"
+    assert row["terminal_validation_nll"] == "2.0"
+    assert row["metrics"] == f"runs/{run.name}/metrics.jsonl"
+    assert load_study(study)["runs"][0]["execution"]["attempts"][0]["gpu"] == "H100"
+
+
+def test_record_updates_preserve_execution_evidence_and_reject_identity_changes(tmp_path):
+    run = create_run(tmp_path / "study", recipe(), "label")
+    update_record(run, {"execution": {"hardware": "H100", "acceptance": {"passed": 10}}})
+    record = update_record(run, {"execution": {"attempts": ["first", "resume"]}})
+    assert record["execution"] == {"hardware": "H100", "acceptance": {"passed": 10}, "attempts": ["first", "resume"]}
+    for field in ("run_id", "label", "name", "config"):
+        with pytest.raises(ValueError, match="immutable"):
+            update_record(run, {field: "changed"})
+
+
+def test_integrity_detects_changed_config_and_scientific_artifact(tmp_path):
+    run = create_run(tmp_path / "study", recipe())
+    metrics = run / "metrics.jsonl"
+    metrics.write_text('{"step": 1}\n')
+    update_record(run, {"metrics": {"path": "metrics.jsonl", "sha256": hashlib.sha256(metrics.read_bytes()).hexdigest()}, "log": {"path": "training.log", "sha256": "a" * 64}})
+    result = validate_record(run)
+    assert result["unavailable"] == ["training.log"]
+    metrics.write_text('{"step": 2}\n')
+    with pytest.raises(ValueError, match="SHA256 mismatch"):
+        validate_record(run)
+    metrics.write_text('{"step": 1}\n')
+    (run / "config.yaml").write_text("model: {}\n")
+    with pytest.raises(ValueError, match="SHA256 mismatch"):
+        validate_record(run)
+
+
+def test_frozen_source_artifacts_are_not_compared_with_current_checkout(tmp_path):
+    run = create_run(tmp_path / "study", recipe())
+    update_record(run, {"executed_recipe": {"path": "config.yaml", "sha256": "b" * 64, "commit": "frozen-source"}})
+    validate_record(run)
+
+
+def test_study_rejects_duplicate_or_unregistered_path_ids(tmp_path):
+    study = tmp_path / "study"
+    run = create_run(study, recipe())
+    path = study / "sweep.yaml"
+    sweep = yaml.safe_load(path.read_text())
+    sweep["run_ids"].append(run.name)
+    path.write_text(yaml.safe_dump(sweep))
+    with pytest.raises(ValueError, match="Duplicate"):
+        load_study(study)
+    sweep["run_ids"] = ["../elsewhere"]
+    path.write_text(yaml.safe_dump(sweep))
+    with pytest.raises(ValueError, match="Invalid"):
+        load_study(study)
+
+
+def test_standalone_trainer_record_creation(tmp_path):
+    run = tmp_path / "smoke"
+    run.mkdir()
+    (run / "config.yaml").write_text(yaml.safe_dump(recipe()))
+    record = update_record(run, {"status": "running", "execution": {"runtime": {"host_staging": False}}})
+    assert record["run_id"] == "smoke"
+    assert record["config"]["sha256"] == hashlib.sha256((run / "config.yaml").read_bytes()).hexdigest()
+    assert load_run(run)["execution"]["runtime"]["host_staging"] is False
+
+
+def test_non_transformer_study_index_uses_flat_settings(tmp_path):
+    study = tmp_path / "state-study"
+    run = create_run(study, {"model": "organization/model", "condition": "random", "seed": 4})
+    update_record(run, {"status": "complete"})
+    regenerate_index(study)
+    with (study / "runs.csv").open() as stream:
+        row, = list(csv.DictReader(stream))
+    assert row["model_id"] == "organization/model"
+    assert row["condition"] == "random"
+    assert row["seed"] == "4"
+    assert row["attention_degree"] == ""
+
+
+def test_state_recipe_records_allocated_output_directory(tmp_path):
+    run = create_run(tmp_path / "state-study", {
+        "model": "organization/model", "condition": {"name": "random", "seed": 2},
+        "output_directory": "placeholder",
+    })
+    recipe = yaml.safe_load((run / "config.yaml").read_text())
+    assert Path(recipe["output_directory"]) == run
+    with (run.parent.parent / "runs.csv").open() as stream:
+        row, = list(csv.DictReader(stream))
+    assert row["condition"] == "random"
+    assert row["seed"] == "2"
+
+
+def test_capture_uses_explicit_best_checkpoint_and_detects_shard_changes(tmp_path):
+    run = create_run(tmp_path / "study", recipe())
+    (run / "metrics.jsonl").write_text('{"step": 10, "validation_nll": 2.0}\n')
+    (run / "completion.json").write_text('{"final_step": 20}\n')
+    (run / "training.log").write_text("finished\n")
+    best = run / "checkpoints" / "10"
+    latest = run / "checkpoints" / "20"
+    best.mkdir(parents=True)
+    latest.mkdir()
+    (best / "shard").write_bytes(b"validation best")
+    (latest / "shard").write_bytes(b"last update")
+    updates = capture_artifacts(run, best, include_log=True)
+    assert Path(updates["selected_checkpoint"]["path"]) == best
+    assert updates["selected_checkpoint"]["file_count"] == 1
+    assert all(not item["path"].endswith("record.json") for item in updates["artifacts"])
+    update_record(run, updates)
+    validate_record(run)
+    (best / "shard").write_bytes(b"changed weights")
+    with pytest.raises(ValueError, match="tree checksum mismatch"):
+        validate_record(run)
+
+
+def test_capture_never_silently_ignores_unavailable_selected_checkpoint(tmp_path):
+    run = create_run(tmp_path / "study", recipe())
+    with pytest.raises(ValueError, match="unavailable"):
+        capture_artifacts(run, run / "checkpoints" / "missing")
+
+
+def test_cli_allocates_fully_resolved_fresh_transformer_recipe(tmp_path, monkeypatch, capsys):
+    from scaffolds.records.__main__ import main
+    source = tmp_path / "template.yaml"
+    source.write_text("model: {}\ntrain:\n  source_commit: historical-source\n")
+    study = tmp_path / "study"
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source), "--label", "fresh"])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    saved = yaml.safe_load((run / "config.yaml").read_text())
+    assert saved["train"]["source_commit"] == "auto"
+    assert saved["model"]["tie_embeddings"] is False
+    assert saved["optim"]["weight_decay_policy"] == "exclude_embeddings_norms_biases_v1"
+    assert load_run(run)["label"] == "fresh"
+    validate_record(run)

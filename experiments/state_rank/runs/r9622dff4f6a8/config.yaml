@@ -1,0 +1,58 @@
+schema_version: 1
+model_id: m-a-p/1.3B-100B-GatedDeltaNet-pure
+model_revision: 930ed6ae4ac629c86cb9855bb3dcb0a0974a29aa
+baseline_directory: experiments/state_rank/runs/rabd239a7f3dc
+baseline_layer: 12
+comparison_layer: 12
+layers:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+- 8
+- 9
+- 10
+- 11
+- 12
+- 13
+- 14
+- 15
+- 16
+- 17
+- 18
+- 19
+- 20
+- 21
+- 22
+- 23
+seeds:
+- 0
+- 1
+- 2
+- 3
+- 4
+tokens: 512
+input_count: 4
+spectrum_prefixes:
+- 1
+- 2
+- 8
+- 32
+- 128
+- 512
+model_dtype: float32
+analysis_dtype: float64
+attention_implementation: fused_recurrent
+allow_tf32: false
+svd_workers: 4
+condition:
+  name: pretrained
+  seed: null
+  weights: pretrained
+weights: pretrained
+seed: null
+output_directory: experiments/state_rank/runs/r9622dff4f6a8

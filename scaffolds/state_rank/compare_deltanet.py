@@ -73,7 +73,7 @@ def validate_config(config):
 def prepare_manifest(config_path, project_root, output=None):
     """Copy exact retained inputs and freeze source/configuration/data identity."""
     project_root = Path(project_root).resolve()
-    config = json.loads(Path(config_path).read_text())
+    config = dict(config_path) if isinstance(config_path, dict) else json.loads(Path(config_path).read_text())
     validate_config(config)
     baseline = project_root / config["baseline_directory"]
     old_metadata = json.loads((baseline / "metadata.json").read_text())
@@ -250,7 +250,7 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
     condition = next((c for c in manifest["conditions"] if c["name"] == condition_name), None)
     if condition is None:
         raise ValueError(f"Unknown condition: {condition_name}")
-    output = Path(manifest["output_directory"]) / condition_name
+    output = common.condition_directory(manifest, condition_name)
     metadata_path = output / "metadata.json"
     if metadata_path.exists():
         previous = json.loads(metadata_path.read_text())
@@ -259,6 +259,7 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
         if previous["status"] == "complete":
             if common.sha256_file(output / "metrics.npz") != previous["metrics_sha256"]:
                 raise ValueError("Completed metrics were changed")
+            common.write_condition_metadata(output, previous)
             print(f"already_complete={condition_name}", flush=True)
             return previous
     # Native fused recurrence is CUDA-only, including ordinary local invocation.
@@ -291,11 +292,11 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
         "fla_revision": spectrum.FLA_REVISION,
         "package_versions": {name: importlib.metadata.version(name) for name in
                              ("torch", "transformers", "numpy", "matplotlib", "flash-linear-attention", "triton")},
-        "log_path": str(Path(manifest["project_root"]) / "logs" / EXPERIMENT / condition_name / f"slurm-{job_id}.out") if job_id else None,
+        "log_path": str(output / "training.log") if job_id else None,
         "checkpoint_retention": "none",
         "initialization_details": INITIALIZATION_DETAILS if condition["weights"] == "random" else None,
     }
-    common.write_json(metadata_path, metadata)
+    common.write_condition_metadata(output, metadata)
     started = time.monotonic()
     try:
         model_config = AutoConfig.from_pretrained(config["model_id"], revision=config["model_revision"])
@@ -331,7 +332,7 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
         metadata["parameter_sha256"] = random_models.parameter_fingerprint(model)
         metadata["parameter_count"] = sum(p.numel() for p in model.parameters())
         metadata["model_config"] = model.config.to_dict()
-        common.write_json(metadata_path, metadata)
+        common.write_condition_metadata(output, metadata)
         model.to(device).eval()
         if condition["weights"] == "pretrained":
             with np.load(baseline_path, allow_pickle=False) as baseline:
@@ -350,12 +351,12 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
                         metrics_sha256=common.sha256_file(output / "metrics.npz"), validation=validation,
                         metrics_shape=list(arrays["participation_ratio"].shape),
                         spectrum_shape=list(arrays["normalized_eigenvalues"].shape))
-        common.write_json(metadata_path, metadata)
+        common.write_condition_metadata(output, metadata)
         print(f"completed={condition_name} elapsed_seconds={metadata['elapsed_seconds']:.2f}", flush=True)
         return metadata
     except BaseException as error:
         metadata.update(status="failed", error=f"{type(error).__name__}: {error}", updated_utc=common.utc_now())
-        common.write_json(metadata_path, metadata)
+        common.write_condition_metadata(output, metadata)
         raise
 
 

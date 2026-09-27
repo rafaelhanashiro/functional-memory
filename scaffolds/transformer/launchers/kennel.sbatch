@@ -2,10 +2,10 @@
 # Kennel launcher for any Transformer experiment. Submit from the experiment's
 # worktree root; resource policy lives here, outside model and training code.
 #
-#   sbatch --job-name=<run> --output=experiments/<experiment>/logs/<run>/slurm-%j.out \
+#   sbatch --job-name=<run> --output=experiments/<study>/runs/<run>/training.log \
 #     scaffolds/transformer/launchers/kennel.sbatch \
-#     experiments.<experiment>.adapter.execution.acceptance \
-#     experiments/<experiment>/configs/<run>.yaml "$(git rev-parse HEAD)" [GPU_COUNT] [GPU_TYPES]
+#     experiments.<study>.acceptance \
+#     experiments/<study>/runs/<run>/config.yaml "$(git rev-parse HEAD)" [GPU_COUNT] [GPU_TYPES]
 #SBATCH --job-name=transformer
 #SBATCH --partition=sweep
 #SBATCH --nodes=1
@@ -19,20 +19,23 @@
 #SBATCH --open-mode=append
 set -euo pipefail
 ADAPTER="${1:?Expected the experiment acceptance module}"
-CONFIG="${2:?Expected experiments/<experiment>/configs/<run>.yaml}"
+CONFIG="${2:?Expected experiments/<study>/runs/<run>/config.yaml}"
 LAUNCH_COMMIT="${3:?Expected the launch commit}"
 GPU_COUNT="${4:-4}"
 GPU_TYPES="${5:-B300,H100}"
 EXECUTION_ROOT="${SLURM_SUBMIT_DIR:?Submit from the experiment worktree root}"
 cd "$EXECUTION_ROOT"
-if [[ ! "$CONFIG" =~ ^experiments/([A-Za-z0-9_]+)/configs/([^/]+)\.yaml$ ]]; then
-  echo "Expected a repository-relative recipe experiments/<experiment>/configs/<run>.yaml: $CONFIG" >&2
+if [[ ! "$CONFIG" =~ ^experiments/([A-Za-z0-9_]+)/runs/(r[0-9a-f]{12})/config\.yaml$ ]]; then
+  echo "Expected a repository-relative recipe experiments/<study>/runs/<run>/config.yaml: $CONFIG" >&2
   exit 1
 fi
 EXPERIMENT="${BASH_REMATCH[1]}"
 RUN="${BASH_REMATCH[2]}"
+RUN_ROOT="experiments/$EXPERIMENT/runs/$RUN"
 # Only the frozen execution set must match the launch commit; outputs and analysis may change.
 python3 scaffolds/launch/frozen.py check --launch-commit "$LAUNCH_COMMIT" --experiment "$EXPERIMENT" --scaffold transformer
+git cat-file -e "$LAUNCH_COMMIT:$CONFIG"
+exec >>"$RUN_ROOT/training.log" 2>&1
 
 GPU_NAMES="$(nvidia-smi --query-gpu=name --format=csv,noheader | sort -u)"
 if [[ "$(wc -l <<<"$GPU_NAMES")" != 1 ]]; then
@@ -55,13 +58,20 @@ if [[ ! -x "$PYTHON" ]]; then
   echo "Missing the worktree environment; run uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink" >&2
   exit 1
 fi
-LOGS="experiments/$EXPERIMENT/logs/$RUN"
+LOGS="$RUN_ROOT/.runtime"
 CACHE="$EXECUTION_ROOT/.cache/$EXPERIMENT"
 export SHARED_TRANSFORMER_SOURCE_COMMIT="$LAUNCH_COMMIT"
 # Execution facts for the W&B mirror; the mode may be overridden per submission.
 export TRANSFORMER_CLUSTER=kennel TRANSFORMER_GPU_TYPE="$GPU_TYPE"
 WANDB_MODE_SETTING="${TRANSFORMER_WANDB_MODE:-online}"
 export PYTHONPATH="$EXECUTION_ROOT"
+finish_record() {
+  local result=$?
+  trap - EXIT
+  "$PYTHON" -m scaffolds.launch.finalize --run "$RUN_ROOT" --exit-code "$result"
+  exit "$result"
+}
+trap finish_record EXIT
 export JAX_PLATFORMS=cuda
 export TRANSFORMER_HOST_STAGING="${TRANSFORMER_HOST_STAGING:-0}"
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
@@ -74,23 +84,49 @@ export JAX_COMPILATION_CACHE_DIR="$CACHE/jax" XDG_CACHE_HOME="$CACHE/xdg" TMPDIR
 CUDA_HOME="$("$PYTHON" -c 'import importlib.util; print(next(iter(importlib.util.find_spec("nvidia.cuda_nvcc").submodule_search_locations)))')"
 export CUDA_HOME
 eval "$("$PYTHON" -m "$ADAPTER" --runtime-env)"
-mkdir -p "$LOGS/submissions" "$JAX_COMPILATION_CACHE_DIR" "$XDG_CACHE_HOME" "$TMPDIR"
+mkdir -p "$LOGS" "$JAX_COMPILATION_CACHE_DIR" "$XDG_CACHE_HOME" "$TMPDIR"
 
-"$PYTHON" - "$LOGS/submissions/$SLURM_JOB_ID-${SLURM_RESTART_COUNT:-0}.json" "$CONFIG" "$LAUNCH_COMMIT" "$GPU_TYPE" "$GPU_COUNT" <<'PY'
+"$PYTHON" - "$RUN_ROOT" "$CONFIG" "$LAUNCH_COMMIT" "$GPU_TYPE" "$GPU_COUNT" "$EXPERIMENT" <<'PY'
 import hashlib, json, os, subprocess, sys
 from datetime import UTC, datetime
 from pathlib import Path
-path, config, launch, gpu_type, gpu_count = sys.argv[1:]
-Path(path).write_text(json.dumps({
+from scaffolds.launch.frozen import frozen_hash
+from scaffolds.records import load_run, update_record, validate_record
+from scaffolds.transformer.configs import load_config
+root, config, launch, gpu_type, gpu_count, experiment = sys.argv[1:]
+run_root = Path(root)
+recipe = load_config(config)
+if recipe.train.workdir.resolve() != run_root.resolve():
+    raise ValueError("The allocated config must write into its own run directory")
+if recipe.train.checkpoint_dir is not None and recipe.train.checkpoint_dir.resolve() != (run_root / "checkpoints").resolve():
+    raise ValueError("Canonical run checkpoints must be colocated under runs/<run>/checkpoints")
+record = load_run(run_root)
+validate_record(run_root, verify_hashes=False)
+attempt = {
     "launch_commit": launch, "config_path": config,
     "config_sha256": hashlib.sha256(Path(config).read_bytes()).hexdigest(),
     "home_cluster": "kennel", "gpu_type": gpu_type, "gpu_count": int(gpu_count),
     "slurm_job_id": os.environ["SLURM_JOB_ID"], "slurm_restart_count": os.environ.get("SLURM_RESTART_COUNT", "0"),
     "slurm_partition": os.environ.get("SLURM_JOB_PARTITION"), "started_utc": datetime.now(UTC).isoformat(),
     "allocation": subprocess.check_output(["scontrol", "show", "job", "-o", os.environ["SLURM_JOB_ID"]], text=True).strip(),
-}, indent=2) + "\n")
+}
+update_record(run_root, {
+    "source_commit": launch, "home_cluster": "kennel", "status": "acceptance",
+    "frozen_execution_sha256": frozen_hash(Path.cwd(), launch, experiment, "transformer"),
+    "attempts": [*record.get("attempts", []), attempt],
+    "log_path": str(run_root / "training.log"),
+})
 PY
 # Acceptance and production share the allocation; matching passed stages are reused on requeue.
 "$PYTHON" -m "$ADAPTER" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
   --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE"
-exec "$PYTHON" -m scaffolds.transformer.train "$CONFIG" --wandb-mode "$WANDB_MODE_SETTING"
+"$PYTHON" - "$RUN_ROOT" "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT/success.json" <<'PY'
+import hashlib, json, sys
+from pathlib import Path
+from scaffolds.records import update_record
+root, path = map(Path, sys.argv[1:])
+summary = json.loads(path.read_text())
+update_record(root, {"acceptance": {"summary": summary, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}})
+PY
+"$PYTHON" -m scaffolds.transformer.train "$CONFIG" --wandb-mode "$WANDB_MODE_SETTING"
+"$PYTHON" -m scaffolds.transformer.retention "$RUN_ROOT/config.json"

@@ -1,0 +1,49 @@
+schema_version: 1
+model_id: meta-llama/Llama-3.2-1B
+model_revision: 4e20de362430cd3b72f300e6b0f18e50e7166e08
+baseline_directory: experiments/state_rank/runs/r387096e9d9c7
+baseline_layer: 8
+comparison_layer: 8
+layers:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+- 8
+- 9
+- 10
+- 11
+- 12
+- 13
+- 14
+- 15
+seeds:
+- 0
+- 1
+- 2
+- 3
+- 4
+tokens: 512
+input_count: 4
+spectrum_prefixes:
+- 1
+- 2
+- 8
+- 32
+- 128
+- 512
+model_dtype: float32
+analysis_dtype: float64
+attention_implementation: eager
+allow_tf32: false
+condition:
+  name: random-seed0
+  seed: 0
+  weights: random
+weights: random
+seed: 0
+output_directory: experiments/state_rank/runs/r4bf905cd724d

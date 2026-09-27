@@ -1,0 +1,63 @@
+schema_version: 1
+study: unnormalized_attention
+metric: terminal_validation_perplexity
+secondary_metrics:
+- best_validation_perplexity
+- training_and_validation_history
+runs:
+- study: unnormalized_attention
+  run_id: r8cccbabca761
+  label: 200m-exp-seed0-kennel
+  sources:
+    best_validation.json:
+      path: experiments/unnormalized_attention/runs/r8cccbabca761/best_validation.json
+      sha256: 9ead667c8ab94587ade4851ffc27214f065363a4550ec5c4f6e5e78f367e88ad
+    completion.json:
+      path: experiments/unnormalized_attention/runs/r8cccbabca761/completion.json
+      sha256: 52631eaef8b681efc2d5192ae2bfed975572d5b84013aea2e613dc498884e183
+    config.json:
+      path: experiments/unnormalized_attention/runs/r8cccbabca761/config.json
+      sha256: 38af77cf15b24b4f522c3e9dbcc42bfc50ff89648dac4e3c09aa749adb9a4228
+    config.yaml:
+      path: experiments/unnormalized_attention/runs/r8cccbabca761/config.yaml
+      sha256: 27aad33256473efda13bec82cbd109f3a8bc40fea713574e51d18107ef6c450b
+    data_identity.json:
+      path: experiments/unnormalized_attention/runs/r8cccbabca761/data_identity.json
+      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
+    metadata.json:
+      path: experiments/unnormalized_attention/runs/r8cccbabca761/metadata.json
+      sha256: 4a44a8b4bf029d113b3c557915caa52ac945019232b0a31bdaae8c5b12698ffd
+    metrics.jsonl:
+      path: experiments/unnormalized_attention/runs/r8cccbabca761/metrics.jsonl
+      sha256: e0bbbdafb9f5cffd49bd080d91c48afcefdac97f18a57fc9dd7dc18360eaf483
+    record.json:
+      path: experiments/unnormalized_attention/runs/r8cccbabca761/record.json
+      sha256: 7b4ec921dca80cadbd7db1061b02e4a7b86ebaa258c7b0abbbef9c2f879d40df
+- study: unnormalized_attention
+  run_id: r7e462a645696
+  label: 250m-exp-seed0-kennel
+  sources:
+    best_validation.json:
+      path: experiments/unnormalized_attention/runs/r7e462a645696/best_validation.json
+      sha256: e5825bc9c766b2796229a7ed11596e3ce607498b1bf27a4c42ec19c5856f73ab
+    completion.json:
+      path: experiments/unnormalized_attention/runs/r7e462a645696/completion.json
+      sha256: e17e84b25cd7dca8574a3f5bf7054de48ddc518eb25b52c8dad2df168924516e
+    config.json:
+      path: experiments/unnormalized_attention/runs/r7e462a645696/config.json
+      sha256: 0d0e347945bf2ac6beb174fe5cdfa1c2b601806825c56f44267a14b838c0ace5
+    config.yaml:
+      path: experiments/unnormalized_attention/runs/r7e462a645696/config.yaml
+      sha256: 06f4cee59682093089f46d941a6ca028213f5fae6a1d58bffb8655a385facbff
+    data_identity.json:
+      path: experiments/unnormalized_attention/runs/r7e462a645696/data_identity.json
+      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
+    metadata.json:
+      path: experiments/unnormalized_attention/runs/r7e462a645696/metadata.json
+      sha256: 97d0af6b7f7741cd4c46915ce4b484849921c5a0d6efaa62a1da71ed7b886495
+    metrics.jsonl:
+      path: experiments/unnormalized_attention/runs/r7e462a645696/metrics.jsonl
+      sha256: 81351a4b0bc5d1fdb19cc6bb8ad7849b4d77cce751403c2d7e6e9b6cc56924b6
+    record.json:
+      path: experiments/unnormalized_attention/runs/r7e462a645696/record.json
+      sha256: 9aaf8fbd1de4b1d4f8ad17b451e8805f43434cec2821fc3793d63a2704924f74

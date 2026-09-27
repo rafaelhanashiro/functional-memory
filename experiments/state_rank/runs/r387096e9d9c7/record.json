@@ -1,0 +1,44 @@
+{
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": {
+    "inputs": {
+      "path": "experiments/state_rank/runs/r387096e9d9c7/inputs.json",
+      "sha256": "8ac90c69b0c3503e3a505d6bcf317af31ad0f2f3c04853e699bb6cf504a497ed"
+    },
+    "metadata": {
+      "path": "experiments/state_rank/runs/r387096e9d9c7/metadata.json",
+      "sha256": "cd72e93c24104617e9f286b622c7e56d852e2403fc7d072590b3755ff1c97ab2"
+    },
+    "numerical_data": {
+      "path": "experiments/state_rank/runs/r387096e9d9c7/spectra.npz",
+      "sha256": "ed64ae5582797460a12eb3326bde20df5b621381b5b12f35fdb490904b949aa0"
+    }
+  },
+  "config": {
+    "path": "experiments/state_rank/runs/r387096e9d9c7/config.yaml",
+    "sha256": "0daebed079eca6a2dd6b9026170a786363bd15a4ee0b70ea6aa0905da0db5f0a"
+  },
+  "config_reconstruction": "Scientific settings transcribed from retained metadata; original execution is pinned by source_commit and script_sha256 in metadata.json.",
+  "hardware": {
+    "device": "cuda",
+    "gpu": "NVIDIA L40S",
+    "hostname": "node4207"
+  },
+  "home_cluster": "kennel",
+  "label": "llama-3.2-1b-l8-kvall-t512",
+  "log_note": "The successful job ID is recorded; the collection's metadata names no retained log.",
+  "log_path": null,
+  "name": "llama-3.2-1b-l8-kvall-t512",
+  "origin": "ORCD/Engaging pretrained-only collection; reused unchanged as the pretrained reproduction baseline",
+  "record_schema_version": 1,
+  "run_id": "r387096e9d9c7",
+  "seed": null,
+  "slurm_job_id": "22698446",
+  "source_commit": "6ff0e8b6e31077c11552487899c66a3596f19a32",
+  "spectra": {
+    "path": "experiments/state_rank/runs/r387096e9d9c7/spectra.npz",
+    "sha256": "ed64ae5582797460a12eb3326bde20df5b621381b5b12f35fdb490904b949aa0",
+    "storage": "Git-ignored archive at the Kennel artifact root; previously a Git LFS object (retrievable from history at 4d93d20936e4eba23761a5ff9f8c0973d23c8ccd)"
+  },
+  "status": "completed"
+}

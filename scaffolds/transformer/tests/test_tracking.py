@@ -15,7 +15,7 @@ def test_experiment_workdir_names_group_run_and_log_directory(tmp_path):
     settings = tracking.run_settings(config)
     assert settings["group"] == "my_experiment"
     assert settings["run_name"] == "200m-seed0"
-    assert settings["directory"] == tmp_path / "experiments/my_experiment/logs/200m-seed0"
+    assert settings["directory"] == config.train.workdir
     assert (settings["entity"], settings["project"]) == ("rafah-massachusetts-institute-of-technology",
                                                          "functional-memory")
 
@@ -67,5 +67,5 @@ def test_offline_training_mirrors_metrics_and_pins_the_run(tmp_path, monkeypatch
     assert identity["run_name"] == "tiny" and identity["project"] == "functional-memory"
     records = [json.loads(line) for line in (workdir / "metrics.jsonl").read_text().splitlines()]
     assert {record["wandb_run_id"] for record in records} == {identity["run_id"]}
-    runs = list((tmp_path / "experiments/demo/logs/tiny/wandb").glob("offline-run-*"))
+    runs = list((workdir / "wandb").glob("offline-run-*"))
     assert len(runs) == 1 and runs[0].name.endswith(identity["run_id"])

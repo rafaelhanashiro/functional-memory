@@ -41,7 +41,7 @@ def main(argv=None, *, config_factory=Config,
     parser.add_argument("--qk-head-dim", type=int, help="Query/key channels per head.")
     parser.add_argument("--workdir", type=Path)
     parser.add_argument("--checkpoint-dir", type=Path,
-                        help="Checkpoint artifact directory, normally checkpoints/<experiment>/<run>.")
+                        help="Optional checkpoint override; defaults to the run's checkpoints/ directory.")
     parser.add_argument("--stop-after-step", type=int, help="Stop with a resume checkpoint; retain the full learning-rate schedule.")
     parser.add_argument("--no-resume", action="store_true")
     parser.add_argument("--wandb-mode", choices=("disabled", "offline", "online"))

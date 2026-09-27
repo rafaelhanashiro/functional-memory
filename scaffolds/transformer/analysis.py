@@ -1,6 +1,6 @@
 """Shared analysis helpers: committed metrics, retained artifacts, and figures.
 
-Experiment adapters build their summaries and figures from `runs/` with these
+Results modules build their summaries and figures from `runs/` with these
 helpers; every derived output must regenerate byte-identically.
 """
 from __future__ import annotations
@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from functools import lru_cache
 from pathlib import Path
 
 
@@ -55,7 +56,7 @@ def summarize_run(
             raise ValueError(f"Metric parameter count does not match sweep: {workdir}")
     metadata_path = workdir / "metadata.json"
     metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
-    status = metadata.get("status", "incomplete" if records or (workdir / "config.json").exists() else "pending")
+    status = metadata.get("status", "incomplete" if records or (workdir / "config.yaml").exists() else "pending")
     if status == "complete":
         status = "incomplete"  # Completion is accepted only with its validated terminal record below.
     row = {
@@ -98,7 +99,7 @@ def summarize_run(
 
 
 def retained_root(manifest: dict, manifest_path: Path | None) -> Path:
-    """Repository root of a record at `experiments/<experiment>/provenance/manifest.json`."""
+    """Repository root of a record at `experiments/<study>/sweep.yaml`."""
     if manifest_path is None:
         return REPOSITORY_ROOT
     for directory in manifest_path.resolve().parents:
@@ -108,7 +109,7 @@ def retained_root(manifest: dict, manifest_path: Path | None) -> Path:
 
 
 def default_manifest_path(record: Path) -> Path:
-    return record / "provenance/manifest.json"
+    return record / "sweep.yaml"
 
 
 def update_results_readme(path: Path, lines: list[str]) -> None:
@@ -163,7 +164,8 @@ def summarize_retained_run(run: dict, root: Path) -> tuple[dict, list[dict]]:
     adapted = dict(run, config=config, workdir=str(metrics_path.parent), training_tokens=expected_tokens)
     row, records = summarize_run(
         adapted, run["source_commit"], metrics_path=metrics_path,
-        completion_path=artifact_path(root, run["completion"]),
+        completion_path=(checked_artifact(root, run["completion"]) if isinstance(run["completion"], dict)
+                         else artifact_path(root, run["completion"])),
     )
     final = next((record for record in records if record["step"] == terminal["step"]), None)
     if row["status"] != "complete" or final is None or any(final[field] != terminal[field] for field in terminal):
@@ -299,3 +301,86 @@ def regeneration_differences(record: Path, output: Path) -> list[str]:
         return ["<nothing regenerated>"]
     return [str(relative) for relative in produced
             if not (record / relative).is_file() or (record / relative).read_bytes() != (output / relative).read_bytes()]
+
+
+def verify_result_selection(directory: Path) -> dict:
+    """Verify the explicit run selection and source hashes for a saved result.
+
+    The selection is a presentation recipe. Execution identity remains in each
+    run's record.json; changing a figure's selection never changes that record.
+    """
+    directory = Path(directory).resolve()
+    selection = result_selection(directory)
+    root = directory.parents[1]
+    for run in selection["runs"]:
+        expected = f"experiments/{run['study']}/runs/{run['run_id']}"
+        for kind, reference in run["sources"].items():
+            path = checked_artifact(root, reference)
+            if path.parent != root / expected:
+                raise ValueError(f"Selected {kind} must belong to {expected}")
+    return selection
+
+
+@lru_cache(maxsize=32)
+def _selection_at_revision(path: str, modified_ns: int, size: int) -> dict:
+    import yaml
+
+    return yaml.safe_load(Path(path).read_text())
+
+
+def result_selection(directory: Path) -> dict:
+    """Read a selection once per file revision, including updates during analysis."""
+    path = (Path(directory) / "selection.yaml").resolve()
+    stat = path.stat()
+    return _selection_at_revision(str(path), stat.st_mtime_ns, stat.st_size)
+
+
+def selected_run_directory(directory: Path, study: Path, label_or_id: str) -> Path:
+    """Resolve a plotting role to the explicit run ID pinned by this result.
+
+    ``label`` is a stable display/selection role. Replacing its ``run_id`` with
+    another execution changes the plotted run without changing plotting code.
+    """
+    study = Path(study)
+    if study.name == "sweep.yaml":
+        study = study.parent
+    candidates = [run for run in result_selection(directory)["runs"]
+                  if run["study"] == study.name and label_or_id in (run["label"], run["run_id"])]
+    if len(candidates) != 1:
+        raise ValueError(f"Expected one selected run for {study.name}/{label_or_id}, found {len(candidates)}")
+    return study / "runs" / candidates[0]["run_id"]
+
+
+def load_selected_study(directory: Path, study: Path) -> dict:
+    """Load the selected run IDs and controls for an aggregate plot."""
+    from scaffolds.records import load_run, load_study
+
+    study = Path(study)
+    if study.name == "sweep.yaml":
+        study = study.parent
+    selection = verify_result_selection(directory)
+    common = load_study(study)
+    common["runs"] = [dict(load_run(study / "runs" / run["run_id"]), name=run["label"])
+                      for run in selection["runs"] if run["study"] == study.name]
+    root = study.parents[1]
+
+    def selected_controls(controls):
+        selected = []
+        for control in controls:
+            source = Path(control["resolved_config"]["path"]).parts[1]
+            path = selected_run_directory(directory, root / "experiments" / source, control["name"])
+            record = load_run(path)
+            # Presentation annotations belong to the comparison; scientific fields
+            # always come from the explicitly selected source run.
+            annotations = {key: control[key] for key in ("coefficient_count", "quadratic_mode",
+                "quadratic_sharing", "control_note") if key in control}
+            if "status" not in record and record.get("terminal"):
+                record = dict(record, status="complete")
+            selected.append({**record, **annotations, "name": control["name"]})
+        return selected
+
+    if "controls" in common:
+        common["controls"] = selected_controls(common["controls"])
+    if "comparisons" in common and "runs" in common["comparisons"]:
+        common["comparisons"] = dict(common["comparisons"], runs=selected_controls(common["comparisons"]["runs"]))
+    return common

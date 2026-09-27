@@ -102,7 +102,7 @@ sacct -j JOB_ID -o JobID,State,Elapsed,ExitCode
 Submit from the experiment's worktree after syncing that worktree's own environment
 (`uv sync --project scaffolds/<capability> --locked --link-mode hardlink`). Environments
 and caches stay outside Git; never modify an environment while jobs use it. Transformer
-experiments submit `scaffolds/transformer/launchers/kennel.sbatch` with their adapter's
+experiments submit `scaffolds/transformer/launchers/kennel.sbatch` with their study’s
 acceptance module; each README gives the exact command.
 
 To move an experiment, transfer required artifacts separately (for example with

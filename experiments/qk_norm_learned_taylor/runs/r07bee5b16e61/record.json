@@ -1,0 +1,304 @@
+{
+  "acceptance": {
+    "H100-4": {
+      "completed_utc": "2026-09-26T14:36:57.575389+00:00",
+      "cpu_distributed_tests_passed": 0,
+      "cpu_tests_passed": 202,
+      "gpu_tests_passed": 83,
+      "identity": "5359a530c898a383166c8d491c16df682dd0d6a2d7be79ddabdcc9e897338a2a",
+      "initialization_check": {
+        "mechanism_parameters": {
+          "polynomial_coefficients": {
+            "initial": [
+              1.0,
+              1.0,
+              0.5
+            ],
+            "shape": [
+              10,
+              16,
+              3
+            ],
+            "weight_decay": false
+          },
+          "qk_norm_log_scale": {
+            "initial": [
+              2.0794415416798357
+            ],
+            "shape": [
+              10,
+              16,
+              1
+            ],
+            "weight_decay": false
+          }
+        },
+        "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+      },
+      "initialization_parameter_count": 199906944,
+      "initialization_parameter_sha256": "0f1e5785c34b3d1aadc0cba401a5e2bce8615155ca3a62273fbd74ec6b3a7f05",
+      "passed_stages": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "pilot": {
+        "attention_backend": "fused",
+        "attention_implementation": "pallas_triton",
+        "final_step": 20,
+        "projected_hours": 2.423,
+        "steady_step_seconds_median": 0.4574
+      },
+      "resume": {
+        "final_step": 21,
+        "restored_step": 20
+      },
+      "slurm_job_id": "202339",
+      "status": "passed"
+    }
+  },
+  "artifacts": [
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/best_validation.json",
+      "sha256": "5e52d12bac9116644c245512688de27ab7204edbe805a0331c9a45cd3c47e810"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/completion.json",
+      "sha256": "ac47989070e0f808a8c571ecefa872c726f044feaf7253746d33cfe7c2bf2304"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/config.json",
+      "sha256": "1c6957dc56fac1863174b82c125c5fdf8661ff78d10902dd537a8797a8249b1f"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/config.yaml",
+      "sha256": "b719e78dbc2afad2d3aa1928f109e6b1e93d014f3c6edacef61a53297d8213b3"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/metadata.json",
+      "sha256": "c03c5b0ffc0570283cbd614c1f91d89eefd49d8a4e545df662703f919c4be5c9"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/metrics.jsonl",
+      "sha256": "c363897b287024b7983a19fc18fcfc37333024bf51e1cc0497bc2f38efca3316"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/retention.json",
+      "sha256": "cff1ec0dcd2c970213f5ada10ca459919c0bf82bd00df77ab3008b58df58a324"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/wandb_run.json",
+      "sha256": "0d2ad61c555a09d26548eb2a6365eece5347b6fe44364bb228b00f17b15ec6c9"
+    }
+  ],
+  "attempts": [
+    {
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "node": "dogo",
+      "outcome": "passed acceptance and trained all 19,074 updates from a fresh initialization",
+      "restart": 0,
+      "slurm_job_id": "202339"
+    }
+  ],
+  "attention_backend": "fused",
+  "attention_degree": 2,
+  "attention_kernel": "learned_polynomial_unnormalized",
+  "attention_normalization": false,
+  "best_validation": {
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "step": 19074,
+    "training_tokens": 10000269312,
+    "validation_nll": 2.8678392512457713,
+    "validation_perplexity": 17.598950177261003
+  },
+  "coefficient_count": 480,
+  "completed_utc": "2026-09-26T17:22:40.401621+00:00",
+  "config": {
+    "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/config.yaml",
+    "recorded_sha256": "72a8871ff95672c5b9f5cd5d72821d5aaacc75d40d0185e0f23b77f5f29ebd86",
+    "sha256": "b719e78dbc2afad2d3aa1928f109e6b1e93d014f3c6edacef61a53297d8213b3"
+  },
+  "execution": {
+    "attempts": [
+      {
+        "gpu_count": 4,
+        "gpu_type": "H100",
+        "node": "dogo",
+        "outcome": "passed acceptance and trained all 19,074 updates from a fresh initialization",
+        "restart": 0,
+        "slurm_job_id": "202339"
+      }
+    ],
+    "attention_backend": "fused",
+    "attention_backend_requested": "fused",
+    "attention_implementation": "pallas_triton",
+    "batch_transfer": "host_to_shard",
+    "device_kinds": [
+      "NVIDIA H100 80GB HBM3"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "runtime_history_entries": 1,
+    "runtime_settings": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct",
+    "wall_time": "02:54:25 including acceptance (Slurm 2026-09-26T10:28:21 to 2026-09-26T13:22:46 local)"
+  },
+  "hardware": "4x NVIDIA H100 dogo, sweep partition",
+  "home_cluster": "kennel",
+  "label": "200m-qk-m002-unnormalized-seed0",
+  "log": {
+    "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/training.log",
+    "sha256": "962b7c900216fe73d57c19cab9201dd37658a5ef4bfea84a0e8450cbe6f1127b"
+  },
+  "name": "200m-qk-m002-unnormalized-seed0",
+  "parameter_count": 199906944,
+  "partition": "sweep",
+  "prediction_tokens": 10000269312,
+  "qk_norm": true,
+  "qk_norm_initial_scale": 8.0,
+  "qk_norm_parameter_count": 160,
+  "qk_norm_sharing": "per_head",
+  "record_schema_version": 1,
+  "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+  "retention": {
+    "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/retention.json",
+    "sha256": "cff1ec0dcd2c970213f5ada10ca459919c0bf82bd00df77ab3008b58df58a324"
+  },
+  "run_id": "r07bee5b16e61",
+  "run_record": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61",
+  "seed": 0,
+  "selected_checkpoint": {
+    "bytes": 2206308588,
+    "file_count": 14,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "dd8932e45c7a7893ab665b42a30bc261902a2055e6e7c5391b6a51926a9eef06",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "3f364b1dd44da78516c55017a0950de665e7b2e45e2668f5ce5d17550761520d",
+        "size_bytes": 144849
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "b05c2908d0d0f4155653fa0dbbc86bf0a8b774c8e4f8cbee8e21e7ce3c3297e4",
+        "size_bytes": 89217
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "ffd1592ee0247fb50915ef53b1247f9abd8d015a7123b1ed2c117cb329e60c38",
+        "size_bytes": 50185
+      },
+      {
+        "path": "default/d/744c4b1cab515a7da8cb6ffd6fcc41ba",
+        "sha256": "f7eec2b64ffa618bd86ab004d9c17873bce02aaa7f9debfdfe045c11bc9010e3",
+        "size_bytes": 5439
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "dab3535472e492687e841abca2b58471d7f8f6dc7beea412a233981bd8545bf0",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/4e1606d0ceda21aeb494de2e38051df5",
+        "sha256": "953b1a9dc81e61bd078c63ccc75670f2dd0618ce13a36dda8e28902391b929ac",
+        "size_bytes": 9679
+      },
+      {
+        "path": "default/ocdbt.process_0/d/5b5b12e0d655e24152d1b6db6469f197",
+        "sha256": "9e2f811c58fa6866c735e3910b9a139c1d759b2851e3c60e57edac1959e9582b",
+        "size_bytes": 717
+      },
+      {
+        "path": "default/ocdbt.process_0/d/5cef8a449d6cfc8a04b8cc61dde201c4",
+        "sha256": "b3b29f158b78669ae8dce316547c7550583d684af423f20341f3faca7d30804b",
+        "size_bytes": 242442240
+      },
+      {
+        "path": "default/ocdbt.process_0/d/abb0723a4820a86b4e797e04ad9f69a5",
+        "sha256": "8ddb3b991217005fe556ee84b1af9be314352b4320aae4b9ba720a67b61c4ef9",
+        "size_bytes": 907911168
+      },
+      {
+        "path": "default/ocdbt.process_0/d/c3d035f32be36f1c194860d7c46fe1d7",
+        "sha256": "7f1785eaef3d40a32691063bc9983f02a5ed2565c16f0b6e9cae8a2b6910bb87",
+        "size_bytes": 209
+      },
+      {
+        "path": "default/ocdbt.process_0/d/f1cdf57f6215b02d08acb2b6ba6ccd0b",
+        "sha256": "cea4c09c7785dffd07520b8c828525d844f18a68a75e927e1879e50d28164580",
+        "size_bytes": 1055653888
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "e25f065b027f7774ba70f770ac86f47876515ba8bd04a641c39a7addf953282e",
+        "size_bytes": 374
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "6092604a7a9f3db8648e657c7968e6045320ee05d4a1f8bff665e2751a5f6d1d",
+        "size_bytes": 139
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/checkpoints/19074",
+    "recorded_files": {
+      "_CHECKPOINT_METADATA": "dd8932e45c7a7893ab665b42a30bc261902a2055e6e7c5391b6a51926a9eef06",
+      "default/_METADATA": "3f364b1dd44da78516c55017a0950de665e7b2e45e2668f5ce5d17550761520d",
+      "default/_sharding": "b05c2908d0d0f4155653fa0dbbc86bf0a8b774c8e4f8cbee8e21e7ce3c3297e4",
+      "default/array_metadatas/process_0": "ffd1592ee0247fb50915ef53b1247f9abd8d015a7123b1ed2c117cb329e60c38",
+      "default/d/744c4b1cab515a7da8cb6ffd6fcc41ba": "f7eec2b64ffa618bd86ab004d9c17873bce02aaa7f9debfdfe045c11bc9010e3",
+      "default/manifest.ocdbt": "dab3535472e492687e841abca2b58471d7f8f6dc7beea412a233981bd8545bf0",
+      "default/ocdbt.process_0/d/4e1606d0ceda21aeb494de2e38051df5": "953b1a9dc81e61bd078c63ccc75670f2dd0618ce13a36dda8e28902391b929ac",
+      "default/ocdbt.process_0/d/5b5b12e0d655e24152d1b6db6469f197": "9e2f811c58fa6866c735e3910b9a139c1d759b2851e3c60e57edac1959e9582b",
+      "default/ocdbt.process_0/d/5cef8a449d6cfc8a04b8cc61dde201c4": "b3b29f158b78669ae8dce316547c7550583d684af423f20341f3faca7d30804b",
+      "default/ocdbt.process_0/d/abb0723a4820a86b4e797e04ad9f69a5": "8ddb3b991217005fe556ee84b1af9be314352b4320aae4b9ba720a67b61c4ef9",
+      "default/ocdbt.process_0/d/c3d035f32be36f1c194860d7c46fe1d7": "7f1785eaef3d40a32691063bc9983f02a5ed2565c16f0b6e9cae8a2b6910bb87",
+      "default/ocdbt.process_0/d/f1cdf57f6215b02d08acb2b6ba6ccd0b": "cea4c09c7785dffd07520b8c828525d844f18a68a75e927e1879e50d28164580",
+      "default/ocdbt.process_0/manifest.ocdbt": "e25f065b027f7774ba70f770ac86f47876515ba8bd04a641c39a7addf953282e",
+      "metrics/metrics": "6092604a7a9f3db8648e657c7968e6045320ee05d4a1f8bff665e2751a5f6d1d"
+    },
+    "rule": "lowest validation NLL; also the terminal checkpoint",
+    "sha256": "fc4a18ed7a48505659339012cf4672fcfd3883ef2e5ce462c0749b7c1500e779",
+    "size_bytes": 2206308588,
+    "step": 19074,
+    "tree_sha256": "1b27e64482fd27037be4d652338584b3cec3213b92f3f12d784ce00065633582",
+    "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'",
+    "verified_present_utc": "2026-09-26T18:26:25Z"
+  },
+  "slurm_job_id": "202339",
+  "slurm_job_ids": [
+    202339
+  ],
+  "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+  "start": "fresh initialization",
+  "status": "completed",
+  "submitted_utc": "2026-09-26T06:43:53+00:00",
+  "terminal_validation_nll": 2.8678392512457713,
+  "terminal_validation_perplexity": 17.598950177261003,
+  "training_updates": 19074,
+  "wandb": {
+    "run_id": "6ed2ecbbde434d79bd5d7d7a14f8b9a0",
+    "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/6ed2ecbbde434d79bd5d7d7a14f8b9a0"
+  }
+}

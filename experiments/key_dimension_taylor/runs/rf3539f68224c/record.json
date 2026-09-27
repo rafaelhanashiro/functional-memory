@@ -1,0 +1,80 @@
+{
+  "artifacts": [
+    {
+      "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/best_validation.json",
+      "sha256": "ecf0cbec044179e2f80c33ff709733ff49a0911b5df736108d3667752d17394d"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/completion.json",
+      "sha256": "46a0f3bed429f66d78f20d0f1e0df9de215d8e2d58a6c73b5dda5a936fdb80f7"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/config.yaml",
+      "sha256": "3f0074c0c49bd3d920bf28e2811677a7ac39d228aff43ce96681df10a0691fb3"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/metadata.json",
+      "sha256": "cc2ef5502f587920e3cb519041665bf7f7c0c4796abe8cf1491e1fa14b83668d"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/metrics.jsonl",
+      "sha256": "93ef9664a46cc56e40f2279f18cab2891840228af66a10dd532deac63ebfe720"
+    }
+  ],
+  "artifacts_retained": "2026-09-24: ORCD checkpoints and logs for the key_dimension runs are not retained, by user decision; metrics, completion, metadata, and configs are retained in Git.",
+  "attention_degree": null,
+  "completion": {
+    "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/completion.json",
+    "sha256": "46a0f3bed429f66d78f20d0f1e0df9de215d8e2d58a6c73b5dda5a936fdb80f7"
+  },
+  "config": {
+    "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/config.yaml",
+    "sha256": "3f0074c0c49bd3d920bf28e2811677a7ac39d228aff43ce96681df10a0691fb3"
+  },
+  "home_cluster": "orcd",
+  "label": "200m-dk128-seed0",
+  "metadata": {
+    "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/metadata.json",
+    "sha256": "cc2ef5502f587920e3cb519041665bf7f7c0c4796abe8cf1491e1fa14b83668d"
+  },
+  "metrics": {
+    "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/metrics.jsonl",
+    "sha256": "93ef9664a46cc56e40f2279f18cab2891840228af66a10dd532deac63ebfe720"
+  },
+  "name": "200m-dk128-seed0",
+  "original_experiment": "key_dimension",
+  "parameter_count": 220877824,
+  "qk_head_dim": 128,
+  "record_schema_version": 1,
+  "resolved_config": {
+    "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/config.yaml",
+    "recorded_sha256": "505fea1ae487bbce7f1293f7eed16b3b7212fb5592e7cfc1331e32a55a9eb83b",
+    "sha256": "3f0074c0c49bd3d920bf28e2811677a7ac39d228aff43ce96681df10a0691fb3"
+  },
+  "retained_completed": true,
+  "run_id": "rf3539f68224c",
+  "seed": 0,
+  "selected_checkpoint": {
+    "file_count": 13,
+    "metadata_sha256": "7199d75a739470491682512e31ac40edcfca75c4e6d2fbe10d98297b59f942de",
+    "retained": false,
+    "size_bytes": 2426243451,
+    "step": 19074,
+    "validation_nll": 2.6656709483691623,
+    "validation_perplexity": 14.377592933058489
+  },
+  "slurm_job_id": "22808244",
+  "slurm_log": {
+    "retained": false,
+    "sha256": "d0845f5f6e2c4fc78bc017e28c35f28418d43cd6ef08e62b6a7db6001f4bdaf8"
+  },
+  "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+  "source_manifest": "experiments/key_dimension_taylor/sweep.yaml",
+  "terminal": {
+    "step": 19074,
+    "training_tokens": 10000269312,
+    "validation_nll": 2.6656709483691623,
+    "validation_perplexity": 14.377592933058489
+  },
+  "value_head_dim": 64
+}

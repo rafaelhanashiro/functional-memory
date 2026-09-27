@@ -1,0 +1,214 @@
+{
+  "acceptance": {
+    "completed_utc": "2026-09-21T04:31:12.558248+00:00",
+    "pilot": {
+      "attention_implementation": "pallas_triton",
+      "data_parallel_devices": 4,
+      "final_step": 32,
+      "restored_step": null,
+      "runtime_seconds": 87.26,
+      "steady_step_seconds_median": 0.5155
+    },
+    "resume": {
+      "attention_implementation": "pallas_triton",
+      "data_parallel_devices": 4,
+      "final_step": 33,
+      "restored_step": 32,
+      "runtime_seconds": 60.86,
+      "steady_step_seconds_median": null
+    },
+    "resume_continues_exactly": true,
+    "status": "passed",
+    "sweep_preflight_job": "200502"
+  },
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": [
+    {
+      "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/best_validation.json",
+      "sha256": "ddb126523e38cffcd22fc7ffc1b1e11464c87eb25f1c4e50f0b1e318d528052e"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/completion.json",
+      "sha256": "008c10a9fdd4060c259a88d52acec57e711070f02c88a657f31ad9dc4826c7d2"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/config.yaml",
+      "sha256": "7d867192042b54518004f5b592c240d8d10a0c344647644fa26de7051e025aad"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/launch.json",
+      "sha256": "eb5cdae4fe7e3b06060fb45c122d5cdc5abb78fee3b83749435af586b101e365"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/metadata.json",
+      "sha256": "fffe7341524eaf5cdb3395311349728dff6f148dccb53ebaf8e91d687a1929ec"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/metrics.jsonl",
+      "sha256": "ec578e7a8bfdd175a394d1261027f09237038121b2c6fa8e7baf6c75d4b4ba2a"
+    }
+  ],
+  "attention_degree": 8,
+  "best_validation": {
+    "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/best_validation.json",
+    "sha256": "ddb126523e38cffcd22fc7ffc1b1e11464c87eb25f1c4e50f0b1e318d528052e"
+  },
+  "completion": {
+    "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/completion.json",
+    "sha256": "008c10a9fdd4060c259a88d52acec57e711070f02c88a657f31ad9dc4826c7d2"
+  },
+  "config": {
+    "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/config.yaml",
+    "sha256": "7d867192042b54518004f5b592c240d8d10a0c344647644fa26de7051e025aad"
+  },
+  "data_identity": {
+    "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/data_identity.json",
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+  },
+  "execution": {
+    "actual_node": "akita",
+    "actual_partition": "sweep",
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "execution_profile": "b300",
+    "gpu_count": 4,
+    "gpu_family": "B300"
+  },
+  "home_cluster": "kennel",
+  "label": "200m-dk032-m008-seed0",
+  "launch": {
+    "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/launch.json",
+    "sha256": "eb5cdae4fe7e3b06060fb45c122d5cdc5abb78fee3b83749435af586b101e365"
+  },
+  "metadata": {
+    "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/metadata.json",
+    "sha256": "fffe7341524eaf5cdb3395311349728dff6f148dccb53ebaf8e91d687a1929ec"
+  },
+  "metrics": {
+    "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/metrics.jsonl",
+    "sha256": "ec578e7a8bfdd175a394d1261027f09237038121b2c6fa8e7baf6c75d4b4ba2a"
+  },
+  "name": "200m-dk032-m008-seed0",
+  "original_experiment": "key_dimension_taylor",
+  "parameter_count": 189420544,
+  "qk_head_dim": 32,
+  "record_schema_version": 1,
+  "resolved_config": {
+    "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/config.yaml",
+    "recorded_sha256": "4a757d25fe2e27609dcbee1a752ecff6def02c77735eca1a0c1537bef8e4f992",
+    "sha256": "7d867192042b54518004f5b592c240d8d10a0c344647644fa26de7051e025aad"
+  },
+  "retained_completed": false,
+  "run_id": "r35c90bbb045c",
+  "seed": 0,
+  "selected_checkpoint": {
+    "file_count": 15,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "1217bf8ccac36c89fe7afdd91f902b652bc183432ef8fab94fac1f755dcf5937",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "8c7e38a68e92c7175b0e81d28eacdbeb0d10d3f03d44d9544c68fa4beca232d5",
+        "size_bytes": 142339
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "14a016b3f2488acc2ac9d7a3a99d76486da2cc74f55af9037eaf3687930d7b8d",
+        "size_bytes": 87449
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "df6819d116dc0c485fe150909c584ab015d8027a384694b9460348efd228884a",
+        "size_bytes": 49083
+      },
+      {
+        "path": "default/d/ca0f49d92fb7372ae81cd10a7e262556",
+        "sha256": "f754d1b97f93b3810935d71628c0f5b7ec8f9de86424fe6a3b47146158ee76da",
+        "size_bytes": 3152
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "ea3468c9b20e25a047d135083eba1099f49c7df338fbc6d0aceb04b1298ddaf4",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/104b3e1590d1d97b6ab17dad1f1116d1",
+        "sha256": "7eefba9d1fe153366cbe0fe8653812f41f40c13caab2f1105d1e376dccc6483f",
+        "size_bytes": 438
+      },
+      {
+        "path": "default/ocdbt.process_0/d/651aa721ce2ce4749be510165592569f",
+        "sha256": "b6aee02ebfc304d9d3c80ad842282164ab241de77f96467fbc8da0b2aeb2e934",
+        "size_bytes": 164814848
+      },
+      {
+        "path": "default/ocdbt.process_0/d/728a933fbe242526a53061a15bf19bab",
+        "sha256": "675a676b4088f1c179d3bcadad3a00e47fb4fe72e46837ebf0d97b277606507a",
+        "size_bytes": 777605120
+      },
+      {
+        "path": "default/ocdbt.process_0/d/7faf95e9e1ee8c544bac83bf7c2fab30",
+        "sha256": "a52062934424fa0254ad40db2107492b374b29522401c04d2cce8e1c80019c32",
+        "size_bytes": 607
+      },
+      {
+        "path": "default/ocdbt.process_0/d/94e0bf497f6c66f0fb13076f96543efa",
+        "sha256": "5c6a3fddb6be187d54e9c33733cddfed99055545ecfc7405780e90334fa62d8f",
+        "size_bytes": 1139302400
+      },
+      {
+        "path": "default/ocdbt.process_0/d/bbfa9b761268b549d2534e044e4b4b98",
+        "sha256": "a29273567d3aef719c066665e8fd31c0bd35342cb3a231777dde7300e69e8f62",
+        "size_bytes": 630
+      },
+      {
+        "path": "default/ocdbt.process_0/d/eac72e127c4a0bc7c77a083a7768036c",
+        "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+        "size_bytes": 195
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "7dc7b0c498073f4cf20e2988fe07e5d0eb83d25469686e9e6c930cfee59e41da",
+        "size_bytes": 387
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "9d1ed24ea67b304170f27fe2944ea8cf4689a1ebb38666caf7db96030a5f503e",
+        "size_bytes": 138
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "metadata_sha256": "1217bf8ccac36c89fe7afdd91f902b652bc183432ef8fab94fac1f755dcf5937",
+    "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/checkpoints/19074",
+    "sha256": "c79dbdaa2ecfaeba94b0ef688b8ec7bb76641479afc25326ad6ecaaa005fb602",
+    "size_bytes": 2082007270,
+    "step": 19074,
+    "validation_nll": 2.7127883349146162,
+    "validation_perplexity": 15.07124064776829
+  },
+  "slurm_job_id": "200736",
+  "slurm_log": {
+    "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/training.log",
+    "sha256": "0c1599e33b10cb67f9a6f2b5cc0594196eb3ba9f59900f24c5ad07f8a52844ef"
+  },
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+  "terminal": {
+    "step": 19074,
+    "training_tokens": 10000269312,
+    "validation_nll": 2.7127883349146162,
+    "validation_perplexity": 15.07124064776829
+  },
+  "value_head_dim": 64
+}

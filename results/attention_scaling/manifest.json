@@ -1,0 +1,1945 @@
+{
+  "schema_version": 1,
+  "experiment": "attention_scaling",
+  "kind": "derived_comparison_no_new_training",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "seed": 0,
+  "data_identity": {
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+  },
+  "terminal_step": 19074,
+  "training_tokens": 10000269312,
+  "display_coordinates": {
+    "heatmap": {
+      "d_k": [
+        8,
+        16,
+        32,
+        64,
+        128
+      ],
+      "panels": [
+        {
+          "id": "normalized_fixed",
+          "title": "Normalized Taylor · fixed",
+          "columns": [
+            {
+              "id": "m1",
+              "label": "m=1"
+            },
+            {
+              "id": "m2",
+              "label": "m=2"
+            },
+            {
+              "id": "m3",
+              "label": "m=3"
+            },
+            {
+              "id": "m4",
+              "label": "m=4"
+            },
+            {
+              "id": "m8",
+              "label": "m=8"
+            },
+            {
+              "id": "m16",
+              "label": "m=16"
+            }
+          ]
+        },
+        {
+          "id": "references",
+          "title": "Reference mechanisms",
+          "columns": [
+            {
+              "id": "softmax",
+              "label": "softmax"
+            },
+            {
+              "id": "softmax_no_qk_norm",
+              "label": "softmax\nno QK-norm",
+              "qk_norm": false
+            },
+            {
+              "id": "gla",
+              "label": "GLA",
+              "qk_norm": null
+            }
+          ]
+        }
+      ]
+    },
+    "degree_chart": {
+      "d_k": [
+        64
+      ],
+      "panels": [
+        {
+          "id": "normalized_learned_taylor",
+          "title": "Normalized, learned",
+          "columns": [
+            {
+              "id": "m1",
+              "label": "m=1"
+            },
+            {
+              "id": "m2",
+              "label": "m=2"
+            },
+            {
+              "id": "m3",
+              "label": "m=3"
+            },
+            {
+              "id": "m4",
+              "label": "m=4"
+            }
+          ]
+        },
+        {
+          "id": "normalized_nonnegative",
+          "title": "Normalized, learned nonnegative",
+          "columns": [
+            {
+              "id": "m2",
+              "label": "m=2"
+            },
+            {
+              "id": "m4",
+              "label": "m=4"
+            }
+          ]
+        },
+        {
+          "id": "unnormalized_learned",
+          "title": "Unnormalized, learned",
+          "columns": [
+            {
+              "id": "m1",
+              "label": "m=1"
+            },
+            {
+              "id": "m2",
+              "label": "m=2"
+            },
+            {
+              "id": "m3",
+              "label": "m=3"
+            },
+            {
+              "id": "m4",
+              "label": "m=4"
+            }
+          ]
+        },
+        {
+          "id": "unnormalized_fixed",
+          "title": "Unnormalized, fixed Taylor",
+          "columns": [
+            {
+              "id": "m1",
+              "label": "m=1"
+            },
+            {
+              "id": "m2",
+              "label": "m=2"
+            },
+            {
+              "id": "m3",
+              "label": "m=3"
+            },
+            {
+              "id": "m4",
+              "label": "m=4"
+            }
+          ]
+        },
+        {
+          "id": "references",
+          "title": "Reference mechanisms",
+          "columns": [
+            {
+              "id": "softmax",
+              "label": "QK-norm softmax"
+            },
+            {
+              "id": "softmax_no_qk_norm",
+              "label": "softmax",
+              "qk_norm": false
+            },
+            {
+              "id": "unnormalized_exp",
+              "label": "unnormalized exp"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "source_manifests": {
+    "key_dimension_taylor": {
+      "path": "experiments/key_dimension_taylor/sweep.yaml",
+      "sha256": "640fdfd4e39d6f6101d9e1134df13c5850fec1459caa52a45ea312f7bccb1151"
+    },
+    "odd_taylor_attention": {
+      "path": "experiments/odd_taylor_attention/sweep.yaml",
+      "sha256": "f63138305fa5e3ec07d8b19408df5c3bc0377d2041c0f8a9434ddcdb029720a4"
+    },
+    "gla_key_dimension": {
+      "path": "experiments/gla_key_dimension/sweep.yaml",
+      "sha256": "ab373dd531499b6238e2bd21363627c41e5e0993c1f4b41a4da14bf09b529fc5"
+    },
+    "qk_norm_attention": {
+      "path": "experiments/qk_norm_attention/sweep.yaml",
+      "sha256": "139017760f5b88a9d22ca39a9400b38767324597fa3ee93fa755d0c5abd65b16"
+    },
+    "unnormalized_taylor_attention": {
+      "path": "experiments/unnormalized_taylor_attention/sweep.yaml",
+      "sha256": "8867d26faadfbe0fd99b6bf924a1e8e9cf3038a55535b407b8605a55a6554d2f"
+    },
+    "unnormalized_attention": {
+      "path": "experiments/unnormalized_attention/sweep.yaml",
+      "sha256": "4443273be750b6b5842b72ced5e091556c4a5e963e30b79dddae81920a2705b1"
+    },
+    "qk_norm_learned_taylor": {
+      "path": "experiments/qk_norm_learned_taylor/sweep.yaml",
+      "sha256": "457abfd99f0fce13caee5ac5c1c1f97dfd87ebb3a08a3e037ee4769d68a7fda7"
+    },
+    "nonnegative_learned_taylor": {
+      "path": "experiments/nonnegative_learned_taylor/sweep.yaml",
+      "sha256": "2f0f0a7dade224911f47961b15b1c589e75876d74ae39116cf28ba5474e7034e"
+    }
+  },
+  "source_records": {
+    "key_dimension_taylor/rc3536d3ff6cd": {
+      "path": "experiments/key_dimension_taylor/runs/rc3536d3ff6cd/record.json",
+      "sha256": "0e100b0f3080817d6df174445c2f7b412c747fe9a8a219134202dc99fc658299"
+    },
+    "key_dimension_taylor/r18aa3ef494f5": {
+      "path": "experiments/key_dimension_taylor/runs/r18aa3ef494f5/record.json",
+      "sha256": "c1f480d10a08d6b4d7add1d0cab3cc782c933724c6fc5a98297d36329d5cf1de"
+    },
+    "key_dimension_taylor/r0b5fb00b8649": {
+      "path": "experiments/key_dimension_taylor/runs/r0b5fb00b8649/record.json",
+      "sha256": "42e9922696ab1309d40d1a61715bfe19a29a3d4010387bdc2a76341d83ae5a6b"
+    },
+    "key_dimension_taylor/r3961c167a16f": {
+      "path": "experiments/key_dimension_taylor/runs/r3961c167a16f/record.json",
+      "sha256": "1f763a3604486132a9c9fd1732969ed024ca262fceabedd4c758aca95b9f7735"
+    },
+    "key_dimension_taylor/ra92381785e78": {
+      "path": "experiments/key_dimension_taylor/runs/ra92381785e78/record.json",
+      "sha256": "91343a05c6ea05816f7f687f5fd4b58c098f6bd79d9f451c5275bf1f7a732805"
+    },
+    "gla_key_dimension/ra6346b7a6cfc": {
+      "path": "experiments/gla_key_dimension/runs/ra6346b7a6cfc/record.json",
+      "sha256": "b92f94e26f074bf67d0d781b91be513fab5cc660c5d428b911a8b1f6458d19b9"
+    },
+    "key_dimension_taylor/r8a9bc098ce3a": {
+      "path": "experiments/key_dimension_taylor/runs/r8a9bc098ce3a/record.json",
+      "sha256": "d651ab8f98e1c562550da8282098280d76e527cb2e74d2b212054c4a26c0480a"
+    },
+    "key_dimension_taylor/r7ca127105528": {
+      "path": "experiments/key_dimension_taylor/runs/r7ca127105528/record.json",
+      "sha256": "c514d37eb437d98b995c6d3121e163a879859feb2812e010c2c99dd36e0749a4"
+    },
+    "key_dimension_taylor/rcaf4e954ca9a": {
+      "path": "experiments/key_dimension_taylor/runs/rcaf4e954ca9a/record.json",
+      "sha256": "1c4b63ff1ab9fc535b6216b980f64c7fdde9312a8170edd1f8a810e8fd7162c4"
+    },
+    "key_dimension_taylor/rfe7378eb4b4f": {
+      "path": "experiments/key_dimension_taylor/runs/rfe7378eb4b4f/record.json",
+      "sha256": "05743135a0f8383b0a6b259c56df3c8dbfbae51cb5a8f64f63a081a7680d3add"
+    },
+    "key_dimension_taylor/r51dc98ae4fd1": {
+      "path": "experiments/key_dimension_taylor/runs/r51dc98ae4fd1/record.json",
+      "sha256": "dd97414b69aa9c981c4a2480347af14fe2b58f3782f8874bd4b370f1789e9399"
+    },
+    "gla_key_dimension/r6a5ffbb56ac3": {
+      "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/record.json",
+      "sha256": "0efdfb8ef97f05c569faa46c57ecbe11d928946f063d27773d118536bcc36f61"
+    },
+    "key_dimension_taylor/r3a06ec7d5976": {
+      "path": "experiments/key_dimension_taylor/runs/r3a06ec7d5976/record.json",
+      "sha256": "759d0e9259a3e7506df0ee5c3ff9a62a17ed2ad4d4c66ab4399eaa156cff64fa"
+    },
+    "key_dimension_taylor/r52e627fffdfc": {
+      "path": "experiments/key_dimension_taylor/runs/r52e627fffdfc/record.json",
+      "sha256": "b23c5aca2cab4614616c718d20cd2ee41689cfb05fd08a0e3c8f61232dd0ca5f"
+    },
+    "key_dimension_taylor/r35c90bbb045c": {
+      "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/record.json",
+      "sha256": "41551800ae33a6e45f5fd2113536f61fd05f46eb39752d2099f13e1ab8c5aaf5"
+    },
+    "key_dimension_taylor/r74009ae25ff9": {
+      "path": "experiments/key_dimension_taylor/runs/r74009ae25ff9/record.json",
+      "sha256": "6d6e7657596a4624937a38014df3cfbf10d2189e8acd85b7d1e8c7cd2bdb2a01"
+    },
+    "key_dimension_taylor/r261f88db0c4b": {
+      "path": "experiments/key_dimension_taylor/runs/r261f88db0c4b/record.json",
+      "sha256": "3c191807e83be2b0dc17c63f9292efdf479496fa6417019fb00ef026775ed91d"
+    },
+    "gla_key_dimension/r7d278821b92d": {
+      "path": "experiments/gla_key_dimension/runs/r7d278821b92d/record.json",
+      "sha256": "64c5954666f42eb37147dffbc382720644a6d23ac72fb88833b9237789e2dc05"
+    },
+    "key_dimension_taylor/r93c9d0814322": {
+      "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/record.json",
+      "sha256": "fdaffd77a7e6dcf4a8e185dd6c807b19cd151f6cf3b2c7c8fd8c89845031b053"
+    },
+    "key_dimension_taylor/ra9b651caa405": {
+      "path": "experiments/key_dimension_taylor/runs/ra9b651caa405/record.json",
+      "sha256": "ef0a667f647bf31b69c0b3c0d8de3134d763412cb14faaf3dc2b2425a99cf712"
+    },
+    "key_dimension_taylor/r4923c6939e74": {
+      "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/record.json",
+      "sha256": "528c12db65a6b2f7619a6b428724851d6e98a974ab4602055c0143b778fdd749"
+    },
+    "key_dimension_taylor/r03d397da0bd0": {
+      "path": "experiments/key_dimension_taylor/runs/r03d397da0bd0/record.json",
+      "sha256": "6cbdc857b11073549be797978000dbdc2334365e77a18b50fd6539926e43b4dd"
+    },
+    "key_dimension_taylor/r50088d29f2b5": {
+      "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/record.json",
+      "sha256": "bc5b80daffa45080f96b736b68749adc875bcc19e72692c8ca625ab93a7628d5"
+    },
+    "gla_key_dimension/rf35e1e8fb2e3": {
+      "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/record.json",
+      "sha256": "89d89904d5239aeebc21a681e9e29f00c2677ee136d39390dd293ee6c854f909"
+    },
+    "key_dimension_taylor/r21a071c7cd15": {
+      "path": "experiments/key_dimension_taylor/runs/r21a071c7cd15/record.json",
+      "sha256": "6a5847a604fd915184e2dd174eeeef17a4c0c11172412679fc4ca0872171c885"
+    },
+    "key_dimension_taylor/rf4c43c0d0467": {
+      "path": "experiments/key_dimension_taylor/runs/rf4c43c0d0467/record.json",
+      "sha256": "b8ed652cf02bfa5a630a69b8e3319b21e3ccb6c6c0f0ae779a51f7fe8dcb3180"
+    },
+    "key_dimension_taylor/r58c25c5d4ce1": {
+      "path": "experiments/key_dimension_taylor/runs/r58c25c5d4ce1/record.json",
+      "sha256": "d2c92fb6d070dc907be7e3bd718aaa00c890c938fc131dacb9d964c5bbf4d8f7"
+    },
+    "key_dimension_taylor/r0c924296d7d3": {
+      "path": "experiments/key_dimension_taylor/runs/r0c924296d7d3/record.json",
+      "sha256": "9e1918ff00a1dabdc06faf8ccf8f89beeec22c447e71bb7891c8dbf2a2267503"
+    },
+    "key_dimension_taylor/rf3539f68224c": {
+      "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/record.json",
+      "sha256": "48a348411fa8e821d182d51ea5d761c6b7df2cdd5dd37a0cc2e504758a168ea8"
+    },
+    "gla_key_dimension/r03c03c3f84b2": {
+      "path": "experiments/gla_key_dimension/runs/r03c03c3f84b2/record.json",
+      "sha256": "678fe99fe864c9feb900f30b333fa92ed51bcc349757b669adf7ed6bb4384a44"
+    },
+    "odd_taylor_attention/raa90edf82385": {
+      "path": "experiments/odd_taylor_attention/runs/raa90edf82385/record.json",
+      "sha256": "fbc0e7bf4030bd93b1399a906e12956f9dec5e4cae4977d4328d1e6a30d2df89"
+    },
+    "odd_taylor_attention/r8b46f1ad9453": {
+      "path": "experiments/odd_taylor_attention/runs/r8b46f1ad9453/record.json",
+      "sha256": "c45c234951e53b921b6732e2c4486e2e89ebc7f092fede882df2a76c81ebd07b"
+    },
+    "qk_norm_attention/r1feece425074": {
+      "path": "experiments/qk_norm_attention/runs/r1feece425074/record.json",
+      "sha256": "be7e056182124fa1ba22e912f12a8e5dc4271eddd9c79fd4101ea839a013b802"
+    },
+    "unnormalized_taylor_attention/reb79b9201e5a": {
+      "path": "experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/record.json",
+      "sha256": "48c86167529e9e65dd53878b583e02af1b6a2b125c1ce9ce98245d3cf3489748"
+    },
+    "qk_norm_learned_taylor/r13c144b8fd17": {
+      "path": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/record.json",
+      "sha256": "04fe933de9d2522f87033c2c3ca131b3947b66ccc7b2afb6e11366659d49e0f1"
+    },
+    "unnormalized_taylor_attention/re4509bf65b5f": {
+      "path": "experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/record.json",
+      "sha256": "b3f4f05eaca12e40387618ef46ca16b4222abe95be005dc98a524919b289b468"
+    },
+    "qk_norm_learned_taylor/r07bee5b16e61": {
+      "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/record.json",
+      "sha256": "c4dfded3b275861afcca2f877ad9273f69d750716341e4ad28376f6d28d2dee0"
+    },
+    "unnormalized_taylor_attention/rba0cd1a9bf62": {
+      "path": "experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/record.json",
+      "sha256": "4413ff767e2c7769b073abbd4bdae619334b8bad185bebdf39faa142b5e3dcd7"
+    },
+    "qk_norm_learned_taylor/r0470d7fcaae6": {
+      "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/record.json",
+      "sha256": "7820463294a68e5a5ba012b646ece2b676ceff83019452f604da260eb59729ad"
+    },
+    "unnormalized_taylor_attention/rfd3129858805": {
+      "path": "experiments/unnormalized_taylor_attention/runs/rfd3129858805/record.json",
+      "sha256": "20283a3e012ed479d73a571e7981499d8e6778dc15a8ab8ebbc4523dcf48adbd"
+    },
+    "qk_norm_learned_taylor/rbaa19693c602": {
+      "path": "experiments/qk_norm_learned_taylor/runs/rbaa19693c602/record.json",
+      "sha256": "fb4f6a383ea2d98231c10967ad198591b9cebe5b7a2197e1227f978e64d13510"
+    },
+    "qk_norm_learned_taylor/rc342fe890e6f": {
+      "path": "experiments/qk_norm_learned_taylor/runs/rc342fe890e6f/record.json",
+      "sha256": "e2f07a4cd02804f80ba2fd1998b4df343e0230a5ef293cd6e3b4edddd5eff4b4"
+    },
+    "qk_norm_learned_taylor/rd962214a5556": {
+      "path": "experiments/qk_norm_learned_taylor/runs/rd962214a5556/record.json",
+      "sha256": "961e8e1ee70a089d035cb9fc6cdce5552dce992a92e179f7b756fb493282b69e"
+    },
+    "qk_norm_learned_taylor/rd7428f72915b": {
+      "path": "experiments/qk_norm_learned_taylor/runs/rd7428f72915b/record.json",
+      "sha256": "5135cb12b7a16ecbbdf93e95be4ee51564045a55949f8478821d9543e06d07ad"
+    },
+    "qk_norm_learned_taylor/re554c79caddb": {
+      "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/record.json",
+      "sha256": "a132f9bbaa903d61460b3e273accd8f7437c36c5ff42f6464ee0140d0c40c5ef"
+    },
+    "unnormalized_attention/r8cccbabca761": {
+      "path": "experiments/unnormalized_attention/runs/r8cccbabca761/record.json",
+      "sha256": "7b4ec921dca80cadbd7db1061b02e4a7b86ebaa258c7b0abbbef9c2f879d40df"
+    },
+    "nonnegative_learned_taylor/rdbd4607d5af9": {
+      "path": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/record.json",
+      "sha256": "74b5daad8b8afa44dce679ba113d3ea581f1f20edd7a3fd0ba9933b3239b4372"
+    },
+    "nonnegative_learned_taylor/r507d1c2632b2": {
+      "path": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/record.json",
+      "sha256": "bcc5a9dc3d1a28528be97915313231250fdcc9380910779ae1a818d108a88518"
+    }
+  },
+  "source_runs": [
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "odd_taylor_attention",
+      "run": "raa90edf82385",
+      "status": "numerical_failure",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/odd_taylor_attention/runs/raa90edf82385/metadata.json",
+          "sha256": "7a5d971252905aec23e3a7c963eaff1616a9ec8dc9c8090fc9f701035aeed336"
+        },
+        "failure": {
+          "path": "experiments/odd_taylor_attention/runs/raa90edf82385/numerical_failure_step_00000031.json",
+          "sha256": "43c29f7a64b34dbaa3fc192321836a476cc8c5ffb54f3ef953e82697b3a62143"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "rc3536d3ff6cd",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/rc3536d3ff6cd/metadata.json",
+          "sha256": "d6d7ec00474997e28893114c2c122a6ce675b29607b8c55b11f19367b8921478"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/rc3536d3ff6cd/metrics.jsonl",
+          "sha256": "c79a75cdd00d5955b95549106f03b91f687054c885e48bd9443fe54dbc6255d0"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/rc3536d3ff6cd/completion.json",
+          "sha256": "b638327ad96544d53384058e9b09a4d975c6d08eafa062c53c66ac371f5fb6f8"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "r8a9bc098ce3a",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r8a9bc098ce3a/metadata.json",
+          "sha256": "0a1359ff51ee59d684d6e8fdcce96e5429bbb8e93c9513b8dffc9953800d0e32"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r8a9bc098ce3a/metrics.jsonl",
+          "sha256": "3862a0101acccb80fd668e2575288bcea3469d643cc80967855eef3bbcd523b8"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r8a9bc098ce3a/completion.json",
+          "sha256": "2ee1db56f1f9926ad9e86a65b4cf870fd5273655ae47a6b24c673150663d5226"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "r3a06ec7d5976",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r3a06ec7d5976/metadata.json",
+          "sha256": "59fb2268d9f473dce8b81697a07d8d4cd08bae26e537c902225d29c53dd78b79"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r3a06ec7d5976/metrics.jsonl",
+          "sha256": "f211003390dd1e795100bb9520e0ed98fb6a75b31b3affd0af909c1ba8e5a888"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r3a06ec7d5976/completion.json",
+          "sha256": "575519164ca70d973b0431b1a9719690ea6940073c1953c7d2450cf82fff84a0"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "r93c9d0814322",
+      "status": "complete",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/metadata.json",
+          "sha256": "300ccab36e6488f7aa6731df6a034ef677812e118c471efe39049c83c95a1c40"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/metrics.jsonl",
+          "sha256": "afd284756057e498dfbc1279530e44e792627848f10663a0dcdd793a0f447bc3"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/completion.json",
+          "sha256": "0c39c07e7276d68eec7965eb5c616b65e4e08ed46c5123555e67cff86604e06b"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "r21a071c7cd15",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r21a071c7cd15/metadata.json",
+          "sha256": "0d966aecc94b1b284ac9d34a6ec13a558e304bf66de3961136b3af7aae701172"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r21a071c7cd15/metrics.jsonl",
+          "sha256": "4731d3920a58201f8ca9ac8bf2568826a28a1a21d1f30e28c5c71e1023fc108d"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r21a071c7cd15/completion.json",
+          "sha256": "86c2c0b0576807eddcc8d86a227fa55786fb6ef51430d43ef4ed935591de40fd"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "odd_taylor_attention",
+      "run": "r8b46f1ad9453",
+      "status": "numerical_failure",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/odd_taylor_attention/runs/r8b46f1ad9453/metadata.json",
+          "sha256": "a8f14c5236955465209b27d86aab60381f691f71f20c068d8d2332dd9dacef82"
+        },
+        "failure": {
+          "path": "experiments/odd_taylor_attention/runs/r8b46f1ad9453/numerical_failure_step_00000419.json",
+          "sha256": "4cdddfa0c4136fbb902b6a8375bc4efff6962eb79b1680616c7c3be8b7e722c6"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "r18aa3ef494f5",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r18aa3ef494f5/metadata.json",
+          "sha256": "c7716e6a52b8991fc63f83c7c508e236b327884ecc300e78fa2735b38707d78a"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r18aa3ef494f5/metrics.jsonl",
+          "sha256": "a9f1db65865e1012e6de36666075baa4ce09b323aafefaf481097b9046ac30dc"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r18aa3ef494f5/completion.json",
+          "sha256": "ac246e4f4abc81e40fac17d3b36023901a867db2a5615c372b48291067addc1f"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "r7ca127105528",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r7ca127105528/metadata.json",
+          "sha256": "c6ce19fb117c5f586990f0dd908c7b1c23055cb059ffaf2bfa94ff6f52643a65"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r7ca127105528/metrics.jsonl",
+          "sha256": "4e478beac647915ca8d55d6c791694faf0950e9925224bc7503e3487e1cbd91f"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r7ca127105528/completion.json",
+          "sha256": "33197f96e8c4fd2cf56747d7b6d0bc496a28ef70d73f06a67e7a3ec9aa7fbe4f"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "r52e627fffdfc",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r52e627fffdfc/metadata.json",
+          "sha256": "27b3673a7fd90eecda8456d3b4fa732e35add0c3ec575c78a0884920e81945f8"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r52e627fffdfc/metrics.jsonl",
+          "sha256": "f860878f62bb69f799ef05265a5f17d94bb79afc4081252b1718352510fd7bc2"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r52e627fffdfc/completion.json",
+          "sha256": "458cf803729ed1cbee40502e81ba30a55f571f26bd8d5238181eddbf6f3319ee"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "ra9b651caa405",
+      "status": "complete",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/ra9b651caa405/metadata.json",
+          "sha256": "10af0dd9289b98829d36b9967ecfa0cf161c22c91792c552c67ff5cd825e241e"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/ra9b651caa405/metrics.jsonl",
+          "sha256": "37ecdb24c15801f34f3df96c8311db2b1332cd934d8fca6197b12c4851d3104a"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/ra9b651caa405/completion.json",
+          "sha256": "bedd0ddfa3867044335f7fe6d223f27941baf42df164eeb9924818258ccbd25d"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "rf4c43c0d0467",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/rf4c43c0d0467/metadata.json",
+          "sha256": "5dd6cb70953094f823ca36f1b4f2247e87f7c66ee4e5b5539169562d8f7acd88"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/rf4c43c0d0467/metrics.jsonl",
+          "sha256": "11e9ed1325c8009a3de91bec8e7247235da8426272b23149051c65d836ac5f5f"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/rf4c43c0d0467/completion.json",
+          "sha256": "981ff4663ee5fd768f671f2c2b13eec81bf57c997a6cab678cf6098dbc4bb778"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "r0b5fb00b8649",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r0b5fb00b8649/metadata.json",
+          "sha256": "c471ab4663d7fa45b382381c35fe6adae58243bbfde9ee13b3fa0c79b7806ddc"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r0b5fb00b8649/metrics.jsonl",
+          "sha256": "1ef52873252a1b44b4b927a94260ec2609ce14444014932f6375d7e015110383"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r0b5fb00b8649/completion.json",
+          "sha256": "db4914e6be28857a12b2f9928646364bde3000069ea42473d25bd60eeef90be2"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "rcaf4e954ca9a",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/rcaf4e954ca9a/metadata.json",
+          "sha256": "c752714e541a6c131ffce357a635236fbb643881b6c70dab41546bb78e6f28ac"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/rcaf4e954ca9a/metrics.jsonl",
+          "sha256": "6715d9d635bd2f01ea3cff26feaf34bea68455ed5acc31a860d84a635241a3bd"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/rcaf4e954ca9a/completion.json",
+          "sha256": "93931b7a3f32c84149e428a35009c8491ab6d9fb4d560b105225a6a886f79587"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "r35c90bbb045c",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/metadata.json",
+          "sha256": "fffe7341524eaf5cdb3395311349728dff6f148dccb53ebaf8e91d687a1929ec"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/metrics.jsonl",
+          "sha256": "ec578e7a8bfdd175a394d1261027f09237038121b2c6fa8e7baf6c75d4b4ba2a"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/completion.json",
+          "sha256": "008c10a9fdd4060c259a88d52acec57e711070f02c88a657f31ad9dc4826c7d2"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "r4923c6939e74",
+      "status": "complete",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/metadata.json",
+          "sha256": "202873338c143c54528ec28e6c4c7c578feabd52c9e08b0f05e20fcd0f0f8108"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/metrics.jsonl",
+          "sha256": "a6a6d987b7779241b5ddc6b15e43c5622cd1c40275d7f8dee98fd73d38d55b35"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/completion.json",
+          "sha256": "4891b76b4e7674df0b2ba311e8a0cfaab6133c155d1fa018171e1a7b9a153085"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m8",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "r58c25c5d4ce1",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r58c25c5d4ce1/metadata.json",
+          "sha256": "530b1482b6f5d5445ade597efc1433ed93f0a5ac0165c0017d672a98f0f87de3"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r58c25c5d4ce1/metrics.jsonl",
+          "sha256": "b1729cd20fe5726ccc1ecf28c8b726f4e3516991a6359ec9c672756266977293"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r58c25c5d4ce1/completion.json",
+          "sha256": "665b83a1a693486f7ce7b1efead761db8d83b5a1b61080e3ab5c9eedbb9ffcd9"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "r3961c167a16f",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r3961c167a16f/metadata.json",
+          "sha256": "ad120cc41070f8ca1d5586d500f5b20b0b53818d9bdaf3c1957d13e429712795"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r3961c167a16f/metrics.jsonl",
+          "sha256": "3be0519b762c5638c54130bf105d3728df2aa4d236e4242304b543ed4faae858"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r3961c167a16f/completion.json",
+          "sha256": "94c511b6b29ee085a200735d4b82afa2a6b347be35960e589411f752d4083f8a"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "rfe7378eb4b4f",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/rfe7378eb4b4f/metadata.json",
+          "sha256": "9ac76943b4a5f79636e63f28e63ec3102beccd49021b6519c654574343a1e9d7"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/rfe7378eb4b4f/metrics.jsonl",
+          "sha256": "f9d0c35d52b0dc45c792f95d8d4c267a667d69fdf0f84a59e97bd50060a61ef5"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/rfe7378eb4b4f/completion.json",
+          "sha256": "16293317ca700799fed3d197dc16f6193afd4cd009413efc166aaa708e423d5c"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "r74009ae25ff9",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r74009ae25ff9/metadata.json",
+          "sha256": "cb20063c9a48a0b860da91eebc0957ac6925839657d7baea7c024a9c4a9beb04"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r74009ae25ff9/metrics.jsonl",
+          "sha256": "8169d4fd407a4eb02b6595f5071cbc7ed8b6392b437e9b1550743042a681c6d4"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r74009ae25ff9/completion.json",
+          "sha256": "b4467c4bb82e4634abc86e7869c8d315d64cb1747eb434eb01452b1f1b0affce"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "r03d397da0bd0",
+      "status": "complete",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r03d397da0bd0/metadata.json",
+          "sha256": "02ed201d70063b26857dd9759688e157527f010edcc15707679bce7a5919e59a"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r03d397da0bd0/metrics.jsonl",
+          "sha256": "97de74ec829f36a5a7ad73b25c93b456716259b188c94a7417e7c63b7a04e929"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r03d397da0bd0/completion.json",
+          "sha256": "931ade1dffc3165778cf42142e37c74fb79211a948b42a9331d08197a1752e84"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "heatmap",
+      "panel": "normalized_fixed",
+      "column": "m16",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "r0c924296d7d3",
+      "status": "complete",
+      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r0c924296d7d3/metadata.json",
+          "sha256": "9ef8cf24ca5855062781fd3385edc0b6ad18dad5a515c35afdd54b7808ee0be3"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r0c924296d7d3/metrics.jsonl",
+          "sha256": "1691a4090e4684df0b7a6c5691dcd633c45e6b2354537014e413d4be9060f61d"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r0c924296d7d3/completion.json",
+          "sha256": "97417db27cbab9d9aaa135a184513e3b0f09ebc9f311028e17fcccc53ca3ec6a"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 8,
+      "experiment": "key_dimension_taylor",
+      "run": "ra92381785e78",
+      "status": "complete",
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/ra92381785e78/metadata.json",
+          "sha256": "12129013bc5c34ca4091759552d3a0567dcb3637b1d52df7bd5393c39687e49e"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/ra92381785e78/metrics.jsonl",
+          "sha256": "75bcb65689ba5618be5403794f17c34c4eb8001557db8ae0f6c4bfe336be144a"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/ra92381785e78/completion.json",
+          "sha256": "f32575a5214ca009c88f81b0dfc0ce2448b917463ee4941870762505f7b8d398"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 16,
+      "experiment": "key_dimension_taylor",
+      "run": "r51dc98ae4fd1",
+      "status": "complete",
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r51dc98ae4fd1/metadata.json",
+          "sha256": "01a30d87bb289c95bfbfcf5a1221f8711a05bebf3f24bf24752fb8f49bb48a74"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r51dc98ae4fd1/metrics.jsonl",
+          "sha256": "5d19fb18cdc2f5b7ee0b5b90c7bb2fa622ff653c8fd3c51cf7d5b8c18dd74b14"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r51dc98ae4fd1/completion.json",
+          "sha256": "9f7548222f69d86867db9a5281457b0197b3b7fe38a5007fc38f8433ffe37d4c"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 32,
+      "experiment": "key_dimension_taylor",
+      "run": "r261f88db0c4b",
+      "status": "complete",
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r261f88db0c4b/metadata.json",
+          "sha256": "e10e58ecfd4ca89d4b1acffcb3760a5a51527f734646b8d0a874b7f499cc5dda"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r261f88db0c4b/metrics.jsonl",
+          "sha256": "5a199dbb81f4caeccf79af40454c7eef997ebe0f3698d75211df6e553b2913d3"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r261f88db0c4b/completion.json",
+          "sha256": "7537c2875711264916f0853370c305321f5a90dab168f2d45b293307e4ccdfb6"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 64,
+      "experiment": "qk_norm_attention",
+      "run": "r1feece425074",
+      "status": "complete",
+      "source_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_attention/runs/r1feece425074/metadata.json",
+          "sha256": "fea4127b7425382d2be5f1f4946f60a4fe1f28c273c3d29e934f92cdd69eeeb6"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_attention/runs/r1feece425074/metrics.jsonl",
+          "sha256": "721add8f72c236ace218e41fe8acf2948acc15039e11374c265d2bed9c3c9e49"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_attention/runs/r1feece425074/completion.json",
+          "sha256": "de4e82ca58ec0c788d99898e3b2c7942e146766cd457c97d0281e914eaa702cb"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "heatmap",
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 128,
+      "experiment": "key_dimension_taylor",
+      "run": "rf3539f68224c",
+      "status": "complete",
+      "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/metadata.json",
+          "sha256": "cc2ef5502f587920e3cb519041665bf7f7c0c4796abe8cf1491e1fa14b83668d"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/metrics.jsonl",
+          "sha256": "93ef9664a46cc56e40f2279f18cab2891840228af66a10dd532deac63ebfe720"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/completion.json",
+          "sha256": "46a0f3bed429f66d78f20d0f1e0df9de215d8e2d58a6c73b5dda5a936fdb80f7"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "references",
+      "column": "softmax_no_qk_norm",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "r50088d29f2b5",
+      "status": "complete",
+      "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/metadata.json",
+          "sha256": "d2a32e0c8045e8053595a1acb2d802b97987f8c7b6f7a9eefdef21066d315d42"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/metrics.jsonl",
+          "sha256": "6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/completion.json",
+          "sha256": "7571ffbad1e5e9cf1b7f378ecad556b3f1f1e7d0d77671f8f5aa740331b9c8e0"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": false,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "heatmap",
+      "panel": "references",
+      "column": "gla",
+      "d_k": 8,
+      "experiment": "gla_key_dimension",
+      "run": "ra6346b7a6cfc",
+      "status": "complete",
+      "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/gla_key_dimension/runs/ra6346b7a6cfc/metadata.json",
+          "sha256": "ccc0b51cc03435106d342e96b751cc8c3cd9008ccd80a6abac5faca26b281230"
+        },
+        "metrics": {
+          "path": "experiments/gla_key_dimension/runs/ra6346b7a6cfc/metrics.jsonl",
+          "sha256": "ec2fc9242bf79f4bb71f3304921863b75834050ae21623424453026b68d2157e"
+        },
+        "completion": {
+          "path": "experiments/gla_key_dimension/runs/ra6346b7a6cfc/completion.json",
+          "sha256": "4c0dd5505c7aa9e24fe44ff874313717fabfe7e482cae5a4fea80a60d2a88835"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "references",
+      "column": "gla",
+      "d_k": 16,
+      "experiment": "gla_key_dimension",
+      "run": "r6a5ffbb56ac3",
+      "status": "complete",
+      "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/metadata.json",
+          "sha256": "6b27f0e7f32bb500c755e49a0110c1f94e3a4a81058cf625972e581197ada7cc"
+        },
+        "metrics": {
+          "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/metrics.jsonl",
+          "sha256": "e308007b1c50cb2d7d128168288d57fc68b837fd352e3b61635f19b8bee6f42b"
+        },
+        "completion": {
+          "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/completion.json",
+          "sha256": "34aa4bfb0acd6bad92bbff6e20a2ad68445dd3cb9c5d8897286f2d72cd32865f"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "references",
+      "column": "gla",
+      "d_k": 32,
+      "experiment": "gla_key_dimension",
+      "run": "r7d278821b92d",
+      "status": "complete",
+      "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/gla_key_dimension/runs/r7d278821b92d/metadata.json",
+          "sha256": "b55dbd410b4c6a58d19f47b45fa9ef9f471b7fc4e2538c72ebbf1aad3ef6937f"
+        },
+        "metrics": {
+          "path": "experiments/gla_key_dimension/runs/r7d278821b92d/metrics.jsonl",
+          "sha256": "18e67631eba392ae43d49a8954ecd650f20decbc2a88f2bf555ddfe13c4fe022"
+        },
+        "completion": {
+          "path": "experiments/gla_key_dimension/runs/r7d278821b92d/completion.json",
+          "sha256": "2b815fe7bc64d22684a85fc501b220c22383f4b1b91f7424471d1ebb70101c7e"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "references",
+      "column": "gla",
+      "d_k": 64,
+      "experiment": "gla_key_dimension",
+      "run": "rf35e1e8fb2e3",
+      "status": "complete",
+      "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/metadata.json",
+          "sha256": "a705f2b2ced23f625ef518573579e3553bbf8c03597d7819e3d91a68b9dada42"
+        },
+        "metrics": {
+          "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/metrics.jsonl",
+          "sha256": "2b4d7a4c237812a26b1a00c4b333606ce5a1f4b35b032c17c4ea28a3e9e97ccb"
+        },
+        "completion": {
+          "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/completion.json",
+          "sha256": "05de4d576437bb73a5e090375b1b335c76686681787aa5c05f35c1031aa66817"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters"
+      ]
+    },
+    {
+      "figure": "heatmap",
+      "panel": "references",
+      "column": "gla",
+      "d_k": 128,
+      "experiment": "gla_key_dimension",
+      "run": "r03c03c3f84b2",
+      "status": "complete",
+      "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/gla_key_dimension/runs/r03c03c3f84b2/metadata.json",
+          "sha256": "d094e5e7838e9a54bfe3bd16b636bd5f027f43c40f834ca66012a0dee31cc7b4"
+        },
+        "metrics": {
+          "path": "experiments/gla_key_dimension/runs/r03c03c3f84b2/metrics.jsonl",
+          "sha256": "4d4866354dcd4e5a5fba308dd11d259464b1751d49bca7e4971a4da8823b8263"
+        },
+        "completion": {
+          "path": "experiments/gla_key_dimension/runs/r03c03c3f84b2/completion.json",
+          "sha256": "660d2d778614a2a76baa4aaf22ce42cd0629130b4e3edb73873ec74df58b686b"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters"
+      ]
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_learned_taylor",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "rc342fe890e6f",
+      "status": "numerical_failure",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/rc342fe890e6f/metadata.json",
+          "sha256": "98917fd570c76bc95e7e72fe6d540ac681b2bad0fe5ad33815a7ca925c2d8a63"
+        },
+        "failure": {
+          "path": "experiments/qk_norm_learned_taylor/runs/rc342fe890e6f/numerical_failure_step_00000027.json",
+          "sha256": "9008aedef104d4c529649a95ec28adb7279b5dbacdf30f8cb0d51020e2895c27"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_learned_taylor",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "rd962214a5556",
+      "status": "numerical_failure",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/rd962214a5556/metadata.json",
+          "sha256": "5e4d79364dcac7a6e2f3fe8c1e05fe3e0060d3588c58a2ed53b49cce35d3a66f"
+        },
+        "failure": {
+          "path": "experiments/qk_norm_learned_taylor/runs/rd962214a5556/numerical_failure_step_00001857.json",
+          "sha256": "7d1f6785a73f7c70e8954c41648749aa0c27cf0bdc633d81917afc5f9e370dd4"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_learned_taylor",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "rd7428f72915b",
+      "status": "numerical_failure",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/rd7428f72915b/metadata.json",
+          "sha256": "82d844d521d1a962b9c56dd640b271ab074e01640b208f1eaeab53c37dc98744"
+        },
+        "failure": {
+          "path": "experiments/qk_norm_learned_taylor/runs/rd7428f72915b/numerical_failure_step_00000318.json",
+          "sha256": "109ef08cd19f8c136dde40190a27bbb4def63da3d8065da5504239257207bbac"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_learned_taylor",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "re554c79caddb",
+      "status": "numerical_failure",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/metadata.json",
+          "sha256": "c80ed4398ea96fb3fd52ede1eb05e77370204c47b08799efa30a967f96c89279"
+        },
+        "failure": {
+          "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/numerical_failure_step_00001456.json",
+          "sha256": "c966641492325599c0aa250357e707e2756216e28bd4a9b6e32352f1fdf8ca54"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_nonnegative",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "nonnegative_learned_taylor",
+      "run": "rdbd4607d5af9",
+      "status": "complete",
+      "source_commit": "270179ce9330e33bd2dacffb364aaf00e01e38f8",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/metadata.json",
+          "sha256": "f1013a01fa35b1b75bdd4f04740525ded99a3158155afa805f4116bdc8429bb5"
+        },
+        "metrics": {
+          "path": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/metrics.jsonl",
+          "sha256": "164da9dfe7ca5bff9e9207b85c55e6f81208c44b77478c5addd551f15a3d8939"
+        },
+        "completion": {
+          "path": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/completion.json",
+          "sha256": "3b79dd0968ca3b981fd728e6b91f84abe45d9dbad0fc49894695634b88ca986a"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_nonnegative",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "nonnegative_learned_taylor",
+      "run": "r507d1c2632b2",
+      "status": "complete",
+      "source_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/metadata.json",
+          "sha256": "8354fbcf845dcb0a05ce5e4490b0c0727f6139c6e4df057fa00b2830c9447d35"
+        },
+        "metrics": {
+          "path": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/metrics.jsonl",
+          "sha256": "e56c31b577a252f4b88522c76b4939257669c2c66a466936c5a1ad78dfd90f4b"
+        },
+        "completion": {
+          "path": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/completion.json",
+          "sha256": "bb3c734e7004a4b5482449ea4514efb13dff91e10e74460d2f8d71c1dcb2b9d2"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "unnormalized_learned",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "r13c144b8fd17",
+      "status": "complete",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/metadata.json",
+          "sha256": "127347cf42e115e434861fdf71dd4953bf6ff78456dc4791e34117fe7fbc38e7"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/metrics.jsonl",
+          "sha256": "96c2730edd978ad36b3c3231281472aa0b6b69bb67e0dc4ce57bbc4d93762148"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/completion.json",
+          "sha256": "b6acc5d1abb93713070656b5b480ae172f6337ef58a929c7d1e092368fc220dc"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "unnormalized_learned",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "r07bee5b16e61",
+      "status": "complete",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/metadata.json",
+          "sha256": "c03c5b0ffc0570283cbd614c1f91d89eefd49d8a4e545df662703f919c4be5c9"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/metrics.jsonl",
+          "sha256": "c363897b287024b7983a19fc18fcfc37333024bf51e1cc0497bc2f38efca3316"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/completion.json",
+          "sha256": "ac47989070e0f808a8c571ecefa872c726f044feaf7253746d33cfe7c2bf2304"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "unnormalized_learned",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "r0470d7fcaae6",
+      "status": "complete",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/metadata.json",
+          "sha256": "faf1dd2352b5085242eac12a72dbca644db69fa488dc409e5ce569b53ab719a5"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/metrics.jsonl",
+          "sha256": "9c4eb4a4d225634e8c03356f6577c760f74f4a084cec497ce6f8355bc53bb828"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/completion.json",
+          "sha256": "217422e572eb7e467596a9adaff9eae72b566c2064fcb2d911464308c5eebdda"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "unnormalized_learned",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "rbaa19693c602",
+      "status": "complete",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/rbaa19693c602/metadata.json",
+          "sha256": "adc7407ef91c00164c036d8385f458b58ef90b1b38d623a84b1a418d0e0f7928"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_learned_taylor/runs/rbaa19693c602/metrics.jsonl",
+          "sha256": "01fcd44375269da22ac332ae2c0150e85fff6b109cf51c410c37c10e2b0a8555"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_learned_taylor/runs/rbaa19693c602/completion.json",
+          "sha256": "7d973eb00c656efe0c7be0426d869a83142d8f95659f7043e82491a5767ec2cd"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "unnormalized_fixed",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "reb79b9201e5a",
+      "status": "complete",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/metadata.json",
+          "sha256": "eb437be40040cb02ec8cc1bc5d77f11c99212e7c4c193424ff41566311ad0255"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/metrics.jsonl",
+          "sha256": "c9e00eac4a104437de18334561fdbea4d6f05b81696632dd2e7dbd605ccbae0d"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/completion.json",
+          "sha256": "bbf2419c6baad8701856e9a16ab7565fb45be8aebd9c5c6a2c6a918837f3e0b1"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "unnormalized_fixed",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "re4509bf65b5f",
+      "status": "complete",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/metadata.json",
+          "sha256": "71639fd6adbccb60586b804767d2f38413b2cc1e019bbc41c677539f6be8bc22"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/metrics.jsonl",
+          "sha256": "a312d11551b69eb5e46e78d96c2571dc0e977151489ba5949e2f2485bb430854"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/completion.json",
+          "sha256": "26ebd93c6eca9126f59bbd92ed7664cda27061dcda766b2ea533a40e2fc645a3"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "unnormalized_fixed",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "rba0cd1a9bf62",
+      "status": "complete",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/metadata.json",
+          "sha256": "8724696257a3a65e4961c83cb94db7dd57bcbfc18aaff02b63372483037c4862"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/metrics.jsonl",
+          "sha256": "41152673f2d2954257fadbe3d01e1d0b77f2570e6a7089aeaecbfa803e4826a8"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/completion.json",
+          "sha256": "ba04abc24913de43e687b544ed77a1c4afbd74ce3ef51fe41f04680affa69b7b"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "unnormalized_fixed",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "unnormalized_taylor_attention",
+      "run": "rfd3129858805",
+      "status": "complete",
+      "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_taylor_attention/runs/rfd3129858805/metadata.json",
+          "sha256": "18063ebbaf4f8dcb71722aa2bf93bf8211798794ac4a79dbd5e0d1d23de4c009"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_taylor_attention/runs/rfd3129858805/metrics.jsonl",
+          "sha256": "9df4a551647e7e72cdb592f28906fba68f6a31aea1f9dc3e9ac55c3389e756fa"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_taylor_attention/runs/rfd3129858805/completion.json",
+          "sha256": "7e72531a9e58c7d68350fee38bca2e48e7c1dd0958c00a1694f5b931d5f5db8e"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "references",
+      "column": "softmax",
+      "d_k": 64,
+      "experiment": "qk_norm_attention",
+      "run": "r1feece425074",
+      "status": "complete",
+      "source_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_attention/runs/r1feece425074/metadata.json",
+          "sha256": "fea4127b7425382d2be5f1f4946f60a4fe1f28c273c3d29e934f92cdd69eeeb6"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_attention/runs/r1feece425074/metrics.jsonl",
+          "sha256": "721add8f72c236ace218e41fe8acf2948acc15039e11374c265d2bed9c3c9e49"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_attention/runs/r1feece425074/completion.json",
+          "sha256": "de4e82ca58ec0c788d99898e3b2c7942e146766cd457c97d0281e914eaa702cb"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "references",
+      "column": "softmax_no_qk_norm",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "r50088d29f2b5",
+      "status": "complete",
+      "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/metadata.json",
+          "sha256": "d2a32e0c8045e8053595a1acb2d802b97987f8c7b6f7a9eefdef21066d315d42"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/metrics.jsonl",
+          "sha256": "6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/completion.json",
+          "sha256": "7571ffbad1e5e9cf1b7f378ecad556b3f1f1e7d0d77671f8f5aa740331b9c8e0"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": false,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "references",
+      "column": "unnormalized_exp",
+      "d_k": 64,
+      "experiment": "unnormalized_attention",
+      "run": "r8cccbabca761",
+      "status": "complete",
+      "source_commit": "3b0d311655b033545d0c211467fd600376e0fdeb",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_attention/runs/r8cccbabca761/metadata.json",
+          "sha256": "4a44a8b4bf029d113b3c557915caa52ac945019232b0a31bdaae8c5b12698ffd"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_attention/runs/r8cccbabca761/metrics.jsonl",
+          "sha256": "e0bbbdafb9f5cffd49bd080d91c48afcefdac97f18a57fc9dd7dc18360eaf483"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_attention/runs/r8cccbabca761/completion.json",
+          "sha256": "52631eaef8b681efc2d5192ae2bfed975572d5b84013aea2e613dc498884e183"
+        }
+      },
+      "weight_decay_policy": null,
+      "qk_norm": false,
+      "legacy": true,
+      "legacy_reasons": [
+        "weight decay on all parameters",
+        "no QK-norm"
+      ]
+    }
+  ],
+  "status_counts": {
+    "heatmap": {
+      "complete": 31,
+      "not_run": 12,
+      "numerical_failure": 2,
+      "legacy": 25
+    },
+    "degree_chart": {
+      "complete": 13,
+      "numerical_failure": 4,
+      "legacy": 5
+    }
+  },
+  "analysis": {
+    "config": {
+      "path": "results/attention_scaling/selection.yaml",
+      "sha256": "e22350ca5f579d54caeb296b35ce2758cd5d4fa4d87fb6b63634e76984e1a782"
+    },
+    "chart_config": {
+      "path": "results/attention_scaling/degree_chart.yaml",
+      "sha256": "19b82a41ee40ecf8efc0ab499b5d5a6a7a801e80529e511915841bfa4cfd4eb9"
+    },
+    "dependency_lock": {
+      "path": "scaffolds/transformer/uv.lock",
+      "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+    },
+    "code": {
+      "collect.py": {
+        "path": "results/attention_scaling/collect.py",
+        "sha256": "e8135b7f52ecd2408698c47e2a7229f4e93c38d468309a8f119b37f1ca05b52f"
+      },
+      "render.py": {
+        "path": "results/attention_scaling/render.py",
+        "sha256": "61dba0ad3ff236988d8191290f220bf7725ef1f1c01084672b35b86d5641f383"
+      },
+      "chart.py": {
+        "path": "results/attention_scaling/chart.py",
+        "sha256": "56ef85f9ab2cc8dfcff9529808385f6402c0b604bc5d14062167bc139c098f04"
+      },
+      "plot.py": {
+        "path": "results/attention_scaling/plot.py",
+        "sha256": "9b99df81d9ebd145160751c9075912e6c7112fd26097bfad7b15f991aa0d759f"
+      }
+    }
+  },
+  "derived_artifacts": {
+    "summary_csv": {
+      "path": "results/attention_scaling/summary.csv",
+      "sha256": "bd1458110e5095e33f59b85bf815fbd18e12db3a9589aa68bc9c59e6eca88290"
+    },
+    "readme": {
+      "path": "results/attention_scaling/README.md",
+      "sha256": "b3d03906d6d5a58fa7c5fd9244e9d5eff421d07f5d8ecc29ef7bcb8f0a277b6d"
+    },
+    "combined_terminal_ppl_pdf": {
+      "path": "results/attention_scaling/combined_terminal_ppl.pdf",
+      "sha256": "e9b017e173dbf366472c0fc5e25115fc153a5eb9a3c58a7eaf2eff56eee05711"
+    },
+    "combined_terminal_ppl_png": {
+      "path": "results/attention_scaling/combined_terminal_ppl.png",
+      "sha256": "1fc54ba9bad01459d5d9224fae44bf8521f5421fc9a1ecb0178d00370aa287c5"
+    },
+    "degree_chart_pdf": {
+      "path": "results/attention_scaling/degree_chart.pdf",
+      "sha256": "76767b3f92583bc28a6f4a4438e6b56b77358540de1155a5dd9f35cfc0b5710a"
+    },
+    "degree_chart_png": {
+      "path": "results/attention_scaling/degree_chart.png",
+      "sha256": "2ea012c1faf983ed9826177442096bbf62dc62a189f7c43a94ade7d667fed20a"
+    }
+  }
+}

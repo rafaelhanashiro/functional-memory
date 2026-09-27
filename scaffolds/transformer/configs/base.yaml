@@ -50,7 +50,8 @@ train:
   seed: 0
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/example/runs/200m-softmax-seed0
+  # create_run assigns the study/run ID before committing and launching this recipe.
+  workdir: experiments/example/runs/r0123456789ab
   micro_batch_size: 64
   log_every: 10
   eval_every: 1000

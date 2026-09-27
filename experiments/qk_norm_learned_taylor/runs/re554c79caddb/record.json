@@ -1,0 +1,210 @@
+{
+  "acceptance": {
+    "B300-4": {
+      "completed_utc": "2026-09-26T12:39:26.928614+00:00",
+      "cpu_distributed_tests_passed": 0,
+      "cpu_tests_passed": 202,
+      "gpu_tests_passed": 83,
+      "identity": "fb7e5ca8bc1ec35270a27e0a56ca349d1a96e9648bae54d7325c9ebc0f1a863c",
+      "initialization_check": {
+        "mechanism_parameters": {
+          "polynomial_coefficients": {
+            "initial": [
+              1.0,
+              1.0,
+              0.5,
+              0.16666666666666666,
+              0.041666666666666664
+            ],
+            "shape": [
+              10,
+              16,
+              5
+            ],
+            "weight_decay": false
+          },
+          "qk_norm_log_scale": {
+            "initial": [
+              2.0794415416798357
+            ],
+            "shape": [
+              10,
+              16,
+              1
+            ],
+            "weight_decay": false
+          }
+        },
+        "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+      },
+      "initialization_parameter_count": 199907264,
+      "initialization_parameter_sha256": "8c0180978667881974dbd10875ef1fe60ccd6b6ea1ac31d6bcd26b49a4c1f623",
+      "passed_stages": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "pilot": {
+        "attention_backend": "blocked",
+        "attention_implementation": "blocked",
+        "final_step": 20,
+        "projected_hours": 5.455,
+        "steady_step_seconds_median": 1.0295
+      },
+      "resume": {
+        "final_step": 21,
+        "restored_step": 20
+      },
+      "slurm_job_id": "202344",
+      "status": "passed"
+    }
+  },
+  "artifacts": [
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/best_validation.json",
+      "sha256": "39080aa755178f2c41fd3d331cff5dfb9d634dc38666f8f42db1080dcf022773"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/config.json",
+      "sha256": "3fbc1b71e1d73247c540fa5c2c19f6aa4e09934dbe17c211ceb33d0f7686b4c4"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/config.yaml",
+      "sha256": "4697211415d06f84d270fc990898e37141379d92736d8e3525be77f0e10f9312"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/metadata.json",
+      "sha256": "c80ed4398ea96fb3fd52ede1eb05e77370204c47b08799efa30a967f96c89279"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/metrics.jsonl",
+      "sha256": "5e84a8be2547a4f2cf8ba500f5845ed7eb0c037c1a5c2cf2afd9b49c4e5e3ea9"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/numerical_failure_step_00001456.json",
+      "sha256": "c966641492325599c0aa250357e707e2756216e28bd4a9b6e32352f1fdf8ca54"
+    },
+    {
+      "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/wandb_run.json",
+      "sha256": "1876df3a404e28fe20319ba0c2620638f4c6b0643ff56139a9d0b46c8fe664e1"
+    }
+  ],
+  "attempts": [
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "passed acceptance, trained from a fresh initialization, and stopped with a numerical failure at update 1,456",
+      "restart": 0,
+      "slurm_job_id": "202344"
+    }
+  ],
+  "attention_backend": "blocked",
+  "attention_degree": 4,
+  "attention_kernel": "learned_polynomial",
+  "attention_normalization": true,
+  "coefficient_count": 800,
+  "config": {
+    "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/config.yaml",
+    "recorded_sha256": "f835cf2bae3a93955603c71176ee54131f14cf77e6b57855ffa5fcf3562200f4",
+    "sha256": "4697211415d06f84d270fc990898e37141379d92736d8e3525be77f0e10f9312"
+  },
+  "execution": {
+    "attempts": [
+      {
+        "gpu_count": 4,
+        "gpu_type": "B300",
+        "node": "akita",
+        "outcome": "passed acceptance, trained from a fresh initialization, and stopped with a numerical failure at update 1,456",
+        "restart": 0,
+        "slurm_job_id": "202344"
+      }
+    ],
+    "attention_backend": "blocked",
+    "attention_backend_requested": "blocked",
+    "attention_implementation": "blocked",
+    "batch_transfer": "host_to_shard",
+    "device_kinds": [
+      "NVIDIA B300 SXM6 AC"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "runtime_history_entries": 1,
+    "runtime_settings": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct",
+    "wall_time": "00:26:21 including acceptance (Slurm 2026-09-26T10:50:24 to 2026-09-26T11:16:45 local)"
+  },
+  "failure": {
+    "checked_quantities": [
+      "forward_loss",
+      "global_gradient_norm",
+      "updated_parameters"
+    ],
+    "error": "Nonfinite training loss or optimizer update at step 1456: nan",
+    "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/numerical_failure_step_00001456.json",
+    "sha256": "c966641492325599c0aa250357e707e2756216e28bd4a9b6e32352f1fdf8ca54",
+    "step": 1456,
+    "timestamp_utc": "2026-09-26T15:16:41.187858+00:00",
+    "update_numerics": {
+      "forward_loss": "NaN",
+      "global_gradient_norm": "NaN",
+      "updated_parameter_norm": "NaN"
+    }
+  },
+  "hardware": "4x NVIDIA B300 akita, sweep partition",
+  "home_cluster": "kennel",
+  "label": "200m-qk-m004-normalized-seed0",
+  "last_valid_validation": {
+    "attention_diagnostics_valid": true,
+    "step": 1000,
+    "validation_nll": 5.693238837378366,
+    "validation_perplexity": 296.85352560795627
+  },
+  "log": {
+    "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/training.log",
+    "sha256": "2450399db5d2fd171ead5b21a91f6b6d20fdb2a6e4a499a2f24c6900a2bf2c76"
+  },
+  "name": "200m-qk-m004-normalized-seed0",
+  "parameter_count": 199907264,
+  "partition": "sweep",
+  "qk_norm": true,
+  "qk_norm_initial_scale": 8.0,
+  "qk_norm_parameter_count": 160,
+  "qk_norm_sharing": "per_head",
+  "record_schema_version": 1,
+  "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
+  "retained_checkpoints": "none: the run concluded as a numerical failure; its last valid diagnostics are in metrics.jsonl",
+  "run_id": "re554c79caddb",
+  "run_record": "experiments/qk_norm_learned_taylor/runs/re554c79caddb",
+  "seed": 0,
+  "slurm_job_id": "202344",
+  "slurm_job_ids": [
+    202344
+  ],
+  "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+  "start": "fresh initialization",
+  "status": "numerical-failure",
+  "submitted_utc": "2026-09-26T06:43:53+00:00",
+  "terminal_validation_nll": null,
+  "terminal_validation_perplexity": null,
+  "wandb": {
+    "run_id": "0fdda1b139444b8bac7bf42eaa66bcfe",
+    "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/0fdda1b139444b8bac7bf42eaa66bcfe"
+  }
+}

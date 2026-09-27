@@ -1,10 +1,10 @@
 """Check and hash an experiment's frozen execution set against its launch commit.
 
 While an experiment's jobs can run or requeue, what they execute must not change:
-the scaffold's code (without its validation record), the experiment's `configs/`,
-and its adapter's execution modules. The README, figures, summaries, and analysis
-modules may change freely, and `runs/`, `logs/`, and `checkpoints/` are outputs.
-Launchers call `check` at every start and requeue; the manifest records `hash`.
+the scaffold's code (without its validation record), shared record/launch helpers,
+the study's sweep.yaml, each run's config.yaml, and study execution modules.
+Run records, metrics, logs, checkpoints, and results may change freely.
+Launchers call `check` at every start and requeue; record.json records `hash`.
 
 Standard library only: every scaffold's launcher runs this with the system Python.
 """
@@ -18,8 +18,30 @@ import sys
 
 
 def pathspecs(experiment: str, scaffold: str) -> list[str]:
-    return [f"scaffolds/{scaffold}", f":(exclude)scaffolds/{scaffold}/validation",
-            f"experiments/{experiment}/configs", f"experiments/{experiment}/adapter/execution"]
+    """Candidate roots; the same predicate filters diffs and committed trees."""
+    return [f"scaffolds/{scaffold}", "scaffolds/records", "scaffolds/launch",
+            f"experiments/{experiment}"]
+
+
+def is_frozen(path: str, experiment: str, scaffold: str) -> bool:
+    for prefix in ("scaffolds/records/", "scaffolds/launch/"):
+        if path.startswith(prefix):
+            return True
+    if path.startswith(f"scaffolds/{scaffold}/"):
+        return not path.startswith(f"scaffolds/{scaffold}/validation/")
+    prefix = f"experiments/{experiment}/"
+    if not path.startswith(prefix):
+        return False
+    relative = Path(path.removeprefix(prefix))
+    parts = relative.parts
+    return (
+        relative.as_posix() == "sweep.yaml"
+        or len(parts) == 1 and relative.suffix in {".py", ".sbatch", ".sh"}
+        or len(parts) == 3 and parts[0] == "runs" and parts[2] == "config.yaml"
+        # Historical layouts remain protected when auditing their source commits.
+        or parts[0] == "configs"
+        or parts[:2] == ("adapter", "execution")
+    )
 
 
 def _git(root: Path, *args: str) -> subprocess.CompletedProcess:
@@ -33,18 +55,17 @@ def changes(root: Path, launch_commit: str, experiment: str, scaffold: str) -> l
     if diff.returncode:
         raise RuntimeError(f"Cannot compare with launch commit {launch_commit}: {diff.stderr.strip()}")
     untracked = _git(root, "ls-files", "--others", "--exclude-standard", "--", *specs)
-    return sorted(set(diff.stdout.split()) | set(untracked.stdout.split()))
+    candidates = set(diff.stdout.splitlines()) | set(untracked.stdout.splitlines())
+    return sorted(path for path in candidates if is_frozen(path, experiment, scaffold))
 
 
 def frozen_hash(root: Path, launch_commit: str, experiment: str, scaffold: str) -> str:
     """SHA256 of the frozen set's tree entries at the launch commit."""
-    included = [spec for spec in pathspecs(experiment, scaffold) if not spec.startswith(":(exclude)")]
-    tree = _git(root, "ls-tree", "-r", launch_commit, "--", *included)
+    tree = _git(root, "ls-tree", "-r", launch_commit, "--", *pathspecs(experiment, scaffold))
     if tree.returncode:
         raise RuntimeError(tree.stderr.strip())
-    # ls-tree has no exclude pathspecs; drop the validation record's entries here.
-    excluded = f"\tscaffolds/{scaffold}/validation/"
-    entries = [line for line in tree.stdout.splitlines() if excluded not in line]
+    entries = [line for line in tree.stdout.splitlines()
+               if is_frozen(line.split("\t", 1)[1], experiment, scaffold)]
     return hashlib.sha256("\n".join(entries).encode()).hexdigest()
 
 

@@ -1,0 +1,37 @@
+model: m-a-p/1.3B-100B-GatedDeltaNet-pure
+model_revision: 930ed6ae4ac629c86cb9855bb3dcb0a0974a29aa
+dataset: Salesforce/wikitext
+dataset_revision: b08601e04326c79dfdd32d625aee71d232d685c3
+dataset_config: wikitext-2-raw-v1
+dataset_split: test
+layer: 12
+kv_head: null
+head_indices:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+tokens: 512
+attention_scale: null
+model_dtype: float32
+analysis_dtype: float64
+attention_implementation: fused_recurrent
+fla_revision: 516143e31fce09925e6c39ac37148444bad176c4
+threshold_rank_singular_tolerance: 0.0001
+psd_relative_tolerance: 1.0e-10
+direct_relative_tolerance: 1.0e-09
+cache_relative_tolerance: 0.0002
+checked_prefixes:
+- 1
+- 2
+- 8
+- 32
+- 128
+- 512
+weights: pretrained
+seed: null
+output_directory: experiments/state_rank/runs/rabd239a7f3dc

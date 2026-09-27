@@ -1,0 +1,44 @@
+{
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": {
+    "inputs": {
+      "path": "experiments/state_rank/runs/rabd239a7f3dc/inputs.json",
+      "sha256": "986feaf726cdef35ccbba48857b537831cd9ecdac5a0bb12a335d3fee7da0c4f"
+    },
+    "metadata": {
+      "path": "experiments/state_rank/runs/rabd239a7f3dc/metadata.json",
+      "sha256": "73034e3de90670290751d801111da652c3563754a08755e9ea440f5440ee889a"
+    },
+    "numerical_data": {
+      "path": "experiments/state_rank/runs/rabd239a7f3dc/spectra.npz",
+      "sha256": "bf8bb6148b627821bdb1526d9773583d9bea36424e05484d60f9a5bc0e2e0bae"
+    }
+  },
+  "config": {
+    "path": "experiments/state_rank/runs/rabd239a7f3dc/config.yaml",
+    "sha256": "4a93acb7201e21c9af3288228ee074088348cc07d02608cf1a9786cdb35ab2ee"
+  },
+  "config_reconstruction": "Scientific settings transcribed from retained metadata; original execution is pinned by source_commit and script_sha256 in metadata.json.",
+  "hardware": {
+    "device": "cuda",
+    "gpu": "NVIDIA L40S",
+    "hostname": "node4200"
+  },
+  "home_cluster": "kennel",
+  "label": "gated-deltanet-1.3b-l12-hall-t512",
+  "log_note": "The successful job ID is recorded; the collection's metadata names no retained log.",
+  "log_path": null,
+  "name": "gated-deltanet-1.3b-l12-hall-t512",
+  "origin": "ORCD/Engaging pretrained-only collection; reused unchanged as the pretrained reproduction baseline",
+  "record_schema_version": 1,
+  "run_id": "rabd239a7f3dc",
+  "seed": null,
+  "slurm_job_id": "22691159",
+  "source_commit": "6ff0e8b6e31077c11552487899c66a3596f19a32",
+  "spectra": {
+    "path": "experiments/state_rank/runs/rabd239a7f3dc/spectra.npz",
+    "sha256": "bf8bb6148b627821bdb1526d9773583d9bea36424e05484d60f9a5bc0e2e0bae",
+    "storage": "Git-ignored archive at the Kennel artifact root; previously a Git LFS object (retrievable from history at 4d93d20936e4eba23761a5ff9f8c0973d23c8ccd)"
+  },
+  "status": "completed"
+}

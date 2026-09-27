@@ -1,0 +1,180 @@
+format: functional-memory-experiment-setup
+version: 2
+experiment: qk_norm_learned_taylor
+status: completed
+home_cluster: kennel
+artifact_root: /data/cl/u/rafah/home/projects/functional-memory
+documentation: experiments/qk_norm_learned_taylor/README.md
+scaffold: scaffolds/transformer
+branch: qk-norm-learned-taylor
+branch_base_commit: f898c382039ad503a0afcc98610fe5c4dbc95805
+launch_commit: 696ffb5ecb2a49a5be433a9abe1273f920a94a03
+frozen_execution_set_sha256: 15729bb98f52a1b86173c1d2891b12b3165ba1961f72d1192fe370a717c0f156
+scientific_change: Learned per-head polynomial kernels p_{l,h}(s) = sum_{r<=m} c_{l,h,r} s^r, m = 1-4,
+  initialized at the Taylor values 1/r!, over QK-norm cosine scores s = exp(gamma_{l,h}) cos(q, k) with
+  gamma learned per layer and head from log(sqrt(d_K)); run without row normalization (fused kernel) and
+  with signed row-sum normalization (blocked reference, the first normalized learned polynomials in the
+  repository); canonical selective weight decay
+requested:
+  date: '2026-09-26'
+  from_cluster: kennel
+  degrees:
+  - 1
+  - 2
+  - 3
+  - 4
+  normalization:
+  - unnormalized
+  - normalized
+  sharing: per_head
+  coefficients: unrestricted, including the constant
+  qk_norm_initial_scale: 8.0
+weight_decay_policy: exclude_embeddings_norms_biases_v1
+shared_dependency_lock:
+  path: scaffolds/transformer/uv.lock
+  sha256: dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559
+data_identity:
+  train:
+    path: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
+    sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
+  eval:
+    path: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
+    sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+comparison_controls:
+  unnormalized_learned_no_qk_norm_m1:
+    run: experiments/learned_unnormalized_taylor/runs/r004b21fc9a41
+    source_commit: 788a085e24225872495199e8040ec1167070a691
+    validation_nll: 3.0307921767234802
+    validation_perplexity: 20.713634951214132
+    weight_decay_policy: all parameters
+  unnormalized_fixed_taylor_no_qk_norm_m1:
+    run: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a
+    source_commit: 972d223d89c2542028dec761569c25dbd7379b36
+    validation_nll: 3.033512370926993
+    validation_perplexity: 20.770056765297024
+    weight_decay_policy: all parameters
+  unnormalized_learned_no_qk_norm_m2:
+    run: experiments/learned_unnormalized_taylor/runs/r96fc5c4294dc
+    source_commit: 788a085e24225872495199e8040ec1167070a691
+    validation_nll: 2.9986991456576755
+    validation_perplexity: 20.059425552490385
+    weight_decay_policy: all parameters
+  unnormalized_fixed_taylor_no_qk_norm_m2:
+    run: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f
+    source_commit: 972d223d89c2542028dec761569c25dbd7379b36
+    validation_nll: 3.1572411145482744
+    validation_perplexity: 23.50565697562782
+    weight_decay_policy: all parameters
+  unnormalized_learned_no_qk_norm_m3:
+    run: experiments/learned_unnormalized_taylor/runs/raaa02715154e
+    source_commit: 788a085e24225872495199e8040ec1167070a691
+    validation_nll: 2.919478850705283
+    validation_perplexity: 18.531627198301937
+    weight_decay_policy: all parameters
+  unnormalized_fixed_taylor_no_qk_norm_m3:
+    run: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62
+    source_commit: 972d223d89c2542028dec761569c25dbd7379b36
+    validation_nll: 3.0076456921441213
+    validation_perplexity: 20.239693320274547
+    weight_decay_policy: all parameters
+  unnormalized_learned_no_qk_norm_m4:
+    run: experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf
+    source_commit: 788a085e24225872495199e8040ec1167070a691
+    validation_nll: 3.002697936126164
+    validation_perplexity: 20.13979958454915
+    weight_decay_policy: all parameters
+  unnormalized_fixed_taylor_no_qk_norm_m4:
+    run: experiments/unnormalized_taylor_attention/runs/rfd3129858805
+    source_commit: 972d223d89c2542028dec761569c25dbd7379b36
+    validation_nll: 3.0662785853658403
+    validation_perplexity: 21.46188530439321
+    weight_decay_policy: all parameters
+  qk_norm_softmax:
+    run: experiments/qk_norm_attention/runs/r1feece425074
+    source_commit: aa5b6eb34d8b57533cdfe04fe263906e69d30091
+    validation_nll: 2.671205988952092
+    validation_perplexity: 14.457394141153632
+    weight_decay_policy: exclude_embeddings_norms_biases_v1
+  softmax_canonical_decay:
+    run: experiments/key_dimension_taylor/runs/r50088d29f2b5
+    source_commit: 381f1fdf6caf2925a984e3932e58b6e70bfbc6b1
+    validation_nll: 2.6854977863175526
+    validation_perplexity: 14.665499848737895
+    weight_decay_policy: exclude_embeddings_norms_biases_v1
+    note: The repository's single softmax baseline since main commit 4601633 (formerly experiments/decay_policy_baseline).
+  softmax_original_decay_retired:
+    validation_perplexity: 14.69417664861716
+    validation_nll: 2.6874512689454213
+    source_commit: 1a8836a75836671cdf83a3ab7763425a6a88cac7
+    weight_decay_policy: all parameters
+    note: Retired from the repository in main commit 4601633 (run, checkpoint, and log removed); the value
+      survives only in attention_scaling_comparison's frozen original-decay copy.
+  normalized_fixed_taylor:
+    m1:
+      run: experiments/odd_taylor_attention/runs/raa90edf82385
+      source_commit: a74e3863fdf1e1dd965252cd435712dec10c9a29
+      weight_decay_policy: exclude_embeddings_norms_biases_v1
+      qk_norm: true
+      status: numerical-failure
+      failure_step: 31
+    m2:
+      run: experiments/key_dimension_taylor/runs/r93c9d0814322
+      source_commit: a74e3863fdf1e1dd965252cd435712dec10c9a29
+      weight_decay_policy: exclude_embeddings_norms_biases_v1
+      qk_norm: true
+      validation_nll: 2.8040092502321516
+      validation_perplexity: 16.510709818133147
+    m3:
+      run: experiments/odd_taylor_attention/runs/r8b46f1ad9453
+      source_commit: a74e3863fdf1e1dd965252cd435712dec10c9a29
+      weight_decay_policy: exclude_embeddings_norms_biases_v1
+      qk_norm: true
+      status: numerical-failure
+      failure_step: 419
+    m4:
+      run: experiments/key_dimension_taylor/runs/ra9b651caa405
+      source_commit: a74e3863fdf1e1dd965252cd435712dec10c9a29
+      weight_decay_policy: exclude_embeddings_norms_biases_v1
+      qk_norm: true
+      validation_nll: 2.701114628996168
+      validation_perplexity: 14.896326352016782
+pre_launch_validation:
+  cpu_tests: 'Full scaffold CPU suite plus the adapter tests at the launch tree: 673 passed, 14 skipped,
+    0 failed (10 min). Targeted first: 170 learned-polynomial, normalized learned-polynomial, backend-resolution,
+    and configuration tests.'
+  gpu_tests:
+    B300: '35 passed (slurm 202336, akita, 71 s): the 26 fused learned-polynomial kernel cases, the 5
+      QK-norm cosine-operand gates, and 4 blocked normalized learned-polynomial cases at the 2,048-token
+      BF16 context with FP64 prefix comparison (degree 1 compared at scale 2, where its signed row sums
+      are well conditioned)'
+    earlier_attempts: jobs 202334 and 202335 failed only the new degree-1 FP64 prefix comparison at scale
+      8 (output 0.8% and constant-coefficient gradient 30% off FP64 through signed-row-sum cancellation);
+      the test was reconditioned, not the code
+    log:
+      path: scaffolds/transformer/validation/logs/normalized-learned-polynomial/slurm-202336.out
+      sha256: 2f31671700eb4e0740b381f1573a807f5adc18f1e9a96b1fa4d951c575eb0283
+      location: primary checkout on Kennel, ignored by Git; to be entered in the scaffold validation record
+        with the runs' acceptance
+  acceptance: 'Runs in each production allocation before training: the adapter''s CPU tests, GPU tests,
+    the softmax-backbone initialization check, a 20-update full-recipe pilot on the recipe''s explicit
+    backend, and an exact fresh-process resume.'
+artifact_locations:
+  runs: experiments/qk_norm_learned_taylor/runs/<run> (committed)
+  checkpoints: experiments/qk_norm_learned_taylor/checkpoints/<run>/19074 for the completed runs (ignored,
+    on Kennel under artifact_root); none for the failed runs
+  logs: experiments/qk_norm_learned_taylor/logs/<run>/slurm-<job>.out (ignored, on Kennel under artifact_root)
+  verified: checkpoint files and logs hashed at these locations; see each run's selected_checkpoint, failure,
+    and log
+summary:
+  path: experiments/qk_norm_learned_taylor/summary.csv
+  generator: experiments.qk_norm_learned_taylor.adapter.analysis.report
+record_layout_version: 1
+run_ids:
+- r13c144b8fd17
+- rc342fe890e6f
+- r07bee5b16e61
+- rd962214a5556
+- r0470d7fcaae6
+- rd7428f72915b
+- rbaa19693c602
+- re554c79caddb

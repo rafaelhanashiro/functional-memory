@@ -1,0 +1,206 @@
+{
+  "acceptance": {
+    "completed_utc": "2026-09-18T23:19:37.450275+00:00",
+    "resume": {
+      "attention_implementation": "pallas_triton",
+      "data_parallel_devices": 4,
+      "final_step": 3,
+      "restored_step": 2,
+      "runtime_seconds": 57.58
+    },
+    "status": "passed",
+    "sweep_preflight_job": "199894"
+  },
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": [
+    {
+      "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/best_validation.json",
+      "sha256": "4e3c28c63fbb19dd7a392f9d0f7226b42689420e3606d82069979b9ec393a5b8"
+    },
+    {
+      "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/config.yaml",
+      "sha256": "48a55069d23adaf917fab42be408fc29e5dd6ab0d7eeb30696779da41d14b42d"
+    },
+    {
+      "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/metadata.json",
+      "sha256": "1bfabf03c2511b04fc8a90227f84210e0a6b3bab0d4932e5e399f8432b295a14"
+    },
+    {
+      "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/metrics.jsonl",
+      "sha256": "928843ab3591d78cae33792b597fcdc107db3cb5e5baf07500754d84d7e0398f"
+    },
+    {
+      "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/numerical_failure_step_00002324.json",
+      "sha256": "53f15b0a1fa9f87ec1e1d83e575dcb21b7bb17f2386400e0abed7fafeca0bb4e"
+    }
+  ],
+  "attention_backend": "fused",
+  "attention_degree": 2,
+  "coefficient_count": 2,
+  "completion": null,
+  "config": {
+    "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/config.yaml",
+    "sha256": "48a55069d23adaf917fab42be408fc29e5dd6ab0d7eeb30696779da41d14b42d"
+  },
+  "execution": {
+    "accounting": {
+      "elapsed": "00:21:07",
+      "exit_code": "1:0",
+      "job_id": "199897",
+      "node": "dogo",
+      "state": "FAILED"
+    },
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "resolved_backend": "pallas_triton",
+    "scheduler": {
+      "cpus_per_task": 32,
+      "gpu_count": 4,
+      "gpu_type": "h100",
+      "memory": "256G",
+      "node": "dogo",
+      "partition": "standard",
+      "preflight_time": "02:00:00",
+      "production_time": "08:00:00"
+    }
+  },
+  "failure": {
+    "attempted_training_tokens": 1218445312,
+    "completed_finite_updates": 2323,
+    "error": "FloatingPointError: Nonfinite training loss or learned-quadratic update at step 2324: nan",
+    "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/numerical_failure_step_00002324.json",
+    "sha256": "53f15b0a1fa9f87ec1e1d83e575dcb21b7bb17f2386400e0abed7fafeca0bb4e",
+    "step": 2324
+  },
+  "home_cluster": "kennel",
+  "label": "200m-unrestricted-global-seed0",
+  "last_committed_validation": {
+    "step": 2000,
+    "training_tokens": 1048576000,
+    "validation_nll": 3.962969950267247,
+    "validation_perplexity": 52.61335318019111
+  },
+  "log_outcome": "indispensable_scientific_numerical_failure",
+  "metadata": {
+    "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/metadata.json",
+    "sha256": "1bfabf03c2511b04fc8a90227f84210e0a6b3bab0d4932e5e399f8432b295a14"
+  },
+  "metrics": {
+    "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/metrics.jsonl",
+    "sha256": "928843ab3591d78cae33792b597fcdc107db3cb5e5baf07500754d84d7e0398f"
+  },
+  "name": "200m-unrestricted-global-seed0",
+  "parameter_count": 199906306,
+  "qk_head_dim": 64,
+  "quadratic_mode": "unrestricted",
+  "quadratic_sharing": "global",
+  "record_schema_version": 1,
+  "resolved_config": {
+    "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/config.yaml",
+    "recorded_sha256": "3f1938b49328a689cdc4d645e91bd75eac5a2b3df2091af681137a1b51c88f89",
+    "sha256": "48a55069d23adaf917fab42be408fc29e5dd6ab0d7eeb30696779da41d14b42d"
+  },
+  "run_id": "rb5ab6e890ffe",
+  "seed": 0,
+  "selected_checkpoint": {
+    "file_count": 14,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "a6e4fec973346c9474b10934f7126382a28f36d0ff17c20503bd85c1e17204dd",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "ca208d090f0a14d4fc4d4ce84c0ca5244080e7ea724085c85641e7629e1bf80f",
+        "size_bytes": 143639
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "39ba182e958a6e5adaa76dcc8f506331a16d81c9aae33e97eca5258867048cd5",
+        "size_bytes": 88337
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "42a3a744fabd036fb799db55b07094fdef00db5a9710fedff3fb93a416404afd",
+        "size_bytes": 49652
+      },
+      {
+        "path": "default/d/b76a04b2a13a898ea7be91c888171f55",
+        "sha256": "375659ccf6671d2c3cd47e23ad5f8f742b8714a7193a56c8ba06d8a5adc65e01",
+        "size_bytes": 3311
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "d83d09a8bbd58fbac9f6129a67b573516987c196b5d399535e475188364cf8bf",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/5b4d70cc34119e4bd515ee1f8a67360f",
+        "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+        "size_bytes": 195
+      },
+      {
+        "path": "default/ocdbt.process_0/d/a4e65c6fbac4b1ad513f81717d18e592",
+        "sha256": "b9ebdbe8e3058f08b73b8a450743a5eefe1fd0af8b27d1ce7e5d3ddb62187ce8",
+        "size_bytes": 1391177728
+      },
+      {
+        "path": "default/ocdbt.process_0/d/b0ad7d870149bb46e7a0c70be3336e0e",
+        "sha256": "54b22e4f9a01dfe7d495fb6826d0ad3a64f51d38306690718a8f8ce2fa8f04f7",
+        "size_bytes": 4087
+      },
+      {
+        "path": "default/ocdbt.process_0/d/cfa6eb6d6e69281b6a756686ad04d0fd",
+        "sha256": "30ae16cd348e0b78f1bfde940e7a718a79903b98a8da798dba1d90826ebd931d",
+        "size_bytes": 588
+      },
+      {
+        "path": "default/ocdbt.process_0/d/e91fb5fce3bb565a704cfdb449eff625",
+        "sha256": "6c3d4abaad9c82a171e14124dca284d62b66d71827c21c14307cfd6425fdde8b",
+        "size_bytes": 746
+      },
+      {
+        "path": "default/ocdbt.process_0/d/e9efc7b7f49480a5e72aada109efcec3",
+        "sha256": "490d40233db30132382e234d396954e8c094e062db4dc49be67e456ace821d86",
+        "size_bytes": 816164864
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "48a6707af6b77c678c1392251a1f5261844fb134498dcd5e225d5de3c6092882",
+        "size_bytes": 344
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "fc829cebf55cde59625d0f78aee439cddf6b8e59e64e5c30eec67916135bcb0e",
+        "size_bytes": 136
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "inventory": {
+      "sha256": "de82ec3e96da9bd40e93920cb7b4226a7005b96c04ee935514f5d585b46c8d1a"
+    },
+    "kind": "directory",
+    "metadata_sha256": "ca208d090f0a14d4fc4d4ce84c0ca5244080e7ea724085c85641e7629e1bf80f",
+    "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/checkpoints/2000",
+    "retention_reason": "diagnostic exception: best finite learned state before concluded numerical failure",
+    "sha256": "fa8dff352fca7481f0ec8047e23b96da69b380f2e2acdd9b0990801d3a00ed6b",
+    "size_bytes": 2207634111,
+    "step": 2000,
+    "validation_nll": 3.962969950267247,
+    "validation_perplexity": 52.61335318019111
+  },
+  "slurm_job_id": "199897",
+  "slurm_log": {
+    "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/training.log",
+    "sha256": "ee103efb3e51a3b07643ba8dffa9c1aec28f56226742955196ede064b1a9e8c8"
+  },
+  "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
+  "status": "numerical-failure",
+  "terminal": null,
+  "value_head_dim": 64
+}

@@ -13,98 +13,107 @@ Consult [CLUSTERS.md](CLUSTERS.md) for cluster access, storage, scheduler limits
 ## Repository layout
 
 ```text
-scaffolds/<capability>/              reusable code and its tests
-  validation/                        the scaffold's own qualification record
-experiments/<experiment>/
-  README.md                          the experiment's complete documentation
-  configs/                           exact scientific recipes
-  runs/<run>/                        run metrics and metadata (authoritative results)
-  provenance/manifest.json           authoritative execution record
-  summary.csv, figures/              optional results derived from runs/
-  adapter/                           experiment code: execution and analysis modules, tests
-  logs/, checkpoints/                artifacts, ignored by Git
+results/<analysis>/
+  README.md                 findings, figure interpretation, regeneration command
+  selection.yaml            explicit run IDs, metrics, and comparison settings
+  *.pdf, *.png, summary.csv  derived figures and tables, committed
+  plot.py, ...               analysis code; tests/ when needed
+experiments/<study>/
+  README.md                 scientific question, methods, launch instructions
+  sweep.yaml                common recipe and study provenance; run membership
+  runs.csv                  generated index of run settings, status, and outcomes
+  runs/<run_id>/
+    config.yaml             complete input recipe, frozen before launch
+    record.json             authoritative execution and artifact provenance
+    metrics.jsonl           canonical measurements (or mechanism-specific data)
+    checkpoints/            ignored, on the run's home cluster
+    training.log            ignored, retained execution log
+  acceptance.py, ...        optional experiment-specific execution code
+scaffolds/<capability>/      shared implementation, tests, and environment
 ```
 
-- `scaffolds/<capability>/` holds reusable code only: model, attention, data, trainer,
-  evaluation, checkpointing, shared launch and acceptance helpers, reusable sweep and
-  analysis helpers, and the scaffold's own tests. Nothing in a scaffold is named after
-  or specific to one experiment. `scaffolds/transformer/` owns the language-model
-  stack; `scaffolds/state_rank/` owns state-spectrum analysis.
-- A scaffold may keep one validation record about itself at
-  `scaffolds/<capability>/validation/`: correctness checks, kernel and throughput
-  benchmarks, and hardware or runtime qualification. It has the shape of an experiment
-  record (README, `configs/`, `runs/<run>/`, `provenance/manifest.json`, ignored
-  `logs/`) and follows the same provenance and artifact rules. Its code (benchmarks,
-  qualification harnesses) is ordinary scaffold code.
-- `experiments/<experiment>/` holds everything for one experiment or sweep: its
-  committed record (README, recipes, runs, provenance, and optional derived summary and
-  figures), its committed `adapter/` package, and its ignored `logs/` and
-  `checkpoints/`. An experiment record contains no other directories.
-- Imports go one way: experiment code imports scaffold code, never the reverse, and
-  never another experiment's code. Anything two experiments need belongs in a scaffold.
-- The adapter separates **execution modules** (launchers, acceptance configuration,
-  anything a running job executes) from **analysis modules** (plotting, summaries, W&B
-  view definitions) and keeps its own tests. Add an adapter module only when
-  configuration of the shared scaffold cannot express the experiment; acceptance
-  logic itself lives in the scaffold's shared acceptance module, and the adapter only
-  configures it.
-- The root `README.md` is the experiment index. `CLUSTERS.md` documents cluster
+- A study groups a scientific question. Varying several axes (for example key width,
+  polynomial degree, normalization, coefficient parameterization, sharing, and seed)
+  produces runs within a study. Each run ID identifies one execution of a complete
+  configuration. Fresh executions receive new IDs; checkpoint resumptions and Slurm
+  requeues retain their ID and append execution attempts. IDs are permanent and unique
+  within the study; use collision-checked short IDs rather than encoding settings in paths.
+- The run index exposes attention family, `d_K`, degree, row normalization, QK
+  normalization, fixed/learned coefficients, restrictions, sharing, seed, training
+  recipe, status, and outcome where applicable. Missing historical facts stay unknown.
+  Settings live in structured configurations and records, not directory names.
+- `results/<analysis>/` groups figures around a comparison. Several analyses may
+  reference the same run, and an analysis may combine several studies. Reference run
+  IDs and checked source artifacts; never copy canonical measurements or checkpoints
+  into a results directory. Selection must be explicit; do not silently choose the
+  newest or best run at a coordinate. Numerical failures and incomplete coordinates
+  remain visible. Terminal and validation-best metrics must be distinguished.
+- Keep figures and analysis files directly in the result directory. Keep each run's
+  recipe, provenance, raw output, retained checkpoint, and log together. Do not create
+  parallel experiment-level `configs/`, `provenance/`, `logs/`, `checkpoints/`, or
+  `figures/` trees. Create optional files/directories only when needed.
+- Experiment execution modules live directly in their study; custom analysis modules
+  live directly in their result collection. Add code only when the shared scaffold
+  cannot express the experiment or analysis. Tests may use a `tests/` directory.
+- `scaffolds/<capability>/` holds reusable code only: model, attention, data, optimizer,
+  training, evaluation, checkpointing, launch and acceptance helpers, and shared
+  analysis. `scaffolds/records/` owns reusable run identity, provenance, and indexing.
+  Production imports go from experiments/results to scaffolds, never the reverse and
+  never from one experiment's execution code into another's.
+- A scaffold's correctness checks, hardware qualification, and throughput benchmarks
+  belong in its own `validation/` record. They describe software/runtime behavior and
+  are distinct from the scientific studies and comparisons under experiments/results.
+- The root `README.md` is the results and study index. `CLUSTERS.md` documents cluster
   operations. Scaffold READMEs document reusable software APIs only.
 
 ## Records and provenance
 
-- Each experiment has a **single canonical `README.md`** containing its question,
-  method, home cluster, artifact locations, exact reproduction commands, findings, and
-  limitations. Do not create competing READMEs, per-run reports, or nested narrative
-  documents. Analysis code may rewrite a marked generated section but must preserve
-  authored text.
-- Recipes under `configs/` state current paths. The bytes that actually executed are
-  preserved at the source commit recorded in the manifest
-  (`git show <commit>:<path>`); do not keep path-relocation maps, old-location entries,
-  or historical-path narratives.
-- Scientific results (training and validation metrics, terminal and best evaluations)
-  live only in `runs/<run>/`. `summary.csv`, README tables, and figures are derived from
-  those files by the adapter's analysis code and must regenerate byte-identically.
-- `provenance/manifest.json` is the single authoritative record of how the experiment
-  and each run were executed: source commit, resolved configuration and hash, seed, home
-  cluster, artifact root, data manifest hashes, the hash of the frozen execution set,
-  hardware (GPU type and count, node), partition, Slurm job IDs and attempts (including
-  preemptions and requeues), runtime settings (e.g. host staging, `NCCL_P2P_DISABLE`),
-  resolved attention backend, a summary of pre-launch acceptance (tests passed,
-  initialization hash, pilot and resume outcomes), W&B run id, selected checkpoint, and
-  log path, each artifact with its SHA256. The trainer's `runs/<run>/metadata.json` is
-  raw output that the manifest summarizes; do not copy per-attempt Slurm or preflight
-  files into the record.
-- Commit results, not data. Numerical archives, raw arrays, and datasets (for example
-  `metrics.npz` or `spectra.npz`) stay beside their committed run metadata, ignored by
-  Git; the manifest records their paths and SHA256. Keep datasets outside the
-  repository.
-- Hardware qualification and kernel or throughput benchmarks describe the shared
-  scaffold and runtime, not an experiment's question; record them in the scaffold's
-  validation record. An experiment whose acceptance qualifies a new mechanism or
-  hardware type summarizes that acceptance in its own manifest and adds the result to
-  the validation record.
-- A concluded numerical failure is a scientific result: record its stopping step, last
-  valid metrics, failure diagnostics, and one matching failure log. Do not label it as a
-  completed training run. Retain a diagnostic checkpoint only when justified in
-  provenance and the README.
+- Each study has one README for its question, method, home cluster, and exact launch
+  commands. Each result collection has one README for findings, limitations, and
+  regeneration. Link between them rather than duplicating narrative. Generated
+  sections may be rewritten, preserving authored text.
+- `runs/<run_id>/config.yaml` is the immutable input recipe. `sweep.yaml` describes
+  study defaults, membership, and common provenance; changing future defaults must
+  not change any launched run's recipe. Actual runtime resolution (including backend,
+  source commit, and absolute paths) is recorded separately in the run's execution
+  record. Preserve the executed source and dependency lock by commit.
+- `runs/<run_id>/record.json` is the authoritative execution record: configuration
+  identity/hash, seed, source commit, frozen execution hash, home cluster, artifact
+  locations and hashes, dataset hashes, GPU type/count/node, partition, Slurm attempts,
+  runtime settings, resolved backend, acceptance outcomes, W&B ID, and selected
+  checkpoint. Shared study facts may be referenced from `sweep.yaml`; per-run facts
+  belong to the run. Raw trainer outputs such as `metadata.json`, `config.json`, and
+  `completion.json` may be retained as evidence and are referenced by the record.
+- Measurements live only under the run. `runs.csv`, result summaries, tables, and
+  figures are derived and must regenerate byte-identically. Result selections and
+  generated manifests identify the exact input runs/artifact hashes and analysis
+  settings. A result update changes its selection, never overwrites an earlier run.
+- Commit configurations, provenance, and compact metrics, not datasets or large
+  arrays. Numerical archives (`metrics.npz`, `spectra.npz`) stay beside run metadata,
+  ignored by Git; record their SHA256. Keep datasets outside the repository.
+- A concluded numerical failure is a scientific result: preserve its stopping step,
+  last valid metrics, failure diagnostics, and matching log. Do not call it completed
+  training. Retain a diagnostic checkpoint only when justified by the record.
+- No permanent relocation maps, competing authoritative manifests, copied per-attempt
+  reports, or historical-path guides. Current paths resolve directly; source commits
+  preserve historical code. Existing descriptive run names may be retained as labels.
 
 ## Artifacts
 
-- Checkpoints live at `experiments/<experiment>/checkpoints/<run>/<step>/` and logs at
-  `experiments/<experiment>/logs/<run>/slurm-<job_id>.out`, on the experiment's home
-  cluster, ignored by Git.
-- During training keep the latest resumable checkpoint and the validation best. After
-  completion retain only the validation-best checkpoint per run, which need not be the
-  final one, and preserve terminal metrics independently. Experiments without
-  pretraining retain no checkpoints unless indispensable for reproduction.
-- Retain one successful Slurm log per run, benchmark, or validation, matching its
-  metadata; remove superseded and failed-attempt logs once debugging is resolved.
-  Launchers open logs in append mode so a requeued job keeps its earlier attempts.
-- The root `.gitignore` excludes `experiments/*/logs/`, `experiments/*/checkpoints/`,
-  `scaffolds/*/validation/logs/`,
-  numerical archives, environments, caches, and runtime checkpoint symlinks using shared
-  patterns. Do not use `.git/info/exclude` or machine-local exclusions.
+- Checkpoints live at `experiments/<study>/runs/<run_id>/checkpoints/<step>/`, and
+  the retained Slurm output at `experiments/<study>/runs/<run_id>/training.log`, on
+  the run's home cluster, ignored by Git. Record job IDs/attempts in `record.json`.
+- During training keep the latest resumable checkpoint and validation best. After
+  completion retain only the validation-best checkpoint, which need not be terminal;
+  preserve terminal metrics independently. Analyses without training retain no
+  checkpoints unless indispensable for reproduction.
+- Retain one successful log, or a matching scientific-failure log, for each run.
+  Launchers append so requeues preserve earlier attempts. Remove superseded debugging
+  logs when resolved. Temporary acceptance output and W&B files stay ignored within
+  the run, and are summarized in its record.
+- Root `.gitignore` uses shared patterns for run checkpoints, logs, temporary runtime
+  output, numerical archives, environments, caches, and scaffold validation artifacts.
+  Do not use `.git/info/exclude` or machine-local exclusions.
 
 ## Scaffold and runtime separation
 
@@ -145,11 +154,10 @@ experiments/<experiment>/
   `rafah-massachusetts-institute-of-technology/functional-memory`, with the experiment
   as the W&B group, the run name as the W&B name, mechanism and hardware tags, the full
   recipe as config, metric prefixes `train/`, `val/`, and `attention/<mechanism>/`, and
-  terminal metrics in the run summary. W&B's local files go under the experiment's
-  `logs/`.
+  terminal metrics in the run summary. W&B's local files stay ignored within the run directory.
 - W&B is a live monitoring mirror. `runs/<run>/metrics.jsonl`, the committed figures,
-  and `summary.csv` remain the canonical results. An experiment's saved W&B view is
-  analysis code in its adapter. Credentials come from the user's `wandb login`
+  and derived summaries remain the recorded results. A saved W&B view is
+  analysis code in the corresponding results collection. Credentials come from the user's `wandb login`
   (`~/.netrc`); never request or print an API key.
 
 ## Experiment home cluster
@@ -160,7 +168,7 @@ experiments/<experiment>/
   from related experiments or comparison baselines, and do not ask the user to choose a
   cluster when the request's location already establishes it.
 - Before continuing an existing experiment, check its recorded home cluster in
-  provenance and its README. If the request comes from a different cluster, tell the
+  its run/study records and README. If the request comes from a different cluster, tell the
   user which cluster they are on and which cluster owns the experiment, and flag the
   mismatch before launching or resuming. Migration requires an explicit user
   instruction.
@@ -178,23 +186,27 @@ experiments/<experiment>/
   runs, logs, and checkpoints live in the worktree's `experiments/<experiment>/` while
   it runs, so changes to `main` never affect it. A sweep shares one worktree.
 - While any of its jobs can run or requeue, the **frozen execution set** must not change:
-  scaffold code (excluding the scaffold's validation record), the dependency lock (and
-  so the environment), the experiment's `configs/`, the adapter's execution modules, and
-  the training data (checked through dataset-manifest checksums). The README, figures, `summary.csv`, and the adapter's
-  analysis modules may be edited and committed at any time.
+  scaffold code (excluding its validation record), the dependency lock (and therefore
+  the environment), `sweep.yaml`, `runs/*/config.yaml`, experiment execution modules,
+  and training data (checked through dataset-manifest checksums). Run records, metrics,
+  logs, and checkpoints are mutable outputs. READMEs, generated indices, and results
+  analysis/figures may be edited while jobs run.
 - Launchers record the launch commit and, at every start and requeue, compare only the
-  frozen execution set with it (ignoring `runs/`, `logs/`, and `checkpoints/`), refusing
-  to run on any difference. The manifest records the frozen set's hash.
+  frozen execution set with it, refusing to run on any difference. Run configurations
+  are inputs even though they live under `runs/`; mutable run outputs are excluded.
+  Each run record contains the frozen set's hash.
 - Never remove a worktree while any of its jobs can still run or requeue.
 - At completion:
   1. Move (not copy) the retained artifacts into the primary checkout's
      `experiments/<experiment>/`: each run's metrics, its validation-best checkpoint,
      and one successful log.
   2. Verify their checksums.
-  3. Record the final locations in the manifest.
+  3. Record the final locations in the run records and regenerate the study index.
   4. Merge the branch into `main`, reconciling any scaffold changes `main` made in the
      meantime.
   5. Only then remove the worktree and delete the branch. `git worktree remove`
      silently deletes ignored files, so confirm nothing retained remains inside it.
 - Before merging, remove temporary files, intermediate checkpoints, caches, redundant
-  outputs, and duplicated documentation.
+  outputs, and duplicated documentation. An older active worktree keeps its frozen
+  execution layout until its jobs finish; migrate retained artifacts into this layout
+  when integrating it, without editing live execution paths.

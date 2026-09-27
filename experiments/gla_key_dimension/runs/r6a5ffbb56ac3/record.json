@@ -1,0 +1,288 @@
+{
+  "acceptance": {
+    "B300": {
+      "completed_utc": "2026-09-25T01:24:44.041636+00:00",
+      "cpu_tests_passed": 49,
+      "devices": [
+        "NVIDIA B300 SXM6 AC",
+        "NVIDIA B300 SXM6 AC",
+        "NVIDIA B300 SXM6 AC",
+        "NVIDIA B300 SXM6 AC"
+      ],
+      "gpu_tests_passed": 21,
+      "identity": "bb4debf4dbf42da9fb472a174df5c45dc4ef811838ec93f5b2a89d2ea2d8b80f",
+      "initialization": {
+        "parameter_count": 194881024,
+        "parameter_sha256": "3f879a801bded9a9154bdc0f03b8dd4f6d89f8944caac5a676355ead453c6bc5"
+      },
+      "pilot": {
+        "attention_backend": "fused",
+        "diagnostics_valid": true,
+        "projected_hours": 2.65,
+        "updates": 20,
+        "validation_nll": 10.86477255821228
+      },
+      "resume": {
+        "data_start_sequence": 5120,
+        "final_step": 21,
+        "restored_step": 20,
+        "state_batch_rng_audit": "exact"
+      },
+      "slurm_job_id": "201793",
+      "slurm_restart_count": "1",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "optax": "0.2.8",
+        "orbax-checkpoint": "0.11.40",
+        "triton": "3.6.0"
+      }
+    },
+    "H100": {
+      "completed_utc": "2026-09-24T22:10:26.533804+00:00",
+      "cpu_tests_passed": 49,
+      "devices": [
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3"
+      ],
+      "gpu_tests_passed": 21,
+      "identity": "114b04eb1367fb597a53b66f49f70077dd2e3625065eb52acd4960b10ddb2c24",
+      "initialization": {
+        "parameter_count": 194881024,
+        "parameter_sha256": "3f879a801bded9a9154bdc0f03b8dd4f6d89f8944caac5a676355ead453c6bc5"
+      },
+      "pilot": {
+        "attention_backend": "fused",
+        "diagnostics_valid": true,
+        "projected_hours": 4.09,
+        "updates": 20,
+        "validation_nll": 10.864844560623169
+      },
+      "resume": {
+        "data_start_sequence": 5120,
+        "final_step": 21,
+        "restored_step": 20,
+        "state_batch_rng_audit": "exact"
+      },
+      "slurm_job_id": "201793",
+      "slurm_restart_count": "0",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "optax": "0.2.8",
+        "orbax-checkpoint": "0.11.40",
+        "triton": "3.6.0"
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/best_validation.json",
+      "sha256": "e610d16fffb5042b197b1125db8b1145f84785539c4fa1cd54bc6da9c4e97405"
+    },
+    {
+      "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/completion.json",
+      "sha256": "34aa4bfb0acd6bad92bbff6e20a2ad68445dd3cb9c5d8897286f2d72cd32865f"
+    },
+    {
+      "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/config.json",
+      "sha256": "88cd21b00c3438b9e5e647a631e38248ce70c4e74cbb17f30d818ef374cf8d9b"
+    },
+    {
+      "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/config.yaml",
+      "sha256": "0eb514b3d76f9bee13b0072605fb4d1d3e7c4b3539593244c403ebe466161b3a"
+    },
+    {
+      "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+    },
+    {
+      "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/metadata.json",
+      "sha256": "6b27f0e7f32bb500c755e49a0110c1f94e3a4a81058cf625972e581197ada7cc"
+    },
+    {
+      "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/metrics.jsonl",
+      "sha256": "e308007b1c50cb2d7d128168288d57fc68b837fd352e3b61635f19b8bee6f42b"
+    }
+  ],
+  "best_validation": {
+    "selection_rule": "lowest_validation_nll",
+    "step": 19074,
+    "training_tokens": 10000269312,
+    "validation_nll": 2.8160622119903564,
+    "validation_perplexity": 16.710916892545267
+  },
+  "checkpoint_dir": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/checkpoints",
+  "config": {
+    "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/config.yaml",
+    "sha256": "0eb514b3d76f9bee13b0072605fb4d1d3e7c4b3539593244c403ebe466161b3a"
+  },
+  "execution": {
+    "attempts": [
+      {
+        "elapsed": "01:14:27",
+        "gpu_type": "H100",
+        "node": "dogo",
+        "partition": "sweep",
+        "slurm_restart_count": 0,
+        "started_utc": "2026-09-24T21:55:23.670850+00:00",
+        "state": "PREEMPTED"
+      },
+      {
+        "elapsed": "01:15:24",
+        "gpu_type": "B300",
+        "node": "akita",
+        "partition": "sweep",
+        "slurm_restart_count": 1,
+        "started_utc": "2026-09-25T01:18:52.202018+00:00",
+        "state": "COMPLETED"
+      }
+    ],
+    "attention_backend": "fused",
+    "data_parallel_devices": 4,
+    "gpu_count": 4,
+    "resume": "H100 attempt preempted at update 6,732; the B300 attempt restored the update-6,500 checkpoint",
+    "runtime": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "slurm_job_id": "201793"
+  },
+  "initialization_sha256": "3f879a801bded9a9154bdc0f03b8dd4f6d89f8944caac5a676355ead453c6bc5",
+  "label": "200m-dk016-gla-seed0",
+  "log_note": "Slurm truncated slurm-201793.out when the preempted H100 attempt requeued (default open mode), so the retained log covers the B300 attempt: acceptance, restore at update 6,500, and training to completion. The H100 attempt's acceptance and metrics survive in runs/ and above.",
+  "log_path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/training.log",
+  "log_sha256": "10915c4f6ef8af36ec0db0fc244b28bfd0583d301d522b25da75dc3966012c01",
+  "name": "200m-dk016-gla-seed0",
+  "parameter_count": 194881024,
+  "qk_head_dim": 16,
+  "record_schema_version": 1,
+  "resolved_config": {
+    "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/config.yaml",
+    "recorded_sha256": "f21068d2530ecae34b5cc163b0b2a1674ad2f9cdd03d75b5979e5bc4ed972bff",
+    "sha256": "0eb514b3d76f9bee13b0072605fb4d1d3e7c4b3539593244c403ebe466161b3a"
+  },
+  "run_files": {
+    "best_validation.json": "e610d16fffb5042b197b1125db8b1145f84785539c4fa1cd54bc6da9c4e97405",
+    "completion.json": "34aa4bfb0acd6bad92bbff6e20a2ad68445dd3cb9c5d8897286f2d72cd32865f",
+    "config.json": "88cd21b00c3438b9e5e647a631e38248ce70c4e74cbb17f30d818ef374cf8d9b",
+    "data_identity.json": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "metadata.json": "6b27f0e7f32bb500c755e49a0110c1f94e3a4a81058cf625972e581197ada7cc",
+    "metrics.jsonl": "e308007b1c50cb2d7d128168288d57fc68b837fd352e3b61635f19b8bee6f42b"
+  },
+  "run_id": "r6a5ffbb56ac3",
+  "seed": 0,
+  "selected_checkpoint": {
+    "file_count": 17,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "371dd812cf0a069e3dfaa6ef97747fd5a87dd3c7c89a9bf408d30d38f7756ea1",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "356f8ebf6a31b06fddfb441552ca1e7584e3d9156b561bd3e04100a9a8e3d45a",
+        "size_bytes": 220389
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "feda4c1b5a514d3f6bfe6b37a5ca89b680f5fb7260d6528e7d25ad17713a9da3",
+        "size_bytes": 134929
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "56dc630c290fd2e5b0af884af99fb75042c0d516886b0cec8a65062de6e20f2b",
+        "size_bytes": 75463
+      },
+      {
+        "path": "default/d/fad572c62b4bce9420ea63b89c651bcf",
+        "sha256": "4159acbec0c946d1851f335bc121258b6e57b3657a3f47698ddb32fa13161576",
+        "size_bytes": 20959
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "f82b4bdbf710eaf4d3748f07fa9d70e8e04f25bd939eac33657c4bd55d7b4c7e",
+        "size_bytes": 120
+      },
+      {
+        "path": "default/ocdbt.process_0/d/1ec2835abca6fc1126cda6af81d5138d",
+        "sha256": "0f1adeedeb074982db84794405c529ca4cf5134a7e6d7f408df95be3b46a38af",
+        "size_bytes": 739
+      },
+      {
+        "path": "default/ocdbt.process_0/d/27e5e883e3d26d99c41157a4d282719e",
+        "sha256": "48da83135795bba368c69ca5bdd7434a40aa3249a2683ce3fc23f36810c3fffb",
+        "size_bytes": 526
+      },
+      {
+        "path": "default/ocdbt.process_0/d/29cf42934a58bf72d0e7c03cb0a4fcd6",
+        "sha256": "431dfa42d605739a00772ee570348c015b253f04a6af307f620b502f0af49f6e",
+        "size_bytes": 503
+      },
+      {
+        "path": "default/ocdbt.process_0/d/3135580b6031ab0e85431cfb41e3f913",
+        "sha256": "24a5c382c4e76da183d6c729b74d0becbdf253d745c628a9885022a48f955060",
+        "size_bytes": 1354092544
+      },
+      {
+        "path": "default/ocdbt.process_0/d/593fd3334c1ab9f5a1c65ba056512eca",
+        "sha256": "7930f3ba2949c785763bce360b0fa2ba5254ebc9c89706a0afd79dfc7bf6446f",
+        "size_bytes": 808
+      },
+      {
+        "path": "default/ocdbt.process_0/d/6f2c8c12da20a0b38c6cb69795f6412e",
+        "sha256": "818647d951bc4d01313fd87bd039de20904400f6979d8863c7388bc0750cdbeb",
+        "size_bytes": 48504832
+      },
+      {
+        "path": "default/ocdbt.process_0/d/73ca74a1abd9642d9132853f4802ddc0",
+        "sha256": "cf1c08876e30674c24637bce1f38cb1e342fe2656a2e9cac893549a81ffa71f4",
+        "size_bytes": 739942400
+      },
+      {
+        "path": "default/ocdbt.process_0/d/8a80026172201901c7572b87db99b6a6",
+        "sha256": "c21269152e374fe73c396edcf1f1ea46725e682f940758ab325c117d7778dc79",
+        "size_bytes": 216
+      },
+      {
+        "path": "default/ocdbt.process_0/d/b4e8ff8bcfa7ef2c7e42ece12531f55e",
+        "sha256": "284972cf8cddf2bfb6d061a6ac0bde2b096989468d1278b7010a2a7aa1e061bc",
+        "size_bytes": 1011675
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "ee67e339f0c5de95b2fb7bc30dec2571560296e788e165029c5b265ba6a462c1",
+        "size_bytes": 467
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "16fff65815b865c8c6e50152d286dec0d3b945f70a5fda21545513559d55dee9",
+        "size_bytes": 139
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/checkpoints/19074",
+    "selection": "validation-best (also terminal)",
+    "sha256": "e4d5ae7f08bd75b3453b4dbcbd443819b28b5bd53f438399fcf494366138fef8",
+    "size_bytes": 2144007075,
+    "step": 19074,
+    "tree_sha256": "e4d5ae7f08bd75b3453b4dbcbd443819b28b5bd53f438399fcf494366138fef8"
+  },
+  "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+  "state_elements_per_layer": 16384,
+  "status": "complete",
+  "terminal": {
+    "step": 19074,
+    "training_tokens": 10000269312,
+    "validation_nll": 2.8160622119903564,
+    "validation_perplexity": 16.710916892545267
+  },
+  "value_head_dim": 64,
+  "workdir": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3"
+}

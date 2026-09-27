@@ -24,12 +24,11 @@ METRIC_PREFIXES = ("train/*", "val/*", "attention/*", "model/*", "terminal/*")
 
 
 def experiment_paths(workdir: Path) -> tuple[str | None, Path | None]:
-    """Experiment name and log directory for a workdir `experiments/<experiment>/runs/<run>`."""
+    """Study name and colocated artifact root for `experiments/<study>/runs/<run>`."""
     parts = Path(workdir).parts
     for index in range(len(parts) - 3, -1, -1):
         if parts[index] == "experiments" and parts[index + 2] == "runs":
-            root = Path(*parts[:index + 2])
-            return parts[index + 1], root / "logs" / parts[index + 3]
+            return parts[index + 1], Path(*parts[:index + 4])
     return None, None
 
 

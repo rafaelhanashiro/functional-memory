@@ -1,0 +1,724 @@
+schema_version: 2
+experiment: state_rank
+home_cluster: kennel
+home_cluster_note: Rerun on Kennel on 2026-09-24 at the user's request so that runs,
+  derived outputs, and data archives are regenerable on one accessible cluster. The
+  superseded ORCD execution is summarized under superseded_execution.
+artifact_root: /data/cl/u/rafah/home/projects/functional-memory
+data_policy: Git holds results only. Numerical archives (metrics.npz, spectra.npz)
+  stay beside their committed run metadata under <artifact_root>/experiments/state_rank/runs/<run>/,
+  ignored by Git; SHA256 below.
+checkpoint_retention: none
+scaffold: scaffolds/state_rank
+documentation: experiments/state_rank/README.md
+kennel_execution:
+  environment:
+    python: <artifact_root>/.venv/bin/python
+    flash-linear-attention: 0.6.0
+    matplotlib: 3.11.2
+    numpy: 2.5.3
+    torch: 2.7.1+cu126
+    transformers: 4.57.6
+    triton: 3.3.1
+    dependency_lock_sha256: 3d0a8accf78ebe6a2288bce53032412d7f86dce603609d568c8193af4d5c6356
+    models: pre-downloaded at the pinned revisions to ~/.cache/huggingface/hub; jobs
+      set HF_HUB_OFFLINE=1
+  runtime_settings:
+    allow_tf32: false
+    OMP_NUM_THREADS: SLURM_CPUS_PER_TASK
+    MKL_NUM_THREADS: 1
+    OPENBLAS_NUM_THREADS: 1
+    MPLBACKEND: Agg
+    HF_HUB_OFFLINE: 1
+  comparisons:
+    random_vs_pretrained:
+      source_commit: 279fdd63fa03054196762da2bc616eb1f8c30208
+      execution_root: worktrees/state_rank-exec-279fdd6 (frozen detached worktree;
+        removed after retention)
+      partition: standard
+      gres: gpu:h100:1
+      cpus: 4
+      memory: 32G
+      gating: pretrained and random-seed0 gate the remaining four conditions (afterok)
+      jobs:
+        pretrained:
+          slurm_job_id: '201744'
+          attempts: 1
+          slurm_restart_count: 0
+          node: dogo.csail.mit.edu
+          gpu: NVIDIA H100 80GB HBM3
+          elapsed_seconds: 46.2
+          parameter_sha256: 270990947595a37e636f45040fb0e9ccfb8fe7c7258218b292741958637e2cde
+          log_path: experiments/state_rank/logs/random_vs_pretrained/pretrained/slurm-201744.out
+        random-seed0:
+          slurm_job_id: '201745'
+          attempts: 1
+          slurm_restart_count: 0
+          node: dogo.csail.mit.edu
+          gpu: NVIDIA H100 80GB HBM3
+          elapsed_seconds: 61.2
+          parameter_sha256: 8d48427c9c2b822cf1cbb3054a83d17f01b246999043b25106e5c7c14aaa7d25
+          log_path: experiments/state_rank/logs/random_vs_pretrained/random-seed0/slurm-201745.out
+        random-seed1:
+          slurm_job_id: '201746'
+          attempts: 1
+          slurm_restart_count: 0
+          node: dogo.csail.mit.edu
+          gpu: NVIDIA H100 80GB HBM3
+          elapsed_seconds: 61.1
+          parameter_sha256: bc5f07d5846229a6ac6ed133acfe39673cce93e15ed0e7ee65354cc44f01edf9
+          log_path: experiments/state_rank/logs/random_vs_pretrained/random-seed1/slurm-201746.out
+        random-seed2:
+          slurm_job_id: '201747'
+          attempts: 1
+          slurm_restart_count: 0
+          node: dogo.csail.mit.edu
+          gpu: NVIDIA H100 80GB HBM3
+          elapsed_seconds: 60.3
+          parameter_sha256: 2297a2b3568ccb102f28c3251616deb2d97838bf793ac37d0cb1a67f69e9a558
+          log_path: experiments/state_rank/logs/random_vs_pretrained/random-seed2/slurm-201747.out
+        random-seed3:
+          slurm_job_id: '201748'
+          attempts: 1
+          slurm_restart_count: 0
+          node: dogo.csail.mit.edu
+          gpu: NVIDIA H100 80GB HBM3
+          elapsed_seconds: 60.7
+          parameter_sha256: ac03d2641b73af6636e656031290ef0786ac9dd8a04228adc16655ccc2a0ff42
+          log_path: experiments/state_rank/logs/random_vs_pretrained/random-seed3/slurm-201748.out
+        random-seed4:
+          slurm_job_id: '201749'
+          attempts: 1
+          slurm_restart_count: 0
+          node: dogo.csail.mit.edu
+          gpu: NVIDIA H100 80GB HBM3
+          elapsed_seconds: 60.4
+          parameter_sha256: 12b8ed5eef98e157e6db55ac3fc565b8f20663375f7070a0d350d074d508a78e
+          log_path: experiments/state_rank/logs/random_vs_pretrained/random-seed4/slurm-201749.out
+      superseded_attempts:
+      - slurm_job_id: '201736'
+        condition: pretrained
+        source_commit: 5424ec87bbdc392fb46f632b652058aefecad4c6
+        state: FAILED
+        reason: 'baseline reproduction: normalized spectrum 2.0576e-5 exceeded the
+          2e-5 tolerance on input 1 with zero discrete-rank mismatches; see tolerance_amendment.
+          Log removed after resolution.'
+      - slurm_job_ids:
+        - '201737'
+        - '201738'
+        - '201739'
+        - '201740'
+        - '201741'
+        conditions: random-seed0..4
+        state: CANCELLED before starting (dependents of 201736)
+    random_vs_pretrained_deltanet:
+      source_commit: 5424ec87bbdc392fb46f632b652058aefecad4c6
+      execution_root: worktrees/state_rank-exec-5424ec8 (frozen detached worktree;
+        removed after retention)
+      partition: standard
+      gres: gpu:h100:1
+      cpus: 8
+      memory: 48G
+      gating: pretrained and random-seed0 gate the remaining four conditions (afterok)
+      jobs:
+        pretrained:
+          slurm_job_id: '201715'
+          attempts: 1
+          slurm_restart_count: 0
+          node: dogo.csail.mit.edu
+          gpu: NVIDIA H100 80GB HBM3
+          elapsed_seconds: 930.6
+          parameter_sha256: 81301c0a01f84e41784ee31ab91ce735d3a542c4afcb2c485b6c797fcf7b6fd0
+          log_path: experiments/state_rank/logs/random_vs_pretrained_deltanet/pretrained/slurm-201715.out
+        random-seed0:
+          slurm_job_id: '201716'
+          attempts: 1
+          slurm_restart_count: 0
+          node: dogo.csail.mit.edu
+          gpu: NVIDIA H100 80GB HBM3
+          elapsed_seconds: 855.6
+          parameter_sha256: bd6ee926a0a19c1a00ab270a0789683a78b0d71cce3e0b95ab35f6c8412ee172
+          log_path: experiments/state_rank/logs/random_vs_pretrained_deltanet/random-seed0/slurm-201716.out
+        random-seed1:
+          slurm_job_id: '201717'
+          attempts: 1
+          slurm_restart_count: 0
+          node: dogo.csail.mit.edu
+          gpu: NVIDIA H100 80GB HBM3
+          elapsed_seconds: 847.8
+          parameter_sha256: b267fe4913209305ced913a37dc62b41b21d7ca00a00592c11e23e91412e4c8f
+          log_path: experiments/state_rank/logs/random_vs_pretrained_deltanet/random-seed1/slurm-201717.out
+        random-seed2:
+          slurm_job_id: '201718'
+          attempts: 1
+          slurm_restart_count: 0
+          node: dogo.csail.mit.edu
+          gpu: NVIDIA H100 80GB HBM3
+          elapsed_seconds: 846.2
+          parameter_sha256: 33d05376667324dcbdf5aea7367eb02c8247d9d8d84054570335c0d15bf132dc
+          log_path: experiments/state_rank/logs/random_vs_pretrained_deltanet/random-seed2/slurm-201718.out
+        random-seed3:
+          slurm_job_id: '201719'
+          attempts: 1
+          slurm_restart_count: 0
+          node: dogo.csail.mit.edu
+          gpu: NVIDIA H100 80GB HBM3
+          elapsed_seconds: 854.0
+          parameter_sha256: fc2a2e4a98573145a800c2ed5312f82f4e2f044c1991180ef272db8c061dd60b
+          log_path: experiments/state_rank/logs/random_vs_pretrained_deltanet/random-seed3/slurm-201719.out
+        random-seed4:
+          slurm_job_id: '201720'
+          attempts: 1
+          slurm_restart_count: 0
+          node: dogo.csail.mit.edu
+          gpu: NVIDIA H100 80GB HBM3
+          elapsed_seconds: 851.7
+          parameter_sha256: b5765f4adbdd5d91dd769906ab63192471b2d2dfc16cb9162bf1f6303172d752
+          log_path: experiments/state_rank/logs/random_vs_pretrained_deltanet/random-seed4/slurm-201720.out
+  unified_analysis:
+    source_commit: 279fdd63fa03054196762da2bc616eb1f8c30208
+    slurm_job_id: '201750'
+    partition: standard
+    node: doodle
+    resources: CPU only; 4 CPUs, 16G
+    attempts: 1
+  workspace: kennel-rerun (execution workspace; removed after retention)
+acceptance:
+  pre_launch_tests:
+  - slurm_job_id: '201714'
+    partition: debug
+    node: dogo
+    gpu: NVIDIA H100 80GB HBM3
+    source_commit: 4d93d20936e4eba23761a5ff9f8c0973d23c8ccd
+    scope: scaffolds/state_rank/tests
+    passed: 173
+    failed: 0
+  - slurm_job_id: '201715'
+    scope: native Gated DeltaNet GPU tests inside the pretrained DeltaNet job
+    source_commit: 5424ec87bbdc392fb46f632b652058aefecad4c6
+    passed: 3
+    failed: 0
+  - slurm_job_id: '201743'
+    partition: debug
+    node: doodle
+    source_commit: 279fdd63fa03054196762da2bc616eb1f8c30208
+    scope: test_compare_random.py and test_comparison_launch.py after the tolerance
+      amendment
+    passed: 24
+    failed: 0
+  baseline_reproduction:
+    random_vs_pretrained:
+      inputs_checked: 4
+      passed: true
+      normalized_spectrum_max_absolute_error: 2.0576192789778514e-05
+      participation_ratio_max_relative_error: 3.2656215199285394e-05
+      keys_relative_error: 1.0916928105920252e-06
+      values_relative_error: 2.575426965119984e-06
+      discrete_rank_mismatches: 0
+    random_vs_pretrained_deltanet:
+      inputs_checked: 4
+      passed: true
+      normalized_spectrum_max_absolute_error: 2.9778755628040443e-07
+      participation_ratio_max_relative_error: 4.962300921662273e-07
+      log_trace_max_absolute_error: 9.787974331043614e-07
+      discrete_rank_mismatches: 0
+  deltanet_cache_consistency:
+    tolerance: 0.0002
+    maximum_prefix_relative_error: 1.9269328921836587e-05
+  unified_analysis: validation passed; source archives unchanged and checksum-verified
+    (see unified_analysis.validation)
+tolerance_amendment:
+  parameter: NORMALIZED_SPECTRUM_ATOL in scaffolds/state_rank/compare_random.py
+  previous: 2.0e-05
+  current: 5.0e-05
+  commit: 279fdd63fa03054196762da2bc616eb1f8c30208
+  scope: Llama pretrained baseline reproduction only; the DeltaNet threshold stays
+    2e-5
+  reason: The retained baseline was measured on L40S. The Kennel H100 pretrained measurement
+    reached 2.0576e-5 (input 1) with zero discrete-rank mismatches and 1e-6 K/V agreement.
+  decision: user-approved on 2026-09-24 before resubmission
+cross_cluster_reproduction:
+  random_vs_pretrained:
+    summary_rows: 96
+    discrete_ranks: threshold, 90%- and 99%-energy ranks identical in all rows
+    continuous_max_relative_difference:
+      participation_ratio: 3.7e-06
+      log_trace: 3.3e-07
+      key_and_value_norms: 3.0e-07
+    parameter_fingerprints: identical to ORCD for all six conditions
+    inputs: identical
+  random_vs_pretrained_deltanet:
+    summary_rows: 144
+    discrete_ranks: energy ranks identical in all rows; threshold rank identical in
+      143
+    threshold_rank_difference:
+      condition: random-seed1
+      layer: 23
+      orcd: 78.46875
+      kennel: 78.5
+      meaning: one of 32 input/head states gains one mode at the 1e-4 sigma_1 cutoff
+    continuous_max_relative_difference:
+      participation_ratio: 5.6e-07
+      log_trace: 5.6e-07
+    parameter_fingerprints:
+      pretrained: identical to ORCD
+      random: differ from ORCD in all five seeds
+      cause: CPU-vendor-dependent last-bit rounding of log/exp/expm1 in FLA's A_log
+        and dt_bias initialization; every other parameter is bit-identical
+      evidence:
+      - Seed 0 on AMD EPYC (dogo, jobs 201752-201754) gives the Kennel fingerprint
+        under every ATen CPU capability (default, AVX2, AVX512), MKL_CBWR (COMPATIBLE,
+        SSE4_2, AVX2, AVX512), MKL_DEBUG_CPU_TYPE=5, a dirtied allocator, and OMP_NUM_THREADS=1.
+      - Seed 0 on Intel Xeon Gold 5218R (doodle, job 201762) reproduces the ORCD fingerprint
+        0415b698...0c65bd exactly.
+      - 'Seeds 0-4, Intel (doodle, 201763) versus AMD (mastiff, 201764; bit-identical
+        to dogo for seed 0): 10-22 of 384 A_log/dt_bias elements per seed differ,
+        each by 1 ULP.'
+      consequence: random DeltaNet metrics deviate from ORCD no more than the pretrained
+        condition, whose parameters are identical (both <=5.6e-7 relative)
+  unified_analysis:
+    depth_summary_rows: 240
+    differences: only the DeltaNet random-seed1 layer-23 threshold rank above; terminal
+      comparison counts unchanged
+superseded_execution:
+  home_cluster: ORCD/Engaging
+  record_commit: 4d93d20936e4eba23761a5ff9f8c0973d23c8ccd
+  summary: The original L40S execution of both comparisons, superseded by the Kennel
+    rerun; its record is at record_commit, and agreement with it is summarized in
+    cross_cluster_reproduction.
+recipes:
+  random_vs_pretrained:
+    schema_version: 1
+    model_id: meta-llama/Llama-3.2-1B
+    model_revision: 4e20de362430cd3b72f300e6b0f18e50e7166e08
+    baseline_directory: experiments/state_rank/runs/r387096e9d9c7
+    baseline_layer: 8
+    comparison_layer: 8
+    layers:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    seeds:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    tokens: 512
+    input_count: 4
+    spectrum_prefixes:
+    - 1
+    - 2
+    - 8
+    - 32
+    - 128
+    - 512
+    model_dtype: float32
+    analysis_dtype: float64
+    attention_implementation: eager
+    allow_tf32: false
+    output_directory: experiments/state_rank/random_vs_pretrained
+  random_vs_pretrained_deltanet:
+    schema_version: 1
+    model_id: m-a-p/1.3B-100B-GatedDeltaNet-pure
+    model_revision: 930ed6ae4ac629c86cb9855bb3dcb0a0974a29aa
+    baseline_directory: experiments/state_rank/runs/rabd239a7f3dc
+    baseline_layer: 12
+    comparison_layer: 12
+    layers:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    seeds:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    tokens: 512
+    input_count: 4
+    spectrum_prefixes:
+    - 1
+    - 2
+    - 8
+    - 32
+    - 128
+    - 512
+    model_dtype: float32
+    analysis_dtype: float64
+    attention_implementation: fused_recurrent
+    allow_tf32: false
+    svd_workers: 4
+    output_directory: experiments/state_rank/random_vs_pretrained_deltanet
+run_ids:
+- rabd239a7f3dc
+- r387096e9d9c7
+- r845135d42740
+- r4bf905cd724d
+- r9364a915d115
+- r1e1b58269791
+- red7a4fb9ce56
+- r2c419979b240
+- r9622dff4f6a8
+- r248ca889523a
+- rb0f5d0c3f603
+- r79a7633b693d
+- rea54b3f2f964
+- r8da34503fda2
+comparisons:
+  random_vs_pretrained:
+    manifest:
+      baseline_directory: experiments/state_rank/runs/llama-3.2-1b-l8-kvall-t512
+      baseline_metadata_sha256: cd72e93c24104617e9f286b622c7e56d852e2403fc7d072590b3755ff1c97ab2
+      baseline_spectra_sha256: ed64ae5582797460a12eb3326bde20df5b621381b5b12f35fdb490904b949aa0
+      checkpoint_retention: none
+      conditions:
+      - name: pretrained
+        seed: null
+        weights: pretrained
+      - name: random-seed0
+        seed: 0
+        weights: random
+      - name: random-seed1
+        seed: 1
+        weights: random
+      - name: random-seed2
+        seed: 2
+        weights: random
+      - name: random-seed3
+        seed: 3
+        weights: random
+      - name: random-seed4
+        seed: 4
+        weights: random
+      config:
+        allow_tf32: false
+        analysis_dtype: float64
+        attention_implementation: eager
+        baseline_directory: experiments/state_rank/runs/llama-3.2-1b-l8-kvall-t512
+        baseline_layer: 8
+        comparison_layer: 8
+        input_count: 4
+        layers:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+        - 9
+        - 10
+        - 11
+        - 12
+        - 13
+        - 14
+        - 15
+        model_dtype: float32
+        model_id: meta-llama/Llama-3.2-1B
+        model_revision: 4e20de362430cd3b72f300e6b0f18e50e7166e08
+        output_directory: experiments/state_rank/random_vs_pretrained
+        schema_version: 1
+        seeds:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        spectrum_prefixes:
+        - 1
+        - 2
+        - 8
+        - 32
+        - 128
+        - 512
+        tokens: 512
+      created_utc: '2026-09-24T19:53:28.090891+00:00'
+      dependency_lock_sha256: 3d0a8accf78ebe6a2288bce53032412d7f86dce603609d568c8193af4d5c6356
+      execution_root: worktrees/state_rank-exec-279fdd6
+      experiment: state_rank/random_vs_pretrained
+      identity: d35eac4d10d6016b2159bd00c3f557f3015b2bec1808b3fbcaa759d766ea7761
+      initialization: Hugging Face reference initialization; not Meta's original random
+        weights
+      inputs_sha256: 8ac90c69b0c3503e3a505d6bcf317af31ad0f2f3c04853e699bb6cf504a497ed
+      jobs:
+        pretrained: '201744'
+        random-seed0: '201745'
+        random-seed1: '201746'
+        random-seed2: '201747'
+        random-seed3: '201748'
+        random-seed4: '201749'
+      output_directory: experiments/state_rank/random_vs_pretrained
+      project_root: /data/cl/u/rafah/home/projects/functional-memory
+      schema_version: 1
+      source_commit: 279fdd63fa03054196762da2bc616eb1f8c30208
+      state_definition: unnormalized softmax numerator; post-RoPE keys; before output
+        processing
+      submitted_utc: '2026-09-24T19:53:28.216116+00:00'
+    inputs_sha256: 8ac90c69b0c3503e3a505d6bcf317af31ad0f2f3c04853e699bb6cf504a497ed
+    resolved_config:
+      allow_tf32: false
+      analysis_dtype: float64
+      attention_implementation: eager
+      baseline_directory: experiments/state_rank/runs/llama-3.2-1b-l8-kvall-t512
+      baseline_layer: 8
+      comparison_layer: 8
+      input_count: 4
+      layers:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+      - 12
+      - 13
+      - 14
+      - 15
+      model_dtype: float32
+      model_id: meta-llama/Llama-3.2-1B
+      model_revision: 4e20de362430cd3b72f300e6b0f18e50e7166e08
+      output_directory: experiments/state_rank/random_vs_pretrained
+      schema_version: 1
+      seeds:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      spectrum_prefixes:
+      - 1
+      - 2
+      - 8
+      - 32
+      - 128
+      - 512
+      tokens: 512
+    baseline_run_id: r387096e9d9c7
+    condition_run_ids:
+      pretrained: r845135d42740
+      random-seed0: r4bf905cd724d
+      random-seed1: r9364a915d115
+      random-seed2: r1e1b58269791
+      random-seed3: red7a4fb9ce56
+      random-seed4: r2c419979b240
+  random_vs_pretrained_deltanet:
+    manifest:
+      baseline_directory: experiments/state_rank/runs/gated-deltanet-1.3b-l12-hall-t512
+      baseline_metadata_sha256: 73034e3de90670290751d801111da652c3563754a08755e9ea440f5440ee889a
+      baseline_spectra_sha256: bf8bb6148b627821bdb1526d9773583d9bea36424e05484d60f9a5bc0e2e0bae
+      baseline_tolerances:
+        energy_cumulative_boundary_atol: 5.0e-05
+        log_trace_max_absolute_error: 0.0005
+        maximum_rank_difference: 1
+        normalized_spectrum_max_absolute_error: 2.0e-05
+        participation_ratio_max_relative_error: 0.0005
+        threshold_relative_singular_boundary_atol: 2.0e-06
+      checkpoint_retention: none
+      conditions:
+      - name: pretrained
+        seed: null
+        weights: pretrained
+      - name: random-seed0
+        seed: 0
+        weights: random
+      - name: random-seed1
+        seed: 1
+        weights: random
+      - name: random-seed2
+        seed: 2
+        weights: random
+      - name: random-seed3
+        seed: 3
+        weights: random
+      - name: random-seed4
+        seed: 4
+        weights: random
+      config:
+        allow_tf32: false
+        analysis_dtype: float64
+        attention_implementation: fused_recurrent
+        baseline_directory: experiments/state_rank/runs/gated-deltanet-1.3b-l12-hall-t512
+        baseline_layer: 12
+        comparison_layer: 12
+        input_count: 4
+        layers:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+        - 9
+        - 10
+        - 11
+        - 12
+        - 13
+        - 14
+        - 15
+        - 16
+        - 17
+        - 18
+        - 19
+        - 20
+        - 21
+        - 22
+        - 23
+        model_dtype: float32
+        model_id: m-a-p/1.3B-100B-GatedDeltaNet-pure
+        model_revision: 930ed6ae4ac629c86cb9855bb3dcb0a0974a29aa
+        output_directory: experiments/state_rank/random_vs_pretrained_deltanet
+        schema_version: 1
+        seeds:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        spectrum_prefixes:
+        - 1
+        - 2
+        - 8
+        - 32
+        - 128
+        - 512
+        svd_workers: 4
+        tokens: 512
+      created_utc: '2026-09-24T16:42:47.522294+00:00'
+      dependency_lock_sha256: 3d0a8accf78ebe6a2288bce53032412d7f86dce603609d568c8193af4d5c6356
+      execution_root: worktrees/state_rank-exec-5424ec8
+      experiment: state_rank/random_vs_pretrained_deltanet
+      identity: d1be58d044bbc79a8de16d721f2ddb573472dba341ac7f430d512176a8bdd01c
+      initialization: Pinned FLA/Hugging Face reference initialization; not the original
+        training initialization
+      initialization_details:
+        A_log: log(Uniform(0, 16)) independently per layer/head
+        dt_bias: inverse_softplus(log-uniform dt in [0.001, 0.1], clamped at 0.0001)
+        implementation: pinned FLA GatedDeltaNetModel reference constructor/post_init
+        linear_convolution_embedding: Normal(0, config.initializer_range); biases
+          zero
+        normalization_weights: ones
+        parameter_generation: seeded CPU FP32, full independent model for each seed
+        residual_rescaling: none (reference default prenorm_residual_strategy=None)
+      inputs_sha256: 986feaf726cdef35ccbba48857b537831cd9ecdac5a0bb12a335d3fee7da0c4f
+      jobs:
+        pretrained: '201715'
+        random-seed0: '201716'
+        random-seed1: '201717'
+        random-seed2: '201718'
+        random-seed3: '201719'
+        random-seed4: '201720'
+      output_directory: experiments/state_rank/random_vs_pretrained_deltanet
+      project_root: /data/cl/u/rafah/home/projects/functional-memory
+      schema_version: 1
+      source_commit: 5424ec87bbdc392fb46f632b652058aefecad4c6
+      state_definition: native recurrent state before output norm/gate/projection;
+        convolution buffers excluded from spectra
+      submitted_utc: '2026-09-24T16:42:47.715328+00:00'
+    inputs_sha256: 986feaf726cdef35ccbba48857b537831cd9ecdac5a0bb12a335d3fee7da0c4f
+    resolved_config:
+      allow_tf32: false
+      analysis_dtype: float64
+      attention_implementation: fused_recurrent
+      baseline_directory: experiments/state_rank/runs/gated-deltanet-1.3b-l12-hall-t512
+      baseline_layer: 12
+      comparison_layer: 12
+      input_count: 4
+      layers:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+      - 12
+      - 13
+      - 14
+      - 15
+      - 16
+      - 17
+      - 18
+      - 19
+      - 20
+      - 21
+      - 22
+      - 23
+      model_dtype: float32
+      model_id: m-a-p/1.3B-100B-GatedDeltaNet-pure
+      model_revision: 930ed6ae4ac629c86cb9855bb3dcb0a0974a29aa
+      output_directory: experiments/state_rank/random_vs_pretrained_deltanet
+      schema_version: 1
+      seeds:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      spectrum_prefixes:
+      - 1
+      - 2
+      - 8
+      - 32
+      - 128
+      - 512
+      svd_workers: 4
+      tokens: 512
+    baseline_run_id: rabd239a7f3dc
+    condition_run_ids:
+      pretrained: r9622dff4f6a8
+      random-seed0: r248ca889523a
+      random-seed1: rb0f5d0c3f603
+      random-seed2: r79a7633b693d
+      random-seed3: rea54b3f2f964
+      random-seed4: r8da34503fda2

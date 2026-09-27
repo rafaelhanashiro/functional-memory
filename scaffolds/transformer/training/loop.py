@@ -16,7 +16,8 @@ import optax
 from flax import nnx
 from tqdm import trange
 
-from scaffolds.transformer.configs import Config, config_to_dict
+from scaffolds.transformer.configs import Config, config_to_dict, load_config
+from scaffolds.transformer.configs.loader import save_config
 from scaffolds.transformer.configs.loader import config_dicts_equal
 from scaffolds.transformer.attention.backends.selection import resolve_config_backend
 from scaffolds.transformer.configs.base import OFM_SOURCE_COMMIT, validate_config
@@ -165,8 +166,29 @@ def _serializable_config(config: Config) -> dict:
 
 
 def ensure_run_config(config: Config, *, resume: bool) -> None:
+    recipe_path = config.train.workdir / "config.yaml"
     path = config.train.workdir / "config.json"
     existing = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+    canonical = None
+    if existing is not None and not resume:
+        raise ValueError(f"Run workdir is already initialized; use resume or a new workdir: {path}")
+    if recipe_path.exists():
+        record_path = config.train.workdir / "record.json"
+        if record_path.exists():
+            recipe = json.loads(record_path.read_text()).get("config", {})
+            expected_hash = recipe.get("sha256") if isinstance(recipe, dict) else None
+            if expected_hash is not None and expected_hash != hashlib.sha256(recipe_path.read_bytes()).hexdigest():
+                raise ValueError(f"Run configuration bytes changed after allocation: {recipe_path}")
+        canonical = load_config(recipe_path)
+        resolve_workdir(canonical)
+        if canonical.train.source_commit == "auto":
+            canonical.train.source_commit = config.train.source_commit
+    elif existing is None:
+        # Direct smoke/CLI runs may allocate locally. Production launchers require
+        # this complete input recipe to be committed before any GPU allocation.
+        if os.environ.get("SHARED_TRANSFORMER_SOURCE_COMMIT") and tracking.experiment_paths(config.train.workdir)[0]:
+            raise ValueError(f"Production run requires a preallocated, committed configuration: {recipe_path}")
+        save_config(config, recipe_path)
     if existing is not None and existing.get("optim", {}).get("weight_decay_policy") != config.optim.weight_decay_policy:
         raise ValueError(
             f"Run has a different or unrecorded weight-decay policy: {path}. "
@@ -192,16 +214,17 @@ def ensure_run_config(config: Config, *, resume: bool) -> None:
         config._attention_backend_resume_request = request
     resolve_config_backend(config)
     current = _serializable_config(config)
+    if canonical is not None:
+        if canonical.model.attention_backend == "auto":
+            canonical.model.attention_backend = config.model.attention_backend
+        if not config_dicts_equal(_serializable_config(canonical), current):
+            raise ValueError(f"Training configuration does not match the allocated run: {recipe_path}")
     if existing is not None:
         # Legacy fixed-kernel runs predate these fields. Compare their defaults
         # semantically without rewriting their persisted configuration bytes.
         if not config_dicts_equal(existing, current):
             raise ValueError(
                 f"Training configuration does not match the initialized run: {path}"
-            )
-        if not resume and not (config.train.workdir / "completion.json").exists():
-            raise ValueError(
-                f"Run workdir is already initialized; use resume or a new workdir: {path}"
             )
         return
     write_json_atomic(path, current)
@@ -389,7 +412,52 @@ def _write_status(config: Config, **updates) -> None:
         if launch.get("log_path") is not None:
             metadata["log_path"] = launch["log_path"]
     write_json_atomic(path, metadata)
-    # Run metadata is rendered by the experiment-level README generator.
+    _update_run_record(config, metadata)
+
+
+def _update_run_record(config: Config, metadata: dict) -> None:
+    """Summarize execution in the canonical record; keep raw files for resume checks."""
+    from scaffolds.records import capture_artifacts, update_record
+    from scaffolds.transformer.training.checkpointing import checkpoint_directory
+
+    workdir = config.train.workdir
+    resolved = _serializable_config(config)
+    raw_path = workdir / "metadata.json"
+    status = metadata.get("status", "initialized")
+    if status == "failed" and metadata.get("numerical_failure_path"):
+        status = "numerical_failure"
+    changes = {
+        "status": status,
+        "source_commit": config.train.source_commit or None,
+        "seed": config.train.seed,
+        "updated_utc": metadata["updated_utc"],
+        "execution": {
+            "resolved_config": resolved,
+            "resolved_config_sha256": hashlib.sha256(
+                json.dumps(resolved, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest(),
+            "raw_metadata": {"path": "metadata.json", "sha256": hashlib.sha256(raw_path.read_bytes()).hexdigest()},
+            "raw_config": {"path": "config.json", "sha256": hashlib.sha256((workdir / "config.json").read_bytes()).hexdigest()},
+            "runtime": metadata["execution_runtime"],
+            "runtime_history": metadata["runtime_history"],
+            "attention_backend": config.model.attention_backend,
+        },
+    }
+    for key in ("step", "training_tokens", "wandb_run_id", "retained_best_checkpoint_step",
+                "retained_terminal_checkpoint_step", "data_identity", "error", "numerical_failure_path"):
+        if key in metadata:
+            changes[key] = metadata[key]
+    if os.environ.get("TRANSFORMER_CLUSTER"):
+        changes["home_cluster"] = os.environ["TRANSFORMER_CLUSTER"]
+    changes["log_path"] = str(workdir / "training.log")
+    if status in {"complete", "failed", "numerical_failure"}:
+        selected_step = metadata.get("retained_best_checkpoint_step")
+        selected = checkpoint_directory(config) / str(selected_step) if selected_step is not None else None
+        artifacts = capture_artifacts(workdir, checkpoint_directory=selected)
+        if "selected_checkpoint" in artifacts:
+            artifacts["selected_checkpoint"]["step"] = selected_step
+        changes.update(artifacts)
+    update_record(workdir, changes)
 
 
 def _fail_numerics(config, state, step, message, sample, provenance, *, diagnostics=None, loss=None,

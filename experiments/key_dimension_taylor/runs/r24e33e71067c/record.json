@@ -1,0 +1,85 @@
+{
+  "artifacts": [
+    {
+      "path": "experiments/key_dimension_taylor/runs/r24e33e71067c/best_validation.json",
+      "sha256": "6fee10bef3b136a272328cf5fe9c895aac81be4d29aefe002256003dbdd01631"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r24e33e71067c/completion.json",
+      "sha256": "6b9ac9b3f8861f6dd4c372dda23e5bf45bf72679a9f63a53b1bdd5f768473671"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r24e33e71067c/config.yaml",
+      "sha256": "e13ab1dd2f889ac6d3050a9e7e3a6992c16e029d1237b2c102c9d014ff0d551e"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r24e33e71067c/metadata.json",
+      "sha256": "615f6127e82ceb8dcfef460affd6f3d92ed0f69fee640de342abdaa1ab39a123"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r24e33e71067c/metrics.jsonl",
+      "sha256": "3c02bd12a7fdc21745dfeb26f5c83698c6e1c51f1710e83c22288a57cd49b979"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r24e33e71067c/recovery.json",
+      "sha256": "f0df06b95211ce6f7b9f329ad0ae9bbc1fc47ca89caa7601cd38ce3b3bd5a29b"
+    }
+  ],
+  "artifacts_retained": "2026-09-24: ORCD checkpoints and logs for the key_dimension runs are not retained, by user decision; metrics, completion, metadata, and configs are retained in Git.",
+  "attention_degree": null,
+  "completion": {
+    "path": "experiments/key_dimension_taylor/runs/r24e33e71067c/completion.json",
+    "sha256": "6b9ac9b3f8861f6dd4c372dda23e5bf45bf72679a9f63a53b1bdd5f768473671"
+  },
+  "config": {
+    "path": "experiments/key_dimension_taylor/runs/r24e33e71067c/config.yaml",
+    "sha256": "e13ab1dd2f889ac6d3050a9e7e3a6992c16e029d1237b2c102c9d014ff0d551e"
+  },
+  "grid_cell": false,
+  "home_cluster": "orcd",
+  "label": "200m-dk256-seed0",
+  "metadata": {
+    "path": "experiments/key_dimension_taylor/runs/r24e33e71067c/metadata.json",
+    "sha256": "615f6127e82ceb8dcfef460affd6f3d92ed0f69fee640de342abdaa1ab39a123"
+  },
+  "metrics": {
+    "path": "experiments/key_dimension_taylor/runs/r24e33e71067c/metrics.jsonl",
+    "sha256": "3c02bd12a7fdc21745dfeb26f5c83698c6e1c51f1710e83c22288a57cd49b979"
+  },
+  "name": "200m-dk256-seed0",
+  "original_experiment": "key_dimension",
+  "parameter_count": 262820864,
+  "qk_head_dim": 256,
+  "record_schema_version": 1,
+  "resolved_config": {
+    "path": "experiments/key_dimension_taylor/runs/r24e33e71067c/config.yaml",
+    "recorded_sha256": "99f2154a9caec43f74a57bbc6bdf5bbd6750f20664e94960a2285629da7d2c89",
+    "sha256": "e13ab1dd2f889ac6d3050a9e7e3a6992c16e029d1237b2c102c9d014ff0d551e"
+  },
+  "retained_completed": true,
+  "run_id": "r24e33e71067c",
+  "seed": 0,
+  "selected_checkpoint": {
+    "file_count": 14,
+    "metadata_sha256": "f59c98f8fb239509fdf41122ed57e4fedbf68fd5bdcd8f178f86caf525bfa527",
+    "retained": false,
+    "size_bytes": 2885220194,
+    "step": 19074,
+    "validation_nll": 2.6513821142060414,
+    "validation_perplexity": 14.173614668293881
+  },
+  "slurm_job_id": "22951341",
+  "slurm_log": {
+    "retained": false,
+    "sha256": "fac048c74df1d0e01471baf03dba39ab94fc1c75825f974aa99cd6a36a3e9ec9"
+  },
+  "source_commit": "3d330a2f29e067b4df017ac08d12b9b6d3154b94",
+  "source_manifest": "experiments/key_dimension_taylor/sweep.yaml",
+  "terminal": {
+    "step": 19074,
+    "training_tokens": 10000269312,
+    "validation_nll": 2.6513821142060414,
+    "validation_perplexity": 14.173614668293881
+  },
+  "value_head_dim": 64
+}

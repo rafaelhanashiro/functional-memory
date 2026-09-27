@@ -1,166 +1,54 @@
 # Unnormalized exponential attention
 
-This experiment asks what changes when a Transformer uses causal
-`exp(QKᵀ / sqrt(d_K)) V` without dividing attention weights by their row sum.
-The canonical run uses the repository's **200M sweep recipe**, so it compares
-directly with the 200M softmax controls and Taylor/key-dimension sweeps.
-**Status: completed.** Removing row normalization costs **0.174 nats** at 200M:
-terminal validation PPL **17.46** versus 14.67 for softmax. A completed 250M run
-is documented [below](#supplementary-250m-run) as a supplementary scale point.
+How does removing row normalization affect exponential attention? Compare the recorded model scales and preserve their training budgets and optimizer recipes.
 
-**Home cluster: Kennel.** The artifact root is
-`/data/cl/u/rafah/home/projects/functional-memory`; the packed corpus is under
-`/data/cl/u/rafah/home/datasets/fineweb_12b`. A clone provides code and records,
-not checkpoints, environments, logs, or datasets. The
-[provenance manifest](provenance/manifest.json) is the authoritative record of
-sources, configurations, runs, and artifact locations.
+[Results and limitations](../../results/unnormalized_attention/README.md) · [Run index](runs.csv) · [Study definition](sweep.yaml)
 
-## Results
+Each row in `runs.csv` identifies one execution. Its immutable input recipe is
+`runs/<run_id>/config.yaml`; `record.json` contains provenance and artifact hashes.
+Metrics and the retained `checkpoints/` and `training.log` are colocated there.
+The home cluster is **kennel**; ignored artifacts remain at
+`/data/cl/u/rafah/home/projects/functional-memory` on Kennel. Source commits in the
+records preserve the exact implementations used for the reported results. Historical
+recipes can differ from current defaults; a rerun with current code is a new execution.
 
-| Run | Terminal val NLL | Terminal val PPL | Softmax control NLL / PPL | Gap (nats) |
-| --- | ---: | ---: | ---: | ---: |
-| `200m-exp-seed0-kennel` | 2.859817 | 17.4583 | 2.685498 / 14.6655 | +0.1743 |
+## Run a new execution
 
-Validation was best at the terminal update 19,074. The softmax control is the
-repository's softmax baseline, trained with this repository's code:
-
-| Control | Cluster, attention backend | Terminal val NLL | Terminal val PPL |
-| --- | --- | --- | --- |
-| [`200m-softmax-seed0`](../key_dimension_taylor/README.md) (source `381f1fd`, selective weight decay) | Kennel (H100, then B300), cuDNN | 2.685498 | 14.6655 |
-
-The control trained under the scaffold's selective weight-decay policy; this run
-trained with decay on all parameters, a difference worth about 0.03 PPL in the
-softmax baseline and far below the gap reported here.
-
-## Implementation
-
-The [shared Transformer scaffold](../../scaffolds/transformer/README.md) owns the
-model, data pipeline, optimizer, trainer, evaluation, and checkpoints. Setting
-`model.attention_normalization: false` selects the exponential mechanism;
-`true` retains the existing normalized mechanisms. There is no score clipping,
-row-max subtraction, prefix-length division, added Q/K normalization, or added
-attention-output normalization.
-
-The fused implementation visits causal query/key tiles without materializing a
-sequence-square attention matrix. Exponentials and accumulation are FP32. Mixed
-FP32/BF16 products split the FP32 operand into three BF16 components;
-FP32/FP32 products use TF32x3. Its derivative is `dS = exp(S) * (dY Vᵀ)`, without
-the softmax row-coupling term. The shared blocked reference supplies independent
-scalar diagnostics.
-
-`attention_backend: auto` selects the CPU reference or a supported NVIDIA fused
-implementation; requested and resolved choices are recorded, and resume uses
-the previously resolved choice. Explicit incompatible backends fail. Nonfinite
-causal scores, exponential weights, outputs, gradients, or updated parameters
-stop training with diagnostics. Weight sums are measurements only: underflow to
-zero or overflow of a sum does not introduce a denominator or silently alter the
-mathematics.
-
-## Validation
-
-From the experiment worktree, sync the scaffold environment and run the CPU tests:
+Create an experiment worktree with `git worktree add -b codex/<study-rerun>
+worktrees/<study-rerun> main`, enter it, and sync its own environment. Allocate the
+run before launch; this example reuses a recorded recipe. To change settings, pass a
+fully specified edited recipe instead. Create all sweep runs before committing the
+frozen execution set.
 
 ```bash
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-JAX_PLATFORMS=cpu PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m pytest \
-  -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m 'not gpu' \
-  scaffolds/transformer/tests/test_unnormalized_attention.py \
-  scaffolds/transformer/tests/test_unnormalized_training.py \
-  experiments/unnormalized_attention/adapter/tests
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records create \
+  --study experiments/unnormalized_attention \
+  --config experiments/unnormalized_attention/runs/r8cccbabca761/config.yaml --label rerun
 ```
 
-Tests cover independent FP64 outputs and Q/K/V gradients, causal boundaries,
-prefix sums at zero scores, sensitivity to score shifts, underflow and visible
-overflow, initialization, gradient accumulation, packed-data resume, and failure
-records.
-
-GPU acceptance ([`adapter/execution/acceptance.py`](adapter/execution/acceptance.py))
-runs in the production allocation before training: fused forward/VJP tests,
-full-model initialization identity against the normalized softmax model with the
-same seed, 20 full-context/full-microbatch updates, validation, and a one-update
-checkpoint-resume audit while preserving the full learning-rate horizon.
-Qualification is bound to source, recipe, hardware, and transfer/allocator
-settings; changing any of them reruns acceptance.
-
-The terminal summary regenerates from `runs/` and the manifest:
+The command prints the new run directory. Set `RUN` to its ID, commit the prepared
+inputs, and submit from the worktree root after checking resources in
+[CLUSTERS.md](../../CLUSTERS.md):
 
 ```bash
-PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.unnormalized_attention.adapter.analysis.summary
+RUN=<new-run-id>
+git add experiments/unnormalized_attention
+git commit -m "Prepare unnormalized_attention execution"
+sbatch --job-name="$RUN" --output="experiments/unnormalized_attention/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.unnormalized_attention.acceptance \
+  "experiments/unnormalized_attention/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 4 B300,H100
 ```
 
-## Kennel launch
+The launcher runs acceptance before training and records each attempt. A requeue or
+checkpoint resume uses the same ID, recipe, and launch commit. A fresh repetition
+allocates a new ID. Do not change the frozen inputs while a job can run or requeue.
+See the [shared runtime API](../../scaffolds/transformer/README.md) for acceptance,
+backend resolution, and resume behavior.
 
-The run used four B300s in `long`. One Python process uses all four GPUs;
-global batch 256, microbatch 64, and four accumulation steps stay unchanged.
-The shared Kennel launcher selects scheduler and transport settings, runs
-acceptance, then starts production.
-
-A rerun with the current scaffold is a new experiment with its own worktree, branch,
-and record (see [AGENTS.md](../../AGENTS.md)); never relaunch into this record's `runs/`.
-Copy the recipes from `configs/` with outputs under `experiments/<new>/` and
-`train.source_commit: auto`, give the new adapter an acceptance spec like
-[this one's](adapter/execution/acceptance.py), then submit the run from the worktree root:
+Regenerate the derived index after collecting execution updates:
 
 ```bash
-uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-mkdir -p "experiments/<new>/logs/$RUN"
-sbatch --job-name="$RUN" --output="experiments/<new>/logs/$RUN/slurm-%j.out" \
-  scaffolds/transformer/launchers/kennel.sbatch experiments.<new>.adapter.execution.acceptance \
-  "experiments/<new>/configs/$RUN.yaml" "$(git rev-parse HEAD)" 4 B300
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records index experiments/unnormalized_attention
 ```
-
-For an H100 fallback, pass `H100` as the final argument; it must pass the same
-acceptance on its own hardware. Do not run both copies concurrently, and keep the
-frozen execution set unchanged while the job can run or requeue. Resubmitting the
-same recipe resumes the latest complete checkpoint, optimizer, and data cursor.
-
-Allocation and acceptance records are written under the experiment's
-`logs/<run>/` beside the Slurm log; training metrics and resolved runtime metadata go to `runs/<run>/` and checkpoints to
-`checkpoints/<run>/`. Checkpoints keep latest and validation best while resumable;
-after completion only the validation-best checkpoint is retained, and the manifest
-summarizes the acceptance and allocation records.
-
-The exact packed corpus has 90 training shards, one evaluation shard, and two
-manifests totaling 24,031,780,324 bytes (22.38 GiB), verified in
-the manifest's `data_manifests.kennel_verification`. Expected manifest
-SHA256 values are:
-
-- Train: `9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4`.
-- Evaluation: `0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f`.
-
-## Supplementary 250M run
-
-Before the 200M recipe became canonical, the same mechanism was trained once at
-the canonical OFM 250M geometry. It is retained as a completed scale point; the
-current code has no path dedicated to it.
-
-- **Recipe:** [`configs/250m-exp-seed0-kennel.yaml`](configs/250m-exp-seed0-kennel.yaml):
-  14 layers (253,654,016 parameters),
-  21,935 updates, 11,500,257,280 prediction tokens, otherwise the recipe above.
-- **Execution:** source `51c6474`, Slurm job `200875`, four B300s on `akita`,
-  2026-09-22, 3 h 18 min including acceptance, no restarts.
-- **Result:** terminal and best validation NLL **2.765265**, PPL **15.883** at
-  update 21,935. Every evaluation reported zero invalid scores, kernels, weight
-  sums, or outputs. At the final diagnostic sample, most layers' maximum weight
-  sums stayed below about 1,000, but layers 6, 12, and 13 reached about 11,900,
-  2,400, and 57,500, far from FP32 overflow.
-- **Comparison:** the only 250M softmax result is the OFM report
-  (source `32ea743`, two H200s, cuDNN): terminal NLL 2.591487, PPL 13.3496, with
-  rounded values and no retained curve. The unnormalized run is 0.174 nats
-  worse. No normalized 250M model has been trained with this repository's code,
-  so a codebase difference cannot be excluded at that scale.
-- **Records:** metrics and completion in [`runs/250m-exp-seed0-kennel/`](runs/250m-exp-seed0-kennel/);
-  CPU validation, GPU acceptance, allocation, the post-pilot walltime reduction
-  from 48 to 8 hours, and the cuBLAS-warning assessment in
-  the [provenance manifest](provenance/manifest.json); the
-  log at `logs/250m-exp-seed0-kennel/slurm-200875.out` and the retained
-  step-21,935 checkpoint (2.7 GB) under `checkpoints/250m-exp-seed0-kennel/`.
-- **Origin:** the mechanism was first written as a standalone experiment at
-  source `7a3e584` and run on ORCD; its recipe and dependency lock are at that
-  commit, and its ORCD artifacts were never inspected or transferred.
-
-## Limitations
-
-Each configuration has one seed. The 200M control comparison is within this
-repository's code and data; the 250M comparison relies on an external,
-rounded OFM result. Diagnostics sample one held-out sequence per evaluation.

@@ -1,0 +1,316 @@
+{
+  "acceptance": {
+    "H100-4": {
+      "attention_backend": null,
+      "completed_utc": "2026-09-27T11:22:51.925864+00:00",
+      "cpu_distributed_tests_passed": 7,
+      "cpu_tests_passed": 179,
+      "device_kinds": [
+        "NVIDIA H100 80GB HBM3"
+      ],
+      "gpu_tests_passed": 177,
+      "identity": "971e8b0c9767544e937b2cc1cfe5ee544c7c07e49a2ca2dab8781f41c7b166b3",
+      "initialization": {
+        "parameter_count": 199906464,
+        "parameter_sha256": "4c16cf4d51d5817b3cf0b126ae82b50d2e7a30efab703960bbd41574501311e3"
+      },
+      "passed_stages": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "slurm_job_id": "202618",
+      "slurm_restart_count": "1",
+      "status": "passed"
+    }
+  },
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": [
+    {
+      "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/best_validation.json",
+      "sha256": "4a33931d3684fb029798a7016e2dbf83e5182cb296389997285186bf2a41f004"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/completion.json",
+      "sha256": "4891b76b4e7674df0b2ba311e8a0cfaab6133c155d1fa018171e1a7b9a153085"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/config.json",
+      "sha256": "a0ffe1c7c9966ca89d911bd1971c233079abfda69790c03e9233e5565b804111"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/config.yaml",
+      "sha256": "8c7806458b6b1b1c66306e518ed75303d62849dc10511fb1a17d0820c4fcaa6a"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/metadata.json",
+      "sha256": "202873338c143c54528ec28e6c4c7c578feabd52c9e08b0f05e20fcd0f0f8108"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/metrics.jsonl",
+      "sha256": "a6a6d987b7779241b5ddc6b15e43c5622cd1c40275d7f8dee98fd73d38d55b35"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/retention.json",
+      "sha256": "652946fe5cb8a7baf8cf69d48a4f63efdc317be4b90f4cefce050fa66649b244"
+    },
+    {
+      "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/wandb_run.json",
+      "sha256": "ad8aed916ba6a67364f57ecc2494e03460c402b845a24283dd01dcab97c2423e"
+    }
+  ],
+  "attention_backend": "fused",
+  "attention_degree": 8,
+  "completed_utc": "2026-09-27T14:33:41.247365+00:00",
+  "completion": {
+    "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/completion.json",
+    "sha256": "4891b76b4e7674df0b2ba311e8a0cfaab6133c155d1fa018171e1a7b9a153085"
+  },
+  "config": {
+    "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/config.yaml",
+    "sha256": "8c7806458b6b1b1c66306e518ed75303d62849dc10511fb1a17d0820c4fcaa6a"
+  },
+  "executed_recipe": {
+    "commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+    "note": "the bytes that ran, at the launch commit; this record's recipe changes only its output paths and names the commit",
+    "path": "experiments/normalized_taylor_rerun/configs/200m-m008-seed0.yaml",
+    "sha256": "908d5c3ba60fe71f1738895b12aaea6923fb717a0398cc05614f5eddc9cc7f4b"
+  },
+  "execution": {
+    "attention_backend": "fused",
+    "attention_backend_requested": "fused",
+    "attention_implementation": "pallas_triton",
+    "batch_transfer": "host_to_shard",
+    "final_devices": [
+      "NVIDIA H100 80GB HBM3",
+      "NVIDIA H100 80GB HBM3",
+      "NVIDIA H100 80GB HBM3",
+      "NVIDIA H100 80GB HBM3"
+    ],
+    "runtime_settings": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct",
+    "time_limit": "10:00:00 per attempt"
+  },
+  "execution_attempts": [
+    {
+      "end": "2026-09-27T03:15:18-04:00",
+      "node": "dogo",
+      "outcome": "preempted within 24 s by a debug-partition job; requeued",
+      "partition": "sweep",
+      "slurm_job_id": 202618,
+      "start": "2026-09-27T03:14:54-04:00"
+    },
+    {
+      "end": "2026-09-27T10:33:45-04:00",
+      "node": "dogo",
+      "outcome": "passed acceptance and completed 19,074 updates from initialization",
+      "partition": "long",
+      "slurm_job_id": 202618,
+      "start": "2026-09-27T07:08:06-04:00"
+    }
+  ],
+  "frozen_execution_set_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
+  "grid_cell": true,
+  "grid_note": "Trained 2026-09-26/27 under the scaffold's current defaults (per-head QK-norm cosine scores and selective weight decay) in the normalized Taylor rerun and folded in, replacing the degree-sweep run of the same name. The dK=64 softmax reference uses selective decay without QK-norm; every other width is from the original sweeps.",
+  "home_cluster": "kennel",
+  "label": "200m-m008-seed0",
+  "launch_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+  "metadata": {
+    "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/metadata.json",
+    "sha256": "202873338c143c54528ec28e6c4c7c578feabd52c9e08b0f05e20fcd0f0f8108"
+  },
+  "metrics": {
+    "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/metrics.jsonl",
+    "sha256": "a6a6d987b7779241b5ddc6b15e43c5622cd1c40275d7f8dee98fd73d38d55b35"
+  },
+  "name": "200m-m008-seed0",
+  "original_branch": "claude/normalized-taylor-rerun",
+  "original_experiment": "normalized_taylor_rerun",
+  "parameter_count": 199906464,
+  "partition_history": [
+    {
+      "partition": "standard,long",
+      "reason": "initial submission",
+      "time": "2026-09-26T19:45-04:00"
+    },
+    {
+      "partition": "long",
+      "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released",
+      "time": "2026-09-26T19:48-04:00"
+    },
+    {
+      "partition": "sweep",
+      "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue",
+      "time": "2026-09-26T21:13-04:00"
+    },
+    {
+      "exclude_added": "dogo",
+      "partition": "sweep",
+      "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends",
+      "time": "2026-09-27T03:18-04:00"
+    },
+    {
+      "exclude_removed": "dogo",
+      "partition": "long",
+      "reason": "the debug burst ended (last debug job on dogo 04:56); dogo restored for pending jobs; 202617 was running and keeps the dogo exclusion until it next requeues; moved from sweep to long after the m=1 rerun concluded, keeping three rerun jobs on long",
+      "time": "2026-09-27T05:22-04:00"
+    }
+  ],
+  "qk_head_dim": 64,
+  "qk_norm": true,
+  "qk_norm_sharing": "per_head",
+  "record_schema_version": 1,
+  "resolved_config": {
+    "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/config.yaml",
+    "recorded_sha256": "96e5c7d5b5b11551ae8d2659f0377fda64ac868f906e65e477f24af16ba64053",
+    "sha256": "8c7806458b6b1b1c66306e518ed75303d62849dc10511fb1a17d0820c4fcaa6a"
+  },
+  "retained_completed": true,
+  "retention": {
+    "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/retention.json",
+    "sha256": "652946fe5cb8a7baf8cf69d48a4f63efdc317be4b90f4cefce050fa66649b244"
+  },
+  "run_id": "r4923c6939e74",
+  "seed": 0,
+  "selected_checkpoint": {
+    "file_count": 13,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "016ed28931fd79b5e55e77fd69275a06e30c7b8f55fec7857c4d03687670c619",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "20667583e745119f53780bde7ba488300e33f0f35d5fcdc7aba5ad5902bb840a",
+        "size_bytes": 143633
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "e42fb7a6fc049d6c676926fefc5c8bfb5783df4eb2164d1b30c6d07dbac3d7d0",
+        "size_bytes": 88321
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "d5ddef7a21b89ff75c68628d46d357caa3529df10d654baa0ac1b3557a7bc4b6",
+        "size_bytes": 49685
+      },
+      {
+        "path": "default/d/bee0263c265007cf6e6ae0874aa1f726",
+        "sha256": "89ccf15928545f3ea900587eaffd2e643241783a6465680c443bf61e7da0d576",
+        "size_bytes": 5152
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "c5598d951c5f0a15c62d8c2fa32c6edb7098d59f6c9a8189a29315e34cdfb756",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/313902412028819459ed2ecee673a5c2",
+        "sha256": "7541f80bd05c799748206e37150c652d3910fa02fa490013f2412c91752ecf5c",
+        "size_bytes": 685
+      },
+      {
+        "path": "default/ocdbt.process_0/d/59649967e871c32047ab8e41ff990469",
+        "sha256": "bfce21b81b6b86ca82f3b820913c044d3364879757bd48e223cbf98b7899f264",
+        "size_bytes": 569831424
+      },
+      {
+        "path": "default/ocdbt.process_0/d/aeb5603d572d50d8536a8ea10e63ed17",
+        "sha256": "49535aca9c45c623462f214ba6904cb79cad3356347813b38ec84b42b940e748",
+        "size_bytes": 1000394752
+      },
+      {
+        "path": "default/ocdbt.process_0/d/bf4ad754b4a4157c1c6ef3f6d8d7b69d",
+        "sha256": "94d3af7d89c3694176321cfe9a5e7d5e9b7476a39abb0e7f1e3c1106e6dbbb34",
+        "size_bytes": 625692672
+      },
+      {
+        "path": "default/ocdbt.process_0/d/c720feab79e598101466a49d3c68ca07",
+        "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+        "size_bytes": 195
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "f8e83167977d50a98fdcc94e1ccb5db34e9f1c8eccf664f47a5c96c8f18f7c76",
+        "size_bytes": 319
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "dfab76fd848abcfbedf4363d051d52741fb051264b9ee6e16bc812f1e5ab8056",
+        "size_bytes": 139
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/checkpoints/19074",
+    "recorded_files": {
+      "_CHECKPOINT_METADATA": "016ed28931fd79b5e55e77fd69275a06e30c7b8f55fec7857c4d03687670c619",
+      "default/_METADATA": "20667583e745119f53780bde7ba488300e33f0f35d5fcdc7aba5ad5902bb840a",
+      "default/_sharding": "e42fb7a6fc049d6c676926fefc5c8bfb5783df4eb2164d1b30c6d07dbac3d7d0",
+      "default/array_metadatas/process_0": "d5ddef7a21b89ff75c68628d46d357caa3529df10d654baa0ac1b3557a7bc4b6",
+      "default/d/bee0263c265007cf6e6ae0874aa1f726": "89ccf15928545f3ea900587eaffd2e643241783a6465680c443bf61e7da0d576",
+      "default/manifest.ocdbt": "c5598d951c5f0a15c62d8c2fa32c6edb7098d59f6c9a8189a29315e34cdfb756",
+      "default/ocdbt.process_0/d/313902412028819459ed2ecee673a5c2": "7541f80bd05c799748206e37150c652d3910fa02fa490013f2412c91752ecf5c",
+      "default/ocdbt.process_0/d/59649967e871c32047ab8e41ff990469": "bfce21b81b6b86ca82f3b820913c044d3364879757bd48e223cbf98b7899f264",
+      "default/ocdbt.process_0/d/aeb5603d572d50d8536a8ea10e63ed17": "49535aca9c45c623462f214ba6904cb79cad3356347813b38ec84b42b940e748",
+      "default/ocdbt.process_0/d/bf4ad754b4a4157c1c6ef3f6d8d7b69d": "94d3af7d89c3694176321cfe9a5e7d5e9b7476a39abb0e7f1e3c1106e6dbbb34",
+      "default/ocdbt.process_0/d/c720feab79e598101466a49d3c68ca07": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+      "default/ocdbt.process_0/manifest.ocdbt": "f8e83167977d50a98fdcc94e1ccb5db34e9f1c8eccf664f47a5c96c8f18f7c76",
+      "metrics/metrics": "dfab76fd848abcfbedf4363d051d52741fb051264b9ee6e16bc812f1e5ab8056"
+    },
+    "rule": "lowest validation NLL; also the terminal checkpoint",
+    "sha256": "d6d48dc8671d96c89b495e9cadf75eb115dd61d44f4fc54d40b541ae9fa23f4f",
+    "size_bytes": 2196207461,
+    "step": 19074,
+    "tree_sha256": "8290ac1a19e123f5b9fdaa0209e2f384f27ba2e11b3b5c54911c1265f148e4ef",
+    "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'",
+    "validation_nll": 2.6739954692976817,
+    "validation_perplexity": 14.497779058238134
+  },
+  "slurm_attempts": {
+    "attempts": [
+      {
+        "end": "2026-09-27T03:15:18",
+        "node": "dogo",
+        "partition": "sweep",
+        "start": "2026-09-27T03:14:54",
+        "state": "PREEMPTED"
+      }
+    ],
+    "source": "sacct -j 202618 -D -X (local time, 2026-09-27 05:25 snapshot)"
+  },
+  "slurm_job_id": "202618",
+  "slurm_log": {
+    "note": "append-mode log holding every attempt of this job",
+    "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/training.log",
+    "sha256": "83c9ac7f7170c6139b397810eb8421f40e6ed447afd2de6ac5c3a807cbdf8df0"
+  },
+  "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+  "status": "complete",
+  "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free. Partition changes are in partition_history",
+  "terminal": {
+    "step": 19074,
+    "training_tokens": 10000269312,
+    "validation_nll": 2.6739954692976817,
+    "validation_perplexity": 14.497779058238134
+  },
+  "value_head_dim": 64,
+  "wandb": {
+    "run_id": "39aec472fdfb4fd8ae1f3038f8e8790c",
+    "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/39aec472fdfb4fd8ae1f3038f8e8790c"
+  },
+  "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+}
