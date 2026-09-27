@@ -1,5 +1,10 @@
 # Factored degree-two Hermite attention
 
+**Legacy raw-score run.** This recipe explicitly disables QK normalization.
+It remains preserved as executed and is excluded from the matched QK-normalized
+Hermite–Taylor comparison. Its QK-normalized replacement has a new run ID in
+`worktrees/hermite_qk_norm/experiments/hermite_attention/` of the primary checkout.
+
 Can the normalized degree-two Hermite model pass qualification and train when its
 fixed kernel is evaluated as a square? The earlier [expanded-polynomial run](../hermite_attention/README.md)
 failed its first full-shape pilot update. A replay found a score near `-1` where
