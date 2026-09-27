@@ -1,0 +1,22 @@
+{
+  "source_commit": "cfe0bba0421ac140da7ad63d7b3dc421b3458de3",
+  "phase": "kernel",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fused_normalized_polynomial",
+  "hostname": "dogo.csail.mit.edu",
+  "started_utc": "2026-09-27T00:08:52.965028+00:00",
+  "frozen_execution_set_sha256": "fe7e0a0274d15171002beffcaebb44b2051152bd9205a5f227e0956214500b51",
+  "slurm_job_id": "202628",
+  "partition": "sweep",
+  "hardware": [
+    "NVIDIA H100 80GB HBM3, GPU-355f34a2-be0c-ba44-022b-1a056f643b80, 560.35.05"
+  ],
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fused_normalized_polynomial/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "JAX_PLATFORMS": "cuda",
+    "CUDA_VISIBLE_DEVICES": "0",
+    "TRANSFORMER_HOST_STAGING": "0",
+    "NCCL_P2P_DISABLE": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  }
+}
