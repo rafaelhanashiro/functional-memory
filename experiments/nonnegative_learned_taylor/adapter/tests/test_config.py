@@ -1,4 +1,5 @@
 """Each recipe is the direct-coefficient normalized recipe with the kernel written as a sum of squares."""
+import copy
 import math
 from pathlib import Path
 
@@ -13,6 +14,8 @@ from experiments.nonnegative_learned_taylor.adapter.execution.acceptance import 
 ROOT = Path(__file__).resolve().parents[4]
 RECORD = ROOT / "experiments/nonnegative_learned_taylor"
 CONTROLS = ROOT / "experiments/qk_norm_learned_taylor/configs"
+# m = 4 kept the blocked reference it launched with; m = 2 was relaunched on the fused kernel.
+BACKEND = {2: "fused", 4: "blocked"}
 
 
 def run_name(degree):
@@ -20,11 +23,13 @@ def run_name(degree):
 
 
 @pytest.mark.parametrize("degree", DEGREES)
-def test_recipes_change_only_the_parameterization_and_output_locations(degree):
+def test_recipes_change_only_the_parameterization_backend_and_output_locations(degree):
     candidate = config_to_dict(load_config(RECORD / "configs" / f"{run_name(degree)}.yaml"))
     control = config_to_dict(load_config(CONTROLS / f"200m-qk-m{degree:03d}-normalized-seed0.yaml"))
     assert candidate["model"].pop("attention_coefficient_parameterization") == "sum_of_squares"
     assert control["model"].pop("attention_coefficient_parameterization") == "direct"
+    assert candidate["model"].pop("attention_backend") == BACKEND[degree]
+    assert control["model"].pop("attention_backend") == "blocked"
     assert candidate["train"].pop("workdir") == f"experiments/nonnegative_learned_taylor/runs/{run_name(degree)}"
     assert candidate["train"].pop("checkpoint_dir") == (
         f"experiments/nonnegative_learned_taylor/checkpoints/{run_name(degree)}")
@@ -55,3 +60,7 @@ def test_acceptance_rejects_other_recipes():
                           ("200m-qk-m004-unnormalized-seed0.yaml", "sum-of-squares")):
         with pytest.raises(ValueError, match=message):
             SPEC.check_config(load_config(CONTROLS / name))
+    automatic = copy.deepcopy(load_config(RECORD / "configs" / f"{run_name(2)}.yaml"))
+    automatic.model.attention_backend = "auto"
+    with pytest.raises(ValueError, match="explicit fused or blocked"):
+        SPEC.check_config(automatic)

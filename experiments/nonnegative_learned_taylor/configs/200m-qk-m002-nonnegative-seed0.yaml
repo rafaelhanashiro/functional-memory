@@ -1,6 +1,6 @@
 # 200M Transformer matching the repository's 200M sweep controls: row-normalized attention with a
 # degree-2 polynomial kernel written as a sum of two squares, so it is nonnegative by construction,
-# over QK-norm cosine scores. Only the blocked reference evaluates this kernel.
+# over QK-norm cosine scores, evaluated by the fused normalized polynomial kernel.
 data:
   source: packed
   dataset_name: HuggingFaceFW/fineweb-edu
@@ -35,7 +35,7 @@ model:
   # p(x) = q1(x)^2 + q2(x)^2, deg q1 = 1, deg q2 = 0. The 3 factor coefficients are
   # learned per layer and head, initialized so p equals the Taylor polynomial T_2;
   # gamma is learned per layer and head from log(sqrt(d_K)). Row sums are positive.
-  attention_backend: blocked
+  attention_backend: fused
   attention_degree: 2
   attention_normalization: true
   attention_coefficients: learned

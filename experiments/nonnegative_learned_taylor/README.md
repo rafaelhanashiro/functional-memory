@@ -59,8 +59,12 @@ with peak/minimum learning rates `3e-4`/`3e-5`, 2,000 warmup updates, selective
 weight decay (`exclude_embeddings_norms_biases_v1`), QK-norm with per-head log scales
 from `log(sqrt(d_K)) = log 8`, **19,074 updates and 10,000,269,312 prediction
 tokens**. Evaluation uses the first 1,792 held-out sequences every 1,000 updates and
-at completion. Only the scaffold's blocked reference evaluates row-normalized learned
-kernels, at about half the throughput of the fused kernels.
+at completion. The two runs use different backends for the same mathematics: `m = 4`
+runs on the scaffold's blocked reference, the only backend for row-normalized learned
+kernels when it launched. `m = 2` first launched on the blocked reference too; when the
+fused normalized polynomial kernel was qualified the same evening, that attempt was
+cancelled and `m = 2` restarted from initialization on the fused kernel, which runs
+about four times faster on H100. Each recipe names its backend explicitly.
 
 Controls: the signed direct-coefficient runs of the same recipe (both failed), the
 [QK-norm softmax baseline](../qk_norm_attention/README.md) (14.4574), and, for
@@ -90,14 +94,15 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.nonnegative_l
 
 The runs were submitted from this experiment's worktree root with the shared Kennel
 launcher, which checks the frozen execution set against the launch commit, runs
-acceptance (CPU tests, distributed CPU tests, GPU tests of the blocked kernels at
+acceptance (CPU tests, distributed CPU tests, GPU tests of the recipe's kernels at
 the production context, initialization, a 20-update pilot, and an exact resume
 audit) in the allocation, then trains; the manifest records each submission's
 partition and resources.
 
 ## Limitations
 
-One seed per degree. The blocked reference is slower than a fused kernel, so the
-runs take longer than the fused learned Taylor runs but compute the same mathematics.
+One seed per degree. The two degrees ran on different backends (fused for `m = 2`,
+blocked for `m = 4`); both evaluate `q1^2 + q2^2` directly with FP32 accumulation and pass the same kernel
+tests, but their BF16 training trajectories are not bitwise comparable.
 The `m = 2` comparison with the earlier positive quadratic changes three things at
 once (QK-norm, the decay policy, and learning the constant square).
