@@ -58,9 +58,117 @@
     {
       "acceptance": {
         "H100-2": {
-          "hardware": {},
+          "cpu-distributed-tests": {
+            "note": "no distributed tests among the declared CPU tests",
+            "status": "passed",
+            "tests_passed": 0
+          },
+          "cpu-tests": {
+            "status": "passed",
+            "tests_passed": 117
+          },
+          "gpu-tests": {
+            "status": "passed",
+            "tests_passed": 66
+          },
+          "hardware": {
+            "attention_backend": "fused",
+            "device_kinds": [
+              "NVIDIA H100 80GB HBM3",
+              "NVIDIA H100 80GB HBM3"
+            ],
+            "devices": [
+              "cuda:0",
+              "cuda:1"
+            ],
+            "versions": {
+              "flax": "0.12.7",
+              "jax": "0.10.0",
+              "optax": "0.2.8",
+              "orbax-checkpoint": "0.11.40"
+            }
+          },
           "identity": "0ce9a6dbd6debc35fa5ca8eb43bed5e4113257b69a4ddda5843551a7a406fd15",
-          "passed_stages": [],
+          "initialization": {
+            "experiment_check": {
+              "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+            },
+            "parameter_count": 199906304,
+            "parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+          },
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "pilot": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "cd134e51919bbb94878446afc2c12f39a7bf8d0b7271a8ba13cc2b7c8459b46f",
+              "final_state_sha256": "cd134e51919bbb94878446afc2c12f39a7bf8d0b7271a8ba13cc2b7c8459b46f",
+              "first_update": {
+                "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+                "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+                "step": 1
+              },
+              "next_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "start_state_sha256": "609d2f978a015b93c8749b5a2faf4513c0b946da31e6e0ff8c3f98959e4b1bc5"
+            },
+            "data_start_sequence": 0,
+            "final_step": 2,
+            "projected_hours": 5.516323039057509,
+            "restored_step": null,
+            "timing": {
+              "checkpoint_seconds": [
+                24.656074875034392
+              ],
+              "evaluation_seconds": [
+                10.576337460894138
+              ],
+              "runtime_seconds": 69.37401602324098,
+              "train_step_seconds": [
+                11.278642333112657,
+                0.9094639173708856
+              ]
+            },
+            "validation_nll": 10.886887788772583
+          },
+          "resume": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "89382e7e7290107d0df62fb1c18d32f48321fbb8422579bcb5bfaa3d5f36b356",
+              "final_state_sha256": "89382e7e7290107d0df62fb1c18d32f48321fbb8422579bcb5bfaa3d5f36b356",
+              "first_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "next_update": {
+                "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+                "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+                "step": 4
+              },
+              "start_state_sha256": "cd134e51919bbb94878446afc2c12f39a7bf8d0b7271a8ba13cc2b7c8459b46f"
+            },
+            "data_start_sequence": 512,
+            "final_step": 3,
+            "restored_step": 2,
+            "timing": {
+              "checkpoint_seconds": [],
+              "evaluation_seconds": [],
+              "runtime_seconds": 56.77974866190925,
+              "train_step_seconds": [
+                11.11896052164957
+              ]
+            }
+          },
           "runtime": {
             "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
             "NCCL_P2P_DISABLE": null,
@@ -70,13 +178,37 @@
             "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
             "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
           },
-          "status": "incomplete"
+          "status": "passed"
         }
       },
       "artifacts": [
         {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m001-seed0/config.json",
+          "sha256": "b563724b0149de8813658e299d9e7275517513db8115ca9e79f8110b77bb90e4"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m001-seed0/data_identity.json",
+          "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m001-seed0/failure_context.json",
+          "sha256": "3a6dc468a9da18c3d08510c5c5b4583a297846f713e513946c8851941cb1e713"
+        },
+        {
           "path": "experiments/hermite_attention/runs/200m-normalized-m001-seed0/launch.json",
           "sha256": "71c112121bd3d1bf84f2bbd5bf110e4b659007b3333c58fc3dcc705dd37676e1"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m001-seed0/metadata.json",
+          "sha256": "fb9fd6ec778dd887dd9827dc470cca3e10aecfd67b8a44b5d6755cf5bc6d5cda"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m001-seed0/numerical_failure_step_00000173.json",
+          "sha256": "72f6bb48a46294622e1dc4d61775b208d913a3c1e9071a97f8463f4f56ab0321"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m001-seed0/wandb_run.json",
+          "sha256": "2c6f4e87f8bb41186d6da3b4bc578bd722e7997abd92acee315d8595de3d3675"
         }
       ],
       "attention_degree": 1,
@@ -84,6 +216,14 @@
       "config": {
         "path": "experiments/hermite_attention/configs/200m-normalized-m001-seed0.yaml",
         "sha256": "51af93e856653fb3ec5b0edb98b28c0ffdc1a91cebd5e69b9a96722c8b9cb8d5"
+      },
+      "data_identity": {
+        "batch_size": 256,
+        "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+        "format": "ofm-packed-run-data",
+        "sequence_length": 2049,
+        "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+        "version": 2
       },
       "execution": {
         "attempts": [
@@ -97,6 +237,80 @@
             "slurm_restart_count": "0",
             "started_utc": "2026-09-27T05:24:24.824815+00:00",
             "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202704",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "0",
+            "started_utc": "2026-09-27T07:35:24.740809+00:00",
+            "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202704",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "1",
+            "started_utc": "2026-09-27T08:04:25.541961+00:00",
+            "time_limit": "2-00:00:00"
+          }
+        ],
+        "attention_backend": "fused",
+        "attention_backend_requested": "fused",
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "runtime_history": [
+          {
+            "runtime": {
+              "batch_transfer": "host_to_shard",
+              "devices": [
+                {
+                  "id": 0,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                },
+                {
+                  "id": 1,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                }
+              ],
+              "environment": {
+                "NCCL_P2P_DISABLE": null,
+                "TRANSFORMER_HOST_STAGING": "0",
+                "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+                "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+              },
+              "state_transfer": "direct"
+            },
+            "slurm_job_id": "202704",
+            "timestamp_utc": "2026-09-27T08:11:03.334697+00:00"
           }
         ]
       },
@@ -120,6 +334,10 @@
         {
           "path": "experiments/hermite_attention/logs/200m-normalized-m001-seed0/slurm-202696.out",
           "sha256": "e3366d406a861a47b445b5f0d5186c57dad07103036be617eca3ca72038a735c"
+        },
+        {
+          "path": "experiments/hermite_attention/logs/200m-normalized-m001-seed0/slurm-202704.out",
+          "sha256": "e5936d04a619ed4e8cd64245fce4e4b4df02eb78f44ca978dde850b6f924e797"
         }
       ],
       "name": "200m-normalized-m001-seed0",
@@ -190,7 +408,7 @@
           "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
         },
         "train": {
-          "checkpoint_dir": "experiments/hermite_attention/checkpoints/200m-normalized-m001-seed0",
+          "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/checkpoints/200m-normalized-m001-seed0",
           "ckpt_every": 500,
           "dtype": "bfloat16",
           "eval_batches": 7,
@@ -202,15 +420,15 @@
           "wandb_dir": "experiments/hermite_attention/logs/200m-normalized-m001-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
-          "wandb_mode": "disabled",
+          "wandb_mode": "online",
           "wandb_project": "functional-memory",
           "wandb_run_name": "200m-normalized-m001-seed0",
-          "workdir": "experiments/hermite_attention/runs/200m-normalized-m001-seed0"
+          "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/runs/200m-normalized-m001-seed0"
         }
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
-      "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "e22b8f1248de3ccf273b543a7a4e4d53291eaa6dc2e7f7a26ceaadf54361a082",
+      "resolved_configuration_origin": "trainer output",
+      "resolved_configuration_sha256": "a40f81718e524a6e04c9f52d223b185ae50de55e6f50c48a4a17f6f0fa8f0ef6",
       "run_record": "experiments/hermite_attention/runs/200m-normalized-m001-seed0",
       "seed": 0,
       "slurm_job_ids": [
@@ -218,7 +436,7 @@
         "202704"
       ],
       "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
-      "status": "submitted",
+      "status": "numerical-failure",
       "submission": {
         "argv": [
           "sbatch",
@@ -279,13 +497,70 @@
         }
       ],
       "target_prediction_tokens": 10000269312,
-      "target_updates": 19074
+      "target_updates": 19074,
+      "wandb": {
+        "entity": "rafah-massachusetts-institute-of-technology",
+        "project": "functional-memory",
+        "run_id": "fdda8ce5bfee494a97c15e8e42d003f1",
+        "run_name": "200m-normalized-m001-seed0"
+      }
     },
     {
       "acceptance": {
         "H100-2": {
-          "hardware": {},
+          "cpu-distributed-tests": {
+            "note": "no distributed tests among the declared CPU tests",
+            "status": "passed",
+            "tests_passed": 0
+          },
+          "cpu-tests": {
+            "status": "passed",
+            "tests_passed": 117
+          },
+          "failure": {
+            "error": "CalledProcessError: Command '['/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/bin/python', '-m', 'experiments.hermite_attention.adapter.execution.acceptance', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/configs/200m-normalized-m002-seed0.yaml', '--directory', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/logs/200m-normalized-m002-seed0/acceptance/H100-2', '--gpu-count', '2', '--gpu-type', 'H100', '--worker', 'pilot', '--output', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/logs/200m-normalized-m002-seed0/acceptance/H100-2/pilot-result.json', '--stop-after-step', '2']' returned non-zero exit status 1.",
+            "identity": "9dde76218fe45361f75b73649c3d12dcab06acc268387d98d51965ff82f137ca",
+            "path": "experiments/hermite_attention/logs/200m-normalized-m002-seed0/acceptance/H100-2/failure.json",
+            "sha256": "2f455444a9670d56e08c2215575f17f35daad719abbc41dea18fdfd0b207a968",
+            "slurm_job_id": "202705",
+            "stage": "pilot"
+          },
+          "gpu-tests": {
+            "status": "passed",
+            "tests_passed": 66
+          },
+          "hardware": {
+            "attention_backend": "fused",
+            "device_kinds": [
+              "NVIDIA H100 80GB HBM3",
+              "NVIDIA H100 80GB HBM3"
+            ],
+            "devices": [
+              "cuda:0",
+              "cuda:1"
+            ],
+            "versions": {
+              "flax": "0.12.7",
+              "jax": "0.10.0",
+              "optax": "0.2.8",
+              "orbax-checkpoint": "0.11.40"
+            }
+          },
           "identity": "9dde76218fe45361f75b73649c3d12dcab06acc268387d98d51965ff82f137ca",
+          "initialization": {
+            "experiment_check": {
+              "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+            },
+            "parameter_count": 199906304,
+            "parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+          },
+          "numerical_failure": {
+            "error": "Nonfinite training loss or optimizer update at step 1: nan",
+            "path": "experiments/hermite_attention/logs/200m-normalized-m002-seed0/acceptance/H100-2/pilot/numerical_failure_step_00000001.json",
+            "scope": "acceptance pilot",
+            "sha256": "558b696eb3eaf50eb86bca5b84a5697f8b07eb228e37949b3ada3bd84a67cc1b",
+            "step": 1
+          },
           "passed_stages": [],
           "runtime": {
             "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
@@ -296,13 +571,17 @@
             "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
             "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
           },
-          "status": "incomplete"
+          "status": "numerical-failure"
         }
       },
       "artifacts": [
         {
           "path": "experiments/hermite_attention/runs/200m-normalized-m002-seed0/launch.json",
           "sha256": "7fc46f0a175df63aeeb02146bfe277523a17d8c5c08f789c7d8258c5fb4ba1aa"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m002-seed0/qualification_failure.json",
+          "sha256": "f2820516efc69350e744eefb69c205e4c8dca4adfb91e5401a9e5939fcb09159"
         }
       ],
       "attention_degree": 2,
@@ -322,6 +601,28 @@
             "slurm_partition": "sweep",
             "slurm_restart_count": "0",
             "started_utc": "2026-09-27T05:24:53.978645+00:00",
+            "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202705",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "0",
+            "started_utc": "2026-09-27T07:41:55.312241+00:00",
+            "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202705",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "1",
+            "started_utc": "2026-09-27T14:33:52.761213+00:00",
             "time_limit": "2-00:00:00"
           }
         ]
@@ -347,10 +648,18 @@
         {
           "path": "experiments/hermite_attention/logs/200m-normalized-m002-seed0/slurm-202697.out",
           "sha256": "8444eab427b441cd0eb4cc844a8dd8a1262436575c0dbc5eac2b32fb7adaaf8f"
+        },
+        {
+          "path": "experiments/hermite_attention/logs/200m-normalized-m002-seed0/slurm-202705.out",
+          "sha256": "d58279c5eaa5d099b30ae4b8a507a1db041ed71a108452364581abe3a2bd59b5"
         }
       ],
       "name": "200m-normalized-m002-seed0",
       "parameter_count": 199906304,
+      "qualification_failure": {
+        "path": "experiments/hermite_attention/runs/200m-normalized-m002-seed0/qualification_failure.json",
+        "sha256": "f2820516efc69350e744eefb69c205e4c8dca4adfb91e5401a9e5939fcb09159"
+      },
       "resolved_configuration": {
         "data": {
           "batch_size": 256,
@@ -446,7 +755,7 @@
         "202705"
       ],
       "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
-      "status": "submitted",
+      "status": "acceptance-numerical-failure",
       "submission": {
         "argv": [
           "sbatch",
@@ -510,11 +819,151 @@
       "target_updates": 19074
     },
     {
-      "acceptance": {},
+      "acceptance": {
+        "H100-2": {
+          "cpu-distributed-tests": {
+            "note": "no distributed tests among the declared CPU tests",
+            "status": "passed",
+            "tests_passed": 0
+          },
+          "cpu-tests": {
+            "status": "passed",
+            "tests_passed": 117
+          },
+          "gpu-tests": {
+            "status": "passed",
+            "tests_passed": 66
+          },
+          "hardware": {
+            "attention_backend": "fused",
+            "device_kinds": [
+              "NVIDIA H100 80GB HBM3",
+              "NVIDIA H100 80GB HBM3"
+            ],
+            "devices": [
+              "cuda:0",
+              "cuda:1"
+            ],
+            "versions": {
+              "flax": "0.12.7",
+              "jax": "0.10.0",
+              "optax": "0.2.8",
+              "orbax-checkpoint": "0.11.40"
+            }
+          },
+          "identity": "e754f7ec321ade2c6ae3ea7ea2bf2db5d7d77b4483bed1cb0e8f74a8ac673060",
+          "initialization": {
+            "experiment_check": {
+              "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+            },
+            "parameter_count": 199906304,
+            "parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+          },
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "pilot": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "9b80e199e0992d41ad58cf00a38d392f076fad9c5ecfddfd2e45732442f1705a",
+              "final_state_sha256": "9b80e199e0992d41ad58cf00a38d392f076fad9c5ecfddfd2e45732442f1705a",
+              "first_update": {
+                "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+                "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+                "step": 1
+              },
+              "next_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "start_state_sha256": "609d2f978a015b93c8749b5a2faf4513c0b946da31e6e0ff8c3f98959e4b1bc5"
+            },
+            "data_start_sequence": 0,
+            "final_step": 2,
+            "projected_hours": 5.965691276117771,
+            "restored_step": null,
+            "timing": {
+              "checkpoint_seconds": [
+                23.419696655590087
+              ],
+              "evaluation_seconds": [
+                13.31657468387857
+              ],
+              "runtime_seconds": 102.71092463098466,
+              "train_step_seconds": [
+                28.879163078963757,
+                0.9749443768523633
+              ]
+            },
+            "validation_nll": 10.878424167633057
+          },
+          "resume": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "513a16b1e070662fb810124965cb15a7909a16b0171e2b9ceb9f8cde2046608d",
+              "final_state_sha256": "513a16b1e070662fb810124965cb15a7909a16b0171e2b9ceb9f8cde2046608d",
+              "first_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "next_update": {
+                "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+                "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+                "step": 4
+              },
+              "start_state_sha256": "9b80e199e0992d41ad58cf00a38d392f076fad9c5ecfddfd2e45732442f1705a"
+            },
+            "data_start_sequence": 512,
+            "final_step": 3,
+            "restored_step": 2,
+            "timing": {
+              "checkpoint_seconds": [],
+              "evaluation_seconds": [],
+              "runtime_seconds": 88.56124983495101,
+              "train_step_seconds": [
+                5.577366054058075
+              ]
+            }
+          },
+          "runtime": {
+            "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "status": "passed"
+        }
+      },
       "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m003-seed0/config.json",
+          "sha256": "4b619b0d4cab8de8024e2f85a9df9e011b560be368f17d03b92ab8c43dd0a524"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m003-seed0/data_identity.json",
+          "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+        },
         {
           "path": "experiments/hermite_attention/runs/200m-normalized-m003-seed0/launch.json",
           "sha256": "abefd9ec148570b226619d55f0ce8d9da8722ab3bca9c12f6681b264eee5d84b"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m003-seed0/metadata.json",
+          "sha256": "96a5bf579eaee8c754f90eb04f17e16120637fcafcc55c4458a171fd925bc74b"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m003-seed0/wandb_run.json",
+          "sha256": "f5552a29123a7786775095d6b0b7f9597f186da3ddfe6afb9b5c636e31e7564a"
         }
       ],
       "attention_degree": 3,
@@ -523,7 +972,103 @@
         "path": "experiments/hermite_attention/configs/200m-normalized-m003-seed0.yaml",
         "sha256": "9b412c67232fb4c1b697f5e255b73ed5e4510d2efa5838981547723a929aa90c"
       },
-      "execution": {},
+      "data_identity": {
+        "batch_size": 256,
+        "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+        "format": "ofm-packed-run-data",
+        "sequence_length": 2049,
+        "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+        "version": 2
+      },
+      "execution": {
+        "attempts": [
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202698",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "0",
+            "started_utc": "2026-09-27T07:18:25.054580+00:00",
+            "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202698",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "1",
+            "started_utc": "2026-09-27T07:48:25.385370+00:00",
+            "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202698",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "2",
+            "started_utc": "2026-09-27T14:33:52.762951+00:00",
+            "time_limit": "2-00:00:00"
+          }
+        ],
+        "attention_backend": "fused",
+        "attention_backend_requested": "fused",
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "runtime_history": [
+          {
+            "runtime": {
+              "batch_transfer": "host_to_shard",
+              "devices": [
+                {
+                  "id": 0,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                },
+                {
+                  "id": 1,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                }
+              ],
+              "environment": {
+                "NCCL_P2P_DISABLE": null,
+                "TRANSFORMER_HOST_STAGING": "0",
+                "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+                "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+              },
+              "state_transfer": "direct"
+            },
+            "slurm_job_id": "202698",
+            "timestamp_utc": "2026-09-27T14:36:03.324414+00:00"
+          }
+        ]
+      },
       "fixed_coefficients": [
         0.8243606353500641,
         0.8243606353500641,
@@ -531,7 +1076,12 @@
         0.27478687845002137
       ],
       "home_cluster": "kennel",
-      "logs": [],
+      "logs": [
+        {
+          "path": "experiments/hermite_attention/logs/200m-normalized-m003-seed0/slurm-202698.out",
+          "sha256": "53e0c58bcabd0a26a9792fb91d90b4288fc321d07a360521e6b7569d7b0e0182"
+        }
+      ],
       "name": "200m-normalized-m003-seed0",
       "parameter_count": 199906304,
       "resolved_configuration": {
@@ -602,7 +1152,7 @@
           "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
         },
         "train": {
-          "checkpoint_dir": "experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0",
+          "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/checkpoints/200m-normalized-m003-seed0",
           "ckpt_every": 500,
           "dtype": "bfloat16",
           "eval_batches": 7,
@@ -614,22 +1164,22 @@
           "wandb_dir": "experiments/hermite_attention/logs/200m-normalized-m003-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
-          "wandb_mode": "disabled",
+          "wandb_mode": "online",
           "wandb_project": "functional-memory",
           "wandb_run_name": "200m-normalized-m003-seed0",
-          "workdir": "experiments/hermite_attention/runs/200m-normalized-m003-seed0"
+          "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/runs/200m-normalized-m003-seed0"
         }
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
-      "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "b0dbc51a306301e06e4ff4a3db24bec37e022bb5f8c818db96e8ec2b984b3c86",
+      "resolved_configuration_origin": "trainer output",
+      "resolved_configuration_sha256": "71974cbfc978fb9abc699766c85b9f1d7eb3ab29b4db67adb9c16e1356206a50",
       "run_record": "experiments/hermite_attention/runs/200m-normalized-m003-seed0",
       "seed": 0,
       "slurm_job_ids": [
         "202698"
       ],
       "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
-      "status": "submitted",
+      "status": "incomplete",
       "submission": {
         "argv": [
           "sbatch",
@@ -672,14 +1222,168 @@
         "time_limit": "2-00:00:00"
       },
       "target_prediction_tokens": 10000269312,
-      "target_updates": 19074
+      "target_updates": 19074,
+      "wandb": {
+        "entity": "rafah-massachusetts-institute-of-technology",
+        "project": "functional-memory",
+        "run_id": "4adf43fe875545d48b1e0ba22118abf0",
+        "run_name": "200m-normalized-m003-seed0"
+      }
     },
     {
-      "acceptance": {},
+      "acceptance": {
+        "H100-2": {
+          "cpu-distributed-tests": {
+            "note": "no distributed tests among the declared CPU tests",
+            "status": "passed",
+            "tests_passed": 0
+          },
+          "cpu-tests": {
+            "status": "passed",
+            "tests_passed": 117
+          },
+          "gpu-tests": {
+            "status": "passed",
+            "tests_passed": 66
+          },
+          "hardware": {
+            "attention_backend": "fused",
+            "device_kinds": [
+              "NVIDIA H100 80GB HBM3",
+              "NVIDIA H100 80GB HBM3"
+            ],
+            "devices": [
+              "cuda:0",
+              "cuda:1"
+            ],
+            "versions": {
+              "flax": "0.12.7",
+              "jax": "0.10.0",
+              "optax": "0.2.8",
+              "orbax-checkpoint": "0.11.40"
+            }
+          },
+          "identity": "a2b147f962fa87fa87e65eb52c1d9799e91ec4c7c07e406f5f3b74c5f4dc82ed",
+          "initialization": {
+            "experiment_check": {
+              "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+            },
+            "parameter_count": 199906304,
+            "parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+          },
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "pilot": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "c134d16d8b63805550a7e4c0f7abc80606a1a17ce029385e99690845b6f484a4",
+              "final_state_sha256": "c134d16d8b63805550a7e4c0f7abc80606a1a17ce029385e99690845b6f484a4",
+              "first_update": {
+                "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+                "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+                "step": 1
+              },
+              "next_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "start_state_sha256": "609d2f978a015b93c8749b5a2faf4513c0b946da31e6e0ff8c3f98959e4b1bc5"
+            },
+            "data_start_sequence": 0,
+            "final_step": 2,
+            "projected_hours": 6.208721917555021,
+            "restored_step": null,
+            "timing": {
+              "checkpoint_seconds": [
+                21.823180529288948
+              ],
+              "evaluation_seconds": [
+                7.367951778694987
+              ],
+              "runtime_seconds": 290.87446865299717,
+              "train_step_seconds": [
+                12.585410148836672,
+                1.0578749682754278
+              ]
+            },
+            "validation_nll": 10.877671241760254
+          },
+          "resume": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "79e753e2c1d29c4f6c2c317c9eeab7344347256e8298831a3dcfdec20e230489",
+              "final_state_sha256": "79e753e2c1d29c4f6c2c317c9eeab7344347256e8298831a3dcfdec20e230489",
+              "first_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "next_update": {
+                "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+                "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+                "step": 4
+              },
+              "start_state_sha256": "c134d16d8b63805550a7e4c0f7abc80606a1a17ce029385e99690845b6f484a4"
+            },
+            "data_start_sequence": 512,
+            "final_step": 3,
+            "restored_step": 2,
+            "timing": {
+              "checkpoint_seconds": [],
+              "evaluation_seconds": [],
+              "runtime_seconds": 55.86886522732675,
+              "train_step_seconds": [
+                11.812651107087731
+              ]
+            }
+          },
+          "runtime": {
+            "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "status": "passed"
+        }
+      },
       "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m004-seed0/config.json",
+          "sha256": "f13d64cffa1a9385faea5ec9e5390e96ec87d0b56f371de6580820f53d8c8b0f"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m004-seed0/data_identity.json",
+          "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m004-seed0/failure_context.json",
+          "sha256": "748f55e91ae9076b0456d3ba040b07822e94413e6307b09d42bde3917d87661a"
+        },
         {
           "path": "experiments/hermite_attention/runs/200m-normalized-m004-seed0/launch.json",
           "sha256": "8bea070c3c0b376ace80c2cc519b4b86193021ba2709fce9fd18eb9e1f1ed174"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m004-seed0/metadata.json",
+          "sha256": "985aeba313e57f9ec4f66de12f0a7a97520be41e31744ec52bf5e4943d52cf06"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m004-seed0/numerical_failure_step_00000053.json",
+          "sha256": "f510575447fcdbb3aafdb3ea05adda6fd19202c3da3b578f7232be2e2d7fcb06"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m004-seed0/wandb_run.json",
+          "sha256": "fbf119384e0a715642ccf4554c6eb40db7f4eee142b192a4f254930db1c0328f"
         }
       ],
       "attention_degree": 4,
@@ -688,7 +1392,103 @@
         "path": "experiments/hermite_attention/configs/200m-normalized-m004-seed0.yaml",
         "sha256": "9c913a81db3d1446a3a813e5147da9ce5394ffa3e38682685f0a0ebd111a5de9"
       },
-      "execution": {},
+      "data_identity": {
+        "batch_size": 256,
+        "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+        "format": "ofm-packed-run-data",
+        "sequence_length": 2049,
+        "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+        "version": 2
+      },
+      "execution": {
+        "attempts": [
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202699",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "0",
+            "started_utc": "2026-09-27T07:20:55.058913+00:00",
+            "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202699",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "1",
+            "started_utc": "2026-09-27T07:41:55.311015+00:00",
+            "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202699",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "2",
+            "started_utc": "2026-09-27T08:40:55.955326+00:00",
+            "time_limit": "2-00:00:00"
+          }
+        ],
+        "attention_backend": "fused",
+        "attention_backend_requested": "fused",
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "runtime_history": [
+          {
+            "runtime": {
+              "batch_transfer": "host_to_shard",
+              "devices": [
+                {
+                  "id": 0,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                },
+                {
+                  "id": 1,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                }
+              ],
+              "environment": {
+                "NCCL_P2P_DISABLE": null,
+                "TRANSFORMER_HOST_STAGING": "0",
+                "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+                "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+              },
+              "state_transfer": "direct"
+            },
+            "slurm_job_id": "202699",
+            "timestamp_utc": "2026-09-27T08:50:23.530816+00:00"
+          }
+        ]
+      },
       "fixed_coefficients": [
         1.0304507941875802,
         0.8243606353500641,
@@ -697,7 +1497,12 @@
         0.06869671961250534
       ],
       "home_cluster": "kennel",
-      "logs": [],
+      "logs": [
+        {
+          "path": "experiments/hermite_attention/logs/200m-normalized-m004-seed0/slurm-202699.out",
+          "sha256": "4960ecf7fece885b18f2e41c84f1aa4c50af316819ec16c532277a68cabe0e2c"
+        }
+      ],
       "name": "200m-normalized-m004-seed0",
       "parameter_count": 199906304,
       "resolved_configuration": {
@@ -769,7 +1574,7 @@
           "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
         },
         "train": {
-          "checkpoint_dir": "experiments/hermite_attention/checkpoints/200m-normalized-m004-seed0",
+          "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/checkpoints/200m-normalized-m004-seed0",
           "ckpt_every": 500,
           "dtype": "bfloat16",
           "eval_batches": 7,
@@ -781,22 +1586,22 @@
           "wandb_dir": "experiments/hermite_attention/logs/200m-normalized-m004-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
-          "wandb_mode": "disabled",
+          "wandb_mode": "online",
           "wandb_project": "functional-memory",
           "wandb_run_name": "200m-normalized-m004-seed0",
-          "workdir": "experiments/hermite_attention/runs/200m-normalized-m004-seed0"
+          "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/runs/200m-normalized-m004-seed0"
         }
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
-      "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "5016d737519387e6b95ce1a0a5554f49eeddd0b4f28d5fab7d1dbf2f8258c35b",
+      "resolved_configuration_origin": "trainer output",
+      "resolved_configuration_sha256": "f9012d753722d5e544b7885b5b6766c1a36ead078549007be937083f90b273c5",
       "run_record": "experiments/hermite_attention/runs/200m-normalized-m004-seed0",
       "seed": 0,
       "slurm_job_ids": [
         "202699"
       ],
       "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
-      "status": "submitted",
+      "status": "numerical-failure",
       "submission": {
         "argv": [
           "sbatch",
@@ -839,14 +1644,160 @@
         "time_limit": "2-00:00:00"
       },
       "target_prediction_tokens": 10000269312,
-      "target_updates": 19074
+      "target_updates": 19074,
+      "wandb": {
+        "entity": "rafah-massachusetts-institute-of-technology",
+        "project": "functional-memory",
+        "run_id": "5c93c447d183432b8e2aa7767d41e92f",
+        "run_name": "200m-normalized-m004-seed0"
+      }
     },
     {
-      "acceptance": {},
+      "acceptance": {
+        "H100-2": {
+          "cpu-distributed-tests": {
+            "note": "no distributed tests among the declared CPU tests",
+            "status": "passed",
+            "tests_passed": 0
+          },
+          "cpu-tests": {
+            "status": "passed",
+            "tests_passed": 87
+          },
+          "gpu-tests": {
+            "status": "passed",
+            "tests_passed": 26
+          },
+          "hardware": {
+            "attention_backend": "fused",
+            "device_kinds": [
+              "NVIDIA H100 80GB HBM3",
+              "NVIDIA H100 80GB HBM3"
+            ],
+            "devices": [
+              "cuda:0",
+              "cuda:1"
+            ],
+            "versions": {
+              "flax": "0.12.7",
+              "jax": "0.10.0",
+              "optax": "0.2.8",
+              "orbax-checkpoint": "0.11.40"
+            }
+          },
+          "identity": "3d2ea9fffe8489f2c8aada6de91e53bdd825975dea20feeffa5657a1c8a09a2a",
+          "initialization": {
+            "experiment_check": {
+              "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+            },
+            "parameter_count": 199906304,
+            "parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+          },
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "pilot": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "2209db756ca6418fcd110a2134eaaa624501cbf0c820b1ad22b71c13050f0832",
+              "final_state_sha256": "2209db756ca6418fcd110a2134eaaa624501cbf0c820b1ad22b71c13050f0832",
+              "first_update": {
+                "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+                "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+                "step": 1
+              },
+              "next_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "start_state_sha256": "609d2f978a015b93c8749b5a2faf4513c0b946da31e6e0ff8c3f98959e4b1bc5"
+            },
+            "data_start_sequence": 0,
+            "final_step": 2,
+            "projected_hours": 4.867021190147045,
+            "restored_step": null,
+            "timing": {
+              "checkpoint_seconds": [
+                22.865418944042176
+              ],
+              "evaluation_seconds": [
+                6.341791612096131
+              ],
+              "runtime_seconds": 61.90277502220124,
+              "train_step_seconds": [
+                10.534190289210528,
+                0.8220494571141899
+              ]
+            },
+            "validation_nll": 10.874919891357422
+          },
+          "resume": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "890fa0b17b4411a1c4ad124b5a7dd914a71cbe0df632ed73c7214a2c0f2174b3",
+              "final_state_sha256": "890fa0b17b4411a1c4ad124b5a7dd914a71cbe0df632ed73c7214a2c0f2174b3",
+              "first_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "next_update": {
+                "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+                "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+                "step": 4
+              },
+              "start_state_sha256": "2209db756ca6418fcd110a2134eaaa624501cbf0c820b1ad22b71c13050f0832"
+            },
+            "data_start_sequence": 512,
+            "final_step": 3,
+            "restored_step": 2,
+            "timing": {
+              "checkpoint_seconds": [],
+              "evaluation_seconds": [],
+              "runtime_seconds": 55.58884133398533,
+              "train_step_seconds": [
+                10.633442494086921
+              ]
+            }
+          },
+          "runtime": {
+            "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "status": "passed"
+        }
+      },
       "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0/config.json",
+          "sha256": "5cdfe4ac76ab4c5199bc30e91caa4a66f07a41407258a45fb89e779a200cc59e"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0/data_identity.json",
+          "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+        },
         {
           "path": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0/launch.json",
           "sha256": "b51e3cea370138ba0904eeb4583c845cc8dfed37fc962cf7a1b21b69b3b3587c"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0/metadata.json",
+          "sha256": "075a679a1b1e9c244e104c6ba3e32cc307886acb956eccd0449425868d15a94b"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0/wandb_run.json",
+          "sha256": "1c2ce462c05d08ed85bce9a42db3461462177394dfa574c65e38bd72a6ae5bf4"
         }
       ],
       "attention_degree": 1,
@@ -855,13 +1806,114 @@
         "path": "experiments/hermite_attention/configs/200m-unnormalized-m001-seed0.yaml",
         "sha256": "e979fd385d3809427d4f0ceb5a83d423e006d7eeffd669e1fb950326931d0c43"
       },
-      "execution": {},
+      "data_identity": {
+        "batch_size": 256,
+        "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+        "format": "ofm-packed-run-data",
+        "sequence_length": 2049,
+        "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+        "version": 2
+      },
+      "execution": {
+        "attempts": [
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202700",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "0",
+            "started_utc": "2026-09-27T07:24:56.106294+00:00",
+            "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202700",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "1",
+            "started_utc": "2026-09-27T07:53:25.594186+00:00",
+            "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202700",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "2",
+            "started_utc": "2026-09-27T14:35:52.344372+00:00",
+            "time_limit": "2-00:00:00"
+          }
+        ],
+        "attention_backend": "fused",
+        "attention_backend_requested": "fused",
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "runtime_history": [
+          {
+            "runtime": {
+              "batch_transfer": "host_to_shard",
+              "devices": [
+                {
+                  "id": 0,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                },
+                {
+                  "id": 1,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                }
+              ],
+              "environment": {
+                "NCCL_P2P_DISABLE": null,
+                "TRANSFORMER_HOST_STAGING": "0",
+                "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+                "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+              },
+              "state_transfer": "direct"
+            },
+            "slurm_job_id": "202700",
+            "timestamp_utc": "2026-09-27T14:38:42.335058+00:00"
+          }
+        ]
+      },
       "fixed_coefficients": [
         1.6487212707001282,
         1.6487212707001282
       ],
       "home_cluster": "kennel",
-      "logs": [],
+      "logs": [
+        {
+          "path": "experiments/hermite_attention/logs/200m-unnormalized-m001-seed0/slurm-202700.out",
+          "sha256": "e30544d56100d993693dd1248a55cbf8e79f2203552264d28fb2b6ed70ac22ed"
+        }
+      ],
       "name": "200m-unnormalized-m001-seed0",
       "parameter_count": 199906304,
       "resolved_configuration": {
@@ -930,7 +1982,7 @@
           "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
         },
         "train": {
-          "checkpoint_dir": "experiments/hermite_attention/checkpoints/200m-unnormalized-m001-seed0",
+          "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/checkpoints/200m-unnormalized-m001-seed0",
           "ckpt_every": 500,
           "dtype": "bfloat16",
           "eval_batches": 7,
@@ -942,22 +1994,22 @@
           "wandb_dir": "experiments/hermite_attention/logs/200m-unnormalized-m001-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
-          "wandb_mode": "disabled",
+          "wandb_mode": "online",
           "wandb_project": "functional-memory",
           "wandb_run_name": "200m-unnormalized-m001-seed0",
-          "workdir": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0"
+          "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/runs/200m-unnormalized-m001-seed0"
         }
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
-      "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "9fb25abe0762a8d12bee44b9d3fe0944e4ca5fb2630106d40f5b47ec28b64c32",
+      "resolved_configuration_origin": "trainer output",
+      "resolved_configuration_sha256": "a5d5363d993fe97e6ca42001104f276543599930438fb1ecaa3c7894c88f16c2",
       "run_record": "experiments/hermite_attention/runs/200m-unnormalized-m001-seed0",
       "seed": 0,
       "slurm_job_ids": [
         "202700"
       ],
       "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
-      "status": "submitted",
+      "status": "incomplete",
       "submission": {
         "argv": [
           "sbatch",
@@ -1000,14 +2052,160 @@
         "time_limit": "2-00:00:00"
       },
       "target_prediction_tokens": 10000269312,
-      "target_updates": 19074
+      "target_updates": 19074,
+      "wandb": {
+        "entity": "rafah-massachusetts-institute-of-technology",
+        "project": "functional-memory",
+        "run_id": "fa43023689164acb8a623b416113a3fe",
+        "run_name": "200m-unnormalized-m001-seed0"
+      }
     },
     {
-      "acceptance": {},
+      "acceptance": {
+        "H100-2": {
+          "cpu-distributed-tests": {
+            "note": "no distributed tests among the declared CPU tests",
+            "status": "passed",
+            "tests_passed": 0
+          },
+          "cpu-tests": {
+            "status": "passed",
+            "tests_passed": 87
+          },
+          "gpu-tests": {
+            "status": "passed",
+            "tests_passed": 26
+          },
+          "hardware": {
+            "attention_backend": "fused",
+            "device_kinds": [
+              "NVIDIA H100 80GB HBM3",
+              "NVIDIA H100 80GB HBM3"
+            ],
+            "devices": [
+              "cuda:0",
+              "cuda:1"
+            ],
+            "versions": {
+              "flax": "0.12.7",
+              "jax": "0.10.0",
+              "optax": "0.2.8",
+              "orbax-checkpoint": "0.11.40"
+            }
+          },
+          "identity": "4b8e7ab87b32e78c75b367af18912e61177221f855aa166fce27bbc775b3d2a8",
+          "initialization": {
+            "experiment_check": {
+              "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+            },
+            "parameter_count": 199906304,
+            "parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+          },
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "pilot": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "190a46e8c2b48a52f79971928844313a6751b859ea9345d030b6690ccc83ade4",
+              "final_state_sha256": "190a46e8c2b48a52f79971928844313a6751b859ea9345d030b6690ccc83ade4",
+              "first_update": {
+                "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+                "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+                "step": 1
+              },
+              "next_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "start_state_sha256": "609d2f978a015b93c8749b5a2faf4513c0b946da31e6e0ff8c3f98959e4b1bc5"
+            },
+            "data_start_sequence": 0,
+            "final_step": 2,
+            "projected_hours": 5.029909343727631,
+            "restored_step": null,
+            "timing": {
+              "checkpoint_seconds": [
+                24.946748489979655
+              ],
+              "evaluation_seconds": [
+                6.49025720404461
+              ],
+              "runtime_seconds": 65.8537742588669,
+              "train_step_seconds": [
+                10.940375231672078,
+                0.8472402570769191
+              ]
+            },
+            "validation_nll": 10.874154090881348
+          },
+          "resume": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "d736561003dc3b93b3ded4530b6df397a296722fa5487ef55e4ccfa1f89ee850",
+              "final_state_sha256": "d736561003dc3b93b3ded4530b6df397a296722fa5487ef55e4ccfa1f89ee850",
+              "first_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "next_update": {
+                "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+                "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+                "step": 4
+              },
+              "start_state_sha256": "190a46e8c2b48a52f79971928844313a6751b859ea9345d030b6690ccc83ade4"
+            },
+            "data_start_sequence": 512,
+            "final_step": 3,
+            "restored_step": 2,
+            "timing": {
+              "checkpoint_seconds": [],
+              "evaluation_seconds": [],
+              "runtime_seconds": 65.74527304666117,
+              "train_step_seconds": [
+                10.937803050037473
+              ]
+            }
+          },
+          "runtime": {
+            "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "status": "passed"
+        }
+      },
       "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m002-seed0/config.json",
+          "sha256": "f62428764ce3d2b82acaebcac10cb24d4da31e344f884008c9484b77afc860be"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m002-seed0/data_identity.json",
+          "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+        },
         {
           "path": "experiments/hermite_attention/runs/200m-unnormalized-m002-seed0/launch.json",
           "sha256": "b0f9aea9c980d039319488553af137be0efa55cc88cad34a09d5b99ee3d22b03"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m002-seed0/metadata.json",
+          "sha256": "13685ca39798b49685c2fa07f03f56e2babaf810eb2a3e717c29bf17191a460b"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m002-seed0/wandb_run.json",
+          "sha256": "1af5570d31e035fc3a700da656c58f4c097f003e01223d084fda6860be776d7c"
         }
       ],
       "attention_degree": 2,
@@ -1016,14 +2214,104 @@
         "path": "experiments/hermite_attention/configs/200m-unnormalized-m002-seed0.yaml",
         "sha256": "b3203d44a13c2bfc36b4a08821c8a1c066d39903f0e10a743684f2bb8d3c303a"
       },
-      "execution": {},
+      "data_identity": {
+        "batch_size": 256,
+        "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+        "format": "ofm-packed-run-data",
+        "sequence_length": 2049,
+        "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+        "version": 2
+      },
+      "execution": {
+        "attempts": [
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202701",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "0",
+            "started_utc": "2026-09-27T07:28:55.654552+00:00",
+            "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202701",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "1",
+            "started_utc": "2026-09-27T07:57:25.439857+00:00",
+            "time_limit": "2-00:00:00"
+          }
+        ],
+        "attention_backend": "fused",
+        "attention_backend_requested": "fused",
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "runtime_history": [
+          {
+            "runtime": {
+              "batch_transfer": "host_to_shard",
+              "devices": [
+                {
+                  "id": 0,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                },
+                {
+                  "id": 1,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                }
+              ],
+              "environment": {
+                "NCCL_P2P_DISABLE": null,
+                "TRANSFORMER_HOST_STAGING": "0",
+                "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+                "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+              },
+              "state_transfer": "direct"
+            },
+            "slurm_job_id": "202701",
+            "timestamp_utc": "2026-09-27T08:00:30.550863+00:00"
+          }
+        ]
+      },
       "fixed_coefficients": [
         0.8243606353500641,
         1.6487212707001282,
         0.8243606353500641
       ],
       "home_cluster": "kennel",
-      "logs": [],
+      "logs": [
+        {
+          "path": "experiments/hermite_attention/logs/200m-unnormalized-m002-seed0/slurm-202701.out",
+          "sha256": "060cffab826ebbba1f5904f639dd0e1e441f82f666752829b6f23761814e6b07"
+        }
+      ],
       "name": "200m-unnormalized-m002-seed0",
       "parameter_count": 199906304,
       "resolved_configuration": {
@@ -1093,7 +2381,7 @@
           "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
         },
         "train": {
-          "checkpoint_dir": "experiments/hermite_attention/checkpoints/200m-unnormalized-m002-seed0",
+          "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/checkpoints/200m-unnormalized-m002-seed0",
           "ckpt_every": 500,
           "dtype": "bfloat16",
           "eval_batches": 7,
@@ -1105,22 +2393,22 @@
           "wandb_dir": "experiments/hermite_attention/logs/200m-unnormalized-m002-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
-          "wandb_mode": "disabled",
+          "wandb_mode": "online",
           "wandb_project": "functional-memory",
           "wandb_run_name": "200m-unnormalized-m002-seed0",
-          "workdir": "experiments/hermite_attention/runs/200m-unnormalized-m002-seed0"
+          "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/runs/200m-unnormalized-m002-seed0"
         }
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
-      "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "ab455b7ebd59a327974be459bad281e341bc7aa42c992a7491582946f7154851",
+      "resolved_configuration_origin": "trainer output",
+      "resolved_configuration_sha256": "007217064f3804fe1481c337b2d19fe19c02cdd45d6d3df490023ecce0eecc35",
       "run_record": "experiments/hermite_attention/runs/200m-unnormalized-m002-seed0",
       "seed": 0,
       "slurm_job_ids": [
         "202701"
       ],
       "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
-      "status": "submitted",
+      "status": "incomplete",
       "submission": {
         "argv": [
           "sbatch",
@@ -1163,10 +2451,68 @@
         "time_limit": "2-00:00:00"
       },
       "target_prediction_tokens": 10000269312,
-      "target_updates": 19074
+      "target_updates": 19074,
+      "wandb": {
+        "entity": "rafah-massachusetts-institute-of-technology",
+        "project": "functional-memory",
+        "run_id": "4411e2cf10824810a61a621bfe8f0fe8",
+        "run_name": "200m-unnormalized-m002-seed0"
+      }
     },
     {
-      "acceptance": {},
+      "acceptance": {
+        "H100-2": {
+          "cpu-distributed-tests": {
+            "note": "no distributed tests among the declared CPU tests",
+            "status": "passed",
+            "tests_passed": 0
+          },
+          "cpu-tests": {
+            "status": "passed",
+            "tests_passed": 87
+          },
+          "gpu-tests": {
+            "status": "passed",
+            "tests_passed": 26
+          },
+          "hardware": {
+            "attention_backend": "fused",
+            "device_kinds": [
+              "NVIDIA H100 80GB HBM3",
+              "NVIDIA H100 80GB HBM3"
+            ],
+            "devices": [
+              "cuda:0",
+              "cuda:1"
+            ],
+            "versions": {
+              "flax": "0.12.7",
+              "jax": "0.10.0",
+              "optax": "0.2.8",
+              "orbax-checkpoint": "0.11.40"
+            }
+          },
+          "identity": "a6b9b995540e368bdbf3cd173d82da0aa62c7a8faf3a11a8d9dbb0e57fb2ee70",
+          "initialization": {
+            "experiment_check": {
+              "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+            },
+            "parameter_count": 199906304,
+            "parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+          },
+          "passed_stages": [],
+          "runtime": {
+            "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "status": "incomplete"
+        }
+      },
       "artifacts": [
         {
           "path": "experiments/hermite_attention/runs/200m-unnormalized-m003-seed0/launch.json",
@@ -1179,7 +2525,32 @@
         "path": "experiments/hermite_attention/configs/200m-unnormalized-m003-seed0.yaml",
         "sha256": "90bf997f0eb6d1510f3dc844c2079f1e587fa3b72b3c5a00367374d066dc87c3"
       },
-      "execution": {},
+      "execution": {
+        "attempts": [
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202702",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "0",
+            "started_utc": "2026-09-27T07:29:24.674216+00:00",
+            "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202702",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "1",
+            "started_utc": "2026-09-27T07:57:54.989360+00:00",
+            "time_limit": "2-00:00:00"
+          }
+        ]
+      },
       "fixed_coefficients": [
         0.8243606353500641,
         0.8243606353500641,
@@ -1187,7 +2558,12 @@
         0.27478687845002137
       ],
       "home_cluster": "kennel",
-      "logs": [],
+      "logs": [
+        {
+          "path": "experiments/hermite_attention/logs/200m-unnormalized-m003-seed0/slurm-202702.out",
+          "sha256": "76792a87e3d1294a85ee13ffbb579d07abef2144a3197ede144c0284fef77ce8"
+        }
+      ],
       "name": "200m-unnormalized-m003-seed0",
       "parameter_count": 199906304,
       "resolved_configuration": {
@@ -1331,11 +2707,151 @@
       "target_updates": 19074
     },
     {
-      "acceptance": {},
+      "acceptance": {
+        "H100-2": {
+          "cpu-distributed-tests": {
+            "note": "no distributed tests among the declared CPU tests",
+            "status": "passed",
+            "tests_passed": 0
+          },
+          "cpu-tests": {
+            "status": "passed",
+            "tests_passed": 87
+          },
+          "gpu-tests": {
+            "status": "passed",
+            "tests_passed": 26
+          },
+          "hardware": {
+            "attention_backend": "fused",
+            "device_kinds": [
+              "NVIDIA H100 80GB HBM3",
+              "NVIDIA H100 80GB HBM3"
+            ],
+            "devices": [
+              "cuda:0",
+              "cuda:1"
+            ],
+            "versions": {
+              "flax": "0.12.7",
+              "jax": "0.10.0",
+              "optax": "0.2.8",
+              "orbax-checkpoint": "0.11.40"
+            }
+          },
+          "identity": "a8895d6fb9145374b971a7456f72d934d1d4f948b09117bf59ca89a9de15558f",
+          "initialization": {
+            "experiment_check": {
+              "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+            },
+            "parameter_count": 199906304,
+            "parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+          },
+          "passed_stages": [
+            "cpu-tests",
+            "cpu-distributed-tests",
+            "gpu-tests",
+            "initialization",
+            "pilot",
+            "resume"
+          ],
+          "pilot": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "b7b122972571f04b946cef0fa5cc29c539df4704f63b3adf344d3582e9eb469d",
+              "final_state_sha256": "b7b122972571f04b946cef0fa5cc29c539df4704f63b3adf344d3582e9eb469d",
+              "first_update": {
+                "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+                "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+                "step": 1
+              },
+              "next_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "start_state_sha256": "609d2f978a015b93c8749b5a2faf4513c0b946da31e6e0ff8c3f98959e4b1bc5"
+            },
+            "data_start_sequence": 0,
+            "final_step": 2,
+            "projected_hours": 5.320398565059295,
+            "restored_step": null,
+            "timing": {
+              "checkpoint_seconds": [
+                23.208903597202152
+              ],
+              "evaluation_seconds": [
+                6.838253555819392
+              ],
+              "runtime_seconds": 64.01863808836788,
+              "train_step_seconds": [
+                11.245666735805571,
+                0.9031620770692825
+              ]
+            },
+            "validation_nll": 10.872454643249512
+          },
+          "resume": {
+            "attention_backend": "fused",
+            "checkpoint_audit": {
+              "checkpoint_state_sha256": "385b070cc20d900b22e8bb504d5581ab99ed78d662ec3ae74aad06597b7b018b",
+              "final_state_sha256": "385b070cc20d900b22e8bb504d5581ab99ed78d662ec3ae74aad06597b7b018b",
+              "first_update": {
+                "batch_sha256": "5b84e7f951117ee79c461ba3fe74533b2667ff2a9a556c19f8afc73cf2c24791",
+                "rng_sha256": "321ca5595ae82061c2292bf39450a4e0c7aff7fd3e4f37d520c9163c7a2ea7f4",
+                "step": 3
+              },
+              "next_update": {
+                "batch_sha256": "9d316db1bf736b0481b12ceb32f6985604c8fb401058f6e369eab6537ca6bcae",
+                "rng_sha256": "3721767bb5975a036a930fdf1ddf4bfce6b91f5a8e265d8076bf00d6c10250d6",
+                "step": 4
+              },
+              "start_state_sha256": "b7b122972571f04b946cef0fa5cc29c539df4704f63b3adf344d3582e9eb469d"
+            },
+            "data_start_sequence": 512,
+            "final_step": 3,
+            "restored_step": 2,
+            "timing": {
+              "checkpoint_seconds": [],
+              "evaluation_seconds": [],
+              "runtime_seconds": 68.55181558895856,
+              "train_step_seconds": [
+                11.302051578182727
+              ]
+            }
+          },
+          "runtime": {
+            "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "status": "passed"
+        }
+      },
       "artifacts": [
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m004-seed0/config.json",
+          "sha256": "4bcdd88b7203d1004ab143007d025e23ae4fd099c8be3db3ce719fbb2ee860cb"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m004-seed0/data_identity.json",
+          "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+        },
         {
           "path": "experiments/hermite_attention/runs/200m-unnormalized-m004-seed0/launch.json",
           "sha256": "4c0f4b52d212f83dc52f7993ec76475f304cb74fe5f4f7683646ac2382f7e098"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m004-seed0/metadata.json",
+          "sha256": "afd9a02454d2c727e2b0fd35dceed384587c7dd4957f24bb0a658e22bbc8205e"
+        },
+        {
+          "path": "experiments/hermite_attention/runs/200m-unnormalized-m004-seed0/wandb_run.json",
+          "sha256": "c31c2299e47bfad2c167f83b5b5201c816db2c8c5024d309b51c206433f79ebf"
         }
       ],
       "attention_degree": 4,
@@ -1344,7 +2860,92 @@
         "path": "experiments/hermite_attention/configs/200m-unnormalized-m004-seed0.yaml",
         "sha256": "c7b2584f441e090131b341128fe0a4f2789614c37f0447138e1d2619e40cb6a6"
       },
-      "execution": {},
+      "data_identity": {
+        "batch_size": 256,
+        "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+        "format": "ofm-packed-run-data",
+        "sequence_length": 2049,
+        "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+        "version": 2
+      },
+      "execution": {
+        "attempts": [
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202703",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "0",
+            "started_utc": "2026-09-27T07:34:55.187040+00:00",
+            "time_limit": "2-00:00:00"
+          },
+          {
+            "gpu_count": 2,
+            "gpu_type": "H100",
+            "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+            "node": "dogo",
+            "slurm_job_id": "202703",
+            "slurm_partition": "sweep",
+            "slurm_restart_count": "1",
+            "started_utc": "2026-09-27T08:18:25.635833+00:00",
+            "time_limit": "2-00:00:00"
+          }
+        ],
+        "attention_backend": "fused",
+        "attention_backend_requested": "fused",
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "runtime_history": [
+          {
+            "runtime": {
+              "batch_transfer": "host_to_shard",
+              "devices": [
+                {
+                  "id": 0,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                },
+                {
+                  "id": 1,
+                  "kind": "NVIDIA H100 80GB HBM3",
+                  "platform": "gpu"
+                }
+              ],
+              "environment": {
+                "NCCL_P2P_DISABLE": null,
+                "TRANSFORMER_HOST_STAGING": "0",
+                "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+                "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+              },
+              "state_transfer": "direct"
+            },
+            "slurm_job_id": "202703",
+            "timestamp_utc": "2026-09-27T08:21:31.594941+00:00"
+          }
+        ]
+      },
       "fixed_coefficients": [
         1.0304507941875802,
         0.8243606353500641,
@@ -1353,7 +2954,12 @@
         0.06869671961250534
       ],
       "home_cluster": "kennel",
-      "logs": [],
+      "logs": [
+        {
+          "path": "experiments/hermite_attention/logs/200m-unnormalized-m004-seed0/slurm-202703.out",
+          "sha256": "03b640d8790ce84c13bf50dc8858ea9407ffc1a9f85bdaeb2c42e8a01de06188"
+        }
+      ],
       "name": "200m-unnormalized-m004-seed0",
       "parameter_count": 199906304,
       "resolved_configuration": {
@@ -1425,7 +3031,7 @@
           "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
         },
         "train": {
-          "checkpoint_dir": "experiments/hermite_attention/checkpoints/200m-unnormalized-m004-seed0",
+          "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/checkpoints/200m-unnormalized-m004-seed0",
           "ckpt_every": 500,
           "dtype": "bfloat16",
           "eval_batches": 7,
@@ -1437,22 +3043,22 @@
           "wandb_dir": "experiments/hermite_attention/logs/200m-unnormalized-m004-seed0/wandb",
           "wandb_entity": "rafah-massachusetts-institute-of-technology",
           "wandb_group": "hermite_attention",
-          "wandb_mode": "disabled",
+          "wandb_mode": "online",
           "wandb_project": "functional-memory",
           "wandb_run_name": "200m-unnormalized-m004-seed0",
-          "workdir": "experiments/hermite_attention/runs/200m-unnormalized-m004-seed0"
+          "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_attention/experiments/hermite_attention/runs/200m-unnormalized-m004-seed0"
         }
       },
       "resolved_configuration_hash_format": "UTF-8 JSON, sorted keys, compact separators",
-      "resolved_configuration_origin": "prepared recipe",
-      "resolved_configuration_sha256": "c6e9de59d547ca330bb21232d6ffb554a3606feee48c43a4fc5eb7431bb40079",
+      "resolved_configuration_origin": "trainer output",
+      "resolved_configuration_sha256": "6bd5825dee4779e7080c3f0c8a1b1d8695a00f7f206dd07ba9e857bc95caecaa",
       "run_record": "experiments/hermite_attention/runs/200m-unnormalized-m004-seed0",
       "seed": 0,
       "slurm_job_ids": [
         "202703"
       ],
       "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
-      "status": "submitted",
+      "status": "incomplete",
       "submission": {
         "argv": [
           "sbatch",
@@ -1495,7 +3101,13 @@
         "time_limit": "2-00:00:00"
       },
       "target_prediction_tokens": 10000269312,
-      "target_updates": 19074
+      "target_updates": 19074,
+      "wandb": {
+        "entity": "rafah-massachusetts-institute-of-technology",
+        "project": "functional-memory",
+        "run_id": "b256139be050424fbc95195c7b38983e",
+        "run_name": "200m-unnormalized-m004-seed0"
+      }
     }
   ],
   "scaffold": "scaffolds/transformer",

@@ -60,14 +60,14 @@ metrics and checkpoint selection are recorded separately.
 <!-- BEGIN GENERATED RESULTS -->
 | Variant | Degree | Status | Last update | Terminal PPL | Failure update |
 | --- | ---: | --- | ---: | ---: | ---: |
-| normalized | 1 | submitted |  |  |  |
-| normalized | 2 | submitted |  |  |  |
-| normalized | 3 | submitted |  |  |  |
-| normalized | 4 | submitted |  |  |  |
-| unnormalized | 1 | submitted |  |  |  |
-| unnormalized | 2 | submitted |  |  |  |
+| normalized | 1 | numerical-failure | 173 |  | 173 |
+| normalized | 2 | acceptance-numerical-failure |  |  | 1 |
+| normalized | 3 | incomplete | 0 |  |  |
+| normalized | 4 | numerical-failure | 53 |  | 53 |
+| unnormalized | 1 | incomplete | 0 |  |  |
+| unnormalized | 2 | incomplete | 0 |  |  |
 | unnormalized | 3 | submitted |  |  |  |
-| unnormalized | 4 | submitted |  |  |  |
+| unnormalized | 4 | incomplete | 0 |  |  |
 <!-- END GENERATED RESULTS -->
 
 The generated table uses only the authoritative run files for scientific metrics.

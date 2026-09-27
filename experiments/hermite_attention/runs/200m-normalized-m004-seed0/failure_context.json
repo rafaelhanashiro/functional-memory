@@ -1,0 +1,26 @@
+{
+  "diagnostic_checkpoint_retained": false,
+  "failure_record": {
+    "path": "experiments/hermite_attention/runs/200m-normalized-m004-seed0/numerical_failure_step_00000053.json",
+    "sha256": "f510575447fcdbb3aafdb3ea05adda6fd19202c3da3b578f7232be2e2d7fcb06"
+  },
+  "failure_step": 53,
+  "format": "hermite-production-numerical-failure-context",
+  "last_valid_training_measurement": {
+    "precision": "as printed in matching Slurm log",
+    "step": 50,
+    "train_nll": 9.736265,
+    "train_perplexity": 16920.2293
+  },
+  "last_valid_validation": null,
+  "matching_failure_log": {
+    "path": "experiments/hermite_attention/logs/200m-normalized-m004-seed0/slurm-202699.out",
+    "sha256": "4960ecf7fece885b18f2e41c84f1aa4c50af316819ec16c532277a68cabe0e2c"
+  },
+  "run": "200m-normalized-m004-seed0",
+  "slurm_job_id": "202699",
+  "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+  "status": "numerical-failure",
+  "validation_note": "Scheduled first at step 1000; failure occurred beforehand.",
+  "version": 1
+}
