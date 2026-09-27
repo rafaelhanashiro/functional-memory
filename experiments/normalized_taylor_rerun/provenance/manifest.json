@@ -83,7 +83,7 @@
       "attention_degree": 1,
       "seed": 0,
       "home_cluster": "kennel",
-      "status": "submitted",
+      "status": "numerical_failure",
       "config": {
         "path": "experiments/normalized_taylor_rerun/configs/200m-m001-seed0.yaml",
         "sha256": "402c9f361c71672ff7e6a555bd876a96e871c90c4ec41b81ef6c6fc0eaa0066f"
@@ -130,6 +130,12 @@
           "partition": "long",
           "exclude_added": "dogo",
           "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends"
+        },
+        {
+          "time": "2026-09-27T05:22-04:00",
+          "partition": "long",
+          "exclude_removed": "dogo",
+          "reason": "the debug burst ended (last debug job on dogo 04:56); dogo restored for pending jobs; 202617 was running and keeps the dogo exclusion until it next requeues"
         }
       ],
       "attempts": [
@@ -148,8 +154,92 @@
           "start": "2026-09-26T22:39:28-04:00",
           "end": "2026-09-26T22:42-04:00",
           "outcome": "took the dogo slot left when a debug job preempted nonnegative m=2 (202638); requeued held during CPU acceptance tests so 202638 could resume there, as agreed for the fused relaunch; released"
+        },
+        {
+          "slurm_job_id": 202614,
+          "outcome": "between 03:00 and 04:21 preempted seven times during acceptance by debug-partition jobs on dogo and akita; the attempt starting 04:44:57 on akita passed acceptance and stopped at update 31 on a NaN loss (not requeued)"
         }
-      ]
+      ],
+      "slurm_attempts": {
+        "source": "sacct -j 202614 -D -X (local time, 2026-09-27 05:25 snapshot)",
+        "attempts": [
+          {
+            "partition": "standard",
+            "state": "REQUEUED",
+            "start": "2026-09-26T19:46:22",
+            "end": "2026-09-26T19:48:31",
+            "node": "akita"
+          },
+          {
+            "partition": "long",
+            "state": "REQUEUED",
+            "start": "2026-09-26T22:39:28",
+            "end": "2026-09-26T22:42:14",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:00:56",
+            "end": "2026-09-27T03:02:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:05:02",
+            "end": "2026-09-27T03:06:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:08:46",
+            "end": "2026-09-27T03:10:28",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:13:31",
+            "end": "2026-09-27T03:14:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:50:31",
+            "end": "2026-09-27T03:52:19",
+            "node": "akita"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T04:17:54",
+            "end": "2026-09-27T04:20:54",
+            "node": "akita"
+          },
+          {
+            "partition": "long",
+            "state": "FAILED",
+            "start": "2026-09-27T04:44:57",
+            "end": "2026-09-27T05:02:54",
+            "node": "akita"
+          }
+        ]
+      },
+      "failure": {
+        "step": 31,
+        "record": "experiments/normalized_taylor_rerun/runs/200m-m001-seed0/numerical_failure_step_00000031.json",
+        "error": "FloatingPointError: Nonfinite training loss or optimizer update at step 31: nan",
+        "last_valid_training": {
+          "step": 30,
+          "train_nll": 10.874235,
+          "train_ppl": 52798.3465
+        },
+        "last_valid_validation": null,
+        "note": "stopped on the trainer's numerical-failure check before any validation, with the loss still near its initial value; the kernel is signed (odd degree); the legacy run failed at update 9"
+      }
     },
     {
       "name": "200m-m002-seed0",
@@ -191,6 +281,100 @@
           "time": "2026-09-27T01:57-04:00",
           "partition": "long",
           "reason": "the nonnegative learned Taylor runs concluded, so this user's long-partition jobs fell to zero; two sweep reruns returned to long, keeping three rerun jobs (12 GPUs) there"
+        },
+        {
+          "time": "2026-09-27T05:22-04:00",
+          "partition": "long",
+          "exclude_removed": "dogo",
+          "reason": "the debug burst ended (last debug job on dogo 04:56); dogo restored for pending jobs; 202617 was running and keeps the dogo exclusion until it next requeues"
+        }
+      ],
+      "slurm_attempts": {
+        "source": "sacct -j 202616 -D -X (local time, 2026-09-27 05:25 snapshot)",
+        "attempts": [
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T02:16:56",
+            "end": "2026-09-27T03:22:54",
+            "node": "akita"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:25:06",
+            "end": "2026-09-27T03:28:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:30:55",
+            "end": "2026-09-27T03:34:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:38:38",
+            "end": "2026-09-27T03:41:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:46:54",
+            "end": "2026-09-27T03:48:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:51:22",
+            "end": "2026-09-27T03:53:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:55:54",
+            "end": "2026-09-27T03:57:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T04:02:24",
+            "end": "2026-09-27T04:04:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T04:14:54",
+            "end": "2026-09-27T04:17:53",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T04:39:39",
+            "end": "2026-09-27T04:40:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "RUNNING",
+            "start": "2026-09-27T04:56:24",
+            "end": null,
+            "node": "dogo"
+          }
+        ]
+      },
+      "attempts": [
+        {
+          "slurm_job_id": 202616,
+          "outcome": "preempted on akita at 03:22 before its update-7,000 checkpoint; ten short attempts on dogo between 03:25 and 04:41 were preempted by debug-partition jobs (the dogo exclusion was added only to pending jobs); running on dogo since 04:56, resumed from the update-6,500 checkpoint"
         }
       ]
     },
@@ -277,6 +461,32 @@
         },
         "last_valid_validation": null,
         "note": "no validation preceded the failure (first at update 1,000); the recorded attention diagnostics were computed after the attempted update and are nonfinite everywhere, so they do not isolate the mechanism. The kernel is signed (odd degree); the legacy run failed at update 17 when signed row sums crossed zero."
+      },
+      "slurm_attempts": {
+        "source": "sacct -j 202615 -D -X (local time, 2026-09-27 05:25 snapshot)",
+        "attempts": [
+          {
+            "partition": "long",
+            "state": "REQUEUED",
+            "start": "2026-09-26T19:46:25",
+            "end": "2026-09-26T19:48:31",
+            "node": "dogo"
+          },
+          {
+            "partition": "standard",
+            "state": "REQUEUED",
+            "start": "2026-09-27T00:58:40",
+            "end": "2026-09-27T01:01:28",
+            "node": "akita"
+          },
+          {
+            "partition": "standard",
+            "state": "FAILED",
+            "start": "2026-09-27T01:47:57",
+            "end": "2026-09-27T02:16:56",
+            "node": "akita"
+          }
+        ]
       }
     },
     {
@@ -325,6 +535,12 @@
           "partition": "long",
           "exclude_added": "dogo",
           "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends"
+        },
+        {
+          "time": "2026-09-27T05:22-04:00",
+          "partition": "long",
+          "exclude_removed": "dogo",
+          "reason": "the debug burst ended (last debug job on dogo 04:56); dogo restored for pending jobs; 202617 was running and keeps the dogo exclusion until it next requeues"
         }
       ],
       "attempts": [
@@ -359,8 +575,73 @@
           "start": "2026-09-27T03:10:48-04:00",
           "end": "2026-09-27T03:13:19-04:00",
           "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued"
+        },
+        {
+          "slurm_job_id": 202617,
+          "outcome": "three further acceptance-stage preemptions on akita between 03:36 and 04:34; running on akita since 05:02"
         }
-      ]
+      ],
+      "slurm_attempts": {
+        "source": "sacct -j 202617 -D -X (local time, 2026-09-27 05:25 snapshot)",
+        "attempts": [
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T02:58:53",
+            "end": "2026-09-27T03:00:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:02:53",
+            "end": "2026-09-27T03:04:49",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:07:04",
+            "end": "2026-09-27T03:08:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:10:48",
+            "end": "2026-09-27T03:13:19",
+            "node": "dogo"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:36:45",
+            "end": "2026-09-27T03:39:19",
+            "node": "akita"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T04:03:54",
+            "end": "2026-09-27T04:06:19",
+            "node": "akita"
+          },
+          {
+            "partition": "long",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T04:32:03",
+            "end": "2026-09-27T04:33:49",
+            "node": "akita"
+          },
+          {
+            "partition": "long",
+            "state": "RUNNING",
+            "start": "2026-09-27T05:02:54",
+            "end": null,
+            "node": "akita"
+          }
+        ]
+      }
     },
     {
       "name": "200m-m008-seed0",
@@ -403,6 +684,12 @@
           "partition": "sweep",
           "exclude_added": "dogo",
           "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends"
+        },
+        {
+          "time": "2026-09-27T05:22-04:00",
+          "partition": "long",
+          "exclude_removed": "dogo",
+          "reason": "the debug burst ended (last debug job on dogo 04:56); dogo restored for pending jobs; 202617 was running and keeps the dogo exclusion until it next requeues; moved from sweep to long after the m=1 rerun concluded, keeping three rerun jobs on long"
         }
       ],
       "attempts": [
@@ -414,7 +701,19 @@
           "end": "2026-09-27T03:15:18-04:00",
           "outcome": "preempted within 24 s by a debug-partition job; requeued"
         }
-      ]
+      ],
+      "slurm_attempts": {
+        "source": "sacct -j 202618 -D -X (local time, 2026-09-27 05:25 snapshot)",
+        "attempts": [
+          {
+            "partition": "sweep",
+            "state": "PREEMPTED",
+            "start": "2026-09-27T03:14:54",
+            "end": "2026-09-27T03:15:18",
+            "node": "dogo"
+          }
+        ]
+      }
     },
     {
       "name": "200m-m016-seed0",
@@ -457,8 +756,18 @@
           "partition": "sweep",
           "exclude_added": "dogo",
           "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends"
+        },
+        {
+          "time": "2026-09-27T05:22-04:00",
+          "partition": "sweep",
+          "exclude_removed": "dogo",
+          "reason": "the debug burst ended (last debug job on dogo 04:56); dogo restored for pending jobs; 202617 was running and keeps the dogo exclusion until it next requeues"
         }
-      ]
+      ],
+      "slurm_attempts": {
+        "source": "sacct -j 202619 -D -X (local time, 2026-09-27 05:25 snapshot)",
+        "attempts": []
+      }
     }
   ],
   "pre_launch_validation": {
