@@ -12,6 +12,12 @@ Each permanent run ID in [runs.csv](runs.csv) owns its frozen recipe, execution
 record, measurements, checkpoint directory, and `training.log` under `runs/`.
 [sweep.yaml](sweep.yaml) lists membership and the exact existing Taylor controls.
 
+The initial cohort was submitted on 2026-09-27 as jobs **203017–203028**, from
+launch commit `84dedd777c2f1def16ef9ef74ea11ec6c94cdda9`. Each submission depends
+on successful compiled H100/B300 checks (jobs 203015/203016). Individual job IDs
+and exact submission commands are stored in the run records; live scheduler
+status and recorded training status are distinct.
+
 ## Method and comparison
 
 Scores use post-RoPE Q and K with per-head, per-layer learned QK scales:
@@ -85,6 +91,7 @@ The initial submission for each allocated run uses:
 RUN=<permanent-run-id>
 LAUNCH_COMMIT=$(git rev-parse HEAD)
 sbatch --parsable --gres=gpu:4 --job-name="hermite-$RUN" \
+  --dependency=afterok:203015:203016 \
   --output="experiments/hermite_attention/runs/$RUN/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch \
   experiments.hermite_attention.acceptance \
