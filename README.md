@@ -20,6 +20,14 @@ a result collection can combine runs from several studies.
 | Unnormalized exponential attention | [Figures and findings](results/unnormalized_attention/README.md) | [Runs and execution](experiments/unnormalized_attention/README.md) |
 | Unnormalized Taylor attention | [Figures and findings](results/unnormalized_taylor_attention/README.md) | [Runs and execution](experiments/unnormalized_taylor_attention/README.md) |
 
+The new [Hermite–Taylor QK-normalized sweep](worktrees/hermite_qk_norm/experiments/hermite_attention/README.md)
+is prepared in its own worktree with eight Hermite variants and four matched
+unnormalized Taylor controls at `d_K=64`. Existing normalized Taylor controls are
+selected explicitly in its study record. The older
+[Hermite sweep](worktrees/hermite_attention/experiments/hermite_attention/README.md)
+and [factored degree-two run](worktrees/hermite_factored_m2/experiments/hermite_factored_m2/README.md)
+use `qk_norm: false` and are legacy results, excluded from that matched comparison.
+
 ```text
 results/<analysis>/
   README.md, selection.yaml, *.pdf, *.png, summary.csv
