@@ -219,11 +219,15 @@ def test_committed_comparison_sources() -> None:
                               ("normalized_learned_taylor", "m3"): 318, ("normalized_learned_taylor", "m4"): 1456}
     legacy = {(row["panel"], row["column"]) for row in chart_rows if row["legacy"]}
     assert legacy == {*(("unnormalized_fixed", f"m{d}") for d in (1, 2, 3, 4)),
-                      ("normalized_nonnegative", "m2"), ("references", "unnormalized_exp")}
+                      ("references", "unnormalized_exp")}
 
     wrong_family = json.loads(json.dumps(chart))
-    next(cell for cell in wrong_family["cells"] if cell["panel"] == "normalized_nonnegative")["run"] = (
-        "200m-positive-global-seed0")
+    quadratic = "experiments/learned_quadratic_attention/provenance/manifest.json"
+    wrong_family["source_manifests"]["learned_quadratic_attention"] = {
+        "path": quadratic, "sha256": hashlib.sha256((root / quadratic).read_bytes()).hexdigest()}
+    wrong_family.pop("source_artifact_set_sha256")
+    cell = next(cell for cell in wrong_family["cells"] if cell["panel"] == "normalized_nonnegative")
+    cell.update(experiment="learned_quadratic_attention", run="200m-positive-global-seed0")
     with pytest.raises(ValueError, match="quadratic sharing"):
         collect_rows(root, wrong_family)
 

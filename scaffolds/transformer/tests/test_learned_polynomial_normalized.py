@@ -1,7 +1,7 @@
 """Row-normalized attention with learned polynomial coefficients, alone and under QK-norm.
 
-The blocked reference is the only implementation. Tests compare it with an
-independent FP64 dense evaluation of p(s) V / rowsum for degrees 1-4, check parity
+Tests compare the blocked reference with an independent FP64 dense evaluation of
+p(s) V / rowsum for degrees 1-4, check parity
 with the fixed Taylor kernels at the Taylor initialization, the signed-row-sum
 diagnostics, configuration and backend selection, parameter ownership, and training
 with resume. GPU cases exercise the production BF16 context on cosine operands.
@@ -12,7 +12,6 @@ from functools import partial
 import json
 import math
 from pathlib import Path
-from types import SimpleNamespace
 
 import jax
 import jax.numpy as jnp
@@ -182,23 +181,55 @@ def test_signed_row_sums_are_valid_and_zero_sums_poison_only_their_rows():
 
 
 def test_configuration_validation_and_backend_selection():
-    config = _model_config(2, "per_head")  # normalized learned coefficients are valid on the blocked backend
+    config = _model_config(2, "per_head")
     assert config.attention_normalization and config.attention_coefficients == "learned"
-    with pytest.raises(ValueError, match="no fused kernel"):
-        _model_config(2, "per_head", attention_backend="fused")
+    explicit = _model_config(2, "per_head", attention_backend="fused")
+    assert resolve_attention_backend(explicit, dtype="bfloat16", platform="gpu") == "fused"
     auto = _model_config(2, "per_head", attention_backend="auto")
-    assert resolve_attention_backend(auto, dtype="bfloat16", platform="gpu") == "blocked"
+    assert resolve_attention_backend(auto, dtype="bfloat16", platform="gpu") == "fused"
     assert resolve_attention_backend(auto, dtype="float32", platform="cpu") == "blocked"
+    wide = replace(auto, qk_head_dim=256)
+    assert resolve_attention_backend(wide, dtype="bfloat16", platform="gpu") == "blocked"
+    with pytest.raises(ValueError, match="up to 128"):
+        resolve_attention_backend(replace(wide, attention_backend="fused"), dtype="bfloat16", platform="gpu")
     unnormalized = replace(auto, attention_normalization=False)
     assert resolve_attention_backend(unnormalized, dtype="bfloat16", platform="gpu") == "fused"
-    # An explicit fused request cannot be built as a ModelConfig; the resolver rejects it independently.
-    explicit = SimpleNamespace(**{**vars(auto), "attention_backend": "fused"})
-    with pytest.raises(ValueError, match="no fused kernel"):
-        resolve_attention_backend(explicit, dtype="bfloat16", platform="gpu")
+    with pytest.raises(ValueError, match="NVIDIA GPU"):
+        resolve_attention_backend(explicit, dtype="float32", platform="cpu")
     with pytest.raises(ValueError, match="quadratic"):
         blocked_dot_product_attention(*_operands()[0], attention_degree=2, attention_normalization=True,
                                       quadratic_mode="positive", coefficients=jnp.ones((2,)),
                                       polynomial_coefficients=jnp.ones((3,)))
+
+
+@pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares"))
+def test_fused_diagnostics_preserve_output_and_shared_parameter_gradients(monkeypatch, parameterization):
+    from scaffolds.transformer.attention.backends import fused_normalized_polynomial
+
+    (q, k, v), _ = _operands(time=5)
+    parameters = jnp.asarray([1.0, 0.5, 0.25], jnp.float32)
+    argument = "polynomial_coefficients" if parameterization == "direct" else "polynomial_square_factors"
+    expected_parameterization = parameterization
+
+    def fused(q, k, v, parameters, *, parameterization):
+        assert parameterization == expected_parameterization
+        assert parameters.shape == (q.shape[2], 3) and parameters.dtype == jnp.float32
+        # Distinct from the reference output; also exposes broadcast-gradient ownership.
+        return jnp.broadcast_to(jnp.sum(parameters, axis=-1)[None, None, :, None], v.shape)
+
+    monkeypatch.setattr(fused_normalized_polynomial, "fused_normalized_polynomial_attention", fused)
+    apply = lambda values: attention_core(q, k, v, attention_degree=2, attention_normalization=True,
+                                         backend="fused", return_diagnostics=True, **{argument: values})
+    output, diagnostics = apply(parameters)
+    _, expected_diagnostics = blocked_dot_product_attention(
+        q, k, v, attention_degree=2, attention_normalization=True,
+        return_diagnostics=True, **{argument: parameters},
+    )
+    np.testing.assert_array_equal(output, jnp.full_like(v, jnp.sum(parameters)))
+    for name in expected_diagnostics:
+        np.testing.assert_array_equal(diagnostics[name], expected_diagnostics[name])
+    gradient = jax.grad(lambda values: jnp.sum(apply(values)[0]))(parameters)
+    np.testing.assert_array_equal(gradient, jnp.full_like(parameters, v.size))
 
 
 @pytest.mark.parametrize("qk_norm", (False, True))

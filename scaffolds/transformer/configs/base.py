@@ -56,10 +56,13 @@ class ModelConfig:
     quadratic_mode: Literal["fixed", "positive", "unrestricted"] = "fixed"
     quadratic_sharing: Literal["global", "per_head"] = "global"
     # Degree-m kernels may learn every coefficient c_0..c_m of sum_r c_r s^r,
-    # starting from the Taylor values 1/r!; without row normalization through the
-    # fused kernel, with it through the blocked reference (signed row sums).
+    # starting from the Taylor values 1/r!, with or without row normalization.
+    # Both forms support fused kernels and the blocked reference.
     attention_coefficients: Literal["fixed", "learned"] = "fixed"
     attention_coefficient_sharing: Literal["global", "per_head"] = "global"
+    # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
+    # (even m, row-normalized only), so the kernel is nonnegative by construction.
+    attention_coefficient_parameterization: Literal["direct", "sum_of_squares"] = "direct"
     # Cosine scores for any dot-product mechanism: s = exp(gamma) * cos(q, k) with a
     # learned log scale gamma per layer and head (or one shared), initialized at
     # log(qk_norm_initial_scale); null selects sqrt(qk_head_dim).
@@ -137,11 +140,17 @@ class ModelConfig:
         if self.attention_coefficients == "learned":
             if self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed":
                 raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")
-            if self.attention_normalization and self.attention_backend == "fused":
-                raise ValueError("Normalized learned polynomial coefficients have no fused kernel; "
-                                 "use attention_backend blocked or auto")
             if self.attention_degree is None or self.attention_degree < 1:
                 raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
+        if self.attention_coefficient_parameterization not in ("direct", "sum_of_squares"):
+            raise ValueError(f"Unknown coefficient parameterization: {self.attention_coefficient_parameterization}")
+        if self.attention_coefficient_parameterization == "sum_of_squares":
+            if self.attention_coefficients != "learned":
+                raise ValueError("A sum-of-squares kernel parameterizes learned polynomial coefficients")
+            if self.attention_degree is None or self.attention_degree < 2 or self.attention_degree % 2:
+                raise ValueError("A sum-of-squares kernel requires an even attention_degree >= 2")
+            if not self.attention_normalization:
+                raise ValueError("A sum-of-squares kernel is implemented for row-normalized attention only")
         if self.qk_norm is None:
             self.qk_norm = self.attention_mechanism == "dot_product" and self.attention_degree != 0
         elif self.attention_degree == 0:

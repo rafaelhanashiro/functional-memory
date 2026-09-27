@@ -1,0 +1,29 @@
+{
+  "source_commit": "d7119bcdaa777f6dc6e29afe45fd66a4d8f062f3",
+  "home_cluster": "kennel",
+  "hostname": "kennel.csail.mit.edu",
+  "completed_utc": "2026-09-27T00:11:04.242905+00:00",
+  "frozen_execution_set_sha256": "ceeb6770186bae99bdcb6a883ac11d12b0161b752cb19596f3df493450917ffc",
+  "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -c scaffolds/transformer/pyproject.toml --import-mode=importlib -q -m 'not gpu' scaffolds/transformer/tests",
+  "tests": {
+    "tests": 732,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 13,
+    "passed": 719
+  },
+  "deselected": 357,
+  "seconds": 676.528,
+  "runtime": {
+    "JAX_PLATFORMS": "cpu"
+  },
+  "log": {
+    "path": "scaffolds/transformer/validation/logs/normalized-polynomial-cpu/pytest.out",
+    "sha256": "05b29740e766f4d9dcce0cb2f78264a2d4563d9bab2c88152267dcdff329c2f2"
+  },
+  "scope": "Complete non-GPU scaffold suite. Final subsequent source change affects only a GPU-marked replay fixture; CPU tests are unchanged.",
+  "skip_reasons": {
+    "requires_two_jax_devices": 8,
+    "requires_four_jax_devices": 5
+  }
+}

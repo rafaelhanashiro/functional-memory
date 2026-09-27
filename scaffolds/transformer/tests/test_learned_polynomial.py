@@ -164,7 +164,6 @@ def test_interpreted_fused_kernel_poisons_rows_with_nonfinite_kernels(monkeypatc
 
 
 @pytest.mark.parametrize("updates,error", [
-    ({"attention_normalization": True, "attention_backend": "fused"}, "no fused kernel"),
     ({"attention_degree": None}, "attention_degree >= 1"),
     ({"attention_degree": 0}, "attention_degree >= 1"),
     ({"quadratic_mode": "positive"}, "Unnormalized attention requires"),

@@ -55,7 +55,7 @@ Every learned family learns its coefficients per layer and head.
 | Family | Degrees | Meaning |
 | --- | --- | --- |
 | Normalized, learned | 1–4 | All `m + 1` coefficients learned from `1/r!`; signed kernel and row sum |
-| Normalized, learned nonnegative | 2, 4 | Kernel constrained nonnegative: the positive quadratic `0.5 (1 + (a s + b)^2)` or the sum of squares `q1^2 + q2^2`; odd degrees cannot be nonnegative on the real line |
+| Normalized, learned nonnegative | 2, 4 | The same normalized kernel written as a sum of squares `q1^2 + q2^2`, nonnegative by construction; odd degrees cannot be nonnegative on the real line |
 | Unnormalized, learned | 1–4 | All coefficients learned from `1/r!`; no row division |
 | Unnormalized, fixed Taylor | 1–4 | Fixed coefficients `1/r!`; no row division |
 
@@ -73,7 +73,7 @@ for QK-norm at the `d_K = 64` softmax).
 
 ### Polynomial kernels at d_K = 64
 
-16 trained runs: 12 complete and 4 numerical failures; 6 are legacy runs, drawn hollow with dashed connectors. Numerical failures appear in the strip below the axis at their degree, labeled with the failing update. The nonnegative family exists only for even degrees, which are the only degrees at which a polynomial can be nonnegative on the real line.
+17 trained runs: 13 complete and 4 numerical failures; 5 are legacy runs, drawn hollow with dashed connectors. Numerical failures appear in the strip below the axis at their degree, labeled with the failing update. The nonnegative family exists only for even degrees, which are the only degrees at which a polynomial can be nonnegative on the real line.
 
 ![Terminal perplexity against polynomial degree](figures/degree_chart.png)
 
@@ -98,19 +98,26 @@ The two old-policy `d_K = 64` softmax runs retired on 2026-09-26 ended at PPL 14
 
 ## Findings
 
-Under the current defaults, ten runs exist so far, all at `d_K = 64`: the two
-softmax references (QK-norm 14.4574, plain 14.6655); the learned unnormalized
-Taylor kernels at m = 1–4 (20.279, 17.599, 16.330, 16.384, from the
-[QK-norm learned Taylor sweep](../qk_norm_learned_taylor/README.md)), each better
-than the legacy fixed unnormalized kernel of the same degree, with degrees 3 and 4
-within 0.05 of each other; and the four normalized learned kernels, which all
-failed numerically (updates 27, 1,857, 318, and 1,456) once a kernel turned negative
-inside the bounded score range and a row sum crossed zero. The
-[nonnegative learned Taylor runs](../nonnegative_learned_taylor/README.md) at m = 2
-and 4 test whether constraining the kernel to be nonnegative removes that failure;
-until they conclude, the nonnegative family shows only the legacy positive quadratic
-(16.2125). Every other plotted value is a legacy run, so the comparisons below among
-them share one training setup.
+Under the current defaults, twelve runs exist so far, all at `d_K = 64`:
+
+- **Softmax references:** QK-norm 14.4574, plain 14.6655.
+- **Unnormalized learned Taylor kernels, m = 1–4:** 20.279, 17.599, 16.330, 16.384,
+  from the [QK-norm learned Taylor sweep](../qk_norm_learned_taylor/README.md). Each
+  is better than the legacy fixed unnormalized kernel of the same degree, and
+  degrees 3 and 4 are within 0.05 of each other.
+- **Normalized learned kernels, m = 1–4:** all failed numerically (updates 27, 1,857,
+  318, and 1,456) once a kernel turned negative inside the bounded score range and a
+  row sum crossed zero.
+- **Nonnegative learned kernels, m = 2 and 4:** the
+  [same normalized kernels written as a sum of squares](../nonnegative_learned_taylor/README.md)
+  trained without failure, reaching 16.176 and 14.742. The `m = 4` result is 0.28
+  above QK-norm softmax and the lowest in the chart. At this width only the heatmap's
+  legacy fixed normalized Taylor `m = 8` and `m = 16` are lower (14.678 and 14.706).
+  Both nonnegative kernels learned a touching root inside the score range: the zero
+  the signed kernels reached only by crossing it.
+
+Every other plotted value is a legacy run, so the comparisons below among them share
+one training setup.
 
 The fixed normalized grid shows that increasing degree narrows the softmax gap. At
 `d_K=8`, fixed `m=2` has PPL 20.5775, versus 16.8479 at `m=16` and 16.7053 for
@@ -129,11 +136,17 @@ The unnormalized exponential reference at `d_K=64` finishes at 17.4583; it does 
 divide by an attention row sum and is a different baseline from softmax.
 
 The source records also include a fixed normalized `m=0` run at `d_K=64`
-(PPL 47.0653), softmax runs at `d_K=2, 4, 256`, and the globally shared learned
-quadratic variants (positive 16.1890; unrestricted, failed at update 2,324). They
-remain in their [source](../key_dimension_taylor/README.md)
-[records](../learned_quadratic_attention/README.md) but lie outside these figures:
-the heatmap's declared width and degree range, and the chart's per-head coefficients.
+(PPL 47.0653), softmax runs at `d_K=2, 4, 256`, and the learned quadratic variants:
+
+- the per-head positive quadratic `0.5 (1 + (a s + b)^2)`, 16.2125, a legacy run
+  that the sum-of-squares `m = 2` run replaced in the chart;
+- the globally shared positive quadratic, 16.1890;
+- the globally shared unrestricted quadratic, which failed at update 2,324.
+
+They remain in their [source](../key_dimension_taylor/README.md)
+[records](../learned_quadratic_attention/README.md) but lie outside these figures.
+The heatmap has a declared width and degree range, and the chart shows only per-head
+coefficients under a single parameterization per family.
 
 ## Limits and reproduction
 

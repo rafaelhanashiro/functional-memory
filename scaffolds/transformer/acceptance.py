@@ -43,6 +43,7 @@ TEST_STAGES = (
 NO_TESTS_COLLECTED = 5
 RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHON_CLIENT_PREALLOCATE",
                 "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME")
+NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,16 @@ class AcceptanceSpec:
     """Environment the launcher exports for this experiment (for example XLA flags)."""
     pilot_steps: int = 20
     allocation_hours: int = 48
+
+
+def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu: bool) -> tuple[str, ...]:
+    """Include the resolved mechanism's required checks even if an adapter omits them."""
+    paths = list(spec.cpu_tests if cpu else spec.gpu_tests)
+    model = config["model"]
+    if (resolved_backend == "fused" and model.get("attention_mechanism", "dot_product") == "dot_product"
+            and model.get("attention_normalization", True) and model.get("attention_coefficients") == "learned"):
+        paths.append(NORMALIZED_POLYNOMIAL_TESTS)
+    return tuple(dict.fromkeys(paths))
 
 
 def write_json(path, value) -> None:
@@ -204,7 +215,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
     specs = attention_parameter_specs(config.model)
     control = replace(config, model=replace(
         config.model, attention_degree=None, attention_normalization=True, quadratic_mode="fixed",
-        attention_coefficients="fixed", qk_norm=False))
+        attention_coefficients="fixed", attention_coefficient_parameterization="direct", qk_norm=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
     added = {(spec.name,) for spec in specs}
     if set(actual) - set(expected) != added or set(expected) - set(actual):
@@ -245,13 +256,18 @@ def _worker(spec: AcceptanceSpec, args, experiment: dict) -> dict:
     if args.worker == "hardware":
         import jax
         from importlib.metadata import version
+        from scaffolds.transformer.attention.backends.selection import resolve_attention_backend
+
         devices = jax.local_devices()
         if (jax.default_backend() != "gpu" or len(devices) != args.gpu_count
                 or any(args.gpu_type.upper() not in d.device_kind.upper() for d in devices)):
             raise RuntimeError(f"Expected {args.gpu_count} {args.gpu_type} GPUs; got {devices}")
         packages = ("jax", "flax", "optax", "orbax-checkpoint")
+        config = load_config(args.config)
         return {"devices": [str(d) for d in devices], "device_kinds": [d.device_kind for d in devices],
-                "versions": {name: version(name) for name in packages}}
+                "versions": {name: version(name) for name in packages},
+                "attention_backend": resolve_attention_backend(
+                    config.model, dtype=config.train.dtype, sequence_length=config.data.sequence_length - 1)}
     if args.worker == "initialization":
         config = load_config(args.config)
         facts = initialization_facts(config)
@@ -286,7 +302,7 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             path = directory / f"{stage}.json"
             if passed(path, experiment):
                 continue
-            paths = spec.cpu_tests if cpu else spec.gpu_tests
+            paths = test_paths(spec, experiment["config"], resolved_backend=hardware["attention_backend"], cpu=cpu)
             if not paths:
                 record(path, experiment, tests_passed=0, note="no tests declared")
                 continue
