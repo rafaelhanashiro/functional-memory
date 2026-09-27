@@ -1,0 +1,233 @@
+"""Read-only probe of degree-2 Hermite attention before the first update.
+
+The first training batch is deterministic. Causal position zero depends only on
+its own token, so running the batch's first tokens through the initialized model
+reproduces those rows at every layer without allocating a full sequence. A
+longer prefix can be requested to inspect later rows; the default probes only
+position zero and cannot rule out a failure elsewhere in the sequence.
+
+This script writes analysis evidence under ignored logs and never changes a run
+record, checkpoint, recipe, or the frozen execution set.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+from dataclasses import replace
+from pathlib import Path
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+from flax import nnx
+
+from scaffolds.transformer.attention.backends.fused_normalized_polynomial import _forward
+from scaffolds.transformer.attention.positional import apply_rope
+from scaffolds.transformer.configs.loader import load_config
+from scaffolds.transformer.data.loaders import make_train_iterator
+from scaffolds.transformer.training.checkpointing import state_sha256
+from scaffolds.transformer.training.state import create_state
+
+
+def _host(value):
+    return np.asarray(jax.device_get(value))
+
+
+def _finite_float(value):
+    number = float(value)
+    return number if math.isfinite(number) else None
+
+
+def _project_qkv(layer, x, positions):
+    attention = layer.attention
+    h = layer.attention_norm(x)
+    shapes = (
+        (attention.num_heads, attention.qk_head_dim),
+        (attention.num_kv_heads, attention.qk_head_dim),
+        (attention.num_kv_heads, attention.value_head_dim),
+    )
+    projected = []
+    for projection, (heads, width) in zip(
+        (attention.q_proj, attention.k_proj, attention.v_proj), shapes, strict=True
+    ):
+        value = projection(h).astype(attention.dtype)
+        projected.append(value.reshape(x.shape[0], x.shape[1], heads, width))
+    q, k, v = projected
+    q = apply_rope(q, positions, attention.rope_theta).astype(attention.dtype)
+    k = apply_rope(k, positions, attention.rope_theta).astype(attention.dtype)
+    return q, k, v
+
+
+def _score_summary(q, k, coefficients):
+    # For short prefixes this independently locates scores near the double root.
+    # Fused normalizers below are the decisive implementation measurement.
+    scores = jnp.einsum(
+        "bqhd,bkhd->bhqk", q, k, preferred_element_type=jnp.float32
+    ) * (1.0 / math.sqrt(q.shape[-1]))
+    c0, c1, c2 = coefficients
+    horner = (c2 * scores + c1) * scores + c0
+    factored = (jnp.float32(math.exp(0.5) / 2.0) * (scores + 1.0)) * (scores + 1.0)
+    causal = np.tri(scores.shape[-2], scores.shape[-1], dtype=bool)[None, None]
+    scores_h, horner_h, factored_h = map(_host, (scores, horner, factored))
+    distance = np.where(causal, np.abs(scores_h + 1.0), np.inf)
+    nearest = np.unravel_index(int(np.argmin(distance)), distance.shape)
+    values = horner_h[np.broadcast_to(causal, horner_h.shape)]
+    factor_values = factored_h[np.broadcast_to(causal, factored_h.shape)]
+    return {
+        "nearest_root": {
+            "batch_in_chunk": int(nearest[0]), "head": int(nearest[1]),
+            "query": int(nearest[2]), "key": int(nearest[3]),
+            "score": _finite_float(scores_h[nearest]),
+            "distance_to_minus_one": _finite_float(distance[nearest]),
+            "horner": _finite_float(horner_h[nearest]),
+            "factored_square": _finite_float(factored_h[nearest]),
+        },
+        "horner_zero_count": int(np.count_nonzero(values == 0)),
+        "horner_negative_count": int(np.count_nonzero(values < 0)),
+        "factored_zero_count": int(np.count_nonzero(factor_values == 0)),
+        "minimum_absolute_horner": _finite_float(np.min(np.abs(values))),
+        "minimum_absolute_factored": _finite_float(np.min(np.abs(factor_values))),
+    }
+
+
+def _probe_chunk(model, tokens, coefficients):
+    x = model.token_embedding(jnp.asarray(tokens, dtype=jnp.int32))
+    x = model.dropout(x, deterministic=True)
+    positions = jnp.arange(tokens.shape[1])
+    parameters = jnp.broadcast_to(
+        jnp.asarray(coefficients, dtype=jnp.float32),
+        (model.config.num_heads, len(coefficients)),
+    )
+    layers = []
+    for layer_index, layer_name in enumerate(model.layer_names):
+        layer = getattr(model, layer_name)
+        q, k, v = _project_qkv(layer, x, positions)
+        score_report = _score_summary(q, k, coefficients)
+        output, normalizer = _forward(
+            q, k, v, parameters, parameterization="direct", interpret=False
+        )
+        norms = _host(normalizer)
+        finite = np.isfinite(norms)
+        invalid_indices = np.argwhere(~finite)
+        report = {
+            "layer": layer_index,
+            **score_report,
+            "fused_row_count": int(norms.size),
+            "fused_nonfinite_normalizer_count": int(np.count_nonzero(~finite)),
+            "fused_zero_normalizer_count": int(np.count_nonzero(norms == 0)),
+            "fused_negative_normalizer_count": int(np.count_nonzero(norms < 0)),
+            "fused_minimum_absolute_finite_normalizer": (
+                _finite_float(np.min(np.abs(norms[finite]))) if np.any(finite) else None
+            ),
+            "fused_nonfinite_output_count": int(np.count_nonzero(~np.isfinite(_host(output)))),
+        }
+        if len(invalid_indices):
+            batch_index, query, head = map(int, invalid_indices[0])
+            report["first_invalid_row"] = {
+                "batch_in_chunk": batch_index, "query": query, "head": head,
+            }
+        layers.append(report)
+        if len(invalid_indices) or report["fused_nonfinite_output_count"]:
+            break
+        h = layer.attention.o_proj(
+            output.astype(v.dtype).reshape(x.shape[0], x.shape[1], -1)
+        )
+        x = x + h
+        x = x + layer.feed_forward(layer.ffn_norm(x))
+    return layers
+
+
+def probe(config_path: Path, *, batch_limit: int, prefix_length: int, chunk_size: int):
+    if jax.default_backend() != "gpu":
+        raise RuntimeError("This probe requires a GPU allocation and the fused GPU backend")
+    config = load_config(config_path)
+    model_cfg = config.model
+    if not (
+        model_cfg.attention_degree == 2
+        and model_cfg.attention_normalization
+        and model_cfg.attention_backend == "fused"
+        and model_cfg.attention_fixed_coefficients is not None
+    ):
+        raise ValueError("Probe requires the normalized, fixed degree-2 fused recipe")
+    if not 1 <= batch_limit <= config.data.batch_size:
+        raise ValueError("batch-limit must be between 1 and the global batch size")
+    if not 1 <= prefix_length <= min(128, model_cfg.max_seq_len):
+        raise ValueError("prefix-length must be between 1 and 128")
+    if chunk_size < 1:
+        raise ValueError("chunk-size must be positive")
+
+    first_batch = next(make_train_iterator(replace(config.data, batch_size=config.data.batch_size)))
+    rng = jax.random.PRNGKey(config.train.seed)
+    state = create_state(config, rng)
+    model = nnx.merge(state.graphdef, state.params)
+    coefficients = tuple(float(c) for c in model_cfg.attention_fixed_coefficients)
+    parameter_sha256 = state_sha256(state.params)
+    acceptance_files = sorted(
+        (config_path.resolve().parents[1] / "logs" / config_path.stem / "acceptance")
+        .glob("*/initialization-result.json")
+    )
+    acceptance_hashes = [
+        json.loads(path.read_text())["parameter_sha256"] for path in acceptance_files
+    ]
+    if not acceptance_hashes:
+        raise FileNotFoundError("No acceptance initialization hash found for this run")
+    if any(expected != parameter_sha256 for expected in acceptance_hashes):
+        raise RuntimeError("Initial model parameter hash differs from recorded acceptance initialization")
+    report = {
+        "format": "hermite-degree-2-initial-normalizer-probe",
+        "config": str(config_path.resolve()),
+        "config_sha256": hashlib.sha256(config_path.read_bytes()).hexdigest(),
+        "seed": config.train.seed,
+        "backend": model_cfg.attention_backend,
+        "device": jax.devices()[0].device_kind,
+        "global_batch_size": config.data.batch_size,
+        "probed_sequences": batch_limit,
+        "prefix_length": prefix_length,
+        "first_batch_sha256": hashlib.sha256(first_batch.astype("<i4").tobytes()).hexdigest(),
+        "coefficients": list(coefficients),
+        "parameter_sha256": parameter_sha256,
+        "acceptance_initialization_files": [str(path) for path in acceptance_files],
+        "acceptance_parameter_sha256_match": True,
+        "chunks": [],
+        "limitation": (
+            "Only the specified causal prefix was probed; finite results cannot rule out "
+            "a failure at a later sequence position or during backward/update arithmetic."
+        ),
+    }
+    for start in range(0, batch_limit, chunk_size):
+        stop = min(start + chunk_size, batch_limit)
+        layers = _probe_chunk(model, first_batch[start:stop, :prefix_length], coefficients)
+        report["chunks"].append({"sequence_start": start, "sequence_stop": stop, "layers": layers})
+        if (len(layers) != model_cfg.num_layers
+                or layers[-1]["fused_nonfinite_normalizer_count"]
+                or layers[-1]["fused_nonfinite_output_count"]):
+            report["first_invalid_chunk"] = [start, stop]
+            break
+    report["all_probed_rows_finite"] = "first_invalid_chunk" not in report
+    return report
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("config", type=Path)
+    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--batch-limit", type=int, default=256)
+    parser.add_argument("--prefix-length", type=int, default=1)
+    parser.add_argument("--chunk-size", type=int, default=16)
+    args = parser.parse_args()
+    result = probe(args.config, batch_limit=args.batch_limit,
+                   prefix_length=args.prefix_length, chunk_size=args.chunk_size)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    print(json.dumps({
+        "output": str(args.output),
+        "all_probed_rows_finite": result["all_probed_rows_finite"],
+        "first_invalid_chunk": result.get("first_invalid_chunk"),
+    }, sort_keys=True), flush=True)
+
+
+if __name__ == "__main__":
+    main()
