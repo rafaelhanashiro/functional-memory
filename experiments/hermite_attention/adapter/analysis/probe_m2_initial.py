@@ -128,6 +128,55 @@ def _score_summary(q, k, coefficients):
     }
 
 
+def _skipped_score_summary():
+    # Retain the short-prefix report's fields without allocating B*H*T*T
+    # scores for a full training sequence.
+    return {
+        "nearest_root": None,
+        "horner_zero_count": None,
+        "horner_negative_count": None,
+        "factored_zero_count": None,
+        "minimum_absolute_horner": None,
+        "minimum_absolute_factored": None,
+        "score_summary_scope": "skipped_full_matrix",
+    }
+
+
+def _first_invalid_row_scores(q, k, coefficients, batch_index, query, head):
+    """Inspect at most one causal row with an independent JAX dot/Horner.
+
+    This is an O(sequence length) reference calculation. Its reduction order
+    can differ from the fused Pallas tile kernel, so it cannot alone establish
+    which fused arithmetic condition poisoned a row.
+    """
+    scores = jnp.einsum(
+        "d,kd->k", q[batch_index, query, head], k[batch_index, :query + 1, head],
+        preferred_element_type=jnp.float32,
+    ) * (1.0 / math.sqrt(q.shape[-1]))
+    c0, c1, c2 = (jnp.float32(value) for value in coefficients)
+    horner = (c2 * scores + c1) * scores + c0
+    factored = (jnp.float32(math.exp(0.5) / 2.0) * (scores + 1.0)) * (scores + 1.0)
+    scores_h, horner_h, factored_h = map(_host, (scores, horner, factored))
+    nearest = int(np.argmin(np.abs(scores_h + 1.0)))
+    return {
+        "scope": "one_invalid_causal_row_independent_jax_reference",
+        "query": query,
+        "head": head,
+        "key_count": query + 1,
+        "nearest_root_key": nearest,
+        "nearest_root_score": _finite_float(scores_h[nearest]),
+        "nearest_root_distance": _finite_float(abs(scores_h[nearest] + 1.0)),
+        "nearest_root_horner": _finite_float(horner_h[nearest]),
+        "nearest_root_factored_square": _finite_float(factored_h[nearest]),
+        "horner_zero_count": int(np.count_nonzero(horner_h == 0)),
+        "horner_negative_count": int(np.count_nonzero(horner_h < 0)),
+        "horner_nonfinite_count": int(np.count_nonzero(~np.isfinite(horner_h))),
+        "horner_sum_fp32": _finite_float(np.sum(horner_h, dtype=np.float32)),
+        "factored_sum_fp32": _finite_float(np.sum(factored_h, dtype=np.float32)),
+        "note": "JAX dot and reduction may differ from the fused Pallas tile arithmetic.",
+    }
+
+
 def _probe_chunk(model, tokens, coefficients):
     x = model.token_embedding(jnp.asarray(tokens, dtype=jnp.int32))
     x = model.dropout(x, deterministic=True)
@@ -140,13 +189,23 @@ def _probe_chunk(model, tokens, coefficients):
     for layer_index, layer_name in enumerate(model.layer_names):
         layer = getattr(model, layer_name)
         q, k, v = _project_qkv(layer, x, positions)
-        score_report = _score_summary(q, k, coefficients)
+        score_report = (
+            _score_summary(q, k, coefficients) if tokens.shape[1] <= 128
+            else _skipped_score_summary()
+        )
         output, normalizer = _forward(
             q, k, v, parameters, parameterization="direct", interpret=False
         )
         norms = _host(normalizer)
         finite = np.isfinite(norms)
-        invalid_indices = np.argwhere(~finite)
+        # Transfer only an output count and one bit per row, not the full
+        # B*T*H*D output tensor. The fused kernel poisons both output and
+        # normalizer when it detects an invalid row.
+        output_nonfinite = ~jnp.isfinite(output)
+        output_nonfinite_count, output_nonfinite_rows = jax.device_get((
+            jnp.count_nonzero(output_nonfinite), jnp.any(output_nonfinite, axis=-1),
+        ))
+        invalid_indices = np.argwhere(~finite | np.asarray(output_nonfinite_rows))
         report = {
             "layer": layer_index,
             **score_report,
@@ -157,13 +216,16 @@ def _probe_chunk(model, tokens, coefficients):
             "fused_minimum_absolute_finite_normalizer": (
                 _finite_float(np.min(np.abs(norms[finite]))) if np.any(finite) else None
             ),
-            "fused_nonfinite_output_count": int(np.count_nonzero(~np.isfinite(_host(output)))),
+            "fused_nonfinite_output_count": int(output_nonfinite_count),
         }
         if len(invalid_indices):
             batch_index, query, head = map(int, invalid_indices[0])
             report["first_invalid_row"] = {
                 "batch_in_chunk": batch_index, "query": query, "head": head,
             }
+            report["first_invalid_row_scores"] = _first_invalid_row_scores(
+                q, k, coefficients, batch_index, query, head
+            )
         layers.append(report)
         if len(invalid_indices) or report["fused_nonfinite_output_count"]:
             break
@@ -189,8 +251,8 @@ def probe(config_path: Path, *, batch_limit: int, prefix_length: int, chunk_size
         raise ValueError("Probe requires the normalized, fixed degree-2 fused recipe")
     if not 1 <= batch_limit <= config.data.batch_size:
         raise ValueError("batch-limit must be between 1 and the global batch size")
-    if not 1 <= prefix_length <= min(128, model_cfg.max_seq_len):
-        raise ValueError("prefix-length must be between 1 and 128")
+    if not 1 <= prefix_length <= model_cfg.max_seq_len:
+        raise ValueError(f"prefix-length must be between 1 and {model_cfg.max_seq_len}")
     if chunk_size < 1:
         raise ValueError("chunk-size must be positive")
 
