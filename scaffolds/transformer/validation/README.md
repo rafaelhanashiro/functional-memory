@@ -348,6 +348,38 @@ a global microbatch of 32, and four accumulation steps (batch 128), preserving t
 production per-device microbatch of 16. Its synthetic tokens are already on the
 devices. Memory numbers are compiler buffer estimates, not allocator peaks.
 
+## Fixed kernels with canonical QK normalization
+
+On 2026-09-27, source `84dedd777c2f1def16ef9ef74ea11ec6c94cdda9` passed
+**85 compiled GPU tests on H100** (`dogo`, job 203015) and **85 on B300**
+(`akita`, job 203016), with no failures or skips. The selection covers static
+Hermite monomial coefficients, normalized degree-two square factors, fixed
+unnormalized Taylor controls, the normalized polynomial kernels, and learned
+per-head QK scales. Twelve BF16 cases at context 2048 and `d_K=d_V=64` compare
+fused outputs and Q/K/V/log-scale gradients against the blocked implementation.
+The CPU composition tests also compare against an independent FP64 Hermite
+recurrence and verify backbone initialization, optimizer parameter ownership,
+and checkpoint resume.
+
+These are software checks, not training outcomes. Each scientific allocation
+still runs its own full-recipe pilot and resume gate. The signed and exact-zero
+normalizer policies are unchanged. Tests use seeded synthetic inputs; no
+training checkpoints or external datasets are retained by these kernel checks.
+
+The [manifest](provenance/manifest.json) records both runs, source identity,
+hardware, test-result hashes, and retained log hashes. Execute
+`validation/qualify_hermite_qk.sbatch` from a checkout of the qualified source
+with its own locked environment; it also selects the experiment's QK composition
+tests at that source. Initial submissions used:
+
+```bash
+sbatch --gres=gpu:h100:1 --nodelist=dogo \
+  --output=scaffolds/transformer/validation/logs/hermite-qk-h100-%j.log \
+  scaffolds/transformer/validation/qualify_hermite_qk.sbatch \
+  84dedd777c2f1def16ef9ef74ea11ec6c94cdda9 H100
+# For B300, use --gres=gpu:b300:1 --nodelist=akita and pass B300.
+```
+
 ## Reproduction
 
 From a worktree with the scaffold environment synced

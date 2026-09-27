@@ -1,0 +1,19 @@
+{
+  "completed_utc": "2026-09-27T23:14:36.916655+00:00",
+  "dependency_lock_sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559",
+  "device_kinds": [
+    "NVIDIA H100 80GB HBM3"
+  ],
+  "exit_code": 0,
+  "gpu_type": "H100",
+  "home_cluster": "kennel",
+  "junit": {
+    "path": "scaffolds/transformer/validation/logs/hermite-qk-h100-203015.xml",
+    "sha256": "148be7e1b4e123570f41c1e8f6f74e432162e16770dce7f0b106dbdbacdca388"
+  },
+  "node": "dogo",
+  "slurm_job_id": "203015",
+  "source_commit": "84dedd777c2f1def16ef9ef74ea11ec6c94cdda9",
+  "status": "passed",
+  "tests_passed": 85
+}
