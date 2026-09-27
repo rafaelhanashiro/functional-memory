@@ -63,15 +63,15 @@ pre_launch_validation:
     H100: 26 passed (slurm 201994, dogo)
     B300: 26 passed (slurm 201993, akita)
 artifact_locations:
-  runs: experiments/learned_unnormalized_taylor/runs/<run> (committed)
-  checkpoints: experiments/learned_unnormalized_taylor/checkpoints/<run>/19074 (ignored, on Kennel under
+  runs: experiments/learned_unnormalized_taylor/runs/<run_id> (committed)
+  checkpoints: experiments/learned_unnormalized_taylor/runs/<run_id>/checkpoints/<step> (ignored, on Kennel under
     artifact_root)
-  logs: experiments/learned_unnormalized_taylor/logs/<run>/slurm-<job>.out (ignored, on Kennel under artifact_root)
+  logs: experiments/learned_unnormalized_taylor/runs/<run_id>/training.log (ignored, on Kennel under artifact_root)
   verified: every checkpoint file and log hashed at these locations; see each run's selected_checkpoint
     and log
 summary:
-  path: experiments/learned_unnormalized_taylor/summary.csv
-  generator: experiments.learned_unnormalized_taylor.adapter.analysis.report
+  path: results/learned_unnormalized_taylor/summary.csv
+  generator: results.learned_unnormalized_taylor.report
 record_layout_version: 1
 run_ids:
 - r004b21fc9a41

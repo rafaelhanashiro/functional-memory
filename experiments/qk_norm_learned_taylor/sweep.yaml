@@ -159,15 +159,15 @@ pre_launch_validation:
     the softmax-backbone initialization check, a 20-update full-recipe pilot on the recipe''s explicit
     backend, and an exact fresh-process resume.'
 artifact_locations:
-  runs: experiments/qk_norm_learned_taylor/runs/<run> (committed)
-  checkpoints: experiments/qk_norm_learned_taylor/checkpoints/<run>/19074 for the completed runs (ignored,
+  runs: experiments/qk_norm_learned_taylor/runs/<run_id> (committed)
+  checkpoints: experiments/qk_norm_learned_taylor/runs/<run_id>/checkpoints/<step> for the completed runs (ignored,
     on Kennel under artifact_root); none for the failed runs
-  logs: experiments/qk_norm_learned_taylor/logs/<run>/slurm-<job>.out (ignored, on Kennel under artifact_root)
+  logs: experiments/qk_norm_learned_taylor/runs/<run_id>/training.log (ignored, on Kennel under artifact_root)
   verified: checkpoint files and logs hashed at these locations; see each run's selected_checkpoint, failure,
     and log
 summary:
-  path: experiments/qk_norm_learned_taylor/summary.csv
-  generator: experiments.qk_norm_learned_taylor.adapter.analysis.report
+  path: results/qk_norm_learned_taylor/summary.csv
+  generator: results.qk_norm_learned_taylor.report
 record_layout_version: 1
 run_ids:
 - r13c144b8fd17

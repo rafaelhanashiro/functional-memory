@@ -4,8 +4,29 @@ import json
 import pytest
 
 from results.state_rank import record
-from scaffolds.records import create_run
+from scaffolds.records import create_run, load_study, run_directory
 import yaml
+
+
+def test_committed_selection_pins_current_run_records():
+    """Provenance edits must update the selection without loading numerical archives."""
+    selection = yaml.safe_load((record.RESULTS / "selection.yaml").read_text())
+    entries = selection["runs"]
+    pinned = [entry["run_id"] for entry in entries]
+    selected = set(selection["collections"].values())
+    for comparison in selection["comparisons"].values():
+        selected.add(comparison["baseline_run_id"])
+        selected.update(comparison["condition_run_ids"].values())
+    assert len(pinned) == len(set(pinned))
+    assert set(pinned) == selected
+    assert selected <= set(load_study(record.RECORD)["run_ids"])
+    for entry in entries:
+        run = run_directory(record.RECORD, entry["run_id"])
+        canonical = json.loads((run / "record.json").read_text())
+        assert entry["record"] == (run / "record.json").relative_to(record.REPOSITORY_ROOT).as_posix()
+        assert entry["record_sha256"] == record.sha256(run / "record.json"), entry["run_id"]
+        assert entry["config_sha256"] == canonical["config"]["sha256"] == record.sha256(run / "config.yaml")
+        assert entry["inputs"] == canonical["artifacts"]
 
 
 def write_csv(path, rows):

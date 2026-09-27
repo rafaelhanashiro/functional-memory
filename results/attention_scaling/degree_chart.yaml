@@ -168,19 +168,19 @@ source_manifests:
     sha256: 640fdfd4e39d6f6101d9e1134df13c5850fec1459caa52a45ea312f7bccb1151
   unnormalized_taylor_attention:
     path: experiments/unnormalized_taylor_attention/sweep.yaml
-    sha256: 8867d26faadfbe0fd99b6bf924a1e8e9cf3038a55535b407b8605a55a6554d2f
+    sha256: ffa3e5a01234d1ddf6441d41508afed9bd2d1f5143473d2d7b16d17d11c43975
   unnormalized_attention:
     path: experiments/unnormalized_attention/sweep.yaml
-    sha256: 4443273be750b6b5842b72ced5e091556c4a5e963e30b79dddae81920a2705b1
+    sha256: 75b71052011d4c8055b11780745a3ff1404087586dd0923cec8736b8e8f1d292
   qk_norm_attention:
     path: experiments/qk_norm_attention/sweep.yaml
-    sha256: 139017760f5b88a9d22ca39a9400b38767324597fa3ee93fa755d0c5abd65b16
+    sha256: b4d831b531bcc01485cdd8a6f13b778d74825085895dc9be915faf9a08edb9a3
   qk_norm_learned_taylor:
     path: experiments/qk_norm_learned_taylor/sweep.yaml
-    sha256: 457abfd99f0fce13caee5ac5c1c1f97dfd87ebb3a08a3e037ee4769d68a7fda7
+    sha256: ff014919d7dd8d8c4f207f3f7b5a46a3e2b50200549b9858745d1633240be8d0
   nonnegative_learned_taylor:
     path: experiments/nonnegative_learned_taylor/sweep.yaml
-    sha256: 2f0f0a7dade224911f47961b15b1c589e75876d74ae39116cf28ba5474e7034e
+    sha256: f38824dfff50acf3f91db70f4ab298c87df92df841270a6275653b8c933d4619
 metric: terminal_validation_perplexity
 source_records:
   unnormalized_taylor_attention/reb79b9201e5a:

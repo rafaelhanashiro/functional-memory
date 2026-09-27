@@ -65,9 +65,9 @@ pre_launch_validation:
     the softmax-backbone initialization check, a 20-update full-recipe pilot on the fused (cuDNN) backend,
     and an exact fresh-process resume.'
 artifact_locations:
-  runs: experiments/qk_norm_attention/runs/<run> (committed)
-  checkpoints: experiments/qk_norm_attention/checkpoints/<run>/19074 (ignored, on Kennel under artifact_root)
-  logs: experiments/qk_norm_attention/logs/<run>/slurm-<job>.out (ignored, on Kennel under artifact_root)
+  runs: experiments/qk_norm_attention/runs/<run_id> (committed)
+  checkpoints: experiments/qk_norm_attention/runs/<run_id>/checkpoints/<step> (ignored, on Kennel under artifact_root)
+  logs: experiments/qk_norm_attention/runs/<run_id>/training.log (ignored, on Kennel under artifact_root)
   verified: checkpoint files and the log hashed at these locations; see the run's selected_checkpoint
     and log
 superseded_launch:
@@ -77,8 +77,8 @@ superseded_launch:
   difference: adapter/execution/acceptance.py listed scaffolds/transformer/tests/test_softmax_backends.py
     among the GPU tests; the relaunch removes it (recipe, scaffold code, lock, and data unchanged)
 summary:
-  path: experiments/qk_norm_attention/summary.csv
-  generator: experiments.qk_norm_attention.adapter.analysis.report
+  path: results/qk_norm_attention/summary.csv
+  generator: results.qk_norm_attention.report
 record_layout_version: 1
 run_ids:
 - r1feece425074

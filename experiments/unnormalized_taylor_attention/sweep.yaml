@@ -14,7 +14,7 @@ scientific_change: Causal p_m(QK^T / sqrt(d_K)) V with fixed unshifted Taylor tr
 recipe:
   base:
     path: experiments/unnormalized_attention/sweep.yaml
-    sha256: 4443273be750b6b5842b72ced5e091556c4a5e963e30b79dddae81920a2705b1
+    sha256: 75b71052011d4c8055b11780745a3ff1404087586dd0923cec8736b8e8f1d292
     recorded_sha256: 528b620b9ede5afc5a9326d97622905b10df6916a8bc0ddf8d5a9afae2bb4ef8
   change: model.attention_degree = m; output locations only otherwise
   parameter_count: 199906304
@@ -78,7 +78,7 @@ data_manifests:
     path: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
     sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
 summary:
-  path: experiments/unnormalized_taylor_attention/summary.csv
+  path: results/unnormalized_taylor_attention/summary.csv
   sha256: 06387bd21af934b67770c326399c89ec9e713b109699326f32ad34c077eb0d61
 execution_evidence:
 - name: validation/200m-m001-seed0/cpu-tests

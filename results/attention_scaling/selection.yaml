@@ -49,10 +49,10 @@ source_manifests:
     sha256: f63138305fa5e3ec07d8b19408df5c3bc0377d2041c0f8a9434ddcdb029720a4
   gla_key_dimension:
     path: experiments/gla_key_dimension/sweep.yaml
-    sha256: ab373dd531499b6238e2bd21363627c41e5e0993c1f4b41a4da14bf09b529fc5
+    sha256: b61aebddc0cc77307ccfccb4087bd68bb17cdf89f6412b8a107db02c3f53105c
   qk_norm_attention:
     path: experiments/qk_norm_attention/sweep.yaml
-    sha256: 139017760f5b88a9d22ca39a9400b38767324597fa3ee93fa755d0c5abd65b16
+    sha256: b4d831b531bcc01485cdd8a6f13b778d74825085895dc9be915faf9a08edb9a3
 cells:
 - panel: normalized_fixed
   column: m2

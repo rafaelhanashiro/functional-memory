@@ -191,27 +191,27 @@
     },
     "gla_key_dimension": {
       "path": "experiments/gla_key_dimension/sweep.yaml",
-      "sha256": "ab373dd531499b6238e2bd21363627c41e5e0993c1f4b41a4da14bf09b529fc5"
+      "sha256": "b61aebddc0cc77307ccfccb4087bd68bb17cdf89f6412b8a107db02c3f53105c"
     },
     "qk_norm_attention": {
       "path": "experiments/qk_norm_attention/sweep.yaml",
-      "sha256": "139017760f5b88a9d22ca39a9400b38767324597fa3ee93fa755d0c5abd65b16"
+      "sha256": "b4d831b531bcc01485cdd8a6f13b778d74825085895dc9be915faf9a08edb9a3"
     },
     "unnormalized_taylor_attention": {
       "path": "experiments/unnormalized_taylor_attention/sweep.yaml",
-      "sha256": "8867d26faadfbe0fd99b6bf924a1e8e9cf3038a55535b407b8605a55a6554d2f"
+      "sha256": "ffa3e5a01234d1ddf6441d41508afed9bd2d1f5143473d2d7b16d17d11c43975"
     },
     "unnormalized_attention": {
       "path": "experiments/unnormalized_attention/sweep.yaml",
-      "sha256": "4443273be750b6b5842b72ced5e091556c4a5e963e30b79dddae81920a2705b1"
+      "sha256": "75b71052011d4c8055b11780745a3ff1404087586dd0923cec8736b8e8f1d292"
     },
     "qk_norm_learned_taylor": {
       "path": "experiments/qk_norm_learned_taylor/sweep.yaml",
-      "sha256": "457abfd99f0fce13caee5ac5c1c1f97dfd87ebb3a08a3e037ee4769d68a7fda7"
+      "sha256": "ff014919d7dd8d8c4f207f3f7b5a46a3e2b50200549b9858745d1633240be8d0"
     },
     "nonnegative_learned_taylor": {
       "path": "experiments/nonnegative_learned_taylor/sweep.yaml",
-      "sha256": "2f0f0a7dade224911f47961b15b1c589e75876d74ae39116cf28ba5474e7034e"
+      "sha256": "f38824dfff50acf3f91db70f4ab298c87df92df841270a6275653b8c933d4619"
     }
   },
   "source_records": {
@@ -1887,11 +1887,11 @@
   "analysis": {
     "config": {
       "path": "results/attention_scaling/selection.yaml",
-      "sha256": "e22350ca5f579d54caeb296b35ce2758cd5d4fa4d87fb6b63634e76984e1a782"
+      "sha256": "cf98ef9f4acf828b9875454c2f317ac8bc84b65291e8e87caf1ee6aa8bd27157"
     },
     "chart_config": {
       "path": "results/attention_scaling/degree_chart.yaml",
-      "sha256": "19b82a41ee40ecf8efc0ab499b5d5a6a7a801e80529e511915841bfa4cfd4eb9"
+      "sha256": "a70df0cb945cbda5746150ce052a9fa31b55d576f49cb5b0581291aa7f98fd50"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",

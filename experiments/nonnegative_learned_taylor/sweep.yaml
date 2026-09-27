@@ -74,16 +74,15 @@ execution_note: m=4 runs from the original checkout (worktrees/nonnegative_learn
   set cannot change while m=4 runs. The top-level launch fields describe the original launch; each run's
   execution fields are authoritative.
 artifact_locations:
-  runs: experiments/nonnegative_learned_taylor/runs/<run> (committed)
-  checkpoints: experiments/nonnegative_learned_taylor/checkpoints/<run>/19074 (ignored, on Kennel under
+  runs: experiments/nonnegative_learned_taylor/runs/<run_id> (committed)
+  checkpoints: experiments/nonnegative_learned_taylor/runs/<run_id>/checkpoints/<step> (ignored, on Kennel under
     artifact_root)
-  logs: experiments/nonnegative_learned_taylor/logs/<run>/slurm-<job>.out with acceptance/, submissions/,
-    wandb/ (ignored, on Kennel under artifact_root)
+  logs: experiments/nonnegative_learned_taylor/runs/<run_id>/training.log (ignored, on Kennel under artifact_root)
   verified: checkpoint trees and logs hashed before and after moving from the execution worktrees into
     the primary checkout on 2026-09-27; identical; see each run's selected_checkpoint and log
 summary:
-  path: experiments/nonnegative_learned_taylor/summary.csv
-  generator: experiments.nonnegative_learned_taylor.adapter.analysis.report
+  path: results/nonnegative_learned_taylor/summary.csv
+  generator: results.nonnegative_learned_taylor.report
 record_layout_version: 1
 run_ids:
 - rdbd4607d5af9

@@ -43,8 +43,11 @@ PY
 )"
 finish_record() {
   local result=$?
+  local finalizer_result=0
   trap - EXIT
-  "$PYTHON" -m scaffolds.launch.finalize --run "$RUN_ROOT" --exit-code "$result"
+  "$PYTHON" -m scaffolds.launch.finalize --run "$RUN_ROOT" --exit-code "$result" || finalizer_result=$?
+  # Preserve the worker's failure even if recording it also fails.
+  if (( result == 0 )); then result=$finalizer_result; fi
   exit "$result"
 }
 trap finish_record EXIT

@@ -4,7 +4,7 @@ status: complete
 home_cluster: kennel
 artifact_root: /data/cl/u/rafah/home/projects/functional-memory
 scaffold: scaffolds/transformer
-study_adapter: experiments/gla_key_dimension/adapter
+study_adapter: experiments/gla_key_dimension
 documentation: experiments/gla_key_dimension/README.md
 key_dimensions:
 - 8
@@ -27,8 +27,8 @@ implementation_sources:
   path: scaffolds/transformer/attention/backends/gla_sources.json
   sha256: 4e709fc4855989b02b3f8a0cf113d14358d2d50d7b72d33647dbca4fca9f58c9
 retention:
-  checkpoints: validation-best checkpoint per completed run under experiments/gla_key_dimension/checkpoints/<run>/<step>/
-  logs: one successful Slurm log per run under experiments/gla_key_dimension/logs/<run>/slurm-<job_id>.out
+  checkpoints: validation-best checkpoint per completed run under experiments/gla_key_dimension/runs/<run_id>/checkpoints/<step>/
+  logs: one successful Slurm log per run under experiments/gla_key_dimension/runs/<run_id>/training.log
 execution_policy:
   hardware: "4\xD7B300 (akita) or 4\xD7H100 (dogo, mastiff) per run in the sweep partition, one Python\
     \ process, global batch 256 as 4 accumulation steps of 64; acceptance keyed to the allocated type"
