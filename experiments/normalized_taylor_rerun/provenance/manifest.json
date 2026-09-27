@@ -676,7 +676,7 @@
       "attention_degree": 8,
       "seed": 0,
       "home_cluster": "kennel",
-      "status": "submitted",
+      "status": "completed",
       "config": {
         "path": "experiments/normalized_taylor_rerun/configs/200m-m008-seed0.yaml",
         "sha256": "908d5c3ba60fe71f1738895b12aaea6923fb717a0398cc05614f5eddc9cc7f4b"
@@ -728,6 +728,14 @@
           "start": "2026-09-27T03:14:54-04:00",
           "end": "2026-09-27T03:15:18-04:00",
           "outcome": "preempted within 24 s by a debug-partition job; requeued"
+        },
+        {
+          "slurm_job_id": 202618,
+          "node": "dogo",
+          "partition": "long",
+          "start": "2026-09-27T07:08:06-04:00",
+          "end": "2026-09-27T10:33:45-04:00",
+          "outcome": "passed acceptance and completed 19,074 updates from initialization"
         }
       ],
       "slurm_attempts": {
@@ -741,6 +749,13 @@
             "node": "dogo"
           }
         ]
+      },
+      "best_validation": {
+        "selection_rule": "lowest_validation_nll",
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.6739954692976817,
+        "validation_perplexity": 14.497779058238134
       }
     },
     {
