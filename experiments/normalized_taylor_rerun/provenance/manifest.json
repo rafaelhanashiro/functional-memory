@@ -124,6 +124,12 @@
           "partition": "long",
           "dependency": "after:202638",
           "reason": "starts only after the requeued nonnegative m=2 (202638) resumes, instead of taking its slot again"
+        },
+        {
+          "time": "2026-09-27T03:18-04:00",
+          "partition": "long",
+          "exclude_added": "dogo",
+          "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends"
         }
       ],
       "attempts": [
@@ -313,6 +319,46 @@
           "time": "2026-09-27T01:57-04:00",
           "partition": "long",
           "reason": "the nonnegative learned Taylor runs concluded, so this user's long-partition jobs fell to zero; two sweep reruns returned to long, keeping three rerun jobs (12 GPUs) there"
+        },
+        {
+          "time": "2026-09-27T03:18-04:00",
+          "partition": "long",
+          "exclude_added": "dogo",
+          "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends"
+        }
+      ],
+      "attempts": [
+        {
+          "slurm_job_id": 202617,
+          "node": "dogo",
+          "partition": "long",
+          "start": "2026-09-27T02:58:53-04:00",
+          "end": "2026-09-27T03:00:49-04:00",
+          "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued"
+        },
+        {
+          "slurm_job_id": 202617,
+          "node": "dogo",
+          "partition": "long",
+          "start": "2026-09-27T03:02:53-04:00",
+          "end": "2026-09-27T03:04:49-04:00",
+          "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued"
+        },
+        {
+          "slurm_job_id": 202617,
+          "node": "dogo",
+          "partition": "long",
+          "start": "2026-09-27T03:07:04-04:00",
+          "end": "2026-09-27T03:08:19-04:00",
+          "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued"
+        },
+        {
+          "slurm_job_id": 202617,
+          "node": "dogo",
+          "partition": "long",
+          "start": "2026-09-27T03:10:48-04:00",
+          "end": "2026-09-27T03:13:19-04:00",
+          "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued"
         }
       ]
     },
@@ -351,6 +397,22 @@
           "time": "2026-09-26T21:13-04:00",
           "partition": "sweep",
           "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue"
+        },
+        {
+          "time": "2026-09-27T03:18-04:00",
+          "partition": "sweep",
+          "exclude_added": "dogo",
+          "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends"
+        }
+      ],
+      "attempts": [
+        {
+          "slurm_job_id": 202618,
+          "node": "dogo",
+          "partition": "sweep",
+          "start": "2026-09-27T03:14:54-04:00",
+          "end": "2026-09-27T03:15:18-04:00",
+          "outcome": "preempted within 24 s by a debug-partition job; requeued"
         }
       ]
     },
@@ -389,6 +451,12 @@
           "time": "2026-09-26T21:13-04:00",
           "partition": "sweep",
           "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue"
+        },
+        {
+          "time": "2026-09-27T03:18-04:00",
+          "partition": "sweep",
+          "exclude_added": "dogo",
+          "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends"
         }
       ]
     }
