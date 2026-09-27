@@ -1,0 +1,9 @@
+run,attention_degree,normalization,status,updates,prediction_tokens,terminal_validation_nll,terminal_validation_perplexity,best_step,best_validation_perplexity,last_valid_step,last_valid_perplexity,failure_step,failure_error,source_commit,slurm_job_id
+200m-normalized-m001-seed0,1,normalized,not-started,,,,,,,,,,,,
+200m-normalized-m002-seed0,2,normalized,not-started,,,,,,,,,,,,
+200m-normalized-m003-seed0,3,normalized,not-started,,,,,,,,,,,,
+200m-normalized-m004-seed0,4,normalized,not-started,,,,,,,,,,,,
+200m-unnormalized-m001-seed0,1,unnormalized,not-started,,,,,,,,,,,,
+200m-unnormalized-m002-seed0,2,unnormalized,not-started,,,,,,,,,,,,
+200m-unnormalized-m003-seed0,3,unnormalized,not-started,,,,,,,,,,,,
+200m-unnormalized-m004-seed0,4,unnormalized,not-started,,,,,,,,,,,,

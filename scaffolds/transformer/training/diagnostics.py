@@ -15,7 +15,7 @@ from scaffolds.transformer.data.loaders import make_eval_iterator
 from scaffolds.transformer.data.packed import manifest_fingerprint
 from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE
 from scaffolds.transformer.training.numerics import (
-    has_learned_polynomial, has_sum_of_squares_kernel, is_odd_taylor, is_signed_kernel,
+    has_fixed_polynomial, has_learned_polynomial, has_sum_of_squares_kernel, is_odd_taylor, is_signed_kernel,
 )
 
 
@@ -64,6 +64,7 @@ def attention_identity(config) -> dict:
     mode = config.model.quadratic_mode
     normalized = config.model.attention_normalization
     learned_polynomial = has_learned_polynomial(config.model)
+    fixed_polynomial = has_fixed_polynomial(config.model)
     identity = {
         "attention_degree": degree,
         "attention_normalization": normalized,
@@ -100,6 +101,20 @@ def attention_identity(config) -> dict:
             attention_formula=(f"causal_p_{degree}(QK^T / sqrt(d_k)) V / rowsum, p(x) = sum_(r<={degree}) c_r x^r, "
                                f"learned c ({config.model.attention_coefficient_sharing}) initialized at 1/r!"),
             attention_score_scale="1/sqrt(d_k)", attention_output_normalization="signed_row_sum")
+    if fixed_polynomial:
+        identity.update(
+            attention_kernel="fixed_polynomial" if normalized else "fixed_polynomial_unnormalized",
+            attention_formula=(f"causal_p_{degree}(QK^T / sqrt(d_k)) V"
+                               + (" / rowsum" if normalized else "")
+                               + f", p(x) = sum_(r<={degree}) c_r x^r, fixed c"),
+            attention_score_scale="1/sqrt(d_k)",
+            attention_output_normalization="signed_row_sum" if normalized else False,
+            attention_coefficients="fixed",
+            attention_fixed_coefficients=list(config.model.attention_fixed_coefficients),
+            attention_coefficient_parameterization="direct",
+            attention_coefficient_sharing="global",
+            attention_coefficient_count=0,
+        )
     if hasattr(config, "_attention_backend_resume_request"):
         identity["attention_backend_resume_requested"] = config._attention_backend_resume_request
     if is_signed_kernel(config.model):
@@ -327,6 +342,17 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         coefficient_report = polynomial_coefficient_report(params, config)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite polynomial coefficients")
+    elif has_fixed_polynomial(config.model):
+        values = np.asarray(config.model.attention_fixed_coefficients, dtype=np.float32)
+        coefficient_report = {
+            "effective_coefficient_names": [COEFFICIENT_NAMES[order] if order < len(COEFFICIENT_NAMES)
+                                             else f"degree_{order}" for order in range(len(values))],
+            "effective": _serializable(values),
+            "finite": bool(np.all(np.isfinite(values))),
+            "trainable": False,
+        }
+        if not coefficient_report["finite"]:
+            issues.append("Nonfinite fixed polynomial coefficients")
     scale_report = None
     if config.model.qk_norm:
         scale_report = qk_norm_scale_report(params, config)
@@ -351,6 +377,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     }
     if coefficient_report is not None:
         report["coefficients"] = coefficient_report
+    if has_fixed_polynomial(config.model):
+        report["kernel_values"] = "unshifted_fixed_polynomial"
     if scale_report is not None:
         report["qk_norm_scale"] = scale_report
     return report

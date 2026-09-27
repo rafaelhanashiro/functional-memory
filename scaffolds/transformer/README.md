@@ -82,11 +82,23 @@ The existing scientific configuration fields remain supported:
 | Nonnegative `attention_degree`, `attention_normalization: false` | Unnormalized fixed Taylor `p_m(QKᵀ / sqrt(d_K)) V`; odd degrees permit signed weights |
 | `attention_degree: m >= 1`, `attention_normalization: false`, `attention_coefficients: learned` | Unnormalized `sum_r c_r (QKᵀ / sqrt(d_K))^r V` with every coefficient learned from `1/r!`; signed |
 | `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Row-normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; fused or blocked |
+| `attention_degree: m >= 1`, `attention_fixed_coefficients: [c0, ..., cm]`, `attention_coefficients: fixed` | Explicit fixed `sum_r c_r s^r`, with or without row normalization; signed weights and row sums; fused or blocked |
 | Even `attention_degree: m >= 2`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: sum_of_squares` | Row-normalized `(q1(s)^2 + q2(s)^2) V / rowsum` with `deg q1 = m/2`, `deg q2 = m/2 - 1` learned and initialized to reproduce `T_m` exactly; nonnegative weights, positive row sums; fused or blocked |
 | `attention_degree: 0` | Uniform causal-prefix averaging |
 | Nonnegative `attention_degree`, `quadratic_mode: fixed` | Fixed Taylor polynomial; odd degrees permit signed weights |
 | `attention_degree: 2`, `quadratic_mode: positive` | Learned `0.5 * (1 + (a*s+b)^2)` |
 | `attention_degree: 2`, `quadratic_mode: unrestricted` | Learned `1 + b*s + c*s^2` |
+
+Explicit `attention_fixed_coefficients` are finite ascending monomial coefficients,
+shared across every layer and head. They are immutable model configuration, outside
+the trainable parameter tree and optimizer state. Omitting them preserves fixed
+Taylor semantics. The generic direct polynomial backends evaluate these constants
+and their Q/K/V derivatives; normalized execution permits negative nonzero row sums
+and fails explicitly on a zero/nonfinite denominator. Unnormalized execution does
+not divide by a row sum. There is no clipping, absolute-value normalization, or
+added denominator epsilon. Diagnostics and serialized recipes retain the actual
+coefficient vector; resumed recipes must match it exactly. A constant overall
+polynomial scale cancels only when row normalization is enabled.
 
 With `attention_coefficient_parameterization: sum_of_squares` the learned array is
 `polynomial_square_factors` instead (`attention/nonnegative_polynomial.py`): the same

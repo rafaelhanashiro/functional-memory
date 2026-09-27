@@ -1,6 +1,7 @@
 """Shared Q/K/V projections, positional encoding, and output projection."""
 
 from typing import Literal
+import math
 
 import jax
 import jax.numpy as jnp
@@ -34,6 +35,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         dropout=config.dropout, backend=config.attention_backend,
         attention_degree=config.attention_degree, quadratic_mode=config.quadratic_mode,
         attention_normalization=config.attention_normalization,
+        attention_fixed_coefficients=config.attention_fixed_coefficients,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         rngs=rngs,
     )
@@ -46,7 +48,8 @@ class MultiHeadAttention(nnx.Module):
         dropout: float = 0.0, backend: AttentionBackend = "blocked",
         attention_degree: int | None = None, quadratic_mode: str = "fixed",
         attention_normalization: bool = True, qk_norm: bool = False,
-        qk_norm_eps: float = 1e-6, *, rngs: nnx.Rngs,
+        qk_norm_eps: float = 1e-6, *, attention_fixed_coefficients: tuple[float, ...] | None = None,
+        rngs: nnx.Rngs,
     ):
         _validate_degree(attention_degree)
         if not isinstance(attention_normalization, bool):
@@ -61,6 +64,16 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError(f"Unknown quadratic mode: {quadratic_mode}")
         if quadratic_mode != "fixed" and attention_degree != 2:
             raise ValueError("Learned quadratic attention requires degree=2")
+        if attention_fixed_coefficients is not None:
+            if quadratic_mode != "fixed" or attention_degree is None or attention_degree < 1:
+                raise ValueError("Fixed polynomial coefficients require degree >= 1 without a quadratic mode")
+            if (not isinstance(attention_fixed_coefficients, (tuple, list))
+                    or len(attention_fixed_coefficients) != attention_degree + 1):
+                raise ValueError("Fixed polynomial coefficients must contain attention_degree + 1 coefficients")
+            if any(not isinstance(value, (int, float)) or isinstance(value, bool)
+                   or not math.isfinite(value) for value in attention_fixed_coefficients):
+                raise ValueError("Fixed polynomial coefficients must be finite numeric values")
+            attention_fixed_coefficients = tuple(float(value) for value in attention_fixed_coefficients)
         if min(hidden_size, num_heads, num_kv_heads, qk_head_dim, value_head_dim) <= 0:
             raise ValueError("Attention dimensions must be positive")
         if num_heads != num_kv_heads:
@@ -81,6 +94,8 @@ class MultiHeadAttention(nnx.Module):
         self.rope_theta = rope_theta
         self.backend = backend
         self.attention_degree = attention_degree
+        # Python floats are static module data, never optimizer parameters.
+        self.attention_fixed_coefficients = attention_fixed_coefficients
         self.attention_normalization = attention_normalization
         self.quadratic_mode = quadratic_mode
         self.qk_norm = qk_norm
@@ -122,6 +137,10 @@ class MultiHeadAttention(nnx.Module):
             if "coefficients" in parameters:
                 raise ValueError("Coefficients were supplied twice")
             parameters = {**parameters, "coefficients": coefficients}
+        if self.attention_fixed_coefficients is not None:
+            if any(name in parameters for name in ("coefficients", "polynomial_coefficients", "polynomial_square_factors")):
+                raise ValueError("Fixed polynomial coefficients cannot be combined with supplied attention coefficients")
+            parameters["polynomial_coefficients"] = jnp.asarray(self.attention_fixed_coefficients, dtype=jnp.float32)
         result = attention_core(
             q, k, v, backend=self.backend, attention_degree=self.attention_degree,
             attention_normalization=self.attention_normalization,

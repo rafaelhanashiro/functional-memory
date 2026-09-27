@@ -5,7 +5,13 @@ import optax
 
 
 def is_odd_taylor(model) -> bool:
-    return model.attention_degree is not None and model.attention_degree % 2 == 1
+    return (model.attention_degree is not None and model.attention_degree % 2 == 1
+            and not has_fixed_polynomial(model) and not has_learned_polynomial(model)
+            and model.quadratic_mode == "fixed")
+
+
+def has_fixed_polynomial(model) -> bool:
+    return getattr(model, "attention_fixed_coefficients", None) is not None
 
 
 def has_learned_polynomial(model) -> bool:
@@ -19,7 +25,7 @@ def has_sum_of_squares_kernel(model) -> bool:
 
 def is_signed_kernel(model) -> bool:
     """Kernels whose weights may be negative or zero by design."""
-    return (is_odd_taylor(model) or model.quadratic_mode == "unrestricted"
+    return (is_odd_taylor(model) or has_fixed_polynomial(model) or model.quadratic_mode == "unrestricted"
             or (has_learned_polynomial(model) and not has_sum_of_squares_kernel(model)))
 
 

@@ -16,14 +16,16 @@ def test_acceptance_rejects_skipped_or_empty_test_reports(tmp_path):
     assert preflight.require_passing_tests(report) == 2
 
 
-@pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares"))
+@pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares", "fixed"))
 @pytest.mark.parametrize("requested_backend", ("auto", "fused"))
 @pytest.mark.parametrize("cpu", (False, True))
 def test_normalized_fused_acceptance_cannot_omit_required_kernel_tests(parameterization, requested_backend, cpu):
     from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
 
-    config = Config(model=ModelConfig(attention_degree=2, attention_coefficients="learned",
-                                      attention_coefficient_parameterization=parameterization,
+    config = Config(model=ModelConfig(attention_degree=2,
+                                      attention_coefficients="fixed" if parameterization == "fixed" else "learned",
+                                      attention_fixed_coefficients=(0.5, 1.0, 0.5) if parameterization == "fixed" else None,
+                                      attention_coefficient_parameterization="direct" if parameterization == "fixed" else parameterization,
                                       attention_backend=requested_backend))
     spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
     paths = preflight.test_paths(spec, config_to_dict(config), resolved_backend="fused", cpu=cpu)
