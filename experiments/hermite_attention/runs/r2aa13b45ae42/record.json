@@ -1,0 +1,51 @@
+{
+  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r2aa13b45ae42",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm",
+  "attention_degree": 1,
+  "attention_kernel": "hermite_unnormalized",
+  "attention_normalization": false,
+  "coefficient_mode": "fixed",
+  "coefficient_sharing": "global",
+  "cohort": "canonical_qk_norm",
+  "comparison_role": "primary",
+  "config": {
+    "path": "experiments/hermite_attention/runs/r2aa13b45ae42/config.yaml",
+    "sha256": "340df83e5447052e64e7db63cfa44509b7e021154d478b9383083de709525339"
+  },
+  "data_manifests": {
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "home_cluster": "kennel",
+  "label": "200m-qk-hermite-m001-unnormalized-seed0",
+  "matched_control": {
+    "run_id": "rdb78995ba45a",
+    "study": "hermite_attention"
+  },
+  "name": "200m-qk-hermite-m001-unnormalized-seed0",
+  "parameter_count": 199906464,
+  "polynomial_family": "hermite",
+  "qk_head_dim": 64,
+  "qk_norm": true,
+  "qk_norm_initial_scale": 8.0,
+  "qk_norm_parameter_count": 160,
+  "qk_norm_sharing": "per_head",
+  "record_schema_version": 1,
+  "requested_hardware": {
+    "gpu_count": 4,
+    "gpu_types": [
+      "H100",
+      "B300"
+    ],
+    "partition": "sweep"
+  },
+  "run_id": "r2aa13b45ae42",
+  "seed": 0,
+  "status": "planned"
+}

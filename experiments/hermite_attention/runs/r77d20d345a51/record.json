@@ -1,0 +1,51 @@
+{
+  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r77d20d345a51",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm",
+  "attention_degree": 2,
+  "attention_kernel": "hermite_normalized",
+  "attention_normalization": true,
+  "coefficient_mode": "fixed",
+  "coefficient_sharing": "global",
+  "cohort": "canonical_qk_norm",
+  "comparison_role": "primary",
+  "config": {
+    "path": "experiments/hermite_attention/runs/r77d20d345a51/config.yaml",
+    "sha256": "66710fbcab8ee7afd7db669e9254a9bca8ef8805f6a0bccf18b1798706685815"
+  },
+  "data_manifests": {
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "home_cluster": "kennel",
+  "label": "200m-qk-hermite-m002-normalized-seed0",
+  "matched_control": {
+    "run_id": "r93c9d0814322",
+    "study": "key_dimension_taylor"
+  },
+  "name": "200m-qk-hermite-m002-normalized-seed0",
+  "parameter_count": 199906464,
+  "polynomial_family": "hermite",
+  "qk_head_dim": 64,
+  "qk_norm": true,
+  "qk_norm_initial_scale": 8.0,
+  "qk_norm_parameter_count": 160,
+  "qk_norm_sharing": "per_head",
+  "record_schema_version": 1,
+  "requested_hardware": {
+    "gpu_count": 4,
+    "gpu_types": [
+      "H100",
+      "B300"
+    ],
+    "partition": "sweep"
+  },
+  "run_id": "r77d20d345a51",
+  "seed": 0,
+  "status": "planned"
+}
