@@ -91,8 +91,10 @@ def plot(record: Path, figures: Path) -> None:
                 (committed_records(signed_control(degree)), SIGNED, "signed (direct coefficients)"),
                 (softmax, REFERENCE, "QK-norm softmax")):
             if records:
+                # The signed runs failed after one validation, so their points need markers to show.
                 axis.plot([r["step"] / 1000 for r in records], [r["validation_perplexity"] for r in records],
-                          color=color, linewidth=2, label=label, linestyle="--" if color == REFERENCE else "-")
+                          color=color, linewidth=2, label=label, linestyle="--" if color == REFERENCE else "-",
+                          marker="o" if color == SIGNED else None, markersize=6)
         failed = failure_step(signed_control(degree))
         if failed is not None:
             axis.axvline(failed / 1000, color=SIGNED, linewidth=0.8, linestyle=":")

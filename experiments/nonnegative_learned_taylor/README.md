@@ -32,8 +32,8 @@ evaluated as `q1^2 + q2^2`, never through expanded coefficients, so no rounding 
 make it negative; kernel values may be exactly zero, and only a zero row sum is
 invalid.
 
-**Status: running.** The results block below is written by the analysis module once
-both runs have concluded.
+**Status: concluded.** Both degrees trained all 19,074 updates without a numerical
+failure; `m = 4` finished 0.28 perplexity above QK-norm softmax.
 
 **Home cluster: Kennel.** The artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`. The
@@ -44,8 +44,50 @@ The packed corpus is under `/data/cl/u/rafah/home/datasets/fineweb_12b`.
 ## Results
 
 <!-- BEGIN GENERATED RESULTS -->
-Pending: the runs have not concluded.
+Terminal held-out perplexity at 19,074 updates (10,000,269,312 prediction tokens), seed 0, d_K = 64, per-head factors and QK-norm scales, against the signed direct-coefficient runs of the same recipe and the QK-norm softmax baseline. The minimum row sum is over every validation's diagnostic sequence.
+
+| m | Status | Terminal PPL | Δ vs QK-norm softmax | Signed control | Minimum row sum |
+|---:|---|---:|---:|---|---:|
+| 2 | complete | 16.1758 | +1.7184 | failed @1,857 | 0.000371 |
+| 4 | complete | 14.7419 | +0.2845 | failed @1,456 | 6.22e-05 |
+
+[Summary CSV](summary.csv) · [Learning curves](figures/learning_curves.pdf)
 <!-- END GENERATED RESULTS -->
+
+## Findings
+
+**Nonnegativity is enough for these kernels to train.** The signed runs of the same
+recipe failed at updates 1,857 (`m = 2`) and 1,456 (`m = 4`). Written as a sum of
+squares, both degrees completed, and all 20 validations of each run recorded valid
+attention diagnostics, with no negative kernel values and no invalid normalizers or
+outputs.
+
+**`m = 4` comes within 0.28 of softmax.** It reached **14.7419**, against 14.4574 for
+QK-norm softmax and 14.6655 for softmax without QK-norm. That is 1.64 below the
+unnormalized learned `m = 4` kernel (16.3840) and 0.24 below the retained
+normalized fixed Taylor `m = 4` at `d_K = 64` (14.9835). That fixed Taylor run is a
+legacy run, with the original weight decay and no QK-norm, and its rerun under the
+current defaults is queued. `m = 2` reached **16.1758**, 1.72 above softmax,
+level with the earlier positive quadratic (16.2125, also legacy) and 1.42 below the
+unnormalized learned `m = 2` (17.5990).
+
+**Both kernels learned a touching root.** The factors moved each kernel onto a zero
+inside the reachable score range `|s| <= exp(gamma)`, which the signed kernels could
+only reach by passing through zero:
+
+- At `m = 2`, the constant factor `q2` fell from its initial `1/sqrt 2` to a median
+  of 2.2e-5 across the 160 heads (below 1e-3 in 109), so `p(s)` is almost exactly
+  `(a + b s)^2`. Its double root sits inside the range, at a median score of
+  -0.6.
+- At `m = 4`, every head's minimum over the reachable range is below 1e-3 of its
+  maximum (below 1e-6 in 126 heads), at an interior score, with a median of -2.0.
+
+Each head can therefore give a key near its learned root almost no weight while the
+kernel stays nonnegative. The learned score scales `exp(gamma)` grew from 8 to
+medians of 13.8 (`m = 2`) and 12.0 (`m = 4`). Row sums stay positive but can become
+small: the smallest across all validation diagnostic sequences was 3.7e-4 at `m = 2`
+and 6.2e-5 at `m = 4`. The outputs remain convex combinations of the values, and the
+normalizers accumulate in FP32.
 
 ## Scientific recipe
 
@@ -101,8 +143,11 @@ partition and resources.
 
 ## Limitations
 
-One seed per degree. The two degrees ran on different backends (fused for `m = 2`,
-blocked for `m = 4`); both evaluate `q1^2 + q2^2` directly with FP32 accumulation and pass the same kernel
-tests, but their BF16 training trajectories are not bitwise comparable.
+One seed per degree. `m = 2` changed hardware during training: it ran on four H100
+SXM until a preemption at about update 14,570, then resumed from the update-14,500
+checkpoint on four B300. The two degrees ran on different backends (fused for
+`m = 2`, blocked for `m = 4`); both evaluate `q1^2 + q2^2` directly with FP32
+accumulation and pass the same kernel tests, but their BF16 training trajectories
+are not bitwise comparable.
 The `m = 2` comparison with the earlier positive quadratic changes three things at
 once (QK-norm, the decay policy, and learning the constant square).
