@@ -576,6 +576,10 @@
       },
       "artifacts": [
         {
+          "path": "experiments/hermite_attention/runs/200m-normalized-m002-seed0/initial_replay.json",
+          "sha256": "7686d71cbf9672ae8c6fbd89bf8d7543ff4e89a52302288d3a4256c04b4df4ed"
+        },
+        {
           "path": "experiments/hermite_attention/runs/200m-normalized-m002-seed0/launch.json",
           "sha256": "7fc46f0a175df63aeeb02146bfe277523a17d8c5c08f789c7d8258c5fb4ba1aa"
         },

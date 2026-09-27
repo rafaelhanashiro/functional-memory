@@ -88,18 +88,25 @@ any of these failures. Each production failure record links its matching log
 and last finite printed training measurement.
 
 The normalized degree-2 pilot had a nonfinite forward loss on its first update.
-Exactly, `p_2(s) = exp(1/2) (s+1)^2 / 2`: its weights cannot cancel by sign, but
-the kernel and row sum vanish at `s=-1`. The direct fused path evaluates the
-expanded coefficients with FP32 Horner arithmetic. A read-only CPU JAX probe of
-that same polynomial evaluator found 868 negative values among 2,001 FP32 scores
-in `[-1.00012, -0.99988]`; the factorized square had none. For example, at
-`s=-1.0001200437545776`, Horner returned `-3.754735e-9`, versus
-`+1.187945e-8` for the square. This reveals an avoidable numerical weakness
-near the root, but does not establish what caused the pilot failure: its saved
-attention diagnostics were collected after the attempted update, when scores
-and parameters were already NaN. A replay of the initial batch with pre-update
-row-sum and gradient measurements would separate an exact root, rounding near
-the root, and another cause.
+Exactly, `p_2(s) = exp(1/2) (s+1)^2 / 2`, so in exact arithmetic multi-key row
+sums cannot cancel by sign and are small only when every score is near `-1`.
+A pre-update replay on the pilot's H100 node used the same seed, first packed
+batch, and local attention shape `[32, 2048, 16, 64]`. It found an invalid row
+in the first local batch: sequence 11, layer 3, head 6, query position 0.
+This row has one causal key. Its score was approximately `-0.9998767376`,
+distinct from the true root.
+An independent FP32 Horner calculation rounded its positive weight to zero;
+the direct fused kernel marked that row invalid, consistent with its zero-sum
+guard. For the same Q/K/V, the existing factorized-square fused kernel returned
+a positive normalizer of `1.2530009e-8` and a finite output. The JAX score
+and Horner reference can differ in last bits from Pallas, but the fused
+normalizer and output comparison directly reproduces the numerical failure.
+The [replay record](runs/200m-normalized-m002-seed0/initial_replay.json) links
+the complete probe and Slurm log by checksum. This identifies an FP32
+evaluation artifact in the direct polynomial path, not an inherent tendency
+of the degree-2 Hermite row sum to cancel. The replay matches the local shape
+and inputs but is a separate one-GPU forward, not the literal two-GPU training
+step; it does not establish long-run stability of the factorized variant.
 
 ## Implementation and acceptance
 

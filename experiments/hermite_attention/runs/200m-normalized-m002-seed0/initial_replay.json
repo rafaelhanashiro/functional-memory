@@ -1,0 +1,71 @@
+{
+  "evidence": [
+    {
+      "path": "experiments/hermite_attention/logs/200m-normalized-m002-seed0/diagnostics/full-context-factorized.json",
+      "sha256": "cc43f8673fa9cf34f05850e8f47fa0e5c32cf668e0d6d4ad3622add8421515ad"
+    },
+    {
+      "path": "experiments/hermite_attention/logs/200m-normalized-m002-seed0/diagnostics/slurm-202884.out",
+      "sha256": "fb01cab24758e726bd5bcc20639b5326986b77eb4dc9f8f0fc5247d1c82b5fe8"
+    }
+  ],
+  "first_invalid_replayed_row": {
+    "causal_key_count": 1,
+    "direct_fused_nonfinite_normalizer_count_in_layer": 1,
+    "direct_fused_nonfinite_output_elements_in_layer": 64,
+    "direct_fused_normalizer": "NaN",
+    "distance_to_exact_root": 0.0001232624053955078,
+    "factorized_fused_normalizer": 1.2530009030342626e-08,
+    "factorized_fused_output_finite": true,
+    "global_sequence_index": 11,
+    "head_zero_based": 6,
+    "independent_jax_expanded_horner_weight": 0.0,
+    "independent_jax_factored_square_weight": 1.252502190851601e-08,
+    "independent_jax_score": -0.9998767375946045,
+    "layer_zero_based": 3,
+    "query_zero_based": 0
+  },
+  "format": "hermite-degree-2-preupdate-replay",
+  "interpretation": "Expanded FP32 Horner evaluation rounds a positive degree-2 weight to zero in a one-key causal row; the direct fused normalization marks the row invalid. The equivalent factorized-square fused kernel has a positive normalizer and finite output for the same Q/K/V row.",
+  "limitations": [
+    "The replay performs the first local batch as separate layer calls on one H100, matching the pilot local attention shape and seed/data order but not the literal two-GPU compiled training step.",
+    "The independent JAX score and Horner reference can differ in last bits from Pallas; the fused normalizer/output measurements are authoritative for each backend.",
+    "The factorized result establishes a finite forward for this row only, not successful training for a factorized degree-2 variant.",
+    "The replay stops after finding the first invalid row in the first local batch; it does not enumerate all failing rows."
+  ],
+  "original_pilot": {
+    "failed_update": 1,
+    "record": "experiments/hermite_attention/runs/200m-normalized-m002-seed0/qualification_failure.json",
+    "slurm_job_id": "202705"
+  },
+  "replay": {
+    "analysis_commit": "3607f75",
+    "config_sha256": "91dff5030a9af9ffe775384517000e2f242b52bb748dbf88e7f2fce4897a303b",
+    "cpu_acceptance_parameter_sha256": [
+      "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+    ],
+    "cpu_gpu_parameter_hash_match": false,
+    "first_global_batch_raw_sha256": "53c1214d7486d11eaf04e54fdb9d32ff993260da2a75c0fd26717719dfe94a84",
+    "first_invalid_local_chunk": [
+      0,
+      32
+    ],
+    "first_update_batch_audit_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+    "frozen_source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+    "global_batch_size": 256,
+    "gpu": "NVIDIA H100 80GB HBM3",
+    "gpu_parameter_sha256": "361e7121ae0d4b2d8cfad93568c21194da602d303db125b9d2600e73848b7ca7",
+    "local_batch_shape": [
+      32,
+      2048
+    ],
+    "node": "dogo",
+    "same_gpu_blocked_fused_parameter_hash_match": true,
+    "seed": 0,
+    "slurm_job_id": "202884",
+    "state": "COMPLETED",
+    "trainer_microbatch_order_matches_global_batch": true
+  },
+  "run": "200m-normalized-m002-seed0",
+  "version": 1
+}
