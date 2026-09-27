@@ -236,11 +236,11 @@
   "source_manifests": {
     "key_dimension_taylor": {
       "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-      "sha256": "752c9c5134d2839fdc1b6a481313bb72e61f6aa9f75b2043b628c6543787ac9e"
+      "sha256": "b821a7ba25f58b00076e7a9f941318e82976db5f9046892665d2247d8b71259e"
     },
     "unnormalized_taylor_attention": {
       "path": "experiments/unnormalized_taylor_attention/provenance/manifest.json",
-      "sha256": "aa4dc7767e7ea580c776891e74de13cb78664b4fcca02f40d4ec18ab9c1efaa5"
+      "sha256": "3121cd32b1219c13c8b99d6c8996f67a78481d7b6c01ce1b2a0bb1148be82fb9"
     },
     "unnormalized_attention": {
       "path": "experiments/unnormalized_attention/provenance/manifest.json",
@@ -252,7 +252,7 @@
     },
     "qk_norm_learned_taylor": {
       "path": "experiments/qk_norm_learned_taylor/provenance/manifest.json",
-      "sha256": "07562fdf973f9c901af79b515653f76c6c92bdfc7961ab4c6f0a4ddb002c3834"
+      "sha256": "a97cc108c8cd525ad67b3804d4b650460cb1e4bf3e5e815a8cc29389a01c1770"
     },
     "nonnegative_learned_taylor": {
       "path": "experiments/nonnegative_learned_taylor/provenance/manifest.json",

@@ -69,15 +69,15 @@
   "source_manifests": {
     "key_dimension_taylor": {
       "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-      "sha256": "752c9c5134d2839fdc1b6a481313bb72e61f6aa9f75b2043b628c6543787ac9e"
+      "sha256": "b821a7ba25f58b00076e7a9f941318e82976db5f9046892665d2247d8b71259e"
     },
     "odd_taylor_attention": {
       "path": "experiments/odd_taylor_attention/provenance/manifest.json",
-      "sha256": "6fb2b1e05ddbfcbb7dbdfb5b99239b16bb98bd71dc329246a5fd91accb5e8d9c"
+      "sha256": "c5417bee6cfc17cd50b79af7749769c2aea3ae0429cd98c32071196a7fb98327"
     },
     "gla_key_dimension": {
       "path": "experiments/gla_key_dimension/provenance/manifest.json",
-      "sha256": "443f1e95641ad9e8b0b0cc8e4a3425cf20a5e004e0c7c93a3e79da45be273a99"
+      "sha256": "90e69a5ba9835710cc761c242f88e0273fc237f411fb251be70e39840a289f87"
     },
     "qk_norm_attention": {
       "path": "experiments/qk_norm_attention/provenance/manifest.json",
@@ -317,5 +317,5 @@
       "run": "200m-qk-softmax-seed0"
     }
   ],
-  "source_artifact_set_sha256": "600d03d93a7dbbde8f3d91e2a7783ce467cfa1ffd9ecc2d109798155796ba2f9"
+  "source_artifact_set_sha256": "c9a2e5252f3a76aa7dd63dba3d1cfcf8b5cb51631031ed9bd4330e116f38aba5"
 }

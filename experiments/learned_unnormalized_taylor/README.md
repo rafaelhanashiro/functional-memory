@@ -112,7 +112,11 @@ Controls, all seed 0 with the same backbone and budget:
 | Kernel | m=1 | m=2 | m=3 | m=4 |
 | --- | ---: | ---: | ---: | ---: |
 | Unnormalized, fixed Taylor coefficients | 20.7701 | 23.5057 | 20.2397 | 21.4619 |
-| Normalized, fixed Taylor coefficients | failed (update 9) | 16.2810 | failed (update 17) | 14.9836 |
+| Normalized, fixed Taylor coefficients, QK-norm and selective decay | failed (update 31) | 16.5107 | failed (update 419) | 14.8963 |
+
+The normalized fixed Taylor row was retrained under the scaffold's current defaults,
+which the runs here predate; its comparison with them includes QK-norm and the
+weight-decay policy as well as normalization.
 
 The unnormalized exponential ends at 17.4583 and softmax at 14.6655. The normalized
 learned quadratic `1 + b s + c s^2` with per-head coefficients failed at update 4,187

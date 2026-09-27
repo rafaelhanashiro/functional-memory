@@ -163,12 +163,17 @@ with the width-matched softmax and row-normalized Taylor runs from the
 | 8 | 192.2M | **17.22** | 16.71 | +0.52 | 20.58 | 18.18 | 17.18 | 16.85 |
 | 16 | 194.9M | **16.71** | 15.58 | +1.13 | 18.50 | 16.51 | 15.80 | 15.63 |
 | 32 | 200.2M | **16.20** | 14.99 | +1.22 | 17.17 | 15.57 | 15.07 | 15.02 |
-| 64 | 210.7M | **15.90** | 14.67 | +1.23 | 16.28 | 14.98 | 14.68 | 14.71 |
+| 64 | 210.7M | **15.90** | 14.67 | +1.23 | 16.51 | 14.90 | 14.50 | 14.45 |
 | 128 | 231.9M | **15.44** | 14.38 | +1.06 | 15.72 | 14.53 | 14.36 | 14.38 |
 
 ![Terminal perplexity versus d_K](figures/perplexity_vs_key_dimension.png)
 
 [PDF](figures/perplexity_vs_key_dimension.pdf) · [summary.csv](summary.csv)
+
+The d_K=64 Taylor runs were retrained under the scaffold's current defaults (QK-norm
+cosine scores and selective weight decay), which the GLA runs, the d_K=64 softmax
+(selective decay, no QK-norm), and the other widths predate; comparisons with them
+at d_K=64 include those changes.
 
 - **GLA improves steadily with key width**, from 17.22 at d_K=8 to 15.44 at d_K=128
   (−1.79 overall; 0.3–0.5 per doubling). Softmax improves more over the same range

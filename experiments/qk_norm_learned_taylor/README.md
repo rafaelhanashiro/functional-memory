@@ -23,8 +23,8 @@ a degree-`m` polynomial's approximation error to the exponential is uniformly bo
 so this sweep measures how much of the polynomial kernels' gap closes when the scores
 are bounded and the model must sharpen through the scale alone. The normalized
 variants are the first row-normalized learned polynomials in the repository: the fixed
-odd Taylor kernels failed at updates 9 and 17 and the normalized learned quadratic at
-update 4,187 when their row sums approached zero; whether bounded scores prevent that
+odd Taylor kernels and the normalized learned quadratic (at update 4,187) failed
+numerically when their row sums approached zero; whether bounded scores prevent that
 was part of the question.
 
 **Status: completed.** The four unnormalized runs trained the full 10B tokens without
@@ -108,7 +108,8 @@ while the cosine scores already span about ±5.3 at initialization. On the
 diagnostic sequence before any training, degree 1 had 16% negative weights, a
 smallest absolute row sum of 0.008, and a cancellation ratio above 12,000; degree 3
 had 5% negative weights and a smallest row sum of 0.005. They failed at updates 27
-and 318 (their fixed-coefficient predecessors at 9 and 17). The even degrees start
+and 318; the fixed-coefficient kernels trained with the same QK-norm recipe fail at
+31 and 419 ([odd Taylor attention](../odd_taylor_attention/README.md)). The even degrees start
 strictly positive (kernel minima 0.50 and 0.27 on the sequence) and were learned
 into failure: the degree-2 shape ratio drifted from Taylor's 2 to a median of 3.31 at
 update 1,500 with one head past 4 (a root near `s = −1.5`), the training loss stayed
@@ -158,7 +159,7 @@ Controls, all seed 0 with the same backbone and budget (terminal perplexity;
 | --- | --- | ---: | ---: | ---: | ---: |
 | Unnormalized, learned coefficients, no QK-norm ([record](../learned_unnormalized_taylor/README.md)) | all parameters | 20.7136 | 20.0594 | 18.5316 | 20.1398 |
 | Unnormalized, fixed Taylor, no QK-norm | all parameters | 20.7701 | 23.5057 | 20.2397 | 21.4619 |
-| Normalized, fixed Taylor, no QK-norm | all parameters | failed (update 9) | 16.2810 | failed (update 17) | 14.9836 |
+| Normalized, fixed Taylor, with QK-norm ([even](../key_dimension_taylor/README.md), [odd](../odd_taylor_attention/README.md)) | selective | failed (update 31) | 16.5107 | failed (update 419) | 14.8963 |
 
 QK-norm softmax ends at 14.4574 and the repository's softmax baseline under the
 canonical policy at 14.6655 ([key_dimension_taylor](../key_dimension_taylor/README.md));

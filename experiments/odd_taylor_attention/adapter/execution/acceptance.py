@@ -9,8 +9,12 @@ def check_config(config) -> None:
 
 SPEC = AcceptanceSpec(
     entry_module=__name__,
-    cpu_tests=("scaffolds/transformer/tests/test_odd_attention.py", "scaffolds/transformer/tests/test_odd_training.py", "experiments/odd_taylor_attention/adapter/tests"),
-    gpu_tests=("scaffolds/transformer/tests/test_odd_attention.py", "scaffolds/transformer/tests/test_fused_attention.py"),
+    cpu_tests=("scaffolds/transformer/tests/test_odd_attention.py", "scaffolds/transformer/tests/test_odd_training.py",
+               "scaffolds/transformer/tests/test_qk_norm.py", "scaffolds/transformer/tests/test_parameter_policy.py",
+               "experiments/odd_taylor_attention/adapter/tests"),
+    # The signed two-pass kernel, and cosine operands through every kernel (the recipes use QK-norm).
+    gpu_tests=("scaffolds/transformer/tests/test_odd_attention.py", "scaffolds/transformer/tests/test_fused_attention.py",
+               "scaffolds/transformer/tests/test_qk_norm.py"),
     check_config=check_config,
     required_backend="fused",
 )

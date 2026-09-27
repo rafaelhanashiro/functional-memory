@@ -24,17 +24,21 @@
   "comparison_controls": {
     "normalized_taylor_m2": {
       "run": "experiments/key_dimension_taylor/runs/200m-m002-seed0",
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
       "terminal_step": 19074,
-      "validation_nll": 2.7900009751319885,
-      "validation_perplexity": 16.281035677939382
+      "validation_nll": 2.8040092502321516,
+      "validation_perplexity": 16.510709818133147
     },
     "normalized_taylor_m4": {
       "run": "experiments/key_dimension_taylor/runs/200m-m004-seed0",
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
       "terminal_step": 19074,
-      "validation_nll": 2.7069559693336487,
-      "validation_perplexity": 14.983595500270773
+      "validation_nll": 2.701114628996168,
+      "validation_perplexity": 14.896326352016782
     },
     "normalized_softmax": {
       "run": "experiments/key_dimension_taylor/runs/200m-softmax-seed0",
@@ -46,15 +50,19 @@
     },
     "normalized_taylor_m1": {
       "run": "experiments/odd_taylor_attention/runs/200m-m001-seed0",
-      "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
       "status": "numerical-failure",
-      "failure_update": 9
+      "failure_update": 31
     },
     "normalized_taylor_m3": {
       "run": "experiments/odd_taylor_attention/runs/200m-m003-seed0",
-      "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
       "status": "numerical-failure",
-      "failure_update": 17
+      "failure_update": 419
     },
     "unnormalized_exponential": {
       "run": "experiments/unnormalized_attention/runs/200m-exp-seed0-kennel",

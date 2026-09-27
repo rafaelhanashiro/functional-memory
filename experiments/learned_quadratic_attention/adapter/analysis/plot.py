@@ -198,7 +198,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
               "Coefficient magnitudes must be interpreted together with score scales: Q/K rescaling can absorb some coefficient movement. The constant scale of a normalized polynomial is unidentifiable. Positive and unrestricted families use different optimization coordinates, so equal learning rates do not isolate positivity alone. One seed per variant does not estimate seed variation.", "",
               "The stability plots use the fixed first held-out diagnostic sequence. Negative-weight fractions are computed after signed normalization; minimum absolute denominators and cancellation ratios expose near-zero signed sums.", "",
               "Learned runs use four H100s on dogo. Control throughput reflects each control's recorded allocations, including any hardware migration; it is not a matched hardware benchmark. Hardware histories are preserved in the control provenance.", "",
-              "The fixed controls are degree-sweep runs retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in the provenance manifest:", ""]
+              "The controls are retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in the provenance manifest:", ""]
     lines += [f"- {label(run)}: `{run['config']['train']['source_commit']}`; "
               + (f"degree-sweep identity `{run['original_sweep_identity']}`." if run.get("original_sweep_identity")
                  else f"{run.get('control_note', 'retained control')}.") for run in manifest["controls"]]

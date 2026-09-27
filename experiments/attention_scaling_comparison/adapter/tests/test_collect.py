@@ -204,10 +204,11 @@ def test_committed_comparison_sources() -> None:
             for status in {row["status"] for row in rows}} == {"complete": 31, "numerical_failure": 2, "not_run": 12}
     current = {(row["panel"], row["column"], row["d_k"]) for row in rows
                if row["status"] != "not_run" and not row["legacy"]}
-    assert current == {("references", "softmax", 64), ("references", "softmax_no_qk_norm", 64)}
+    assert current == {("references", "softmax", 64), ("references", "softmax_no_qk_norm", 64),
+                       *(("normalized_fixed", f"m{degree}", 64) for degree in (1, 2, 3, 4, 8, 16))}
     failures = {(row["panel"], row["column"]): row["failure_step"]
                 for row in rows if row["status"] == "numerical_failure"}
-    assert failures == {("normalized_fixed", "m1"): 9, ("normalized_fixed", "m3"): 17}
+    assert failures == {("normalized_fixed", "m1"): 31, ("normalized_fixed", "m3"): 419}
     assert all(row["d_k"] == 64 for row in rows if row["status"] == "numerical_failure")
 
     chart = json.loads((root / "experiments/attention_scaling_comparison/configs/degree_chart.json").read_text())

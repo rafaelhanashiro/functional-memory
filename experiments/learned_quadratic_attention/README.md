@@ -13,7 +13,7 @@ Four learned variants match the degree sweep's 200M-parameter, 10B-token seed-0 
 
 | Kernel | Parameters | Status | Terminal NLL | Terminal PPL |
 |---|---:|---|---:|---:|
-| Fixed Taylor quadratic | 199,906,304 | complete | 2.790001 | 16.2810 |
+| Fixed Taylor quadratic | 199,906,464 | complete | 2.804009 | 16.5107 |
 | Exact softmax | 199,906,304 | complete | 2.685498 | 14.6655 |
 | Positive · global | 199,906,306 | complete | 2.784334 | 16.1890 |
 | Positive · per head/layer | 199,906,624 | complete | 2.785781 | 16.2125 |
@@ -28,9 +28,9 @@ The stability plots use the fixed first held-out diagnostic sequence. Negative-w
 
 Learned runs use four H100s on dogo. Control throughput reflects each control's recorded allocations, including any hardware migration; it is not a matched hardware benchmark. Hardware histories are preserved in the control provenance.
 
-The fixed controls are degree-sweep runs retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in the provenance manifest:
+The controls are retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in the provenance manifest:
 
-- Fixed Taylor quadratic: `1a8836a75836671cdf83a3ab7763425a6a88cac7`; degree-sweep identity `6bae4c76b615f8f1385b608d750948799b9e00c0f2166073009a9efc70cc814a`.
+- Fixed Taylor quadratic: `a74e3863fdf1e1dd965252cd435712dec10c9a29`; fixed Taylor m=2 under the current defaults (QK-norm and selective weight decay), source a74e386.
 - Exact softmax: `381f1fdf6caf2925a984e3932e58b6e70bfbc6b1`; softmax baseline retrained 2026-09-25 under the selective weight-decay policy.
 
 Recorded failures:
@@ -59,9 +59,12 @@ Zero/nonfinite denominators or nonfinite computations fail explicitly, without
 clipping, epsilon, or absolute-value normalization.
 
 Positive/global and positive/per-head complete with perplexities **16.1890345**
-and **16.2124774**, versus **16.2810357** for fixed Taylor quadratic and
-**14.6655** for exact softmax (the selective-decay softmax baseline). These small positive-family improvements are
-single-seed observations and do not establish a robust ordering. Unrestricted
+and **16.2124774**. Against the fixed Taylor quadratic trained in the same setup,
+the positive family improved slightly; that control has since been retrained under
+the scaffold's current defaults (QK-norm and selective weight decay) and replaced,
+so the table's fixed-quadratic value (16.5107) is not a matched comparison. Exact
+softmax, the selective-decay baseline without QK-norm, reads **14.6655**. These
+single-seed observations do not establish a robust ordering. Unrestricted
 global and per-head runs terminate at updates **2324** and **4187**. Their last
 committed validations are at updates 2000 and 4000; these are partial-budget
 observations, not terminal 10B-token results.
@@ -99,11 +102,13 @@ and at validation. Failed runs have no imputed terminal endpoint.
 
 Training reads `/data/cl/u/rafah/home/datasets/fineweb_12b` directly on NFS.
 The train/eval manifests, tokenizer identity and shard checksums are recorded
-in canonical provenance. No node-local staging was required. The original
-fixed quadratic and softmax controls remain the independently retained
-degree sweep, now retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); they are referenced,
-not copied or relabeled. In particular, softmax's recorded H100/B300 history
-means control throughput is not a matched-hardware comparison.
+in canonical provenance. No node-local staging was required. The fixed
+quadratic and softmax controls are retained in the
+[dK × Taylor-degree record](../key_dimension_taylor/README.md) and referenced here, not
+copied. Both were retrained after these runs: softmax under selective weight decay,
+and the fixed quadratic under QK-norm and selective weight decay. Their recorded
+hardware histories also differ, so control throughput is not a matched-hardware
+comparison.
 
 ## Validation, resume evidence and failure retention
 

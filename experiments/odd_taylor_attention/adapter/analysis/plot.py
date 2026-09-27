@@ -157,17 +157,17 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
         axis.legend(fontsize=8)
     save(figure, "throughput")
 
-    lines = ["# Odd Taylor attention", "", f"Source: `{manifest['source_commit']}`. Sweep identity: `{manifest['identity']}`.", "",
-             "Fixed degree-one and degree-three Taylor models match the degree sweep's 200M-parameter, 10B-token seed-0 recipe. Endpoints use committed terminal validation, independently of the retained validation-best checkpoint.", "",
+    lines = ["# Odd Taylor attention", "", f"Source: `{manifest['source_commit']}`. Frozen execution set: `{manifest['identity']}`.", "",
+             "Fixed degree-one and degree-three Taylor models use the dK × Taylor-degree record's 200M-parameter, 10B-token, seed-0 recipe at d_K = 64 under the scaffold's current defaults (QK-norm and selective weight decay). Endpoints use committed terminal validation, independently of the retained validation-best checkpoint.", "",
              "| Kernel | Parameters | Status | Terminal NLL | Terminal PPL | Failure step |", "|---|---:|---|---:|---:|---:|"]
     for row in rows:
         metrics = f"{row['terminal_nll']:.6f} | {row['terminal_ppl']:.4f}" if row["status"] == "complete" else "— | —"
         lines.append(f"| {row['kernel']} | {row['parameter_count']:,} | {row['status']} | {metrics} | {row['failure_step']} |")
-    lines += ["", "Fixed coefficients: p₁(s)=1+s; p₃(s)=1+s+s²/2+s³/6. Scores are unshifted after RoPE and weights use the signed row sum. Negative weights and negative nonzero denominators are allowed; zero/nonfinite denominators and nonfinite computations fail without epsilon, clipping, or absolute-value normalization.", "",
-              "Each model uses the full 19,074-update learning-rate schedule throughout a 5,000-update stability stage and subsequent continuation. Continuation requires finite committed validation and exact checkpoint, next-batch, and RNG restoration. One seed per variant does not estimate seed variation.", "",
-              "The stability plots use the fixed first held-out diagnostic sequence. Negative-weight fractions are computed after signed normalization; minimum absolute denominators and cancellation ratios expose near-zero signed sums.", "",
-              "Odd-degree runs use four H100s on dogo. Control throughput reflects its recorded allocations, including hardware migration, and is not a matched hardware benchmark. Hardware histories are preserved in the control provenance.", "",
-              "The fixed controls are degree-sweep runs retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in the provenance manifest:", ""]
+    lines += ["", "Fixed coefficients: p₁(s)=1+s; p₃(s)=1+s+s²/2+s³/6. Scores are QK-norm cosine scores s = exp(γ)·cos(q, k), with γ learned per layer and head from log 8, so |s| ≤ exp(γ); weights use the signed row sum. Negative weights and negative nonzero denominators are allowed; zero/nonfinite denominators and nonfinite computations fail without epsilon, clipping, or absolute-value normalization.", "",
+              "Each run follows the full 19,074-update schedule from initialization under the shared launcher, which checkpoints every 500 updates and requeues after preemption. One seed per variant does not estimate seed variation.", "",
+              "The stability plots use the fixed first held-out diagnostic sequence. Both odd-degree runs failed before their first validation at update 1,000, so only the controls have validation and diagnostic curves.", "",
+              "Both odd-degree runs failed on four B300s on akita, after earlier attempts were preempted during acceptance. Control throughput reflects its recorded allocations and is not a matched hardware benchmark. Hardware histories are preserved in the provenance manifest.", "",
+              "The controls are retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in the provenance manifest:", ""]
     lines += [f"- {label(run)}: `{run['config']['train']['source_commit']}`; "
               + (f"degree-sweep identity `{run['original_sweep_identity']}`." if run.get("original_sweep_identity")
                  else f"{run.get('control_note', 'retained control')}.") for run in manifest["controls"]]

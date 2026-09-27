@@ -2,35 +2,45 @@
 
 How does held-out perplexity depend on the per-head query/key width `dK` and on
 the degree `m` of normalized Taylor attention, with softmax as the `m → ∞`
-reference? This completed record holds **30 seed-0 runs** of the 200M reference
-Transformer at a common 10,000,269,312-token budget, from three sweeps. The
-heatmaps focus on the complete 25-cell joint comparison: `dK` 8, 16, 32, 64,
-and 128, crossed with `m` 2, 4, 8, and 16 plus one softmax reference per width.
-Four further runs from the width and degree sweeps remain in the record and summary CSV:
+reference? This completed record holds **29 seed-0 runs** of the 200M reference
+Transformer at a common 10,000,269,312-token budget. The heatmaps focus on the
+complete 25-cell joint comparison: `dK` 8, 16, 32, 64, and 128, crossed with `m`
+2, 4, 8, and 16 plus one softmax reference per width. Four further runs remain in
+the record and summary CSV:
 
-| Sweep | Coordinates | Runs | Executed |
+| Source | Coordinates | Runs | Executed |
 | --- | --- | ---: | --- |
-| Width | softmax at dK 2, 4, 8, 16, 32, 64, 128, 256 | 8 | ORCD, 2026-09-16 to 09-18 |
-| Degree | m = 0, 2, 4, 8, 16 and softmax at dK 64 | 6 | Kennel, 2026-09-17 to 09-18 |
-| Joint | m = 2, 4, 8, 16 at dK 8, 16, 32, 128 | 16 | Kennel, 2026-09-20 to 09-22 |
+| Width sweep | softmax at dK 2, 4, 8, 16, 32, 128, 256 | 7 | ORCD, 2026-09-16 to 09-18 |
+| Degree sweep | m = 0 at dK 64 | 1 | Kennel, 2026-09-17 |
+| Joint sweep | m = 2, 4, 8, 16 at dK 8, 16, 32, 128 | 16 | Kennel, 2026-09-20 to 09-22 |
+| Softmax baseline | softmax at dK 64, selective weight decay | 1 | Kennel, 2026-09-25 |
+| Normalized Taylor rerun | m = 2, 4, 8, 16 at dK 64, QK-norm and selective weight decay | 4 | Kennel, 2026-09-26 to 09-27 |
 
-The width and degree sweeps ran as separate experiments before being combined here; each
-run's source commit is in the [provenance manifest](provenance/manifest.json).
+The width and degree sweeps ran as separate experiments before being combined
+here. The dK=64 softmax and Taylor runs were retrained later and replaced the
+sweeps' runs at those coordinates. Each run's source commit is in the
+[provenance manifest](provenance/manifest.json).
 
 **Findings.** Softmax improves monotonically with query/key width in this family,
 from PPL 22.35 at dK=2 to 14.17 at dK=256, with diminishing returns above dK=32
 (14.99). Width also adds parameters (`178,934,784 + 327,680·dK`), so these
 differences do not isolate width from model size. Increasing Taylor degree
 narrows the gap to softmax, most strongly at small widths: at m=2 the gap falls
-from +3.87 PPL at dK=8 to +1.34 at dK=128. Degrees 8 and 16 are within ±0.02 PPL
-of softmax at dK 64 and 128; degree 8 is slightly better there (by 0.0117 and
-0.0190), which one seed cannot establish as a reliable ordering. At dK 8, 16,
-and 32, degree 16 comes closest but remains 0.1426, 0.0537, and 0.0337 worse.
-Degree 0, uniform causal-prefix averaging, reaches only 47.07; its Q/K
-projections receive no attention gradient. The dK=64 softmax reference
+from +3.87 PPL at dK=8 to +1.34 at dK=128. At dK=128, degrees 8 and 16 are
+within ±0.02 PPL of softmax (degree 8 lower by 0.0190), which one seed cannot
+establish as an ordering. At dK 8, 16, and 32, degree 16 comes closest but remains
+0.1426, 0.0537, and 0.0337 worse. Degree 0, uniform causal-prefix averaging,
+reaches only 47.07; its Q/K projections receive no attention gradient.
+
+The dK=64 row now uses newer training setups. The softmax reference
 (`200m-softmax-seed0`, source `381f1fd`) is the repository's softmax baseline,
-retrained on 2026-09-25 under the scaffold's selective weight-decay policy; every
-other run here predates that policy and trained with decay on all parameters.
+retrained on 2026-09-25 under the selective weight-decay policy. The Taylor runs at
+m = 2, 4, 8, and 16 (source `a74e386`) were retrained on 2026-09-26/27 under the
+scaffold's current defaults, QK-norm cosine scores and selective weight decay.
+Degrees 8 and 16 reach 14.4978 and 14.4539: 0.17 and 0.21 below this softmax
+reference, which has no QK-norm, and within 0.04 of the QK-norm softmax baseline
+(14.4574, [QK-norm attention](../qk_norm_attention/README.md)). Every other run
+here trained with decay on all parameters and without QK-norm.
 
 <!-- BEGIN GENERATED RESULTS -->
 Terminal held-out perplexity at 19,074 updates (10,000,269,312 prediction tokens), seed 0. 29 of 29 retained runs are complete. The heatmap shows the 25-cell joint comparison; other retained runs remain in the CSV and manifest.
@@ -40,7 +50,7 @@ Terminal held-out perplexity at 19,074 updates (10,000,269,312 prediction tokens
 | 8 | 20.5775 | 18.1785 | 17.1790 | 16.8479 | 16.7053 |
 | 16 | 18.4989 | 16.5132 | 15.8001 | 15.6301 | 15.5764 |
 | 32 | 17.1717 | 15.5698 | 15.0712 | 15.0190 | 14.9853 |
-| 64 | 16.2810 | 14.9836 | 14.6781 | 14.7062 | 14.6655 |
+| 64 | 16.5107 | 14.8963 | 14.4978 | 14.4539 | 14.6655 |
 | 128 | 15.7202 | 14.5300 | 14.3586 | 14.3831 | 14.3776 |
 
 Runs retained outside the grid: `200m-dk002-seed0` (softmax, dK=2, PPL 22.3489); `200m-dk004-seed0` (softmax, dK=4, PPL 18.8928); `200m-m000-seed0` (m=0, dK=64, PPL 47.0653); `200m-dk256-seed0` (softmax, dK=256, PPL 14.1736). The grid uses one softmax reference per width; at dK=64 it is `200m-softmax-seed0` (PPL 14.6655).
@@ -59,13 +69,16 @@ Every run uses the 200M reference architecture: 10 layers, residual width 1024,
 embeddings, RMSNorm (epsilon `1e-6`), RoPE (base 10,000) at each model's true
 query/key width, no dropout, BF16 computation, and FP32 parameters and optimizer
 state. "200M" names the recipe, not an equal parameter budget: dK=64 has
-199,906,304 parameters, and each width step changes only the Q/K projections.
+199,906,304 parameters, each width step changes only the Q/K projections, and the
+QK-norm runs add 160 per-head scales (199,906,464).
 
 All runs use seed 0, the same packed FineWeb-Edu corpus and order, global batch
 256 with microbatch 64 and four accumulation steps, 2,048 prediction positions,
 and **19,074 updates**. AdamW uses peak/minimum learning rates `3e-4`/`3e-5`,
 2,000 warmup updates, cosine decay, betas (0.9, 0.95), weight decay 0.1, and
-clipping at 1.0 after accumulation. Evaluation uses the first 1,792 held-out
+clipping at 1.0 after accumulation. The dK=64 softmax and Taylor runs apply the
+selective policy, with no decay on the token embedding, RMSNorm scales, biases, or
+QK-norm scales; every other run decays all parameters. Evaluation uses the first 1,792 held-out
 sequences (3,670,016 prediction tokens) every 1,000 updates and at completion;
 perplexity is the exponential of mean token NLL. The primary endpoint is terminal
 perplexity at the common budget; validation-best results are recorded separately.
@@ -73,8 +86,10 @@ perplexity at the common budget; validation-best results are recorded separately
 `attention_degree: null` selects softmax. An integer `m` selects the unshifted
 truncated exponential `P_m(s) = sum_{r=0}^m s^r / r!` on post-RoPE scores
 `s = q·k / sqrt(dK)`, normalized over the causal prefix:
-`sum(P_m(s) v) / sum(P_m(s))`. There is no score shifting, clipping, temperature,
-or added normalization; invalid kernels or normalizers fail visibly. Degrees 2–16
+`sum(P_m(s) v) / sum(P_m(s))`. The dK=64 Taylor runs instead use QK-norm cosine
+scores `s = exp(gamma) · cos(q, k)`, with `gamma` learned per layer and head from
+`log(sqrt(dK))`. There is no score shifting, clipping, temperature, or added
+normalization; invalid kernels or normalizers fail visibly. Degrees 2–16
 used the fused Pallas/Triton kernel (FP32 Horner arithmetic, causal tiles only,
 no sequence-square arrays); m=0 used the blocked reference; softmax used cuDNN.
 The fused kernel and its benchmarks are documented in
@@ -93,10 +108,18 @@ data checks.
   attempt), two GPUs per run on ORCD, cuDNN softmax. Its checkpoints and logs
   stayed on ORCD and are **not retained**, by decision on 2026-09-24; metrics,
   completion records, metadata, and recipes are retained and checksum-verified.
-- **Degree sweep:** sources `2484f00` (m=0) and `1a8836a`, four GPUs per run.
-  m=0 ran on H100 PCIe with the blocked backend, degrees 2–16 on H100 SXM with
-  the fused kernel, and softmax continued from an H100 checkpoint on B300.
-  Training allocations totaled 87,714 s (about 97.5 GPU-hours).
+- **Degree sweep:** source `2484f00` for the retained m=0 run, four H100 PCIe
+  with the blocked backend. The sweep's m = 2–16 and softmax runs were replaced
+  by the two entries below.
+- **Softmax baseline:** source `381f1fd`, selective weight decay, four H100s and
+  then four B300s, cuDNN.
+- **Normalized Taylor rerun:** source `a74e386`, QK-norm and selective weight
+  decay, fused kernel, four H100s or B300s per attempt, with the shared launcher's
+  acceptance in every allocation. The runs were moved between partitions and
+  preempted several times. m=2 trained on B300 and resumed on H100 from its
+  update-6,500 checkpoint; m=4 and m=16 trained on B300, and m=8 on H100. The
+  manifest records every attempt, partition change, and acceptance. The same
+  launch produced the odd degrees in [odd Taylor attention](../odd_taylor_attention/README.md).
 - **Joint sweep:** source `4d942ea`, sweep identity `7363664d…`, four H100s on
   `dogo` or four B300s on `akita`. Pre-launch acceptance (job 200502) ran every
   coordinate through 32 full-recipe updates, validation, and an exact step-32→33
@@ -115,9 +138,9 @@ times, not a matched benchmark.
 
 ## Retained artifacts
 
-On Kennel, 22 runs (16 joint, 6 degree sweep) each keep one validation-best
-checkpoint at `checkpoints/<run>/<step>/` in this experiment directory (47,174,300,709
-bytes in total). Selection is by minimum validation NLL; it is the terminal step
+On Kennel, 22 runs (16 joint, m=0, the dK=64 softmax, and the four dK=64 Taylor
+reruns) each keep one validation-best checkpoint at `checkpoints/<run>/<step>/` in
+this experiment directory (47,174,560,306 bytes in total). Selection is by minimum validation NLL; it is the terminal step
 for every run except m=0 (step 19,000). One successful log per retained run and
 the sweeps' preflight and data-validation logs are under `logs/`,
 indexed with SHA256 in the manifest. Checkpoint migration checks compared Orbax
@@ -165,6 +188,9 @@ asserted.
 Every coordinate has one seed. The focused heatmap grid is complete; the other
 runs cover only softmax at dK 2, 4, and 256 and m=0 at dK=64. Width changes
 parameter count. Hardware differed across sweeps and, for some runs, within a run.
-The dK=64 softmax reference differs from the rest of the record in its
-weight-decay policy; its comparisons at dK=64 therefore combine that policy change
-(about 0.03 PPL in the softmax baseline) with the mechanism differences.
+The dK=64 row mixes training setups. Its Taylor runs use QK-norm and selective
+decay, its softmax reference uses selective decay without QK-norm, and every other
+width uses the original setup (decay on all parameters, no QK-norm). Deltas at
+dK=64 therefore include QK-norm, which moves softmax by 0.21 PPL (14.6655 to
+14.4574); comparisons across widths include both changes, and the decay policy
+alone moves softmax by about 0.03 PPL.

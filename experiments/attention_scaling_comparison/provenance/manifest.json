@@ -183,15 +183,15 @@
   "source_manifests": {
     "key_dimension_taylor": {
       "path": "experiments/key_dimension_taylor/provenance/manifest.json",
-      "sha256": "752c9c5134d2839fdc1b6a481313bb72e61f6aa9f75b2043b628c6543787ac9e"
+      "sha256": "b821a7ba25f58b00076e7a9f941318e82976db5f9046892665d2247d8b71259e"
     },
     "odd_taylor_attention": {
       "path": "experiments/odd_taylor_attention/provenance/manifest.json",
-      "sha256": "6fb2b1e05ddbfcbb7dbdfb5b99239b16bb98bd71dc329246a5fd91accb5e8d9c"
+      "sha256": "c5417bee6cfc17cd50b79af7749769c2aea3ae0429cd98c32071196a7fb98327"
     },
     "gla_key_dimension": {
       "path": "experiments/gla_key_dimension/provenance/manifest.json",
-      "sha256": "443f1e95641ad9e8b0b0cc8e4a3425cf20a5e004e0c7c93a3e79da45be273a99"
+      "sha256": "90e69a5ba9835710cc761c242f88e0273fc237f411fb251be70e39840a289f87"
     },
     "qk_norm_attention": {
       "path": "experiments/qk_norm_attention/provenance/manifest.json",
@@ -199,7 +199,7 @@
     },
     "unnormalized_taylor_attention": {
       "path": "experiments/unnormalized_taylor_attention/provenance/manifest.json",
-      "sha256": "aa4dc7767e7ea580c776891e74de13cb78664b4fcca02f40d4ec18ab9c1efaa5"
+      "sha256": "3121cd32b1219c13c8b99d6c8996f67a78481d7b6c01ce1b2a0bb1148be82fb9"
     },
     "unnormalized_attention": {
       "path": "experiments/unnormalized_attention/provenance/manifest.json",
@@ -207,7 +207,7 @@
     },
     "qk_norm_learned_taylor": {
       "path": "experiments/qk_norm_learned_taylor/provenance/manifest.json",
-      "sha256": "07562fdf973f9c901af79b515653f76c6c92bdfc7961ab4c6f0a4ddb002c3834"
+      "sha256": "a97cc108c8cd525ad67b3804d4b650460cb1e4bf3e5e815a8cc29389a01c1770"
     },
     "nonnegative_learned_taylor": {
       "path": "experiments/nonnegative_learned_taylor/provenance/manifest.json",
@@ -223,24 +223,21 @@
       "experiment": "odd_taylor_attention",
       "run": "200m-m001-seed0",
       "status": "numerical_failure",
-      "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
       "artifacts": {
         "metadata": {
           "path": "experiments/odd_taylor_attention/runs/200m-m001-seed0/metadata.json",
-          "sha256": "0757ad980b5c370cded0c6c54cc7a564356466ddc58539c41b124b0d0d47aa3c"
+          "sha256": "7a5d971252905aec23e3a7c963eaff1616a9ec8dc9c8090fc9f701035aeed336"
         },
         "failure": {
-          "path": "experiments/odd_taylor_attention/runs/200m-m001-seed0/numerical_failure_step_00000009.json",
-          "sha256": "19d77d1a471f71230ea20afb4f3124a4206f1ae2b271b3734e974c4446369a57"
+          "path": "experiments/odd_taylor_attention/runs/200m-m001-seed0/numerical_failure_step_00000031.json",
+          "sha256": "43c29f7a64b34dbaa3fc192321836a476cc8c5ffb54f3ef953e82697b3a62143"
         }
       },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "figure": "heatmap",
@@ -343,28 +340,25 @@
       "experiment": "key_dimension_taylor",
       "run": "200m-m002-seed0",
       "status": "complete",
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
       "artifacts": {
         "metadata": {
           "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metadata.json",
-          "sha256": "754692f8fad41a85d630883aab228c6aab7a947b29871cade89968d2e52cb296"
+          "sha256": "300ccab36e6488f7aa6731df6a034ef677812e118c471efe39049c83c95a1c40"
         },
         "metrics": {
           "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/metrics.jsonl",
-          "sha256": "5445fae230da3a12efd40b64dcacd5311ed83288c783ce673f7abecfc47d0f77"
+          "sha256": "afd284756057e498dfbc1279530e44e792627848f10663a0dcdd793a0f447bc3"
         },
         "completion": {
           "path": "experiments/key_dimension_taylor/runs/200m-m002-seed0/completion.json",
-          "sha256": "b58da90a02f1bc1b0c0d6bf3b63584b7ab9df39f600e1c65b5e6d442211e59a7"
+          "sha256": "0c39c07e7276d68eec7965eb5c616b65e4e08ed46c5123555e67cff86604e06b"
         }
       },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "figure": "heatmap",
@@ -405,24 +399,21 @@
       "experiment": "odd_taylor_attention",
       "run": "200m-m003-seed0",
       "status": "numerical_failure",
-      "source_commit": "2e0e88d9cc955b57cd07cdd40a743d2c49bafd4c",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
       "artifacts": {
         "metadata": {
           "path": "experiments/odd_taylor_attention/runs/200m-m003-seed0/metadata.json",
-          "sha256": "360df6a9c73b0c21240c0ce5a51500507b15eef5af0d48798a5f0e8fbc80af77"
+          "sha256": "a8f14c5236955465209b27d86aab60381f691f71f20c068d8d2332dd9dacef82"
         },
         "failure": {
-          "path": "experiments/odd_taylor_attention/runs/200m-m003-seed0/numerical_failure_step_00000017.json",
-          "sha256": "c0f5a136568c040aabd692d9d6636d6355a6b75957938c3cb6cdf771bd5fe0b2"
+          "path": "experiments/odd_taylor_attention/runs/200m-m003-seed0/numerical_failure_step_00000419.json",
+          "sha256": "4cdddfa0c4136fbb902b6a8375bc4efff6962eb79b1680616c7c3be8b7e722c6"
         }
       },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "figure": "heatmap",
@@ -525,28 +516,25 @@
       "experiment": "key_dimension_taylor",
       "run": "200m-m004-seed0",
       "status": "complete",
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
       "artifacts": {
         "metadata": {
           "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/metadata.json",
-          "sha256": "3c38a793975e2bd1b4804b4001ea2c98a2acb679950c1c465f522c7a5d9a8514"
+          "sha256": "10af0dd9289b98829d36b9967ecfa0cf161c22c91792c552c67ff5cd825e241e"
         },
         "metrics": {
           "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/metrics.jsonl",
-          "sha256": "9ced82fa7db159b5a93b569ac40b7d8139169bd38634040e781512209e92ee17"
+          "sha256": "37ecdb24c15801f34f3df96c8311db2b1332cd934d8fca6197b12c4851d3104a"
         },
         "completion": {
           "path": "experiments/key_dimension_taylor/runs/200m-m004-seed0/completion.json",
-          "sha256": "5aa158bc0661f8682353c4c9b19030c3935abc27c145f823709abdf98100ada1"
+          "sha256": "bedd0ddfa3867044335f7fe6d223f27941baf42df164eeb9924818258ccbd25d"
         }
       },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "figure": "heatmap",
@@ -680,28 +668,25 @@
       "experiment": "key_dimension_taylor",
       "run": "200m-m008-seed0",
       "status": "complete",
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
       "artifacts": {
         "metadata": {
           "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/metadata.json",
-          "sha256": "2525594087e15a5512a6bee1622b7a8ccdf1fce85df587d2a863ea2d8b0fc838"
+          "sha256": "202873338c143c54528ec28e6c4c7c578feabd52c9e08b0f05e20fcd0f0f8108"
         },
         "metrics": {
           "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/metrics.jsonl",
-          "sha256": "edeb0eaa9980c748808df22b18ffcd13c010662ad82c6a472e6445de397cd590"
+          "sha256": "a6a6d987b7779241b5ddc6b15e43c5622cd1c40275d7f8dee98fd73d38d55b35"
         },
         "completion": {
           "path": "experiments/key_dimension_taylor/runs/200m-m008-seed0/completion.json",
-          "sha256": "4c1e37050f64bce387de8266596309e13d8de381e8368965cb3926e1105a63a4"
+          "sha256": "4891b76b4e7674df0b2ba311e8a0cfaab6133c155d1fa018171e1a7b9a153085"
         }
       },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "figure": "heatmap",
@@ -835,28 +820,25 @@
       "experiment": "key_dimension_taylor",
       "run": "200m-m016-seed0",
       "status": "complete",
-      "source_commit": "1a8836a75836671cdf83a3ab7763425a6a88cac7",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
       "artifacts": {
         "metadata": {
           "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/metadata.json",
-          "sha256": "1169532305ca5500b6bf2fafdc99d75d79715bfb07cd1b9bd4545a80db63f8fa"
+          "sha256": "02ed201d70063b26857dd9759688e157527f010edcc15707679bce7a5919e59a"
         },
         "metrics": {
           "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/metrics.jsonl",
-          "sha256": "3bb5eb752f69f69e4b0c00f04559093baad00d15541f5831f162e46aa3130e1a"
+          "sha256": "97de74ec829f36a5a7ad73b25c93b456716259b188c94a7417e7c63b7a04e929"
         },
         "completion": {
           "path": "experiments/key_dimension_taylor/runs/200m-m016-seed0/completion.json",
-          "sha256": "d5a95945386136c1183a0f78d492cad4b261023cd5413e175c4ee01cbee4317d"
+          "sha256": "931ade1dffc3165778cf42142e37c74fb79211a948b42a9331d08197a1752e84"
         }
       },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "figure": "heatmap",
@@ -1700,7 +1682,7 @@
       "complete": 31,
       "not_run": 12,
       "numerical_failure": 2,
-      "legacy": 31
+      "legacy": 25
     },
     "degree_chart": {
       "complete": 13,
@@ -1711,11 +1693,11 @@
   "analysis": {
     "config": {
       "path": "experiments/attention_scaling_comparison/configs/heatmap.json",
-      "sha256": "8fea92204e6089fe4d61fd2e32015e188b87580a20badea44d3f51cf2664b00e"
+      "sha256": "e51db16925b86466d202ac307692ab2003efaf688a8e0e68cbefea785fa60d41"
     },
     "chart_config": {
       "path": "experiments/attention_scaling_comparison/configs/degree_chart.json",
-      "sha256": "9e1e2ed072097a51b2a29068254abd5259c8002c613df6e7e16ff806a71c9994"
+      "sha256": "75309a40f5c62a80069df0e02c3a2717795b807b6f5023a9d24665e67e530da5"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
@@ -1743,19 +1725,19 @@
   "derived_artifacts": {
     "summary_csv": {
       "path": "experiments/attention_scaling_comparison/summary.csv",
-      "sha256": "90a7235a52b3650aff25b078de961bee5d171fd412393f5454744574d627fa0c"
+      "sha256": "597ca263b7fefd10e397ac5d7b085d4da4a0757d206d4082c04ac95f0783142b"
     },
     "readme": {
       "path": "experiments/attention_scaling_comparison/README.md",
-      "sha256": "ef785da9d3e3486b5a2626e38008b133c7534c4fd3f6e6b0442d50469432df68"
+      "sha256": "f9815f26c66bddca9c7c64c730c951e0fd49cfc4fa39663411b683def39bec2d"
     },
     "combined_terminal_ppl_pdf": {
       "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.pdf",
-      "sha256": "26ce0a7c50ea13813bce97d112898150d9f59b0a377a2692ffabee94839706f9"
+      "sha256": "e9b017e173dbf366472c0fc5e25115fc153a5eb9a3c58a7eaf2eff56eee05711"
     },
     "combined_terminal_ppl_png": {
       "path": "experiments/attention_scaling_comparison/figures/combined_terminal_ppl.png",
-      "sha256": "698d02a29540421246c5f0da2dcc1bbfe674ea0b37413697c281d0611bb0fb08"
+      "sha256": "1fc54ba9bad01459d5d9224fae44bf8521f5421fc9a1ecb0178d00370aa287c5"
     },
     "degree_chart_pdf": {
       "path": "experiments/attention_scaling_comparison/figures/degree_chart.pdf",

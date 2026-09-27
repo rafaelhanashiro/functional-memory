@@ -30,10 +30,10 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     rows = build(ROOT, config_path=config, output_dir=output)
     assert len(rows) == 45
     assert Counter(row["status"] for row in rows) == {"complete": 31, "numerical_failure": 2, "not_run": 12}
-    assert sum(1 for row in rows if row["legacy"]) == 31
+    assert sum(1 for row in rows if row["legacy"]) == 25
     by_cell = {(r["panel"], r["column"], r["d_k"]): r for r in rows}
-    assert by_cell["normalized_fixed", "m1", 64]["failure_step"] == 9
-    assert by_cell["normalized_fixed", "m3", 64]["failure_step"] == 17
+    assert by_cell["normalized_fixed", "m1", 64]["failure_step"] == 31
+    assert by_cell["normalized_fixed", "m3", 64]["failure_step"] == 419
     assert by_cell["references", "gla", 128]["terminal_ppl"] == pytest.approx(15.436583304097534)
     assert by_cell["references", "softmax", 64]["terminal_ppl"] == pytest.approx(14.457394141153632)
     assert by_cell["references", "softmax_no_qk_norm", 64]["terminal_ppl"] == pytest.approx(14.665499848737895)
@@ -50,7 +50,7 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     provenance = json.loads((output / "provenance" / "manifest.json").read_text())
     assert len(provenance["source_manifests"]) == 8
     assert Counter(row["figure"] for row in provenance["source_runs"]) == {"heatmap": 33, "degree_chart": 17}
-    assert provenance["status_counts"]["heatmap"]["legacy"] == 31
+    assert provenance["status_counts"]["heatmap"]["legacy"] == 25
     assert provenance["status_counts"]["degree_chart"] == {"complete": 13, "legacy": 5, "numerical_failure": 4}
     for name in ("combined_terminal_ppl", "degree_chart"):
         assert (output / "figures" / f"{name}.pdf").stat().st_size > 1000
