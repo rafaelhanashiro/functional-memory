@@ -226,6 +226,23 @@ def _probe_chunk(model, tokens, coefficients):
             report["first_invalid_row_scores"] = _first_invalid_row_scores(
                 q, k, coefficients, batch_index, query, head
             )
+            # The existing SOS backend evaluates the mathematically identical
+            # c0*(s+1)^2 without subtractive cancellation. Compare the same
+            # Q/K/V row, without modifying the frozen training mechanism.
+            factor = jnp.float32(math.sqrt(coefficients[0]))
+            factors = jnp.broadcast_to(
+                jnp.asarray((factor, factor, 0.0), dtype=jnp.float32),
+                (model.config.num_heads, 3),
+            )
+            factored_output, factored_normalizer = _forward(
+                q, k, v, factors, parameterization="sum_of_squares", interpret=False
+            )
+            factored_row_normalizer = _host(factored_normalizer[batch_index, query, head])
+            factored_row_output = _host(factored_output[batch_index, query, head])
+            report["first_invalid_row_factorized_fused"] = {
+                "normalizer": _finite_float(factored_row_normalizer),
+                "output_finite": bool(np.all(np.isfinite(factored_row_output))),
+            }
         layers.append(report)
         if len(invalid_indices) or report["fused_nonfinite_output_count"]:
             break
