@@ -229,12 +229,14 @@ def test_configuration_validation_backend_selection_and_legacy_equality():
                              (dict(attention_degree=1), "even attention_degree"),
                              (dict(attention_normalization=False), "row-normalized"),
                              (dict(attention_coefficients="fixed"), "learned polynomial"),
-                             (dict(attention_coefficient_parameterization="softplus"), "Unknown coefficient"),
-                             (dict(attention_backend="fused"), "no fused kernel")):
+                             (dict(attention_coefficient_parameterization="softplus"), "Unknown coefficient")):
         with pytest.raises(ValueError, match=message):
             _model_config(4, **updates)
     auto = _model_config(4, attention_backend="auto")
-    assert resolve_attention_backend(auto, dtype="bfloat16", platform="gpu") == "blocked"
+    assert resolve_attention_backend(auto, dtype="bfloat16", platform="gpu") == "fused"
+    assert resolve_attention_backend(auto, dtype="float32", platform="cpu") == "blocked"
+    fused = _model_config(4, attention_backend="fused")
+    assert resolve_attention_backend(fused, dtype="bfloat16", platform="gpu") == "fused"
     assert ModelConfig().attention_coefficient_parameterization == "direct"
     # A run recorded before the option existed used direct coefficients.
     direct = Config()

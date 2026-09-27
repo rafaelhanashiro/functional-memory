@@ -17,119 +17,7 @@
   "panels": [
     {
       "id": "normalized_fixed",
-      "title": "Row-normalized Taylor \u00b7 fixed",
-      "columns": [
-        {
-          "id": "m1",
-          "label": "m=1"
-        },
-        {
-          "id": "m2",
-          "label": "m=2"
-        },
-        {
-          "id": "m3",
-          "label": "m=3"
-        },
-        {
-          "id": "m4",
-          "label": "m=4"
-        },
-        {
-          "id": "m8",
-          "label": "m=8"
-        },
-        {
-          "id": "m16",
-          "label": "m=16"
-        }
-      ]
-    },
-    {
-      "id": "normalized_learned_taylor",
-      "title": "Row-normalized Taylor \u00b7 learned per head",
-      "columns": [
-        {
-          "id": "m1",
-          "label": "m=1"
-        },
-        {
-          "id": "m2",
-          "label": "m=2"
-        },
-        {
-          "id": "m3",
-          "label": "m=3"
-        },
-        {
-          "id": "m4",
-          "label": "m=4"
-        },
-        {
-          "id": "m8",
-          "label": "m=8"
-        },
-        {
-          "id": "m16",
-          "label": "m=16"
-        }
-      ]
-    },
-    {
-      "id": "normalized_learned",
-      "title": "Row-normalized quadratic \u00b7 learned",
-      "columns": [
-        {
-          "id": "positive_global",
-          "label": "positive\nglobal"
-        },
-        {
-          "id": "positive_per_head",
-          "label": "positive\nper head"
-        },
-        {
-          "id": "unrestricted_global",
-          "label": "signed\nglobal"
-        },
-        {
-          "id": "unrestricted_per_head",
-          "label": "signed\nper head"
-        }
-      ]
-    },
-    {
-      "id": "unnormalized_fixed",
-      "title": "Unnormalized Taylor \u00b7 fixed",
-      "columns": [
-        {
-          "id": "m1",
-          "label": "m=1"
-        },
-        {
-          "id": "m2",
-          "label": "m=2"
-        },
-        {
-          "id": "m3",
-          "label": "m=3"
-        },
-        {
-          "id": "m4",
-          "label": "m=4"
-        },
-        {
-          "id": "m8",
-          "label": "m=8"
-        },
-        {
-          "id": "m16",
-          "label": "m=16"
-        }
-      ]
-    },
-    {
-      "id": "unnormalized_learned",
-      "title": "Unnormalized Taylor \u00b7 learned per head",
+      "title": "Normalized Taylor \u00b7 fixed",
       "columns": [
         {
           "id": "m1",
@@ -174,10 +62,6 @@
           "id": "gla",
           "label": "GLA",
           "qk_norm": null
-        },
-        {
-          "id": "unnormalized_exp",
-          "label": "unnormalized\nexp"
         }
       ]
     }
@@ -191,33 +75,13 @@
       "path": "experiments/odd_taylor_attention/provenance/manifest.json",
       "sha256": "6fb2b1e05ddbfcbb7dbdfb5b99239b16bb98bd71dc329246a5fd91accb5e8d9c"
     },
-    "learned_quadratic_attention": {
-      "path": "experiments/learned_quadratic_attention/provenance/manifest.json",
-      "sha256": "4d5f0318febd6582eaafd60e308153fcbc81877f48074e46a95abdc796d0872d"
-    },
-    "unnormalized_taylor_attention": {
-      "path": "experiments/unnormalized_taylor_attention/provenance/manifest.json",
-      "sha256": "aa4dc7767e7ea580c776891e74de13cb78664b4fcca02f40d4ec18ab9c1efaa5"
-    },
-    "learned_unnormalized_taylor": {
-      "path": "experiments/learned_unnormalized_taylor/provenance/manifest.json",
-      "sha256": "701344360d0681913d928eb106f9ad9cf64195a032c57ab1f587c2e21ab3563f"
-    },
     "gla_key_dimension": {
       "path": "experiments/gla_key_dimension/provenance/manifest.json",
       "sha256": "443f1e95641ad9e8b0b0cc8e4a3425cf20a5e004e0c7c93a3e79da45be273a99"
     },
-    "unnormalized_attention": {
-      "path": "experiments/unnormalized_attention/provenance/manifest.json",
-      "sha256": "990c644dad61f3ccb8eafbca07de71d0d7a9eb0a7b999bf60d1f7f73ffa34ee5"
-    },
     "qk_norm_attention": {
       "path": "experiments/qk_norm_attention/provenance/manifest.json",
       "sha256": "bb8900c813809e4398d2d5d643a0257a428919a086ca5c7a271d76ad82bdcd06"
-    },
-    "qk_norm_learned_taylor": {
-      "path": "experiments/qk_norm_learned_taylor/provenance/manifest.json",
-      "sha256": "07562fdf973f9c901af79b515653f76c6c92bdfc7961ab4c6f0a4ddb002c3834"
     }
   },
   "cells": [
@@ -446,131 +310,12 @@
       "run": "200m-m003-seed0"
     },
     {
-      "panel": "normalized_learned",
-      "column": "positive_global",
-      "d_k": 64,
-      "experiment": "learned_quadratic_attention",
-      "run": "200m-positive-global-seed0"
-    },
-    {
-      "panel": "normalized_learned",
-      "column": "positive_per_head",
-      "d_k": 64,
-      "experiment": "learned_quadratic_attention",
-      "run": "200m-positive-per-head-seed0"
-    },
-    {
-      "panel": "normalized_learned",
-      "column": "unrestricted_global",
-      "d_k": 64,
-      "experiment": "learned_quadratic_attention",
-      "run": "200m-unrestricted-global-seed0"
-    },
-    {
-      "panel": "normalized_learned",
-      "column": "unrestricted_per_head",
-      "d_k": 64,
-      "experiment": "learned_quadratic_attention",
-      "run": "200m-unrestricted-per-head-seed0"
-    },
-    {
-      "panel": "unnormalized_fixed",
-      "column": "m1",
-      "d_k": 64,
-      "experiment": "unnormalized_taylor_attention",
-      "run": "200m-m001-seed0"
-    },
-    {
-      "panel": "unnormalized_learned",
-      "column": "m1",
-      "d_k": 64,
-      "experiment": "qk_norm_learned_taylor",
-      "run": "200m-qk-m001-unnormalized-seed0"
-    },
-    {
-      "panel": "unnormalized_fixed",
-      "column": "m2",
-      "d_k": 64,
-      "experiment": "unnormalized_taylor_attention",
-      "run": "200m-m002-seed0"
-    },
-    {
-      "panel": "unnormalized_learned",
-      "column": "m2",
-      "d_k": 64,
-      "experiment": "qk_norm_learned_taylor",
-      "run": "200m-qk-m002-unnormalized-seed0"
-    },
-    {
-      "panel": "unnormalized_fixed",
-      "column": "m3",
-      "d_k": 64,
-      "experiment": "unnormalized_taylor_attention",
-      "run": "200m-m003-seed0"
-    },
-    {
-      "panel": "unnormalized_learned",
-      "column": "m3",
-      "d_k": 64,
-      "experiment": "qk_norm_learned_taylor",
-      "run": "200m-qk-m003-unnormalized-seed0"
-    },
-    {
-      "panel": "unnormalized_fixed",
-      "column": "m4",
-      "d_k": 64,
-      "experiment": "unnormalized_taylor_attention",
-      "run": "200m-m004-seed0"
-    },
-    {
-      "panel": "unnormalized_learned",
-      "column": "m4",
-      "d_k": 64,
-      "experiment": "qk_norm_learned_taylor",
-      "run": "200m-qk-m004-unnormalized-seed0"
-    },
-    {
-      "panel": "references",
-      "column": "unnormalized_exp",
-      "d_k": 64,
-      "experiment": "unnormalized_attention",
-      "run": "200m-exp-seed0-kennel"
-    },
-    {
       "panel": "references",
       "column": "softmax",
       "d_k": 64,
       "experiment": "qk_norm_attention",
       "run": "200m-qk-softmax-seed0"
-    },
-    {
-      "panel": "normalized_learned_taylor",
-      "column": "m1",
-      "d_k": 64,
-      "experiment": "qk_norm_learned_taylor",
-      "run": "200m-qk-m001-normalized-seed0"
-    },
-    {
-      "panel": "normalized_learned_taylor",
-      "column": "m2",
-      "d_k": 64,
-      "experiment": "qk_norm_learned_taylor",
-      "run": "200m-qk-m002-normalized-seed0"
-    },
-    {
-      "panel": "normalized_learned_taylor",
-      "column": "m3",
-      "d_k": 64,
-      "experiment": "qk_norm_learned_taylor",
-      "run": "200m-qk-m003-normalized-seed0"
-    },
-    {
-      "panel": "normalized_learned_taylor",
-      "column": "m4",
-      "d_k": 64,
-      "experiment": "qk_norm_learned_taylor",
-      "run": "200m-qk-m004-normalized-seed0"
     }
   ],
-  "source_artifact_set_sha256": "87a0746bbb38aa316a85cb40e9a42b2661a5ca3a4174b8f19ce0511a583529a5"
+  "source_artifact_set_sha256": "600d03d93a7dbbde8f3d91e2a7783ce467cfa1ffd9ecc2d109798155796ba2f9"
 }

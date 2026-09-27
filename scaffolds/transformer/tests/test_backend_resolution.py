@@ -77,6 +77,41 @@ def test_auto_is_resolved_in_saved_config_and_request_kept_in_metadata(tmp_path)
     assert attention_identity(config)["attention_backend_requested"] == "auto"
 
 
+@pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares"))
+def test_learned_normalized_resume_keeps_recorded_blocked_backend(tmp_path, monkeypatch, parameterization):
+    from scaffolds.transformer.attention.backends import selection
+
+    config = Config()
+    config.train.workdir = tmp_path
+    config.model = ModelConfig(attention_degree=2, attention_coefficients="learned",
+                               attention_coefficient_parameterization=parameterization,
+                               attention_backend="blocked")
+    ensure_run_config(config, resume=True)
+    original = (tmp_path / "config.json").read_bytes()
+    resumed = load_config(tmp_path / "config.json")
+    resumed.model.attention_backend = "auto"
+    monkeypatch.setattr(selection, "_runtime_platform", lambda: "gpu")
+    monkeypatch.setattr(selection, "_cuda_compute_capability", lambda: 9)
+    assert resolve_attention_backend(resumed.model, dtype="bfloat16") == "fused"
+    ensure_run_config(resumed, resume=True)
+    assert resumed.model.attention_backend == "blocked"
+    assert (tmp_path / "config.json").read_bytes() == original
+
+
+@pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares"))
+def test_fused_normalized_identity_records_reference_diagnostics(parameterization):
+    config = Config()
+    config.model = ModelConfig(attention_degree=2, attention_coefficients="learned",
+                               attention_coefficient_parameterization=parameterization,
+                               attention_backend="fused")
+    identity = attention_identity(config)
+    assert identity["attention_backend"] == "fused"
+    assert identity["attention_implementation"] == "pallas_triton"
+    assert identity["diagnostic_backend"] == "blocked"
+    assert identity["attention_coefficient_parameterization"] == parameterization
+    assert identity["query_block_size"] > 0 and identity["key_block_size"] > 0
+
+
 def test_resuming_saved_resolved_config_preserves_original_request(tmp_path):
     from scaffolds.transformer.training.loop import _write_status
 

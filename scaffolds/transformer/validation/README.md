@@ -246,7 +246,7 @@ recipe's widths.
 ## Normalized learned polynomials and QK-norm on B300 and H100
 
 Row-normalized attention with learned polynomial coefficients
-(`attention/learned_polynomial.py`) has only the blocked reference; QK-norm scores
+(`attention/learned_polynomial.py`) initially used only the blocked reference; QK-norm scores
 compose with every kernel as pre-scaled operands. Both first ran for the
 [QK-norm learned Taylor sweep](../../../experiments/qk_norm_learned_taylor/README.md).
 The new GPU cases (`tests/test_learned_polynomial_normalized.py`) run the blocked
@@ -265,6 +265,88 @@ source `696ffb5` (673-test CPU suite before launch; per allocation 202 CPU tests
 first H100 qualification of QK-norm. Pilot update times were 1.01–1.03 s for the
 blocked normalized kernels on four B300s (1.97 s on four H100s) against 0.46–0.48 s
 for the fused unnormalized kernel on either GPU.
+
+## Fused normalized learned polynomials
+
+`attention/backends/fused_normalized_polynomial.py` implements both direct learned
+coefficients and even-degree sum-of-squares factors. Direct coefficients use two
+passes to normalize by the final signed row sum; the nonnegative family evaluates
+the two factors directly and uses one online forward pass. Both reverse passes
+differentiate Q, K, V, and all parameters without storing a sequence-square array.
+The model owns parameters and sharing; the kernel receives per-head arrays and
+JAX reduces gradients through any shared broadcast.
+
+The qualification suite compares outputs and all gradients with an independent
+FP64 oracle, exercises signed and zero row sums, factor roots, masked overflow,
+odd dimensions, shared coefficients, BF16 QK-norm at 2,048 tokens, and a small
+Transformer's optimizer and checkpoint/resume. Polynomial values, row sums,
+backward output residuals, and parameter-gradient reductions use FP32. The shared
+tensor-core dot policy is unchanged. Near polynomial roots and cancelling signed
+sums, small score or accumulation errors can be amplified; these cases use
+conditioning-aware bounds. There is no denominator clipping or epsilon fallback.
+The strict replay test uses packed tokens with distinct embedding indices within
+each microbatch: repeated-index BF16 embedding-gradient accumulation can vary
+with GPU atomic update order. It checks the complete final parameter/optimizer
+state exactly, plus durable checkpoint hashes and the resumed batch/RNG identity.
+This fixture does not claim bitwise determinism for arbitrary training data.
+
+Qualification passed 40 GPU tests on H100 (`dogo`, job 202628) and 40 on B300
+(`akita`, job 202629), including the strict replay fixture. The complete CPU suite
+passed 719 tests, with 13 expected skips. The two-GPU update comparison is job
+202626. Exact source commits, configuration hashes, hardware, attempts, runtime
+settings, test counts, and retained log hashes are in the
+[manifest](provenance/manifest.json). Existing experiment worktrees and their
+resolved backends were not changed.
+
+<!-- BEGIN GENERATED NORMALIZED POLYNOMIAL THROUGHPUT -->
+Kernel forward and backward, including all parameter gradients:
+
+| GPU | Family | Degree | Blocked (ms) | Fused (ms) | Speedup |
+|---|---|---:|---:|---:|---:|
+| H100 | Unrestricted | 1 | 42.270 | 4.485 | 9.43× |
+| H100 | Unrestricted | 2 | 42.313 | 4.871 | 8.69× |
+| H100 | Unrestricted | 3 | 42.393 | 5.521 | 7.68× |
+| H100 | Unrestricted | 4 | 42.429 | 6.071 | 6.99× |
+| H100 | Nonnegative | 2 | 47.397 | 4.557 | 10.40× |
+| H100 | Nonnegative | 4 | 43.267 | 5.929 | 7.30× |
+| B300 | Unrestricted | 1 | 21.712 | 7.066 | 3.07× |
+| B300 | Unrestricted | 2 | 21.739 | 8.463 | 2.57× |
+| B300 | Unrestricted | 3 | 21.881 | 9.470 | 2.31× |
+| B300 | Unrestricted | 4 | 22.219 | 10.392 | 2.14× |
+| B300 | Nonnegative | 2 | 23.881 | 7.429 | 3.21× |
+| B300 | Nonnegative | 4 | 22.108 | 10.042 | 2.20× |
+
+Complete Transformer updates on two B300 GPUs:
+
+| Family | Degree | Blocked (ms) | Fused (ms) | Speedup |
+|---|---:|---:|---:|---:|
+| Unrestricted | 2 | 995.449 | 447.108 | 2.23× |
+| Unrestricted | 4 | 1013.012 | 521.030 | 1.94× |
+| Nonnegative | 2 | 1077.729 | 407.212 | 2.65× |
+| Nonnegative | 4 | 1009.427 | 512.678 | 1.97× |
+<!-- END GENERATED NORMALIZED POLYNOMIAL THROUGHPUT -->
+
+Run the qualification from a clean, committed worktree with its own environment:
+
+```bash
+SOURCE=$(git rev-parse HEAD)
+RUN=normalized-polynomial-h100
+mkdir -p scaffolds/transformer/validation/logs/$RUN
+sbatch --nodelist=dogo \
+  --output=scaffolds/transformer/validation/logs/$RUN/slurm-%j.out \
+  scaffolds/transformer/launchers/qualify_normalized_polynomial.sbatch "$SOURCE" "$RUN" kernel
+# Use akita for B300. For complete 200M-model update comparisons, request
+# --gres=gpu:2 and pass "updates" in place of "kernel" with a fresh RUN.
+python -m scaffolds.transformer.benchmarks.summarize_normalized_polynomial --check
+```
+
+The kernel benchmark uses BF16 `[16, 2048, 16, 64]` Q/K/V, QK-norm at scale 8,
+Taylor-initialized parameters, three warmups, and ten synchronized measured calls.
+It includes every input/parameter gradient; compilation, diagnostics, transfers,
+and the rest of the Transformer are excluded. The update benchmark uses two GPUs,
+a global microbatch of 32, and four accumulation steps (batch 128), preserving the
+production per-device microbatch of 16. Its synthetic tokens are already on the
+devices. Memory numbers are compiler buffer estimates, not allocator peaks.
 
 ## Reproduction
 

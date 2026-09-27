@@ -9,6 +9,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
+from .chart import render_degree_chart
 from .collect import collect_rows
 from .render import render_heatmap
 
@@ -16,7 +17,7 @@ from .render import render_heatmap
 REPO_ROOT = Path(__file__).resolve().parents[4]
 EXPERIMENT = "attention_scaling_comparison"
 FIELDS = (
-    "panel", "column", "d_k", "status", "terminal_nll", "terminal_ppl", "failure_step",
+    "figure", "panel", "column", "d_k", "status", "terminal_nll", "terminal_ppl", "failure_step",
     "source_experiment", "source_run", "source_commit", "metrics_path", "metrics_sha256",
     "completion_path", "completion_sha256", "failure_path", "failure_sha256",
     "weight_decay_policy", "qk_norm", "legacy", "legacy_reasons",
@@ -35,13 +36,13 @@ def reference(root: Path, path: Path) -> dict[str, str]:
     return {"path": name, "sha256": digest(path)}
 
 
-def csv_row(row: dict) -> dict:
+def csv_row(row: dict, figure: str) -> dict:
     artifacts = row.get("artifacts") or {}
     def artifact_field(kind: str, field: str) -> str:
         return (artifacts.get(kind) or {}).get(field, "")
 
     return {
-        "panel": row["panel"], "column": row["column"], "d_k": row["d_k"],
+        "figure": figure, "panel": row["panel"], "column": row["column"], "d_k": row["d_k"],
         "status": row["status"], "terminal_nll": row.get("terminal_nll"),
         "terminal_ppl": row.get("terminal_ppl"), "failure_step": row.get("failure_step"),
         "source_experiment": row.get("experiment", ""), "source_run": row.get("run", ""),
@@ -59,16 +60,20 @@ def csv_row(row: dict) -> dict:
     }
 
 
-def update_readme(path: Path, rows: list[dict]) -> None:
+def _counts(rows: list[dict]) -> tuple[Counter, int, int]:
+    trained = [row for row in rows if row["status"] != "not_run"]
+    return Counter(row["status"] for row in rows), len(trained), sum(1 for row in trained if row.get("legacy"))
+
+
+def update_readme(path: Path, rows: list[dict], chart_rows: list[dict]) -> None:
     begin, end = "<!-- BEGIN GENERATED RESULTS -->", "<!-- END GENERATED RESULTS -->"
     authored = path.read_text()
     if authored.count(begin) != 1 or authored.count(end) != 1:
         raise ValueError("README needs exactly one generated-results marker pair")
     prefix, rest = authored.split(begin, 1)
     _, suffix = rest.split(end, 1)
-    counts = Counter(row["status"] for row in rows)
-    trained = [row for row in rows if row["status"] != "not_run"]
-    legacy = [row for row in trained if row.get("legacy")]
+    counts, trained, legacy = _counts(rows)
+    chart_counts, chart_trained, chart_legacy = _counts(chart_rows)
     block = (
         f"{len(rows)} displayed coordinates: {counts['complete']} complete, "
         f"{counts['numerical_failure']} numerical failures, "
@@ -76,45 +81,63 @@ def update_readme(path: Path, rows: list[dict]) -> None:
         "Only completed runs at the common 19,074-update endpoint receive a color "
         "and a terminal PPL. A failed run is labeled with its failure update; "
         "an untrained coordinate is marked NOT RUN. "
-        f"{len(legacy)} of the {len(trained)} trained cells are outlined as legacy runs: they trained "
+        f"{legacy} of the {trained} trained cells are outlined as legacy runs: they trained "
         "with weight decay on all parameters and, where it applies, without QK-norm, before those "
         "became the scaffold's defaults; each is replaced when its experiment is rerun. "
-        f"{len(trained) - len(legacy)} cells already use the current defaults.\n\n"
+        f"{trained - legacy} cells already use the current defaults.\n\n"
         "![Combined terminal perplexity heatmap](figures/combined_terminal_ppl.png)\n\n"
-        "[PDF](figures/combined_terminal_ppl.pdf) · [Cell-level data and source checksums](summary.csv) "
+        "[PDF](figures/combined_terminal_ppl.pdf)\n\n"
+        "### Polynomial kernels at d_K = 64\n\n"
+        f"{chart_trained} trained runs: {chart_counts['complete']} complete and "
+        f"{chart_counts['numerical_failure']} numerical failures; {chart_legacy} are legacy runs, drawn "
+        "hollow with dashed connectors. Numerical failures appear in the strip below the axis at "
+        "their degree, labeled with the failing update. The nonnegative family exists only for even "
+        "degrees, which are the only degrees at which a polynomial can be nonnegative on the real line.\n\n"
+        "![Terminal perplexity against polynomial degree](figures/degree_chart.png)\n\n"
+        "[PDF](figures/degree_chart.pdf) · [Cell-level data and source checksums](summary.csv) "
         "· [Provenance](provenance/manifest.json)\n"
     )
     path.write_text(prefix + begin + "\n" + block + end + suffix)
 
 
 def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
-          output_dir: Path | None = None) -> list[dict]:
+          chart_config_path: Path | None = None, output_dir: Path | None = None) -> list[dict]:
+    """Regenerate both figures, the summary, the README block, and provenance; returns the heatmap rows."""
     repo_root = repo_root.resolve()
     output_dir = output_dir or repo_root / "experiments" / EXPERIMENT
     config_path = config_path or output_dir / "configs" / "heatmap.json"
+    chart_config_path = chart_config_path or config_path.parent / "degree_chart.json"
     config = json.loads(config_path.read_text())
+    chart_config = json.loads(chart_config_path.read_text())
     rows = collect_rows(repo_root, config)
-    figure_paths = render_heatmap(rows, config, output_dir)
+    chart_rows = collect_rows(repo_root, chart_config)
+    figure_paths = {**render_heatmap(rows, config, output_dir),
+                    **render_degree_chart(chart_rows, chart_config, output_dir)}
 
     csv_path = output_dir / "summary.csv"
     with csv_path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDS, lineterminator="\n")
         writer.writeheader()
-        writer.writerows(csv_row(row) for row in rows)
+        writer.writerows(csv_row(row, "heatmap") for row in rows)
+        writer.writerows(csv_row(row, "degree_chart") for row in chart_rows)
 
     readme_path = output_dir / "README.md"
-    update_readme(readme_path, rows)
+    update_readme(readme_path, rows, chart_rows)
 
     source_rows = [
-        {"panel": row["panel"], "column": row["column"], "d_k": row["d_k"],
+        {"figure": figure, "panel": row["panel"], "column": row["column"], "d_k": row["d_k"],
          "experiment": row["experiment"], "run": row["run"], "status": row["status"],
          "source_commit": row.get("source_commit"), "artifacts": row.get("artifacts", {}),
          "weight_decay_policy": row.get("weight_decay_policy"), "qk_norm": row.get("qk_norm"),
          "legacy": bool(row.get("legacy")), "legacy_reasons": row.get("legacy_reasons", [])}
-        for row in rows if row["status"] != "not_run"
+        for figure, figure_rows in (("heatmap", rows), ("degree_chart", chart_rows))
+        for row in figure_rows if row["status"] != "not_run"
     ]
-    status_counts = dict(sorted(Counter(row["status"] for row in rows).items()))
-    status_counts["legacy"] = sum(1 for row in rows if row.get("legacy"))
+    status_counts = {}
+    for figure, figure_rows in (("heatmap", rows), ("degree_chart", chart_rows)):
+        counts = dict(sorted(Counter(row["status"] for row in figure_rows).items()))
+        counts["legacy"] = sum(1 for row in figure_rows if row.get("legacy"))
+        status_counts[figure] = counts
     code = Path(__file__).resolve().parent
     lock = repo_root / "scaffolds" / "transformer" / "uv.lock"
     manifest = {
@@ -127,15 +150,17 @@ def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
         "data_identity": config["data_identity"],
         "terminal_step": config["terminal_step"],
         "training_tokens": config["training_tokens"],
-        "display_coordinates": {"d_k": config["d_k"], "panels": config["panels"]},
-        "source_manifests": config["source_manifests"],
+        "display_coordinates": {"heatmap": {"d_k": config["d_k"], "panels": config["panels"]},
+                                "degree_chart": {"d_k": chart_config["d_k"], "panels": chart_config["panels"]}},
+        "source_manifests": {**config["source_manifests"], **chart_config["source_manifests"]},
         "source_runs": source_rows,
         "status_counts": status_counts,
         "analysis": {
             "config": reference(repo_root, config_path),
+            "chart_config": reference(repo_root, chart_config_path),
             "dependency_lock": reference(repo_root, lock),
             "code": {name: reference(repo_root, code / name)
-                     for name in ("collect.py", "render.py", "plot.py")},
+                     for name in ("collect.py", "render.py", "chart.py", "plot.py")},
         },
         "derived_artifacts": {
             "summary_csv": reference(repo_root, csv_path),

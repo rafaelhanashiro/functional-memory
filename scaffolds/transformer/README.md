@@ -69,7 +69,7 @@ full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 projection. `attention/core.py` dispatches complete operations on post-RoPE
 `[batch, time, heads, channels]` arrays. Q/K use `d_K`; the output has V's shape
 and dtype. Mechanisms live in `softmax.py`, `taylor.py`,
-`learned_quadratic.py`, and `unnormalized.py`. Their implementations live under `attention/backends/`.
+`learned_quadratic.py`, `learned_polynomial.py`, and `unnormalized.py`. Their implementations live under `attention/backends/`.
 Fused kernels consume Q/K/V directly and retain their custom backward passes.
 The interface does not require a materialized attention matrix.
 
@@ -81,8 +81,8 @@ The existing scientific configuration fields remain supported:
 | `attention_degree: null`, `attention_normalization: false` | Unnormalized causal `exp(QKᵀ / sqrt(d_K)) V` |
 | Nonnegative `attention_degree`, `attention_normalization: false` | Unnormalized fixed Taylor `p_m(QKᵀ / sqrt(d_K)) V`; odd degrees permit signed weights |
 | `attention_degree: m >= 1`, `attention_normalization: false`, `attention_coefficients: learned` | Unnormalized `sum_r c_r (QKᵀ / sqrt(d_K))^r V` with every coefficient learned from `1/r!`; signed |
-| `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Row-normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; blocked reference only |
-| Even `attention_degree: m >= 2`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: sum_of_squares` | Row-normalized `(q1(s)^2 + q2(s)^2) V / rowsum` with `deg q1 = m/2`, `deg q2 = m/2 - 1` learned and initialized to reproduce `T_m` exactly; nonnegative weights, positive row sums; blocked reference only |
+| `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Row-normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; fused or blocked |
+| Even `attention_degree: m >= 2`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: sum_of_squares` | Row-normalized `(q1(s)^2 + q2(s)^2) V / rowsum` with `deg q1 = m/2`, `deg q2 = m/2 - 1` learned and initialized to reproduce `T_m` exactly; nonnegative weights, positive row sums; fused or blocked |
 | `attention_degree: 0` | Uniform causal-prefix averaging |
 | Nonnegative `attention_degree`, `quadratic_mode: fixed` | Fixed Taylor polynomial; odd degrees permit signed weights |
 | `attention_degree: 2`, `quadratic_mode: positive` | Learned `0.5 * (1 + (a*s+b)^2)` |
@@ -107,9 +107,18 @@ with `attention_coefficient_sharing: global`, `[num_layers, num_heads, m + 1]` w
 Horner's rule with or without row normalization. Without normalization,
 `attention/backends/fused_learned_polynomial.py` is the fused kernel, whose custom
 backward also returns each head's coefficient gradient `sum_{i>=j} S_ij^r (dY_i · V_j)`.
-With normalization (`attention/learned_polynomial.py`) the weights divide by the
-signed row sum, as for odd Taylor and unrestricted quadratic kernels; there is no
-fused kernel, `attention_backend: auto` resolves to `blocked`, and `fused` is rejected.
+With normalization (`attention/learned_polynomial.py`),
+`attention/backends/fused_normalized_polynomial.py` supports both direct coefficients
+and sum-of-squares factors. Direct coefficients use a two-pass forward calculation
+that divides by the final signed row sum; nonnegative factors use one-pass online
+normalization. Both evaluate causal tiles without storing a sequence-square matrix,
+retain FP32 output for the custom backward, and differentiate every learned value
+through both the numerator and denominator. Factor evaluation stays in sum-of-squares
+form. Parameter gradients are reduced from query-tile partials without atomics;
+globally shared arrays receive the sum across heads and layers through ordinary JAX
+broadcast differentiation. `attention_backend: auto` selects fused execution on
+supported NVIDIA GPUs and the blocked reference otherwise. The blocked reference
+provides diagnostics while the fused output continues through subsequent layers.
 
 ### QK-norm (cosine scores)
 

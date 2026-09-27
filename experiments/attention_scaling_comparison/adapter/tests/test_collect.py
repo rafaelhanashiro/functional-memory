@@ -199,37 +199,33 @@ def test_committed_comparison_sources() -> None:
     root = Path(__file__).resolve().parents[4]
     config = json.loads((root / "experiments/attention_scaling_comparison/configs/heatmap.json").read_text())
     rows = collect_rows(root, config)
-    assert len(rows) == 160
+    assert len(rows) == 45
     assert {status: sum(row["status"] == status for row in rows)
-            for status in {row["status"] for row in rows}} == {
-                "complete": 42, "numerical_failure": 8, "not_run": 110}
+            for status in {row["status"] for row in rows}} == {"complete": 31, "numerical_failure": 2, "not_run": 12}
     current = {(row["panel"], row["column"], row["d_k"]) for row in rows
                if row["status"] != "not_run" and not row["legacy"]}
-    assert current == {("references", "softmax", 64), ("references", "softmax_no_qk_norm", 64),
-                       *((panel, f"m{d}", 64) for panel in ("unnormalized_learned", "normalized_learned_taylor")
-                         for d in (1, 2, 3, 4))}
-    assert all(row["legacy"] for row in rows if row["status"] != "not_run"
-               and (row["panel"], row["column"], row["d_k"]) not in current)
+    assert current == {("references", "softmax", 64), ("references", "softmax_no_qk_norm", 64)}
     failures = {(row["panel"], row["column"]): row["failure_step"]
                 for row in rows if row["status"] == "numerical_failure"}
-    assert failures == {("normalized_fixed", "m1"): 9,
-                        ("normalized_fixed", "m3"): 17,
-                        ("normalized_learned", "unrestricted_global"): 2324,
-                        ("normalized_learned", "unrestricted_per_head"): 4187,
-                        ("normalized_learned_taylor", "m1"): 27,
-                        ("normalized_learned_taylor", "m2"): 1857,
-                        ("normalized_learned_taylor", "m3"): 318,
-                        ("normalized_learned_taylor", "m4"): 1456}
+    assert failures == {("normalized_fixed", "m1"): 9, ("normalized_fixed", "m3"): 17}
     assert all(row["d_k"] == 64 for row in rows if row["status"] == "numerical_failure")
 
-    mislabeled = json.loads(json.dumps(config))
-    global_cell = next(cell for cell in mislabeled["cells"]
-                       if cell["panel"] == "normalized_learned" and cell["column"] == "positive_global")
-    per_head_cell = next(cell for cell in mislabeled["cells"]
-                         if cell["panel"] == "normalized_learned" and cell["column"] == "positive_per_head")
-    global_cell["run"], per_head_cell["run"] = per_head_cell["run"], global_cell["run"]
+    chart = json.loads((root / "experiments/attention_scaling_comparison/configs/degree_chart.json").read_text())
+    chart_rows = collect_rows(root, chart)
+    assert len(chart_rows) == 17
+    chart_failures = {(row["panel"], row["column"]): row["failure_step"]
+                      for row in chart_rows if row["status"] == "numerical_failure"}
+    assert chart_failures == {("normalized_learned_taylor", "m1"): 27, ("normalized_learned_taylor", "m2"): 1857,
+                              ("normalized_learned_taylor", "m3"): 318, ("normalized_learned_taylor", "m4"): 1456}
+    legacy = {(row["panel"], row["column"]) for row in chart_rows if row["legacy"]}
+    assert legacy == {*(("unnormalized_fixed", f"m{d}") for d in (1, 2, 3, 4)),
+                      ("normalized_nonnegative", "m2"), ("references", "unnormalized_exp")}
+
+    wrong_family = json.loads(json.dumps(chart))
+    next(cell for cell in wrong_family["cells"] if cell["panel"] == "normalized_nonnegative")["run"] = (
+        "200m-positive-global-seed0")
     with pytest.raises(ValueError, match="quadratic sharing"):
-        collect_rows(root, mislabeled)
+        collect_rows(root, wrong_family)
 
     wrong_data = json.loads(json.dumps(config))
     wrong_data["data_identity"]["eval_manifest_sha256"] = "0" * 64
