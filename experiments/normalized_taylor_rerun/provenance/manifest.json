@@ -508,7 +508,7 @@
       "attention_degree": 4,
       "seed": 0,
       "home_cluster": "kennel",
-      "status": "submitted",
+      "status": "completed",
       "config": {
         "path": "experiments/normalized_taylor_rerun/configs/200m-m004-seed0.yaml",
         "sha256": "61207b1df57f94afb211e7e0c91c96732daaf68b9767e402782de4ef47d292a5"
@@ -593,6 +593,13 @@
         {
           "slurm_job_id": 202617,
           "outcome": "three further acceptance-stage preemptions on akita between 03:36 and 04:34; running on akita since 05:02"
+        },
+        {
+          "slurm_job_id": 202617,
+          "node": "akita",
+          "start": "2026-09-27T05:02:54-04:00",
+          "end": "2026-09-27T07:51:48-04:00",
+          "outcome": "passed acceptance and completed 19,074 updates from initialization"
         }
       ],
       "slurm_attempts": {
@@ -655,6 +662,13 @@
             "node": "akita"
           }
         ]
+      },
+      "best_validation": {
+        "selection_rule": "lowest_validation_nll",
+        "step": 19074,
+        "training_tokens": 10000269312,
+        "validation_nll": 2.701114628996168,
+        "validation_perplexity": 14.896326352016782
       }
     },
     {
