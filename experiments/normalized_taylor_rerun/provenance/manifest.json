@@ -193,7 +193,7 @@
       "attention_degree": 3,
       "seed": 0,
       "home_cluster": "kennel",
-      "status": "submitted",
+      "status": "numerical_failure",
       "config": {
         "path": "experiments/normalized_taylor_rerun/configs/200m-m003-seed0.yaml",
         "sha256": "a57d56146be76536d4fb39db1828a0cf7f4ba40998e2d7ef9642743745f0dba9"
@@ -250,8 +250,28 @@
           "start": "2026-09-27T00:58:40-04:00",
           "end": "2026-09-27T01:01-04:00",
           "outcome": "started when nonnegative m=4 ended; requeued held during acceptance, with the user's approval, so the stranded nonnegative m=2 (202638) could finish on akita"
+        },
+        {
+          "slurm_job_id": 202615,
+          "node": "akita",
+          "partition": "standard",
+          "start": "2026-09-27T01:47:57-04:00",
+          "end": "2026-09-27T02:16:56-04:00",
+          "outcome": "passed B300 acceptance, trained from initialization, and stopped at update 419 on a NaN forward loss, gradient norm, and parameter update (the trainer's numerical-failure stop; not requeued)"
         }
-      ]
+      ],
+      "failure": {
+        "step": 419,
+        "record": "experiments/normalized_taylor_rerun/runs/200m-m003-seed0/numerical_failure_step_00000419.json",
+        "error": "FloatingPointError: Nonfinite training loss or optimizer update at step 419: nan",
+        "last_valid_training": {
+          "step": 410,
+          "train_nll": 7.471041,
+          "train_ppl": 1756.4345
+        },
+        "last_valid_validation": null,
+        "note": "no validation preceded the failure (first at update 1,000); the recorded attention diagnostics were computed after the attempted update and are nonfinite everywhere, so they do not isolate the mechanism. The kernel is signed (odd degree); the legacy run failed at update 17 when signed row sums crossed zero."
+      }
     },
     {
       "name": "200m-m004-seed0",
