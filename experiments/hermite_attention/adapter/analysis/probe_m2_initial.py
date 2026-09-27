@@ -13,6 +13,7 @@ record, checkpoint, recipe, or the frozen execution set.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import math
@@ -26,8 +27,11 @@ from flax import nnx
 
 from scaffolds.transformer.attention.backends.fused_normalized_polynomial import _forward
 from scaffolds.transformer.attention.positional import apply_rope
+from scaffolds.transformer.acceptance import initialization_facts
 from scaffolds.transformer.configs.loader import load_config
 from scaffolds.transformer.data.loaders import make_train_iterator
+from scaffolds.transformer.data.packed import load_packed_manifest
+from scaffolds.transformer.models import build_model
 from scaffolds.transformer.training.checkpointing import state_sha256
 from scaffolds.transformer.training.state import create_state
 
@@ -39,6 +43,37 @@ def _host(value):
 def _finite_float(value):
     number = float(value)
     return number if math.isfinite(number) else None
+
+
+def _first_parameter_mismatch(actual, expected_model, rng):
+    """Explain a same-device hash mismatch without making that mismatch valid."""
+    expected = nnx.state(build_model(
+        expected_model, nnx.Rngs(params=rng, dropout=jax.random.fold_in(rng, 0))
+    ), nnx.Param)
+    left = jax.tree_util.tree_flatten_with_path(actual)[0]
+    right = jax.tree_util.tree_flatten_with_path(expected)[0]
+    if len(left) != len(right):
+        return {"reason": "parameter_leaf_count", "fused": len(left), "blocked": len(right)}
+    for (left_path, left_value), (right_path, right_value) in zip(left, right, strict=True):
+        if str(left_path) != str(right_path):
+            return {"reason": "parameter_path", "fused": str(left_path), "blocked": str(right_path)}
+        left_array, right_array = _host(left_value), _host(right_value)
+        if left_array.shape != right_array.shape or left_array.dtype != right_array.dtype:
+            return {
+                "reason": "parameter_shape_or_dtype", "path": str(left_path),
+                "fused_shape": list(left_array.shape), "blocked_shape": list(right_array.shape),
+                "fused_dtype": str(left_array.dtype), "blocked_dtype": str(right_array.dtype),
+            }
+        unequal = np.argwhere(left_array != right_array)
+        if len(unequal):
+            index = tuple(map(int, unequal[0]))
+            return {
+                "reason": "parameter_value", "path": str(left_path),
+                "index": list(index),
+                "fused": _finite_float(left_array[index]),
+                "blocked": _finite_float(right_array[index]),
+            }
+    return {"reason": "hash_differs_despite_equal_parameter_arrays"}
 
 
 def _project_qkv(layer, x, positions):
@@ -159,12 +194,30 @@ def probe(config_path: Path, *, batch_limit: int, prefix_length: int, chunk_size
     if chunk_size < 1:
         raise ValueError("chunk-size must be positive")
 
-    first_batch = next(make_train_iterator(replace(config.data, batch_size=config.data.batch_size)))
+    validated_manifest = load_packed_manifest(config.data.train_manifest)
+    first_batch = next(make_train_iterator(
+        replace(config.data, batch_size=config.data.batch_size),
+        validated_manifest=validated_manifest,
+    ))
+    micro_batch_size = config.train.micro_batch_size
+    if config.data.batch_size % micro_batch_size:
+        raise ValueError("global batch must be divisible by the configured microbatch size")
+    micro_iterator = make_train_iterator(
+        replace(config.data, batch_size=micro_batch_size), validated_manifest=validated_manifest,
+    )
+    micro_batches = np.concatenate(
+        [next(micro_iterator) for _ in range(config.data.batch_size // micro_batch_size)], axis=0
+    )
+    if not np.array_equal(first_batch, micro_batches):
+        raise RuntimeError("First global batch differs from trainer microbatch sequence order")
     rng = jax.random.PRNGKey(config.train.seed)
     state = create_state(config, rng)
     model = nnx.merge(state.graphdef, state.params)
     coefficients = tuple(float(c) for c in model_cfg.attention_fixed_coefficients)
-    parameter_sha256 = state_sha256(state.params)
+    gpu_fused_hash = state_sha256(state.params)
+    blocked_config = copy.deepcopy(config)
+    gpu_blocked_facts = initialization_facts(blocked_config)
+    gpu_blocked_hash = gpu_blocked_facts["parameter_sha256"]
     acceptance_files = sorted(
         (config_path.resolve().parents[1] / "logs" / config_path.stem / "acceptance")
         .glob("*/initialization-result.json")
@@ -174,8 +227,6 @@ def probe(config_path: Path, *, batch_limit: int, prefix_length: int, chunk_size
     ]
     if not acceptance_hashes:
         raise FileNotFoundError("No acceptance initialization hash found for this run")
-    if any(expected != parameter_sha256 for expected in acceptance_hashes):
-        raise RuntimeError("Initial model parameter hash differs from recorded acceptance initialization")
     report = {
         "format": "hermite-degree-2-initial-normalizer-probe",
         "config": str(config_path.resolve()),
@@ -187,16 +238,27 @@ def probe(config_path: Path, *, batch_limit: int, prefix_length: int, chunk_size
         "probed_sequences": batch_limit,
         "prefix_length": prefix_length,
         "first_batch_sha256": hashlib.sha256(first_batch.astype("<i4").tobytes()).hexdigest(),
+        "trainer_microbatch_order_matches_global_batch": True,
         "coefficients": list(coefficients),
-        "parameter_sha256": parameter_sha256,
+        "gpu_fused_parameter_sha256": gpu_fused_hash,
+        "gpu_blocked_parameter_sha256": gpu_blocked_hash,
+        "gpu_blocked_parameter_count": gpu_blocked_facts["parameter_count"],
+        "same_gpu_parameter_hash_match": gpu_fused_hash == gpu_blocked_hash,
         "acceptance_initialization_files": [str(path) for path in acceptance_files],
-        "acceptance_parameter_sha256_match": True,
+        "cpu_acceptance_parameter_sha256": acceptance_hashes,
+        "cpu_gpu_parameter_hash_match": all(value == gpu_fused_hash for value in acceptance_hashes),
         "chunks": [],
         "limitation": (
             "Only the specified causal prefix was probed; finite results cannot rule out "
             "a failure at a later sequence position or during backward/update arithmetic."
         ),
     }
+    if gpu_fused_hash != gpu_blocked_hash:
+        report["first_parameter_mismatch"] = _first_parameter_mismatch(
+            state.params, blocked_config.model, rng
+        )
+        report["all_probed_rows_finite"] = None
+        return report
     for start in range(0, batch_limit, chunk_size):
         stop = min(start + chunk_size, batch_limit)
         layers = _probe_chunk(model, first_batch[start:stop, :prefix_length], coefficients)
@@ -222,6 +284,13 @@ def main():
                    prefix_length=args.prefix_length, chunk_size=args.chunk_size)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    if not result["same_gpu_parameter_hash_match"]:
+        raise RuntimeError(
+            "Same-GPU blocked and fused initialization differ: "
+            + json.dumps({key: result[key] for key in (
+                "gpu_fused_parameter_sha256", "gpu_blocked_parameter_sha256",
+                "first_parameter_mismatch")}, sort_keys=True)
+        )
     print(json.dumps({
         "output": str(args.output),
         "all_probed_rows_finite": result["all_probed_rows_finite"],
