@@ -36,10 +36,10 @@ def test_compiled_fp32_outputs_and_qkv_gradients_match_fp64(degree, normalized, 
     operands, cotangent = _operands(degree, shape=shape)
     with jax.default_matmul_precision("highest"):
         actual = _evaluate(_attention(degree, normalized, prefactor=PREFACTOR, backend="fused"), operands, cotangent)
-        blocked = _evaluate(_attention(degree, normalized, prefactor=PREFACTOR), operands, cotangent)
     assert actual[0].dtype == jnp.float32
+    # Use the independent Hermite recurrence oracle. The blocked reference's
+    # GPU compilation hits an XLA layout error for the odd-width stress shape.
     _assert_result(actual, _fp64(operands, cotangent, degree, normalized, PREFACTOR))
-    _assert_result(actual, blocked)
 
 
 @pytest.mark.parametrize("degree", DEGREES)
