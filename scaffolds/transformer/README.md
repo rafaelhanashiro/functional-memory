@@ -318,7 +318,7 @@ against a `step` axis, so updates relogged after a resume are kept; terminal and
 validation-best metrics go to the run summary. `wandb_run.json` in the run directory
 pins the W&B run id across requeues.
 
-Recipes leave `train.wandb_mode` at `disabled`; the Kennel launcher passes
+Recipes leave `train.wandb_mode` at `disabled`; the Kennel and ORCD launchers pass
 `--wandb-mode online` (set `TRANSFORMER_WANDB_MODE=offline` or `disabled` when
 submitting to change it), and acceptance pilots never log. Saved workspace views are
 results code built with the `views` dependency group
@@ -336,6 +336,9 @@ Studies configure these shared modules with execution modules at their root
   across requeues. The frozen set includes study `sweep.yaml`, every run's
   `config.yaml`, root execution modules, and shared record/launch helpers. Metrics,
   records and `results/` remain editable while jobs run.
+- `launchers/orcd.sbatch` does the same on ORCD. Its allocations fit that cluster's
+  per-user GPU caps and 6-hour limit, and a job requeues itself before the limit
+  (see [CLUSTERS.md](../../CLUSTERS.md)).
 - `acceptance.py` runs identity-keyed acceptance in the production allocation: CPU
   tests, distributed CPU tests on two forced host devices, and single-GPU kernel tests
   (no skips), an initialization hash, a full-recipe pilot, and an exact fresh-process

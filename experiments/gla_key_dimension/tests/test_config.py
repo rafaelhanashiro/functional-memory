@@ -1,6 +1,6 @@
 """GLA recipes preserve the dK × Taylor controls; the summary derives from runs/."""
 from pathlib import Path
-from scaffolds.records import load_study, run_directory
+from scaffolds.records import load_run, load_study, run_directory
 import hashlib
 import json
 
@@ -22,6 +22,8 @@ OUTPUT_FIELDS = {"workdir", "checkpoint_dir", "wandb_project", "wandb_run_name",
 # decay) after the GLA runs executed; everything else they share must still match.
 CURRENT_DEFAULT_FIELDS = {"model": {"qk_norm", "qk_norm_sharing", "qk_norm_initial_scale", "qk_norm_eps"},
                           "optim": {"weight_decay_policy"}}
+# Manifest paths are cluster-specific; the corpus is identified by the manifests' SHA256.
+MANIFEST_FIELDS = {"train_manifest", "eval_manifest"}
 
 
 def taylor_control(key_dimension):
@@ -50,7 +52,10 @@ def test_recipes_preserve_dk_taylor_data_optimizer_backbone_and_cadence():
             for section, fields in CURRENT_DEFAULT_FIELDS.items():
                 for side in (candidate, control):
                     side[section] = {k: v for k, v in side[section].items() if k not in fields}
-        assert candidate["data"] == control["data"]
+        assert ({k: v for k, v in candidate["data"].items() if k not in MANIFEST_FIELDS}
+                == {k: v for k, v in control["data"].items() if k not in MANIFEST_FIELDS})
+        assert [candidate["data"][field] for field in ("train_manifest", "eval_manifest")] == [
+            manifest()["data_identity"][split]["path"] for split in ("train", "eval")]
         assert candidate["optim"] == control["optim"]
         assert ({k: v for k, v in candidate["model"].items() if k not in GLA_FIELDS}
                 == {k: v for k, v in control["model"].items() if k not in GLA_FIELDS})
@@ -70,8 +75,10 @@ def test_recipes_preserve_dk_taylor_data_optimizer_backbone_and_cadence():
 
 
 def test_data_manifests_match_the_recorded_corpus():
-    for item in manifest()["data_identity"].values():
+    controls = load_study(ROOT / "experiments/key_dimension_taylor")["data_identity"]
+    for split, item in manifest()["data_identity"].items():
         assert hashlib.sha256(Path(item["path"]).read_bytes()).hexdigest() == item["sha256"]
+        assert item["sha256"] == controls[f"{split}_manifest"]["sha256"]
 
 
 def test_comparison_points_cover_every_width_and_degree():
@@ -85,11 +92,14 @@ def test_comparison_points_cover_every_width_and_degree():
 
 def test_summary_uses_completed_runs_and_width_matched_comparisons(tmp_path):
     from results.gla_key_dimension import plot
+    from scaffolds.transformer.analysis import result_selection
 
     # Result selections match runs by study name, so the copy keeps the study's directory name.
     record = tmp_path / "gla_key_dimension"
     record.mkdir()
-    data = manifest()
+    # Plot roles resolve to the result's pinned runs, which a rerun cohort replaces only on completion.
+    pinned = [run["run_id"] for run in result_selection(plot.OUTPUT)["runs"] if run["study"] == RECORD.name]
+    data = dict(manifest(), run_ids=pinned, runs=[load_run(RECORD / "runs" / run_id) for run_id in pinned])
     (record / "sweep.yaml").write_text(yaml.safe_dump({key: value for key, value in data.items() if key != "runs"}))
     for entry in data["runs"]:
         directory = record / "runs" / entry["run_id"]

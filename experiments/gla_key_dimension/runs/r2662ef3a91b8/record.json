@@ -1,0 +1,14 @@
+{
+  "config": {
+    "path": "experiments/gla_key_dimension/runs/r2662ef3a91b8/config.yaml",
+    "sha256": "c084808ee712d6901e2ad2be306006f4761e9b557517fdecce53ae579dd409c5"
+  },
+  "label": "200m-dk008-gla-seed0",
+  "name": "200m-dk008-gla-seed0",
+  "parameter_count": 192237824,
+  "record_schema_version": 1,
+  "run_id": "r2662ef3a91b8",
+  "seed": 0,
+  "state_elements_per_layer": 8192,
+  "status": "planned"
+}

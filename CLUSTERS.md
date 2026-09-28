@@ -65,8 +65,12 @@ recorded in `scaffolds/transformer/validation/README.md`.
 - **Login:** `ssh rafah@orcd-login.mit.edu`, using MIT authentication/Duo.
   See the [SSH guide](https://orcd-docs.mit.edu/accessing-orcd/ssh-login/).
 - **Paths:** record the current checkout and dataset paths in each experiment.
-  Historical key-dimension configs use `/home/rafah/projects/ofm/datasets/fineweb_12b`;
-  verify that location before reusing them.
+  Packed FineWeb is at `/home/rafah/projects/ofm/datasets/fineweb_12b`; its train
+  and eval manifests match Kennel's `fineweb_12b` byte for byte (checked 2026-09-28).
+- **Execution storage:** `/home/rafah` has held training checkpoints to its quota
+  before. Put experiment worktrees under `/orcd/pool/006/rafah/functional_memory/worktrees/`
+  with `UV_CACHE_DIR=/orcd/pool/006/rafah/.cache/uv`, so hardlinked environments
+  and checkpoints share the pool filesystem.
 
 | Storage | Documented default quota | Intended use / backup |
 | --- | --- | --- |
@@ -85,10 +89,24 @@ Source: [filesystems](https://orcd-docs.mit.edu/filesystems-file-transfer/filesy
 | `mit_preemptable` | 48 hours | 4 GPUs; checkpoint and use `--requeue` |
 
 Documented GPU types include L40S, A100, H100, and H200, depending on partition.
-Account/group entitlements may differ; verify before submitting. Sources:
+Account/group entitlements may differ; verify before submitting. Live QOS limits
+on 2026-09-28 (`sacctmgr show qos`) were per user across all jobs: 2 GPUs and 32
+CPUs in `mit_normal_gpu`, 4 GPUs in `mit_preemptable`. H200 nodes have 8 GPUs,
+120 CPUs, and 2 TB of memory; nodes define no GPU-type features. Sources:
 [scheduler](https://orcd-docs.mit.edu/running-jobs/overview/),
 [GPU requests](https://orcd-docs.mit.edu/running-jobs/requesting-resources/).
 [Full documentation](https://orcd-docs.mit.edu/); help: `orcd-help-engaging@mit.edu`.
+
+### ORCD launch policy
+
+`scaffolds/transformer/launchers/orcd.sbatch` requests 2×H200 in either
+`mit_preemptable` or `mit_normal_gpu`, whichever frees first. Because the caps are
+per user, 2-GPU jobs can hold three allocations (six GPUs) at once, while 4-GPU jobs
+fit only in `mit_preemptable`. Every job asks for 6 hours, the `mit_normal_gpu`
+maximum. Ten minutes before the limit it requeues itself and resumes from its latest
+checkpoint, so it loses at most one checkpoint interval. H200 uses direct device
+transfer. Order a sweep's runs with `sbatch --nice`: 1000 priority points equal about
+8 hours of queue age.
 
 ## Everyday use
 
