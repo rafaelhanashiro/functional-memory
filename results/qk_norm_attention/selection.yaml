@@ -32,7 +32,7 @@ runs:
       sha256: 721add8f72c236ace218e41fe8acf2948acc15039e11374c265d2bed9c3c9e49
     record.json:
       path: experiments/qk_norm_attention/runs/r1feece425074/record.json
-      sha256: fd32425847d426dd9a414ad8c9cd7909f2ff4f0ac6a2328feaaeffadea7f69ce
+      sha256: 5992cebd0523cd0d1e1432d56c945bcb0a9ab72821485a53524f5b7f4c445931
     retention.json:
       path: experiments/qk_norm_attention/runs/r1feece425074/retention.json
       sha256: f5e810195fcc2bbe358eebafaf906db481dd42047bd6f463916ba77413013902
@@ -66,7 +66,7 @@ runs:
       sha256: 6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786
     record.json:
       path: experiments/key_dimension_taylor/runs/r50088d29f2b5/record.json
-      sha256: 76fc7e73f512b29152219dc4b9b2b82d818137ea3dadfa617697518cd4efe701
+      sha256: aa71e99a9d9df0934e52487e7d3f0b0f4734be4136ad168434f308bca20dc45b
     retention.json:
       path: experiments/key_dimension_taylor/runs/r50088d29f2b5/retention.json
       sha256: 208d80975f73fae02b39a112744f60c214955b99c1203d5da4faf5e42b0fa2db

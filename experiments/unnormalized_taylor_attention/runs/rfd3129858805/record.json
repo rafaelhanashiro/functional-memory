@@ -51,10 +51,34 @@
   ],
   "attempts": [
     {
-      "slurm_job_id": "201014"
+      "allocation": {
+        "AllocTRES": "cpu=32,mem=256G,node=1,billing=32,gres/gpu=4",
+        "BatchHost": "akita",
+        "EndTime": "2026-09-24T23:47:52",
+        "JobId": "201014",
+        "JobName": "unnorm-taylor-m4",
+        "JobState": "RUNNING",
+        "NodeList": "akita",
+        "NumCPUs": "32",
+        "Partition": "sweep",
+        "QOS": "normal",
+        "ReqTRES": "cpu=32,mem=256G,node=1,billing=32,gres/gpu=4",
+        "Requeue": "1",
+        "Restarts": "0",
+        "RunTime": "00:00:05",
+        "StartTime": "2026-09-22T23:47:52",
+        "TimeLimit": "2-00:00:00"
+      },
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "partition": "sweep",
+      "restart": "0",
+      "slurm_job_id": "201014",
+      "started_utc": "2026-09-23T03:47:57.097735+00:00",
+      "time_limit": "2-00:00:00"
     }
   ],
-  "attention_degree": 4,
   "completed_utc": "2026-09-23T06:49:43.111999+00:00",
   "config": {
     "path": "experiments/unnormalized_taylor_attention/runs/rfd3129858805/config.yaml",
@@ -62,36 +86,6 @@
     "sha256": "61d90e7ef3e027af6cf1fa2017c7c9a7623f717229d41eea8360af74802082a0"
   },
   "execution": {
-    "attempts": [
-      {
-        "allocation": {
-          "AllocTRES": "cpu=32,mem=256G,node=1,billing=32,gres/gpu=4",
-          "BatchHost": "akita",
-          "EndTime": "2026-09-24T23:47:52",
-          "JobId": "201014",
-          "JobName": "unnorm-taylor-m4",
-          "JobState": "RUNNING",
-          "NodeList": "akita",
-          "NumCPUs": "32",
-          "Partition": "sweep",
-          "QOS": "normal",
-          "ReqTRES": "cpu=32,mem=256G,node=1,billing=32,gres/gpu=4",
-          "Requeue": "1",
-          "Restarts": "0",
-          "RunTime": "00:00:05",
-          "StartTime": "2026-09-22T23:47:52",
-          "TimeLimit": "2-00:00:00"
-        },
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "partition": "sweep",
-        "restart": "0",
-        "slurm_job_id": "201014",
-        "started_utc": "2026-09-23T03:47:57.097735+00:00",
-        "time_limit": "2-00:00:00"
-      }
-    ],
     "attention_backend": "fused",
     "attention_backend_requested": "auto",
     "attention_implementation": "pallas_triton",
@@ -127,10 +121,8 @@
   "label": "200m-m004-seed0",
   "log": "experiments/unnormalized_taylor_attention/runs/rfd3129858805/training.log",
   "name": "200m-m004-seed0",
-  "prediction_tokens": 10000269312,
   "record_schema_version": 1,
   "run_id": "rfd3129858805",
-  "run_record": "experiments/unnormalized_taylor_attention/runs/rfd3129858805",
   "seed": 0,
   "selected_checkpoint": {
     "file_count": 13,
@@ -212,8 +204,5 @@
   },
   "slurm_job_id": "201014",
   "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
-  "status": "completed",
-  "terminal_validation_nll": 3.0662785853658403,
-  "terminal_validation_perplexity": 21.46188530439321,
-  "training_updates": 19074
+  "status": "completed"
 }

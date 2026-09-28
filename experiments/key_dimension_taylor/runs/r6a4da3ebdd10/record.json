@@ -26,34 +26,15 @@
       "slurm_job_id": "22808234"
     }
   ],
-  "attention_degree": null,
-  "completion": {
-    "path": "experiments/key_dimension_taylor/runs/r6a4da3ebdd10/completion.json",
-    "sha256": "640e1bb189040e342922236118b56a6e2d3659b4982ff055b366358116effa3c"
-  },
   "config": {
     "path": "experiments/key_dimension_taylor/runs/r6a4da3ebdd10/config.yaml",
     "sha256": "8f6051ae545696bb6ad6ff6bf41a1385853e585633a79e864395e9ba941b1b05"
   },
   "home_cluster": "orcd",
   "label": "200m-dk002-seed0",
-  "metadata": {
-    "path": "experiments/key_dimension_taylor/runs/r6a4da3ebdd10/metadata.json",
-    "sha256": "68439986833f3a0f3e9c589f87d24b39a6438f630f51c64f8b77ae8c8df9cea9"
-  },
-  "metrics": {
-    "path": "experiments/key_dimension_taylor/runs/r6a4da3ebdd10/metrics.jsonl",
-    "sha256": "78c17abc6e22dac7594aeda267650e783557ee60d3ed56eee5b4e2ddaee6b0a9"
-  },
   "name": "200m-dk002-seed0",
   "parameter_count": 179590144,
-  "qk_head_dim": 2,
   "record_schema_version": 1,
-  "resolved_config": {
-    "path": "experiments/key_dimension_taylor/runs/r6a4da3ebdd10/config.yaml",
-    "recorded_sha256": "903d1480589fe71231e4743c5fb825482f614dce7eb3b8c054d0e02a93ccd14d",
-    "sha256": "8f6051ae545696bb6ad6ff6bf41a1385853e585633a79e864395e9ba941b1b05"
-  },
   "run_id": "r6a4da3ebdd10",
   "seed": 0,
   "selected_checkpoint": {
@@ -66,12 +47,5 @@
     "validation_perplexity": 22.348850973485618
   },
   "slurm_job_id": "22808234",
-  "source_commit": "5e871d2659373272e26668e10911922c7201678a",
-  "terminal": {
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 3.1067749091557095,
-    "validation_perplexity": 22.348850973485618
-  },
-  "value_head_dim": 64
+  "source_commit": "5e871d2659373272e26668e10911922c7201678a"
 }

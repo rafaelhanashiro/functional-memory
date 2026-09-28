@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 
 from functools import partial
-from scaffolds.transformer.analysis import load_selected_study, selected_run_directory
+from scaffolds.transformer.analysis import selected_views, selected_run_directory
 
 from scaffolds.transformer.analysis import verify_result_selection
 
@@ -26,11 +26,11 @@ FIELDS = ["run", "role", "parameters", "updates", "prediction_tokens", "terminal
 
 
 def rows(record: Path = RECORD) -> list[dict]:
-    manifest = load_selected_study(Path(__file__).resolve().parent, record)
+    manifest = selected_views(Path(__file__).resolve().parent, record)
     result = []
     for run in manifest["runs"]:
         row = terminal_row(locate_run(record, run["name"]))
-        node = run["execution"]["attempts"][-1]["node"]
+        node = run["attempts"][-1]["node"]
         # The manifest's role opens with its category; the rest describes it.
         row.update(run=run["name"], role=run["role"].split()[0], hardware=f"{row['gpu_count']}x{row['gpu_type']} {node}")
         result.append(row)

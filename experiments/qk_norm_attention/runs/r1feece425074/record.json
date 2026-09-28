@@ -120,8 +120,6 @@
       "slurm_job_id": "202215"
     }
   ],
-  "attention_degree": null,
-  "attention_kernel": "softmax",
   "completed_utc": "2026-09-25T23:33:58.116982+00:00",
   "config": {
     "path": "experiments/qk_norm_attention/runs/r1feece425074/config.yaml",
@@ -129,40 +127,6 @@
     "sha256": "fb547f444034497bd8da6a8e74024c2e3ec6f0eba8a02de86449f33dc7dd3e9d"
   },
   "execution": {
-    "attempts": [
-      {
-        "gpu_count": 4,
-        "gpu_type": "H100",
-        "node": "dogo",
-        "outcome": "preempted 2026-09-25T17:50:16 local during acceptance cpu-tests; requeued",
-        "restart": 0,
-        "slurm_job_id": "202156"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "H100",
-        "node": "dogo",
-        "outcome": "preempted 2026-09-25T18:02:17 local during acceptance cpu-tests; requeued",
-        "restart": 1,
-        "slurm_job_id": "202156"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "acceptance cpu-tests (171) and cpu-distributed-tests (5) passed; gpu-tests failed 2 of 28: test_softmax_backends cuDNN cases at width 256 (B300 cuDNN rejects hidden_dim > 128 when d_qk != d_v), unrelated to this d_K = 64 recipe; the 5 QK-norm gates and the attention GPU tests passed; job exited FAILED 2026-09-25T18:11:50 local before initialization, pilot, or training; no run outputs",
-        "restart": 2,
-        "slurm_job_id": "202156"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "passed acceptance on akita (4x B300) and trained all 19,074 updates from a fresh initialization without interruption",
-        "restart": 0,
-        "slurm_job_id": "202215"
-      }
-    ],
     "attention_backend": "fused",
     "attention_backend_requested": "fused",
     "attention_implementation": "cudnn",
@@ -200,16 +164,8 @@
   "name": "200m-qk-softmax-seed0",
   "parameter_count": 199906464,
   "partition": "sweep",
-  "prediction_tokens": 10000269312,
-  "qk_head_dim": 64,
-  "qk_norm": true,
-  "qk_norm_eps": 1e-06,
-  "qk_norm_initial_scale": 8.0,
-  "qk_norm_parameter_count": 160,
-  "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
   "run_id": "r1feece425074",
-  "run_record": "experiments/qk_norm_attention/runs/r1feece425074",
   "seed": 0,
   "selected_checkpoint": {
     "bytes": 2196138283,
@@ -311,10 +267,6 @@
   "source_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
   "status": "completed",
   "submitted_utc": "2026-09-25T22:13:06+00:00",
-  "terminal_validation_nll": 2.671205988952092,
-  "terminal_validation_perplexity": 14.457394141153632,
-  "training_updates": 19074,
-  "value_head_dim": 64,
   "wandb": {
     "run_id": "8c6f3b4343ba4f70b2d9c9148814184d",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/8c6f3b4343ba4f70b2d9c9148814184d"

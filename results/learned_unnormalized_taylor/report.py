@@ -12,7 +12,7 @@ import math
 from pathlib import Path
 
 from functools import partial
-from scaffolds.transformer.analysis import load_selected_study, selected_run_directory
+from scaffolds.transformer.analysis import selected_views, selected_run_directory
 
 from scaffolds.transformer.analysis import verify_result_selection
 
@@ -77,8 +77,8 @@ def negative_kernel_fraction(record: dict) -> float:
 
 
 def rows(record: Path = RECORD, controls: Path = CONTROLS) -> list[dict]:
-    manifest = load_selected_study(Path(__file__).resolve().parent, record)
-    nodes = {run["name"]: run["execution"]["attempts"][-1]["node"] for run in manifest["runs"]}
+    manifest = selected_views(Path(__file__).resolve().parent, record)
+    nodes = {run["name"]: run["attempts"][-1]["node"] for run in manifest["runs"]}
     result = []
     for degree in DEGREES:
         run_directory, control_directory = locate_run(record, run_name(degree)), locate_run(controls, run_name(degree))

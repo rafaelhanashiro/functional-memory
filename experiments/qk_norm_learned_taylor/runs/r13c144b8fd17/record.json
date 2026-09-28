@@ -108,9 +108,6 @@
     }
   ],
   "attention_backend": "fused",
-  "attention_degree": 1,
-  "attention_kernel": "learned_polynomial_unnormalized",
-  "attention_normalization": false,
   "coefficient_count": 320,
   "completed_utc": "2026-09-26T18:25:17.607645+00:00",
   "config": {
@@ -119,16 +116,6 @@
     "sha256": "5ccddcc9a89c7de6981638df33402b4ee9a3de658854d4b18cf1d3ab70f4a97b"
   },
   "execution": {
-    "attempts": [
-      {
-        "gpu_count": 4,
-        "gpu_type": "H100",
-        "node": "mastiff",
-        "outcome": "passed acceptance and trained all 19,074 updates from a fresh initialization",
-        "restart": 0,
-        "slurm_job_id": "202337"
-      }
-    ],
     "attention_backend": "fused",
     "attention_backend_requested": "fused",
     "attention_implementation": "pallas_triton",
@@ -163,14 +150,8 @@
   "name": "200m-qk-m001-unnormalized-seed0",
   "parameter_count": 199906784,
   "partition": "sweep",
-  "prediction_tokens": 10000269312,
-  "qk_norm": true,
-  "qk_norm_initial_scale": 8.0,
-  "qk_norm_parameter_count": 160,
-  "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
   "run_id": "r13c144b8fd17",
-  "run_record": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17",
   "seed": 0,
   "selected_checkpoint": {
     "bytes": 2207347340,
@@ -278,9 +259,6 @@
   "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
   "status": "completed",
   "submitted_utc": "2026-09-26T06:43:52+00:00",
-  "terminal_validation_nll": 3.0095842821257457,
-  "terminal_validation_perplexity": 20.278967843274895,
-  "training_updates": 19074,
   "wandb": {
     "run_id": "1436e26beb06455d96a3c99a9756c621",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/1436e26beb06455d96a3c99a9756c621"

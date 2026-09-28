@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 
 from functools import partial
-from scaffolds.transformer.analysis import load_selected_study, selected_run_directory
+from scaffolds.transformer.analysis import selected_views, selected_run_directory
 
 from scaffolds.transformer.analysis import verify_result_selection
 
@@ -69,8 +69,8 @@ def control_terminal_perplexity(name: str):
 
 
 def rows(record: Path = RECORD) -> list[dict]:
-    manifest = load_selected_study(Path(__file__).resolve().parent, record)
-    nodes = {run["name"]: (run.get("execution", {}).get("attempts") or [{}])[-1].get("node", "")
+    manifest = selected_views(Path(__file__).resolve().parent, record)
+    nodes = {run["name"]: (run.get("attempts") or [{}])[-1].get("node", "")
              for run in manifest["runs"]}
     result = []
     for name in RUNS:

@@ -73,11 +73,6 @@
     }
   ],
   "attention_backend": "fused",
-  "attention_degree": 2,
-  "completion": {
-    "path": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/completion.json",
-    "sha256": "3b79dd0968ca3b981fd728e6b91f84abe45d9dbad0fc49894695634b88ca986a"
-  },
   "config": {
     "path": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/config.yaml",
     "recorded_sha256": "1ff9ec14a0dee40935f1d03f260d3e40ae6a5047efd4a53f271330c548ea4fed",
@@ -93,10 +88,8 @@
   },
   "name": "200m-qk-m002-nonnegative-seed0",
   "parameter_count": 199906944,
-  "prediction_tokens": 10000269312,
   "record_schema_version": 1,
   "run_id": "rdbd4607d5af9",
-  "run_record": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9",
   "seed": 0,
   "selected_checkpoint": {
     "bytes": 2200342995,
@@ -213,10 +206,7 @@
   },
   "source_commit": "270179ce9330e33bd2dacffb364aaf00e01e38f8",
   "status": "completed",
-  "terminal_validation_nll": 2.7835158109664917,
-  "terminal_validation_perplexity": 16.17579211851895,
   "throughput": "0.50 s/update on four H100 SXM (2.2 s/update for the blocked attempt)",
-  "training_updates": 19074,
   "wandb": {
     "run_id": "fb0b427a2c034695beeb4d3be4e16613",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/fb0b427a2c034695beeb4d3be4e16613"

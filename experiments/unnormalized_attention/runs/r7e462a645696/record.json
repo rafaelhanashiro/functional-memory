@@ -51,7 +51,32 @@
   ],
   "attempts": [
     {
-      "slurm_job_id": "200875"
+      "allocation": {
+        "AllocTRES": "cpu=32,mem=256G,node=1,billing=32,gres/gpu=4",
+        "BatchHost": "akita",
+        "EndTime": "2026-09-24T16:08:03",
+        "JobId": "200875",
+        "JobName": "unnorm-250m",
+        "JobState": "RUNNING",
+        "NodeList": "akita",
+        "NumCPUs": "32",
+        "Partition": "long",
+        "QOS": "normal",
+        "ReqTRES": "cpu=32,mem=256G,node=1,billing=32,gres/gpu=4",
+        "Requeue": "1",
+        "Restarts": "0",
+        "RunTime": "00:00:02",
+        "StartTime": "2026-09-22T16:08:03",
+        "TimeLimit": "2-00:00:00"
+      },
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "partition": "long",
+      "restart": "0",
+      "slurm_job_id": "200875",
+      "started_utc": "2026-09-22T20:08:05.734405+00:00",
+      "time_limit": "2-00:00:00"
     }
   ],
   "completed_utc": "2026-09-22T23:25:54.992433+00:00",
@@ -61,36 +86,6 @@
     "sha256": "06f4cee59682093089f46d941a6ca028213f5fae6a1d58bffb8655a385facbff"
   },
   "execution": {
-    "attempts": [
-      {
-        "allocation": {
-          "AllocTRES": "cpu=32,mem=256G,node=1,billing=32,gres/gpu=4",
-          "BatchHost": "akita",
-          "EndTime": "2026-09-24T16:08:03",
-          "JobId": "200875",
-          "JobName": "unnorm-250m",
-          "JobState": "RUNNING",
-          "NodeList": "akita",
-          "NumCPUs": "32",
-          "Partition": "long",
-          "QOS": "normal",
-          "ReqTRES": "cpu=32,mem=256G,node=1,billing=32,gres/gpu=4",
-          "Requeue": "1",
-          "Restarts": "0",
-          "RunTime": "00:00:02",
-          "StartTime": "2026-09-22T16:08:03",
-          "TimeLimit": "2-00:00:00"
-        },
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "partition": "long",
-        "restart": "0",
-        "slurm_job_id": "200875",
-        "started_utc": "2026-09-22T20:08:05.734405+00:00",
-        "time_limit": "2-00:00:00"
-      }
-    ],
     "attention_backend": "fused",
     "attention_backend_requested": "auto",
     "attention_implementation": "pallas_triton",
@@ -131,11 +126,9 @@
     "source_commit": "7a3e584fd199b2edbc595cf7053b620401309216"
   },
   "parameter_count": 253654016,
-  "prediction_tokens": 11500257280,
   "record_schema_version": 1,
   "role": "supplementary 250M scale point; documented in the README, no dedicated code path",
   "run_id": "r7e462a645696",
-  "run_record": "experiments/unnormalized_attention/runs/r7e462a645696",
   "seed": 0,
   "selected_checkpoint": {
     "file_count": 14,
@@ -222,8 +215,5 @@
   },
   "slurm_job_id": "200875",
   "source_commit": "51c647459205854447ee31fc54b9bde8813f819c",
-  "status": "completed",
-  "terminal_validation_nll": 2.765264621802739,
-  "terminal_validation_perplexity": 15.883242486813428,
-  "training_updates": 21935
+  "status": "completed"
 }

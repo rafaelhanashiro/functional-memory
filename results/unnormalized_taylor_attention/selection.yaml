@@ -32,7 +32,7 @@ runs:
       sha256: c9e00eac4a104437de18334561fdbea4d6f05b81696632dd2e7dbd605ccbae0d
     record.json:
       path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/record.json
-      sha256: 2b17295c5c0cb605728f71474fe3a81c124f55f8572bfd7b6910492ccb9f30f4
+      sha256: a435e9de0143e6b87c5474c3eee0771e42a5f7d452c4dd79ec92bb50fe10c4ef
 - study: unnormalized_taylor_attention
   run_id: re4509bf65b5f
   label: 200m-m002-seed0
@@ -60,7 +60,7 @@ runs:
       sha256: a312d11551b69eb5e46e78d96c2571dc0e977151489ba5949e2f2485bb430854
     record.json:
       path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/record.json
-      sha256: 51f9bffee3d137a65aca034bc108414b8c0f51a1f4358d83d2da7b5cfab4c186
+      sha256: 8f2d91ab129ca253d898458ce28d5f195f5874ef2d8f0b6e47b09f0971b791dc
 - study: unnormalized_taylor_attention
   run_id: rba0cd1a9bf62
   label: 200m-m003-seed0
@@ -88,7 +88,7 @@ runs:
       sha256: 41152673f2d2954257fadbe3d01e1d0b77f2570e6a7089aeaecbfa803e4826a8
     record.json:
       path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/record.json
-      sha256: 802c58951ae6c43e7759ecec38ccbe43cd0df3b32c33871b715f11cc935f74f6
+      sha256: 2892c7830e83c76cc82ccfba594ba40c175610b0b895f183e97b40ae2d7bc6e3
 - study: unnormalized_taylor_attention
   run_id: rfd3129858805
   label: 200m-m004-seed0
@@ -116,4 +116,4 @@ runs:
       sha256: 9df4a551647e7e72cdb592f28906fba68f6a31aea1f9dc3e9ac55c3389e756fa
     record.json:
       path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/record.json
-      sha256: 011f38ad4146fe8ee5c6393db1e2a8c614face8eb1db93cd3ab26f8b1152a7ee
+      sha256: 2241dc7ec43070f9aebe53121da48432865f0e30e5ed6d756e76cca4ad8cc86c

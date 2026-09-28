@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 
 from functools import partial
-from scaffolds.transformer.analysis import load_selected_study, run_view, selected_run_directory
+from scaffolds.transformer.analysis import selected_views, run_view, selected_run_directory
 
 locate_run = partial(selected_run_directory, Path(__file__).resolve().parent)
 
@@ -121,7 +121,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=OUTPUT)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
-    manifest = load_selected_study(Path(__file__).resolve().parent, args.record)
+    manifest = selected_views(Path(__file__).resolve().parent, args.record)
     rows = gla_rows(manifest, args.record)
     write_summary(rows, args.output / "summary.csv")
     for path in plot(rows, manifest, args.output):

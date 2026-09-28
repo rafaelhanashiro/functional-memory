@@ -81,7 +81,6 @@
     }
   ],
   "attention_backend": "fused",
-  "attention_degree": 3,
   "coefficient_count": 0,
   "completion": null,
   "config": {
@@ -131,35 +130,18 @@
     "sha256": "775c98b51f178783439e2fe4430fa483d894afd16ed6176b1745c730b7ee6771",
     "size_bytes": 37501
   },
-  "metadata": {
-    "path": "experiments/odd_taylor_attention/runs/r8b46f1ad9453/metadata.json",
-    "sha256": "a8f14c5236955465209b27d86aab60381f691f71f20c068d8d2332dd9dacef82"
-  },
   "metrics": null,
   "name": "200m-m003-seed0",
   "parameter_count": 199906464,
-  "qk_head_dim": 64,
-  "qk_norm": true,
-  "qk_norm_sharing": "per_head",
-  "quadratic_mode": "fixed",
-  "quadratic_sharing": "global",
   "record_schema_version": 1,
-  "resolved_config": {
-    "path": "experiments/odd_taylor_attention/runs/r8b46f1ad9453/config.yaml",
-    "recorded_sha256": "51b7d31f79d80bec37ef0ed0b7927626b15276860284a257336813e8a08a949c",
-    "sha256": "d10f16273afc5f387c7055c4b127057d142a7cec59fe253fb466bb3a011a7283"
-  },
   "run_id": "r8b46f1ad9453",
   "seed": 0,
   "selected_checkpoint": null,
   "slurm_job_id": "202615",
   "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
   "status": "numerical-failure",
-  "terminal": null,
-  "value_head_dim": 64,
   "wandb": {
     "run_id": "d538a4ac54874cf4b522c22082a2ef98",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/d538a4ac54874cf4b522c22082a2ef98"
-  },
-  "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+  }
 }

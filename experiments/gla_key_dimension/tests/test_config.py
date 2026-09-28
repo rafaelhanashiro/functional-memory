@@ -34,11 +34,17 @@ def manifest():
     return load_study(RECORD)
 
 
+def views():
+    from scaffolds.transformer.analysis import run_view
+
+    return [run_view(RECORD / "runs" / run_id) for run_id in manifest()["run_ids"]]
+
+
 def test_recipes_preserve_dk_taylor_data_optimizer_backbone_and_cadence():
-    runs = manifest()["runs"]
+    runs = views()
     assert [run["qk_head_dim"] for run in runs] == list(KEY_DIMENSIONS)
     for run in runs:
-        path = ROOT / run["resolved_config"]["path"]
+        path = Path(run["workdir"]) / "config.yaml"
         candidate, control = config_to_dict(load_config(path)), taylor_control(run["qk_head_dim"])
         if control["model"].get("qk_norm"):
             for section, fields in CURRENT_DEFAULT_FIELDS.items():
@@ -54,7 +60,8 @@ def test_recipes_preserve_dk_taylor_data_optimizer_backbone_and_cadence():
         assert candidate["model"]["attention_backend"] == "fused"
         assert candidate["train"]["workdir"].endswith(f"experiments/gla_key_dimension/runs/{run['run_id']}")
         assert candidate["train"]["checkpoint_dir"].endswith(f"experiments/gla_key_dimension/runs/{run['run_id']}/checkpoints")
-        assert hashlib.sha256(path.read_bytes()).hexdigest() == run["resolved_config"]["sha256"]
+        record = json.loads((Path(run["workdir"]) / "record.json").read_text())
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == record["config"]["sha256"]
         config = load_config(path)
         assert model_parameter_count(config.model) == run["parameter_count"]
         assert run["state_elements_per_layer"] == config.model.num_heads * run["qk_head_dim"] * config.model.value_head_dim
@@ -88,11 +95,18 @@ def test_summary_uses_completed_runs_and_width_matched_comparisons(tmp_path):
         directory = record / "runs" / entry["run_id"]
         directory.mkdir(parents=True)
         (directory / "record.json").write_text(json.dumps(entry))
+        (directory / "config.yaml").write_text((RECORD / "runs" / entry["run_id"] / "config.yaml").read_text())
+
+    def copied():
+        from scaffolds.transformer.analysis import run_view
+
+        return dict(data, runs=[run_view(record / "runs" / entry["run_id"]) for entry in data["runs"]])
+
     run = run_directory(record, "200m-dk016-gla-seed0")
     (run / "completion.json").write_text(json.dumps({"final_step": 19074, "training_tokens": 10_000_269_312,
                                                      "validation_nll": 2.8, "validation_perplexity": 16.4}))
     (run / "best_validation.json").write_text(json.dumps({"step": 19074, "validation_perplexity": 16.4}))
-    rows = {row["run"]: row for row in plot.gla_rows(manifest(), record)}
+    rows = {row["run"]: row for row in plot.gla_rows(copied(), record)}
     assert rows["200m-dk008-gla-seed0"]["status"] == "incomplete"
     completed = rows["200m-dk016-gla-seed0"]
     assert completed["softmax_perplexity"] == plot.comparison_table(manifest())[(16, None)]
@@ -100,7 +114,7 @@ def test_summary_uses_completed_runs_and_width_matched_comparisons(tmp_path):
     (run / "completion.json").write_text(json.dumps({"final_step": 1000, "training_tokens": 524_288_000,
                                                      "validation_nll": 3.0, "validation_perplexity": 20.0}))
     with pytest.raises(ValueError, match="full training budget"):
-        plot.gla_rows(manifest(), record)
+        plot.gla_rows(copied(), record)
 
 
 def test_acceptance_spec_requires_the_fused_kernel_and_declares_existing_tests():

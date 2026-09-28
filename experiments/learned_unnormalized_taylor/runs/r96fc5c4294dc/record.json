@@ -93,10 +93,105 @@
   ],
   "attempts": [
     {
-      "slurm_job_id": "201998"
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "0",
+      "slurm_job_id": "201998",
+      "started_utc": "2026-09-25T07:33:23.492964+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "1",
+      "slurm_job_id": "201998",
+      "started_utc": "2026-09-25T07:59:01.804124+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "2",
+      "slurm_job_id": "201998",
+      "started_utc": "2026-09-25T08:20:28.756863+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "3",
+      "slurm_job_id": "201998",
+      "started_utc": "2026-09-25T08:40:42.997667+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "4",
+      "slurm_job_id": "201998",
+      "started_utc": "2026-09-25T08:56:46.665271+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "5",
+      "slurm_job_id": "201998",
+      "started_utc": "2026-09-25T09:02:51.992045+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "6",
+      "slurm_job_id": "201998",
+      "started_utc": "2026-09-25T09:40:49.124474+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "7",
+      "slurm_job_id": "201998",
+      "started_utc": "2026-09-25T10:10:11.736096+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "node": "dogo",
+      "outcome": "passed acceptance and trained all 19,074 updates from a fresh initialization",
+      "partition": "sweep",
+      "restart": "8",
+      "slurm_job_id": "201998",
+      "started_utc": "2026-09-25T11:16:03.461297+00:00",
+      "time_limit": "2-00:00:00"
     }
   ],
-  "attention_degree": 2,
   "coefficient_count": 480,
   "completed_utc": "2026-09-25T14:05:48.060368+00:00",
   "config": {
@@ -105,107 +200,6 @@
     "sha256": "77f9591c3ddd83be7751da6be9a0a9da58d5f31c35ca52724832c5c68ca65ef3"
   },
   "execution": {
-    "attempts": [
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "0",
-        "slurm_job_id": "201998",
-        "started_utc": "2026-09-25T07:33:23.492964+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "1",
-        "slurm_job_id": "201998",
-        "started_utc": "2026-09-25T07:59:01.804124+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "2",
-        "slurm_job_id": "201998",
-        "started_utc": "2026-09-25T08:20:28.756863+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "3",
-        "slurm_job_id": "201998",
-        "started_utc": "2026-09-25T08:40:42.997667+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "4",
-        "slurm_job_id": "201998",
-        "started_utc": "2026-09-25T08:56:46.665271+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "5",
-        "slurm_job_id": "201998",
-        "started_utc": "2026-09-25T09:02:51.992045+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "6",
-        "slurm_job_id": "201998",
-        "started_utc": "2026-09-25T09:40:49.124474+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "7",
-        "slurm_job_id": "201998",
-        "started_utc": "2026-09-25T10:10:11.736096+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "H100",
-        "node": "dogo",
-        "outcome": "passed acceptance and trained all 19,074 updates from a fresh initialization",
-        "partition": "sweep",
-        "restart": "8",
-        "slurm_job_id": "201998",
-        "started_utc": "2026-09-25T11:16:03.461297+00:00",
-        "time_limit": "2-00:00:00"
-      }
-    ],
     "attention_backend": "fused",
     "attention_backend_requested": "auto",
     "attention_implementation": "pallas_triton",
@@ -240,10 +234,8 @@
   },
   "name": "200m-m002-seed0",
   "parameter_count": 199906784,
-  "prediction_tokens": 10000269312,
   "record_schema_version": 1,
   "run_id": "r96fc5c4294dc",
-  "run_record": "experiments/learned_unnormalized_taylor/runs/r96fc5c4294dc",
   "seed": 0,
   "selected_checkpoint": {
     "bytes": 2209080385,
@@ -349,9 +341,6 @@
   "slurm_job_id": "201998",
   "source_commit": "788a085e24225872495199e8040ec1167070a691",
   "status": "completed",
-  "terminal_validation_nll": 2.9986991456576755,
-  "terminal_validation_perplexity": 20.059425552490385,
-  "training_updates": 19074,
   "wandb": {
     "run_id": "4cbe2cb832a94cd0b37577e873d4a119",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/4cbe2cb832a94cd0b37577e873d4a119"

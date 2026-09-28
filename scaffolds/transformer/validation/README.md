@@ -189,7 +189,7 @@ Every production allocation then passed the sweep's acceptance at source `4af147
 (49 GLA CPU tests, 21 kernel tests, a 20-update full-recipe pilot on the fused
 backend, and an exact fresh-process resume): H100 in jobs 201793 (first attempt)
 and 201794; B300 in jobs 201792, 201793 (after requeue), 201795, and 201796.
-Per-run evidence is summarized in the GLA provenance manifest.
+Per-run acceptance is summarized in each GLA run's `record.json`.
 
 The kernel is slow rather than wrong. On one H100 at the per-device production
 shape (16 × 2,048 tokens, 16 heads, d_V 64), fused GLA forward+backward took 3.9,

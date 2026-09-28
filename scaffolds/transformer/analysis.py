@@ -156,7 +156,7 @@ def run_view(run_directory: Path, label: str | None = None) -> dict:
         status = "numerical-failure"
     return {
         **record, "name": label or record["label"], "workdir": str(run_directory), "config": config,
-        "source_commit": record["source_commit"], "status": status, "error": metadata.get("error") or "",
+        "source_commit": record.get("source_commit"), "status": status, "error": metadata.get("error") or "",
         "failure": json.loads(failures[-1].read_text()) if failures else None,
         "attention_degree": setting("attention_degree"), "qk_head_dim": setting("qk_head_dim"),
         "value_head_dim": setting("value_head_dim"),
@@ -294,20 +294,6 @@ def selected_run_directory(directory: Path, study: Path, label_or_id: str) -> Pa
     if len(candidates) != 1:
         raise ValueError(f"Expected one selected run for {study.name}/{label_or_id}, found {len(candidates)}")
     return study / "runs" / candidates[0]["run_id"]
-
-
-def load_selected_study(directory: Path, study: Path) -> dict:
-    """Load a study's facts and the records of its selected runs."""
-    from scaffolds.records import load_run, load_study
-
-    study = Path(study)
-    if study.name == "sweep.yaml":
-        study = study.parent
-    selection = verify_result_selection(directory)
-    common = load_study(study)
-    common["runs"] = [dict(load_run(study / "runs" / run["run_id"]), name=run["label"])
-                      for run in selection["runs"] if run["study"] == study.name]
-    return common
 
 
 def selected_views(directory: Path, study: Path) -> dict:

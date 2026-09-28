@@ -91,10 +91,72 @@
   ],
   "attempts": [
     {
-      "slurm_job_id": "202000"
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "0",
+      "slurm_job_id": "202000",
+      "started_utc": "2026-09-25T07:57:33.654762+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "1",
+      "slurm_job_id": "202000",
+      "started_utc": "2026-09-25T08:11:29.912034+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "2",
+      "slurm_job_id": "202000",
+      "started_utc": "2026-09-25T08:39:57.517538+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "3",
+      "slurm_job_id": "202000",
+      "started_utc": "2026-09-25T08:55:56.108680+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
+      "partition": "sweep",
+      "restart": "4",
+      "slurm_job_id": "202000",
+      "started_utc": "2026-09-25T08:58:52.501808+00:00",
+      "time_limit": "2-00:00:00"
+    },
+    {
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "node": "akita",
+      "outcome": "passed acceptance and trained all 19,074 updates from a fresh initialization",
+      "partition": "sweep",
+      "restart": "5",
+      "slurm_job_id": "202000",
+      "started_utc": "2026-09-25T09:35:23.035043+00:00",
+      "time_limit": "2-00:00:00"
     }
   ],
-  "attention_degree": 4,
   "coefficient_count": 800,
   "completed_utc": "2026-09-25T12:12:32.801843+00:00",
   "config": {
@@ -103,74 +165,6 @@
     "sha256": "c84be3b17a63073308b017ae8713a4770d763118478381b5e697f1d3809890ac"
   },
   "execution": {
-    "attempts": [
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "0",
-        "slurm_job_id": "202000",
-        "started_utc": "2026-09-25T07:57:33.654762+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "1",
-        "slurm_job_id": "202000",
-        "started_utc": "2026-09-25T08:11:29.912034+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "2",
-        "slurm_job_id": "202000",
-        "started_utc": "2026-09-25T08:39:57.517538+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "3",
-        "slurm_job_id": "202000",
-        "started_utc": "2026-09-25T08:55:56.108680+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "preempted by Slurm during acceptance, before any training update; requeued automatically",
-        "partition": "sweep",
-        "restart": "4",
-        "slurm_job_id": "202000",
-        "started_utc": "2026-09-25T08:58:52.501808+00:00",
-        "time_limit": "2-00:00:00"
-      },
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "passed acceptance and trained all 19,074 updates from a fresh initialization",
-        "partition": "sweep",
-        "restart": "5",
-        "slurm_job_id": "202000",
-        "started_utc": "2026-09-25T09:35:23.035043+00:00",
-        "time_limit": "2-00:00:00"
-      }
-    ],
     "attention_backend": "fused",
     "attention_backend_requested": "auto",
     "attention_implementation": "pallas_triton",
@@ -205,10 +199,8 @@
   },
   "name": "200m-m004-seed0",
   "parameter_count": 199907104,
-  "prediction_tokens": 10000269312,
   "record_schema_version": 1,
   "run_id": "rdce1f1f53cdf",
-  "run_record": "experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf",
   "seed": 0,
   "selected_checkpoint": {
     "bytes": 2214908950,
@@ -314,9 +306,6 @@
   "slurm_job_id": "202000",
   "source_commit": "788a085e24225872495199e8040ec1167070a691",
   "status": "completed",
-  "terminal_validation_nll": 3.002697936126164,
-  "terminal_validation_perplexity": 20.13979958454915,
-  "training_updates": 19074,
   "wandb": {
     "run_id": "405ce9ce1a684e0ab1c695665cab991d",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/405ce9ce1a684e0ab1c695665cab991d"

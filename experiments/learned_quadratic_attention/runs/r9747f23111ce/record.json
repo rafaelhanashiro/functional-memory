@@ -40,7 +40,6 @@
     }
   ],
   "attention_backend": "fused",
-  "attention_degree": 2,
   "coefficient_count": 320,
   "completion": null,
   "config": {
@@ -94,25 +93,9 @@
     "sha256": "9975c6981efdb5d8931e5d40e90b6369731f8b94104cfe9617ab64b013fe70b8",
     "size_bytes": 293535
   },
-  "metadata": {
-    "path": "experiments/learned_quadratic_attention/runs/r9747f23111ce/metadata.json",
-    "sha256": "dcae9ab9b346232aedd8d916ca2bcd3e155b6539f4e59893ecabdf1529e972c5"
-  },
-  "metrics": {
-    "path": "experiments/learned_quadratic_attention/runs/r9747f23111ce/metrics.jsonl",
-    "sha256": "89b276c6b3befe881f818f0ecb47b31399d8fbfdcb7508e5d35d64ec88ce7eea"
-  },
   "name": "200m-unrestricted-per-head-seed0",
   "parameter_count": 199906624,
-  "qk_head_dim": 64,
-  "quadratic_mode": "unrestricted",
-  "quadratic_sharing": "per_head",
   "record_schema_version": 1,
-  "resolved_config": {
-    "path": "experiments/learned_quadratic_attention/runs/r9747f23111ce/config.yaml",
-    "recorded_sha256": "01ebc147ff08c7510b9ed2fcdea189766481edc4611cfa618a06dfa38252e4aa",
-    "sha256": "2f815df07ca3aef141d162aa6b65917122f91f92c18b7bfa03dbb81307c5bd6f"
-  },
   "run_id": "r9747f23111ce",
   "seed": 0,
   "selected_checkpoint": {
@@ -200,7 +183,5 @@
   },
   "slurm_job_id": "199898",
   "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
-  "status": "numerical-failure",
-  "terminal": null,
-  "value_head_dim": 64
+  "status": "numerical-failure"
 }

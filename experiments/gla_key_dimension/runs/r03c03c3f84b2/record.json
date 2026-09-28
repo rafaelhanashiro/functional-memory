@@ -69,23 +69,23 @@
       "sha256": "4d4866354dcd4e5a5fba308dd11d259464b1751d49bca7e4971a4da8823b8263"
     }
   ],
+  "attempts": [
+    {
+      "elapsed": "04:46:04",
+      "gpu_type": "B300",
+      "node": "akita",
+      "partition": "sweep",
+      "slurm_restart_count": 0,
+      "started_utc": "2026-09-24T23:44:36.300660+00:00",
+      "state": "COMPLETED"
+    }
+  ],
   "checkpoint_dir": "experiments/gla_key_dimension/runs/r03c03c3f84b2/checkpoints",
   "config": {
     "path": "experiments/gla_key_dimension/runs/r03c03c3f84b2/config.yaml",
     "sha256": "d9597795a465f5e9e914d71332d5567117a2554c8dee9d2f1e6dae1982d864d4"
   },
   "execution": {
-    "attempts": [
-      {
-        "elapsed": "04:46:04",
-        "gpu_type": "B300",
-        "node": "akita",
-        "partition": "sweep",
-        "slurm_restart_count": 0,
-        "started_utc": "2026-09-24T23:44:36.300660+00:00",
-        "state": "COMPLETED"
-      }
-    ],
     "attention_backend": "fused",
     "data_parallel_devices": 4,
     "gpu_count": 4,
@@ -107,21 +107,7 @@
   "log_path": "experiments/gla_key_dimension/runs/r03c03c3f84b2/training.log",
   "name": "200m-dk128-gla-seed0",
   "parameter_count": 231885824,
-  "qk_head_dim": 128,
   "record_schema_version": 1,
-  "resolved_config": {
-    "path": "experiments/gla_key_dimension/runs/r03c03c3f84b2/config.yaml",
-    "recorded_sha256": "d67f1230d50a51f6dd0cdf5f9cf3371e523366d4d8aa017a8869b71e40318aa9",
-    "sha256": "d9597795a465f5e9e914d71332d5567117a2554c8dee9d2f1e6dae1982d864d4"
-  },
-  "run_files": {
-    "best_validation.json": "644f28a99580fe8c189e02909ad0bdc0a9a4898f1943d38e3483b63321e4fa62",
-    "completion.json": "660d2d778614a2a76baa4aaf22ce42cd0629130b4e3edb73873ec74df58b686b",
-    "config.json": "f411e893c7cd6455a3c70acad0dbc031cb70a49b635bdf5b34c692cb43f49ad7",
-    "data_identity.json": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
-    "metadata.json": "d094e5e7838e9a54bfe3bd16b636bd5f027f43c40f834ca66012a0dee31cc7b4",
-    "metrics.jsonl": "4d4866354dcd4e5a5fba308dd11d259464b1751d49bca7e4971a4da8823b8263"
-  },
   "run_id": "r03c03c3f84b2",
   "seed": 0,
   "selected_checkpoint": {
@@ -220,12 +206,5 @@
   "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
   "state_elements_per_layer": 131072,
   "status": "complete",
-  "terminal": {
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 2.736740231513977,
-    "validation_perplexity": 15.436583304097534
-  },
-  "value_head_dim": 64,
   "workdir": "experiments/gla_key_dimension/runs/r03c03c3f84b2"
 }

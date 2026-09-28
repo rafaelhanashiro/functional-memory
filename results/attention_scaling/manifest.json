@@ -217,195 +217,195 @@
   "source_records": {
     "key_dimension_taylor/rc3536d3ff6cd": {
       "path": "experiments/key_dimension_taylor/runs/rc3536d3ff6cd/record.json",
-      "sha256": "67eb88906f7ea146a81a84fa6917749be43b65fde271a73d265b52944fd5dda4"
+      "sha256": "ad229c54c930e63ba2ae52b6789754394a9e9466a71658283287f79d18c58974"
     },
     "key_dimension_taylor/r18aa3ef494f5": {
       "path": "experiments/key_dimension_taylor/runs/r18aa3ef494f5/record.json",
-      "sha256": "22cdb6735e4c335cf2c9dab2243bc972ef39caebc6bfa6a0029310e776fed9a7"
+      "sha256": "8b18e8f8a778035b60b8f49dc7dad2d3c7e2a4e2a53f5e95dffb3a1f45fae441"
     },
     "key_dimension_taylor/r0b5fb00b8649": {
       "path": "experiments/key_dimension_taylor/runs/r0b5fb00b8649/record.json",
-      "sha256": "359794728131a13ba42b325c017fa302f1232a3453c05727a1adc17c7005a4d1"
+      "sha256": "f65a33ce074978480090b6f3eb5bdac600aff569e87e560b572a76075f1fd5e7"
     },
     "key_dimension_taylor/r3961c167a16f": {
       "path": "experiments/key_dimension_taylor/runs/r3961c167a16f/record.json",
-      "sha256": "17fd2171b1c6cdb38626e45145cf924d55ba750214d9380ea37698ed8d42194c"
+      "sha256": "cac07994e67d5005c177b45bcda3bd1dec245ec71f3e61c01d9b5edfc85f7293"
     },
     "key_dimension_taylor/ra92381785e78": {
       "path": "experiments/key_dimension_taylor/runs/ra92381785e78/record.json",
-      "sha256": "4413e9316aaaf97df9cd2b371f7e462e97b16173b1cadfbb49228f8914bf3405"
+      "sha256": "e2b79e3a77615574bb6155ac655975300232e7fc4f5ac9b6724f65f719830ed8"
     },
     "gla_key_dimension/ra6346b7a6cfc": {
       "path": "experiments/gla_key_dimension/runs/ra6346b7a6cfc/record.json",
-      "sha256": "216102f2677f6f23a267d01211cda8c9ad5cb7e67d18c0ffc58051e9083a5f28"
+      "sha256": "f5284de183fe72206341f6a359b56b9c5c079d63dced51566c845e69dec14e0f"
     },
     "key_dimension_taylor/r8a9bc098ce3a": {
       "path": "experiments/key_dimension_taylor/runs/r8a9bc098ce3a/record.json",
-      "sha256": "0fbe9104d5003ad26e6665bbb2197784ae2befcbd40091d0150bd37dbc77b411"
+      "sha256": "5e9b5a523765a84956994433dee4021551f75a793167de8f9697cfd611def065"
     },
     "key_dimension_taylor/r7ca127105528": {
       "path": "experiments/key_dimension_taylor/runs/r7ca127105528/record.json",
-      "sha256": "dcfe9e474e5be92e0ac4ba446e3e02bcc982fd017768b33f4fc634c86978245d"
+      "sha256": "397d331ee2ae446e03d0950f1e86a72c1f057cf5f86bed8b2ee5c977f949607e"
     },
     "key_dimension_taylor/rcaf4e954ca9a": {
       "path": "experiments/key_dimension_taylor/runs/rcaf4e954ca9a/record.json",
-      "sha256": "0a14c72091e9a70218d8d6c3a9fc7c917b7922e23cbf93fe9ac45e0558349360"
+      "sha256": "601e10406c8505bc1c1901857588abace9b34c05f01250fe574d516b1462df89"
     },
     "key_dimension_taylor/rfe7378eb4b4f": {
       "path": "experiments/key_dimension_taylor/runs/rfe7378eb4b4f/record.json",
-      "sha256": "b07d9fda11cad23172c1c83b26cc356bb8803fe3fbbd04ad1e9f30c074eb10d6"
+      "sha256": "fcabc9f5df99a34844690db84e64f5e6fc6e94fcc86fb5aba63512fbc846e327"
     },
     "key_dimension_taylor/r51dc98ae4fd1": {
       "path": "experiments/key_dimension_taylor/runs/r51dc98ae4fd1/record.json",
-      "sha256": "e58f4ee8b6637265265389113fe223171626a4942f5dfc092da21c79b8fc0a07"
+      "sha256": "b6efaa38fe7f0b0f8da00d6f5d0855f1bcd383dda842fbbf563da868b5968273"
     },
     "gla_key_dimension/r6a5ffbb56ac3": {
       "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/record.json",
-      "sha256": "8165bc2133c3fe03ad846366457e95ae4623a1ac3f2eeb3c5017b076c07a53f3"
+      "sha256": "cfa29c55850d3daff49305444c5fb228227b3c7643a8983ce826e302097bce96"
     },
     "key_dimension_taylor/r3a06ec7d5976": {
       "path": "experiments/key_dimension_taylor/runs/r3a06ec7d5976/record.json",
-      "sha256": "106a8e8c8e6e11c8b478adec51bafa857905e75cfabb8101a0f166830679c68d"
+      "sha256": "4dec7b5104482b3efc765392318ccade9cae5e28cb8dd6b32f51332823ae96d2"
     },
     "key_dimension_taylor/r52e627fffdfc": {
       "path": "experiments/key_dimension_taylor/runs/r52e627fffdfc/record.json",
-      "sha256": "4bf17807c800bfe629505d7661a3457b64cbad1845cf487bec3b9a755118a4e6"
+      "sha256": "f1652b5e2adb97d83519e2254f7e8b8d3c580a9e7a67963e5b5c7309f33dda7c"
     },
     "key_dimension_taylor/r35c90bbb045c": {
       "path": "experiments/key_dimension_taylor/runs/r35c90bbb045c/record.json",
-      "sha256": "3d42b81d4168e5fc43ba6939cb6b8a1a5755cd45cca720378cacdbfcf5df2680"
+      "sha256": "ebdc8770207565f5a36d075a4498a69490f505e08c7614f54ef38367ff776168"
     },
     "key_dimension_taylor/r74009ae25ff9": {
       "path": "experiments/key_dimension_taylor/runs/r74009ae25ff9/record.json",
-      "sha256": "f42535b0fac4136dbbc57455a6b6c28631aa3a265d3a680ec1ea8a3816e6e715"
+      "sha256": "2144f1a50080396e8a26e24a34892c3af2ff437b39c9031427a0ab7a069f2d46"
     },
     "key_dimension_taylor/r261f88db0c4b": {
       "path": "experiments/key_dimension_taylor/runs/r261f88db0c4b/record.json",
-      "sha256": "ad090fc93d575dec003c52ac19add3a33565c5df0c0ff370783e00b7e4cb4812"
+      "sha256": "226726221de5d35e3ccdff67b966aa5d13a6b5eff74bbf82446f4708809d647b"
     },
     "gla_key_dimension/r7d278821b92d": {
       "path": "experiments/gla_key_dimension/runs/r7d278821b92d/record.json",
-      "sha256": "dc40c095035a5a00913b133781244387a6f38bf1f529b8ca53e4f9e59dd278a0"
+      "sha256": "0c5b734bc181f026b125900597a23150e9c764e8108e9de93132348fd44f2d44"
     },
     "key_dimension_taylor/r93c9d0814322": {
       "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/record.json",
-      "sha256": "3ae86a4891f57d775afb4522a84d9f5c1103ad63dc8a06a56046866c27031626"
+      "sha256": "b37ece50525c199198c090c3effe461b4d9b528a4177444f6c7cc80b932663aa"
     },
     "key_dimension_taylor/ra9b651caa405": {
       "path": "experiments/key_dimension_taylor/runs/ra9b651caa405/record.json",
-      "sha256": "6f4a58062e38b0a5722d088761d3d73ca69b9cb97c8d5259b93a27f07355edc2"
+      "sha256": "1ab7f3de074a57e47d8b34583d9103479a60692bf3dde70f8f40e4ddceae6e62"
     },
     "key_dimension_taylor/r4923c6939e74": {
       "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/record.json",
-      "sha256": "78ebf3531050c5bd7bac969f26cf49574fca8e63929d669720f5c1e3215da5a7"
+      "sha256": "560734a543af1db5ecef94b4c422e79401e53896cfa73d0e5e5bf5c331f35de6"
     },
     "key_dimension_taylor/r03d397da0bd0": {
       "path": "experiments/key_dimension_taylor/runs/r03d397da0bd0/record.json",
-      "sha256": "503d90a1ea8fbbbd5e8fde2d64bc9b59d410fe188c0d162cd5dc2447cc544b2d"
+      "sha256": "c81b6ba4fa91c8e776a55062bc056ff6a6ed0b0b6f193897daad677e46524d06"
     },
     "key_dimension_taylor/r50088d29f2b5": {
       "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/record.json",
-      "sha256": "76fc7e73f512b29152219dc4b9b2b82d818137ea3dadfa617697518cd4efe701"
+      "sha256": "aa71e99a9d9df0934e52487e7d3f0b0f4734be4136ad168434f308bca20dc45b"
     },
     "gla_key_dimension/rf35e1e8fb2e3": {
       "path": "experiments/gla_key_dimension/runs/rf35e1e8fb2e3/record.json",
-      "sha256": "f3adfa3823ec77af41becf9c4fbbffd02a35d1dbd0c69e36518541c50985c01a"
+      "sha256": "c23761cdf82291b0077e3dfbb1eb5f15efde6901248e630025995650f8172a19"
     },
     "key_dimension_taylor/r21a071c7cd15": {
       "path": "experiments/key_dimension_taylor/runs/r21a071c7cd15/record.json",
-      "sha256": "14bdd1a2159493cb09ed03f206f44b3961e35f9aca6ef4a34ca5817bd58c754c"
+      "sha256": "12c078a69712b674ae54c9a496a5fef9672a1aa97b320b5fa13be95fc5190419"
     },
     "key_dimension_taylor/rf4c43c0d0467": {
       "path": "experiments/key_dimension_taylor/runs/rf4c43c0d0467/record.json",
-      "sha256": "e8be8d269235c19a5d4f1a298dbe624596d864063a43e582d670c2577eec9aae"
+      "sha256": "d9af5a9a2faf570aefa22cc9a73b05513c60a5cf5b5a6fa76b677f1b97846429"
     },
     "key_dimension_taylor/r58c25c5d4ce1": {
       "path": "experiments/key_dimension_taylor/runs/r58c25c5d4ce1/record.json",
-      "sha256": "2308bc13e2109d1ba306d28935a5989d9a4f2773a2e2359495c01a50301aed1b"
+      "sha256": "9c04a5e2d4d9d227e1f195f7d180178ed40dc291ac1341bbf904e49a94efbeca"
     },
     "key_dimension_taylor/r0c924296d7d3": {
       "path": "experiments/key_dimension_taylor/runs/r0c924296d7d3/record.json",
-      "sha256": "aaed66aa4bac9ec7268d236bfacde7de9664bd92b11f9ffa2e834070042d7db7"
+      "sha256": "4bf874d9a7c84c9abeaa392cc8fff062853288bb58edd5f55f0d35885edd8639"
     },
     "key_dimension_taylor/rf3539f68224c": {
       "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/record.json",
-      "sha256": "144bf4b5d657fc754e42a9362334a3bd5d3c1f091574f6ffa1d099b98677e682"
+      "sha256": "eda515741ab5c8c10200bf59855948db7d96e53a9bd1367c4f584dec988c547e"
     },
     "gla_key_dimension/r03c03c3f84b2": {
       "path": "experiments/gla_key_dimension/runs/r03c03c3f84b2/record.json",
-      "sha256": "8724df79549159be931a4409cad69db42f6c237676b3285f4e87a3ec4240a7d6"
+      "sha256": "6cf82edf9a45f21e823d704c6fdf78915d074b7cd619e8f4db0efac14d8be599"
     },
     "odd_taylor_attention/raa90edf82385": {
       "path": "experiments/odd_taylor_attention/runs/raa90edf82385/record.json",
-      "sha256": "15021a069abf87fe714a2ac841671bc1fe53e4394b778759cf819928af9779ab"
+      "sha256": "af6f253e578cf4d49e02552468d7a25b2d901efb0daa14848dffa22dbf7406fa"
     },
     "odd_taylor_attention/r8b46f1ad9453": {
       "path": "experiments/odd_taylor_attention/runs/r8b46f1ad9453/record.json",
-      "sha256": "e66826a274845e6b39a232829127f5aa3abb28d49d969850256eae660882e74b"
+      "sha256": "10607353f695d9eed37b0d97480aa0e7f97136eda3ec793aa05a4710df2e8f3c"
     },
     "qk_norm_attention/r1feece425074": {
       "path": "experiments/qk_norm_attention/runs/r1feece425074/record.json",
-      "sha256": "fd32425847d426dd9a414ad8c9cd7909f2ff4f0ac6a2328feaaeffadea7f69ce"
+      "sha256": "5992cebd0523cd0d1e1432d56c945bcb0a9ab72821485a53524f5b7f4c445931"
     },
     "unnormalized_taylor_attention/reb79b9201e5a": {
       "path": "experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/record.json",
-      "sha256": "2b17295c5c0cb605728f71474fe3a81c124f55f8572bfd7b6910492ccb9f30f4"
+      "sha256": "a435e9de0143e6b87c5474c3eee0771e42a5f7d452c4dd79ec92bb50fe10c4ef"
     },
     "qk_norm_learned_taylor/r13c144b8fd17": {
       "path": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/record.json",
-      "sha256": "4ea6e63deee41d587e761f82ec67f3d18b3f09f74e54587156bb49cfc04f040c"
+      "sha256": "431c05f3b0d378dad44c6e3a6dcc5a50d0db33d0de566522cda253069cc52ba7"
     },
     "unnormalized_taylor_attention/re4509bf65b5f": {
       "path": "experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/record.json",
-      "sha256": "51f9bffee3d137a65aca034bc108414b8c0f51a1f4358d83d2da7b5cfab4c186"
+      "sha256": "8f2d91ab129ca253d898458ce28d5f195f5874ef2d8f0b6e47b09f0971b791dc"
     },
     "qk_norm_learned_taylor/r07bee5b16e61": {
       "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/record.json",
-      "sha256": "d993672518ee89f3398d7a7bfbd3161d999622de1ccab31a25103fbe56e3916c"
+      "sha256": "49c508476818905192f8e854ec6ef34f8c504ecff592d605f4ea1853d92a0c1f"
     },
     "unnormalized_taylor_attention/rba0cd1a9bf62": {
       "path": "experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/record.json",
-      "sha256": "802c58951ae6c43e7759ecec38ccbe43cd0df3b32c33871b715f11cc935f74f6"
+      "sha256": "2892c7830e83c76cc82ccfba594ba40c175610b0b895f183e97b40ae2d7bc6e3"
     },
     "qk_norm_learned_taylor/r0470d7fcaae6": {
       "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/record.json",
-      "sha256": "7266b24d62abfe62f566110d2ef49a43d5b86eb7c5924e96acdda7e27644cb5d"
+      "sha256": "c64a8908d7215a1f187d31d3f430379d6f217e3ae8285b5856cd1248b3845d19"
     },
     "unnormalized_taylor_attention/rfd3129858805": {
       "path": "experiments/unnormalized_taylor_attention/runs/rfd3129858805/record.json",
-      "sha256": "011f38ad4146fe8ee5c6393db1e2a8c614face8eb1db93cd3ab26f8b1152a7ee"
+      "sha256": "2241dc7ec43070f9aebe53121da48432865f0e30e5ed6d756e76cca4ad8cc86c"
     },
     "qk_norm_learned_taylor/rbaa19693c602": {
       "path": "experiments/qk_norm_learned_taylor/runs/rbaa19693c602/record.json",
-      "sha256": "bf1e69b0924d545186b7cc869286668818ef33407bfe534c2f3a055611ab7e76"
+      "sha256": "2025aac435c3a3117217ad73c5d0f2ad3e2a9a0b749c18ecde924ebe5e8d24f2"
     },
     "qk_norm_learned_taylor/rc342fe890e6f": {
       "path": "experiments/qk_norm_learned_taylor/runs/rc342fe890e6f/record.json",
-      "sha256": "f1bf7d1774915ee0ce8ffaea3efce0ec0b595472cf8b7a98b9ecde185ba42f7b"
+      "sha256": "79607b6e077ca8a03ca7656339998245eca5e530496f4b3cc3fc51611074efff"
     },
     "qk_norm_learned_taylor/rd962214a5556": {
       "path": "experiments/qk_norm_learned_taylor/runs/rd962214a5556/record.json",
-      "sha256": "ae3f3167d8a6d2358cb5e90e322d6fbe4683b0f7d4e465e48902c60c12930ba1"
+      "sha256": "6c0280efff5674f8fca047773447b80c7f4836e52b2aa0ad0412642222d52fe9"
     },
     "qk_norm_learned_taylor/rd7428f72915b": {
       "path": "experiments/qk_norm_learned_taylor/runs/rd7428f72915b/record.json",
-      "sha256": "182516378695f6438d33bc00a8dabc12e2ce165138db12d495d032e79a93aca6"
+      "sha256": "4d6ccba13663d82f35e638c9a18eb38077646ac3ced6d3848ad46ea769354295"
     },
     "qk_norm_learned_taylor/re554c79caddb": {
       "path": "experiments/qk_norm_learned_taylor/runs/re554c79caddb/record.json",
-      "sha256": "c9075f92fc9ce40f966d12768e4c31c900545939b51fbd33274eefda64ec5d5f"
+      "sha256": "3614e7af4322c004408329a8ad638c2d8c4da80ef859930880371d22041506e6"
     },
     "unnormalized_attention/r8cccbabca761": {
       "path": "experiments/unnormalized_attention/runs/r8cccbabca761/record.json",
-      "sha256": "6de5934f9be9eab9179cfd2594cbab69ffce546ab12822460c3d48d0441cf1ba"
+      "sha256": "26a04a12400b06ee4837e5b6bb04481920c6b38288bdc8006a69212503b19c1e"
     },
     "nonnegative_learned_taylor/rdbd4607d5af9": {
       "path": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/record.json",
-      "sha256": "2278055da24e0e2f96023fe2e87706f608dcdf7942db30da5a0c218b005d9adf"
+      "sha256": "2ad1583a886b95d246d0ad516a1f617f6ee0b63f321f4b455c237ac4129a2c95"
     },
     "nonnegative_learned_taylor/r507d1c2632b2": {
       "path": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/record.json",
-      "sha256": "ef7f30ac0d00718f43d817c0cdd0ab9fa43e14525a1212bb4472f3d128d1e78f"
+      "sha256": "4eac67eb6ff4a16e584288ad81264e4d3f81cf65f17e25d0790aa5fcdc99fc28"
     }
   },
   "source_runs": [
@@ -1887,11 +1887,11 @@
   "analysis": {
     "config": {
       "path": "results/attention_scaling/selection.yaml",
-      "sha256": "7aea2ca660121ed63ce5abc8c8275ef44a52577f672d9b8838fd718a916d1a2d"
+      "sha256": "bb0bbd3001bb47d6e99269bd8d2f32b7ad6681339356aed9af10d9d2ceca2e4c"
     },
     "chart_config": {
       "path": "results/attention_scaling/degree_chart.yaml",
-      "sha256": "fb8063c894615434542eb17b2d3eccd77585b1702c23bb616d07829ab8a69e97"
+      "sha256": "8dcf7c5375d2ef85223ef06a53d785d94c5dfe0cf8a0f03654235040e9614472"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
@@ -1900,7 +1900,7 @@
     "code": {
       "collect.py": {
         "path": "results/attention_scaling/collect.py",
-        "sha256": "e8135b7f52ecd2408698c47e2a7229f4e93c38d468309a8f119b37f1ca05b52f"
+        "sha256": "8f83915efe97a37ba30f5e6a30fc0bff5ac3e735dc8c13331c02505c537dcd31"
       },
       "render.py": {
         "path": "results/attention_scaling/render.py",

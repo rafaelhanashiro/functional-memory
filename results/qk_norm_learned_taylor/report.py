@@ -16,7 +16,7 @@ import math
 from pathlib import Path
 
 from functools import partial
-from scaffolds.transformer.analysis import load_selected_study, selected_run_directory
+from scaffolds.transformer.analysis import selected_views, selected_run_directory
 
 from scaffolds.transformer.analysis import verify_result_selection
 
@@ -113,8 +113,8 @@ def _hardware(run_directory: Path, node: str) -> str:
 
 
 def rows(record: Path = RECORD, *, allow_pending: bool = False) -> list[dict]:
-    manifest = load_selected_study(Path(__file__).resolve().parent, record)
-    nodes = {run["name"]: (run.get("execution", {}).get("attempts") or run.get("attempts") or [{}])[-1].get("node", "")
+    manifest = selected_views(Path(__file__).resolve().parent, record)
+    nodes = {run["name"]: (run.get("attempts") or [{}])[-1].get("node", "")
              for run in manifest["runs"]}
     qk_softmax = control_perplexity(QK_SOFTMAX)
     table = []

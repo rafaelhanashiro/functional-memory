@@ -13,7 +13,7 @@ import shutil
 from pathlib import Path
 
 from functools import partial
-from scaffolds.transformer.analysis import load_selected_study, selected_run_directory
+from scaffolds.transformer.analysis import selected_views, selected_run_directory
 
 from scaffolds.transformer.analysis import verify_result_selection
 
@@ -60,7 +60,7 @@ def minimum_row_sum(records: list[dict]) -> float:
 
 
 def rows(record: Path = RECORD) -> list[dict]:
-    manifest = load_selected_study(Path(__file__).resolve().parent, record)
+    manifest = selected_views(Path(__file__).resolve().parent, record)
     hardware = {run["name"]: run.get("hardware_summary", "") for run in manifest["runs"]}
     softmax = terminal_row(SOFTMAX)["terminal_validation_perplexity"]
     result = []

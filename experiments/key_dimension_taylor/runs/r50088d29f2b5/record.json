@@ -185,12 +185,7 @@
     }
   ],
   "attention_backend": "fused",
-  "attention_degree": null,
   "completed_utc": "2026-09-25T23:35:49.944451+00:00",
-  "completion": {
-    "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/completion.json",
-    "sha256": "7571ffbad1e5e9cf1b7f378ecad556b3f1f1e7d0d77671f8f5aa740331b9c8e0"
-  },
   "config": {
     "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/config.yaml",
     "sha256": "d39c51225ff4843fe32ea5cb2a399df2c64e6d5808abf6f9600aa89fdadd861a"
@@ -223,23 +218,9 @@
     "sha256": "411d7234ce9b347c06fea1ad7c2a1323e2143411bdacb254ba3214637572e7de",
     "size_bytes": 1496166
   },
-  "metadata": {
-    "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/metadata.json",
-    "sha256": "d2a32e0c8045e8053595a1acb2d802b97987f8c7b6f7a9eefdef21066d315d42"
-  },
-  "metrics": {
-    "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/metrics.jsonl",
-    "sha256": "6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786"
-  },
   "name": "200m-softmax-seed0",
   "parameter_count": 199906304,
-  "qk_head_dim": 64,
   "record_schema_version": 1,
-  "resolved_config": {
-    "path": "experiments/key_dimension_taylor/runs/r50088d29f2b5/config.yaml",
-    "recorded_sha256": "4fcd6d27091f88b0cb0f1e7c8ac2c9a9ab2c61269c3f736bca16800d147eb861",
-    "sha256": "d39c51225ff4843fe32ea5cb2a399df2c64e6d5808abf6f9600aa89fdadd861a"
-  },
   "run_id": "r50088d29f2b5",
   "seed": 0,
   "selected_checkpoint": {
@@ -345,16 +326,8 @@
   },
   "slurm_job_id": "202190",
   "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
-  "terminal": {
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 2.6854977863175526,
-    "validation_perplexity": 14.665499848737895
-  },
-  "value_head_dim": 64,
   "wandb": {
     "run_id": "2a3a4d814bf242f8b5f9244bd06a8544",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/2a3a4d814bf242f8b5f9244bd06a8544"
-  },
-  "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+  }
 }

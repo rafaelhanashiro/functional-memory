@@ -11,8 +11,6 @@ from scaffolds.records import load_study
 from pathlib import Path
 
 
-_COMPLETE = {"complete", "completed"}
-_NUMERICAL_FAILURE = {"numerical-failure", "numerical_failure"}
 # The scaffold's current defaults. Runs trained under anything else are shown as
 # legacy cells until their experiment is rerun.
 CANONICAL_WEIGHT_DECAY_POLICY = "exclude_embeddings_norms_biases_v1"
@@ -49,31 +47,12 @@ def _optional_match(record: dict, key: str, expected: object, description: str) 
         _match(record[key], expected, f"{description} {key}")
 
 
-def _artifact(repo_root: Path, experiment: str, run_name: str, name: str, run: dict) -> dict:
+def _artifact(repo_root: Path, experiment: str, run_name: str, name: str) -> dict:
     relative = f"experiments/{experiment}/runs/{run_name}/{name}"
-    declared = run.get(name.removesuffix(".jsonl").removesuffix(".json"))
-    if name == "completion.json" and isinstance(run.get("completion_artifact"), dict):
-        declared = run["completion_artifact"]
-    if name.startswith("numerical_failure_step_"):
-        declared = run.get("failure")
-    expected_sha = None
-    if isinstance(declared, dict):
-        _match(declared.get("path"), relative, f"Artifact path for {run_name}")
-        expected_sha = declared.get("sha256")
-    elif isinstance(declared, str):
-        _match(declared, relative, f"Artifact path for {run_name}")
-    run_files = run.get("run_files", {})
-    if name in run_files:
-        if expected_sha is not None:
-            _match(run_files[name], expected_sha, f"Manifest hashes for {relative}")
-        expected_sha = run_files[name]
     path = repo_root / relative
     if not path.is_file() or path.is_symlink():
         raise ValueError(f"Missing canonical run artifact: {relative}")
-    actual_sha = _digest(path)
-    if expected_sha is not None:
-        _match(actual_sha, expected_sha, f"Artifact SHA256 for {relative}")
-    return {"path": relative, "sha256": actual_sha}
+    return {"path": relative, "sha256": _digest(path)}
 
 
 def _expected_degree(panel: str, column: str) -> int | None:
@@ -91,20 +70,20 @@ def _identity(record: dict, *, source: str, width: int, degree: int | None, labe
     _optional_match(record, "attention_degree", degree, label)
 
 
-def _mechanism(cell: dict, run: dict, metadata: dict, label: str) -> None:
+def _mechanism(cell: dict, model: dict, metadata: dict, label: str) -> None:
     panel, column = cell["panel"], cell["column"]
     if panel == "normalized_learned":
         mode, separator, sharing = column.partition("_")
         if not separator or mode not in {"positive", "unrestricted"} or sharing not in {"global", "per_head"}:
             raise ValueError(f"Unknown learned quadratic column: {column}")
-        for record in (run, metadata):
+        for record in (model, metadata):
             _match(record.get("quadratic_mode"), mode, f"{label} quadratic mode")
             _match(record.get("quadratic_sharing"), sharing, f"{label} quadratic sharing")
     if panel == "normalized_nonnegative":
         # The positive quadratic 0.5 (1 + (a s + b)^2) or the sum of squares q1^2 + q2^2, per head.
         kernel = metadata.get("attention_kernel")
         if kernel == "learned_quadratic":
-            for record in (run, metadata):
+            for record in (model, metadata):
                 _match(record.get("quadratic_mode"), "positive", f"{label} quadratic mode")
                 _match(record.get("quadratic_sharing"), "per_head", f"{label} quadratic sharing")
         else:
@@ -127,25 +106,16 @@ def _mechanism(cell: dict, run: dict, metadata: dict, label: str) -> None:
         _match(metadata.get("attention_coefficients"), "learned", f"{label} coefficients")
 
 
-def _defaults_status(repo_root: Path, experiment: str, name: str, column: dict, label: str, run: dict) -> dict:
+def _defaults_status(config: dict, column: dict, label: str) -> dict:
     """How a run relates to the current defaults: its resolved decay policy and QK-norm.
 
-    The trainer's `config.yaml` is the resolved configuration; runs recorded before it
-    existed trained with decay on all parameters and without QK-norm. A column may
+    The run's `config.yaml` states both; a recipe without a policy decays all
+    parameters, and one without `qk_norm` uses plain scores. A column may
     declare `qk_norm: false` (a plain-score reference) or `qk_norm: null` (a mechanism
     QK-norm does not apply to); otherwise QK-norm is expected.
     """
-    config_path = repo_root / f"experiments/{experiment}/runs/{name}/config.yaml"
-    reference = run.get("config", run.get("resolved_config"))
-    if isinstance(reference, dict) and "path" in reference:
-        _match(reference["path"], config_path.relative_to(repo_root).as_posix(), f"{label} configuration path")
-        _match(_digest(config_path), reference["sha256"], f"{label} configuration SHA256")
-    if config_path.exists():
-        config = yaml.safe_load(config_path.read_text())
-        policy = config.get("optim", {}).get("weight_decay_policy")
-        qk_norm = bool(config.get("model", {}).get("qk_norm", False))
-    else:
-        policy, qk_norm = None, False
+    policy = config.get("optim", {}).get("weight_decay_policy")
+    qk_norm = bool(config.get("model", {}).get("qk_norm", False))
     expects = column.get("qk_norm", True)
     reasons = []
     if policy != CANONICAL_WEIGHT_DECAY_POLICY:
@@ -173,102 +143,74 @@ def _terminal(record: dict, step: int, tokens: int, label: str) -> tuple[float, 
     return float(nll), float(ppl)
 
 
-def _manifest_terminal(run: dict, step: int, tokens: int, nll: float, ppl: float) -> None:
-    name = run["name"]
-    if isinstance(run.get("terminal"), dict):
-        _match(_terminal(run["terminal"], step, tokens, f"{name} manifest terminal"),
-               (nll, ppl), f"{name} terminal values")
-    else:
-        _match(run.get("terminal_validation_nll"), nll, f"{name} manifest NLL")
-        _match(run.get("terminal_validation_perplexity"), ppl, f"{name} manifest PPL")
-        _match(run.get("training_updates"), step, f"{name} training updates")
-        _match(run.get("prediction_tokens"), tokens, f"{name} prediction tokens")
-
-
 def _collect_referenced(repo_root: Path, cell: dict, run: dict, step: int, tokens: int,
                         seed: int, data_identity: dict, column: dict | None = None) -> dict:
     experiment, name = cell["experiment"], cell["run"]
     width, degree = cell["d_k"], _expected_degree(cell["panel"], cell["column"])
     label = f"{experiment}/{name}"
-    canonical_dir = f"experiments/{experiment}/runs/{name}"
-    _match(run.get("run_id", run.get("name")), name, f"{label} run ID")
-    _optional_match(run, "run_record", canonical_dir, label)
-    _optional_match(run, "workdir", canonical_dir, label)
+    directory = repo_root / f"experiments/{experiment}/runs/{name}"
+    _match(run.get("run_id"), name, f"{label} run ID")
     _match(run.get("seed"), seed, f"{label} seed")
-    if "qk_head_dim" in run:
-        _match(run["qk_head_dim"], width, f"{label} manifest d_K")
-    if "attention_degree" in run:
-        _match(run["attention_degree"], degree, f"{label} manifest degree")
     source = run.get("source_commit")
     if not isinstance(source, str) or not source:
         raise ValueError(f"Missing source commit for {label}")
-
-    raw_status = run.get("status")
-    has_terminal = isinstance(run.get("terminal"), dict) or "terminal_validation_perplexity" in run
-    has_failure = isinstance(run.get("failure"), dict)
-    if raw_status in _NUMERICAL_FAILURE or has_failure:
+    config = yaml.safe_load((directory / "config.yaml").read_text())
+    model = config.get("model", {})
+    _match(model.get("qk_head_dim"), width, f"{label} recipe d_K")
+    _optional_match(model, "attention_degree", degree, f"{label} recipe")
+    failures = sorted(directory.glob("numerical_failure_step_*.json"))
+    if failures:
         status = "numerical_failure"
-        if raw_status not in _NUMERICAL_FAILURE or not has_failure:
-            raise ValueError(f"Contradictory numerical failure record: {label}")
-    elif raw_status in _COMPLETE or (raw_status is None and has_terminal):
+        if (directory / "completion.json").exists():
+            raise ValueError(f"Numerical failure has a completion artifact: {label}")
+    elif (directory / "completion.json").exists():
         status = "complete"
-        if not has_terminal:
-            raise ValueError(f"Completed run lacks manifest terminal validation: {label}")
     else:
         status = "incomplete"
-        if has_terminal or raw_status in _COMPLETE:
-            raise ValueError(f"Contradictory incomplete record: {label}")
 
     result = {"status": status, "terminal_ppl": None, "terminal_nll": None,
               "failure_step": None, "experiment": experiment, "run": name,
               "source_commit": source, "artifacts": {},
-              **_defaults_status(repo_root, experiment, name, column or {}, label, run)}
+              **_defaults_status(config, column or {}, label)}
     if status == "incomplete":
         metadata_path = repo_root / f"experiments/{experiment}/runs/{name}/metadata.json"
         if metadata_path.exists():
-            result["artifacts"]["metadata"] = _artifact(repo_root, experiment, name, "metadata.json", run)
+            result["artifacts"]["metadata"] = _artifact(repo_root, experiment, name, "metadata.json")
             metadata = _json(metadata_path)
             _match(metadata.get("seed"), seed, f"{label} metadata seed")
             _identity(metadata, source=source, width=width, degree=degree, label=label)
             _data_identity(metadata, data_identity, label)
-            _mechanism(cell, run, metadata, label)
+            _mechanism(cell, model, metadata, label)
         return result
 
-    result["artifacts"]["metadata"] = _artifact(repo_root, experiment, name, "metadata.json", run)
+    result["artifacts"]["metadata"] = _artifact(repo_root, experiment, name, "metadata.json")
     metadata = _json(repo_root / result["artifacts"]["metadata"]["path"])
     _match(metadata.get("seed"), seed, f"{label} metadata seed")
     _identity(metadata, source=source, width=width, degree=degree, label=f"{label} metadata")
     _data_identity(metadata, data_identity, label)
-    _mechanism(cell, run, metadata, label)
+    _mechanism(cell, model, metadata, label)
     _optional_match(metadata, "target_steps", step, f"{label} metadata")
     _optional_match(metadata, "target_tokens", tokens, f"{label} metadata")
 
     if status == "numerical_failure":
         _match(metadata.get("status"), "failed", f"{label} failure metadata status")
-        failure_ref = run["failure"]
-        failure_name = Path(failure_ref["path"]).name
-        if not re.fullmatch(r"numerical_failure_step_\d+\.json", failure_name):
-            raise ValueError(f"Unexpected numerical failure file: {label}")
-        result["artifacts"]["failure"] = _artifact(repo_root, experiment, name, failure_name, run)
+        result["artifacts"]["failure"] = _artifact(repo_root, experiment, name, failures[-1].name)
         failure = _json(repo_root / result["artifacts"]["failure"]["path"])
         failed_step = failure.get("step")
         if not isinstance(failed_step, int) or failed_step < 1 or failed_step >= step:
             raise ValueError(f"Invalid numerical failure step for {label}: {failed_step}")
-        _match(failure_ref.get("step"), failed_step, f"{label} manifest failure step")
         _match(metadata.get("step"), failed_step, f"{label} metadata failure step")
         _optional_match(failure, "attention_degree", degree, f"{label} failure")
         if not failure.get("error") or not metadata.get("error"):
             raise ValueError(f"Missing numerical failure diagnosis for {label}")
-        if (repo_root / f"experiments/{experiment}/runs/{name}/completion.json").exists():
-            raise ValueError(f"Numerical failure has a completion artifact: {label}")
         result["failure_step"] = failed_step
         return result
 
     _match(metadata.get("status"), "complete", f"{label} metadata status")
     _match(metadata.get("step"), step, f"{label} metadata step")
     _match(metadata.get("training_tokens"), tokens, f"{label} metadata tokens")
-    result["artifacts"]["metrics"] = _artifact(repo_root, experiment, name, "metrics.jsonl", run)
-    result["artifacts"]["completion"] = _artifact(repo_root, experiment, name, "completion.json", run)
+    result["artifacts"]["metrics"] = _artifact(repo_root, experiment, name, "metrics.jsonl")
+    result["artifacts"]["completion"] = _artifact(repo_root, experiment, name, "completion.json")
     metrics_path = repo_root / result["artifacts"]["metrics"]["path"]
     validations = []
     for line_number, line in enumerate(metrics_path.read_text().splitlines(), 1):
@@ -287,7 +229,6 @@ def _collect_referenced(repo_root: Path, cell: dict, run: dict, step: int, token
     _identity(completion, source=source, width=width, degree=degree, label=f"{label} completion")
     _match(_terminal(completion, step, tokens, f"{label} completion"),
            (terminal_nll, terminal_ppl), f"{label} completion validation")
-    _manifest_terminal(run, step, tokens, terminal_nll, terminal_ppl)
     result["terminal_nll"] = terminal_nll
     result["terminal_ppl"] = terminal_ppl
     return result

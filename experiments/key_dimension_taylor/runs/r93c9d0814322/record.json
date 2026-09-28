@@ -172,12 +172,7 @@
     }
   ],
   "attention_backend": "fused",
-  "attention_degree": 2,
   "completed_utc": "2026-09-27T11:08:02.279313+00:00",
-  "completion": {
-    "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/completion.json",
-    "sha256": "0c39c07e7276d68eec7965eb5c616b65e4e08ed46c5123555e67cff86604e06b"
-  },
   "config": {
     "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/config.yaml",
     "sha256": "742cf0d13516ae8318e06173466ba50c3a0df60a76e4e45147ac37cdddbc6bfe"
@@ -210,25 +205,9 @@
     "sha256": "19659449e6ff46fe6d68dc59c92042ec7f0c0c7cb9b19919ab52613df548f6e0",
     "size_bytes": 1480170
   },
-  "metadata": {
-    "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/metadata.json",
-    "sha256": "300ccab36e6488f7aa6731df6a034ef677812e118c471efe39049c83c95a1c40"
-  },
-  "metrics": {
-    "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/metrics.jsonl",
-    "sha256": "afd284756057e498dfbc1279530e44e792627848f10663a0dcdd793a0f447bc3"
-  },
   "name": "200m-m002-seed0",
   "parameter_count": 199906464,
-  "qk_head_dim": 64,
-  "qk_norm": true,
-  "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
-  "resolved_config": {
-    "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/config.yaml",
-    "recorded_sha256": "198ea98b1981e657f9286a9225c0e14594dfd2ccddc0ba6ff28c99952d899f74",
-    "sha256": "742cf0d13516ae8318e06173466ba50c3a0df60a76e4e45147ac37cdddbc6bfe"
-  },
   "run_id": "r93c9d0814322",
   "seed": 0,
   "selected_checkpoint": {
@@ -324,16 +303,8 @@
   "slurm_job_id": "202616",
   "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
   "status": "complete",
-  "terminal": {
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 2.8040092502321516,
-    "validation_perplexity": 16.510709818133147
-  },
-  "value_head_dim": 64,
   "wandb": {
     "run_id": "f50426298c8047e6ae43a68ad33408e7",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/f50426298c8047e6ae43a68ad33408e7"
-  },
-  "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+  }
 }

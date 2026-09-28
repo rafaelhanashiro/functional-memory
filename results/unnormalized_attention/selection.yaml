@@ -32,7 +32,7 @@ runs:
       sha256: e0bbbdafb9f5cffd49bd080d91c48afcefdac97f18a57fc9dd7dc18360eaf483
     record.json:
       path: experiments/unnormalized_attention/runs/r8cccbabca761/record.json
-      sha256: 6de5934f9be9eab9179cfd2594cbab69ffce546ab12822460c3d48d0441cf1ba
+      sha256: 26a04a12400b06ee4837e5b6bb04481920c6b38288bdc8006a69212503b19c1e
 - study: unnormalized_attention
   run_id: r7e462a645696
   label: 250m-exp-seed0-kennel
@@ -60,4 +60,4 @@ runs:
       sha256: 81351a4b0bc5d1fdb19cc6bb8ad7849b4d77cce751403c2d7e6e9b6cc56924b6
     record.json:
       path: experiments/unnormalized_attention/runs/r7e462a645696/record.json
-      sha256: aa76e55d1afd0d482b91a09d69c71e3a73d91168af66656a6551fe3f4d192737
+      sha256: 1b81410de9c35e06590ecef9042f132c94d35ff3aebeb29829a56d35beb2a637

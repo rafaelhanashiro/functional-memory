@@ -33,11 +33,15 @@ def test_result_selection_checks_source_hashes_and_run_ownership(tmp_path):
 
 def test_selected_ids_change_inputs_without_changing_plotting_code(tmp_path):
     from scaffolds.records import create_run
-    from scaffolds.transformer.analysis import load_selected_study, selected_run_directory
+    from scaffolds.transformer.analysis import selected_run_directory, selected_views
+
+    def recipe(value):
+        return {"model": {"qk_head_dim": 8, "value_head_dim": 8}, "data": {"batch_size": 1, "sequence_length": 2},
+                "optim": {"total_steps": 1}, "value": value}
 
     study = tmp_path / "experiments/toy"
-    first = create_run(study, {"value": 1}, label="old execution")
-    second = create_run(study, {"value": 2}, label="new execution")
+    first = create_run(study, recipe(1), label="old execution")
+    second = create_run(study, recipe(2), label="new execution")
     result = tmp_path / "results/toy"
     result.mkdir(parents=True)
 
@@ -50,10 +54,10 @@ def test_selected_ids_change_inputs_without_changing_plotting_code(tmp_path):
 
     select(first)
     assert selected_run_directory(result, study, "baseline") == first
-    assert [r["run_id"] for r in load_selected_study(result, study)["runs"]] == [first.name]
+    assert [r["run_id"] for r in selected_views(result, study)["runs"]] == [first.name]
     select(second)
     assert selected_run_directory(result, study, "baseline") == second
-    selected = load_selected_study(result, study)["runs"]
+    selected = selected_views(result, study)["runs"]
     assert [r["run_id"] for r in selected] == [second.name]
     assert selected[0]["name"] == "baseline"
     with pytest.raises(ValueError, match="Expected one selected run"):

@@ -54,8 +54,7 @@ Packed training and evaluation batches always transfer directly from NumPy host
 arrays to their destination shards. `metadata.json` records the resolved transfer
 policy, hardware, selected environment settings, and changes across resumptions
 in `execution_runtime` and `runtime_history`. `scaffold_ofm_source_commit` records
-shared implementation ancestry; an experiment's scientific control source belongs
-in its own provenance manifest.
+shared implementation ancestry; a run's own source commit is in its `record.json`.
 
 Kennel launchers source `launchers/kennel_runtime.sh`, which selects host staging
 and disables NCCL peer transport for A100/A6000 allocations. A6000 uses the
@@ -344,12 +343,13 @@ Studies configure these shared modules with execution modules at their root
   required backend, initialization check, runtime environment) and nothing else.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
   the selection.
-- `analysis.py` reads committed validation events and retained artifacts and saves
-  figures deterministically. `verify_result_selection` checks pinned input hashes;
+- `analysis.py` reads committed validation events and saves figures
+  deterministically. `verify_result_selection` checks pinned input hashes;
   `selected_run_directory` resolves a plotting role through the explicit run ID in
-  `results/<comparison>/selection.yaml`; `load_selected_study` loads exactly those
-  runs and selected controls for aggregate plots. A new execution can replace a
-  plotted role by updating its selected ID and source hashes. Summaries and figures
+  `results/<comparison>/selection.yaml`; `run_view` presents one run from its own
+  recipe, record, and raw outputs; `selected_views` loads a study's selected runs and
+  its `{study, label}` controls as run views. A new execution can replace a plotted
+  role by updating its selected ID and source hashes. Summaries and figures
   regenerate byte-identically.
 
 Kernel and throughput benchmark scripts live in `benchmarks/`; their results and the

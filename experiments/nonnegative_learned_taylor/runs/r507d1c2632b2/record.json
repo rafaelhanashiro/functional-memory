@@ -54,11 +54,6 @@
     }
   ],
   "attention_backend": "blocked",
-  "attention_degree": 4,
-  "completion": {
-    "path": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/completion.json",
-    "sha256": "bb3c734e7004a4b5482449ea4514efb13dff91e10e74460d2f8d71c1dcb2b9d2"
-  },
   "config": {
     "path": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/config.yaml",
     "recorded_sha256": "8fb4ceab0f4eb570851c0105c2ea4843aa16920f255f15819316b5fcc08421ff",
@@ -74,10 +69,8 @@
   },
   "name": "200m-qk-m004-nonnegative-seed0",
   "parameter_count": 199907264,
-  "prediction_tokens": 10000269312,
   "record_schema_version": 1,
   "run_id": "r507d1c2632b2",
-  "run_record": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2",
   "seed": 0,
   "selected_checkpoint": {
     "bytes": 2197272315,
@@ -194,9 +187,6 @@
   },
   "source_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
   "status": "completed",
-  "terminal_validation_nll": 2.6906952432223727,
-  "terminal_validation_perplexity": 14.741921579480255,
-  "training_updates": 19074,
   "wandb": {
     "run_id": "74a27e5b86904340abeb4e156357055c",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/74a27e5b86904340abeb4e156357055c"

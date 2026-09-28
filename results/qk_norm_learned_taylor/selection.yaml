@@ -32,7 +32,7 @@ runs:
       sha256: 96c2730edd978ad36b3c3231281472aa0b6b69bb67e0dc4ce57bbc4d93762148
     record.json:
       path: experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/record.json
-      sha256: 4ea6e63deee41d587e761f82ec67f3d18b3f09f74e54587156bb49cfc04f040c
+      sha256: 431c05f3b0d378dad44c6e3a6dcc5a50d0db33d0de566522cda253069cc52ba7
     retention.json:
       path: experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/retention.json
       sha256: bbed1b757487bd377bd9ba5081e7570b95ad7bdaade7fa334b4d0105b9f34ce9
@@ -60,7 +60,7 @@ runs:
       sha256: 9008aedef104d4c529649a95ec28adb7279b5dbacdf30f8cb0d51020e2895c27
     record.json:
       path: experiments/qk_norm_learned_taylor/runs/rc342fe890e6f/record.json
-      sha256: f1bf7d1774915ee0ce8ffaea3efce0ec0b595472cf8b7a98b9ecde185ba42f7b
+      sha256: 79607b6e077ca8a03ca7656339998245eca5e530496f4b3cc3fc51611074efff
     wandb_run.json:
       path: experiments/qk_norm_learned_taylor/runs/rc342fe890e6f/wandb_run.json
       sha256: b153e6b423bc326a6da8246086d83073d92dfd80bf2ebf1d1cddb1eed1c4ea8a
@@ -91,7 +91,7 @@ runs:
       sha256: c363897b287024b7983a19fc18fcfc37333024bf51e1cc0497bc2f38efca3316
     record.json:
       path: experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/record.json
-      sha256: d993672518ee89f3398d7a7bfbd3161d999622de1ccab31a25103fbe56e3916c
+      sha256: 49c508476818905192f8e854ec6ef34f8c504ecff592d605f4ea1853d92a0c1f
     retention.json:
       path: experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/retention.json
       sha256: cff1ec0dcd2c970213f5ada10ca459919c0bf82bd00df77ab3008b58df58a324
@@ -125,7 +125,7 @@ runs:
       sha256: 7d1f6785a73f7c70e8954c41648749aa0c27cf0bdc633d81917afc5f9e370dd4
     record.json:
       path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/record.json
-      sha256: ae3f3167d8a6d2358cb5e90e322d6fbe4683b0f7d4e465e48902c60c12930ba1
+      sha256: 6c0280efff5674f8fca047773447b80c7f4836e52b2aa0ad0412642222d52fe9
     wandb_run.json:
       path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/wandb_run.json
       sha256: f3e67c8b726c5746c94af5484332c956f17e0d60026a862a1dac874f82fb9f56
@@ -156,7 +156,7 @@ runs:
       sha256: 9c4eb4a4d225634e8c03356f6577c760f74f4a084cec497ce6f8355bc53bb828
     record.json:
       path: experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/record.json
-      sha256: 7266b24d62abfe62f566110d2ef49a43d5b86eb7c5924e96acdda7e27644cb5d
+      sha256: c64a8908d7215a1f187d31d3f430379d6f217e3ae8285b5856cd1248b3845d19
     retention.json:
       path: experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/retention.json
       sha256: 8a6925d668a1d340b59acd3c88e3651e1ded6f2b8e95ff5cad12b7540c532ca8
@@ -184,7 +184,7 @@ runs:
       sha256: 109ef08cd19f8c136dde40190a27bbb4def63da3d8065da5504239257207bbac
     record.json:
       path: experiments/qk_norm_learned_taylor/runs/rd7428f72915b/record.json
-      sha256: 182516378695f6438d33bc00a8dabc12e2ce165138db12d495d032e79a93aca6
+      sha256: 4d6ccba13663d82f35e638c9a18eb38077646ac3ced6d3848ad46ea769354295
     wandb_run.json:
       path: experiments/qk_norm_learned_taylor/runs/rd7428f72915b/wandb_run.json
       sha256: 682337be834c70ed36b6ce36b279f25c7b3a0a63865d1c31e35a6f57e3c3cb01
@@ -215,7 +215,7 @@ runs:
       sha256: 01fcd44375269da22ac332ae2c0150e85fff6b109cf51c410c37c10e2b0a8555
     record.json:
       path: experiments/qk_norm_learned_taylor/runs/rbaa19693c602/record.json
-      sha256: bf1e69b0924d545186b7cc869286668818ef33407bfe534c2f3a055611ab7e76
+      sha256: 2025aac435c3a3117217ad73c5d0f2ad3e2a9a0b749c18ecde924ebe5e8d24f2
     retention.json:
       path: experiments/qk_norm_learned_taylor/runs/rbaa19693c602/retention.json
       sha256: 78b6593385a787b2c5e80e928a1b19e9641f84b66dce5b6604c8befbe6842532
@@ -249,7 +249,7 @@ runs:
       sha256: c966641492325599c0aa250357e707e2756216e28bd4a9b6e32352f1fdf8ca54
     record.json:
       path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/record.json
-      sha256: c9075f92fc9ce40f966d12768e4c31c900545939b51fbd33274eefda64ec5d5f
+      sha256: 3614e7af4322c004408329a8ad638c2d8c4da80ef859930880371d22041506e6
     wandb_run.json:
       path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/wandb_run.json
       sha256: 1876df3a404e28fe20319ba0c2620638f4c6b0643ff56139a9d0b46c8fe664e1
@@ -280,7 +280,7 @@ runs:
       sha256: da1764d69f3cd33df4cfe3f2fb7cbf27df0127a866e8b3a037602e7c9c24d698
     record.json:
       path: experiments/learned_unnormalized_taylor/runs/r004b21fc9a41/record.json
-      sha256: 6529958ecbb698a9c00e4fcb0e80df42f5711059cbd128008f71b26325f3a167
+      sha256: 66c971b244e8a65a48a663114a85d307fffbae57fc6db1aee42cd1bc62e07252
     retention.json:
       path: experiments/learned_unnormalized_taylor/runs/r004b21fc9a41/retention.json
       sha256: 3afdbee03086d0d9744c0e668fb1bfa1925838adfa6e69da8c6a602b3611ad10
@@ -314,7 +314,7 @@ runs:
       sha256: 252427608c2cf1829127b54e045aa08d876cbe4cce9cac3148df8aa20cb1f53e
     record.json:
       path: experiments/learned_unnormalized_taylor/runs/r96fc5c4294dc/record.json
-      sha256: b396857a4d5c149f76710f8524f5ba32e50f606e8f41b33ec168af72fa0449d4
+      sha256: 5cbeca52f194d388c83596d193bb8dcfc5f080c888fc003028b3386642d91ad5
     retention.json:
       path: experiments/learned_unnormalized_taylor/runs/r96fc5c4294dc/retention.json
       sha256: 009cf9830dc62f903e1e1b8112582cf90b556884d3b94f02f96107e4b3071ee4
@@ -348,7 +348,7 @@ runs:
       sha256: 1a54d9448a020962ea53260596eb0f82801d16a9a0f9ffc6ffd0a7340b04a3fa
     record.json:
       path: experiments/learned_unnormalized_taylor/runs/raaa02715154e/record.json
-      sha256: 13fd2fd73a6021b9d149178d1a23bc6463760e991cd93b1b5061a0418714261a
+      sha256: 336d8545117afa606500e9da43b1bedc6882b5fa2780e68786c0f80755d7e6ae
     retention.json:
       path: experiments/learned_unnormalized_taylor/runs/raaa02715154e/retention.json
       sha256: 1c26a9b1e104232b23f0d6d75d2b9ec1063756275529a111cf167fe7cd695cba
@@ -382,7 +382,7 @@ runs:
       sha256: 992a12bdfebac250bf7e6f265b6b49ccd2c7190f13a0aaa59fa42345c4cf00b7
     record.json:
       path: experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/record.json
-      sha256: 655f31416c9266093af33d679a49a3fb48a9b54ba440de209fe183fb2addc317
+      sha256: 7c26ebce941f519dddf331f07fa4109d4f5e00ed2ea0ce019bcb09ea08b7ab58
     retention.json:
       path: experiments/learned_unnormalized_taylor/runs/rdce1f1f53cdf/retention.json
       sha256: 1c694dfa9b0f71d95df52a1f44f19eb3ca9230ea15f1af8d3fa357571197bd15
@@ -416,7 +416,7 @@ runs:
       sha256: 721add8f72c236ace218e41fe8acf2948acc15039e11374c265d2bed9c3c9e49
     record.json:
       path: experiments/qk_norm_attention/runs/r1feece425074/record.json
-      sha256: fd32425847d426dd9a414ad8c9cd7909f2ff4f0ac6a2328feaaeffadea7f69ce
+      sha256: 5992cebd0523cd0d1e1432d56c945bcb0a9ab72821485a53524f5b7f4c445931
     retention.json:
       path: experiments/qk_norm_attention/runs/r1feece425074/retention.json
       sha256: f5e810195fcc2bbe358eebafaf906db481dd42047bd6f463916ba77413013902

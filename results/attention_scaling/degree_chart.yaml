@@ -185,53 +185,53 @@ metric: terminal_validation_perplexity
 source_records:
   unnormalized_taylor_attention/reb79b9201e5a:
     path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/record.json
-    sha256: 2b17295c5c0cb605728f71474fe3a81c124f55f8572bfd7b6910492ccb9f30f4
+    sha256: a435e9de0143e6b87c5474c3eee0771e42a5f7d452c4dd79ec92bb50fe10c4ef
   qk_norm_learned_taylor/r13c144b8fd17:
     path: experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/record.json
-    sha256: 4ea6e63deee41d587e761f82ec67f3d18b3f09f74e54587156bb49cfc04f040c
+    sha256: 431c05f3b0d378dad44c6e3a6dcc5a50d0db33d0de566522cda253069cc52ba7
   unnormalized_taylor_attention/re4509bf65b5f:
     path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/record.json
-    sha256: 51f9bffee3d137a65aca034bc108414b8c0f51a1f4358d83d2da7b5cfab4c186
+    sha256: 8f2d91ab129ca253d898458ce28d5f195f5874ef2d8f0b6e47b09f0971b791dc
   qk_norm_learned_taylor/r07bee5b16e61:
     path: experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/record.json
-    sha256: d993672518ee89f3398d7a7bfbd3161d999622de1ccab31a25103fbe56e3916c
+    sha256: 49c508476818905192f8e854ec6ef34f8c504ecff592d605f4ea1853d92a0c1f
   unnormalized_taylor_attention/rba0cd1a9bf62:
     path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/record.json
-    sha256: 802c58951ae6c43e7759ecec38ccbe43cd0df3b32c33871b715f11cc935f74f6
+    sha256: 2892c7830e83c76cc82ccfba594ba40c175610b0b895f183e97b40ae2d7bc6e3
   qk_norm_learned_taylor/r0470d7fcaae6:
     path: experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/record.json
-    sha256: 7266b24d62abfe62f566110d2ef49a43d5b86eb7c5924e96acdda7e27644cb5d
+    sha256: c64a8908d7215a1f187d31d3f430379d6f217e3ae8285b5856cd1248b3845d19
   unnormalized_taylor_attention/rfd3129858805:
     path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/record.json
-    sha256: 011f38ad4146fe8ee5c6393db1e2a8c614face8eb1db93cd3ab26f8b1152a7ee
+    sha256: 2241dc7ec43070f9aebe53121da48432865f0e30e5ed6d756e76cca4ad8cc86c
   qk_norm_learned_taylor/rbaa19693c602:
     path: experiments/qk_norm_learned_taylor/runs/rbaa19693c602/record.json
-    sha256: bf1e69b0924d545186b7cc869286668818ef33407bfe534c2f3a055611ab7e76
+    sha256: 2025aac435c3a3117217ad73c5d0f2ad3e2a9a0b749c18ecde924ebe5e8d24f2
   qk_norm_learned_taylor/rc342fe890e6f:
     path: experiments/qk_norm_learned_taylor/runs/rc342fe890e6f/record.json
-    sha256: f1bf7d1774915ee0ce8ffaea3efce0ec0b595472cf8b7a98b9ecde185ba42f7b
+    sha256: 79607b6e077ca8a03ca7656339998245eca5e530496f4b3cc3fc51611074efff
   qk_norm_learned_taylor/rd962214a5556:
     path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/record.json
-    sha256: ae3f3167d8a6d2358cb5e90e322d6fbe4683b0f7d4e465e48902c60c12930ba1
+    sha256: 6c0280efff5674f8fca047773447b80c7f4836e52b2aa0ad0412642222d52fe9
   qk_norm_learned_taylor/rd7428f72915b:
     path: experiments/qk_norm_learned_taylor/runs/rd7428f72915b/record.json
-    sha256: 182516378695f6438d33bc00a8dabc12e2ce165138db12d495d032e79a93aca6
+    sha256: 4d6ccba13663d82f35e638c9a18eb38077646ac3ced6d3848ad46ea769354295
   qk_norm_learned_taylor/re554c79caddb:
     path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/record.json
-    sha256: c9075f92fc9ce40f966d12768e4c31c900545939b51fbd33274eefda64ec5d5f
+    sha256: 3614e7af4322c004408329a8ad638c2d8c4da80ef859930880371d22041506e6
   key_dimension_taylor/r50088d29f2b5:
     path: experiments/key_dimension_taylor/runs/r50088d29f2b5/record.json
-    sha256: 76fc7e73f512b29152219dc4b9b2b82d818137ea3dadfa617697518cd4efe701
+    sha256: aa71e99a9d9df0934e52487e7d3f0b0f4734be4136ad168434f308bca20dc45b
   unnormalized_attention/r8cccbabca761:
     path: experiments/unnormalized_attention/runs/r8cccbabca761/record.json
-    sha256: 6de5934f9be9eab9179cfd2594cbab69ffce546ab12822460c3d48d0441cf1ba
+    sha256: 26a04a12400b06ee4837e5b6bb04481920c6b38288bdc8006a69212503b19c1e
   qk_norm_attention/r1feece425074:
     path: experiments/qk_norm_attention/runs/r1feece425074/record.json
-    sha256: fd32425847d426dd9a414ad8c9cd7909f2ff4f0ac6a2328feaaeffadea7f69ce
+    sha256: 5992cebd0523cd0d1e1432d56c945bcb0a9ab72821485a53524f5b7f4c445931
   nonnegative_learned_taylor/rdbd4607d5af9:
     path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/record.json
-    sha256: 2278055da24e0e2f96023fe2e87706f608dcdf7942db30da5a0c218b005d9adf
+    sha256: 2ad1583a886b95d246d0ad516a1f617f6ee0b63f321f4b455c237ac4129a2c95
   nonnegative_learned_taylor/r507d1c2632b2:
     path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/record.json
-    sha256: ef7f30ac0d00718f43d817c0cdd0ab9fa43e14525a1212bb4472f3d128d1e78f
+    sha256: 4eac67eb6ff4a16e584288ad81264e4d3f81cf65f17e25d0790aa5fcdc99fc28
 source_artifact_set_sha256: 56848778a5014409a8d8210f577643067ff67dfe8fcf500ecd343280f9da6414

@@ -51,10 +51,34 @@
   ],
   "attempts": [
     {
-      "slurm_job_id": "201012"
+      "allocation": {
+        "AllocTRES": "cpu=32,mem=256G,node=1,billing=32,gres/gpu=4",
+        "BatchHost": "mastiff",
+        "EndTime": "2026-09-24T22:34:03",
+        "JobId": "201012",
+        "JobName": "unnorm-taylor-m2",
+        "JobState": "RUNNING",
+        "NodeList": "mastiff",
+        "NumCPUs": "32",
+        "Partition": "sweep",
+        "QOS": "normal",
+        "ReqTRES": "cpu=32,mem=256G,node=1,billing=32,gres/gpu=4",
+        "Requeue": "1",
+        "Restarts": "0",
+        "RunTime": "00:00:02",
+        "StartTime": "2026-09-22T22:34:03",
+        "TimeLimit": "2-00:00:00"
+      },
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "node": "mastiff",
+      "partition": "sweep",
+      "restart": "0",
+      "slurm_job_id": "201012",
+      "started_utc": "2026-09-23T02:34:05.050939+00:00",
+      "time_limit": "2-00:00:00"
     }
   ],
-  "attention_degree": 2,
   "completed_utc": "2026-09-23T07:44:09.213810+00:00",
   "config": {
     "path": "experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/config.yaml",
@@ -62,36 +86,6 @@
     "sha256": "e99503d7471ab5b1fbd770403d98da44086b6b00d3831dccbf00fe1aef4ee51a"
   },
   "execution": {
-    "attempts": [
-      {
-        "allocation": {
-          "AllocTRES": "cpu=32,mem=256G,node=1,billing=32,gres/gpu=4",
-          "BatchHost": "mastiff",
-          "EndTime": "2026-09-24T22:34:03",
-          "JobId": "201012",
-          "JobName": "unnorm-taylor-m2",
-          "JobState": "RUNNING",
-          "NodeList": "mastiff",
-          "NumCPUs": "32",
-          "Partition": "sweep",
-          "QOS": "normal",
-          "ReqTRES": "cpu=32,mem=256G,node=1,billing=32,gres/gpu=4",
-          "Requeue": "1",
-          "Restarts": "0",
-          "RunTime": "00:00:02",
-          "StartTime": "2026-09-22T22:34:03",
-          "TimeLimit": "2-00:00:00"
-        },
-        "gpu_count": 4,
-        "gpu_type": "H100",
-        "node": "mastiff",
-        "partition": "sweep",
-        "restart": "0",
-        "slurm_job_id": "201012",
-        "started_utc": "2026-09-23T02:34:05.050939+00:00",
-        "time_limit": "2-00:00:00"
-      }
-    ],
     "attention_backend": "fused",
     "attention_backend_requested": "auto",
     "attention_implementation": "pallas_triton",
@@ -127,10 +121,8 @@
   "label": "200m-m002-seed0",
   "log": "experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/training.log",
   "name": "200m-m002-seed0",
-  "prediction_tokens": 10000269312,
   "record_schema_version": 1,
   "run_id": "re4509bf65b5f",
-  "run_record": "experiments/unnormalized_taylor_attention/runs/re4509bf65b5f",
   "seed": 0,
   "selected_checkpoint": {
     "file_count": 13,
@@ -212,8 +204,5 @@
   },
   "slurm_job_id": "201012",
   "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
-  "status": "completed",
-  "terminal_validation_nll": 3.1572411145482744,
-  "terminal_validation_perplexity": 23.50565697562782,
-  "training_updates": 19074
+  "status": "completed"
 }

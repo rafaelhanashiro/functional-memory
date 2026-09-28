@@ -25,7 +25,12 @@ def _write(path: Path, value: dict | list[dict]) -> str:
         for run in runs:
             run = dict(run, run_id=run.get("run_id", run["name"]))
             value["run_ids"].append(run["run_id"])
-            _write(path.parent / "runs" / run["run_id"] / "record.json", run)
+            directory = path.parent / "runs" / run["run_id"]
+            _write(directory / "record.json", run)
+            if not (directory / "config.yaml").exists():
+                # A recipe without a decay policy or qk_norm is a legacy one.
+                _write(directory / "config.yaml", {"model": {"qk_head_dim": run["qk_head_dim"],
+                                                             "attention_degree": run["attention_degree"]}})
     if isinstance(value, list):
         payload = "".join(json.dumps(record, sort_keys=True) + "\n" for record in value)
     else:
@@ -104,7 +109,7 @@ def test_terminal_validation_and_failed_and_missing_cells(tmp_path: Path) -> Non
     completed = rows[2]
     assert (completed["terminal_nll"], completed["terminal_ppl"]) == (3.0, 20.086)
     assert set(completed["artifacts"]) == {"metadata", "metrics", "completion"}
-    # No resolved configuration: the run predates the current defaults on both counts.
+    # A recipe without a decay policy or qk_norm predates the current defaults on both counts.
     assert completed["legacy"] is True
     assert completed["legacy_reasons"] == ["weight decay on all parameters", "no QK-norm"]
     assert (completed["weight_decay_policy"], completed["qk_norm"]) == (None, False)
@@ -118,7 +123,8 @@ def test_terminal_validation_and_failed_and_missing_cells(tmp_path: Path) -> Non
 def test_current_defaults_are_read_from_the_resolved_configuration(tmp_path: Path) -> None:
     config = _fixture(tmp_path)
     run_dir = tmp_path / "experiments/toy_taylor/runs/r000000000001"
-    resolved = {"optim": {"weight_decay_policy": "exclude_embeddings_norms_biases_v1"}, "model": {"qk_norm": True}}
+    resolved = {"optim": {"weight_decay_policy": "exclude_embeddings_norms_biases_v1"},
+                "model": {"qk_head_dim": 8, "attention_degree": 2, "qk_norm": True}}
     _write(run_dir / "config.yaml", resolved)
     config.pop("source_artifact_set_sha256", None)
     row = collect_rows(tmp_path, config)[2]
@@ -188,7 +194,7 @@ def test_declared_but_unfinished_run_is_incomplete(tmp_path: Path) -> None:
     assert rows[0]["artifacts"] == {}
 
 
-def test_pinned_artifact_set_catches_changes_to_legacy_unhashed_files(tmp_path: Path) -> None:
+def test_pinned_artifact_set_catches_changed_run_files(tmp_path: Path) -> None:
     config = _fixture(tmp_path)
     experiment = "toy_taylor"
     manifest_path = tmp_path / config["source_manifests"][experiment]["path"]

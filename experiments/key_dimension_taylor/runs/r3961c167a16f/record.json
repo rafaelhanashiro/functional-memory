@@ -57,11 +57,6 @@
       "slurm_job_id": "200508"
     }
   ],
-  "attention_degree": 16,
-  "completion": {
-    "path": "experiments/key_dimension_taylor/runs/r3961c167a16f/completion.json",
-    "sha256": "94c511b6b29ee085a200735d4b82afa2a6b347be35960e589411f752d4083f8a"
-  },
   "config": {
     "path": "experiments/key_dimension_taylor/runs/r3961c167a16f/config.yaml",
     "sha256": "108bcbc783b4c538b0aabffd57858600348b2668620e2ed6e4843798c43acb49"
@@ -92,23 +87,9 @@
     "sha256": "4988278174b30a8b572438ee4fe824cd2d2a05dc15dd388c9631a648e515b62b",
     "size_bytes": 1511563
   },
-  "metadata": {
-    "path": "experiments/key_dimension_taylor/runs/r3961c167a16f/metadata.json",
-    "sha256": "ad120cc41070f8ca1d5586d500f5b20b0b53818d9bdaf3c1957d13e429712795"
-  },
-  "metrics": {
-    "path": "experiments/key_dimension_taylor/runs/r3961c167a16f/metrics.jsonl",
-    "sha256": "3be0519b762c5638c54130bf105d3728df2aa4d236e4242304b543ed4faae858"
-  },
   "name": "200m-dk008-m016-seed0",
   "parameter_count": 181556224,
-  "qk_head_dim": 8,
   "record_schema_version": 1,
-  "resolved_config": {
-    "path": "experiments/key_dimension_taylor/runs/r3961c167a16f/config.yaml",
-    "recorded_sha256": "695b52701afe4d2744097a0c8960e901336f0aa454849e3604339d8705d54e18",
-    "sha256": "108bcbc783b4c538b0aabffd57858600348b2668620e2ed6e4843798c43acb49"
-  },
   "run_id": "r3961c167a16f",
   "seed": 0,
   "selected_checkpoint": {
@@ -196,12 +177,5 @@
     "validation_perplexity": 16.847921405989926
   },
   "slurm_job_id": "200508",
-  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
-  "terminal": {
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 2.8242272904941013,
-    "validation_perplexity": 16.847921405989926
-  },
-  "value_head_dim": 64
+  "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320"
 }

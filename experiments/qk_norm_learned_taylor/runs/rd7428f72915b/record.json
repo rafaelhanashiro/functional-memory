@@ -98,9 +98,6 @@
     }
   ],
   "attention_backend": "blocked",
-  "attention_degree": 3,
-  "attention_kernel": "learned_polynomial",
-  "attention_normalization": true,
   "coefficient_count": 640,
   "config": {
     "path": "experiments/qk_norm_learned_taylor/runs/rd7428f72915b/config.yaml",
@@ -108,16 +105,6 @@
     "sha256": "2e8897af4258b1b55ee750d9fc346134eef0103a8a5fb4e8c0424a32154aefbc"
   },
   "execution": {
-    "attempts": [
-      {
-        "gpu_count": 4,
-        "gpu_type": "B300",
-        "node": "akita",
-        "outcome": "passed acceptance, trained from a fresh initialization, and stopped with a numerical failure at update 318",
-        "restart": 0,
-        "slurm_job_id": "202342"
-      }
-    ],
     "attention_backend": "blocked",
     "attention_backend_requested": "blocked",
     "attention_implementation": "blocked",
@@ -170,20 +157,13 @@
   "name": "200m-qk-m003-normalized-seed0",
   "parameter_count": 199907104,
   "partition": "sweep",
-  "qk_norm": true,
-  "qk_norm_initial_scale": 8.0,
-  "qk_norm_parameter_count": 160,
-  "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
   "run_id": "rd7428f72915b",
-  "run_record": "experiments/qk_norm_learned_taylor/runs/rd7428f72915b",
   "seed": 0,
   "slurm_job_id": "202342",
   "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
   "status": "numerical-failure",
   "submitted_utc": "2026-09-26T06:43:53+00:00",
-  "terminal_validation_nll": null,
-  "terminal_validation_perplexity": null,
   "wandb": {
     "run_id": "715462c278e34f148f0e3ee9742ee601",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/715462c278e34f148f0e3ee9742ee601"
