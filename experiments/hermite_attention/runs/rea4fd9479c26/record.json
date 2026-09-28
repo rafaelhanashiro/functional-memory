@@ -1,6 +1,1530 @@
 {
+  "acceptance": {
+    "error": "CalledProcessError: Command '['/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/scaffolds/transformer/.venv/bin/python', '-m', 'experiments.hermite_attention.acceptance', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/config.yaml', '--directory', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4', '--gpu-count', '4', '--gpu-type', 'B300', '--worker', 'pilot', '--output', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4/pilot-result.json', '--stop-after-step', '20']' returned non-zero exit status 1.",
+    "failed_utc": "2026-09-28T07:48:20.564116+00:00",
+    "failure": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4/failure.json",
+      "sha256": "41af72fb0d243020f507ff8c1f9344ccc25a69317ab20a54d146218bfd4b7a4c"
+    },
+    "identity": "1b7e1866af06b78a0ef12ce4edcbac19eeaac1f20165bb3e330dd3e0d633af3a",
+    "numerical_failure": {
+      "artifact": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4/pilot/numerical_failure_step_00000005.json",
+        "sha256": "570e56cfcebdf629d61d865b6339a5036a1a1b55da15029a1e30ef338f2a2413"
+      },
+      "diagnostics": {
+        "attention_backend": "fused",
+        "attention_backend_requested": "fused",
+        "attention_coefficient_count": 0,
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_sharing": "global",
+        "attention_coefficients": "fixed",
+        "attention_degree": 1,
+        "attention_diagnostics": {
+          "attention_backend": "fused",
+          "attention_backend_requested": "fused",
+          "attention_coefficient_count": 0,
+          "attention_coefficient_parameterization": "direct",
+          "attention_coefficient_sharing": "global",
+          "attention_coefficients": "fixed",
+          "attention_degree": 1,
+          "attention_fixed_coefficients": [
+            1.6487212707001282,
+            1.6487212707001282
+          ],
+          "attention_formula": "causal_p_1(QK^T / sqrt(d_k)) V / rowsum, p(x) = sum_(r<=1) c_r x^r, fixed c",
+          "attention_implementation": "pallas_triton",
+          "attention_kernel": "fixed_polynomial",
+          "attention_normalization": true,
+          "attention_output_normalization": "signed_row_sum",
+          "attention_score_formula": "exp(gamma) * <q, k> / (||q|| ||k||), gamma learned, |score| <= exp(gamma)",
+          "attention_score_scale": "1/sqrt(d_k)",
+          "attention_signed": true,
+          "coefficients": {
+            "effective": [
+              1.6487212181091309,
+              1.6487212181091309
+            ],
+            "effective_coefficient_names": [
+              "constant",
+              "linear"
+            ],
+            "finite": true,
+            "trainable": false
+          },
+          "diagnostic_backend": "blocked",
+          "diagnostic_query_block_size": 128,
+          "format": "shared-transformer-attention-diagnostics",
+          "issues": [
+            "layer 0: nonfinite cancellation_ratio_max",
+            "layer 0: nonfinite cancellation_ratio_mean",
+            "layer 0: invalid_kernel_count=33570816",
+            "layer 0: invalid_normalizer_count=32768",
+            "layer 0: invalid_output_count=2097152",
+            "layer 0: invalid_score_count=33570816",
+            "layer 0: nonfinite kernel_max",
+            "layer 0: nonfinite kernel_min",
+            "layer 0: nonfinite min_abs_normalizer",
+            "layer 0: nonfinite normalizer_max",
+            "layer 0: nonfinite normalizer_min",
+            "layer 0: nonfinite score_max",
+            "layer 0: nonfinite score_min",
+            "layer 1: nonfinite cancellation_ratio_max",
+            "layer 1: nonfinite cancellation_ratio_mean",
+            "layer 1: invalid_kernel_count=33570816",
+            "layer 1: invalid_normalizer_count=32768",
+            "layer 1: invalid_output_count=2097152",
+            "layer 1: invalid_score_count=33570816",
+            "layer 1: nonfinite kernel_max",
+            "layer 1: nonfinite kernel_min",
+            "layer 1: nonfinite min_abs_normalizer",
+            "layer 1: nonfinite normalizer_max",
+            "layer 1: nonfinite normalizer_min",
+            "layer 1: nonfinite score_max",
+            "layer 1: nonfinite score_min",
+            "layer 2: nonfinite cancellation_ratio_max",
+            "layer 2: nonfinite cancellation_ratio_mean",
+            "layer 2: invalid_kernel_count=33570816",
+            "layer 2: invalid_normalizer_count=32768",
+            "layer 2: invalid_output_count=2097152",
+            "layer 2: invalid_score_count=33570816",
+            "layer 2: nonfinite kernel_max",
+            "layer 2: nonfinite kernel_min",
+            "layer 2: nonfinite min_abs_normalizer",
+            "layer 2: nonfinite normalizer_max",
+            "layer 2: nonfinite normalizer_min",
+            "layer 2: nonfinite score_max",
+            "layer 2: nonfinite score_min",
+            "layer 3: nonfinite cancellation_ratio_max",
+            "layer 3: nonfinite cancellation_ratio_mean",
+            "layer 3: invalid_kernel_count=33570816",
+            "layer 3: invalid_normalizer_count=32768",
+            "layer 3: invalid_output_count=2097152",
+            "layer 3: invalid_score_count=33570816",
+            "layer 3: nonfinite kernel_max",
+            "layer 3: nonfinite kernel_min",
+            "layer 3: nonfinite min_abs_normalizer",
+            "layer 3: nonfinite normalizer_max",
+            "layer 3: nonfinite normalizer_min",
+            "layer 3: nonfinite score_max",
+            "layer 3: nonfinite score_min",
+            "layer 4: nonfinite cancellation_ratio_max",
+            "layer 4: nonfinite cancellation_ratio_mean",
+            "layer 4: invalid_kernel_count=33570816",
+            "layer 4: invalid_normalizer_count=32768",
+            "layer 4: invalid_output_count=2097152",
+            "layer 4: invalid_score_count=33570816",
+            "layer 4: nonfinite kernel_max",
+            "layer 4: nonfinite kernel_min",
+            "layer 4: nonfinite min_abs_normalizer",
+            "layer 4: nonfinite normalizer_max",
+            "layer 4: nonfinite normalizer_min",
+            "layer 4: nonfinite score_max",
+            "layer 4: nonfinite score_min",
+            "layer 5: nonfinite cancellation_ratio_max",
+            "layer 5: nonfinite cancellation_ratio_mean",
+            "layer 5: invalid_kernel_count=33570816",
+            "layer 5: invalid_normalizer_count=32768",
+            "layer 5: invalid_output_count=2097152",
+            "layer 5: invalid_score_count=33570816",
+            "layer 5: nonfinite kernel_max",
+            "layer 5: nonfinite kernel_min",
+            "layer 5: nonfinite min_abs_normalizer",
+            "layer 5: nonfinite normalizer_max",
+            "layer 5: nonfinite normalizer_min",
+            "layer 5: nonfinite score_max",
+            "layer 5: nonfinite score_min",
+            "layer 6: nonfinite cancellation_ratio_max",
+            "layer 6: nonfinite cancellation_ratio_mean",
+            "layer 6: invalid_kernel_count=33570816",
+            "layer 6: invalid_normalizer_count=32768",
+            "layer 6: invalid_output_count=2097152",
+            "layer 6: invalid_score_count=33570816",
+            "layer 6: nonfinite kernel_max",
+            "layer 6: nonfinite kernel_min",
+            "layer 6: nonfinite min_abs_normalizer",
+            "layer 6: nonfinite normalizer_max",
+            "layer 6: nonfinite normalizer_min",
+            "layer 6: nonfinite score_max",
+            "layer 6: nonfinite score_min",
+            "layer 7: nonfinite cancellation_ratio_max",
+            "layer 7: nonfinite cancellation_ratio_mean",
+            "layer 7: invalid_kernel_count=33570816",
+            "layer 7: invalid_normalizer_count=32768",
+            "layer 7: invalid_output_count=2097152",
+            "layer 7: invalid_score_count=33570816",
+            "layer 7: nonfinite kernel_max",
+            "layer 7: nonfinite kernel_min",
+            "layer 7: nonfinite min_abs_normalizer",
+            "layer 7: nonfinite normalizer_max",
+            "layer 7: nonfinite normalizer_min",
+            "layer 7: nonfinite score_max",
+            "layer 7: nonfinite score_min",
+            "layer 8: nonfinite cancellation_ratio_max",
+            "layer 8: nonfinite cancellation_ratio_mean",
+            "layer 8: invalid_kernel_count=33570816",
+            "layer 8: invalid_normalizer_count=32768",
+            "layer 8: invalid_output_count=2097152",
+            "layer 8: invalid_score_count=33570816",
+            "layer 8: nonfinite kernel_max",
+            "layer 8: nonfinite kernel_min",
+            "layer 8: nonfinite min_abs_normalizer",
+            "layer 8: nonfinite normalizer_max",
+            "layer 8: nonfinite normalizer_min",
+            "layer 8: nonfinite score_max",
+            "layer 8: nonfinite score_min",
+            "layer 9: nonfinite cancellation_ratio_max",
+            "layer 9: nonfinite cancellation_ratio_mean",
+            "layer 9: invalid_kernel_count=33570816",
+            "layer 9: invalid_normalizer_count=32768",
+            "layer 9: invalid_output_count=2097152",
+            "layer 9: invalid_score_count=33570816",
+            "layer 9: nonfinite kernel_max",
+            "layer 9: nonfinite kernel_min",
+            "layer 9: nonfinite min_abs_normalizer",
+            "layer 9: nonfinite normalizer_max",
+            "layer 9: nonfinite normalizer_min",
+            "layer 9: nonfinite score_max",
+            "layer 9: nonfinite score_min",
+            "Nonfinite QK-norm scales"
+          ],
+          "kernel_values": "unshifted_fixed_polynomial",
+          "key_block_size": 64,
+          "layers": [
+            {
+              "cancellation_ratio_max": "NaN",
+              "cancellation_ratio_mean": "NaN",
+              "causal_entry_count": 33570816,
+              "invalid_kernel_count": 33570816,
+              "invalid_normalizer_count": 32768,
+              "invalid_output_count": 2097152,
+              "invalid_score_count": 33570816,
+              "kernel_max": "NaN",
+              "kernel_min": "NaN",
+              "layer": 0,
+              "min_abs_normalizer": "NaN",
+              "negative_kernel_count": 0,
+              "negative_kernel_fraction": 0.0,
+              "negative_weight_count": 0,
+              "negative_weight_fraction": 0.0,
+              "normalizer_max": "NaN",
+              "normalizer_min": "NaN",
+              "row_count": 32768,
+              "score_max": "NaN",
+              "score_min": "NaN"
+            },
+            {
+              "cancellation_ratio_max": "NaN",
+              "cancellation_ratio_mean": "NaN",
+              "causal_entry_count": 33570816,
+              "invalid_kernel_count": 33570816,
+              "invalid_normalizer_count": 32768,
+              "invalid_output_count": 2097152,
+              "invalid_score_count": 33570816,
+              "kernel_max": "NaN",
+              "kernel_min": "NaN",
+              "layer": 1,
+              "min_abs_normalizer": "NaN",
+              "negative_kernel_count": 0,
+              "negative_kernel_fraction": 0.0,
+              "negative_weight_count": 0,
+              "negative_weight_fraction": 0.0,
+              "normalizer_max": "NaN",
+              "normalizer_min": "NaN",
+              "row_count": 32768,
+              "score_max": "NaN",
+              "score_min": "NaN"
+            },
+            {
+              "cancellation_ratio_max": "NaN",
+              "cancellation_ratio_mean": "NaN",
+              "causal_entry_count": 33570816,
+              "invalid_kernel_count": 33570816,
+              "invalid_normalizer_count": 32768,
+              "invalid_output_count": 2097152,
+              "invalid_score_count": 33570816,
+              "kernel_max": "NaN",
+              "kernel_min": "NaN",
+              "layer": 2,
+              "min_abs_normalizer": "NaN",
+              "negative_kernel_count": 0,
+              "negative_kernel_fraction": 0.0,
+              "negative_weight_count": 0,
+              "negative_weight_fraction": 0.0,
+              "normalizer_max": "NaN",
+              "normalizer_min": "NaN",
+              "row_count": 32768,
+              "score_max": "NaN",
+              "score_min": "NaN"
+            },
+            {
+              "cancellation_ratio_max": "NaN",
+              "cancellation_ratio_mean": "NaN",
+              "causal_entry_count": 33570816,
+              "invalid_kernel_count": 33570816,
+              "invalid_normalizer_count": 32768,
+              "invalid_output_count": 2097152,
+              "invalid_score_count": 33570816,
+              "kernel_max": "NaN",
+              "kernel_min": "NaN",
+              "layer": 3,
+              "min_abs_normalizer": "NaN",
+              "negative_kernel_count": 0,
+              "negative_kernel_fraction": 0.0,
+              "negative_weight_count": 0,
+              "negative_weight_fraction": 0.0,
+              "normalizer_max": "NaN",
+              "normalizer_min": "NaN",
+              "row_count": 32768,
+              "score_max": "NaN",
+              "score_min": "NaN"
+            },
+            {
+              "cancellation_ratio_max": "NaN",
+              "cancellation_ratio_mean": "NaN",
+              "causal_entry_count": 33570816,
+              "invalid_kernel_count": 33570816,
+              "invalid_normalizer_count": 32768,
+              "invalid_output_count": 2097152,
+              "invalid_score_count": 33570816,
+              "kernel_max": "NaN",
+              "kernel_min": "NaN",
+              "layer": 4,
+              "min_abs_normalizer": "NaN",
+              "negative_kernel_count": 0,
+              "negative_kernel_fraction": 0.0,
+              "negative_weight_count": 0,
+              "negative_weight_fraction": 0.0,
+              "normalizer_max": "NaN",
+              "normalizer_min": "NaN",
+              "row_count": 32768,
+              "score_max": "NaN",
+              "score_min": "NaN"
+            },
+            {
+              "cancellation_ratio_max": "NaN",
+              "cancellation_ratio_mean": "NaN",
+              "causal_entry_count": 33570816,
+              "invalid_kernel_count": 33570816,
+              "invalid_normalizer_count": 32768,
+              "invalid_output_count": 2097152,
+              "invalid_score_count": 33570816,
+              "kernel_max": "NaN",
+              "kernel_min": "NaN",
+              "layer": 5,
+              "min_abs_normalizer": "NaN",
+              "negative_kernel_count": 0,
+              "negative_kernel_fraction": 0.0,
+              "negative_weight_count": 0,
+              "negative_weight_fraction": 0.0,
+              "normalizer_max": "NaN",
+              "normalizer_min": "NaN",
+              "row_count": 32768,
+              "score_max": "NaN",
+              "score_min": "NaN"
+            },
+            {
+              "cancellation_ratio_max": "NaN",
+              "cancellation_ratio_mean": "NaN",
+              "causal_entry_count": 33570816,
+              "invalid_kernel_count": 33570816,
+              "invalid_normalizer_count": 32768,
+              "invalid_output_count": 2097152,
+              "invalid_score_count": 33570816,
+              "kernel_max": "NaN",
+              "kernel_min": "NaN",
+              "layer": 6,
+              "min_abs_normalizer": "NaN",
+              "negative_kernel_count": 0,
+              "negative_kernel_fraction": 0.0,
+              "negative_weight_count": 0,
+              "negative_weight_fraction": 0.0,
+              "normalizer_max": "NaN",
+              "normalizer_min": "NaN",
+              "row_count": 32768,
+              "score_max": "NaN",
+              "score_min": "NaN"
+            },
+            {
+              "cancellation_ratio_max": "NaN",
+              "cancellation_ratio_mean": "NaN",
+              "causal_entry_count": 33570816,
+              "invalid_kernel_count": 33570816,
+              "invalid_normalizer_count": 32768,
+              "invalid_output_count": 2097152,
+              "invalid_score_count": 33570816,
+              "kernel_max": "NaN",
+              "kernel_min": "NaN",
+              "layer": 7,
+              "min_abs_normalizer": "NaN",
+              "negative_kernel_count": 0,
+              "negative_kernel_fraction": 0.0,
+              "negative_weight_count": 0,
+              "negative_weight_fraction": 0.0,
+              "normalizer_max": "NaN",
+              "normalizer_min": "NaN",
+              "row_count": 32768,
+              "score_max": "NaN",
+              "score_min": "NaN"
+            },
+            {
+              "cancellation_ratio_max": "NaN",
+              "cancellation_ratio_mean": "NaN",
+              "causal_entry_count": 33570816,
+              "invalid_kernel_count": 33570816,
+              "invalid_normalizer_count": 32768,
+              "invalid_output_count": 2097152,
+              "invalid_score_count": 33570816,
+              "kernel_max": "NaN",
+              "kernel_min": "NaN",
+              "layer": 8,
+              "min_abs_normalizer": "NaN",
+              "negative_kernel_count": 0,
+              "negative_kernel_fraction": 0.0,
+              "negative_weight_count": 0,
+              "negative_weight_fraction": 0.0,
+              "normalizer_max": "NaN",
+              "normalizer_min": "NaN",
+              "row_count": 32768,
+              "score_max": "NaN",
+              "score_min": "NaN"
+            },
+            {
+              "cancellation_ratio_max": "NaN",
+              "cancellation_ratio_mean": "NaN",
+              "causal_entry_count": 33570816,
+              "invalid_kernel_count": 33570816,
+              "invalid_normalizer_count": 32768,
+              "invalid_output_count": 2097152,
+              "invalid_score_count": 33570816,
+              "kernel_max": "NaN",
+              "kernel_min": "NaN",
+              "layer": 9,
+              "min_abs_normalizer": "NaN",
+              "negative_kernel_count": 0,
+              "negative_kernel_fraction": 0.0,
+              "negative_weight_count": 0,
+              "negative_weight_fraction": 0.0,
+              "normalizer_max": "NaN",
+              "normalizer_min": "NaN",
+              "row_count": 32768,
+              "score_max": "NaN",
+              "score_min": "NaN"
+            }
+          ],
+          "m0_qk_parameter_note": null,
+          "qk_norm": true,
+          "qk_norm_eps": 1e-06,
+          "qk_norm_initial_scale": 8.0,
+          "qk_norm_parameter_count": 160,
+          "qk_norm_scale": {
+            "effective": [
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ]
+            ],
+            "effective_coefficient_names": [
+              "alpha"
+            ],
+            "finite": false,
+            "raw": [
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ],
+              [
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ],
+                [
+                  "NaN"
+                ]
+              ]
+            ],
+            "raw_parameter_names": [
+              "gamma"
+            ]
+          },
+          "qk_norm_sharing": "per_head",
+          "query_block_size": 64,
+          "sample": {
+            "diagnostic_pass_contributes_to_validation_loss": false,
+            "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+            "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+            "num_sequences": 1,
+            "prediction_tokens": 2048,
+            "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+            "selection": "first_heldout_sequence",
+            "sequence_index": 0,
+            "source": "packed"
+          },
+          "step": 5,
+          "valid": false,
+          "version": 1
+        },
+        "attention_fixed_coefficients": [
+          1.6487212707001282,
+          1.6487212707001282
+        ],
+        "attention_formula": "causal_p_1(QK^T / sqrt(d_k)) V / rowsum, p(x) = sum_(r<=1) c_r x^r, fixed c",
+        "attention_implementation": "pallas_triton",
+        "attention_kernel": "fixed_polynomial",
+        "attention_normalization": true,
+        "attention_output_normalization": "signed_row_sum",
+        "attention_score_formula": "exp(gamma) * <q, k> / (||q|| ||k||), gamma learned, |score| <= exp(gamma)",
+        "attention_score_scale": "1/sqrt(d_k)",
+        "attention_signed": true,
+        "checked_quantities": [
+          "forward_loss",
+          "global_gradient_norm",
+          "updated_parameters"
+        ],
+        "diagnostic_backend": "blocked",
+        "diagnostic_query_block_size": 128,
+        "diagnostics_state": "after_attempted_training_update",
+        "error": "Nonfinite training loss or optimizer update at step 5: nan",
+        "format": "shared-transformer-numerical-failure",
+        "key_block_size": 64,
+        "loss": "NaN",
+        "loss_note": "A NaN loss scalar also signals an invalid gradient norm or parameter update.",
+        "m0_qk_parameter_note": null,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_initial_scale": 8.0,
+        "qk_norm_parameter_count": 160,
+        "qk_norm_sharing": "per_head",
+        "query_block_size": 64,
+        "step": 5,
+        "timestamp_utc": "2026-09-28T07:48:09.047980+00:00",
+        "training_tokens": 2621440,
+        "update_numerics": {
+          "forward_loss": "NaN",
+          "global_gradient_norm": "NaN",
+          "updated_parameter_norm": "NaN"
+        },
+        "version": 1
+      }
+    },
+    "pilot_metadata": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4/pilot/metadata.json",
+      "sha256": "744af08b0119259d4ab85d33ac016df0a2915448e59c3b45d36afde5f2d08e55"
+    },
+    "slurm_job_id": "203102",
+    "stage": "pilot",
+    "status": "numerical_failure"
+  },
   "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26",
   "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm",
+  "artifacts": [
+    {
+      "path": "experiments/hermite_attention/runs/rea4fd9479c26/training.log",
+      "sha256": "a4992eb71567a44769b982bd9ee1307160b66752a2d6f27b0dcad21692c67c0f",
+      "size_bytes": 6053
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4",
+      "allocation": "JobId=203102 JobName=qk-hermite-norm-m1-rea4fd9479c26 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20084 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:03 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-09-27T22:49:30 EligibleTime=2026-09-28T03:38:26 AccrueTime=2026-09-28T03:38:26 StartTime=2026-09-28T03:39:50 EndTime=2026-09-29T03:39:50 Deadline=N/A PreemptEligibleTime=2026-09-28T05:39:50 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-09-28T03:39:50 Scheduler=Main Partition=standard AllocNode:Sid=kennel:3673817 ReqNodeList=akita ExcNodeList=collie,doodle,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/hermite_attention/runs/rea4fd9479c26/config.yaml",
+      "config_sha256": "5e0b9525cadccdde712274c1ae7bfb619bdd3a2c1b1d266e6fdd634dd78d65d9",
+      "exit_code": 1,
+      "finished_utc": "2026-09-28T07:48:21.127255+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "slurm_job_id": "203102",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-09-28T07:39:53.617241+00:00"
+    }
+  ],
   "attention_degree": 1,
   "attention_kernel": "hermite_normalized",
   "attention_normalization": true,
@@ -22,6 +1546,7 @@
       "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
     }
   },
+  "error": "CalledProcessError: Command '['/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/scaffolds/transformer/.venv/bin/python', '-m', 'experiments.hermite_attention.acceptance', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/config.yaml', '--directory', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4', '--gpu-count', '4', '--gpu-type', 'B300', '--worker', 'pilot', '--output', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4/pilot-result.json', '--stop-after-step', '20']' returned non-zero exit status 1.",
   "executed_recipe": {
     "commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
     "path": "experiments/hermite_attention/runs/rea4fd9479c26/config.yaml",
@@ -30,6 +1555,12 @@
   "frozen_execution_sha256": "0d6b47d719837a3b243287e68591664fe0814fa10f75cfaea9fa5b9142cebfc0",
   "home_cluster": "kennel",
   "label": "200m-qk-hermite-m001-normalized-seed0",
+  "log": {
+    "path": "experiments/hermite_attention/runs/rea4fd9479c26/training.log",
+    "sha256": "a4992eb71567a44769b982bd9ee1307160b66752a2d6f27b0dcad21692c67c0f",
+    "size_bytes": 6053
+  },
+  "log_path": "experiments/hermite_attention/runs/rea4fd9479c26/training.log",
   "matched_control": {
     "run_id": "raa90edf82385",
     "study": "odd_taylor_attention"
@@ -59,7 +1590,7 @@
   "run_id": "rea4fd9479c26",
   "seed": 0,
   "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
-  "status": "submitted",
+  "status": "acceptance_numerical_failure",
   "submission": {
     "command": [
       "sbatch",
