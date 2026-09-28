@@ -7,7 +7,7 @@ figures are built from existing runs named in [`selection.yaml`](selection.yaml)
 [`manifest.json`](manifest.json). Home cluster: Kennel.
 
 Current defaults are selective weight decay and QK-norm. **Legacy** runs predate
-them: outlined in the heatmap, hollow and dashed in the degree chart.
+them and are outlined in the heatmap.
 
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
@@ -20,7 +20,7 @@ them: outlined in the heatmap, hollow and dashed in the degree chart.
 
 ### Degree chart (d_K = 64)
 
-25 runs: 17 complete, 8 failed, 1 legacy (hollow, dashed). Failures sit below the axis at their update.
+25 runs: 17 complete, 8 failed. Failures sit below the axis at their update.
 
 ![Terminal perplexity against polynomial degree](degree_chart.png)
 
@@ -43,7 +43,7 @@ them: outlined in the heatmap, hollow and dashed in the degree chart.
 ## Results at d_K = 64
 
 References: QK-norm softmax **14.457**, softmax without QK-norm **14.665** (both with
-selective decay), unnormalized exp 17.458 (legacy).
+selective decay), unnormalized exp with QK-norm 18.304.
 
 Normalized kernels (failures show the update):
 

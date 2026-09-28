@@ -83,8 +83,9 @@ def update_readme(path: Path, rows: list[dict], chart_rows: list[dict]) -> None:
         "![Combined terminal perplexity heatmap](combined_terminal_ppl.png)\n\n"
         "[PDF](combined_terminal_ppl.pdf)\n\n"
         "### Degree chart (d_K = 64)\n\n"
-        f"{chart_trained} runs: {chart_counts['complete']} complete, {chart_counts['numerical_failure']} failed, "
-        f"{chart_legacy} legacy (hollow, dashed). Failures sit below the axis at their update.\n\n"
+        f"{chart_trained} runs: {chart_counts['complete']} complete, {chart_counts['numerical_failure']} failed"
+        + (f", {chart_legacy} legacy (hollow, dashed)" if chart_legacy else "")
+        + ". Failures sit below the axis at their update.\n\n"
         "![Terminal perplexity against polynomial degree](degree_chart.png)\n\n"
         "[PDF](degree_chart.pdf) · [Cell data and checksums](summary.csv) · [Provenance](manifest.json)\n"
     )

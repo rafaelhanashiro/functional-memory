@@ -118,7 +118,7 @@ def test_aggregate_exports_grid_curves_csv_and_outside_runs(tmp_path):
     (output / "README.md").write_text(authored)
     rows = aggregate(study, output)
     assert len(rows) == 28
-    for name in ("terminal_ppl_heatmap", "delta_ppl_heatmap", "learning_curves"):
+    for name in ("learning_curves",):
         for suffix in ("png", "pdf"):
             assert (output / f"{name}.{suffix}").stat().st_size > 1000
     csv_rows = {row["run"]: row for row in csv.DictReader((output / "summary.csv").open())}

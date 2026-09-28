@@ -182,15 +182,17 @@ def _build_figure(rows: list[dict], config: dict):
 
     figure.text(0.09, 0.955, config.get("title", "Polynomial attention kernels across degree"),
                 fontsize=13, weight="bold", color=INK, va="top")
-    figure.text(0.09, 0.915, "Terminal perplexity at 19,074 updates, seed 0; learned coefficients are per layer and head.\n"
-                "Hollow points and dashed lines are legacy runs (weight decay on all parameters, no QK-norm),\n"
-                "replaced when rerun.", fontsize=8.5, color=MUTED, va="top", linespacing=1.3)
+    any_legacy = any(row.get("legacy") for row in rows if row["status"] == "complete")
+    figure.text(0.09, 0.915, "Terminal perplexity at 19,074 updates, seed 0; learned coefficients are per layer and head."
+                + ("\nHollow points and dashed lines are legacy runs (weight decay on all parameters, no QK-norm),\n"
+                   "replaced when rerun." if any_legacy else ""), fontsize=8.5, color=MUTED, va="top", linespacing=1.3)
     handles = [Line2D([], [], color=FAMILY_STYLE[panel["id"]][0], marker=FAMILY_STYLE[panel["id"]][1],
                       linewidth=2, markersize=7, label=panel["title"]) for panel in families]
-    handles += [Line2D([], [], color=MUTED, marker="o", markerfacecolor=SURFACE, linewidth=1.5,
-                       linestyle=(0, (4, 3)), markersize=7, label="legacy run (to be rerun)"),
-                Line2D([], [], color=MUTED, marker="X", linestyle="none", markersize=8,
-                       label="numerical failure (update shown)")]
+    if any_legacy:
+        handles.append(Line2D([], [], color=MUTED, marker="o", markerfacecolor=SURFACE, linewidth=1.5,
+                              linestyle=(0, (4, 3)), markersize=7, label="legacy run (to be rerun)"))
+    handles.append(Line2D([], [], color=MUTED, marker="X", linestyle="none", markersize=8,
+                          label="numerical failure (update shown)"))
     figure.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.08, 0.005), ncol=3, frameon=False,
                   fontsize=8, columnspacing=1.6, handlelength=2.4)
     return figure

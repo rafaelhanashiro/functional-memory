@@ -113,8 +113,6 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from matplotlib.colors import Normalize, TwoSlopeNorm
-    import numpy as np
 
     output_dir = output_dir or Path(__file__).resolve().parent
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -153,77 +151,6 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
                            metadata={"CreationDate": None} if extension == "pdf" else None)
         plt.close(figure)
 
-    values = np.array([[row["terminal_ppl"] if row["status"] == "complete" else np.nan for row in line] for line in grid])
-    finite = values[np.isfinite(values)]
-    minimum, maximum = (float(finite.min()), float(finite.max())) if len(finite) else (0.0, 1.0)
-    # A far outlier (degree 0) would flatten every other cell. Cap the color scale
-    # at 1.5x the median; larger cells take the over-range color, the colorbar
-    # shows the extension, and each cell still prints its exact value.
-    capped = [value for value in finite if value <= 1.5 * float(np.median(finite))] if len(finite) else []
-    top = max(capped) if capped else maximum
-    if minimum == top:
-        minimum, top = minimum - 0.5, top + 0.5
-    norm = Normalize(minimum, top)
-    from matplotlib.colors import ListedColormap
-    # One hue, light to dark; the lightest step stays distinct from gray untrained cells.
-    cmap = ListedColormap(plt.colormaps["Blues"](np.linspace(0.18, 0.92, 256)))
-    cmap.set_over(plt.colormaps["Blues"](1.0))
-    cmap.set_bad("#eeeeee")
-    figure = plt.figure(figsize=(10, 6.5), layout="constrained")
-    layout = figure.add_gridspec(1, 3, width_ratios=(n_degrees, 1, 0.13), wspace=0.10)
-    axes = [figure.add_subplot(layout[0, 0]), figure.add_subplot(layout[0, 1])]
-    for axis, columns in zip(axes, (range(n_degrees), range(n_degrees, n_degrees + 1))):
-        columns = list(columns)
-        image = axis.imshow(values[:, columns], norm=norm, cmap=cmap, aspect="auto")
-        axis.set_xticks(range(len(columns)), [f"m={degrees[col]}" if col < n_degrees else "Softmax" for col in columns])
-        axis.set_yticks(range(len(widths)), [str(width) for width in widths] if axis == axes[0] else [])
-        for row_index, line in enumerate(grid):
-            for x, column in enumerate(columns):
-                row = line[column]
-                value = values[row_index, column]
-                annotation = f"{value:.4f}" if np.isfinite(value) else "—" if row["status"] == "not run" else row["status"].upper()
-                color = "white" if np.isfinite(value) and norm(value) > 0.58 else "black"
-                axis.text(x, row_index, annotation, ha="center", va="center", fontsize=9, color=color)
-        axis.set_xticks(np.arange(-0.5, len(columns), 1), minor=True)
-        axis.set_yticks(np.arange(-0.5, len(widths), 1), minor=True)
-        axis.grid(which="minor", color="white", linewidth=1.5)
-        axis.tick_params(which="minor", bottom=False, left=False)
-    axes[0].set_ylabel("Query/key dimension per head (dK)")
-    axes[0].set_title("Taylor degree")
-    axes[1].set_title("Reference")
-    figure.colorbar(image, cax=figure.add_subplot(layout[0, 2]), extend="max" if maximum > top else "neither",
-                    label="Terminal held-out perplexity (linear scale" + (f"; ▲ above {top:.1f}" if maximum > top else "") + ")")
-    figure.suptitle("Joint dK × Taylor degree · 19,074 updates · seed 0")
-    save(figure, "terminal_ppl_heatmap")
-
-    deltas = np.array([[row["delta_ppl_vs_softmax"] if row["delta_ppl_vs_softmax"] != "" else np.nan for row in line[:n_degrees]] for line in grid])
-    # Scale deltas over the cells within the terminal-perplexity color range; the
-    # same over-range outliers take the extreme colors and keep printed values.
-    in_range = np.isfinite(deltas) & (values[:, :n_degrees] <= top)
-    available = np.abs(deltas[in_range]) if in_range.any() else np.abs(deltas[np.isfinite(deltas)])
-    extent = max(float(available.max()) if len(available) else 1.0, 1e-8)
-    beyond = bool(np.any(np.abs(deltas[np.isfinite(deltas)]) > extent))
-    figure, axis = plt.subplots(figsize=(8, 5.5), layout="constrained")
-    delta_cmap = plt.colormaps["RdBu_r"].copy()
-    delta_cmap.set_over(plt.colormaps["RdBu_r"](1.0))
-    delta_cmap.set_under(plt.colormaps["RdBu_r"](0.0))
-    delta_cmap.set_bad("#eeeeee")
-    image = axis.imshow(deltas, cmap=delta_cmap, norm=TwoSlopeNorm(0.0, -extent, extent), aspect="auto")
-    for i, line in enumerate(grid):
-        for j, row in enumerate(line[:n_degrees]):
-            value = deltas[i, j]
-            annotation = (f"{value:+.4f}" if np.isfinite(value) else "—" if row["status"] == "not run"
-                          else row["status"].upper() if row["status"] != "complete" else "NO REF")
-            axis.text(j, i, annotation, ha="center", va="center", fontsize=9,
-                      color="white" if np.isfinite(value) and abs(value) > 0.65 * extent else "black")
-    axis.set_xticks(range(n_degrees), [f"m={degree}" for degree in degrees])
-    axis.set_yticks(range(len(widths)), [str(width) for width in widths])
-    axis.set_ylabel("Query/key dimension per head (dK)")
-    axis.set_title("Terminal perplexity − softmax at the same dK\nNegative is better")
-    figure.colorbar(image, ax=axis, extend="both" if beyond else "neither",
-                    label="Δ perplexity (linear scale" + (f"; arrows beyond ±{extent:.2f}" if beyond else "") + ")")
-    save(figure, "delta_ppl_heatmap")
-
     curve_rows = (len(widths) + 3) // 3
     figure, axes = plt.subplots(curve_rows, 3, figsize=(14, 4 * curve_rows), layout="constrained", squeeze=False)
     for axis, width in zip(axes.flat, widths):
@@ -258,7 +185,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     lines = [f"Terminal held-out perplexity at 19,074 updates (10,000,269,312 prediction tokens), seed 0. "
              f"{count['complete']} of {len(rows)} retained runs are complete"
              + (f"; {count['pending']} pending, {count['incomplete']} incomplete, {count['failed']} numerical failures" if len(rows) != count["complete"] else "")
-             + f". The heatmap shows the {len(widths) * (n_degrees + 1)}-cell joint comparison;"
+             + f". The table shows the {len(widths) * (n_degrees + 1)}-cell joint comparison;"
              + " other runs remain in the CSV."
              + (" A dash marks a coordinate that was never trained; nothing is imputed." if manifest.get("grid_coverage") == "partial" else ""),
              "", *table, ""]
@@ -268,7 +195,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
             + ". The grid uses one softmax reference per width"
             + (f"; at dK=64 it is `{references[64]['run']}` (PPL {references[64]['terminal_ppl']:.4f})" if 64 in references and references[64]["run"] else "")
             + ".", ""]
-    lines += ["Each delta in the CSV and delta heatmap subtracts the softmax endpoint at the same width. "
+    lines += ["Each delta in the CSV subtracts the softmax endpoint at the same width. "
               "FAILED means a recorded numerical failure; interrupted or unaudited runs remain INCOMPLETE. "
               f"Source commits, exact recipes, and artifact checksums are in each run’s `config.yaml` and `record.json` under `experiments/{EXPERIMENT}/runs/`.", ""]
     failures = [row for row in rows if row["error"]]
@@ -278,7 +205,8 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     if unretained:
         lines += [f"Checkpoints and logs are not retained for {len(unretained)} runs trained on another cluster "
                   f"({', '.join(f'`{name}`' for name in unretained)}); their metrics, completion records, metadata, and recipes are retained and checksum-verified.", ""]
-    lines += ["[Summary CSV](summary.csv) · [Terminal heatmap](terminal_ppl_heatmap.pdf) · [Delta heatmap](delta_ppl_heatmap.pdf) · [Learning curves](learning_curves.pdf)", ""]
+    lines += ["[Summary CSV](summary.csv) · [Learning curves](learning_curves.pdf) · "
+              "[Heatmap](../attention_scaling/combined_terminal_ppl.png) in the cross-study comparison", ""]
     update_results_readme(output_dir / "README.md", lines)
     return rows
 

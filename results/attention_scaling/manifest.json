@@ -1851,30 +1851,27 @@
       "column": "unnormalized_exp",
       "d_k": 64,
       "experiment": "unnormalized_attention",
-      "run": "r8cccbabca761",
+      "run": "r810a6797098b",
       "status": "complete",
-      "source_commit": "3b0d311655b033545d0c211467fd600376e0fdeb",
+      "source_commit": "371fd6eaf93e5e755bb52892c208f11f1d4129e0",
       "artifacts": {
         "metadata": {
-          "path": "experiments/unnormalized_attention/runs/r8cccbabca761/metadata.json",
-          "sha256": "4a44a8b4bf029d113b3c557915caa52ac945019232b0a31bdaae8c5b12698ffd"
+          "path": "experiments/unnormalized_attention/runs/r810a6797098b/metadata.json",
+          "sha256": "b1fe17e983345ef1fbd53aa3fa31c8fdc52ab60479f45db93747aeea66593c8c"
         },
         "metrics": {
-          "path": "experiments/unnormalized_attention/runs/r8cccbabca761/metrics.jsonl",
-          "sha256": "e0bbbdafb9f5cffd49bd080d91c48afcefdac97f18a57fc9dd7dc18360eaf483"
+          "path": "experiments/unnormalized_attention/runs/r810a6797098b/metrics.jsonl",
+          "sha256": "c4c3f3502c5790959665e573f4100f4d88c010f8ebab3bed3dc18fff670d57ff"
         },
         "completion": {
-          "path": "experiments/unnormalized_attention/runs/r8cccbabca761/completion.json",
-          "sha256": "52631eaef8b681efc2d5192ae2bfed975572d5b84013aea2e613dc498884e183"
+          "path": "experiments/unnormalized_attention/runs/r810a6797098b/completion.json",
+          "sha256": "238f9cf5098fe573674be007afa88322ba7f8f4c1bd27ecf0db58e5f2ee1695c"
         }
       },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     }
   ],
   "status_counts": {
@@ -1887,7 +1884,7 @@
     "degree_chart": {
       "complete": 17,
       "numerical_failure": 8,
-      "legacy": 1
+      "legacy": 0
     }
   },
   "analysis": {
@@ -1897,7 +1894,7 @@
     },
     "chart_config": {
       "path": "results/attention_scaling/degree_chart.yaml",
-      "sha256": "13899105f2dbbb9f17f3c10bef7708a5c275b119e76aef6504272bfc68973797"
+      "sha256": "415e0264e90601860d55d28a90b438687c02fe841300f5f970eedbf95339a764"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
@@ -1914,22 +1911,22 @@
       },
       "chart.py": {
         "path": "results/attention_scaling/chart.py",
-        "sha256": "6776a97791489f2658041b3b5de8025dd5368206bfd8aef9c82a4b612de9741d"
+        "sha256": "7bb4b339e6f69c1a31ea3c588554507894611c4c7f6834170729fb4584b1f2b1"
       },
       "plot.py": {
         "path": "results/attention_scaling/plot.py",
-        "sha256": "7ba2304dcfd569424ae062656211171bc9b235b5e0e7296f5c7c471aec664dab"
+        "sha256": "6413f5d216b14c17880df02ca413ef494fa7a9db3234af2d29f5df84d90e2e6b"
       }
     }
   },
   "derived_artifacts": {
     "summary_csv": {
       "path": "results/attention_scaling/summary.csv",
-      "sha256": "97e2963943f8a9ed51f9126259c0934e32f0bd64fe1e9e61f040d0d593717cc9"
+      "sha256": "1e039d14f60eecdc7383640434309f89a9ed491ebc9364be6d9d0de7b641c5df"
     },
     "readme": {
       "path": "results/attention_scaling/README.md",
-      "sha256": "d70017351c8202c514fde5b6db69a990509d545e403e39bc21a4a0288e6a2b03"
+      "sha256": "69f2af57109af194901b65819d994b5e82a3646106931cdd864de64cfd17dfe5"
     },
     "combined_terminal_ppl_pdf": {
       "path": "results/attention_scaling/combined_terminal_ppl.pdf",
@@ -1941,11 +1938,11 @@
     },
     "degree_chart_pdf": {
       "path": "results/attention_scaling/degree_chart.pdf",
-      "sha256": "3d49be8e1a33a097d90bc08cd1f8c523d3f458e6e51bd2b812255dc095b23365"
+      "sha256": "cc56c1df008a197b5ba9165e24e3a7aa11d80c341501caa2e6a6b98516c9a790"
     },
     "degree_chart_png": {
       "path": "results/attention_scaling/degree_chart.png",
-      "sha256": "3774f5fe7135f0714fe2b958138b9525a5684a4d33515d9a07186353ca6bdaef"
+      "sha256": "a8b85304bbba0901f5d846203a72698e4ac882f2818f63f2226237aed531750c"
     }
   }
 }

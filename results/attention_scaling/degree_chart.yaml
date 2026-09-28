@@ -156,8 +156,8 @@ cells:
   column: unnormalized_exp
   d_k: 64
   experiment: unnormalized_attention
-  run: r8cccbabca761
-  label: 200m-exp-seed0-kennel
+  run: r810a6797098b
+  label: 200m-qk-exp-seed0
 - panel: references
   column: softmax
   d_k: 64
@@ -462,24 +462,24 @@ runs:
       path: experiments/key_dimension_taylor/runs/r50088d29f2b5/best_validation.json
       sha256: e21b8b5fa7314c7d097d4421a03770ec0010b4db59ac967dcfe7acfdca01104c
 - study: unnormalized_attention
-  run_id: r8cccbabca761
-  label: 200m-exp-seed0-kennel
+  run_id: r810a6797098b
+  label: 200m-qk-exp-seed0
   sources:
     config.yaml:
-      path: experiments/unnormalized_attention/runs/r8cccbabca761/config.yaml
-      sha256: 27aad33256473efda13bec82cbd109f3a8bc40fea713574e51d18107ef6c450b
+      path: experiments/unnormalized_attention/runs/r810a6797098b/config.yaml
+      sha256: 845aba18d5929b130a11fe7fd9ff9bc0623f6be774b90f8a1e6c8fd6dc7fd0bb
     metrics.jsonl:
-      path: experiments/unnormalized_attention/runs/r8cccbabca761/metrics.jsonl
-      sha256: e0bbbdafb9f5cffd49bd080d91c48afcefdac97f18a57fc9dd7dc18360eaf483
+      path: experiments/unnormalized_attention/runs/r810a6797098b/metrics.jsonl
+      sha256: c4c3f3502c5790959665e573f4100f4d88c010f8ebab3bed3dc18fff670d57ff
     completion.json:
-      path: experiments/unnormalized_attention/runs/r8cccbabca761/completion.json
-      sha256: 52631eaef8b681efc2d5192ae2bfed975572d5b84013aea2e613dc498884e183
+      path: experiments/unnormalized_attention/runs/r810a6797098b/completion.json
+      sha256: 238f9cf5098fe573674be007afa88322ba7f8f4c1bd27ecf0db58e5f2ee1695c
     metadata.json:
-      path: experiments/unnormalized_attention/runs/r8cccbabca761/metadata.json
-      sha256: 4a44a8b4bf029d113b3c557915caa52ac945019232b0a31bdaae8c5b12698ffd
+      path: experiments/unnormalized_attention/runs/r810a6797098b/metadata.json
+      sha256: b1fe17e983345ef1fbd53aa3fa31c8fdc52ab60479f45db93747aeea66593c8c
     best_validation.json:
-      path: experiments/unnormalized_attention/runs/r8cccbabca761/best_validation.json
-      sha256: 9ead667c8ab94587ade4851ffc27214f065363a4550ec5c4f6e5e78f367e88ad
+      path: experiments/unnormalized_attention/runs/r810a6797098b/best_validation.json
+      sha256: fac53d2c7520751b60c4be443daa2dee3f14401d7a94c8290fa14f9eeb03347e
 - study: qk_norm_attention
   run_id: r1feece425074
   label: 200m-qk-softmax-seed0

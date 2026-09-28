@@ -227,7 +227,7 @@ def test_committed_comparison_sources() -> None:
                               ("normalized_fixed_hermite", "m1"): 5, ("normalized_fixed_hermite", "m2"): 3829,
                               ("normalized_fixed_hermite", "m3"): 802, ("normalized_fixed_hermite", "m4"): 1390}
     legacy = {(row["panel"], row["column"]) for row in chart_rows if row["legacy"]}
-    assert legacy == {("references", "unnormalized_exp")}
+    assert legacy == set()
 
     for panel, other, message in (("unnormalized_fixed_hermite", "unnormalized_fixed", "no fixed Hermite"),
                                   ("unnormalized_fixed", "unnormalized_fixed_hermite", "a Taylor cell uses 1/r!")):

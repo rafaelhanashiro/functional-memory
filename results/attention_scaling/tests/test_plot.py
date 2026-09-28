@@ -54,7 +54,7 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     assert "source_manifests" not in provenance and "source_records" not in provenance
     assert Counter(row["figure"] for row in provenance["source_runs"]) == {"heatmap": 33, "degree_chart": 25}
     assert provenance["status_counts"]["heatmap"]["legacy"] == 22
-    assert provenance["status_counts"]["degree_chart"] == {"complete": 17, "legacy": 1, "numerical_failure": 8}
+    assert provenance["status_counts"]["degree_chart"] == {"complete": 17, "legacy": 0, "numerical_failure": 8}
     for name in ("combined_terminal_ppl", "degree_chart"):
         assert (output / f"{name}.pdf").stat().st_size > 1000
     first = hashes(output)
