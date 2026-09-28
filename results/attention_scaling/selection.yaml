@@ -43,13 +43,13 @@ panels:
 source_manifests:
   key_dimension_taylor:
     path: experiments/key_dimension_taylor/sweep.yaml
-    sha256: cc9b2e0a12ff9713e3f144a4a1cb9fc29a6f0daaaf2d399ae57a16fa83ff2280
+    sha256: 8f1d7fa5178fb171fc385a368cc61c51a9d37948d09371981ab59a05e5822896
   odd_taylor_attention:
     path: experiments/odd_taylor_attention/sweep.yaml
-    sha256: cd879ebe19467658481dac83de1409fecaafd9226c7192f2a462eaea7d189151
+    sha256: eec43834ef261f94514f217c171aa0e2d222a6b3c908aaea9451ec155abd9a27
   gla_key_dimension:
     path: experiments/gla_key_dimension/sweep.yaml
-    sha256: c7fb2f60d6f5ddddd3691cdd3b3c8645a867c4d78fe88e4fb702cd60b434e769
+    sha256: 8c3911b0f7edeeac0b820ba044281909ac24a3f9d281fcbe73cdfbcf18de0b12
   qk_norm_attention:
     path: experiments/qk_norm_attention/sweep.yaml
     sha256: 7e849fb7d604a4ec9408caefd03babf89acc8fc7d3c56f6967a1e9dee055dc92
@@ -256,100 +256,100 @@ metric: terminal_validation_perplexity
 source_records:
   key_dimension_taylor/rc3536d3ff6cd:
     path: experiments/key_dimension_taylor/runs/rc3536d3ff6cd/record.json
-    sha256: 16f19baf09d8d167c13457d77dc7e25b764d1d7e84cd9354e2291ffc557f5a3e
+    sha256: 67eb88906f7ea146a81a84fa6917749be43b65fde271a73d265b52944fd5dda4
   key_dimension_taylor/r18aa3ef494f5:
     path: experiments/key_dimension_taylor/runs/r18aa3ef494f5/record.json
-    sha256: 4d6617a9c85d0fd52d0aa8f3afe5233a6eca718273f5273918578747e130706e
+    sha256: 22cdb6735e4c335cf2c9dab2243bc972ef39caebc6bfa6a0029310e776fed9a7
   key_dimension_taylor/r0b5fb00b8649:
     path: experiments/key_dimension_taylor/runs/r0b5fb00b8649/record.json
-    sha256: 236677096db64c1b732298d1368e2ee1e12146cf2922a5cccd506abbdf660b31
+    sha256: 359794728131a13ba42b325c017fa302f1232a3453c05727a1adc17c7005a4d1
   key_dimension_taylor/r3961c167a16f:
     path: experiments/key_dimension_taylor/runs/r3961c167a16f/record.json
-    sha256: 8994b35b70cac558e4004d868fb0a9f3e34670c33f0f89e5de1e8965304621c1
+    sha256: 17fd2171b1c6cdb38626e45145cf924d55ba750214d9380ea37698ed8d42194c
   key_dimension_taylor/ra92381785e78:
     path: experiments/key_dimension_taylor/runs/ra92381785e78/record.json
-    sha256: c1075ad85b783fa6529a2095ff4a83b4d0702e408872135a3dec1c6c9d505b21
+    sha256: 4413e9316aaaf97df9cd2b371f7e462e97b16173b1cadfbb49228f8914bf3405
   gla_key_dimension/ra6346b7a6cfc:
     path: experiments/gla_key_dimension/runs/ra6346b7a6cfc/record.json
-    sha256: 889af45b8a2592e87479c0774ed3d10673d7b6d9056b17c60c5a99d637eec31c
+    sha256: 216102f2677f6f23a267d01211cda8c9ad5cb7e67d18c0ffc58051e9083a5f28
   key_dimension_taylor/r8a9bc098ce3a:
     path: experiments/key_dimension_taylor/runs/r8a9bc098ce3a/record.json
-    sha256: b854c88a466f5c10bcab9a83bd1f9b84433dfe2280174dac2f067b217bec6b4b
+    sha256: 0fbe9104d5003ad26e6665bbb2197784ae2befcbd40091d0150bd37dbc77b411
   key_dimension_taylor/r7ca127105528:
     path: experiments/key_dimension_taylor/runs/r7ca127105528/record.json
-    sha256: dc61948a7cac07c0f6a0ae0fee55ae4a3bd0b760ea6465422cf9f99b0d87befc
+    sha256: dcfe9e474e5be92e0ac4ba446e3e02bcc982fd017768b33f4fc634c86978245d
   key_dimension_taylor/rcaf4e954ca9a:
     path: experiments/key_dimension_taylor/runs/rcaf4e954ca9a/record.json
-    sha256: 1a55df748d698e08b9c4765e02e1ff7b0a51c75e9565ddfb9aeafa54b8794fce
+    sha256: 0a14c72091e9a70218d8d6c3a9fc7c917b7922e23cbf93fe9ac45e0558349360
   key_dimension_taylor/rfe7378eb4b4f:
     path: experiments/key_dimension_taylor/runs/rfe7378eb4b4f/record.json
-    sha256: 236a10d39c97bb9cbb5c056606e2fd23badec457f710b2e7f8e2d2cb90c38dae
+    sha256: b07d9fda11cad23172c1c83b26cc356bb8803fe3fbbd04ad1e9f30c074eb10d6
   key_dimension_taylor/r51dc98ae4fd1:
     path: experiments/key_dimension_taylor/runs/r51dc98ae4fd1/record.json
-    sha256: 55bfed04ee18445003873e50d878fbf82c7aae36b0546d1925ca11f70e6b6979
+    sha256: e58f4ee8b6637265265389113fe223171626a4942f5dfc092da21c79b8fc0a07
   gla_key_dimension/r6a5ffbb56ac3:
     path: experiments/gla_key_dimension/runs/r6a5ffbb56ac3/record.json
-    sha256: de2c28bd7a29d731571ef9d424ea30c4e60f1fd9d8576f1b1f412ccf26fd7917
+    sha256: 8165bc2133c3fe03ad846366457e95ae4623a1ac3f2eeb3c5017b076c07a53f3
   key_dimension_taylor/r3a06ec7d5976:
     path: experiments/key_dimension_taylor/runs/r3a06ec7d5976/record.json
-    sha256: 6bead747fa7feaed2c955b5d741fb7590e61ab05585785532309846c50e98dc4
+    sha256: 106a8e8c8e6e11c8b478adec51bafa857905e75cfabb8101a0f166830679c68d
   key_dimension_taylor/r52e627fffdfc:
     path: experiments/key_dimension_taylor/runs/r52e627fffdfc/record.json
-    sha256: 54f292fdb43a829c0393c1c5021f83457edcc4c1fc1a336b5a8490175538a881
+    sha256: 4bf17807c800bfe629505d7661a3457b64cbad1845cf487bec3b9a755118a4e6
   key_dimension_taylor/r35c90bbb045c:
     path: experiments/key_dimension_taylor/runs/r35c90bbb045c/record.json
-    sha256: b9f6751fdac3443ed884a88348b0574ad404196948fc30b9d6fbfc9db262f72a
+    sha256: 3d42b81d4168e5fc43ba6939cb6b8a1a5755cd45cca720378cacdbfcf5df2680
   key_dimension_taylor/r74009ae25ff9:
     path: experiments/key_dimension_taylor/runs/r74009ae25ff9/record.json
-    sha256: 13957df6ac80dbd45854250739c7f703c49443dca58c00099937dcb194c1a574
+    sha256: f42535b0fac4136dbbc57455a6b6c28631aa3a265d3a680ec1ea8a3816e6e715
   key_dimension_taylor/r261f88db0c4b:
     path: experiments/key_dimension_taylor/runs/r261f88db0c4b/record.json
-    sha256: 35cae72c8d55ab69d30209669240803e5d70e3c0267fe852b92b4294cfaeb17b
+    sha256: ad090fc93d575dec003c52ac19add3a33565c5df0c0ff370783e00b7e4cb4812
   gla_key_dimension/r7d278821b92d:
     path: experiments/gla_key_dimension/runs/r7d278821b92d/record.json
-    sha256: 326d748fce1eea3d9ae25d10c469dc54805b84b5b981be4d55f2516075665cb8
+    sha256: dc40c095035a5a00913b133781244387a6f38bf1f529b8ca53e4f9e59dd278a0
   key_dimension_taylor/r93c9d0814322:
     path: experiments/key_dimension_taylor/runs/r93c9d0814322/record.json
-    sha256: 5d7c584c4de4e3a1ad5d5d80a40f07529a8ff6af98bf27fdea7416ed9a380895
+    sha256: 3ae86a4891f57d775afb4522a84d9f5c1103ad63dc8a06a56046866c27031626
   key_dimension_taylor/ra9b651caa405:
     path: experiments/key_dimension_taylor/runs/ra9b651caa405/record.json
-    sha256: 5fe8b44a15baa32434d8127cabb9ef2403eca3d71ab7ad1a2c7faa911a33db14
+    sha256: 6f4a58062e38b0a5722d088761d3d73ca69b9cb97c8d5259b93a27f07355edc2
   key_dimension_taylor/r4923c6939e74:
     path: experiments/key_dimension_taylor/runs/r4923c6939e74/record.json
-    sha256: 300d2da740266867a3976834d092ef66c1d2401e0180f176cc0cede31b3e5cfc
+    sha256: 78ebf3531050c5bd7bac969f26cf49574fca8e63929d669720f5c1e3215da5a7
   key_dimension_taylor/r03d397da0bd0:
     path: experiments/key_dimension_taylor/runs/r03d397da0bd0/record.json
-    sha256: a808eefee9810ab3b1e7f10ab4f3bce5cec4982318cca615cb4e6b6f7fe75d2f
+    sha256: 503d90a1ea8fbbbd5e8fde2d64bc9b59d410fe188c0d162cd5dc2447cc544b2d
   key_dimension_taylor/r50088d29f2b5:
     path: experiments/key_dimension_taylor/runs/r50088d29f2b5/record.json
-    sha256: da84d175213730913356b75aaa1d87a077411d3871b170cbfb1bd500c6a7ddc3
+    sha256: 76fc7e73f512b29152219dc4b9b2b82d818137ea3dadfa617697518cd4efe701
   gla_key_dimension/rf35e1e8fb2e3:
     path: experiments/gla_key_dimension/runs/rf35e1e8fb2e3/record.json
-    sha256: 4abe4033f7b1423d83401402e4839c80ab5217665465b4e5b4e28184e0f70340
+    sha256: f3adfa3823ec77af41becf9c4fbbffd02a35d1dbd0c69e36518541c50985c01a
   key_dimension_taylor/r21a071c7cd15:
     path: experiments/key_dimension_taylor/runs/r21a071c7cd15/record.json
-    sha256: 3a5f91b07205fe6d037b6e9974188648a101bcf71753d27d719d1380241c6d5f
+    sha256: 14bdd1a2159493cb09ed03f206f44b3961e35f9aca6ef4a34ca5817bd58c754c
   key_dimension_taylor/rf4c43c0d0467:
     path: experiments/key_dimension_taylor/runs/rf4c43c0d0467/record.json
-    sha256: 34b8de6900e87d8a74499dd02eab8d272eda2b6653dd28fcdcf14e7fd86ebe8b
+    sha256: e8be8d269235c19a5d4f1a298dbe624596d864063a43e582d670c2577eec9aae
   key_dimension_taylor/r58c25c5d4ce1:
     path: experiments/key_dimension_taylor/runs/r58c25c5d4ce1/record.json
-    sha256: 951fa3a9258dfd8a8f14849c6e5a12b690eadb8b05712271fc82ed2fc2c427ff
+    sha256: 2308bc13e2109d1ba306d28935a5989d9a4f2773a2e2359495c01a50301aed1b
   key_dimension_taylor/r0c924296d7d3:
     path: experiments/key_dimension_taylor/runs/r0c924296d7d3/record.json
-    sha256: be7f372217ea63abf2fce0e11695d86617121f0c84a3ad99df658be113b8d4b9
+    sha256: aaed66aa4bac9ec7268d236bfacde7de9664bd92b11f9ffa2e834070042d7db7
   key_dimension_taylor/rf3539f68224c:
     path: experiments/key_dimension_taylor/runs/rf3539f68224c/record.json
-    sha256: 254bc4c186f080f8729377b5dbf1d53a1d7d2b19586a2490535bbed61872d49c
+    sha256: 144bf4b5d657fc754e42a9362334a3bd5d3c1f091574f6ffa1d099b98677e682
   gla_key_dimension/r03c03c3f84b2:
     path: experiments/gla_key_dimension/runs/r03c03c3f84b2/record.json
-    sha256: b87b9deb33d24e690ae7cf9f2b3619d60a08bbd8b7f5041f07d11378f6b3baf5
+    sha256: 8724df79549159be931a4409cad69db42f6c237676b3285f4e87a3ec4240a7d6
   odd_taylor_attention/raa90edf82385:
     path: experiments/odd_taylor_attention/runs/raa90edf82385/record.json
-    sha256: 28c88133de91719725f5dd032cd113851e3bb5f893927f65bb0a840a4b007778
+    sha256: 15021a069abf87fe714a2ac841671bc1fe53e4394b778759cf819928af9779ab
   odd_taylor_attention/r8b46f1ad9453:
     path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/record.json
-    sha256: 0eba0e674821cbb4a3f81d429018949c392bf34b463d82112126682fdc5c7472
+    sha256: e66826a274845e6b39a232829127f5aa3abb28d49d969850256eae660882e74b
   qk_norm_attention/r1feece425074:
     path: experiments/qk_norm_attention/runs/r1feece425074/record.json
     sha256: fd32425847d426dd9a414ad8c9cd7909f2ff4f0ac6a2328feaaeffadea7f69ce

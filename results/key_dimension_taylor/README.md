@@ -43,7 +43,7 @@ reference, which has no QK-norm, and within 0.04 of the QK-norm softmax baseline
 here trained with decay on all parameters and without QK-norm.
 
 <!-- BEGIN GENERATED RESULTS -->
-Terminal held-out perplexity at 19,074 updates (10,000,269,312 prediction tokens), seed 0. 29 of 29 retained runs are complete. The heatmap shows the 25-cell joint comparison; other retained runs remain in the CSV and manifest.
+Terminal held-out perplexity at 19,074 updates (10,000,269,312 prediction tokens), seed 0. 29 of 29 retained runs are complete. The heatmap shows the 25-cell joint comparison; other runs remain in the CSV.
 
 | dK | m=2 | m=4 | m=8 | m=16 | Softmax |
 |---:|---:|---:|---:|---:|---:|
@@ -55,7 +55,7 @@ Terminal held-out perplexity at 19,074 updates (10,000,269,312 prediction tokens
 
 Runs retained outside the grid: `200m-dk002-seed0` (softmax, dK=2, PPL 22.3489); `200m-dk004-seed0` (softmax, dK=4, PPL 18.8928); `200m-m000-seed0` (m=0, dK=64, PPL 47.0653); `200m-dk256-seed0` (softmax, dK=256, PPL 14.1736). The grid uses one softmax reference per width; at dK=64 it is `200m-softmax-seed0` (PPL 14.6655).
 
-Each delta in the CSV and delta heatmap subtracts the softmax endpoint at the same width. `original_experiment` in the CSV records which sweep trained each run; heatmaps do not mark it. FAILED means a recorded numerical failure; interrupted or unaudited runs remain INCOMPLETE. Source commits, exact recipes, and artifact checksums are in `experiments/key_dimension_taylor/sweep.yaml` and each run’s `record.json`.
+Each delta in the CSV and delta heatmap subtracts the softmax endpoint at the same width. FAILED means a recorded numerical failure; interrupted or unaudited runs remain INCOMPLETE. Source commits, exact recipes, and artifact checksums are in each run’s `config.yaml` and `record.json` under `experiments/key_dimension_taylor/runs/`.
 
 Checkpoints and logs are not retained for 7 runs trained on another cluster (`200m-dk002-seed0`, `200m-dk004-seed0`, `200m-dk008-seed0`, `200m-dk016-seed0`, `200m-dk032-seed0`, `200m-dk128-seed0`, `200m-dk256-seed0`); their metrics, completion records, metadata, and recipes are retained and checksum-verified.
 

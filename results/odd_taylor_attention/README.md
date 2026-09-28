@@ -34,12 +34,12 @@ Each run follows the full 19,074-update schedule from initialization under the s
 
 The stability plots use the fixed first held-out diagnostic sequence. Both odd-degree runs failed before their first validation at update 1,000, so only the controls have validation and diagnostic curves.
 
-Both odd-degree runs failed on four B300s on akita, after earlier attempts were preempted during acceptance. Control throughput reflects its recorded allocations and is not a matched hardware benchmark. Hardware histories are preserved in the provenance manifest.
+Both odd-degree runs failed on four B300s on akita, after earlier attempts were preempted during acceptance. Control throughput reflects its recorded allocations and is not a matched hardware benchmark. Hardware histories are in the run records.
 
-The controls are retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in the provenance manifest:
+The controls are retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in their run records:
 
-- Fixed Taylor m=2: `a74e3863fdf1e1dd965252cd435712dec10c9a29`; fixed Taylor m=2 under the current defaults (QK-norm and selective weight decay), source a74e386.
-- Exact softmax: `381f1fdf6caf2925a984e3932e58b6e70bfbc6b1`; softmax baseline retrained 2026-09-25 under the selective weight-decay policy.
+- Fixed Taylor m=2: `a74e3863fdf1e1dd965252cd435712dec10c9a29`; fixed Taylor m=2 with QK-norm and selective weight decay.
+- Exact softmax: `381f1fdf6caf2925a984e3932e58b6e70bfbc6b1`; softmax with selective weight decay and no QK-norm.
 
 Recorded failures:
 

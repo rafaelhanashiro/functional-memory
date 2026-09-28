@@ -28,12 +28,12 @@ Coefficient magnitudes must be interpreted together with score scales: Q/K resca
 
 The stability plots use the fixed first held-out diagnostic sequence. Negative-weight fractions are computed after signed normalization; minimum absolute denominators and cancellation ratios expose near-zero signed sums.
 
-Learned runs use four H100s on dogo. Control throughput reflects each control's recorded allocations, including any hardware migration; it is not a matched hardware benchmark. Hardware histories are preserved in the control provenance.
+Learned runs use four H100s on dogo. Control throughput reflects each control's recorded allocations, including any hardware migration; it is not a matched hardware benchmark. Hardware histories are in the run records.
 
-The controls are retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in the provenance manifest:
+The controls are retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in their run records:
 
-- Fixed Taylor quadratic: `a74e3863fdf1e1dd965252cd435712dec10c9a29`; fixed Taylor m=2 under the current defaults (QK-norm and selective weight decay), source a74e386.
-- Exact softmax: `381f1fdf6caf2925a984e3932e58b6e70bfbc6b1`; softmax baseline retrained 2026-09-25 under the selective weight-decay policy.
+- Fixed Taylor quadratic: `a74e3863fdf1e1dd965252cd435712dec10c9a29`; fixed Taylor m=2 with QK-norm and selective weight decay.
+- Exact softmax: `381f1fdf6caf2925a984e3932e58b6e70bfbc6b1`; softmax with selective weight decay and no QK-norm.
 
 Recorded failures:
 

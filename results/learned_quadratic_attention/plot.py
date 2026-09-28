@@ -7,13 +7,9 @@ import json
 from pathlib import Path
 
 from functools import partial
-from scaffolds.transformer.analysis import load_selected_study, selected_run_directory
-
-from scaffolds.transformer.analysis import verify_result_selection
 
 from scaffolds.transformer.analysis import (
-    RETAINED_FORMAT, artifact_path, checked_artifact, committed_records, default_manifest_path,
-    retained_plot_manifest, retained_root, summarize_retained_run, summarize_run as base_summary,
+    committed_records, selected_best, selected_run_directory, selected_views, summarize_run as base_summary,
     update_results_readme,
 )
 
@@ -23,34 +19,26 @@ EXPERIMENT = "learned_quadratic_attention"
 
 
 def label(run: dict) -> str:
-    if run.get("retained_completed"):
+    if run.get("control"):
         return "Fixed Taylor quadratic" if run["attention_degree"] == 2 else "Exact softmax"
     return f"{run['quadratic_mode'].capitalize()} · {'global' if run['quadratic_sharing'] == 'global' else 'per head/layer'}"
 
-
-def summarize_run(run: dict, source_commit: str) -> tuple[dict, list[dict]]:
-    if run.get("retained_completed") and not run.get("_retained_checked"):
-        raise ValueError(f"Control {run['name']} must be verified by retained_plot_manifest")
-    row, records = base_summary(run, source_commit)
+def summarize_run(run: dict) -> tuple[dict, list[dict]]:
+    row, records = base_summary(run, run["source_commit"])
     row.update(kernel=label(run), quadratic_mode=run.get("quadratic_mode", "fixed"),
                quadratic_sharing=run.get("quadratic_sharing", "none"),
                coefficient_count=run.get("coefficient_count", 0),
                negative_weight_fraction="", min_abs_normalizer="", cancellation_ratio_max="",
                score_min="", score_max="")
-    if not run.get("retained_completed"):
-        if records:
-            # Match the learned training and retention policy on exact ties.
-            best = min(records, key=lambda record: (record["validation_nll"], -record["step"]))
-            row.update(best_step=best["step"], best_ppl=best["validation_perplexity"])
+    best = selected_best(run, records)
+    if best is not None:
+        row.update(best_step=best["step"], best_ppl=best["validation_perplexity"])
+    if not run.get("control"):
         completion_path = Path(run["workdir"]) / "completion.json"
         identities = records + ([json.loads(completion_path.read_text())] if completion_path.exists() else [])
         for record in identities:
             if any(record.get(key) != run[key] for key in ("quadratic_mode", "quadratic_sharing")):
-                raise ValueError(f"Metric family/sharing does not match learned sweep: {run['name']}")
-        failure_path = Path(run["workdir"]) / "preflight_failure.json"
-        if not records and failure_path.exists():
-            failure = json.loads(failure_path.read_text())
-            row.update(status="preflight-ineligible", error=failure["error"])
+                raise ValueError(f"Metric identity does not match the learned_quadratic_attention runs: {run['name']}")
     if records:
         layers = records[-1].get("attention_diagnostics", {}).get("layers", [])
         for key, reduction in (("negative_weight_fraction", max), ("min_abs_normalizer", min),
@@ -58,8 +46,8 @@ def summarize_run(run: dict, source_commit: str) -> tuple[dict, list[dict]]:
             values = [layer[key] for layer in layers if key in layer]
             if values:
                 row[key] = reduction(values)
-    if run.get("_retained_checked") and run["status"] == "numerical-failure":
-        row.update(status="numerical-failure", error=run["failure"].get("error", row["error"]))
+    if run["status"] == "numerical-failure":
+        row.update(status="numerical-failure", error=run["error"])
     return row, records
 
 
@@ -69,14 +57,12 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     import matplotlib.pyplot as plt
     import numpy as np
 
-    if manifest.get("format") == RETAINED_FORMAT:
-        manifest = retained_plot_manifest(manifest, manifest_path)
-    output_dir = output_dir or Path(manifest["project_root"]) / "results" / EXPERIMENT
+    output_dir = output_dir or Path(__file__).resolve().parent
     output_dir.mkdir(parents=True, exist_ok=True)
     figures_dir = output_dir
     figures_dir.mkdir(exist_ok=True)
     runs = [*manifest["controls"], *manifest["runs"]]
-    summaries = [summarize_run(run, run["config"]["train"]["source_commit"]) for run in runs]
+    summaries = [summarize_run(run) for run in runs]
     rows = [row for row, _ in summaries]
     with (output_dir / "summary.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
@@ -204,11 +190,9 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     lines += ["", "Positive: p(s)=0.5[1+(as+b)²], initialized at a=b=1. Unrestricted: p(s)=1+bs+cs², initialized at b=1,c=0.5. Coefficients are FP32 without weight decay; global sharing adds 2 parameters and per-head/per-layer sharing adds 320.", "",
               "Coefficient magnitudes must be interpreted together with score scales: Q/K rescaling can absorb some coefficient movement. The constant scale of a normalized polynomial is unidentifiable. Positive and unrestricted families use different optimization coordinates, so equal learning rates do not isolate positivity alone. One seed per variant does not estimate seed variation.", "",
               "The stability plots use the fixed first held-out diagnostic sequence. Negative-weight fractions are computed after signed normalization; minimum absolute denominators and cancellation ratios expose near-zero signed sums.", "",
-              "Learned runs use four H100s on dogo. Control throughput reflects each control's recorded allocations, including any hardware migration; it is not a matched hardware benchmark. Hardware histories are preserved in the control provenance.", "",
-              "The controls are retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in the provenance manifest:", ""]
-    lines += [f"- {label(run)}: `{run['config']['train']['source_commit']}`; "
-              + (f"degree-sweep identity `{run['original_sweep_identity']}`." if run.get("original_sweep_identity")
-                 else f"{run.get('control_note', 'retained control')}.") for run in manifest["controls"]]
+              "Learned runs use four H100s on dogo. Control throughput reflects each control's recorded allocations, including any hardware migration; it is not a matched hardware benchmark. Hardware histories are in the run records.", "",
+              "The controls are retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in their run records:", ""]
+    lines += [f"- {label(run)}: `{run['source_commit']}`; {run.get('control_note', 'control')}." for run in manifest["controls"]]
     failures = [row for row in rows if row["error"]]
     if failures:
         lines += ["", "Recorded failures:", "", *[f"- {row['kernel']}: {row['error']}" for row in failures]]
@@ -219,11 +203,10 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", type=Path, default=default_manifest_path(Path("experiments/learned_quadratic_attention")))
+    parser.add_argument("--manifest", type=Path, default=Path("experiments/learned_quadratic_attention/sweep.yaml"))
     parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
-    verify_result_selection(Path(__file__).resolve().parent)
-    aggregate(load_selected_study(Path(__file__).resolve().parent, args.manifest), args.output_dir, manifest_path=args.manifest)
+    aggregate(selected_views(Path(__file__).resolve().parent, args.manifest), args.output_dir, manifest_path=args.manifest)
 
 
 if __name__ == "__main__":

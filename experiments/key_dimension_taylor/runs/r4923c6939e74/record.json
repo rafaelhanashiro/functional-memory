@@ -107,9 +107,13 @@
     "time_limit": "10:00:00 per attempt"
   },
   "frozen_execution_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
-  "grid_cell": true,
   "home_cluster": "kennel",
   "label": "200m-m008-seed0",
+  "log": {
+    "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/training.log",
+    "sha256": "83c9ac7f7170c6139b397810eb8421f40e6ed447afd2de6ac5c3a807cbdf8df0",
+    "size_bytes": 1514010
+  },
   "metadata": {
     "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/metadata.json",
     "sha256": "202873338c143c54528ec28e6c4c7c578feabd52c9e08b0f05e20fcd0f0f8108"
@@ -119,7 +123,6 @@
     "sha256": "a6a6d987b7779241b5ddc6b15e43c5622cd1c40275d7f8dee98fd73d38d55b35"
   },
   "name": "200m-m008-seed0",
-  "original_experiment": "normalized_taylor_rerun",
   "parameter_count": 199906464,
   "qk_head_dim": 64,
   "qk_norm": true,
@@ -130,7 +133,6 @@
     "recorded_sha256": "96e5c7d5b5b11551ae8d2659f0377fda64ac868f906e65e477f24af16ba64053",
     "sha256": "8c7806458b6b1b1c66306e518ed75303d62849dc10511fb1a17d0820c4fcaa6a"
   },
-  "retained_completed": true,
   "run_id": "r4923c6939e74",
   "seed": 0,
   "selected_checkpoint": {
@@ -230,11 +232,6 @@
     "validation_perplexity": 14.497779058238134
   },
   "slurm_job_id": "202618",
-  "slurm_log": {
-    "note": "append-mode log holding every attempt of this job",
-    "path": "experiments/key_dimension_taylor/runs/r4923c6939e74/training.log",
-    "sha256": "83c9ac7f7170c6139b397810eb8421f40e6ed447afd2de6ac5c3a807cbdf8df0"
-  },
   "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
   "status": "complete",
   "terminal": {

@@ -14,7 +14,6 @@ degrees:
 dependency_lock:
   sha256: e95c4687c9aac6e3b97e0ca2dd4c3bf2f47385293f04e1b5fd067ca1edc0621c
 experiment: key_dimension_taylor
-format: functional-memory-retained-experiment
 home_cluster: kennel
 identity: 7363664d1dafdf5d46c34dabb2d1567761279a0515c94c6bbc2f59505812b0b3
 key_dimensions:

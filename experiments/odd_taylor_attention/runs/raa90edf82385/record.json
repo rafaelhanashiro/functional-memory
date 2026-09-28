@@ -168,13 +168,17 @@
   "frozen_execution_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
   "home_cluster": "kennel",
   "label": "200m-m001-seed0",
+  "log": {
+    "path": "experiments/odd_taylor_attention/runs/raa90edf82385/training.log",
+    "sha256": "30b69cf57ff690fef2d428c157de99c031bd085d5cfdcdd917193032344b63ce",
+    "size_bytes": 13767
+  },
   "metadata": {
     "path": "experiments/odd_taylor_attention/runs/raa90edf82385/metadata.json",
     "sha256": "7a5d971252905aec23e3a7c963eaff1616a9ec8dc9c8090fc9f701035aeed336"
   },
   "metrics": null,
   "name": "200m-m001-seed0",
-  "original_experiment": "normalized_taylor_rerun",
   "parameter_count": 199906464,
   "qk_head_dim": 64,
   "qk_norm": true,
@@ -191,11 +195,6 @@
   "seed": 0,
   "selected_checkpoint": null,
   "slurm_job_id": "202614",
-  "slurm_log": {
-    "note": "append-mode log holding every attempt of this job",
-    "path": "experiments/odd_taylor_attention/runs/raa90edf82385/training.log",
-    "sha256": "30b69cf57ff690fef2d428c157de99c031bd085d5cfdcdd917193032344b63ce"
-  },
   "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
   "status": "numerical-failure",
   "terminal": null,

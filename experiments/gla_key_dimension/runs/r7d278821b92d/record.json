@@ -99,8 +99,12 @@
   },
   "initialization_sha256": "d0f9844220ca38ac3569c50813903573dfbe8af6ece63fe57db609012b72b933",
   "label": "200m-dk032-gla-seed0",
+  "log": {
+    "path": "experiments/gla_key_dimension/runs/r7d278821b92d/training.log",
+    "sha256": "42cb22fe98908550ad12481af6b6fbef657228e366261ec805843aebfebeb1fa",
+    "size_bytes": 1509969
+  },
   "log_path": "experiments/gla_key_dimension/runs/r7d278821b92d/training.log",
-  "log_sha256": "42cb22fe98908550ad12481af6b6fbef657228e366261ec805843aebfebeb1fa",
   "name": "200m-dk032-gla-seed0",
   "parameter_count": 200167424,
   "qk_head_dim": 32,

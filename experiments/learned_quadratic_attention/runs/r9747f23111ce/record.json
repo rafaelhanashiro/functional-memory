@@ -89,6 +89,11 @@
     "validation_nll": 3.9853841832705905,
     "validation_perplexity": 53.805956856087285
   },
+  "log": {
+    "path": "experiments/learned_quadratic_attention/runs/r9747f23111ce/training.log",
+    "sha256": "9975c6981efdb5d8931e5d40e90b6369731f8b94104cfe9617ab64b013fe70b8",
+    "size_bytes": 293535
+  },
   "metadata": {
     "path": "experiments/learned_quadratic_attention/runs/r9747f23111ce/metadata.json",
     "sha256": "dcae9ab9b346232aedd8d916ca2bcd3e155b6539f4e59893ecabdf1529e972c5"
@@ -194,10 +199,6 @@
     "validation_perplexity": 52.17554277640717
   },
   "slurm_job_id": "199898",
-  "slurm_log": {
-    "path": "experiments/learned_quadratic_attention/runs/r9747f23111ce/training.log",
-    "sha256": "9975c6981efdb5d8931e5d40e90b6369731f8b94104cfe9617ab64b013fe70b8"
-  },
   "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
   "status": "numerical-failure",
   "terminal": null,

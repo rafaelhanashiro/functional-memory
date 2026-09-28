@@ -1,4 +1,4 @@
-"""Shared analysis helpers: committed metrics, retained artifacts, and figures.
+"""Shared analysis helpers: committed metrics, run views, selections, and figures.
 
 Results modules build their summaries and figures from `runs/` with these
 helpers; every derived output must regenerate byte-identically.
@@ -12,7 +12,6 @@ from functools import lru_cache
 from pathlib import Path
 
 
-RETAINED_FORMAT = "functional-memory-retained-experiment"
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -98,20 +97,6 @@ def summarize_run(
     return row, records
 
 
-def retained_root(manifest: dict, manifest_path: Path | None) -> Path:
-    """Repository root of a record at `experiments/<study>/sweep.yaml`."""
-    if manifest_path is None:
-        return REPOSITORY_ROOT
-    for directory in manifest_path.resolve().parents:
-        if directory.name == manifest["experiment"] and directory.parent.name == "experiments":
-            return directory.parent.parent
-    raise ValueError("A record's manifest must live under experiments/<experiment>/")
-
-
-def default_manifest_path(record: Path) -> Path:
-    return record / "sweep.yaml"
-
-
 def update_results_readme(path: Path, lines: list[str]) -> None:
     """Replace only the generated block, preserving authored methods and usage."""
     begin, end = "<!-- BEGIN GENERATED RESULTS -->", "<!-- END GENERATED RESULTS -->"
@@ -129,108 +114,68 @@ def update_results_readme(path: Path, lines: list[str]) -> None:
     path.write_text(text)
 
 
-def artifact_path(root: Path, relative_path: str) -> Path:
-    path = Path(relative_path)
-    if path.is_absolute() or ".." in path.parts:
-        raise ValueError(f"Retained artifact path must be repository-relative: {relative_path}")
-    return root / path
-
-
 def checked_artifact(root: Path, artifact: dict) -> Path:
-    path = artifact_path(root, artifact["path"])
+    """A repository-relative file whose bytes match its pinned SHA256."""
+    path = Path(artifact["path"])
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"Artifact path must be repository-relative: {artifact['path']}")
+    path = Path(root) / path
     if hashlib.sha256(path.read_bytes()).hexdigest() != artifact["sha256"]:
-        raise ValueError(f"Retained artifact checksum does not match: {path}")
+        raise ValueError(f"Artifact checksum does not match: {path}")
     return path
 
 
-def summarize_retained_run(run: dict, root: Path) -> tuple[dict, list[dict]]:
+def _optional_json(path: Path) -> dict | None:
+    return json.loads(path.read_text()) if path.exists() else None
+
+
+def run_view(run_directory: Path, label: str | None = None) -> dict:
+    """One run for analysis, read from its own directory.
+
+    Identity comes from the frozen recipe, falling back to the record for settings an
+    older recipe left implicit; status, errors, and failures come from the trainer's
+    raw outputs. The record's fields remain available for presentation.
+    """
     import yaml
 
-    config_path = checked_artifact(root, run["resolved_config"])
-    metrics_path = checked_artifact(root, run["metrics"])
-    config = yaml.safe_load(config_path.read_text())
-    if (config["train"]["seed"] != run["seed"]
-            or config["train"]["source_commit"] != run["source_commit"]
-            or any(config["model"][field] != run[field]
-                   for field in ("attention_degree", "qk_head_dim", "value_head_dim"))):
-        raise ValueError(f"Resolved configuration identity does not match provenance: {config_path}")
-    terminal = run["terminal"]
-    expected_tokens = (config["optim"]["total_steps"] * config["data"]["batch_size"]
-                       * (config["data"]["sequence_length"] - 1))
-    if terminal["step"] != config["optim"]["total_steps"] or terminal["training_tokens"] != expected_tokens:
-        raise ValueError(f"Retained terminal budget does not match configuration: {config_path}")
-    # The retained artifact paths, not the recipe's workdir, locate the metrics;
-    # regenerating figures needs neither datasets nor checkpoints.
-    adapted = dict(run, config=config, workdir=str(metrics_path.parent), training_tokens=expected_tokens)
-    row, records = summarize_run(
-        adapted, run["source_commit"], metrics_path=metrics_path,
-        completion_path=(checked_artifact(root, run["completion"]) if isinstance(run["completion"], dict)
-                         else artifact_path(root, run["completion"])),
-    )
-    final = next((record for record in records if record["step"] == terminal["step"]), None)
-    if row["status"] != "complete" or final is None or any(final[field] != terminal[field] for field in terminal):
-        raise ValueError(f"Retained terminal metrics do not match committed validation: {metrics_path}")
-    selected = run["selected_checkpoint"]
-    artifact_path(root, selected["path"])
-    best = next((record for record in records if record["step"] == selected["step"]), None)
-    if (best is None or best["validation_nll"] != min(record["validation_nll"] for record in records)
-            or any(best[field] != selected[field] for field in ("validation_nll", "validation_perplexity"))):
-        raise ValueError(f"Retained checkpoint is not validation-best: {metrics_path}")
-    row.update(best_step=selected["step"], best_ppl=selected["validation_perplexity"])
-    return row, records
+    run_directory = Path(run_directory)
+    record = json.loads((run_directory / "record.json").read_text())
+    config = yaml.safe_load((run_directory / "config.yaml").read_text())
+    metadata = _optional_json(run_directory / "metadata.json") or {}
+    completion = _optional_json(run_directory / "completion.json")
+    failures = sorted(run_directory.glob("numerical_failure_step_*.json"))
+    model = config["model"]
+
+    def setting(key: str, default=None):
+        return model[key] if key in model else record.get(key, default)
+
+    status = metadata.get("status", record.get("status"))
+    if completion is not None:
+        status = "complete"
+    elif failures and status == "failed":
+        status = "numerical-failure"
+    return {
+        **record, "name": label or record["label"], "workdir": str(run_directory), "config": config,
+        "source_commit": record["source_commit"], "status": status, "error": metadata.get("error") or "",
+        "failure": json.loads(failures[-1].read_text()) if failures else None,
+        "attention_degree": setting("attention_degree"), "qk_head_dim": setting("qk_head_dim"),
+        "value_head_dim": setting("value_head_dim"),
+        "quadratic_mode": setting("quadratic_mode", "fixed"), "quadratic_sharing": setting("quadratic_sharing", "global"),
+        "parameter_count": (completion or metadata).get("parameter_count", record.get("parameter_count")),
+        "training_tokens": config["optim"]["total_steps"] * config["data"]["batch_size"] * (config["data"]["sequence_length"] - 1),
+    }
 
 
-def retained_plot_manifest(manifest: dict, manifest_path: Path | None = None) -> dict:
-    """Adapt a concluded attention study, including numerical failures, for plots."""
-    import yaml
-
-    root = retained_root(manifest, manifest_path)
-    adapted = dict(manifest, project_root=str(root))
-    for group in ("controls", "runs"):
-        adapted[group] = []
-        for run in manifest[group]:
-            if run.get("source_provenance"):
-                checked_artifact(root, run["source_provenance"])
-            config = yaml.safe_load(checked_artifact(root, run["resolved_config"]).read_text())
-            identity = ("attention_degree", "qk_head_dim", "value_head_dim")
-            if (config["train"]["source_commit"] != run["source_commit"]
-                    or config["train"]["seed"] != run["seed"]
-                    or any(config["model"][key] != run[key] for key in identity)):
-                raise ValueError(f"Retained configuration identity mismatch: {run['name']}")
-            metadata_path = checked_artifact(root, run["metadata"])
-            workdir = metadata_path.parent
-            metadata = json.loads(metadata_path.read_text())
-            if metadata.get("source_commit") != run["source_commit"] or metadata.get("parameter_count") != run["parameter_count"]:
-                raise ValueError(f"Retained metadata identity mismatch: {run['name']}")
-            if run.get("metrics"):
-                if checked_artifact(root, run["metrics"]) != workdir / "metrics.jsonl":
-                    raise ValueError("Retained metrics must be in their run directory")
-            elif (workdir / "metrics.jsonl").exists():
-                raise ValueError(f"Unrecorded retained validation metrics: {run['name']}")
-            if run.get("completion_artifact"):
-                checked_artifact(root, run["completion_artifact"])
-            if run["status"] == "complete":
-                summarize_retained_run(run, root)
-            else:
-                if run.get("terminal") is not None or run.get("completion") is not None:
-                    raise ValueError(f"Failed run cannot have a terminal endpoint: {run['name']}")
-                failure = json.loads(checked_artifact(root, run["failure"]).read_text())
-                if (metadata.get("status") != "failed" or metadata.get("step") != run["failure"]["step"]
-                        or failure["step"] != run["failure"]["step"]
-                        or failure.get("attention_degree") != run["attention_degree"]):
-                    raise ValueError(f"Retained numerical failure mismatch: {run['name']}")
-                if run.get("launcher_failure"):
-                    checked_artifact(root, run["launcher_failure"])
-                selected = run.get("selected_checkpoint")
-                records = committed_records(workdir)
-                if selected:
-                    best = min(records, key=lambda record: (record["validation_nll"], -record["step"]))
-                    if any(best[key] != selected[key] for key in ("step", "validation_nll", "validation_perplexity")):
-                        raise ValueError(f"Retained failed-run checkpoint is not validation-best: {run['name']}")
-                    artifact_path(root, selected["path"])
-            adapted[group].append(dict(run, config=config, workdir=str(workdir), _retained_checked=True,
-                training_tokens=config["optim"]["total_steps"] * config["data"]["batch_size"] * (config["data"]["sequence_length"] - 1)))
-    return adapted
+def selected_best(run: dict, records: list[dict]) -> dict | None:
+    """The validation-best record: the retained checkpoint's step when it is a minimum, else latest on ties."""
+    if not records:
+        return None
+    minimum = min(record["validation_nll"] for record in records)
+    step = (run.get("selected_checkpoint") or {}).get("step")
+    chosen = next((record for record in records if record["step"] == step), None)
+    if chosen is not None and chosen["validation_nll"] == minimum:
+        return chosen
+    return min(records, key=lambda record: (record["validation_nll"], -record["step"]))
 
 
 def save_figure(figure, stem: Path, *, dpi: int = 180, **options) -> list[Path]:
@@ -352,7 +297,7 @@ def selected_run_directory(directory: Path, study: Path, label_or_id: str) -> Pa
 
 
 def load_selected_study(directory: Path, study: Path) -> dict:
-    """Load the selected run IDs and controls for an aggregate plot."""
+    """Load a study's facts and the records of its selected runs."""
     from scaffolds.records import load_run, load_study
 
     study = Path(study)
@@ -362,25 +307,29 @@ def load_selected_study(directory: Path, study: Path) -> dict:
     common = load_study(study)
     common["runs"] = [dict(load_run(study / "runs" / run["run_id"]), name=run["label"])
                       for run in selection["runs"] if run["study"] == study.name]
-    root = study.parents[1]
-
-    def selected_controls(controls):
-        selected = []
-        for control in controls:
-            source = Path(control["resolved_config"]["path"]).parts[1]
-            path = selected_run_directory(directory, root / "experiments" / source, control["name"])
-            record = load_run(path)
-            # Presentation annotations belong to the comparison; scientific fields
-            # always come from the explicitly selected source run.
-            annotations = {key: control[key] for key in ("coefficient_count", "quadratic_mode",
-                "quadratic_sharing", "control_note") if key in control}
-            if "status" not in record and record.get("terminal"):
-                record = dict(record, status="complete")
-            selected.append({**record, **annotations, "name": control["name"]})
-        return selected
-
-    if "controls" in common:
-        common["controls"] = selected_controls(common["controls"])
-    if "comparisons" in common and "runs" in common["comparisons"]:
-        common["comparisons"] = dict(common["comparisons"], runs=selected_controls(common["comparisons"]["runs"]))
     return common
+
+
+def selected_views(directory: Path, study: Path) -> dict:
+    """A study's facts with its selected runs and controls as run views.
+
+    Controls are ``{study, label, ...annotations}`` entries in ``sweep.yaml``; the
+    result's selection pins which run each label resolves to, and the annotations
+    only affect presentation.
+    """
+    from scaffolds.records import load_study
+
+    study = Path(study)
+    if study.name == "sweep.yaml":
+        study = study.parent
+    selection = verify_result_selection(directory)
+    common = load_study(study)
+    root = study.parents[1]
+    runs = [run_view(study / "runs" / run["run_id"], run["label"])
+            for run in selection["runs"] if run["study"] == study.name]
+    controls = []
+    for control in common.get("controls", []):
+        path = selected_run_directory(directory, root / "experiments" / control["study"], control["label"])
+        annotations = {key: value for key, value in control.items() if key not in ("study", "label")}
+        controls.append({**run_view(path, control["label"]), **annotations, "control": True})
+    return dict(common, runs=runs, controls=controls)

@@ -7,13 +7,9 @@ import json
 from pathlib import Path
 
 from functools import partial
-from scaffolds.transformer.analysis import load_selected_study, selected_run_directory
-
-from scaffolds.transformer.analysis import verify_result_selection
 
 from scaffolds.transformer.analysis import (
-    RETAINED_FORMAT, artifact_path, checked_artifact, committed_records, default_manifest_path,
-    retained_plot_manifest, retained_root, summarize_retained_run, summarize_run as base_summary,
+    committed_records, selected_best, selected_run_directory, selected_views, summarize_run as base_summary,
     update_results_readme,
 )
 
@@ -25,44 +21,23 @@ EXPERIMENT = "odd_taylor_attention"
 def label(run: dict) -> str:
     return "Exact softmax" if run["attention_degree"] is None else f"Fixed Taylor m={run['attention_degree']}"
 
-
-def summarize_run(run: dict, source_commit: str) -> tuple[dict, list[dict]]:
-    if run.get("retained_completed") and not run.get("_retained_checked"):
-        raise ValueError(f"Control {run['name']} must be verified by retained_plot_manifest")
-    row, records = base_summary(run, source_commit)
+def summarize_run(run: dict) -> tuple[dict, list[dict]]:
+    row, records = base_summary(run, run["source_commit"])
     row.update(kernel=label(run), quadratic_mode=run.get("quadratic_mode", "fixed"),
                quadratic_sharing=run.get("quadratic_sharing", "none"),
                coefficient_count=run.get("coefficient_count", 0),
                negative_weight_fraction="", min_abs_normalizer="", cancellation_ratio_max="",
                score_min="", score_max="")
-    if not run.get("retained_completed"):
-        if records:
-            # Match odd-degree training and retention on exact ties.
-            best = min(records, key=lambda record: (record["validation_nll"], -record["step"]))
-            row.update(best_step=best["step"], best_ppl=best["validation_perplexity"])
+    best = selected_best(run, records)
+    if best is not None:
+        row.update(best_step=best["step"], best_ppl=best["validation_perplexity"])
+    if not run.get("control"):
         completion_path = Path(run["workdir"]) / "completion.json"
         identities = records + ([json.loads(completion_path.read_text())] if completion_path.exists() else [])
         for record in identities:
             if any(record.get(key) != run[key] for key in ("attention_degree",)):
-                raise ValueError(f"Metric degree does not match odd Taylor sweep: {run['name']}")
-        failure_path = Path(run["workdir"]) / "preflight_failure.json"
-        if not records and failure_path.exists():
-            failure = json.loads(failure_path.read_text())
-            row.update(status="preflight-ineligible", error=failure["error"])
-    failure = Path(run["workdir"]) / "production_failure.json"
-    if failure.exists():
-        record = json.loads(failure.read_text())
-        row.update(status="numerical-failure" if record.get("numerical_failures") else "failed",
-                   error=record["error"])
-    row["failure_step"] = ""
-    failures = [json.loads(path.read_text())
-                for path in Path(run["workdir"]).glob("numerical_failure_step_*.json")]
-    preflight_failure = Path(run["workdir"]) / "preflight_failure.json"
-    if preflight_failure.exists():
-        failures.extend(detail["record"] for detail in
-                        json.loads(preflight_failure.read_text()).get("numerical_failures", []))
-    if failures and row.get("status") != "complete":
-        row["failure_step"] = max((failure.get("step", 0) for failure in failures), default="")
+                raise ValueError(f"Metric identity does not match the odd_taylor_attention runs: {run['name']}")
+    row["failure_step"] = run["failure"]["step"] if run["failure"] is not None and row["status"] != "complete" else ""
     if records:
         layers = records[-1].get("attention_diagnostics", {}).get("layers", [])
         for key, reduction in (("negative_weight_fraction", max), ("min_abs_normalizer", min),
@@ -70,8 +45,8 @@ def summarize_run(run: dict, source_commit: str) -> tuple[dict, list[dict]]:
             values = [layer[key] for layer in layers if key in layer]
             if values:
                 row[key] = reduction(values)
-    if run.get("_retained_checked") and run["status"] == "numerical-failure":
-        row.update(status="numerical-failure", error=run["failure"].get("error", row["error"]))
+    if run["status"] == "numerical-failure":
+        row.update(status="numerical-failure", error=run["error"])
     return row, records
 
 
@@ -80,14 +55,12 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    if manifest.get("format") == RETAINED_FORMAT:
-        manifest = retained_plot_manifest(manifest, manifest_path)
-    output_dir = output_dir or Path(manifest["project_root"]) / "results" / EXPERIMENT
+    output_dir = output_dir or Path(__file__).resolve().parent
     output_dir.mkdir(parents=True, exist_ok=True)
     figures_dir = output_dir
     figures_dir.mkdir(exist_ok=True)
     runs = [*manifest["controls"], *manifest["runs"]]
-    summaries = [summarize_run(run, run["config"]["train"]["source_commit"]) for run in runs]
+    summaries = [summarize_run(run) for run in runs]
     rows = [row for row, _ in summaries]
     with (output_dir / "summary.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
@@ -173,11 +146,9 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     lines += ["", "Fixed coefficients: p₁(s)=1+s; p₃(s)=1+s+s²/2+s³/6. Scores are QK-norm cosine scores s = exp(γ)·cos(q, k), with γ learned per layer and head from log 8, so |s| ≤ exp(γ); weights use the signed row sum. Negative weights and negative nonzero denominators are allowed; zero/nonfinite denominators and nonfinite computations fail without epsilon, clipping, or absolute-value normalization.", "",
               "Each run follows the full 19,074-update schedule from initialization under the shared launcher, which checkpoints every 500 updates and requeues after preemption. One seed per variant does not estimate seed variation.", "",
               "The stability plots use the fixed first held-out diagnostic sequence. Both odd-degree runs failed before their first validation at update 1,000, so only the controls have validation and diagnostic curves.", "",
-              "Both odd-degree runs failed on four B300s on akita, after earlier attempts were preempted during acceptance. Control throughput reflects its recorded allocations and is not a matched hardware benchmark. Hardware histories are preserved in the provenance manifest.", "",
-              "The controls are retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in the provenance manifest:", ""]
-    lines += [f"- {label(run)}: `{run['config']['train']['source_commit']}`; "
-              + (f"degree-sweep identity `{run['original_sweep_identity']}`." if run.get("original_sweep_identity")
-                 else f"{run.get('control_note', 'retained control')}.") for run in manifest["controls"]]
+              "Both odd-degree runs failed on four B300s on akita, after earlier attempts were preempted during acceptance. Control throughput reflects its recorded allocations and is not a matched hardware benchmark. Hardware histories are in the run records.", "",
+              "The controls are retained in the [dK × Taylor-degree record](../key_dimension_taylor/README.md); their source commits and artifact checksums are in their run records:", ""]
+    lines += [f"- {label(run)}: `{run['source_commit']}`; {run.get('control_note', 'control')}." for run in manifest["controls"]]
     failures = [row for row in rows if row["error"]]
     if failures:
         lines += ["", "Recorded failures:", "", *[f"- {row['kernel']}: {row['error']}" for row in failures]]
@@ -188,11 +159,10 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", type=Path, default=default_manifest_path(Path("experiments/odd_taylor_attention")))
+    parser.add_argument("--manifest", type=Path, default=Path("experiments/odd_taylor_attention/sweep.yaml"))
     parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
-    verify_result_selection(Path(__file__).resolve().parent)
-    aggregate(load_selected_study(Path(__file__).resolve().parent, args.manifest), args.output_dir, manifest_path=args.manifest)
+    aggregate(selected_views(Path(__file__).resolve().parent, args.manifest), args.output_dir, manifest_path=args.manifest)
 
 
 if __name__ == "__main__":

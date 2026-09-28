@@ -79,6 +79,11 @@
   },
   "home_cluster": "kennel",
   "label": "200m-positive-global-seed0",
+  "log": {
+    "path": "experiments/learned_quadratic_attention/runs/r0fc01aa2826e/training.log",
+    "sha256": "1694d0f2ac8a1bdc55388afe2988dca35ea940c73e9d73214851cf21d12df743",
+    "size_bytes": 1504110
+  },
   "metadata": {
     "path": "experiments/learned_quadratic_attention/runs/r0fc01aa2826e/metadata.json",
     "sha256": "a063d5e8361ac26560b6ab6bd2bfea22f0e72ae5330f3cb58a1dd69612db586a"
@@ -184,10 +189,6 @@
     "validation_perplexity": 16.189034521301647
   },
   "slurm_job_id": "199895",
-  "slurm_log": {
-    "path": "experiments/learned_quadratic_attention/runs/r0fc01aa2826e/training.log",
-    "sha256": "1694d0f2ac8a1bdc55388afe2988dca35ea940c73e9d73214851cf21d12df743"
-  },
   "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
   "status": "complete",
   "terminal": {

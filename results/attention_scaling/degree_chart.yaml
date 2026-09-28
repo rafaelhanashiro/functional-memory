@@ -165,7 +165,7 @@ cells:
 source_manifests:
   key_dimension_taylor:
     path: experiments/key_dimension_taylor/sweep.yaml
-    sha256: cc9b2e0a12ff9713e3f144a4a1cb9fc29a6f0daaaf2d399ae57a16fa83ff2280
+    sha256: 8f1d7fa5178fb171fc385a368cc61c51a9d37948d09371981ab59a05e5822896
   unnormalized_taylor_attention:
     path: experiments/unnormalized_taylor_attention/sweep.yaml
     sha256: 2216239b0eefbdbaf6486f69dd2229a1f4ba4d63b77158a20d789d69b8f93784
@@ -221,7 +221,7 @@ source_records:
     sha256: c9075f92fc9ce40f966d12768e4c31c900545939b51fbd33274eefda64ec5d5f
   key_dimension_taylor/r50088d29f2b5:
     path: experiments/key_dimension_taylor/runs/r50088d29f2b5/record.json
-    sha256: da84d175213730913356b75aaa1d87a077411d3871b170cbfb1bd500c6a7ddc3
+    sha256: 76fc7e73f512b29152219dc4b9b2b82d818137ea3dadfa617697518cd4efe701
   unnormalized_attention/r8cccbabca761:
     path: experiments/unnormalized_attention/runs/r8cccbabca761/record.json
     sha256: 6de5934f9be9eab9179cfd2594cbab69ffce546ab12822460c3d48d0441cf1ba

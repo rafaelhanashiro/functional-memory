@@ -3,17 +3,13 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 from pathlib import Path
 
 from functools import partial
-from scaffolds.transformer.analysis import load_selected_study, selected_run_directory
-
-from scaffolds.transformer.analysis import verify_result_selection
 
 from scaffolds.transformer.analysis import (
-    artifact_path, checked_artifact, committed_records, default_manifest_path, retained_root, update_results_readme,
+    committed_records, selected_best, selected_run_directory, selected_views, update_results_readme,
 )
 
 locate_run = partial(selected_run_directory, Path(__file__).resolve().parent)
@@ -27,15 +23,8 @@ TERMINAL_STEP = 19_074
 def summarize_run(run: dict) -> tuple[dict, list[dict]]:
     """Accept only committed, identity-matched terminal validation as an endpoint."""
     workdir = Path(run["workdir"])
-    if run.get("retained_completed"):
-        if not run.get("provenance_sha256"):
-            raise ValueError(f"Missing historical checksums: {run['name']}")
-        for name, expected in run["provenance_sha256"].items():
-            if hashlib.sha256(Path(name).read_bytes()).hexdigest() != expected:
-                raise ValueError(f"Historical artifact checksum changed: {name}")
-    source = run.get("source_commit", run["config"]["train"]["source_commit"])
-    degree = run["attention_degree"]
-    records = committed_records(workdir, metrics_path=Path(run.get("metrics_path", workdir / "metrics.jsonl")))
+    source, degree = run["source_commit"], run["attention_degree"]
+    records = committed_records(workdir)
     for record in records:
         if (record.get("source_commit") != source or record.get("qk_head_dim") != run["qk_head_dim"]
                 or record.get("parameter_count") != run["parameter_count"]
@@ -43,25 +32,13 @@ def summarize_run(run: dict) -> tuple[dict, list[dict]]:
             raise ValueError(f"Metric identity does not match joint sweep: {run['name']}")
     metadata_path = workdir / "metadata.json"
     metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
-    raw_status = metadata.get("status", "incomplete" if records or (workdir / "config.yaml").exists() else "pending")
+    raw_status = metadata.get("status", "incomplete" if records else "pending")
     error = metadata.get("error") or ""
     failure_kind = metadata.get("failure_kind", "")
-    failures = sorted(workdir.glob("numerical_failure_step_*.json"))
-    preflight_failure = workdir / "preflight_failure.json"
-    production_failure = workdir / "production_failure.json"
-    if production_failure.exists():
-        failure = json.loads(production_failure.read_text())
-        failure_kind = failure.get("failure_kind", "numerical" if failure.get("numerical_failures") else "infrastructure")
-        raw_status, error = "failed", failure.get("error", "Production interrupted")
-    elif preflight_failure.exists():
-        failure = json.loads(preflight_failure.read_text())
-        failure_kind = failure.get("failure_kind", "numerical" if failure.get("reason") == "numerical" else "infrastructure")
-        raw_status, error = "preflight-ineligible", failure.get("error", failure.get("reason", "Preflight failed"))
-    elif failures:
-        failure = json.loads(failures[-1].read_text())
-        failure_kind = "numerical"
-        raw_status, error = "failed", failure.get("error", "Numerical failure")
-    if raw_status in ("failed", "preflight-ineligible", "ineligible"):
+    if run["failure"] is not None:
+        failure_kind, raw_status = "numerical", "failed"
+        error = run["failure"].get("error", "Numerical failure")
+    if raw_status in ("failed", "ineligible"):
         failure_kind = failure_kind or "infrastructure"
         status = "failed" if failure_kind == "numerical" else "incomplete"
         if status == "incomplete":
@@ -72,25 +49,15 @@ def summarize_run(run: dict) -> tuple[dict, list[dict]]:
         "run": run["name"], "qk_head_dim": run["qk_head_dim"], "attention_degree": degree,
         "kernel": "softmax" if degree is None else f"m={degree}",
         "value_head_dim": run["value_head_dim"], "parameter_count": run["parameter_count"],
-        # Reused cells were trained by the earlier width or degree sweeps, not the joint sweep.
-        "reused": run.get("original_experiment", EXPERIMENT) != EXPERIMENT, "original_experiment": run.get("original_experiment", EXPERIMENT),
         "source_commit": source, "status": status, "execution_status": raw_status, "failure_kind": failure_kind, "error": error,
-        "unavailable_historical_artifacts": json.dumps(run.get("unavailable_historical_artifacts", []), sort_keys=True),
         "terminal_step": "", "training_tokens": "", "terminal_nll": "", "terminal_ppl": "",
         "delta_ppl_vs_softmax": "", "best_step": "", "best_ppl": "", "latest_tokens_per_second": "",
     }
-    if records:
-        best = min(records, key=lambda record: (record["validation_nll"], -record["step"]))
+    best = selected_best(run, records)
+    if best is not None:
         row.update(best_step=best["step"], best_ppl=best["validation_perplexity"],
                    latest_tokens_per_second=records[-1].get("tokens_per_second", ""))
-        # A historical checkpoint's original selection remains authoritative on ties.
-        selected = run.get("selected_checkpoint", run.get("retained_provenance", run.get("historical_provenance", {})).get("selected_checkpoint"))
-        if run.get("retained_completed") and selected:
-            chosen = next((record for record in records if record["step"] == selected["step"]), None)
-            if chosen is None or chosen["validation_nll"] != best["validation_nll"]:
-                raise ValueError(f"Historical checkpoint is not validation-best: {run['name']}")
-            row.update(best_step=chosen["step"], best_ppl=chosen["validation_perplexity"])
-    completion_path = Path(run.get("completion_path", workdir / "completion.json"))
+    completion_path = workdir / "completion.json"
     if completion_path.exists():
         completion = json.loads(completion_path.read_text())
         final = next((record for record in records if record["step"] == TERMINAL_STEP), None)
@@ -107,8 +74,6 @@ def summarize_run(run: dict) -> tuple[dict, list[dict]]:
         row.update(status="complete", execution_status="complete", failure_kind="", error="", terminal_step=TERMINAL_STEP,
                    training_tokens=final["training_tokens"], terminal_nll=final["validation_nll"],
                    terminal_ppl=final["validation_perplexity"])
-    if run.get("retained_completed") and row["status"] != "complete":
-        raise ValueError(f"Historical reference is incomplete: {run['name']}")
     return row, records
 
 
@@ -144,39 +109,6 @@ def grid_rows(rows: list[dict], *, widths=WIDTHS, degrees=DEGREES, allow_missing
     return [[cells[width, degree] for degree in (*degrees, None)] for width in widths]
 
 
-def summarize_retained_run(run: dict, root: Path) -> tuple[dict, list[dict]]:
-    """Read a completed cell using portable, checksummed retained artifacts."""
-    import yaml
-
-    config = yaml.safe_load(checked_artifact(root, run["resolved_config"]).read_text())
-    metrics = checked_artifact(root, run["metrics"])
-    completion = checked_artifact(root, run["completion"])
-    checked_artifact(root, run["metadata"])
-    if (config["train"]["seed"] != run["seed"]
-            or config["train"]["source_commit"] != run["source_commit"]
-            or any(config["model"].get(key) != run[key]
-                   for key in ("qk_head_dim", "value_head_dim", "attention_degree"))):
-        raise ValueError(f"Retained configuration identity does not match: {run['name']}")
-    tokens = config["optim"]["total_steps"] * config["data"]["batch_size"] * (config["data"]["sequence_length"] - 1)
-    adapted = dict(run, config=config, workdir=str(metrics.parent), metrics_path=str(metrics),
-                   completion_path=str(completion), training_tokens=tokens,
-                   provenance_sha256={str(metrics): run["metrics"]["sha256"], str(completion): run["completion"]["sha256"]})
-    row, records = summarize_run(adapted)
-    terminal = run["terminal"]
-    final = next((record for record in records if record["step"] == terminal["step"]), None)
-    if row["status"] != "complete" or final is None or any(final[key] != value for key, value in terminal.items()):
-        raise ValueError(f"Retained terminal metrics do not match: {run['name']}")
-    selected = run["selected_checkpoint"]
-    if selected.get("path"):  # Absent when the checkpoint was deliberately not retained.
-        artifact_path(root, selected["path"])
-    best = next((record for record in records if record["step"] == selected["step"]), None)
-    if (best is None or best["validation_nll"] != min(record["validation_nll"] for record in records)
-            or any(best[key] != selected[key] for key in ("validation_nll", "validation_perplexity"))):
-        raise ValueError(f"Retained checkpoint is not validation-best: {run['name']}")
-    row.update(best_step=selected["step"], best_ppl=selected["validation_perplexity"])
-    return row, records
-
-
 def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: Path | None = None) -> list[dict]:
     import matplotlib
     matplotlib.use("Agg")
@@ -184,18 +116,18 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     from matplotlib.colors import Normalize, TwoSlopeNorm
     import numpy as np
 
-    retained = manifest.get("format") == "functional-memory-retained-experiment"
-    root = retained_root(manifest, manifest_path) if retained else Path(manifest["project_root"])
-    output_dir = output_dir or root / "results" / EXPERIMENT
+    output_dir = output_dir or Path(__file__).resolve().parent
     output_dir.mkdir(parents=True, exist_ok=True)
     figures_dir = output_dir
     figures_dir.mkdir(exist_ok=True)
     all_runs = [*manifest["runs"], *manifest.get("controls", [])]
-    summaries = [(summarize_retained_run(run, root) if retained else summarize_run(run)) for run in all_runs]
-    in_grid = [run.get("grid_cell", True) for run in all_runs]
+    summaries = [summarize_run(run) for run in all_runs]
     widths = tuple(sorted(manifest.get("key_dimensions", {run["qk_head_dim"] for run in manifest["runs"]})))
     degrees = tuple(sorted(manifest.get("degrees", {run["attention_degree"] for run in manifest["runs"]
                                                     if run["attention_degree"] is not None})))
+    # The grid is every declared width crossed with every declared degree plus softmax.
+    in_grid = [run["qk_head_dim"] in widths and (run["attention_degree"] is None or run["attention_degree"] in degrees)
+               for run in all_runs]
     n_degrees = len(degrees)
     grid = grid_rows([row for (row, _), keep in zip(summaries, in_grid) if keep], widths=widths, degrees=degrees,
                      allow_missing=manifest.get("grid_coverage") == "partial")
@@ -300,7 +232,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
                 continue
             degree = row["attention_degree"]
             axis.plot([record["training_tokens"] / 1e9 for record in records], [record["validation_perplexity"] for record in records],
-                      label=row["kernel"] + (" *" if row["reused"] else ""),
+                      label=row["kernel"],
                       color="black" if degree is None else f"C{degrees.index(degree)}",
                       linestyle="-" if row["status"] == "complete" else "--")
         axis.set_title(f"dK={width}")
@@ -312,8 +244,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
     for axis in list(axes.flat)[len(widths):]:
         axis.axis("off")
     if len(widths) < axes.size:
-        axes.flat[len(widths)].text(0, 0.8, "* Trained by the earlier width or degree sweep\nDashed curves: incomplete or failed\n"
-                                    "Endpoints require 19,074 updates", va="top")
+        axes.flat[len(widths)].text(0, 0.8, "Dashed curves: incomplete or failed\nEndpoints require 19,074 updates", va="top")
     save(figure, "learning_curves")
 
     count = {status: sum(row["status"] == status for row in rows) for status in ("complete", "pending", "incomplete", "failed")}
@@ -328,7 +259,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
              f"{count['complete']} of {len(rows)} retained runs are complete"
              + (f"; {count['pending']} pending, {count['incomplete']} incomplete, {count['failed']} numerical failures" if len(rows) != count["complete"] else "")
              + f". The heatmap shows the {len(widths) * (n_degrees + 1)}-cell joint comparison;"
-             + " other retained runs remain in the CSV and manifest."
+             + " other runs remain in the CSV."
              + (" A dash marks a coordinate that was never trained; nothing is imputed." if manifest.get("grid_coverage") == "partial" else ""),
              "", *table, ""]
     if extras:
@@ -338,22 +269,15 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
             + (f"; at dK=64 it is `{references[64]['run']}` (PPL {references[64]['terminal_ppl']:.4f})" if 64 in references and references[64]["run"] else "")
             + ".", ""]
     lines += ["Each delta in the CSV and delta heatmap subtracts the softmax endpoint at the same width. "
-              "`original_experiment` in the CSV records which sweep trained each run; heatmaps do not mark it. "
               "FAILED means a recorded numerical failure; interrupted or unaudited runs remain INCOMPLETE. "
-              f"Source commits, exact recipes, and artifact checksums are in `experiments/{EXPERIMENT}/sweep.yaml` and each run’s `record.json`.", ""]
+              f"Source commits, exact recipes, and artifact checksums are in each run’s `config.yaml` and `record.json` under `experiments/{EXPERIMENT}/runs/`.", ""]
     failures = [row for row in rows if row["error"]]
     if failures:
         lines += ["Recorded failures or interruptions:", "", *[f"- `{row['run']}` ({row['failure_kind'] or row['execution_status']}): {row['error']}" for row in failures], ""]
-    unretained = [run["name"] for run in all_runs if run.get("artifacts_retained")]
+    unretained = [run["name"] for run in all_runs if not (run.get("selected_checkpoint") or {}).get("path")]
     if unretained:
         lines += [f"Checkpoints and logs are not retained for {len(unretained)} runs trained on another cluster "
                   f"({', '.join(f'`{name}`' for name in unretained)}); their metrics, completion records, metadata, and recipes are retained and checksum-verified.", ""]
-    unavailable = [(run, artifact) for run in all_runs for artifact in run.get("unavailable_historical_artifacts", [])]
-    if unavailable:
-        lines += ["Unavailable historical artifacts: these are absent from this cluster; their recorded hashes are "
-                  "preserved in provenance, but their contents have not been locally revalidated.", "",
-                  *[f"- `{run['name']}`: {artifact.get('kind', 'artifact')} `{artifact['path']}`; recorded SHA256 "
-                    f"`{artifact.get('sha256', artifact.get('metadata_sha256', 'not recorded'))}`." for run, artifact in unavailable], ""]
     lines += ["[Summary CSV](summary.csv) · [Terminal heatmap](terminal_ppl_heatmap.pdf) · [Delta heatmap](delta_ppl_heatmap.pdf) · [Learning curves](learning_curves.pdf)", ""]
     update_results_readme(output_dir / "README.md", lines)
     return rows
@@ -361,11 +285,10 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", type=Path, default=default_manifest_path(Path("experiments/key_dimension_taylor")))
+    parser.add_argument("--manifest", type=Path, default=Path("experiments/key_dimension_taylor/sweep.yaml"))
     parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
-    verify_result_selection(Path(__file__).resolve().parent)
-    aggregate(load_selected_study(Path(__file__).resolve().parent, args.manifest), args.output_dir, manifest_path=args.manifest)
+    aggregate(selected_views(Path(__file__).resolve().parent, args.manifest), args.output_dir, manifest_path=args.manifest)
 
 
 if __name__ == "__main__":

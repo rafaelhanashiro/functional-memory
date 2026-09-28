@@ -66,7 +66,7 @@ runs:
       sha256: 6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786
     record.json:
       path: experiments/key_dimension_taylor/runs/r50088d29f2b5/record.json
-      sha256: da84d175213730913356b75aaa1d87a077411d3871b170cbfb1bd500c6a7ddc3
+      sha256: 76fc7e73f512b29152219dc4b9b2b82d818137ea3dadfa617697518cd4efe701
     retention.json:
       path: experiments/key_dimension_taylor/runs/r50088d29f2b5/retention.json
       sha256: 208d80975f73fae02b39a112744f60c214955b99c1203d5da4faf5e42b0fa2db

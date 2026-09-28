@@ -26,7 +26,7 @@ runs:
       sha256: b48b4cebd91b6c98aaad06da5dd82d1ef59a61416fec306dfac17b9a83287068
     record.json:
       path: experiments/learned_quadratic_attention/runs/r0fc01aa2826e/record.json
-      sha256: ea50adedbb9d7e8b75d345205c4909dc76050fb883c48f6bd47d0dfaaf4aae8b
+      sha256: 1206adce644db47be4d625373678125cc73ef0af156174d12bf0c418ed27175a
 - study: learned_quadratic_attention
   run_id: rd5f573abb162
   label: 200m-positive-per-head-seed0
@@ -48,7 +48,7 @@ runs:
       sha256: 9b3a83c92043812a46ff8711288e087c9b64e4001b5385243b79f94a33d7b26f
     record.json:
       path: experiments/learned_quadratic_attention/runs/rd5f573abb162/record.json
-      sha256: d8241be1b0fd88547d672d569318fb98125e81ae65f9925bbe7fdf8b3ce31ac8
+      sha256: 5d7f7b8641b0f717855d579a0b61351ade91ded4ad8fb7c9c34ad61c7ecc10a1
 - study: learned_quadratic_attention
   run_id: rb5ab6e890ffe
   label: 200m-unrestricted-global-seed0
@@ -70,7 +70,7 @@ runs:
       sha256: 53f15b0a1fa9f87ec1e1d83e575dcb21b7bb17f2386400e0abed7fafeca0bb4e
     record.json:
       path: experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/record.json
-      sha256: 445e57249a62911df5cffff3b06b8f2dbfc6476b3b6437e0bc3c5a3eb8b1fe0a
+      sha256: 4ce0ca9b4b5053c8971307725fda2e8a2a5d9fc0e069a340066eabc69bc0a7ff
 - study: learned_quadratic_attention
   run_id: r9747f23111ce
   label: 200m-unrestricted-per-head-seed0
@@ -92,7 +92,7 @@ runs:
       sha256: 80c4e3b2eafebd3c66d3d355b723a0deaffe6f57091465e7e80c17e28c13411b
     record.json:
       path: experiments/learned_quadratic_attention/runs/r9747f23111ce/record.json
-      sha256: cd687190e4af9738d56beb3a7d5f4e2890433857ac0ffb95a9952a7650a3c010
+      sha256: da412cc035373aba4b5656e4a1488d3de17ae3016e879ec34ee60daec20acb94
 - study: key_dimension_taylor
   run_id: r93c9d0814322
   label: 200m-m002-seed0
@@ -120,7 +120,7 @@ runs:
       sha256: afd284756057e498dfbc1279530e44e792627848f10663a0dcdd793a0f447bc3
     record.json:
       path: experiments/key_dimension_taylor/runs/r93c9d0814322/record.json
-      sha256: 5d7c584c4de4e3a1ad5d5d80a40f07529a8ff6af98bf27fdea7416ed9a380895
+      sha256: 3ae86a4891f57d775afb4522a84d9f5c1103ad63dc8a06a56046866c27031626
     retention.json:
       path: experiments/key_dimension_taylor/runs/r93c9d0814322/retention.json
       sha256: d758f967ec107092270d03b71f1d79ce0f8b94c39d8ed732cbf72bc60b3ffae6
@@ -154,7 +154,7 @@ runs:
       sha256: 6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786
     record.json:
       path: experiments/key_dimension_taylor/runs/r50088d29f2b5/record.json
-      sha256: da84d175213730913356b75aaa1d87a077411d3871b170cbfb1bd500c6a7ddc3
+      sha256: 76fc7e73f512b29152219dc4b9b2b82d818137ea3dadfa617697518cd4efe701
     retention.json:
       path: experiments/key_dimension_taylor/runs/r50088d29f2b5/retention.json
       sha256: 208d80975f73fae02b39a112744f60c214955b99c1203d5da4faf5e42b0fa2db

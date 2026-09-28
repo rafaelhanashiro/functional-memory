@@ -89,6 +89,11 @@
     "path": "experiments/key_dimension_taylor/runs/r21a071c7cd15/launch.json",
     "sha256": "cf5db863cef1eb6fb995f400be4dd6d171b7d229eebd2e1637ae736e756a0b15"
   },
+  "log": {
+    "path": "experiments/key_dimension_taylor/runs/r21a071c7cd15/training.log",
+    "sha256": "7558588effd3c4d38e1e9801a9612c1f55c822707c7e42da213622e82c45d245",
+    "size_bytes": 1513425
+  },
   "metadata": {
     "path": "experiments/key_dimension_taylor/runs/r21a071c7cd15/metadata.json",
     "sha256": "0d966aecc94b1b284ac9d34a6ec13a558e304bf66de3961136b3af7aae701172"
@@ -98,7 +103,6 @@
     "sha256": "4731d3920a58201f8ca9ac8bf2568826a28a1a21d1f30e28c5c71e1023fc108d"
   },
   "name": "200m-dk128-m002-seed0",
-  "original_experiment": "key_dimension_taylor",
   "parameter_count": 220877824,
   "qk_head_dim": 128,
   "record_schema_version": 1,
@@ -107,7 +111,6 @@
     "recorded_sha256": "0d1b3485b25f119261ae79f23c26cca9a8c35bdc38c754b33f003c364d8c8bda",
     "sha256": "c5b2790b5dae8d689a004499f3fc174757e6d1a0856c1cdfedc90df3867425aa"
   },
-  "retained_completed": false,
   "run_id": "r21a071c7cd15",
   "seed": 0,
   "selected_checkpoint": {
@@ -195,10 +198,6 @@
     "validation_perplexity": 15.720163910119203
   },
   "slurm_job_id": "200737",
-  "slurm_log": {
-    "path": "experiments/key_dimension_taylor/runs/r21a071c7cd15/training.log",
-    "sha256": "7558588effd3c4d38e1e9801a9612c1f55c822707c7e42da213622e82c45d245"
-  },
   "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
   "terminal": {
     "step": 19074,

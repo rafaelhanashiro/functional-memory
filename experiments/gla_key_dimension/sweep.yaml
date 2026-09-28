@@ -20,464 +20,60 @@ data_identity:
     sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
 dependency_lock:
   sha256: 098b75b9bc2e27abf3ca873f20bc2bd2887aa6f03c2ae0ab8de11d6d5002b6f7
-configs:
-- path: experiments/gla_key_dimension/runs/ra6346b7a6cfc/config.yaml
-  sha256: afe1b8c0fef58e36a8f19b5dff321c6ba5885248c295e97f59db9f86adc59f01
-  recorded_sha256: 4b6f7a0972bb6861d40bd661cd249ec6c771d2ef7b02a6c81735385af80bee30
-- path: experiments/gla_key_dimension/runs/r6a5ffbb56ac3/config.yaml
-  sha256: 0eb514b3d76f9bee13b0072605fb4d1d3e7c4b3539593244c403ebe466161b3a
-  recorded_sha256: f21068d2530ecae34b5cc163b0b2a1674ad2f9cdd03d75b5979e5bc4ed972bff
-- path: experiments/gla_key_dimension/runs/r7d278821b92d/config.yaml
-  sha256: 67d55b2e7e8692ee40888583726f1b3ca9566ff2e4c533cf1c697394c205b4e8
-  recorded_sha256: 6cfcc7eaedf2bba1e610e3ebf2b81dda6440cf2a54194c7071c31d9692641186
-- path: experiments/gla_key_dimension/runs/rf35e1e8fb2e3/config.yaml
-  sha256: e3a6c404996f88658237c84149ee5b046d70adc4599bd7d00f630b6e2f9a2aaa
-  recorded_sha256: 5f3ecd78fab430e24f72f73942eef86c974a2d4df1708a1d9546e98b21b7dc7e
-- path: experiments/gla_key_dimension/runs/r03c03c3f84b2/config.yaml
-  sha256: d9597795a465f5e9e914d71332d5567117a2554c8dee9d2f1e6dae1982d864d4
-  recorded_sha256: d67f1230d50a51f6dd0cdf5f9cf3371e523366d4d8aa017a8869b71e40318aa9
 comparisons:
-  record:
-    path: experiments/key_dimension_taylor/sweep.yaml
-    sha256: 453616fcaea8c8495e57b3fc24cf94620aba54b3d857b0fa1d77a82191aa61a1
-    recorded_sha256: b821a7ba25f58b00076e7a9f941318e82976db5f9046892665d2247d8b71259e
   note: Seed-0 200M runs with the same data, optimizer, and backbone recipe at each
     d_K; softmax and row-normalized Taylor attention of degree 2, 4, 8, and 16.
   runs:
-  - name: 200m-dk008-seed0
-    qk_head_dim: 8
-    kernel: softmax
-    attention_degree: null
-    parameter_count: 181556224
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/ra92381785e78/config.yaml
-      sha256: 136a520582dcbbf77bd2b3d1c2043059328bc81a50347fd9ec0ea9b87b5c19d1
-      recorded_sha256: d22f30cb34b18b765f7a7553134e45ebe95e2f74dc00e64013cd43e2f6e5aa2e
-    metrics:
-      path: experiments/key_dimension_taylor/runs/ra92381785e78/metrics.jsonl
-      sha256: 75bcb65689ba5618be5403794f17c34c4eb8001557db8ae0f6c4bfe336be144a
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.815727804388319
-      validation_perplexity: 16.70532956917316
-  - name: 200m-dk008-m002-seed0
-    qk_head_dim: 8
-    kernel: normalized Taylor m=2
-    attention_degree: 2
-    parameter_count: 181556224
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/rc3536d3ff6cd/config.yaml
-      sha256: f6910d1361ce77876df264d3f3f6a3b78f9b86bf5c03c4b560f3affc6daf27eb
-      recorded_sha256: b38662221dcc61f2cddcc97d7b2ed5b6d6c09368edbc3b9c3e83eac905c0c6f4
-    metrics:
-      path: experiments/key_dimension_taylor/runs/rc3536d3ff6cd/metrics.jsonl
-      sha256: c79a75cdd00d5955b95549106f03b91f687054c885e48bd9443fe54dbc6255d0
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 3.024197425161089
-      validation_perplexity: 20.577483111979156
-  - name: 200m-dk008-m004-seed0
-    qk_head_dim: 8
-    kernel: normalized Taylor m=4
-    attention_degree: 4
-    parameter_count: 181556224
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r18aa3ef494f5/config.yaml
-      sha256: 943002cb9250be47708745b6a7d2feb017beaa17bf8a5bb0724eb35a5038bc32
-      recorded_sha256: 09d9e72cbaf1687944e6d02d8e19909519457a0d158166a48f2acddf23b35746
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r18aa3ef494f5/metrics.jsonl
-      sha256: a9f1db65865e1012e6de36666075baa4ce09b323aafefaf481097b9046ac30dc
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.900241528238569
-      validation_perplexity: 18.178535468906798
-  - name: 200m-dk008-m008-seed0
-    qk_head_dim: 8
-    kernel: normalized Taylor m=8
-    attention_degree: 8
-    parameter_count: 181556224
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r0b5fb00b8649/config.yaml
-      sha256: a6118dbb54cc478dd459909b0e546070fb64c9a6428161c26a951021e0b81283
-      recorded_sha256: cefff36fb24e6be52c27efe85cc47defc4bd643b431267fd330428b06153f009
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r0b5fb00b8649/metrics.jsonl
-      sha256: 1ef52873252a1b44b4b927a94260ec2609ce14444014932f6375d7e015110383
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.843690403870174
-      validation_perplexity: 17.179046318526584
-  - name: 200m-dk008-m016-seed0
-    qk_head_dim: 8
-    kernel: normalized Taylor m=16
-    attention_degree: 16
-    parameter_count: 181556224
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r3961c167a16f/config.yaml
-      sha256: 108bcbc783b4c538b0aabffd57858600348b2668620e2ed6e4843798c43acb49
-      recorded_sha256: 695b52701afe4d2744097a0c8960e901336f0aa454849e3604339d8705d54e18
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r3961c167a16f/metrics.jsonl
-      sha256: 3be0519b762c5638c54130bf105d3728df2aa4d236e4242304b543ed4faae858
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.8242272904941013
-      validation_perplexity: 16.847921405989926
-  - name: 200m-dk016-seed0
-    qk_head_dim: 16
-    kernel: softmax
-    attention_degree: null
-    parameter_count: 184177664
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r51dc98ae4fd1/config.yaml
-      sha256: 0b5eae069e89c038dbb7eb1a4125448b717ce7ec306f8d1f866d53f8c8c98a48
-      recorded_sha256: 23ffb22f1f5a787cf2955ebbda0f9fe0a96775f866496bca7d4c154080c19147
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r51dc98ae4fd1/metrics.jsonl
-      sha256: 5d19fb18cdc2f5b7ee0b5b90c7bb2fa622ff653c8fd3c51cf7d5b8c18dd74b14
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.745754207883562
-      validation_perplexity: 15.576357314635974
-  - name: 200m-dk016-m002-seed0
-    qk_head_dim: 16
-    kernel: normalized Taylor m=2
-    attention_degree: 2
-    parameter_count: 184177664
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r8a9bc098ce3a/config.yaml
-      sha256: f9f1710d10c8edef1ec9a292c7ef8dbac3239e9801de9aa0d3f9112f6a424077
-      recorded_sha256: 180e33775b84bfafa5f78c3d4750a68cdf341023a9254bd419056efd1574660e
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r8a9bc098ce3a/metrics.jsonl
-      sha256: 3862a0101acccb80fd668e2575288bcea3469d643cc80967855eef3bbcd523b8
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.9177121264593944
-      validation_perplexity: 18.49891582770924
-  - name: 200m-dk016-m004-seed0
-    qk_head_dim: 16
-    kernel: normalized Taylor m=4
-    attention_degree: 4
-    parameter_count: 184177664
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r7ca127105528/config.yaml
-      sha256: a1cc744f0cd96a6a98d66c0d1f785f5df5385c5165b111e810ce47a7817efac5
-      recorded_sha256: b67f2f5eb4bb8ca46d7572b4e165c1554115d1d10c27bdb1fdd23a66c769c2c4
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r7ca127105528/metrics.jsonl
-      sha256: 4e478beac647915ca8d55d6c791694faf0950e9925224bc7503e3487e1cbd91f
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.804158474717821
-      validation_perplexity: 16.513173804152746
-  - name: 200m-dk016-m008-seed0
-    qk_head_dim: 16
-    kernel: normalized Taylor m=8
-    attention_degree: 8
-    parameter_count: 184177664
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/rcaf4e954ca9a/config.yaml
-      sha256: 78c4ba0fc1c7c2be672cfc3dbfd7d0b7a7c0548a86601097a224327b2bf3ee00
-      recorded_sha256: 3b73606a09907577d9ded27bc7e93c8e0a023b707cad8bd45a1fa3d657a0d610
-    metrics:
-      path: experiments/key_dimension_taylor/runs/rcaf4e954ca9a/metrics.jsonl
-      sha256: 6715d9d635bd2f01ea3cff26feaf34bea68455ed5acc31a860d84a635241a3bd
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.760017820766994
-      validation_perplexity: 15.800124516088989
-  - name: 200m-dk016-m016-seed0
-    qk_head_dim: 16
-    kernel: normalized Taylor m=16
-    attention_degree: 16
-    parameter_count: 184177664
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/rfe7378eb4b4f/config.yaml
-      sha256: 61db672c0fe98068d176c140de382df2c5ca28992f452eeea40dfd90b09111e5
-      recorded_sha256: e028853aa49fc88f699367eb05aca654785690b799b9ea62124f023cfcfe8a92
-    metrics:
-      path: experiments/key_dimension_taylor/runs/rfe7378eb4b4f/metrics.jsonl
-      sha256: f9d0c35d52b0dc45c792f95d8d4c267a667d69fdf0f84a59e97bd50060a61ef5
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.7491975171225413
-      validation_perplexity: 15.630083975357097
-  - name: 200m-dk032-seed0
-    qk_head_dim: 32
-    kernel: softmax
-    attention_degree: null
-    parameter_count: 189420544
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r261f88db0c4b/config.yaml
-      sha256: eaeab6850b2ff44d8ba71f7c26f81ab1b4fa668912059ea331ebbec560bad4f8
-      recorded_sha256: 3dd81acf850d527d6452d7141db681a41dc58f34245f47262eb8152c16fb007e
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r261f88db0c4b/metrics.jsonl
-      sha256: 5a199dbb81f4caeccf79af40454c7eef997ebe0f3698d75211df6e553b2913d3
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.707067149026053
-      validation_perplexity: 14.985261464418581
-  - name: 200m-dk032-m002-seed0
-    qk_head_dim: 32
-    kernel: normalized Taylor m=2
-    attention_degree: 2
-    parameter_count: 189420544
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r3a06ec7d5976/config.yaml
-      sha256: 0526544b18690f596c1b5e449a8112aee86f862fa52e9bccb560bb0934116cb2
-      recorded_sha256: 460eaf9141894ae876e0bb21fdd7238f31784dc42918d1817f9a4e2cfa3cdac7
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r3a06ec7d5976/metrics.jsonl
-      sha256: f211003390dd1e795100bb9520e0ed98fb6a75b31b3affd0af909c1ba8e5a888
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.8432648267064775
-      validation_perplexity: 17.171736864198078
-  - name: 200m-dk032-m004-seed0
-    qk_head_dim: 32
-    kernel: normalized Taylor m=4
-    attention_degree: 4
-    parameter_count: 189420544
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r52e627fffdfc/config.yaml
-      sha256: 522cc31cd0bbc0d5020a1ff0ed6fab1aeeb22ab61b7d525cf9dc75f0e52c0b9a
-      recorded_sha256: 2cef918a1977e98a12d29179c2b4948875f9f2397b29639729d36bbe72d31301
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r52e627fffdfc/metrics.jsonl
-      sha256: f860878f62bb69f799ef05265a5f17d94bb79afc4081252b1718352510fd7bc2
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.7453334076063975
-      validation_perplexity: 15.569804158042514
-  - name: 200m-dk032-m008-seed0
-    qk_head_dim: 32
-    kernel: normalized Taylor m=8
-    attention_degree: 8
-    parameter_count: 189420544
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r35c90bbb045c/config.yaml
-      sha256: 7d867192042b54518004f5b592c240d8d10a0c344647644fa26de7051e025aad
-      recorded_sha256: 4a757d25fe2e27609dcbee1a752ecff6def02c77735eca1a0c1537bef8e4f992
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r35c90bbb045c/metrics.jsonl
-      sha256: ec578e7a8bfdd175a394d1261027f09237038121b2c6fa8e7baf6c75d4b4ba2a
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.7127883349146162
-      validation_perplexity: 15.07124064776829
-  - name: 200m-dk032-m016-seed0
-    qk_head_dim: 32
-    kernel: normalized Taylor m=16
-    attention_degree: 16
-    parameter_count: 189420544
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r74009ae25ff9/config.yaml
-      sha256: b39ae009a2ae771398ce7d93f1bef1a8924437c0e5dbbad1032ca8b8a00042f7
-      recorded_sha256: 5a032dfb9403ed7f56c88648d8593fd343c230a9e5cc4ac8d42de72eb00f26bf
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r74009ae25ff9/metrics.jsonl
-      sha256: 8169d4fd407a4eb02b6595f5071cbc7ed8b6392b437e9b1550743042a681c6d4
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.709314090864999
-      validation_perplexity: 15.018970332120823
-  - name: 200m-softmax-seed0
-    qk_head_dim: 64
-    kernel: softmax
-    attention_degree: null
-    parameter_count: 199906304
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/config.yaml
-      sha256: d39c51225ff4843fe32ea5cb2a399df2c64e6d5808abf6f9600aa89fdadd861a
-      recorded_sha256: 4fcd6d27091f88b0cb0f1e7c8ac2c9a9ab2c61269c3f736bca16800d147eb861
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/metrics.jsonl
-      sha256: 6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.6854977863175526
-      validation_perplexity: 14.665499848737895
-    weight_decay_policy: exclude_embeddings_norms_biases_v1
-  - name: 200m-m002-seed0
-    qk_head_dim: 64
-    kernel: normalized Taylor m=2
-    attention_degree: 2
-    parameter_count: 199906464
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r93c9d0814322/config.yaml
-      sha256: 742cf0d13516ae8318e06173466ba50c3a0df60a76e4e45147ac37cdddbc6bfe
-      recorded_sha256: 198ea98b1981e657f9286a9225c0e14594dfd2ccddc0ba6ff28c99952d899f74
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r93c9d0814322/metrics.jsonl
-      sha256: afd284756057e498dfbc1279530e44e792627848f10663a0dcdd793a0f447bc3
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.8040092502321516
-      validation_perplexity: 16.510709818133147
-    note: current defaults (QK-norm, selective weight decay) since the 2026-09-27
-      fold-in; the GLA runs predate them
-  - name: 200m-m004-seed0
-    qk_head_dim: 64
-    kernel: normalized Taylor m=4
-    attention_degree: 4
-    parameter_count: 199906464
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/ra9b651caa405/config.yaml
-      sha256: 62dd7a2986e7cc32a458d2e48df536f40d00116a2ca6029953011a6b97edcd2e
-      recorded_sha256: 6a83ecf0ff6d4b3703a9fda03438f77b4e7bab86c06dbe97876fd8553c57c057
-    metrics:
-      path: experiments/key_dimension_taylor/runs/ra9b651caa405/metrics.jsonl
-      sha256: 37ecdb24c15801f34f3df96c8311db2b1332cd934d8fca6197b12c4851d3104a
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.701114628996168
-      validation_perplexity: 14.896326352016782
-    note: current defaults (QK-norm, selective weight decay) since the 2026-09-27
-      fold-in; the GLA runs predate them
-  - name: 200m-m008-seed0
-    qk_head_dim: 64
-    kernel: normalized Taylor m=8
-    attention_degree: 8
-    parameter_count: 199906464
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r4923c6939e74/config.yaml
-      sha256: 8c7806458b6b1b1c66306e518ed75303d62849dc10511fb1a17d0820c4fcaa6a
-      recorded_sha256: 96e5c7d5b5b11551ae8d2659f0377fda64ac868f906e65e477f24af16ba64053
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r4923c6939e74/metrics.jsonl
-      sha256: a6a6d987b7779241b5ddc6b15e43c5622cd1c40275d7f8dee98fd73d38d55b35
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.6739954692976817
-      validation_perplexity: 14.497779058238134
-    note: current defaults (QK-norm, selective weight decay) since the 2026-09-27
-      fold-in; the GLA runs predate them
-  - name: 200m-m016-seed0
-    qk_head_dim: 64
-    kernel: normalized Taylor m=16
-    attention_degree: 16
-    parameter_count: 199906464
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r03d397da0bd0/config.yaml
-      sha256: 35d9eb9021df2eef5eb29e5a03279da9aa022bcdca05ebf63ed216433aef32ae
-      recorded_sha256: da587b97987d351fcf1c8c7c28570c09d9fada03afb96346b1c30159c4be5191
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r03d397da0bd0/metrics.jsonl
-      sha256: 97de74ec829f36a5a7ad73b25c93b456716259b188c94a7417e7c63b7a04e929
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.670966259070805
-      validation_perplexity: 14.453928687175491
-    note: current defaults (QK-norm, selective weight decay) since the 2026-09-27
-      fold-in; the GLA runs predate them
-  - name: 200m-dk128-seed0
-    qk_head_dim: 128
-    kernel: softmax
-    attention_degree: null
-    parameter_count: 220877824
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/rf3539f68224c/config.yaml
-      sha256: 3f0074c0c49bd3d920bf28e2811677a7ac39d228aff43ce96681df10a0691fb3
-      recorded_sha256: 505fea1ae487bbce7f1293f7eed16b3b7212fb5592e7cfc1331e32a55a9eb83b
-    metrics:
-      path: experiments/key_dimension_taylor/runs/rf3539f68224c/metrics.jsonl
-      sha256: 93ef9664a46cc56e40f2279f18cab2891840228af66a10dd532deac63ebfe720
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.6656709483691623
-      validation_perplexity: 14.377592933058489
-  - name: 200m-dk128-m002-seed0
-    qk_head_dim: 128
-    kernel: normalized Taylor m=2
-    attention_degree: 2
-    parameter_count: 220877824
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r21a071c7cd15/config.yaml
-      sha256: c5b2790b5dae8d689a004499f3fc174757e6d1a0856c1cdfedc90df3867425aa
-      recorded_sha256: 0d1b3485b25f119261ae79f23c26cca9a8c35bdc38c754b33f003c364d8c8bda
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r21a071c7cd15/metrics.jsonl
-      sha256: 4731d3920a58201f8ca9ac8bf2568826a28a1a21d1f30e28c5c71e1023fc108d
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.754944213799068
-      validation_perplexity: 15.720163910119203
-  - name: 200m-dk128-m004-seed0
-    qk_head_dim: 128
-    kernel: normalized Taylor m=4
-    attention_degree: 4
-    parameter_count: 220877824
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/rf4c43c0d0467/config.yaml
-      sha256: 9688fcfdc0c0fc5ff5d4088735fe05dd4e932231ee63783425b9a166cb81a3e1
-      recorded_sha256: be73f3bd3896fcd2d0802f09f7a4fd0910853c515d6001e1ee6d21a9c820f0d3
-    metrics:
-      path: experiments/key_dimension_taylor/runs/rf4c43c0d0467/metrics.jsonl
-      sha256: 11e9ed1325c8009a3de91bec8e7247235da8426272b23149051c65d836ac5f5f
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.6762146949768066
-      validation_perplexity: 14.529988628748207
-  - name: 200m-dk128-m008-seed0
-    qk_head_dim: 128
-    kernel: normalized Taylor m=8
-    attention_degree: 8
-    parameter_count: 220877824
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r58c25c5d4ce1/config.yaml
-      sha256: d4252010c6fe5bd5db7c4b1ee9a110bd77a0ea5dcf5a372b88d44abac08bfc9a
-      recorded_sha256: c93cc8a22924bcdb59e0ff8221c449752c242fbbd0c5b3668c181e47a0ab4864
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r58c25c5d4ce1/metrics.jsonl
-      sha256: b1729cd20fe5726ccc1ecf28c8b726f4e3516991a6359ec9c672756266977293
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.664348942892892
-      validation_perplexity: 14.358598234779393
-  - name: 200m-dk128-m016-seed0
-    qk_head_dim: 128
-    kernel: normalized Taylor m=16
-    attention_degree: 16
-    parameter_count: 220877824
-    resolved_config:
-      path: experiments/key_dimension_taylor/runs/r0c924296d7d3/config.yaml
-      sha256: 5b8c59024ade25e7e48684a933b03ab03455359cb954b5f3d96ae85cf9c0b747
-      recorded_sha256: 94dfc6e8193ced072ac215a6146735e6a853da61bd811def096c28ec7acd71bf
-    metrics:
-      path: experiments/key_dimension_taylor/runs/r0c924296d7d3/metrics.jsonl
-      sha256: 1691a4090e4684df0b7a6c5691dcd633c45e6b2354537014e413d4be9060f61d
-    terminal:
-      step: 19074
-      training_tokens: 10000269312
-      validation_nll: 2.666055755955832
-      validation_perplexity: 14.38312660452828
+  - study: key_dimension_taylor
+    label: 200m-dk008-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk008-m002-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk008-m004-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk008-m008-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk008-m016-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk016-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk016-m002-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk016-m004-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk016-m008-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk016-m016-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk032-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk032-m002-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk032-m004-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk032-m008-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk032-m016-seed0
+  - study: key_dimension_taylor
+    label: 200m-softmax-seed0
+  - study: key_dimension_taylor
+    label: 200m-m002-seed0
+  - study: key_dimension_taylor
+    label: 200m-m004-seed0
+  - study: key_dimension_taylor
+    label: 200m-m008-seed0
+  - study: key_dimension_taylor
+    label: 200m-m016-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk128-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk128-m002-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk128-m004-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk128-m008-seed0
+  - study: key_dimension_taylor
+    label: 200m-dk128-m016-seed0
 source_commit: 4af147ea64c89bcb0f8086d1e3a963c7ecbcec77
 run_ids:
 - ra6346b7a6cfc

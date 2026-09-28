@@ -1,21 +1,18 @@
 """Summarize GLA terminal perplexity beside the dK × Taylor comparison points.
 
 Writes ``results/gla_key_dimension/summary.csv`` and
-``perplexity_vs_key_dimension.{png,pdf}`` from ``runs/`` and the
-checksummed comparison runs pinned in the provenance manifest.
+``perplexity_vs_key_dimension.{png,pdf}`` from the GLA runs and the width-matched
+comparison runs pinned in this result's selection.
 """
 from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 from pathlib import Path
 
 from functools import partial
-from scaffolds.transformer.analysis import load_selected_study, selected_run_directory
-
-from scaffolds.transformer.analysis import verify_result_selection
+from scaffolds.transformer.analysis import load_selected_study, run_view, selected_run_directory
 
 locate_run = partial(selected_run_directory, Path(__file__).resolve().parent)
 
@@ -31,18 +28,14 @@ COLORS = {"gla": "#c2410c", "softmax": "#374151",
 MARKERS = {2: "o", 4: "^", 8: "v", 16: "P"}
 
 
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
 def comparison_table(manifest: dict) -> dict:
-    """Terminal perplexity by (d_K, degree); degree None is softmax. Checksums are verified."""
+    """Terminal perplexity by (d_K, degree); degree None is softmax, from each selected run's completion."""
     table = {}
-    for run in manifest["comparisons"]["runs"]:
-        for key in ("resolved_config", "metrics"):
-            if sha256(ROOT / run[key]["path"]) != run[key]["sha256"]:
-                raise ValueError(f"Comparison {run['name']} {key} differs from its pinned checksum")
-        table[(run["qk_head_dim"], run["attention_degree"])] = run["terminal"]["validation_perplexity"]
+    for comparison in manifest["comparisons"]["runs"]:
+        directory = locate_run(ROOT / "experiments" / comparison["study"], comparison["label"])
+        view = run_view(directory, comparison["label"])
+        table[(view["qk_head_dim"], view["attention_degree"])] = json.loads(
+            (directory / "completion.json").read_text())["validation_perplexity"]
     return table
 
 
@@ -127,7 +120,6 @@ def main() -> None:
     parser.add_argument("--record", type=Path, default=RECORD)
     parser.add_argument("--output", type=Path, default=OUTPUT)
     args = parser.parse_args()
-    verify_result_selection(Path(__file__).resolve().parent)
     args.output.mkdir(parents=True, exist_ok=True)
     manifest = load_selected_study(Path(__file__).resolve().parent, args.record)
     rows = gla_rows(manifest, args.record)

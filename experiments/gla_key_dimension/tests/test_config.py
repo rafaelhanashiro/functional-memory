@@ -67,11 +67,13 @@ def test_data_manifests_match_the_recorded_corpus():
         assert hashlib.sha256(Path(item["path"]).read_bytes()).hexdigest() == item["sha256"]
 
 
-def test_comparison_points_reference_retained_key_dimension_taylor_runs():
-    for control in manifest()["comparisons"]["runs"]:
-        for key in ("resolved_config", "metrics"):
-            path = ROOT / control[key]["path"]
-            assert hashlib.sha256(path.read_bytes()).hexdigest() == control[key]["sha256"]
+def test_comparison_points_cover_every_width_and_degree():
+    from results.gla_key_dimension import plot
+
+    references = manifest()["comparisons"]["runs"]
+    assert {reference["study"] for reference in references} == {"key_dimension_taylor"}
+    assert set(plot.comparison_table(manifest())) == {(width, degree) for width in KEY_DIMENSIONS
+                                                       for degree in (None, *plot.DEGREES)}
 
 
 def test_summary_uses_completed_runs_and_width_matched_comparisons(tmp_path):
@@ -93,8 +95,7 @@ def test_summary_uses_completed_runs_and_width_matched_comparisons(tmp_path):
     rows = {row["run"]: row for row in plot.gla_rows(manifest(), record)}
     assert rows["200m-dk008-gla-seed0"]["status"] == "incomplete"
     completed = rows["200m-dk016-gla-seed0"]
-    softmax = next(c for c in manifest()["comparisons"]["runs"] if c["name"] == "200m-dk016-seed0")
-    assert completed["softmax_perplexity"] == softmax["terminal"]["validation_perplexity"]
+    assert completed["softmax_perplexity"] == plot.comparison_table(manifest())[(16, None)]
     assert completed["delta_perplexity_vs_softmax"] == pytest.approx(16.4 - completed["softmax_perplexity"])
     (run / "completion.json").write_text(json.dumps({"final_step": 1000, "training_tokens": 524_288_000,
                                                      "validation_nll": 3.0, "validation_perplexity": 20.0}))

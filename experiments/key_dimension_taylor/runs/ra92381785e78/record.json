@@ -21,7 +21,6 @@
       "sha256": "75bcb65689ba5618be5403794f17c34c4eb8001557db8ae0f6c4bfe336be144a"
     }
   ],
-  "artifacts_retained": "2026-09-24: ORCD checkpoints and logs for the key_dimension runs are not retained, by user decision; metrics, completion, metadata, and configs are retained in Git.",
   "attempts": [
     {
       "slurm_job_id": "22808237"
@@ -47,7 +46,6 @@
     "sha256": "75bcb65689ba5618be5403794f17c34c4eb8001557db8ae0f6c4bfe336be144a"
   },
   "name": "200m-dk008-seed0",
-  "original_experiment": "key_dimension",
   "parameter_count": 181556224,
   "qk_head_dim": 8,
   "record_schema_version": 1,
@@ -56,7 +54,6 @@
     "recorded_sha256": "d22f30cb34b18b765f7a7553134e45ebe95e2f74dc00e64013cd43e2f6e5aa2e",
     "sha256": "136a520582dcbbf77bd2b3d1c2043059328bc81a50347fd9ec0ea9b87b5c19d1"
   },
-  "retained_completed": true,
   "run_id": "ra92381785e78",
   "seed": 0,
   "selected_checkpoint": {
@@ -69,10 +66,6 @@
     "validation_perplexity": 16.70532956917316
   },
   "slurm_job_id": "22808237",
-  "slurm_log": {
-    "retained": false,
-    "sha256": "cce4364a950dcf027cb6177145eb4e18f16109a59143a9ecfd97675b858ec149"
-  },
   "source_commit": "5e871d2659373272e26668e10911922c7201678a",
   "terminal": {
     "step": 19074,
