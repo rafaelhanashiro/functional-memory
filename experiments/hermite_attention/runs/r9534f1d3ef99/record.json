@@ -22,6 +22,12 @@
       "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
     }
   },
+  "executed_recipe": {
+    "commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+    "path": "experiments/hermite_attention/runs/r9534f1d3ef99/config.yaml",
+    "sha256": "863779081100670e4cc228280daaf9177212191938f47228f4643bbbcca27ae6"
+  },
+  "frozen_execution_sha256": "0d6b47d719837a3b243287e68591664fe0814fa10f75cfaea9fa5b9142cebfc0",
   "home_cluster": "kennel",
   "label": "200m-qk-taylor-m003-unnormalized-seed0",
   "name": "200m-qk-taylor-m003-unnormalized-seed0",
@@ -43,5 +49,24 @@
   },
   "run_id": "r9534f1d3ef99",
   "seed": 0,
-  "status": "planned"
+  "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--gres=gpu:4",
+      "--job-name=qk-taylor-unnorm-m3-r9534f1d3ef99",
+      "--output=experiments/hermite_attention/runs/r9534f1d3ef99/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.hermite_attention.acceptance",
+      "experiments/hermite_attention/runs/r9534f1d3ef99/config.yaml",
+      "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "4",
+      "B300,H100"
+    ],
+    "slurm_job_id": "203112",
+    "submitted_utc": "2026-09-28T02:49:30.598754+00:00"
+  }
 }

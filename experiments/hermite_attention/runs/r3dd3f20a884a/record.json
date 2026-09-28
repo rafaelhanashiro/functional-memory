@@ -22,6 +22,12 @@
       "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
     }
   },
+  "executed_recipe": {
+    "commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+    "path": "experiments/hermite_attention/runs/r3dd3f20a884a/config.yaml",
+    "sha256": "856f9f05f02d35f5cd2e8827058e7f101b6578fb61a45437df387e48b6205119"
+  },
+  "frozen_execution_sha256": "0d6b47d719837a3b243287e68591664fe0814fa10f75cfaea9fa5b9142cebfc0",
   "home_cluster": "kennel",
   "label": "200m-qk-hermite-m003-normalized-seed0",
   "matched_control": {
@@ -47,5 +53,24 @@
   },
   "run_id": "r3dd3f20a884a",
   "seed": 0,
-  "status": "planned"
+  "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--gres=gpu:4",
+      "--job-name=qk-hermite-norm-m3-r3dd3f20a884a",
+      "--output=experiments/hermite_attention/runs/r3dd3f20a884a/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.hermite_attention.acceptance",
+      "experiments/hermite_attention/runs/r3dd3f20a884a/config.yaml",
+      "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "4",
+      "B300,H100"
+    ],
+    "slurm_job_id": "203104",
+    "submitted_utc": "2026-09-28T02:49:30.474635+00:00"
+  }
 }

@@ -12,11 +12,12 @@ Each permanent run ID in [runs.csv](runs.csv) owns its frozen recipe, execution
 record, measurements, checkpoint directory, and `training.log` under `runs/`.
 [sweep.yaml](sweep.yaml) lists membership and the exact existing Taylor controls.
 
-The initial cohort was submitted on 2026-09-27 as jobs **203017–203028**, from
-launch commit `84dedd777c2f1def16ef9ef74ea11ec6c94cdda9`. Each submission depends
-on successful compiled H100/B300 checks (jobs 203015/203016). Individual job IDs
-and exact submission commands are stored in the run records; live scheduler
-status and recorded training status are distinct.
+The cohort was submitted on 2026-09-27 as jobs **203102–203113**, from launch
+commit `bd31f8ad7a8a964b286387ad7ad7723ea405b286`, after the compiled H100/B300
+checks (jobs 203015/203016) passed. One run uses the `standard` allowance and
+three use `long`; the rest use `sweep`. Individual job IDs, partitions, and exact
+submission commands are stored in the run records; live scheduler status and
+recorded training status are distinct.
 
 ## Method and comparison
 
@@ -72,8 +73,8 @@ executes a 20-update full-recipe pilot, and verifies an exact fresh-process
 resume before production. A pilot numerical failure is recorded separately from
 a production failure. Passing a short pilot does not establish long-run stability.
 Hardware and resolved backend are recorded separately from the scientific recipe.
-Jobs request four H100 or B300 GPUs on `sweep`; qualification covers the actual
-allocated hardware before any production training.
+Jobs request four H100 or B300 GPUs on the partition chosen at submission;
+qualification covers the actual allocated hardware before any production training.
 
 From the worktree root, prepare and test the frozen source before submitting:
 
@@ -85,13 +86,14 @@ JAX_PLATFORMS=cpu PYTHONPATH=. OMP_NUM_THREADS=1 \
   experiments/hermite_attention/tests
 ```
 
-The initial submission for each allocated run uses:
+The submission for each allocated run uses the following, with the partition
+options (`--partition`, and for `standard` a 24-hour `--time`) recorded in its
+run record:
 
 ```bash
 RUN=<permanent-run-id>
 LAUNCH_COMMIT=$(git rev-parse HEAD)
 sbatch --parsable --gres=gpu:4 --job-name="hermite-$RUN" \
-  --dependency=afterok:203015:203016 \
   --output="experiments/hermite_attention/runs/$RUN/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch \
   experiments.hermite_attention.acceptance \

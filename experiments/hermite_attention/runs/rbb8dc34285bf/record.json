@@ -1,6 +1,22 @@
 {
   "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rbb8dc34285bf",
   "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm",
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rbb8dc34285bf/.runtime/acceptance/H100-4",
+      "allocation": "JobId=203103 JobName=qk-hermite-norm-m2-rbb8dc34285bf UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20084 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:02 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-09-27T22:49:30 EligibleTime=2026-09-27T22:49:30 AccrueTime=2026-09-27T22:49:30 StartTime=2026-09-27T22:49:32 EndTime=2026-09-28T22:49:32 Deadline=N/A PreemptEligibleTime=2026-09-28T00:49:32 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-09-27T22:49:32 Scheduler=Main Partition=standard AllocNode:Sid=kennel:3673817 ReqNodeList=dogo ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rbb8dc34285bf/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rbb8dc34285bf/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/hermite_attention/runs/rbb8dc34285bf/config.yaml",
+      "config_sha256": "578150492260aa09deba16d3452745d848a69b862267aabf8ad5156a7ec7b348",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "slurm_job_id": "203103",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-09-28T02:49:34.431305+00:00"
+    }
+  ],
   "attention_degree": 2,
   "attention_kernel": "hermite_normalized",
   "attention_normalization": true,
@@ -22,8 +38,15 @@
       "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
     }
   },
+  "executed_recipe": {
+    "commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+    "path": "experiments/hermite_attention/runs/rbb8dc34285bf/config.yaml",
+    "sha256": "578150492260aa09deba16d3452745d848a69b862267aabf8ad5156a7ec7b348"
+  },
+  "frozen_execution_sha256": "0d6b47d719837a3b243287e68591664fe0814fa10f75cfaea9fa5b9142cebfc0",
   "home_cluster": "kennel",
   "label": "200m-qk-hermite-m002-normalized-seed0",
+  "log_path": "experiments/hermite_attention/runs/rbb8dc34285bf/training.log",
   "matched_control": {
     "run_id": "r93c9d0814322",
     "study": "key_dimension_taylor"
@@ -43,9 +66,34 @@
       "H100",
       "B300"
     ],
-    "partition": "sweep"
+    "node_list": [
+      "dogo"
+    ],
+    "partition": "standard",
+    "time_limit": "1-00:00:00"
   },
   "run_id": "rbb8dc34285bf",
   "seed": 0,
-  "status": "planned"
+  "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--time=1-00:00:00",
+      "--nodelist=dogo",
+      "--gres=gpu:4",
+      "--job-name=qk-hermite-norm-m2-rbb8dc34285bf",
+      "--output=experiments/hermite_attention/runs/rbb8dc34285bf/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.hermite_attention.acceptance",
+      "experiments/hermite_attention/runs/rbb8dc34285bf/config.yaml",
+      "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "4",
+      "B300,H100"
+    ],
+    "slurm_job_id": "203103",
+    "submitted_utc": "2026-09-28T02:49:30.457841+00:00"
+  }
 }
