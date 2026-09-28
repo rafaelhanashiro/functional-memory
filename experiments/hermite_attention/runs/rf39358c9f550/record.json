@@ -49,7 +49,7 @@
       "H100",
       "B300"
     ],
-    "partition": "sweep"
+    "partition": "long"
   },
   "run_id": "rf39358c9f550",
   "seed": 0,
