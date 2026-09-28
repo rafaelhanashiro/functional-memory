@@ -49,9 +49,21 @@
       "H100",
       "B300"
     ],
-    "partition": "sweep"
+    "partition": "long"
   },
   "run_id": "r3ba7bc7811da",
+  "scheduler_changes": [
+    {
+      "changed_utc": "2026-09-28T01:13:02.566993+00:00",
+      "commands": [
+        "scontrol update JobId=203018 Partition=long"
+      ],
+      "from_partition": "sweep",
+      "reason": "Moved while pending so it is scheduled ahead of sweep work.",
+      "slurm_job_id": "203018",
+      "to_partition": "long"
+    }
+  ],
   "seed": 0,
   "source_commit": "84dedd777c2f1def16ef9ef74ea11ec6c94cdda9",
   "status": "submitted",

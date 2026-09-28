@@ -1,6 +1,22 @@
 {
   "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r77d20d345a51",
   "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm",
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r77d20d345a51/.runtime/acceptance/H100-4",
+      "allocation": "JobId=203017 JobName=qk-hermite-norm-m2-r77d20d345a51 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20084 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:01 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-09-27T19:11:52 EligibleTime=2026-09-27T19:15:26 AccrueTime=2026-09-27T19:15:26 StartTime=2026-09-27T21:14:34 EndTime=2026-09-28T21:14:34 Deadline=N/A PreemptEligibleTime=2026-09-27T23:14:34 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-09-27T21:14:34 Scheduler=Main Partition=standard AllocNode:Sid=kennel:3677806 ReqNodeList=dogo ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r77d20d345a51/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r77d20d345a51/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/hermite_attention/runs/r77d20d345a51/config.yaml",
+      "config_sha256": "66710fbcab8ee7afd7db669e9254a9bca8ef8805f6a0bccf18b1798706685815",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "84dedd777c2f1def16ef9ef74ea11ec6c94cdda9",
+      "slurm_job_id": "203017",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-09-28T01:14:35.941533+00:00"
+    }
+  ],
   "attention_degree": 2,
   "attention_kernel": "hermite_normalized",
   "attention_normalization": true,
@@ -30,6 +46,7 @@
   "frozen_execution_sha256": "b4afd139ee74b969f499b1a474dad2f093a033095462060e430217b3ce7dde4e",
   "home_cluster": "kennel",
   "label": "200m-qk-hermite-m002-normalized-seed0",
+  "log_path": "experiments/hermite_attention/runs/r77d20d345a51/training.log",
   "matched_control": {
     "run_id": "r93c9d0814322",
     "study": "key_dimension_taylor"
@@ -49,12 +66,29 @@
       "H100",
       "B300"
     ],
-    "partition": "sweep"
+    "node_list": [
+      "dogo"
+    ],
+    "partition": "standard",
+    "time_limit": "1-00:00:00"
   },
   "run_id": "r77d20d345a51",
+  "scheduler_changes": [
+    {
+      "changed_utc": "2026-09-28T01:13:02.566993+00:00",
+      "commands": [
+        "scontrol update JobId=203017 TimeLimit=1-00:00:00",
+        "scontrol update JobId=203017 Partition=standard NodeList=dogo"
+      ],
+      "from_partition": "sweep",
+      "reason": "Moved while pending to use the user's standard allowance; standard caps jobs at 24 h, and pinning to dogo preempts one lower-tier job instead of several on akita.",
+      "slurm_job_id": "203017",
+      "to_partition": "standard"
+    }
+  ],
   "seed": 0,
   "source_commit": "84dedd777c2f1def16ef9ef74ea11ec6c94cdda9",
-  "status": "submitted",
+  "status": "acceptance",
   "submission": {
     "command": [
       "sbatch",
