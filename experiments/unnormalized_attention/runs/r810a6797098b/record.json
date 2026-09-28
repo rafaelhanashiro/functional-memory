@@ -1,11 +1,63 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/unnormalized_exp_qk_norm/experiments/unnormalized_attention/runs/r810a6797098b/.runtime/acceptance/H100-4",
+      "allocation": "JobId=203276 JobName=qk-exp-r810a6797098b UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20068 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:03 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-09-28T12:12:03 EligibleTime=2026-09-28T12:12:03 AccrueTime=2026-09-28T12:12:03 StartTime=2026-09-28T12:12:19 EndTime=2026-09-29T12:12:19 Deadline=N/A PreemptEligibleTime=2026-09-28T14:12:19 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-09-28T12:12:19 Scheduler=Main Partition=standard AllocNode:Sid=kennel:2063802 ReqNodeList=dogo ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/unnormalized_exp_qk_norm/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/unnormalized_exp_qk_norm StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/unnormalized_exp_qk_norm/experiments/unnormalized_attention/runs/r810a6797098b/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/unnormalized_exp_qk_norm/experiments/unnormalized_attention/runs/r810a6797098b/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/unnormalized_attention/runs/r810a6797098b/config.yaml",
+      "config_sha256": "845aba18d5929b130a11fe7fd9ff9bc0623f6be774b90f8a1e6c8fd6dc7fd0bb",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "371fd6eaf93e5e755bb52892c208f11f1d4129e0",
+      "slurm_job_id": "203276",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-09-28T16:12:22.319667+00:00"
+    }
+  ],
   "config": {
     "path": "experiments/unnormalized_attention/runs/r810a6797098b/config.yaml",
     "sha256": "845aba18d5929b130a11fe7fd9ff9bc0623f6be774b90f8a1e6c8fd6dc7fd0bb"
   },
+  "frozen_execution_sha256": "8d6f07a8934c49d48c4f6f39068206e1911ad52f63cad996277593eb453eb8a6",
+  "home_cluster": "kennel",
   "label": "200m-qk-exp-seed0",
+  "log_path": "experiments/unnormalized_attention/runs/r810a6797098b/training.log",
   "name": "200m-qk-exp-seed0",
   "record_schema_version": 1,
+  "requested_hardware": {
+    "gpu_count": 4,
+    "gpu_types": [
+      "H100",
+      "B300"
+    ],
+    "node_list": [
+      "dogo"
+    ],
+    "partition": "standard",
+    "time_limit": "1-00:00:00"
+  },
   "run_id": "r810a6797098b",
-  "status": "planned"
+  "source_commit": "371fd6eaf93e5e755bb52892c208f11f1d4129e0",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--time=1-00:00:00",
+      "--nodelist=dogo",
+      "--gres=gpu:4",
+      "--job-name=qk-exp-r810a6797098b",
+      "--output=experiments/unnormalized_attention/runs/r810a6797098b/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.unnormalized_attention.acceptance",
+      "experiments/unnormalized_attention/runs/r810a6797098b/config.yaml",
+      "371fd6eaf93e5e755bb52892c208f11f1d4129e0",
+      "4",
+      "B300,H100"
+    ],
+    "slurm_job_id": "203276",
+    "submitted_utc": "2026-09-28T16:12:03.965739+00:00"
+  }
 }
