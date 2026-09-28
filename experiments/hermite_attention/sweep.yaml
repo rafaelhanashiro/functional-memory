@@ -4,7 +4,7 @@ experiment: hermite_attention
 question: How do fixed standard-normal Hermite and Taylor coefficients compare at
   matched QK-normalized scores?
 home_cluster: kennel
-artifact_root: /data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm
+artifact_root: /data/cl/u/rafah/home/projects/functional-memory
 scaffold: scaffolds/transformer
 cohort: canonical_qk_norm
 qk_norm: true

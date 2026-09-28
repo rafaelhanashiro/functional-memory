@@ -2,14 +2,10 @@
   "acceptance": {
     "error": "CalledProcessError: Command '['/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/scaffolds/transformer/.venv/bin/python', '-m', 'experiments.hermite_attention.acceptance', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/config.yaml', '--directory', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4', '--gpu-count', '4', '--gpu-type', 'B300', '--worker', 'pilot', '--output', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4/pilot-result.json', '--stop-after-step', '20']' returned non-zero exit status 1.",
     "failed_utc": "2026-09-28T07:48:20.564116+00:00",
-    "failure": {
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4/failure.json",
-      "sha256": "41af72fb0d243020f507ff8c1f9344ccc25a69317ab20a54d146218bfd4b7a4c"
-    },
     "identity": "1b7e1866af06b78a0ef12ce4edcbac19eeaac1f20165bb3e330dd3e0d633af3a",
     "numerical_failure": {
       "artifact": {
-        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4/pilot/numerical_failure_step_00000005.json",
+        "path": "experiments/hermite_attention/runs/rea4fd9479c26/numerical_failure_step_00000005.json",
         "sha256": "570e56cfcebdf629d61d865b6339a5036a1a1b55da15029a1e30ef338f2a2413"
       },
       "diagnostics": {
@@ -1491,15 +1487,15 @@
       }
     },
     "pilot_metadata": {
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4/pilot/metadata.json",
+      "path": "experiments/hermite_attention/runs/rea4fd9479c26/metadata.json",
       "sha256": "744af08b0119259d4ab85d33ac016df0a2915448e59c3b45d36afde5f2d08e55"
     },
     "slurm_job_id": "203102",
     "stage": "pilot",
     "status": "numerical_failure"
   },
-  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26",
-  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm",
+  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/experiments/hermite_attention/runs/rea4fd9479c26",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
   "artifacts": [
     {
       "path": "experiments/hermite_attention/runs/rea4fd9479c26/training.log",
@@ -1525,11 +1521,6 @@
       "started_utc": "2026-09-28T07:39:53.617241+00:00"
     }
   ],
-  "attention_degree": 1,
-  "attention_kernel": "hermite_normalized",
-  "attention_normalization": true,
-  "coefficient_mode": "fixed",
-  "coefficient_sharing": "global",
   "cohort": "canonical_qk_norm",
   "comparison_role": "primary",
   "config": {
@@ -1568,11 +1559,6 @@
   "name": "200m-qk-hermite-m001-normalized-seed0",
   "parameter_count": 199906464,
   "polynomial_family": "hermite",
-  "qk_head_dim": 64,
-  "qk_norm": true,
-  "qk_norm_initial_scale": 8.0,
-  "qk_norm_parameter_count": 160,
-  "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
   "requested_hardware": {
     "dependency": "afterany:203107",

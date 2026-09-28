@@ -39,8 +39,8 @@
       "status": "passed"
     }
   },
-  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r9534f1d3ef99",
-  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm",
+  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/experiments/hermite_attention/runs/r9534f1d3ef99",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
   "artifacts": [
     {
       "path": "experiments/hermite_attention/runs/r9534f1d3ef99/best_validation.json",
@@ -106,9 +106,6 @@
       "started_utc": "2026-09-28T10:37:00.829124+00:00"
     }
   ],
-  "attention_degree": 3,
-  "attention_kernel": "taylor_unnormalized",
-  "attention_normalization": false,
   "best_validation": {
     "path": "experiments/hermite_attention/runs/r9534f1d3ef99/best_validation.json",
     "sha256": "adbcf44921d02bc0a5c72f8450f10a6f8efae55df377b0fb13a63945a5e0d854",
@@ -126,8 +123,6 @@
     "validation_nll": 2.869641806398119,
     "version": 1
   },
-  "coefficient_mode": "fixed",
-  "coefficient_sharing": "global",
   "cohort": "canonical_qk_norm",
   "comparison_role": "matched_control",
   "completion": {
@@ -338,7 +333,7 @@
     "sha256": "636ecb42e2c8306d437469a45b4c9cf676f41acdd91f22c49d8140caafc5aff8",
     "size_bytes": 1507622
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r9534f1d3ef99/training.log",
+  "log_path": "experiments/hermite_attention/runs/r9534f1d3ef99/training.log",
   "metadata": {
     "path": "experiments/hermite_attention/runs/r9534f1d3ef99/metadata.json",
     "sha256": "cc5a29221e9017c240d57a78ff07b26da21db45e799a990392cc73a48b687cd1",
@@ -352,11 +347,6 @@
   "name": "200m-qk-taylor-m003-unnormalized-seed0",
   "parameter_count": 199906464,
   "polynomial_family": "taylor",
-  "qk_head_dim": 64,
-  "qk_norm": true,
-  "qk_norm_initial_scale": 8.0,
-  "qk_norm_parameter_count": 160,
-  "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
   "requested_hardware": {
     "dependency": "afterany:203108",

@@ -39,8 +39,8 @@
       "status": "passed"
     }
   },
-  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rbb8dc34285bf",
-  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm",
+  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/experiments/hermite_attention/runs/rbb8dc34285bf",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
   "artifacts": [
     {
       "path": "experiments/hermite_attention/runs/rbb8dc34285bf/best_validation.json",
@@ -101,16 +101,11 @@
       "started_utc": "2026-09-28T02:49:34.431305+00:00"
     }
   ],
-  "attention_degree": 2,
-  "attention_kernel": "hermite_normalized",
-  "attention_normalization": true,
   "best_validation": {
     "path": "experiments/hermite_attention/runs/rbb8dc34285bf/best_validation.json",
     "sha256": "bf5ddd6082927c9594b142b471526771ba12679b4647a26a731e7540e31e4667",
     "size_bytes": 182
   },
-  "coefficient_mode": "fixed",
-  "coefficient_sharing": "global",
   "cohort": "canonical_qk_norm",
   "comparison_role": "primary",
   "config": {
@@ -137,6 +132,83 @@
       "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
       "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
     }
+  },
+  "diagnostic_checkpoint": {
+    "file_count": 13,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "3adb8aec22a5430d663a56e5e94394cd5ca4f054e706be6733f686b53fd5373b",
+        "size_bytes": 275
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "20667583e745119f53780bde7ba488300e33f0f35d5fcdc7aba5ad5902bb840a",
+        "size_bytes": 143633
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "e42fb7a6fc049d6c676926fefc5c8bfb5783df4eb2164d1b30c6d07dbac3d7d0",
+        "size_bytes": 88321
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "d5ddef7a21b89ff75c68628d46d357caa3529df10d654baa0ac1b3557a7bc4b6",
+        "size_bytes": 49685
+      },
+      {
+        "path": "default/d/bd24aaf6720b3ee52cad28ddd955d6bf",
+        "sha256": "53664d9698742ec806cdb2d3fcce59d230bf58483e1d2ec09d18e7a00452b0ea",
+        "size_bytes": 5220
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "01ed1422e55d440ea6f255ca3e8c6f2ec11615b4b42ef59ee5b2580d66f9c9ad",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/0973ed93a179f9e5b05baeba843d2531",
+        "sha256": "617d7cff1f9c105c01375f0735d371f01ed67e82f93d5d87a7303eb8bca6ab15",
+        "size_bytes": 681
+      },
+      {
+        "path": "default/ocdbt.process_0/d/0d151cf34ed5ed9f6cc10be7e7542810",
+        "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+        "size_bytes": 195
+      },
+      {
+        "path": "default/ocdbt.process_0/d/8bad3383addcf0f513e7f90942852f96",
+        "sha256": "e1aedeca41bc42dbcef087ed46b2957c95c60932ba8aeb281b14dbf1e739bfe9",
+        "size_bytes": 726
+      },
+      {
+        "path": "default/ocdbt.process_0/d/910c289a585eb32d4cd49f9295c9869b",
+        "sha256": "bc2b70a9f420c0885ec0544ef7b31d7cf7b6b22e841b4355b0f162d547a5ad89",
+        "size_bytes": 345788416
+      },
+      {
+        "path": "default/ocdbt.process_0/d/927eb3abebd3bf6824eee7d4d890c3dd",
+        "sha256": "1737b60f94a199e871f2dd350f5c70b2582ff6e18a720ef9bd08e581d1b56ced",
+        "size_bytes": 1067175936
+      },
+      {
+        "path": "default/ocdbt.process_0/d/c55dba316068986118b725c1e296213d",
+        "sha256": "af6c99f0b7bfbe2a009f76c879fa5942a3c13f8b73d313bd133374a59ced9244",
+        "size_bytes": 792608768
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "d86f0562780e3a61be44a6a8dac4a471f89ea120571870f994d49a2608728192",
+        "size_bytes": 363
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "experiments/hermite_attention/runs/rbb8dc34285bf/checkpoints/3500",
+    "purpose": "replay the first nonfinite update at step 3829 from its exact optimizer and data state",
+    "sha256": "aabae25b1d0b9c29730f8a4d6aece8550c2839559d910a64aac564d7466c514e",
+    "size_bytes": 2205862337,
+    "step": 3500
   },
   "error": "FloatingPointError: Nonfinite training loss or optimizer update at step 3829: nan",
   "executed_recipe": {
@@ -320,7 +392,7 @@
     "sha256": "2afd7af951caa29624879e1f5e38642f7a1966d3b4540e196ebb5d0f1630de2d",
     "size_bytes": 274758
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rbb8dc34285bf/training.log",
+  "log_path": "experiments/hermite_attention/runs/rbb8dc34285bf/training.log",
   "matched_control": {
     "run_id": "r93c9d0814322",
     "study": "key_dimension_taylor"
@@ -336,14 +408,9 @@
     "size_bytes": 48736
   },
   "name": "200m-qk-hermite-m002-normalized-seed0",
-  "numerical_failure_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rbb8dc34285bf/numerical_failure_step_00003829.json",
+  "numerical_failure_path": "experiments/hermite_attention/runs/rbb8dc34285bf/numerical_failure_step_00003829.json",
   "parameter_count": 199906464,
   "polynomial_family": "hermite",
-  "qk_head_dim": 64,
-  "qk_norm": true,
-  "qk_norm_initial_scale": 8.0,
-  "qk_norm_parameter_count": 160,
-  "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
   "requested_hardware": {
     "gpu_count": 4,

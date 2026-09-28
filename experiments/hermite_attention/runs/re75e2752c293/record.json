@@ -39,8 +39,8 @@
       "status": "passed"
     }
   },
-  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/re75e2752c293",
-  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm",
+  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/experiments/hermite_attention/runs/re75e2752c293",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
   "artifacts": [
     {
       "path": "experiments/hermite_attention/runs/re75e2752c293/best_validation.json",
@@ -106,9 +106,6 @@
       "started_utc": "2026-09-28T08:04:58.379222+00:00"
     }
   ],
-  "attention_degree": 3,
-  "attention_kernel": "hermite_unnormalized",
-  "attention_normalization": false,
   "best_validation": {
     "path": "experiments/hermite_attention/runs/re75e2752c293/best_validation.json",
     "sha256": "78a48e5058503b249852cb2d47abb4edae7b3f8af197cfc2132a994739026bfd",
@@ -126,8 +123,6 @@
     "validation_nll": 2.8844598702022006,
     "version": 1
   },
-  "coefficient_mode": "fixed",
-  "coefficient_sharing": "global",
   "cohort": "canonical_qk_norm",
   "comparison_role": "primary",
   "completion": {
@@ -343,7 +338,7 @@
     "sha256": "8f159a304a7e09e80470b01f52bb8033edb9ef63e6e7c2813cc9bbb6cfdee97c",
     "size_bytes": 1508077
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/re75e2752c293/training.log",
+  "log_path": "experiments/hermite_attention/runs/re75e2752c293/training.log",
   "matched_control": {
     "run_id": "r9534f1d3ef99",
     "study": "hermite_attention"
@@ -361,11 +356,6 @@
   "name": "200m-qk-hermite-m003-unnormalized-seed0",
   "parameter_count": 199906464,
   "polynomial_family": "hermite",
-  "qk_head_dim": 64,
-  "qk_norm": true,
-  "qk_norm_initial_scale": 8.0,
-  "qk_norm_parameter_count": 160,
-  "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
   "requested_hardware": {
     "dependency": "afterany:203104",

@@ -39,8 +39,8 @@
       "status": "passed"
     }
   },
-  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/re8b05edb37b1",
-  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm",
+  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/experiments/hermite_attention/runs/re8b05edb37b1",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
   "artifacts": [
     {
       "path": "experiments/hermite_attention/runs/re8b05edb37b1/best_validation.json",
@@ -101,16 +101,11 @@
       "started_utc": "2026-09-28T03:38:06.520784+00:00"
     }
   ],
-  "attention_degree": 4,
-  "attention_kernel": "hermite_normalized",
-  "attention_normalization": true,
   "best_validation": {
     "path": "experiments/hermite_attention/runs/re8b05edb37b1/best_validation.json",
     "sha256": "c1e7c6e6ba8d6df7ea049a484264029cf81fca94f3154e9f27ce7502eab241f3",
     "size_bytes": 180
   },
-  "coefficient_mode": "fixed",
-  "coefficient_sharing": "global",
   "cohort": "canonical_qk_norm",
   "comparison_role": "primary",
   "config": {
@@ -322,7 +317,7 @@
     "sha256": "7af3da325b323a700b36558f9f60c4f24ec24ba995631fbf6532edf0cacb7d04",
     "size_bytes": 102667
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/re8b05edb37b1/training.log",
+  "log_path": "experiments/hermite_attention/runs/re8b05edb37b1/training.log",
   "matched_control": {
     "run_id": "ra9b651caa405",
     "study": "key_dimension_taylor"
@@ -338,14 +333,9 @@
     "size_bytes": 16991
   },
   "name": "200m-qk-hermite-m004-normalized-seed0",
-  "numerical_failure_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/re8b05edb37b1/numerical_failure_step_00001390.json",
+  "numerical_failure_path": "experiments/hermite_attention/runs/re8b05edb37b1/numerical_failure_step_00001390.json",
   "parameter_count": 199906464,
   "polynomial_family": "hermite",
-  "qk_head_dim": 64,
-  "qk_norm": true,
-  "qk_norm_initial_scale": 8.0,
-  "qk_norm_parameter_count": 160,
-  "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
   "requested_hardware": {
     "gpu_count": 4,

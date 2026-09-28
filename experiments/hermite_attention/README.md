@@ -5,12 +5,14 @@ Taylor truncation at the same degree when the score geometry and training recipe
 match? This cohort uses **QK normalization for every run**, `d_K=d_V=64`, degrees
 1–4, seed 0, and both row-normalized and unnormalized attention.
 
-**Home cluster: Kennel.** The active branch is `codex/hermite-qk-norm`; its
-worktree and artifact root are
-`/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm`.
-Each permanent run ID in [runs.csv](runs.csv) owns its frozen recipe, execution
-record, measurements, checkpoint directory, and `training.log` under `runs/`.
+**Home cluster: Kennel.** The artifact root is
+`/data/cl/u/rafah/home/projects/functional-memory`. Each permanent run ID in
+[runs.csv](runs.csv) owns its frozen recipe, execution record, measurements,
+retained checkpoint, and `training.log` under `runs/`. Completed runs retain their
+validation-best checkpoint; normalized degree 2 retains its step-3500 checkpoint to
+replay its first nonfinite update, and the other failures retain none.
 [sweep.yaml](sweep.yaml) lists membership and the exact existing Taylor controls.
+Findings are in [results/attention_scaling](../../results/attention_scaling/README.md).
 
 The cohort was submitted on 2026-09-27 as jobs **203102–203113**, from launch
 commit `bd31f8ad7a8a964b286387ad7ad7723ea405b286`, after the compiled H100/B300

@@ -39,8 +39,8 @@
       "status": "passed"
     }
   },
-  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rf39358c9f550",
-  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm",
+  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/experiments/hermite_attention/runs/rf39358c9f550",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
   "artifacts": [
     {
       "path": "experiments/hermite_attention/runs/rf39358c9f550/best_validation.json",
@@ -154,9 +154,6 @@
       "started_utc": "2026-09-28T07:38:26.961998+00:00"
     }
   ],
-  "attention_degree": 4,
-  "attention_kernel": "hermite_unnormalized",
-  "attention_normalization": false,
   "best_validation": {
     "path": "experiments/hermite_attention/runs/rf39358c9f550/best_validation.json",
     "sha256": "440d5f061b34a6ce5b24580bf85070d775cff0c144dd6358c4f0ed019d13fc60",
@@ -174,8 +171,6 @@
     "validation_nll": 2.847592830657959,
     "version": 1
   },
-  "coefficient_mode": "fixed",
-  "coefficient_sharing": "global",
   "cohort": "canonical_qk_norm",
   "comparison_role": "primary",
   "completion": {
@@ -392,7 +387,7 @@
     "sha256": "c48a5b38df0cd37835513991c7bc7728415fc1617556ded9c8b01bace64032ab",
     "size_bytes": 1510223
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rf39358c9f550/training.log",
+  "log_path": "experiments/hermite_attention/runs/rf39358c9f550/training.log",
   "matched_control": {
     "run_id": "r3d631b7b8afe",
     "study": "hermite_attention"
@@ -410,11 +405,6 @@
   "name": "200m-qk-hermite-m004-unnormalized-seed0",
   "parameter_count": 199906464,
   "polynomial_family": "hermite",
-  "qk_head_dim": 64,
-  "qk_norm": true,
-  "qk_norm_initial_scale": 8.0,
-  "qk_norm_parameter_count": 160,
-  "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
   "requested_hardware": {
     "gpu_count": 4,

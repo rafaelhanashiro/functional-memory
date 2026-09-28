@@ -39,8 +39,8 @@
       "status": "passed"
     }
   },
-  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rb58cee0a77cd",
-  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm",
+  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/experiments/hermite_attention/runs/rb58cee0a77cd",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
   "artifacts": [
     {
       "path": "experiments/hermite_attention/runs/rb58cee0a77cd/best_validation.json",
@@ -106,9 +106,6 @@
       "started_utc": "2026-09-28T04:01:13.019939+00:00"
     }
   ],
-  "attention_degree": 2,
-  "attention_kernel": "taylor_unnormalized",
-  "attention_normalization": false,
   "best_validation": {
     "path": "experiments/hermite_attention/runs/rb58cee0a77cd/best_validation.json",
     "sha256": "edad76e80a14ce6964e8a4f4eae6de7d45c507c7f4927fbfe6bac45d55c6c472",
@@ -126,8 +123,6 @@
     "validation_nll": 3.0795374597821916,
     "version": 1
   },
-  "coefficient_mode": "fixed",
-  "coefficient_sharing": "global",
   "cohort": "canonical_qk_norm",
   "comparison_role": "matched_control",
   "completion": {
@@ -338,7 +333,7 @@
     "sha256": "b227d9f2971f93421799818ce58f98b473a51fe12a00239af95a32c81d61429b",
     "size_bytes": 1509891
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rb58cee0a77cd/training.log",
+  "log_path": "experiments/hermite_attention/runs/rb58cee0a77cd/training.log",
   "metadata": {
     "path": "experiments/hermite_attention/runs/rb58cee0a77cd/metadata.json",
     "sha256": "4886f980e345c933794f8347ff6c253a1a9cebef0c14baa2b051d9b78293b1c3",
@@ -352,11 +347,6 @@
   "name": "200m-qk-taylor-m002-unnormalized-seed0",
   "parameter_count": 199906464,
   "polynomial_family": "taylor",
-  "qk_head_dim": 64,
-  "qk_norm": true,
-  "qk_norm_initial_scale": 8.0,
-  "qk_norm_parameter_count": 160,
-  "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
   "requested_hardware": {
     "gpu_count": 4,
