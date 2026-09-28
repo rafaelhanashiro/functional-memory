@@ -63,9 +63,9 @@ cells:
 - panel: unnormalized_fixed
   column: m1
   d_k: 64
-  experiment: unnormalized_taylor_attention
-  run: reb79b9201e5a
-  label: 200m-m001-seed0
+  experiment: hermite_attention
+  run: rdb78995ba45a
+  label: 200m-qk-taylor-m001-unnormalized-seed0
 - panel: unnormalized_learned
   column: m1
   d_k: 64
@@ -75,9 +75,9 @@ cells:
 - panel: unnormalized_fixed
   column: m2
   d_k: 64
-  experiment: unnormalized_taylor_attention
-  run: re4509bf65b5f
-  label: 200m-m002-seed0
+  experiment: hermite_attention
+  run: rb58cee0a77cd
+  label: 200m-qk-taylor-m002-unnormalized-seed0
 - panel: unnormalized_learned
   column: m2
   d_k: 64
@@ -87,9 +87,9 @@ cells:
 - panel: unnormalized_fixed
   column: m3
   d_k: 64
-  experiment: unnormalized_taylor_attention
-  run: rba0cd1a9bf62
-  label: 200m-m003-seed0
+  experiment: hermite_attention
+  run: r9534f1d3ef99
+  label: 200m-qk-taylor-m003-unnormalized-seed0
 - panel: unnormalized_learned
   column: m3
   d_k: 64
@@ -99,9 +99,9 @@ cells:
 - panel: unnormalized_fixed
   column: m4
   d_k: 64
-  experiment: unnormalized_taylor_attention
-  run: rfd3129858805
-  label: 200m-m004-seed0
+  experiment: hermite_attention
+  run: r3d631b7b8afe
+  label: 200m-qk-taylor-m004-unnormalized-seed0
 - panel: unnormalized_learned
   column: m4
   d_k: 64
@@ -164,25 +164,25 @@ cells:
   label: 200m-qk-m004-nonnegative-seed0
 metric: terminal_validation_perplexity
 runs:
-- study: unnormalized_taylor_attention
-  run_id: reb79b9201e5a
-  label: 200m-m001-seed0
+- study: hermite_attention
+  run_id: rdb78995ba45a
+  label: 200m-qk-taylor-m001-unnormalized-seed0
   sources:
     config.yaml:
-      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/config.yaml
-      sha256: 1feb719f72a6a17708cce6a673c2036d596068a174dc2cd0582d1b325256d687
+      path: experiments/hermite_attention/runs/rdb78995ba45a/config.yaml
+      sha256: 5ed30bfc608f92236eee480114f533eee41400e2f48e5ad8222cabaafdcca956
     metrics.jsonl:
-      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/metrics.jsonl
-      sha256: c9e00eac4a104437de18334561fdbea4d6f05b81696632dd2e7dbd605ccbae0d
+      path: experiments/hermite_attention/runs/rdb78995ba45a/metrics.jsonl
+      sha256: 8cd09cc5aa1c766efe211d708ba690384c56e8e2210e588a6b4416d6ab9117c4
     completion.json:
-      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/completion.json
-      sha256: bbf2419c6baad8701856e9a16ab7565fb45be8aebd9c5c6a2c6a918837f3e0b1
+      path: experiments/hermite_attention/runs/rdb78995ba45a/completion.json
+      sha256: 3fb4c750641f23a5cc01a8f79f96005fd92ec210f4e2e8830133f8aa3adea01d
     metadata.json:
-      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/metadata.json
-      sha256: eb437be40040cb02ec8cc1bc5d77f11c99212e7c4c193424ff41566311ad0255
+      path: experiments/hermite_attention/runs/rdb78995ba45a/metadata.json
+      sha256: 6fbc8133acd93e97bb47756cd048cfaab4f02fafaea82f386b2971cd83a144d4
     best_validation.json:
-      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/best_validation.json
-      sha256: 3ebf36341187a470896d081f4c57d5243f70e7810400d52ffece926aa8498e9a
+      path: experiments/hermite_attention/runs/rdb78995ba45a/best_validation.json
+      sha256: 282e6a2f787ea3bdcd2ea8f59eb42a9e79b8c2e6c58fccb33612612f70a384e8
 - study: qk_norm_learned_taylor
   run_id: r13c144b8fd17
   label: 200m-qk-m001-unnormalized-seed0
@@ -202,25 +202,25 @@ runs:
     best_validation.json:
       path: experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/best_validation.json
       sha256: e352893c34373906d9698ce20f7fb3987b995beb05d7cd18df4f7cb7188b9ec8
-- study: unnormalized_taylor_attention
-  run_id: re4509bf65b5f
-  label: 200m-m002-seed0
+- study: hermite_attention
+  run_id: rb58cee0a77cd
+  label: 200m-qk-taylor-m002-unnormalized-seed0
   sources:
     config.yaml:
-      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/config.yaml
-      sha256: e99503d7471ab5b1fbd770403d98da44086b6b00d3831dccbf00fe1aef4ee51a
+      path: experiments/hermite_attention/runs/rb58cee0a77cd/config.yaml
+      sha256: f27a050dc6eeee275e74ad2d9f3f641ba0d4b755fdf32a68c31083061ee1cd5c
     metrics.jsonl:
-      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/metrics.jsonl
-      sha256: a312d11551b69eb5e46e78d96c2571dc0e977151489ba5949e2f2485bb430854
+      path: experiments/hermite_attention/runs/rb58cee0a77cd/metrics.jsonl
+      sha256: a35eaa281e50e0195bcb6dc345e9de4ad29777765c48eab7d308941280fa491a
     completion.json:
-      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/completion.json
-      sha256: 26ebd93c6eca9126f59bbd92ed7664cda27061dcda766b2ea533a40e2fc645a3
+      path: experiments/hermite_attention/runs/rb58cee0a77cd/completion.json
+      sha256: 1855368719a0a6da7fc6d5e8dc6844192466b7fa759e9a891362d47c5967e719
     metadata.json:
-      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/metadata.json
-      sha256: 71639fd6adbccb60586b804767d2f38413b2cc1e019bbc41c677539f6be8bc22
+      path: experiments/hermite_attention/runs/rb58cee0a77cd/metadata.json
+      sha256: 4886f980e345c933794f8347ff6c253a1a9cebef0c14baa2b051d9b78293b1c3
     best_validation.json:
-      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/best_validation.json
-      sha256: cb95f804caee43f72bb70a0af288f72e97cb92774e9d44f870acdc591af11a76
+      path: experiments/hermite_attention/runs/rb58cee0a77cd/best_validation.json
+      sha256: edad76e80a14ce6964e8a4f4eae6de7d45c507c7f4927fbfe6bac45d55c6c472
 - study: qk_norm_learned_taylor
   run_id: r07bee5b16e61
   label: 200m-qk-m002-unnormalized-seed0
@@ -240,25 +240,25 @@ runs:
     best_validation.json:
       path: experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/best_validation.json
       sha256: 5e52d12bac9116644c245512688de27ab7204edbe805a0331c9a45cd3c47e810
-- study: unnormalized_taylor_attention
-  run_id: rba0cd1a9bf62
-  label: 200m-m003-seed0
+- study: hermite_attention
+  run_id: r9534f1d3ef99
+  label: 200m-qk-taylor-m003-unnormalized-seed0
   sources:
     config.yaml:
-      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/config.yaml
-      sha256: 5e809fad78ce5ecdc2cfc402bf6c3e191517397409aa50df5a2ac5c0a49464a9
+      path: experiments/hermite_attention/runs/r9534f1d3ef99/config.yaml
+      sha256: 863779081100670e4cc228280daaf9177212191938f47228f4643bbbcca27ae6
     metrics.jsonl:
-      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/metrics.jsonl
-      sha256: 41152673f2d2954257fadbe3d01e1d0b77f2570e6a7089aeaecbfa803e4826a8
+      path: experiments/hermite_attention/runs/r9534f1d3ef99/metrics.jsonl
+      sha256: 134135b4ca365ba6c232e77ad1475207e42f4f2779630c39660f30fa476f1a92
     completion.json:
-      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/completion.json
-      sha256: ba04abc24913de43e687b544ed77a1c4afbd74ce3ef51fe41f04680affa69b7b
+      path: experiments/hermite_attention/runs/r9534f1d3ef99/completion.json
+      sha256: 836d8c8d91eec8f7739719bc037b0654e4e4115f601b6386734a8da8de776bd3
     metadata.json:
-      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/metadata.json
-      sha256: 8724696257a3a65e4961c83cb94db7dd57bcbfc18aaff02b63372483037c4862
+      path: experiments/hermite_attention/runs/r9534f1d3ef99/metadata.json
+      sha256: cc5a29221e9017c240d57a78ff07b26da21db45e799a990392cc73a48b687cd1
     best_validation.json:
-      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/best_validation.json
-      sha256: d767165eb86c1d64f6e7a0d7eb5acba09ca506bbf02d731bedaa2094c9aacea5
+      path: experiments/hermite_attention/runs/r9534f1d3ef99/best_validation.json
+      sha256: adbcf44921d02bc0a5c72f8450f10a6f8efae55df377b0fb13a63945a5e0d854
 - study: qk_norm_learned_taylor
   run_id: r0470d7fcaae6
   label: 200m-qk-m003-unnormalized-seed0
@@ -278,25 +278,25 @@ runs:
     best_validation.json:
       path: experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/best_validation.json
       sha256: fba4f7bfc916d1ab67430261dc37d54d7e3fa59c433237480012909917e00b5f
-- study: unnormalized_taylor_attention
-  run_id: rfd3129858805
-  label: 200m-m004-seed0
+- study: hermite_attention
+  run_id: r3d631b7b8afe
+  label: 200m-qk-taylor-m004-unnormalized-seed0
   sources:
     config.yaml:
-      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/config.yaml
-      sha256: 61d90e7ef3e027af6cf1fa2017c7c9a7623f717229d41eea8360af74802082a0
+      path: experiments/hermite_attention/runs/r3d631b7b8afe/config.yaml
+      sha256: fbb7c386f605940ad3e2184d398945139a50e5885b179f05ad01c0f6069c728c
     metrics.jsonl:
-      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/metrics.jsonl
-      sha256: 9df4a551647e7e72cdb592f28906fba68f6a31aea1f9dc3e9ac55c3389e756fa
+      path: experiments/hermite_attention/runs/r3d631b7b8afe/metrics.jsonl
+      sha256: 4db0346c5ee71fd914260f32457d3c78569066104550011711834bd90e93ddff
     completion.json:
-      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/completion.json
-      sha256: 7e72531a9e58c7d68350fee38bca2e48e7c1dd0958c00a1694f5b931d5f5db8e
+      path: experiments/hermite_attention/runs/r3d631b7b8afe/completion.json
+      sha256: 2b142a25237c888c0f79994702325d356269f55ac938ad0bde9f84e02a40cd5f
     metadata.json:
-      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/metadata.json
-      sha256: 18063ebbaf4f8dcb71722aa2bf93bf8211798794ac4a79dbd5e0d1d23de4c009
+      path: experiments/hermite_attention/runs/r3d631b7b8afe/metadata.json
+      sha256: 4b84a49c99599eef219b5fbb1b51ee06704a12cd72477cd8d4b8f5779b05c517
     best_validation.json:
-      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/best_validation.json
-      sha256: 10f111eeb36ff6691183ce7a9c00dcdc6635d4dc6f168361631eea4b7faf3c6a
+      path: experiments/hermite_attention/runs/r3d631b7b8afe/best_validation.json
+      sha256: bcc539da2467b102634643e62c79ff21d342315fafa0685ce453bacd5e8ee400
 - study: qk_norm_learned_taylor
   run_id: rbaa19693c602
   label: 200m-qk-m004-unnormalized-seed0

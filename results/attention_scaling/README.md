@@ -1,12 +1,14 @@
 # Attention mechanisms across key width and Taylor degree
 
 This record puts the completed 200M-reference attention experiments on one
-terminal held-out perplexity scale, in two figures. The **heatmap** covers the
+terminal held-out perplexity scale, in three figures. The **heatmap** covers the
 mechanisms trained across per-head query/key widths `d_K = 8, 16, 32, 64, 128`:
 normalized fixed Taylor kernels by degree, softmax, and GLA. The **degree
 chart** covers the polynomial families trained only at `d_K = 64`, as perplexity
-against degree `m = 1, 2, 3, 4`. The comparison is a derived analysis of existing
-runs; it trains no new models.
+against degree `m = 1, 2, 3, 4`. The **Hermite–Taylor figure** compares fixed
+Hermite and fixed Taylor coefficients at `d_K = 64`, with and without row
+normalization. The comparison is a derived analysis of existing runs; it trains no
+new models.
 
 Both figures describe the target state of the repository's experiments: every
 mechanism trained under the scaffold's current defaults (selective weight decay
@@ -20,10 +22,10 @@ Each plotted value is a model evaluated after **19,074 optimizer updates** and
 **10,000,269,312 prediction tokens**. All plotted runs use seed 0 and the same
 packed FineWeb-Edu order and held-out evaluation set. Terminal validation loss
 and perplexity come from each source run's committed `metrics.jsonl` and
-`completion.json`. The two figure configurations,
-[`selection.yaml`](selection.yaml) and
-[`degree_chart.yaml`](degree_chart.yaml), pin their source
-manifests by SHA256 and name every plotted run. The
+`completion.json`. The three figure configurations,
+[`selection.yaml`](selection.yaml), [`degree_chart.yaml`](degree_chart.yaml), and
+[`hermite_chart.yaml`](hermite_chart.yaml), name every plotted run and pin its
+scientific inputs by SHA256. The
 [comparison provenance](manifest.json) records the source commits,
 run-file hashes, and generated artifact hashes.
 
@@ -59,10 +61,23 @@ Every learned family learns its coefficients per layer and head.
 | Unnormalized, learned | 1–4 | All coefficients learned from `1/r!`; no row division |
 | Unnormalized, fixed Taylor | 1–4 | Fixed coefficients `1/r!`; no row division |
 
+**Hermite–Taylor figure.** Two panels, row-normalized and unnormalized, share one
+perplexity axis and the QK-norm softmax level. Taylor uses the fixed coefficients
+`1/r!`; Hermite uses the fixed probabilists' Hermite projection of `exp(s)` under a
+standard normal weight, `p_m(s) = exp(1/2) sum_(r<=m) He_r(s)/r!`. Normalized
+Hermite degree 2 is evaluated as the square `exp(1/2) (s+1)^2 / 2`. A line joins only
+adjacent completed degrees, so it never crosses a failed one; each panel's strip
+marks failures at their update. Every run in this figure uses QK-norm and the current
+decay policy. Normalized Hermite degree 1 failed during its 20-update qualification
+pilot, which uses the production model, data order, batch, and optimizer with a
+shortened evaluation; the strip shows that stopping update.
+
 A legacy run was trained with weight decay on all parameters and, for mechanisms
 that take it, without QK-norm. Its perplexity is comparable with current runs only
-up to the size of those two effects (about 0.03 PPL for the decay policy and 0.21
-for QK-norm at the `d_K = 64` softmax).
+up to the size of those two effects: about 0.03 PPL for the decay policy and 0.21
+for QK-norm at the `d_K = 64` softmax. For polynomial kernels QK-norm matters much
+more: the fixed unnormalized Taylor kernels improved by 0.45–3.28 PPL when rerun with
+it, so legacy polynomial cells are not close proxies for current ones.
 
 <!-- BEGIN GENERATED RESULTS -->
 45 displayed coordinates: 31 complete, 2 numerical failures, 12 not run, and 0 incomplete. Only completed runs at the common 19,074-update endpoint receive a color and a terminal PPL. A failed run is labeled with its failure update; an untrained coordinate is marked NOT RUN. 25 of the 33 trained cells are outlined as legacy runs: they trained with weight decay on all parameters and, where it applies, without QK-norm, before those became the scaffold's defaults; each is replaced when its experiment is rerun. 8 cells already use the current defaults.
@@ -73,11 +88,19 @@ for QK-norm at the `d_K = 64` softmax).
 
 ### Polynomial kernels at d_K = 64
 
-17 trained runs: 13 complete and 4 numerical failures; 5 are legacy runs, drawn hollow with dashed connectors. Numerical failures appear in the strip below the axis at their degree, labeled with the failing update. The nonnegative family exists only for even degrees, which are the only degrees at which a polynomial can be nonnegative on the real line.
+17 trained runs: 13 complete and 4 numerical failures; 1 are legacy runs, drawn hollow with dashed connectors. Numerical failures appear in the strip below the axis at their degree, labeled with the failing update. The nonnegative family exists only for even degrees, which are the only degrees at which a polynomial can be nonnegative on the real line.
 
 ![Terminal perplexity against polynomial degree](degree_chart.png)
 
-[PDF](degree_chart.pdf) · [Cell-level data and source checksums](summary.csv) · [Provenance](manifest.json)
+[PDF](degree_chart.pdf)
+
+### Fixed Hermite and Taylor coefficients
+
+17 trained runs: 11 complete and 6 numerical failures, all with QK-norm. Row-normalized and unnormalized kernels are separate panels on a shared perplexity axis; a line joins only adjacent completed degrees, so it never crosses a failed one.
+
+![Hermite and Taylor terminal perplexity by degree](hermite_taylor.png)
+
+[PDF](hermite_taylor.pdf) · [Cell-level data and source checksums](summary.csv) · [Provenance](manifest.json)
 <!-- END GENERATED RESULTS -->
 
 ## Snapshot under the original weight-decay policy
@@ -98,7 +121,7 @@ The two old-policy `d_K = 64` softmax runs retired on 2026-09-26 ended at PPL 14
 
 ## Findings
 
-Under the current defaults, eighteen runs exist so far, all at `d_K = 64`:
+Under the current defaults, thirty runs exist so far, all at `d_K = 64`:
 
 - **Softmax references:** QK-norm 14.4574, plain 14.6655.
 - **Normalized fixed Taylor kernels, m = 1, 2, 3, 4, 8, 16:** the odd degrees failed
@@ -108,8 +131,26 @@ Under the current defaults, eighteen runs exist so far, all at `d_K = 64`:
   single-seed noise), and degree 8 is 0.04 above it.
 - **Unnormalized learned Taylor kernels, m = 1–4:** 20.279, 17.599, 16.330, 16.384,
   from the [QK-norm learned Taylor sweep](../qk_norm_learned_taylor/README.md). Each
-  is better than the legacy fixed unnormalized kernel of the same degree, and
-  degrees 3 and 4 are within 0.05 of each other.
+  is at or below the fixed unnormalized Taylor kernel of the same degree, by 0.04 at
+  `m = 1` up to 4.15 at `m = 2`, and degrees 3 and 4 are within 0.05 of each other.
+- **Unnormalized fixed Taylor kernels, m = 1–4:** 20.316, 21.748, 17.631, 18.181, from
+  the [Hermite–Taylor study](../../experiments/hermite_attention/README.md). The
+  legacy runs without QK-norm had 20.770, 23.506, 20.240, and 21.462.
+- **Unnormalized fixed Hermite kernels, m = 1–4:** 20.870, 17.468, 17.894, 17.246.
+  Hermite is lower than Taylor at the even degrees, by 4.28 at `m = 2` and 0.94 at
+  `m = 4`, and higher at the odd degrees, by 0.55 at `m = 1` and 0.26 at `m = 3`. The
+  runs without QK-norm show the same sign at every degree.
+- **Normalized fixed Hermite kernels, m = 1–4:** all failed numerically, at updates 5
+  (in the qualification pilot), 3,829, 802, and 1,390, while normalized Taylor
+  completed at `m = 2` and `m = 4`. Even-degree Taylor truncations of `exp(s)` are
+  strictly positive, so their row sums cannot approach zero. Hermite `m = 2` has a
+  double root at `s = -1` and Hermite `m = 4` is negative for scores between about
+  -2.8 and -1.6. Before failing, normalized Hermite `m = 2` was below Taylor at every
+  validation (33.85 against 38.86 at update 3,000) and Hermite `m = 3` trained faster
+  than Taylor `m = 3`; Hermite `m = 4` was far behind (551 against 105 at update
+  1,000). The mechanism of the `m = 2` failure is not established: its failure record
+  was captured after the nonfinite update, and its step-3,500 checkpoint is retained
+  to replay it.
 - **Normalized learned kernels, m = 1–4:** all failed numerically (updates 27, 1,857,
   318, and 1,456) once a kernel turned negative inside the bounded score range and a
   row sum crossed zero.
@@ -157,7 +198,10 @@ coefficients under a single parameterization per family.
 
 This is one seed per trained coordinate. Width changes model parameter count;
 GLA also changes the attention architecture. The source runs used different GPU
-types and execution revisions, as their manifests record. Small PPL differences
+types and execution revisions, as their manifests record. Two Hermite–Taylor runs
+resumed on a different GPU type after preemption: unnormalized Hermite `m = 2`
+(B300 until update 14,500, then H100) and unnormalized Taylor `m = 4` (B300 for its
+first 500 updates, then H100). Small PPL differences
 should not be read as statistically established rankings. Sparse panels show
 which runs were actually performed, not evidence that untested coordinates
 would fail or match the plotted values.
@@ -172,6 +216,6 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m \
 ```
 
 The renderer checks that each cell's run still has the scientific inputs pinned
-in the two selection files, then writes both figures and the [cell-level summary](summary.csv), whose `figure`
+in the three selection files, then writes the three figures and the [cell-level summary](summary.csv), whose `figure`
 column says which figure each row belongs to. No GPU, dataset, or source
 checkpoint is required.
