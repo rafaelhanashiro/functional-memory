@@ -66,7 +66,7 @@ def test_unknown_family_and_coordinate_are_rejected():
         _build_figure([*ROWS, _row("normalized_nonnegative", "m3", value=1.0)], _config())
 
 
-def test_margin_labels_are_spread_apart():
+def test_value_labels_are_spread_apart():
     placed = _spread([14.46, 14.67, 16.2], gap=0.5)
     assert placed[1] - placed[0] >= 0.5 - 1e-9 and placed[2] - placed[1] >= 0.5 - 1e-9
     assert _spread([10.0, 20.0], gap=1.0) == [10.0, 20.0]

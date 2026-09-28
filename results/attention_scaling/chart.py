@@ -33,8 +33,9 @@ FAMILY_STYLE = {
     "unnormalized_fixed_hermite": ("#4a3aa7", "p"),
 }
 INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
-REFERENCE_STYLE = {"softmax": "-", "softmax_no_qk_norm": (0, (6, 3)), "unnormalized_exp": (0, (1, 2)),
-                   "gla": (0, (6, 2, 1, 2))}
+# Reference levels: dark hues outside the family slots, each with its own dash as a second cue.
+REFERENCE_STYLE = {"softmax": ("#0b0b0b", "-"), "softmax_no_qk_norm": ("#8a8984", (0, (6, 3))),
+                   "gla": ("#9e2a2b", (0, (6, 2, 1, 2))), "unnormalized_exp": ("#0e6655", (0, (1, 2)))}
 
 
 def _degree(column_id: str) -> int:
@@ -78,37 +79,40 @@ def _build_figure(rows: list[dict], config: dict):
     """Build the figure; kept separate from saving for layout tests."""
     grouped = _by_panel(rows, config)
     families = [panel for panel in config["panels"] if panel["id"] != REFERENCE_PANEL]
-    titles = {panel["id"]: panel["title"] for panel in config["panels"]}
     references = [row for row in grouped.get(REFERENCE_PANEL, []) if row["status"] == "complete"]
     reference_labels = {column["id"]: column["label"]
                         for panel in config["panels"] if panel["id"] == REFERENCE_PANEL for column in panel["columns"]}
     degrees = sorted({_degree(column["id"]) for panel in families for column in panel["columns"]})
-    failures = [(panel["id"], row) for panel in families for row in grouped[panel["id"]]
-                if row["status"] == "numerical_failure"]
     failure_families = [panel["id"] for panel in families
-                        if any(family == panel["id"] for family, _ in failures)]
+                        if any(row["status"] == "numerical_failure" for row in grouped[panel["id"]])]
+    any_legacy = any(row.get("legacy") for row in rows if row["status"] == "complete")
 
     values = [float(row["terminal_ppl"]) for row in rows if row["status"] == "complete"]
     lower, upper = (min(values), max(values)) if values else (0.0, 1.0)
     pad = 0.06 * (upper - lower or 1.0)
 
     strip_rows = max(len(failure_families), 1)
-    figure = plt.figure(figsize=(8.6, 5.4 + 0.28 * strip_rows), facecolor=SURFACE)
-    grid = figure.add_gridspec(2, 1, height_ratios=(5.2, 0.34 * strip_rows + 0.35), hspace=0.08,
-                               left=0.09, right=0.70, top=0.84, bottom=0.2)
+    figure = plt.figure(figsize=(8.0, 5.5 + 0.22 * strip_rows), facecolor=SURFACE)
+    grid = figure.add_gridspec(2, 1, height_ratios=(5.2, 0.3 * strip_rows + 0.35), hspace=0.08,
+                               left=0.1, right=0.97, top=0.86, bottom=0.215)
     axis = figure.add_subplot(grid[0])
     axis.set_gid("chart:perplexity")
     strip = figure.add_subplot(grid[1], sharex=axis)
     strip.set_gid("chart:failures")
 
-    margin_labels: list[tuple[float, str, str, str | None]] = []  # (level, text, text color, marker color)
+    handles = []
+    for panel in families:
+        family = panel["id"]
+        color, marker = FAMILY_STYLE[family]
+        handles.append(Line2D([], [], color=color, marker=marker, linewidth=1.5, markersize=5.5, label=panel["title"]))
     for row in references:
         level = float(row["terminal_ppl"])
         legacy = bool(row.get("legacy"))
-        axis.axhline(level, color=MUTED, linewidth=1.1, linestyle=REFERENCE_STYLE.get(row["column"], "-"),
-                     alpha=0.55 if legacy else 0.9, zorder=1, gid=f"reference:{row['column']}")
+        color, dash = REFERENCE_STYLE.get(row["column"], (MUTED, "-"))
+        axis.axhline(level, color=color, linewidth=1.2, linestyle=dash, alpha=0.5 if legacy else 0.9,
+                     zorder=1, gid=f"reference:{row['column']}")
         label = f"{reference_labels.get(row['column'], row['column'])} {level:.2f}" + (" (legacy)" if legacy else "")
-        margin_labels.append((level, label, MUTED, None))
+        handles.append(Line2D([], [], color=color, linewidth=1.2, linestyle=dash, label=label))
 
     value_labels: dict[int, list[float]] = {}
     for panel in families:
@@ -120,49 +124,38 @@ def _build_figure(rows: list[dict], config: dict):
         for (x0, y0, legacy0), (x1, y1, legacy1) in zip(points, points[1:]):
             if any(x0 < degree < x1 for degree in declared):  # never bridge a failed or missing degree
                 continue
-            axis.plot([x0, x1], [y0, y1], color=color, linewidth=2, zorder=2, solid_capstyle="round",
+            axis.plot([x0, x1], [y0, y1], color=color, linewidth=1.5, zorder=2, solid_capstyle="round",
                       linestyle=(0, (4, 3)) if legacy0 or legacy1 else "-")
         for x, y, legacy in points:
-            axis.plot([x], [y], marker=marker, markersize=8, color=color, markeredgecolor=color,
-                      markerfacecolor=SURFACE if legacy else color, markeredgewidth=1.8, linestyle="none",
+            axis.plot([x], [y], marker=marker, markersize=6, color=color, markeredgecolor=color,
+                      markerfacecolor=SURFACE if legacy else color, markeredgewidth=1.3, linestyle="none",
                       zorder=3, gid=f"point:{family}:m{x}:{'legacy' if legacy else 'current'}")
             value_labels.setdefault(x, []).append(y)
-        if points:
-            margin_labels.append((points[-1][1], titles[family], INK, color))
 
+    # Failures take their family's marker, so the legend identifies each strip row.
     for index, family in enumerate(failure_families):
-        color, _ = FAMILY_STYLE[family]
+        color, marker = FAMILY_STYLE[family]
         y = len(failure_families) - 1 - index
-        strip.annotate(titles[family], (1.0, y), xycoords=("axes fraction", "data"), xytext=(8, 0),
-                       textcoords="offset points", va="center", fontsize=8, color=INK)
-        for failed_family, row in failures:
-            if failed_family != family:
+        for row in grouped[family]:
+            if row["status"] != "numerical_failure":
                 continue
             x = _degree(row["column"])
-            strip.plot([x], [y], marker="X", markersize=9, color=color, markeredgecolor=SURFACE,
-                       markeredgewidth=0.8, linestyle="none", gid=f"failure:{family}:m{x}")
+            strip.plot([x], [y], marker=marker, markersize=6, color=color, linestyle="none",
+                       gid=f"failure:{family}:m{x}")
             step = row.get("failure_step")
-            strip.annotate(f"@{step:,}" if step is not None else "failed", (x, y), xytext=(8, 0),
-                           textcoords="offset points", va="center", fontsize=7.5, color=INK)
+            strip.annotate(f"@{step:,}" if step is not None else "failed", (x, y), xytext=(7, 0),
+                           textcoords="offset points", va="center", fontsize=7, color=INK)
 
-    axis.set_xlim(min(degrees) - 0.4, max(degrees) + 0.4)
+    axis.set_xlim(min(degrees) - 0.4, max(degrees) + 0.5)
     axis.set_ylim(lower - pad, upper + 2.5 * pad)
     height_points = axis.get_window_extent().height * 72 / figure.dpi
-    gap = 11.5 * (axis.get_ylim()[1] - axis.get_ylim()[0]) / height_points
+    gap = 10.5 * (axis.get_ylim()[1] - axis.get_ylim()[0]) / height_points
     # Each value sits to the right of its marker; values at one degree are nudged apart.
     for x, levels in value_labels.items():
         for level, placed in zip(levels, _spread(levels, 0.85 * gap)):
-            axis.annotate(f"{level:.2f}", (x, placed), xytext=(8, 0), textcoords="offset points",
-                          ha="left", va="center", fontsize=7.5, color=INK, zorder=4,
+            axis.annotate(f"{level:.2f}", (x, placed), xytext=(7, 0), textcoords="offset points",
+                          ha="left", va="center", fontsize=7, color=INK, zorder=4,
                           bbox={"boxstyle": "round,pad=0.12", "facecolor": SURFACE, "edgecolor": "none", "alpha": 0.85})
-    # Right-margin labels for every family and reference level, nudged apart to stay legible.
-    for (level, text, text_color, marker_color), placed in zip(
-            margin_labels, _spread([label[0] for label in margin_labels], gap)):
-        if marker_color is not None:
-            axis.plot([1.03], [placed], marker="s", markersize=6, color=marker_color, transform=axis.get_yaxis_transform(),
-                      clip_on=False, linestyle="none")
-        axis.annotate(text, (1.0, placed), xycoords=("axes fraction", "data"), xytext=(16, 0),
-                      textcoords="offset points", va="center", fontsize=8.2, color=text_color, annotation_clip=False)
     axis.set_ylabel("Terminal held-out perplexity (lower is better)", fontsize=9.5, color=INK)
     axis.tick_params(labelbottom=False, colors=MUTED, labelcolor=INK, labelsize=8.5, length=0)
     axis.grid(axis="y", color=GRID, linewidth=0.8)
@@ -185,21 +178,16 @@ def _build_figure(rows: list[dict], config: dict):
         strip.annotate("none", (0.5, 0.5), xycoords="axes fraction", ha="center", va="center",
                        fontsize=8, color=MUTED)
 
-    figure.text(0.09, 0.955, config.get("title", "Polynomial attention kernels across degree"),
+    figure.text(0.1, 0.965, config.get("title", "Polynomial attention kernels across degree"),
                 fontsize=13, weight="bold", color=INK, va="top")
-    any_legacy = any(row.get("legacy") for row in rows if row["status"] == "complete")
-    figure.text(0.09, 0.915, "Terminal perplexity at 19,074 updates, seed 0; learned coefficients are per layer and head."
-                + ("\nHollow points and dashed lines are legacy runs (weight decay on all parameters, no QK-norm),\n"
-                   "replaced when rerun." if any_legacy else ""), fontsize=8.5, color=MUTED, va="top", linespacing=1.3)
-    handles = [Line2D([], [], color=FAMILY_STYLE[panel["id"]][0], marker=FAMILY_STYLE[panel["id"]][1],
-                      linewidth=2, markersize=7, label=panel["title"]) for panel in families]
+    figure.text(0.1, 0.925, "Terminal perplexity at 19,074 updates, seed 0; learned coefficients are per layer and head."
+                + ("\nHollow points and dashed lines are legacy runs (weight decay on all parameters, no QK-norm)."
+                   if any_legacy else ""), fontsize=8.5, color=MUTED, va="top", linespacing=1.3)
     if any_legacy:
-        handles.append(Line2D([], [], color=MUTED, marker="o", markerfacecolor=SURFACE, linewidth=1.5,
-                              linestyle=(0, (4, 3)), markersize=7, label="legacy run (to be rerun)"))
-    handles.append(Line2D([], [], color=MUTED, marker="X", linestyle="none", markersize=8,
-                          label="numerical failure (update shown)"))
-    figure.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.08, 0.005), ncol=3, frameon=False,
-                  fontsize=8, columnspacing=1.6, handlelength=2.4)
+        handles.append(Line2D([], [], color=MUTED, marker="o", markerfacecolor=SURFACE, linewidth=1.2,
+                              linestyle=(0, (4, 3)), markersize=5.5, label="legacy run (to be rerun)"))
+    figure.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.09, 0.005), ncol=3, frameon=False,
+                  fontsize=7.8, columnspacing=1.4, handlelength=2.6)
     return figure
 
 

@@ -238,13 +238,13 @@
               "qk_norm": false
             },
             {
-              "id": "unnormalized_exp",
-              "label": "unnormalized exp"
-            },
-            {
               "id": "gla",
               "label": "GLA",
               "qk_norm": null
+            },
+            {
+              "id": "unnormalized_exp",
+              "label": "unnormalized exp"
             }
           ]
         }
@@ -1979,34 +1979,6 @@
     {
       "figure": "degree_chart",
       "panel": "references",
-      "column": "unnormalized_exp",
-      "d_k": 64,
-      "experiment": "unnormalized_attention",
-      "run": "r810a6797098b",
-      "status": "complete",
-      "source_commit": "371fd6eaf93e5e755bb52892c208f11f1d4129e0",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/unnormalized_attention/runs/r810a6797098b/metadata.json",
-          "sha256": "b1fe17e983345ef1fbd53aa3fa31c8fdc52ab60479f45db93747aeea66593c8c"
-        },
-        "metrics": {
-          "path": "experiments/unnormalized_attention/runs/r810a6797098b/metrics.jsonl",
-          "sha256": "c4c3f3502c5790959665e573f4100f4d88c010f8ebab3bed3dc18fff670d57ff"
-        },
-        "completion": {
-          "path": "experiments/unnormalized_attention/runs/r810a6797098b/completion.json",
-          "sha256": "238f9cf5098fe573674be007afa88322ba7f8f4c1bd27ecf0db58e5f2ee1695c"
-        }
-      },
-      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
-      "qk_norm": true,
-      "legacy": false,
-      "legacy_reasons": []
-    },
-    {
-      "figure": "degree_chart",
-      "panel": "references",
       "column": "gla",
       "d_k": 64,
       "experiment": "gla_key_dimension",
@@ -2031,6 +2003,34 @@
       "qk_norm": false,
       "legacy": false,
       "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "references",
+      "column": "unnormalized_exp",
+      "d_k": 64,
+      "experiment": "unnormalized_attention",
+      "run": "r810a6797098b",
+      "status": "complete",
+      "source_commit": "371fd6eaf93e5e755bb52892c208f11f1d4129e0",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/unnormalized_attention/runs/r810a6797098b/metadata.json",
+          "sha256": "b1fe17e983345ef1fbd53aa3fa31c8fdc52ab60479f45db93747aeea66593c8c"
+        },
+        "metrics": {
+          "path": "experiments/unnormalized_attention/runs/r810a6797098b/metrics.jsonl",
+          "sha256": "c4c3f3502c5790959665e573f4100f4d88c010f8ebab3bed3dc18fff670d57ff"
+        },
+        "completion": {
+          "path": "experiments/unnormalized_attention/runs/r810a6797098b/completion.json",
+          "sha256": "238f9cf5098fe573674be007afa88322ba7f8f4c1bd27ecf0db58e5f2ee1695c"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     }
   ],
   "status_counts": {
@@ -2053,7 +2053,7 @@
     },
     "chart_config": {
       "path": "results/attention_scaling/degree_chart.yaml",
-      "sha256": "59cb76afad7bb217cab367473c3036e33125b37c5c7e84a0099780525a33ff75"
+      "sha256": "04d7fa0ef655b37abec52febf9935156d1da382b2ef92d7d1cf0aa10346cbad3"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
@@ -2070,7 +2070,7 @@
       },
       "chart.py": {
         "path": "results/attention_scaling/chart.py",
-        "sha256": "007a7d5cc3935f5ce7ced772a2ca60d9f4f5cec527f3c978741be297d9fde611"
+        "sha256": "81dc1b8198a1172d09e1148b17ba4bfc6a44dd816bd76deb40aae311c23ccba0"
       },
       "plot.py": {
         "path": "results/attention_scaling/plot.py",
@@ -2081,7 +2081,7 @@
   "derived_artifacts": {
     "summary_csv": {
       "path": "results/attention_scaling/summary.csv",
-      "sha256": "b9e5dc3307932bf393bd67961e36b05aff2e7224f87e864d3bb463e551308310"
+      "sha256": "6a8b5b2e95a0259b1354cec45602ff33c6061753b666df1721278f4dc4b05aa9"
     },
     "readme": {
       "path": "results/attention_scaling/README.md",
@@ -2097,11 +2097,11 @@
     },
     "degree_chart_pdf": {
       "path": "results/attention_scaling/degree_chart.pdf",
-      "sha256": "d5635865bc0bc448ca67965c978fab708751b4449ef55a35e7cf3e06a4080258"
+      "sha256": "672f3fb7b644c0bb7b7e99c1876db5ae9a098aa14cb3338cbcc96febfc5333d6"
     },
     "degree_chart_png": {
       "path": "results/attention_scaling/degree_chart.png",
-      "sha256": "3b1395f455764802499606efbe03f626f441c28486e75815129446361e937f7b"
+      "sha256": "c52bd9d33f3045d34a9d9b94dcdea05a294cbcd7c528cdf927bcc274610a699f"
     }
   }
 }

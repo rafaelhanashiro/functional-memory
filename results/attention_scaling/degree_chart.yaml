@@ -82,11 +82,11 @@ panels:
   - id: softmax_no_qk_norm
     label: softmax
     qk_norm: false
-  - id: unnormalized_exp
-    label: unnormalized exp
   - id: gla
     label: GLA
     qk_norm: null
+  - id: unnormalized_exp
+    label: unnormalized exp
 cells:
 - panel: unnormalized_fixed
   column: m1
