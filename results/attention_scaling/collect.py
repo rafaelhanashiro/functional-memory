@@ -8,6 +8,7 @@ import math
 import re
 import yaml
 from scaffolds.records import load_study
+from scaffolds.records.selections import verify_pinned_runs
 from pathlib import Path
 
 
@@ -16,14 +17,6 @@ from pathlib import Path
 CANONICAL_WEIGHT_DECAY_POLICY = "exclude_embeddings_norms_biases_v1"
 _REFERENCE_KERNELS = {"softmax": "softmax", "softmax_no_qk_norm": "softmax",
                       "gla": "gla", "unnormalized_exp": "exp_unnormalized"}
-
-
-def source_artifact_set_sha256(rows: list[dict]) -> str:
-    """Pin all selected run files, including files older manifests do not hash."""
-    entries = sorted((artifact["path"], artifact["sha256"])
-                     for row in rows for artifact in row.get("artifacts", {}).values())
-    payload = json.dumps(entries, separators=(",", ":"), ensure_ascii=True).encode()
-    return hashlib.sha256(payload).hexdigest()
 
 
 def _json(path: Path) -> dict:
@@ -235,7 +228,7 @@ def _collect_referenced(repo_root: Path, cell: dict, run: dict, step: int, token
 
 
 def collect_rows(repo_root: Path, config: dict) -> list[dict]:
-    """Return the complete declared grid, with source runs checked against pinned manifests."""
+    """Return the complete declared grid, with each cell's run checked against its pinned inputs."""
     repo_root = Path(repo_root)
     widths = config["d_k"]
     if not widths or len(widths) != len(set(widths)) or any(type(width) is not int or width <= 0 for width in widths):
@@ -266,14 +259,16 @@ def collect_rows(repo_root: Path, config: dict) -> list[dict]:
         raise ValueError("Empty heatmap grid")
     expected_set = set(expected)
 
+    cell_runs = {(cell["experiment"], cell["run"]) for cell in config["cells"]}
+    pins = config.get("runs", [])
+    if {(entry["study"], entry["run_id"]) for entry in pins} != cell_runs or len(pins) != len(cell_runs):
+        raise ValueError("Pinned runs must be exactly the cells' runs; run `python -m scaffolds.records refresh`")
+    verify_pinned_runs(repo_root, pins)
+
     manifests = {}
-    for experiment, reference in config["source_manifests"].items():
-        path = f"experiments/{experiment}/sweep.yaml"
-        _match(reference.get("path"), path, f"Source manifest path for {experiment}")
-        actual = _digest(repo_root / path)
-        _match(actual, reference.get("sha256"), f"Source manifest SHA256 for {experiment}")
-        manifest = load_study(repo_root / path)
-        _match(manifest.get("experiment"), experiment, f"Source manifest identity for {experiment}")
+    for experiment in sorted({experiment for experiment, _ in cell_runs}):
+        manifest = load_study(repo_root / "experiments" / experiment)
+        _match(manifest.get("experiment"), experiment, f"Source study identity for {experiment}")
         indexed = {}
         for run in manifest.get("runs", []):
             name = run.get("run_id", run["name"])
@@ -281,9 +276,6 @@ def collect_rows(repo_root: Path, config: dict) -> list[dict]:
                 raise ValueError(f"Duplicate source run: {experiment}/{name}")
             indexed[name] = run
         manifests[experiment] = indexed
-
-    for reference in config.get("source_records", {}).values():
-        _match(_digest(repo_root / reference["path"]), reference["sha256"], "Source run record SHA256")
 
     columns = {(panel["id"], column["id"]): column for panel in config["panels"] for column in panel["columns"]}
     references = {}
@@ -313,6 +305,4 @@ def collect_rows(repo_root: Path, config: dict) -> list[dict]:
             row.update(_collect_referenced(repo_root, cell, run, step, tokens, seed, data_identity,
                                            columns[(panel, column)]))
         rows.append(row)
-    if expected_sha := config.get("source_artifact_set_sha256"):
-        _match(source_artifact_set_sha256(rows), expected_sha, "Source artifact set SHA256")
     return rows

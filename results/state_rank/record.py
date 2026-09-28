@@ -198,8 +198,6 @@ def regenerate(record: Path = RECORD, results: Path = RESULTS) -> dict:
     for entry in selection["runs"]:
         run = run_directory(record, entry["run_id"])
         validate_record(run)
-        if sha256(run / "record.json") != entry["record_sha256"]:
-            raise ValueError(f"Selection record hash changed: {run.name}")
         if sha256(run / "config.yaml") != entry["config_sha256"]:
             raise ValueError(f"Selection config hash changed: {run.name}")
         for artifact in entry["inputs"].values():

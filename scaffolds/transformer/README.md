@@ -344,13 +344,15 @@ Studies configure these shared modules with execution modules at their root
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
   the selection.
 - `analysis.py` reads committed validation events and saves figures
-  deterministically. `verify_result_selection` checks pinned input hashes;
+  deterministically. `verify_result_selection` checks that each selected run's
+  scientific inputs match the selection's pins;
   `selected_run_directory` resolves a plotting role through the explicit run ID in
   `results/<comparison>/selection.yaml`; `run_view` presents one run from its own
   recipe, record, and raw outputs; `selected_views` loads a study's selected runs and
-  its `{study, label}` controls as run views. A new execution can replace a plotted
-  role by updating its selected ID and source hashes. Summaries and figures
-  regenerate byte-identically.
+  its `{study, label}` controls as run views. A new execution replaces a plotted
+  role by changing its selected ID and refreshing the selection
+  (`python -m scaffolds.records refresh`). Summaries and figures regenerate
+  byte-identically.
 
 Kernel and throughput benchmark scripts live in `benchmarks/`; their results and the
 scaffold's hardware qualification live in [`validation/`](validation/README.md).

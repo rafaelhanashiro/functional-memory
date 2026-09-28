@@ -11,9 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from results.attention_scaling.collect import (
-    collect_rows, source_artifact_set_sha256,
-)
+from results.attention_scaling.collect import collect_rows
+from scaffolds.records.selections import run_sources
 
 
 def _write(path: Path, value: dict | list[dict]) -> str:
@@ -37,6 +36,13 @@ def _write(path: Path, value: dict | list[dict]) -> str:
         payload = json.dumps(value, sort_keys=True) + "\n"
     path.write_text(payload)
     return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def _pin(root: Path, config: dict) -> dict:
+    """The config with its cells' runs pinned to their current scientific files."""
+    return dict(config, runs=[{"study": cell["experiment"], "run_id": cell["run"],
+                               "sources": run_sources(root, cell["experiment"], cell["run"])}
+                              for cell in config["cells"]])
 
 
 def _fixture(tmp_path: Path) -> dict:
@@ -85,18 +91,15 @@ def _fixture(tmp_path: Path) -> dict:
                                "sha256": metadata_sha},
                   "failure": {"path": f"experiments/{experiment}/runs/{failed_name}/{failure_filename}",
                               "sha256": failure_sha, "step": 7}}
-    manifest_path = base / "sweep.yaml"
-    manifest_sha = _write(manifest_path, {"experiment": experiment, "runs": [complete_run, failed_run]})
-    return {"d_k": [8, 16], "terminal_step": 10, "training_tokens": 100, "seed": 0,
-            "panels": [{"id": "normalized_fixed", "title": "Taylor",
-                        "columns": [{"id": "m1", "label": "m=1"},
-                                    {"id": "m2", "label": "m=2"}]}],
-            "source_manifests": {experiment: {"path": f"experiments/{experiment}/sweep.yaml",
-                                              "sha256": manifest_sha}},
-            "cells": [{"panel": "normalized_fixed", "column": "m2", "d_k": 8,
-                       "experiment": experiment, "run": complete_name},
-                      {"panel": "normalized_fixed", "column": "m1", "d_k": 16,
-                       "experiment": experiment, "run": failed_name}]}
+    _write(base / "sweep.yaml", {"experiment": experiment, "runs": [complete_run, failed_run]})
+    return _pin(tmp_path, {
+        "d_k": [8, 16], "terminal_step": 10, "training_tokens": 100, "seed": 0,
+        "panels": [{"id": "normalized_fixed", "title": "Taylor",
+                    "columns": [{"id": "m1", "label": "m=1"}, {"id": "m2", "label": "m=2"}]}],
+        "cells": [{"panel": "normalized_fixed", "column": "m2", "d_k": 8,
+                   "experiment": experiment, "run": complete_name},
+                  {"panel": "normalized_fixed", "column": "m1", "d_k": 16,
+                   "experiment": experiment, "run": failed_name}]})
 
 
 def test_terminal_validation_and_failed_and_missing_cells(tmp_path: Path) -> None:
@@ -126,7 +129,7 @@ def test_current_defaults_are_read_from_the_resolved_configuration(tmp_path: Pat
     resolved = {"optim": {"weight_decay_policy": "exclude_embeddings_norms_biases_v1"},
                 "model": {"qk_head_dim": 8, "attention_degree": 2, "qk_norm": True}}
     _write(run_dir / "config.yaml", resolved)
-    config.pop("source_artifact_set_sha256", None)
+    config = _pin(tmp_path, config)
     row = collect_rows(tmp_path, config)[2]
     assert (row["legacy"], row["legacy_reasons"], row["qk_norm"]) == (False, [], True)
     assert row["weight_decay_policy"] == "exclude_embeddings_norms_biases_v1"
@@ -140,76 +143,61 @@ def test_current_defaults_are_read_from_the_resolved_configuration(tmp_path: Pat
 
     resolved["model"]["qk_norm"] = False
     _write(run_dir / "config.yaml", resolved)
+    config = _pin(tmp_path, config)
     config["panels"][0]["columns"][1]["qk_norm"] = True
     row = collect_rows(tmp_path, config)[2]
     assert (row["legacy"], row["legacy_reasons"]) == (True, ["no QK-norm"])
 
 
-def test_rejects_mutated_source_and_reference_errors(tmp_path: Path) -> None:
+def test_rejects_changed_inputs_and_reference_errors(tmp_path: Path) -> None:
     config = _fixture(tmp_path)
-    source_path = tmp_path / config["source_manifests"]["toy_taylor"]["path"]
-    original_manifest = load_study(source_path)
-    source_path.write_text(source_path.read_text() + "\n")
-    with pytest.raises(ValueError, match="Source manifest SHA256"):
+    run_dir = tmp_path / "experiments/toy_taylor/runs/r000000000001"
+    # Provenance is not pinned; a changed measurement file is.
+    record = json.loads((run_dir / "record.json").read_text())
+    _write(run_dir / "record.json", dict(record, attempts=[{"node": "n1"}]))
+    collect_rows(tmp_path, config)
+    metadata = json.loads((run_dir / "metadata.json").read_text())
+    _write(run_dir / "metadata.json", dict(metadata, extra="mutated"))
+    with pytest.raises(ValueError, match="Scientific inputs of toy_taylor/r000000000001 differ"):
         collect_rows(tmp_path, config)
-    _write(source_path, original_manifest)
+    _write(run_dir / "metadata.json", metadata)
+    with pytest.raises(ValueError, match="Pinned runs must be exactly the cells' runs"):
+        collect_rows(tmp_path, dict(config, runs=config["runs"][:1]))
 
     duplicate = dict(config, cells=[*config["cells"], config["cells"][0]])
     with pytest.raises(ValueError, match="Duplicate or out-of-grid"):
         collect_rows(tmp_path, duplicate)
-    bad_width = dict(config, cells=[dict(config["cells"][0], d_k=32)])
+    bad_width = _pin(tmp_path, dict(config, cells=[dict(config["cells"][0], d_k=32)]))
     with pytest.raises(ValueError, match="Duplicate or out-of-grid"):
         collect_rows(tmp_path, bad_width)
 
 
 def test_rejects_terminal_metric_disagreement_even_with_fresh_hashes(tmp_path: Path) -> None:
     config = _fixture(tmp_path)
-    experiment = "toy_taylor"
-    manifest_path = tmp_path / config["source_manifests"][experiment]["path"]
-    manifest = load_study(manifest_path)
-    metrics_path = tmp_path / manifest["runs"][0]["metrics"]["path"]
+    metrics_path = tmp_path / "experiments/toy_taylor/runs/r000000000001/metrics.jsonl"
     records = [json.loads(line) for line in metrics_path.read_text().splitlines()]
     records[-1]["validation_perplexity"] = 21.0
-    manifest["runs"][0]["metrics"]["sha256"] = _write(metrics_path, records)
-    config["source_manifests"][experiment]["sha256"] = _write(manifest_path, manifest)
+    _write(metrics_path, records)
     with pytest.raises(ValueError, match="completion validation"):
-        collect_rows(tmp_path, config)
+        collect_rows(tmp_path, _pin(tmp_path, config))
 
 
 def test_declared_but_unfinished_run_is_incomplete(tmp_path: Path) -> None:
     config = _fixture(tmp_path)
     experiment = "toy_taylor"
-    manifest_path = tmp_path / config["source_manifests"][experiment]["path"]
+    manifest_path = tmp_path / "experiments" / experiment / "sweep.yaml"
     manifest = load_study(manifest_path)
     name = "r000000000003"
     manifest["runs"].append({"name": name, "status": "running", "seed": 0,
                              "qk_head_dim": 8, "attention_degree": 1,
                              "source_commit": "source-commit-1"})
-    config["source_manifests"][experiment]["sha256"] = _write(manifest_path, manifest)
+    _write(manifest_path, manifest)
     config["cells"].append({"panel": "normalized_fixed", "column": "m1", "d_k": 8,
                             "experiment": experiment, "run": name})
-    rows = collect_rows(tmp_path, config)
+    rows = collect_rows(tmp_path, _pin(tmp_path, config))
     assert rows[0]["status"] == "incomplete"
     assert rows[0]["terminal_ppl"] is None
     assert rows[0]["artifacts"] == {}
-
-
-def test_pinned_artifact_set_catches_changed_run_files(tmp_path: Path) -> None:
-    config = _fixture(tmp_path)
-    experiment = "toy_taylor"
-    manifest_path = tmp_path / config["source_manifests"][experiment]["path"]
-    manifest = load_study(manifest_path)
-    for kind in ("metadata", "metrics", "completion"):
-        del manifest["runs"][0][kind]["sha256"]
-    config["source_manifests"][experiment]["sha256"] = _write(manifest_path, manifest)
-    config["source_artifact_set_sha256"] = source_artifact_set_sha256(collect_rows(tmp_path, config))
-
-    metadata_path = tmp_path / manifest["runs"][0]["metadata"]["path"]
-    metadata = json.loads(metadata_path.read_text())
-    metadata["extra_provenance"] = "mutated"
-    _write(metadata_path, metadata)
-    with pytest.raises(ValueError, match="Source artifact set SHA256"):
-        collect_rows(tmp_path, config)
 
 
 def test_committed_comparison_sources() -> None:
@@ -240,15 +228,12 @@ def test_committed_comparison_sources() -> None:
                       ("references", "unnormalized_exp")}
 
     wrong_family = json.loads(json.dumps(chart))
-    quadratic = "experiments/learned_quadratic_attention/sweep.yaml"
-    wrong_family["source_manifests"]["learned_quadratic_attention"] = {
-        "path": quadratic, "sha256": hashlib.sha256((root / quadratic).read_bytes()).hexdigest()}
-    wrong_family.pop("source_artifact_set_sha256")
+    quadratic = "experiments/learned_quadratic_attention"
     cell = next(cell for cell in wrong_family["cells"] if cell["panel"] == "normalized_nonnegative")
     record = next(run for run in load_study(root / quadratic)["runs"] if run["name"] == "200m-positive-global-seed0")
     cell.update(experiment="learned_quadratic_attention", run=record["run_id"])
     with pytest.raises(ValueError, match="quadratic sharing"):
-        collect_rows(root, wrong_family)
+        collect_rows(root, _pin(root, wrong_family))
 
     wrong_data = json.loads(json.dumps(config))
     wrong_data["data_identity"]["eval_manifest_sha256"] = "0" * 64

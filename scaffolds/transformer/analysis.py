@@ -5,7 +5,6 @@ helpers; every derived output must regenerate byte-identically.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 from functools import lru_cache
@@ -112,17 +111,6 @@ def update_results_readme(path: Path, lines: list[str]) -> None:
     else:
         text += ("\n" if text.endswith("\n") else "\n\n") + block + "\n"
     path.write_text(text)
-
-
-def checked_artifact(root: Path, artifact: dict) -> Path:
-    """A repository-relative file whose bytes match its pinned SHA256."""
-    path = Path(artifact["path"])
-    if path.is_absolute() or ".." in path.parts:
-        raise ValueError(f"Artifact path must be repository-relative: {artifact['path']}")
-    path = Path(root) / path
-    if hashlib.sha256(path.read_bytes()).hexdigest() != artifact["sha256"]:
-        raise ValueError(f"Artifact checksum does not match: {path}")
-    return path
 
 
 def _optional_json(path: Path) -> dict | None:
@@ -249,20 +237,16 @@ def regeneration_differences(record: Path, output: Path) -> list[str]:
 
 
 def verify_result_selection(directory: Path) -> dict:
-    """Verify the explicit run selection and source hashes for a saved result.
+    """Verify that a saved result's pinned runs still have the scientific inputs it plotted.
 
     The selection is a presentation recipe. Execution identity remains in each
-    run's record.json; changing a figure's selection never changes that record.
+    run's record.json, which is not pinned, so provenance edits never invalidate it.
     """
+    from scaffolds.records.selections import verify_pinned_runs
+
     directory = Path(directory).resolve()
     selection = result_selection(directory)
-    root = directory.parents[1]
-    for run in selection["runs"]:
-        expected = f"experiments/{run['study']}/runs/{run['run_id']}"
-        for kind, reference in run["sources"].items():
-            path = checked_artifact(root, reference)
-            if path.parent != root / expected:
-                raise ValueError(f"Selected {kind} must belong to {expected}")
+    verify_pinned_runs(directory.parents[1], selection["runs"])
     return selection
 
 

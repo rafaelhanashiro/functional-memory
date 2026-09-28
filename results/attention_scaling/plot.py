@@ -153,8 +153,6 @@ def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
         "training_tokens": config["training_tokens"],
         "display_coordinates": {"heatmap": {"d_k": config["d_k"], "panels": config["panels"]},
                                 "degree_chart": {"d_k": chart_config["d_k"], "panels": chart_config["panels"]}},
-        "source_manifests": {**config["source_manifests"], **chart_config["source_manifests"]},
-        "source_records": {**config.get("source_records", {}), **chart_config.get("source_records", {})},
         "source_runs": source_rows,
         "status_counts": status_counts,
         "analysis": {

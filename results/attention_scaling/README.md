@@ -171,7 +171,7 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m \
   results.attention_scaling.plot
 ```
 
-The renderer checks each pinned source manifest and the underlying run record,
-then writes both figures and the [cell-level summary](summary.csv), whose `figure`
+The renderer checks that each cell's run still has the scientific inputs pinned
+in the two selection files, then writes both figures and the [cell-level summary](summary.csv), whose `figure`
 column says which figure each row belongs to. No GPU, dataset, or source
 checkpoint is required.

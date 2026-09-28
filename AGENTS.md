@@ -85,9 +85,12 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   belong to the run. Raw trainer outputs such as `metadata.json`, `config.json`, and
   `completion.json` may be retained as evidence and are referenced by the record.
 - Measurements live only under the run. `runs.csv`, result summaries, tables, and
-  figures are derived and must regenerate byte-identically. Result selections and
-  generated manifests identify the exact input runs/artifact hashes and analysis
-  settings. A result update changes its selection, never overwrites an earlier run.
+  figures are derived and must regenerate byte-identically. Result selections name
+  the exact input runs and analysis settings and pin each run's scientific inputs
+  (recipe, metrics, completion, status metadata, validation-best and numerical-failure
+  records), never its provenance. A result update changes its selection, never
+  overwrites an earlier run: point the role at the new run ID, run
+  `python -m scaffolds.records refresh results/<analysis>`, and regenerate.
 - Commit configurations, provenance, and compact metrics, not datasets or large
   arrays. Numerical archives (`metrics.npz`, `spectra.npz`) stay beside run metadata,
   ignored by Git; record their SHA256. Keep datasets outside the repository.

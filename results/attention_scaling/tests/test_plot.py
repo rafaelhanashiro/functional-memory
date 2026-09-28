@@ -48,7 +48,7 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     assert float(chart["normalized_nonnegative", "m4"]["terminal_ppl"]) == pytest.approx(14.741921579480255)
     assert all(row["terminal_ppl"] == "" for row in csv_rows if row["status"] == "numerical_failure")
     provenance = json.loads((output / "manifest.json").read_text())
-    assert len(provenance["source_manifests"]) == 8
+    assert "source_manifests" not in provenance and "source_records" not in provenance
     assert Counter(row["figure"] for row in provenance["source_runs"]) == {"heatmap": 33, "degree_chart": 17}
     assert provenance["status_counts"]["heatmap"]["legacy"] == 25
     assert provenance["status_counts"]["degree_chart"] == {"complete": 13, "legacy": 5, "numerical_failure": 4}

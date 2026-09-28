@@ -1,4 +1,4 @@
-"""Allocate runs and inspect canonical records without importing a model runtime."""
+"""Allocate runs, inspect canonical records, and re-pin result selections without a model runtime."""
 import argparse
 import json
 from pathlib import Path
@@ -6,6 +6,7 @@ from pathlib import Path
 import yaml
 
 from . import create_run, load_study, regenerate_index, validate_record
+from .selections import refresh_selection
 
 
 def main() -> None:
@@ -22,6 +23,8 @@ def main() -> None:
     for name in ("index", "validate"):
         command = commands.add_parser(name)
         command.add_argument("study", type=Path)
+    refresh = commands.add_parser("refresh", help="re-pin a result's selections to its runs' scientific files")
+    refresh.add_argument("result", type=Path, nargs="+")
     args = parser.parse_args()
     if args.command == "create":
         recipe = yaml.safe_load(args.config.read_text())
@@ -40,6 +43,10 @@ def main() -> None:
                 )
             recipe["train"]["source_commit"] = "auto"
         print(create_run(args.study, recipe, args.label))
+    elif args.command == "refresh":
+        for result in args.result:
+            changes = refresh_selection(result)
+            print("\n".join(f"{result}/{change}" for change in changes) or f"{result}: selections already current")
     elif args.command == "index":
         print(regenerate_index(args.study))
     else:

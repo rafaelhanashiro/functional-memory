@@ -1,5 +1,4 @@
 """Saved comparisons pin their run identity and scientific inputs."""
-import hashlib
 import json
 
 import pytest
@@ -8,31 +7,36 @@ import yaml
 from scaffolds.transformer.analysis import verify_result_selection
 
 
-def test_result_selection_checks_source_hashes_and_run_ownership(tmp_path):
+def test_result_selection_pins_exactly_the_scientific_inputs(tmp_path):
+    from scaffolds.records.selections import run_sources
+
     run = tmp_path / "experiments/toy/runs/r000000000001"
     run.mkdir(parents=True)
-    source = run / "metrics.jsonl"
-    source.write_text(json.dumps({"validation_perplexity": 12.0}) + "\n")
+    (run / "config.yaml").write_text("model: {}\n")
+    (run / "record.json").write_text("{}\n")
+    metrics = run / "metrics.jsonl"
+    metrics.write_text(json.dumps({"validation_perplexity": 12.0}) + "\n")
     result = tmp_path / "results/toy"
     result.mkdir(parents=True)
-    selection = {"runs": [{"study": "toy", "run_id": run.name, "sources": {
-        "metrics": {"path": str(source.relative_to(tmp_path)),
-                    "sha256": hashlib.sha256(source.read_bytes()).hexdigest()}}}]}
-    path = result / "selection.yaml"
-    path.write_text(yaml.safe_dump(selection))
+    selection = {"runs": [{"study": "toy", "run_id": run.name, "sources": run_sources(tmp_path, "toy", run.name)}]}
+    assert set(selection["runs"][0]["sources"]) == {"config.yaml", "metrics.jsonl"}
+    (result / "selection.yaml").write_text(yaml.safe_dump(selection))
     assert verify_result_selection(result) == selection
-    source.write_text(source.read_text() + "\n")
-    with pytest.raises(ValueError, match="checksum"):
+    # Provenance is not a plotted input.
+    (run / "record.json").write_text(json.dumps({"attempts": [{"node": "n1"}]}) + "\n")
+    assert verify_result_selection(result) == selection
+    metrics.write_text(metrics.read_text() + "\n")
+    with pytest.raises(ValueError, match="metrics.jsonl"):
         verify_result_selection(result)
-    selection["runs"][0]["sources"]["metrics"]["sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
-    selection["runs"][0]["run_id"] = "r000000000002"
-    path.write_text(yaml.safe_dump(selection))
-    with pytest.raises(ValueError, match="must belong"):
+    metrics.write_text(json.dumps({"validation_perplexity": 12.0}) + "\n")
+    (run / "numerical_failure_step_00000003.json").write_text("{}\n")
+    with pytest.raises(ValueError, match="numerical_failure_step_00000003.json"):
         verify_result_selection(result)
 
 
 def test_selected_ids_change_inputs_without_changing_plotting_code(tmp_path):
     from scaffolds.records import create_run
+    from scaffolds.records.selections import run_sources
     from scaffolds.transformer.analysis import selected_run_directory, selected_views
 
     def recipe(value):
@@ -46,9 +50,7 @@ def test_selected_ids_change_inputs_without_changing_plotting_code(tmp_path):
     result.mkdir(parents=True)
 
     def select(run):
-        sources = {name: {"path": str((run / name).relative_to(tmp_path)),
-                          "sha256": hashlib.sha256((run / name).read_bytes()).hexdigest()}
-                   for name in ("record.json", "config.yaml")}
+        sources = run_sources(tmp_path, "toy", run.name)
         selection = {"runs": [{"study": "toy", "run_id": run.name, "label": "baseline", "sources": sources}]}
         (result / "selection.yaml").write_text(yaml.safe_dump(selection))
 

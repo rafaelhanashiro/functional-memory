@@ -9,163 +9,94 @@ runs:
   run_id: rdbd4607d5af9
   label: 200m-qk-m002-nonnegative-seed0
   sources:
-    best_validation.json:
-      path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/best_validation.json
-      sha256: 0e66eb3f16f9e1bf896e04f90a840f095bb8f41a1153a8505af1967cd1747d75
-    completion.json:
-      path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/completion.json
-      sha256: 3b79dd0968ca3b981fd728e6b91f84abe45d9dbad0fc49894695634b88ca986a
-    config.json:
-      path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/config.json
-      sha256: e0a1d690193ffdbc6e20ad14ef5af39d454830c5fafa2115e2a2af5f51fd0b45
     config.yaml:
       path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/config.yaml
       sha256: 8b6d73ac23b07c1a9d3c1bfa77110057590aacba681a4e7d2638ad4178227207
-    data_identity.json:
-      path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/data_identity.json
-      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
-    metadata.json:
-      path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/metadata.json
-      sha256: f1013a01fa35b1b75bdd4f04740525ded99a3158155afa805f4116bdc8429bb5
     metrics.jsonl:
       path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/metrics.jsonl
       sha256: 164da9dfe7ca5bff9e9207b85c55e6f81208c44b77478c5addd551f15a3d8939
-    record.json:
-      path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/record.json
-      sha256: 2ad1583a886b95d246d0ad516a1f617f6ee0b63f321f4b455c237ac4129a2c95
-    retention.json:
-      path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/retention.json
-      sha256: a98dba0b2fbe54b409ecb128aa46b11b660fc703a8bb17d94f37c1e0ebf34813
-    wandb_run.json:
-      path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/wandb_run.json
-      sha256: c0ed5268346038ce8cda886918ce37f04c51cfe2b6eab7970db51c08b223ceb3
+    completion.json:
+      path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/completion.json
+      sha256: 3b79dd0968ca3b981fd728e6b91f84abe45d9dbad0fc49894695634b88ca986a
+    metadata.json:
+      path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/metadata.json
+      sha256: f1013a01fa35b1b75bdd4f04740525ded99a3158155afa805f4116bdc8429bb5
+    best_validation.json:
+      path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/best_validation.json
+      sha256: 0e66eb3f16f9e1bf896e04f90a840f095bb8f41a1153a8505af1967cd1747d75
 - study: nonnegative_learned_taylor
   run_id: r507d1c2632b2
   label: 200m-qk-m004-nonnegative-seed0
   sources:
-    best_validation.json:
-      path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/best_validation.json
-      sha256: f63736cfffbcdba50ab6653f776f7028ba238cf072004b17f71e72360f17593a
-    completion.json:
-      path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/completion.json
-      sha256: bb3c734e7004a4b5482449ea4514efb13dff91e10e74460d2f8d71c1dcb2b9d2
-    config.json:
-      path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/config.json
-      sha256: 77e9c2a9010b23d051281c40226f050eea9a99b7f1e4e2f3c4e70efe4556824b
     config.yaml:
       path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/config.yaml
       sha256: b86fbefeb080890491195d2d53d008917a9456cef9a55ed1a8a0ba030421a25e
-    data_identity.json:
-      path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/data_identity.json
-      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
-    metadata.json:
-      path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/metadata.json
-      sha256: 8354fbcf845dcb0a05ce5e4490b0c0727f6139c6e4df057fa00b2830c9447d35
     metrics.jsonl:
       path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/metrics.jsonl
       sha256: e56c31b577a252f4b88522c76b4939257669c2c66a466936c5a1ad78dfd90f4b
-    record.json:
-      path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/record.json
-      sha256: 4eac67eb6ff4a16e584288ad81264e4d3f81cf65f17e25d0790aa5fcdc99fc28
-    retention.json:
-      path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/retention.json
-      sha256: 0eb750cd91d6eb5a1db63e0291d410b991c2fa84c980a34c29aac0e51a1f0fce
-    wandb_run.json:
-      path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/wandb_run.json
-      sha256: 835fc3f84cf707f7dae3d03b65dafc8f2eb191de4cf823d278148b9035026780
+    completion.json:
+      path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/completion.json
+      sha256: bb3c734e7004a4b5482449ea4514efb13dff91e10e74460d2f8d71c1dcb2b9d2
+    metadata.json:
+      path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/metadata.json
+      sha256: 8354fbcf845dcb0a05ce5e4490b0c0727f6139c6e4df057fa00b2830c9447d35
+    best_validation.json:
+      path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/best_validation.json
+      sha256: f63736cfffbcdba50ab6653f776f7028ba238cf072004b17f71e72360f17593a
 - study: qk_norm_learned_taylor
   run_id: rd962214a5556
   label: 200m-qk-m002-normalized-seed0
   sources:
-    best_validation.json:
-      path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/best_validation.json
-      sha256: a095e1c1dcde2f8e527779164605c5a94a45b85f078a8601fb3d56eb5d5438c2
-    config.json:
-      path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/config.json
-      sha256: 9df34fcdf5e0fd4ae2f10eb10f24e4a122673ded9820779f819221e227f8f331
     config.yaml:
       path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/config.yaml
       sha256: b7fa880fea520003a76499bf4b34433c2be1cc3932149618b110394b51d06641
-    data_identity.json:
-      path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/data_identity.json
-      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
-    metadata.json:
-      path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/metadata.json
-      sha256: 5e4d79364dcac7a6e2f3fe8c1e05fe3e0060d3588c58a2ed53b49cce35d3a66f
     metrics.jsonl:
       path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/metrics.jsonl
       sha256: 72229b9816493eabeaf02e8c5f0522b5e6f62a375091fd340d0a3f487d28b0de
+    metadata.json:
+      path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/metadata.json
+      sha256: 5e4d79364dcac7a6e2f3fe8c1e05fe3e0060d3588c58a2ed53b49cce35d3a66f
+    best_validation.json:
+      path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/best_validation.json
+      sha256: a095e1c1dcde2f8e527779164605c5a94a45b85f078a8601fb3d56eb5d5438c2
     numerical_failure_step_00001857.json:
       path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/numerical_failure_step_00001857.json
       sha256: 7d1f6785a73f7c70e8954c41648749aa0c27cf0bdc633d81917afc5f9e370dd4
-    record.json:
-      path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/record.json
-      sha256: 6c0280efff5674f8fca047773447b80c7f4836e52b2aa0ad0412642222d52fe9
-    wandb_run.json:
-      path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/wandb_run.json
-      sha256: f3e67c8b726c5746c94af5484332c956f17e0d60026a862a1dac874f82fb9f56
 - study: qk_norm_learned_taylor
   run_id: re554c79caddb
   label: 200m-qk-m004-normalized-seed0
   sources:
-    best_validation.json:
-      path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/best_validation.json
-      sha256: 39080aa755178f2c41fd3d331cff5dfb9d634dc38666f8f42db1080dcf022773
-    config.json:
-      path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/config.json
-      sha256: 3fbc1b71e1d73247c540fa5c2c19f6aa4e09934dbe17c211ceb33d0f7686b4c4
     config.yaml:
       path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/config.yaml
       sha256: 4697211415d06f84d270fc990898e37141379d92736d8e3525be77f0e10f9312
-    data_identity.json:
-      path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/data_identity.json
-      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
-    metadata.json:
-      path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/metadata.json
-      sha256: c80ed4398ea96fb3fd52ede1eb05e77370204c47b08799efa30a967f96c89279
     metrics.jsonl:
       path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/metrics.jsonl
       sha256: 5e84a8be2547a4f2cf8ba500f5845ed7eb0c037c1a5c2cf2afd9b49c4e5e3ea9
+    metadata.json:
+      path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/metadata.json
+      sha256: c80ed4398ea96fb3fd52ede1eb05e77370204c47b08799efa30a967f96c89279
+    best_validation.json:
+      path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/best_validation.json
+      sha256: 39080aa755178f2c41fd3d331cff5dfb9d634dc38666f8f42db1080dcf022773
     numerical_failure_step_00001456.json:
       path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/numerical_failure_step_00001456.json
       sha256: c966641492325599c0aa250357e707e2756216e28bd4a9b6e32352f1fdf8ca54
-    record.json:
-      path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/record.json
-      sha256: 3614e7af4322c004408329a8ad638c2d8c4da80ef859930880371d22041506e6
-    wandb_run.json:
-      path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/wandb_run.json
-      sha256: 1876df3a404e28fe20319ba0c2620638f4c6b0643ff56139a9d0b46c8fe664e1
 - study: qk_norm_attention
   run_id: r1feece425074
   label: 200m-qk-softmax-seed0
   sources:
-    best_validation.json:
-      path: experiments/qk_norm_attention/runs/r1feece425074/best_validation.json
-      sha256: 543211dc3f730ec8a4d6e96b26fe33fe1dd6be88e3175785139bfdb535928b18
-    completion.json:
-      path: experiments/qk_norm_attention/runs/r1feece425074/completion.json
-      sha256: de4e82ca58ec0c788d99898e3b2c7942e146766cd457c97d0281e914eaa702cb
-    config.json:
-      path: experiments/qk_norm_attention/runs/r1feece425074/config.json
-      sha256: df25725806070bcf1621f5208d66657dcd229a6355ada04a8f33fd3c348c2366
     config.yaml:
       path: experiments/qk_norm_attention/runs/r1feece425074/config.yaml
       sha256: fb547f444034497bd8da6a8e74024c2e3ec6f0eba8a02de86449f33dc7dd3e9d
-    data_identity.json:
-      path: experiments/qk_norm_attention/runs/r1feece425074/data_identity.json
-      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
-    metadata.json:
-      path: experiments/qk_norm_attention/runs/r1feece425074/metadata.json
-      sha256: fea4127b7425382d2be5f1f4946f60a4fe1f28c273c3d29e934f92cdd69eeeb6
     metrics.jsonl:
       path: experiments/qk_norm_attention/runs/r1feece425074/metrics.jsonl
       sha256: 721add8f72c236ace218e41fe8acf2948acc15039e11374c265d2bed9c3c9e49
-    record.json:
-      path: experiments/qk_norm_attention/runs/r1feece425074/record.json
-      sha256: 5992cebd0523cd0d1e1432d56c945bcb0a9ab72821485a53524f5b7f4c445931
-    retention.json:
-      path: experiments/qk_norm_attention/runs/r1feece425074/retention.json
-      sha256: f5e810195fcc2bbe358eebafaf906db481dd42047bd6f463916ba77413013902
-    wandb_run.json:
-      path: experiments/qk_norm_attention/runs/r1feece425074/wandb_run.json
-      sha256: 842efd5f9232ba118ea9b2ec3da8bd991955ab8451e75b4c03e121e57cd4772b
+    completion.json:
+      path: experiments/qk_norm_attention/runs/r1feece425074/completion.json
+      sha256: de4e82ca58ec0c788d99898e3b2c7942e146766cd457c97d0281e914eaa702cb
+    metadata.json:
+      path: experiments/qk_norm_attention/runs/r1feece425074/metadata.json
+      sha256: fea4127b7425382d2be5f1f4946f60a4fe1f28c273c3d29e934f92cdd69eeeb6
+    best_validation.json:
+      path: experiments/qk_norm_attention/runs/r1feece425074/best_validation.json
+      sha256: 543211dc3f730ec8a4d6e96b26fe33fe1dd6be88e3175785139bfdb535928b18

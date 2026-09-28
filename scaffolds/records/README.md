@@ -55,11 +55,32 @@ whole sweep before any jobs can run or requeue.
   exits through `python -m scaffolds.launch.finalize --run <run> --exit-code <code>`.
 - `validate_record(run, verify_hashes=True)` checks identity, recipe integrity, and
   available artifact hashes. Missing external artifacts are reported as unavailable;
-  missing or modified input recipes are errors. Source-commit-qualified historical
-  artifacts are not compared with current checkout files.
+  missing or modified input recipes are errors.
 - `regenerate_index(study)` derives a deterministic CSV from recipes, records, and
   raw metrics. Missing historical settings remain empty; current defaults are not
   retroactively assigned to old results.
+
+## Result selections
+
+A result's selection files (`results/<analysis>/*.yaml`) pin every plotted run to the
+SHA256 of its scientific inputs: `config.yaml`, `metrics.jsonl`, `completion.json`,
+`metadata.json`, `best_validation.json`, and any `numerical_failure_step_*.json`.
+Provenance and bookkeeping (`record.json`, `launch.json`, `retention.json`, W&B and
+data-identity files, raw `config.json`) are not pinned, so recording attempts,
+artifacts, or retention never invalidates a figure. A run of a state analysis instead
+pins its recipe hash and the inputs its record captured.
+
+After pointing a role at a new `run_id`, editing a grid's cells, or correcting a
+measurement, re-pin and then regenerate:
+
+```bash
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh results/<analysis>
+```
+
+`refresh` rewrites only the fingerprints, lists each change, and pins exactly the
+runs a grid's `cells` name. A figure whose inputs changed fails verification until
+its selection is refreshed. In Python, `selections.run_sources(root, study, run_id)`
+returns one run's pins and `selections.verify_pinned_runs(root, runs)` checks them.
 
 The input recipe and raw runtime `config.json` serve different purposes: the former
 is frozen before launch, while the latter records resolved backend, source, and

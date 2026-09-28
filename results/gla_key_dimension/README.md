@@ -74,7 +74,7 @@ primary endpoint is exponential mean token NLL at the common terminal training
 budget. Validation-best metrics remain separate. Width-matched softmax and
 row-normalized Taylor (m=2, 4, 8, 16) endpoints from the
 [dK × Taylor record](../key_dimension_taylor/README.md) are pinned by checksum in
-the manifest; the dK=64 softmax reference is `200m-softmax-seed0` (PPL 14.665), the
+the selection; the dK=64 softmax reference is `200m-softmax-seed0` (PPL 14.665), the
 repository's softmax baseline, trained under the selective weight-decay policy.
 One seed cannot establish statistical significance.
 

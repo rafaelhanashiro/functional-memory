@@ -8,8 +8,8 @@ from scaffolds.records import create_run, load_study, run_directory
 import yaml
 
 
-def test_committed_selection_pins_current_run_records():
-    """Provenance edits must update the selection without loading numerical archives."""
+def test_committed_selection_pins_current_run_inputs():
+    """The selection pins each run's recipe and captured inputs, not its provenance."""
     selection = yaml.safe_load((record.RESULTS / "selection.yaml").read_text())
     entries = selection["runs"]
     pinned = [entry["run_id"] for entry in entries]
@@ -23,8 +23,6 @@ def test_committed_selection_pins_current_run_records():
     for entry in entries:
         run = run_directory(record.RECORD, entry["run_id"])
         canonical = json.loads((run / "record.json").read_text())
-        assert entry["record"] == (run / "record.json").relative_to(record.REPOSITORY_ROOT).as_posix()
-        assert entry["record_sha256"] == record.sha256(run / "record.json"), entry["run_id"]
         assert entry["config_sha256"] == canonical["config"]["sha256"] == record.sha256(run / "config.yaml")
         assert entry["inputs"] == canonical["artifacts"]
 

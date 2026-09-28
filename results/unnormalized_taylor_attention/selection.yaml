@@ -9,111 +9,75 @@ runs:
   run_id: reb79b9201e5a
   label: 200m-m001-seed0
   sources:
-    best_validation.json:
-      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/best_validation.json
-      sha256: 3ebf36341187a470896d081f4c57d5243f70e7810400d52ffece926aa8498e9a
-    completion.json:
-      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/completion.json
-      sha256: bbf2419c6baad8701856e9a16ab7565fb45be8aebd9c5c6a2c6a918837f3e0b1
-    config.json:
-      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/config.json
-      sha256: 38a019874cc1c61d7042a87e76af757995071333174220af16a73dfaac7b78d7
     config.yaml:
       path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/config.yaml
       sha256: 1feb719f72a6a17708cce6a673c2036d596068a174dc2cd0582d1b325256d687
-    data_identity.json:
-      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/data_identity.json
-      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
-    metadata.json:
-      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/metadata.json
-      sha256: eb437be40040cb02ec8cc1bc5d77f11c99212e7c4c193424ff41566311ad0255
     metrics.jsonl:
       path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/metrics.jsonl
       sha256: c9e00eac4a104437de18334561fdbea4d6f05b81696632dd2e7dbd605ccbae0d
-    record.json:
-      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/record.json
-      sha256: a435e9de0143e6b87c5474c3eee0771e42a5f7d452c4dd79ec92bb50fe10c4ef
+    completion.json:
+      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/completion.json
+      sha256: bbf2419c6baad8701856e9a16ab7565fb45be8aebd9c5c6a2c6a918837f3e0b1
+    metadata.json:
+      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/metadata.json
+      sha256: eb437be40040cb02ec8cc1bc5d77f11c99212e7c4c193424ff41566311ad0255
+    best_validation.json:
+      path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/best_validation.json
+      sha256: 3ebf36341187a470896d081f4c57d5243f70e7810400d52ffece926aa8498e9a
 - study: unnormalized_taylor_attention
   run_id: re4509bf65b5f
   label: 200m-m002-seed0
   sources:
-    best_validation.json:
-      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/best_validation.json
-      sha256: cb95f804caee43f72bb70a0af288f72e97cb92774e9d44f870acdc591af11a76
-    completion.json:
-      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/completion.json
-      sha256: 26ebd93c6eca9126f59bbd92ed7664cda27061dcda766b2ea533a40e2fc645a3
-    config.json:
-      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/config.json
-      sha256: 6350bcdb075452df845b0a1ccaf816f87d4cc38853643cd816f2132405ef06f6
     config.yaml:
       path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/config.yaml
       sha256: e99503d7471ab5b1fbd770403d98da44086b6b00d3831dccbf00fe1aef4ee51a
-    data_identity.json:
-      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/data_identity.json
-      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
-    metadata.json:
-      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/metadata.json
-      sha256: 71639fd6adbccb60586b804767d2f38413b2cc1e019bbc41c677539f6be8bc22
     metrics.jsonl:
       path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/metrics.jsonl
       sha256: a312d11551b69eb5e46e78d96c2571dc0e977151489ba5949e2f2485bb430854
-    record.json:
-      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/record.json
-      sha256: 8f2d91ab129ca253d898458ce28d5f195f5874ef2d8f0b6e47b09f0971b791dc
+    completion.json:
+      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/completion.json
+      sha256: 26ebd93c6eca9126f59bbd92ed7664cda27061dcda766b2ea533a40e2fc645a3
+    metadata.json:
+      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/metadata.json
+      sha256: 71639fd6adbccb60586b804767d2f38413b2cc1e019bbc41c677539f6be8bc22
+    best_validation.json:
+      path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/best_validation.json
+      sha256: cb95f804caee43f72bb70a0af288f72e97cb92774e9d44f870acdc591af11a76
 - study: unnormalized_taylor_attention
   run_id: rba0cd1a9bf62
   label: 200m-m003-seed0
   sources:
-    best_validation.json:
-      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/best_validation.json
-      sha256: d767165eb86c1d64f6e7a0d7eb5acba09ca506bbf02d731bedaa2094c9aacea5
-    completion.json:
-      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/completion.json
-      sha256: ba04abc24913de43e687b544ed77a1c4afbd74ce3ef51fe41f04680affa69b7b
-    config.json:
-      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/config.json
-      sha256: 0ff73f7c1073c2f4cd04ab8367f354b0f257c3604016b2ff6816935a3bb8a46f
     config.yaml:
       path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/config.yaml
       sha256: 5e809fad78ce5ecdc2cfc402bf6c3e191517397409aa50df5a2ac5c0a49464a9
-    data_identity.json:
-      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/data_identity.json
-      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
-    metadata.json:
-      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/metadata.json
-      sha256: 8724696257a3a65e4961c83cb94db7dd57bcbfc18aaff02b63372483037c4862
     metrics.jsonl:
       path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/metrics.jsonl
       sha256: 41152673f2d2954257fadbe3d01e1d0b77f2570e6a7089aeaecbfa803e4826a8
-    record.json:
-      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/record.json
-      sha256: 2892c7830e83c76cc82ccfba594ba40c175610b0b895f183e97b40ae2d7bc6e3
+    completion.json:
+      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/completion.json
+      sha256: ba04abc24913de43e687b544ed77a1c4afbd74ce3ef51fe41f04680affa69b7b
+    metadata.json:
+      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/metadata.json
+      sha256: 8724696257a3a65e4961c83cb94db7dd57bcbfc18aaff02b63372483037c4862
+    best_validation.json:
+      path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/best_validation.json
+      sha256: d767165eb86c1d64f6e7a0d7eb5acba09ca506bbf02d731bedaa2094c9aacea5
 - study: unnormalized_taylor_attention
   run_id: rfd3129858805
   label: 200m-m004-seed0
   sources:
-    best_validation.json:
-      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/best_validation.json
-      sha256: 10f111eeb36ff6691183ce7a9c00dcdc6635d4dc6f168361631eea4b7faf3c6a
-    completion.json:
-      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/completion.json
-      sha256: 7e72531a9e58c7d68350fee38bca2e48e7c1dd0958c00a1694f5b931d5f5db8e
-    config.json:
-      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/config.json
-      sha256: b462deb136af5c42739ec66e6ad2d9a7bad1f1bb6b097cf964595828c0040c33
     config.yaml:
       path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/config.yaml
       sha256: 61d90e7ef3e027af6cf1fa2017c7c9a7623f717229d41eea8360af74802082a0
-    data_identity.json:
-      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/data_identity.json
-      sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
-    metadata.json:
-      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/metadata.json
-      sha256: 18063ebbaf4f8dcb71722aa2bf93bf8211798794ac4a79dbd5e0d1d23de4c009
     metrics.jsonl:
       path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/metrics.jsonl
       sha256: 9df4a551647e7e72cdb592f28906fba68f6a31aea1f9dc3e9ac55c3389e756fa
-    record.json:
-      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/record.json
-      sha256: 2241dc7ec43070f9aebe53121da48432865f0e30e5ed6d756e76cca4ad8cc86c
+    completion.json:
+      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/completion.json
+      sha256: 7e72531a9e58c7d68350fee38bca2e48e7c1dd0958c00a1694f5b931d5f5db8e
+    metadata.json:
+      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/metadata.json
+      sha256: 18063ebbaf4f8dcb71722aa2bf93bf8211798794ac4a79dbd5e0d1d23de4c009
+    best_validation.json:
+      path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/best_validation.json
+      sha256: 10f111eeb36ff6691183ce7a9c00dcdc6635d4dc6f168361631eea4b7faf3c6a
