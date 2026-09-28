@@ -99,6 +99,42 @@ def test_production_requires_preallocated_recipe(tmp_path, monkeypatch):
     assert not (root / "config.yaml").exists()
 
 
+def pilot_worker(run, *, stop):
+    """Run the acceptance pilot as the launcher does: the run's recipe in its scratch directory."""
+    command = [sys.executable, "-c", """
+import json, sys
+from pathlib import Path
+from scaffolds.transformer.configs import load_config
+from scaffolds.transformer.training.loop import run_training
+run, stop = Path(sys.argv[1]), int(sys.argv[2])
+config = load_config(run / 'config.yaml')
+config.train.workdir = run / '.runtime/acceptance/CPU-1/pilot'
+config.train.checkpoint_dir = None
+config.train.wandb_mode = 'disabled'
+result = run_training(config, resume=True, stop_after_step=stop, audit_checkpoint=True)
+(run.parent / f'pilot-{stop}.json').write_text(json.dumps(result))
+""", str(run), str(stop)]
+    env = {**os.environ, "JAX_PLATFORMS": "cpu", "OMP_NUM_THREADS": "1",
+           "SHARED_TRANSFORMER_SOURCE_COMMIT": "a" * 40}
+    result = subprocess.run(command, cwd=ROOT, env=env, text=True, capture_output=True, timeout=180)
+    assert result.returncode == 0, result.stdout + result.stderr
+    return json.loads((run.parent / f"pilot-{stop}.json").read_text())
+
+
+def test_acceptance_pilot_inside_an_allocated_run_trains_and_resumes(tmp_path):
+    from scaffolds.transformer.acceptance import validate_resume_audit
+
+    run = allocated_run(tmp_path)
+    record = (run / "record.json").read_bytes()
+    first = pilot_worker(run, stop=2)
+    resumed = pilot_worker(run, stop=3)
+    validate_resume_audit(first, resumed)
+    assert resumed["final_step"] == 3
+    # The scratch pilot never touches the production run's recipe or record.
+    assert (run / "record.json").read_bytes() == record
+    assert not (run / "config.json").exists()
+
+
 def test_finalization_updates_authoritative_record_and_hashes(tmp_path, monkeypatch):
     from scaffolds.records import validate_record
     from scaffolds.transformer.retention import finalize_run

@@ -184,9 +184,12 @@ def ensure_run_config(config: Config, *, resume: bool) -> None:
         if canonical.train.source_commit == "auto":
             canonical.train.source_commit = config.train.source_commit
     elif existing is None:
-        # Direct smoke/CLI runs may allocate locally. Production launchers require
-        # this complete input recipe to be committed before any GPU allocation.
-        if os.environ.get("SHARED_TRANSFORMER_SOURCE_COMMIT") and tracking.experiment_paths(config.train.workdir)[0]:
+        # Direct smoke/CLI runs and scratch runs inside a run directory (acceptance
+        # pilots) may allocate locally. Production launchers require the run's own
+        # complete input recipe to be committed before any GPU allocation.
+        run_root = tracking.experiment_paths(config.train.workdir)[1]
+        if (os.environ.get("SHARED_TRANSFORMER_SOURCE_COMMIT") and run_root is not None
+                and run_root.resolve() == Path(config.train.workdir).resolve()):
             raise ValueError(f"Production run requires a preallocated, committed configuration: {recipe_path}")
         save_config(config, recipe_path)
     if existing is not None and existing.get("optim", {}).get("weight_decay_policy") != config.optim.weight_decay_policy:
