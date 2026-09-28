@@ -3,9 +3,6 @@ experiment: gla_key_dimension
 status: complete
 home_cluster: kennel
 artifact_root: /data/cl/u/rafah/home/projects/functional-memory
-scaffold: scaffolds/transformer
-study_adapter: experiments/gla_key_dimension
-documentation: experiments/gla_key_dimension/README.md
 key_dimensions:
 - 8
 - 16
@@ -23,38 +20,6 @@ data_identity:
     sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
 dependency_lock:
   sha256: 098b75b9bc2e27abf3ca873f20bc2bd2887aa6f03c2ae0ab8de11d6d5002b6f7
-implementation_sources:
-  path: scaffolds/transformer/attention/backends/gla_sources.json
-  sha256: 4e709fc4855989b02b3f8a0cf113d14358d2d50d7b72d33647dbca4fca9f58c9
-retention:
-  checkpoints: validation-best checkpoint per completed run under experiments/gla_key_dimension/runs/<run_id>/checkpoints/<step>/
-  logs: one successful Slurm log per run under experiments/gla_key_dimension/runs/<run_id>/training.log
-execution_policy:
-  hardware: "4\xD7B300 (akita) or 4\xD7H100 (dogo, mastiff) per run in the sweep partition, one Python\
-    \ process, global batch 256 as 4 accumulation steps of 64; acceptance keyed to the allocated type"
-  excluded_hardware: 'A100/A6000: not qualified for the fused GLA kernel'
-  runtime_settings:
-    CUDA_HOME: <environment>/site-packages/nvidia/cuda_nvcc, so jaxlib assembles the bridge's Triton PTX
-      with the locked CUDA 12.9 ptxas instead of a node's system toolkit
-    XLA_FLAGS: --xla_gpu_enable_command_buffer= (the Triton custom-call bridge runs outside command buffers)
-    EJKERNEL_TRITON_CACHE_DIR: <artifact_root>/.cache/gla_key_dimension/triton
-    TRANSFORMER_HOST_STAGING: 0 (direct H100 transfers)
-  attention_backend: fused (chunked Triton), pinned in every recipe
-  acceptance: 'per GPU type and source/config/runtime identity: GLA CPU tests, fused-kernel GPU tests,
-    initialization hash, 20-update full-recipe pilot, and exact fresh-process resume at update 21'
-  kernel_operands: Q, K, V, and the output cotangent enter the Triton kernels as FP32. With BF16 operands
-    upcast in-kernel, Triton 3.6 on sm_103 (B300) ran FP32 IEEE products at TF32-level precision (4e-4
-    relative output error vs 1e-7 on H100); FP32 operands fix this without changing the arithmetic.
-  runtime_settings_resolved:
-    CUDA_HOME: .envs/shared_transformer/lib/python3.11/site-packages/nvidia/cuda_nvcc
-    NCCL_P2P_DISABLE: null
-    TRANSFORMER_HOST_STAGING: '0'
-    XLA_FLAGS: ' --xla_gpu_enable_command_buffer='
-    XLA_PYTHON_CLIENT_ALLOCATOR: null
-    XLA_PYTHON_CLIENT_MEM_FRACTION: null
-    XLA_PYTHON_CLIENT_PREALLOCATE: 'false'
-  submission: sweep partition, 4 GPUs (B300 or H100 resolved per allocation), through the experiment's
-    Kennel launcher at the source commit; the README gives the equivalent current command
 configs:
 - path: experiments/gla_key_dimension/runs/ra6346b7a6cfc/config.yaml
   sha256: afe1b8c0fef58e36a8f19b5dff321c6ba5885248c295e97f59db9f86adc59f01
@@ -76,8 +41,8 @@ comparisons:
     path: experiments/key_dimension_taylor/sweep.yaml
     sha256: 453616fcaea8c8495e57b3fc24cf94620aba54b3d857b0fa1d77a82191aa61a1
     recorded_sha256: b821a7ba25f58b00076e7a9f941318e82976db5f9046892665d2247d8b71259e
-  note: Seed-0 200M runs with the same data, optimizer, and backbone recipe at each d_K; softmax and row-normalized
-    Taylor attention of degree 2, 4, 8, and 16.
+  note: Seed-0 200M runs with the same data, optimizer, and backbone recipe at each
+    d_K; softmax and row-normalized Taylor attention of degree 2, 4, 8, and 16.
   runs:
   - name: 200m-dk008-seed0
     qk_head_dim: 8
@@ -369,8 +334,8 @@ comparisons:
       training_tokens: 10000269312
       validation_nll: 2.8040092502321516
       validation_perplexity: 16.510709818133147
-    note: current defaults (QK-norm, selective weight decay) since the 2026-09-27 fold-in; the GLA runs
-      predate them
+    note: current defaults (QK-norm, selective weight decay) since the 2026-09-27
+      fold-in; the GLA runs predate them
   - name: 200m-m004-seed0
     qk_head_dim: 64
     kernel: normalized Taylor m=4
@@ -388,8 +353,8 @@ comparisons:
       training_tokens: 10000269312
       validation_nll: 2.701114628996168
       validation_perplexity: 14.896326352016782
-    note: current defaults (QK-norm, selective weight decay) since the 2026-09-27 fold-in; the GLA runs
-      predate them
+    note: current defaults (QK-norm, selective weight decay) since the 2026-09-27
+      fold-in; the GLA runs predate them
   - name: 200m-m008-seed0
     qk_head_dim: 64
     kernel: normalized Taylor m=8
@@ -407,8 +372,8 @@ comparisons:
       training_tokens: 10000269312
       validation_nll: 2.6739954692976817
       validation_perplexity: 14.497779058238134
-    note: current defaults (QK-norm, selective weight decay) since the 2026-09-27 fold-in; the GLA runs
-      predate them
+    note: current defaults (QK-norm, selective weight decay) since the 2026-09-27
+      fold-in; the GLA runs predate them
   - name: 200m-m016-seed0
     qk_head_dim: 64
     kernel: normalized Taylor m=16
@@ -426,8 +391,8 @@ comparisons:
       training_tokens: 10000269312
       validation_nll: 2.670966259070805
       validation_perplexity: 14.453928687175491
-    note: current defaults (QK-norm, selective weight decay) since the 2026-09-27 fold-in; the GLA runs
-      predate them
+    note: current defaults (QK-norm, selective weight decay) since the 2026-09-27
+      fold-in; the GLA runs predate them
   - name: 200m-dk128-seed0
     qk_head_dim: 128
     kernel: softmax
@@ -513,22 +478,7 @@ comparisons:
       training_tokens: 10000269312
       validation_nll: 2.666055755955832
       validation_perplexity: 14.38312660452828
-development_validation:
-  ofm_parity:
-    ofm_commit: 8977f529e83efc688daf96cdcfd365ebbce2afa8
-    result: parameters, outputs, and all parameter gradients exact in FP32 and BF16, with and without
-      RoPE
-    tool: experiments/gla_key_dimension/adapter/verify_ofm.py
-    note: Run during development against an OFM checkout; OFM is not available on Kennel, so it is not
-      part of this record's acceptance.
-limitations:
-- Single seed.
-- d_K changes both the recurrent state size and the trainable projection count; the comparison is not
-  parameter-matched.
-- GLA adds data-dependent decay gates, an output gate, and head normalization relative to softmax and
-  Taylor attention.
 source_commit: 4af147ea64c89bcb0f8086d1e3a963c7ecbcec77
-record_layout_version: 1
 run_ids:
 - ra6346b7a6cfc
 - r6a5ffbb56ac3

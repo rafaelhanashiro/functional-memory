@@ -74,12 +74,9 @@ first and then recomputes tiles to accumulate the normalized values.
 
 The failure records were written after the attempted update, so their attention
 diagnostics are nonfinite everywhere and do not isolate the mechanism, and no
-validation preceded either failure. The signed row sum is the likely cause. The
-earlier runs of these kernels, without QK-norm and under the original weight-decay
-policy, failed within the first 20 updates, and a forensic replay traced those
-failures to near-exact cancellation of signed contributions that left an exactly
-zero FP32 row sum. That analysis remains in this README at commit `ac949ae`.
-Bounding the scores delayed the failure but did not prevent it.
+validation preceded either failure. The signed row sum is the likely cause: odd
+polynomials are negative for low scores, so a row's signed contributions can cancel
+to zero. Bounding the scores with QK-norm does not prevent this.
 
 ## Model, data and optimization
 

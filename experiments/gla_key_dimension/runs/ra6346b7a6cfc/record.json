@@ -69,13 +69,6 @@
       "sha256": "ec2fc9242bf79f4bb71f3304921863b75834050ae21623424453026b68d2157e"
     }
   ],
-  "best_validation": {
-    "selection_rule": "lowest_validation_nll",
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 2.8462983795574734,
-    "validation_perplexity": 17.223907326438283
-  },
   "checkpoint_dir": "experiments/gla_key_dimension/runs/ra6346b7a6cfc/checkpoints",
   "config": {
     "path": "experiments/gla_key_dimension/runs/ra6346b7a6cfc/config.yaml",

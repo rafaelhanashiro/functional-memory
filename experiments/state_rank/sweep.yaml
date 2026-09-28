@@ -1,82 +1,8 @@
 schema_version: 2
 experiment: state_rank
 home_cluster: kennel
-home_cluster_note: Rerun on Kennel on 2026-09-24 at the user's request so that runs,
-  derived outputs, and data archives are regenerable on one accessible cluster. The
-  superseded ORCD execution is summarized under superseded_execution.
 artifact_root: /data/cl/u/rafah/home/projects/functional-memory
-data_policy: Git holds results only. Numerical archives (metrics.npz, spectra.npz)
-  stay beside their committed run metadata under <artifact_root>/experiments/state_rank/runs/<run>/,
-  ignored by Git; SHA256 below.
 checkpoint_retention: none
-scaffold: scaffolds/state_rank
-documentation: experiments/state_rank/README.md
-kennel_execution:
-  environment:
-    python: <artifact_root>/.venv/bin/python
-    flash-linear-attention: 0.6.0
-    matplotlib: 3.11.2
-    numpy: 2.5.3
-    torch: 2.7.1+cu126
-    transformers: 4.57.6
-    triton: 3.3.1
-    dependency_lock_sha256: 3d0a8accf78ebe6a2288bce53032412d7f86dce603609d568c8193af4d5c6356
-    models: pre-downloaded at the pinned revisions to ~/.cache/huggingface/hub; jobs
-      set HF_HUB_OFFLINE=1
-  runtime_settings:
-    allow_tf32: false
-    OMP_NUM_THREADS: SLURM_CPUS_PER_TASK
-    MKL_NUM_THREADS: 1
-    OPENBLAS_NUM_THREADS: 1
-    MPLBACKEND: Agg
-    HF_HUB_OFFLINE: 1
-  comparisons:
-    random_vs_pretrained:
-      source_commit: 279fdd63fa03054196762da2bc616eb1f8c30208
-      execution_root: worktrees/state_rank-exec-279fdd6 (frozen detached worktree;
-        removed after retention)
-      partition: standard
-      gres: gpu:h100:1
-      cpus: 4
-      memory: 32G
-      gating: pretrained and random-seed0 gate the remaining four conditions (afterok)
-      superseded_attempts:
-      - slurm_job_id: '201736'
-        condition: pretrained
-        source_commit: 5424ec87bbdc392fb46f632b652058aefecad4c6
-        state: FAILED
-        reason: 'baseline reproduction: normalized spectrum 2.0576e-5 exceeded the
-          2e-5 tolerance on input 1 with zero discrete-rank mismatches; see tolerance_amendment.
-          Log removed after resolution.'
-      - slurm_job_ids:
-        - '201737'
-        - '201738'
-        - '201739'
-        - '201740'
-        - '201741'
-        conditions: random-seed0..4
-        state: CANCELLED before starting (dependents of 201736)
-      per_run_execution: each run's record.json (execution_attempts, parameter_sha256,
-        log)
-    random_vs_pretrained_deltanet:
-      source_commit: 5424ec87bbdc392fb46f632b652058aefecad4c6
-      execution_root: worktrees/state_rank-exec-5424ec8 (frozen detached worktree;
-        removed after retention)
-      partition: standard
-      gres: gpu:h100:1
-      cpus: 8
-      memory: 48G
-      gating: pretrained and random-seed0 gate the remaining four conditions (afterok)
-      per_run_execution: each run's record.json (execution_attempts, parameter_sha256,
-        log)
-  unified_analysis:
-    source_commit: 279fdd63fa03054196762da2bc616eb1f8c30208
-    slurm_job_id: '201750'
-    partition: standard
-    node: doodle
-    resources: CPU only; 4 CPUs, 16G
-    attempts: 1
-  workspace: kennel-rerun (execution workspace; removed after retention)
 acceptance:
   pre_launch_tests:
   - slurm_job_id: '201714'
@@ -121,65 +47,6 @@ acceptance:
     maximum_prefix_relative_error: 1.9269328921836587e-05
   unified_analysis: validation passed; source archives unchanged and checksum-verified
     (see unified_analysis.validation)
-tolerance_amendment:
-  parameter: NORMALIZED_SPECTRUM_ATOL in scaffolds/state_rank/compare_random.py
-  previous: 2.0e-05
-  current: 5.0e-05
-  commit: 279fdd63fa03054196762da2bc616eb1f8c30208
-  scope: Llama pretrained baseline reproduction only; the DeltaNet threshold stays
-    2e-5
-  reason: The retained baseline was measured on L40S. The Kennel H100 pretrained measurement
-    reached 2.0576e-5 (input 1) with zero discrete-rank mismatches and 1e-6 K/V agreement.
-  decision: user-approved on 2026-09-24 before resubmission
-cross_cluster_reproduction:
-  random_vs_pretrained:
-    summary_rows: 96
-    discrete_ranks: threshold, 90%- and 99%-energy ranks identical in all rows
-    continuous_max_relative_difference:
-      participation_ratio: 3.7e-06
-      log_trace: 3.3e-07
-      key_and_value_norms: 3.0e-07
-    parameter_fingerprints: identical to ORCD for all six conditions
-    inputs: identical
-  random_vs_pretrained_deltanet:
-    summary_rows: 144
-    discrete_ranks: energy ranks identical in all rows; threshold rank identical in
-      143
-    threshold_rank_difference:
-      condition: random-seed1
-      layer: 23
-      orcd: 78.46875
-      kennel: 78.5
-      meaning: one of 32 input/head states gains one mode at the 1e-4 sigma_1 cutoff
-    continuous_max_relative_difference:
-      participation_ratio: 5.6e-07
-      log_trace: 5.6e-07
-    parameter_fingerprints:
-      pretrained: identical to ORCD
-      random: differ from ORCD in all five seeds
-      cause: CPU-vendor-dependent last-bit rounding of log/exp/expm1 in FLA's A_log
-        and dt_bias initialization; every other parameter is bit-identical
-      evidence:
-      - Seed 0 on AMD EPYC (dogo, jobs 201752-201754) gives the Kennel fingerprint
-        under every ATen CPU capability (default, AVX2, AVX512), MKL_CBWR (COMPATIBLE,
-        SSE4_2, AVX2, AVX512), MKL_DEBUG_CPU_TYPE=5, a dirtied allocator, and OMP_NUM_THREADS=1.
-      - Seed 0 on Intel Xeon Gold 5218R (doodle, job 201762) reproduces the ORCD fingerprint
-        0415b698...0c65bd exactly.
-      - 'Seeds 0-4, Intel (doodle, 201763) versus AMD (mastiff, 201764; bit-identical
-        to dogo for seed 0): 10-22 of 384 A_log/dt_bias elements per seed differ,
-        each by 1 ULP.'
-      consequence: random DeltaNet metrics deviate from ORCD no more than the pretrained
-        condition, whose parameters are identical (both <=5.6e-7 relative)
-  unified_analysis:
-    depth_summary_rows: 240
-    differences: only the DeltaNet random-seed1 layer-23 threshold rank above; terminal
-      comparison counts unchanged
-superseded_execution:
-  home_cluster: ORCD/Engaging
-  record_commit: 4d93d20936e4eba23761a5ff9f8c0973d23c8ccd
-  summary: The original L40S execution of both comparisons, superseded by the Kennel
-    rerun; its record is at record_commit, and agreement with it is summarized in
-    cross_cluster_reproduction.
 recipes:
   random_vs_pretrained:
     schema_version: 1

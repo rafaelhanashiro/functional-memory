@@ -107,13 +107,6 @@
       "sha256": "e308007b1c50cb2d7d128168288d57fc68b837fd352e3b61635f19b8bee6f42b"
     }
   ],
-  "best_validation": {
-    "selection_rule": "lowest_validation_nll",
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 2.8160622119903564,
-    "validation_perplexity": 16.710916892545267
-  },
   "checkpoint_dir": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/checkpoints",
   "config": {
     "path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/config.yaml",
@@ -154,7 +147,6 @@
   },
   "initialization_sha256": "3f879a801bded9a9154bdc0f03b8dd4f6d89f8944caac5a676355ead453c6bc5",
   "label": "200m-dk016-gla-seed0",
-  "log_note": "Slurm truncated slurm-201793.out when the preempted H100 attempt requeued (default open mode), so the retained log covers the B300 attempt: acceptance, restore at update 6,500, and training to completion. The H100 attempt's acceptance and metrics survive in runs/ and above.",
   "log_path": "experiments/gla_key_dimension/runs/r6a5ffbb56ac3/training.log",
   "log_sha256": "10915c4f6ef8af36ec0db0fc244b28bfd0583d301d522b25da75dc3966012c01",
   "name": "200m-dk016-gla-seed0",

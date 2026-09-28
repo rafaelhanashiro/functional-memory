@@ -122,14 +122,7 @@ evaluation/checkpoint overhead and 10% headroom against eight hours. Numerical
 or runtime pilot failure would reject only that variant; infrastructure or
 shared-correctness failure would block the whole sweep.
 
-An earlier pilot compared independently generated GPU trajectories and failed
-before the eventual successful preflight. Its step-2 states already differed
-before restart: 260/285 leaves, maximum parameter difference 1.527369e-7, with
-finite NLLs 10.8814556599 and 10.8814499378. Step 3 differed in 276 leaves,
-maximum parameter difference 3.455207e-7. Coefficients were bitwise equal while
-optimizer moments differed. The nondeterministic primitive was not conclusively
-identified. The diagnosis, folded into the
-[study record](../../experiments/learned_quadratic_attention/sweep.yaml) (`execution_evidence`), preserves those measurements. The replacement gate checks exact live state, durable checkpoint,
+The resume gate checks exact live state, durable checkpoint,
 fresh-process restored parameters/optimizer/update count, and next batch/RNG;
 CPU tests separately require uninterrupted/resumed trajectory identity. It
 uses no floating-point tolerance and does not change production arithmetic.

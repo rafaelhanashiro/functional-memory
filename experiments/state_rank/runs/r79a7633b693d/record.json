@@ -10,11 +10,7 @@
       "sha256": "1cba6e2cace13a91c49fa4b2ec09296084356732c8f67d1d6a46f6cc941f9524"
     }
   },
-  "config": {
-    "path": "experiments/state_rank/runs/r79a7633b693d/config.yaml",
-    "sha256": "009b09df6c8aeb533c019a576e49ac205259961a4b989780b44a12d3d1eeeeeb"
-  },
-  "execution_attempts": [
+  "attempts": [
     {
       "attempts": 1,
       "elapsed_seconds": 846.2,
@@ -25,6 +21,10 @@
       "slurm_restart_count": 0
     }
   ],
+  "config": {
+    "path": "experiments/state_rank/runs/r79a7633b693d/config.yaml",
+    "sha256": "009b09df6c8aeb533c019a576e49ac205259961a4b989780b44a12d3d1eeeeeb"
+  },
   "hardware": {
     "device": "cuda",
     "gpu": "NVIDIA H100 80GB HBM3",

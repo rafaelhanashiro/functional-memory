@@ -16,7 +16,7 @@ runs:
 - run_id: rabd239a7f3dc
   label: gated-deltanet-1.3b-l12-hall-t512
   record: experiments/state_rank/runs/rabd239a7f3dc/record.json
-  record_sha256: df88f843122b92f204109817947b8e44aa78d327df18eb907f462c5945703cd2
+  record_sha256: 66cedbf4dddee8a5294164f55011de7e90bec20e3830c9593447f177bf578553
   config_sha256: 4a93acb7201e21c9af3288228ee074088348cc07d02608cf1a9786cdb35ab2ee
   inputs:
     metadata:
@@ -31,7 +31,7 @@ runs:
 - run_id: r387096e9d9c7
   label: llama-3.2-1b-l8-kvall-t512
   record: experiments/state_rank/runs/r387096e9d9c7/record.json
-  record_sha256: 9915816596a23c6832e0a2a644c16a9ba16e3d34cdfabfd55ac225865715b5be
+  record_sha256: 9a19f5e76f188bf8a8d0181ed6bbc4592d7b59aa0a4fde7852a0b304ee366919
   config_sha256: 0daebed079eca6a2dd6b9026170a786363bd15a4ee0b70ea6aa0905da0db5f0a
   inputs:
     metadata:
@@ -46,7 +46,7 @@ runs:
 - run_id: r845135d42740
   label: random_vs_pretrained-pretrained
   record: experiments/state_rank/runs/r845135d42740/record.json
-  record_sha256: 43f6c5efc7069e465bf01eb1845d3752a5418fdeab59d706694671510b381e48
+  record_sha256: 0c4650fddb17228a9604d6c92197b4bff6dbc372cce1425c9dc2b5053070191e
   config_sha256: 2bbbade012d87eff8a764dd742d292775551684ff94104b02f52c69dac1be81f
   inputs:
     metadata:
@@ -58,7 +58,7 @@ runs:
 - run_id: r4bf905cd724d
   label: random_vs_pretrained-random-seed0
   record: experiments/state_rank/runs/r4bf905cd724d/record.json
-  record_sha256: 57f93adb327e8ab947160fbe75d529d79ea2c3a47cc4d309b43a93bc73fc3a02
+  record_sha256: f186abf39c4237b6fea2c793b6c4efdf3b7e5b97e1305de3cca7237e4255a0df
   config_sha256: 40a5a9d8bdd11443b0d7a87a77a2f74266bc7473367f52d19812c90543081dd4
   inputs:
     metadata:
@@ -70,7 +70,7 @@ runs:
 - run_id: r9364a915d115
   label: random_vs_pretrained-random-seed1
   record: experiments/state_rank/runs/r9364a915d115/record.json
-  record_sha256: da7b832565a07ec1ef5f7b3b0a12d2890be25516e47652ffc0806b3c05e7264c
+  record_sha256: 17a6ca50eed2ced10362430986e11c159bbf03c42bbf5d569f2a8744daaacd42
   config_sha256: 40b2494e6aae705716954434fc5189b42ec7c1c876c7ed4b30078ab213331fdd
   inputs:
     metadata:
@@ -82,7 +82,7 @@ runs:
 - run_id: r1e1b58269791
   label: random_vs_pretrained-random-seed2
   record: experiments/state_rank/runs/r1e1b58269791/record.json
-  record_sha256: 90e1441dbaf49250417736bb09d90e10ff24fff90244827ce1eda83ff710b2cb
+  record_sha256: 2ae98c5eafd7d67c863850cbe72e1cf8fd50ecadb5d5c7061b21a9cb51a805b9
   config_sha256: 34fcee11fa6f87d8757c7d3ca8601d99de05f5e88fc91d3ad73a22065630abbf
   inputs:
     metadata:
@@ -94,7 +94,7 @@ runs:
 - run_id: red7a4fb9ce56
   label: random_vs_pretrained-random-seed3
   record: experiments/state_rank/runs/red7a4fb9ce56/record.json
-  record_sha256: bc2b9f761a48a70f788e51bc1c3e81a5e3ff90ff77f32a9cd48483efc33577a6
+  record_sha256: 3f05b71e2e623622e435ec676f2a7a482cd7206001a98a06de57758d4ee13748
   config_sha256: 81c28957c513e83b0ff0cce7cd452702c0ebba7a18490f5026a5ed577bcbabc7
   inputs:
     metadata:
@@ -106,7 +106,7 @@ runs:
 - run_id: r2c419979b240
   label: random_vs_pretrained-random-seed4
   record: experiments/state_rank/runs/r2c419979b240/record.json
-  record_sha256: e8c0ebbf0350ac3efcd3c75e5b7bece40aed0dd3bec9236f16e51133103716e3
+  record_sha256: 5879afc51e85e15c9553f6918dc849cde76670ad696ffd61a727c4aa2d74ea88
   config_sha256: 8c002a42e1e537bc17b60079096a111479a8d8d1ac588ae60af8513031f94f10
   inputs:
     metadata:
@@ -118,7 +118,7 @@ runs:
 - run_id: r9622dff4f6a8
   label: random_vs_pretrained_deltanet-pretrained
   record: experiments/state_rank/runs/r9622dff4f6a8/record.json
-  record_sha256: 951f4d7b32257d8715e4c85bf858291c185fa45d165973dae78fe255f5d54272
+  record_sha256: 619014bac5faa5ab53350d4019055e76e07fdf7dbbfd0a8c4d830d7c7d660edc
   config_sha256: 6bad3a0da2b9ca2178b840a407840d3c3f0ec7143b162760bfbd673a658327cb
   inputs:
     metadata:
@@ -130,7 +130,7 @@ runs:
 - run_id: r248ca889523a
   label: random_vs_pretrained_deltanet-random-seed0
   record: experiments/state_rank/runs/r248ca889523a/record.json
-  record_sha256: a8a45f97ed832e9f4d8b53fa252916a1d2ba03afb907cb1cf6bd02000bdf1091
+  record_sha256: dfae9da58bddbc4b2d2931f58ee9f4f8bb4d9d8916e5a0468cbf4b0dc7bd5f8b
   config_sha256: 1934a7d166ecf6cfdd5295e5778cb5549794f93e696b91506239bbe175884adc
   inputs:
     metadata:
@@ -142,7 +142,7 @@ runs:
 - run_id: rb0f5d0c3f603
   label: random_vs_pretrained_deltanet-random-seed1
   record: experiments/state_rank/runs/rb0f5d0c3f603/record.json
-  record_sha256: be7caf81cf20bc94a9e11b0003aa57e8c3c043335c67f4164397fdb5183aaad5
+  record_sha256: aca6fd85f7e22af051aed779608b030cc97f72867badc15fe58cc5d4b24fc95f
   config_sha256: f6369063d14bda686e565bfcaa5e7083443abb35d27bb5b873927f30ac8ca287
   inputs:
     metadata:
@@ -154,7 +154,7 @@ runs:
 - run_id: r79a7633b693d
   label: random_vs_pretrained_deltanet-random-seed2
   record: experiments/state_rank/runs/r79a7633b693d/record.json
-  record_sha256: dd2d4d8d1a54ab2998d69321e3006107a63f189dc858b6fb96a394520b686fd7
+  record_sha256: 667e83d8833e685616bc929a0f9a35e302e5cc3a4e023c1ef5ed054016dad21c
   config_sha256: 009b09df6c8aeb533c019a576e49ac205259961a4b989780b44a12d3d1eeeeeb
   inputs:
     metadata:
@@ -166,7 +166,7 @@ runs:
 - run_id: rea54b3f2f964
   label: random_vs_pretrained_deltanet-random-seed3
   record: experiments/state_rank/runs/rea54b3f2f964/record.json
-  record_sha256: 92e9d8aa8ab4eb456d65817972d78aaa3ee9c491e3e2f39e719e49a6a3eaac4e
+  record_sha256: 3201038a39c5aed83aad2a10ac8f4eba3a8c945dfe3a91d1e80fcf2417724c89
   config_sha256: 2d3aeaad8fba4feb1dab791979d7cd3a523cb08d8f62be99d046281f47a89fdc
   inputs:
     metadata:
@@ -178,7 +178,7 @@ runs:
 - run_id: r8da34503fda2
   label: random_vs_pretrained_deltanet-random-seed4
   record: experiments/state_rank/runs/r8da34503fda2/record.json
-  record_sha256: f4a4d5b7300087c98bf2f9728ed95b94e78638f494b04fb3086c7c58a553f37b
+  record_sha256: 695ca61cfdb80923f86cde3d0a48d00c1cea4a7bb9d32c630e5752098d3218bb
   config_sha256: dfea7f81300f7dc199811f01afa805dbb0f79d8372242e10caa9506e7d3a39f2
   inputs:
     metadata:

@@ -74,16 +74,6 @@
   ],
   "attention_backend": "fused",
   "attention_degree": 2,
-  "backend_agreement": "same seed and data order as the cancelled blocked attempt: training NLL 10.487346 vs 10.487302 at update 20, 8.231812 vs 8.231823 at 100, 6.955703 vs 6.955702 at 200; validation NLL 4.849204 vs 4.849587 at 1,000 and 4.054707 vs 4.052367 at 2,000 (fused vs blocked)",
-  "best_validation": {
-    "selection_rule": "lowest_validation_nll",
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 2.7835158109664917,
-    "validation_perplexity": 16.17579211851895
-  },
-  "branch": "claude/nonnegative-learned-taylor-fused",
-  "checkpoint_directory": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/checkpoints",
   "completion": {
     "path": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/completion.json",
     "sha256": "3b79dd0968ca3b981fd728e6b91f84abe45d9dbad0fc49894695634b88ca986a"
@@ -93,26 +83,18 @@
     "recorded_sha256": "1ff9ec14a0dee40935f1d03f260d3e40ae6a5047efd4a53f271330c548ea4fed",
     "sha256": "8b6d73ac23b07c1a9d3c1bfa77110057590aacba681a4e7d2638ad4178227207"
   },
-  "execution_checkout": "worktrees/nonnegative_learned_taylor_fused",
-  "factor_count": 480,
-  "frozen_execution_set_sha256": "a6eac0c38b2fe505c85c436bdb7e49884af58f082f63e34a82da0c107d387fb2",
+  "frozen_execution_sha256": "a6eac0c38b2fe505c85c436bdb7e49884af58f082f63e34a82da0c107d387fb2",
   "hardware_summary": "4x H100 SXM (dogo) through update ~14,570, then 4x B300 (akita)",
   "home_cluster": "kennel",
   "label": "200m-qk-m002-nonnegative-seed0",
-  "launch_commit": "270179ce9330e33bd2dacffb364aaf00e01e38f8",
   "log": {
     "path": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/training.log",
     "sha256": "ba2e2cb07a7ca8cd208183687993d6d075b00d16b14eb4840e6a9ad6327498ac"
   },
-  "log_directory": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9",
   "name": "200m-qk-m002-nonnegative-seed0",
   "parameter_count": 199906944,
   "prediction_tokens": 10000269312,
   "record_schema_version": 1,
-  "retention": {
-    "path": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/retention.json",
-    "sha256": "a98dba0b2fbe54b409ecb128aa46b11b660fc703a8bb17d94f37c1e0ebf34813"
-  },
   "run_id": "rdbd4607d5af9",
   "run_record": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9",
   "seed": 0,
@@ -229,56 +211,8 @@
     "tree_sha256": "8a78249695030325b84311691a7e75401f52d7547a7808b20098bc6de6673e90",
     "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'"
   },
-  "slurm_job_ids": [
-    202638
-  ],
   "source_commit": "270179ce9330e33bd2dacffb364aaf00e01e38f8",
   "status": "completed",
-  "submission": "sbatch --partition=long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); started at 21:19:55 on dogo (H100) in the slot released by cancelling the blocked attempt; the pending normalized Taylor rerun m=1 (202614) was held for the swap and released once 202638 started",
-  "superseded_attempt": {
-    "artifacts": "deleted 2026-09-26 22:00 after the fused run passed update 3,000 with matching validation; none retained",
-    "attempts": [
-      {
-        "end": "2026-09-26T19:46:21-04:00",
-        "node": "dogo",
-        "outcome": "preempted by this user's own standard-partition job (normalized Taylor rerun m=1, 202614); requeued",
-        "start": "2026-09-26T19:06:59-04:00"
-      },
-      {
-        "end": "2026-09-26T21:19:51-04:00",
-        "node": "dogo",
-        "outcome": "resumed from the update-500 checkpoint; cancelled at update 2,940 to relaunch on the fused kernel",
-        "start": "2026-09-26T19:48:33-04:00"
-      }
-    ],
-    "attention_backend": "blocked",
-    "config": {
-      "path": "experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/config.yaml",
-      "recorded_sha256": "5b9971e915ae24d11f3eab3513e1c9828491efb5081eaf7105d55e2210824ae7",
-      "sha256": "8b6d73ac23b07c1a9d3c1bfa77110057590aacba681a4e7d2638ad4178227207"
-    },
-    "execution_checkout": "worktrees/nonnegative_learned_taylor",
-    "last_validation": {
-      "step": 2000,
-      "validation_nll": 4.052367,
-      "validation_perplexity": 57.5335
-    },
-    "slurm_job_id": 202604,
-    "source_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
-    "throughput": "2.2 s/update on four H100 SXM",
-    "validation": [
-      {
-        "step": 1000,
-        "validation_nll": 4.849587,
-        "validation_perplexity": 127.6876
-      },
-      {
-        "step": 2000,
-        "validation_nll": 4.052367,
-        "validation_perplexity": 57.5335
-      }
-    ]
-  },
   "terminal_validation_nll": 2.7835158109664917,
   "terminal_validation_perplexity": 16.17579211851895,
   "throughput": "0.50 s/update on four H100 SXM (2.2 s/update for the blocked attempt)",

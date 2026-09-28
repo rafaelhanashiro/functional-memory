@@ -91,15 +91,12 @@
       "sha256": "b19d219e8cf62f09dd38db52647f8ec5cf64915218b0feef0a85cd1bdcdeabcb"
     }
   ],
-  "attempts": "8 earlier attempts were preempted during acceptance before any training update; attempt 8 on H100 node dogo reused the passed stages, completed acceptance, and trained uninterrupted from scratch.",
+  "attempts": [
+    {
+      "slurm_job_id": "201998"
+    }
+  ],
   "attention_degree": 2,
-  "best_validation": {
-    "selection_rule": "lowest_validation_nll_latest_on_tie",
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 2.9986991456576755,
-    "validation_perplexity": 20.059425552490385
-  },
   "coefficient_count": 480,
   "completed_utc": "2026-09-25T14:05:48.060368+00:00",
   "config": {
@@ -233,6 +230,7 @@
     },
     "state_transfer": "direct"
   },
+  "frozen_execution_sha256": "0b198131b38d6469e704720ed8e232f5c9a67c5877a035d383320cddeb38d275",
   "hardware": "4x NVIDIA H100 80GB HBM3 dogo, sweep partition",
   "home_cluster": "kennel",
   "label": "200m-m002-seed0",
@@ -349,11 +347,7 @@
     "verified_present_utc": "2026-09-25T14:11:24Z"
   },
   "slurm_job_id": "201998",
-  "slurm_job_ids": [
-    201998
-  ],
   "source_commit": "788a085e24225872495199e8040ec1167070a691",
-  "start": "fresh initialization",
   "status": "completed",
   "terminal_validation_nll": 2.9986991456576755,
   "terminal_validation_perplexity": 20.059425552490385,

@@ -34,6 +34,11 @@
       "sha256": "53f15b0a1fa9f87ec1e1d83e575dcb21b7bb17f2386400e0abed7fafeca0bb4e"
     }
   ],
+  "attempts": [
+    {
+      "slurm_job_id": "199897"
+    }
+  ],
   "attention_backend": "fused",
   "attention_degree": 2,
   "coefficient_count": 2,
@@ -84,7 +89,6 @@
     "validation_nll": 3.962969950267247,
     "validation_perplexity": 52.61335318019111
   },
-  "log_outcome": "indispensable_scientific_numerical_failure",
   "metadata": {
     "path": "experiments/learned_quadratic_attention/runs/rb5ab6e890ffe/metadata.json",
     "sha256": "1bfabf03c2511b04fc8a90227f84210e0a6b3bab0d4932e5e399f8432b295a14"

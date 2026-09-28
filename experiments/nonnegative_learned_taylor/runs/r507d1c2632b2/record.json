@@ -55,15 +55,6 @@
   ],
   "attention_backend": "blocked",
   "attention_degree": 4,
-  "best_validation": {
-    "selection_rule": "lowest_validation_nll",
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 2.6906952432223727,
-    "validation_perplexity": 14.741921579480255
-  },
-  "branch": "claude/nonnegative-learned-taylor",
-  "checkpoint_directory": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/checkpoints",
   "completion": {
     "path": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/completion.json",
     "sha256": "bb3c734e7004a4b5482449ea4514efb13dff91e10e74460d2f8d71c1dcb2b9d2"
@@ -73,26 +64,18 @@
     "recorded_sha256": "8fb4ceab0f4eb570851c0105c2ea4843aa16920f255f15819316b5fcc08421ff",
     "sha256": "b86fbefeb080890491195d2d53d008917a9456cef9a55ed1a8a0ba030421a25e"
   },
-  "execution_checkout": "worktrees/nonnegative_learned_taylor",
-  "factor_count": 800,
-  "frozen_execution_set_sha256": "e5a8da3132f2de76c8729e4b982ede885db711e8b86a01ccb2e759a106a04643",
+  "frozen_execution_sha256": "e5a8da3132f2de76c8729e4b982ede885db711e8b86a01ccb2e759a106a04643",
   "hardware_summary": "4x B300 (akita)",
   "home_cluster": "kennel",
   "label": "200m-qk-m004-nonnegative-seed0",
-  "launch_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
   "log": {
     "path": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/training.log",
     "sha256": "c3ce20b907b58d40b233a720169f0c62c077cbd31ab6999fe75347c9ce31ea68"
   },
-  "log_directory": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2",
   "name": "200m-qk-m004-nonnegative-seed0",
   "parameter_count": 199907264,
   "prediction_tokens": 10000269312,
   "record_schema_version": 1,
-  "retention": {
-    "path": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/retention.json",
-    "sha256": "0eb750cd91d6eb5a1db63e0291d410b991c2fa84c980a34c29aac0e51a1f0fce"
-  },
   "run_id": "r507d1c2632b2",
   "run_record": "experiments/nonnegative_learned_taylor/runs/r507d1c2632b2",
   "seed": 0,
@@ -209,12 +192,8 @@
     "tree_sha256": "596119e1f33825cc17b740000a64dc528fa7a1f0858bd309458f8d1f206c3416",
     "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'"
   },
-  "slurm_job_ids": [
-    202605
-  ],
   "source_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
   "status": "completed",
-  "submission": "sbatch --partition=long --time=1-00:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); started on akita (B300) within a minute by preempting a sweep-partition job",
   "terminal_validation_nll": 2.6906952432223727,
   "terminal_validation_perplexity": 14.741921579480255,
   "training_updates": 19074,

@@ -34,6 +34,11 @@
       "sha256": "b48b4cebd91b6c98aaad06da5dd82d1ef59a61416fec306dfac17b9a83287068"
     }
   ],
+  "attempts": [
+    {
+      "slurm_job_id": "199895"
+    }
+  ],
   "attention_backend": "fused",
   "attention_degree": 2,
   "coefficient_count": 2,
@@ -74,13 +79,6 @@
   },
   "home_cluster": "kennel",
   "label": "200m-positive-global-seed0",
-  "last_committed_validation": {
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 2.7843341316495622,
-    "validation_perplexity": 16.189034521301647
-  },
-  "log_outcome": "successful_training",
   "metadata": {
     "path": "experiments/learned_quadratic_attention/runs/r0fc01aa2826e/metadata.json",
     "sha256": "a063d5e8361ac26560b6ab6bd2bfea22f0e72ae5330f3cb58a1dd69612db586a"

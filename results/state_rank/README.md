@@ -236,16 +236,15 @@ All twelve conditions ran on one H100 each on `dogo` (Llama from source
 `279fdd6`, DeltaNet from `5424ec8`); the unified analysis ran as CPU job 201750
 from `279fdd6`. Before launch the full state-rank suite passed on an H100 (173
 tests), and the three native DeltaNet GPU tests passed inside the pretrained
-DeltaNet job. Jobs, attempts, hardware, and acceptance values are in
-[provenance](../../experiments/state_rank/sweep.yaml).
+DeltaNet job. Jobs, attempts, and hardware are in each
+[run record](../../experiments/state_rank/runs/); acceptance values are in the
+[study file](../../experiments/state_rank/sweep.yaml).
 
-- **Baseline reproduction.** Llama reproduces the pretrained-only collection with
-  zero discrete-rank mismatches, K/V relative error ≤ 2.6 × 10⁻⁶, and normalized
-  spectra within 2.06 × 10⁻⁵. That collection was measured on L40S; the first
-  Kennel attempt (job 201736) stopped at the original 2 × 10⁻⁵ spectrum tolerance,
-  which was then relaxed to 5 × 10⁻⁵ for Llama only (`279fdd6`, recorded as
-  `tolerance_amendment`). DeltaNet reproduces its collection within
-  2.98 × 10⁻⁷ with zero rank mismatches at the unchanged 2 × 10⁻⁵ tolerance;
+- **Baseline reproduction.** Llama reproduces the pretrained-only collection,
+  measured on L40S, with zero discrete-rank mismatches, K/V relative error
+  ≤ 2.6 × 10⁻⁶, and normalized spectra within 2.06 × 10⁻⁵, inside its
+  5 × 10⁻⁵ spectrum tolerance. DeltaNet reproduces its collection within
+  2.98 × 10⁻⁷ with zero rank mismatches at a 2 × 10⁻⁵ tolerance;
   maximum full-prefix versus tokenwise cache error is 1.93 × 10⁻⁵ (tolerance
   2 × 10⁻⁴).
 - **Agreement with ORCD.** Llama: all threshold and energy ranks identical in 96

@@ -4,29 +4,6 @@ experiment: nonnegative_learned_taylor
 status: concluded
 home_cluster: kennel
 artifact_root: /data/cl/u/rafah/home/projects/functional-memory
-execution_checkout: worktrees/nonnegative_learned_taylor
-documentation: experiments/nonnegative_learned_taylor/README.md
-scaffold: scaffolds/transformer
-branch: claude/nonnegative-learned-taylor
-branch_base_commit: aedd097e92079455dd4f6b382b475b1783c4c248
-launch_commit: aff55c30a44489ba6904e5463bc9d4c62aa0f406
-frozen_execution_set_sha256: e5a8da3132f2de76c8729e4b982ede885db711e8b86a01ccb2e759a106a04643
-scientific_change: Row-normalized causal p_{l,h}(s) V / rowsum with p = q1^2 + q2^2 (deg q1 = m/2, deg
-  q2 = m/2 - 1), factors learned per layer and head and initialized so p = T_m; QK-norm cosine scores
-  with per-head log scales; otherwise the QK-norm learned Taylor sweep's normalized recipe
-requested:
-  date: '2026-09-26'
-  from_cluster: kennel
-  degrees:
-  - 2
-  - 4
-  sharing: per_head
-  normalization: row-normalized
-  partition_policy: best resources and little wait among allowed partitions (not conference); long preempts
-    only sweep
-shared_dependency_lock:
-  path: scaffolds/transformer/uv.lock
-  sha256: dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559
 data_identity:
   train:
     path: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
@@ -34,56 +11,9 @@ data_identity:
   eval:
     path: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
     sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
-comparison_controls:
-  signed_direct_m2:
-    run: experiments/qk_norm_learned_taylor/runs/rd962214a5556
-    source_commit: 696ffb5ecb2a49a5be433a9abe1273f920a94a03
-    status: numerical-failure
-    failure_step: 1857
-  signed_direct_m4:
-    run: experiments/qk_norm_learned_taylor/runs/re554c79caddb
-    source_commit: 696ffb5ecb2a49a5be433a9abe1273f920a94a03
-    status: numerical-failure
-    failure_step: 1456
-  qk_norm_softmax:
-    run: experiments/qk_norm_attention/runs/r1feece425074
-    source_commit: aa5b6eb34d8b57533cdfe04fe263906e69d30091
-    validation_nll: 2.671205988952092
-    validation_perplexity: 14.457394141153632
-  positive_quadratic_per_head_legacy:
-    run: experiments/learned_quadratic_attention/runs/rd5f573abb162
-    note: 0.5 (1 + (a s + b)^2) per head, without QK-norm and under decay on all parameters
-    validation_perplexity: 16.2125
-pre_launch_validation:
-  cpu_tests: 767 passed, 13 skipped (full scaffold, launch helpers, and every JAX adapter) at the launch
-    tree; the new sum-of-squares suite 24/24 on CPU
-  gpu_tests:
-    B300: 11 passed (sum-of-squares, direct normalized, QK-norm GPU cases; akita)
-    H100: 11 passed (dogo)
-  hardware_note: A mastiff H100 reported CUDA_ERROR_ECC_UNCORRECTABLE during a test allocation; mastiff
-    was excluded from these submissions
-  fused_relaunch_cpu_tests: '187 passed, 51 skipped (GPU-only cases) at 270179c: the experiment''s acceptance
-    suites, the fused normalized polynomial tests, acceptance and backend-resolution tests; in-allocation
-    acceptance runs the GPU cases on H100'
-  fused_kernel_qualification: 'scaffolds/transformer/validation (main fa9bdb2): sum-of-squares m=2/m=4
-    fused kernels qualified on H100 and B300'
-execution_note: m=4 runs from the original checkout (worktrees/nonnegative_learned_taylor, branch claude/nonnegative-learned-taylor,
-  launch aff55c3) on the blocked backend. m=2 was relaunched on the fused normalized polynomial kernel
-  from a second checkout (worktrees/nonnegative_learned_taylor_fused, branch claude/nonnegative-learned-taylor-fused
-  = the experiment branch with main's fused kernels merged), because the original checkout's frozen execution
-  set cannot change while m=4 runs. The top-level launch fields describe the original launch; each run's
-  execution fields are authoritative.
-artifact_locations:
-  runs: experiments/nonnegative_learned_taylor/runs/<run_id> (committed)
-  checkpoints: experiments/nonnegative_learned_taylor/runs/<run_id>/checkpoints/<step> (ignored, on Kennel under
-    artifact_root)
-  logs: experiments/nonnegative_learned_taylor/runs/<run_id>/training.log (ignored, on Kennel under artifact_root)
-  verified: checkpoint trees and logs hashed before and after moving from the execution worktrees into
-    the primary checkout on 2026-09-27; identical; see each run's selected_checkpoint and log
-summary:
-  path: results/nonnegative_learned_taylor/summary.csv
-  generator: results.nonnegative_learned_taylor.report
-record_layout_version: 1
 run_ids:
 - rdbd4607d5af9
 - r507d1c2632b2
+dependency_lock:
+  path: scaffolds/transformer/uv.lock
+  sha256: dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559

@@ -52,11 +52,12 @@
       "sha256": "4731d3920a58201f8ca9ac8bf2568826a28a1a21d1f30e28c5c71e1023fc108d"
     }
   ],
+  "attempts": [
+    {
+      "slurm_job_id": "200737"
+    }
+  ],
   "attention_degree": 2,
-  "best_validation": {
-    "path": "experiments/key_dimension_taylor/runs/r21a071c7cd15/best_validation.json",
-    "sha256": "8d2eebf0d1bc04812776b6cee7e3b825b8c8e31e9b1b75bb14ed2aeae4d1460a"
-  },
   "completion": {
     "path": "experiments/key_dimension_taylor/runs/r21a071c7cd15/completion.json",
     "sha256": "86c2c0b0576807eddcc8d86a227fa55786fb6ef51430d43ef4ed935591de40fd"

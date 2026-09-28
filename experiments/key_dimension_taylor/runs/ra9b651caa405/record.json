@@ -69,6 +69,64 @@
       "sha256": "73876b2bd8d5f253987b6127283f584e6bfd4fcb3f0e41b977b2b8a0f1247698"
     }
   ],
+  "attempts": [
+    {
+      "end": "2026-09-27T03:00:49",
+      "node": "dogo",
+      "partition": "long",
+      "start": "2026-09-27T02:58:53",
+      "state": "PREEMPTED"
+    },
+    {
+      "end": "2026-09-27T03:04:49",
+      "node": "dogo",
+      "partition": "long",
+      "start": "2026-09-27T03:02:53",
+      "state": "PREEMPTED"
+    },
+    {
+      "end": "2026-09-27T03:08:19",
+      "node": "dogo",
+      "partition": "long",
+      "start": "2026-09-27T03:07:04",
+      "state": "PREEMPTED"
+    },
+    {
+      "end": "2026-09-27T03:13:19",
+      "node": "dogo",
+      "partition": "long",
+      "start": "2026-09-27T03:10:48",
+      "state": "PREEMPTED"
+    },
+    {
+      "end": "2026-09-27T03:39:19",
+      "node": "akita",
+      "partition": "long",
+      "start": "2026-09-27T03:36:45",
+      "state": "PREEMPTED"
+    },
+    {
+      "end": "2026-09-27T04:06:19",
+      "node": "akita",
+      "partition": "long",
+      "start": "2026-09-27T04:03:54",
+      "state": "PREEMPTED"
+    },
+    {
+      "end": "2026-09-27T04:33:49",
+      "node": "akita",
+      "partition": "long",
+      "start": "2026-09-27T04:32:03",
+      "state": "PREEMPTED"
+    },
+    {
+      "end": null,
+      "node": "akita",
+      "partition": "long",
+      "start": "2026-09-27T05:02:54",
+      "state": "RUNNING"
+    }
+  ],
   "attention_backend": "fused",
   "attention_degree": 4,
   "completed_utc": "2026-09-27T11:51:44.041288+00:00",
@@ -79,12 +137,6 @@
   "config": {
     "path": "experiments/key_dimension_taylor/runs/ra9b651caa405/config.yaml",
     "sha256": "62dd7a2986e7cc32a458d2e48df536f40d00116a2ca6029953011a6b97edcd2e"
-  },
-  "executed_recipe": {
-    "commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
-    "note": "the bytes that ran, at the launch commit; this record's recipe changes only its output paths and names the commit",
-    "path": "experiments/normalized_taylor_rerun/configs/200m-m004-seed0.yaml",
-    "sha256": "61207b1df57f94afb211e7e0c91c96732daaf68b9767e402782de4ef47d292a5"
   },
   "execution": {
     "attention_backend": "fused",
@@ -106,57 +158,10 @@
     "state_transfer": "direct",
     "time_limit": "10:00:00 per attempt"
   },
-  "execution_attempts": [
-    {
-      "end": "2026-09-27T03:00:49-04:00",
-      "node": "dogo",
-      "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued",
-      "partition": "long",
-      "slurm_job_id": 202617,
-      "start": "2026-09-27T02:58:53-04:00"
-    },
-    {
-      "end": "2026-09-27T03:04:49-04:00",
-      "node": "dogo",
-      "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued",
-      "partition": "long",
-      "slurm_job_id": 202617,
-      "start": "2026-09-27T03:02:53-04:00"
-    },
-    {
-      "end": "2026-09-27T03:08:19-04:00",
-      "node": "dogo",
-      "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued",
-      "partition": "long",
-      "slurm_job_id": 202617,
-      "start": "2026-09-27T03:07:04-04:00"
-    },
-    {
-      "end": "2026-09-27T03:13:19-04:00",
-      "node": "dogo",
-      "outcome": "preempted during CPU acceptance tests by another user's 1-GPU debug-partition job; requeued",
-      "partition": "long",
-      "slurm_job_id": 202617,
-      "start": "2026-09-27T03:10:48-04:00"
-    },
-    {
-      "outcome": "three further acceptance-stage preemptions on akita between 03:36 and 04:34; running on akita since 05:02",
-      "slurm_job_id": 202617
-    },
-    {
-      "end": "2026-09-27T07:51:48-04:00",
-      "node": "akita",
-      "outcome": "passed acceptance and completed 19,074 updates from initialization",
-      "slurm_job_id": 202617,
-      "start": "2026-09-27T05:02:54-04:00"
-    }
-  ],
-  "frozen_execution_set_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
+  "frozen_execution_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
   "grid_cell": true,
-  "grid_note": "Trained 2026-09-26/27 under the scaffold's current defaults (per-head QK-norm cosine scores and selective weight decay) in the normalized Taylor rerun and folded in, replacing the degree-sweep run of the same name. The dK=64 softmax reference uses selective decay without QK-norm; every other width is from the original sweeps.",
   "home_cluster": "kennel",
   "label": "200m-m004-seed0",
-  "launch_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
   "metadata": {
     "path": "experiments/key_dimension_taylor/runs/ra9b651caa405/metadata.json",
     "sha256": "10af0dd9289b98829d36b9967ecfa0cf161c22c91792c552c67ff5cd825e241e"
@@ -166,43 +171,8 @@
     "sha256": "37ecdb24c15801f34f3df96c8311db2b1332cd934d8fca6197b12c4851d3104a"
   },
   "name": "200m-m004-seed0",
-  "original_branch": "claude/normalized-taylor-rerun",
   "original_experiment": "normalized_taylor_rerun",
   "parameter_count": 199906464,
-  "partition_history": [
-    {
-      "partition": "standard,long",
-      "reason": "initial submission",
-      "time": "2026-09-26T19:45-04:00"
-    },
-    {
-      "partition": "long",
-      "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released",
-      "time": "2026-09-26T19:48-04:00"
-    },
-    {
-      "partition": "sweep",
-      "reason": "Kennel wiki etiquette: a user's long jobs together should stay near ~15 GPUs (at most 60% of the cluster), and sweep-like queues belong in sweep; preemption there loses at most 500 updates (the checkpoint interval) and passed acceptance stages are reused on requeue",
-      "time": "2026-09-26T21:13-04:00"
-    },
-    {
-      "partition": "long",
-      "reason": "the nonnegative learned Taylor runs concluded, so this user's long-partition jobs fell to zero; two sweep reruns returned to long, keeping three rerun jobs (12 GPUs) there",
-      "time": "2026-09-27T01:57-04:00"
-    },
-    {
-      "exclude_added": "dogo",
-      "partition": "long",
-      "reason": "a burst of short 1-GPU debug jobs on dogo preempted each 4-GPU rerun that started there (m=4 four times in 15 minutes, m=8 once) before acceptance finished; dogo excluded until the burst ends",
-      "time": "2026-09-27T03:18-04:00"
-    },
-    {
-      "exclude_removed": "dogo",
-      "partition": "long",
-      "reason": "the debug burst ended (last debug job on dogo 04:56); dogo restored for pending jobs; 202617 was running and keeps the dogo exclusion until it next requeues",
-      "time": "2026-09-27T05:22-04:00"
-    }
-  ],
   "qk_head_dim": 64,
   "qk_norm": true,
   "qk_norm_sharing": "per_head",
@@ -213,10 +183,6 @@
     "sha256": "62dd7a2986e7cc32a458d2e48df536f40d00116a2ca6029953011a6b97edcd2e"
   },
   "retained_completed": true,
-  "retention": {
-    "path": "experiments/key_dimension_taylor/runs/ra9b651caa405/retention.json",
-    "sha256": "9734adabfcf8f277f617288775ab8d7c91010411eb03907a4a1fc7ce9432df52"
-  },
   "run_id": "ra9b651caa405",
   "seed": 0,
   "selected_checkpoint": {
@@ -321,67 +287,6 @@
     "validation_nll": 2.701114628996168,
     "validation_perplexity": 14.896326352016782
   },
-  "slurm_attempts": {
-    "attempts": [
-      {
-        "end": "2026-09-27T03:00:49",
-        "node": "dogo",
-        "partition": "long",
-        "start": "2026-09-27T02:58:53",
-        "state": "PREEMPTED"
-      },
-      {
-        "end": "2026-09-27T03:04:49",
-        "node": "dogo",
-        "partition": "long",
-        "start": "2026-09-27T03:02:53",
-        "state": "PREEMPTED"
-      },
-      {
-        "end": "2026-09-27T03:08:19",
-        "node": "dogo",
-        "partition": "long",
-        "start": "2026-09-27T03:07:04",
-        "state": "PREEMPTED"
-      },
-      {
-        "end": "2026-09-27T03:13:19",
-        "node": "dogo",
-        "partition": "long",
-        "start": "2026-09-27T03:10:48",
-        "state": "PREEMPTED"
-      },
-      {
-        "end": "2026-09-27T03:39:19",
-        "node": "akita",
-        "partition": "long",
-        "start": "2026-09-27T03:36:45",
-        "state": "PREEMPTED"
-      },
-      {
-        "end": "2026-09-27T04:06:19",
-        "node": "akita",
-        "partition": "long",
-        "start": "2026-09-27T04:03:54",
-        "state": "PREEMPTED"
-      },
-      {
-        "end": "2026-09-27T04:33:49",
-        "node": "akita",
-        "partition": "long",
-        "start": "2026-09-27T04:32:03",
-        "state": "PREEMPTED"
-      },
-      {
-        "end": null,
-        "node": "akita",
-        "partition": "long",
-        "start": "2026-09-27T05:02:54",
-        "state": "RUNNING"
-      }
-    ],
-    "source": "sacct -j 202617 -D -X (local time, 2026-09-27 05:25 snapshot)"
-  },
   "slurm_job_id": "202617",
   "slurm_log": {
     "note": "append-mode log holding every attempt of this job",
@@ -390,7 +295,6 @@
   },
   "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
   "status": "complete",
-  "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free. Partition changes are in partition_history",
   "terminal": {
     "step": 19074,
     "training_tokens": 10000269312,

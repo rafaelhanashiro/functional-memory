@@ -165,10 +165,9 @@ Controls, all seed 0 with the same backbone and budget (terminal perplexity;
 
 QK-norm softmax ends at 14.4574 and the repository's softmax baseline under the
 canonical policy at 14.6655 ([key_dimension_taylor](../key_dimension_taylor/README.md));
-the unnormalized exponential without QK-norm ends at 17.4583. The canonical policy
-changed the softmax control by 0.03 relative to the retired all-parameter-decay run,
-so the older controls remain informative, but the comparison across policies is not
-exact.
+the unnormalized exponential without QK-norm ends at 17.4583. The weight-decay
+policy moves softmax by about 0.03 PPL, so controls trained with decay on all
+parameters remain informative, but comparisons across policies are not exact.
 
 ## Implementation
 

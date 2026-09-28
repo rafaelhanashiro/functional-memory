@@ -22,17 +22,7 @@
       "sha256": "81d1526abd39534ed990102595a1c4255376a1db46e15570f16595b662371a23"
     }
   ],
-  "attention_backend": "blocked",
-  "attention_degree": 0,
-  "completion": {
-    "path": "experiments/key_dimension_taylor/runs/r8233512d8371/completion.json",
-    "sha256": "011332986212318cbce783213481e72f52f318c63943feede58a593d18291011"
-  },
-  "config": {
-    "path": "experiments/key_dimension_taylor/runs/r8233512d8371/config.yaml",
-    "sha256": "579a1981ec03a27d79ee7931e27f8c103b3a150233f23066a50ec0620ac9e10f"
-  },
-  "execution_attempts": [
+  "attempts": [
     {
       "elapsed_seconds": 36068,
       "ended_local": "2026-09-17T12:20:22",
@@ -46,6 +36,16 @@
       "timezone": "America/New_York"
     }
   ],
+  "attention_backend": "blocked",
+  "attention_degree": 0,
+  "completion": {
+    "path": "experiments/key_dimension_taylor/runs/r8233512d8371/completion.json",
+    "sha256": "011332986212318cbce783213481e72f52f318c63943feede58a593d18291011"
+  },
+  "config": {
+    "path": "experiments/key_dimension_taylor/runs/r8233512d8371/config.yaml",
+    "sha256": "579a1981ec03a27d79ee7931e27f8c103b3a150233f23066a50ec0620ac9e10f"
+  },
   "grid_cell": false,
   "home_cluster": "kennel",
   "label": "200m-m000-seed0",

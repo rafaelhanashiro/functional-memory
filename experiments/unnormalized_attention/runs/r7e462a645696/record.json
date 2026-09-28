@@ -49,31 +49,11 @@
       "sha256": "81351a4b0bc5d1fdb19cc6bb8ad7849b4d77cce751403c2d7e6e9b6cc56924b6"
     }
   ],
-  "best_validation": {
-    "selection_rule": "lowest_validation_nll",
-    "step": 21935,
-    "training_tokens": 11500257280,
-    "validation_nll": 2.765264621802739,
-    "validation_perplexity": 15.883242486813428
-  },
-  "comparison_baseline": {
-    "attention_backend": "cudnn",
-    "gpu_count": 2,
-    "gpu_type": "H200",
-    "notes": "Historical report metrics are rounded; no new softmax training run is implied.",
-    "parameter_count": 253654016,
-    "seed": 0,
-    "source_commit": "32ea743b7b3aed1d631116dfaa3c4b85101baf32",
-    "source_config": "configs/experiments/transformer_250m.yaml",
-    "source_report": "/home/rafah/projects/ofm/runs/250m/transformer_250m/REPORT.md",
-    "source_repository": "ofm",
-    "status": "complete",
-    "terminal_step": 21935,
-    "terminal_validation_nll_reported": 2.591487,
-    "terminal_validation_perplexity_reported": 13.3496,
-    "training_tokens": 11500257280,
-    "validation_best_step": 21935
-  },
+  "attempts": [
+    {
+      "slurm_job_id": "200875"
+    }
+  ],
   "completed_utc": "2026-09-22T23:25:54.992433+00:00",
   "config": {
     "path": "experiments/unnormalized_attention/runs/r7e462a645696/config.yaml",
@@ -139,47 +119,6 @@
       "jax": "0.10.0",
       "optax": "0.2.8",
       "orbax-checkpoint": "0.11.40"
-    }
-  },
-  "execution_notes": {
-    "cpu_initialization_check": {
-      "parameter_count": 253654016,
-      "parameter_sha256": "6e1b4dddd849bc14944f8f7e399aa405179deac85a32903f89dd3ca83b0b8b80",
-      "reference_source_commit": "c2b0d6e5514995cbe7b5e564f902201cfde1ba4e"
-    },
-    "cublas_warning_assessment": {
-      "assessment": "The installed cuBLAS12.9.2 patch includes the concurrent TMEM fix, while JAX0.10.0 warns across the broader version range. Warning alone is not grounds to switch hardware; current-mechanism qualification remains mandatory.",
-      "environment_modified": false,
-      "installed_package": "nvidia-cublas-cu12==12.9.2.10",
-      "jax_warning_source": "https://github.com/jax-ml/jax/blob/jax-v0.10.0/jax_plugins/cuda/__init__.py#L276-L290",
-      "job_id": "200875",
-      "previous_local_assessment": "experiments/key_dimension_taylor/performance/b300/metadata.json",
-      "reported_runtime_version": 120902,
-      "vendor_patch_notes": "https://docs.nvidia.com/cuda/cublas-patch-release-notes/#cublas-patch-release-12-9-2"
-    },
-    "submission_command": {
-      "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
-      "command": "sbatch of the experiment's Kennel launcher at the recorded source commit",
-      "config_path": "experiments/unnormalized_attention/runs/r7e462a645696/config.yaml",
-      "config_sha256": "1c3f9cff11f1cdafdb97847010f5e71fcd097375bb7f5c669b5b1e3ab2e90723",
-      "gpu_count": 4,
-      "gpu_type": "B300",
-      "home_cluster": "kennel",
-      "job_id": "200875",
-      "log_path": "experiments/unnormalized_attention/runs/r7e462a645696/training.log",
-      "partition": "long",
-      "run": "250m-exp-seed0-kennel",
-      "source_commit": "51c647459205854447ee31fc54b9bde8813f819c",
-      "submitted_utc": "2026-09-22T20:08:03.887308+00:00",
-      "walltime": "2-00:00:00"
-    },
-    "walltime_change": {
-      "job_id": "200875",
-      "original_walltime": "2-00:00:00",
-      "pilot_projected_hours": 3.713311867907436,
-      "reason": "Reduce scheduler reservation after the measured pilot; retain more than two times the conservative projection as headroom.",
-      "updated_utc": "2026-09-22T20:14:24.488124+00:00",
-      "updated_walltime": "08:00:00"
     }
   },
   "hardware": "4x NVIDIA B300 on akita, one process, fused Pallas/Triton exponential kernel",
@@ -283,7 +222,6 @@
   },
   "slurm_job_id": "200875",
   "source_commit": "51c647459205854447ee31fc54b9bde8813f819c",
-  "start": "fresh initialization",
   "status": "completed",
   "terminal_validation_nll": 2.765264621802739,
   "terminal_validation_perplexity": 15.883242486813428,

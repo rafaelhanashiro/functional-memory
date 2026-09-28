@@ -22,6 +22,11 @@
     }
   ],
   "artifacts_retained": "2026-09-24: ORCD checkpoints and logs for the key_dimension runs are not retained, by user decision; metrics, completion, metadata, and configs are retained in Git.",
+  "attempts": [
+    {
+      "slurm_job_id": "22808244"
+    }
+  ],
   "attention_degree": null,
   "completion": {
     "path": "experiments/key_dimension_taylor/runs/rf3539f68224c/completion.json",
@@ -69,7 +74,6 @@
     "sha256": "d0845f5f6e2c4fc78bc017e28c35f28418d43cd6ef08e62b6a7db6001f4bdaf8"
   },
   "source_commit": "5e871d2659373272e26668e10911922c7201678a",
-  "source_manifest": "experiments/key_dimension_taylor/sweep.yaml",
   "terminal": {
     "step": 19074,
     "training_tokens": 10000269312,

@@ -86,15 +86,12 @@
       "sha256": "548a40f86ff67be07b1f7ce4df3f6155f69129e46465c756ad9b821dd1666ca1"
     }
   ],
-  "attempts": "One attempt: acceptance and uninterrupted training.",
+  "attempts": [
+    {
+      "slurm_job_id": "201997"
+    }
+  ],
   "attention_degree": 1,
-  "best_validation": {
-    "selection_rule": "lowest_validation_nll_latest_on_tie",
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 3.0307921767234802,
-    "validation_perplexity": 20.713634951214132
-  },
   "coefficient_count": 320,
   "completed_utc": "2026-09-25T09:35:16.900857+00:00",
   "config": {
@@ -140,6 +137,7 @@
     },
     "state_transfer": "direct"
   },
+  "frozen_execution_sha256": "0b198131b38d6469e704720ed8e232f5c9a67c5877a035d383320cddeb38d275",
   "hardware": "4x NVIDIA B300 SXM6 AC akita, sweep partition",
   "home_cluster": "kennel",
   "label": "200m-m001-seed0",
@@ -256,11 +254,7 @@
     "verified_present_utc": "2026-09-25T14:11:24Z"
   },
   "slurm_job_id": "201997",
-  "slurm_job_ids": [
-    201997
-  ],
   "source_commit": "788a085e24225872495199e8040ec1167070a691",
-  "start": "fresh initialization",
   "status": "completed",
   "terminal_validation_nll": 3.0307921767234802,
   "terminal_validation_perplexity": 20.713634951214132,

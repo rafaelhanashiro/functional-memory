@@ -3,10 +3,8 @@ schema_version: 1
 experiment: odd_taylor_attention
 source_commit: a74e3863fdf1e1dd965252cd435712dec10c9a29
 identity: 14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f
-collection_status: concluded
 home_cluster: kennel
 artifact_root: /data/cl/u/rafah/home/projects/functional-memory
-scaffold: scaffolds/transformer
 data_identity:
   train:
     path: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
@@ -15,14 +13,6 @@ data_identity:
     path: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
     sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
 dependency_lock_sha256: dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559
-run_budget:
-  updates: 19074
-  prediction_tokens: 10000269312
-  validation_tokens: 3670016
-scientific_failure_policy: Numerical failures are concluded scientific outcomes, not completed 10B-token
-  runs; no terminal validation is imputed.
-checkpoint_selection: Lowest committed validation NLL; latest on exact ties. Both runs failed before their
-  first validation, so no checkpoint is retained.
 controls:
 - name: 200m-m002-seed0
   attention_degree: 2
@@ -68,9 +58,10 @@ controls:
   completion: experiments/key_dimension_taylor/runs/r93c9d0814322/completion.json
   execution_attempts:
   - slurm_job_id: 202616
-    outcome: preempted on akita at 03:22 before its update-7,000 checkpoint; ten short attempts on dogo
-      between 03:25 and 04:41 were preempted by debug-partition jobs (the dogo exclusion was added only
-      to pending jobs); running on dogo since 04:56, resumed from the update-6,500 checkpoint
+    outcome: preempted on akita at 03:22 before its update-7,000 checkpoint; ten short
+      attempts on dogo between 03:25 and 04:41 were preempted by debug-partition jobs
+      (the dogo exclusion was added only to pending jobs); running on dogo since 04:56,
+      resumed from the update-6,500 checkpoint
   - slurm_job_id: 202616
     node: dogo
     start: '2026-09-27T04:56:24-04:00'
@@ -88,8 +79,8 @@ controls:
     recorded_sha256: b821a7ba25f58b00076e7a9f941318e82976db5f9046892665d2247d8b71259e
   weight_decay_policy: exclude_embeddings_norms_biases_v1
   qk_norm: true
-  control_note: fixed Taylor m=2 under the current defaults (QK-norm and selective weight decay), source
-    a74e386
+  control_note: fixed Taylor m=2 under the current defaults (QK-norm and selective
+    weight decay), source a74e386
 - name: 200m-softmax-seed0
   attention_degree: null
   attention_backend: fused
@@ -123,8 +114,8 @@ controls:
   slurm_log:
     path: experiments/key_dimension_taylor/runs/r50088d29f2b5/training.log
     sha256: 411d7234ce9b347c06fea1ad7c2a1323e2143411bdacb254ba3214637572e7de
-    note: append-mode log holding all four attempts of job 202190; the failed 202186 log was removed after
-      its cause was fixed
+    note: append-mode log holding all four attempts of job 202190; the failed 202186
+      log was removed after its cause was fixed
   metadata:
     path: experiments/key_dimension_taylor/runs/r50088d29f2b5/metadata.json
     sha256: d2a32e0c8045e8053595a1acb2d802b97987f8c7b6f7a9eefdef21066d315d42
@@ -142,8 +133,8 @@ controls:
     started_utc: '2026-09-25T21:20:12Z'
     ended_utc: '2026-09-25T21:24:50Z'
     launch_commit: 126d72a90dea0624a9acc3914255ecaf19998442
-    outcome: 'failed acceptance cpu-tests: the adapter''s regeneration test skipped before completion
-      (fixed in 381f1fd)'
+    outcome: 'failed acceptance cpu-tests: the adapter''s regeneration test skipped
+      before completion (fixed in 381f1fd)'
   - slurm_job_id: '202190'
     restart: '0'
     partition: sweep
@@ -170,8 +161,8 @@ controls:
     gpu_count: 4
     started_utc: '2026-09-25T21:57:25Z'
     ended_utc: '2026-09-25T22:16:54Z'
-    outcome: passed H100 acceptance at 22:05:09Z; trained from a fresh initialization to about update
-      1,464 (checkpoint at 1,000, first validation at 1,000); preempted
+    outcome: passed H100 acceptance at 22:05:09Z; trained from a fresh initialization
+      to about update 1,464 (checkpoint at 1,000, first validation at 1,000); preempted
   - slurm_job_id: '202190'
     restart: '3'
     partition: sweep
@@ -180,8 +171,8 @@ controls:
     gpu_count: 4
     started_utc: '2026-09-25T22:19:26Z'
     ended_utc: '2026-09-25T23:35:54Z'
-    outcome: passed B300 acceptance at 22:28:30Z; resumed from the update-1,000 checkpoint (data sequence
-      256,000) and completed all 19,074 updates
+    outcome: passed B300 acceptance at 22:28:30Z; resumed from the update-1,000 checkpoint
+      (data sequence 256,000) and completed all 19,074 updates
   status: complete
   retained_completed: true
   coefficient_count: 0
@@ -194,23 +185,11 @@ controls:
     recorded_sha256: b821a7ba25f58b00076e7a9f941318e82976db5f9046892665d2247d8b71259e
   weight_decay_policy: exclude_embeddings_norms_biases_v1
   qk_norm: false
-  control_note: softmax baseline retrained 2026-09-25 under the selective weight-decay policy
-retained_logs:
-- path: experiments/odd_taylor_attention/runs/raa90edf82385/training.log
-  sha256: 30b69cf57ff690fef2d428c157de99c031bd085d5cfdcdd917193032344b63ce
-- path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/training.log
-  sha256: 775c98b51f178783439e2fe4430fa483d894afd16ed6176b1745c730b7ee6771
-artifact_availability: Checkpoints and logs live on Kennel under artifact_root; Git supplies only code,
-  exact recipes and scientific evidence.
+  control_note: softmax baseline retrained 2026-09-25 under the selective weight-decay
+    policy
 dependency_lock:
   path: scaffolds/transformer/uv.lock
   sha256: dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559
-identity_note: frozen execution-set SHA256 of the normalized Taylor rerun launch that produced both runs
-history: Both runs were retrained on 2026-09-26/27 under the scaffold's current defaults (per-head QK-norm
-  and selective weight decay) in the normalized Taylor rerun and folded in, replacing the runs of source
-  2e0e88d together with their preflight, failure analysis, evidence, and logs; that history is in Git
-  before this record's fold-in commit.
-record_layout_version: 1
 run_ids:
 - raa90edf82385
 - r8b46f1ad9453

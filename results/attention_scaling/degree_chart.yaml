@@ -165,73 +165,73 @@ cells:
 source_manifests:
   key_dimension_taylor:
     path: experiments/key_dimension_taylor/sweep.yaml
-    sha256: 640fdfd4e39d6f6101d9e1134df13c5850fec1459caa52a45ea312f7bccb1151
+    sha256: cc9b2e0a12ff9713e3f144a4a1cb9fc29a6f0daaaf2d399ae57a16fa83ff2280
   unnormalized_taylor_attention:
     path: experiments/unnormalized_taylor_attention/sweep.yaml
-    sha256: ffa3e5a01234d1ddf6441d41508afed9bd2d1f5143473d2d7b16d17d11c43975
+    sha256: 2216239b0eefbdbaf6486f69dd2229a1f4ba4d63b77158a20d789d69b8f93784
   unnormalized_attention:
     path: experiments/unnormalized_attention/sweep.yaml
-    sha256: 75b71052011d4c8055b11780745a3ff1404087586dd0923cec8736b8e8f1d292
+    sha256: a7634aab2466228e45a3de7abb7827ade49e9220e6a6b2385ff97f5af798319e
   qk_norm_attention:
     path: experiments/qk_norm_attention/sweep.yaml
-    sha256: b4d831b531bcc01485cdd8a6f13b778d74825085895dc9be915faf9a08edb9a3
+    sha256: 7e849fb7d604a4ec9408caefd03babf89acc8fc7d3c56f6967a1e9dee055dc92
   qk_norm_learned_taylor:
     path: experiments/qk_norm_learned_taylor/sweep.yaml
-    sha256: ff014919d7dd8d8c4f207f3f7b5a46a3e2b50200549b9858745d1633240be8d0
+    sha256: 0f493d2ffa3127bf2d4c627809374c82462a04564b0514e0da330816bdf8e143
   nonnegative_learned_taylor:
     path: experiments/nonnegative_learned_taylor/sweep.yaml
-    sha256: f38824dfff50acf3f91db70f4ab298c87df92df841270a6275653b8c933d4619
+    sha256: 72d6083c6970a8a72abc6d87f861bcdefaf09913a6a4f2991ea8d31edd5a23c2
 metric: terminal_validation_perplexity
 source_records:
   unnormalized_taylor_attention/reb79b9201e5a:
     path: experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/record.json
-    sha256: 48c86167529e9e65dd53878b583e02af1b6a2b125c1ce9ce98245d3cf3489748
+    sha256: 2b17295c5c0cb605728f71474fe3a81c124f55f8572bfd7b6910492ccb9f30f4
   qk_norm_learned_taylor/r13c144b8fd17:
     path: experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/record.json
-    sha256: 04fe933de9d2522f87033c2c3ca131b3947b66ccc7b2afb6e11366659d49e0f1
+    sha256: 4ea6e63deee41d587e761f82ec67f3d18b3f09f74e54587156bb49cfc04f040c
   unnormalized_taylor_attention/re4509bf65b5f:
     path: experiments/unnormalized_taylor_attention/runs/re4509bf65b5f/record.json
-    sha256: b3f4f05eaca12e40387618ef46ca16b4222abe95be005dc98a524919b289b468
+    sha256: 51f9bffee3d137a65aca034bc108414b8c0f51a1f4358d83d2da7b5cfab4c186
   qk_norm_learned_taylor/r07bee5b16e61:
     path: experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/record.json
-    sha256: c4dfded3b275861afcca2f877ad9273f69d750716341e4ad28376f6d28d2dee0
+    sha256: d993672518ee89f3398d7a7bfbd3161d999622de1ccab31a25103fbe56e3916c
   unnormalized_taylor_attention/rba0cd1a9bf62:
     path: experiments/unnormalized_taylor_attention/runs/rba0cd1a9bf62/record.json
-    sha256: 4413ff767e2c7769b073abbd4bdae619334b8bad185bebdf39faa142b5e3dcd7
+    sha256: 802c58951ae6c43e7759ecec38ccbe43cd0df3b32c33871b715f11cc935f74f6
   qk_norm_learned_taylor/r0470d7fcaae6:
     path: experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/record.json
-    sha256: 7820463294a68e5a5ba012b646ece2b676ceff83019452f604da260eb59729ad
+    sha256: 7266b24d62abfe62f566110d2ef49a43d5b86eb7c5924e96acdda7e27644cb5d
   unnormalized_taylor_attention/rfd3129858805:
     path: experiments/unnormalized_taylor_attention/runs/rfd3129858805/record.json
-    sha256: 20283a3e012ed479d73a571e7981499d8e6778dc15a8ab8ebbc4523dcf48adbd
+    sha256: 011f38ad4146fe8ee5c6393db1e2a8c614face8eb1db93cd3ab26f8b1152a7ee
   qk_norm_learned_taylor/rbaa19693c602:
     path: experiments/qk_norm_learned_taylor/runs/rbaa19693c602/record.json
-    sha256: fb4f6a383ea2d98231c10967ad198591b9cebe5b7a2197e1227f978e64d13510
+    sha256: bf1e69b0924d545186b7cc869286668818ef33407bfe534c2f3a055611ab7e76
   qk_norm_learned_taylor/rc342fe890e6f:
     path: experiments/qk_norm_learned_taylor/runs/rc342fe890e6f/record.json
-    sha256: e2f07a4cd02804f80ba2fd1998b4df343e0230a5ef293cd6e3b4edddd5eff4b4
+    sha256: f1bf7d1774915ee0ce8ffaea3efce0ec0b595472cf8b7a98b9ecde185ba42f7b
   qk_norm_learned_taylor/rd962214a5556:
     path: experiments/qk_norm_learned_taylor/runs/rd962214a5556/record.json
-    sha256: 961e8e1ee70a089d035cb9fc6cdce5552dce992a92e179f7b756fb493282b69e
+    sha256: ae3f3167d8a6d2358cb5e90e322d6fbe4683b0f7d4e465e48902c60c12930ba1
   qk_norm_learned_taylor/rd7428f72915b:
     path: experiments/qk_norm_learned_taylor/runs/rd7428f72915b/record.json
-    sha256: 5135cb12b7a16ecbbdf93e95be4ee51564045a55949f8478821d9543e06d07ad
+    sha256: 182516378695f6438d33bc00a8dabc12e2ce165138db12d495d032e79a93aca6
   qk_norm_learned_taylor/re554c79caddb:
     path: experiments/qk_norm_learned_taylor/runs/re554c79caddb/record.json
-    sha256: a132f9bbaa903d61460b3e273accd8f7437c36c5ff42f6464ee0140d0c40c5ef
+    sha256: c9075f92fc9ce40f966d12768e4c31c900545939b51fbd33274eefda64ec5d5f
   key_dimension_taylor/r50088d29f2b5:
     path: experiments/key_dimension_taylor/runs/r50088d29f2b5/record.json
-    sha256: bc5b80daffa45080f96b736b68749adc875bcc19e72692c8ca625ab93a7628d5
+    sha256: da84d175213730913356b75aaa1d87a077411d3871b170cbfb1bd500c6a7ddc3
   unnormalized_attention/r8cccbabca761:
     path: experiments/unnormalized_attention/runs/r8cccbabca761/record.json
-    sha256: 7b4ec921dca80cadbd7db1061b02e4a7b86ebaa258c7b0abbbef9c2f879d40df
+    sha256: 6de5934f9be9eab9179cfd2594cbab69ffce546ab12822460c3d48d0441cf1ba
   qk_norm_attention/r1feece425074:
     path: experiments/qk_norm_attention/runs/r1feece425074/record.json
-    sha256: be7e056182124fa1ba22e912f12a8e5dc4271eddd9c79fd4101ea839a013b802
+    sha256: fd32425847d426dd9a414ad8c9cd7909f2ff4f0ac6a2328feaaeffadea7f69ce
   nonnegative_learned_taylor/rdbd4607d5af9:
     path: experiments/nonnegative_learned_taylor/runs/rdbd4607d5af9/record.json
-    sha256: 74b5daad8b8afa44dce679ba113d3ea581f1f20edd7a3fd0ba9933b3239b4372
+    sha256: 2278055da24e0e2f96023fe2e87706f608dcdf7942db30da5a0c218b005d9adf
   nonnegative_learned_taylor/r507d1c2632b2:
     path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/record.json
-    sha256: bcc5a9dc3d1a28528be97915313231250fdcc9380910779ae1a818d108a88518
+    sha256: ef7f30ac0d00718f43d817c0cdd0ab9fa43e14525a1212bb4472f3d128d1e78f
 source_artifact_set_sha256: 56848778a5014409a8d8210f577643067ff67dfe8fcf500ecd343280f9da6414

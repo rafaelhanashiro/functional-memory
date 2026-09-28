@@ -26,7 +26,7 @@ runs:
       sha256: 43c29f7a64b34dbaa3fc192321836a476cc8c5ffb54f3ef953e82697b3a62143
     record.json:
       path: experiments/odd_taylor_attention/runs/raa90edf82385/record.json
-      sha256: fbc0e7bf4030bd93b1399a906e12956f9dec5e4cae4977d4328d1e6a30d2df89
+      sha256: 28c88133de91719725f5dd032cd113851e3bb5f893927f65bb0a840a4b007778
     wandb_run.json:
       path: experiments/odd_taylor_attention/runs/raa90edf82385/wandb_run.json
       sha256: 3bbf738c9afc6f6309209ec89bd68a2032d1bf71971eab4c17c1acb240be11a7
@@ -51,7 +51,7 @@ runs:
       sha256: 4cdddfa0c4136fbb902b6a8375bc4efff6962eb79b1680616c7c3be8b7e722c6
     record.json:
       path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/record.json
-      sha256: c45c234951e53b921b6732e2c4486e2e89ebc7f092fede882df2a76c81ebd07b
+      sha256: 0eba0e674821cbb4a3f81d429018949c392bf34b463d82112126682fdc5c7472
     wandb_run.json:
       path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/wandb_run.json
       sha256: b0dcfd68af7e8d43595f215ad92079923ac3b62e01d232c30a164afa0bedf7f4
@@ -82,7 +82,7 @@ runs:
       sha256: afd284756057e498dfbc1279530e44e792627848f10663a0dcdd793a0f447bc3
     record.json:
       path: experiments/key_dimension_taylor/runs/r93c9d0814322/record.json
-      sha256: fdaffd77a7e6dcf4a8e185dd6c807b19cd151f6cf3b2c7c8fd8c89845031b053
+      sha256: 5d7c584c4de4e3a1ad5d5d80a40f07529a8ff6af98bf27fdea7416ed9a380895
     retention.json:
       path: experiments/key_dimension_taylor/runs/r93c9d0814322/retention.json
       sha256: d758f967ec107092270d03b71f1d79ce0f8b94c39d8ed732cbf72bc60b3ffae6
@@ -116,7 +116,7 @@ runs:
       sha256: 6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786
     record.json:
       path: experiments/key_dimension_taylor/runs/r50088d29f2b5/record.json
-      sha256: bc5b80daffa45080f96b736b68749adc875bcc19e72692c8ca625ab93a7628d5
+      sha256: da84d175213730913356b75aaa1d87a077411d3871b170cbfb1bd500c6a7ddc3
     retention.json:
       path: experiments/key_dimension_taylor/runs/r50088d29f2b5/retention.json
       sha256: 208d80975f73fae02b39a112744f60c214955b99c1203d5da4faf5e42b0fa2db

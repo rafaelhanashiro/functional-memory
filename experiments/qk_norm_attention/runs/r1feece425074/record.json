@@ -122,13 +122,6 @@
   ],
   "attention_degree": null,
   "attention_kernel": "softmax",
-  "best_validation": {
-    "selection_rule": "lowest_validation_nll_latest_on_tie",
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 2.671205988952092,
-    "validation_perplexity": 14.457394141153632
-  },
   "completed_utc": "2026-09-25T23:33:58.116982+00:00",
   "config": {
     "path": "experiments/qk_norm_attention/runs/r1feece425074/config.yaml",
@@ -196,6 +189,7 @@
     "state_transfer": "direct",
     "wall_time": "1 h 20 min 57 s including acceptance (Slurm 2026-09-25T18:13:06 to 19:34:03 local); training 1 h 10 min 44 s"
   },
+  "frozen_execution_sha256": "bb64cdd2b310f84ba1bf0bad05ac7b8a3c53b51373625df9f0d6ec4bd0726700",
   "hardware": "4x NVIDIA B300 akita, sweep partition",
   "home_cluster": "kennel",
   "label": "200m-qk-softmax-seed0",
@@ -214,11 +208,6 @@
   "qk_norm_parameter_count": 160,
   "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
-  "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
-  "retention": {
-    "path": "experiments/qk_norm_attention/runs/r1feece425074/retention.json",
-    "sha256": "f5e810195fcc2bbe358eebafaf906db481dd42047bd6f463916ba77413013902"
-  },
   "run_id": "r1feece425074",
   "run_record": "experiments/qk_norm_attention/runs/r1feece425074",
   "seed": 0,
@@ -319,12 +308,7 @@
     "verified_present_utc": "2026-09-26T02:20:35Z"
   },
   "slurm_job_id": "202215",
-  "slurm_job_ids": [
-    202156,
-    202215
-  ],
   "source_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
-  "start": "fresh initialization",
   "status": "completed",
   "submitted_utc": "2026-09-25T22:13:06+00:00",
   "terminal_validation_nll": 2.671205988952092,

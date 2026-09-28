@@ -94,9 +94,15 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 - A concluded numerical failure is a scientific result: preserve its stopping step,
   last valid metrics, failure diagnostics, and matching log. Do not call it completed
   training. Retain a diagnostic checkpoint only when justified by the record.
-- No permanent relocation maps, competing authoritative manifests, copied per-attempt
-  reports, or historical-path guides. Current paths resolve directly; source commits
-  preserve historical code. Existing descriptive run names may be retained as labels.
+- Records state current facts only; Git is the history. `sweep.yaml` holds study-wide
+  facts (home cluster, artifact root, dataset and lock hashes, shared settings the
+  analysis reads) and `run_ids`; everything else about a run lives in its record. Do
+  not record migration, fold-in, or relocation notes, superseded attempts or runs,
+  pre-migration hashes, copied measurements, per-attempt evidence dumps, or narrative
+  about how the repository reached its current state, in records, study files, or
+  READMEs. When a run is replaced, delete it and its artifacts rather than annotating
+  it. Current paths resolve directly; source commits preserve historical code.
+  Existing descriptive run names may be retained as labels.
 
 ## Artifacts
 

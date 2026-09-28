@@ -18,10 +18,8 @@ the record and summary CSV:
 | Softmax baseline | softmax at dK 64, selective weight decay | 1 | Kennel, 2026-09-25 |
 | Normalized Taylor rerun | m = 2, 4, 8, 16 at dK 64, QK-norm and selective weight decay | 4 | Kennel, 2026-09-26 to 09-27 |
 
-The width and degree sweeps ran as separate experiments before being combined
-here. The dK=64 softmax and Taylor runs were retrained later and replaced the
-sweeps' runs at those coordinates. Each run's source commit is in the
-[study record](../../experiments/key_dimension_taylor/sweep.yaml).
+Each run's source commit, hardware, and Slurm attempts are in its
+[run record](../../experiments/key_dimension_taylor/runs/).
 
 **Findings.** Softmax improves monotonically with query/key width in this family,
 from PPL 22.35 at dK=2 to 14.17 at dK=256, with diminishing returns above dK=32
@@ -101,10 +99,8 @@ The fused kernel and its benchmarks are documented in
 
 ## Execution and provenance
 
-The [study record](../../experiments/key_dimension_taylor/sweep.yaml) records each run's source
-commit, resolved recipe and hash, hardware, Slurm jobs, selected checkpoint, and
-log; `absorbed_experiments` summarizes the width and degree sweeps' execution and
-data checks.
+Each [run record](../../experiments/key_dimension_taylor/runs/) holds its source
+commit, recipe hash, hardware, Slurm attempts, selected checkpoint, and log.
 
 - **Width sweep:** source `5e871d2` (dK=256: `3d330a2`, after one earlier
   attempt), two GPUs per run on ORCD, cuDNN softmax. Its checkpoints and logs

@@ -49,15 +49,12 @@
       "sha256": "c9e00eac4a104437de18334561fdbea4d6f05b81696632dd2e7dbd605ccbae0d"
     }
   ],
-  "attempts": "Slurm attempt 0 on H100 node dogo was preempted during CPU acceptance before any training update; attempt 1 requeued onto B300 node akita, passed acceptance, and trained from scratch.",
+  "attempts": [
+    {
+      "slurm_job_id": "201011"
+    }
+  ],
   "attention_degree": 1,
-  "best_validation": {
-    "selection_rule": "lowest_validation_nll",
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 3.033512370926993,
-    "validation_perplexity": 20.770056765297024
-  },
   "completed_utc": "2026-09-23T09:05:25.820752+00:00",
   "config": {
     "path": "experiments/unnormalized_taylor_attention/runs/reb79b9201e5a/config.yaml",
@@ -238,7 +235,6 @@
   },
   "slurm_job_id": "201011",
   "source_commit": "972d223d89c2542028dec761569c25dbd7379b36",
-  "start": "fresh initialization",
   "status": "completed",
   "terminal_validation_nll": 3.033512370926993,
   "terminal_validation_perplexity": 20.770056765297024,

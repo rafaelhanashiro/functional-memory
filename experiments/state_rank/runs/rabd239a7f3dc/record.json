@@ -14,11 +14,15 @@
       "sha256": "bf8bb6148b627821bdb1526d9773583d9bea36424e05484d60f9a5bc0e2e0bae"
     }
   },
+  "attempts": [
+    {
+      "slurm_job_id": "22691159"
+    }
+  ],
   "config": {
     "path": "experiments/state_rank/runs/rabd239a7f3dc/config.yaml",
     "sha256": "4a93acb7201e21c9af3288228ee074088348cc07d02608cf1a9786cdb35ab2ee"
   },
-  "config_reconstruction": "Scientific settings transcribed from retained metadata; original execution is pinned by source_commit and script_sha256 in metadata.json.",
   "hardware": {
     "device": "cuda",
     "gpu": "NVIDIA L40S",
@@ -26,7 +30,6 @@
   },
   "home_cluster": "kennel",
   "label": "gated-deltanet-1.3b-l12-hall-t512",
-  "log_note": "The successful job ID is recorded; the collection's metadata names no retained log.",
   "log_path": null,
   "name": "gated-deltanet-1.3b-l12-hall-t512",
   "origin": "ORCD/Engaging pretrained-only collection; reused unchanged as the pretrained reproduction baseline",

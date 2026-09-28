@@ -284,8 +284,6 @@ def validate_record(path: str | Path, verify_hashes: bool = True) -> dict[str, A
 
     Checkpoints and logs can live on another cluster. Missing references are
     returned as ``unavailable``; a missing canonical recipe is always an error.
-    References that include a Git ``commit`` identify historical source bytes
-    and are not compared with the current checkout.
     """
     run = _run_path(path)
     record = load_run(run)
@@ -306,7 +304,7 @@ def validate_record(path: str | Path, verify_hashes: bool = True) -> dict[str, A
 
     def visit(value: Any) -> None:
         if isinstance(value, dict):
-            if isinstance(value.get("path"), str) and isinstance(value.get("sha256"), str) and not value.get("commit"):
+            if isinstance(value.get("path"), str) and isinstance(value.get("sha256"), str):
                 artifact = _artifact_path(run, value["path"])
                 if value.get("kind") == "directory":
                     if artifact.is_dir():

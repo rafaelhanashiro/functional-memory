@@ -165,6 +165,7 @@
       "updated_parameter_norm": "NaN"
     }
   },
+  "frozen_execution_sha256": "15729bb98f52a1b86173c1d2891b12b3165ba1961f72d1192fe370a717c0f156",
   "hardware": "4x NVIDIA B300 akita, sweep partition",
   "home_cluster": "kennel",
   "label": "200m-qk-m002-normalized-seed0",
@@ -186,17 +187,11 @@
   "qk_norm_parameter_count": 160,
   "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
-  "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
-  "retained_checkpoints": "none: the run concluded as a numerical failure; its last valid diagnostics are in metrics.jsonl",
   "run_id": "rd962214a5556",
   "run_record": "experiments/qk_norm_learned_taylor/runs/rd962214a5556",
   "seed": 0,
   "slurm_job_id": "202340",
-  "slurm_job_ids": [
-    202340
-  ],
   "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
-  "start": "fresh initialization",
   "status": "numerical-failure",
   "submitted_utc": "2026-09-26T06:43:53+00:00",
   "terminal_validation_nll": null,

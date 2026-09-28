@@ -57,6 +57,29 @@
       "sha256": "b0dcfd68af7e8d43595f215ad92079923ac3b62e01d232c30a164afa0bedf7f4"
     }
   ],
+  "attempts": [
+    {
+      "end": "2026-09-26T19:48:31",
+      "node": "dogo",
+      "partition": "long",
+      "start": "2026-09-26T19:46:25",
+      "state": "REQUEUED"
+    },
+    {
+      "end": "2026-09-27T01:01:28",
+      "node": "akita",
+      "partition": "standard",
+      "start": "2026-09-27T00:58:40",
+      "state": "REQUEUED"
+    },
+    {
+      "end": "2026-09-27T02:16:56",
+      "node": "akita",
+      "partition": "standard",
+      "start": "2026-09-27T01:47:57",
+      "state": "FAILED"
+    }
+  ],
   "attention_backend": "fused",
   "attention_degree": 3,
   "coefficient_count": 0,
@@ -64,12 +87,6 @@
   "config": {
     "path": "experiments/odd_taylor_attention/runs/r8b46f1ad9453/config.yaml",
     "sha256": "d10f16273afc5f387c7055c4b127057d142a7cec59fe253fb466bb3a011a7283"
-  },
-  "executed_recipe": {
-    "commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
-    "note": "the bytes that ran, at the launch commit; this record's recipe changes only its output paths and names the commit",
-    "path": "experiments/normalized_taylor_rerun/configs/200m-m003-seed0.yaml",
-    "sha256": "a57d56146be76536d4fb39db1828a0cf7f4ba40998e2d7ef9642743745f0dba9"
   },
   "execution": {
     "attention_backend": "fused",
@@ -91,32 +108,6 @@
     "state_transfer": "direct",
     "time_limit": "10:00:00 per attempt"
   },
-  "execution_attempts": [
-    {
-      "end": "2026-09-26T19:48:31-04:00",
-      "node": "dogo",
-      "outcome": "requeued (held) within acceptance during the partition correction",
-      "partition": "long",
-      "slurm_job_id": 202615,
-      "start": "2026-09-26T19:46:25-04:00"
-    },
-    {
-      "end": "2026-09-27T01:01-04:00",
-      "node": "akita",
-      "outcome": "started when nonnegative m=4 ended; requeued held during acceptance, with the user's approval, so the stranded nonnegative m=2 (202638) could finish on akita",
-      "partition": "standard",
-      "slurm_job_id": 202615,
-      "start": "2026-09-27T00:58:40-04:00"
-    },
-    {
-      "end": "2026-09-27T02:16:56-04:00",
-      "node": "akita",
-      "outcome": "passed B300 acceptance, trained from initialization, and stopped at update 419 on a NaN forward loss, gradient norm, and parameter update (the trainer's numerical-failure stop; not requeued)",
-      "partition": "standard",
-      "slurm_job_id": 202615,
-      "start": "2026-09-27T01:47:57-04:00"
-    }
-  ],
   "failure": {
     "attempted_training_tokens": 219676672,
     "completed_finite_updates": 418,
@@ -132,46 +123,17 @@
     "sha256": "4cdddfa0c4136fbb902b6a8375bc4efff6962eb79b1680616c7c3be8b7e722c6",
     "step": 419
   },
-  "frozen_execution_set_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
+  "frozen_execution_sha256": "14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f",
   "home_cluster": "kennel",
   "label": "200m-m003-seed0",
-  "launch_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
-  "log_outcome": "indispensable_scientific_numerical_failure",
   "metadata": {
     "path": "experiments/odd_taylor_attention/runs/r8b46f1ad9453/metadata.json",
     "sha256": "a8f14c5236955465209b27d86aab60381f691f71f20c068d8d2332dd9dacef82"
   },
   "metrics": null,
   "name": "200m-m003-seed0",
-  "original_branch": "claude/normalized-taylor-rerun",
   "original_experiment": "normalized_taylor_rerun",
   "parameter_count": 199906464,
-  "partition_history": [
-    {
-      "partition": "standard,long",
-      "reason": "initial submission",
-      "time": "2026-09-26T19:45-04:00"
-    },
-    {
-      "partition": "long",
-      "reason": "standard,long submissions preempted this user's own long-partition nonnegative learned Taylor runs (standard outranks long, youngest job first); pending jobs held, the two started jobs requeued held, all moved to long, then released",
-      "time": "2026-09-26T19:48-04:00"
-    },
-    {
-      "dependency": "afterany:202605",
-      "partition": "standard",
-      "reason": "uses this user's standard allowance (4 GPUs) on the B300s freed when nonnegative m=4 (202605) ends; pinned to akita so the standard job cannot preempt this user's long job on dogo",
-      "req_node_list": "akita",
-      "time": "2026-09-26T21:13-04:00"
-    },
-    {
-      "dependency": "afterany:202638",
-      "partition": "standard",
-      "reason": "takes akita back when nonnegative m=2 ends",
-      "req_node_list": "akita",
-      "time": "2026-09-27T01:01-04:00"
-    }
-  ],
   "qk_head_dim": 64,
   "qk_norm": true,
   "qk_norm_sharing": "per_head",
@@ -186,32 +148,6 @@
   "run_id": "r8b46f1ad9453",
   "seed": 0,
   "selected_checkpoint": null,
-  "slurm_attempts": {
-    "attempts": [
-      {
-        "end": "2026-09-26T19:48:31",
-        "node": "dogo",
-        "partition": "long",
-        "start": "2026-09-26T19:46:25",
-        "state": "REQUEUED"
-      },
-      {
-        "end": "2026-09-27T01:01:28",
-        "node": "akita",
-        "partition": "standard",
-        "start": "2026-09-27T00:58:40",
-        "state": "REQUEUED"
-      },
-      {
-        "end": "2026-09-27T02:16:56",
-        "node": "akita",
-        "partition": "standard",
-        "start": "2026-09-27T01:47:57",
-        "state": "FAILED"
-      }
-    ],
-    "source": "sacct -j 202615 -D -X (local time, 2026-09-27 05:25 snapshot)"
-  },
   "slurm_job_id": "202615",
   "slurm_log": {
     "note": "append-mode log holding every attempt of this job",
@@ -220,7 +156,6 @@
   },
   "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
   "status": "numerical-failure",
-  "submission": "sbatch --partition=standard,long --time=10:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff through scaffolds/transformer/launchers/kennel.sbatch (any 4 B300 or H100, requeue, append-mode log); queued while no 4-GPU slot was free. Partition changes are in partition_history",
   "terminal": null,
   "value_head_dim": 64,
   "wandb": {

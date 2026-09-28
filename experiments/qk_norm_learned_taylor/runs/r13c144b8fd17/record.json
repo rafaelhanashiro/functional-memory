@@ -111,13 +111,6 @@
   "attention_degree": 1,
   "attention_kernel": "learned_polynomial_unnormalized",
   "attention_normalization": false,
-  "best_validation": {
-    "selection_rule": "lowest_validation_nll_latest_on_tie",
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 3.0095842821257457,
-    "validation_perplexity": 20.278967843274895
-  },
   "coefficient_count": 320,
   "completed_utc": "2026-09-26T18:25:17.607645+00:00",
   "config": {
@@ -159,6 +152,7 @@
     "state_transfer": "direct",
     "wall_time": "04:43:18 including acceptance (Slurm 2026-09-26T09:42:02 to 2026-09-26T14:25:20 local)"
   },
+  "frozen_execution_sha256": "15729bb98f52a1b86173c1d2891b12b3165ba1961f72d1192fe370a717c0f156",
   "hardware": "4x NVIDIA H100 mastiff, sweep partition",
   "home_cluster": "kennel",
   "label": "200m-qk-m001-unnormalized-seed0",
@@ -175,11 +169,6 @@
   "qk_norm_parameter_count": 160,
   "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
-  "requested_hardware": "4x B300 or 4x H100 (A100/A6000 nodes excluded)",
-  "retention": {
-    "path": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/retention.json",
-    "sha256": "bbed1b757487bd377bd9ba5081e7570b95ad7bdaade7fa334b4d0105b9f34ce9"
-  },
   "run_id": "r13c144b8fd17",
   "run_record": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17",
   "seed": 0,
@@ -286,11 +275,7 @@
     "verified_present_utc": "2026-09-26T18:26:25Z"
   },
   "slurm_job_id": "202337",
-  "slurm_job_ids": [
-    202337
-  ],
   "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
-  "start": "fresh initialization",
   "status": "completed",
   "submitted_utc": "2026-09-26T06:43:52+00:00",
   "terminal_validation_nll": 3.0095842821257457,

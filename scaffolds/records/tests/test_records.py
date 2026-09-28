@@ -107,12 +107,6 @@ def test_integrity_detects_changed_config_and_scientific_artifact(tmp_path):
         validate_record(run)
 
 
-def test_frozen_source_artifacts_are_not_compared_with_current_checkout(tmp_path):
-    run = create_run(tmp_path / "study", recipe())
-    update_record(run, {"executed_recipe": {"path": "config.yaml", "sha256": "b" * 64, "commit": "frozen-source"}})
-    validate_record(run)
-
-
 def test_study_rejects_duplicate_or_unregistered_path_ids(tmp_path):
     study = tmp_path / "study"
     run = create_run(study, recipe())

@@ -4,28 +4,7 @@ experiment: qk_norm_attention
 status: completed
 home_cluster: kennel
 artifact_root: /data/cl/u/rafah/home/projects/functional-memory
-documentation: experiments/qk_norm_attention/README.md
-scaffold: scaffolds/transformer
-branch: qk-norm-attention
-branch_base_commit: 8bdc5e22be0ff7b42e412062569985136a883b0d
-scaffold_change_commit: dd6f2f47e18cb931d8c186d084749bbbd481174f
-launch_commit: aa5b6eb34d8b57533cdfe04fe263906e69d30091
-frozen_execution_set_sha256: bb64cdd2b310f84ba1bf0bad05ac7b8a3c53b51373625df9f0d6ec4bd0726700
-scientific_change: Exact softmax attention over QK-norm cosine scores s_ij = exp(gamma_{l,h}) <q_i, k_j>
-  / (||q_i|| ||k_j||), |s_ij| <= exp(gamma_{l,h}); one log scale gamma per layer and head, learned from
-  log(sqrt(d_K)) = log 8, FP32, no weight decay, backbone learning-rate schedule; Q/K unit-normalized
-  per head in FP32 before RoPE with eps 1e-6; everything else the 200M softmax control
-requested:
-  date: '2026-09-25'
-  from_cluster: kennel
-  mechanism: exact softmax, d_K = 64
-  qk_norm: cosine scores with a learned per-head log scale
-  scale_parametrization: alpha = exp(gamma), gamma learned
-  initial_scale: 8.0
 weight_decay_policy: exclude_embeddings_norms_biases_v1
-shared_dependency_lock:
-  path: scaffolds/transformer/uv.lock
-  sha256: dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559
 data_identity:
   train:
     path: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
@@ -33,52 +12,8 @@ data_identity:
   eval:
     path: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
     sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
-comparison_controls:
-  softmax:
-    run: experiments/key_dimension_taylor/runs/r50088d29f2b5
-    source_commit: 381f1fdf6caf2925a984e3932e58b6e70bfbc6b1
-    weight_decay_policy: exclude_embeddings_norms_biases_v1
-    slurm_job_id: '202190'
-    hardware: 4x NVIDIA H100 80GB HBM3 (dogo) for acceptance and updates 1-1,464; 4x NVIDIA B300 SXM6
-      AC (akita) from the update-1,000 checkpoint to 19,074; sweep partition
-    validation_nll: 2.6854977863175526
-    validation_perplexity: 14.665499848737895
-    completed_utc: '2026-09-25T23:35:49.944451+00:00'
-    note: 'The repository''s softmax baseline: the same recipe and weight-decay policy as this run, without
-      QK-norm.'
-pre_launch_validation:
-  cpu_tests: 'Full scaffold CPU suite at the scaffold-change tree dd6f2f4 (before merging main): 552 passed,
-    12 skipped, 0 failed. After merging main 8bdc5e2 (selective weight decay, universal update checks,
-    resume guard): 195 targeted tests passed, 6 skipped, 0 failed (test_qk_norm, test_parameter_policy,
-    test_model, test_config, test_update_numerics, test_resume_guard, test_training); the adapter''s 3
-    configuration tests passed at the launch tree.'
-  gpu_tests:
-    B300: '5 passed (slurm 202131, akita, 44 s) at the scaffold-change tree: cuDNN softmax and the fused
-      Taylor, unnormalized, and learned-polynomial kernels consume the cosine operands as the blocked
-      reference does at the 2,048-token BF16 context, including the log-scale gradient'
-    log:
-      path: scaffolds/transformer/validation/logs/qk-norm-scores/slurm-202131.out
-      sha256: 4b96c3616f86d0401dc5b6012aced27ca951ef1008b218fb25608d7c980d2da3
-      location: primary checkout on Kennel, ignored by Git; to be entered in the scaffold validation record
-        with this run's acceptance
-  acceptance: 'Runs in the production allocation before training: the adapter''s CPU tests, GPU tests,
-    the softmax-backbone initialization check, a 20-update full-recipe pilot on the fused (cuDNN) backend,
-    and an exact fresh-process resume.'
-artifact_locations:
-  runs: experiments/qk_norm_attention/runs/<run_id> (committed)
-  checkpoints: experiments/qk_norm_attention/runs/<run_id>/checkpoints/<step> (ignored, on Kennel under artifact_root)
-  logs: experiments/qk_norm_attention/runs/<run_id>/training.log (ignored, on Kennel under artifact_root)
-  verified: checkpoint files and the log hashed at these locations; see the run's selected_checkpoint
-    and log
-superseded_launch:
-  launch_commit: 4b5c69cef73eeb3bf8d0ea6ad3611208aad45cb3
-  frozen_execution_set_sha256: 00a2f12c81079ca1809ae34c25926cb226d0f1c656a74691c69515272b7ec0a1
-  slurm_job_id: '202156'
-  difference: adapter/execution/acceptance.py listed scaffolds/transformer/tests/test_softmax_backends.py
-    among the GPU tests; the relaunch removes it (recipe, scaffold code, lock, and data unchanged)
-summary:
-  path: results/qk_norm_attention/summary.csv
-  generator: results.qk_norm_attention.report
-record_layout_version: 1
 run_ids:
 - r1feece425074
+dependency_lock:
+  path: scaffolds/transformer/uv.lock
+  sha256: dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559

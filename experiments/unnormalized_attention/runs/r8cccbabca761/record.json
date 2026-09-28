@@ -49,13 +49,11 @@
       "sha256": "e0bbbdafb9f5cffd49bd080d91c48afcefdac97f18a57fc9dd7dc18360eaf483"
     }
   ],
-  "best_validation": {
-    "selection_rule": "lowest_validation_nll",
-    "step": 19074,
-    "training_tokens": 10000269312,
-    "validation_nll": 2.8598174708230153,
-    "validation_perplexity": 17.45833998930364
-  },
+  "attempts": [
+    {
+      "slurm_job_id": "201002"
+    }
+  ],
   "completed_utc": "2026-09-23T03:47:47.095549+00:00",
   "config": {
     "path": "experiments/unnormalized_attention/runs/r8cccbabca761/config.yaml",
@@ -210,7 +208,6 @@
   },
   "slurm_job_id": "201002",
   "source_commit": "3b0d311655b033545d0c211467fd600376e0fdeb",
-  "start": "fresh initialization",
   "status": "completed",
   "terminal_validation_nll": 2.8598174708230153,
   "terminal_validation_perplexity": 17.45833998930364,
