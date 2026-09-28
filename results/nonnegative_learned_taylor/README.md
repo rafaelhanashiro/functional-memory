@@ -2,9 +2,9 @@
 
 [Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/nonnegative_learned_taylor/runs.csv) · [Execution guide](../../experiments/nonnegative_learned_taylor/README.md)
 
-Does a row-normalized learned polynomial kernel train once it cannot go negative?
+Does a normalized learned polynomial kernel train once it cannot go negative?
 The [QK-norm learned Taylor sweep](../qk_norm_learned_taylor/README.md) learned all
-`m + 1` coefficients of `p(s) = sum_r c_r s^r` per layer and head under row
+`m + 1` coefficients of `p(s) = sum_r c_r s^r` per layer and head under
 normalization, and every degree failed numerically (updates 27, 1,857, 318, and
 1,456) once its kernel turned negative inside the bounded score range and a row sum
 crossed zero. This experiment keeps that recipe and changes only the kernel's
@@ -105,7 +105,7 @@ weight decay (`exclude_embeddings_norms_biases_v1`), QK-norm with per-head log s
 from `log(sqrt(d_K)) = log 8`, **19,074 updates and 10,000,269,312 prediction
 tokens**. Evaluation uses the first 1,792 held-out sequences every 1,000 updates and
 at completion. The two runs use different backends for the same mathematics: `m = 4`
-runs on the scaffold's blocked reference, the only backend for row-normalized learned
+runs on the scaffold's blocked reference, the only backend for normalized learned
 kernels when it launched. `m = 2` first launched on the blocked reference too; when the
 fused normalized polynomial kernel was qualified the same evening, that attempt was
 cancelled and `m = 2` restarted from initialization on the fused kernel, which runs

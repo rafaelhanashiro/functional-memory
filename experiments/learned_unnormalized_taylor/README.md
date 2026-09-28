@@ -1,6 +1,6 @@
 # Learned unnormalized Taylor attention
 
-What kernels emerge when unnormalized polynomial attention learns its coefficients? Train per-head learned coefficients without row normalization using the exact recorded degree and initialization.
+What kernels emerge when unnormalized polynomial attention learns its coefficients? Train per-head learned coefficients without normalization using the exact recorded degree and initialization.
 
 [Results and limitations](../../results/learned_unnormalized_taylor/README.md) · [Run index](runs.csv) · [Study definition](sweep.yaml)
 

@@ -22,7 +22,7 @@ dependency_lock:
   sha256: 098b75b9bc2e27abf3ca873f20bc2bd2887aa6f03c2ae0ab8de11d6d5002b6f7
 comparisons:
   note: Seed-0 200M runs with the same data, optimizer, and backbone recipe at each
-    d_K; softmax and row-normalized Taylor attention of degree 2, 4, 8, and 16.
+    d_K; softmax and normalized Taylor attention of degree 2, 4, 8, and 16.
   runs:
   - study: key_dimension_taylor
     label: 200m-dk008-seed0

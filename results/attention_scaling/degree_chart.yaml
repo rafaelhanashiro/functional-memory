@@ -5,7 +5,7 @@ seed: 0
 data_identity:
   train_manifest_sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
   eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
-title: Polynomial attention kernels across Taylor degree at d_K = 64
+title: Polynomial attention kernels across degree at d_K = 64
 d_k:
 - 64
 panels:
@@ -49,6 +49,20 @@ panels:
     label: m=3
   - id: m4
     label: m=4
+- id: normalized_fixed_hermite
+  title: Normalized, fixed Hermite
+  columns: &id001
+  - id: m1
+    label: m=1
+  - id: m2
+    label: m=2
+  - id: m3
+    label: m=3
+  - id: m4
+    label: m=4
+- id: unnormalized_fixed_hermite
+  title: Unnormalized, fixed Hermite
+  columns: *id001
 - id: references
   title: Reference mechanisms
   columns:
@@ -162,6 +176,54 @@ cells:
   experiment: nonnegative_learned_taylor
   run: r507d1c2632b2
   label: 200m-qk-m004-nonnegative-seed0
+- panel: normalized_fixed_hermite
+  column: m1
+  d_k: 64
+  experiment: hermite_attention
+  run: rea4fd9479c26
+  label: 200m-qk-hermite-m001-normalized-seed0
+- panel: normalized_fixed_hermite
+  column: m2
+  d_k: 64
+  experiment: hermite_attention
+  run: rbb8dc34285bf
+  label: 200m-qk-hermite-m002-normalized-seed0
+- panel: normalized_fixed_hermite
+  column: m3
+  d_k: 64
+  experiment: hermite_attention
+  run: r3dd3f20a884a
+  label: 200m-qk-hermite-m003-normalized-seed0
+- panel: normalized_fixed_hermite
+  column: m4
+  d_k: 64
+  experiment: hermite_attention
+  run: re8b05edb37b1
+  label: 200m-qk-hermite-m004-normalized-seed0
+- panel: unnormalized_fixed_hermite
+  column: m1
+  d_k: 64
+  experiment: hermite_attention
+  run: r2aa13b45ae42
+  label: 200m-qk-hermite-m001-unnormalized-seed0
+- panel: unnormalized_fixed_hermite
+  column: m2
+  d_k: 64
+  experiment: hermite_attention
+  run: r05b79574172d
+  label: 200m-qk-hermite-m002-unnormalized-seed0
+- panel: unnormalized_fixed_hermite
+  column: m3
+  d_k: 64
+  experiment: hermite_attention
+  run: re75e2752c293
+  label: 200m-qk-hermite-m003-unnormalized-seed0
+- panel: unnormalized_fixed_hermite
+  column: m4
+  d_k: 64
+  experiment: hermite_attention
+  run: rf39358c9f550
+  label: 200m-qk-hermite-m004-unnormalized-seed0
 metric: terminal_validation_perplexity
 runs:
 - study: hermite_attention
@@ -475,3 +537,143 @@ runs:
     best_validation.json:
       path: experiments/nonnegative_learned_taylor/runs/r507d1c2632b2/best_validation.json
       sha256: f63736cfffbcdba50ab6653f776f7028ba238cf072004b17f71e72360f17593a
+- study: hermite_attention
+  run_id: rea4fd9479c26
+  label: 200m-qk-hermite-m001-normalized-seed0
+  sources:
+    config.yaml:
+      path: experiments/hermite_attention/runs/rea4fd9479c26/config.yaml
+      sha256: 5e0b9525cadccdde712274c1ae7bfb619bdd3a2c1b1d266e6fdd634dd78d65d9
+    metadata.json:
+      path: experiments/hermite_attention/runs/rea4fd9479c26/metadata.json
+      sha256: 744af08b0119259d4ab85d33ac016df0a2915448e59c3b45d36afde5f2d08e55
+    numerical_failure_step_00000005.json:
+      path: experiments/hermite_attention/runs/rea4fd9479c26/numerical_failure_step_00000005.json
+      sha256: 570e56cfcebdf629d61d865b6339a5036a1a1b55da15029a1e30ef338f2a2413
+- study: hermite_attention
+  run_id: rbb8dc34285bf
+  label: 200m-qk-hermite-m002-normalized-seed0
+  sources:
+    config.yaml:
+      path: experiments/hermite_attention/runs/rbb8dc34285bf/config.yaml
+      sha256: 578150492260aa09deba16d3452745d848a69b862267aabf8ad5156a7ec7b348
+    metrics.jsonl:
+      path: experiments/hermite_attention/runs/rbb8dc34285bf/metrics.jsonl
+      sha256: 10bd632d110b37e34e78f3fbaa1deaf5863073f7e86b7c4da643be3acfbe3c88
+    metadata.json:
+      path: experiments/hermite_attention/runs/rbb8dc34285bf/metadata.json
+      sha256: ef7991425171a1997767079ff9f5d700f57b6d4debfe845e4c767364ecd54b02
+    best_validation.json:
+      path: experiments/hermite_attention/runs/rbb8dc34285bf/best_validation.json
+      sha256: bf5ddd6082927c9594b142b471526771ba12679b4647a26a731e7540e31e4667
+    numerical_failure_step_00003829.json:
+      path: experiments/hermite_attention/runs/rbb8dc34285bf/numerical_failure_step_00003829.json
+      sha256: eb58d455a27cd8647a24f34303355e67ce2c34b7fccb54315dd7920b659c3133
+- study: hermite_attention
+  run_id: r3dd3f20a884a
+  label: 200m-qk-hermite-m003-normalized-seed0
+  sources:
+    config.yaml:
+      path: experiments/hermite_attention/runs/r3dd3f20a884a/config.yaml
+      sha256: 856f9f05f02d35f5cd2e8827058e7f101b6578fb61a45437df387e48b6205119
+    metadata.json:
+      path: experiments/hermite_attention/runs/r3dd3f20a884a/metadata.json
+      sha256: 7449f709527322d88f6fa630cdc5b44342a2a9e84a344fe0c2c28d3dda14dd64
+    numerical_failure_step_00000802.json:
+      path: experiments/hermite_attention/runs/r3dd3f20a884a/numerical_failure_step_00000802.json
+      sha256: 55037df792775f1b6b37516fa988a235ebacc2250b2f22a24007f78d021a8098
+- study: hermite_attention
+  run_id: re8b05edb37b1
+  label: 200m-qk-hermite-m004-normalized-seed0
+  sources:
+    config.yaml:
+      path: experiments/hermite_attention/runs/re8b05edb37b1/config.yaml
+      sha256: 50588aa3908b319a493408356f535200b651389ab9bddb0478bb5bbfd4083b33
+    metrics.jsonl:
+      path: experiments/hermite_attention/runs/re8b05edb37b1/metrics.jsonl
+      sha256: 045af6e9d80260a3e0bc05d60c16b54d78582efb573c10ac715b0f41c067564d
+    metadata.json:
+      path: experiments/hermite_attention/runs/re8b05edb37b1/metadata.json
+      sha256: 48727c9b6d293987bc470975993ba2b01c1eb2bcc8c57cd42bcac8077f95bed1
+    best_validation.json:
+      path: experiments/hermite_attention/runs/re8b05edb37b1/best_validation.json
+      sha256: c1e7c6e6ba8d6df7ea049a484264029cf81fca94f3154e9f27ce7502eab241f3
+    numerical_failure_step_00001390.json:
+      path: experiments/hermite_attention/runs/re8b05edb37b1/numerical_failure_step_00001390.json
+      sha256: 1cf4a1a1fe3651fd5599eebd1492d553d12fa428916b2abb7999897249f2108c
+- study: hermite_attention
+  run_id: r2aa13b45ae42
+  label: 200m-qk-hermite-m001-unnormalized-seed0
+  sources:
+    config.yaml:
+      path: experiments/hermite_attention/runs/r2aa13b45ae42/config.yaml
+      sha256: 340df83e5447052e64e7db63cfa44509b7e021154d478b9383083de709525339
+    metrics.jsonl:
+      path: experiments/hermite_attention/runs/r2aa13b45ae42/metrics.jsonl
+      sha256: b72b18534a56fa6f17de6ead9d5c8217746dd776ca2849490e6cb0668429bf05
+    completion.json:
+      path: experiments/hermite_attention/runs/r2aa13b45ae42/completion.json
+      sha256: 38b6fc26db1a6c333a33e0afc951b709776e8ebf84c00f3d9b44c04832ef0dd1
+    metadata.json:
+      path: experiments/hermite_attention/runs/r2aa13b45ae42/metadata.json
+      sha256: 2f21e3e9b7d9659fa2f5a0123208f7932074262a0ecb9962b3d5a70d6560884a
+    best_validation.json:
+      path: experiments/hermite_attention/runs/r2aa13b45ae42/best_validation.json
+      sha256: 1826d53a3ddfae9236ceb4ca13a66a0e3e140987d0c614f31febfd25cfbcefb7
+- study: hermite_attention
+  run_id: r05b79574172d
+  label: 200m-qk-hermite-m002-unnormalized-seed0
+  sources:
+    config.yaml:
+      path: experiments/hermite_attention/runs/r05b79574172d/config.yaml
+      sha256: ba554d3ead07a9ca692d20823df6e6822bc48dd708f19e0951c6033be8e32f58
+    metrics.jsonl:
+      path: experiments/hermite_attention/runs/r05b79574172d/metrics.jsonl
+      sha256: 377a371044f8e4698b6a5953ebd2cfc0f5c0429b0ba1c6279c1761e27b1e7bab
+    completion.json:
+      path: experiments/hermite_attention/runs/r05b79574172d/completion.json
+      sha256: f794b75b60f13ed8100d63ca23d103ac66b68c7481ecd9ca9451f1e70fe10f72
+    metadata.json:
+      path: experiments/hermite_attention/runs/r05b79574172d/metadata.json
+      sha256: 14f0e256ba624d1df8e398855cfd710213f89390d9d9509061641c11f98d2fba
+    best_validation.json:
+      path: experiments/hermite_attention/runs/r05b79574172d/best_validation.json
+      sha256: a0cad33fa1b0209d535ee623fcd581b506c5eba5ec3b7ada9999fbb4d3a9a4d5
+- study: hermite_attention
+  run_id: re75e2752c293
+  label: 200m-qk-hermite-m003-unnormalized-seed0
+  sources:
+    config.yaml:
+      path: experiments/hermite_attention/runs/re75e2752c293/config.yaml
+      sha256: abe72fa2974ad3d8bb5fe3b803478979c90cd16fb47dbad222c97ca6a9242c99
+    metrics.jsonl:
+      path: experiments/hermite_attention/runs/re75e2752c293/metrics.jsonl
+      sha256: 40bb966693949fcf61302ed3a7f73bbc832d297fd6e3c78726b6742ee4adc5b3
+    completion.json:
+      path: experiments/hermite_attention/runs/re75e2752c293/completion.json
+      sha256: d9eae5d5df400c4796c5d4229bd470dade7b9a7543a632f4a2445e85e11297f4
+    metadata.json:
+      path: experiments/hermite_attention/runs/re75e2752c293/metadata.json
+      sha256: cc1f3138bc63598a8637e30b8b033d31a34fd1b219db4b18b57d39a335848309
+    best_validation.json:
+      path: experiments/hermite_attention/runs/re75e2752c293/best_validation.json
+      sha256: 78a48e5058503b249852cb2d47abb4edae7b3f8af197cfc2132a994739026bfd
+- study: hermite_attention
+  run_id: rf39358c9f550
+  label: 200m-qk-hermite-m004-unnormalized-seed0
+  sources:
+    config.yaml:
+      path: experiments/hermite_attention/runs/rf39358c9f550/config.yaml
+      sha256: 9a36b85c1afc6a924a666fcf4dccd0653903f947d3d0cce98de9005e612c7e40
+    metrics.jsonl:
+      path: experiments/hermite_attention/runs/rf39358c9f550/metrics.jsonl
+      sha256: e2b497bed41034168cb1e6bd32790307a26875c34a610a97904ecd40d3152b64
+    completion.json:
+      path: experiments/hermite_attention/runs/rf39358c9f550/completion.json
+      sha256: c16a9636c090640b3bdbca731d1731286de4cb2449a5f5eadd0fa3e704476f21
+    metadata.json:
+      path: experiments/hermite_attention/runs/rf39358c9f550/metadata.json
+      sha256: 03cb478a11297ad2dc8c923b1e51aedcfbc0fe235d15140bcf54a8809a935773
+    best_validation.json:
+      path: experiments/hermite_attention/runs/rf39358c9f550/best_validation.json
+      sha256: 440d5f061b34a6ce5b24580bf85070d775cff0c144dd6358c4f0ed019d13fc60

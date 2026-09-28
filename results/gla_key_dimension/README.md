@@ -18,7 +18,7 @@ The decay is `alpha_t = exp(log_sigmoid(W2 W1 x_t + b) / 16)`, with gate
 rank 16. As in OFM, Q/K use RoPE; per-head RMSNorm is applied to the readout,
 which is multiplied by a learned SiLU output gate before output projection.
 State starts at zero for every packed record; training does not carry it between
-records. There is no softmax row normalization or additional `1/sqrt(dK)` scaling.
+records. There is no softmax normalization or additional `1/sqrt(dK)` scaling.
 
 The GLA module and its fused kernels are adapted into this repository from OFM;
 the runtime does not import the external OFM checkout. Implementation ancestry
@@ -72,7 +72,7 @@ Evaluation every 1,000 updates and at completion uses the first seven fixed
 held-out global batches: 1,792 records and 3,670,016 prediction tokens. The
 primary endpoint is exponential mean token NLL at the common terminal training
 budget. Validation-best metrics remain separate. Width-matched softmax and
-row-normalized Taylor (m=2, 4, 8, 16) endpoints from the
+normalized Taylor (m=2, 4, 8, 16) endpoints from the
 [dK × Taylor record](../key_dimension_taylor/README.md) are pinned by checksum in
 the selection; the dK=64 softmax reference is `200m-softmax-seed0` (PPL 14.665), the
 repository's softmax baseline, trained under the selective weight-decay policy.
@@ -145,7 +145,7 @@ JAX_PLATFORMS=cpu PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m pytest 
 All five runs completed the full 19,074 updates (10.0B prediction tokens) without
 numerical failures; attention diagnostics stayed valid, and every run's
 validation-best checkpoint is its terminal one. Terminal held-out perplexity,
-with the width-matched softmax and row-normalized Taylor runs from the
+with the width-matched softmax and normalized Taylor runs from the
 [dK × Taylor record](../key_dimension_taylor/README.md):
 
 | d_K | Parameters | GLA | Softmax | GLA − softmax | Taylor m=2 | m=4 | m=8 | m=16 |

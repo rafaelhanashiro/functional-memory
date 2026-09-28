@@ -3,7 +3,7 @@
 Does the fixed standard-normal Hermite approximation of `exp(s)` improve on
 Taylor truncation at the same degree when the score geometry and training recipe
 match? This cohort uses **QK normalization for every run**, `d_K=d_V=64`, degrees
-1–4, seed 0, and both row-normalized and unnormalized attention.
+1–4, seed 0, and both normalized and unnormalized attention.
 
 **Home cluster: Kennel.** The artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`. Each permanent run ID in
@@ -25,14 +25,14 @@ scheduler status and recorded training status are distinct.
 
 Scores use post-RoPE Q and K with per-head, per-layer learned QK scales:
 `s_ij = exp(gamma) cos(q_i, k_j)`, initialized with `exp(gamma)=sqrt(64)=8`.
-This is independent of row normalization, which divides the weighted value sum
+This is independent of normalization, which divides the weighted value sum
 by the causal sum of polynomial weights.
 
 The eight Hermite runs use
 `p_m(s) = exp(1/2) sum_(r=0)^m He_r(s)/r!`, the probabilists' Hermite expansion
 under standard-normal weighting. Coefficients stay fixed; the QK scales are
 learned. The factor `exp(1/2)` is retained for unnormalized attention and cancels
-mathematically under row normalization. Normalized degree 1 is consequently the
+mathematically under normalization. Normalized degree 1 is consequently the
 same mathematical kernel as normalized degree-1 Taylor and provides a check of
 the comparison, subject to differences in floating-point evaluation.
 

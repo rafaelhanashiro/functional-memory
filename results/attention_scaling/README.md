@@ -3,9 +3,8 @@
 Terminal held-out perplexity of the 200M attention runs: 19,074 updates (10.0B
 tokens), seed 0, same data order and evaluation set. No training happens here; the
 figures are built from existing runs named in [`selection.yaml`](selection.yaml)
-(heatmap), [`degree_chart.yaml`](degree_chart.yaml), and
-[`hermite_chart.yaml`](hermite_chart.yaml). Provenance: [`manifest.json`](manifest.json).
-Home cluster: Kennel.
+(heatmap) and [`degree_chart.yaml`](degree_chart.yaml). Provenance:
+[`manifest.json`](manifest.json). Home cluster: Kennel.
 
 Current defaults are selective weight decay and QK-norm. **Legacy** runs predate
 them: outlined in the heatmap, hollow and dashed in the degree chart.
@@ -21,34 +20,25 @@ them: outlined in the heatmap, hollow and dashed in the degree chart.
 
 ### Degree chart (d_K = 64)
 
-17 runs: 13 complete, 4 failed, 1 legacy (hollow, dashed). Failures sit below the axis at their update.
+25 runs: 17 complete, 8 failed, 1 legacy (hollow, dashed). Failures sit below the axis at their update.
 
 ![Terminal perplexity against polynomial degree](degree_chart.png)
 
-[PDF](degree_chart.pdf)
-
-### Hermite vs Taylor (d_K = 64, QK-norm)
-
-17 runs: 11 complete, 6 failed.
-
-![Hermite and Taylor terminal perplexity by degree](hermite_taylor.png)
-
-[PDF](hermite_taylor.pdf) · [Cell data and checksums](summary.csv) · [Provenance](manifest.json)
+[PDF](degree_chart.pdf) · [Cell data and checksums](summary.csv) · [Provenance](manifest.json)
 <!-- END GENERATED RESULTS -->
 
 ## Figure key
 
-- **Heatmap:** normalized fixed Taylor (`1/r!`, row-normalized) at `m = 1, 2, 3, 4, 8, 16`
-  and `d_K = 8–128`, plus softmax with and without QK-norm and GLA. FAIL = numerical
+- **Heatmap:** normalized fixed Taylor (`1/r!`) at `m = 1, 2, 3, 4, 8, 16` and
+  `d_K = 8–128`, plus softmax with and without QK-norm and GLA. FAIL = numerical
   failure at the shown update; NOT RUN = not trained.
-- **Degree chart:** families at `d_K = 64`. Learned coefficients start from `1/r!` and
-  are learned per layer and head. "Nonnegative" writes the kernel as `q1^2 + q2^2`,
-  so it exists only at even degrees.
-- **Hermite vs Taylor:** Taylor uses `1/r!`; Hermite uses the fixed standard-normal
-  projection `p_m(s) = exp(1/2) sum_(r<=m) He_r(s)/r!` (normalized `m = 2` evaluated as
-  `exp(1/2) (s+1)^2 / 2`). Lines join only adjacent completed degrees. Normalized
-  Hermite `m = 1` failed in its 20-update qualification pilot (production model, data,
-  and optimizer).
+- **Degree chart:** families at `d_K = 64`; failures sit in the strip below the axis.
+  Learned coefficients start from `1/r!` and are learned per layer and head.
+  "Nonnegative" writes the kernel as `q1^2 + q2^2`, so it exists only at even degrees.
+  Fixed Hermite uses the standard-normal projection
+  `p_m(s) = exp(1/2) sum_(r<=m) He_r(s)/r!` (normalized `m = 2` evaluated as
+  `exp(1/2) (s+1)^2 / 2`). Normalized Hermite `m = 1` failed in its 20-update
+  qualification pilot (production model, data, and optimizer).
 
 ## Results at d_K = 64
 

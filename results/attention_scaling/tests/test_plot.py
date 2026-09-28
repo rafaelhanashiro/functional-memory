@@ -40,25 +40,22 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     assert by_cell["references", "softmax", 8]["legacy"] is True
 
     csv_rows = list(csv.DictReader((output / "summary.csv").open()))
-    assert Counter(row["figure"] for row in csv_rows) == {"heatmap": 45, "degree_chart": 17, "hermite_taylor": 17}
+    assert Counter(row["figure"] for row in csv_rows) == {"heatmap": 45, "degree_chart": 25}
     chart = {(row["panel"], row["column"]): row for row in csv_rows if row["figure"] == "degree_chart"}
     assert float(chart["unnormalized_learned", "m3"]["terminal_ppl"]) == pytest.approx(16.330106671324174)
     assert chart["normalized_learned_taylor", "m2"]["failure_step"] == "1857"
     assert chart["normalized_nonnegative", "m2"]["legacy"] == "false"
     assert float(chart["normalized_nonnegative", "m4"]["terminal_ppl"]) == pytest.approx(14.741921579480255)
-    hermite = {(row["panel"], row["column"]): row for row in csv_rows if row["figure"] == "hermite_taylor"}
-    assert float(hermite["unnormalized_fixed_hermite", "m2"]["terminal_ppl"]) == pytest.approx(17.4677191891141)
-    assert float(hermite["unnormalized_fixed", "m2"]["terminal_ppl"]) == pytest.approx(21.748340587188633)
-    assert hermite["normalized_fixed_hermite", "m2"]["failure_step"] == "3829"
+    assert float(chart["unnormalized_fixed_hermite", "m2"]["terminal_ppl"]) == pytest.approx(17.4677191891141)
+    assert float(chart["unnormalized_fixed", "m2"]["terminal_ppl"]) == pytest.approx(21.748340587188633)
+    assert chart["normalized_fixed_hermite", "m2"]["failure_step"] == "3829"
     assert all(row["terminal_ppl"] == "" for row in csv_rows if row["status"] == "numerical_failure")
     provenance = json.loads((output / "manifest.json").read_text())
     assert "source_manifests" not in provenance and "source_records" not in provenance
-    assert Counter(row["figure"] for row in provenance["source_runs"]) == {"heatmap": 33, "degree_chart": 17,
-                                                                           "hermite_taylor": 17}
+    assert Counter(row["figure"] for row in provenance["source_runs"]) == {"heatmap": 33, "degree_chart": 25}
     assert provenance["status_counts"]["heatmap"]["legacy"] == 25
-    assert provenance["status_counts"]["degree_chart"] == {"complete": 13, "legacy": 1, "numerical_failure": 4}
-    assert provenance["status_counts"]["hermite_taylor"] == {"complete": 11, "legacy": 0, "numerical_failure": 6}
-    for name in ("combined_terminal_ppl", "degree_chart", "hermite_taylor"):
+    assert provenance["status_counts"]["degree_chart"] == {"complete": 17, "legacy": 1, "numerical_failure": 8}
+    for name in ("combined_terminal_ppl", "degree_chart"):
         assert (output / f"{name}.pdf").stat().st_size > 1000
     first = hashes(output)
     build(ROOT, config_path=config, output_dir=output)

@@ -1,6 +1,6 @@
 # Unnormalized exponential attention
 
-How does removing row normalization affect exponential attention? Compare the recorded model scales and preserve their training budgets and optimizer recipes.
+How does removing normalization affect exponential attention? Compare the recorded model scales and preserve their training budgets and optimizer recipes.
 
 [Results and limitations](../../results/unnormalized_attention/README.md) · [Run index](runs.csv) · [Study definition](sweep.yaml)
 

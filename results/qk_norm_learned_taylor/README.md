@@ -3,7 +3,7 @@
 [Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/qk_norm_learned_taylor/runs.csv) · [Execution guide](../../experiments/qk_norm_learned_taylor/README.md)
 
 Do learned polynomial attention kernels train better when their scores are bounded
-cosines with a learned scale, and does bounding the scores let the row-normalized
+cosines with a learned scale, and does bounding the scores let the normalized
 signed kernels survive? This sweep trained degrees **m = 1, 2, 3, 4** with
 
 ```text
@@ -24,7 +24,7 @@ scores with a learned scale slightly beat standard softmax. With `|s_ij| <= exp(
 a degree-`m` polynomial's approximation error to the exponential is uniformly bounded,
 so this sweep measures how much of the polynomial kernels' gap closes when the scores
 are bounded and the model must sharpen through the scale alone. The normalized
-variants are the first row-normalized learned polynomials in the repository: the fixed
+variants are the first normalized learned polynomials in the repository: the fixed
 odd Taylor kernels and the normalized learned quadratic (at update 4,187) failed
 numerically when their row sums approached zero; whether bounded scores prevent that
 was part of the question.
@@ -69,7 +69,7 @@ all-parameter weight decay; the policy change moved the softmax control by only
 0.03), the gains are 0.43 (m=1), 2.46 (m=2), 2.20 (m=3), and 3.76 (m=4). Degrees 3
 and 4 end within 0.05 of each other, so beyond degree 3 the polynomial's
 approximation quality is no longer the limit; the remaining 1.9-perplexity gap to
-QK-norm softmax is the missing row normalization. The QK-norm cubic and quartic also
+QK-norm softmax is the missing normalization. The QK-norm cubic and quartic also
 beat the unnormalized exponential without QK-norm (17.46), which makes an
 unnormalized exponential with QK-norm the natural next control. All four runs trail
 QK-norm softmax heavily early (perplexity 204–244 at update 1,000 against 93) and
@@ -101,7 +101,7 @@ cannot separate that from the bounded range; an unnormalized learned kernel with
 QK-norm at a large initial scale would.
 
 **The normalized kernels fail by the same mechanism as before, and bounding the
-scores does not help.** Row normalization divides by the signed sum
+scores does not help.** Normalization divides by the signed sum
 `sum_j p(s_ij)`; once `p` is negative somewhere in the score range, a row sum can pass
 through zero, the weights for that row blow up, and the loss goes nonfinite (the
 scaffold adds no epsilon or clipping). The odd degrees are negative from the start:
@@ -149,7 +149,7 @@ backbone weights are bit-identical to the 200M softmax control's, which every
 allocation's acceptance verified, and at initialization each model computes its
 fixed-Taylor kernel over cosine scores.
 
-| Run | Row normalization | Kernel at init | Backend |
+| Run | Normalization | Kernel at init | Backend |
 | --- | --- | --- | --- |
 | `200m-qk-m00{1,2,3,4}-unnormalized-seed0` | none | `p_m(8 cos)` | fused Pallas/Triton (`fused_learned_polynomial`) |
 | `200m-qk-m00{1,2,3,4}-normalized-seed0` | signed row sum | `p_m(8 cos) / rowsum` | blocked reference (no fused kernel exists) |

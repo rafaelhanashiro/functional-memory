@@ -6,7 +6,7 @@ This experiment asks what changes when a Transformer uses causal
 `exp(QKᵀ / sqrt(d_K)) V` without dividing attention weights by their row sum.
 The canonical run uses the repository's **200M sweep recipe**, so it compares
 directly with the 200M softmax controls and Taylor/key-dimension sweeps.
-**Status: completed.** Removing row normalization costs **0.174 nats** at 200M:
+**Status: completed.** Removing normalization costs **0.174 nats** at 200M:
 terminal validation PPL **17.46** versus 14.67 for softmax. A completed 250M run
 is documented [below](#supplementary-250m-run) as a supplementary scale point.
 

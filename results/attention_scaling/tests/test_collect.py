@@ -218,27 +218,21 @@ def test_committed_comparison_sources() -> None:
 
     chart = yaml.safe_load((root / "results/attention_scaling/degree_chart.yaml").read_text())
     chart_rows = collect_rows(root, chart)
-    assert len(chart_rows) == 17
+    assert len(chart_rows) == 25
     chart_failures = {(row["panel"], row["column"]): row["failure_step"]
                       for row in chart_rows if row["status"] == "numerical_failure"}
     assert chart_failures == {("normalized_learned_taylor", "m1"): 27, ("normalized_learned_taylor", "m2"): 1857,
-                              ("normalized_learned_taylor", "m3"): 318, ("normalized_learned_taylor", "m4"): 1456}
+                              ("normalized_learned_taylor", "m3"): 318, ("normalized_learned_taylor", "m4"): 1456,
+                              ("normalized_fixed_hermite", "m1"): 5, ("normalized_fixed_hermite", "m2"): 3829,
+                              ("normalized_fixed_hermite", "m3"): 802, ("normalized_fixed_hermite", "m4"): 1390}
     legacy = {(row["panel"], row["column"]) for row in chart_rows if row["legacy"]}
     assert legacy == {("references", "unnormalized_exp")}
 
-    hermite = yaml.safe_load((root / "results/attention_scaling/hermite_chart.yaml").read_text())
-    hermite_rows = collect_rows(root, hermite)
-    assert len(hermite_rows) == 17 and not any(row["legacy"] for row in hermite_rows)
-    assert {(row["panel"], row["column"]): row["failure_step"]
-            for row in hermite_rows if row["status"] == "numerical_failure"} == {
-        ("normalized_fixed_taylor", "m1"): 31, ("normalized_fixed_taylor", "m3"): 419,
-        ("normalized_fixed_hermite", "m1"): 5, ("normalized_fixed_hermite", "m2"): 3829,
-        ("normalized_fixed_hermite", "m3"): 802, ("normalized_fixed_hermite", "m4"): 1390}
     for panel, other, message in (("unnormalized_fixed_hermite", "unnormalized_fixed", "no fixed Hermite"),
                                   ("unnormalized_fixed", "unnormalized_fixed_hermite", "a Taylor cell uses 1/r!")):
-        swapped = json.loads(json.dumps(hermite))
+        swapped = json.loads(json.dumps(chart))
         target = next(cell for cell in swapped["cells"] if cell["panel"] == panel and cell["column"] == "m2")
-        source = next(cell for cell in hermite["cells"] if cell["panel"] == other and cell["column"] == "m2")
+        source = next(cell for cell in chart["cells"] if cell["panel"] == other and cell["column"] == "m2")
         swapped["cells"] = [cell for cell in swapped["cells"] if cell["run"] != source["run"]]
         target.update(experiment=source["experiment"], run=source["run"])
         with pytest.raises(ValueError, match=message):

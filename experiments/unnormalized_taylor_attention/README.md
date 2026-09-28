@@ -1,6 +1,6 @@
 # Unnormalized Taylor attention
 
-How does fixed Taylor degree affect attention without row normalization? Compare fixed degrees 1–4 using the recorded common training recipe.
+How does fixed Taylor degree affect attention without normalization? Compare fixed degrees 1–4 using the recorded common training recipe.
 
 [Results and limitations](../../results/unnormalized_taylor_attention/README.md) · [Run index](runs.csv) · [Study definition](sweep.yaml)
 

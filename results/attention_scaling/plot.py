@@ -10,7 +10,7 @@ import yaml
 from collections import Counter
 from pathlib import Path
 
-from .chart import render_degree_chart, render_hermite_chart
+from .chart import render_degree_chart
 from .collect import collect_rows
 from .render import render_heatmap
 
@@ -66,7 +66,7 @@ def _counts(rows: list[dict]) -> tuple[Counter, int, int]:
     return Counter(row["status"] for row in rows), len(trained), sum(1 for row in trained if row.get("legacy"))
 
 
-def update_readme(path: Path, rows: list[dict], chart_rows: list[dict], hermite_rows: list[dict]) -> None:
+def update_readme(path: Path, rows: list[dict], chart_rows: list[dict]) -> None:
     begin, end = "<!-- BEGIN GENERATED RESULTS -->", "<!-- END GENERATED RESULTS -->"
     authored = path.read_text()
     if authored.count(begin) != 1 or authored.count(end) != 1:
@@ -75,7 +75,6 @@ def update_readme(path: Path, rows: list[dict], chart_rows: list[dict], hermite_
     _, suffix = rest.split(end, 1)
     counts, trained, legacy = _counts(rows)
     chart_counts, chart_trained, chart_legacy = _counts(chart_rows)
-    hermite_counts, hermite_trained, _ = _counts(hermite_rows)
     block = (
         "### Heatmap\n\n"
         f"{len(rows)} cells: {counts['complete']} complete, {counts['numerical_failure']} failed, "
@@ -87,34 +86,24 @@ def update_readme(path: Path, rows: list[dict], chart_rows: list[dict], hermite_
         f"{chart_trained} runs: {chart_counts['complete']} complete, {chart_counts['numerical_failure']} failed, "
         f"{chart_legacy} legacy (hollow, dashed). Failures sit below the axis at their update.\n\n"
         "![Terminal perplexity against polynomial degree](degree_chart.png)\n\n"
-        "[PDF](degree_chart.pdf)\n\n"
-        "### Hermite vs Taylor (d_K = 64, QK-norm)\n\n"
-        f"{hermite_trained} runs: {hermite_counts['complete']} complete, "
-        f"{hermite_counts['numerical_failure']} failed.\n\n"
-        "![Hermite and Taylor terminal perplexity by degree](hermite_taylor.png)\n\n"
-        "[PDF](hermite_taylor.pdf) · [Cell data and checksums](summary.csv) · [Provenance](manifest.json)\n"
+        "[PDF](degree_chart.pdf) · [Cell data and checksums](summary.csv) · [Provenance](manifest.json)\n"
     )
     path.write_text(prefix + begin + "\n" + block + end + suffix)
 
 
 def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
-          chart_config_path: Path | None = None, hermite_config_path: Path | None = None,
-          output_dir: Path | None = None) -> list[dict]:
-    """Regenerate the three figures, the summary, the README block, and provenance; returns the heatmap rows."""
+          chart_config_path: Path | None = None, output_dir: Path | None = None) -> list[dict]:
+    """Regenerate both figures, the summary, the README block, and provenance; returns the heatmap rows."""
     repo_root = repo_root.resolve()
     output_dir = output_dir or repo_root / "results" / EXPERIMENT
     config_path = config_path or repo_root / "results" / EXPERIMENT / "selection.yaml"
     chart_config_path = chart_config_path or config_path.parent / "degree_chart.yaml"
-    hermite_config_path = hermite_config_path or config_path.parent / "hermite_chart.yaml"
     config = yaml.safe_load(config_path.read_text())
     chart_config = yaml.safe_load(chart_config_path.read_text())
-    hermite_config = yaml.safe_load(hermite_config_path.read_text())
     rows = collect_rows(repo_root, config)
     chart_rows = collect_rows(repo_root, chart_config)
-    hermite_rows = collect_rows(repo_root, hermite_config)
     figure_paths = {**render_heatmap(rows, config, output_dir),
-                    **render_degree_chart(chart_rows, chart_config, output_dir),
-                    **render_hermite_chart(hermite_rows, hermite_config, output_dir)}
+                    **render_degree_chart(chart_rows, chart_config, output_dir)}
 
     csv_path = output_dir / "summary.csv"
     with csv_path.open("w", newline="") as handle:
@@ -122,10 +111,9 @@ def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
         writer.writeheader()
         writer.writerows(csv_row(row, "heatmap") for row in rows)
         writer.writerows(csv_row(row, "degree_chart") for row in chart_rows)
-        writer.writerows(csv_row(row, "hermite_taylor") for row in hermite_rows)
 
     readme_path = output_dir / "README.md"
-    update_readme(readme_path, rows, chart_rows, hermite_rows)
+    update_readme(readme_path, rows, chart_rows)
 
     source_rows = [
         {"figure": figure, "panel": row["panel"], "column": row["column"], "d_k": row["d_k"],
@@ -133,11 +121,11 @@ def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
          "source_commit": row.get("source_commit"), "artifacts": row.get("artifacts", {}),
          "weight_decay_policy": row.get("weight_decay_policy"), "qk_norm": row.get("qk_norm"),
          "legacy": bool(row.get("legacy")), "legacy_reasons": row.get("legacy_reasons", [])}
-        for figure, figure_rows in (("heatmap", rows), ("degree_chart", chart_rows), ("hermite_taylor", hermite_rows))
+        for figure, figure_rows in (("heatmap", rows), ("degree_chart", chart_rows))
         for row in figure_rows if row["status"] != "not_run"
     ]
     status_counts = {}
-    for figure, figure_rows in (("heatmap", rows), ("degree_chart", chart_rows), ("hermite_taylor", hermite_rows)):
+    for figure, figure_rows in (("heatmap", rows), ("degree_chart", chart_rows)):
         counts = dict(sorted(Counter(row["status"] for row in figure_rows).items()))
         counts["legacy"] = sum(1 for row in figure_rows if row.get("legacy"))
         status_counts[figure] = counts
@@ -154,15 +142,12 @@ def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
         "terminal_step": config["terminal_step"],
         "training_tokens": config["training_tokens"],
         "display_coordinates": {"heatmap": {"d_k": config["d_k"], "panels": config["panels"]},
-                                "degree_chart": {"d_k": chart_config["d_k"], "panels": chart_config["panels"]},
-                                "hermite_taylor": {"d_k": hermite_config["d_k"], "facets": hermite_config["facets"],
-                                                   "panels": hermite_config["panels"]}},
+                                "degree_chart": {"d_k": chart_config["d_k"], "panels": chart_config["panels"]}},
         "source_runs": source_rows,
         "status_counts": status_counts,
         "analysis": {
             "config": reference(repo_root, config_path),
             "chart_config": reference(repo_root, chart_config_path),
-            "hermite_config": reference(repo_root, hermite_config_path),
             "dependency_lock": reference(repo_root, lock),
             "code": {name: reference(repo_root, code / name)
                      for name in ("collect.py", "render.py", "chart.py", "plot.py")},

@@ -1,6 +1,6 @@
 # QK-normalized learned Taylor attention
 
-How do learned polynomial degree and row normalization affect cosine-score attention? Vary degree and row normalization with unrestricted learned polynomial coefficients.
+How do learned polynomial degree and normalization affect cosine-score attention? Vary degree and normalization with unrestricted learned polynomial coefficients.
 
 [Results and limitations](../../results/qk_norm_learned_taylor/README.md) · [Run index](runs.csv) · [Study definition](sweep.yaml)
 

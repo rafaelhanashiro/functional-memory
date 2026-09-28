@@ -3,7 +3,7 @@
 [Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/unnormalized_taylor_attention/runs.csv) · [Execution guide](../../experiments/unnormalized_taylor_attention/README.md)
 
 Do fixed Taylor truncations of the exponential attention kernel train when the
-attention row normalization is removed? With normalization, the odd degrees
+attention normalization is removed? With normalization, the odd degrees
 fail numerically when signed row sums approach zero
 ([odd Taylor attention](../odd_taylor_attention/README.md)).
 This sweep trains degrees **m = 1, 2, 3, 4** with
