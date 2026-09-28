@@ -197,7 +197,8 @@ def regenerate(record: Path = RECORD, results: Path = RESULTS) -> dict:
         raise ValueError("Selected comparison runs must exactly match the pinned input set")
     for entry in selection["runs"]:
         run = run_directory(record, entry["run_id"])
-        validate_record(run)
+        # Verify scientific hashes below; logs and checkpoints are provenance.
+        validate_record(run, verify_hashes=False)
         if sha256(run / "config.yaml") != entry["config_sha256"]:
             raise ValueError(f"Selection config hash changed: {run.name}")
         for artifact in entry["inputs"].values():

@@ -74,8 +74,8 @@ def summarize_run(
         "best_ppl": "",
         "latest_tokens_per_second": "",
     }
-    if records:
-        best = min(records, key=lambda record: record["validation_nll"])
+    best = selected_best(run, records)
+    if best is not None:
         row.update(best_step=best["step"], best_ppl=best["validation_perplexity"],
                    latest_tokens_per_second=records[-1].get("tokens_per_second", ""))
     completion_path = completion_path or workdir / "completion.json"
@@ -85,12 +85,15 @@ def summarize_run(
         final = next((record for record in records if record["step"] == expected_step), None)
         if (completion.get("source_commit") != source_commit or "attention_degree" not in completion
                 or completion["attention_degree"] != run["attention_degree"]
+                or completion.get("qk_head_dim") != run["qk_head_dim"]
                 or completion.get("parameter_count") != run["parameter_count"]):
             raise ValueError(f"Completion identity does not match sweep: {completion_path}")
         if completion.get("final_step") != expected_step or completion.get("training_tokens") != run["training_tokens"]:
             raise ValueError(f"Completion does not match the fixed training budget: {completion_path}")
         if final is None or final["training_tokens"] != run["training_tokens"]:
             raise ValueError(f"Completion lacks its committed terminal validation: {completion_path}")
+        if any(completion.get(key) != final[key] for key in ("validation_nll", "validation_perplexity")):
+            raise ValueError(f"Completion disagrees with its committed terminal validation: {completion_path}")
         row.update(status="complete", error="", training_tokens=final["training_tokens"],
                    terminal_nll=final["validation_nll"], terminal_ppl=final["validation_perplexity"])
     return row, records
@@ -132,20 +135,24 @@ def run_view(run_directory: Path, label: str | None = None) -> dict:
     metadata = _optional_json(run_directory / "metadata.json") or {}
     completion = _optional_json(run_directory / "completion.json")
     failures = sorted(run_directory.glob("numerical_failure_step_*.json"))
+    failure = _optional_json(failures[-1]) if failures else None
     model = config["model"]
 
     def setting(key: str, default=None):
         return model[key] if key in model else record.get(key, default)
 
     status = metadata.get("status", record.get("status"))
+    if completion is not None and failure is not None:
+        raise ValueError(f"Numerical failure has a completion artifact: {run_directory}")
     if completion is not None:
         status = "complete"
-    elif failures and status == "failed":
+    elif failure is not None:
         status = "numerical-failure"
     return {
         **record, "name": label or record["label"], "workdir": str(run_directory), "config": config,
-        "source_commit": record.get("source_commit"), "status": status, "error": metadata.get("error") or "",
-        "failure": json.loads(failures[-1].read_text()) if failures else None,
+        "source_commit": record.get("source_commit"), "status": status,
+        "error": metadata.get("error") or (failure or {}).get("error") or "",
+        "failure": failure, "best_validation": _optional_json(run_directory / "best_validation.json"),
         "attention_degree": setting("attention_degree"), "qk_head_dim": setting("qk_head_dim"),
         "value_head_dim": setting("value_head_dim"),
         "quadratic_mode": setting("quadratic_mode", "fixed"), "quadratic_sharing": setting("quadratic_sharing", "global"),
@@ -155,13 +162,18 @@ def run_view(run_directory: Path, label: str | None = None) -> dict:
 
 
 def selected_best(run: dict, records: list[dict]) -> dict | None:
-    """The validation-best record: the retained checkpoint's step when it is a minimum, else latest on ties."""
+    """Use the pinned validation-best record, or the latest minimum when none was saved."""
     if not records:
+        if run.get("best_validation") is not None:
+            raise ValueError("Saved validation-best record lacks committed validation")
         return None
     minimum = min(record["validation_nll"] for record in records)
-    step = (run.get("selected_checkpoint") or {}).get("step")
-    chosen = next((record for record in records if record["step"] == step), None)
-    if chosen is not None and chosen["validation_nll"] == minimum:
+    best = run.get("best_validation")
+    if best is not None:
+        chosen = next((record for record in records if record["step"] == best.get("step")), None)
+        if (chosen is None or chosen["validation_nll"] != minimum
+                or any(best.get(key) != chosen[key] for key in ("validation_nll", "validation_perplexity"))):
+            raise ValueError("Saved validation-best record does not match a committed minimum")
         return chosen
     return min(records, key=lambda record: (record["validation_nll"], -record["step"]))
 

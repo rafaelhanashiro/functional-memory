@@ -69,12 +69,23 @@ def _refreshed(root: Path, study: str, entry: dict[str, Any]) -> dict[str, Any]:
     return dict(entry, config_sha256=_sha256(run / "config.yaml"), inputs=inputs)
 
 
+def _array_roles(selection: dict[str, Any]) -> dict[str, str]:
+    """Run IDs and display labels selected by collection and comparison roles."""
+    roles = {run_id: label for label, run_id in selection.get("collections", {}).items()}
+    for label, comparison in selection.get("comparisons", {}).items():
+        roles.setdefault(comparison["baseline_run_id"], f"{label}-baseline")
+        for condition, run_id in comparison["condition_run_ids"].items():
+            roles.setdefault(run_id, f"{label}-{condition}")
+    return roles
+
+
 def refresh_selection(directory: str | Path) -> list[str]:
     """Re-pin a result's selection files to their runs' current scientific files.
 
-    Each selection keeps its ``runs`` list; pointing a label at a new ``run_id`` and
-    refreshing pins the new run. A grid that declares ``cells`` pins exactly the runs
-    its cells name. Returns one line per changed fingerprint, empty when current.
+    A direct ``runs`` list keeps each role; pointing its label at a new ``run_id``
+    and refreshing pins the new run. A grid's ``cells`` and an array analysis's
+    ``collections``/``comparisons`` pin exactly the runs those roles name.
+    Returns one line per changed fingerprint, empty when current.
     """
     directory = Path(directory).resolve()
     root = directory.parents[1]
@@ -87,15 +98,27 @@ def refresh_selection(directory: str | Path) -> list[str]:
         style = next((option for option in _DUMP_OPTIONS if yaml.safe_dump(selection, **option) == original),
                      _DUMP_OPTIONS[-1])
         default_study = Path(selection["study"]).name if "study" in selection else None
-        previous = {(entry.get("study", default_study), entry["run_id"]): entry for entry in selection.get("runs", [])}
+        previous_entries = selection.get("runs", [])
+        previous = {(entry.get("study", default_study), entry["run_id"]): entry for entry in previous_entries}
         if "cells" in selection:
-            wanted = {(cell["experiment"], cell["run"]): {"study": cell["experiment"], "run_id": cell["run"],
-                                                         "label": cell["label"]}
-                      for cell in selection["cells"]}
+            wanted = list({(cell["experiment"], cell["run"]): {
+                "study": cell["experiment"], "run_id": cell["run"], "label": cell["label"]}
+                for cell in selection["cells"]}.values())
+        elif "collections" in selection or "comparisons" in selection:
+            roles = _array_roles(selection)
+            # Keep established labels and ordering for retained runs. New roles
+            # get the same array-input pin schema, even before their first refresh.
+            wanted = [entry for key, entry in previous.items() if key[0] == default_study
+                      and entry["run_id"] in roles]
+            wanted += [{"run_id": run_id, "label": label, "config_sha256": None, "inputs": {}}
+                       for run_id, label in roles.items() if (default_study, run_id) not in previous]
         else:
-            wanted = previous
+            wanted = previous_entries
         refreshed = []
-        for key, entry in wanted.items():
+        wanted_keys = set()
+        for entry in wanted:
+            key = (entry.get("study", default_study), entry["run_id"])
+            wanted_keys.add(key)
             replaced = _pinned_runs(entry) - {key[1]}
             entry = _refreshed(root, key[0], entry)
             before, after = _fingerprints(previous.get(key, {})), _fingerprints(entry)
@@ -110,7 +133,7 @@ def refresh_selection(directory: str | Path) -> list[str]:
                         change = "pinned" if name not in before else "removed" if name not in after else "changed"
                         changes.append(f"{prefix} {name} {change}")
             refreshed.append(entry)
-        changes += [f"{path.name}: {'/'.join(key)} unpinned" for key in previous if key not in wanted]
+        changes += [f"{path.name}: {'/'.join(key)} unpinned" for key in previous if key not in wanted_keys]
         selection["runs"] = refreshed
         text = yaml.safe_dump(selection, **style)
         if text != original:

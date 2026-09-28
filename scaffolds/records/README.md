@@ -77,9 +77,11 @@ measurement, re-pin and then regenerate:
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh results/<analysis>
 ```
 
-`refresh` rewrites only the fingerprints, lists each change, and pins exactly the
-runs a grid's `cells` name. A figure whose inputs changed fails verification until
-its selection is refreshed. In Python, `selections.run_sources(root, study, run_id)`
+`refresh` rewrites the input pins, lists each change, and preserves the roles in a
+`runs` list. Grids pin exactly their `cells`; array analyses pin exactly their
+`collections` and comparison baseline/condition roles. A figure whose inputs changed
+fails verification until its selection is refreshed. In Python,
+`selections.run_sources(root, study, run_id)`
 returns one run's pins and `selections.verify_pinned_runs(root, runs)` checks them.
 
 The input recipe and raw runtime `config.json` serve different purposes: the former

@@ -99,11 +99,44 @@ def test_run_view_reads_identity_from_the_recipe_and_status_from_raw_outputs(tmp
     assert (failed["status"], failed["error"], failed["failure"]["step"]) == ("numerical-failure", "E: nan", 7)
 
 
-def test_selected_best_prefers_the_retained_checkpoint_only_at_a_minimum():
+def test_selected_best_uses_pinned_validation_best_and_ignores_provenance():
     from scaffolds.transformer.analysis import selected_best
 
-    records = [{"step": 1, "validation_nll": 1.0}, {"step": 2, "validation_nll": 1.0}, {"step": 3, "validation_nll": 2.0}]
+    records = [{"step": 1, "validation_nll": 1.0, "validation_perplexity": 2.7},
+               {"step": 2, "validation_nll": 1.0, "validation_perplexity": 2.7},
+               {"step": 3, "validation_nll": 2.0, "validation_perplexity": 7.4}]
     assert selected_best({}, records)["step"] == 2
-    assert selected_best({"selected_checkpoint": {"step": 1}}, records)["step"] == 1
-    assert selected_best({"selected_checkpoint": {"step": 3}}, records)["step"] == 2
+    run = {"best_validation": records[0], "selected_checkpoint": {"step": 2}}
+    assert selected_best(run, records)["step"] == 1
+    run["selected_checkpoint"] = {"step": 3}
+    assert selected_best(run, records)["step"] == 1
+    for best in (records[2], dict(records[0], validation_perplexity=999), dict(records[0], step=4)):
+        with pytest.raises(ValueError, match="validation-best"):
+            selected_best({"best_validation": best}, records)
     assert selected_best({}, []) is None
+
+
+def test_run_view_keeps_numerical_failure_visible_without_status_metadata(tmp_path):
+    from scaffolds.transformer.analysis import run_view
+
+    directory = _run(tmp_path, "r000000000001", metadata={}, failure={"step": 7, "error": "nan"})
+    (directory / "metadata.json").unlink()
+    view = run_view(directory)
+    assert (view["status"], view["error"]) == ("numerical-failure", "nan")
+    (directory / "completion.json").write_text("{}\n")
+    with pytest.raises(ValueError, match="Numerical failure has a completion"):
+        run_view(directory)
+
+
+@pytest.mark.parametrize("changed", [{"validation_nll": 99}, {"validation_perplexity": 99}, {"qk_head_dim": 8}])
+def test_summary_rejects_completion_disagreement_with_terminal_validation(tmp_path, changed):
+    from scaffolds.transformer.analysis import run_view, summarize_run
+
+    identity = {"source_commit": "abc", "attention_degree": 3, "qk_head_dim": 64, "parameter_count": 7}
+    final = {**identity, "event": "validation", "step": 10, "checkpoint_step": 10,
+             "training_tokens": 10 * 256 * 2048, "validation_nll": 1.0, "validation_perplexity": 2.7}
+    directory = _run(tmp_path, "r000000000001", metadata={**identity, "status": "complete"},
+                     completion={**final, "final_step": 10, **changed})
+    (directory / "metrics.jsonl").write_text(json.dumps(final) + "\n")
+    with pytest.raises(ValueError, match="Completion"):
+        summarize_run(run_view(directory), "abc")

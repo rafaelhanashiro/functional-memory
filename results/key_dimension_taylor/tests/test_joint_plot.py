@@ -38,6 +38,10 @@ def make_run(root: Path, width=8, degree=2, *, complete=True, terminal_ppl=16.0,
                             "attention_degree": degree, "training_tokens": step * 524_288,
                             "validation_nll": math.log(ppl), "validation_perplexity": ppl})
         (run / "metrics.jsonl").write_text("".join(json.dumps(record) + "\n" for record in records))
+        if selected_step is not None:
+            best = next(record for record in records if record["step"] == selected_step)
+            write_json(run / "best_validation.json", {key: best[key] for key in (
+                "step", "validation_nll", "validation_perplexity")})
         write_json(run / "completion.json", {**identity, "attention_degree": degree, "final_step": 19_074,
                                              "training_tokens": TOKENS, "validation_nll": records[-1]["validation_nll"],
                                              "validation_perplexity": terminal_ppl})
@@ -66,7 +70,7 @@ def test_placement_terminal_and_width_specific_delta(tmp_path):
         assert line[4]["delta_ppl_vs_softmax"] == ""
 
 
-def test_retained_checkpoint_decides_ties(tmp_path):
+def test_saved_validation_best_decides_ties(tmp_path):
     assert summarize_run(make_run(tmp_path, 64, 2, selected_step=18_000))[0]["best_step"] == 18_000
 
 

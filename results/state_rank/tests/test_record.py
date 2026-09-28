@@ -4,7 +4,7 @@ import json
 import pytest
 
 from results.state_rank import record
-from scaffolds.records import create_run, load_study, run_directory
+from scaffolds.records import create_run, load_study, run_directory, update_record
 import yaml
 
 
@@ -121,3 +121,29 @@ def test_explicit_selection_controls_condition_source(tmp_path):
         "condition_run_ids": {"random-seed0": replacement.name}}}}
     workspace = record.reconstitute(study, tmp_path / "workspace", selection)
     assert (workspace / "random_vs_pretrained/random-seed0").resolve() == replacement.resolve()
+
+
+def test_regeneration_checks_scientific_inputs_without_rehashing_provenance(tmp_path, monkeypatch):
+    study = tmp_path / "study"
+    run = create_run(study, {"tokens": 8}, "collection")
+    metadata = run / "metadata.json"
+    metadata.write_text('{}\n')
+    (run / "training.log").write_text('updated bookkeeping output\n')
+    update_record(run, {"log": {"path": str(run / "training.log"), "sha256": "0" * 64}})
+    results = tmp_path / "results"
+    results.mkdir()
+    selection = {"collections": {"collection": run.name}, "comparisons": {}, "runs": [{
+        "run_id": run.name, "config_sha256": record.sha256(run / "config.yaml"),
+        "inputs": {"metadata": {"path": str(metadata), "sha256": record.sha256(metadata)}},
+    }]}
+    (results / "selection.yaml").write_text(yaml.safe_dump(selection))
+
+    def verified(*args):
+        raise RuntimeError("scientific inputs verified")
+
+    monkeypatch.setattr(record, "reconstitute", verified)
+    with pytest.raises(RuntimeError, match="scientific inputs verified"):
+        record.regenerate(study, results)
+    metadata.write_text('{"layer": 9}\n')
+    with pytest.raises(ValueError, match="Selection input hash changed"):
+        record.regenerate(study, results)

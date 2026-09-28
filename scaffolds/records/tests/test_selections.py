@@ -90,3 +90,51 @@ def test_refresh_rehashes_captured_inputs_of_array_analyses(tmp_path):
     assert entry["config_sha256"] == hashlib.sha256((directory / "config.yaml").read_bytes()).hexdigest()
     # The archive lives only on the home cluster, so its captured hash is kept.
     assert entry["inputs"] == kept
+
+
+def test_refresh_preserves_distinct_roles_that_share_a_run(tmp_path):
+    source = run(tmp_path, "toy", "r000000000001")
+    directory = result(tmp_path, selection={"runs": [
+        {"study": "toy", "run_id": source.name, "label": label, "sources": {}}
+        for label in ("baseline", "control")]})
+
+    refresh_selection(directory)
+    entries = yaml.safe_load((directory / "selection.yaml").read_text())["runs"]
+    assert [entry["label"] for entry in entries] == ["baseline", "control"]
+    verify_pinned_runs(tmp_path, entries)
+    assert refresh_selection(directory) == []
+
+
+def test_refresh_follows_array_comparison_and_collection_roles(tmp_path):
+    run_ids = [f"r{number:012x}" for number in range(1, 7)]
+    for run_id in run_ids:
+        run(tmp_path, "arrays", run_id, **{"record.json": '{"artifacts": {}}\n'})
+    selection = {
+        "study": "experiments/arrays",
+        "collections": {"collection": run_ids[0]},
+        "comparisons": {"comparison": {
+            "baseline_run_id": run_ids[1], "condition_run_ids": {"pretrained": run_ids[2]}}},
+        "runs": [{"run_id": run_id, "label": label, "config_sha256": "0" * 64, "inputs": {}}
+                 for run_id, label in zip(run_ids, ("collection", "baseline", "pretrained"))],
+    }
+    directory = result(tmp_path, selection=selection)
+    refresh_selection(directory)
+    assert refresh_selection(directory) == []
+
+    selection = yaml.safe_load((directory / "selection.yaml").read_text())
+    selection["collections"]["collection"] = run_ids[3]
+    comparison = selection["comparisons"]["comparison"]
+    comparison["baseline_run_id"] = run_ids[4]
+    comparison["condition_run_ids"]["pretrained"] = run_ids[5]
+    (directory / "selection.yaml").write_text(yaml.safe_dump(selection, sort_keys=False, allow_unicode=True))
+
+    changes = refresh_selection(directory)
+    entries = yaml.safe_load((directory / "selection.yaml").read_text())["runs"]
+    assert {entry["run_id"] for entry in entries} == set(run_ids[3:])
+    assert len(entries) == 3
+    for entry in entries:
+        recipe = tmp_path / "experiments/arrays/runs" / entry["run_id"] / "config.yaml"
+        assert entry["config_sha256"] == hashlib.sha256(recipe.read_bytes()).hexdigest()
+        assert entry["inputs"] == {}
+    assert len(changes) == 6
+    assert refresh_selection(directory) == []
