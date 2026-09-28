@@ -241,10 +241,10 @@ def test_committed_comparison_sources() -> None:
             collect_rows(root, _pin(root, swapped))
 
     wrong_family = json.loads(json.dumps(chart))
-    quadratic = "experiments/learned_quadratic_attention"
+    quadratic = "experiments/attention_scaling"
     cell = next(cell for cell in wrong_family["cells"] if cell["panel"] == "normalized_nonnegative")
     record = next(run for run in load_study(root / quadratic)["runs"] if run["name"] == "200m-positive-global-seed0")
-    cell.update(experiment="learned_quadratic_attention", run=record["run_id"])
+    cell.update(experiment="attention_scaling", run=record["run_id"])
     with pytest.raises(ValueError, match="quadratic sharing"):
         collect_rows(root, _pin(root, wrong_family))
 

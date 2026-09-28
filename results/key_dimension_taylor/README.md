@@ -1,6 +1,6 @@
 # Query/key dimension × Taylor degree
 
-[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/key_dimension_taylor/runs.csv) · [Execution guide](../../experiments/key_dimension_taylor/README.md)
+[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/attention_scaling/runs.csv) · [Execution guide](../../experiments/attention_scaling/README.md)
 
 How does held-out perplexity depend on the per-head query/key width `dK` and on
 the degree `m` of normalized Taylor attention, with softmax as the `m → ∞`
@@ -19,7 +19,7 @@ the record and summary CSV:
 | Normalized Taylor rerun | m = 2, 4, 8, 16 at dK 64, QK-norm and selective weight decay | 4 | Kennel, 2026-09-26 to 09-27 |
 
 Each run's source commit, hardware, and Slurm attempts are in its
-[run record](../../experiments/key_dimension_taylor/runs/).
+[run record](../../experiments/attention_scaling/runs/).
 
 **Findings.** Softmax improves monotonically with query/key width in this family,
 from PPL 22.35 at dK=2 to 14.17 at dK=256, with diminishing returns above dK=32
@@ -55,11 +55,11 @@ Terminal held-out perplexity at 19,074 updates (10,000,269,312 prediction tokens
 
 Runs retained outside the grid: `200m-dk002-seed0` (softmax, dK=2, PPL 22.3489); `200m-dk004-seed0` (softmax, dK=4, PPL 18.8928); `200m-m000-seed0` (m=0, dK=64, PPL 47.0653); `200m-dk256-seed0` (softmax, dK=256, PPL 14.1736). The grid uses one softmax reference per width; at dK=64 it is `200m-softmax-seed0` (PPL 14.6655).
 
-Each delta in the CSV subtracts the softmax endpoint at the same width. FAILED means a recorded numerical failure; interrupted or unaudited runs remain INCOMPLETE. Source commits, exact recipes, and artifact checksums are in each run’s `config.yaml` and `record.json` under `experiments/key_dimension_taylor/runs/`.
+Each delta in the CSV subtracts the softmax endpoint at the same width. FAILED means a recorded numerical failure; interrupted or unaudited runs remain INCOMPLETE. Source commits, exact recipes, and artifact checksums are in each run’s `config.yaml` and `record.json` under `experiments/attention_scaling/runs/`.
 
 Checkpoints and logs are not retained for 7 runs trained on another cluster (`200m-dk002-seed0`, `200m-dk004-seed0`, `200m-dk008-seed0`, `200m-dk016-seed0`, `200m-dk032-seed0`, `200m-dk128-seed0`, `200m-dk256-seed0`); their metrics, completion records, metadata, and recipes are retained and checksum-verified.
 
-[Summary CSV](summary.csv) · [Learning curves](learning_curves.pdf) · [Heatmap](../attention_scaling/combined_terminal_ppl.png) in the cross-study comparison
+[Summary CSV](summary.csv) · [Learning curves](learning_curves.pdf) · [Heatmap](../attention_scaling/combined_terminal_ppl.png) in the attention comparison
 <!-- END GENERATED RESULTS -->
 
 ## Method and scientific identity
@@ -95,11 +95,11 @@ no sequence-square arrays); m=0 used the blocked reference; softmax used cuDNN.
 The fused kernel and its benchmarks are documented in
 [shared scaffold validation](../../scaffolds/transformer/validation/README.md).
 
-[Exact recipes](../../experiments/key_dimension_taylor/runs/) are authoritative: one resolved configuration per run.
+[Exact recipes](../../experiments/attention_scaling/runs/) are authoritative: one resolved configuration per run.
 
 ## Execution and provenance
 
-Each [run record](../../experiments/key_dimension_taylor/runs/) holds its source
+Each [run record](../../experiments/attention_scaling/runs/) holds its source
 commit, recipe hash, hardware, Slurm attempts, selected checkpoint, and log.
 
 - **Width sweep:** source `5e871d2` (dK=256: `3d330a2`, after one earlier
@@ -121,7 +121,7 @@ commit, recipe hash, hardware, Slurm attempts, selected checkpoint, and log.
 - **Joint sweep:** source `4d942ea`, sweep identity `7363664d…`, four H100s on
   `dogo` or four B300s on `akita`. Pre-launch acceptance (job 200502) ran every
   coordinate through 32 full-recipe updates, validation, and an exact step-32→33
-  resume; all passed and are summarized per run in the manifest. Three runs
+  resume; all passed and are summarized per run in their run records. Three runs
   (dK32/m16, dK128/m8, dK128/m16) reached step 500 on host-staged A6000s, then
   resumed from the same checkpoints on B300, B300, and H100; their handoff and
   restore audits are in their run records. Orchestration sources were
@@ -154,13 +154,13 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m results.key_dimension_tay
 ```
 
 The plotter verifies every recipe, metrics file, completion record, terminal
-identity, and validation-best selection against the manifest, and rewrites only the
+identity, and validation-best selection against the pinned selection and each run’s recipe, and rewrites only the
 marked results block; figures regenerate byte-identically.
 
 The exact executed code for each run is at its recorded source commit
 (`git show <commit>:<path>`).
 
-Use the [execution guide](../../experiments/key_dimension_taylor/README.md) to create and submit a fresh run with the current scaffold.
+Use the [execution guide](../../experiments/attention_scaling/README.md) to create and submit a fresh run with the current scaffold.
 
 Recipes point to the Kennel corpus at `/data/cl/u/rafah/home/datasets/fineweb_12b`.
 The three mixed-hardware joint trajectories also depended on their step-500 handoff,

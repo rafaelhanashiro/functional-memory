@@ -137,7 +137,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
         axis.legend(fontsize=8)
     save(figure, "throughput")
 
-    lines = ["# Odd Taylor attention", "", f"Source: `{manifest['source_commit']}`. Frozen execution set: `{manifest['identity']}`.", "",
+    lines = ["# Odd Taylor attention", "",
              "Fixed degree-one and degree-three Taylor models use the dK × Taylor-degree record's 200M-parameter, 10B-token, seed-0 recipe at d_K = 64 under the scaffold's current defaults (QK-norm and selective weight decay). Endpoints use committed terminal validation, independently of the retained validation-best checkpoint.", "",
              "| Kernel | Parameters | Status | Terminal NLL | Terminal PPL | Failure step |", "|---|---:|---|---:|---:|---:|"]
     for row in rows:
@@ -159,7 +159,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", type=Path, default=Path("experiments/odd_taylor_attention/sweep.yaml"))
+    parser.add_argument("--manifest", type=Path, default=Path("experiments/attention_scaling/sweep.yaml"))
     parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
     aggregate(selected_views(Path(__file__).resolve().parent, args.manifest), args.output_dir, manifest_path=args.manifest)

@@ -1,0 +1,105 @@
+{
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": [
+    {
+      "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/best_validation.json",
+      "sha256": "32dc59897de0a3aae02162bc1395c71687d031457da322a155687fcec1e06b41",
+      "size_bytes": 184
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/config.json",
+      "sha256": "d4bd9fcdfa1d3f6377625585b769e1f220e8dbff378da910fed37605bed0742f",
+      "size_bytes": 2881
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/metadata.json",
+      "sha256": "1ebffde7cac834aa0afdb404c35eac435ab19f57a1100ec543501b7962b7d84d",
+      "size_bytes": 19243
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/metrics.jsonl",
+      "sha256": "f372dd85c80377ea794a1643aaa906c6d0894f0609c076f337759dca1ebe429a",
+      "size_bytes": 109906
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/numerical_failure_step_00012587.json",
+      "sha256": "22d8becea9db978dcb6e80675d2da3affa698a1b89a2d92860aa18be4d482f2b",
+      "size_bytes": 16799
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/wandb_run.json",
+      "sha256": "4ce77c8fda44dec6fefa63ca272115bbeb59b1fe2ce0b7617c213b837862665e",
+      "size_bytes": 197
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/training.log",
+      "sha256": "d1c36e7c371b155f7e1fd229ee91265576fd5ef562a8ee698bd1dcc4a5f386b1",
+      "size_bytes": 963681
+    }
+  ],
+  "attempts": [
+    {
+      "gpu_count": 2,
+      "gpu_type": "H100",
+      "launch_commit": "faa198c95bfc5edb8302a0f032edff07a3d87392",
+      "node": "dogo",
+      "slurm_job_id": "202920",
+      "slurm_partition": "sweep"
+    }
+  ],
+  "best_validation": {
+    "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/best_validation.json",
+    "sha256": "32dc59897de0a3aae02162bc1395c71687d031457da322a155687fcec1e06b41",
+    "size_bytes": 184
+  },
+  "config": {
+    "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/config.yaml",
+    "sha256": "46559b96b1f0df986bc70cf80947df44d448ccbed0973842d93175c99d88f95f"
+  },
+  "data_identity": {
+    "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/data_identity.json",
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291
+  },
+  "dependency_lock": {
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559",
+    "source_commit": "faa198c95bfc5edb8302a0f032edff07a3d87392",
+    "source_path": "scaffolds/transformer/uv.lock"
+  },
+  "home_cluster": "kennel",
+  "label": "200m-normalized-factored-m002-seed0",
+  "log": {
+    "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/training.log",
+    "sha256": "d1c36e7c371b155f7e1fd229ee91265576fd5ef562a8ee698bd1dcc4a5f386b1",
+    "size_bytes": 963681
+  },
+  "log_path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/training.log",
+  "metadata": {
+    "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/metadata.json",
+    "sha256": "1ebffde7cac834aa0afdb404c35eac435ab19f57a1100ec543501b7962b7d84d",
+    "size_bytes": 19243
+  },
+  "metrics": {
+    "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/metrics.jsonl",
+    "sha256": "f372dd85c80377ea794a1643aaa906c6d0894f0609c076f337759dca1ebe429a",
+    "size_bytes": 109906
+  },
+  "name": "200m-normalized-factored-m002-seed0",
+  "numerical_failure_path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/numerical_failure_step_00012587.json",
+  "polynomial_family": "hermite",
+  "record_schema_version": 1,
+  "run_id": "r4eb6d3d2c3cf",
+  "seed": 0,
+  "source_commit": "faa198c95bfc5edb8302a0f032edff07a3d87392",
+  "status": "numerical_failure",
+  "wandb_run": {
+    "path": "experiments/attention_scaling/runs/r4eb6d3d2c3cf/wandb_run.json",
+    "sha256": "4ce77c8fda44dec6fefa63ca272115bbeb59b1fe2ce0b7617c213b837862665e",
+    "size_bytes": 197
+  }
+}

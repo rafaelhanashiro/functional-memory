@@ -293,11 +293,11 @@ def selected_run_directory(directory: Path, study: Path, label_or_id: str) -> Pa
 
 
 def selected_views(directory: Path, study: Path) -> dict:
-    """A study's facts with its selected runs and controls as run views.
+    """A study's facts with this comparison's selected runs and controls.
 
-    Controls are ``{study, label, ...annotations}`` entries in ``sweep.yaml``; the
-    result's selection pins which run each label resolves to, and the annotations
-    only affect presentation.
+    Selection entries explicitly distinguish primary and control roles, even when
+    they share one study. Comparison settings and optional annotated controls live
+    in the selection's ``analysis`` mapping, independently of study membership.
     """
     from scaffolds.records import load_study
 
@@ -306,12 +306,16 @@ def selected_views(directory: Path, study: Path) -> dict:
         study = study.parent
     selection = verify_result_selection(directory)
     common = load_study(study)
+    analysis = selection.get("analysis", {})
     root = study.parents[1]
+    for run in selection["runs"]:
+        if run.get("role", "primary") not in ("primary", "control"):
+            raise ValueError(f"Unknown result role: {run['role']}")
     runs = [run_view(study / "runs" / run["run_id"], run["label"])
-            for run in selection["runs"] if run["study"] == study.name]
+            for run in selection["runs"] if run["study"] == study.name and run.get("role", "primary") == "primary"]
     controls = []
-    for control in common.get("controls", []):
+    for control in analysis.get("controls", []):
         path = selected_run_directory(directory, root / "experiments" / control["study"], control["label"])
         annotations = {key: value for key, value in control.items() if key not in ("study", "label")}
         controls.append({**run_view(path, control["label"]), **annotations, "control": True})
-    return dict(common, runs=runs, controls=controls)
+    return {**common, **analysis, "runs": runs, "controls": controls}

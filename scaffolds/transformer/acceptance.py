@@ -24,12 +24,13 @@ import json
 import math
 import os
 from pathlib import Path
+import shlex
 import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
-from scaffolds.transformer.configs import config_to_dict, load_config
+from scaffolds.transformer.configs import config_to_dict, load_config, validate_config
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKS = ("cpu-tests", "cpu-distributed-tests", "gpu-tests", "initialization", "pilot", "resume")
@@ -64,11 +65,15 @@ class AcceptanceSpec:
     """Environment the launcher exports for this experiment (for example XLA flags)."""
     pilot_steps: int = 20
     allocation_hours: int = 48
+    select_tests: Callable | None = None
+    """Optional recipe/backend selector called as ``(config, resolved_backend, cpu)``."""
 
 
 def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu: bool) -> tuple[str, ...]:
     """Include the resolved mechanism's required checks even if an adapter omits them."""
     paths = list(spec.cpu_tests if cpu else spec.gpu_tests)
+    if spec.select_tests is not None:
+        paths.extend(spec.select_tests(config, resolved_backend, cpu))
     model = config["model"]
     if (resolved_backend == "fused" and model.get("attention_mechanism", "dot_product") == "dot_product"
             and model.get("attention_normalization", True)
@@ -77,6 +82,91 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                  or model.get("attention_fixed_square_factors") is not None)):
         paths.append(NORMALIZED_POLYNOMIAL_TESTS)
     return tuple(dict.fromkeys(paths))
+
+
+def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tuple[str, ...]:
+    """Qualify the recipe's mechanism without depending on study names or past sweeps."""
+    model = config["model"]
+    fused = resolved_backend == "fused"
+    tests = []
+    if model.get("attention_mechanism", "dot_product") == "gla":
+        tests = ["gla", "gla_bridge", "gla_integration"] if cpu else (["gla_kernel"] if fused else [])
+    else:
+        degree = model.get("attention_degree")
+        normalized = model.get("attention_normalization", True)
+        learned = model.get("attention_coefficients", "fixed") == "learned"
+        quadratic = model.get("quadratic_mode", "fixed") != "fixed"
+        fixed = (model.get("attention_fixed_coefficients") is not None
+                 or model.get("attention_fixed_square_factors") is not None)
+        square = model.get("attention_coefficient_parameterization", "direct") == "sum_of_squares"
+        if cpu:
+            tests.append("attention")
+        if model.get("qk_norm") and (cpu or resolved_backend in ("fused", "cudnn")):
+            tests.append("qk_norm")
+        if quadratic:
+            tests.extend(["learned_quadratic", "learned_training"] if cpu else
+                         (["learned_fused_attention"] if fused else []))
+        elif learned:
+            if cpu:
+                tests.extend(["learned_polynomial", "learned_polynomial_training"])
+            if normalized:
+                if cpu or resolved_backend == "blocked":
+                    tests.append("learned_polynomial_normalized")
+                    if square:
+                        tests.append("learned_polynomial_nonnegative")
+                if fused:
+                    tests.append("normalized_polynomial_fused_attention")
+            elif fused:
+                tests.append("learned_polynomial_fused_attention")
+        elif fixed:
+            if cpu:
+                tests.extend(["fixed_polynomial", "fixed_polynomial_config"])
+                if square:
+                    tests.append("fixed_square_factors")
+            elif fused:
+                tests.append("fixed_square_factors_fused" if square else "fixed_polynomial_fused")
+            if model.get("qk_norm") and (cpu or fused):
+                tests.append("fixed_polynomial_qk_norm")
+        elif normalized:
+            if degree is None:
+                if cpu:
+                    tests.append("softmax_backends")
+                elif resolved_backend in ("fused", "cudnn"):
+                    # This check exercises the production width without requiring
+                    # unrelated width-256 cuDNN support from the allocation.
+                    tests.append("attention.py::test_gpu_exact_control_matches_original_cudnn")
+            elif degree % 2:
+                tests.extend(["odd_attention", "odd_training"] if cpu else (["odd_attention"] if fused else []))
+            elif fused:
+                tests.extend(["fused_attention", "taylor_kernel_widths"])
+        if not normalized:
+            tests.extend(["unnormalized_attention", "unnormalized_training"] if cpu else
+                         (["unnormalized_fused_attention"] if fused and not learned and not fixed else []))
+    return tuple(f"scaffolds/transformer/tests/test_{name}" + ("" if ".py::" in name else ".py") for name in tests)
+
+
+def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
+    """Shared acceptance for a Transformer recipe across all attention families."""
+    validate_config(config)
+    runtime_env = {}
+    if config.model.attention_mechanism == "gla":
+        # The custom-call bridge executes outside XLA command buffers.
+        flags = os.environ.get("XLA_FLAGS", "").split()
+        flags = [flag for flag in flags if not flag.startswith("--xla_gpu_enable_command_buffer=")]
+        runtime_env = {"XLA_FLAGS": " ".join([*flags, "--xla_gpu_enable_command_buffer="]),
+                       "EJKERNEL_TRITON_CACHE_DIR": ".cache/transformer/triton"}
+    request = config.model.attention_backend
+    return AcceptanceSpec(
+        entry_module=entry_module,
+        cpu_tests=tuple(f"scaffolds/transformer/tests/test_{name}.py" for name in (
+            "model", "training", "checkpoint_audit", "parameter_policy")),
+        check_config=validate_config,
+        required_backend=None if request == "auto" else request,
+        check_initialization=(None if config.model.attention_mechanism == "gla"
+                              else matches_softmax_backbone_initialization),
+        runtime_env=runtime_env,
+        select_tests=attention_test_paths,
+    )
 
 
 def write_json(path, value) -> None:
@@ -385,7 +475,7 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
         raise
 
 
-def main(spec: AcceptanceSpec, argv=None) -> None:
+def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("config", nargs="?", type=Path)
     parser.add_argument("--directory", type=Path)
@@ -393,12 +483,18 @@ def main(spec: AcceptanceSpec, argv=None) -> None:
     parser.add_argument("--gpu-type", default="H100")
     parser.add_argument("--worker", choices=("hardware", "initialization", "pilot"))
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--stop-after-step", type=int, default=spec.pilot_steps)
+    parser.add_argument("--stop-after-step", type=int)
     parser.add_argument("--runtime-env", action="store_true", help="Print shell exports for the launcher and exit")
     args = parser.parse_args(argv)
+    if not isinstance(spec, AcceptanceSpec):
+        if args.config is None:
+            parser.error("config is required to select attention acceptance checks and runtime settings")
+        spec = spec(load_config(args.config))
+    if args.stop_after_step is None:
+        args.stop_after_step = spec.pilot_steps
     if args.runtime_env:
         for key, value in spec.runtime_env.items():
-            print(f"export {key}={json.dumps(value)}")
+            print(f"export {key}={shlex.quote(value)}")
         return
     if args.config is None or args.directory is None:
         parser.error("config and --directory are required")

@@ -1,6 +1,6 @@
 # Learned-coefficient unnormalized Taylor attention
 
-[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/learned_unnormalized_taylor/runs.csv) · [Execution guide](../../experiments/learned_unnormalized_taylor/README.md)
+[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/attention_scaling/runs.csv) · [Execution guide](../../experiments/attention_scaling/README.md)
 
 Does unnormalized polynomial attention train better when every coefficient of its
 kernel, including the constant, is learned? The
@@ -27,7 +27,7 @@ and the models stopped inflating their scores.
 **Home cluster: Kennel.** The artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`; retained checkpoints and logs
 are under this directory there (see [Artifacts](#artifacts)). The
-[study record](../../experiments/learned_unnormalized_taylor/sweep.yaml) is the authoritative record of
+[run records](../../experiments/attention_scaling/runs/) are authoritative for
 sources, configurations, runs, and artifact locations. The packed corpus is under
 `/data/cl/u/rafah/home/datasets/fineweb_12b`.
 
@@ -91,7 +91,7 @@ signed kernels are harmless here because nothing divides by the row sum.
 
 ## Scientific recipe
 
-Each [run recipe](../../experiments/learned_unnormalized_taylor/runs/) is the fixed unnormalized Taylor recipe of the same
+Each [run recipe](../../experiments/attention_scaling/runs/) is the fixed unnormalized Taylor recipe of the same
 degree with `attention_coefficients: learned` and
 `attention_coefficient_sharing: per_head` added; a configuration test enforces
 that nothing else differs except output locations. The backbone is the
@@ -161,7 +161,7 @@ JAX_PLATFORMS=cpu PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m pytest 
   -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m 'not gpu' \
   scaffolds/transformer/tests/test_learned_polynomial.py \
   scaffolds/transformer/tests/test_learned_polynomial_training.py \
-  experiments/learned_unnormalized_taylor/tests
+  experiments/attention_scaling/tests
 ```
 
 CPU tests compare blocked outputs and Q/K/V and coefficient gradients for degrees
@@ -184,16 +184,16 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m results.learned_unnormali
 ```
 
 ## Kennel launch
-Use the [execution guide](../../experiments/learned_unnormalized_taylor/README.md) to create a fresh run and submit it from an isolated worktree.
+Use the [execution guide](../../experiments/attention_scaling/README.md) to create a fresh run and submit it from an isolated worktree.
 
 ## Artifacts
 
 Each run keeps its validation-best checkpoint, which is also its terminal one, at
-`experiments/learned_unnormalized_taylor/runs/<run_id>/checkpoints/19074/` (about 2.2 GB
-each) and one Slurm log at `experiments/learned_unnormalized_taylor/runs/<run_id>/training.log`,
-both on Kennel under the artifact root and ignored by Git; the manifest records
+`experiments/attention_scaling/runs/<run_id>/checkpoints/19074/` (about 2.2 GB
+each) and one Slurm log at `experiments/attention_scaling/runs/<run_id>/training.log`,
+both on Kennel under the artifact root and ignored by Git; the run records record
 every file's SHA256. W&B mirrors the runs in the `learned_unnormalized_taylor` group;
-the manifest records each run id. A clone supplies the committed runs, recipes,
+the run records record each run id. A clone supplies the committed runs, recipes,
 figures, and summary, not checkpoints, logs, or datasets.
 
 ## Limitations

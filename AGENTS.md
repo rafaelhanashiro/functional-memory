@@ -32,6 +32,12 @@ experiments/<study>/
 scaffolds/<capability>/      shared implementation, tests, and environment
 ```
 
+- All shared-Transformer attention experiments belong to
+  `experiments/attention_scaling/`. Attention family, normalization, QK normalization,
+  degree, width, coefficient parameterization, sharing, and seed distinguish runs
+  within this study; do not create a new study directory for a sweep or mechanism.
+  `experiments/state_rank/` is a separate scientific question. Comparisons and their
+  explicit primary/control run selections belong under `results/`.
 - A study groups a scientific question. Varying several axes (for example key width,
   polynomial degree, normalization, coefficient parameterization, sharing, and seed)
   produces runs within a study. Each run ID identifies one execution of a complete

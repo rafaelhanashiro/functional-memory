@@ -6,7 +6,7 @@ import sys
 from scaffolds.transformer.analysis import regeneration_differences
 
 RECORD = Path(__file__).resolve().parents[1]
-STUDY = RECORD.parents[1] / "experiments" / RECORD.name
+STUDY = RECORD.parents[1] / "experiments" / "attention_scaling"
 ROOT = RECORD.parents[1]
 
 

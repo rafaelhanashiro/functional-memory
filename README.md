@@ -5,25 +5,28 @@ runs behind them: one permanent ID per execution, with its recipe, measurements,
 provenance, checkpoint, and log together. A study can vary several settings at once;
 a result collection can combine runs from several studies.
 
-| Study or comparison | Results | Run data and reproduction |
+| Study | Results | Run data and reproduction |
 | --- | --- | --- |
+| Attention scaling: softmax, Taylor, Hermite, learned polynomials, and GLA | [Heatmaps and degree curves](results/attention_scaling/README.md) | [All attention runs](experiments/attention_scaling/README.md) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
-| Attention scaling across studies | [Combined heatmaps and degree curves](results/attention_scaling/README.md) | Selected from the studies below |
-| GLA key dimension | [Figures and findings](results/gla_key_dimension/README.md) | [Runs and execution](experiments/gla_key_dimension/README.md) |
-| Hermite and Taylor attention with QK-norm | [Hermite–Taylor figure and findings](results/attention_scaling/README.md) | [Runs and execution](experiments/hermite_attention/README.md) |
-| Query/key dimension and Taylor degree | [Figures and findings](results/key_dimension_taylor/README.md) | [Runs and execution](experiments/key_dimension_taylor/README.md) |
-| Learned quadratic attention | [Figures and findings](results/learned_quadratic_attention/README.md) | [Runs and execution](experiments/learned_quadratic_attention/README.md) |
-| Learned unnormalized Taylor attention | [Figures and findings](results/learned_unnormalized_taylor/README.md) | [Runs and execution](experiments/learned_unnormalized_taylor/README.md) |
-| Nonnegative learned Taylor attention | [Figures and findings](results/nonnegative_learned_taylor/README.md) | [Runs and execution](experiments/nonnegative_learned_taylor/README.md) |
-| Odd Taylor attention | [Figures and findings](results/odd_taylor_attention/README.md) | [Runs and execution](experiments/odd_taylor_attention/README.md) |
-| QK-normalized attention | [Figures and findings](results/qk_norm_attention/README.md) | [Runs and execution](experiments/qk_norm_attention/README.md) |
-| QK-normalized learned Taylor attention | [Figures and findings](results/qk_norm_learned_taylor/README.md) | [Runs and execution](experiments/qk_norm_learned_taylor/README.md) |
-| Unnormalized exponential attention | [Figures and findings](results/unnormalized_attention/README.md) | [Runs and execution](experiments/unnormalized_attention/README.md) |
-| Unnormalized Taylor attention | [Figures and findings](results/unnormalized_taylor_attention/README.md) | [Runs and execution](experiments/unnormalized_taylor_attention/README.md) |
 
-Hermite runs without QK-norm are kept in
-[hermite_attention_no_qk_norm](experiments/hermite_attention_no_qk_norm/README.md) and
-summarized in the [Hermite study](experiments/hermite_attention/README.md); they are not plotted.
+All attention settings vary within `experiments/attention_scaling/runs/<run_id>/`.
+There are no separate experiment folders for individual mechanisms or sweeps.
+The [run index](experiments/attention_scaling/runs.csv) exposes the settings,
+home cluster, training budget, status, and outcome. Each result collection selects
+its inputs explicitly, so the same run can participate in several comparisons.
+
+Additional attention views:
+[GLA width](results/gla_key_dimension/README.md),
+[key width and degree](results/key_dimension_taylor/README.md),
+[learned quadratic](results/learned_quadratic_attention/README.md),
+[learned unnormalized Taylor](results/learned_unnormalized_taylor/README.md),
+[nonnegative learned Taylor](results/nonnegative_learned_taylor/README.md),
+[odd Taylor](results/odd_taylor_attention/README.md),
+[QK-normalized softmax](results/qk_norm_attention/README.md),
+[QK-normalized learned Taylor](results/qk_norm_learned_taylor/README.md),
+[unnormalized exponential](results/unnormalized_attention/README.md), and
+[unnormalized Taylor](results/unnormalized_taylor_attention/README.md).
 
 ```text
 results/<analysis>/

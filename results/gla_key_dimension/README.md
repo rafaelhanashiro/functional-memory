@@ -1,6 +1,6 @@
 # Gated linear attention across key width
 
-[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/gla_key_dimension/runs.csv) · [Execution guide](../../experiments/gla_key_dimension/README.md)
+[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/attention_scaling/runs.csv) · [Execution guide](../../experiments/attention_scaling/README.md)
 
 How does gated linear attention (GLA) scale with key width `d_K`, against softmax
 and normalized Taylor attention on the same 200M backbone? Terminal held-out

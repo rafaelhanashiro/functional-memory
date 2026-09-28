@@ -1,6 +1,6 @@
 # Learned quadratic attention
 
-[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/learned_quadratic_attention/runs.csv) · [Execution guide](../../experiments/learned_quadratic_attention/README.md)
+[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/attention_scaling/runs.csv) · [Execution guide](../../experiments/attention_scaling/README.md)
 
 Can learning quadratic attention coefficients improve the fixed Taylor kernel,
 and does an explicitly positive parameterization avoid signed-normalization
@@ -9,8 +9,6 @@ scientific numerical failures**. The failures are findings of the requested
 recipe, not unfinished jobs waiting to resume.
 
 <!-- BEGIN GENERATED RESULTS -->
-Source: `2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb`. Sweep identity: `833c751215987cf19038b2164012038e4720f089894c43846c40814579ca5d48`.
-
 Four learned variants match the degree sweep's 200M-parameter, 10B-token seed-0 recipe. Endpoints use committed terminal validation, independently of the retained validation-best checkpoint.
 
 | Kernel | Parameters | Status | Terminal NLL | Terminal PPL |
@@ -146,18 +144,18 @@ recorded Slurm wall times and are not resident-input kernel benchmarks.
 
 ## Provenance, artifact locations and retention
 
-The home cluster is **Kennel**. The authoritative [manifest](../../experiments/learned_quadratic_attention/sweep.yaml)
-records source `2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb`, seeds, exact configuration and
+The home cluster is **Kennel**. The [run records](../../experiments/attention_scaling/runs/)
+record source `2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb`, seeds, exact configuration and
 metric hashes, data identity, runtime hardware, pre-launch acceptance, selected
 checkpoints, and the successful and numerical-failure logs. The executed code and
 dependency lock are at that source commit.
 
-| Artifact | Location in `experiments/learned_quadratic_attention/` |
+| Artifact | Location in `experiments/attention_scaling/` |
 | --- | --- |
-| Exact recipes | `experiments/learned_quadratic_attention/runs/<run_id>/config.yaml` |
+| Exact recipes | `experiments/attention_scaling/runs/<run_id>/config.yaml` |
 | Committed metrics, metadata and failure/completion evidence | `runs/<run_id>/` |
 | Figures and summary | `results/learned_quadratic_attention/` |
-| Canonical manifest | `experiments/learned_quadratic_attention/sweep.yaml` |
+| Canonical manifest | `experiments/attention_scaling/sweep.yaml` |
 | Retained checkpoint, when one exists (ignored) | `runs/<run_id>/checkpoints/<step>/` |
 | Matching Slurm logs (ignored) | `runs/<run_id>/training.log`; acceptance evidence in `record.json` |
 
@@ -177,14 +175,14 @@ uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardli
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m results.learned_quadratic_attention.plot
 ```
 
-The plotter verifies retained hashes and semantic identities against the manifest
+The plotter verifies retained hashes and semantic identities against the pinned selection and each run’s recipe
 and updates only the marked generated-results section of this README. Completed
 controls keep their own source commits and terminal metrics; incomplete validation
 histories are plotted without a terminal bar.
 
 This collection used four H100 SXM GPUs on `dogo`.
 
-Use the [execution guide](../../experiments/learned_quadratic_attention/README.md) to create and submit a fresh run with the current scaffold.
+Use the [execution guide](../../experiments/attention_scaling/README.md) to create and submit a fresh run with the current scaffold.
 
 The launcher runs the shared acceptance stages (tests, initialization, pilot, and
 resume audit) before training and reuses passed stages on requeue. Source, seed,

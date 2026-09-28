@@ -11,7 +11,7 @@ from scaffolds.transformer.analysis import regeneration_differences
 from results.qk_norm_learned_taylor import report
 
 RECORD = Path(__file__).resolve().parents[1]
-STUDY = RECORD.parents[1] / "experiments" / RECORD.name
+STUDY = RECORD.parents[1] / "experiments" / "attention_scaling"
 ROOT = RECORD.parents[1]
 
 

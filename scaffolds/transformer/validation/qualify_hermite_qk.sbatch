@@ -28,7 +28,7 @@ result=0
   scaffolds/transformer/tests/test_fixed_square_factors_fused.py \
   scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py \
   scaffolds/transformer/tests/test_qk_norm.py \
-  experiments/hermite_attention/tests/test_qk_norm.py --junitxml="$JUNIT" || result=$?
+  scaffolds/transformer/tests/test_fixed_polynomial_qk_norm.py --junitxml="$JUNIT" || result=$?
 "$PYTHON" - "$DIRECTORY" "$JUNIT" "$LAUNCH_COMMIT" "$GPU_TYPE" "$result" <<'PY'
 from datetime import UTC, datetime
 from pathlib import Path

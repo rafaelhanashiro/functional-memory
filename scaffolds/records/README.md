@@ -19,7 +19,9 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records validat
 `create` prints the allocated directory. It generates a collision-checked ID,
 registers the run, sets its output paths, and hashes the recipe. For Transformer
 recipes the CLI resolves scaffold defaults into a complete config and resets the
-source-commit request to `auto`; execution resolves that request separately.
+source-commit request to `auto`; execution resolves that request separately. The CLI
+also assigns the target study as the W&B group, uses the new label or ID as its
+name, and clears the copied local W&B directory.
 Changing scientific settings requires a fresh allocation. A resume reuses the same
 ID and recipe; it does not call `create`.
 
@@ -57,7 +59,8 @@ whole sweep before any jobs can run or requeue.
   available artifact hashes. Missing external artifacts are reported as unavailable;
   missing or modified input recipes are errors.
 - `regenerate_index(study)` derives a deterministic CSV from recipes, records, and
-  raw metrics. Missing historical settings remain empty; current defaults are not
+  raw metrics, including attention family, home cluster, and training budget.
+  Missing historical settings remain empty; current defaults are not
   retroactively assigned to old results.
 
 ## Result selections
@@ -69,6 +72,11 @@ Provenance and bookkeeping (`record.json`, `launch.json`, `retention.json`, W&B 
 data-identity files, raw `config.json`) are not pinned, so recording attempts,
 artifacts, or retention never invalidates a figure. A run of a state analysis instead
 pins its recipe hash and the inputs its record captured.
+
+Transformer comparison selections distinguish `role: primary` from `role: control`
+in their `runs` list. Comparison-specific settings and annotated controls belong in
+`selection.analysis`; they do not belong to study-wide defaults. The shared
+`selected_views` helper uses those explicit roles even when all inputs share a study.
 
 After pointing a role at a new `run_id`, editing a grid's cells, or correcting a
 measurement, re-pin and then regenerate:

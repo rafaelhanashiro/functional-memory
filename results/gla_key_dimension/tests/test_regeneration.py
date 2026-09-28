@@ -5,7 +5,7 @@ from results.gla_key_dimension import plot
 from scaffolds.transformer.analysis import selected_views, regeneration_differences
 
 RECORD = Path(__file__).resolve().parents[1]
-STUDY = RECORD.parents[1] / "experiments" / RECORD.name
+STUDY = RECORD.parents[1] / "experiments" / "attention_scaling"
 
 
 def test_regeneration_reproduces_committed_outputs(tmp_path):

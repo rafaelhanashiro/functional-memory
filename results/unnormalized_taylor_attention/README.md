@@ -1,6 +1,6 @@
 # Unnormalized Taylor attention
 
-[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/unnormalized_taylor_attention/runs.csv) · [Execution guide](../../experiments/unnormalized_taylor_attention/README.md)
+[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/attention_scaling/runs.csv) · [Execution guide](../../experiments/attention_scaling/README.md)
 
 Do fixed Taylor truncations of the exponential attention kernel train when the
 attention normalization is removed? With normalization, the odd degrees
@@ -22,7 +22,7 @@ degrees end ahead of even ones: m=3 20.24, m=1 20.77, m=4 21.46, m=2 23.51.
 `/data/cl/u/rafah/home/projects/functional-memory`; the packed corpus is under
 `/data/cl/u/rafah/home/datasets/fineweb_12b`. A clone provides code and records,
 not checkpoints, environments, logs, or datasets. The
-[study record](../../experiments/unnormalized_taylor_attention/sweep.yaml) is the authoritative record of
+[run records](../../experiments/attention_scaling/runs/) are authoritative for
 sources, configurations, runs, and artifact locations.
 
 ## Results
@@ -77,7 +77,7 @@ Elapsed times include acceptance. The m=1 job was first preempted on H100 node
 `dogo` during CPU acceptance, before any training update, and then ran from
 scratch on B300 after automatic requeue; both submission records are retained.
 No run resumed from a checkpoint. Records: metrics and completion in
-[`runs/`](../../experiments/unnormalized_taylor_attention/runs/), acceptance and allocations in the [study record](../../experiments/unnormalized_taylor_attention/sweep.yaml), a
+[`runs/`](../../experiments/attention_scaling/runs/), acceptance and allocations in the [run records](../../experiments/attention_scaling/runs/), a
 [terminal summary](summary.csv), one log per run at
 `runs/<run_id>/training.log`, and each run's retained step-19,074 checkpoint
 (2.1 GB) under `runs/<run_id>/checkpoints/`; logs and checkpoints are ignored and stay on
@@ -85,8 +85,8 @@ Kennel.
 
 ## Scientific recipe
 
-Each [run recipe](../../experiments/unnormalized_taylor_attention/runs/) is the canonical
-[unnormalized exponential recipe](../../experiments/unnormalized_attention/runs/)
+Each [run recipe](../../experiments/attention_scaling/runs/) is the canonical
+[unnormalized exponential recipe](../../experiments/attention_scaling/runs/)
 with `model.attention_degree: m` added; a configuration test enforces that
 nothing else differs except output locations. That recipe is the repository's
 200M sweep recipe apart from normalization: 199,906,304 parameters, 10 layers,
@@ -144,7 +144,7 @@ JAX_PLATFORMS=cpu PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m pytest 
   -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m 'not gpu' \
   scaffolds/transformer/tests/test_unnormalized_attention.py \
   scaffolds/transformer/tests/test_unnormalized_training.py \
-  experiments/unnormalized_taylor_attention/tests
+  experiments/attention_scaling/tests
 ```
 
 CPU tests compare blocked outputs and Q/K/V gradients for degrees 0–4 with an
@@ -158,14 +158,14 @@ full 2,048-token BF16 context, causality, and invalid-score handling.
 Acceptance then verifies full-model initialization, runs 20 full-recipe
 updates with validation, and checks one-update checkpoint resume.
 
-The terminal summary regenerates from `runs/` and the manifest:
+The terminal summary regenerates from `runs/` and the selection:
 
 ```bash
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m results.unnormalized_taylor_attention.summary
 ```
 
 ## Kennel launch
-Use the [execution guide](../../experiments/unnormalized_taylor_attention/README.md) to create a fresh run and submit it from an isolated worktree.
+Use the [execution guide](../../experiments/attention_scaling/README.md) to create a fresh run and submit it from an isolated worktree.
 
 ## Limitations
 

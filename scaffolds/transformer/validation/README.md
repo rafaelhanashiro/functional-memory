@@ -56,7 +56,7 @@ independent parity tests with their explicit tolerances.
 ## Taylor attention kernel and throughput benchmarks
 
 These runs measured the fused Taylor attention kernel used by the degree and
-joint sweeps in the [dK × Taylor-degree record](../../../experiments/key_dimension_taylor/README.md).
+joint sweeps in the [dK × Taylor-degree record](../../../experiments/attention_scaling/README.md).
 Full updates use four GPUs, global batch 256, global microbatch 64, four
 accumulation steps, 2,048 prediction positions, and the 199,906,304-parameter
 dK=64 model. Timings are medians of ten synchronized calls after three warmups;
@@ -163,7 +163,7 @@ qualification. Kennel launcher policy based on these results is in
 ## Fused GLA kernel qualification on H100 and B300
 
 The chunked Triton GLA kernels (`attention/backends/chunked_gla_triton.py`) first
-ran on GPUs for the [GLA d_K sweep](../../../experiments/gla_key_dimension/README.md). Their 21
+ran on GPUs for the [GLA d_K sweep](../../../experiments/attention_scaling/README.md). Their 21
 GPU tests (`tests/test_gla_kernel.py`) compare fused outputs, final states, and
 all four gradients with a sequential FP32 recurrence for d_K 2–128 (and a 76/152
 case), zero and extreme decays, and mixed FP32/BF16 operands. Two defects were
@@ -203,7 +203,7 @@ development measurement, not a retained benchmark run.
 
 The fused unnormalized kernel with learned per-head coefficients
 (`attention/backends/fused_learned_polynomial.py`) first ran for the
-[learned-coefficient unnormalized Taylor sweep](../../../experiments/learned_unnormalized_taylor/README.md).
+[learned-coefficient unnormalized Taylor sweep](../../../experiments/attention_scaling/README.md).
 It reuses the fixed unnormalized kernel's tiles and products and adds per-head
 coefficient gradients. Its 26 GPU tests (`tests/test_learned_polynomial_fused_attention.py`)
 compare the forward and all four VJPs, including the coefficients, with the blocked
@@ -226,7 +226,7 @@ These are pilot measurements, not a retained benchmark.
 QK-norm (`attention/qk_norm.py`) is a score option, not a kernel: the attention
 module unit-normalizes Q and K and pre-scales the queries so that the unchanged
 kernels compute `exp(gamma) cos(q, k)`. It first ran for the
-[QK-norm attention record](../../../experiments/qk_norm_attention/README.md)
+[QK-norm attention record](../../../experiments/attention_scaling/README.md)
 (exact softmax through cuDNN, `d_K = 64`). Its five GPU tests
 (`tests/test_qk_norm.py`) compare cuDNN softmax and the fused Taylor, unnormalized,
 and learned-polynomial kernels on cosine operands with the blocked reference at the
@@ -248,7 +248,7 @@ recipe's widths.
 Row-normalized attention with learned polynomial coefficients
 (`attention/learned_polynomial.py`) initially used only the blocked reference; QK-norm scores
 compose with every kernel as pre-scaled operands. Both first ran for the
-[QK-norm learned Taylor sweep](../../../experiments/qk_norm_learned_taylor/README.md).
+[QK-norm learned Taylor sweep](../../../experiments/attention_scaling/README.md).
 The new GPU cases (`tests/test_learned_polynomial_normalized.py`) run the blocked
 normalized kernel at the 2,048-token BF16 context on cosine operands and compare a
 causal prefix, including the coefficient and log-scale gradients, with FP64; the

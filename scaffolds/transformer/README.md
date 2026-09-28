@@ -342,8 +342,12 @@ Studies configure these shared modules with execution modules at their root
 - `acceptance.py` runs identity-keyed acceptance in the production allocation: CPU
   tests, distributed CPU tests on two forced host devices, and single-GPU kernel tests
   (no skips), an initialization hash, a full-recipe pilot, and an exact fresh-process
-  resume. A study execution module supplies an `AcceptanceSpec` (tests, recipe check,
-  required backend, initialization check, runtime environment) and nothing else.
+  resume. `attention_spec(config, entry_module=...)` selects correctness and kernel
+  tests from the recipe and resolved backend, plus the initialization check and
+  runtime environment. A study execution module passes this factory to `main`;
+  specialized studies can supply an `AcceptanceSpec` directly. Launchers invoke
+  `<acceptance_module> <config.yaml> --runtime-env` before starting workers so GLA
+  bridge settings apply only to GLA recipes.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
   the selection.
 - `analysis.py` reads committed validation events and saves figures

@@ -1,6 +1,6 @@
 # Fixed odd Taylor attention
 
-[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/odd_taylor_attention/runs.csv) · [Execution guide](../../experiments/odd_taylor_attention/README.md)
+[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/attention_scaling/runs.csv) · [Execution guide](../../experiments/attention_scaling/README.md)
 
 Do signed fixed odd Taylor polynomials train under the repository's 200M recipe?
 Under the scaffold's current defaults (per-head QK-norm cosine scores and
@@ -11,14 +11,12 @@ reached the first validation at update 1,000 or produced a checkpoint, and no
 
 **Home cluster: Kennel.** The artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`; the
-[study record](../../experiments/odd_taylor_attention/sweep.yaml) is the authoritative record of
+[run records](../../experiments/attention_scaling/runs/) are authoritative for
 each run's source, recipe, acceptance, attempts, and artifacts.
 
 ## Results
 
 <!-- BEGIN GENERATED RESULTS -->
-Source: `a74e3863fdf1e1dd965252cd435712dec10c9a29`. Frozen execution set: `14a89d188933c04f6edfda366b1835ec2268a181477fbd4a7468910f434f141f`.
-
 Fixed degree-one and degree-three Taylor models use the dK × Taylor-degree record's 200M-parameter, 10B-token, seed-0 recipe at d_K = 64 under the scaffold's current defaults (QK-norm and selective weight decay). Endpoints use committed terminal validation, independently of the retained validation-best checkpoint.
 
 | Kernel | Parameters | Status | Terminal NLL | Terminal PPL | Failure step |
@@ -102,17 +100,17 @@ in each allocation: CPU and distributed CPU tests, the fused, signed odd, and
 QK-norm GPU tests, initialization identity, a 20-update pilot, and an exact resume
 audit. Several early attempts were preempted during acceptance by debug-partition
 jobs. Each run then passed acceptance on four B300s on `akita` and trained from
-initialization until its failure (jobs 202614 and 202615). The manifest records
+initialization until its failure (jobs 202614 and 202615). The run records record
 every attempt, partition change, and acceptance summary; it also records each
 run's executed recipe at the launch commit, since this record's recipes differ
 only in output paths and the named source commit.
 
-| Artifact | Location in `experiments/odd_taylor_attention/` |
+| Artifact | Location in `experiments/attention_scaling/` |
 | --- | --- |
-| Exact recipes | `experiments/odd_taylor_attention/runs/<run_id>/config.yaml` |
+| Exact recipes | `experiments/attention_scaling/runs/<run_id>/config.yaml` |
 | Committed metadata and numerical-failure records | `runs/<run_id>/` |
 | Figures and summary | `results/odd_taylor_attention/` |
-| Canonical manifest | `experiments/odd_taylor_attention/sweep.yaml` |
+| Canonical manifest | `experiments/attention_scaling/sweep.yaml` |
 | One failure log per run (ignored) | `runs/<run_id>/training.log` |
 
 No checkpoint is retained, because neither run reached a validation. The failure
@@ -129,10 +127,10 @@ uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardli
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m results.odd_taylor_attention.plot
 ```
 
-The plotter verifies retained hashes and semantic identities against the manifest
+The plotter verifies retained hashes and semantic identities against the pinned selection and each run’s recipe
 and rewrites only the marked results block.
 
-Use the [execution guide](../../experiments/odd_taylor_attention/README.md) to create and submit a fresh run.
+Use the [execution guide](../../experiments/attention_scaling/README.md) to create and submit a fresh run.
 
 Source, seed, and input order do not guarantee bitwise-identical GPU trajectories
 or identical failure steps.

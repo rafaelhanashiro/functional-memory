@@ -1,0 +1,67 @@
+{
+  "artifacts": [
+    {
+      "path": "experiments/attention_scaling/runs/r261f88db0c4b/best_validation.json",
+      "sha256": "f6a7b4b721bef170f564aeca6246c7807c7ef629d90ff669c8835f13f1203b8f"
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r261f88db0c4b/completion.json",
+      "sha256": "7537c2875711264916f0853370c305321f5a90dab168f2d45b293307e4ccdfb6"
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r261f88db0c4b/config.yaml",
+      "sha256": "eaeab6850b2ff44d8ba71f7c26f81ab1b4fa668912059ea331ebbec560bad4f8"
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r261f88db0c4b/metadata.json",
+      "sha256": "e10e58ecfd4ca89d4b1acffcb3760a5a51527f734646b8d0a874b7f499cc5dda"
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r261f88db0c4b/metrics.jsonl",
+      "sha256": "5a199dbb81f4caeccf79af40454c7eef997ebe0f3698d75211df6e553b2913d3"
+    }
+  ],
+  "attempts": [
+    {
+      "slurm_job_id": "22808239"
+    }
+  ],
+  "attention_family": "softmax",
+  "config": {
+    "path": "experiments/attention_scaling/runs/r261f88db0c4b/config.yaml",
+    "sha256": "eaeab6850b2ff44d8ba71f7c26f81ab1b4fa668912059ea331ebbec560bad4f8"
+  },
+  "data_identity": {
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "dependency_lock": {
+    "sha256": "e55f98b6f1e2f9cd9eef53f9a5d7afa2d1dad8e869e70f52a4dcc809a6b420e6",
+    "source_commit": "5e871d2659373272e26668e10911922c7201678a",
+    "source_path": "experiments/key_dimension/uv.lock"
+  },
+  "home_cluster": "orcd",
+  "label": "200m-dk032-seed0",
+  "name": "200m-dk032-seed0",
+  "parameter_count": 189420544,
+  "record_schema_version": 1,
+  "run_id": "r261f88db0c4b",
+  "seed": 0,
+  "selected_checkpoint": {
+    "file_count": 13,
+    "metadata_sha256": "bf9317b3eb4dd977b513ed8f57ae7fbbd38183ec922b5ef10c3f4976efdf13c1",
+    "retained": false,
+    "size_bytes": 2082192738,
+    "step": 19074,
+    "validation_nll": 2.707067149026053,
+    "validation_perplexity": 14.985261464418581
+  },
+  "slurm_job_id": "22808239",
+  "source_commit": "5e871d2659373272e26668e10911922c7201678a"
+}

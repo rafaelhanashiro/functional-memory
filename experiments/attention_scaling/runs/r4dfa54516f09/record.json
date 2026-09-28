@@ -1,0 +1,26 @@
+{
+  "artifact_root": "/orcd/pool/006/rafah/functional_memory/worktrees/gla_key_dimension_rerun",
+  "config": {
+    "path": "experiments/attention_scaling/runs/r4dfa54516f09/config.yaml",
+    "sha256": "b5ad983be2a0081faf72d0cb1e9c665e091f946731e224a2368f8f3c6c8865af"
+  },
+  "data_identity": {
+    "eval": {
+      "path": "/home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train": {
+      "path": "/home/rafah/projects/ofm/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "home_cluster": "orcd",
+  "label": "200m-dk128-gla-seed0",
+  "name": "200m-dk128-gla-seed0",
+  "parameter_count": 231885824,
+  "record_schema_version": 1,
+  "run_id": "r4dfa54516f09",
+  "seed": 0,
+  "state_elements_per_layer": 131072,
+  "status": "planned"
+}

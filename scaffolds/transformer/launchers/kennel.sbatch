@@ -86,7 +86,7 @@ export JAX_COMPILATION_CACHE_DIR="$CACHE/jax" XDG_CACHE_HOME="$CACHE/xdg" TMPDIR
 # which is the node's /usr/local/cuda unless CUDA_HOME names another; pin the locked toolkit.
 CUDA_HOME="$("$PYTHON" -c 'import importlib.util; print(next(iter(importlib.util.find_spec("nvidia.cuda_nvcc").submodule_search_locations)))')"
 export CUDA_HOME
-eval "$("$PYTHON" -m "$ADAPTER" --runtime-env)"
+eval "$("$PYTHON" -m "$ADAPTER" "$CONFIG" --runtime-env)"
 mkdir -p "$LOGS" "$JAX_COMPILATION_CACHE_DIR" "$XDG_CACHE_HOME" "$TMPDIR"
 
 "$PYTHON" - "$RUN_ROOT" "$CONFIG" "$LAUNCH_COMMIT" "$GPU_TYPE" "$GPU_COUNT" "$EXPERIMENT" <<'PY'

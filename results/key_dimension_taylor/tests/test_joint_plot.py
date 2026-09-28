@@ -20,7 +20,7 @@ def write_json(path, record):
 
 def make_run(root: Path, width=8, degree=2, *, complete=True, terminal_ppl=16.0, selected_step=None):
     name = f"200m-dk{width:03d}-{'softmax' if degree is None else f'm{degree:03d}'}-seed0"
-    run = root / "experiments" / "key_dimension_taylor" / "runs" / f"r{abs(hash(name)) % 16**12:012x}"
+    run = root / "experiments" / "attention_scaling" / "runs" / f"r{abs(hash(name)) % 16**12:012x}"
     run.mkdir(parents=True, exist_ok=True)
     (run / "config.yaml").write_text(yaml.safe_dump({
         "model": {"qk_head_dim": width, "value_head_dim": 64, "attention_degree": degree},

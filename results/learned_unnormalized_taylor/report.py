@@ -23,8 +23,8 @@ from scaffolds.transformer.analysis import save_figure, terminal_row, update_res
 locate_run = partial(selected_run_directory, Path(__file__).resolve().parent)
 
 OUTPUT = Path(__file__).resolve().parent
-RECORD = OUTPUT.parents[1] / "experiments" / "learned_unnormalized_taylor"
-CONTROLS = RECORD.parent / "unnormalized_taylor_attention"
+RECORD = OUTPUT.parents[1] / "experiments" / "attention_scaling"
+CONTROLS = RECORD
 DEGREES = (1, 2, 3, 4)
 LEARNED, FIXED, INK, MUTED, GRID = "#2a78d6", "#eb6834", "#0b0b0b", "#52514e", "#e4e3df"
 FIELDS = ["run", "attention_degree", "parameters", "updates", "prediction_tokens", "terminal_validation_nll",
@@ -81,7 +81,7 @@ def rows(record: Path = RECORD, controls: Path = CONTROLS) -> list[dict]:
     nodes = {run["name"]: run["attempts"][-1]["node"] for run in manifest["runs"]}
     result = []
     for degree in DEGREES:
-        run_directory, control_directory = locate_run(record, run_name(degree)), locate_run(controls, run_name(degree))
+        run_directory, control_directory = locate_run(record, run_name(degree)), locate_run(controls, "fixed-" + run_name(degree))
         row = terminal_row(run_directory)
         control = terminal_row(control_directory)
         final, control_final = validations(run_directory)[-1], validations(control_directory)[-1]
@@ -136,7 +136,7 @@ def figures(record: Path = RECORD, controls: Path = CONTROLS, output: Path | Non
     directory = (output or OUTPUT)
     directory.mkdir(parents=True, exist_ok=True)
     series = {degree: (validations(locate_run(record, run_name(degree))),
-                       validations(locate_run(controls, run_name(degree)))) for degree in DEGREES}
+                       validations(locate_run(controls, "fixed-" + run_name(degree)))) for degree in DEGREES}
     line = dict(linewidth=2, solid_capstyle="round", solid_joinstyle="round")
 
     figure, axes = plt.subplots(1, 4, figsize=(12, 3.2), sharey=True)

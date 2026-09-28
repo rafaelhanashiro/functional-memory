@@ -1,0 +1,98 @@
+{
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": [
+    {
+      "path": "experiments/attention_scaling/runs/r4287ce47c28e/config.json",
+      "sha256": "b563724b0149de8813658e299d9e7275517513db8115ca9e79f8110b77bb90e4",
+      "size_bytes": 2770
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4287ce47c28e/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4287ce47c28e/failure_context.json",
+      "sha256": "3a6dc468a9da18c3d08510c5c5b4583a297846f713e513946c8851941cb1e713",
+      "size_bytes": 1031
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4287ce47c28e/metadata.json",
+      "sha256": "fb9fd6ec778dd887dd9827dc470cca3e10aecfd67b8a44b5d6755cf5bc6d5cda",
+      "size_bytes": 18918
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4287ce47c28e/numerical_failure_step_00000173.json",
+      "sha256": "72f6bb48a46294622e1dc4d61775b208d913a3c1e9071a97f8463f4f56ab0321",
+      "size_bytes": 16487
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4287ce47c28e/wandb_run.json",
+      "sha256": "2c6f4e87f8bb41186d6da3b4bc578bd722e7997abd92acee315d8595de3d3675",
+      "size_bytes": 188
+    },
+    {
+      "path": "experiments/attention_scaling/runs/r4287ce47c28e/training.log",
+      "sha256": "e5936d04a619ed4e8cd64245fce4e4b4df02eb78f44ca978dde850b6f924e797",
+      "size_bytes": 17454
+    }
+  ],
+  "attempts": [
+    {
+      "gpu_count": 2,
+      "gpu_type": "H100",
+      "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "node": "dogo",
+      "slurm_job_id": "202704",
+      "slurm_partition": "sweep"
+    },
+    {
+      "gpu_count": 2,
+      "gpu_type": "H100",
+      "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "node": "dogo",
+      "slurm_job_id": "202704",
+      "slurm_partition": "sweep"
+    }
+  ],
+  "config": {
+    "path": "experiments/attention_scaling/runs/r4287ce47c28e/config.yaml",
+    "sha256": "f4969dc1ce4285063c32f9791c79f5fe2b9d3bb0464737666308f737482a91fc"
+  },
+  "data_identity": {
+    "path": "experiments/attention_scaling/runs/r4287ce47c28e/data_identity.json",
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291
+  },
+  "dependency_lock": {
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559",
+    "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+    "source_path": "scaffolds/transformer/uv.lock"
+  },
+  "home_cluster": "kennel",
+  "label": "200m-normalized-m001-seed0",
+  "log": {
+    "path": "experiments/attention_scaling/runs/r4287ce47c28e/training.log",
+    "sha256": "e5936d04a619ed4e8cd64245fce4e4b4df02eb78f44ca978dde850b6f924e797",
+    "size_bytes": 17454
+  },
+  "log_path": "experiments/attention_scaling/runs/r4287ce47c28e/training.log",
+  "metadata": {
+    "path": "experiments/attention_scaling/runs/r4287ce47c28e/metadata.json",
+    "sha256": "fb9fd6ec778dd887dd9827dc470cca3e10aecfd67b8a44b5d6755cf5bc6d5cda",
+    "size_bytes": 18918
+  },
+  "name": "200m-normalized-m001-seed0",
+  "numerical_failure_path": "experiments/attention_scaling/runs/r4287ce47c28e/numerical_failure_step_00000173.json",
+  "polynomial_family": "hermite",
+  "record_schema_version": 1,
+  "run_id": "r4287ce47c28e",
+  "seed": 0,
+  "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+  "status": "numerical_failure",
+  "wandb_run": {
+    "path": "experiments/attention_scaling/runs/r4287ce47c28e/wandb_run.json",
+    "sha256": "2c6f4e87f8bb41186d6da3b4bc578bd722e7997abd92acee315d8595de3d3675",
+    "size_bytes": 188
+  }
+}

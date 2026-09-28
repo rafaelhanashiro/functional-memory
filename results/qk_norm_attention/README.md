@@ -1,6 +1,6 @@
 # QK-norm attention
 
-[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/qk_norm_attention/runs.csv) · [Execution guide](../../experiments/qk_norm_attention/README.md)
+[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/attention_scaling/runs.csv) · [Execution guide](../../experiments/attention_scaling/README.md)
 
 How does exact softmax attention train when its scores are bounded cosines with a
 learned scale? This record's first run is the **QK-norm softmax baseline**: the
@@ -31,7 +31,7 @@ sequence was 18.7.
 **Home cluster: Kennel.** The artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`; the retained checkpoint and log
 are under this directory there (see [Artifacts](#artifacts)). The
-[study record](../../experiments/qk_norm_attention/sweep.yaml) is the authoritative record of
+[run records](../../experiments/attention_scaling/runs/) are authoritative for
 sources, configuration, the run, and artifact locations. The packed corpus is under
 `/data/cl/u/rafah/home/datasets/fineweb_12b`.
 
@@ -76,8 +76,8 @@ softmax path is unchanged and the normalization is elementwise. Training took
 
 ## Scientific recipe
 
-The [run recipe](../../experiments/qk_norm_attention/runs/r1feece425074/config.yaml) is the
-[200M softmax control](../../experiments/key_dimension_taylor/runs/r50088d29f2b5/config.yaml) with
+The [run recipe](../../experiments/attention_scaling/runs/r1feece425074/config.yaml) is the
+[200M softmax control](../../experiments/attention_scaling/runs/r50088d29f2b5/config.yaml) with
 `qk_norm: true`, `qk_norm_sharing: per_head`, the default initial scale
 `sqrt(d_K)`, and `qk_norm_eps: 1e-6` added; a configuration test enforces that
 nothing else differs except output locations. The backbone is the repository's
@@ -131,7 +131,7 @@ JAX_PLATFORMS=cpu PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m pytest 
   -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m 'not gpu' \
   scaffolds/transformer/tests/test_qk_norm.py \
   scaffolds/transformer/tests/test_softmax_backends.py \
-  experiments/qk_norm_attention/tests
+  experiments/attention_scaling/tests
 ```
 
 CPU tests compare the composed operator and its Q/K/V and `gamma` gradients with
@@ -158,15 +158,15 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m results.qk_norm_attention
 ```
 
 ## Kennel launch
-Use the [execution guide](../../experiments/qk_norm_attention/README.md) to create a fresh run and submit it from an isolated worktree.
+Use the [execution guide](../../experiments/attention_scaling/README.md) to create a fresh run and submit it from an isolated worktree.
 
 ## Artifacts
 
 The run keeps its validation-best checkpoint, which is also its terminal one, at
-`experiments/qk_norm_attention/runs/r1feece425074/checkpoints/19074/` (13 files,
+`experiments/attention_scaling/runs/r1feece425074/checkpoints/19074/` (13 files,
 2.2 GB) and one Slurm log at
-`experiments/qk_norm_attention/runs/r1feece425074/training.log`, both on
-Kennel under the artifact root and ignored by Git; the manifest records every
+`experiments/attention_scaling/runs/r1feece425074/training.log`, both on
+Kennel under the artifact root and ignored by Git; the run records record every
 file's SHA256. W&B mirrors the run in the `qk_norm_attention` group; the manifest
 records its run id. A clone supplies the committed run record, recipe, summary,
 figures, and this README, not the checkpoint, log, or datasets.

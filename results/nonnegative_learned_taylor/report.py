@@ -22,10 +22,10 @@ from scaffolds.transformer.analysis import committed_records, save_figure, termi
 locate_run = partial(selected_run_directory, Path(__file__).resolve().parent)
 
 OUTPUT = Path(__file__).resolve().parent
-RECORD = OUTPUT.parents[1] / "experiments" / "nonnegative_learned_taylor"
+RECORD = OUTPUT.parents[1] / "experiments" / "attention_scaling"
 EXPERIMENTS = RECORD.parent
 DEGREES = (2, 4)
-SOFTMAX = locate_run(EXPERIMENTS / "qk_norm_attention", "200m-qk-softmax-seed0")
+SOFTMAX = locate_run(EXPERIMENTS / "attention_scaling", "200m-qk-softmax-seed0")
 NONNEGATIVE, SIGNED, REFERENCE, GRID, INK = "#2a78d6", "#eb6834", "#52514e", "#e4e3df", "#0b0b0b"
 FIELDS = ["run", "attention_degree", "status", "terminal_validation_nll", "terminal_validation_perplexity",
           "best_step", "best_validation_perplexity", "failure_step", "signed_control_failure_step",
@@ -38,7 +38,7 @@ def run_name(degree: int) -> str:
 
 
 def signed_control(degree: int) -> Path:
-    return locate_run(EXPERIMENTS / "qk_norm_learned_taylor", f"200m-qk-m{degree:03d}-normalized-seed0")
+    return locate_run(EXPERIMENTS / "attention_scaling", f"200m-qk-m{degree:03d}-normalized-seed0")
 
 
 def failure_step(run_directory: Path):

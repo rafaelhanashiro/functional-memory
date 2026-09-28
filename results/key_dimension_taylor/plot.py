@@ -197,7 +197,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
             + ".", ""]
     lines += ["Each delta in the CSV subtracts the softmax endpoint at the same width. "
               "FAILED means a recorded numerical failure; interrupted or unaudited runs remain INCOMPLETE. "
-              f"Source commits, exact recipes, and artifact checksums are in each run’s `config.yaml` and `record.json` under `experiments/{EXPERIMENT}/runs/`.", ""]
+              f"Source commits, exact recipes, and artifact checksums are in each run’s `config.yaml` and `record.json` under `experiments/attention_scaling/runs/`.", ""]
     failures = [row for row in rows if row["error"]]
     if failures:
         lines += ["Recorded failures or interruptions:", "", *[f"- `{row['run']}` ({row['failure_kind'] or row['execution_status']}): {row['error']}" for row in failures], ""]
@@ -206,14 +206,14 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
         lines += [f"Checkpoints and logs are not retained for {len(unretained)} runs trained on another cluster "
                   f"({', '.join(f'`{name}`' for name in unretained)}); their metrics, completion records, metadata, and recipes are retained and checksum-verified.", ""]
     lines += ["[Summary CSV](summary.csv) · [Learning curves](learning_curves.pdf) · "
-              "[Heatmap](../attention_scaling/combined_terminal_ppl.png) in the cross-study comparison", ""]
+              "[Heatmap](../attention_scaling/combined_terminal_ppl.png) in the attention comparison", ""]
     update_results_readme(output_dir / "README.md", lines)
     return rows
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", type=Path, default=Path("experiments/key_dimension_taylor/sweep.yaml"))
+    parser.add_argument("--manifest", type=Path, default=Path("experiments/attention_scaling/sweep.yaml"))
     parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
     aggregate(selected_views(Path(__file__).resolve().parent, args.manifest), args.output_dir, manifest_path=args.manifest)

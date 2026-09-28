@@ -27,13 +27,13 @@ from scaffolds.transformer.analysis import committed_records, save_figure, termi
 locate_run = partial(selected_run_directory, Path(__file__).resolve().parent)
 
 OUTPUT = Path(__file__).resolve().parent
-RECORD = OUTPUT.parents[1] / "experiments" / "qk_norm_learned_taylor"
+RECORD = OUTPUT.parents[1] / "experiments" / "attention_scaling"
 EXPERIMENTS = RECORD.parent
 DEGREES = (1, 2, 3, 4)
 VARIANTS = ("unnormalized", "normalized")
 RUNS = tuple(f"200m-qk-m{degree:03d}-{variant}-seed0" for degree in DEGREES for variant in VARIANTS)
-LEARNED_CONTROLS = {degree: locate_run(EXPERIMENTS / "learned_unnormalized_taylor", f"200m-m{degree:03d}-seed0") for degree in DEGREES}
-QK_SOFTMAX = locate_run(EXPERIMENTS / "qk_norm_attention", "200m-qk-softmax-seed0")
+LEARNED_CONTROLS = {degree: locate_run(EXPERIMENTS / "attention_scaling", f"200m-m{degree:03d}-seed0") for degree in DEGREES}
+QK_SOFTMAX = locate_run(EXPERIMENTS / "attention_scaling", "200m-qk-softmax-seed0")
 # Categorical slots 1-4 of the repository's figure palette, one per degree.
 DEGREE_COLORS = {1: "#2a78d6", 2: "#eb6834", 3: "#1baf7a", 4: "#eda100"}
 INK, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"

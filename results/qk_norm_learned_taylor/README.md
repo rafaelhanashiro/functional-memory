@@ -1,6 +1,6 @@
 # Learned Taylor kernels over QK-norm scores
 
-[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/qk_norm_learned_taylor/runs.csv) · [Execution guide](../../experiments/qk_norm_learned_taylor/README.md)
+[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/attention_scaling/runs.csv) · [Execution guide](../../experiments/attention_scaling/README.md)
 
 Do learned polynomial attention kernels train better when their scores are bounded
 cosines with a learned scale, and does bounding the scores let the normalized
@@ -40,7 +40,7 @@ negative inside the bounded score range and a row sum crossed zero.
 **Home cluster: Kennel.** The artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`; retained checkpoints and logs are
 under this directory there (see [Artifacts](#artifacts)). The
-[study record](../../experiments/qk_norm_learned_taylor/sweep.yaml) is the authoritative record of
+[run records](../../experiments/attention_scaling/runs/) are authoritative for
 sources, configurations, runs, and artifact locations. The packed corpus is under
 `/data/cl/u/rafah/home/datasets/fineweb_12b`.
 
@@ -126,8 +126,8 @@ normalized polynomial kernels.
 
 ## Scientific recipe
 
-Each unnormalized [run recipe](../../experiments/qk_norm_learned_taylor/runs/) is the
-[learned-coefficient unnormalized Taylor recipe](../../experiments/learned_unnormalized_taylor/runs/)
+Each unnormalized [run recipe](../../experiments/attention_scaling/runs/) is the
+[learned-coefficient unnormalized Taylor recipe](../../experiments/attention_scaling/runs/)
 of the same degree with `qk_norm: true`, `qk_norm_sharing: per_head`, the default
 initial scale `sqrt(d_K)`, and `qk_norm_eps: 1e-6` added; each normalized recipe is
 its unnormalized twin with `attention_normalization: true`. Configuration tests
@@ -198,7 +198,7 @@ JAX_PLATFORMS=cpu PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m pytest 
   scaffolds/transformer/tests/test_qk_norm.py \
   scaffolds/transformer/tests/test_learned_polynomial.py \
   scaffolds/transformer/tests/test_learned_polynomial_normalized.py \
-  experiments/qk_norm_learned_taylor/tests
+  experiments/attention_scaling/tests
 ```
 
 CPU tests compare the normalized and unnormalized learned kernels, alone and
@@ -225,14 +225,14 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m results.qk_norm_learned_t
 ```
 
 ## Kennel launch
-Use the [execution guide](../../experiments/qk_norm_learned_taylor/README.md) to create a fresh run and submit it from an isolated worktree.
+Use the [execution guide](../../experiments/attention_scaling/README.md) to create a fresh run and submit it from an isolated worktree.
 
 ## Artifacts
 
 Each completed run keeps its validation-best checkpoint, which is also its terminal
-one, at `experiments/qk_norm_learned_taylor/runs/<run_id>/checkpoints/19074/` (about 2.2 GB
-each) and one Slurm log at `experiments/qk_norm_learned_taylor/runs/<run_id>/training.log`, both on
-Kennel under the artifact root and ignored by Git; the manifest records every file's
+one, at `experiments/attention_scaling/runs/<run_id>/checkpoints/19074/` (about 2.2 GB
+each) and one Slurm log at `experiments/attention_scaling/runs/<run_id>/training.log`, both on
+Kennel under the artifact root and ignored by Git; the run records record every file's
 SHA256. The failed runs keep their log and their numerical-failure record and last
 valid validation in `runs/<run_id>/`; no diagnostic checkpoint is retained (the
 degree-2 failure analysis above read the step-1,500 checkpoint before it was

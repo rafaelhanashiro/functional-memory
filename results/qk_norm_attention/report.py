@@ -23,10 +23,10 @@ from scaffolds.transformer.analysis import committed_records, save_figure, termi
 locate_run = partial(selected_run_directory, Path(__file__).resolve().parent)
 
 OUTPUT = Path(__file__).resolve().parent
-RECORD = OUTPUT.parents[1] / "experiments" / "qk_norm_attention"
+RECORD = OUTPUT.parents[1] / "experiments" / "attention_scaling"
 EXPERIMENTS = RECORD.parent
 RUNS = ("200m-qk-softmax-seed0",)
-CONTROLS = {"softmax": ("Softmax", locate_run(EXPERIMENTS / "key_dimension_taylor", "200m-softmax-seed0"))}
+CONTROLS = {"softmax": ("Softmax", locate_run(EXPERIMENTS / "attention_scaling", "200m-softmax-seed0"))}
 # Categorical slots 1-2 of the repository's figure palette; layer depth uses one sequential hue.
 QK_NORM, SOFTMAX = "#2a78d6", "#eb6834"
 INK, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"

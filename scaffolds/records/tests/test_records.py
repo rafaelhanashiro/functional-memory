@@ -75,10 +75,59 @@ def test_index_reproduces_bytes_and_preserves_unknown_legacy_fields(tmp_path):
     assert row["attention_normalization"] == "False"
     assert row["qk_norm"] == ""
     assert row["coefficient_mode"] == ""
+    assert row["attention_family"] == ""
+    assert row["home_cluster"] == ""
+    assert row["training_steps"] == ""
+    assert row["prediction_tokens"] == ""
     assert row["terminal_step"] == "20"
     assert row["terminal_validation_nll"] == "2.0"
     assert row["metrics"] == f"runs/{run.name}/metrics.jsonl"
     assert load_study(study)["runs"][0]["execution"]["attempts"][0]["gpu"] == "H100"
+
+
+def test_index_exposes_family_cluster_and_full_budget_separately_from_outcome(tmp_path):
+    study = tmp_path / "study"
+    config = {
+        "model": {"attention_mechanism": "dot_product", "attention_degree": 2,
+                  "attention_coefficients": "fixed", "attention_fixed_coefficients": [1.0, 2.0, 1.0]},
+        "data": {"batch_size": 256, "sequence_length": 2049},
+        "optim": {"total_steps": 19074}, "train": {"seed": 0},
+    }
+    run = create_run(study, config, "arbitrary-label")
+    update_record(run, {"polynomial_family": "hermite", "home_cluster": "kennel", "status": "numerical_failure"})
+    (run / "metrics.jsonl").write_text('{"step": 10, "validation_nll": 2.0}\n')
+    regenerate_index(study)
+    with (study / "runs.csv").open() as stream:
+        row, = list(csv.DictReader(stream))
+    assert row["attention_mechanism"] == "dot_product"
+    assert row["attention_family"] == "hermite"
+    assert row["coefficient_mode"] == "fixed"
+    assert row["home_cluster"] == "kennel"
+    assert row["training_steps"] == "19074"
+    assert row["prediction_tokens"] == "10000269312"
+    assert row["terminal_step"] == "10"
+
+
+@pytest.mark.parametrize("quadratic_mode", ["positive", "unrestricted"])
+def test_index_recognizes_legacy_learned_quadratic_recipe(tmp_path, quadratic_mode):
+    study = tmp_path / "study"
+    create_run(study, {"model": {"attention_degree": 2, "quadratic_mode": quadratic_mode,
+                                 "quadratic_sharing": "per_head"}})
+    with (study / "runs.csv").open() as stream:
+        row, = list(csv.DictReader(stream))
+    assert row["attention_family"] == "learned_polynomial"
+    assert row["coefficient_mode"] == "learned"
+    assert row["quadratic_mode"] == quadratic_mode
+    assert row["coefficient_sharing"] == "per_head"
+
+
+def test_index_keeps_custom_polynomial_distinct_without_inventing_basis(tmp_path):
+    study = tmp_path / "study"
+    create_run(study, {"model": {"attention_degree": 2, "attention_coefficients": "fixed",
+                                 "attention_fixed_coefficients": [1.0, 2.0, 1.0]}}, "hermite-looking-label")
+    with (study / "runs.csv").open() as stream:
+        row, = list(csv.DictReader(stream))
+    assert row["attention_family"] == "polynomial"
 
 
 def test_record_updates_preserve_execution_evidence_and_reject_identity_changes(tmp_path):
@@ -201,6 +250,31 @@ def test_cli_allocates_fully_resolved_fresh_transformer_recipe(tmp_path, monkeyp
     assert saved["optim"]["weight_decay_policy"] == "exclude_embeddings_norms_biases_v1"
     assert load_run(run)["label"] == "fresh"
     validate_record(run)
+
+
+@pytest.mark.parametrize("label", [None, "new-run"])
+def test_cli_fresh_run_resets_copied_tracking_identity(tmp_path, monkeypatch, capsys, label):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "historical.yaml"
+    source.write_text(yaml.safe_dump({"model": {}, "train": {
+        "source_commit": "historical-source", "wandb_group": "old-study",
+        "wandb_run_name": "old-run", "wandb_dir": "/old/worktree/run/wandb",
+    }}))
+    original = source.read_bytes()
+    study = tmp_path / "attention_scaling"
+    arguments = ["records", "create", "--study", str(study), "--config", str(source)]
+    if label is not None:
+        arguments.extend(["--label", label])
+    monkeypatch.setattr("sys.argv", arguments)
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    saved = yaml.safe_load((run / "config.yaml").read_text())
+    assert saved["train"]["source_commit"] == "auto"
+    assert saved["train"]["wandb_group"] == "attention_scaling"
+    assert saved["train"]["wandb_run_name"] == label
+    assert saved["train"]["wandb_dir"] is None
+    assert source.read_bytes() == original
 
 
 @pytest.mark.parametrize("train_section", ["", "train: {}\n"])

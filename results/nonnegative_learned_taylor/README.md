@@ -1,6 +1,6 @@
 # Nonnegative learned Taylor kernels
 
-[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/nonnegative_learned_taylor/runs.csv) · [Execution guide](../../experiments/nonnegative_learned_taylor/README.md)
+[Selected runs and source hashes](selection.yaml) · [Run index](../../experiments/attention_scaling/runs.csv) · [Execution guide](../../experiments/attention_scaling/README.md)
 
 Does a normalized learned polynomial kernel train once it cannot go negative?
 The [QK-norm learned Taylor sweep](../qk_norm_learned_taylor/README.md) learned all
@@ -39,7 +39,7 @@ failure; `m = 4` finished 0.28 perplexity above QK-norm softmax.
 
 **Home cluster: Kennel.** The artifact root is
 `/data/cl/u/rafah/home/projects/functional-memory`. The
-[study record](../../experiments/nonnegative_learned_taylor/sweep.yaml) is the authoritative record of the
+[run records](../../experiments/attention_scaling/runs/) are authoritative for the
 source commit, frozen execution set, acceptance, execution, and artifact locations.
 The packed corpus is under `/data/cl/u/rafah/home/datasets/fineweb_12b`.
 
@@ -94,8 +94,8 @@ normalizers accumulate in FP32.
 
 ## Scientific recipe
 
-Each [recipe](../../experiments/nonnegative_learned_taylor/runs/) is the corresponding normalized recipe of the
-[QK-norm learned Taylor sweep](../../experiments/qk_norm_learned_taylor/runs/) with
+Each [recipe](../../experiments/attention_scaling/runs/) is the corresponding normalized recipe of the
+[QK-norm learned Taylor sweep](../../experiments/attention_scaling/runs/) with
 `attention_coefficient_parameterization: sum_of_squares` added; a configuration test
 enforces that nothing else differs except output locations. The backbone is the
 repository's 200M model: 10 layers, width 1024, 16 heads, `d_K = d_V = 64`, untied
@@ -118,12 +118,12 @@ policy (16.2125, [learned quadratic attention](../learned_quadratic_attention/RE
 
 ## Artifacts
 
-| Artifact | Location in `experiments/nonnegative_learned_taylor/` |
+| Artifact | Location in `experiments/attention_scaling/` |
 | --- | --- |
-| Exact recipes | `experiments/nonnegative_learned_taylor/runs/<run_id>/config.yaml` |
+| Exact recipes | `experiments/attention_scaling/runs/<run_id>/config.yaml` |
 | Committed metrics, metadata, and completion or failure records | `runs/<run_id>/` |
 | Summary and figure | `summary.csv`, `learning_curves.{png,pdf}` |
-| Canonical manifest | `experiments/nonnegative_learned_taylor/sweep.yaml` |
+| Canonical manifest | `experiments/attention_scaling/sweep.yaml` |
 | Validation-best checkpoints (ignored) | `runs/<run_id>/checkpoints/<step>/` |
 | Slurm logs (ignored) | `runs/<run_id>/training.log` |
 
@@ -141,7 +141,7 @@ The runs were submitted from this experiment's worktree root with the shared Ken
 launcher, which checks the frozen execution set against the launch commit, runs
 acceptance (CPU tests, distributed CPU tests, GPU tests of the recipe's kernels at
 the production context, initialization, a 20-update pilot, and an exact resume
-audit) in the allocation, then trains; the manifest records each submission's
+audit) in the allocation, then trains; the run records record each submission's
 partition and resources.
 
 ## Limitations

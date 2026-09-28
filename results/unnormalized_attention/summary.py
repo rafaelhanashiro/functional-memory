@@ -19,7 +19,7 @@ from scaffolds.transformer.analysis import terminal_row, write_csv
 locate_run = partial(selected_run_directory, Path(__file__).resolve().parent)
 
 OUTPUT = Path(__file__).resolve().parent
-RECORD = OUTPUT.parents[1] / "experiments" / "unnormalized_attention"
+RECORD = OUTPUT.parents[1] / "experiments" / "attention_scaling"
 FIELDS = ["run", "role", "parameters", "updates", "prediction_tokens", "terminal_validation_nll",
           "terminal_validation_perplexity", "best_step", "best_validation_nll", "best_validation_perplexity",
           "source_commit", "slurm_job_id", "hardware"]

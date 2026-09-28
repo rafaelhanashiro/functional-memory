@@ -26,10 +26,11 @@ import yaml
 
 RUN_ID = re.compile(r"r[0-9a-f]{12}\Z")
 INDEX_COLUMNS = (
-    "run_id", "label", "status", "model_id", "condition", "attention_kernel", "qk_head_dim",
+    "run_id", "label", "status", "home_cluster", "model_id", "condition",
+    "attention_mechanism", "attention_family", "attention_kernel", "qk_head_dim",
     "attention_degree", "attention_normalization", "qk_norm",
     "coefficient_mode", "coefficient_parameterization", "coefficient_sharing",
-    "quadratic_mode", "weight_decay_policy", "seed", "source_commit",
+    "quadratic_mode", "weight_decay_policy", "seed", "training_steps", "prediction_tokens", "source_commit",
     "terminal_step", "terminal_validation_nll", "terminal_validation_perplexity",
     "config", "record", "metrics",
 )
@@ -337,6 +338,37 @@ def _first(*values: Any) -> Any:
     return next((value for value in values if value is not None), None)
 
 
+def _attention_family(model: Mapping[str, Any], record: Mapping[str, Any], kernel: Any) -> Any:
+    """Name the scientific family without identifying custom coefficients by label."""
+    explicit = _first(record.get("polynomial_family"), record.get("attention_family"))
+    if explicit is not None:
+        return explicit
+    mechanism = model.get("attention_mechanism")
+    if mechanism is not None and mechanism != "dot_product":
+        return mechanism
+    families = {
+        "gla": "gla", "softmax": "softmax", "exp_unnormalized": "exponential",
+        "taylor": "taylor", "taylor_unnormalized": "taylor",
+        "learned_quadratic": "learned_polynomial", "learned_polynomial": "learned_polynomial",
+        "learned_polynomial_unnormalized": "learned_polynomial",
+        "learned_polynomial_sum_of_squares": "learned_polynomial",
+        "fixed_polynomial": "polynomial", "fixed_polynomial_unnormalized": "polynomial",
+        "fixed_polynomial_sum_of_squares": "polynomial",
+    }
+    if kernel in families:
+        return families[kernel]
+    if model.get("attention_fixed_coefficients") is not None or model.get("attention_fixed_square_factors") is not None:
+        return "polynomial"
+    if model.get("attention_coefficients") == "learned" or model.get("quadratic_mode") in {"positive", "unrestricted"}:
+        return "learned_polynomial"
+    if model.get("attention_coefficients") == "fixed" and "attention_degree" in model:
+        if model["attention_degree"] is not None:
+            return "taylor"
+        if "attention_normalization" in model:
+            return "softmax" if model["attention_normalization"] else "exponential"
+    return None
+
+
 def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
     run = study / "runs" / record["run_id"]
     config = _read_mapping(run / "config.yaml")
@@ -347,6 +379,8 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
     train = train if isinstance(train, dict) else {}
     optim = config.get("optim", {})
     optim = optim if isinstance(optim, dict) else {}
+    data = config.get("data", {})
+    data = data if isinstance(data, dict) else {}
     condition = config.get("condition", {})
     condition_name = condition.get("name") if isinstance(condition, dict) else condition
     condition_seed = condition.get("seed") if isinstance(condition, dict) else None
@@ -364,14 +398,24 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
     last_validation = max(validations, key=lambda x: x.get("step", -1), default={})
     sources = (terminal, completion, metadata, last_validation)
     get = lambda key: _first(*(source.get(key) for source in sources))
-    mode = _first(record.get("coefficient_mode"), model.get("attention_coefficients"))
+    mode = _first(model.get("attention_coefficients"), record.get("coefficient_mode"))
+    if model.get("quadratic_mode") in {"positive", "unrestricted"}:
+        mode = "learned"
+    elif mode is None and model.get("quadratic_mode") == "fixed":
+        mode = "fixed"
+    kernel = _first(record.get("attention_kernel"), metadata.get("attention_kernel"), model.get("attention_kernel"))
     sharing = _first(record.get("coefficient_sharing"), metadata.get("attention_coefficient_sharing"), model.get("attention_coefficient_sharing"), model.get("quadratic_sharing"))
+    budget = (optim.get("total_steps"), data.get("batch_size"), data.get("sequence_length"))
+    prediction_tokens = budget[0] * budget[1] * (budget[2] - 1) if all(type(value) is int for value in budget) else None
     return {
         "run_id": record["run_id"], "label": record.get("label", record.get("name")),
         "status": _first(record.get("status"), completion.get("status"), metadata.get("status")),
+        "home_cluster": record.get("home_cluster"),
         "model_id": _first(model_id, record.get("model_id"), metadata.get("model_id")),
         "condition": _first(condition_name, record.get("condition"), metadata.get("condition")),
-        "attention_kernel": _first(record.get("attention_kernel"), metadata.get("attention_kernel"), model.get("attention_kernel")),
+        "attention_mechanism": _first(model.get("attention_mechanism"), metadata.get("attention_mechanism")),
+        "attention_family": _attention_family(model, record, kernel),
+        "attention_kernel": kernel,
         "qk_head_dim": _first(model.get("qk_head_dim"), record.get("qk_head_dim"), metadata.get("qk_head_dim")),
         "attention_degree": _first(model.get("attention_degree"), record.get("attention_degree"), metadata.get("attention_degree")),
         "attention_normalization": _first(model.get("attention_normalization"), record.get("attention_normalization"), metadata.get("attention_normalization")),
@@ -381,6 +425,7 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "coefficient_sharing": sharing, "quadratic_mode": model.get("quadratic_mode"),
         "weight_decay_policy": optim.get("weight_decay_policy"),
         "seed": _first(train.get("seed"), config.get("seed"), condition_seed, record.get("seed"), metadata.get("seed")),
+        "training_steps": optim.get("total_steps"), "prediction_tokens": prediction_tokens,
         "source_commit": _first(record.get("source_commit"), metadata.get("source_commit"), train.get("source_commit")),
         "terminal_step": _first(terminal.get("step"), record.get("training_updates"), get("step")),
         "terminal_validation_nll": _first(record.get("terminal_validation_nll"), get("validation_nll")),

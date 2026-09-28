@@ -1,0 +1,185 @@
+{
+  "acceptance": {
+    "H100-4": {
+      "completed_utc": "2026-09-26T14:26:45.488969+00:00",
+      "cpu_distributed_tests_passed": 0,
+      "cpu_tests_passed": 202,
+      "gpu_tests_passed": 83,
+      "identity": "751a61fe6796db442df59dfeec300a90ea358a365b657ba2fab2baeaf82a5925",
+      "initialization_check": {
+        "mechanism_parameters": {
+          "polynomial_coefficients": {
+            "initial": [
+              1.0,
+              1.0
+            ],
+            "shape": [
+              10,
+              16,
+              2
+            ],
+            "weight_decay": false
+          },
+          "qk_norm_log_scale": {
+            "initial": [
+              2.0794415416798357
+            ],
+            "shape": [
+              10,
+              16,
+              1
+            ],
+            "weight_decay": false
+          }
+        },
+        "softmax_counterpart_parameter_sha256": "ba614ec083a08ae41a0958541742af533187527debe40c3a6e9324cd9e8e4036"
+      },
+      "initialization_parameter_count": 199906784,
+      "initialization_parameter_sha256": "d4807b199c0d7a131e12e4ecc2c0a25ce6ee62e27ae41b5b0e618a837c9bceea",
+      "passed_stages": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "pilot": {
+        "attention_backend": "blocked",
+        "attention_implementation": "blocked",
+        "final_step": 20,
+        "projected_hours": 10.447,
+        "steady_step_seconds_median": 1.9718
+      },
+      "resume": {
+        "final_step": 21,
+        "restored_step": 20
+      },
+      "slurm_job_id": "202338",
+      "status": "passed"
+    }
+  },
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": [
+    {
+      "path": "experiments/attention_scaling/runs/rc342fe890e6f/config.json",
+      "sha256": "2353d2689f5e8e3be36dcc89f9b8f8358a891db35deee5b99e5af76fad357a48"
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rc342fe890e6f/config.yaml",
+      "sha256": "e4ed7d1fedc53cb09328742b53450b0afe9c60ae3d21940c9b34a80ce2a36413"
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rc342fe890e6f/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rc342fe890e6f/metadata.json",
+      "sha256": "98917fd570c76bc95e7e72fe6d540ac681b2bad0fe5ad33815a7ca925c2d8a63"
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rc342fe890e6f/numerical_failure_step_00000027.json",
+      "sha256": "9008aedef104d4c529649a95ec28adb7279b5dbacdf30f8cb0d51020e2895c27"
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rc342fe890e6f/wandb_run.json",
+      "sha256": "b153e6b423bc326a6da8246086d83073d92dfd80bf2ebf1d1cddb1eed1c4ea8a"
+    }
+  ],
+  "attempts": [
+    {
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "node": "dogo",
+      "outcome": "passed acceptance, trained from a fresh initialization, and stopped with a numerical failure at update 27",
+      "restart": 0,
+      "slurm_job_id": "202338"
+    }
+  ],
+  "attention_backend": "blocked",
+  "coefficient_count": 320,
+  "config": {
+    "path": "experiments/attention_scaling/runs/rc342fe890e6f/config.yaml",
+    "recorded_sha256": "3aaaf8031f6b5db0bc9825bdeb2f354e5b4a9d32c09112fee3e3d847e76d8fab",
+    "sha256": "e4ed7d1fedc53cb09328742b53450b0afe9c60ae3d21940c9b34a80ce2a36413"
+  },
+  "data_identity": {
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "dependency_lock": {
+    "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559",
+    "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+    "source_path": "scaffolds/transformer/uv.lock"
+  },
+  "execution": {
+    "attention_backend": "blocked",
+    "attention_backend_requested": "blocked",
+    "attention_implementation": "blocked",
+    "batch_transfer": "host_to_shard",
+    "device_kinds": [
+      "NVIDIA H100 80GB HBM3"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "runtime_history_entries": 1,
+    "runtime_settings": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct",
+    "wall_time": "00:10:46 including acceptance (Slurm 2026-09-26T10:17:35 to 2026-09-26T10:28:21 local)"
+  },
+  "failure": {
+    "checked_quantities": [
+      "forward_loss",
+      "global_gradient_norm",
+      "updated_parameters"
+    ],
+    "error": "Nonfinite training loss or optimizer update at step 27: nan",
+    "path": "experiments/attention_scaling/runs/rc342fe890e6f/numerical_failure_step_00000027.json",
+    "sha256": "9008aedef104d4c529649a95ec28adb7279b5dbacdf30f8cb0d51020e2895c27",
+    "step": 27,
+    "timestamp_utc": "2026-09-26T14:28:16.661201+00:00",
+    "update_numerics": {
+      "forward_loss": "NaN",
+      "global_gradient_norm": "NaN",
+      "updated_parameter_norm": "NaN"
+    }
+  },
+  "frozen_execution_sha256": "15729bb98f52a1b86173c1d2891b12b3165ba1961f72d1192fe370a717c0f156",
+  "hardware": "4x NVIDIA H100 dogo, sweep partition",
+  "home_cluster": "kennel",
+  "label": "200m-qk-m001-normalized-seed0",
+  "last_valid_validation": null,
+  "log": {
+    "path": "experiments/attention_scaling/runs/rc342fe890e6f/training.log",
+    "sha256": "fa7f2c9057f6c31838fa173c67ff7da48f66ebd8a2d41b5d89870b81e9d988ca"
+  },
+  "name": "200m-qk-m001-normalized-seed0",
+  "parameter_count": 199906784,
+  "partition": "sweep",
+  "record_schema_version": 1,
+  "run_id": "rc342fe890e6f",
+  "seed": 0,
+  "slurm_job_id": "202338",
+  "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+  "status": "numerical-failure",
+  "submitted_utc": "2026-09-26T06:43:53+00:00",
+  "wandb": {
+    "run_id": "0776e9671abc44b68e9ebe65fd40fb29",
+    "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/0776e9671abc44b68e9ebe65fd40fb29"
+  }
+}

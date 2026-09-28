@@ -1,71 +1,89 @@
 schema_version: 1
-study: odd_taylor_attention
+study: attention_scaling
 metric: terminal_validation_perplexity
 secondary_metrics:
 - best_validation_perplexity
 - training_and_validation_history
 runs:
-- study: odd_taylor_attention
+- study: attention_scaling
   run_id: raa90edf82385
   label: 200m-m001-seed0
   sources:
     config.yaml:
-      path: experiments/odd_taylor_attention/runs/raa90edf82385/config.yaml
+      path: experiments/attention_scaling/runs/raa90edf82385/config.yaml
       sha256: a5ff5d5fda842f0437c419f99f858d16f17cf19dec2091bc985846766cf25268
     metadata.json:
-      path: experiments/odd_taylor_attention/runs/raa90edf82385/metadata.json
+      path: experiments/attention_scaling/runs/raa90edf82385/metadata.json
       sha256: 7a5d971252905aec23e3a7c963eaff1616a9ec8dc9c8090fc9f701035aeed336
     numerical_failure_step_00000031.json:
-      path: experiments/odd_taylor_attention/runs/raa90edf82385/numerical_failure_step_00000031.json
+      path: experiments/attention_scaling/runs/raa90edf82385/numerical_failure_step_00000031.json
       sha256: 43c29f7a64b34dbaa3fc192321836a476cc8c5ffb54f3ef953e82697b3a62143
-- study: odd_taylor_attention
+  role: primary
+- study: attention_scaling
   run_id: r8b46f1ad9453
   label: 200m-m003-seed0
   sources:
     config.yaml:
-      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/config.yaml
+      path: experiments/attention_scaling/runs/r8b46f1ad9453/config.yaml
       sha256: d10f16273afc5f387c7055c4b127057d142a7cec59fe253fb466bb3a011a7283
     metadata.json:
-      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/metadata.json
+      path: experiments/attention_scaling/runs/r8b46f1ad9453/metadata.json
       sha256: a8f14c5236955465209b27d86aab60381f691f71f20c068d8d2332dd9dacef82
     numerical_failure_step_00000419.json:
-      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/numerical_failure_step_00000419.json
+      path: experiments/attention_scaling/runs/r8b46f1ad9453/numerical_failure_step_00000419.json
       sha256: 4cdddfa0c4136fbb902b6a8375bc4efff6962eb79b1680616c7c3be8b7e722c6
-- study: key_dimension_taylor
+  role: primary
+- study: attention_scaling
   run_id: r93c9d0814322
   label: 200m-m002-seed0
   sources:
     config.yaml:
-      path: experiments/key_dimension_taylor/runs/r93c9d0814322/config.yaml
+      path: experiments/attention_scaling/runs/r93c9d0814322/config.yaml
       sha256: 742cf0d13516ae8318e06173466ba50c3a0df60a76e4e45147ac37cdddbc6bfe
     metrics.jsonl:
-      path: experiments/key_dimension_taylor/runs/r93c9d0814322/metrics.jsonl
+      path: experiments/attention_scaling/runs/r93c9d0814322/metrics.jsonl
       sha256: afd284756057e498dfbc1279530e44e792627848f10663a0dcdd793a0f447bc3
     completion.json:
-      path: experiments/key_dimension_taylor/runs/r93c9d0814322/completion.json
+      path: experiments/attention_scaling/runs/r93c9d0814322/completion.json
       sha256: 0c39c07e7276d68eec7965eb5c616b65e4e08ed46c5123555e67cff86604e06b
     metadata.json:
-      path: experiments/key_dimension_taylor/runs/r93c9d0814322/metadata.json
+      path: experiments/attention_scaling/runs/r93c9d0814322/metadata.json
       sha256: 300ccab36e6488f7aa6731df6a034ef677812e118c471efe39049c83c95a1c40
     best_validation.json:
-      path: experiments/key_dimension_taylor/runs/r93c9d0814322/best_validation.json
+      path: experiments/attention_scaling/runs/r93c9d0814322/best_validation.json
       sha256: 157ecf0d356530fe5053fa52197dc7cdf7be72103696568156189bfeef7ba98d
-- study: key_dimension_taylor
+  role: control
+- study: attention_scaling
   run_id: r50088d29f2b5
   label: 200m-softmax-seed0
   sources:
     config.yaml:
-      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/config.yaml
+      path: experiments/attention_scaling/runs/r50088d29f2b5/config.yaml
       sha256: d39c51225ff4843fe32ea5cb2a399df2c64e6d5808abf6f9600aa89fdadd861a
     metrics.jsonl:
-      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/metrics.jsonl
+      path: experiments/attention_scaling/runs/r50088d29f2b5/metrics.jsonl
       sha256: 6fc68e43a84719a7c39cbc08d66fbc49523bad867abf5d90bf968df0be8d5786
     completion.json:
-      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/completion.json
+      path: experiments/attention_scaling/runs/r50088d29f2b5/completion.json
       sha256: 7571ffbad1e5e9cf1b7f378ecad556b3f1f1e7d0d77671f8f5aa740331b9c8e0
     metadata.json:
-      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/metadata.json
+      path: experiments/attention_scaling/runs/r50088d29f2b5/metadata.json
       sha256: d2a32e0c8045e8053595a1acb2d802b97987f8c7b6f7a9eefdef21066d315d42
     best_validation.json:
-      path: experiments/key_dimension_taylor/runs/r50088d29f2b5/best_validation.json
+      path: experiments/attention_scaling/runs/r50088d29f2b5/best_validation.json
       sha256: e21b8b5fa7314c7d097d4421a03770ec0010b4db59ac967dcfe7acfdca01104c
+  role: control
+analysis:
+  controls:
+  - study: attention_scaling
+    label: 200m-m002-seed0
+    coefficient_count: 0
+    quadratic_mode: fixed
+    quadratic_sharing: none
+    control_note: fixed Taylor m=2 with QK-norm and selective weight decay
+  - study: attention_scaling
+    label: 200m-softmax-seed0
+    coefficient_count: 0
+    quadratic_mode: fixed
+    quadratic_sharing: none
+    control_note: softmax with selective weight decay and no QK-norm

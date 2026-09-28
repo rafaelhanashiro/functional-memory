@@ -18,7 +18,7 @@ locate_run = partial(selected_run_directory, Path(__file__).resolve().parent)
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = Path(__file__).resolve().parent
-RECORD = ROOT / "experiments/gla_key_dimension"
+RECORD = ROOT / "experiments/attention_scaling"
 DEGREES = (2, 4, 8, 16)
 # Fixed series colors: GLA is the accent; softmax neutral; Taylor degree is a
 # single-hue ramp because degree is ordered (light = low, dark = high).

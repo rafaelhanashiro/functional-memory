@@ -42,6 +42,10 @@ def main() -> None:
                     "Use --allow-plain-qk only when plain QK scores were explicitly requested."
                 )
             recipe["train"]["source_commit"] = "auto"
+            study = args.study.parent if args.study.name == "sweep.yaml" else args.study
+            recipe["train"]["wandb_group"] = study.name
+            recipe["train"]["wandb_run_name"] = args.label
+            recipe["train"]["wandb_dir"] = None
         print(create_run(args.study, recipe, args.label))
     elif args.command == "refresh":
         for result in args.result:

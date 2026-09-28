@@ -66,6 +66,34 @@ def test_selected_ids_change_inputs_without_changing_plotting_code(tmp_path):
         selected_run_directory(result, study, first.name)
 
 
+def test_selected_views_keep_comparison_roles_independent_of_study_membership(tmp_path):
+    from scaffolds.records import create_run
+    from scaffolds.records.selections import run_sources
+    from scaffolds.transformer.analysis import selected_views
+
+    study = tmp_path / "experiments/attention_scaling"
+    recipe = {"model": {"qk_head_dim": 8, "value_head_dim": 8},
+              "data": {"batch_size": 1, "sequence_length": 2}, "optim": {"total_steps": 1}}
+    primary = create_run(study, recipe, label="learned")
+    control = create_run(study, recipe, label="fixed")
+    create_run(study, recipe, label="unselected")
+    result = tmp_path / "results/comparison"
+    result.mkdir(parents=True)
+    selection = {"analysis": {"key_dimensions": [8], "controls": [
+        {"study": study.name, "label": "fixed", "control_note": "matched coefficients"}]}, "runs": [
+        {"study": study.name, "run_id": run.name, "label": label, "role": role,
+         "sources": run_sources(tmp_path, study.name, run.name)}
+        for run, label, role in ((primary, "learned", "primary"), (control, "fixed", "control"))]}
+    (result / "selection.yaml").write_text(yaml.safe_dump(selection))
+
+    views = selected_views(result, study)
+    assert [run["run_id"] for run in views["runs"]] == [primary.name]
+    assert [run["run_id"] for run in views["controls"]] == [control.name]
+    assert views["controls"][0]["control_note"] == "matched coefficients"
+    assert views["controls"][0]["control"] is True
+    assert views["key_dimensions"] == [8]
+
+
 def _run(tmp_path, name, *, metadata, completion=None, failure=None, record_extra=None):
     from pathlib import Path
 

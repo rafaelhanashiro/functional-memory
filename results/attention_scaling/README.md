@@ -107,13 +107,9 @@ are not.
 - **GLA** (selective decay except at `d_K = 32, 128`): 17.46 at `d_K = 8` to 15.44 at
   `d_K = 128`; better than normalized `m = 2` and worse than softmax at every width.
 
-Not plotted (in their study records): normalized `m = 0` (47.07), softmax at
+Not plotted (retained in the run records): normalized `m = 0` (47.07), softmax at
 `d_K = 2, 4, 256`, and the learned quadratics (per-head positive 16.21, global
 positive 16.19, global unrestricted failed @2,324).
-
-[`combined_terminal_ppl-original-decay.png`](combined_terminal_ppl-original-decay.png)
-([PDF](combined_terminal_ppl-original-decay.pdf), [data](summary-original-decay.csv))
-is the frozen 2026-09-25 heatmap under the old decay rule; it is not regenerated.
 
 ## Limits
 

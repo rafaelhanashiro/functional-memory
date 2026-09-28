@@ -181,7 +181,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
         axis.legend(fontsize=8)
     save(figure, "throughput")
 
-    lines = ["# Learned quadratic attention", "", f"Source: `{manifest['source_commit']}`. Sweep identity: `{manifest['identity']}`.", "",
+    lines = ["# Learned quadratic attention", "",
              "Four learned variants match the degree sweep's 200M-parameter, 10B-token seed-0 recipe. Endpoints use committed terminal validation, independently of the retained validation-best checkpoint.", "",
              "| Kernel | Parameters | Status | Terminal NLL | Terminal PPL |", "|---|---:|---|---:|---:|"]
     for row in rows:
@@ -203,7 +203,7 @@ def aggregate(manifest: dict, output_dir: Path | None = None, *, manifest_path: 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", type=Path, default=Path("experiments/learned_quadratic_attention/sweep.yaml"))
+    parser.add_argument("--manifest", type=Path, default=Path("experiments/attention_scaling/sweep.yaml"))
     parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
     aggregate(selected_views(Path(__file__).resolve().parent, args.manifest), args.output_dir, manifest_path=args.manifest)
