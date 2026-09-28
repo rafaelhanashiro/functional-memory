@@ -281,7 +281,7 @@
   },
   "slurm_job_id": "202215",
   "source_commit": "aa5b6eb34d8b57533cdfe04fe263906e69d30091",
-  "status": "completed",
+  "status": "complete",
   "submitted_utc": "2026-09-25T22:13:06+00:00",
   "wandb": {
     "run_id": "8c6f3b4343ba4f70b2d9c9148814184d",

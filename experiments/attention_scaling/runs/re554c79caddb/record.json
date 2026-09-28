@@ -192,7 +192,7 @@
   "seed": 0,
   "slurm_job_id": "202344",
   "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
-  "status": "numerical-failure",
+  "status": "numerical_failure",
   "submitted_utc": "2026-09-26T06:43:53+00:00",
   "wandb": {
     "run_id": "0fdda1b139444b8bac7bf42eaa66bcfe",

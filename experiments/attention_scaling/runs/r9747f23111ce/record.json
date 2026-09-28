@@ -198,5 +198,5 @@
   },
   "slurm_job_id": "199898",
   "source_commit": "2358ccf2f194f4ed39fecb5bfbae45f42a72fdfb",
-  "status": "numerical-failure"
+  "status": "numerical_failure"
 }

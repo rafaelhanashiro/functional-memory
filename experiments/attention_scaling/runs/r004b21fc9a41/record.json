@@ -93,9 +93,9 @@
       "gpu_type": "B300",
       "node": "akita",
       "outcome": "passed acceptance and trained all 19,074 updates from a fresh initialization",
-      "partition": "sweep",
       "restart": "0",
       "slurm_job_id": "201997",
+      "slurm_partition": "sweep",
       "started_utc": "2026-09-25T07:26:31.285722+00:00",
       "time_limit": "2-00:00:00"
     }
@@ -263,7 +263,7 @@
   },
   "slurm_job_id": "201997",
   "source_commit": "788a085e24225872495199e8040ec1167070a691",
-  "status": "completed",
+  "status": "complete",
   "wandb": {
     "run_id": "dc025be1aae04d4c86acd8159c8ddfc0",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/dc025be1aae04d4c86acd8159c8ddfc0"

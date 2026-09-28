@@ -134,9 +134,9 @@
       "launch_commit": "126d72a90dea0624a9acc3914255ecaf19998442",
       "node": "dogo",
       "outcome": "failed acceptance cpu-tests: the adapter's regeneration test skipped before completion (fixed in 381f1fd)",
-      "partition": "sweep",
       "restart": "0",
       "slurm_job_id": "202186",
+      "slurm_partition": "sweep",
       "started_utc": "2026-09-25T21:20:12Z"
     },
     {
@@ -145,9 +145,9 @@
       "gpu_type": "H100",
       "node": "dogo",
       "outcome": "passed cpu-tests and cpu-distributed-tests; preempted",
-      "partition": "sweep",
       "restart": "0",
       "slurm_job_id": "202190",
+      "slurm_partition": "sweep",
       "started_utc": "2026-09-25T21:26:41Z"
     },
     {
@@ -156,9 +156,9 @@
       "gpu_type": "H100",
       "node": "dogo",
       "outcome": "preempted during gpu-tests",
-      "partition": "sweep",
       "restart": "1",
       "slurm_job_id": "202190",
+      "slurm_partition": "sweep",
       "started_utc": "2026-09-25T21:49:15Z"
     },
     {
@@ -167,9 +167,9 @@
       "gpu_type": "H100",
       "node": "dogo",
       "outcome": "passed H100 acceptance at 22:05:09Z; trained from a fresh initialization to about update 1,464 (checkpoint at 1,000, first validation at 1,000); preempted",
-      "partition": "sweep",
       "restart": "2",
       "slurm_job_id": "202190",
+      "slurm_partition": "sweep",
       "started_utc": "2026-09-25T21:57:25Z"
     },
     {
@@ -178,9 +178,9 @@
       "gpu_type": "B300",
       "node": "akita",
       "outcome": "passed B300 acceptance at 22:28:30Z; resumed from the update-1,000 checkpoint (data sequence 256,000) and completed all 19,074 updates",
-      "partition": "sweep",
       "restart": "3",
       "slurm_job_id": "202190",
+      "slurm_partition": "sweep",
       "started_utc": "2026-09-25T22:19:26Z"
     }
   ],

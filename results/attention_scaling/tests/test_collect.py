@@ -85,7 +85,7 @@ def _fixture(tmp_path: Path) -> dict:
     metadata_sha = _write(failed_dir / "metadata.json", failed_metadata)
     failure_filename = "numerical_failure_step_00000007.json"
     failure_sha = _write(failed_dir / failure_filename, failure)
-    failed_run = {"name": failed_name, "status": "numerical-failure", "seed": 0,
+    failed_run = {"name": failed_name, "status": "numerical_failure", "seed": 0,
                   "qk_head_dim": 16, "attention_degree": 1, "source_commit": source,
                   "metadata": {"path": f"experiments/{experiment}/runs/{failed_name}/metadata.json",
                                "sha256": metadata_sha},

@@ -221,7 +221,7 @@
     "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'"
   },
   "source_commit": "270179ce9330e33bd2dacffb364aaf00e01e38f8",
-  "status": "completed",
+  "status": "complete",
   "throughput": "0.50 s/update on four H100 SXM (2.2 s/update for the blocked attempt)",
   "wandb": {
     "run_id": "fb0b427a2c034695beeb4d3be4e16613",

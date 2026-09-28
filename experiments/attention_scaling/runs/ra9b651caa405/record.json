@@ -73,56 +73,56 @@
     {
       "end": "2026-09-27T03:00:49",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T02:58:53",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T03:04:49",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T03:02:53",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T03:08:19",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T03:07:04",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T03:13:19",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T03:10:48",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T03:39:19",
       "node": "akita",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T03:36:45",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T04:06:19",
       "node": "akita",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T04:03:54",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T04:33:49",
       "node": "akita",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T04:32:03",
       "state": "PREEMPTED"
     },
     {
       "end": null,
       "node": "akita",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T05:02:54",
       "state": "RUNNING"
     }

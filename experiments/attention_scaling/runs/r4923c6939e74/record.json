@@ -70,7 +70,7 @@
     {
       "end": "2026-09-27T03:15:18",
       "node": "dogo",
-      "partition": "sweep",
+      "slurm_partition": "sweep",
       "start": "2026-09-27T03:14:54",
       "state": "PREEMPTED"
     }

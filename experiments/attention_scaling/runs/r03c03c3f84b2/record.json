@@ -75,7 +75,7 @@
       "elapsed": "04:46:04",
       "gpu_type": "B300",
       "node": "akita",
-      "partition": "sweep",
+      "slurm_partition": "sweep",
       "slurm_restart_count": 0,
       "started_utc": "2026-09-24T23:44:36.300660+00:00",
       "state": "COMPLETED"

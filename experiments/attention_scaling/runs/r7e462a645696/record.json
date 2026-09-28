@@ -73,9 +73,9 @@
       "gpu_count": 4,
       "gpu_type": "B300",
       "node": "akita",
-      "partition": "long",
       "restart": "0",
       "slurm_job_id": "200875",
+      "slurm_partition": "long",
       "started_utc": "2026-09-22T20:08:05.734405+00:00",
       "time_limit": "2-00:00:00"
     }
@@ -235,5 +235,5 @@
   },
   "slurm_job_id": "200875",
   "source_commit": "51c647459205854447ee31fc54b9bde8813f819c",
-  "status": "completed"
+  "status": "complete"
 }

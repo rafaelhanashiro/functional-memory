@@ -16,8 +16,8 @@
       "elapsed_seconds": 61.2,
       "gpu": "NVIDIA H100 80GB HBM3",
       "node": "dogo.csail.mit.edu",
-      "partition": "standard",
       "slurm_job_id": "201745",
+      "slurm_partition": "standard",
       "slurm_restart_count": 0
     }
   ],
@@ -45,5 +45,5 @@
   "seed": 0,
   "slurm_job_id": "201745",
   "source_commit": "279fdd63fa03054196762da2bc616eb1f8c30208",
-  "status": "completed"
+  "status": "complete"
 }

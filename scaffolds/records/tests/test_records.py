@@ -27,7 +27,7 @@ def test_identical_recipes_get_distinct_ids_and_resume_keeps_identity(tmp_path):
     assert load_run(first)["label"] == "same-label"
     original = (first / "config.yaml").read_bytes()
     update_record(first, {"attempts": [{"job_id": "12"}], "status": "running"})
-    record = update_record(first, {"attempts": [{"job_id": "12"}, {"job_id": "13"}], "status": "completed"})
+    record = update_record(first, {"attempts": [{"job_id": "12"}, {"job_id": "13"}], "status": "complete"})
     assert record["run_id"] == first.name
     assert (first / "config.yaml").read_bytes() == original
     assert run_directory(study, first.name) == first

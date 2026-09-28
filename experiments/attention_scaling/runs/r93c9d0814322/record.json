@@ -96,77 +96,77 @@
     {
       "end": "2026-09-27T03:22:54",
       "node": "akita",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T02:16:56",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T03:28:49",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T03:25:06",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T03:34:49",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T03:30:55",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T03:41:49",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T03:38:38",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T03:48:19",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T03:46:54",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T03:53:19",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T03:51:22",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T03:57:19",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T03:55:54",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T04:04:19",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T04:02:24",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T04:17:53",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T04:14:54",
       "state": "PREEMPTED"
     },
     {
       "end": "2026-09-27T04:40:49",
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T04:39:39",
       "state": "PREEMPTED"
     },
     {
       "end": null,
       "node": "dogo",
-      "partition": "long",
+      "slurm_partition": "long",
       "start": "2026-09-27T04:56:24",
       "state": "RUNNING"
     }

@@ -202,7 +202,7 @@
     "tree_sha256_rule": "sha256 over sorted lines '<relative path>\\t<file sha256>'"
   },
   "source_commit": "aff55c30a44489ba6904e5463bc9d4c62aa0f406",
-  "status": "completed",
+  "status": "complete",
   "wandb": {
     "run_id": "74a27e5b86904340abeb4e156357055c",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/74a27e5b86904340abeb4e156357055c"
