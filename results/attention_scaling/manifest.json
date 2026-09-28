@@ -2085,7 +2085,7 @@
     },
     "readme": {
       "path": "results/attention_scaling/README.md",
-      "sha256": "c048d39d6552b5fba0c1bc99caee5df0741bccb09ab01c9d93a90a9b8f351fd1"
+      "sha256": "12bc4a5033747896cf954fa13b2c1b83491e8309471385d9410327e2c9b40158"
     },
     "combined_terminal_ppl_pdf": {
       "path": "results/attention_scaling/combined_terminal_ppl.pdf",

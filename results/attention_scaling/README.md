@@ -6,6 +6,12 @@ figures are built from existing runs named in [`selection.yaml`](selection.yaml)
 (heatmap) and [`degree_chart.yaml`](degree_chart.yaml). Provenance:
 [`manifest.json`](manifest.json). Home cluster: Kennel.
 
+The two maintained attention figures are the combined heatmap and the degree plot.
+Their selections are subsets of the [complete run inventory](../../experiments/attention_scaling/runs.csv).
+Each run retains its recipe, measurements (including training curves and recorded
+coefficient diagnostics), and execution metadata under
+[`experiments/attention_scaling/runs/`](../../experiments/attention_scaling/runs/).
+
 Current defaults are selective weight decay and QK-norm. **Legacy** runs predate
 them and are outlined in the heatmap.
 

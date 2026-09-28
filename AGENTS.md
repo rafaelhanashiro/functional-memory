@@ -54,6 +54,12 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   into a results directory. Selection must be explicit; do not silently choose the
   newest or best run at a coordinate. Numerical failures and incomplete coordinates
   remain visible. Terminal and validation-best metrics must be distinguished.
+- Keep the maintained attention comparisons in `results/attention_scaling/`: the
+  combined heatmap and degree plot, their explicit selections, and regeneration code.
+  Do not create a result directory for each mechanism or sweep. Learning curves and
+  coefficient diagnostics remain available in run measurements; add a maintained
+  diagnostic figure only when it serves a requested comparison. State-rank results
+  belong to `results/state_rank/`.
 - Keep figures and analysis files directly in the result directory. Keep each run's
   recipe, provenance, raw output, retained checkpoint, and log together. Do not create
   parallel experiment-level `configs/`, `provenance/`, `logs/`, `checkpoints/`, or

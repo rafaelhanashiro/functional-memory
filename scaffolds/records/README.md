@@ -73,10 +73,8 @@ data-identity files, raw `config.json`) are not pinned, so recording attempts,
 artifacts, or retention never invalidates a figure. A run of a state analysis instead
 pins its recipe hash and the inputs its record captured.
 
-Transformer comparison selections distinguish `role: primary` from `role: control`
-in their `runs` list. Comparison-specific settings and annotated controls belong in
-`selection.analysis`; they do not belong to study-wide defaults. The shared
-`selected_views` helper uses those explicit roles even when all inputs share a study.
+Comparison-specific settings and primary/control run choices belong in result
+selections; they do not belong to study-wide defaults.
 
 After pointing a role at a new `run_id`, editing a grid's cells, or correcting a
 measurement, re-pin and then regenerate:

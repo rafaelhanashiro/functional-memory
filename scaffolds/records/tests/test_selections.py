@@ -1,6 +1,7 @@
 import hashlib
 import json
 
+import pytest
 import yaml
 
 from scaffolds.records.selections import refresh_selection, run_sources, verify_pinned_runs
@@ -20,6 +21,23 @@ def result(root, name="toy", **selections):
     for file, selection in selections.items():
         (directory / f"{file}.yaml").write_text(yaml.safe_dump(selection, sort_keys=False, allow_unicode=True))
     return directory
+
+
+def test_verification_pins_exactly_scientific_inputs_and_ignores_provenance(tmp_path):
+    directory = run(tmp_path, "toy", "r000000000001", **{"metrics.jsonl": "1\n"})
+    entries = [{"study": "toy", "run_id": directory.name,
+                "sources": run_sources(tmp_path, "toy", directory.name)}]
+    assert set(entries[0]["sources"]) == {"config.yaml", "metrics.jsonl"}
+    verify_pinned_runs(tmp_path, entries)
+    (directory / "record.json").write_text('{"attempts": [{"node": "n1"}]}\n')
+    verify_pinned_runs(tmp_path, entries)
+    (directory / "metrics.jsonl").write_text("2\n")
+    with pytest.raises(ValueError, match="metrics.jsonl"):
+        verify_pinned_runs(tmp_path, entries)
+    (directory / "metrics.jsonl").write_text("1\n")
+    (directory / "numerical_failure_step_00000003.json").write_text("{}\n")
+    with pytest.raises(ValueError, match="numerical_failure_step_00000003.json"):
+        verify_pinned_runs(tmp_path, entries)
 
 
 def test_refresh_pins_scientific_files_and_follows_a_repointed_role(tmp_path):

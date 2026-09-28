@@ -25,9 +25,10 @@ by that execution, including their original execution paths. Current artifact
 locations come from the record. New executions allocate fresh IDs; historical
 recipes are never edited to inherit current defaults.
 
-Result collections under `results/` select exact run IDs and pin their scientific
-inputs. Each comparison states its own controls and settings in `selection.yaml`;
-study membership alone never selects a figure's inputs. Existing plain-score
+The heatmap and degree plot under `results/attention_scaling/` select exact run IDs
+and pin their scientific inputs. Each comparison states its controls and settings
+in its selection YAML; study membership alone never selects a figure's inputs.
+Existing plain-score
 runs, numerical failures, and allocated but unlaunched runs remain distinguishable
 in the index. Terminal metrics and validation-best checkpoint metrics are distinct.
 

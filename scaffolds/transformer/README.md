@@ -350,16 +350,6 @@ Studies configure these shared modules with execution modules at their root
   bridge settings apply only to GLA recipes.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
   the selection.
-- `analysis.py` reads committed validation events and saves figures
-  deterministically. `verify_result_selection` checks that each selected run's
-  scientific inputs match the selection's pins;
-  `selected_run_directory` resolves a plotting role through the explicit run ID in
-  `results/<comparison>/selection.yaml`; `run_view` presents one run from its own
-  recipe, record, and raw outputs; `selected_views` loads a study's selected runs and
-  its `{study, label}` controls as run views. A new execution replaces a plotted
-  role by changing its selected ID and refreshing the selection
-  (`python -m scaffolds.records refresh`). Summaries and figures regenerate
-  byte-identically.
 
 Kernel and throughput benchmark scripts live in `benchmarks/`; their results and the
 scaffold's hardware qualification live in [`validation/`](validation/README.md).

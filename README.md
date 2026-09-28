@@ -16,17 +16,11 @@ The [run index](experiments/attention_scaling/runs.csv) exposes the settings,
 home cluster, training budget, status, and outcome. Each result collection selects
 its inputs explicitly, so the same run can participate in several comparisons.
 
-Additional attention views:
-[GLA width](results/gla_key_dimension/README.md),
-[key width and degree](results/key_dimension_taylor/README.md),
-[learned quadratic](results/learned_quadratic_attention/README.md),
-[learned unnormalized Taylor](results/learned_unnormalized_taylor/README.md),
-[nonnegative learned Taylor](results/nonnegative_learned_taylor/README.md),
-[odd Taylor](results/odd_taylor_attention/README.md),
-[QK-normalized softmax](results/qk_norm_attention/README.md),
-[QK-normalized learned Taylor](results/qk_norm_learned_taylor/README.md),
-[unnormalized exponential](results/unnormalized_attention/README.md), and
-[unnormalized Taylor](results/unnormalized_taylor_attention/README.md).
+The maintained attention results are the combined heatmap and degree plot in
+`results/attention_scaling/`. The complete run inventory, learning-curve data,
+coefficient diagnostics, and execution metadata remain under
+`experiments/attention_scaling/`; result directories organize the comparisons we
+want to present, rather than individual sweeps.
 
 ```text
 results/<analysis>/
