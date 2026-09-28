@@ -9,8 +9,9 @@ This sweep trains GLA at **d_K ∈ {8, 16, 32, 64, 128}**, matching the rows of 
 terminal held-out perplexity after 10.0B training tokens.
 
 **Status:** complete. All five runs trained for 10.0B tokens on Kennel B300s and H100s.
-Five replacement runs with selective weight decay are executing on ORCD; they are
-the study's registered runs, and this selection will move to them when they complete.
+Five replacement runs with selective weight decay are the study's registered runs on
+ORCD: d_K = 8, 16, and 64 are complete, and d_K = 32 and 128 are not yet launched.
+This selection will move to them when all five complete.
 
 ## Scientific comparison
 

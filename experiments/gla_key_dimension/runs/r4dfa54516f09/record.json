@@ -11,18 +11,5 @@
   "run_id": "r4dfa54516f09",
   "seed": 0,
   "state_elements_per_layer": 131072,
-  "status": "submitted",
-  "submission": {
-    "gpu_count": 2,
-    "gpu_type": "H200",
-    "launch_commit": "b3c32f9b3211f061d622ca2d7285bc2609ff0b4e",
-    "launcher": "scaffolds/transformer/launchers/orcd.sbatch",
-    "nice": 4000,
-    "partitions": [
-      "mit_preemptable",
-      "mit_normal_gpu"
-    ],
-    "slurm_job_id": "24159643",
-    "submitted_utc": "2026-09-28T05:54:30.730435+00:00"
-  }
+  "status": "planned"
 }

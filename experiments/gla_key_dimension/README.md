@@ -9,7 +9,9 @@ Each row in `runs.csv` identifies one execution. Its immutable input recipe is
 Metrics and the retained `checkpoints/` and `training.log` are colocated there.
 The home cluster is **orcd**. The registered runs use the scaffold's current
 selective weight decay (`exclude_embeddings_norms_biases_v1`). GLA does not use
-QK normalization. They execute on 2×H200 from the worktree
+QK normalization. Runs at d_K = 8, 16, and 64 are complete on 2×H200; d_K = 32
+(`rafe4dbce01c3`) and 128 (`r4dfa54516f09`) are allocated but not launched. They
+live in the worktree
 `/orcd/pool/006/rafah/functional_memory/worktrees/gla_key_dimension_rerun` (branch
 `claude/gla-key-dimension-rerun`), which holds their checkpoints and logs. Source
 commits in the records preserve the exact implementations used for the reported
@@ -46,8 +48,10 @@ sbatch --job-name="$RUN" --output="experiments/gla_key_dimension/runs/$RUN/train
   "experiments/gla_key_dimension/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 2 H200
 ```
 
-The registered cohort was submitted in the order d_K = 64, 8, 16, 32, 128, with
-`--nice` 0, 1000, 2000, 3000, and 4000. That order holds when jobs requeue.
+The registered cohort's frozen execution set is unchanged since `b3c32f9`. Launch
+the two remaining runs from its worktree with the `sbatch` command above (their
+inputs are already committed), d_K = 32 before 128, with `--nice` 0 and 1000 so
+that order holds when jobs requeue.
 
 The launcher runs acceptance before training and records each attempt. A requeue or
 checkpoint resume uses the same ID, recipe, and launch commit. A fresh repetition
