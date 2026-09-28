@@ -1,8 +1,8 @@
 schema_version: 2
 experiment: gla_key_dimension
-status: complete
-home_cluster: kennel
-artifact_root: /data/cl/u/rafah/home/projects/functional-memory
+status: running
+home_cluster: orcd
+artifact_root: /orcd/pool/006/rafah/functional_memory/worktrees/gla_key_dimension_rerun
 key_dimensions:
 - 8
 - 16
@@ -13,13 +13,14 @@ seed: 0
 prediction_tokens: 10000269312
 data_identity:
   train:
-    path: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
+    path: /home/rafah/projects/ofm/datasets/fineweb_12b/train/manifest.json
     sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
   eval:
-    path: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
+    path: /home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json
     sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
 dependency_lock:
-  sha256: 098b75b9bc2e27abf3ca873f20bc2bd2887aa6f03c2ae0ab8de11d6d5002b6f7
+  path: scaffolds/transformer/uv.lock
+  sha256: dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559
 comparisons:
   note: Seed-0 200M runs with the same data, optimizer, and backbone recipe at each
     d_K; softmax and normalized Taylor attention of degree 2, 4, 8, and 16.
@@ -74,10 +75,9 @@ comparisons:
     label: 200m-dk128-m008-seed0
   - study: key_dimension_taylor
     label: 200m-dk128-m016-seed0
-source_commit: 4af147ea64c89bcb0f8086d1e3a963c7ecbcec77
 run_ids:
-- ra6346b7a6cfc
-- r6a5ffbb56ac3
-- r7d278821b92d
-- rf35e1e8fb2e3
-- r03c03c3f84b2
+- r2662ef3a91b8
+- raa1fd6ae9d6d
+- rafe4dbce01c3
+- r6e11d7bd996d
+- r4dfa54516f09

@@ -1,0 +1,15 @@
+{
+  "config": {
+    "path": "experiments/gla_key_dimension/runs/r4dfa54516f09/config.yaml",
+    "sha256": "b5ad983be2a0081faf72d0cb1e9c665e091f946731e224a2368f8f3c6c8865af"
+  },
+  "home_cluster": "orcd",
+  "label": "200m-dk128-gla-seed0",
+  "name": "200m-dk128-gla-seed0",
+  "parameter_count": 231885824,
+  "record_schema_version": 1,
+  "run_id": "r4dfa54516f09",
+  "seed": 0,
+  "state_elements_per_layer": 131072,
+  "status": "planned"
+}

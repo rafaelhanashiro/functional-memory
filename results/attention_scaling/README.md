@@ -12,7 +12,7 @@ them: outlined in the heatmap, hollow and dashed in the degree chart.
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
 
-45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 25 of 33 trained cells are legacy (outlined).
+45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 22 of 33 trained cells are legacy (outlined).
 
 ![Combined terminal perplexity heatmap](combined_terminal_ppl.png)
 
@@ -98,12 +98,12 @@ changes perplexity by at most 0.25, about as much as for softmax, so the legacy
 normalized Taylor cells at other widths are fair proxies; legacy unnormalized ones
 are not.
 
-## Other widths (legacy runs)
+## Other widths
 
-- **Normalized fixed Taylor:** higher degree closes the gap to softmax. `d_K = 8`:
+- **Normalized fixed Taylor (legacy runs):** higher degree closes the gap to softmax. `d_K = 8`:
   `m = 2` 20.58, `m = 16` 16.85, softmax 16.71. `d_K = 128`: `m = 8` 14.36 vs softmax 14.38.
-- **GLA:** 17.22 at `d_K = 8` to 15.44 at `d_K = 128`; better than normalized `m = 2` and
-  worse than softmax at every width.
+- **GLA** (selective decay except at `d_K = 32, 128`): 17.46 at `d_K = 8` to 15.44 at
+  `d_K = 128`; better than normalized `m = 2` and worse than softmax at every width.
 
 Not plotted (in their study records): normalized `m = 0` (47.07), softmax at
 `d_K = 2, 4, 256`, and the learned quadratics (per-head positive 16.21, global

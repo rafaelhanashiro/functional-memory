@@ -7,7 +7,7 @@ import json
 import math
 import re
 import yaml
-from scaffolds.records import load_study
+from scaffolds.records import load_run, load_study
 from scaffolds.records.selections import verify_pinned_runs
 from pathlib import Path
 
@@ -276,17 +276,9 @@ def collect_rows(repo_root: Path, config: dict) -> list[dict]:
         raise ValueError("Pinned runs must be exactly the cells' runs; run `python -m scaffolds.records refresh`")
     verify_pinned_runs(repo_root, pins)
 
-    manifests = {}
     for experiment in sorted({experiment for experiment, _ in cell_runs}):
         manifest = load_study(repo_root / "experiments" / experiment)
         _match(manifest.get("experiment"), experiment, f"Source study identity for {experiment}")
-        indexed = {}
-        for run in manifest.get("runs", []):
-            name = run.get("run_id", run["name"])
-            if name in indexed:
-                raise ValueError(f"Duplicate source run: {experiment}/{name}")
-            indexed[name] = run
-        manifests[experiment] = indexed
 
     columns = {(panel["id"], column["id"]): column for panel in config["panels"] for column in panel["columns"]}
     references = {}
@@ -296,12 +288,15 @@ def collect_rows(repo_root: Path, config: dict) -> list[dict]:
         if coordinate not in expected_set or coordinate in references:
             raise ValueError(f"Duplicate or out-of-grid cell reference: {coordinate}")
         experiment, name = cell["experiment"], cell["run"]
-        if experiment not in manifests or name not in manifests[experiment]:
+        # The pinned run, not the study's current run list: a rerun cohort replaces a
+        # figure's run only once its own run at that coordinate completes.
+        directory = repo_root / "experiments" / experiment / "runs" / name
+        if not (directory / "record.json").is_file():
             raise ValueError(f"Unknown source run: {experiment}/{name}")
         if (experiment, name) in used_runs:
             raise ValueError(f"Source run is referenced twice: {experiment}/{name}")
         used_runs.add((experiment, name))
-        references[coordinate] = (cell, manifests[experiment][name])
+        references[coordinate] = (cell, load_run(directory))
 
     rows = []
     for panel, column, width in expected:

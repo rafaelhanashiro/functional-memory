@@ -19,7 +19,7 @@
     "gla_inner_chunk_size": 16,
     "gla_kernel_dot_precision": "ieee",
     "gla_state_dtype": "float32",
-    "gla_state_elements_per_layer": 65536,
+    "gla_state_elements_per_layer": 16384,
     "gla_use_rope": true,
     "issues": [],
     "kernel_values": "vector_gated_recurrence",
@@ -31,9 +31,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 0,
-        "log_decay_max": -8.450987865324433e-22,
-        "log_decay_min": -7.84375,
-        "read_abs_max": 923.0078735351562
+        "log_decay_max": -2.689764237390111e-24,
+        "log_decay_min": -4.125,
+        "read_abs_max": 17012.65234375
       },
       {
         "invalid_gate_count": 0,
@@ -42,9 +42,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 1,
-        "log_decay_max": -5.621103784652568e-19,
-        "log_decay_min": -2.875,
-        "read_abs_max": 61512.48828125
+        "log_decay_max": -4.7391000845831144e-11,
+        "log_decay_min": -1.6171875,
+        "read_abs_max": 134435.0
       },
       {
         "invalid_gate_count": 0,
@@ -53,9 +53,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 2,
-        "log_decay_max": -4.377720009063125e-19,
-        "log_decay_min": -3.671875,
-        "read_abs_max": 6150.6611328125
+        "log_decay_max": -1.8743505358909118e-10,
+        "log_decay_min": -3.75,
+        "read_abs_max": 66789.8828125
       },
       {
         "invalid_gate_count": 0,
@@ -64,9 +64,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 3,
-        "log_decay_max": -2.689764237390111e-24,
-        "log_decay_min": -3.828125,
-        "read_abs_max": 2426.001953125
+        "log_decay_max": -3.362616568568343e-33,
+        "log_decay_min": -4.5625,
+        "read_abs_max": 13273.265625
       },
       {
         "invalid_gate_count": 0,
@@ -75,9 +75,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 4,
-        "log_decay_max": -0.0,
-        "log_decay_min": -6.21875,
-        "read_abs_max": 3312.756591796875
+        "log_decay_max": -7.311536789657412e-24,
+        "log_decay_min": -4.78125,
+        "read_abs_max": 2389.678955078125
       },
       {
         "invalid_gate_count": 0,
@@ -86,9 +86,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 5,
-        "log_decay_max": -3.593451264867361e-20,
-        "log_decay_min": -6.0625,
-        "read_abs_max": 1481.516357421875
+        "log_decay_max": -0.0,
+        "log_decay_min": -5.9375,
+        "read_abs_max": 3899.106201171875
       },
       {
         "invalid_gate_count": 0,
@@ -97,9 +97,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 6,
-        "log_decay_max": -7.50301100480825e-34,
-        "log_decay_min": -6.40625,
-        "read_abs_max": 1330.0045166015625
+        "log_decay_max": -1.7660983704364944e-16,
+        "log_decay_min": -5.84375,
+        "read_abs_max": 2360.571044921875
       },
       {
         "invalid_gate_count": 0,
@@ -109,8 +109,8 @@
         "invalid_read_count": 0,
         "layer": 7,
         "log_decay_max": -0.0,
-        "log_decay_min": -5.0625,
-        "read_abs_max": 3102.364013671875
+        "log_decay_min": -6.0625,
+        "read_abs_max": 2763.4775390625
       },
       {
         "invalid_gate_count": 0,
@@ -119,9 +119,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 8,
-        "log_decay_max": -5.0554895361715724e-36,
-        "log_decay_min": -5.65625,
-        "read_abs_max": 1729.62060546875
+        "log_decay_max": -7.311536789657412e-24,
+        "log_decay_min": -4.9375,
+        "read_abs_max": 1905.0084228515625
       },
       {
         "invalid_gate_count": 0,
@@ -130,14 +130,14 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 9,
-        "log_decay_max": -9.374686726333026e-43,
-        "log_decay_min": -5.375,
-        "read_abs_max": 1978.93017578125
+        "log_decay_max": -1.910201644903403e-27,
+        "log_decay_min": -4.84375,
+        "read_abs_max": 2934.054443359375
       }
     ],
     "sample": {
       "diagnostic_pass_contributes_to_validation_loss": false,
-      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest": "/home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json",
       "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
       "num_sequences": 1,
       "prediction_tokens": 2048,
@@ -156,6 +156,18 @@
   "attention_mechanism": "gla",
   "attention_output_normalization": "per_head_rmsnorm_then_silu_output_gate",
   "attention_score_scale": "1",
+  "checkpoint_retention": {
+    "best_checkpoint_step": 19074,
+    "completion_sha256": "089def9787a9c322be1ba1077de42a946d38fb110549e59dbaee67455fb2639a",
+    "format": "shared-transformer-checkpoint-retention",
+    "seed": 0,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "b3c32f9b3211f061d622ca2d7285bc2609ff0b4e",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 19074,
+    "validation_nll": 2.814557748181479,
+    "version": 1
+  },
   "data_identity": {
     "batch_size": 256,
     "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
@@ -166,14 +178,12 @@
   },
   "devices": [
     "cuda:0",
-    "cuda:1",
-    "cuda:2",
-    "cuda:3"
+    "cuda:1"
   ],
   "diagnostic_backend": "fused",
   "diagnostic_sample": {
     "diagnostic_pass_contributes_to_validation_loss": false,
-    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest": "/home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json",
     "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
     "num_sequences": 1,
     "prediction_tokens": 2048,
@@ -188,22 +198,12 @@
     "devices": [
       {
         "id": 0,
-        "kind": "NVIDIA B300 SXM6 AC",
+        "kind": "NVIDIA H200",
         "platform": "gpu"
       },
       {
         "id": 1,
-        "kind": "NVIDIA B300 SXM6 AC",
-        "platform": "gpu"
-      },
-      {
-        "id": 2,
-        "kind": "NVIDIA B300 SXM6 AC",
-        "platform": "gpu"
-      },
-      {
-        "id": 3,
-        "kind": "NVIDIA B300 SXM6 AC",
+        "kind": "NVIDIA H200",
         "platform": "gpu"
       }
     ],
@@ -222,11 +222,11 @@
   "gla_inner_chunk_size": 16,
   "gla_kernel_dot_precision": "ieee",
   "gla_state_dtype": "float32",
-  "gla_state_elements_per_layer": 65536,
+  "gla_state_elements_per_layer": 16384,
   "gla_use_rope": true,
   "next_train_sequence": 4882944,
-  "parameter_count": 210740224,
-  "qk_head_dim": 64,
+  "parameter_count": 194881024,
+  "qk_head_dim": 16,
   "retained_best_checkpoint_step": 19074,
   "retained_terminal_checkpoint_step": 19074,
   "rng_state": {
@@ -240,22 +240,12 @@
         "devices": [
           {
             "id": 0,
-            "kind": "NVIDIA B300 SXM6 AC",
+            "kind": "NVIDIA H200",
             "platform": "gpu"
           },
           {
             "id": 1,
-            "kind": "NVIDIA B300 SXM6 AC",
-            "platform": "gpu"
-          },
-          {
-            "id": 2,
-            "kind": "NVIDIA B300 SXM6 AC",
-            "platform": "gpu"
-          },
-          {
-            "id": 3,
-            "kind": "NVIDIA B300 SXM6 AC",
+            "kind": "NVIDIA H200",
             "platform": "gpu"
           }
         ],
@@ -267,22 +257,22 @@
         },
         "state_transfer": "direct"
       },
-      "slurm_job_id": "201795",
-      "timestamp_utc": "2026-09-24T22:19:33.610245+00:00"
+      "slurm_job_id": "24159641",
+      "timestamp_utc": "2026-09-28T12:13:01.136632+00:00"
     }
   ],
   "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
   "seed": 0,
-  "slurm_job_id": "201795",
+  "slurm_job_id": "24159641",
   "slurm_restart_count": 0,
-  "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+  "source_commit": "b3c32f9b3211f061d622ca2d7285bc2609ff0b4e",
   "status": "complete",
   "step": 19074,
   "target_steps": 19074,
   "target_tokens": 10000269312,
   "training_tokens": 10000269312,
-  "updated_utc": "2026-09-25T01:18:47.102227+00:00",
-  "validation_nll": 2.766116406236376,
-  "validation_perplexity": 15.896777349093544,
+  "updated_utc": "2026-09-28T16:56:07.813940+00:00",
+  "validation_nll": 2.814557748181479,
+  "validation_perplexity": 16.685794825226285,
   "value_head_dim": 64
 }

@@ -210,6 +210,7 @@ def test_committed_comparison_sources() -> None:
     current = {(row["panel"], row["column"], row["d_k"]) for row in rows
                if row["status"] != "not_run" and not row["legacy"]}
     assert current == {("references", "softmax", 64), ("references", "softmax_no_qk_norm", 64),
+                       *(("references", "gla", width) for width in (8, 16, 64)),
                        *(("normalized_fixed", f"m{degree}", 64) for degree in (1, 2, 3, 4, 8, 16))}
     failures = {(row["panel"], row["column"]): row["failure_step"]
                 for row in rows if row["status"] == "numerical_failure"}

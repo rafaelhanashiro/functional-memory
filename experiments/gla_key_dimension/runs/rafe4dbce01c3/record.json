@@ -1,0 +1,15 @@
+{
+  "config": {
+    "path": "experiments/gla_key_dimension/runs/rafe4dbce01c3/config.yaml",
+    "sha256": "2b112a7eb1aad35d267995de907c22c960acb6b36638a15f5b2c9660bf97e2e8"
+  },
+  "home_cluster": "orcd",
+  "label": "200m-dk032-gla-seed0",
+  "name": "200m-dk032-gla-seed0",
+  "parameter_count": 200167424,
+  "record_schema_version": 1,
+  "run_id": "rafe4dbce01c3",
+  "seed": 0,
+  "state_elements_per_layer": 32768,
+  "status": "planned"
+}
