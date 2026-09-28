@@ -105,15 +105,8 @@ normalized_taylor_controls:
       path: experiments/key_dimension_taylor/runs/ra9b651caa405/best_validation.json
       sha256: 23eb69673fee6bb1838892438a7bbe512124802c3376e1a558d55cfe69d2dfac
 legacy:
-  comparison_role: legacy_raw_qk
-  studies:
-  - hermite_attention
-  - hermite_factored_m2
-  source_branches:
-  - codex/hermite-attention
-  - codex/hermite-factored-m2
-  note: Previous executions explicitly disable QK norm and are preserved separately.
-    They are excluded from the matched QK-norm comparison.
+  study: hermite_attention_no_qk_norm
+  note: 'The same fixed Hermite kernels with plain scores (qk_norm: false); not plotted.'
 run_ids:
 - rea4fd9479c26
 - rbb8dc34285bf

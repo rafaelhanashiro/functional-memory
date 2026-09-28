@@ -1,0 +1,190 @@
+{
+  "artifacts": [
+    {
+      "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/best_validation.json",
+      "sha256": "f192e5bcce9c4781dbe3da11314b2e754c7e633eb4d61b29f31d5a387258abbf",
+      "size_bytes": 182
+    },
+    {
+      "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/completion.json",
+      "sha256": "f9738e338fd8e2637a1670b44dc4b10a625274c12a58438bf89bf7cb611f061c",
+      "size_bytes": 12755
+    },
+    {
+      "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/config.json",
+      "sha256": "f62428764ce3d2b82acaebcac10cb24d4da31e344f884008c9484b77afc860be",
+      "size_bytes": 2805
+    },
+    {
+      "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/metadata.json",
+      "sha256": "429d28ef3a2a1124b3b503bc21361a83d88632e1f4dc6d6a42aed12b4c0c300b",
+      "size_bytes": 14542
+    },
+    {
+      "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/metrics.jsonl",
+      "sha256": "e6f5c8fe80f79b1c81a29a62ad6de067f1a86e75a4f0e7fc44099df9f1cef1ce",
+      "size_bytes": 183110
+    },
+    {
+      "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/wandb_run.json",
+      "sha256": "1af5570d31e035fc3a700da656c58f4c097f003e01223d084fda6860be776d7c",
+      "size_bytes": 190
+    },
+    {
+      "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/training.log",
+      "sha256": "698e6680db54bed8ed254f24a5b6cc57f75f41c695033142db5a28955b227a28",
+      "size_bytes": 1493325
+    }
+  ],
+  "attempts": [
+    {
+      "gpu_count": 2,
+      "gpu_type": "H100",
+      "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "node": "dogo",
+      "slurm_job_id": "202701",
+      "slurm_partition": "sweep"
+    },
+    {
+      "gpu_count": 2,
+      "gpu_type": "H100",
+      "launch_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+      "node": "dogo",
+      "slurm_job_id": "202701",
+      "slurm_partition": "sweep"
+    }
+  ],
+  "best_validation": {
+    "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/best_validation.json",
+    "sha256": "f192e5bcce9c4781dbe3da11314b2e754c7e633eb4d61b29f31d5a387258abbf",
+    "size_bytes": 182
+  },
+  "completion": {
+    "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/completion.json",
+    "sha256": "f9738e338fd8e2637a1670b44dc4b10a625274c12a58438bf89bf7cb611f061c",
+    "size_bytes": 12755
+  },
+  "config": {
+    "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/config.yaml",
+    "sha256": "faec660ff8a4ce8a15e863fcdd6f47099d987e01a33d03ef8d573c73aef25e40"
+  },
+  "data_identity": {
+    "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/data_identity.json",
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291
+  },
+  "home_cluster": "kennel",
+  "label": "200m-unnormalized-m002-seed0",
+  "log": {
+    "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/training.log",
+    "sha256": "698e6680db54bed8ed254f24a5b6cc57f75f41c695033142db5a28955b227a28",
+    "size_bytes": 1493325
+  },
+  "log_path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/training.log",
+  "metadata": {
+    "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/metadata.json",
+    "sha256": "429d28ef3a2a1124b3b503bc21361a83d88632e1f4dc6d6a42aed12b4c0c300b",
+    "size_bytes": 14542
+  },
+  "metrics": {
+    "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/metrics.jsonl",
+    "sha256": "e6f5c8fe80f79b1c81a29a62ad6de067f1a86e75a4f0e7fc44099df9f1cef1ce",
+    "size_bytes": 183110
+  },
+  "name": "200m-unnormalized-m002-seed0",
+  "record_schema_version": 1,
+  "run_id": "r67ab7468727d",
+  "seed": 0,
+  "selected_checkpoint": {
+    "file_count": 14,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "acdd7cc940a483480524128b3f2720f538629a4cdb1b8132d83e46ca4deed01f",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "3da76512365bc62f5c45a1b36ce36a5d51af5094b7ce263c240f36220edc5854",
+        "size_bytes": 142453
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "7a322803396f8f107e7b9532ee1f671799bbabac872865e04cce9fbc459808cf",
+        "size_bytes": 80117
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "99805d0bfbc7688329f7495f47ced6019f7f1b2ca8c374133df6efab538baf89",
+        "size_bytes": 49203
+      },
+      {
+        "path": "default/d/d5423f0ec5d4b6ac3a348c9adcdc7d89",
+        "sha256": "d1a3ae6391f0fbc8d409706942ed10134c510e90948282bf00ec727b30275289",
+        "size_bytes": 3219
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "45a4af4301f285a1e50625e0fe259a2e6eff0cb20ca4d4025d02b2be204bf88b",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/09ff74ec9c37f2b65db18a2b5d7f84fc",
+        "sha256": "41064847256a8a757cfd724c6d7467f07410c6d0ea2cc28a5fab364822b2e57f",
+        "size_bytes": 614
+      },
+      {
+        "path": "default/ocdbt.process_0/d/52d71fd00bc26a78d0977c646ab959f3",
+        "sha256": "5f29fdbba2a7b288df992be1cd4b22e541182e5caa0a6cde52e40c75d3321bd1",
+        "size_bytes": 476934144
+      },
+      {
+        "path": "default/ocdbt.process_0/d/5d187429ab3e07e0ee387b3c06f33b1b",
+        "sha256": "ba93cfb5f83991c9145aac6de8616c545f2ca45649c98680000510c4899d28ac",
+        "size_bytes": 1563226112
+      },
+      {
+        "path": "default/ocdbt.process_0/d/6e8c62999f2471c2031792e1b30e0fda",
+        "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+        "size_bytes": 195
+      },
+      {
+        "path": "default/ocdbt.process_0/d/99942ceb89f066d2bf81a0dfa6aa4aa0",
+        "sha256": "42e5e669b6935769e5566ff19f34d07150f28dcdca72cecd4b4cf955795c7767",
+        "size_bytes": 723
+      },
+      {
+        "path": "default/ocdbt.process_0/d/b652ee58d43030eba780636abf59260b",
+        "sha256": "9971a31e949151a8c98f31c5c71733a77c6616dd08a111389250db011de6b2b7",
+        "size_bytes": 168853504
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "05380421067c99d2a6d70a8c739771ef7839f23b90b8b9e161ed583cf173b50c",
+        "size_bytes": 360
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "d7bdb6fe7cd24f98e91448125bba4669f082d11a5e1719fefdd8a6e1f3ea5a2f",
+        "size_bytes": 135
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/checkpoints/19074",
+    "sha256": "cf49f3f660eee3607f95662b21e025ca02243276a1a69b4328211b4d4f585416",
+    "size_bytes": 2209291263
+  },
+  "source_commit": "2f11d5a3df81e8b0ca7624977d12a92d42e01833",
+  "status": "complete",
+  "wandb_run": {
+    "path": "experiments/hermite_attention_no_qk_norm/runs/r67ab7468727d/wandb_run.json",
+    "sha256": "1af5570d31e035fc3a700da656c58f4c097f003e01223d084fda6860be776d7c",
+    "size_bytes": 190
+  }
+}

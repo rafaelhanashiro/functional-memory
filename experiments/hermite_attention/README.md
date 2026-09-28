@@ -63,10 +63,10 @@ with `exclude_embeddings_norms_biases_v1`. Validation uses seven batches every
 1,000 updates and at completion. Terminal validation and validation-best
 checkpoint selection are distinct.
 
-The previous `hermite_attention` and `hermite_factored_m2` executions with
-`qk_norm: false` are **legacy raw-score runs**, preserved in their original
-worktrees until integration. They are excluded from this matched QK-normalized
-comparison. New executions have new IDs and do not resume their checkpoints.
+Without QK-norm ([hermite_attention_no_qk_norm](../hermite_attention_no_qk_norm/README.md),
+same selective decay; not plotted), unnormalized Hermite reached 21.40, 19.68, 20.55, and
+20.78 at `m = 1–4`, so QK-norm lowers it by 0.53–3.53; normalized Hermite failed at every
+degree (updates 173, 12,587 for the factored `m = 2`, 608, and 53).
 
 ## Qualification and launch
 

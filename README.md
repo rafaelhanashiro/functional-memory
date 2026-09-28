@@ -21,10 +21,9 @@ a result collection can combine runs from several studies.
 | Unnormalized exponential attention | [Figures and findings](results/unnormalized_attention/README.md) | [Runs and execution](experiments/unnormalized_attention/README.md) |
 | Unnormalized Taylor attention | [Figures and findings](results/unnormalized_taylor_attention/README.md) | [Runs and execution](experiments/unnormalized_taylor_attention/README.md) |
 
-The older raw-score [Hermite sweep](worktrees/hermite_attention/experiments/hermite_attention/README.md)
-and [factored degree-two run](worktrees/hermite_factored_m2/experiments/hermite_factored_m2/README.md)
-use `qk_norm: false`; they are legacy results, kept in their worktrees until
-integration and excluded from the matched QK-norm comparison.
+Hermite runs without QK-norm are kept in
+[hermite_attention_no_qk_norm](experiments/hermite_attention_no_qk_norm/README.md) and
+summarized in the [Hermite study](experiments/hermite_attention/README.md); they are not plotted.
 
 ```text
 results/<analysis>/
