@@ -10,6 +10,7 @@ a result collection can combine runs from several studies.
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 | Attention scaling across studies | [Combined heatmaps and degree curves](results/attention_scaling/README.md) | Selected from the studies below |
 | GLA key dimension | [Figures and findings](results/gla_key_dimension/README.md) | [Runs and execution](experiments/gla_key_dimension/README.md) |
+| Hermite and Taylor attention with QK-norm | [Hermite–Taylor figure and findings](results/attention_scaling/README.md) | [Runs and execution](experiments/hermite_attention/README.md) |
 | Query/key dimension and Taylor degree | [Figures and findings](results/key_dimension_taylor/README.md) | [Runs and execution](experiments/key_dimension_taylor/README.md) |
 | Learned quadratic attention | [Figures and findings](results/learned_quadratic_attention/README.md) | [Runs and execution](experiments/learned_quadratic_attention/README.md) |
 | Learned unnormalized Taylor attention | [Figures and findings](results/learned_unnormalized_taylor/README.md) | [Runs and execution](experiments/learned_unnormalized_taylor/README.md) |
@@ -20,13 +21,10 @@ a result collection can combine runs from several studies.
 | Unnormalized exponential attention | [Figures and findings](results/unnormalized_attention/README.md) | [Runs and execution](experiments/unnormalized_attention/README.md) |
 | Unnormalized Taylor attention | [Figures and findings](results/unnormalized_taylor_attention/README.md) | [Runs and execution](experiments/unnormalized_taylor_attention/README.md) |
 
-The new [Hermite–Taylor QK-normalized sweep](worktrees/hermite_qk_norm/experiments/hermite_attention/README.md)
-is submitted from its own worktree with eight Hermite variants and four matched
-unnormalized Taylor controls at `d_K=64`. Existing normalized Taylor controls are
-selected explicitly in its study record. The older
-[Hermite sweep](worktrees/hermite_attention/experiments/hermite_attention/README.md)
+The older raw-score [Hermite sweep](worktrees/hermite_attention/experiments/hermite_attention/README.md)
 and [factored degree-two run](worktrees/hermite_factored_m2/experiments/hermite_factored_m2/README.md)
-use `qk_norm: false` and are legacy results, excluded from that matched comparison.
+use `qk_norm: false`; they are legacy results, kept in their worktrees until
+integration and excluded from the matched QK-norm comparison.
 
 ```text
 results/<analysis>/

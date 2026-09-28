@@ -1,0 +1,534 @@
+{
+  "acceptance": {
+    "sha256": "26b248f0ae9b272e1c00b5215030b2bd004676003333fab632d61b049d05c810",
+    "summary": {
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-09-28T06:57:09.643438+00:00",
+      "hardware": {
+        "attention_backend": "fused",
+        "device_kinds": [
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "e7a3ddb31342bd51e778bf1013163a8c3d5d070aebb907eca5328f1c666fea7d",
+      "slurm_job_id": "203107",
+      "slurm_restart_count": "1",
+      "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "status": "passed"
+    }
+  },
+  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/experiments/hermite_attention/runs/r05b79574172d",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": [
+    {
+      "path": "experiments/hermite_attention/runs/r05b79574172d/best_validation.json",
+      "sha256": "a0cad33fa1b0209d535ee623fcd581b506c5eba5ec3b7ada9999fbb4d3a9a4d5",
+      "size_bytes": 183
+    },
+    {
+      "path": "experiments/hermite_attention/runs/r05b79574172d/completion.json",
+      "sha256": "f794b75b60f13ed8100d63ca23d103ac66b68c7481ecd9ca9451f1e70fe10f72",
+      "size_bytes": 31156
+    },
+    {
+      "path": "experiments/hermite_attention/runs/r05b79574172d/config.json",
+      "sha256": "d77461afb983afa02753fd56b3bd896428e175c392e09d15dd4df68bcdd2f0de",
+      "size_bytes": 2763
+    },
+    {
+      "path": "experiments/hermite_attention/runs/r05b79574172d/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/hermite_attention/runs/r05b79574172d/metadata.json",
+      "sha256": "14f0e256ba624d1df8e398855cfd710213f89390d9d9509061641c11f98d2fba",
+      "size_bytes": 34489
+    },
+    {
+      "path": "experiments/hermite_attention/runs/r05b79574172d/metrics.jsonl",
+      "sha256": "377a371044f8e4698b6a5953ebd2cfc0f5c0429b0ba1c6279c1761e27b1e7bab",
+      "size_bytes": 324452
+    },
+    {
+      "path": "experiments/hermite_attention/runs/r05b79574172d/retention.json",
+      "sha256": "3676563fd61f1db7bbe15df54a3cdc018234c832cff45e21a3c70853e96fdb50",
+      "size_bytes": 436
+    },
+    {
+      "path": "experiments/hermite_attention/runs/r05b79574172d/wandb_run.json",
+      "sha256": "744d09b40fefdac3aa9e83900d2f3836b1bce4351df66e024ae6010a020bc7e9",
+      "size_bytes": 201
+    },
+    {
+      "path": "experiments/hermite_attention/runs/r05b79574172d/training.log",
+      "sha256": "6fb1ba2ad3edfd42b1a2a4001b91a8de70346415c602cad64304564e44202131",
+      "size_bytes": 1480178
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r05b79574172d/.runtime/acceptance/B300-4",
+      "allocation": "JobId=203107 JobName=qk-hermite-unnorm-m2-r05b79574172d UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20085 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:02 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-09-27T22:49:30 EligibleTime=2026-09-27T23:03:59 AccrueTime=2026-09-27T23:03:59 StartTime=2026-09-27T23:50:42 EndTime=2026-09-29T23:50:42 Deadline=N/A PreemptEligibleTime=2026-09-27T23:50:42 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-09-27T23:50:42 Scheduler=Main Partition=long AllocNode:Sid=kennel:3673817 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r05b79574172d/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r05b79574172d/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/hermite_attention/runs/r05b79574172d/config.yaml",
+      "config_sha256": "ba554d3ead07a9ca692d20823df6e6822bc48dd708f19e0951c6033be8e32f58",
+      "exit_code": 0,
+      "finished_utc": "2026-09-28T05:40:49.615460+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "slurm_job_id": "203107",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-09-28T03:50:44.511294+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r05b79574172d/.runtime/acceptance/H100-4",
+      "allocation": "JobId=203107 JobName=qk-hermite-unnorm-m2-r05b79574172d UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20086 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=1 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:01 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-09-28T01:40:50 EligibleTime=2026-09-28T01:42:51 AccrueTime=2026-09-28T01:42:51 StartTime=2026-09-28T02:50:21 EndTime=2026-09-30T02:50:21 Deadline=N/A PreemptEligibleTime=2026-09-28T02:50:21 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-09-28T02:50:21 Scheduler=Main Partition=long AllocNode:Sid=kennel:3673817 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r05b79574172d/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r05b79574172d/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/hermite_attention/runs/r05b79574172d/config.yaml",
+      "config_sha256": "ba554d3ead07a9ca692d20823df6e6822bc48dd708f19e0951c6033be8e32f58",
+      "exit_code": 0,
+      "finished_utc": "2026-09-28T07:38:26.213772+00:00",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "slurm_job_id": "203107",
+      "slurm_partition": "long",
+      "slurm_restart_count": "1",
+      "started_utc": "2026-09-28T06:50:22.295765+00:00"
+    }
+  ],
+  "best_validation": {
+    "path": "experiments/hermite_attention/runs/r05b79574172d/best_validation.json",
+    "sha256": "a0cad33fa1b0209d535ee623fcd581b506c5eba5ec3b7ada9999fbb4d3a9a4d5",
+    "size_bytes": 183
+  },
+  "checkpoint_retention": {
+    "best_checkpoint_step": 19074,
+    "completion_sha256": "f794b75b60f13ed8100d63ca23d103ac66b68c7481ecd9ca9451f1e70fe10f72",
+    "format": "shared-transformer-checkpoint-retention",
+    "seed": 0,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 19074,
+    "validation_nll": 2.860354559762137,
+    "version": 1
+  },
+  "cohort": "canonical_qk_norm",
+  "comparison_role": "primary",
+  "completion": {
+    "path": "experiments/hermite_attention/runs/r05b79574172d/completion.json",
+    "sha256": "f794b75b60f13ed8100d63ca23d103ac66b68c7481ecd9ca9451f1e70fe10f72",
+    "size_bytes": 31156
+  },
+  "config": {
+    "path": "experiments/hermite_attention/runs/r05b79574172d/config.yaml",
+    "sha256": "ba554d3ead07a9ca692d20823df6e6822bc48dd708f19e0951c6033be8e32f58"
+  },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "path": "experiments/hermite_attention/runs/r05b79574172d/data_identity.json",
+    "sequence_length": 2049,
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "data_manifests": {
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "error": null,
+  "executed_recipe": {
+    "commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+    "path": "experiments/hermite_attention/runs/r05b79574172d/config.yaml",
+    "sha256": "ba554d3ead07a9ca692d20823df6e6822bc48dd708f19e0951c6033be8e32f58"
+  },
+  "execution": {
+    "attention_backend": "fused",
+    "raw_config": {
+      "path": "config.json",
+      "sha256": "d77461afb983afa02753fd56b3bd896428e175c392e09d15dd4df68bcdd2f0de"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": "14f0e256ba624d1df8e398855cfd710213f89390d9d9509061641c11f98d2fba"
+    },
+    "resolved_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "fused",
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_sharing": "global",
+        "attention_coefficients": "fixed",
+        "attention_degree": 2,
+        "attention_fixed_coefficients": [
+          0.8243606353500641,
+          1.6487212707001282,
+          0.8243606353500641
+        ],
+        "attention_fixed_square_factors": null,
+        "attention_mechanism": "dot_product",
+        "attention_normalization": false,
+        "dropout": 0.0,
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 1024,
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 64,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_head",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 2000,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r05b79574172d/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "hermite_attention",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "200m-qk-hermite-m002-unnormalized-seed0",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/r05b79574172d"
+      }
+    },
+    "resolved_config_sha256": "c2161d35905fc685fed69a1adc1c5eda07d9d30b146db686631f0fa64a095410",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 1,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 2,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 3,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA B300 SXM6 AC",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA B300 SXM6 AC",
+              "platform": "gpu"
+            },
+            {
+              "id": 2,
+              "kind": "NVIDIA B300 SXM6 AC",
+              "platform": "gpu"
+            },
+            {
+              "id": 3,
+              "kind": "NVIDIA B300 SXM6 AC",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "203107",
+        "timestamp_utc": "2026-09-28T04:01:20.419512+00:00"
+      },
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 2,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 3,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "203107",
+        "timestamp_utc": "2026-09-28T06:57:52.966813+00:00"
+      }
+    ]
+  },
+  "frozen_execution_sha256": "0d6b47d719837a3b243287e68591664fe0814fa10f75cfaea9fa5b9142cebfc0",
+  "home_cluster": "kennel",
+  "label": "200m-qk-hermite-m002-unnormalized-seed0",
+  "log": {
+    "path": "experiments/hermite_attention/runs/r05b79574172d/training.log",
+    "sha256": "6fb1ba2ad3edfd42b1a2a4001b91a8de70346415c602cad64304564e44202131",
+    "size_bytes": 1480178
+  },
+  "log_path": "experiments/hermite_attention/runs/r05b79574172d/training.log",
+  "matched_control": {
+    "run_id": "ra2915b02b177",
+    "study": "hermite_attention"
+  },
+  "metadata": {
+    "path": "experiments/hermite_attention/runs/r05b79574172d/metadata.json",
+    "sha256": "14f0e256ba624d1df8e398855cfd710213f89390d9d9509061641c11f98d2fba",
+    "size_bytes": 34489
+  },
+  "metrics": {
+    "path": "experiments/hermite_attention/runs/r05b79574172d/metrics.jsonl",
+    "sha256": "377a371044f8e4698b6a5953ebd2cfc0f5c0429b0ba1c6279c1761e27b1e7bab",
+    "size_bytes": 324452
+  },
+  "name": "200m-qk-hermite-m002-unnormalized-seed0",
+  "parameter_count": 199906464,
+  "polynomial_family": "hermite",
+  "record_schema_version": 1,
+  "requested_hardware": {
+    "gpu_count": 4,
+    "gpu_types": [
+      "H100",
+      "B300"
+    ],
+    "partition": "long"
+  },
+  "retained_best_checkpoint_step": 19074,
+  "retained_terminal_checkpoint_step": 19074,
+  "retention": {
+    "path": "experiments/hermite_attention/runs/r05b79574172d/retention.json",
+    "sha256": "3676563fd61f1db7bbe15df54a3cdc018234c832cff45e21a3c70853e96fdb50",
+    "size_bytes": 436
+  },
+  "run_id": "r05b79574172d",
+  "seed": 0,
+  "selected_checkpoint": {
+    "file_count": 13,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "c289c223bc9955bc2328ed164f8b52befe641ea8cf84118a21c31e6a40104fdd",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "20667583e745119f53780bde7ba488300e33f0f35d5fcdc7aba5ad5902bb840a",
+        "size_bytes": 143633
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "e42fb7a6fc049d6c676926fefc5c8bfb5783df4eb2164d1b30c6d07dbac3d7d0",
+        "size_bytes": 88321
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "d5ddef7a21b89ff75c68628d46d357caa3529df10d654baa0ac1b3557a7bc4b6",
+        "size_bytes": 49685
+      },
+      {
+        "path": "default/d/58dcfbd21591e59a71fe4a127f4d9fbb",
+        "sha256": "d2267caca0115aabac6d83f762cb1b15123a487216d7656526440c70da253918",
+        "size_bytes": 5200
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "e96bb1b7b871ec488e64d52641f6f53bb4059f0fbfe3cc0c240b51319561338f",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/0aae4bb6b8e474dd856cc8abb3aee06c",
+        "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+        "size_bytes": 195
+      },
+      {
+        "path": "default/ocdbt.process_0/d/3b8136b971fa1801190298d75cb44014",
+        "sha256": "7a7fafe3124805c7d8154e51b283b36044e44b7f2dee43c9e773471d443bd75b",
+        "size_bytes": 1560170496
+      },
+      {
+        "path": "default/ocdbt.process_0/d/5d315d003555d128bf0984a249ce16b1",
+        "sha256": "c46442fb88db97c4302222a6e1f527ce140309d2c4f1c7353df38d5cfde4b04f",
+        "size_bytes": 734
+      },
+      {
+        "path": "default/ocdbt.process_0/d/ab2031267927676d7b65a53ae810c9c2",
+        "sha256": "9b829a1fa7e6aedd9478f38bf850a3d43cc16e71603b13fed9a4a4f885b731dd",
+        "size_bytes": 34820096
+      },
+      {
+        "path": "default/ocdbt.process_0/d/ae727aced6e27df2720d9e22adab1818",
+        "sha256": "a95aed2776684d0df4ba85f7d8227ad328f75adf630255ff038960248cd1ea89",
+        "size_bytes": 611950592
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "c0572b573be5cc66a13588b69b51f8417826c9c189256f7d1707fc2a9aeebeb9",
+        "size_bytes": 322
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "42954ff3de756b7b2312a9aed32446d76c73dba7c7354807b63844cd8275b984",
+        "size_bytes": 136
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "experiments/hermite_attention/runs/r05b79574172d/checkpoints/19074",
+    "sha256": "953b2d112a187b0eef34aaa32269d2db5473142aca757078f212e1f048760303",
+    "size_bytes": 2207229894,
+    "step": 19074,
+    "validation_nll": 2.860354559762137
+  },
+  "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+  "status": "complete",
+  "step": 19074,
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--hold",
+      "--gres=gpu:4",
+      "--job-name=qk-hermite-unnorm-m2-r05b79574172d",
+      "--output=experiments/hermite_attention/runs/r05b79574172d/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.hermite_attention.acceptance",
+      "experiments/hermite_attention/runs/r05b79574172d/config.yaml",
+      "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "4",
+      "B300,H100"
+    ],
+    "slurm_job_id": "203107",
+    "submitted_utc": "2026-09-28T02:49:30.525907+00:00"
+  },
+  "training_tokens": 10000269312,
+  "updated_utc": "2026-09-28T07:38:17.222889+00:00",
+  "wandb_run": {
+    "path": "experiments/hermite_attention/runs/r05b79574172d/wandb_run.json",
+    "sha256": "744d09b40fefdac3aa9e83900d2f3836b1bce4351df66e024ae6010a020bc7e9",
+    "size_bytes": 201
+  }
+}
