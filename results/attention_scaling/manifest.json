@@ -2256,7 +2256,7 @@
       },
       "plot.py": {
         "path": "results/attention_scaling/plot.py",
-        "sha256": "a8f176359f449abe6bfeb275b8a2be1babb442a5bee97d6bf487baee3e9c6ee5"
+        "sha256": "30be15b4b542a7fa34fc76faba4934e59f29a5a9c275249b5781e2916acdeeae"
       }
     }
   },
@@ -2267,7 +2267,7 @@
     },
     "readme": {
       "path": "results/attention_scaling/README.md",
-      "sha256": "cda9d73381a361f7414786ae358c254f1f42bd27b11b9d2e520e2d2da9e2d349"
+      "sha256": "86d315c696686d5ffde28a75bde8193d9ea5c8d8a9b43dfc2eb277f785ad0b40"
     },
     "combined_terminal_ppl_pdf": {
       "path": "results/attention_scaling/combined_terminal_ppl.pdf",
