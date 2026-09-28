@@ -92,8 +92,10 @@ softmax by 0.03.
 | Unnormalized learned Taylor | −0.43 | −2.46 | −2.20 | −3.76 | | |
 | Normalized fixed Taylor | fails (@9 → @31) | +0.23 | fails (@17 → @419) | −0.09 | −0.18 | −0.25 |
 | Softmax | −0.21 | | | | | |
+| Unnormalized exp | +0.85 | | | | | |
 
-QK-norm helps unnormalized kernels at `m >= 2` by 1.8–3.8 PPL. For normalized Taylor it
+QK-norm helps unnormalized polynomial kernels at `m >= 2` by 1.8–3.8 PPL but hurts the
+unnormalized exponential by 0.85 (18.304 vs 17.458). For normalized Taylor it
 changes perplexity by at most 0.25, about as much as for softmax, so the legacy
 normalized Taylor cells at other widths are fair proxies; legacy unnormalized ones
 are not.

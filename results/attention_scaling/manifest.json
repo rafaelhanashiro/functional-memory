@@ -1929,7 +1929,7 @@
     },
     "readme": {
       "path": "results/attention_scaling/README.md",
-      "sha256": "5faccdf50694817836d9722b1ebac1449d668fafa9b4304429af76baac49b029"
+      "sha256": "d70017351c8202c514fde5b6db69a990509d545e403e39bc21a4a0288e6a2b03"
     },
     "combined_terminal_ppl_pdf": {
       "path": "results/attention_scaling/combined_terminal_ppl.pdf",
