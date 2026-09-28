@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/unnormalized_attention/runs/r810a6797098b/config.yaml",
+    "sha256": "845aba18d5929b130a11fe7fd9ff9bc0623f6be774b90f8a1e6c8fd6dc7fd0bb"
+  },
+  "label": "200m-qk-exp-seed0",
+  "name": "200m-qk-exp-seed0",
+  "record_schema_version": 1,
+  "run_id": "r810a6797098b",
+  "status": "planned"
+}

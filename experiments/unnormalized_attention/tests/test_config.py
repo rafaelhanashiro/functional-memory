@@ -7,15 +7,17 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
+import yaml
 from flax import nnx
 
-from scaffolds.transformer.configs import Config, ModelConfig, load_config, save_config, validate_config
+from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict, load_config, save_config, validate_config
 from scaffolds.transformer.models import build_model, model_parameter_count
 from scaffolds.transformer.training.diagnostics import attention_identity
 
 
 ROOT = Path(__file__).resolve().parents[3]
 BASE_CONFIG = run_directory(ROOT / "experiments/unnormalized_attention", "200m-exp-seed0-kennel") / "config.yaml"
+QK_NORM_CONFIG = run_directory(ROOT / "experiments/unnormalized_attention", "200m-qk-exp-seed0") / "config.yaml"
 
 
 def test_recipe_matches_200m_sweep_budget_and_geometry():
@@ -50,3 +52,19 @@ def test_200m_parameter_count_is_unchanged(normalized):
     count = sum(leaf.size for leaf in jax.tree.leaves(params))
     assert count == model_parameter_count(cfg) == 199_906_304
     assert all(leaf.dtype == jnp.float32 for leaf in jax.tree.leaves(params))
+
+
+def test_qk_norm_rerun_changes_only_scores_decay_backend_and_tracking():
+    raw = yaml.safe_load(QK_NORM_CONFIG.read_text())
+    assert raw["model"]["qk_norm"] is True and raw["model"]["qk_norm_sharing"] == "per_head"
+    assert raw["model"]["qk_norm_initial_scale"] is None and raw["model"]["attention_backend"] == "fused"
+    assert raw["optim"]["weight_decay_policy"] == "exclude_embeddings_norms_biases_v1"
+    rerun, base = config_to_dict(load_config(QK_NORM_CONFIG)), config_to_dict(load_config(BASE_CONFIG))
+    for recipe in (rerun, base):
+        for name in ("qk_norm", "attention_backend"):
+            recipe["model"].pop(name)
+        for name in ("workdir", "checkpoint_dir", "wandb_project", "wandb_entity", "wandb_run_name",
+                     "wandb_group", "wandb_mode"):
+            recipe["train"].pop(name)
+    assert rerun == base
+    assert model_parameter_count(load_config(QK_NORM_CONFIG).model) == 199_906_304 + 160
