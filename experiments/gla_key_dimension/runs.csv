@@ -1,6 +1,6 @@
 run_id,label,status,model_id,condition,attention_kernel,qk_head_dim,attention_degree,attention_normalization,qk_norm,coefficient_mode,coefficient_parameterization,coefficient_sharing,quadratic_mode,weight_decay_policy,seed,source_commit,terminal_step,terminal_validation_nll,terminal_validation_perplexity,config,record,metrics
-r2662ef3a91b8,200m-dk008-gla-seed0,planned,,,,8,,True,False,fixed,direct,global,fixed,exclude_embeddings_norms_biases_v1,0,auto,,,,runs/r2662ef3a91b8/config.yaml,runs/r2662ef3a91b8/record.json,
-r4dfa54516f09,200m-dk128-gla-seed0,planned,,,,128,,True,False,fixed,direct,global,fixed,exclude_embeddings_norms_biases_v1,0,auto,,,,runs/r4dfa54516f09/config.yaml,runs/r4dfa54516f09/record.json,
-r6e11d7bd996d,200m-dk064-gla-seed0,planned,,,,64,,True,False,fixed,direct,global,fixed,exclude_embeddings_norms_biases_v1,0,auto,,,,runs/r6e11d7bd996d/config.yaml,runs/r6e11d7bd996d/record.json,
-raa1fd6ae9d6d,200m-dk016-gla-seed0,planned,,,,16,,True,False,fixed,direct,global,fixed,exclude_embeddings_norms_biases_v1,0,auto,,,,runs/raa1fd6ae9d6d/config.yaml,runs/raa1fd6ae9d6d/record.json,
-rafe4dbce01c3,200m-dk032-gla-seed0,planned,,,,32,,True,False,fixed,direct,global,fixed,exclude_embeddings_norms_biases_v1,0,auto,,,,runs/rafe4dbce01c3/config.yaml,runs/rafe4dbce01c3/record.json,
+r2662ef3a91b8,200m-dk008-gla-seed0,submitted,,,,8,,True,False,fixed,direct,global,fixed,exclude_embeddings_norms_biases_v1,0,auto,,,,runs/r2662ef3a91b8/config.yaml,runs/r2662ef3a91b8/record.json,
+r4dfa54516f09,200m-dk128-gla-seed0,submitted,,,,128,,True,False,fixed,direct,global,fixed,exclude_embeddings_norms_biases_v1,0,auto,,,,runs/r4dfa54516f09/config.yaml,runs/r4dfa54516f09/record.json,
+r6e11d7bd996d,200m-dk064-gla-seed0,submitted,,,,64,,True,False,fixed,direct,global,fixed,exclude_embeddings_norms_biases_v1,0,auto,,,,runs/r6e11d7bd996d/config.yaml,runs/r6e11d7bd996d/record.json,
+raa1fd6ae9d6d,200m-dk016-gla-seed0,submitted,,,,16,,True,False,fixed,direct,global,fixed,exclude_embeddings_norms_biases_v1,0,auto,,,,runs/raa1fd6ae9d6d/config.yaml,runs/raa1fd6ae9d6d/record.json,
+rafe4dbce01c3,200m-dk032-gla-seed0,submitted,,,,32,,True,False,fixed,direct,global,fixed,exclude_embeddings_norms_biases_v1,0,auto,,,,runs/rafe4dbce01c3/config.yaml,runs/rafe4dbce01c3/record.json,

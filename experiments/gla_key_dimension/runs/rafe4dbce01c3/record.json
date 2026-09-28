@@ -3,6 +3,7 @@
     "path": "experiments/gla_key_dimension/runs/rafe4dbce01c3/config.yaml",
     "sha256": "2b112a7eb1aad35d267995de907c22c960acb6b36638a15f5b2c9660bf97e2e8"
   },
+  "home_cluster": "orcd",
   "label": "200m-dk032-gla-seed0",
   "name": "200m-dk032-gla-seed0",
   "parameter_count": 200167424,
@@ -10,5 +11,18 @@
   "run_id": "rafe4dbce01c3",
   "seed": 0,
   "state_elements_per_layer": 32768,
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "gpu_count": 2,
+    "gpu_type": "H200",
+    "launch_commit": "b3c32f9b3211f061d622ca2d7285bc2609ff0b4e",
+    "launcher": "scaffolds/transformer/launchers/orcd.sbatch",
+    "nice": 3000,
+    "partitions": [
+      "mit_preemptable",
+      "mit_normal_gpu"
+    ],
+    "slurm_job_id": "24159642",
+    "submitted_utc": "2026-09-28T05:54:30.730435+00:00"
+  }
 }
