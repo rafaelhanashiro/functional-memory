@@ -21,10 +21,11 @@ from matplotlib.lines import Line2D
 
 REFERENCE_PANEL = "references"
 # Categorical slots of the validated reference palette, with distinct markers as secondary
-# encoding. The Hermite line takes slot 7: slots 5 and 6 fail all-pairs against the orange
-# line; slot 5 marks the strip-only normalized Hermite family.
+# encoding. Families plotted on the axis take slots that pass all-pairs against the orange
+# line (1 and 7); strip-only families take slots 5 and 6.
 FAMILY_STYLE = {
-    "normalized_learned_taylor": ("#2a78d6", "o"),
+    "normalized_fixed": ("#2a78d6", "o"),
+    "normalized_learned_taylor": ("#008300", "h"),
     "normalized_nonnegative": ("#eb6834", "s"),
     "unnormalized_learned": ("#1baf7a", "D"),
     "unnormalized_fixed": ("#eda100", "^"),
@@ -32,7 +33,8 @@ FAMILY_STYLE = {
     "unnormalized_fixed_hermite": ("#4a3aa7", "p"),
 }
 INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
-REFERENCE_STYLE = {"softmax": "-", "softmax_no_qk_norm": (0, (6, 3)), "unnormalized_exp": (0, (1, 2))}
+REFERENCE_STYLE = {"softmax": "-", "softmax_no_qk_norm": (0, (6, 3)), "unnormalized_exp": (0, (1, 2)),
+                   "gla": (0, (6, 2, 1, 2))}
 
 
 def _degree(column_id: str) -> int:
@@ -114,7 +116,10 @@ def _build_figure(rows: list[dict], config: dict):
         color, marker = FAMILY_STYLE[family]
         points = sorted(((_degree(row["column"]), float(row["terminal_ppl"]), bool(row.get("legacy")))
                          for row in grouped[family] if row["status"] == "complete"), key=lambda point: point[0])
+        declared = {_degree(column["id"]) for column in panel["columns"]}
         for (x0, y0, legacy0), (x1, y1, legacy1) in zip(points, points[1:]):
+            if any(x0 < degree < x1 for degree in declared):  # never bridge a failed or missing degree
+                continue
             axis.plot([x0, x1], [y0, y1], color=color, linewidth=2, zorder=2, solid_capstyle="round",
                       linestyle=(0, (4, 3)) if legacy0 or legacy1 else "-")
         for x, y, legacy in points:

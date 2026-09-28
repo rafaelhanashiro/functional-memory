@@ -40,7 +40,7 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     assert by_cell["references", "softmax", 8]["legacy"] is True
 
     csv_rows = list(csv.DictReader((output / "summary.csv").open()))
-    assert Counter(row["figure"] for row in csv_rows) == {"heatmap": 45, "degree_chart": 25}
+    assert Counter(row["figure"] for row in csv_rows) == {"heatmap": 45, "degree_chart": 30}
     chart = {(row["panel"], row["column"]): row for row in csv_rows if row["figure"] == "degree_chart"}
     assert float(chart["unnormalized_learned", "m3"]["terminal_ppl"]) == pytest.approx(16.330106671324174)
     assert chart["normalized_learned_taylor", "m2"]["failure_step"] == "1857"
@@ -52,9 +52,9 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     assert all(row["terminal_ppl"] == "" for row in csv_rows if row["status"] == "numerical_failure")
     provenance = json.loads((output / "manifest.json").read_text())
     assert "source_manifests" not in provenance and "source_records" not in provenance
-    assert Counter(row["figure"] for row in provenance["source_runs"]) == {"heatmap": 33, "degree_chart": 25}
+    assert Counter(row["figure"] for row in provenance["source_runs"]) == {"heatmap": 33, "degree_chart": 30}
     assert provenance["status_counts"]["heatmap"]["legacy"] == 22
-    assert provenance["status_counts"]["degree_chart"] == {"complete": 17, "legacy": 0, "numerical_failure": 8}
+    assert provenance["status_counts"]["degree_chart"] == {"complete": 20, "legacy": 0, "numerical_failure": 10}
     for name in ("combined_terminal_ppl", "degree_chart"):
         assert (output / f"{name}.pdf").stat().st_size > 1000
     first = hashes(output)

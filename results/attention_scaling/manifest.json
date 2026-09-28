@@ -79,66 +79,8 @@
       ],
       "panels": [
         {
-          "id": "normalized_learned_taylor",
-          "title": "Normalized, learned",
-          "columns": [
-            {
-              "id": "m1",
-              "label": "m=1"
-            },
-            {
-              "id": "m2",
-              "label": "m=2"
-            },
-            {
-              "id": "m3",
-              "label": "m=3"
-            },
-            {
-              "id": "m4",
-              "label": "m=4"
-            }
-          ]
-        },
-        {
-          "id": "normalized_nonnegative",
-          "title": "Normalized, learned nonnegative",
-          "columns": [
-            {
-              "id": "m2",
-              "label": "m=2"
-            },
-            {
-              "id": "m4",
-              "label": "m=4"
-            }
-          ]
-        },
-        {
-          "id": "unnormalized_learned",
-          "title": "Unnormalized, learned",
-          "columns": [
-            {
-              "id": "m1",
-              "label": "m=1"
-            },
-            {
-              "id": "m2",
-              "label": "m=2"
-            },
-            {
-              "id": "m3",
-              "label": "m=3"
-            },
-            {
-              "id": "m4",
-              "label": "m=4"
-            }
-          ]
-        },
-        {
-          "id": "unnormalized_fixed",
-          "title": "Unnormalized, fixed Taylor",
+          "id": "normalized_fixed",
+          "title": "Normalized, fixed Taylor",
           "columns": [
             {
               "id": "m1",
@@ -181,8 +123,88 @@
           ]
         },
         {
+          "id": "normalized_learned_taylor",
+          "title": "Normalized, learned",
+          "columns": [
+            {
+              "id": "m1",
+              "label": "m=1"
+            },
+            {
+              "id": "m2",
+              "label": "m=2"
+            },
+            {
+              "id": "m3",
+              "label": "m=3"
+            },
+            {
+              "id": "m4",
+              "label": "m=4"
+            }
+          ]
+        },
+        {
+          "id": "normalized_nonnegative",
+          "title": "Normalized, learned nonnegative",
+          "columns": [
+            {
+              "id": "m2",
+              "label": "m=2"
+            },
+            {
+              "id": "m4",
+              "label": "m=4"
+            }
+          ]
+        },
+        {
+          "id": "unnormalized_fixed",
+          "title": "Unnormalized, fixed Taylor",
+          "columns": [
+            {
+              "id": "m1",
+              "label": "m=1"
+            },
+            {
+              "id": "m2",
+              "label": "m=2"
+            },
+            {
+              "id": "m3",
+              "label": "m=3"
+            },
+            {
+              "id": "m4",
+              "label": "m=4"
+            }
+          ]
+        },
+        {
           "id": "unnormalized_fixed_hermite",
           "title": "Unnormalized, fixed Hermite",
+          "columns": [
+            {
+              "id": "m1",
+              "label": "m=1"
+            },
+            {
+              "id": "m2",
+              "label": "m=2"
+            },
+            {
+              "id": "m3",
+              "label": "m=3"
+            },
+            {
+              "id": "m4",
+              "label": "m=4"
+            }
+          ]
+        },
+        {
+          "id": "unnormalized_learned",
+          "title": "Unnormalized, learned",
           "columns": [
             {
               "id": "m1",
@@ -218,6 +240,11 @@
             {
               "id": "unnormalized_exp",
               "label": "unnormalized exp"
+            },
+            {
+              "id": "gla",
+              "label": "GLA",
+              "qk_norm": null
             }
           ]
         }
@@ -1207,6 +1234,206 @@
     },
     {
       "figure": "degree_chart",
+      "panel": "normalized_fixed",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "odd_taylor_attention",
+      "run": "raa90edf82385",
+      "status": "numerical_failure",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/odd_taylor_attention/runs/raa90edf82385/metadata.json",
+          "sha256": "7a5d971252905aec23e3a7c963eaff1616a9ec8dc9c8090fc9f701035aeed336"
+        },
+        "failure": {
+          "path": "experiments/odd_taylor_attention/runs/raa90edf82385/numerical_failure_step_00000031.json",
+          "sha256": "43c29f7a64b34dbaa3fc192321836a476cc8c5ffb54f3ef953e82697b3a62143"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_fixed",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "r93c9d0814322",
+      "status": "complete",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/metadata.json",
+          "sha256": "300ccab36e6488f7aa6731df6a034ef677812e118c471efe39049c83c95a1c40"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/metrics.jsonl",
+          "sha256": "afd284756057e498dfbc1279530e44e792627848f10663a0dcdd793a0f447bc3"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/r93c9d0814322/completion.json",
+          "sha256": "0c39c07e7276d68eec7965eb5c616b65e4e08ed46c5123555e67cff86604e06b"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_fixed",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "odd_taylor_attention",
+      "run": "r8b46f1ad9453",
+      "status": "numerical_failure",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/odd_taylor_attention/runs/r8b46f1ad9453/metadata.json",
+          "sha256": "a8f14c5236955465209b27d86aab60381f691f71f20c068d8d2332dd9dacef82"
+        },
+        "failure": {
+          "path": "experiments/odd_taylor_attention/runs/r8b46f1ad9453/numerical_failure_step_00000419.json",
+          "sha256": "4cdddfa0c4136fbb902b6a8375bc4efff6962eb79b1680616c7c3be8b7e722c6"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_fixed",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "key_dimension_taylor",
+      "run": "ra9b651caa405",
+      "status": "complete",
+      "source_commit": "a74e3863fdf1e1dd965252cd435712dec10c9a29",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/key_dimension_taylor/runs/ra9b651caa405/metadata.json",
+          "sha256": "10af0dd9289b98829d36b9967ecfa0cf161c22c91792c552c67ff5cd825e241e"
+        },
+        "metrics": {
+          "path": "experiments/key_dimension_taylor/runs/ra9b651caa405/metrics.jsonl",
+          "sha256": "37ecdb24c15801f34f3df96c8311db2b1332cd934d8fca6197b12c4851d3104a"
+        },
+        "completion": {
+          "path": "experiments/key_dimension_taylor/runs/ra9b651caa405/completion.json",
+          "sha256": "bedd0ddfa3867044335f7fe6d223f27941baf42df164eeb9924818258ccbd25d"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_fixed_hermite",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "hermite_attention",
+      "run": "rea4fd9479c26",
+      "status": "numerical_failure",
+      "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/hermite_attention/runs/rea4fd9479c26/metadata.json",
+          "sha256": "744af08b0119259d4ab85d33ac016df0a2915448e59c3b45d36afde5f2d08e55"
+        },
+        "failure": {
+          "path": "experiments/hermite_attention/runs/rea4fd9479c26/numerical_failure_step_00000005.json",
+          "sha256": "570e56cfcebdf629d61d865b6339a5036a1a1b55da15029a1e30ef338f2a2413"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_fixed_hermite",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "hermite_attention",
+      "run": "rbb8dc34285bf",
+      "status": "numerical_failure",
+      "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/hermite_attention/runs/rbb8dc34285bf/metadata.json",
+          "sha256": "ef7991425171a1997767079ff9f5d700f57b6d4debfe845e4c767364ecd54b02"
+        },
+        "failure": {
+          "path": "experiments/hermite_attention/runs/rbb8dc34285bf/numerical_failure_step_00003829.json",
+          "sha256": "eb58d455a27cd8647a24f34303355e67ce2c34b7fccb54315dd7920b659c3133"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_fixed_hermite",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "hermite_attention",
+      "run": "r3dd3f20a884a",
+      "status": "numerical_failure",
+      "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/hermite_attention/runs/r3dd3f20a884a/metadata.json",
+          "sha256": "7449f709527322d88f6fa630cdc5b44342a2a9e84a344fe0c2c28d3dda14dd64"
+        },
+        "failure": {
+          "path": "experiments/hermite_attention/runs/r3dd3f20a884a/numerical_failure_step_00000802.json",
+          "sha256": "55037df792775f1b6b37516fa988a235ebacc2250b2f22a24007f78d021a8098"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "normalized_fixed_hermite",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "hermite_attention",
+      "run": "re8b05edb37b1",
+      "status": "numerical_failure",
+      "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/hermite_attention/runs/re8b05edb37b1/metadata.json",
+          "sha256": "48727c9b6d293987bc470975993ba2b01c1eb2bcc8c57cd42bcac8077f95bed1"
+        },
+        "failure": {
+          "path": "experiments/hermite_attention/runs/re8b05edb37b1/numerical_failure_step_00001390.json",
+          "sha256": "1cf4a1a1fe3651fd5599eebd1492d553d12fa428916b2abb7999897249f2108c"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
       "panel": "normalized_learned_taylor",
       "column": "m1",
       "d_k": 64,
@@ -1359,118 +1586,6 @@
     },
     {
       "figure": "degree_chart",
-      "panel": "unnormalized_learned",
-      "column": "m1",
-      "d_k": 64,
-      "experiment": "qk_norm_learned_taylor",
-      "run": "r13c144b8fd17",
-      "status": "complete",
-      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/metadata.json",
-          "sha256": "127347cf42e115e434861fdf71dd4953bf6ff78456dc4791e34117fe7fbc38e7"
-        },
-        "metrics": {
-          "path": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/metrics.jsonl",
-          "sha256": "96c2730edd978ad36b3c3231281472aa0b6b69bb67e0dc4ce57bbc4d93762148"
-        },
-        "completion": {
-          "path": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/completion.json",
-          "sha256": "b6acc5d1abb93713070656b5b480ae172f6337ef58a929c7d1e092368fc220dc"
-        }
-      },
-      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
-      "qk_norm": true,
-      "legacy": false,
-      "legacy_reasons": []
-    },
-    {
-      "figure": "degree_chart",
-      "panel": "unnormalized_learned",
-      "column": "m2",
-      "d_k": 64,
-      "experiment": "qk_norm_learned_taylor",
-      "run": "r07bee5b16e61",
-      "status": "complete",
-      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/metadata.json",
-          "sha256": "c03c5b0ffc0570283cbd614c1f91d89eefd49d8a4e545df662703f919c4be5c9"
-        },
-        "metrics": {
-          "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/metrics.jsonl",
-          "sha256": "c363897b287024b7983a19fc18fcfc37333024bf51e1cc0497bc2f38efca3316"
-        },
-        "completion": {
-          "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/completion.json",
-          "sha256": "ac47989070e0f808a8c571ecefa872c726f044feaf7253746d33cfe7c2bf2304"
-        }
-      },
-      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
-      "qk_norm": true,
-      "legacy": false,
-      "legacy_reasons": []
-    },
-    {
-      "figure": "degree_chart",
-      "panel": "unnormalized_learned",
-      "column": "m3",
-      "d_k": 64,
-      "experiment": "qk_norm_learned_taylor",
-      "run": "r0470d7fcaae6",
-      "status": "complete",
-      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/metadata.json",
-          "sha256": "faf1dd2352b5085242eac12a72dbca644db69fa488dc409e5ce569b53ab719a5"
-        },
-        "metrics": {
-          "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/metrics.jsonl",
-          "sha256": "9c4eb4a4d225634e8c03356f6577c760f74f4a084cec497ce6f8355bc53bb828"
-        },
-        "completion": {
-          "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/completion.json",
-          "sha256": "217422e572eb7e467596a9adaff9eae72b566c2064fcb2d911464308c5eebdda"
-        }
-      },
-      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
-      "qk_norm": true,
-      "legacy": false,
-      "legacy_reasons": []
-    },
-    {
-      "figure": "degree_chart",
-      "panel": "unnormalized_learned",
-      "column": "m4",
-      "d_k": 64,
-      "experiment": "qk_norm_learned_taylor",
-      "run": "rbaa19693c602",
-      "status": "complete",
-      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/qk_norm_learned_taylor/runs/rbaa19693c602/metadata.json",
-          "sha256": "adc7407ef91c00164c036d8385f458b58ef90b1b38d623a84b1a418d0e0f7928"
-        },
-        "metrics": {
-          "path": "experiments/qk_norm_learned_taylor/runs/rbaa19693c602/metrics.jsonl",
-          "sha256": "01fcd44375269da22ac332ae2c0150e85fff6b109cf51c410c37c10e2b0a8555"
-        },
-        "completion": {
-          "path": "experiments/qk_norm_learned_taylor/runs/rbaa19693c602/completion.json",
-          "sha256": "7d973eb00c656efe0c7be0426d869a83142d8f95659f7043e82491a5767ec2cd"
-        }
-      },
-      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
-      "qk_norm": true,
-      "legacy": false,
-      "legacy_reasons": []
-    },
-    {
-      "figure": "degree_chart",
       "panel": "unnormalized_fixed",
       "column": "m1",
       "d_k": 64,
@@ -1574,102 +1689,6 @@
         "completion": {
           "path": "experiments/hermite_attention/runs/r3d631b7b8afe/completion.json",
           "sha256": "2b142a25237c888c0f79994702325d356269f55ac938ad0bde9f84e02a40cd5f"
-        }
-      },
-      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
-      "qk_norm": true,
-      "legacy": false,
-      "legacy_reasons": []
-    },
-    {
-      "figure": "degree_chart",
-      "panel": "normalized_fixed_hermite",
-      "column": "m1",
-      "d_k": 64,
-      "experiment": "hermite_attention",
-      "run": "rea4fd9479c26",
-      "status": "numerical_failure",
-      "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/hermite_attention/runs/rea4fd9479c26/metadata.json",
-          "sha256": "744af08b0119259d4ab85d33ac016df0a2915448e59c3b45d36afde5f2d08e55"
-        },
-        "failure": {
-          "path": "experiments/hermite_attention/runs/rea4fd9479c26/numerical_failure_step_00000005.json",
-          "sha256": "570e56cfcebdf629d61d865b6339a5036a1a1b55da15029a1e30ef338f2a2413"
-        }
-      },
-      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
-      "qk_norm": true,
-      "legacy": false,
-      "legacy_reasons": []
-    },
-    {
-      "figure": "degree_chart",
-      "panel": "normalized_fixed_hermite",
-      "column": "m2",
-      "d_k": 64,
-      "experiment": "hermite_attention",
-      "run": "rbb8dc34285bf",
-      "status": "numerical_failure",
-      "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/hermite_attention/runs/rbb8dc34285bf/metadata.json",
-          "sha256": "ef7991425171a1997767079ff9f5d700f57b6d4debfe845e4c767364ecd54b02"
-        },
-        "failure": {
-          "path": "experiments/hermite_attention/runs/rbb8dc34285bf/numerical_failure_step_00003829.json",
-          "sha256": "eb58d455a27cd8647a24f34303355e67ce2c34b7fccb54315dd7920b659c3133"
-        }
-      },
-      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
-      "qk_norm": true,
-      "legacy": false,
-      "legacy_reasons": []
-    },
-    {
-      "figure": "degree_chart",
-      "panel": "normalized_fixed_hermite",
-      "column": "m3",
-      "d_k": 64,
-      "experiment": "hermite_attention",
-      "run": "r3dd3f20a884a",
-      "status": "numerical_failure",
-      "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/hermite_attention/runs/r3dd3f20a884a/metadata.json",
-          "sha256": "7449f709527322d88f6fa630cdc5b44342a2a9e84a344fe0c2c28d3dda14dd64"
-        },
-        "failure": {
-          "path": "experiments/hermite_attention/runs/r3dd3f20a884a/numerical_failure_step_00000802.json",
-          "sha256": "55037df792775f1b6b37516fa988a235ebacc2250b2f22a24007f78d021a8098"
-        }
-      },
-      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
-      "qk_norm": true,
-      "legacy": false,
-      "legacy_reasons": []
-    },
-    {
-      "figure": "degree_chart",
-      "panel": "normalized_fixed_hermite",
-      "column": "m4",
-      "d_k": 64,
-      "experiment": "hermite_attention",
-      "run": "re8b05edb37b1",
-      "status": "numerical_failure",
-      "source_commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
-      "artifacts": {
-        "metadata": {
-          "path": "experiments/hermite_attention/runs/re8b05edb37b1/metadata.json",
-          "sha256": "48727c9b6d293987bc470975993ba2b01c1eb2bcc8c57cd42bcac8077f95bed1"
-        },
-        "failure": {
-          "path": "experiments/hermite_attention/runs/re8b05edb37b1/numerical_failure_step_00001390.json",
-          "sha256": "1cf4a1a1fe3651fd5599eebd1492d553d12fa428916b2abb7999897249f2108c"
         }
       },
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
@@ -1791,6 +1810,118 @@
     },
     {
       "figure": "degree_chart",
+      "panel": "unnormalized_learned",
+      "column": "m1",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "r13c144b8fd17",
+      "status": "complete",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/metadata.json",
+          "sha256": "127347cf42e115e434861fdf71dd4953bf6ff78456dc4791e34117fe7fbc38e7"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/metrics.jsonl",
+          "sha256": "96c2730edd978ad36b3c3231281472aa0b6b69bb67e0dc4ce57bbc4d93762148"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r13c144b8fd17/completion.json",
+          "sha256": "b6acc5d1abb93713070656b5b480ae172f6337ef58a929c7d1e092368fc220dc"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "unnormalized_learned",
+      "column": "m2",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "r07bee5b16e61",
+      "status": "complete",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/metadata.json",
+          "sha256": "c03c5b0ffc0570283cbd614c1f91d89eefd49d8a4e545df662703f919c4be5c9"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/metrics.jsonl",
+          "sha256": "c363897b287024b7983a19fc18fcfc37333024bf51e1cc0497bc2f38efca3316"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r07bee5b16e61/completion.json",
+          "sha256": "ac47989070e0f808a8c571ecefa872c726f044feaf7253746d33cfe7c2bf2304"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "unnormalized_learned",
+      "column": "m3",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "r0470d7fcaae6",
+      "status": "complete",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/metadata.json",
+          "sha256": "faf1dd2352b5085242eac12a72dbca644db69fa488dc409e5ce569b53ab719a5"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/metrics.jsonl",
+          "sha256": "9c4eb4a4d225634e8c03356f6577c760f74f4a084cec497ce6f8355bc53bb828"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_learned_taylor/runs/r0470d7fcaae6/completion.json",
+          "sha256": "217422e572eb7e467596a9adaff9eae72b566c2064fcb2d911464308c5eebdda"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "unnormalized_learned",
+      "column": "m4",
+      "d_k": 64,
+      "experiment": "qk_norm_learned_taylor",
+      "run": "rbaa19693c602",
+      "status": "complete",
+      "source_commit": "696ffb5ecb2a49a5be433a9abe1273f920a94a03",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/qk_norm_learned_taylor/runs/rbaa19693c602/metadata.json",
+          "sha256": "adc7407ef91c00164c036d8385f458b58ef90b1b38d623a84b1a418d0e0f7928"
+        },
+        "metrics": {
+          "path": "experiments/qk_norm_learned_taylor/runs/rbaa19693c602/metrics.jsonl",
+          "sha256": "01fcd44375269da22ac332ae2c0150e85fff6b109cf51c410c37c10e2b0a8555"
+        },
+        "completion": {
+          "path": "experiments/qk_norm_learned_taylor/runs/rbaa19693c602/completion.json",
+          "sha256": "7d973eb00c656efe0c7be0426d869a83142d8f95659f7043e82491a5767ec2cd"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
       "panel": "references",
       "column": "softmax",
       "d_k": 64,
@@ -1872,6 +2003,34 @@
       "qk_norm": true,
       "legacy": false,
       "legacy_reasons": []
+    },
+    {
+      "figure": "degree_chart",
+      "panel": "references",
+      "column": "gla",
+      "d_k": 64,
+      "experiment": "gla_key_dimension",
+      "run": "r6e11d7bd996d",
+      "status": "complete",
+      "source_commit": "b3c32f9b3211f061d622ca2d7285bc2609ff0b4e",
+      "artifacts": {
+        "metadata": {
+          "path": "experiments/gla_key_dimension/runs/r6e11d7bd996d/metadata.json",
+          "sha256": "94552faa992638a9a80eae6a72ee6793fa74eaf9c44dfc84026427786bed1981"
+        },
+        "metrics": {
+          "path": "experiments/gla_key_dimension/runs/r6e11d7bd996d/metrics.jsonl",
+          "sha256": "f55a68848dd4f1193900feb2b7cd904b3fafa21df42ee8e7df29e6fb993c2668"
+        },
+        "completion": {
+          "path": "experiments/gla_key_dimension/runs/r6e11d7bd996d/completion.json",
+          "sha256": "2589eecfa7af15af80b3cfcd1a5cf4b6526e3fa658f60e768ef294646191eadb"
+        }
+      },
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": false,
+      "legacy": false,
+      "legacy_reasons": []
     }
   ],
   "status_counts": {
@@ -1882,8 +2041,8 @@
       "legacy": 22
     },
     "degree_chart": {
-      "complete": 17,
-      "numerical_failure": 8,
+      "complete": 20,
+      "numerical_failure": 10,
       "legacy": 0
     }
   },
@@ -1894,7 +2053,7 @@
     },
     "chart_config": {
       "path": "results/attention_scaling/degree_chart.yaml",
-      "sha256": "415e0264e90601860d55d28a90b438687c02fe841300f5f970eedbf95339a764"
+      "sha256": "59cb76afad7bb217cab367473c3036e33125b37c5c7e84a0099780525a33ff75"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
@@ -1903,7 +2062,7 @@
     "code": {
       "collect.py": {
         "path": "results/attention_scaling/collect.py",
-        "sha256": "182d3c846506505e2788f9ffd213894a650f97cf59fbde98b86887e40406de96"
+        "sha256": "bce6f521a04c79ecb40f4991f3afe24577a87cb5f3d55e8d846f7cf95832aab7"
       },
       "render.py": {
         "path": "results/attention_scaling/render.py",
@@ -1911,7 +2070,7 @@
       },
       "chart.py": {
         "path": "results/attention_scaling/chart.py",
-        "sha256": "7bb4b339e6f69c1a31ea3c588554507894611c4c7f6834170729fb4584b1f2b1"
+        "sha256": "007a7d5cc3935f5ce7ced772a2ca60d9f4f5cec527f3c978741be297d9fde611"
       },
       "plot.py": {
         "path": "results/attention_scaling/plot.py",
@@ -1922,11 +2081,11 @@
   "derived_artifacts": {
     "summary_csv": {
       "path": "results/attention_scaling/summary.csv",
-      "sha256": "1e039d14f60eecdc7383640434309f89a9ed491ebc9364be6d9d0de7b641c5df"
+      "sha256": "b9e5dc3307932bf393bd67961e36b05aff2e7224f87e864d3bb463e551308310"
     },
     "readme": {
       "path": "results/attention_scaling/README.md",
-      "sha256": "69f2af57109af194901b65819d994b5e82a3646106931cdd864de64cfd17dfe5"
+      "sha256": "bd1b7aa48ecfa73e821d85850f9b28ae12e831a23d15df335ee42bc22a23cd6c"
     },
     "combined_terminal_ppl_pdf": {
       "path": "results/attention_scaling/combined_terminal_ppl.pdf",
@@ -1938,11 +2097,11 @@
     },
     "degree_chart_pdf": {
       "path": "results/attention_scaling/degree_chart.pdf",
-      "sha256": "cc56c1df008a197b5ba9165e24e3a7aa11d80c341501caa2e6a6b98516c9a790"
+      "sha256": "d5635865bc0bc448ca67965c978fab708751b4449ef55a35e7cf3e06a4080258"
     },
     "degree_chart_png": {
       "path": "results/attention_scaling/degree_chart.png",
-      "sha256": "a8b85304bbba0901f5d846203a72698e4ac882f2818f63f2226237aed531750c"
+      "sha256": "3b1395f455764802499606efbe03f626f441c28486e75815129446361e937f7b"
     }
   }
 }

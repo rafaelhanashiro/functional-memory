@@ -92,7 +92,9 @@ def _mechanism(cell: dict, model: dict, metadata: dict, label: str) -> None:
     # Taylor kernels use the implicit 1/r! coefficients; Hermite recipes state theirs, as
     # expanded coefficients or, for normalized degree 2, as fixed square factors.
     stated = model.get("attention_fixed_coefficients") is not None or model.get("attention_fixed_square_factors") is not None
-    if panel == "unnormalized_fixed" and stated:
+    if panel == "normalized_fixed":
+        _optional_match(metadata, "attention_kernel", "taylor", f"{label} kernel")
+    if panel in ("unnormalized_fixed", "normalized_fixed") and stated:
         raise ValueError(f"{label} states fixed coefficients; a Taylor cell uses 1/r!")
     if panel in ("normalized_fixed_hermite", "unnormalized_fixed_hermite") and not stated:
         raise ValueError(f"{label} states no fixed Hermite coefficients")

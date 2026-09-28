@@ -20,7 +20,7 @@ them and are outlined in the heatmap.
 
 ### Degree chart (d_K = 64)
 
-25 runs: 17 complete, 8 failed. Failures sit below the axis at their update.
+30 runs: 20 complete, 10 failed. Failures sit below the axis at their update.
 
 ![Terminal perplexity against polynomial degree](degree_chart.png)
 
@@ -43,7 +43,7 @@ them and are outlined in the heatmap.
 ## Results at d_K = 64
 
 References: QK-norm softmax **14.457**, softmax without QK-norm **14.665** (both with
-selective decay), unnormalized exp with QK-norm 18.304.
+selective decay), GLA 15.895 (no QK-norm), unnormalized exp with QK-norm 18.304.
 
 Normalized kernels (failures show the update):
 

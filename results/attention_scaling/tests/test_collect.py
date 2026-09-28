@@ -219,13 +219,14 @@ def test_committed_comparison_sources() -> None:
 
     chart = yaml.safe_load((root / "results/attention_scaling/degree_chart.yaml").read_text())
     chart_rows = collect_rows(root, chart)
-    assert len(chart_rows) == 25
+    assert len(chart_rows) == 30
     chart_failures = {(row["panel"], row["column"]): row["failure_step"]
                       for row in chart_rows if row["status"] == "numerical_failure"}
     assert chart_failures == {("normalized_learned_taylor", "m1"): 27, ("normalized_learned_taylor", "m2"): 1857,
                               ("normalized_learned_taylor", "m3"): 318, ("normalized_learned_taylor", "m4"): 1456,
                               ("normalized_fixed_hermite", "m1"): 5, ("normalized_fixed_hermite", "m2"): 3829,
-                              ("normalized_fixed_hermite", "m3"): 802, ("normalized_fixed_hermite", "m4"): 1390}
+                              ("normalized_fixed_hermite", "m3"): 802, ("normalized_fixed_hermite", "m4"): 1390,
+                              ("normalized_fixed", "m1"): 31, ("normalized_fixed", "m3"): 419}
     legacy = {(row["panel"], row["column"]) for row in chart_rows if row["legacy"]}
     assert legacy == set()
 

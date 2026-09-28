@@ -9,37 +9,8 @@ title: Polynomial attention kernels across degree at d_K = 64
 d_k:
 - 64
 panels:
-- id: normalized_learned_taylor
-  title: Normalized, learned
-  columns:
-  - id: m1
-    label: m=1
-  - id: m2
-    label: m=2
-  - id: m3
-    label: m=3
-  - id: m4
-    label: m=4
-- id: normalized_nonnegative
-  title: Normalized, learned nonnegative
-  columns:
-  - id: m2
-    label: m=2
-  - id: m4
-    label: m=4
-- id: unnormalized_learned
-  title: Unnormalized, learned
-  columns:
-  - id: m1
-    label: m=1
-  - id: m2
-    label: m=2
-  - id: m3
-    label: m=3
-  - id: m4
-    label: m=4
-- id: unnormalized_fixed
-  title: Unnormalized, fixed Taylor
+- id: normalized_fixed
+  title: Normalized, fixed Taylor
   columns:
   - id: m1
     label: m=1
@@ -60,9 +31,49 @@ panels:
     label: m=3
   - id: m4
     label: m=4
+- id: normalized_learned_taylor
+  title: Normalized, learned
+  columns:
+  - id: m1
+    label: m=1
+  - id: m2
+    label: m=2
+  - id: m3
+    label: m=3
+  - id: m4
+    label: m=4
+- id: normalized_nonnegative
+  title: Normalized, learned nonnegative
+  columns:
+  - id: m2
+    label: m=2
+  - id: m4
+    label: m=4
+- id: unnormalized_fixed
+  title: Unnormalized, fixed Taylor
+  columns:
+  - id: m1
+    label: m=1
+  - id: m2
+    label: m=2
+  - id: m3
+    label: m=3
+  - id: m4
+    label: m=4
 - id: unnormalized_fixed_hermite
   title: Unnormalized, fixed Hermite
   columns: *id001
+- id: unnormalized_learned
+  title: Unnormalized, learned
+  columns:
+  - id: m1
+    label: m=1
+  - id: m2
+    label: m=2
+  - id: m3
+    label: m=3
+  - id: m4
+    label: m=4
 - id: references
   title: Reference mechanisms
   columns:
@@ -73,6 +84,9 @@ panels:
     qk_norm: false
   - id: unnormalized_exp
     label: unnormalized exp
+  - id: gla
+    label: GLA
+    qk_norm: null
 cells:
 - panel: unnormalized_fixed
   column: m1
@@ -224,6 +238,36 @@ cells:
   experiment: hermite_attention
   run: rf39358c9f550
   label: 200m-qk-hermite-m004-unnormalized-seed0
+- panel: normalized_fixed
+  column: m1
+  d_k: 64
+  experiment: odd_taylor_attention
+  run: raa90edf82385
+  label: 200m-m001-seed0
+- panel: normalized_fixed
+  column: m2
+  d_k: 64
+  experiment: key_dimension_taylor
+  run: r93c9d0814322
+  label: 200m-m002-seed0
+- panel: normalized_fixed
+  column: m3
+  d_k: 64
+  experiment: odd_taylor_attention
+  run: r8b46f1ad9453
+  label: 200m-m003-seed0
+- panel: normalized_fixed
+  column: m4
+  d_k: 64
+  experiment: key_dimension_taylor
+  run: ra9b651caa405
+  label: 200m-m004-seed0
+- panel: references
+  column: gla
+  d_k: 64
+  experiment: gla_key_dimension
+  run: r6e11d7bd996d
+  label: 200m-dk064-gla-seed0
 metric: terminal_validation_perplexity
 runs:
 - study: hermite_attention
@@ -677,3 +721,86 @@ runs:
     best_validation.json:
       path: experiments/hermite_attention/runs/rf39358c9f550/best_validation.json
       sha256: 440d5f061b34a6ce5b24580bf85070d775cff0c144dd6358c4f0ed019d13fc60
+- study: odd_taylor_attention
+  run_id: raa90edf82385
+  label: 200m-m001-seed0
+  sources:
+    config.yaml:
+      path: experiments/odd_taylor_attention/runs/raa90edf82385/config.yaml
+      sha256: a5ff5d5fda842f0437c419f99f858d16f17cf19dec2091bc985846766cf25268
+    metadata.json:
+      path: experiments/odd_taylor_attention/runs/raa90edf82385/metadata.json
+      sha256: 7a5d971252905aec23e3a7c963eaff1616a9ec8dc9c8090fc9f701035aeed336
+    numerical_failure_step_00000031.json:
+      path: experiments/odd_taylor_attention/runs/raa90edf82385/numerical_failure_step_00000031.json
+      sha256: 43c29f7a64b34dbaa3fc192321836a476cc8c5ffb54f3ef953e82697b3a62143
+- study: key_dimension_taylor
+  run_id: r93c9d0814322
+  label: 200m-m002-seed0
+  sources:
+    config.yaml:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/config.yaml
+      sha256: 742cf0d13516ae8318e06173466ba50c3a0df60a76e4e45147ac37cdddbc6bfe
+    metrics.jsonl:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/metrics.jsonl
+      sha256: afd284756057e498dfbc1279530e44e792627848f10663a0dcdd793a0f447bc3
+    completion.json:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/completion.json
+      sha256: 0c39c07e7276d68eec7965eb5c616b65e4e08ed46c5123555e67cff86604e06b
+    metadata.json:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/metadata.json
+      sha256: 300ccab36e6488f7aa6731df6a034ef677812e118c471efe39049c83c95a1c40
+    best_validation.json:
+      path: experiments/key_dimension_taylor/runs/r93c9d0814322/best_validation.json
+      sha256: 157ecf0d356530fe5053fa52197dc7cdf7be72103696568156189bfeef7ba98d
+- study: odd_taylor_attention
+  run_id: r8b46f1ad9453
+  label: 200m-m003-seed0
+  sources:
+    config.yaml:
+      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/config.yaml
+      sha256: d10f16273afc5f387c7055c4b127057d142a7cec59fe253fb466bb3a011a7283
+    metadata.json:
+      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/metadata.json
+      sha256: a8f14c5236955465209b27d86aab60381f691f71f20c068d8d2332dd9dacef82
+    numerical_failure_step_00000419.json:
+      path: experiments/odd_taylor_attention/runs/r8b46f1ad9453/numerical_failure_step_00000419.json
+      sha256: 4cdddfa0c4136fbb902b6a8375bc4efff6962eb79b1680616c7c3be8b7e722c6
+- study: key_dimension_taylor
+  run_id: ra9b651caa405
+  label: 200m-m004-seed0
+  sources:
+    config.yaml:
+      path: experiments/key_dimension_taylor/runs/ra9b651caa405/config.yaml
+      sha256: 62dd7a2986e7cc32a458d2e48df536f40d00116a2ca6029953011a6b97edcd2e
+    metrics.jsonl:
+      path: experiments/key_dimension_taylor/runs/ra9b651caa405/metrics.jsonl
+      sha256: 37ecdb24c15801f34f3df96c8311db2b1332cd934d8fca6197b12c4851d3104a
+    completion.json:
+      path: experiments/key_dimension_taylor/runs/ra9b651caa405/completion.json
+      sha256: bedd0ddfa3867044335f7fe6d223f27941baf42df164eeb9924818258ccbd25d
+    metadata.json:
+      path: experiments/key_dimension_taylor/runs/ra9b651caa405/metadata.json
+      sha256: 10af0dd9289b98829d36b9967ecfa0cf161c22c91792c552c67ff5cd825e241e
+    best_validation.json:
+      path: experiments/key_dimension_taylor/runs/ra9b651caa405/best_validation.json
+      sha256: 23eb69673fee6bb1838892438a7bbe512124802c3376e1a558d55cfe69d2dfac
+- study: gla_key_dimension
+  run_id: r6e11d7bd996d
+  label: 200m-dk064-gla-seed0
+  sources:
+    config.yaml:
+      path: experiments/gla_key_dimension/runs/r6e11d7bd996d/config.yaml
+      sha256: b1214accc43d6f2d59ef0685b9c7152e337c00d1ec46630d0ca1125fa58f198f
+    metrics.jsonl:
+      path: experiments/gla_key_dimension/runs/r6e11d7bd996d/metrics.jsonl
+      sha256: f55a68848dd4f1193900feb2b7cd904b3fafa21df42ee8e7df29e6fb993c2668
+    completion.json:
+      path: experiments/gla_key_dimension/runs/r6e11d7bd996d/completion.json
+      sha256: 2589eecfa7af15af80b3cfcd1a5cf4b6526e3fa658f60e768ef294646191eadb
+    metadata.json:
+      path: experiments/gla_key_dimension/runs/r6e11d7bd996d/metadata.json
+      sha256: 94552faa992638a9a80eae6a72ee6793fa74eaf9c44dfc84026427786bed1981
+    best_validation.json:
+      path: experiments/gla_key_dimension/runs/r6e11d7bd996d/best_validation.json
+      sha256: a2c4a41b00752e8964854de904e989b664c0c3141201027e4557ccbec5d2271b

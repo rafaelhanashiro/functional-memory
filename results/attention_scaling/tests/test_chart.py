@@ -77,3 +77,20 @@ def test_png_and_pdf_regenerate_byte_identically(tmp_path):
     second = {name: path.read_bytes() for name, path in render_degree_chart(ROWS, _config(), tmp_path).items()}
     assert set(first) == {"degree_chart_png", "degree_chart_pdf"} and first == second
 
+
+
+def test_line_never_bridges_a_failed_degree():
+    degrees = [{"id": f"m{d}", "label": f"m={d}"} for d in (1, 2, 3, 4)]
+    config = {"d_k": [64], "panels": [{"id": "normalized_fixed", "title": "Normalized, fixed Taylor", "columns": degrees},
+                                      {"id": "references", "title": "References", "columns": [{"id": "softmax", "label": "softmax"}]}]}
+    rows = [_row("normalized_fixed", "m1", "numerical_failure", failure_step=31), _row("normalized_fixed", "m2", value=16.5),
+            _row("normalized_fixed", "m3", "numerical_failure", failure_step=419), _row("normalized_fixed", "m4", value=14.9),
+            _row("references", "softmax", value=14.46)]
+    figure = _build_figure(rows, config)
+    try:
+        axis = next(axis for axis in figure.axes if axis.get_gid() == "chart:perplexity")
+        assert {"point:normalized_fixed:m2:current", "point:normalized_fixed:m4:current"} <= _gids(axis)
+        assert not [line for line in axis.get_lines() if line.get_gid() is None and len(line.get_xdata()) == 2
+                    and list(line.get_xdata()) == [2, 4]]
+    finally:
+        plt.close(figure)
