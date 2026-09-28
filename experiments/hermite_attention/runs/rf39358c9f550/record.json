@@ -22,12 +22,6 @@
       "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
     }
   },
-  "executed_recipe": {
-    "commit": "84dedd777c2f1def16ef9ef74ea11ec6c94cdda9",
-    "path": "experiments/hermite_attention/runs/rf39358c9f550/config.yaml",
-    "sha256": "9a36b85c1afc6a924a666fcf4dccd0653903f947d3d0cce98de9005e612c7e40"
-  },
-  "frozen_execution_sha256": "b4afd139ee74b969f499b1a474dad2f093a033095462060e430217b3ce7dde4e",
   "home_cluster": "kennel",
   "label": "200m-qk-hermite-m004-unnormalized-seed0",
   "matched_control": {
@@ -53,25 +47,5 @@
   },
   "run_id": "rf39358c9f550",
   "seed": 0,
-  "source_commit": "84dedd777c2f1def16ef9ef74ea11ec6c94cdda9",
-  "status": "submitted",
-  "submission": {
-    "command": [
-      "sbatch",
-      "--parsable",
-      "--gres=gpu:4",
-      "--dependency=afterok:203015:203016",
-      "--job-name=qk-hermite-unnorm-m4-rf39358c9f550",
-      "--output=experiments/hermite_attention/runs/rf39358c9f550/training.log",
-      "scaffolds/transformer/launchers/kennel.sbatch",
-      "experiments.hermite_attention.acceptance",
-      "experiments/hermite_attention/runs/rf39358c9f550/config.yaml",
-      "84dedd777c2f1def16ef9ef74ea11ec6c94cdda9",
-      "4",
-      "B300,H100"
-    ],
-    "qualification_dependency": "afterok:203015:203016",
-    "slurm_job_id": "203023",
-    "submitted_utc": "2026-09-27T23:11:52.996440+00:00"
-  }
+  "status": "planned"
 }

@@ -29,7 +29,7 @@ model:
   remat: false
   attention_backend: fused
   attention_degree: 2
-  attention_normalization: true
+  attention_normalization: false
   attention_mechanism: dot_product
   gla_gate_rank: 16
   gla_gate_tau: 16.0
@@ -39,13 +39,13 @@ model:
   quadratic_mode: fixed
   quadratic_sharing: global
   attention_coefficients: fixed
-  attention_fixed_coefficients: null
-  attention_fixed_square_factors:
-  - 0.9079430793557843
-  - 0.9079430793557843
-  - 0.0
+  attention_fixed_coefficients:
+  - 0.8243606353500641
+  - 1.6487212707001282
+  - 0.8243606353500641
+  attention_fixed_square_factors: null
   attention_coefficient_sharing: global
-  attention_coefficient_parameterization: sum_of_squares
+  attention_coefficient_parameterization: direct
   qk_norm: true
   qk_norm_sharing: per_head
   qk_norm_initial_scale: null
@@ -64,8 +64,8 @@ train:
   seed: 0
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/hermite_attention/runs/r77d20d345a51
-  checkpoint_dir: experiments/hermite_attention/runs/r77d20d345a51/checkpoints
+  workdir: experiments/hermite_attention/runs/r05b79574172d
+  checkpoint_dir: experiments/hermite_attention/runs/r05b79574172d/checkpoints
   micro_batch_size: 64
   log_every: 10
   eval_every: 1000
@@ -73,7 +73,7 @@ train:
   ckpt_every: 500
   wandb_project: functional-memory
   wandb_entity: rafah-massachusetts-institute-of-technology
-  wandb_run_name: 200m-qk-hermite-m002-normalized-seed0
+  wandb_run_name: 200m-qk-hermite-m002-unnormalized-seed0
   wandb_group: hermite_attention
   wandb_dir: null
   wandb_mode: online
