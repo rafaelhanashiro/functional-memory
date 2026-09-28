@@ -14,10 +14,10 @@ record, measurements, checkpoint directory, and `training.log` under `runs/`.
 
 The cohort was submitted on 2026-09-27 as jobs **203102–203113**, from launch
 commit `bd31f8ad7a8a964b286387ad7ad7723ea405b286`, after the compiled H100/B300
-checks (jobs 203015/203016) passed. One run uses the `standard` allowance and
-three use `long`; the rest use `sweep`. Individual job IDs, partitions, and exact
-submission commands are stored in the run records; live scheduler status and
-recorded training status are distinct.
+checks (jobs 203015/203016) passed. Runs use the `standard` allowance one at a
+time on `akita`, or `long`. Individual job IDs, partitions, node pins, ordering
+dependencies, and exact submission commands are stored in the run records; live
+scheduler status and recorded training status are distinct.
 
 ## Method and comparison
 

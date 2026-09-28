@@ -44,12 +44,17 @@
   "qk_norm_sharing": "per_head",
   "record_schema_version": 1,
   "requested_hardware": {
+    "dependency": "afterany:203112",
     "gpu_count": 4,
     "gpu_types": [
       "H100",
       "B300"
     ],
-    "partition": "sweep"
+    "node_list": [
+      "akita"
+    ],
+    "partition": "standard",
+    "time_limit": "1-00:00:00"
   },
   "run_id": "r2aa13b45ae42",
   "seed": 0,
