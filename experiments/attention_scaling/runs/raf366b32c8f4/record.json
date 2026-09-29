@@ -3,9 +3,38 @@
     "path": "experiments/attention_scaling/runs/raf366b32c8f4/config.yaml",
     "sha256": "49f878a6de5202179d8371c7024e9150aaee8bd6ef23477b6546d4947823ce74"
   },
+  "frozen_execution_sha256": "266cece727a57c266a626b4bdc62fd2d8c8d73d41d27b27cf2699aacc0b0443e",
+  "home_cluster": "kennel",
   "label": "200m-qk-dk008-m016-seed0",
   "name": "200m-qk-dk008-m016-seed0",
   "record_schema_version": 1,
+  "requested_hardware": {
+    "gpu_count": 4,
+    "gpu_types": [
+      "H100",
+      "B300"
+    ],
+    "partition": "long"
+  },
   "run_id": "raf366b32c8f4",
-  "status": "planned"
+  "source_commit": "5bb3970d9256e9df7221f96d0a9dcc1172011366",
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--gres=gpu:4",
+      "--job-name=qk-taylor-dk008-m016",
+      "--output=experiments/attention_scaling/runs/raf366b32c8f4/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.attention_scaling.acceptance",
+      "experiments/attention_scaling/runs/raf366b32c8f4/config.yaml",
+      "5bb3970d9256e9df7221f96d0a9dcc1172011366",
+      "4",
+      "B300,H100"
+    ],
+    "slurm_job_id": "203633",
+    "submitted_utc": "2026-09-29T04:17:45.325400+00:00"
+  }
 }
