@@ -60,4 +60,4 @@ PYTHONPATH=. scaffolds/state_rank/.venv/bin/python -m scaffolds.records index ex
 
 The existing result selection remains fixed. To analyze new runs, deliberately
 select their IDs and hashes in a result collection and regenerate it using the
-[result analysis command](../../results/state_rank/README.md#reproduction).
+[result analysis command](../../results/state_rank/README.md#regenerate).
