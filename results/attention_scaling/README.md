@@ -18,7 +18,7 @@ them and are outlined in the heatmap.
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
 
-45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 19 of 33 trained cells are legacy (outlined).
+45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 17 of 33 trained cells are legacy (outlined).
 
 ![Combined terminal perplexity heatmap](combined_terminal_ppl.png)
 
