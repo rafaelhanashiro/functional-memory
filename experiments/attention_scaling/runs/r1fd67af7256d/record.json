@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r1fd67af7256d/config.yaml",
+    "sha256": "4b0154f4f00e678da3133edd9031da6eaf6f8cbd0270f51e5413690492646e36"
+  },
+  "label": "200m-qk-dk016-m008-seed0",
+  "name": "200m-qk-dk016-m008-seed0",
+  "record_schema_version": 1,
+  "run_id": "r1fd67af7256d",
+  "status": "planned"
+}
