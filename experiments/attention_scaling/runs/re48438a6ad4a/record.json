@@ -9,7 +9,14 @@
   "name": "200m-qk-dk016-m002-seed0",
   "record_schema_version": 1,
   "requested_hardware": {
-    "dependency": "afterany:203635",
+    "dependency": "afterany:203813",
+    "exclude": [
+      "collie",
+      "samoyed",
+      "doodle",
+      "terrier",
+      "mastiff"
+    ],
     "gpu_count": 4,
     "gpu_types": [
       "H100",
@@ -24,8 +31,9 @@
     "command": [
       "sbatch",
       "--parsable",
+      "--exclude=collie,samoyed,doodle,terrier,mastiff",
       "--partition=long",
-      "--dependency=afterany:203635",
+      "--dependency=afterany:203813",
       "--gres=gpu:4",
       "--job-name=qk-taylor-dk016-m002",
       "--output=experiments/attention_scaling/runs/re48438a6ad4a/training.log",
@@ -36,7 +44,7 @@
       "4",
       "B300,H100"
     ],
-    "slurm_job_id": "203636",
-    "submitted_utc": "2026-09-29T04:17:45.371684+00:00"
+    "slurm_job_id": "203814",
+    "submitted_utc": "2026-09-29T14:01:12.815125+00:00"
   }
 }

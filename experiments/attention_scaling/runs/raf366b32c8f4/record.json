@@ -9,6 +9,13 @@
   "name": "200m-qk-dk008-m016-seed0",
   "record_schema_version": 1,
   "requested_hardware": {
+    "exclude": [
+      "collie",
+      "samoyed",
+      "doodle",
+      "terrier",
+      "mastiff"
+    ],
     "gpu_count": 4,
     "gpu_types": [
       "H100",
@@ -23,6 +30,7 @@
     "command": [
       "sbatch",
       "--parsable",
+      "--exclude=collie,samoyed,doodle,terrier,mastiff",
       "--partition=long",
       "--gres=gpu:4",
       "--job-name=qk-taylor-dk008-m016",
@@ -34,7 +42,7 @@
       "4",
       "B300,H100"
     ],
-    "slurm_job_id": "203633",
-    "submitted_utc": "2026-09-29T04:17:45.325400+00:00"
+    "slurm_job_id": "203808",
+    "submitted_utc": "2026-09-29T14:01:12.653375+00:00"
   }
 }

@@ -9,12 +9,24 @@
   "name": "200m-qk-dk016-m016-seed0",
   "record_schema_version": 1,
   "requested_hardware": {
+    "dependency": "afterany:203803",
+    "exclude": [
+      "collie",
+      "samoyed",
+      "doodle",
+      "terrier",
+      "mastiff"
+    ],
     "gpu_count": 4,
     "gpu_types": [
       "H100",
       "B300"
     ],
-    "partition": "long"
+    "node_list": [
+      "akita"
+    ],
+    "partition": "standard",
+    "time_limit": "1-00:00:00"
   },
   "run_id": "r406ddaedf670",
   "source_commit": "5bb3970d9256e9df7221f96d0a9dcc1172011366",
@@ -23,7 +35,11 @@
     "command": [
       "sbatch",
       "--parsable",
-      "--partition=long",
+      "--exclude=collie,samoyed,doodle,terrier,mastiff",
+      "--partition=standard",
+      "--time=1-00:00:00",
+      "--nodelist=akita",
+      "--dependency=afterany:203803",
       "--gres=gpu:4",
       "--job-name=qk-taylor-dk016-m016",
       "--output=experiments/attention_scaling/runs/r406ddaedf670/training.log",
@@ -34,7 +50,7 @@
       "4",
       "B300,H100"
     ],
-    "slurm_job_id": "203629",
-    "submitted_utc": "2026-09-29T04:17:45.262873+00:00"
+    "slurm_job_id": "203804",
+    "submitted_utc": "2026-09-29T14:01:12.449986+00:00"
   }
 }
