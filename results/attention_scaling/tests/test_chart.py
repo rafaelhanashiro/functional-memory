@@ -13,7 +13,7 @@ def _config():
         {"id": "normalized_nonnegative", "title": "Normalized, learned nonnegative", "columns": degrees(2, 4)},
         {"id": "unnormalized_learned", "title": "Unnormalized, learned", "columns": degrees(1, 2, 3, 4)},
         {"id": "references", "title": "References", "columns": [
-            {"id": "softmax", "label": "QK-norm softmax"}, {"id": "unnormalized_exp", "label": "unnormalized exp"}]},
+            {"id": "softmax", "label": "softmax"}, {"id": "unnormalized_exp", "label": "unnormalized exp"}]},
     ]}
 
 

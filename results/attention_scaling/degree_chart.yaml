@@ -78,9 +78,9 @@ panels:
   title: Reference mechanisms
   columns:
   - id: softmax
-    label: QK-norm softmax
-  - id: softmax_no_qk_norm
     label: softmax
+  - id: softmax_no_qk_norm
+    label: softmax no QK-norm
     qk_norm: false
   - id: gla
     label: GLA

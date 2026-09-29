@@ -230,11 +230,11 @@
           "columns": [
             {
               "id": "softmax",
-              "label": "QK-norm softmax"
+              "label": "softmax"
             },
             {
               "id": "softmax_no_qk_norm",
-              "label": "softmax",
+              "label": "softmax no QK-norm",
               "qk_norm": false
             },
             {
@@ -2053,7 +2053,7 @@
     },
     "chart_config": {
       "path": "results/attention_scaling/degree_chart.yaml",
-      "sha256": "185c171d38c5fc3cc57f8bc598758cb07ea24e8b2fd934ffaa7362e4894e744d"
+      "sha256": "9b801ddefbad4bdc306cb3367ce946db82adf2b80de8db41420ef8990ffac0db"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
@@ -2085,7 +2085,7 @@
     },
     "readme": {
       "path": "results/attention_scaling/README.md",
-      "sha256": "12bc4a5033747896cf954fa13b2c1b83491e8309471385d9410327e2c9b40158"
+      "sha256": "7fd8461056732e6da713144a1e188b732d16e322dfca27201ba0add8b7ac0bc9"
     },
     "combined_terminal_ppl_pdf": {
       "path": "results/attention_scaling/combined_terminal_ppl.pdf",
@@ -2097,11 +2097,11 @@
     },
     "degree_chart_pdf": {
       "path": "results/attention_scaling/degree_chart.pdf",
-      "sha256": "672f3fb7b644c0bb7b7e99c1876db5ae9a098aa14cb3338cbcc96febfc5333d6"
+      "sha256": "7b7d398c965ebc0cc0a69d10db710a253549972989f1fe95b2d2082f00a5ac81"
     },
     "degree_chart_png": {
       "path": "results/attention_scaling/degree_chart.png",
-      "sha256": "c52bd9d33f3045d34a9d9b94dcdea05a294cbcd7c528cdf927bcc274610a699f"
+      "sha256": "02417477b1c2b21dee1c2dc5ce517a3046d2b705aed7af4b77128651b51d0f16"
     }
   }
 }

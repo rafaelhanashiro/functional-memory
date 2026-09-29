@@ -48,7 +48,7 @@ them and are outlined in the heatmap.
 
 ## Results at d_K = 64
 
-References: QK-norm softmax **14.457**, softmax without QK-norm **14.665** (both with
+References: softmax **14.457**, softmax no QK-norm **14.665** (both with
 selective decay), GLA 15.895 (no QK-norm), unnormalized exp with QK-norm 18.304.
 
 Normalized kernels (failures show the update):
@@ -76,7 +76,7 @@ Unnormalized kernels:
   (negative for `s` in about (−2.8, −1.6)). Even-degree Taylor is strictly positive and
   finishes. Hermite `m = 2` is nonnegative but zero at `s = -1` and failed late; the
   learned sum-of-squares kernels also learned a zero and finished.
-- **Normalized Taylor `m = 16` ties QK-norm softmax** (0.0035 lower); `m = 8` is 0.04 above.
+- **Normalized Taylor `m = 16` ties softmax** (0.0035 lower); `m = 8` is 0.04 above.
 - **Hermite vs Taylor, unnormalized:** Hermite is better at even degrees (−4.28 at
   `m = 2`, −0.94 at `m = 4`) and worse at odd degrees (+0.55, +0.26). Runs without
   QK-norm show the same signs.
