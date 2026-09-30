@@ -30,14 +30,16 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     rows = build(ROOT, config_path=config, output_dir=output)
     assert len(rows) == 45
     assert Counter(row["status"] for row in rows) == {"complete": 31, "numerical_failure": 2, "not_run": 12}
-    assert sum(1 for row in rows if row["legacy"]) == 8
+    assert sum(1 for row in rows if row["legacy"]) == 4
     by_cell = {(r["panel"], r["column"], r["d_k"]): r for r in rows}
     assert by_cell["normalized_fixed", "m1", 64]["failure_step"] == 31
     assert by_cell["normalized_fixed", "m3", 64]["failure_step"] == 419
     assert by_cell["references", "gla", 128]["terminal_ppl"] == pytest.approx(15.538013225551541)
     assert by_cell["references", "softmax", 64]["terminal_ppl"] == pytest.approx(14.457394141153632)
     assert by_cell["references", "softmax_no_qk_norm", 64]["terminal_ppl"] == pytest.approx(14.665499848737895)
-    assert by_cell["references", "softmax", 8]["legacy"] is True
+    assert by_cell["references", "softmax", 8]["terminal_ppl"] == pytest.approx(17.22423966278349)
+    assert by_cell["references", "softmax", 8]["legacy"] is False
+    assert by_cell["normalized_fixed", "m4", 8]["legacy"] is True
 
     csv_rows = list(csv.DictReader((output / "summary.csv").open()))
     assert Counter(row["figure"] for row in csv_rows) == {"heatmap": 45, "degree_chart": 30}
@@ -53,7 +55,7 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     provenance = json.loads((output / "manifest.json").read_text())
     assert "source_manifests" not in provenance and "source_records" not in provenance
     assert Counter(row["figure"] for row in provenance["source_runs"]) == {"heatmap": 33, "degree_chart": 30}
-    assert provenance["status_counts"]["heatmap"]["legacy"] == 8
+    assert provenance["status_counts"]["heatmap"]["legacy"] == 4
     assert provenance["status_counts"]["degree_chart"] == {"complete": 20, "legacy": 0, "numerical_failure": 10}
     for name in ("combined_terminal_ppl", "degree_chart"):
         assert (output / f"{name}.pdf").stat().st_size > 1000

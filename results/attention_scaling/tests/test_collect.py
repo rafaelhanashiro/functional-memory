@@ -209,7 +209,8 @@ def test_committed_comparison_sources() -> None:
             for status in {row["status"] for row in rows}} == {"complete": 31, "numerical_failure": 2, "not_run": 12}
     current = {(row["panel"], row["column"], row["d_k"]) for row in rows
                if row["status"] != "not_run" and not row["legacy"]}
-    assert current == {("references", "softmax", 64), ("references", "softmax_no_qk_norm", 64),
+    assert current == {*(("references", "softmax", width) for width in (8, 16, 32, 64, 128)),
+                       ("references", "softmax_no_qk_norm", 64),
                        *(("references", "gla", width) for width in (8, 16, 32, 64, 128)),
                        ("normalized_fixed", "m4", 16), ("normalized_fixed", "m8", 16), ("normalized_fixed", "m16", 128),
                        ("normalized_fixed", "m2", 8), ("normalized_fixed", "m16", 32),

@@ -47,7 +47,8 @@ Runs keep their original home cluster: **Kennel or ORCD**, recorded per run in
 `/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/`.
 ORCD artifacts live under
 `/orcd/pool/006/rafah/functional_memory/artifacts/experiments/attention_scaling/runs/`,
-and their records state the absolute paths; every GLA execution ran on ORCD.
+and their records state the absolute paths. Every GLA execution and the QK-norm
+softmax runs at `d_K = 8, 16, 32, 128` ran on ORCD.
 Artifacts on the other cluster are unavailable in each checkout.
 Git carries the compact measurements and recipes, not checkpoints or logs.
 

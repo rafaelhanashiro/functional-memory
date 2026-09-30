@@ -18,7 +18,7 @@ them and are outlined in the heatmap.
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
 
-45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 8 of 33 trained cells are legacy (outlined).
+45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 4 of 33 trained cells are legacy (outlined).
 
 ![Combined terminal perplexity heatmap](combined_terminal_ppl.png)
 
@@ -112,12 +112,16 @@ small at 16–64, and helps slightly at 128 (blank: rerun in progress):
 | 4 | | +0.24 | | −0.09 | −0.09 |
 | 8 | +0.56 | +0.07 | | −0.18 | −0.16 |
 | 16 | +0.49 | +0.02 | −0.13 | −0.25 | −0.16 |
+| softmax | +0.52 | +0.01 | −0.12 | −0.21 | −0.15 |
+
+Softmax follows the same pattern. Its runs without QK-norm used the old decay rule
+except at `d_K = 64`.
 
 ## Other widths
 
 - **Normalized fixed Taylor:** higher degree closes the gap to softmax. `d_K = 8`:
-  `m = 2` 22.44, `m = 16` 17.34, softmax 16.71. `d_K = 128`: `m = 8` 14.20 vs
-  softmax 14.38. Softmax at widths other than 64 is still legacy.
+  `m = 2` 22.44, `m = 16` 17.34, softmax 17.22. `d_K = 128`: `m = 8` 14.20 and
+  `m = 16` 14.22 match softmax (14.22).
 - **GLA** (selective decay at every width): 17.46 at `d_K = 8` to 15.54 at `d_K = 128`,
   improving with each doubling; better than normalized `m = 2` and worse than softmax
   at every width.
