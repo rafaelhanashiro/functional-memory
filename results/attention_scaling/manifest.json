@@ -310,30 +310,27 @@
       "column": "m2",
       "d_k": 16,
       "experiment": "attention_scaling",
-      "run": "r8a9bc098ce3a",
+      "run": "re48438a6ad4a",
       "status": "complete",
-      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "source_commit": "5bb3970d9256e9df7221f96d0a9dcc1172011366",
       "artifacts": {
         "metadata": {
-          "path": "experiments/attention_scaling/runs/r8a9bc098ce3a/metadata.json",
-          "sha256": "0a1359ff51ee59d684d6e8fdcce96e5429bbb8e93c9513b8dffc9953800d0e32"
+          "path": "experiments/attention_scaling/runs/re48438a6ad4a/metadata.json",
+          "sha256": "f6b57f4be6e48cc6fb0d05ba4557cf31c62d139610f840401a78f5089e62690c"
         },
         "metrics": {
-          "path": "experiments/attention_scaling/runs/r8a9bc098ce3a/metrics.jsonl",
-          "sha256": "3862a0101acccb80fd668e2575288bcea3469d643cc80967855eef3bbcd523b8"
+          "path": "experiments/attention_scaling/runs/re48438a6ad4a/metrics.jsonl",
+          "sha256": "62a5c6629bb3d76ce37a782c95210ab160659ad20baff946f30431c34899cc2d"
         },
         "completion": {
-          "path": "experiments/attention_scaling/runs/r8a9bc098ce3a/completion.json",
-          "sha256": "2ee1db56f1f9926ad9e86a65b4cf870fd5273655ae47a6b24c673150663d5226"
+          "path": "experiments/attention_scaling/runs/re48438a6ad4a/completion.json",
+          "sha256": "2f419c8918f2eee0cff8dc23b6dc1c30fc8bd6eabb45901a4c671b2beec05362"
         }
       },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "figure": "heatmap",
@@ -1977,7 +1974,7 @@
       "complete": 31,
       "not_run": 12,
       "numerical_failure": 2,
-      "legacy": 1
+      "legacy": 0
     },
     "degree_chart": {
       "complete": 20,
@@ -1988,7 +1985,7 @@
   "analysis": {
     "config": {
       "path": "results/attention_scaling/selection.yaml",
-      "sha256": "5c73bb302e3faddfddc34fe53c45077b7ce845f84c2046891ccfdcbf8865693d"
+      "sha256": "40ef12b562a41fdf713ad6359599c006b6d9fa36d0cf2b06bf10faab2a096e7e"
     },
     "chart_config": {
       "path": "results/attention_scaling/degree_chart.yaml",
@@ -2005,7 +2002,7 @@
       },
       "render.py": {
         "path": "results/attention_scaling/render.py",
-        "sha256": "61dba0ad3ff236988d8191290f220bf7725ef1f1c01084672b35b86d5641f383"
+        "sha256": "25644efbcf9fdcc2588dad38d0c986898536df0bee0e90edfa4bb610795afcd5"
       },
       "chart.py": {
         "path": "results/attention_scaling/chart.py",
@@ -2013,26 +2010,26 @@
       },
       "plot.py": {
         "path": "results/attention_scaling/plot.py",
-        "sha256": "6413f5d216b14c17880df02ca413ef494fa7a9db3234af2d29f5df84d90e2e6b"
+        "sha256": "379dbba669572026c030658d41b6092794cb677021c6db93eca841b26fa8f9aa"
       }
     }
   },
   "derived_artifacts": {
     "summary_csv": {
       "path": "results/attention_scaling/summary.csv",
-      "sha256": "c2277def25b1865216c47e8c5a4b14b5dea0623811db22c1a98c19c8036ca6a7"
+      "sha256": "f36669b71d7067e6737d4eda4d240259094fc9c2faa722600974c5d67928c279"
     },
     "readme": {
       "path": "results/attention_scaling/README.md",
-      "sha256": "d3bb47d120bf8c42656057d328a96271857aaf5161e44d38550c8353c54d974e"
+      "sha256": "effb35d999249b194a8d759109877b97ada258fd1ca4d4bcc73e6ec3fe8b15b7"
     },
     "combined_terminal_ppl_pdf": {
       "path": "results/attention_scaling/combined_terminal_ppl.pdf",
-      "sha256": "703a1f92f3b73886437d2904949a9134f591ee98da38331b5fbd78fb709aa78b"
+      "sha256": "1a7c1ce7056510fb3d61b52c305d452002767e29dac92a0b0cf38de4f6704cca"
     },
     "combined_terminal_ppl_png": {
       "path": "results/attention_scaling/combined_terminal_ppl.png",
-      "sha256": "fca13ae211fdfbee9ede1ef1faa9c3967ab8f2b4256b2dddcc2d584c47ff6e9d"
+      "sha256": "f352723c3c4b5b242725fd9aa4b0a4ea2001e606b8ac315710335da0b2bfa829"
     },
     "degree_chart_pdf": {
       "path": "results/attention_scaling/degree_chart.pdf",

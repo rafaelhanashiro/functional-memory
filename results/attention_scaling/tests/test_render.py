@@ -86,9 +86,10 @@ def test_failure_incomplete_and_missing_cells_have_distinct_marks():
         assert patches[2].get_facecolor() == patches[3].get_facecolor()
         assert len({patches[index].get_hatch() for index in (0, 1, 2)}) == 3
         assert len(figure.legends) == 1
+        # Without a legacy cell, neither the legend nor the subtitle mentions outlines.
         assert [text.get_text() for text in figure.legends[0].get_texts()] == [
-            "Numerical failure (step shown)", "Not run", "Incomplete",
-            "Legacy run: decay on all parameters, no QK-norm (to be rerun)"]
+            "Numerical failure (step shown)", "Not run", "Incomplete"]
+        assert not any("Outlined" in text.get_text() for text in figure.texts)
     finally:
         import matplotlib.pyplot as plt
         plt.close(figure)
@@ -109,6 +110,9 @@ def test_legacy_runs_keep_their_color_and_get_an_outline():
         assert all(not patch.get_fill() for patch in outlines)
         # The outline does not replace the perplexity color: the legacy cell is still drawn from the grid.
         assert axis.images[0].get_array()[0, 0] == 12.5
+        assert figure.legends[0].get_texts()[-1].get_text() == (
+            "Legacy run: decay on all parameters, no QK-norm (to be rerun)")
+        assert any("Outlined cells" in text.get_text() for text in figure.texts)
     finally:
         import matplotlib.pyplot as plt
         plt.close(figure)

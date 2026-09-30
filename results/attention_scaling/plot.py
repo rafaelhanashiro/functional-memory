@@ -78,8 +78,9 @@ def update_readme(path: Path, rows: list[dict], chart_rows: list[dict]) -> None:
     block = (
         "### Heatmap\n\n"
         f"{len(rows)} cells: {counts['complete']} complete, {counts['numerical_failure']} failed, "
-        f"{counts['not_run']} not run, {counts['incomplete']} incomplete. "
-        f"{legacy} of {trained} trained cells are legacy (outlined).\n\n"
+        f"{counts['not_run']} not run, {counts['incomplete']} incomplete."
+        + (f" {legacy} of {trained} trained cells are legacy (outlined)." if legacy else "")
+        + "\n\n"
         "![Combined terminal perplexity heatmap](combined_terminal_ppl.png)\n\n"
         "[PDF](combined_terminal_ppl.pdf)\n\n"
         "### Degree chart (d_K = 64)\n\n"

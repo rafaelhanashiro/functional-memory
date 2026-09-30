@@ -207,17 +207,8 @@ def test_committed_comparison_sources() -> None:
     assert len(rows) == 45
     assert {status: sum(row["status"] == status for row in rows)
             for status in {row["status"] for row in rows}} == {"complete": 31, "numerical_failure": 2, "not_run": 12}
-    current = {(row["panel"], row["column"], row["d_k"]) for row in rows
-               if row["status"] != "not_run" and not row["legacy"]}
-    assert current == {*(("references", "softmax", width) for width in (8, 16, 32, 64, 128)),
-                       ("references", "softmax_no_qk_norm", 64),
-                       *(("references", "gla", width) for width in (8, 16, 32, 64, 128)),
-                       ("normalized_fixed", "m4", 16), ("normalized_fixed", "m8", 16), ("normalized_fixed", "m16", 128),
-                       ("normalized_fixed", "m2", 8), ("normalized_fixed", "m16", 32),
-                       ("normalized_fixed", "m16", 16), ("normalized_fixed", "m16", 8), ("normalized_fixed", "m4", 128),
-                       ("normalized_fixed", "m8", 8), ("normalized_fixed", "m2", 32), ("normalized_fixed", "m2", 128), ("normalized_fixed", "m8", 128),
-                       ("normalized_fixed", "m4", 8), ("normalized_fixed", "m8", 32), ("normalized_fixed", "m4", 32),
-                       *(("normalized_fixed", f"m{degree}", 64) for degree in (1, 2, 3, 4, 8, 16))}
+    # Every trained heatmap cell uses the current defaults.
+    assert not any(row["legacy"] for row in rows)
     failures = {(row["panel"], row["column"]): row["failure_step"]
                 for row in rows if row["status"] == "numerical_failure"}
     assert failures == {("normalized_fixed", "m1"): 31, ("normalized_fixed", "m3"): 419}

@@ -12,13 +12,13 @@ Each run retains its recipe, measurements (including training curves and recorde
 coefficient diagnostics), and execution metadata under
 [`experiments/attention_scaling/runs/`](../../experiments/attention_scaling/runs/).
 
-Current defaults are selective weight decay and QK-norm. **Legacy** runs predate
-them and are outlined in the heatmap.
+Every plotted run uses the current defaults, selective weight decay and QK-norm,
+except GLA and the "softmax no QK-norm" reference, which have no QK-norm.
 
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
 
-45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 1 of 33 trained cells are legacy (outlined).
+45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete.
 
 ![Combined terminal perplexity heatmap](combined_terminal_ppl.png)
 
@@ -103,12 +103,13 @@ softmax by 0.03.
 QK-norm helps unnormalized polynomial kernels at `m >= 2` by 1.8–3.8 PPL but hurts the
 unnormalized exponential by 0.85 (18.304 vs 17.458).
 
-For normalized fixed Taylor the effect depends on `d_K`: it hurts at `d_K = 8`, is
-small at 16–64, and helps slightly at 128 (blank: rerun in progress):
+For normalized fixed Taylor the effect depends on `d_K` and `m`: QK-norm hurts most at
+small `d_K` and low degree (+1.86 at `d_K = 8`, `m = 2`). At `m >= 4` and
+`d_K >= 32` it changes perplexity by at most 0.25.
 
 | m | d_K = 8 | 16 | 32 | 64 | 128 |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 2 | +1.86 | | +0.39 | +0.23 | +0.08 |
+| 2 | +1.86 | +0.81 | +0.39 | +0.23 | +0.08 |
 | 4 | +0.89 | +0.24 | +0.04 | −0.09 | −0.09 |
 | 8 | +0.56 | +0.07 | −0.05 | −0.18 | −0.16 |
 | 16 | +0.49 | +0.02 | −0.13 | −0.25 | −0.16 |

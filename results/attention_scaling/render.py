@@ -184,15 +184,17 @@ def _build_figure(rows: list[dict], config: dict):
     figure.text(left / figure_w, 1 - 0.30 / figure_h,
                 config.get("title", "Attention scaling across key dimension and expansion degree"),
                 fontsize=15, weight="bold", va="top", color="#172334")
+    any_legacy = any(row.get("legacy") for row in indexed.values())
     figure.text(left / figure_w, 1 - 0.66 / figure_h,
-                "Terminal validation perplexity; each cell is one requested configuration. "
-                "Outlined cells predate the current defaults and will be rerun.",
+                "Terminal validation perplexity; each cell is one requested configuration."
+                + (" Outlined cells predate the current defaults and will be rerun." if any_legacy else ""),
                 fontsize=9.5, va="top", color="#475569")
     legend = [Patch(facecolor=face, edgecolor=edge, hatch=hatch, label=label)
               for (face, edge, hatch), label in zip(
                   _STATUS_STYLE.values(),
                   ("Numerical failure (step shown)", "Not run", "Incomplete"))]
-    legend.append(Patch(facecolor="white", edgecolor=_LEGACY_EDGE, linewidth=_LEGACY_WIDTH, label=_LEGACY_LABEL))
+    if any_legacy:
+        legend.append(Patch(facecolor="white", edgecolor=_LEGACY_EDGE, linewidth=_LEGACY_WIDTH, label=_LEGACY_LABEL))
     figure.legend(handles=legend, loc="lower center", bbox_to_anchor=(0.48, 0.025),
                   ncol=4, frameon=False, fontsize=9, columnspacing=2.0, handlelength=1.8)
     return figure
