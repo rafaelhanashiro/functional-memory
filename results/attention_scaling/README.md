@@ -18,7 +18,7 @@ them and are outlined in the heatmap.
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
 
-45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 12 of 33 trained cells are legacy (outlined).
+45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 8 of 33 trained cells are legacy (outlined).
 
 ![Combined terminal perplexity heatmap](combined_terminal_ppl.png)
 
@@ -101,16 +101,23 @@ softmax by 0.03.
 | Unnormalized exp | +0.85 | | | | | |
 
 QK-norm helps unnormalized polynomial kernels at `m >= 2` by 1.8–3.8 PPL but hurts the
-unnormalized exponential by 0.85 (18.304 vs 17.458). For normalized Taylor it
-changes perplexity by at most 0.25, about as much as for softmax, so the legacy
-normalized Taylor cells at other widths are fair proxies; legacy unnormalized ones
-are not.
+unnormalized exponential by 0.85 (18.304 vs 17.458).
+
+For normalized fixed Taylor the effect depends on `d_K`: it hurts at `d_K = 8`, is
+small at 16–64, and helps slightly at 128 (blank: rerun in progress):
+
+| m | d_K = 8 | 16 | 32 | 64 | 128 |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 2 | +1.86 | | +0.39 | +0.23 | +0.08 |
+| 4 | | +0.24 | | −0.09 | −0.09 |
+| 8 | +0.56 | +0.07 | | −0.18 | −0.16 |
+| 16 | +0.49 | +0.02 | −0.13 | −0.25 | −0.16 |
 
 ## Other widths
 
-- **Normalized fixed Taylor** (QK-norm reruns in progress; outlined cells are still legacy): higher
-  degree closes the gap to softmax. `d_K = 8`:
-  `m = 2` 20.58, `m = 16` 16.85, softmax 16.71. `d_K = 128`: `m = 8` 14.36 vs softmax 14.38.
+- **Normalized fixed Taylor:** higher degree closes the gap to softmax. `d_K = 8`:
+  `m = 2` 22.44, `m = 16` 17.34, softmax 16.71. `d_K = 128`: `m = 8` 14.20 vs
+  softmax 14.38. Softmax at widths other than 64 is still legacy.
 - **GLA** (selective decay at every width): 17.46 at `d_K = 8` to 15.54 at `d_K = 128`,
   improving with each doubling; better than normalized `m = 2` and worse than softmax
   at every width.
@@ -123,9 +130,10 @@ positive 16.19, global unrestricted failed @2,324).
 
 - One seed per cell; differences of a few tenths are not established.
 - Parameter count changes with `d_K`; GLA also changes the architecture.
-- Two runs resumed on another GPU type after preemption: unnormalized Hermite `m = 2`
-  (B300, then H100 from update 14,500) and unnormalized Taylor `m = 4` (B300, then
-  H100 from update 500).
+- Three runs resumed on another GPU type after preemption: unnormalized Hermite `m = 2`
+  (B300, then H100 from update 14,500), unnormalized Taylor `m = 4` (B300, then
+  H100 from update 500), and normalized Taylor `d_K = 128`, `m = 8` (H100, then B300
+  from update 500).
 
 ## Reproduce
 
