@@ -18,7 +18,7 @@ them and are outlined in the heatmap.
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
 
-45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 2 of 33 trained cells are legacy (outlined).
+45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 1 of 33 trained cells are legacy (outlined).
 
 ![Combined terminal perplexity heatmap](combined_terminal_ppl.png)
 
@@ -109,7 +109,7 @@ small at 16–64, and helps slightly at 128 (blank: rerun in progress):
 | m | d_K = 8 | 16 | 32 | 64 | 128 |
 | ---: | ---: | ---: | ---: | ---: | ---: |
 | 2 | +1.86 | | +0.39 | +0.23 | +0.08 |
-| 4 | +0.89 | +0.24 | | −0.09 | −0.09 |
+| 4 | +0.89 | +0.24 | +0.04 | −0.09 | −0.09 |
 | 8 | +0.56 | +0.07 | −0.05 | −0.18 | −0.16 |
 | 16 | +0.49 | +0.02 | −0.13 | −0.25 | −0.16 |
 | softmax | +0.52 | +0.01 | −0.12 | −0.21 | −0.15 |
