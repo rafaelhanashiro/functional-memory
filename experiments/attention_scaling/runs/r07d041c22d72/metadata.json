@@ -1,9 +1,11 @@
 {
   "attention_backend": "fused",
   "attention_backend_requested": "fused",
+  "attention_backend_resume_requested": "fused",
   "attention_diagnostics": {
     "attention_backend": "fused",
     "attention_backend_requested": "fused",
+    "attention_backend_resume_requested": "fused",
     "attention_formula": "S_t=diag(sigmoid(g_t)^(1/tau)) S_{t-1}+k_t v_t^T; y_t=q_t^T S_t",
     "attention_implementation": "chunked_gla_triton",
     "attention_kernel": "gla",
@@ -31,9 +33,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 0,
-        "log_decay_max": -2.550363205071167e-42,
-        "log_decay_min": -5.84375,
-        "read_abs_max": 934.9076538085938
+        "log_decay_max": -0.0,
+        "log_decay_min": -6.6875,
+        "read_abs_max": 2201.042724609375
       },
       {
         "invalid_gate_count": 0,
@@ -42,9 +44,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 1,
-        "log_decay_max": -4.4346711144126604e-24,
-        "log_decay_min": -2.921875,
-        "read_abs_max": 378072.84375
+        "log_decay_max": -2.5519771768479136e-23,
+        "log_decay_min": -3.078125,
+        "read_abs_max": 1260526.0
       },
       {
         "invalid_gate_count": 0,
@@ -53,9 +55,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 2,
-        "log_decay_max": -4.153465347940558e-18,
-        "log_decay_min": -4.1875,
-        "read_abs_max": 16003.3740234375
+        "log_decay_max": -1.5478523811267352e-23,
+        "log_decay_min": -4.875,
+        "read_abs_max": 30174.822265625
       },
       {
         "invalid_gate_count": 0,
@@ -64,9 +66,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 3,
-        "log_decay_max": -0.0,
-        "log_decay_min": -6.03125,
-        "read_abs_max": 3916.1474609375
+        "log_decay_max": -7.707141553786494e-44,
+        "log_decay_min": -5.53125,
+        "read_abs_max": 10272.205078125
       },
       {
         "invalid_gate_count": 0,
@@ -76,8 +78,8 @@
         "invalid_read_count": 0,
         "layer": 4,
         "log_decay_max": -0.0,
-        "log_decay_min": -7.46875,
-        "read_abs_max": 3984.7626953125
+        "log_decay_min": -8.4375,
+        "read_abs_max": 9675.4052734375
       },
       {
         "invalid_gate_count": 0,
@@ -86,9 +88,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 5,
-        "log_decay_max": -6.753994985975812e-32,
-        "log_decay_min": -6.625,
-        "read_abs_max": 1305.137451171875
+        "log_decay_max": -5.121185367721476e-41,
+        "log_decay_min": -7.8125,
+        "read_abs_max": 2821.63623046875
       },
       {
         "invalid_gate_count": 0,
@@ -98,8 +100,8 @@
         "invalid_read_count": 0,
         "layer": 6,
         "log_decay_max": -0.0,
-        "log_decay_min": -6.21875,
-        "read_abs_max": 2097.425537109375
+        "log_decay_min": -6.875,
+        "read_abs_max": 4135.4814453125
       },
       {
         "invalid_gate_count": 0,
@@ -109,8 +111,8 @@
         "invalid_read_count": 0,
         "layer": 7,
         "log_decay_max": -0.0,
-        "log_decay_min": -5.46875,
-        "read_abs_max": 2095.50732421875
+        "log_decay_min": -6.78125,
+        "read_abs_max": 6014.2685546875
       },
       {
         "invalid_gate_count": 0,
@@ -120,8 +122,8 @@
         "invalid_read_count": 0,
         "layer": 8,
         "log_decay_max": -0.0,
-        "log_decay_min": -5.40625,
-        "read_abs_max": 2433.08056640625
+        "log_decay_min": -5.625,
+        "read_abs_max": 5715.44384765625
       },
       {
         "invalid_gate_count": 0,
@@ -130,14 +132,14 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 9,
-        "log_decay_max": -3.4093717191960317e-19,
-        "log_decay_min": -4.90625,
-        "read_abs_max": 2111.948486328125
+        "log_decay_max": -2.9118036052221336e-16,
+        "log_decay_min": -6.125,
+        "read_abs_max": 5933.767578125
       }
     ],
     "sample": {
       "diagnostic_pass_contributes_to_validation_loss": false,
-      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest": "/home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json",
       "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
       "num_sequences": 1,
       "prediction_tokens": 2048,
@@ -156,6 +158,18 @@
   "attention_mechanism": "gla",
   "attention_output_normalization": "per_head_rmsnorm_then_silu_output_gate",
   "attention_score_scale": "1",
+  "checkpoint_retention": {
+    "best_checkpoint_step": 19074,
+    "completion_sha256": "a4e89e37df826a478c5cdb20aa1ebf6bf6280e71ab31de5bad384ae18ec7d017",
+    "format": "shared-transformer-checkpoint-retention",
+    "seed": 0,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "9ce35246b268afa5e491b444812077f324b78c39",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 19074,
+    "validation_nll": 2.743289487702506,
+    "version": 1
+  },
   "data_identity": {
     "batch_size": 256,
     "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
@@ -166,14 +180,12 @@
   },
   "devices": [
     "cuda:0",
-    "cuda:1",
-    "cuda:2",
-    "cuda:3"
+    "cuda:1"
   ],
   "diagnostic_backend": "fused",
   "diagnostic_sample": {
     "diagnostic_pass_contributes_to_validation_loss": false,
-    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest": "/home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json",
     "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
     "num_sequences": 1,
     "prediction_tokens": 2048,
@@ -188,22 +200,12 @@
     "devices": [
       {
         "id": 0,
-        "kind": "NVIDIA B300 SXM6 AC",
+        "kind": "NVIDIA H200 NVL",
         "platform": "gpu"
       },
       {
         "id": 1,
-        "kind": "NVIDIA B300 SXM6 AC",
-        "platform": "gpu"
-      },
-      {
-        "id": 2,
-        "kind": "NVIDIA B300 SXM6 AC",
-        "platform": "gpu"
-      },
-      {
-        "id": 3,
-        "kind": "NVIDIA B300 SXM6 AC",
+        "kind": "NVIDIA H200 NVL",
         "platform": "gpu"
       }
     ],
@@ -240,22 +242,12 @@
         "devices": [
           {
             "id": 0,
-            "kind": "NVIDIA B300 SXM6 AC",
+            "kind": "NVIDIA H200",
             "platform": "gpu"
           },
           {
             "id": 1,
-            "kind": "NVIDIA B300 SXM6 AC",
-            "platform": "gpu"
-          },
-          {
-            "id": 2,
-            "kind": "NVIDIA B300 SXM6 AC",
-            "platform": "gpu"
-          },
-          {
-            "id": 3,
-            "kind": "NVIDIA B300 SXM6 AC",
+            "kind": "NVIDIA H200",
             "platform": "gpu"
           }
         ],
@@ -267,22 +259,100 @@
         },
         "state_transfer": "direct"
       },
-      "slurm_job_id": "201796",
-      "timestamp_utc": "2026-09-24T23:52:24.691852+00:00"
+      "slurm_job_id": "24228989",
+      "timestamp_utc": "2026-09-29T02:03:05.092193+00:00"
+    },
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H200 NVL",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H200 NVL",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "24327523",
+      "timestamp_utc": "2026-09-29T18:57:52.327906+00:00"
+    },
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H200",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H200",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "24327523",
+      "timestamp_utc": "2026-09-29T20:09:36.294256+00:00"
+    },
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H200 NVL",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H200 NVL",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "24327523",
+      "timestamp_utc": "2026-09-29T21:29:35.264309+00:00"
     }
   ],
   "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
   "seed": 0,
-  "slurm_job_id": "201796",
-  "slurm_restart_count": 0,
-  "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+  "slurm_job_id": "24327523",
+  "slurm_restart_count": 4,
+  "source_commit": "9ce35246b268afa5e491b444812077f324b78c39",
   "status": "complete",
   "step": 19074,
   "target_steps": 19074,
   "target_tokens": 10000269312,
   "training_tokens": 10000269312,
-  "updated_utc": "2026-09-25T04:30:28.215707+00:00",
-  "validation_nll": 2.736740231513977,
-  "validation_perplexity": 15.436583304097534,
+  "updated_utc": "2026-09-29T23:12:25.220558+00:00",
+  "validation_nll": 2.743289487702506,
+  "validation_perplexity": 15.538013225551541,
   "value_head_dim": 64
 }

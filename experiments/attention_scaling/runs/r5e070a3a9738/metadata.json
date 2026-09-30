@@ -1,9 +1,11 @@
 {
   "attention_backend": "fused",
   "attention_backend_requested": "fused",
+  "attention_backend_resume_requested": "fused",
   "attention_diagnostics": {
     "attention_backend": "fused",
     "attention_backend_requested": "fused",
+    "attention_backend_resume_requested": "fused",
     "attention_formula": "S_t=diag(sigmoid(g_t)^(1/tau)) S_{t-1}+k_t v_t^T; y_t=q_t^T S_t",
     "attention_implementation": "chunked_gla_triton",
     "attention_kernel": "gla",
@@ -31,9 +33,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 0,
-        "log_decay_max": -5.125782892249762e-22,
-        "log_decay_min": -4.90625,
-        "read_abs_max": 1627.3841552734375
+        "log_decay_max": -5.924599711819513e-20,
+        "log_decay_min": -5.15625,
+        "read_abs_max": 4725.10791015625
       },
       {
         "invalid_gate_count": 0,
@@ -42,9 +44,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 1,
-        "log_decay_max": -1.2222300949105147e-09,
-        "log_decay_min": -1.171875,
-        "read_abs_max": 82745.9765625
+        "log_decay_max": -7.413200053818514e-10,
+        "log_decay_min": -1.5,
+        "read_abs_max": 372641.21875
       },
       {
         "invalid_gate_count": 0,
@@ -53,9 +55,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 2,
-        "log_decay_max": -1.861453997828709e-17,
-        "log_decay_min": -3.28125,
-        "read_abs_max": 19406.7578125
+        "log_decay_max": -1.812348765177383e-26,
+        "log_decay_min": -3.3125,
+        "read_abs_max": 45965.97265625
       },
       {
         "invalid_gate_count": 0,
@@ -64,9 +66,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 3,
-        "log_decay_max": -1.3742244990996648e-35,
-        "log_decay_min": -5.0,
-        "read_abs_max": 5225.9990234375
+        "log_decay_max": -2.550363205071167e-42,
+        "log_decay_min": -5.4375,
+        "read_abs_max": 11256.015625
       },
       {
         "invalid_gate_count": 0,
@@ -75,9 +77,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 4,
-        "log_decay_max": -4.896901433610809e-14,
-        "log_decay_min": -4.3125,
-        "read_abs_max": 1257.866455078125
+        "log_decay_max": -5.621103784652568e-19,
+        "log_decay_min": -5.6875,
+        "read_abs_max": 2720.4228515625
       },
       {
         "invalid_gate_count": 0,
@@ -87,8 +89,8 @@
         "invalid_read_count": 0,
         "layer": 5,
         "log_decay_max": -0.0,
-        "log_decay_min": -5.875,
-        "read_abs_max": 3246.370361328125
+        "log_decay_min": -6.5625,
+        "read_abs_max": 8238.28515625
       },
       {
         "invalid_gate_count": 0,
@@ -97,9 +99,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 6,
-        "log_decay_max": -1.254237806942817e-19,
-        "log_decay_min": -4.96875,
-        "read_abs_max": 1117.304443359375
+        "log_decay_max": -2.5192039913340818e-18,
+        "log_decay_min": -6.5,
+        "read_abs_max": 2468.51513671875
       },
       {
         "invalid_gate_count": 0,
@@ -109,8 +111,8 @@
         "invalid_read_count": 0,
         "layer": 7,
         "log_decay_max": -0.0,
-        "log_decay_min": -5.1875,
-        "read_abs_max": 3064.48046875
+        "log_decay_min": -5.09375,
+        "read_abs_max": 4969.60986328125
       },
       {
         "invalid_gate_count": 0,
@@ -119,9 +121,9 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 8,
-        "log_decay_max": -3.784122425001309e-40,
-        "log_decay_min": -5.90625,
-        "read_abs_max": 1372.85009765625
+        "log_decay_max": -1.5266255542995571e-37,
+        "log_decay_min": -6.6875,
+        "read_abs_max": 4563.9326171875
       },
       {
         "invalid_gate_count": 0,
@@ -130,14 +132,14 @@
         "invalid_projection_count": 0,
         "invalid_read_count": 0,
         "layer": 9,
-        "log_decay_max": -0.0,
-        "log_decay_min": -5.375,
-        "read_abs_max": 1634.4805908203125
+        "log_decay_max": -1.3565762463009228e-30,
+        "log_decay_min": -6.375,
+        "read_abs_max": 2967.498779296875
       }
     ],
     "sample": {
       "diagnostic_pass_contributes_to_validation_loss": false,
-      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest": "/home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json",
       "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
       "num_sequences": 1,
       "prediction_tokens": 2048,
@@ -156,6 +158,18 @@
   "attention_mechanism": "gla",
   "attention_output_normalization": "per_head_rmsnorm_then_silu_output_gate",
   "attention_score_scale": "1",
+  "checkpoint_retention": {
+    "best_checkpoint_step": 19074,
+    "completion_sha256": "5f24f3308de2a4ce42195d3472aff470f1a0e3041810e7936f33d6bbc381145a",
+    "format": "shared-transformer-checkpoint-retention",
+    "seed": 0,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "9ce35246b268afa5e491b444812077f324b78c39",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 19074,
+    "validation_nll": 2.782809019088745,
+    "version": 1
+  },
   "data_identity": {
     "batch_size": 256,
     "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
@@ -166,14 +180,12 @@
   },
   "devices": [
     "cuda:0",
-    "cuda:1",
-    "cuda:2",
-    "cuda:3"
+    "cuda:1"
   ],
   "diagnostic_backend": "fused",
   "diagnostic_sample": {
     "diagnostic_pass_contributes_to_validation_loss": false,
-    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest": "/home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json",
     "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
     "num_sequences": 1,
     "prediction_tokens": 2048,
@@ -188,22 +200,12 @@
     "devices": [
       {
         "id": 0,
-        "kind": "NVIDIA H100 80GB HBM3",
+        "kind": "NVIDIA H200",
         "platform": "gpu"
       },
       {
         "id": 1,
-        "kind": "NVIDIA H100 80GB HBM3",
-        "platform": "gpu"
-      },
-      {
-        "id": 2,
-        "kind": "NVIDIA H100 80GB HBM3",
-        "platform": "gpu"
-      },
-      {
-        "id": 3,
-        "kind": "NVIDIA H100 80GB HBM3",
+        "kind": "NVIDIA H200",
         "platform": "gpu"
       }
     ],
@@ -240,22 +242,12 @@
         "devices": [
           {
             "id": 0,
-            "kind": "NVIDIA H100 80GB HBM3",
+            "kind": "NVIDIA H200",
             "platform": "gpu"
           },
           {
             "id": 1,
-            "kind": "NVIDIA H100 80GB HBM3",
-            "platform": "gpu"
-          },
-          {
-            "id": 2,
-            "kind": "NVIDIA H100 80GB HBM3",
-            "platform": "gpu"
-          },
-          {
-            "id": 3,
-            "kind": "NVIDIA H100 80GB HBM3",
+            "kind": "NVIDIA H200",
             "platform": "gpu"
           }
         ],
@@ -267,22 +259,22 @@
         },
         "state_transfer": "direct"
       },
-      "slurm_job_id": "201794",
-      "timestamp_utc": "2026-09-24T22:10:55.155432+00:00"
+      "slurm_job_id": "24228988",
+      "timestamp_utc": "2026-09-29T01:52:12.144461+00:00"
     }
   ],
   "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
   "seed": 0,
-  "slurm_job_id": "201794",
-  "slurm_restart_count": 0,
-  "source_commit": "4af147ea64c89bcb0f8086d1e3a963c7ecbcec77",
+  "slurm_job_id": "24228988",
+  "slurm_restart_count": 1,
+  "source_commit": "9ce35246b268afa5e491b444812077f324b78c39",
   "status": "complete",
   "step": 19074,
   "target_steps": 19074,
   "target_tokens": 10000269312,
   "training_tokens": 10000269312,
-  "updated_utc": "2026-09-25T01:21:38.386995+00:00",
-  "validation_nll": 2.785285081182207,
-  "validation_perplexity": 16.204436798347036,
+  "updated_utc": "2026-09-29T07:45:51.321009+00:00",
+  "validation_nll": 2.782809019088745,
+  "validation_perplexity": 16.1643632394287,
   "value_head_dim": 64
 }

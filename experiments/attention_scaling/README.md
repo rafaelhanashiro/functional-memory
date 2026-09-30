@@ -45,9 +45,11 @@ own gated recurrence. The shared scaffold defines each mechanism and its kernels
 Runs keep their original home cluster: **Kennel or ORCD**, recorded per run in
 `runs.csv` and `record.json`. Kennel artifacts live under
 `/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/`.
-ORCD artifacts remain at the absolute locations in their records, including
-`/orcd/pool/006/rafah/functional_memory/worktrees/gla_key_dimension_rerun/` for the
-ORCD GLA executions. These remote artifacts are unavailable in the Kennel checkout.
+ORCD artifacts remain at the absolute locations in their records: every GLA execution
+ran on ORCD, with d_K = 8, 16, and 64 under
+`/orcd/pool/006/rafah/functional_memory/worktrees/gla_key_dimension_rerun/` and
+d_K = 32 and 128 under `/orcd/pool/006/rafah/functional_memory/worktrees/gla_dk032_dk128/`.
+These remote artifacts are unavailable in the Kennel checkout.
 Git carries the compact measurements and recipes, not checkpoints or logs.
 
 Completed training retains the validation-best checkpoint and one successful log.

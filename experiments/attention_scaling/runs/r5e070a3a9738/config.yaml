@@ -61,8 +61,8 @@ train:
   seed: 0
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/gla_key_dimension/runs/rafe4dbce01c3
-  checkpoint_dir: experiments/gla_key_dimension/runs/rafe4dbce01c3/checkpoints
+  workdir: experiments/attention_scaling/runs/r5e070a3a9738
+  checkpoint_dir: experiments/attention_scaling/runs/r5e070a3a9738/checkpoints
   micro_batch_size: 64
   log_every: 10
   eval_every: 1000
@@ -70,7 +70,7 @@ train:
   ckpt_every: 500
   wandb_project: functional-memory
   wandb_entity: rafah-massachusetts-institute-of-technology
-  wandb_run_name: null
-  wandb_group: null
+  wandb_run_name: 200m-dk032-gla-seed0
+  wandb_group: attention_scaling
   wandb_dir: null
   wandb_mode: disabled

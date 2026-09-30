@@ -18,7 +18,7 @@ them and are outlined in the heatmap.
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
 
-45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 17 of 33 trained cells are legacy (outlined).
+45 cells: 31 complete, 2 failed, 12 not run, 0 incomplete. 15 of 33 trained cells are legacy (outlined).
 
 ![Combined terminal perplexity heatmap](combined_terminal_ppl.png)
 
@@ -111,8 +111,9 @@ are not.
 - **Normalized fixed Taylor** (QK-norm reruns in progress; outlined cells are still legacy): higher
   degree closes the gap to softmax. `d_K = 8`:
   `m = 2` 20.58, `m = 16` 16.85, softmax 16.71. `d_K = 128`: `m = 8` 14.36 vs softmax 14.38.
-- **GLA** (selective decay except at `d_K = 32, 128`): 17.46 at `d_K = 8` to 15.44 at
-  `d_K = 128`; better than normalized `m = 2` and worse than softmax at every width.
+- **GLA** (selective decay at every width): 17.46 at `d_K = 8` to 15.54 at `d_K = 128`,
+  improving with each doubling; better than normalized `m = 2` and worse than softmax
+  at every width.
 
 Not plotted (retained in the run records): normalized `m = 0` (47.07), softmax at
 `d_K = 2, 4, 256`, and the learned quadratics (per-head positive 16.21, global
