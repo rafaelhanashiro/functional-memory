@@ -52,8 +52,6 @@ def _expected_degree(panel: str, column: str) -> int | None:
     match = re.fullmatch(r"m(\d+)", column)
     if match:
         return int(match.group(1))
-    if panel == "normalized_learned":
-        return 2
     return None
 
 
@@ -65,23 +63,10 @@ def _identity(record: dict, *, source: str, width: int, degree: int | None, labe
 
 def _mechanism(cell: dict, model: dict, metadata: dict, label: str) -> None:
     panel, column = cell["panel"], cell["column"]
-    if panel == "normalized_learned":
-        mode, separator, sharing = column.partition("_")
-        if not separator or mode not in {"positive", "unrestricted"} or sharing not in {"global", "per_head"}:
-            raise ValueError(f"Unknown learned quadratic column: {column}")
-        for record in (model, metadata):
-            _match(record.get("quadratic_mode"), mode, f"{label} quadratic mode")
-            _match(record.get("quadratic_sharing"), sharing, f"{label} quadratic sharing")
     if panel == "normalized_nonnegative":
-        # The positive quadratic 0.5 (1 + (a s + b)^2) or the sum of squares q1^2 + q2^2, per head.
-        kernel = metadata.get("attention_kernel")
-        if kernel == "learned_quadratic":
-            for record in (model, metadata):
-                _match(record.get("quadratic_mode"), "positive", f"{label} quadratic mode")
-                _match(record.get("quadratic_sharing"), "per_head", f"{label} quadratic sharing")
-        else:
-            _match(kernel, "learned_polynomial_sum_of_squares", f"{label} kernel")
-            _match(metadata.get("attention_coefficient_sharing"), "per_head", f"{label} coefficient sharing")
+        # The sum of squares q1^2 + q2^2, learned per head.
+        _match(metadata.get("attention_kernel"), "learned_polynomial_sum_of_squares", f"{label} kernel")
+        _match(metadata.get("attention_coefficient_sharing"), "per_head", f"{label} coefficient sharing")
         return
     expected_kernel = {
         "unnormalized_fixed": "taylor_unnormalized",

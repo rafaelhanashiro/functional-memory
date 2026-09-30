@@ -1998,7 +1998,7 @@
     "code": {
       "collect.py": {
         "path": "results/attention_scaling/collect.py",
-        "sha256": "bce6f521a04c79ecb40f4991f3afe24577a87cb5f3d55e8d846f7cf95832aab7"
+        "sha256": "d8995e70d6bc8aeadb6070c68fdd4eaed2cdad4c0d837ac7dbe12846cd660436"
       },
       "render.py": {
         "path": "results/attention_scaling/render.py",
@@ -2021,7 +2021,7 @@
     },
     "readme": {
       "path": "results/attention_scaling/README.md",
-      "sha256": "effb35d999249b194a8d759109877b97ada258fd1ca4d4bcc73e6ec3fe8b15b7"
+      "sha256": "d8e90face03609d35479132b241fad2ad794bd931385b18fd5fb5a4a7d7aa49c"
     },
     "combined_terminal_ppl_pdf": {
       "path": "results/attention_scaling/combined_terminal_ppl.pdf",

@@ -127,10 +127,6 @@ except at `d_K = 64`.
   improving with each doubling; better than normalized `m = 2` and worse than softmax
   at every width.
 
-Not plotted (retained in the run records): normalized `m = 0` (47.07), softmax at
-`d_K = 2, 4, 256`, and the learned quadratics (per-head positive 16.21, global
-positive 16.19, global unrestricted failed @2,324).
-
 ## Limits
 
 - One seed per cell; differences of a few tenths are not established.

@@ -237,12 +237,15 @@ def test_committed_comparison_sources() -> None:
         with pytest.raises(ValueError, match=message):
             collect_rows(root, _pin(root, swapped))
 
+    # A signed learned Taylor run cannot stand in for the nonnegative sum of squares.
     wrong_family = json.loads(json.dumps(chart))
-    quadratic = "experiments/attention_scaling"
-    cell = next(cell for cell in wrong_family["cells"] if cell["panel"] == "normalized_nonnegative")
-    record = next(run for run in load_study(root / quadratic)["runs"] if run["name"] == "200m-positive-global-seed0")
-    cell.update(experiment="attention_scaling", run=record["run_id"])
-    with pytest.raises(ValueError, match="quadratic sharing"):
+    target = next(cell for cell in wrong_family["cells"]
+                  if cell["panel"] == "normalized_nonnegative" and cell["column"] == "m4")
+    source = next(cell for cell in chart["cells"]
+                  if cell["panel"] == "normalized_learned_taylor" and cell["column"] == "m4")
+    wrong_family["cells"] = [cell for cell in wrong_family["cells"] if cell["run"] != source["run"]]
+    target.update(experiment=source["experiment"], run=source["run"])
+    with pytest.raises(ValueError, match="kernel: expected 'learned_polynomial_sum_of_squares'"):
         collect_rows(root, _pin(root, wrong_family))
 
     wrong_data = json.loads(json.dumps(config))

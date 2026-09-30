@@ -3,7 +3,7 @@
 How do attention family, key dimension, polynomial degree, normalization, and
 coefficient learning affect language-model quality and cost? This study contains
 all Transformer attention executions: softmax, exponential, Taylor, Hermite,
-learned polynomial and quadratic attention, and GLA.
+learned polynomial attention, and GLA.
 
 [Combined comparisons](../../results/attention_scaling/README.md) ·
 [Run index](runs.csv) · [Study membership](sweep.yaml) ·
