@@ -51,8 +51,8 @@ cells:
   column: m4
   d_k: 8
   experiment: attention_scaling
-  run: r18aa3ef494f5
-  label: 200m-dk008-m004-seed0
+  run: ra1582c10aec6
+  label: 200m-qk-dk008-m004-seed0
 - panel: normalized_fixed
   column: m8
   d_k: 8
@@ -129,8 +129,8 @@ cells:
   column: m8
   d_k: 32
   experiment: attention_scaling
-  run: r35c90bbb045c
-  label: 200m-dk032-m008-seed0
+  run: r0ff512377204
+  label: 200m-qk-dk032-m008-seed0
 - panel: normalized_fixed
   column: m16
   d_k: 32
@@ -261,24 +261,24 @@ runs:
       path: experiments/attention_scaling/runs/r8de9574f7dac/best_validation.json
       sha256: d7ff7e5f491bc254820967f9d010bad4c39a7f5be8cbfe96b8303e2758aa5345
 - study: attention_scaling
-  run_id: r18aa3ef494f5
-  label: 200m-dk008-m004-seed0
+  run_id: ra1582c10aec6
+  label: 200m-qk-dk008-m004-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r18aa3ef494f5/config.yaml
-      sha256: 943002cb9250be47708745b6a7d2feb017beaa17bf8a5bb0724eb35a5038bc32
+      path: experiments/attention_scaling/runs/ra1582c10aec6/config.yaml
+      sha256: 43487c70ed5af3a50e2c7002e1d2709d5dfb6c33bb78c83d4b1b37aa1a09ca2e
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r18aa3ef494f5/metrics.jsonl
-      sha256: a9f1db65865e1012e6de36666075baa4ce09b323aafefaf481097b9046ac30dc
+      path: experiments/attention_scaling/runs/ra1582c10aec6/metrics.jsonl
+      sha256: e925c06a7318d1a17498fc4672cb192d72695e2fd68ad23a0225037b3716535d
     completion.json:
-      path: experiments/attention_scaling/runs/r18aa3ef494f5/completion.json
-      sha256: ac246e4f4abc81e40fac17d3b36023901a867db2a5615c372b48291067addc1f
+      path: experiments/attention_scaling/runs/ra1582c10aec6/completion.json
+      sha256: 0382b2e4823226fb6587553eb0ebf24741a23b097ae7d64e08da50652e1fe3b2
     metadata.json:
-      path: experiments/attention_scaling/runs/r18aa3ef494f5/metadata.json
-      sha256: c7716e6a52b8991fc63f83c7c508e236b327884ecc300e78fa2735b38707d78a
+      path: experiments/attention_scaling/runs/ra1582c10aec6/metadata.json
+      sha256: a355f373d47683fa5a416bbf47f0727b3d1895e0b155d3d2c174e38b944bf14e
     best_validation.json:
-      path: experiments/attention_scaling/runs/r18aa3ef494f5/best_validation.json
-      sha256: fbda74e4a26677f4602002af7d78fa30ed1f71ec272dd3b992c06c8469eb358e
+      path: experiments/attention_scaling/runs/ra1582c10aec6/best_validation.json
+      sha256: 1290af1c5491023959ed64de9e5186451e09988e1dd8e60b5a6be2e4496e41d1
 - study: attention_scaling
   run_id: r34b6ba7e769e
   label: 200m-qk-dk008-m008-seed0
@@ -508,24 +508,24 @@ runs:
       path: experiments/attention_scaling/runs/r52e627fffdfc/best_validation.json
       sha256: ef4674bcfe1bfb87c6c264000c7b26bc66d6f3fa3497b6dfe19a10d2ff3ad7e9
 - study: attention_scaling
-  run_id: r35c90bbb045c
-  label: 200m-dk032-m008-seed0
+  run_id: r0ff512377204
+  label: 200m-qk-dk032-m008-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r35c90bbb045c/config.yaml
-      sha256: 7d867192042b54518004f5b592c240d8d10a0c344647644fa26de7051e025aad
+      path: experiments/attention_scaling/runs/r0ff512377204/config.yaml
+      sha256: 637dfb9ce0ed6fbe1debf230dac2b5874623b5313f715f4b5e5733b0d0895c47
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r35c90bbb045c/metrics.jsonl
-      sha256: ec578e7a8bfdd175a394d1261027f09237038121b2c6fa8e7baf6c75d4b4ba2a
+      path: experiments/attention_scaling/runs/r0ff512377204/metrics.jsonl
+      sha256: 9ac76992aaee94d83626f8c78e929bae59b96388dc214719f9bbe658a7f6b156
     completion.json:
-      path: experiments/attention_scaling/runs/r35c90bbb045c/completion.json
-      sha256: 008c10a9fdd4060c259a88d52acec57e711070f02c88a657f31ad9dc4826c7d2
+      path: experiments/attention_scaling/runs/r0ff512377204/completion.json
+      sha256: 9e0dec5076642e3731855661489d70f6e388ec017af9a57fb35c7446ed4cf08e
     metadata.json:
-      path: experiments/attention_scaling/runs/r35c90bbb045c/metadata.json
-      sha256: fffe7341524eaf5cdb3395311349728dff6f148dccb53ebaf8e91d687a1929ec
+      path: experiments/attention_scaling/runs/r0ff512377204/metadata.json
+      sha256: 728091e68413d343af0d50f0f0a19e37a1eb602d2abdd66968b601c3235a2a9d
     best_validation.json:
-      path: experiments/attention_scaling/runs/r35c90bbb045c/best_validation.json
-      sha256: ddb126523e38cffcd22fc7ffc1b1e11464c87eb25f1c4e50f0b1e318d528052e
+      path: experiments/attention_scaling/runs/r0ff512377204/best_validation.json
+      sha256: 38801973ec7bcc6553a013eb06a7bd4a11fe366357cea18ea1df5891837af12f
 - study: attention_scaling
   run_id: r32ea521d99f3
   label: 200m-qk-dk032-m016-seed0
