@@ -35,7 +35,8 @@
       "status": "passed"
     }
   },
-  "artifact_root": "/orcd/pool/006/rafah/functional_memory/worktrees/gla_dk032_dk128",
+  "artifact_directory": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/attention_scaling/runs/r5e070a3a9738",
+  "artifact_root": "/orcd/pool/006/rafah/functional_memory/artifacts",
   "artifacts": [
     {
       "path": "experiments/attention_scaling/runs/r5e070a3a9738/best_validation.json",
@@ -78,7 +79,7 @@
       "size_bytes": 182
     },
     {
-      "path": "/orcd/pool/006/rafah/functional_memory/worktrees/gla_dk032_dk128/experiments/attention_scaling/runs/r5e070a3a9738/training.log",
+      "path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/attention_scaling/runs/r5e070a3a9738/training.log",
       "sha256": "32fd2733648fbbdd2f4eab85f5a5aa0a04c4233c7e44bdfab9d8c249d50f2548",
       "size_bytes": 1529990
     }
@@ -301,11 +302,11 @@
   "home_cluster": "orcd",
   "label": "200m-dk032-gla-seed0",
   "log": {
-    "path": "/orcd/pool/006/rafah/functional_memory/worktrees/gla_dk032_dk128/experiments/attention_scaling/runs/r5e070a3a9738/training.log",
+    "path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/attention_scaling/runs/r5e070a3a9738/training.log",
     "sha256": "32fd2733648fbbdd2f4eab85f5a5aa0a04c4233c7e44bdfab9d8c249d50f2548",
     "size_bytes": 1529990
   },
-  "log_path": "/orcd/pool/006/rafah/functional_memory/worktrees/gla_dk032_dk128/experiments/attention_scaling/runs/r5e070a3a9738/training.log",
+  "log_path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/attention_scaling/runs/r5e070a3a9738/training.log",
   "metadata": {
     "path": "experiments/attention_scaling/runs/r5e070a3a9738/metadata.json",
     "sha256": "0f530125c75cc2cfe3ece46a687a67ef8af00b2330d437b19f93fd0ab3c6cf93",
@@ -403,7 +404,7 @@
     ],
     "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
     "kind": "directory",
-    "path": "/orcd/pool/006/rafah/functional_memory/worktrees/gla_dk032_dk128/experiments/attention_scaling/runs/r5e070a3a9738/checkpoints/19074",
+    "path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/attention_scaling/runs/r5e070a3a9738/checkpoints/19074",
     "sha256": "0d5d4ff04f212df71679276f08f322377b81cfb58961afc5812726dbdc947bfb",
     "size_bytes": 2202695773,
     "step": 19074,

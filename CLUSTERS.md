@@ -73,6 +73,11 @@ recorded in `scaffolds/transformer/validation/README.md`.
   before. Put experiment worktrees under `/orcd/pool/006/rafah/functional_memory/worktrees/`
   with `UV_CACHE_DIR=/orcd/pool/006/rafah/.cache/uv`, so hardlinked environments
   and checkpoints share the pool filesystem.
+- **Artifact root:** `/orcd/pool/006/rafah/functional_memory/artifacts`, outside any
+  worktree, because the primary checkout (`/home/rafah/projects/functional_memory`)
+  is on `/home`. Retained checkpoints and logs live in
+  `experiments/<study>/runs/<run_id>/` there; it shares the worktrees' filesystem, so
+  completion moves are renames.
 
 | Storage | Documented default quota | Intended use / backup |
 | --- | --- | --- |

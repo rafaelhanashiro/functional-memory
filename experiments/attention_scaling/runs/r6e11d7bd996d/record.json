@@ -35,7 +35,8 @@
       "status": "passed"
     }
   },
-  "artifact_root": "/orcd/pool/006/rafah/functional_memory/worktrees/gla_key_dimension_rerun",
+  "artifact_directory": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/attention_scaling/runs/r6e11d7bd996d",
+  "artifact_root": "/orcd/pool/006/rafah/functional_memory/artifacts",
   "artifacts": [
     {
       "path": "experiments/attention_scaling/runs/r6e11d7bd996d/best_validation.json",
@@ -78,7 +79,7 @@
       "size_bytes": 175
     },
     {
-      "path": "/orcd/pool/006/rafah/functional_memory/worktrees/gla_key_dimension_rerun/experiments/gla_key_dimension/runs/r6e11d7bd996d/training.log",
+      "path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/attention_scaling/runs/r6e11d7bd996d/training.log",
       "sha256": "f2b4ae27c508b32d88a85b44be4e52a30a54c55601f48bd3e2a36f789e6c63e9",
       "size_bytes": 1497029
     }
@@ -322,11 +323,11 @@
   "home_cluster": "orcd",
   "label": "200m-dk064-gla-seed0",
   "log": {
-    "path": "/orcd/pool/006/rafah/functional_memory/worktrees/gla_key_dimension_rerun/experiments/gla_key_dimension/runs/r6e11d7bd996d/training.log",
+    "path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/attention_scaling/runs/r6e11d7bd996d/training.log",
     "sha256": "f2b4ae27c508b32d88a85b44be4e52a30a54c55601f48bd3e2a36f789e6c63e9",
     "size_bytes": 1497029
   },
-  "log_path": "/orcd/pool/006/rafah/functional_memory/worktrees/gla_key_dimension_rerun/experiments/gla_key_dimension/runs/r6e11d7bd996d/training.log",
+  "log_path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/attention_scaling/runs/r6e11d7bd996d/training.log",
   "metadata": {
     "path": "experiments/attention_scaling/runs/r6e11d7bd996d/metadata.json",
     "sha256": "94552faa992638a9a80eae6a72ee6793fa74eaf9c44dfc84026427786bed1981",
@@ -435,7 +436,7 @@
     ],
     "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
     "kind": "directory",
-    "path": "/orcd/pool/006/rafah/functional_memory/worktrees/gla_key_dimension_rerun/experiments/gla_key_dimension/runs/r6e11d7bd996d/checkpoints/19074",
+    "path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/attention_scaling/runs/r6e11d7bd996d/checkpoints/19074",
     "sha256": "fc72693401e04993403f0274e81a2fad03fa09130a944b90d4fdd0d57c0e1d4a",
     "size_bytes": 2323879328,
     "step": 19074,
