@@ -753,30 +753,27 @@
       "column": "m16",
       "d_k": 8,
       "experiment": "attention_scaling",
-      "run": "r3961c167a16f",
+      "run": "raf366b32c8f4",
       "status": "complete",
-      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "source_commit": "5bb3970d9256e9df7221f96d0a9dcc1172011366",
       "artifacts": {
         "metadata": {
-          "path": "experiments/attention_scaling/runs/r3961c167a16f/metadata.json",
-          "sha256": "ad120cc41070f8ca1d5586d500f5b20b0b53818d9bdaf3c1957d13e429712795"
+          "path": "experiments/attention_scaling/runs/raf366b32c8f4/metadata.json",
+          "sha256": "914050646848e939aaee380bb9feeabd344ec08326f1cd1f03277f7674386c9b"
         },
         "metrics": {
-          "path": "experiments/attention_scaling/runs/r3961c167a16f/metrics.jsonl",
-          "sha256": "3be0519b762c5638c54130bf105d3728df2aa4d236e4242304b543ed4faae858"
+          "path": "experiments/attention_scaling/runs/raf366b32c8f4/metrics.jsonl",
+          "sha256": "3de10eb67bc6c2c050250b8ef4db86ed1285cead0a4cc4b497c014e713c14893"
         },
         "completion": {
-          "path": "experiments/attention_scaling/runs/r3961c167a16f/completion.json",
-          "sha256": "94c511b6b29ee085a200735d4b82afa2a6b347be35960e589411f752d4083f8a"
+          "path": "experiments/attention_scaling/runs/raf366b32c8f4/completion.json",
+          "sha256": "11489fa0fd76c574e3da271781fc48c519e070e915307b562b8ccc29c523e22e"
         }
       },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "figure": "heatmap",
@@ -784,30 +781,27 @@
       "column": "m16",
       "d_k": 16,
       "experiment": "attention_scaling",
-      "run": "rfe7378eb4b4f",
+      "run": "r406ddaedf670",
       "status": "complete",
-      "source_commit": "4d942eae8981752f4666d4b6f8261b35e1338320",
+      "source_commit": "5bb3970d9256e9df7221f96d0a9dcc1172011366",
       "artifacts": {
         "metadata": {
-          "path": "experiments/attention_scaling/runs/rfe7378eb4b4f/metadata.json",
-          "sha256": "9ac76943b4a5f79636e63f28e63ec3102beccd49021b6519c654574343a1e9d7"
+          "path": "experiments/attention_scaling/runs/r406ddaedf670/metadata.json",
+          "sha256": "d64f878318efdf24c31a84319a7ba47ae162ed5cc524fdb55e941254dc352434"
         },
         "metrics": {
-          "path": "experiments/attention_scaling/runs/rfe7378eb4b4f/metrics.jsonl",
-          "sha256": "f9d0c35d52b0dc45c792f95d8d4c267a667d69fdf0f84a59e97bd50060a61ef5"
+          "path": "experiments/attention_scaling/runs/r406ddaedf670/metrics.jsonl",
+          "sha256": "6c874407ff23f6a341bd1c2ca8af8df5075f5e196d01b41d34d436fcd1bce5c1"
         },
         "completion": {
-          "path": "experiments/attention_scaling/runs/rfe7378eb4b4f/completion.json",
-          "sha256": "16293317ca700799fed3d197dc16f6193afd4cd009413efc166aaa708e423d5c"
+          "path": "experiments/attention_scaling/runs/r406ddaedf670/completion.json",
+          "sha256": "f120586bdb8f92a38a4cb508bd2a019f53920df8f288a97900cc930c5fbf2018"
         }
       },
-      "weight_decay_policy": null,
-      "qk_norm": false,
-      "legacy": true,
-      "legacy_reasons": [
-        "weight decay on all parameters",
-        "no QK-norm"
-      ]
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
+      "qk_norm": true,
+      "legacy": false,
+      "legacy_reasons": []
     },
     {
       "figure": "heatmap",
@@ -2019,7 +2013,7 @@
       "complete": 31,
       "not_run": 12,
       "numerical_failure": 2,
-      "legacy": 15
+      "legacy": 13
     },
     "degree_chart": {
       "complete": 20,
@@ -2030,7 +2024,7 @@
   "analysis": {
     "config": {
       "path": "results/attention_scaling/selection.yaml",
-      "sha256": "4fd957f5f96eb0819f96a29b26816c9dda3f2efc9cb1928c1f09f720574d2fe1"
+      "sha256": "5bda44dd510864eeca089502ff94bb6e5b320985e4d66ccf1e7f72e7336b14b9"
     },
     "chart_config": {
       "path": "results/attention_scaling/degree_chart.yaml",
@@ -2062,19 +2056,19 @@
   "derived_artifacts": {
     "summary_csv": {
       "path": "results/attention_scaling/summary.csv",
-      "sha256": "06e5f39cb689bd3c19e5979978336ec130f672066c3deec58dd100fd4649ab3c"
+      "sha256": "a082efa55b9b45b3d3df142109c4c2bc722987623ee5e552368aa33057e397a0"
     },
     "readme": {
       "path": "results/attention_scaling/README.md",
-      "sha256": "260962803c64f5758d487c72c9078d3992445fe5e0e936d11c61a90cbb0e8930"
+      "sha256": "6554250bec14bb659cee27054765371939f80b47b023995c6876f59a711e4aaf"
     },
     "combined_terminal_ppl_pdf": {
       "path": "results/attention_scaling/combined_terminal_ppl.pdf",
-      "sha256": "ea1bd5617655a04c83c9f38e101feb18dfaa5f136d38d541a79851d9e034c523"
+      "sha256": "35b357ea28e6d2e25f125087f026706ba985996bce224db9cee140c6907f2f52"
     },
     "combined_terminal_ppl_png": {
       "path": "results/attention_scaling/combined_terminal_ppl.png",
-      "sha256": "19a091fd7b7a404fc77e86810d3b211fbd30d2d47bb5955a8d431de8a585a45e"
+      "sha256": "ead476fa58d81ac4a1ed8e8ae908883c32f6422d036bcc6cf4b5bec88a2763e7"
     },
     "degree_chart_pdf": {
       "path": "results/attention_scaling/degree_chart.pdf",

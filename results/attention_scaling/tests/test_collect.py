@@ -213,6 +213,7 @@ def test_committed_comparison_sources() -> None:
                        *(("references", "gla", width) for width in (8, 16, 32, 64, 128)),
                        ("normalized_fixed", "m4", 16), ("normalized_fixed", "m8", 16), ("normalized_fixed", "m16", 128),
                        ("normalized_fixed", "m2", 8), ("normalized_fixed", "m16", 32),
+                       ("normalized_fixed", "m16", 16), ("normalized_fixed", "m16", 8),
                        *(("normalized_fixed", f"m{degree}", 64) for degree in (1, 2, 3, 4, 8, 16))}
     failures = {(row["panel"], row["column"]): row["failure_step"]
                 for row in rows if row["status"] == "numerical_failure"}
