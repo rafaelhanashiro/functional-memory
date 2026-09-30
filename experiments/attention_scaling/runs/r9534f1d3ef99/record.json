@@ -161,11 +161,6 @@
     "source_path": "scaffolds/transformer/uv.lock"
   },
   "error": null,
-  "executed_recipe": {
-    "commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
-    "path": "experiments/hermite_attention/runs/r9534f1d3ef99/config.yaml",
-    "sha256": "863779081100670e4cc228280daaf9177212191938f47228f4643bbbcca27ae6"
-  },
   "execution": {
     "attention_backend": "fused",
     "raw_config": {

@@ -139,11 +139,6 @@
     "source_path": "scaffolds/transformer/uv.lock"
   },
   "error": "FloatingPointError: Nonfinite training loss or optimizer update at step 1390: nan",
-  "executed_recipe": {
-    "commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
-    "path": "experiments/hermite_attention/runs/re8b05edb37b1/config.yaml",
-    "sha256": "50588aa3908b319a493408356f535200b651389ab9bddb0478bb5bbfd4083b33"
-  },
   "execution": {
     "attention_backend": "fused",
     "raw_config": {

@@ -1543,11 +1543,6 @@
     "source_path": "scaffolds/transformer/uv.lock"
   },
   "error": "CalledProcessError: Command '['/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/scaffolds/transformer/.venv/bin/python', '-m', 'experiments.hermite_attention.acceptance', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/config.yaml', '--directory', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4', '--gpu-count', '4', '--gpu-type', 'B300', '--worker', 'pilot', '--output', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/hermite_qk_norm/experiments/hermite_attention/runs/rea4fd9479c26/.runtime/acceptance/B300-4/pilot-result.json', '--stop-after-step', '20']' returned non-zero exit status 1.",
-  "executed_recipe": {
-    "commit": "bd31f8ad7a8a964b286387ad7ad7723ea405b286",
-    "path": "experiments/hermite_attention/runs/rea4fd9479c26/config.yaml",
-    "sha256": "5e0b9525cadccdde712274c1ae7bfb619bdd3a2c1b1d266e6fdd634dd78d65d9"
-  },
   "frozen_execution_sha256": "0d6b47d719837a3b243287e68591664fe0814fa10f75cfaea9fa5b9142cebfc0",
   "home_cluster": "kennel",
   "label": "200m-qk-hermite-m001-normalized-seed0",
