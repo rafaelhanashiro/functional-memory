@@ -199,10 +199,16 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   user which cluster they are on and which cluster owns the experiment, and flag the
   mismatch before launching or resuming. Migration requires an explicit user
   instruction.
-- Keep each experiment's runs, resumptions, checkpoints, and logs on its home cluster.
-  Record the home cluster and artifact root in provenance and the README. A clone shares
-  committed code, recipes, and results, not ignored artifacts; report unavailable or
-  unverified artifacts accurately.
+- Each run has one home cluster, recorded in its `record.json` and `runs.csv`; one study
+  may hold runs from several clusters. A run's checkpoints, logs, and resumptions stay
+  on its home cluster. At completion they move out of the worktree into that cluster's
+  artifact root (listed in `CLUSTERS.md`), and the record states their absolute paths
+  there. Never copy them to another cluster except in an explicit migration.
+- A checkout on another cluster has only the committed files, which is expected:
+  `scaffolds.records validate` reports those artifacts as unavailable, not as errors.
+  Figures, indices, and tests use only committed files and must pass on every cluster;
+  code and tests must not require a cluster-specific path (dataset, artifact) elsewhere.
+- Close out on the home cluster, push, and pull on the other clusters.
 - When migrating an experiment, transfer and verify its checkpoints and supporting
   artifacts, provide the matching data and environment, update its recorded locations,
   and never run the same run concurrently on two clusters.
@@ -224,9 +230,8 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   Each run record contains the frozen set's hash.
 - Never remove a worktree while any of its jobs can still run or requeue.
 - At completion:
-  1. Move (not copy) the retained artifacts into the primary checkout's
-     `experiments/<experiment>/`: each run's metrics, its validation-best checkpoint,
-     and one successful log.
+  1. Move (not copy) the retained artifacts into the home cluster's artifact root:
+     each run's metrics, its validation-best checkpoint, and one successful log.
   2. Verify their checksums.
   3. Record the final locations in the run records and regenerate the study index.
   4. Merge the branch into `main`, reconciling any scaffold changes `main` made in the

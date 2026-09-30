@@ -16,6 +16,8 @@ See [AGENTS.md](AGENTS.md) for retention and migration rules.
 - **Datasets:** `/data/cl/u/rafah/home/datasets` (alongside `projects`);
   packed FineWeb is in `fineweb_12b`.
 - **Storage:** keep persistent files on NFS under `/data/cl/u/rafah`.
+- **Artifact root:** the primary checkout; retained checkpoints and logs live in
+  `experiments/<study>/runs/<run_id>/` there.
   Avoid AFS for jobs because authentication expires. `/data/cl/scratch` is
   expendable; node-local `/scratch` is for temporary, I/O-heavy data.
   Current training configs read FineWeb from NFS; stage locally when needed.
