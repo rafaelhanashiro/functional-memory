@@ -39,6 +39,7 @@
       "status": "passed"
     }
   },
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
   "artifacts": [
     {
       "path": "experiments/attention_scaling/runs/r8de9574f7dac/best_validation.json",
@@ -314,7 +315,7 @@
     "sha256": "c5b75b577c9dd1d5d06c19a8b2afddbc3d16301def6e5900f2daaf207c8650f1",
     "size_bytes": 1494512
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/normalized_taylor_width_rerun/experiments/attention_scaling/runs/r8de9574f7dac/training.log",
+  "log_path": "experiments/attention_scaling/runs/r8de9574f7dac/training.log",
   "metadata": {
     "path": "experiments/attention_scaling/runs/r8de9574f7dac/metadata.json",
     "sha256": "43e707232b8d9bebe7cb300068d8e546e9e06be415f59fb30913f72e84e2d06d",
