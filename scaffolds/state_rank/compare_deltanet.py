@@ -29,6 +29,25 @@ INITIALIZATION_DETAILS = {
     "residual_rescaling": "none (reference default prenorm_residual_strategy=None)",
     "parameter_generation": "seeded CPU FP32, full independent model for each seed",
 }
+# The Gated DeltaNet paper's training code (NVlabs/GatedDeltaNet lit_gpt, mamba_init),
+# applied to the pinned architecture after FLA's construction with the same generator.
+PAPER_INITIALIZATION_DETAILS = {
+    "implementation": "NVlabs/GatedDeltaNet lit_gpt GPT._init_weights with mamba_init, after pinned FLA construction",
+    "embedding": "Normal(0, 0.02)",
+    "linear_and_short_convolution": "PyTorch default kaiming_uniform_(a=sqrt(5)), Uniform(+-1/sqrt(fan_in)); Linear biases zero",
+    "mlp_down_projection": "kaiming_uniform_(a=sqrt(5)) / sqrt(2 * num_hidden_layers) (lit_gpt SwiGLU w3)",
+    "recurrent_output_projection": "PyTorch default, not rescaled (lit_gpt rescaling does not match o_proj)",
+    "normalization_weights": "ones",
+    "A_log": "log(Uniform(0, 16)) independently per layer/head",
+    "dt_bias": "inverse_softplus(log-uniform dt in [0.001, 0.1], clamped at 0.0001)",
+    "parameter_generation": "seeded CPU FP32, full independent model for each seed",
+}
+INITIALIZATIONS = {
+    "fla_reference": ("Pinned FLA/Hugging Face reference initialization; not the original training initialization",
+                      INITIALIZATION_DETAILS),
+    "gated_deltanet_paper": ("Gated DeltaNet paper training-code initialization on the pinned architecture; "
+                             "not the checkpoint's own training initialization", PAPER_INITIALIZATION_DETAILS),
+}
 # State evolution is FP32; tolerances accommodate possible kernel/hardware drift.
 # FP64 SVD should agree much more closely, but cannot undo FP32 state differences.
 # Discrete ranks may move by ONE only when an actual boundary crossing is
@@ -64,6 +83,8 @@ def validate_config(config):
         raise ValueError("input_count must be a positive integer")
     if type(config.get("svd_workers", 1)) is not int or config.get("svd_workers", 1) < 1:
         raise ValueError("svd_workers must be a positive integer")
+    if config.get("random_initialization", "fla_reference") not in INITIALIZATIONS:
+        raise ValueError(f"Unknown random initialization: {config['random_initialization']}")
     prefixes = config["spectrum_prefixes"]
     if (not prefixes or prefixes != sorted(set(prefixes))
             or any(type(t) is not int or not 1 <= t <= config["tokens"] for t in prefixes)):
@@ -95,6 +116,7 @@ def prepare_manifest(config_path, project_root, output=None):
         "baseline_spectra_sha256": common.sha256_file(baseline / "spectra.npz"),
     }
     identity = hashlib.sha256(json.dumps(provenance, sort_keys=True).encode()).hexdigest()
+    initialization, initialization_details = INITIALIZATIONS[config.get("random_initialization", "fla_reference")]
     path = output / "manifest.json"
     if path.exists():
         existing = json.loads(path.read_text())
@@ -109,10 +131,10 @@ def prepare_manifest(config_path, project_root, output=None):
         "project_root": str(project_root), "execution_root": str(Path(__file__).resolve().parents[2]),
         "output_directory": str(output), "baseline_directory": str(baseline),
         "created_utc": common.utc_now(), "conditions": common.condition_specs(config), "jobs": {},
-        "initialization": "Pinned FLA/Hugging Face reference initialization; not the original training initialization",
+        "initialization": initialization,
         "state_definition": "native recurrent state before output norm/gate/projection; convolution buffers excluded from spectra",
         "checkpoint_retention": "none", "baseline_tolerances": BASELINE_TOLERANCES,
-        "initialization_details": INITIALIZATION_DETAILS,
+        "initialization_details": initialization_details,
     })
     return path
 
@@ -294,7 +316,7 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
                              ("torch", "transformers", "numpy", "matplotlib", "flash-linear-attention", "triton")},
         "log_path": str(output / "training.log") if job_id else None,
         "checkpoint_retention": "none",
-        "initialization_details": INITIALIZATION_DETAILS if condition["weights"] == "random" else None,
+        "initialization_details": manifest["initialization_details"] if condition["weights"] == "random" else None,
     }
     common.write_condition_metadata(output, metadata)
     started = time.monotonic()
@@ -318,7 +340,8 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
             if not np.array_equal(old["head_indices"], np.arange(model_config.num_v_heads or model_config.num_heads)):
                 raise ValueError("Retained baseline does not cover all recurrent heads")
         if condition["weights"] == "random":
-            model = random_models.build_random_gated_deltanet(model_config, condition["seed"])
+            model = random_models.build_random_gated_deltanet(
+                model_config, condition["seed"], config.get("random_initialization", "fla_reference"))
             metadata["unused_checkpoint_keys"] = []
         else:
             model, loading = AutoModel.from_pretrained(

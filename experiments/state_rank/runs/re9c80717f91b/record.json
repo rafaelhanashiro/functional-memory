@@ -1,0 +1,21 @@
+{
+  "checkpoint_retention": "none",
+  "comparison": "random_vs_pretrained_deltanet_paper_init",
+  "config": {
+    "path": "experiments/state_rank/runs/re9c80717f91b/config.yaml",
+    "sha256": "f453b3e86ba6a7d2051a31ed64e9243c996f32ad2c9b280858e4b7cc992cd379"
+  },
+  "execution": {
+    "comparison_manifest": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/state_rank_paper_init/experiments/state_rank/runs/r3793d9db5bf8/.runtime/comparison/manifest.json"
+  },
+  "home_cluster": "kennel",
+  "inputs": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/state_rank/runs/rabd239a7f3dc/inputs.json",
+    "sha256": "986feaf726cdef35ccbba48857b537831cd9ecdac5a0bb12a335d3fee7da0c4f"
+  },
+  "label": "random_vs_pretrained_deltanet_paper_init/random-seed4",
+  "name": "random_vs_pretrained_deltanet_paper_init/random-seed4",
+  "record_schema_version": 1,
+  "run_id": "re9c80717f91b",
+  "status": "planned"
+}
