@@ -245,7 +245,7 @@ recipe's widths.
 
 ## Normalized learned polynomials and QK-norm on B300 and H100
 
-Row-normalized attention with learned polynomial coefficients
+Normalized attention with learned polynomial coefficients
 (`attention/learned_polynomial.py`) initially used only the blocked reference; QK-norm scores
 compose with every kernel as pre-scaled operands. Both first ran for the
 [QK-norm learned Taylor sweep](../../../experiments/attention_scaling/README.md).

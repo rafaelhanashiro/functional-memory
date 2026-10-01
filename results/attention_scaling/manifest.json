@@ -2006,7 +2006,7 @@
       },
       "chart.py": {
         "path": "results/attention_scaling/chart.py",
-        "sha256": "3ea2efb7d4a0877f057c4a4cf0c7e43775a810a4dfb5acbc2f1f32b946fbbb32"
+        "sha256": "1314998aee97ceaeef71a99e3695cd8985d5bcd7c0f12a1679731889fc756832"
       },
       "plot.py": {
         "path": "results/attention_scaling/plot.py",
@@ -2033,11 +2033,11 @@
     },
     "degree_chart_pdf": {
       "path": "results/attention_scaling/degree_chart.pdf",
-      "sha256": "e1575c5b0308645f91f8b47718d0000684af7d230a44846517d0e21d52851b2b"
+      "sha256": "3ff46849769d45ffb0d7a274106e868eb2509a8c0bbe6f16faefc9da8e8b7823"
     },
     "degree_chart_png": {
       "path": "results/attention_scaling/degree_chart.png",
-      "sha256": "da7685b5e053bbcc388f2a084cb6bc122c0d3095e43ab0f06cd5bf1973b46f39"
+      "sha256": "3aad63655135be491ae21839637f32467cdf084756d40679661fe04721507742"
     }
   }
 }

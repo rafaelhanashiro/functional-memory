@@ -80,8 +80,8 @@ The existing scientific configuration fields remain supported:
 | `attention_degree: null`, `attention_normalization: false` | Unnormalized causal `exp(QKᵀ / sqrt(d_K)) V` |
 | Nonnegative `attention_degree`, `attention_normalization: false` | Unnormalized fixed Taylor `p_m(QKᵀ / sqrt(d_K)) V`; odd degrees permit signed weights |
 | `attention_degree: m >= 1`, `attention_normalization: false`, `attention_coefficients: learned` | Unnormalized `sum_r c_r (QKᵀ / sqrt(d_K))^r V` with every coefficient learned from `1/r!`; signed |
-| `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Row-normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; fused or blocked |
-| Even `attention_degree: m >= 2`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: sum_of_squares` | Row-normalized `(q1(s)^2 + q2(s)^2) V / rowsum` with `deg q1 = m/2`, `deg q2 = m/2 - 1` learned and initialized to reproduce `T_m` exactly; nonnegative weights, positive row sums; fused or blocked |
+| `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; fused or blocked |
+| Even `attention_degree: m >= 2`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: sum_of_squares` | Normalized `(q1(s)^2 + q2(s)^2) V / rowsum` with `deg q1 = m/2`, `deg q2 = m/2 - 1` learned and initialized to reproduce `T_m` exactly; nonnegative weights, positive row sums; fused or blocked |
 | `attention_degree: 0` | Uniform causal-prefix averaging |
 | Nonnegative `attention_degree`, `quadratic_mode: fixed` | Fixed Taylor polynomial; odd degrees permit signed weights |
 | `attention_degree: 2`, `quadratic_mode: positive` | Learned `0.5 * (1 + (a*s+b)^2)` |
@@ -113,7 +113,7 @@ parameters and the coefficients of `q1^2 + q2^2` as the effective ones.
 Learned polynomial coefficients are the `polynomial_coefficients` array: `[m + 1]`
 with `attention_coefficient_sharing: global`, `[num_layers, num_heads, m + 1]` with
 `per_head`, FP32, without weight decay. The blocked reference evaluates them by
-Horner's rule with or without row normalization. Without normalization,
+Horner's rule with or without normalization. Without normalization,
 `attention/backends/fused_learned_polynomial.py` is the fused kernel, whose custom
 backward also returns each head's coefficient gradient `sum_{i>=j} S_ij^r (dY_i · V_j)`.
 With normalization (`attention/learned_polynomial.py`),
@@ -209,7 +209,7 @@ the default mechanism `dot_product` preserves all existing recipes. GLA uses
 `S_t = diag(sigmoid(g_t) ** (1 / tau)) S_{t-1} + k_t v_t^T`, followed by the
 inclusive read `q_t^T S_t`, per-head RMSNorm, a SiLU output gate, and an output
 projection. Each sequence starts with zero state. No score scaling or attention
-row normalization is applied. The OFM defaults are gate rank 16, tau 16, RoPE
+normalization is applied. The OFM defaults are gate rank 16, tau 16, RoPE
 enabled, and outer/inner chunks 64/16, exposed by `gla_gate_rank`, `gla_gate_tau`,
 `gla_use_rope`, `gla_chunk_size`, and `gla_inner_chunk_size`.
 

@@ -1,4 +1,4 @@
-question: Can rescaling each head's unnormalized attention output replace row normalization?
+question: Can rescaling each head's unnormalized attention output replace normalization?
 study: experiments/attention_scaling
 metric: terminal validation perplexity
 runs:

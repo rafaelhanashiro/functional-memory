@@ -47,10 +47,13 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   configuration. Fresh executions receive new IDs; checkpoint resumptions and Slurm
   requeues retain their ID and append execution attempts. IDs are permanent and unique
   within the study; use collision-checked short IDs rather than encoding settings in paths.
-- The run index exposes attention family, `d_K`, degree, row normalization, QK
+- The run index exposes attention family, `d_K`, degree, normalization, QK
   normalization, fixed/learned coefficients, restrictions, sharing, seed, training
   recipe, status, and outcome where applicable. Missing historical facts stay unknown.
   Settings live in structured configurations and records, not directory names.
+- Attention divided by its causal row sum is "normalized" and attention without that
+  division is "unnormalized" in figures, legends, READMEs, and write-ups; never write
+  "row-normalized" or "row normalization".
 - `results/<analysis>/` groups figures around a comparison. Several analyses may
   reference the same run, and an analysis may combine several studies. Reference run
   IDs and checked source artifacts; never copy canonical measurements or checkpoints

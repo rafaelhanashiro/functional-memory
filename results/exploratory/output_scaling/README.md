@@ -3,7 +3,7 @@
 Opened 2026-10-01. Open decision: promote into
 [`results/attention_scaling/`](../../attention_scaling/README.md) or discard.
 
-Dropping row normalization costs 2–4 PPL. Can rescaling each head's unnormalized
+Dropping normalization costs 2–4 PPL. Can rescaling each head's unnormalized
 output before the output projection recover it? If so, signed kernels, which fail
 when normalized, can be explored without normalization.
 

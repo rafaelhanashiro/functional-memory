@@ -2,7 +2,7 @@
 
 One line per kernel family on a shared linear perplexity axis. Hue and marker shape
 identify the coefficient family (Taylor, Hermite, learned); line style and marker fill
-identify the kernel variant (row-normalized, unnormalized, nonnegative coefficients).
+identify the kernel variant (normalized, unnormalized, nonnegative coefficients).
 Reference mechanisms are thin horizontal levels labeled in the right margin. Numerical
 failures have no perplexity, so they are marked in a strip below the axis at their
 degree, labeled with the failing update. Runs that predate the scaffold's current
@@ -28,9 +28,9 @@ INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
 COEFFICIENTS = {"taylor": ("Taylor", "#2a78d6", "o"), "hermite": ("Hermite", "#eb6834", "^"),
                 "learned": ("Learned", "#1baf7a", "D")}
 # Kernel variants: line style, plus marker fill so that unconnected points carry it too.
-VARIANTS = {"normalized": ("row-normalized", "-", "full"),
-            "unnormalized": ("unnormalized", (0, (5, 2.5)), "none"),
-            "nonnegative": ("row-normalized, nonnegative coefficients", (0, (6, 2, 1, 2)), "bottom")}
+VARIANTS = {"normalized": ("Normalized", "-", "full"),
+            "unnormalized": ("Unnormalized", (0, (5, 2.5)), "none"),
+            "nonnegative": ("Normalized, nonnegative coefficients", (0, (6, 2, 1, 2)), "bottom")}
 FAMILY_STYLE = {
     "normalized_fixed": ("taylor", "normalized"),
     "unnormalized_fixed": ("taylor", "unnormalized"),

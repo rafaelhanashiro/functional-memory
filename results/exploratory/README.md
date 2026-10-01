@@ -6,4 +6,4 @@ either promoted into a canonical result collection or deleted with its runs; see
 
 | Topic | Question | Opened |
 | --- | --- | --- |
-| [output_scaling](output_scaling/README.md) | Can rescaling unnormalized attention outputs replace row normalization? | 2026-10-01 |
+| [output_scaling](output_scaling/README.md) | Can rescaling unnormalized attention outputs replace normalization? | 2026-10-01 |
