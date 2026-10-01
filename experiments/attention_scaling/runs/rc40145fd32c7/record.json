@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rc40145fd32c7/config.yaml",
+    "sha256": "b4997ae8e4923c80f1e452895016871d8c786e19f15709a01f2d8c2ebd9d5fb8"
+  },
+  "label": "200m-qk-m004-unnormalized-inverse-position-seed0",
+  "name": "200m-qk-m004-unnormalized-inverse-position-seed0",
+  "record_schema_version": 1,
+  "run_id": "rc40145fd32c7",
+  "status": "planned"
+}

@@ -70,6 +70,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value = copy.deepcopy(value)
         value.setdefault("model", {}).setdefault("attention_degree", None)
         value["model"].setdefault("attention_normalization", True)
+        value["model"].setdefault("attention_output_scaling", "none")
         value["model"].setdefault("attention_mechanism", "dot_product")
         for key, default in (("gla_gate_rank", 16), ("gla_gate_tau", 16.0),
                              ("gla_chunk_size", 64), ("gla_inner_chunk_size", 16),

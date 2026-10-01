@@ -13,8 +13,8 @@ learned polynomial attention, and GLA.
 
 Each `runs/<run_id>/` holds one complete recipe and execution. Settings are fields
 in `config.yaml` and columns in `runs.csv`: attention family, `d_K`, degree,
-normalization, QK normalization, coefficient learning and restrictions, sharing,
-seed, training budget, and outcome. Varying these settings adds runs here;
+normalization, output scaling, QK normalization, coefficient learning and
+restrictions, sharing, seed, training budget, and outcome. Varying these settings adds runs here;
 it does not create another study directory. Use permanent IDs for lookups:
 descriptive labels need not be unique.
 
@@ -37,7 +37,9 @@ Taylor uses `sum_r s^r/r!`. The fixed standard-normal Hermite approximation is
 its normalized degree-two factored form avoids cancellation near its root.
 Learned unrestricted polynomials train their coefficients; sum-of-squares recipes
 train factors that guarantee a nonnegative polynomial. QK normalization changes
-the scores independently of normalization of the attention weights. GLA uses its
+the scores independently of normalization of the attention weights. Unnormalized
+attention may rescale each head's output before the output projection, by `1/t` or
+by a per-head RMSNorm (`attention_output_scaling`). GLA uses its
 own gated recurrence. The shared scaffold defines each mechanism and its kernels.
 
 ## Cluster and artifacts

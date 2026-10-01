@@ -28,7 +28,7 @@ RUN_ID = re.compile(r"r[0-9a-f]{12}\Z")
 INDEX_COLUMNS = (
     "run_id", "label", "status", "home_cluster", "model_id", "condition",
     "attention_mechanism", "attention_family", "attention_kernel", "qk_head_dim",
-    "attention_degree", "attention_normalization", "qk_norm",
+    "attention_degree", "attention_normalization", "attention_output_scaling", "qk_norm",
     "coefficient_mode", "coefficient_parameterization", "coefficient_sharing",
     "quadratic_mode", "weight_decay_policy", "seed", "training_steps", "prediction_tokens", "source_commit",
     "terminal_step", "terminal_validation_nll", "terminal_validation_perplexity",
@@ -419,6 +419,7 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "qk_head_dim": _first(model.get("qk_head_dim"), record.get("qk_head_dim"), metadata.get("qk_head_dim")),
         "attention_degree": _first(model.get("attention_degree"), record.get("attention_degree"), metadata.get("attention_degree")),
         "attention_normalization": _first(model.get("attention_normalization"), record.get("attention_normalization"), metadata.get("attention_normalization")),
+        "attention_output_scaling": model.get("attention_output_scaling"),
         "qk_norm": _first(model.get("qk_norm"), record.get("qk_norm"), metadata.get("qk_norm")),
         "coefficient_mode": mode,
         "coefficient_parameterization": _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),

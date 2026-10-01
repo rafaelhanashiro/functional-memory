@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r69893658e068/config.yaml",
+    "sha256": "de73b8b179b2604877da6fc83c2272df24b7d2d82bc09e984067be813a946190"
+  },
+  "label": "200m-qk-exp-inverse-position-seed0",
+  "name": "200m-qk-exp-inverse-position-seed0",
+  "record_schema_version": 1,
+  "run_id": "r69893658e068",
+  "status": "planned"
+}

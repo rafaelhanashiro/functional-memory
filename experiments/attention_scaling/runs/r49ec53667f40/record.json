@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r49ec53667f40/config.yaml",
+    "sha256": "ae40230eab76e3a386eece4b9e841a5e908ede456bbc7273f362c9c5903eefc4"
+  },
+  "label": "200m-qk-m004-unnormalized-head-rmsnorm-seed0",
+  "name": "200m-qk-m004-unnormalized-head-rmsnorm-seed0",
+  "record_schema_version": 1,
+  "run_id": "r49ec53667f40",
+  "status": "planned"
+}

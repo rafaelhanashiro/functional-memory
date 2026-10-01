@@ -166,6 +166,27 @@ and maximum. Recipes and metadata identify the option with `qk_norm`,
 `qk_norm_sharing`, `qk_norm_initial_scale`, and `qk_norm_eps`. GLA and degree 0
 do not use it.
 
+### Unnormalized output scaling
+
+`attention_output_scaling` rescales each head's unnormalized output
+`o_t = sum_(j<=t) k(s_tj) v_j` before the output projection
+(`attention/output_scaling.py`); only unnormalized dot-product attention accepts it.
+Normalized attention equals `o_t / sum_j k(s_tj)`, so `o_t` is the normalized output
+times the row's kernel sum.
+
+| `attention_output_scaling` | Output |
+|---|---|
+| `none` (default) | `o_t` |
+| `inverse_position` | `o_t / t`, with `t` the number of visible keys |
+| `head_rms_norm` | `w ⊙ o_t / sqrt(mean(o_t²) + rms_norm_eps)` over the head's value channels |
+
+`inverse_position` removes the kernel sum's growth with `t`, not its dependence on
+the scores. `head_rms_norm` removes any positive per-row scale, so for a positive
+kernel it equals the RMSNorm of the normalized output; unlike a row sum, its
+divisor cannot be driven through zero by a signed kernel. Its gain `w` is the
+`output_norm_scale` array `[layers, heads, value_head_dim]`, initialized at 1 and
+excluded from weight decay. Run metadata and W&B tags name the option.
+
 `AttentionParameterSpec` declares initialization, sharing, the forward argument,
 and weight-decay policy. The model registers each array once and selects the
 appropriate device-array arguments for each layer. Gradients from shared uses

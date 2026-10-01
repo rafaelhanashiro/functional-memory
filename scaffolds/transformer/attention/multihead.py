@@ -8,6 +8,7 @@ import jax.numpy as jnp
 from flax import nnx
 
 from scaffolds.transformer.attention.core import attention_core
+from scaffolds.transformer.attention.output_scaling import OUTPUT_SCALINGS, scale_attention_output
 from scaffolds.transformer.attention.qk_norm import cosine_score_operands
 from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
@@ -38,6 +39,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_fixed_coefficients=config.attention_fixed_coefficients,
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
+        attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
         rngs=rngs,
     )
 
@@ -51,6 +53,7 @@ class MultiHeadAttention(nnx.Module):
         attention_normalization: bool = True, qk_norm: bool = False,
         qk_norm_eps: float = 1e-6, *, attention_fixed_coefficients: tuple[float, ...] | None = None,
         attention_fixed_square_factors: tuple[float, ...] | None = None,
+        attention_output_scaling: str = "none", rms_norm_eps: float = 1e-6,
         rngs: nnx.Rngs,
     ):
         _validate_degree(attention_degree)
@@ -62,6 +65,10 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
         if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused")):
             raise ValueError("Unnormalized attention requires a fixed exp/Taylor kernel and a blocked/fused backend")
+        if attention_output_scaling not in OUTPUT_SCALINGS:
+            raise ValueError(f"Unknown attention output scaling: {attention_output_scaling}")
+        if attention_output_scaling != "none" and attention_normalization:
+            raise ValueError("Attention output scaling applies only to unnormalized attention")
         if quadratic_mode not in ("fixed", "positive", "unrestricted"):
             raise ValueError(f"Unknown quadratic mode: {quadratic_mode}")
         if quadratic_mode != "fixed" and attention_degree != 2:
@@ -116,6 +123,8 @@ class MultiHeadAttention(nnx.Module):
         self.quadratic_mode = quadratic_mode
         self.qk_norm = qk_norm
         self.qk_norm_eps = qk_norm_eps
+        self.attention_output_scaling = attention_output_scaling
+        self.rms_norm_eps = rms_norm_eps
         self.dtype = jnp.float32
         # Preserve the reference constructor order/default initialization exactly.
         self.q_proj = nnx.Linear(hidden_size, num_heads * qk_head_dim, use_bias=False, rngs=rngs)
@@ -135,6 +144,9 @@ class MultiHeadAttention(nnx.Module):
         log_scale = parameters.pop("qk_norm_log_scale", None)
         if self.qk_norm != (log_scale is not None):
             raise ValueError("QK-norm requires exactly its model-owned qk_norm_log_scale parameter")
+        output_norm_scale = parameters.pop("output_norm_scale", None)
+        if (self.attention_output_scaling == "head_rms_norm") != (output_norm_scale is not None):
+            raise ValueError("Head RMSNorm output scaling requires exactly its model-owned output_norm_scale parameter")
         q, k, v = self.q_proj(x), self.k_proj(x), self.v_proj(x)
         if self.backend != "manual":
             q, k, v = (operand.astype(self.dtype) for operand in (q, k, v))
@@ -169,5 +181,7 @@ class MultiHeadAttention(nnx.Module):
             deterministic=deterministic, rngs=rngs, weights_dtype=x.dtype,
         )
         y, diagnostics = result if return_diagnostics else (result, None)
+        y = scale_attention_output(y, self.attention_output_scaling,
+                                   output_norm_scale=output_norm_scale, eps=self.rms_norm_eps)
         output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))
         return (output, diagnostics) if return_diagnostics else output

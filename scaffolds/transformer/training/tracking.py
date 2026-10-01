@@ -54,6 +54,8 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
         tags.append(f"m{identity['attention_degree']}")
     if identity.get("qk_norm"):
         tags.append("qk_norm")
+    if identity.get("attention_output_scaling"):
+        tags.append(f"output_{identity['attention_output_scaling']}")
     if runtime.get("gpu_type"):
         tags.append(f"{runtime.get('gpu_count', '')}x{runtime['gpu_type']}")
     if runtime.get("cluster"):

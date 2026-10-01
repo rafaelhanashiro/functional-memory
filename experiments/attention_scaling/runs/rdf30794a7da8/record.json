@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rdf30794a7da8/config.yaml",
+    "sha256": "159985dfc685a82d8b377e4d20b064ec1277fdac7c18874c0c4e42f0ec2b2b99"
+  },
+  "label": "200m-qk-exp-head-rmsnorm-seed0",
+  "name": "200m-qk-exp-head-rmsnorm-seed0",
+  "record_schema_version": 1,
+  "run_id": "rdf30794a7da8",
+  "status": "planned"
+}

@@ -47,6 +47,11 @@ class ModelConfig:
     attention_backend: Literal["auto", "blocked", "fused", "manual", "xla", "cudnn"] = "auto"
     attention_degree: int | None = None
     attention_normalization: bool = True
+    # Unnormalized dot-product attention only: rescale each head's output
+    # o_t = sum_(j<=t) k(s_tj) v_j before the output projection. "inverse_position"
+    # divides by the number of visible keys t; "head_rms_norm" applies an RMSNorm over
+    # the head's value channels with a learned gain per layer, head, and channel.
+    attention_output_scaling: Literal["none", "inverse_position", "head_rms_norm"] = "none"
     attention_mechanism: Literal["dot_product", "gla"] = "dot_product"
     gla_gate_rank: int = 16
     gla_gate_tau: float = 16.0
@@ -101,6 +106,11 @@ class ModelConfig:
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
         if not isinstance(self.attention_normalization, bool):
             raise ValueError("model.attention_normalization must be a boolean")
+        if self.attention_output_scaling not in ("none", "inverse_position", "head_rms_norm"):
+            raise ValueError(f"Unknown attention output scaling: {self.attention_output_scaling}")
+        if self.attention_output_scaling != "none" and (
+                self.attention_mechanism != "dot_product" or self.attention_normalization):
+            raise ValueError("model.attention_output_scaling applies only to unnormalized dot-product attention")
         if self.attention_mechanism == "gla":
             if self.attention_degree is not None or self.quadratic_mode != "fixed":
                 raise ValueError("GLA cannot use Taylor degrees or learned quadratic modes")
