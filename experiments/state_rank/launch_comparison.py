@@ -18,8 +18,7 @@ from scaffolds.state_rank.compare_random import (
     utc_now, validate_manifest, write_json,
 )
 
-RECIPES = {"llama": "random_vs_pretrained", "gated-deltanet": "random_vs_pretrained_deltanet",
-           "gated-deltanet-paper-init": "random_vs_pretrained_deltanet_paper_init"}
+RECIPES = {"llama": "random_vs_pretrained", "gated-deltanet": "random_vs_pretrained_deltanet_paper_init"}
 EXECUTION_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -29,7 +28,7 @@ def prepare_runs(model, project_root, study, *, config=None):
     study_metadata = yaml.safe_load((study / "sweep.yaml").read_text())
     recipe = config or study_metadata["recipes"][RECIPES[model]]
     prepare = prepare_manifest
-    if model.startswith("gated-deltanet"):
+    if model == "gated-deltanet":
         from scaffolds.state_rank import compare_deltanet
         prepare = compare_deltanet.prepare_manifest
     with tempfile.TemporaryDirectory(prefix="state-rank-prepare-") as temporary:

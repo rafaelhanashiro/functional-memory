@@ -32,10 +32,9 @@ PYTHONPATH=. scaffolds/state_rank/.venv/bin/python -m experiments.state_rank.lau
   --model gated-deltanet --project-root /data/cl/u/rafah/home/projects/functional-memory
 ```
 
-`--model gated-deltanet-paper-init` allocates the same DeltaNet comparison with its
-random conditions drawn as the Gated DeltaNet paper's training code initializes
-(`random_initialization: gated_deltanet_paper` in `sweep.yaml`); the default is the
-pinned FLA reference initialization.
+Random Llama models use Hugging Face's reference initializer. Random DeltaNet models
+use the Gated DeltaNet paper's training-code initialization
+(`random_initialization: gated_deltanet_paper` in the recipe).
 
 Each command prints a manifest path under the first allocated run’s `.runtime/`.
 All conditions receive new IDs and complete immutable recipes. Prepare both
