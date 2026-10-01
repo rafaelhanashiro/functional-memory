@@ -1,4 +1,27 @@
 {
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": {
+    "metadata": {
+      "path": "experiments/state_rank/runs/rd7981352ed2a/metadata.json",
+      "sha256": "e68b173a14bfee1d71565b8f350ebb8c56828b5f060b4ca920779a21a241d6c3"
+    },
+    "numerical_data": {
+      "path": "experiments/state_rank/runs/rd7981352ed2a/metrics.npz",
+      "sha256": "3a3f9ee97aa284d4d0634478e44835dea20fa6daa5fa2ee2ec948cac82445519"
+    }
+  },
+  "attempts": [
+    {
+      "exit_code": 0,
+      "finished_utc": "2026-10-01T19:25:10.105421+00:00",
+      "slurm_job_id": "205328",
+      "slurm_partition": "standard",
+      "slurm_restart_count": 0,
+      "source_commit": "e871cba26d02c68012b7a2f9afd14212dd02addf",
+      "started_utc": "2026-10-01T19:10:52.436076+00:00",
+      "submitted_utc": "2026-10-01T18:11:13.609744+00:00"
+    }
+  ],
   "checkpoint_retention": "none",
   "comparison": "random_vs_pretrained_deltanet_paper_init",
   "config": {
@@ -6,16 +29,230 @@
     "sha256": "f94f866e21531bc11d82eddff8f11ee6db893548ce8c007ddc028e905738666d"
   },
   "execution": {
-    "comparison_manifest": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/state_rank_paper_init/experiments/state_rank/runs/r3793d9db5bf8/.runtime/comparison/manifest.json"
+    "comparison_manifest": "experiments/state_rank/sweep.yaml#comparisons.random_vs_pretrained_deltanet_paper_init.manifest",
+    "hardware": {
+      "device": "cuda",
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "hostname": "dogo.csail.mit.edu"
+    },
+    "package_versions": {
+      "flash-linear-attention": "0.6.0",
+      "matplotlib": "3.11.2",
+      "numpy": "2.5.3",
+      "torch": "2.7.1+cu126",
+      "transformers": "4.57.6",
+      "triton": "3.3.1"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": "e68b173a14bfee1d71565b8f350ebb8c56828b5f060b4ca920779a21a241d6c3"
+    }
   },
+  "frozen_execution_sha256": "c6a44dbb9b10cce4dbe0044f4e1bc1661d81af329ee359793682d4be827aedc5",
   "home_cluster": "kennel",
   "inputs": {
-    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/state_rank/runs/rabd239a7f3dc/inputs.json",
+    "path": "experiments/state_rank/runs/rabd239a7f3dc/inputs.json",
     "sha256": "986feaf726cdef35ccbba48857b537831cd9ecdac5a0bb12a335d3fee7da0c4f"
   },
   "label": "random_vs_pretrained_deltanet_paper_init/random-seed3",
+  "log": {
+    "path": "experiments/state_rank/runs/rd7981352ed2a/training.log",
+    "sha256": "679dd4d32f94ad0adec5dbeba42948a920a4e2062e5618e63b16fc2c4239941f",
+    "size_bytes": 6829
+  },
+  "log_path": "experiments/state_rank/runs/rd7981352ed2a/training.log",
+  "metadata": {
+    "path": "experiments/state_rank/runs/rd7981352ed2a/metadata.json",
+    "sha256": "e68b173a14bfee1d71565b8f350ebb8c56828b5f060b4ca920779a21a241d6c3",
+    "size_bytes": 11621
+  },
+  "metrics": {
+    "path": "metrics.npz",
+    "sha256": "3a3f9ee97aa284d4d0634478e44835dea20fa6daa5fa2ee2ec948cac82445519"
+  },
   "name": "random_vs_pretrained_deltanet_paper_init/random-seed3",
   "record_schema_version": 1,
   "run_id": "rd7981352ed2a",
-  "status": "planned"
+  "seed": 3,
+  "source_commit": "e871cba26d02c68012b7a2f9afd14212dd02addf",
+  "status": "complete",
+  "validation": {
+    "baseline_checks": [],
+    "baseline_tolerances": {
+      "energy_cumulative_boundary_atol": 5e-05,
+      "log_trace_max_absolute_error": 0.0005,
+      "maximum_rank_difference": 1,
+      "normalized_spectrum_max_absolute_error": 2e-05,
+      "participation_ratio_max_relative_error": 0.0005,
+      "threshold_relative_singular_boundary_atol": 2e-06
+    },
+    "input_checks": [
+      {
+        "cache_relative_tolerance": 0.0002,
+        "checked_prefixes": [
+          1,
+          2,
+          8,
+          32,
+          128,
+          512
+        ],
+        "input_index": 0,
+        "maximum_prefix_relative_error": 4.3473808288831736e-05,
+        "maximum_prefix_relative_error_by_layer": [
+          7.841356347756841e-07,
+          1.9440235494343506e-06,
+          3.035412939410109e-06,
+          4.423825247758358e-06,
+          5.461835328357961e-06,
+          7.11054671520781e-06,
+          7.62974101126303e-06,
+          9.363015926597441e-06,
+          1.0724762667811701e-05,
+          1.2458459799672912e-05,
+          1.4461806423687926e-05,
+          1.713507790665941e-05,
+          1.862119626211501e-05,
+          1.9451196839929997e-05,
+          2.16893239933897e-05,
+          2.355681079069236e-05,
+          2.502471474394855e-05,
+          2.867214738351363e-05,
+          2.9405175137335787e-05,
+          3.203074762015559e-05,
+          3.484166001239077e-05,
+          3.789538672508196e-05,
+          4.184336182376953e-05,
+          4.3473808288831736e-05
+        ],
+        "svd_method": "numpy.linalg.svd(compute_uv=False), float64, direct recurrent matrix",
+        "svd_workers": 4
+      },
+      {
+        "cache_relative_tolerance": 0.0002,
+        "checked_prefixes": [
+          1,
+          2,
+          8,
+          32,
+          128,
+          512
+        ],
+        "input_index": 1,
+        "maximum_prefix_relative_error": 4.025660582442803e-05,
+        "maximum_prefix_relative_error_by_layer": [
+          7.240811170367782e-07,
+          1.9921256580393384e-06,
+          3.496692965084868e-06,
+          4.1788874268848325e-06,
+          5.262975001343662e-06,
+          6.933944545638613e-06,
+          7.6253552934955535e-06,
+          9.26597458120969e-06,
+          1.0199710064609709e-05,
+          1.2051767691208779e-05,
+          1.4068321390565223e-05,
+          1.5736479422234666e-05,
+          1.7528629631841167e-05,
+          1.8708786766318376e-05,
+          2.1517178595866426e-05,
+          2.298623385715376e-05,
+          2.45188734155837e-05,
+          2.883010679242443e-05,
+          2.9602011352174262e-05,
+          3.256376771997779e-05,
+          3.6088472954458424e-05,
+          3.692648503002537e-05,
+          3.916646292091938e-05,
+          4.025660582442803e-05
+        ],
+        "svd_method": "numpy.linalg.svd(compute_uv=False), float64, direct recurrent matrix",
+        "svd_workers": 4
+      },
+      {
+        "cache_relative_tolerance": 0.0002,
+        "checked_prefixes": [
+          1,
+          2,
+          8,
+          32,
+          128,
+          512
+        ],
+        "input_index": 2,
+        "maximum_prefix_relative_error": 4.3052022249397034e-05,
+        "maximum_prefix_relative_error_by_layer": [
+          1.0459764081162417e-06,
+          1.8175557069354636e-06,
+          2.998886116106806e-06,
+          4.2705270970147235e-06,
+          5.739998423928079e-06,
+          6.640804925558271e-06,
+          7.82037278291699e-06,
+          9.561663390863119e-06,
+          1.07102253390485e-05,
+          1.3532843345323531e-05,
+          1.4883681196745104e-05,
+          1.668969115805083e-05,
+          1.892581018378974e-05,
+          1.9881008716929405e-05,
+          2.26885256098514e-05,
+          2.4740179175585522e-05,
+          2.5473255194451815e-05,
+          2.817616724137736e-05,
+          3.104570853172388e-05,
+          3.225418222889406e-05,
+          3.3469631993273986e-05,
+          3.688707905820831e-05,
+          3.969456091229913e-05,
+          4.3052022249397034e-05
+        ],
+        "svd_method": "numpy.linalg.svd(compute_uv=False), float64, direct recurrent matrix",
+        "svd_workers": 4
+      },
+      {
+        "cache_relative_tolerance": 0.0002,
+        "checked_prefixes": [
+          1,
+          2,
+          8,
+          32,
+          128,
+          512
+        ],
+        "input_index": 3,
+        "maximum_prefix_relative_error": 4.211595103027838e-05,
+        "maximum_prefix_relative_error_by_layer": [
+          7.236009142416429e-07,
+          1.8979004338402608e-06,
+          3.0823184064329763e-06,
+          4.3047114398802935e-06,
+          5.560429635920972e-06,
+          6.596844720713749e-06,
+          7.69161690204841e-06,
+          9.241022468312028e-06,
+          1.0132034873222429e-05,
+          1.2063533888957516e-05,
+          1.4759254948983505e-05,
+          1.600396126899599e-05,
+          1.912639175498396e-05,
+          1.9791104555342727e-05,
+          2.1484263556730903e-05,
+          2.4207120447555986e-05,
+          2.625423565429627e-05,
+          2.8319913781331704e-05,
+          2.970248660599106e-05,
+          3.320653948025661e-05,
+          3.4025863997998716e-05,
+          3.740983656268306e-05,
+          3.959032543799645e-05,
+          4.211595103027838e-05
+        ],
+        "svd_method": "numpy.linalg.svd(compute_uv=False), float64, direct recurrent matrix",
+        "svd_workers": 4
+      }
+    ],
+    "maximum_prefix_relative_error": 4.3473808288831736e-05
+  },
+  "weights": "random"
 }
