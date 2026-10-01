@@ -206,3 +206,18 @@ def test_manifest_records_the_requested_random_initialization(project):
     config_path.write_text(json.dumps(config))
     with pytest.raises(ValueError, match='random initialization'):
         driver.prepare_manifest(config_path, root)
+
+
+def test_cli_runs_a_prepared_condition_without_a_recipe_path(monkeypatch, tmp_path):
+    """The launcher passes only --manifest and --condition; --config belongs to --prepare."""
+    calls = []
+    monkeypatch.setattr(driver, 'run_condition', lambda *args, **kwargs: calls.append((args, kwargs)))
+    manifest = tmp_path / 'manifest.json'
+    monkeypatch.setattr('sys.argv', ['compare_deltanet', '--manifest', str(manifest), '--condition', 'random-seed0',
+                                     '--require-cuda'])
+    driver.main()
+    assert calls == [((manifest, 'random-seed0'), {'require_cuda': True})]
+    monkeypatch.setattr('sys.argv', ['compare_deltanet', '--prepare'])
+    with pytest.raises(SystemExit):
+        driver.main()
+    assert len(calls) == 1

@@ -385,7 +385,7 @@ def run_condition(manifest_path, condition_name, *, require_cuda=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--config", type=Path)
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--output", type=Path)
     parser.add_argument("--manifest", type=Path)
@@ -394,6 +394,8 @@ def main():
     parser.add_argument("--require-cuda", action="store_true")
     args = parser.parse_args()
     if args.prepare:
+        if args.config is None:
+            parser.error("--prepare requires --config")
         print(prepare_manifest(args.config, args.project_root, args.output))
     elif args.manifest and args.condition:
         run_condition(args.manifest, args.condition, require_cuda=args.require_cuda)
