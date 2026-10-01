@@ -5,6 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 import hashlib
 import json
+import math
 from pathlib import Path
 
 import torch
@@ -49,8 +50,38 @@ def build_random_llama(config: PretrainedConfig, seed: int) -> torch.nn.Module:
 
 
 
-def build_random_gated_deltanet(config: PretrainedConfig, seed: int) -> torch.nn.Module:
-    """Build the pinned FLA Gated DeltaNet reference initialization on CPU.
+GATED_DELTANET_INITIALIZATIONS = ("fla_reference", "gated_deltanet_paper")
+
+
+def _apply_gated_deltanet_paper_initialization(model: torch.nn.Module) -> None:
+    """Re-draw weights as the Gated DeltaNet paper's training code does.
+
+    NVlabs/GatedDeltaNet ``lit_gpt`` with ``mamba_init`` (its 1.3B configurations)
+    draws embeddings from N(0, 0.02), leaves every Linear and short convolution at
+    PyTorch's default ``kaiming_uniform_(a=sqrt(5))`` with zero Linear biases, and
+    redraws the MLP down projection (xformers SwiGLU ``w3``) the same way divided by
+    sqrt(2 * num_layers). Its name-matched rescaling does not reach the recurrent
+    layer's ``o_proj``. Normalization scales stay one, and ``A_log``/``dt_bias``
+    keep FLA's draws, which follow the paper's distributions.
+    """
+    scale = math.sqrt(2 * model.config.num_hidden_layers)
+    with torch.no_grad():
+        for name, module in model.named_modules():
+            if isinstance(module, torch.nn.Embedding):
+                torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            elif isinstance(module, torch.nn.Linear):
+                torch.nn.Linear.reset_parameters(module)
+                if module.bias is not None:
+                    torch.nn.init.zeros_(module.bias)
+                if name.endswith("mlp.down_proj"):
+                    module.weight /= scale
+            elif isinstance(module, torch.nn.Conv1d):
+                torch.nn.Conv1d.reset_parameters(module)
+
+
+def build_random_gated_deltanet(config: PretrainedConfig, seed: int,
+                                initialization: str = "fla_reference") -> torch.nn.Module:
+    """Build a seeded random Gated DeltaNet on CPU: FLA's reference or the paper's initialization.
 
     FLA's normal ``post_init`` path initializes Linear, Conv1d, and Embedding
     weights with ``config.initializer_range`` and initializes normalization
@@ -60,6 +91,10 @@ def build_random_gated_deltanet(config: PretrainedConfig, seed: int) -> torch.nn
     or apply an additional initialization pass. Historical unused D parameters
     are absent from the pinned implementation.
 
+    ``initialization="gated_deltanet_paper"`` then re-draws the weights as the
+    paper's training code does (see ``_apply_gated_deltanet_paper_initialization``),
+    continuing the same seeded CPU generator.
+
     Parameters are drawn directly in FP32 on CPU, under an isolated CPU RNG.
     The caller's configuration and defaults are preserved; the returned eval
     model selects native fused_recurrent inference (which requires a GPU).
@@ -68,6 +103,8 @@ def build_random_gated_deltanet(config: PretrainedConfig, seed: int) -> torch.nn
         raise ValueError("seed must be a nonnegative integer smaller than 2**64")
     if getattr(config, "model_type", None) != "gated_deltanet":
         raise ValueError("build_random_gated_deltanet requires a GatedDeltaNet configuration")
+    if initialization not in GATED_DELTANET_INITIALIZATIONS:
+        raise ValueError(f"Unknown Gated DeltaNet initialization: {initialization}")
 
     random_config = deepcopy(config)
     random_config.attn_mode = "fused_recurrent"
@@ -82,6 +119,8 @@ def build_random_gated_deltanet(config: PretrainedConfig, seed: int) -> torch.nn
 
             torch.random.default_generator.manual_seed(seed)
             model = AutoModel.from_config(random_config, dtype=torch.float32)
+            if initialization == "gated_deltanet_paper":
+                _apply_gated_deltanet_paper_initialization(model)
     finally:
         torch.set_default_dtype(previous_dtype)
 

@@ -189,3 +189,35 @@ def test_baseline_zero_states_match_without_infinite_minus_infinite():
     result['log_trace'][0, 0] = 0.
     mismatch = driver.compare_baseline(result, zero, reference, 0)
     assert not mismatch['passed'] and np.isinf(mismatch['log_trace_max_absolute_error'])
+
+
+def test_manifest_records_the_requested_random_initialization(project):
+    root, config_path, config, _ = project
+    reference = json.loads(driver.prepare_manifest(config_path, root).read_text())
+    assert reference['initialization_details'] == driver.INITIALIZATION_DETAILS
+    config['random_initialization'] = 'gated_deltanet_paper'
+    config['output_directory'] = 'paper'
+    config_path.write_text(json.dumps(config))
+    paper = json.loads(driver.prepare_manifest(config_path, root).read_text())
+    assert paper['initialization_details'] == driver.PAPER_INITIALIZATION_DETAILS
+    assert paper['initialization'].startswith('Gated DeltaNet paper') and paper['identity'] != reference['identity']
+    driver.validate_manifest(paper)
+    config['random_initialization'] = 'kaiming'
+    config_path.write_text(json.dumps(config))
+    with pytest.raises(ValueError, match='random initialization'):
+        driver.prepare_manifest(config_path, root)
+
+
+def test_cli_runs_a_prepared_condition_without_a_recipe_path(monkeypatch, tmp_path):
+    """The launcher passes only --manifest and --condition; --config belongs to --prepare."""
+    calls = []
+    monkeypatch.setattr(driver, 'run_condition', lambda *args, **kwargs: calls.append((args, kwargs)))
+    manifest = tmp_path / 'manifest.json'
+    monkeypatch.setattr('sys.argv', ['compare_deltanet', '--manifest', str(manifest), '--condition', 'random-seed0',
+                                     '--require-cuda'])
+    driver.main()
+    assert calls == [((manifest, 'random-seed0'), {'require_cuda': True})]
+    monkeypatch.setattr('sys.argv', ['compare_deltanet', '--prepare'])
+    with pytest.raises(SystemExit):
+        driver.main()
+    assert len(calls) == 1

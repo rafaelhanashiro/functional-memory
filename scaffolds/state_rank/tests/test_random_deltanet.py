@@ -1,6 +1,7 @@
 """CPU-only checks of the installed FLA reference model initialization."""
 
 from copy import deepcopy
+import math
 from functools import wraps
 from inspect import signature
 from unittest.mock import patch
@@ -165,3 +166,42 @@ def test_invalid_seeds_rejected(config, seed):
 def test_non_deltanet_configuration_is_rejected():
     with pytest.raises(ValueError, match="GatedDeltaNet configuration"):
         build_random_gated_deltanet(LlamaConfig(), 0)
+
+
+def _uniform_bound(weight):
+    fan_in = weight.shape[1] * (weight.shape[2] if weight.dim() == 3 else 1)
+    return 1 / math.sqrt(fan_in)
+
+
+def test_paper_initialization_follows_the_gated_deltanet_training_code(config):
+    """NVlabs lit_gpt mamba_init: default Linear/conv draws, scaled MLP down projection, N(0, .02) embeddings."""
+    config.num_hidden_layers, config.hidden_size, config.intermediate_size = 3, 64, 96
+    paper = build_random_gated_deltanet(config, 5, "gated_deltanet_paper")
+    reference = build_random_gated_deltanet(config, 5)
+    assert parameter_fingerprint(paper) == parameter_fingerprint(build_random_gated_deltanet(config, 5, "gated_deltanet_paper"))
+    assert parameter_fingerprint(paper) != parameter_fingerprint(reference)
+    assert set(dict(paper.named_parameters())) == set(dict(reference.named_parameters()))
+    scale = math.sqrt(2 * config.num_hidden_layers)
+    for name, module in paper.named_modules():
+        if isinstance(module, (torch.nn.Linear, torch.nn.Conv1d)):
+            weight = module.weight.detach()
+            bound = _uniform_bound(weight) / (scale if name.endswith("mlp.down_proj") else 1)
+            # Uniform(+-bound): every draw inside the bound, spread like a uniform (std = bound / sqrt(3)).
+            assert float(weight.abs().max()) <= bound * (1 + 1e-6), name
+            assert 0.75 < float(weight.std()) * math.sqrt(3) / bound < 1.25, name
+            assert module.bias is None or not torch.any(module.bias), name
+    for layer in paper.layers:
+        # Unlike FLA's N(0, .02), depthwise kernels of width 4 are Uniform(+-1/2).
+        assert float(layer.attn.k_conv1d.weight.abs().max()) > 0.3
+        for norm in (layer.attn_norm, layer.mlp_norm, layer.attn.o_norm):
+            assert torch.equal(norm.weight, torch.ones_like(norm.weight))
+    assert 0.018 < float(paper.embeddings.weight.detach().std()) < 0.022
+    # The decay gates keep FLA's draws, which follow the paper's distributions.
+    for ours, theirs in zip(paper.layers, reference.layers):
+        assert torch.equal(ours.attn.A_log, theirs.attn.A_log)
+        assert torch.equal(ours.attn.dt_bias, theirs.attn.dt_bias)
+
+
+def test_unknown_initialization_is_rejected(config):
+    with pytest.raises(ValueError, match="initialization"):
+        build_random_gated_deltanet(config, 0, "kaiming")
