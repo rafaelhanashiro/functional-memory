@@ -18,6 +18,9 @@ results/<analysis>/
   selection.yaml            explicit run IDs, metrics, and comparison settings
   *.pdf, *.png, summary.csv  derived figures and tables, committed
   plot.py, ...               analysis code; tests/ when needed
+results/exploratory/
+  README.md                 open exploratory topics and the date each opened
+  <topic>/                  README.md, optional selection.yaml and figures
 experiments/<study>/
   README.md                 scientific question, methods, launch instructions
   sweep.yaml                common recipe and study provenance; run membership
@@ -60,6 +63,19 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   coefficient diagnostics remain available in run measurements; add a maintained
   diagnostic figure only when it serves a requested comparison. State-rank results
   belong to `results/state_rank/`.
+- Exploratory experiments, whose place in the canonical results is not yet decided,
+  report under `results/exploratory/<topic>/`, one directory per question with flat
+  files: a README with the question, runs, findings, the open decision, and the date
+  opened; an optional selection YAML of explicit run IDs with roles, pinned by
+  `scaffolds.records refresh`; and optional figures or tables that regenerate from
+  it. Tests are not required. Their runs live in their study like any other run, with
+  the usual lifecycle, records, and retained artifacts, and enter no canonical
+  selection. `results/exploratory/README.md` lists the open topics; mention them in
+  status updates. A topic ends in one of two ways: promote it (move its selection,
+  findings, and code into the canonical collection, add tests, and delete the topic),
+  or discard it (delete the topic and its runs with their artifacts). Exploratory
+  topics are exempt from the one-collection rule and from tests, not from the
+  provenance rules.
 - Keep figures and analysis files directly in the result directory. Keep each run's
   recipe, provenance, raw output, retained checkpoint, and log together. Do not create
   parallel experiment-level `configs/`, `provenance/`, `logs/`, `checkpoints/`, or

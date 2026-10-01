@@ -65,7 +65,8 @@ whole sweep before any jobs can run or requeue.
 
 ## Result selections
 
-A result's selection files (`results/<analysis>/*.yaml`) pin every plotted run to the
+A result's selection files (`results/<analysis>/*.yaml`, or
+`results/exploratory/<topic>/*.yaml`) pin every plotted run to the
 SHA256 of its scientific inputs: `config.yaml`, `metrics.jsonl`, `completion.json`,
 `metadata.json`, `best_validation.json`, and any `numerical_failure_step_*.json`.
 Provenance and bookkeeping (`record.json`, `launch.json`, `retention.json`, W&B and

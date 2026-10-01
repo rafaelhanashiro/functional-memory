@@ -79,6 +79,14 @@ def _array_roles(selection: dict[str, Any]) -> dict[str, str]:
     return roles
 
 
+def _repository_root(directory: Path) -> Path:
+    """The checkout holding ``results/``, for collections at any depth beneath it."""
+    for parent in directory.parents:
+        if parent.name == "results":
+            return parent.parent
+    raise ValueError(f"A result collection must live under results/: {directory}")
+
+
 def refresh_selection(directory: str | Path) -> list[str]:
     """Re-pin a result's selection files to their runs' current scientific files.
 
@@ -88,7 +96,7 @@ def refresh_selection(directory: str | Path) -> list[str]:
     Returns one line per changed fingerprint, empty when current.
     """
     directory = Path(directory).resolve()
-    root = directory.parents[1]
+    root = _repository_root(directory)
     changes = []
     for path in sorted(directory.glob("*.yaml")):
         original = path.read_text()

@@ -10,6 +10,9 @@ a result collection can combine runs from several studies.
 | Attention scaling: softmax, Taylor, Hermite, learned polynomials, and GLA | [Heatmaps and degree curves](results/attention_scaling/README.md) | [All attention runs](experiments/attention_scaling/README.md) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 
+Exploratory results awaiting a decision (promote or discard) are in
+[`results/exploratory/`](results/exploratory/README.md).
+
 All attention settings vary within `experiments/attention_scaling/runs/<run_id>/`.
 There are no separate experiment folders for individual mechanisms or sweeps.
 The [run index](experiments/attention_scaling/runs.csv) exposes the settings,

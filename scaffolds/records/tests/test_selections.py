@@ -156,3 +156,16 @@ def test_refresh_follows_array_comparison_and_collection_roles(tmp_path):
         assert entry["inputs"] == {}
     assert len(changes) == 6
     assert refresh_selection(directory) == []
+
+
+def test_refresh_finds_the_checkout_from_an_exploratory_topic(tmp_path):
+    old = run(tmp_path, "toy", "r000000000001", **{"metrics.jsonl": "1\n"})
+    directory = result(tmp_path, "exploratory/topic", selection={"runs": [
+        {"study": "toy", "run_id": old.name, "label": "baseline", "role": "control"}]})
+    assert refresh_selection(directory) == [f"selection.yaml: toy/{old.name} pinned"]
+    entry = yaml.safe_load((directory / "selection.yaml").read_text())["runs"][0]
+    assert entry["role"] == "control" and entry["sources"] == run_sources(tmp_path, "toy", old.name)
+    outside = tmp_path / "elsewhere"
+    outside.mkdir()
+    with pytest.raises(ValueError, match="under results/"):
+        refresh_selection(outside)
