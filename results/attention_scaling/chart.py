@@ -1,10 +1,12 @@
-"""Render terminal perplexity against Taylor degree for the fixed-d_K polynomial families.
+"""Render terminal perplexity against polynomial degree for the fixed-d_K kernel families.
 
-One line per kernel family on a shared linear perplexity axis, with horizontal
-reference levels for the softmax and exponential mechanisms. Numerical failures
-have no perplexity, so they are marked in a strip below the axis at their degree,
-labeled with the failing update. Runs that predate the scaffold's current defaults
-(legacy) are drawn hollow with dashed connectors and are replaced when rerun.
+One line per kernel family on a shared linear perplexity axis. Hue and marker shape
+identify the coefficient family (Taylor, Hermite, learned); line style and marker fill
+identify the kernel variant (row-normalized, unnormalized, nonnegative coefficients).
+Reference mechanisms are thin horizontal levels labeled in the right margin. Numerical
+failures have no perplexity, so they are marked in a strip below the axis at their
+degree, labeled with the failing update. Runs that predate the scaffold's current
+defaults (legacy) are drawn faded and are replaced when rerun.
 """
 
 from __future__ import annotations
@@ -20,22 +22,35 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
 REFERENCE_PANEL = "references"
-# Categorical slots of the validated reference palette, with distinct markers as secondary
-# encoding. Families plotted on the axis take slots that pass all-pairs against the orange
-# line (1 and 7); strip-only families take slots 5 and 6.
-FAMILY_STYLE = {
-    "normalized_fixed": ("#2a78d6", "o"),
-    "normalized_learned_taylor": ("#008300", "h"),
-    "normalized_nonnegative": ("#eb6834", "s"),
-    "unnormalized_learned": ("#1baf7a", "D"),
-    "unnormalized_fixed": ("#eda100", "^"),
-    "normalized_fixed_hermite": ("#e87ba4", "v"),
-    "unnormalized_fixed_hermite": ("#4a3aa7", "p"),
-}
 INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
-# Reference levels: dark hues outside the family slots, each with its own dash as a second cue.
-REFERENCE_STYLE = {"softmax": ("#0b0b0b", "-"), "softmax_no_qk_norm": ("#8a8984", (0, (6, 3))),
-                   "gla": ("#9e2a2b", (0, (6, 2, 1, 2))), "unnormalized_exp": ("#0e6655", (0, (1, 2)))}
+# Coefficient families take the first three slots of the validated categorical palette,
+# which pass all-pairs CVD separation; the marker shape repeats the hue as a second cue.
+COEFFICIENTS = {"taylor": ("Taylor", "#2a78d6", "o"), "hermite": ("Hermite", "#eb6834", "^"),
+                "learned": ("Learned", "#1baf7a", "D")}
+# Kernel variants: line style, plus marker fill so that unconnected points carry it too.
+VARIANTS = {"normalized": ("row-normalized", "-", "full"),
+            "unnormalized": ("unnormalized", (0, (5, 2.5)), "none"),
+            "nonnegative": ("row-normalized, nonnegative coefficients", (0, (6, 2, 1, 2)), "bottom")}
+FAMILY_STYLE = {
+    "normalized_fixed": ("taylor", "normalized"),
+    "unnormalized_fixed": ("taylor", "unnormalized"),
+    "normalized_fixed_hermite": ("hermite", "normalized"),
+    "unnormalized_fixed_hermite": ("hermite", "unnormalized"),
+    "normalized_learned_taylor": ("learned", "normalized"),
+    "unnormalized_learned": ("learned", "unnormalized"),
+    "normalized_nonnegative": ("learned", "nonnegative"),
+}
+LEGACY_ALPHA = 0.4
+
+
+def _marker(family: str, legacy: bool = False) -> dict:
+    """Marker keyword arguments: hue and shape by coefficients, fill by kernel variant."""
+    coefficients, variant = FAMILY_STYLE[family]
+    _, color, marker = COEFFICIENTS[coefficients]
+    fill = VARIANTS[variant][2]
+    return {"marker": marker, "color": color, "markeredgecolor": color, "markeredgewidth": 1.3,
+            "markerfacecolor": SURFACE if fill == "none" else color, "fillstyle": "full" if fill == "none" else fill,
+            "markerfacecoloralt": SURFACE, "alpha": LEGACY_ALPHA if legacy else 1.0}
 
 
 def _degree(column_id: str) -> int:
@@ -94,53 +109,49 @@ def _build_figure(rows: list[dict], config: dict):
     strip_rows = max(len(failure_families), 1)
     figure = plt.figure(figsize=(8.0, 5.5 + 0.22 * strip_rows), facecolor=SURFACE)
     grid = figure.add_gridspec(2, 1, height_ratios=(5.2, 0.3 * strip_rows + 0.35), hspace=0.08,
-                               left=0.1, right=0.97, top=0.86, bottom=0.215)
+                               left=0.1, right=0.78, top=0.86, bottom=0.2)
     axis = figure.add_subplot(grid[0])
     axis.set_gid("chart:perplexity")
     strip = figure.add_subplot(grid[1], sharex=axis)
     strip.set_gid("chart:failures")
 
-    handles = []
-    for panel in families:
-        family = panel["id"]
-        color, marker = FAMILY_STYLE[family]
-        handles.append(Line2D([], [], color=color, marker=marker, linewidth=1.5, markersize=5.5, label=panel["title"]))
+    # Reference levels are one neutral style, identified by their labels in the right margin.
+    reference_levels = []
     for row in references:
         level = float(row["terminal_ppl"])
         legacy = bool(row.get("legacy"))
-        color, dash = REFERENCE_STYLE.get(row["column"], (MUTED, "-"))
-        axis.axhline(level, color=color, linewidth=1.2, linestyle=dash, alpha=0.5 if legacy else 0.9,
+        axis.axhline(level, color=MUTED, linewidth=1.0, alpha=LEGACY_ALPHA if legacy else 0.85,
                      zorder=1, gid=f"reference:{row['column']}")
         label = f"{reference_labels.get(row['column'], row['column'])} {level:.2f}" + (" (legacy)" if legacy else "")
-        handles.append(Line2D([], [], color=color, linewidth=1.2, linestyle=dash, label=label))
+        reference_levels.append((level, label))
 
     value_labels: dict[int, list[float]] = {}
     for panel in families:
         family = panel["id"]
-        color, marker = FAMILY_STYLE[family]
+        coefficients, variant = FAMILY_STYLE[family]
+        color, dash = COEFFICIENTS[coefficients][1], VARIANTS[variant][1]
         points = sorted(((_degree(row["column"]), float(row["terminal_ppl"]), bool(row.get("legacy")))
                          for row in grouped[family] if row["status"] == "complete"), key=lambda point: point[0])
         declared = {_degree(column["id"]) for column in panel["columns"]}
         for (x0, y0, legacy0), (x1, y1, legacy1) in zip(points, points[1:]):
             if any(x0 < degree < x1 for degree in declared):  # never bridge a failed or missing degree
                 continue
-            axis.plot([x0, x1], [y0, y1], color=color, linewidth=1.5, zorder=2, solid_capstyle="round",
-                      linestyle=(0, (4, 3)) if legacy0 or legacy1 else "-")
+            axis.plot([x0, x1], [y0, y1], color=color, linewidth=1.6, zorder=2, linestyle=dash,
+                      solid_capstyle="round", dash_capstyle="round",
+                      alpha=LEGACY_ALPHA if legacy0 or legacy1 else 1.0)
         for x, y, legacy in points:
-            axis.plot([x], [y], marker=marker, markersize=6, color=color, markeredgecolor=color,
-                      markerfacecolor=SURFACE if legacy else color, markeredgewidth=1.3, linestyle="none",
-                      zorder=3, gid=f"point:{family}:m{x}:{'legacy' if legacy else 'current'}")
+            axis.plot([x], [y], markersize=6.5, linestyle="none", zorder=3, **_marker(family, legacy),
+                      gid=f"point:{family}:m{x}:{'legacy' if legacy else 'current'}")
             value_labels.setdefault(x, []).append(y)
 
-    # Failures take their family's marker, so the legend identifies each strip row.
+    # Failures keep their family's marker and fill, so the legends identify each strip row.
     for index, family in enumerate(failure_families):
-        color, marker = FAMILY_STYLE[family]
         y = len(failure_families) - 1 - index
         for row in grouped[family]:
             if row["status"] != "numerical_failure":
                 continue
             x = _degree(row["column"])
-            strip.plot([x], [y], marker=marker, markersize=6, color=color, linestyle="none",
+            strip.plot([x], [y], markersize=6.5, linestyle="none", **_marker(family, bool(row.get("legacy"))),
                        gid=f"failure:{family}:m{x}")
             step = row.get("failure_step")
             strip.annotate(f"@{step:,}" if step is not None else "failed", (x, y), xytext=(7, 0),
@@ -156,6 +167,11 @@ def _build_figure(rows: list[dict], config: dict):
             axis.annotate(f"{level:.2f}", (x, placed), xytext=(7, 0), textcoords="offset points",
                           ha="left", va="center", fontsize=7, color=INK, zorder=4,
                           bbox={"boxstyle": "round,pad=0.12", "facecolor": SURFACE, "edgecolor": "none", "alpha": 0.85})
+    levels = [level for level, _ in reference_levels]
+    for (_, label), placed in zip(reference_levels, _spread(levels, gap)):
+        axis.annotate(label, (1.0, placed), xycoords=("axes fraction", "data"), xytext=(6, 0),
+                      textcoords="offset points", ha="left", va="center", fontsize=7.5, color=MUTED,
+                      annotation_clip=False)
     axis.set_ylabel("Terminal held-out perplexity (lower is better)", fontsize=9.5, color=INK)
     axis.tick_params(labelbottom=False, colors=MUTED, labelcolor=INK, labelsize=8.5, length=0)
     axis.grid(axis="y", color=GRID, linewidth=0.8)
@@ -181,13 +197,28 @@ def _build_figure(rows: list[dict], config: dict):
     figure.text(0.1, 0.965, config.get("title", "Polynomial attention kernels across degree"),
                 fontsize=13, weight="bold", color=INK, va="top")
     figure.text(0.1, 0.925, "Terminal perplexity at 19,074 updates, seed 0; learned coefficients are per layer and head."
-                + ("\nHollow points and dashed lines are legacy runs (weight decay on all parameters, no QK-norm)."
+                + ("\nFaded points and lines are legacy runs (weight decay on all parameters, no QK-norm)."
                    if any_legacy else ""), fontsize=8.5, color=MUTED, va="top", linespacing=1.3)
+
+    # Two factored legends: hue for the coefficient family, line style and fill for the kernel.
+    used = [FAMILY_STYLE[panel["id"]] for panel in families]
+    coefficient_handles = [
+        Line2D([], [], color=color, marker=marker, linewidth=1.6, markersize=6, label=name)
+        for key, (name, color, marker) in COEFFICIENTS.items() if any(key == pair[0] for pair in used)]
+    variant_handles = []
+    for key, (name, dash, fill) in VARIANTS.items():
+        if any(key == pair[1] for pair in used):
+            variant_handles.append(Line2D(
+                [], [], color=MUTED, linestyle=dash, linewidth=1.6, marker="o", markersize=6, markeredgecolor=MUTED,
+                markerfacecolor=SURFACE if fill == "none" else MUTED, fillstyle="full" if fill == "none" else fill,
+                markerfacecoloralt=SURFACE, label=name))
     if any_legacy:
-        handles.append(Line2D([], [], color=MUTED, marker="o", markerfacecolor=SURFACE, linewidth=1.2,
-                              linestyle=(0, (4, 3)), markersize=5.5, label="legacy run (to be rerun)"))
-    figure.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.09, 0.005), ncol=3, frameon=False,
-                  fontsize=7.8, columnspacing=1.4, handlelength=2.6)
+        variant_handles.append(Line2D([], [], color=MUTED, marker="o", linewidth=1.6, markersize=6,
+                                      alpha=LEGACY_ALPHA, label="legacy run (to be rerun)"))
+    style = {"loc": "lower left", "frameon": False, "fontsize": 7.8, "title_fontsize": 8, "alignment": "left",
+             "handlelength": 3.2}
+    figure.legend(handles=coefficient_handles, title="Coefficients", bbox_to_anchor=(0.09, 0.005), **style)
+    figure.legend(handles=variant_handles, title="Kernel", bbox_to_anchor=(0.3, 0.005), **style)
     return figure
 
 

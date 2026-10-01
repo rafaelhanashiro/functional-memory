@@ -50,9 +50,30 @@ def test_points_legacy_marks_failures_and_references_are_placed_by_degree():
         assert {"reference:softmax", "reference:unnormalized_exp"} <= gids
         assert _gids(strip) >= {"failure:normalized_learned_taylor:m1", "failure:normalized_learned_taylor:m3"}
         legacy_point = next(line for line in main.get_lines() if line.get_gid() == "point:normalized_nonnegative:m2:legacy")
-        assert legacy_point.get_markerfacecolor() == "#ffffff"
+        assert legacy_point.get_alpha() < 1
         texts = {text.get_text() for text in strip.texts}
         assert {"@27", "@318"} <= texts
+    finally:
+        plt.close(figure)
+
+
+def test_hue_follows_coefficients_and_line_style_follows_the_kernel():
+    degrees = [{"id": f"m{d}", "label": f"m={d}"} for d in (1, 2)]
+    families = ("normalized_fixed", "unnormalized_fixed", "unnormalized_learned")
+    config = {"d_k": [64], "panels": [{"id": family, "title": family, "columns": degrees} for family in families]}
+    rows = [_row(family, f"m{d}", value=10.0 + index + d) for index, family in enumerate(families) for d in (1, 2)]
+    figure = _build_figure(rows, config)
+    try:
+        axis = next(axis for axis in figure.axes if axis.get_gid() == "chart:perplexity")
+        segments = [line for line in axis.get_lines() if line.get_gid() is None and len(line.get_xdata()) == 2]
+        style = {line.get_ydata()[0]: (line.get_color(), line.get_linestyle()) for line in segments}
+        taylor, unnormalized_taylor, unnormalized_learned = style[11.0], style[12.0], style[13.0]
+        assert taylor[0] == unnormalized_taylor[0] != unnormalized_learned[0]
+        assert taylor[1] != unnormalized_taylor[1] == unnormalized_learned[1]
+        points = {line.get_gid(): line for line in axis.get_lines() if line.get_gid()}
+        # Marker fill repeats the kernel variant, so unconnected points carry it too.
+        assert points["point:normalized_fixed:m1:current"].get_fillstyle() == "full"
+        assert points["point:unnormalized_fixed:m1:current"].get_markerfacecolor() == "#ffffff"
     finally:
         plt.close(figure)
 
