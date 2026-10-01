@@ -142,6 +142,8 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
         if not normalized:
             tests.extend(["unnormalized_attention", "unnormalized_training"] if cpu else
                          (["unnormalized_fused_attention"] if fused and not learned and not fixed else []))
+        if model.get("attention_output_scaling", "none") != "none" and cpu:
+            tests.append("attention_output_scaling")
     return tuple(f"scaffolds/transformer/tests/test_{name}" + ("" if ".py::" in name else ".py") for name in tests)
 
 
@@ -277,6 +279,7 @@ def matches_softmax_initialization(config) -> dict:
 
     actual = initialization_facts(config)
     control = replace(config, model=replace(config.model, attention_degree=None, attention_normalization=True,
+                                           attention_output_scaling="none",
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
                                            attention_coefficient_parameterization="direct"))
     expected = initialization_facts(control)
@@ -309,8 +312,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
 
     specs = attention_parameter_specs(config.model)
     control = replace(config, model=replace(
-        config.model, attention_degree=None, attention_normalization=True, quadratic_mode="fixed",
-        attention_coefficients="fixed", attention_fixed_coefficients=None,
+        config.model, attention_degree=None, attention_normalization=True, attention_output_scaling="none",
+        quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
         attention_fixed_square_factors=None,
         attention_coefficient_parameterization="direct", qk_norm=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)

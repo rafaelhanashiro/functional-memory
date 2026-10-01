@@ -150,6 +150,13 @@ def attention_identity(config) -> dict:
         })
     if config.model.qk_norm:
         identity.update(qk_norm_identity(config.model))
+    scaling = config.model.attention_output_scaling
+    if scaling != "none":
+        identity.update(
+            attention_output_scaling=scaling, attention_output_normalization=scaling,
+            attention_formula=identity["attention_formula"] + (
+                ", divided by the number of visible keys t" if scaling == "inverse_position"
+                else ", then per-head RMSNorm over value channels with a learned gain"))
     if config.model.attention_backend == "fused":
         if not normalized:
             from scaffolds.transformer.attention.backends.fused_unnormalized import _tile_sizes

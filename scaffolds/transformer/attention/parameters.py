@@ -35,6 +35,10 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         from scaffolds.transformer.attention.qk_norm import initial_scale, parameter_specs as qk_norm_specs
 
         specs += qk_norm_specs(initial_scale=initial_scale(config), sharing=config.qk_norm_sharing)
+    if getattr(config, "attention_output_scaling", "none") == "head_rms_norm":
+        from scaffolds.transformer.attention.output_scaling import parameter_specs as output_specs
+
+        specs += output_specs(value_head_dim=config.value_head_dim)
     return specs
 
 
