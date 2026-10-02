@@ -9,6 +9,7 @@ from scaffolds.transformer.attention.parameters import (
     attention_parameter_specs, initialize_attention_parameters, parameters_for_layer,
 )
 from scaffolds.transformer.models.components.normalization import RMSNorm
+from scaffolds.transformer.models.initialization import apply_initialization
 
 
 def _call_block_remat(
@@ -88,6 +89,9 @@ class TransformerLM(nnx.Module):
             self, self.attention_parameter_specs,
             num_layers=config.num_layers, num_heads=config.num_heads,
         )
+        if config.initialization != "flax_default":
+            # One extra draw after construction, so Flax-default models keep their exact weights.
+            apply_initialization(self, config.initialization, rngs.params(), num_layers=config.num_layers)
 
     def __call__(
         self,

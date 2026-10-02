@@ -56,6 +56,8 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
         tags.append("qk_norm")
     if identity.get("attention_output_scaling"):
         tags.append(f"output_{identity['attention_output_scaling']}")
+    if config.model.initialization != "flax_default":
+        tags.append(f"init_{config.model.initialization}")
     if runtime.get("gpu_type"):
         tags.append(f"{runtime.get('gpu_count', '')}x{runtime['gpu_type']}")
     if runtime.get("cluster"):

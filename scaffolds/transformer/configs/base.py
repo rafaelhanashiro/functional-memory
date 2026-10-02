@@ -83,6 +83,10 @@ class ModelConfig:
     qk_norm_sharing: Literal["global", "per_head"] = "per_head"
     qk_norm_initial_scale: float | None = None
     qk_norm_eps: float = 1e-6
+    # Weight initialization: the scaffold's Flax defaults, or an architecture's reference
+    # recipe ("transformer_reference" for dot-product attention, "gla_reference" for GLA);
+    # see models/initialization.py.
+    initialization: Literal["flax_default", "transformer_reference", "gla_reference"] = "flax_default"
 
     def __post_init__(self):
         if self.kind != "transformer":
@@ -215,6 +219,12 @@ class ModelConfig:
                 raise ValueError(f"model.{name} must be finite and positive")
         if self.qk_norm and self.attention_mechanism != "dot_product":
             raise ValueError("QK-norm is a dot-product attention option; GLA does not support it")
+        from scaffolds.transformer.models.initialization import INITIALIZATIONS, MECHANISMS
+        if self.initialization not in INITIALIZATIONS:
+            raise ValueError(f"Unknown initialization: {self.initialization}")
+        if MECHANISMS.get(self.initialization, self.attention_mechanism) != self.attention_mechanism:
+            raise ValueError(f"model.initialization {self.initialization!r} belongs to "
+                             f"{MECHANISMS[self.initialization]} attention, not {self.attention_mechanism}")
         if not 0 <= self.dropout < 1:
             raise ValueError("model.dropout must be in [0, 1)")
         if self.dropout != 0 and self.attention_backend != "manual":
