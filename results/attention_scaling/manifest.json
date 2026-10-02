@@ -65,9 +65,10 @@
               "qk_norm": false
             },
             {
-              "id": "gla",
-              "label": "GLA",
-              "qk_norm": null
+              "id": "gated_deltanet",
+              "label": "Gated DeltaNet\npaper init",
+              "qk_norm": null,
+              "initialization": "gated_deltanet_reference"
             }
           ]
         }
@@ -238,9 +239,10 @@
               "qk_norm": false
             },
             {
-              "id": "gla",
-              "label": "GLA",
-              "qk_norm": null
+              "id": "gated_deltanet",
+              "label": "Gated DeltaNet\npaper init",
+              "qk_norm": null,
+              "initialization": "gated_deltanet_reference"
             },
             {
               "id": "unnormalized_exp",
@@ -1031,24 +1033,24 @@
     {
       "figure": "heatmap",
       "panel": "references",
-      "column": "gla",
+      "column": "gated_deltanet",
       "d_k": 8,
       "experiment": "attention_scaling",
-      "run": "r2662ef3a91b8",
+      "run": "r74f492893587",
       "status": "complete",
-      "source_commit": "b3c32f9b3211f061d622ca2d7285bc2609ff0b4e",
+      "source_commit": "948dc2959b32b140ab5b8491ab777ef0db86f1d8",
       "artifacts": {
         "metadata": {
-          "path": "experiments/attention_scaling/runs/r2662ef3a91b8/metadata.json",
-          "sha256": "7ae672aabd02b66f5464af0f3005c35806af5674cbe16d48e2eb56946e984016"
+          "path": "experiments/attention_scaling/runs/r74f492893587/metadata.json",
+          "sha256": "98b1ec5616c9df623b2d81b21104cbf745e32f13c10b91eb096bfc8966a48b8f"
         },
         "metrics": {
-          "path": "experiments/attention_scaling/runs/r2662ef3a91b8/metrics.jsonl",
-          "sha256": "3bd31ef8bd19d7c6024b22c58225a01a3933354c2033bc8cddabe9e24a853706"
+          "path": "experiments/attention_scaling/runs/r74f492893587/metrics.jsonl",
+          "sha256": "84a666bec8f1f8fed5845b4510704d1bf08aeaa1efc03bed867e8ec7bc54890f"
         },
         "completion": {
-          "path": "experiments/attention_scaling/runs/r2662ef3a91b8/completion.json",
-          "sha256": "265a409383b185207dd84c81cc299d81d21e679894c6d5f8498025bd4bb4d4e3"
+          "path": "experiments/attention_scaling/runs/r74f492893587/completion.json",
+          "sha256": "fbcd23178bf7b2f39da44c8b75ff72e14c1baf4215438cd172eaa8481629efbe"
         }
       },
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
@@ -1059,24 +1061,24 @@
     {
       "figure": "heatmap",
       "panel": "references",
-      "column": "gla",
+      "column": "gated_deltanet",
       "d_k": 16,
       "experiment": "attention_scaling",
-      "run": "raa1fd6ae9d6d",
+      "run": "r09f5913a71c5",
       "status": "complete",
-      "source_commit": "b3c32f9b3211f061d622ca2d7285bc2609ff0b4e",
+      "source_commit": "948dc2959b32b140ab5b8491ab777ef0db86f1d8",
       "artifacts": {
         "metadata": {
-          "path": "experiments/attention_scaling/runs/raa1fd6ae9d6d/metadata.json",
-          "sha256": "06cdc7374889b623e5eb252ce919d7b524c1108095b06b570ccd4fc846b3fc9c"
+          "path": "experiments/attention_scaling/runs/r09f5913a71c5/metadata.json",
+          "sha256": "5ce6b96a1ebe0e0b40645891394d5e0c483da9d2c754b14070519bdab8b16587"
         },
         "metrics": {
-          "path": "experiments/attention_scaling/runs/raa1fd6ae9d6d/metrics.jsonl",
-          "sha256": "bbcf88bcebece9489c9e6af2f2a6a3411e67a07ee2428caf9911fd2c1efc7dd6"
+          "path": "experiments/attention_scaling/runs/r09f5913a71c5/metrics.jsonl",
+          "sha256": "4a9c60e996cf3adc1f744df9ed01ed10b1bb921f253f3416ebe47a23a8ed2b8f"
         },
         "completion": {
-          "path": "experiments/attention_scaling/runs/raa1fd6ae9d6d/completion.json",
-          "sha256": "089def9787a9c322be1ba1077de42a946d38fb110549e59dbaee67455fb2639a"
+          "path": "experiments/attention_scaling/runs/r09f5913a71c5/completion.json",
+          "sha256": "f0cf081760a67edbfbc87890a3f9c0f12f36b8607cd7edfd0186e91105363100"
         }
       },
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
@@ -1087,24 +1089,24 @@
     {
       "figure": "heatmap",
       "panel": "references",
-      "column": "gla",
+      "column": "gated_deltanet",
       "d_k": 32,
       "experiment": "attention_scaling",
-      "run": "r5e070a3a9738",
+      "run": "r4150da71c076",
       "status": "complete",
-      "source_commit": "9ce35246b268afa5e491b444812077f324b78c39",
+      "source_commit": "948dc2959b32b140ab5b8491ab777ef0db86f1d8",
       "artifacts": {
         "metadata": {
-          "path": "experiments/attention_scaling/runs/r5e070a3a9738/metadata.json",
-          "sha256": "0f530125c75cc2cfe3ece46a687a67ef8af00b2330d437b19f93fd0ab3c6cf93"
+          "path": "experiments/attention_scaling/runs/r4150da71c076/metadata.json",
+          "sha256": "5127c62fe4c27774e2dd2db9da1cedb412b9eb94425b3619adaca4d0817bea07"
         },
         "metrics": {
-          "path": "experiments/attention_scaling/runs/r5e070a3a9738/metrics.jsonl",
-          "sha256": "12a1f2c555c2e5954ae36559ee60f3906b2f6ceaee114b320df728fc9b13af01"
+          "path": "experiments/attention_scaling/runs/r4150da71c076/metrics.jsonl",
+          "sha256": "13c87d8c5c12d0816e83600466ffebf1076d2bb9e4ddee5646ae96be6814a12b"
         },
         "completion": {
-          "path": "experiments/attention_scaling/runs/r5e070a3a9738/completion.json",
-          "sha256": "5f24f3308de2a4ce42195d3472aff470f1a0e3041810e7936f33d6bbc381145a"
+          "path": "experiments/attention_scaling/runs/r4150da71c076/completion.json",
+          "sha256": "fd1f4a613cbafce851a833f22fa9ba9cdd264b737654873c3c075916cf72da2a"
         }
       },
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
@@ -1115,24 +1117,24 @@
     {
       "figure": "heatmap",
       "panel": "references",
-      "column": "gla",
+      "column": "gated_deltanet",
       "d_k": 64,
       "experiment": "attention_scaling",
-      "run": "r6e11d7bd996d",
+      "run": "r118c41829531",
       "status": "complete",
-      "source_commit": "b3c32f9b3211f061d622ca2d7285bc2609ff0b4e",
+      "source_commit": "948dc2959b32b140ab5b8491ab777ef0db86f1d8",
       "artifacts": {
         "metadata": {
-          "path": "experiments/attention_scaling/runs/r6e11d7bd996d/metadata.json",
-          "sha256": "94552faa992638a9a80eae6a72ee6793fa74eaf9c44dfc84026427786bed1981"
+          "path": "experiments/attention_scaling/runs/r118c41829531/metadata.json",
+          "sha256": "a1a7ce8d725255d573b3b54b28fa95daa3361941f47f036a73ceaa0653642c8c"
         },
         "metrics": {
-          "path": "experiments/attention_scaling/runs/r6e11d7bd996d/metrics.jsonl",
-          "sha256": "f55a68848dd4f1193900feb2b7cd904b3fafa21df42ee8e7df29e6fb993c2668"
+          "path": "experiments/attention_scaling/runs/r118c41829531/metrics.jsonl",
+          "sha256": "547f377abf89330c93134692afec9272414d971e8a3af7316d269ec02147ee0b"
         },
         "completion": {
-          "path": "experiments/attention_scaling/runs/r6e11d7bd996d/completion.json",
-          "sha256": "2589eecfa7af15af80b3cfcd1a5cf4b6526e3fa658f60e768ef294646191eadb"
+          "path": "experiments/attention_scaling/runs/r118c41829531/completion.json",
+          "sha256": "69b21b4c425087117c1c82a32e418c8a198a7dd6d8f58ed0c637b8ac10d609f7"
         }
       },
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
@@ -1143,24 +1145,24 @@
     {
       "figure": "heatmap",
       "panel": "references",
-      "column": "gla",
+      "column": "gated_deltanet",
       "d_k": 128,
       "experiment": "attention_scaling",
-      "run": "r07d041c22d72",
+      "run": "r86b223e4d9e9",
       "status": "complete",
-      "source_commit": "9ce35246b268afa5e491b444812077f324b78c39",
+      "source_commit": "948dc2959b32b140ab5b8491ab777ef0db86f1d8",
       "artifacts": {
         "metadata": {
-          "path": "experiments/attention_scaling/runs/r07d041c22d72/metadata.json",
-          "sha256": "b8205b88c62618c1776018711076ec81d27ebba30294b53423d7ad84f590ed14"
+          "path": "experiments/attention_scaling/runs/r86b223e4d9e9/metadata.json",
+          "sha256": "850320fb3d1105d2719d003e9ea49b7711e0f281d67c74d5adf9a73f0ff3d8cf"
         },
         "metrics": {
-          "path": "experiments/attention_scaling/runs/r07d041c22d72/metrics.jsonl",
-          "sha256": "f44f76f833d58b245beb315eae6db3fb2b66f14f3d75b02e66e76857f04a569c"
+          "path": "experiments/attention_scaling/runs/r86b223e4d9e9/metrics.jsonl",
+          "sha256": "fa333ba66565973549ab176f2abd77ac4637b2695d22a378a5b7acf8e2ef1bcb"
         },
         "completion": {
-          "path": "experiments/attention_scaling/runs/r07d041c22d72/completion.json",
-          "sha256": "a4e89e37df826a478c5cdb20aa1ebf6bf6280e71ab31de5bad384ae18ec7d017"
+          "path": "experiments/attention_scaling/runs/r86b223e4d9e9/completion.json",
+          "sha256": "43add0f9dd7dac9966760fd0bad857925aed1035b6a14934b6ab4723ea4571a9"
         }
       },
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
@@ -1915,24 +1917,24 @@
     {
       "figure": "degree_chart",
       "panel": "references",
-      "column": "gla",
+      "column": "gated_deltanet",
       "d_k": 64,
       "experiment": "attention_scaling",
-      "run": "r6e11d7bd996d",
+      "run": "r118c41829531",
       "status": "complete",
-      "source_commit": "b3c32f9b3211f061d622ca2d7285bc2609ff0b4e",
+      "source_commit": "948dc2959b32b140ab5b8491ab777ef0db86f1d8",
       "artifacts": {
         "metadata": {
-          "path": "experiments/attention_scaling/runs/r6e11d7bd996d/metadata.json",
-          "sha256": "94552faa992638a9a80eae6a72ee6793fa74eaf9c44dfc84026427786bed1981"
+          "path": "experiments/attention_scaling/runs/r118c41829531/metadata.json",
+          "sha256": "a1a7ce8d725255d573b3b54b28fa95daa3361941f47f036a73ceaa0653642c8c"
         },
         "metrics": {
-          "path": "experiments/attention_scaling/runs/r6e11d7bd996d/metrics.jsonl",
-          "sha256": "f55a68848dd4f1193900feb2b7cd904b3fafa21df42ee8e7df29e6fb993c2668"
+          "path": "experiments/attention_scaling/runs/r118c41829531/metrics.jsonl",
+          "sha256": "547f377abf89330c93134692afec9272414d971e8a3af7316d269ec02147ee0b"
         },
         "completion": {
-          "path": "experiments/attention_scaling/runs/r6e11d7bd996d/completion.json",
-          "sha256": "2589eecfa7af15af80b3cfcd1a5cf4b6526e3fa658f60e768ef294646191eadb"
+          "path": "experiments/attention_scaling/runs/r118c41829531/completion.json",
+          "sha256": "69b21b4c425087117c1c82a32e418c8a198a7dd6d8f58ed0c637b8ac10d609f7"
         }
       },
       "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
@@ -1985,11 +1987,11 @@
   "analysis": {
     "config": {
       "path": "results/attention_scaling/selection.yaml",
-      "sha256": "40ef12b562a41fdf713ad6359599c006b6d9fa36d0cf2b06bf10faab2a096e7e"
+      "sha256": "b5284cde0a563a02388b5ff6db54c8364d11c1f9b1a8fd51c79905da5547731c"
     },
     "chart_config": {
       "path": "results/attention_scaling/degree_chart.yaml",
-      "sha256": "9b801ddefbad4bdc306cb3367ce946db82adf2b80de8db41420ef8990ffac0db"
+      "sha256": "3473f19a723706c26b672a2f30d663754285eaae2ce9717e44a4d17eecbabada"
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
@@ -1998,7 +2000,7 @@
     "code": {
       "collect.py": {
         "path": "results/attention_scaling/collect.py",
-        "sha256": "d8995e70d6bc8aeadb6070c68fdd4eaed2cdad4c0d837ac7dbe12846cd660436"
+        "sha256": "b6c795cbc1e749d5bfcb926da1f73297038dc8a5fea035de25c9e02a33c012ff"
       },
       "render.py": {
         "path": "results/attention_scaling/render.py",
@@ -2006,7 +2008,7 @@
       },
       "chart.py": {
         "path": "results/attention_scaling/chart.py",
-        "sha256": "1314998aee97ceaeef71a99e3695cd8985d5bcd7c0f12a1679731889fc756832"
+        "sha256": "edfcfc2a367ba1b99326b5505a420851ef11ee4da61339efadb3623b16dfa3eb"
       },
       "plot.py": {
         "path": "results/attention_scaling/plot.py",
@@ -2017,27 +2019,27 @@
   "derived_artifacts": {
     "summary_csv": {
       "path": "results/attention_scaling/summary.csv",
-      "sha256": "f36669b71d7067e6737d4eda4d240259094fc9c2faa722600974c5d67928c279"
+      "sha256": "2afa0e72752eb70381c43348473dd14514e713da56aa72d0355e0f0fa3d9f2d3"
     },
     "readme": {
       "path": "results/attention_scaling/README.md",
-      "sha256": "d8e90face03609d35479132b241fad2ad794bd931385b18fd5fb5a4a7d7aa49c"
+      "sha256": "0fd4639f6bd4e0171141ea3196a5b1defd5e5ea578220ea3cec08e5dc1832582"
     },
     "combined_terminal_ppl_pdf": {
       "path": "results/attention_scaling/combined_terminal_ppl.pdf",
-      "sha256": "1a7c1ce7056510fb3d61b52c305d452002767e29dac92a0b0cf38de4f6704cca"
+      "sha256": "6c37697b08e39527f7597c6029aa27bb9434c90807bc3f60a167e7aee77c0298"
     },
     "combined_terminal_ppl_png": {
       "path": "results/attention_scaling/combined_terminal_ppl.png",
-      "sha256": "f352723c3c4b5b242725fd9aa4b0a4ea2001e606b8ac315710335da0b2bfa829"
+      "sha256": "bbc29f2caebaf51df15dd7827342ebcdf159e5441569146fc4c88a282ef05af5"
     },
     "degree_chart_pdf": {
       "path": "results/attention_scaling/degree_chart.pdf",
-      "sha256": "3ff46849769d45ffb0d7a274106e868eb2509a8c0bbe6f16faefc9da8e8b7823"
+      "sha256": "c29a0938dd4798cf2f26727846e8f4494878e354ee9c328fa50e40bee7792213"
     },
     "degree_chart_png": {
       "path": "results/attention_scaling/degree_chart.png",
-      "sha256": "3aad63655135be491ae21839637f32467cdf084756d40679661fe04721507742"
+      "sha256": "ae6bf985c0fb0ed963f4002ab3df71aca9989b3e46475b4aa344280d636e7b47"
     }
   }
 }

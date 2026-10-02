@@ -149,6 +149,22 @@ def test_current_defaults_are_read_from_the_resolved_configuration(tmp_path: Pat
     assert (row["legacy"], row["legacy_reasons"]) == (True, ["no QK-norm"])
 
 
+def test_a_column_states_any_initialization_other_than_flax_defaults(tmp_path: Path) -> None:
+    config = _fixture(tmp_path)
+    run_dir = tmp_path / "experiments/toy_taylor/runs/r000000000001"
+    recipe = {"model": {"qk_head_dim": 8, "attention_degree": 2, "initialization": "transformer_reference"}}
+    _write(run_dir / "config.yaml", recipe)
+    config = _pin(tmp_path, config)
+    with pytest.raises(ValueError, match="initialization: expected 'flax_default'"):
+        collect_rows(tmp_path, config)
+    config["panels"][0]["columns"][1]["initialization"] = "transformer_reference"
+    assert collect_rows(tmp_path, config)[2]["status"] == "complete"
+    recipe["model"].pop("initialization")
+    _write(run_dir / "config.yaml", recipe)
+    with pytest.raises(ValueError, match="initialization: expected 'transformer_reference'"):
+        collect_rows(tmp_path, _pin(tmp_path, config))
+
+
 def test_rejects_changed_inputs_and_reference_errors(tmp_path: Path) -> None:
     config = _fixture(tmp_path)
     run_dir = tmp_path / "experiments/toy_taylor/runs/r000000000001"

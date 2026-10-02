@@ -82,9 +82,12 @@ panels:
   - id: softmax_no_qk_norm
     label: softmax no QK-norm
     qk_norm: false
-  - id: gla
-    label: GLA
+  - id: gated_deltanet
+    label: 'Gated DeltaNet
+
+      paper init'
     qk_norm: null
+    initialization: gated_deltanet_reference
   - id: unnormalized_exp
     label: unnormalized exp
 cells:
@@ -263,11 +266,11 @@ cells:
   run: ra9b651caa405
   label: 200m-m004-seed0
 - panel: references
-  column: gla
+  column: gated_deltanet
   d_k: 64
   experiment: attention_scaling
-  run: r6e11d7bd996d
-  label: 200m-dk064-gla-seed0
+  run: r118c41829531
+  label: 200m-dk064-gdn-seed0
 metric: terminal_validation_perplexity
 runs:
 - study: attention_scaling
@@ -786,21 +789,21 @@ runs:
       path: experiments/attention_scaling/runs/ra9b651caa405/best_validation.json
       sha256: 23eb69673fee6bb1838892438a7bbe512124802c3376e1a558d55cfe69d2dfac
 - study: attention_scaling
-  run_id: r6e11d7bd996d
-  label: 200m-dk064-gla-seed0
+  run_id: r118c41829531
+  label: 200m-dk064-gdn-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r6e11d7bd996d/config.yaml
-      sha256: b1214accc43d6f2d59ef0685b9c7152e337c00d1ec46630d0ca1125fa58f198f
+      path: experiments/attention_scaling/runs/r118c41829531/config.yaml
+      sha256: 9bfce73a19e5c7e2f9609a9b9837514d7d49000f248692c89bdf571db7fe68a0
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r6e11d7bd996d/metrics.jsonl
-      sha256: f55a68848dd4f1193900feb2b7cd904b3fafa21df42ee8e7df29e6fb993c2668
+      path: experiments/attention_scaling/runs/r118c41829531/metrics.jsonl
+      sha256: 547f377abf89330c93134692afec9272414d971e8a3af7316d269ec02147ee0b
     completion.json:
-      path: experiments/attention_scaling/runs/r6e11d7bd996d/completion.json
-      sha256: 2589eecfa7af15af80b3cfcd1a5cf4b6526e3fa658f60e768ef294646191eadb
+      path: experiments/attention_scaling/runs/r118c41829531/completion.json
+      sha256: 69b21b4c425087117c1c82a32e418c8a198a7dd6d8f58ed0c637b8ac10d609f7
     metadata.json:
-      path: experiments/attention_scaling/runs/r6e11d7bd996d/metadata.json
-      sha256: 94552faa992638a9a80eae6a72ee6793fa74eaf9c44dfc84026427786bed1981
+      path: experiments/attention_scaling/runs/r118c41829531/metadata.json
+      sha256: a1a7ce8d725255d573b3b54b28fa95daa3361941f47f036a73ceaa0653642c8c
     best_validation.json:
-      path: experiments/attention_scaling/runs/r6e11d7bd996d/best_validation.json
-      sha256: a2c4a41b00752e8964854de904e989b664c0c3141201027e4557ccbec5d2271b
+      path: experiments/attention_scaling/runs/r118c41829531/best_validation.json
+      sha256: 83a845f43b670fcf102afd3996c761a860a0cd3ce0bf67cf0305c42161e17106

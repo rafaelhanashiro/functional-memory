@@ -87,6 +87,17 @@ def test_unknown_family_and_coordinate_are_rejected():
         _build_figure([*ROWS, _row("normalized_nonnegative", "m3", value=1.0)], _config())
 
 
+def test_multiline_reference_label_carries_its_value_on_the_first_line():
+    config = _config()
+    config["panels"][-1]["columns"][0]["label"] = "softmax\npaper init"
+    figure = _build_figure(ROWS, config)
+    try:
+        axis = next(axis for axis in figure.axes if axis.get_gid() == "chart:perplexity")
+        assert "softmax 14.46\npaper init" in {text.get_text() for text in axis.texts}
+    finally:
+        plt.close(figure)
+
+
 def test_value_labels_are_spread_apart():
     placed = _spread([14.46, 14.67, 16.2], gap=0.5)
     assert placed[1] - placed[0] >= 0.5 - 1e-9 and placed[2] - placed[1] >= 0.5 - 1e-9

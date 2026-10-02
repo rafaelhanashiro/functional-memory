@@ -8,4 +8,3 @@ either promoted into a canonical result collection or deleted with its runs; see
 | --- | --- | --- |
 | [output_scaling](output_scaling/README.md) | Can rescaling unnormalized attention outputs replace normalization? | 2026-10-01 |
 | [reference_init](reference_init/README.md) | Do Flax-default initializations handicap our runs against each architecture's reference initialization? | 2026-10-02 |
-| [gated_deltanet](gated_deltanet/README.md) | How does Gated DeltaNet scale with key width on the shared backbone? | 2026-10-02 |

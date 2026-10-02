@@ -12,8 +12,10 @@ Each run retains its recipe, measurements (including training curves and recorde
 coefficient diagnostics), and execution metadata under
 [`experiments/attention_scaling/runs/`](../../experiments/attention_scaling/runs/).
 
-Every plotted run uses the current defaults, selective weight decay and QK-norm,
-except GLA and the "softmax no QK-norm" reference, which have no QK-norm.
+Every plotted run uses the current defaults: selective weight decay, QK-norm, and the
+scaffold's Flax-default initialization. Two references depart from them: "softmax no
+QK-norm" has no QK-norm, and Gated DeltaNet has no QK-norm and uses its paper's
+initialization (`gated_deltanet_reference`; see [Limits](#limits)).
 
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
@@ -36,7 +38,7 @@ except GLA and the "softmax no QK-norm" reference, which have no QK-norm.
 ## Figure key
 
 - **Heatmap:** normalized fixed Taylor (`1/r!`) at `m = 1, 2, 3, 4, 8, 16` and
-  `d_K = 8–128`, plus softmax with and without QK-norm and GLA. FAIL = numerical
+  `d_K = 8–128`, plus softmax with and without QK-norm and Gated DeltaNet. FAIL = numerical
   failure at the shown update; NOT RUN = not trained.
 - **Degree chart:** families at `d_K = 64`; failures sit in the strip below the axis.
   Learned coefficients start from `1/r!` and are learned per layer and head.
@@ -49,7 +51,8 @@ except GLA and the "softmax no QK-norm" reference, which have no QK-norm.
 ## Results at d_K = 64
 
 References: softmax **14.457**, softmax no QK-norm **14.665** (both with
-selective decay), GLA 15.895 (no QK-norm), unnormalized exp with QK-norm 18.304.
+selective decay), Gated DeltaNet **13.705** (paper initialization), unnormalized exp
+with QK-norm 18.304.
 
 Normalized kernels (failures show the update):
 
@@ -123,18 +126,26 @@ except at `d_K = 64`.
 - **Normalized fixed Taylor:** higher degree closes the gap to softmax. `d_K = 8`:
   `m = 2` 22.44, `m = 16` 17.34, softmax 17.22. `d_K = 128`: `m = 8` 14.20 and
   `m = 16` 14.22 match softmax (14.22).
-- **GLA** (selective decay at every width): 17.46 at `d_K = 8` to 15.54 at `d_K = 128`,
-  improving with each doubling; better than normalized `m = 2` and worse than softmax
-  at every width.
+- **Gated DeltaNet** (FLA's chunked kernels, paper initialization): 14.85 at `d_K = 8`
+  to 13.38 at `d_K = 128`, improving with every doubling. It is the lowest cell at every
+  width, by the most at small `d_K` (2.38 below softmax at `d_K = 8`, 0.85 at 128).
+  With both on their reference initializations at `d_K = 64` it beats GLA by 1.67
+  (13.705 vs 15.376).
 
 ## Limits
 
 - One seed per cell; differences of a few tenths are not established.
-- Parameter count changes with `d_K`; GLA also changes the architecture.
-- Three runs resumed on another GPU type after preemption: unnormalized Hermite `m = 2`
+- Initializations differ: Gated DeltaNet uses its paper's, every other run Flax
+  defaults. Softmax with its reference initialization improves by 0.94 at `d_K = 64`
+  and beats Gated DeltaNet there (13.514 vs 13.705;
+  [reference_init](../exploratory/reference_init/README.md)).
+- Parameter count changes with `d_K`. Gated DeltaNet also changes the architecture and
+  has 10.9–11.0M (5–6%) more parameters than softmax at the same `d_K`.
+- Four runs resumed on another GPU type after preemption: unnormalized Hermite `m = 2`
   (B300, then H100 from update 14,500), unnormalized Taylor `m = 4` (B300, then
-  H100 from update 500), and normalized Taylor `d_K = 128`, `m = 8` (H100, then B300
-  from update 500).
+  H100 from update 500), normalized Taylor `d_K = 128`, `m = 8` (H100, then B300
+  from update 500), and Gated DeltaNet `d_K = 128` (H100, then B300 from update
+  13,500).
 
 ## Reproduce
 

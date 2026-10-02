@@ -16,7 +16,7 @@ from pathlib import Path
 # legacy cells until their experiment is rerun.
 CANONICAL_WEIGHT_DECAY_POLICY = "exclude_embeddings_norms_biases_v1"
 _REFERENCE_KERNELS = {"softmax": "softmax", "softmax_no_qk_norm": "softmax",
-                      "gla": "gla", "unnormalized_exp": "exp_unnormalized"}
+                      "gated_deltanet": "gated_deltanet", "unnormalized_exp": "exp_unnormalized"}
 
 
 def _json(path: Path) -> dict:
@@ -149,6 +149,9 @@ def _collect_referenced(repo_root: Path, cell: dict, run: dict, step: int, token
     model = config.get("model", {})
     _match(model.get("qk_head_dim"), width, f"{label} recipe d_K")
     _optional_match(model, "attention_degree", degree, f"{label} recipe")
+    # A column that departs from the scaffold's Flax-default initialization declares it.
+    _match(model.get("initialization", "flax_default"), (column or {}).get("initialization", "flax_default"),
+           f"{label} initialization")
     failures = sorted(directory.glob("numerical_failure_step_*.json"))
     if failures:
         status = "numerical_failure"

@@ -122,7 +122,9 @@ def _build_figure(rows: list[dict], config: dict):
         legacy = bool(row.get("legacy"))
         axis.axhline(level, color=MUTED, linewidth=1.0, alpha=LEGACY_ALPHA if legacy else 0.85,
                      zorder=1, gid=f"reference:{row['column']}")
-        label = f"{reference_labels.get(row['column'], row['column'])} {level:.2f}" + (" (legacy)" if legacy else "")
+        # A multi-line label carries its value on the first line.
+        name, *rest = reference_labels.get(row["column"], row["column"]).split("\n")
+        label = "\n".join([f"{name} {level:.2f}" + (" (legacy)" if legacy else ""), *rest])
         reference_levels.append((level, label))
 
     value_labels: dict[int, list[float]] = {}
@@ -169,9 +171,11 @@ def _build_figure(rows: list[dict], config: dict):
                           bbox={"boxstyle": "round,pad=0.12", "facecolor": SURFACE, "edgecolor": "none", "alpha": 0.85})
     levels = [level for level, _ in reference_levels]
     for (_, label), placed in zip(reference_levels, _spread(levels, gap)):
-        axis.annotate(label, (1.0, placed), xycoords=("axes fraction", "data"), xytext=(6, 0),
-                      textcoords="offset points", ha="left", va="center", fontsize=7.5, color=MUTED,
-                      annotation_clip=False)
+        # Multi-line labels hang below their level so that the first line sits on it.
+        multiline = "\n" in label
+        axis.annotate(label, (1.0, placed), xycoords=("axes fraction", "data"), xytext=(6, 4.5 if multiline else 0),
+                      textcoords="offset points", ha="left", va="top" if multiline else "center", fontsize=7.5,
+                      color=MUTED, annotation_clip=False)
     axis.set_ylabel("Terminal held-out perplexity (lower is better)", fontsize=9.5, color=INK)
     axis.tick_params(labelbottom=False, colors=MUTED, labelcolor=INK, labelsize=8.5, length=0)
     axis.grid(axis="y", color=GRID, linewidth=0.8)

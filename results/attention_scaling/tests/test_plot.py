@@ -34,7 +34,7 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     by_cell = {(r["panel"], r["column"], r["d_k"]): r for r in rows}
     assert by_cell["normalized_fixed", "m1", 64]["failure_step"] == 31
     assert by_cell["normalized_fixed", "m3", 64]["failure_step"] == 419
-    assert by_cell["references", "gla", 128]["terminal_ppl"] == pytest.approx(15.538013225551541)
+    assert by_cell["references", "gated_deltanet", 128]["terminal_ppl"] == pytest.approx(13.38022395757579)
     assert by_cell["references", "softmax", 64]["terminal_ppl"] == pytest.approx(14.457394141153632)
     assert by_cell["references", "softmax_no_qk_norm", 64]["terminal_ppl"] == pytest.approx(14.665499848737895)
     assert by_cell["references", "softmax", 8]["terminal_ppl"] == pytest.approx(17.22423966278349)

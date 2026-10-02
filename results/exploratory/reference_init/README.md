@@ -34,9 +34,10 @@ Gap by update (reference minus Flax defaults):
 
 - **The reference initializations train better, not just faster.** The gap shrinks
   early but levels off: softmax stays near −0.95 over the last 4,000 updates.
-- **Every canonical figure is affected.** All heatmap and degree-chart runs use Flax
-  defaults, so their perplexities are inflated by an amount that may differ by
-  mechanism; Gated DeltaNet ([topic](../gated_deltanet/README.md)) uses its paper's
+- **Every canonical figure is affected.** All heatmap and degree-chart runs except
+  Gated DeltaNet use Flax defaults, so their perplexities are inflated by an amount
+  that may differ by mechanism; Gated DeltaNet
+  ([attention scaling](../../attention_scaling/README.md)) uses its paper's
   initialization.
 
 ## Limits

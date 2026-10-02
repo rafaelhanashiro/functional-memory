@@ -7,7 +7,7 @@ a result collection can combine runs from several studies.
 
 | Study | Results | Run data and reproduction |
 | --- | --- | --- |
-| Attention scaling: softmax, Taylor, Hermite, learned polynomials, and GLA | [Heatmaps and degree curves](results/attention_scaling/README.md) | [All attention runs](experiments/attention_scaling/README.md) |
+| Attention scaling: softmax, Taylor, Hermite, learned polynomials, and Gated DeltaNet | [Heatmaps and degree curves](results/attention_scaling/README.md) | [All attention runs](experiments/attention_scaling/README.md) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 
 Exploratory results awaiting a decision (promote or discard) are in
