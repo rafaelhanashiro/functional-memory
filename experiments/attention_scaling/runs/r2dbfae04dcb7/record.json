@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r2dbfae04dcb7/config.yaml",
+    "sha256": "aa8d933e8c7bc4addd9ed8dc70a1e466e4f2686ca623712cf9b0264e4a2642c6"
+  },
+  "label": "200m-qk-dk032-softmax-transformer-init-seed0",
+  "name": "200m-qk-dk032-softmax-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "r2dbfae04dcb7",
+  "status": "planned"
+}
