@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rf7277f076b8f/config.yaml",
+    "sha256": "06395e0efbde03fd9aec3cd83ec0501e343ce42b31669255521b71a36ce8e495"
+  },
+  "label": "200m-softmax-transformer-init-seed0",
+  "name": "200m-softmax-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "rf7277f076b8f",
+  "status": "planned"
+}

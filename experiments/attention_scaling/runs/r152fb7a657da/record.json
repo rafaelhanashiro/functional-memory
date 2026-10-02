@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r152fb7a657da/config.yaml",
+    "sha256": "67ef9db62278c1c6384580d7df3e37f9aaa876fed4b81c3df3147b3d67537a7e"
+  },
+  "label": "200m-qk-m004-unnormalized-inverse-position-transformer-init-seed0",
+  "name": "200m-qk-m004-unnormalized-inverse-position-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "r152fb7a657da",
+  "status": "planned"
+}

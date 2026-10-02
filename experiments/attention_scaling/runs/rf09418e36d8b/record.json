@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rf09418e36d8b/config.yaml",
+    "sha256": "4b92c0dbfec0dc7ff8392a4a2af7566ba6fb819fa20daa64e2f0609ad3271b9b"
+  },
+  "label": "200m-qk-exp-inverse-position-transformer-init-seed0",
+  "name": "200m-qk-exp-inverse-position-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "rf09418e36d8b",
+  "status": "planned"
+}
