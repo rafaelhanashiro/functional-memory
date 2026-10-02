@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rba0327a59191/config.yaml",
+    "sha256": "e2609eee67ba817de679f0d2426d3a9d2de3e793a643002ad527d258bb29f828"
+  },
+  "label": "200m-qk-dk032-m002-transformer-init-seed0",
+  "name": "200m-qk-dk032-m002-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "rba0327a59191",
+  "status": "planned"
+}

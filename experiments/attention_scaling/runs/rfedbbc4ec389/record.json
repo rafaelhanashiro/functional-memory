@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rfedbbc4ec389/config.yaml",
+    "sha256": "20b3e355e852ccab583679162432198f328b7a07d3d954ea4db240b0f20047de"
+  },
+  "label": "200m-qk-dk128-m004-transformer-init-seed0",
+  "name": "200m-qk-dk128-m004-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "rfedbbc4ec389",
+  "status": "planned"
+}
