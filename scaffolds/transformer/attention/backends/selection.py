@@ -38,6 +38,18 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
         raise ValueError("Attention requires float32 or bfloat16 computation")
     actual_platform = _runtime_platform() if platform is None else platform
     gpu = actual_platform in ("gpu", "cuda")
+    if model_config.attention_mechanism == "gated_deltanet":
+        if request not in ("auto", "blocked", "fused"):
+            raise ValueError("Gated DeltaNet requires backend='auto', 'blocked' or 'fused'")
+        length = model_config.max_seq_len if sequence_length is None else sequence_length
+        capability = (9 if platform is not None else _cuda_compute_capability()) if gpu else None
+        # FLA's kernels are qualified here on Hopper (H100) and Blackwell (B300).
+        supports = capability is not None and capability >= 9
+        if request == "auto":
+            return "fused" if length % 64 == 0 and supports else "blocked"
+        if request == "fused" and (length % 64 or not supports):
+            raise ValueError("Fused Gated DeltaNet requires sequence length divisible by 64 and an sm90+ GPU")
+        return request
     if model_config.attention_mechanism == "gla":
         if request not in ("auto", "blocked", "fused"):
             raise ValueError("GLA requires backend='auto', 'blocked' or 'fused'")

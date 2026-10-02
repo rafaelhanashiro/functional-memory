@@ -52,7 +52,9 @@ class ModelConfig:
     # divides by the number of visible keys t; "head_rms_norm" applies an RMSNorm over
     # the head's value channels with a learned gain per layer, head, and channel.
     attention_output_scaling: Literal["none", "inverse_position", "head_rms_norm"] = "none"
-    attention_mechanism: Literal["dot_product", "gla"] = "dot_product"
+    attention_mechanism: Literal["dot_product", "gla", "gated_deltanet"] = "dot_product"
+    # Gated DeltaNet's causal depthwise short-convolution width (FLA and paper default 4).
+    gdn_conv_size: int = 4
     gla_gate_rank: int = 16
     gla_gate_tau: float = 16.0
     gla_chunk_size: int = 64
@@ -86,7 +88,8 @@ class ModelConfig:
     # Weight initialization: the scaffold's Flax defaults, or an architecture's reference
     # recipe ("transformer_reference" for dot-product attention, "gla_reference" for GLA);
     # see models/initialization.py.
-    initialization: Literal["flax_default", "transformer_reference", "gla_reference"] = "flax_default"
+    initialization: Literal["flax_default", "transformer_reference", "gla_reference",
+                            "gated_deltanet_reference"] = "flax_default"
 
     def __post_init__(self):
         if self.kind != "transformer":
@@ -102,9 +105,11 @@ class ModelConfig:
                 raise ValueError(f"model.{name} must be a positive integer")
         if self.num_kv_heads != self.num_heads:
             raise ValueError("This scaffold uses full MHA: num_kv_heads must equal num_heads")
-        if self.attention_mechanism not in ("dot_product", "gla"):
+        if self.attention_mechanism not in ("dot_product", "gla", "gated_deltanet"):
             raise ValueError(f"Unknown attention mechanism: {self.attention_mechanism}")
-        if self.qk_head_dim % 2 and (self.attention_mechanism != "gla" or self.gla_use_rope):
+        uses_rope = (self.attention_mechanism == "dot_product"
+                     or (self.attention_mechanism == "gla" and self.gla_use_rope))
+        if self.qk_head_dim % 2 and uses_rope:
             raise ValueError("model.qk_head_dim must be even for RoPE")
         if self.attention_backend not in ("auto", "blocked", "fused", "manual", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
@@ -122,6 +127,15 @@ class ModelConfig:
                 raise ValueError("attention_normalization is a dot-product option; GLA requires its default true")
             if self.attention_backend not in ("auto", "blocked", "fused"):
                 raise ValueError("GLA requires backend='auto', 'blocked' or 'fused'")
+        if self.attention_mechanism == "gated_deltanet":
+            if self.attention_degree is not None or self.quadratic_mode != "fixed":
+                raise ValueError("Gated DeltaNet cannot use Taylor degrees or learned quadratic modes")
+            if not self.attention_normalization or self.attention_coefficients != "fixed":
+                raise ValueError("Gated DeltaNet uses its own recurrence: no normalization or coefficient options")
+            if self.attention_backend not in ("auto", "blocked", "fused"):
+                raise ValueError("Gated DeltaNet requires backend='auto', 'blocked' or 'fused'")
+        if not isinstance(self.gdn_conv_size, int) or isinstance(self.gdn_conv_size, bool) or self.gdn_conv_size <= 0:
+            raise ValueError("model.gdn_conv_size must be a positive integer")
         for name in ("gla_gate_rank", "gla_chunk_size", "gla_inner_chunk_size"):
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
@@ -313,9 +327,9 @@ def validate_config(config: Config) -> None:
             config.model.attention_degree is not None or not config.model.attention_normalization):
         if max(config.model.qk_head_dim, config.model.value_head_dim) > 128:
             raise ValueError("Fused attention supports Q/K and value head dimensions up to 128")
-    if config.model.attention_mechanism == "gla" and config.model.attention_backend == "fused":
+    if config.model.attention_mechanism in ("gla", "gated_deltanet") and config.model.attention_backend == "fused":
         if (data.sequence_length - 1) % 64:
-            raise ValueError("Fused GLA requires prediction sequence length divisible by 64")
+            raise ValueError("Fused GLA and Gated DeltaNet require prediction sequence length divisible by 64")
     if train.wandb_mode not in ("online", "offline", "disabled"):
         raise ValueError("Invalid train.wandb_mode")
     if not 0 <= optim.warmup_steps <= optim.total_steps:

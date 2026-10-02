@@ -1,0 +1,205 @@
+"""FLA's chunked gated delta rule as a differentiable JAX operation.
+
+The forward and backward passes launch flash-linear-attention's own Triton kernels
+(``fla.ops.gated_delta_rule.chunk``) in FLA's order through the vendored bridge;
+``fla_gated_delta_rule_kernels`` holds the argument-order wrappers. The two
+chunk-local cumulative sums of the log decay run in JAX. Launch parameters follow
+FLA's GPU branches: its autotune menus, tile sizes from the device's shared memory,
+and the reduced Blackwell menus FLA uses while a Triton ``tl.dot`` recurrence race
+is outstanding. FLA cannot detect these itself, because the scaffold imports it
+with a CPU-only torch.
+
+Inputs: ``q, k`` [B, T, H, K] already L2-normalized, ``v`` [B, T, H, V], the
+per-token natural-log decay ``g`` [B, T, H] (<= 0) and ``beta`` [B, T, H]. Output
+``o_t = S_t^T (scale q_t)`` with ``S_t = a_t S_{t-1} + b_t k_t (v_t - a_t S_{t-1}^T k_t)^T``.
+"""
+
+from functools import lru_cache, partial
+import math
+
+import jax
+import jax.numpy as jnp
+
+CHUNK_SIZE = 64
+RCP_LN2 = 1.0 / math.log(2.0)
+
+
+def _next_power_of_2(value: int) -> int:
+    return 1 << (int(value) - 1).bit_length()
+
+
+def _max_shared_memory_per_block(ordinal: int) -> int:
+    """The opt-in shared-memory limit Triton reports, read from the CUDA driver directly.
+
+    Triton's own driver object asks torch whether CUDA is available, which the
+    scaffold's CPU-only torch denies.
+    """
+    import ctypes
+
+    cuda = ctypes.CDLL("libcuda.so.1")
+    device, value = ctypes.c_int(), ctypes.c_int()
+    for status in (cuda.cuInit(0), cuda.cuDeviceGet(ctypes.byref(device), ordinal),
+                   # CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN
+                   cuda.cuDeviceGetAttribute(ctypes.byref(value), 97, device)):
+        if status:
+            raise RuntimeError(f"CUDA driver query failed with status {status}")
+    return value.value
+
+
+@lru_cache(maxsize=None)
+def _device_class() -> tuple[str, int]:
+    """("hopper" | "blackwell" | "other", maximum shared memory per block) of the local GPUs."""
+    device = jax.local_devices()[0]
+    major = int(str(device.compute_capability).split(".")[0])
+    shared = _max_shared_memory_per_block(0)
+    return ("hopper" if major == 9 else "blackwell" if major in (10, 12) else "other"), shared
+
+
+@lru_cache(maxsize=None)
+def _kernels():
+    """Autotuned wrappers with FLA's menus for this device class (imports FLA; GPU only)."""
+    import triton
+    from packaging.version import Version
+
+    from scaffolds.transformer.attention.backends import fla_gated_delta_rule_kernels as raw
+
+    arch, shared = _device_class()
+    if arch == "hopper" and Version("3.4.0") <= Version(triton.__version__) < Version("3.7.1"):
+        # FLA refuses this combination: chunk_bwd_dqkwg returns wrong gradients (FLA #640).
+        raise RuntimeError(f"Triton {triton.__version__} on Hopper corrupts FLA's gated dqkwg; use >= 3.7.1")
+    blackwell = arch == "blackwell"
+    config = triton.Config
+    o_warps = (2, 4) if arch == "hopper" else (2, 4, 8)
+    fwd_o_configs = ([] if blackwell else [config({"BK": 128, "BV": 128}, num_warps=8, num_stages=3)]) + [
+        config({"BK": 64, "BV": 64}, num_warps=4, num_stages=3),
+        config({"BK": 32, "BV": 32}, num_warps=2, num_stages=3)]
+    menus = {
+        "kkt_solve": [config({"BK": bk}, num_warps=w) for bk in (32, 64) for w in (1, 2, 4)],
+        "recompute_w_u": [config({}, num_warps=w, num_stages=s) for w in (2, 4, 8) for s in (2, 3, 4)],
+        "fwd_h": [config({"BV": bv}, num_warps=w, num_stages=s)
+                  for w in ((2,) if blackwell else (2, 4)) for s in (2, 3, 4) for bv in (32, 64)],
+        "fwd_o": fwd_o_configs,
+        "bwd_dv_local": [config({}, num_warps=w, num_stages=s) for w in o_warps for s in (2, 3, 4)],
+        "bwd_dhu": [config({"BV": bv}, num_warps=w, num_stages=s) for w in (2, 4) for s in (2, 3, 4)
+                    for bv in (32, 64)],
+        "bwd_dqkwg": [config({}, num_warps=w, num_stages=s) for w in o_warps for s in (2, 3, 4)],
+        "wy_bwd": [config({}, num_warps=w, num_stages=s)
+                   for w in ((2,) if blackwell else (2, 4)) for s in ((4,) if blackwell else (2, 3, 4))],
+    }
+    # The bridge benchmarks the configurations itself; a dummy benchmarker keeps Triton's
+    # Autotuner from asking its (torch-backed) driver for one.
+    tuned = {name: triton.autotune(configs=configs, key=["K", "V"] if name != "kkt_solve" else ["K"],
+                                   do_bench=lambda *args, **kwargs: 0.0)(getattr(raw, name))
+             for name, configs in menus.items()}
+    # FLA's tile caps from the device's shared memory (check_shared_mem 'hopper' / 'ada' / default).
+    tile = 128 if shared >= 232448 else 64 if shared >= 101376 else 32
+    wy_tile = 64 if shared >= 102400 else 32
+    return tuned, tile, wy_tile
+
+
+def _call(kernel, *args, out, grid, name, zeroed=(), **meta):
+    from scaffolds.transformer.attention.backends.ejkernel_bridge import triton_call
+
+    return triton_call(*args, kernel=kernel, out_shape=out, grid=grid, name=f"fla::gdn::{name}",
+                       zeroed_outputs=zeroed, **meta)
+
+
+def _shape(shape, dtype):
+    return jax.ShapeDtypeStruct(shape, dtype)
+
+
+def _chunk_cumsum(g, *, reverse=False):
+    """Cumulative sum within each chunk of ``CHUNK_SIZE`` tokens, in FP32 ([B, T, H])."""
+    batch, length, heads = g.shape
+    chunks = g.astype(jnp.float32).reshape(batch, length // CHUNK_SIZE, CHUNK_SIZE, heads)
+    if reverse:
+        chunks = jnp.flip(jnp.cumsum(jnp.flip(chunks, 2), axis=2), 2)
+    else:
+        chunks = jnp.cumsum(chunks, axis=2)
+    return chunks.reshape(batch, length, heads)
+
+
+def _forward_pieces(kernels, k, v, g, beta):
+    tuned, _, _ = kernels
+    batch, length, heads, key_dim = k.shape
+    value_dim, chunks = v.shape[-1], length // CHUNK_SIZE
+    meta = dict(H=heads, HV=heads, K=key_dim, BT=CHUNK_SIZE)
+    a = _call(tuned["kkt_solve"], k, g, beta, length, out=_shape((batch, length, heads, CHUNK_SIZE), k.dtype),
+              grid=(chunks, batch * heads), name="kkt_solve", zeroed=(0,), BC=16, **meta)
+    w, u = _call(tuned["recompute_w_u"], k, v, beta, a, g, length,
+                 out=[_shape(k.shape, k.dtype), _shape(v.shape, v.dtype)], grid=(chunks, batch * heads),
+                 name="recompute_w_u", V=value_dim, BK=64, BV=64, **meta)
+    v_new, h = _call(tuned["fwd_h"], k, u, w, g, length,
+                     out=[_shape(v.shape, v.dtype), _shape((batch, chunks, heads, key_dim, value_dim), k.dtype)],
+                     grid=lambda m: (-(-value_dim // m["BV"]) * batch * heads,), name="fwd_h", V=value_dim, **meta)
+    return a, w, v_new, h
+
+
+def _gated_delta_rule_fwd(q, k, v, g, beta, scale):
+    kernels = _kernels()
+    batch, length, heads, key_dim = q.shape
+    value_dim = v.shape[-1]
+    if length % CHUNK_SIZE:
+        raise ValueError(f"Sequence length must be a multiple of {CHUNK_SIZE}")
+    g_chunk = _chunk_cumsum(g) * RCP_LN2  # FLA's kernels use exp2 of the base-2 chunk-local cumulative decay.
+    a, _, v_new, h = _forward_pieces(kernels, k, v, g_chunk, beta)
+    o = _call(kernels[0]["fwd_o"], q, k, v_new, h, g_chunk, float(scale), length, out=_shape(v.shape, v.dtype),
+              grid=lambda m: (-(-value_dim // m["BV"]), length // CHUNK_SIZE, batch * heads), name="fwd_o",
+              H=heads, HV=heads, K=key_dim, V=value_dim, BT=CHUNK_SIZE)
+    return o, (q, k, v, g_chunk, beta, a)
+
+
+def _gated_delta_rule_bwd(scale, residuals, do):
+    q, k, v, g_chunk, beta, a = residuals
+    kernels = _kernels()
+    tuned, tile, wy_tile = kernels
+    batch, length, heads, key_dim = q.shape
+    value_dim, chunks = v.shape[-1], length // CHUNK_SIZE
+    do = do.astype(v.dtype)
+    meta = dict(H=heads, HV=heads, K=key_dim, V=value_dim, BT=CHUNK_SIZE)
+    bk = min(max(_next_power_of_2(key_dim), 16), tile)
+    bv = min(max(_next_power_of_2(value_dim), 16), tile)
+    w, u = _call(tuned["recompute_w_u"], k, v, beta, a, g_chunk, length,
+                 out=[_shape(k.shape, k.dtype), _shape(v.shape, v.dtype)], grid=(chunks, batch * heads),
+                 name="recompute_w_u", BK=64, BV=64, **meta)
+    v_new, h = _call(tuned["fwd_h"], k, u, w, g_chunk, length,
+                     out=[_shape(v.shape, v.dtype), _shape((batch, chunks, heads, key_dim, value_dim), k.dtype)],
+                     grid=lambda m: (-(-value_dim // m["BV"]) * batch * heads,), name="fwd_h", **meta)
+    dv = _call(tuned["bwd_dv_local"], q, k, g_chunk, do, float(scale), length, out=_shape(v.shape, do.dtype),
+               grid=(chunks, batch * heads), name="bwd_dv_local", BK=bk, BV=bv, **meta)
+    dh, dv = _call(tuned["bwd_dhu"], q, k, w, g_chunk, do, dv, float(scale), length,
+                   out=[_shape((batch, chunks, heads, key_dim, value_dim), q.dtype), _shape(dv.shape, dv.dtype)],
+                   grid=lambda m: (-(-value_dim // m["BV"]) * batch * heads,), name="bwd_dhu", **meta)
+    nk = -(-key_dim // bk)
+    dq, dk, dw, dg = _call(tuned["bwd_dqkwg"], q, k, v_new, g_chunk, h, do, dh, dv, float(scale), length,
+                           out=[_shape(q.shape, q.dtype), _shape(k.shape, k.dtype), _shape(w.shape, w.dtype),
+                                _shape((nk, batch, length, heads), jnp.float32)],
+                           grid=(nk, chunks, batch * heads), name="bwd_dqkwg", B=batch, BK=bk, BV=bv, **meta)
+    wy_bk = min(max(_next_power_of_2(key_dim), 16), wy_tile)
+    wy_bv = min(max(_next_power_of_2(value_dim), 16), wy_tile)
+    dk2, dv, db, dg2 = _call(tuned["wy_bwd"], k, v, beta, g_chunk, a, dw, dv, length,
+                             out=[_shape(k.shape, k.dtype), _shape(v.shape, v.dtype), _shape(beta.shape, beta.dtype),
+                                  _shape(g_chunk.shape, jnp.float32)],
+                             grid=(chunks, batch * heads), name="wy_bwd", BK=wy_bk, BV=wy_bv, **meta)
+    dk = (dk.astype(jnp.float32) + dk2.astype(jnp.float32)).astype(k.dtype)
+    dg = _chunk_cumsum(dg.sum(0) + dg2, reverse=True)
+    return dq, dk, dv, dg, db
+
+
+@partial(jax.custom_vjp, nondiff_argnums=(5,))
+def fla_gated_delta_rule(q, k, v, g, beta, scale):
+    """Chunked gated delta rule with FLA's kernels; differentiable in q, k, v, g, and beta."""
+    return _gated_delta_rule_fwd(q, k, v, g, beta, scale)[0]
+
+
+def _fwd(q, k, v, g, beta, scale):
+    return _gated_delta_rule_fwd(q, k, v, g, beta, scale)
+
+
+def _bwd(scale, residuals, do):
+    dq, dk, dv, dg, db = _gated_delta_rule_bwd(scale, residuals, do)
+    _, _, _, g_chunk, beta, _ = residuals
+    return dq, dk, dv, dg.astype(jnp.float32), db.astype(beta.dtype)
+
+
+fla_gated_delta_rule.defvjp(_fwd, _bwd)

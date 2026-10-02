@@ -31,6 +31,12 @@ def model_parameter_count(config: ModelConfig) -> int:
         value_dim = config.num_heads * config.value_head_dim
         # Output gate, low-rank vector decay (including bias), and head RMSNorm.
         attention += h * value_dim + h * config.gla_gate_rank + config.gla_gate_rank * key_dim + key_dim + value_dim
+    if config.attention_mechanism == "gated_deltanet":
+        key_dim = config.num_heads * config.qk_head_dim
+        value_dim = config.num_heads * config.value_head_dim
+        # Output gate, decay and beta projections, short convolutions, A_log and dt_bias, gated-norm scale.
+        attention += (h * value_dim + 2 * h * config.num_heads + config.gdn_conv_size * (2 * key_dim + value_dim)
+                      + 2 * config.num_heads + config.value_head_dim)
     feed_forward = 3 * h * config.intermediate_size
     return (
         2 * embedding

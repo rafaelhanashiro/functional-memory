@@ -53,7 +53,9 @@ Node CUDA toolkits differ: on 2026-09-24 `dogo` had CUDA 12.6 in `/usr/local/cud
 and `akita` CUDA 13.0. jaxlib assembles Triton custom-call PTX with that `ptxas`
 unless `CUDA_HOME` names another toolkit; `scaffolds/transformer/launchers/kennel.sbatch`
 points it at the locked environment's `nvidia/cuda_nvcc` (CUDA 12.9), since 12.6
-rejects Triton 3.6's PTX.
+rejects Triton's PTX. Triton 3.7 picks its PTX version from its bundled assembler (CUDA
+13.1 for Blackwell, PTX 9.1), which the locked `ptxas` rejects on B300, so the launcher
+also sets `TRITON_PTXAS_PATH` and `TRITON_PTXAS_BLACKWELL_PATH` to the locked `ptxas`.
 
 The retained joint-sweep checks cover all 20 B300 and host-staged A6000
 configurations and 16 new H100 configurations. On `samoyed`, direct peer transfers

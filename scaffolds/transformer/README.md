@@ -214,6 +214,31 @@ mechanism-owned attention parameters (`models/initialization.py`).
 | `flax_default` (default) | any | Flax defaults |
 | `transformer_reference` | dot-product | N(0, 0.02); attention `o_proj` and MLP `down_proj` N(0, 0.02/√(2L)) (GPT-2/Megatron) |
 | `gla_reference` | GLA | N(0, 0.02); query, key, and both low-rank gate projections Xavier-uniform, gain 2^-2.5 (official GLA code) |
+| `gated_deltanet_reference` | Gated DeltaNet | Embeddings and output head N(0, 0.02); Linear weights Uniform(±1/√fan_in); MLP `down_proj` also divided by √(2L) (official `lit_gpt`, `mamba_init`) |
+
+### Gated DeltaNet
+
+`attention_mechanism: gated_deltanet` replaces the attention module with Gated DeltaNet
+(`attention/gated_deltanet.py`), mirroring flash-linear-attention's layer. Queries, keys,
+and values each pass a causal depthwise short convolution (`gdn_conv_size`, default 4)
+and SiLU; queries and keys are L2-normalized per head. Each head keeps a
+`qk_head_dim × value_head_dim` state, `S_t = a_t S_{t-1} + β_t k_t (v_t − a_t S_{t-1}ᵀ k_t)ᵀ`,
+read inclusively as `S_tᵀ q_t / √d_K`, with `β_t = sigmoid(W_b x_t)` and the Mamba-2 decay
+`a_t = exp(−exp(A_log) softplus(W_a x_t + dt_bias))` (`A_log`, `dt_bias` without weight
+decay). The read passes `RMSNorm(o_t) · w · silu(W_g x_t)` (one `w` shared by the heads)
+and the output projection. There is no positional encoding and no QK-norm.
+
+`blocked` is a token-by-token FP32 reference. `fused`
+(`attention/backends/fla_gated_delta_rule.py`) launches FLA's own chunked Triton kernels,
+imported unmodified from the pinned `flash-linear-attention` in the CUDA extra, through
+the vendored bridge: thin wrappers reorder arguments into the bridge's convention, the
+forward and backward follow FLA's launch sequence under `jax.custom_vjp`, and the two
+chunk-local cumulative sums run in JAX. FLA reads the GPU through torch, which the
+environment installs CPU-only to satisfy imports, so the glue applies FLA's GPU choices
+itself: TF32 triangular solves, its Hopper and Blackwell autotune menus, and tile sizes
+from the device's shared memory. Triton must be ≥ 3.7.1 on Hopper (FLA #640). The fused
+path requires an sm90+ GPU and prediction length divisible by 64; `auto` selects it there
+and the reference elsewhere. It passes its GPU tests on H100 and B300.
 
 ### Gated linear attention
 
@@ -240,10 +265,12 @@ fail. Launchers configure bridge caching and XLA options separately from recipes
 Training resolves the backend from the actual prediction length. Direct model
 construction with `auto` resolves from `max_seq_len`; use `blocked` for inference
 at arbitrary lengths that do not satisfy the fused kernel's chunk constraint.
-The bridge hands Triton's PTX (ISA 8.7 with Triton 3.6) to jaxlib, which assembles
-it with the first `ptxas` among its CUDA roots; that is a node's `/usr/local/cuda`
-unless `CUDA_HOME` names another toolkit, so launchers set `CUDA_HOME` to the
-environment's `nvidia/cuda_nvcc`. Operands are converted to FP32 before launch:
+The bridge hands Triton's PTX to jaxlib, which assembles it with the first `ptxas`
+among its CUDA roots; that is a node's `/usr/local/cuda` unless `CUDA_HOME` names
+another toolkit, so launchers set `CUDA_HOME` to the environment's `nvidia/cuda_nvcc`.
+Triton 3.7 picks its PTX version from its own bundled assembler (CUDA 13.1 for
+Blackwell), newer than the locked toolkit reads, so launchers also point
+`TRITON_PTXAS_PATH` and `TRITON_PTXAS_BLACKWELL_PATH` at the locked `ptxas`. Operands are converted to FP32 before launch:
 with BF16 operands upcast inside the kernel, Triton 3.6 on B300 computed the FP32
 products at TF32-level precision. The fused kernel passes its GPU tests on H100 and B300.
 

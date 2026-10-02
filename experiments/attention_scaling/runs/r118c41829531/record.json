@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r118c41829531/config.yaml",
+    "sha256": "9bfce73a19e5c7e2f9609a9b9837514d7d49000f248692c89bdf571db7fe68a0"
+  },
+  "label": "200m-dk064-gdn-seed0",
+  "name": "200m-dk064-gdn-seed0",
+  "record_schema_version": 1,
+  "run_id": "r118c41829531",
+  "status": "planned"
+}
