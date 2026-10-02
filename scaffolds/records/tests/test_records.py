@@ -207,6 +207,26 @@ def test_state_recipe_records_allocated_output_directory(tmp_path):
     assert row["seed"] == "2"
 
 
+def test_stray_git_directory_is_not_a_checkout(tmp_path):
+    (tmp_path / ".git").mkdir()
+    run = create_run(tmp_path / "study", recipe())
+    assert load_run(run)["config"]["path"] == str((run / "config.yaml").resolve())
+
+
+@pytest.mark.parametrize("worktree", [False, True])
+def test_paths_are_stored_relative_to_the_checkout(tmp_path, worktree):
+    checkout = tmp_path / "checkout"
+    if worktree:
+        checkout.mkdir()
+        (checkout / ".git").write_text("gitdir: /elsewhere/.git/worktrees/checkout\n")
+    else:
+        (checkout / ".git").mkdir(parents=True)
+        (checkout / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
+    run = create_run(checkout / "experiments" / "study", recipe())
+    assert load_run(run)["config"]["path"] == f"experiments/study/runs/{run.name}/config.yaml"
+    validate_record(run)
+
+
 def test_capture_uses_explicit_best_checkpoint_and_detects_shard_changes(tmp_path):
     run = create_run(tmp_path / "study", recipe())
     (run / "metrics.jsonl").write_text('{"step": 10, "validation_nll": 2.0}\n')

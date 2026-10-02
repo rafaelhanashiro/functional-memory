@@ -55,8 +55,11 @@ def _run_path(path: str | Path) -> Path:
 
 
 def _repository(path: Path) -> Path | None:
+    # A checkout has .git/HEAD; a worktree has a .git file. A bare .git directory
+    # elsewhere (e.g. a stray /tmp/.git on a shared node) is not a checkout.
     for parent in (path.resolve(), *path.resolve().parents):
-        if (parent / ".git").exists():
+        marker = parent / ".git"
+        if marker.is_file() or (marker / "HEAD").is_file():
             return parent
     return None
 
