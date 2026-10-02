@@ -114,7 +114,7 @@ def _build_figure(rows: list[dict], config: dict):
         group_y = [top_y, bottom_y]
     else:
         group_y = [1.55]
-    figure_h = group_y[0] + axis_h + 1.2
+    figure_h = group_y[0] + axis_h + 1.2 + (0.25 if config.get("caption") else 0)  # a caption adds a subtitle line
     figure = plt.figure(figsize=(figure_w, figure_h), facecolor="white")
 
     for group, width, y in zip(groups, group_widths, group_y):
@@ -187,8 +187,9 @@ def _build_figure(rows: list[dict], config: dict):
     any_legacy = any(row.get("legacy") for row in indexed.values())
     figure.text(left / figure_w, 1 - 0.66 / figure_h,
                 "Terminal validation perplexity; each cell is one requested configuration."
-                + (" Outlined cells predate the current defaults and will be rerun." if any_legacy else ""),
-                fontsize=9.5, va="top", color="#475569")
+                + (" Outlined cells predate the current defaults and will be rerun." if any_legacy else "")
+                + (f"\n{config['caption']}" if config.get("caption") else ""),
+                fontsize=9.5, va="top", color="#475569", linespacing=1.3)
     legend = [Patch(facecolor=face, edgecolor=edge, hatch=hatch, label=label)
               for (face, edge, hatch), label in zip(
                   _STATUS_STYLE.values(),

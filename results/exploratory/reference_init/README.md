@@ -1,15 +1,18 @@
 # Reference initializations
 
-Opened 2026-10-02. Open decision: rerun the canonical comparisons with each
-architecture's reference initialization, or discard.
+Opened 2026-10-02. The reference mechanisms in
+[`results/attention_scaling/`](../../attention_scaling/README.md) now use these
+reference-initialization runs. Open decision: rerun the polynomial kernels, which still
+use Flax defaults, with the reference initialization.
 
-Every canonical run uses the scaffold's Flax defaults (Linear weights truncated normal
-with variance `1/fan_in`, no depth scaling). Do they handicap the models against the
-recipes their authors train with? Softmax at every `d_K` and GLA at `d_K = 64` repeat
-the canonical recipes and change only `model.initialization`
+The scaffold's Flax defaults draw Linear weights truncated normal with variance
+`1/fan_in` and no depth scaling. Do they handicap the models against the recipes their
+authors train with? Softmax at every `d_K`, and softmax no QK-norm, unnormalized exp,
+and GLA at `d_K = 64`, repeat the Flax-default recipes and change only
+`model.initialization`
 ([scaffold](../../../scaffolds/transformer/README.md#weight-initialization)):
 
-- **softmax** (QK-norm): `transformer_reference`, GPT-2/Megatron: N(0, 0.02), attention
+- **softmax and unnormalized exp**: `transformer_reference`, GPT-2/Megatron: N(0, 0.02), attention
   and MLP output projections N(0, 0.02/√(2L)).
 - **GLA**: `gla_reference`, official GLA code: N(0, 0.02), Xavier gain 2^-2.5 on the
   query, key, and gate projections.
@@ -27,6 +30,8 @@ Terminal validation perplexity:
 | Softmax | 32 | 14.865 | **13.762** | −1.10 |
 | Softmax | 64 | 14.457 | **13.514** | −0.94 |
 | Softmax | 128 | 14.225 | **13.303** | −0.92 |
+| Softmax no QK-norm | 64 | 14.665 | **13.932** | −0.73 |
+| Unnormalized exp | 64 | 18.304 | **15.885** | −2.42 |
 | GLA | 64 | 15.895 | **15.376** | −0.52 |
 
 Gap by update at `d_K = 64` (reference minus Flax defaults):
@@ -39,17 +44,19 @@ Gap by update at `d_K = 64` (reference minus Flax defaults):
 - **The reference initializations train better, not just faster.** The gap shrinks
   early but levels off: softmax stays near −0.95 over the last 4,000 updates.
 - **Softmax gains at every width, most at small `d_K`** (−1.59 at 8 to −0.92 at 128).
+- **Unnormalized exp gains the most (−2.42).** Its attention output sums over all
+  visible keys, so with Flax defaults the residual stream reaches about 1,300 at
+  initialization (length 512); the depth-scaled output projections shrink that about 10×.
 - **Against Gated DeltaNet** (paper initialization), reference-initialized softmax
   is ahead at `d_K >= 32` (by 0.19, 0.19, 0.08), level at 16 (+0.05), and behind
   at 8 (+0.79).
-- **Every canonical figure is affected.** All heatmap and degree-chart runs except
-  Gated DeltaNet use Flax defaults, so their perplexities are inflated by an amount
-  that may differ by mechanism; Gated DeltaNet
-  ([attention scaling](../../attention_scaling/README.md)) uses its paper's
-  initialization.
+- **The polynomial kernels are likely handicapped too.** They are dot-product attention
+  on the same Transformer, so the same initialization applies; until they are rerun,
+  compare them with the references only at equal initialization.
 
 ## Limits
 
 - One seed per run.
-- Softmax trained on B300 except `d_K = 8` (H100); the GLA check trained on H100 and
-  its canonical run on ORCD.
+- Reference-initialization runs trained on B300, except softmax `d_K = 8`, softmax no
+  QK-norm, and GLA (H100). The Flax-default GLA run and softmax at `d_K = 8, 16, 32, 128`
+  trained on ORCD.

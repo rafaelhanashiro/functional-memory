@@ -98,6 +98,14 @@ def test_multiline_reference_label_carries_its_value_on_the_first_line():
         plt.close(figure)
 
 
+def test_caption_follows_the_subtitle():
+    figure = _build_figure(ROWS, dict(_config(), caption="References use their reference initializations."))
+    try:
+        assert any("\nReferences use their reference initializations." in text.get_text() for text in figure.texts)
+    finally:
+        plt.close(figure)
+
+
 def test_value_labels_are_spread_apart():
     placed = _spread([14.46, 14.67, 16.2], gap=0.5)
     assert placed[1] - placed[0] >= 0.5 - 1e-9 and placed[2] - placed[1] >= 0.5 - 1e-9

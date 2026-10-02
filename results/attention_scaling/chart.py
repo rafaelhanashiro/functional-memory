@@ -201,6 +201,7 @@ def _build_figure(rows: list[dict], config: dict):
     figure.text(0.1, 0.965, config.get("title", "Polynomial attention kernels across degree"),
                 fontsize=13, weight="bold", color=INK, va="top")
     figure.text(0.1, 0.925, "Terminal perplexity at 19,074 updates, seed 0; learned coefficients are per layer and head."
+                + (f"\n{config['caption']}" if config.get("caption") else "")
                 + ("\nFaded points and lines are legacy runs (weight decay on all parameters, no QK-norm)."
                    if any_legacy else ""), fontsize=8.5, color=MUTED, va="top", linespacing=1.3)
 

@@ -132,6 +132,17 @@ def test_png_and_pdf_regenerate_byte_identically(tmp_path):
     assert {name: path.read_bytes() for name, path in second.items()} == first
 
 
+def test_caption_follows_the_subtitle():
+    config = dict(_config(), caption="References use their reference initializations.")
+    figure = _build_figure([], config)
+    try:
+        assert any(text.get_text().endswith("\nReferences use their reference initializations.")
+                   for text in figure.texts)
+    finally:
+        import matplotlib.pyplot as plt
+        plt.close(figure)
+
+
 def test_duplicate_coordinates_are_rejected():
     config = _config()
     row = _row("references", "c0", 8, "complete", 12.5)
