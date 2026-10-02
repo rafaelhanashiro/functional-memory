@@ -144,6 +144,8 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
                          (["unnormalized_fused_attention"] if fused and not learned and not fixed else []))
         if model.get("attention_output_scaling", "none") != "none" and cpu:
             tests.append("attention_output_scaling")
+    if model.get("initialization", "flax_default") != "flax_default" and cpu:
+        tests.append("initialization")
     return tuple(f"scaffolds/transformer/tests/test_{name}" + ("" if ".py::" in name else ".py") for name in tests)
 
 

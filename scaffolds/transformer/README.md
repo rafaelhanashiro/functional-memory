@@ -200,6 +200,21 @@ and defining its numerical diagnostics. A fused implementation must differentiat
 all trainable array arguments. Data loading, the Transformer residual/MLP blocks,
 and the training loop do not need separate copies.
 
+### Weight initialization
+
+`model.initialization` selects the weight initialization; the default
+`flax_default` keeps the scaffold's Flax draws (Linear kernels truncated normal with
+variance `1/fan_in`, embeddings variance `1/features`). A reference scheme re-draws the
+weights after construction from one extra draw of the run's parameter key, keeping
+parameter metadata, norm scales of one, zero biases, and the declared initial values of
+mechanism-owned attention parameters (`models/initialization.py`).
+
+| `initialization` | Mechanism | Weights |
+|---|---|---|
+| `flax_default` (default) | any | Flax defaults |
+| `transformer_reference` | dot-product | N(0, 0.02); attention `o_proj` and MLP `down_proj` N(0, 0.02/√(2L)) (GPT-2/Megatron) |
+| `gla_reference` | GLA | N(0, 0.02); query, key, and both low-rank gate projections Xavier-uniform, gain 2^-2.5 (official GLA code) |
+
 ### Gated linear attention
 
 `attention_mechanism: gla` replaces the attention module inside the same residual

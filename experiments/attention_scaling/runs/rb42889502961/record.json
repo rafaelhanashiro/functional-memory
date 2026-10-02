@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rb42889502961/config.yaml",
+    "sha256": "0a849baffa946b02275243f7ccb55cf479da13cd6ceb373a2d66f1a1756ef544"
+  },
+  "label": "200m-dk064-gla-reference-init-seed0",
+  "name": "200m-dk064-gla-reference-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "rb42889502961",
+  "status": "planned"
+}
