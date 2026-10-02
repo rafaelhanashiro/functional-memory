@@ -1993,7 +1993,7 @@
     },
     "dependency_lock": {
       "path": "scaffolds/transformer/uv.lock",
-      "sha256": "dc590455ba26b6e2ee0934d17f523b2f042e55fae378e86bfc6a70282a56a559"
+      "sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3"
     },
     "code": {
       "collect.py": {

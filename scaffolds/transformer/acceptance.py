@@ -91,6 +91,8 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
     tests = []
     if model.get("attention_mechanism", "dot_product") == "gla":
         tests = ["gla", "gla_bridge", "gla_integration"] if cpu else (["gla_kernel"] if fused else [])
+    elif model.get("attention_mechanism", "dot_product") == "gated_deltanet":
+        tests = ["gated_deltanet"] if cpu else (["gated_deltanet_kernel"] if fused else [])
     else:
         degree = model.get("attention_degree")
         normalized = model.get("attention_normalization", True)
@@ -153,7 +155,7 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
     """Shared acceptance for a Transformer recipe across all attention families."""
     validate_config(config)
     runtime_env = {}
-    if config.model.attention_mechanism == "gla":
+    if config.model.attention_mechanism in ("gla", "gated_deltanet"):
         # The custom-call bridge executes outside XLA command buffers.
         flags = os.environ.get("XLA_FLAGS", "").split()
         flags = [flag for flag in flags if not flag.startswith("--xla_gpu_enable_command_buffer=")]
@@ -166,7 +168,7 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
             "model", "training", "checkpoint_audit", "parameter_policy")),
         check_config=validate_config,
         required_backend=None if request == "auto" else request,
-        check_initialization=(None if config.model.attention_mechanism == "gla"
+        check_initialization=(None if config.model.attention_mechanism in ("gla", "gated_deltanet")
                               else matches_softmax_backbone_initialization),
         runtime_env=runtime_env,
         select_tests=attention_test_paths,

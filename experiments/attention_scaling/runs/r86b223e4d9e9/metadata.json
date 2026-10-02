@@ -1,0 +1,338 @@
+{
+  "attention_backend": "fused",
+  "attention_backend_requested": "fused",
+  "attention_diagnostics": {
+    "attention_backend": "fused",
+    "attention_backend_requested": "fused",
+    "attention_formula": "S_t=a_t S_{t-1}+b_t k_t (v_t-a_t S_{t-1}^T k_t)^T; o_t=S_t^T q_t/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); b_t=sigmoid(W_b x)",
+    "attention_implementation": "fla_chunk_gated_delta_rule_triton",
+    "attention_kernel": "gated_deltanet",
+    "attention_mechanism": "gated_deltanet",
+    "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+    "attention_score_scale": "1/sqrt(d_k)",
+    "diagnostic_backend": "fused",
+    "format": "shared-transformer-attention-diagnostics",
+    "gdn_chunk_size": 64,
+    "gdn_conv_size": 4,
+    "gdn_initial_state": "zero_each_sequence",
+    "gdn_kernel_source": "flash-linear-attention chunk_gated_delta_rule (pinned in the scaffold lock)",
+    "gdn_state_elements_per_layer": 131072,
+    "issues": [],
+    "kernel_values": "gated_delta_rule_recurrence",
+    "layers": [
+      {
+        "beta_max": 0.95703125,
+        "beta_min": 0.0302734375,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 0,
+        "log_decay_max": -5.186706857784884e-06,
+        "log_decay_min": -10.240867614746094,
+        "read_abs_max": 2.390625
+      },
+      {
+        "beta_max": 0.859375,
+        "beta_min": 0.015869140625,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 1,
+        "log_decay_max": -1.8863916920963675e-05,
+        "log_decay_min": -23.516456604003906,
+        "read_abs_max": 0.7890625
+      },
+      {
+        "beta_max": 0.9296875,
+        "beta_min": 0.01031494140625,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 2,
+        "log_decay_max": -2.8217984890943626e-06,
+        "log_decay_min": -17.649272918701172,
+        "read_abs_max": 0.435546875
+      },
+      {
+        "beta_max": 0.8671875,
+        "beta_min": 0.029296875,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 3,
+        "log_decay_max": -2.307464441742013e-08,
+        "log_decay_min": -15.362088203430176,
+        "read_abs_max": 0.310546875
+      },
+      {
+        "beta_max": 0.99609375,
+        "beta_min": 0.01068115234375,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 4,
+        "log_decay_max": -6.111845607392752e-08,
+        "log_decay_min": -16.06162452697754,
+        "read_abs_max": 0.330078125
+      },
+      {
+        "beta_max": 0.97265625,
+        "beta_min": 0.0091552734375,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 5,
+        "log_decay_max": -2.1773264961666428e-05,
+        "log_decay_min": -17.88777732849121,
+        "read_abs_max": 0.1572265625
+      },
+      {
+        "beta_max": 0.98828125,
+        "beta_min": 0.0047607421875,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 6,
+        "log_decay_max": -1.607456390217976e-08,
+        "log_decay_min": -20.858022689819336,
+        "read_abs_max": 0.244140625
+      },
+      {
+        "beta_max": 0.96484375,
+        "beta_min": 0.00193023681640625,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 7,
+        "log_decay_max": -1.9896683411957383e-08,
+        "log_decay_min": -17.338119506835938,
+        "read_abs_max": 0.26171875
+      },
+      {
+        "beta_max": 0.96484375,
+        "beta_min": 0.0025482177734375,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 8,
+        "log_decay_max": -6.69185027390995e-08,
+        "log_decay_min": -12.65012264251709,
+        "read_abs_max": 0.1513671875
+      },
+      {
+        "beta_max": 0.94921875,
+        "beta_min": 0.0113525390625,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 9,
+        "log_decay_max": -5.133409104018938e-06,
+        "log_decay_min": -9.698665618896484,
+        "read_abs_max": 0.2138671875
+      }
+    ],
+    "sample": {
+      "diagnostic_pass_contributes_to_validation_loss": false,
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "num_sequences": 1,
+      "prediction_tokens": 2048,
+      "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+      "selection": "first_heldout_sequence",
+      "sequence_index": 0,
+      "source": "packed"
+    },
+    "step": 19074,
+    "valid": true,
+    "version": 1
+  },
+  "attention_formula": "S_t=a_t S_{t-1}+b_t k_t (v_t-a_t S_{t-1}^T k_t)^T; o_t=S_t^T q_t/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); b_t=sigmoid(W_b x)",
+  "attention_implementation": "fla_chunk_gated_delta_rule_triton",
+  "attention_kernel": "gated_deltanet",
+  "attention_mechanism": "gated_deltanet",
+  "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+  "attention_score_scale": "1/sqrt(d_k)",
+  "checkpoint_retention": {
+    "best_checkpoint_step": 19074,
+    "completion_sha256": "43add0f9dd7dac9966760fd0bad857925aed1035b6a14934b6ab4723ea4571a9",
+    "format": "shared-transformer-checkpoint-retention",
+    "seed": 0,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "948dc2959b32b140ab5b8491ab777ef0db86f1d8",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 19074,
+    "validation_nll": 2.5937777927943637,
+    "version": 1
+  },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "diagnostic_backend": "fused",
+  "diagnostic_sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "error": null,
+  "execution_runtime": {
+    "batch_transfer": "host_to_shard",
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA B300 SXM6 AC",
+        "platform": "gpu"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA B300 SXM6 AC",
+        "platform": "gpu"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA B300 SXM6 AC",
+        "platform": "gpu"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA B300 SXM6 AC",
+        "platform": "gpu"
+      }
+    ],
+    "environment": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct"
+  },
+  "gdn_chunk_size": 64,
+  "gdn_conv_size": 4,
+  "gdn_initial_state": "zero_each_sequence",
+  "gdn_kernel_source": "flash-linear-attention chunk_gated_delta_rule (pinned in the scaffold lock)",
+  "gdn_state_elements_per_layer": 131072,
+  "next_train_sequence": 4882944,
+  "parameter_count": 231897024,
+  "qk_head_dim": 128,
+  "retained_best_checkpoint_step": 19074,
+  "retained_terminal_checkpoint_step": 19074,
+  "rng_state": {
+    "completed_updates": 19074,
+    "seed": 0
+  },
+  "runtime_history": [
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 2,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 3,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "205825",
+      "timestamp_utc": "2026-10-02T12:26:39.932584+00:00"
+    },
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA B300 SXM6 AC",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA B300 SXM6 AC",
+            "platform": "gpu"
+          },
+          {
+            "id": 2,
+            "kind": "NVIDIA B300 SXM6 AC",
+            "platform": "gpu"
+          },
+          {
+            "id": 3,
+            "kind": "NVIDIA B300 SXM6 AC",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "205825",
+      "timestamp_utc": "2026-10-02T15:10:05.410879+00:00"
+    }
+  ],
+  "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "seed": 0,
+  "slurm_job_id": "205825",
+  "slurm_restart_count": 1,
+  "source_commit": "948dc2959b32b140ab5b8491ab777ef0db86f1d8",
+  "status": "complete",
+  "step": 19074,
+  "target_steps": 19074,
+  "target_tokens": 10000269312,
+  "training_tokens": 10000269312,
+  "updated_utc": "2026-10-02T15:44:54.975721+00:00",
+  "validation_nll": 2.5937777927943637,
+  "validation_perplexity": 13.38022395757579,
+  "value_head_dim": 64
+}

@@ -16,7 +16,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-cuda = ["jax[cuda12]==0.10.0", "nvidia-cudnn-cu12==9.22.0.52", "triton==3.6.0"]
+cuda = [
+    "jax[cuda12]==0.10.0", "nvidia-cudnn-cu12==9.22.0.52", "triton==3.7.1",
+    # FLA's Gated DeltaNet Triton kernels, launched through the JAX bridge; the
+    # CPU-only torch build only satisfies their module imports.
+    "flash-linear-attention", "torch==2.9.1",
+]
 
 [dependency-groups]
 dev = ["pytest>=8.3.0"]
@@ -25,6 +30,15 @@ views = ["wandb-workspaces==0.4.11"]
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+flash-linear-attention = { git = "https://github.com/fla-org/flash-linear-attention.git", rev = "516143e31fce09925e6c39ac37148444bad176c4" }
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

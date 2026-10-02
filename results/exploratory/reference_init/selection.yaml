@@ -1,0 +1,81 @@
+question: Do the scaffold's Flax-default initializations handicap our runs against
+  each architecture's reference initialization?
+study: experiments/attention_scaling
+metric: terminal validation perplexity
+runs:
+- run_id: rbde7fc4c2135
+  label: softmax, transformer reference initialization
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/config.yaml
+      sha256: 9fa4ffa41817bc592ac325822ceb1d9d5c822e85bea4aac04496d61e79ecaf28
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/metrics.jsonl
+      sha256: 1e52b91c3f087a16c909417cd9d8faa775770bc58791b68d3fc4efb300393446
+    completion.json:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/completion.json
+      sha256: 2be474260e097644a99ddbfe3a838ec5c7c7f6f100d9759e14bdfd7cc40dc8c1
+    metadata.json:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/metadata.json
+      sha256: 7311ac18288b9071eda6a5cfa1f5a3b7fe6633156f82e975a0d882c2f7b92276
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/best_validation.json
+      sha256: b05a2a70f4fb65bca76c0c53cab76a78f49c5f5f588af6b73250ecc0bf1d9411
+- run_id: rb42889502961
+  label: GLA, official GLA initialization
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rb42889502961/config.yaml
+      sha256: 0a849baffa946b02275243f7ccb55cf479da13cd6ceb373a2d66f1a1756ef544
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rb42889502961/metrics.jsonl
+      sha256: 52400cbd664d28817f5d3355af8b884382c187d2131667c3aae2e1b9797ec97f
+    completion.json:
+      path: experiments/attention_scaling/runs/rb42889502961/completion.json
+      sha256: e29c6d4ad36c53885c86bb45fe59aec9b577f41e9f3e73106a9755970a80f2ca
+    metadata.json:
+      path: experiments/attention_scaling/runs/rb42889502961/metadata.json
+      sha256: aa31e2289121450865b15da59a936809c13e929922927c53a7f2bcee080a3c1a
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rb42889502961/best_validation.json
+      sha256: 6d0f37920b5437e39faf751abebec6be9e96d06c84eeee7e252ffaaf217e8a73
+- run_id: r1feece425074
+  label: softmax, Flax defaults
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r1feece425074/config.yaml
+      sha256: fb547f444034497bd8da6a8e74024c2e3ec6f0eba8a02de86449f33dc7dd3e9d
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r1feece425074/metrics.jsonl
+      sha256: 721add8f72c236ace218e41fe8acf2948acc15039e11374c265d2bed9c3c9e49
+    completion.json:
+      path: experiments/attention_scaling/runs/r1feece425074/completion.json
+      sha256: de4e82ca58ec0c788d99898e3b2c7942e146766cd457c97d0281e914eaa702cb
+    metadata.json:
+      path: experiments/attention_scaling/runs/r1feece425074/metadata.json
+      sha256: fea4127b7425382d2be5f1f4946f60a4fe1f28c273c3d29e934f92cdd69eeeb6
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r1feece425074/best_validation.json
+      sha256: 543211dc3f730ec8a4d6e96b26fe33fe1dd6be88e3175785139bfdb535928b18
+- run_id: r6e11d7bd996d
+  label: GLA, Flax defaults
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r6e11d7bd996d/config.yaml
+      sha256: b1214accc43d6f2d59ef0685b9c7152e337c00d1ec46630d0ca1125fa58f198f
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r6e11d7bd996d/metrics.jsonl
+      sha256: f55a68848dd4f1193900feb2b7cd904b3fafa21df42ee8e7df29e6fb993c2668
+    completion.json:
+      path: experiments/attention_scaling/runs/r6e11d7bd996d/completion.json
+      sha256: 2589eecfa7af15af80b3cfcd1a5cf4b6526e3fa658f60e768ef294646191eadb
+    metadata.json:
+      path: experiments/attention_scaling/runs/r6e11d7bd996d/metadata.json
+      sha256: 94552faa992638a9a80eae6a72ee6793fa74eaf9c44dfc84026427786bed1981
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r6e11d7bd996d/best_validation.json
+      sha256: a2c4a41b00752e8964854de904e989b664c0c3141201027e4557ccbec5d2271b

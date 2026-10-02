@@ -14,6 +14,12 @@ initial values.
 - ``gla_reference`` (berlino/gated_linear_attention): every Linear and embedding
   weight N(0, 0.02), then the query, key, and both low-rank gate projections
   Xavier-uniform with gain 2^-2.5.
+- ``gated_deltanet_reference`` (NVlabs/GatedDeltaNet ``lit_gpt`` with ``mamba_init``):
+  embeddings and the (there tied) output head N(0, 0.02); every Linear weight
+  PyTorch's default ``kaiming_uniform_(a=sqrt(5))``, Uniform(+-1/sqrt(fan_in)); the MLP
+  down projection the same divided by sqrt(2 * num_layers). Its name-matched rescaling
+  does not reach the recurrent ``o_proj``. Short convolutions keep PyTorch's default
+  draw and ``A_log``/``dt_bias`` their Mamba-2 draws, both made at construction.
 """
 
 import math
@@ -22,9 +28,10 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 
-INITIALIZATIONS = ("flax_default", "transformer_reference", "gla_reference")
+INITIALIZATIONS = ("flax_default", "transformer_reference", "gla_reference", "gated_deltanet_reference")
 # Each reference scheme belongs to one attention mechanism.
-MECHANISMS = {"transformer_reference": "dot_product", "gla_reference": "gla"}
+MECHANISMS = {"transformer_reference": "dot_product", "gla_reference": "gla",
+              "gated_deltanet_reference": "gated_deltanet"}
 _GLA_XAVIER = ("q_proj", "k_proj", "gate_low_rank", "gate_proj")
 
 
@@ -43,6 +50,14 @@ def _weight_initializer(scheme: str, path: tuple[str, ...], num_layers: int):
         return _normal(0.02 / math.sqrt(2 * num_layers) if residual else 0.02)
     if scheme == "gla_reference":
         return _xavier_uniform(2 ** -2.5) if parent == "attention" and name in _GLA_XAVIER else _normal(0.02)
+    if scheme == "gated_deltanet_reference":
+        if name in ("token_embedding", "lm_head"):
+            return _normal(0.02)
+        torch_default = jax.nn.initializers.variance_scaling(1.0 / 3.0, "fan_in", "uniform")
+        if (parent, name) == ("feed_forward", "down_proj"):
+            scale = math.sqrt(2 * num_layers)
+            return lambda key, shape, dtype: torch_default(key, shape, dtype) / scale
+        return torch_default
     raise ValueError(f"Unknown initialization: {scheme}")
 
 

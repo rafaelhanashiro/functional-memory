@@ -3,7 +3,7 @@
 How do attention family, key dimension, polynomial degree, normalization, and
 coefficient learning affect language-model quality and cost? This study contains
 all Transformer attention executions: softmax, exponential, Taylor, Hermite,
-learned polynomial attention, and GLA.
+learned polynomial attention, GLA, and Gated DeltaNet.
 
 [Combined comparisons](../../results/attention_scaling/README.md) ·
 [Run index](runs.csv) · [Study membership](sweep.yaml) ·
@@ -40,7 +40,9 @@ train factors that guarantee a nonnegative polynomial. QK normalization changes
 the scores independently of normalization of the attention weights. Unnormalized
 attention may rescale each head's output before the output projection, by `1/t` or
 by a per-head RMSNorm (`attention_output_scaling`). GLA uses its
-own gated recurrence. The shared scaffold defines each mechanism and its kernels.
+own gated recurrence, and Gated DeltaNet its gated delta rule (FLA's kernels).
+`model.initialization` selects the scaffold's Flax defaults or an architecture's
+reference recipe. The shared scaffold defines each mechanism and its kernels.
 
 ## Cluster and artifacts
 
