@@ -1,0 +1,302 @@
+{
+  "attention_backend": "fused",
+  "attention_backend_requested": "fused",
+  "attention_diagnostics": {
+    "attention_backend": "fused",
+    "attention_backend_requested": "fused",
+    "attention_formula": "S_t=a_t S_{t-1}+b_t k_t (v_t-a_t S_{t-1}^T k_t)^T; o_t=S_t^T q_t/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); b_t=sigmoid(W_b x)",
+    "attention_implementation": "fla_chunk_gated_delta_rule_triton",
+    "attention_kernel": "gated_deltanet",
+    "attention_mechanism": "gated_deltanet",
+    "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+    "attention_score_scale": "1/sqrt(d_k)",
+    "diagnostic_backend": "fused",
+    "format": "shared-transformer-attention-diagnostics",
+    "gdn_chunk_size": 64,
+    "gdn_conv_size": 4,
+    "gdn_initial_state": "zero_each_sequence",
+    "gdn_kernel_source": "flash-linear-attention chunk_gated_delta_rule (pinned in the scaffold lock)",
+    "gdn_state_elements_per_layer": 16384,
+    "issues": [],
+    "kernel_values": "gated_delta_rule_recurrence",
+    "layers": [
+      {
+        "beta_max": 0.88671875,
+        "beta_min": 0.00592041015625,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 0,
+        "log_decay_max": -5.902978591620922e-05,
+        "log_decay_min": -13.119897842407227,
+        "read_abs_max": 2.90625
+      },
+      {
+        "beta_max": 0.89453125,
+        "beta_min": 0.00347900390625,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 1,
+        "log_decay_max": -5.520265631275834e-07,
+        "log_decay_min": -22.774208068847656,
+        "read_abs_max": 1.6640625
+      },
+      {
+        "beta_max": 0.84765625,
+        "beta_min": 0.00592041015625,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 2,
+        "log_decay_max": -2.2958906811254565e-06,
+        "log_decay_min": -25.29787254333496,
+        "read_abs_max": 1.2890625
+      },
+      {
+        "beta_max": 0.89453125,
+        "beta_min": 0.004608154296875,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 3,
+        "log_decay_max": -8.571863645556732e-07,
+        "log_decay_min": -21.475576400756836,
+        "read_abs_max": 0.78125
+      },
+      {
+        "beta_max": 0.92578125,
+        "beta_min": 0.004913330078125,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 4,
+        "log_decay_max": -1.8355967768002301e-06,
+        "log_decay_min": -16.99666404724121,
+        "read_abs_max": 0.60546875
+      },
+      {
+        "beta_max": 0.98828125,
+        "beta_min": 0.0013275146484375,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 5,
+        "log_decay_max": -1.1194184423857223e-07,
+        "log_decay_min": -16.669811248779297,
+        "read_abs_max": 0.380859375
+      },
+      {
+        "beta_max": 0.98046875,
+        "beta_min": 0.0023193359375,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 6,
+        "log_decay_max": -1.5042925838315568e-07,
+        "log_decay_min": -26.80210304260254,
+        "read_abs_max": 0.63671875
+      },
+      {
+        "beta_max": 0.984375,
+        "beta_min": 0.00433349609375,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 7,
+        "log_decay_max": -1.3311337809795987e-08,
+        "log_decay_min": -29.62360191345215,
+        "read_abs_max": 0.5703125
+      },
+      {
+        "beta_max": 0.9453125,
+        "beta_min": 0.00070953369140625,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 8,
+        "log_decay_max": -1.4276781146183026e-10,
+        "log_decay_min": -11.173775672912598,
+        "read_abs_max": 0.490234375
+      },
+      {
+        "beta_max": 0.9453125,
+        "beta_min": 0.000804901123046875,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 9,
+        "log_decay_max": -9.81418565970671e-07,
+        "log_decay_min": -29.094261169433594,
+        "read_abs_max": 0.51953125
+      }
+    ],
+    "sample": {
+      "diagnostic_pass_contributes_to_validation_loss": false,
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "num_sequences": 1,
+      "prediction_tokens": 2048,
+      "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+      "selection": "first_heldout_sequence",
+      "sequence_index": 0,
+      "source": "packed"
+    },
+    "step": 19074,
+    "valid": true,
+    "version": 1
+  },
+  "attention_formula": "S_t=a_t S_{t-1}+b_t k_t (v_t-a_t S_{t-1}^T k_t)^T; o_t=S_t^T q_t/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); b_t=sigmoid(W_b x)",
+  "attention_implementation": "fla_chunk_gated_delta_rule_triton",
+  "attention_kernel": "gated_deltanet",
+  "attention_mechanism": "gated_deltanet",
+  "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+  "attention_score_scale": "1/sqrt(d_k)",
+  "checkpoint_retention": {
+    "best_checkpoint_step": 19074,
+    "completion_sha256": "f0cf081760a67edbfbc87890a3f9c0f12f36b8607cd7edfd0186e91105363100",
+    "format": "shared-transformer-checkpoint-retention",
+    "seed": 0,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "948dc2959b32b140ab5b8491ab777ef0db86f1d8",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 19074,
+    "validation_nll": 2.6595868297985623,
+    "version": 1
+  },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "diagnostic_backend": "fused",
+  "diagnostic_sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "error": null,
+  "execution_runtime": {
+    "batch_transfer": "host_to_shard",
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA B300 SXM6 AC",
+        "platform": "gpu"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA B300 SXM6 AC",
+        "platform": "gpu"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA B300 SXM6 AC",
+        "platform": "gpu"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA B300 SXM6 AC",
+        "platform": "gpu"
+      }
+    ],
+    "environment": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct"
+  },
+  "gdn_chunk_size": 64,
+  "gdn_conv_size": 4,
+  "gdn_initial_state": "zero_each_sequence",
+  "gdn_kernel_source": "flash-linear-attention chunk_gated_delta_rule (pinned in the scaffold lock)",
+  "gdn_state_elements_per_layer": 16384,
+  "next_train_sequence": 4882944,
+  "parameter_count": 195053504,
+  "qk_head_dim": 16,
+  "retained_best_checkpoint_step": 19074,
+  "retained_terminal_checkpoint_step": 19074,
+  "rng_state": {
+    "completed_updates": 19074,
+    "seed": 0
+  },
+  "runtime_history": [
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA B300 SXM6 AC",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA B300 SXM6 AC",
+            "platform": "gpu"
+          },
+          {
+            "id": 2,
+            "kind": "NVIDIA B300 SXM6 AC",
+            "platform": "gpu"
+          },
+          {
+            "id": 3,
+            "kind": "NVIDIA B300 SXM6 AC",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "205823",
+      "timestamp_utc": "2026-10-02T10:38:19.018657+00:00"
+    }
+  ],
+  "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "seed": 0,
+  "slurm_job_id": "205823",
+  "slurm_restart_count": 0,
+  "source_commit": "948dc2959b32b140ab5b8491ab777ef0db86f1d8",
+  "status": "complete",
+  "step": 19074,
+  "target_steps": 19074,
+  "target_tokens": 10000269312,
+  "training_tokens": 10000269312,
+  "updated_utc": "2026-10-02T11:57:57.628878+00:00",
+  "validation_nll": 2.6595868297985623,
+  "validation_perplexity": 14.290383518119855,
+  "value_head_dim": 64
+}
