@@ -10,31 +10,43 @@ when normalized, can be explored without normalization.
 `model.attention_output_scaling` ([scaffold](../../../scaffolds/transformer/README.md#unnormalized-output-scaling)):
 `inverse_position` divides query `t`'s output by its `t` visible keys;
 `head_rms_norm` applies a per-head RMSNorm with a learned gain. All runs: `d_K = 64`,
-QK-norm, selective decay, 19,074 updates (10.0B tokens), seed 0. Runs and roles:
+QK-norm, selective decay, 19,074 updates (10.0B tokens), seed 0. Each scaled run exists
+with Flax defaults and with the transformer reference initialization
+([reference_init](../reference_init/README.md)). Runs and roles:
 [`selection.yaml`](selection.yaml).
 
 ## Results
 
 Terminal validation perplexity:
 
-| Kernel | No scaling | 1/t | Head RMSNorm |
-| --- | ---: | ---: | ---: |
-| exp | 18.304 | 15.045 | **14.495** |
-| Learned m = 4 | 16.384 | fail @12,637 | **14.709** |
+| Kernel | Initialization | No scaling | 1/t | Head RMSNorm |
+| --- | --- | ---: | ---: | ---: |
+| exp | reference | 15.885 | 14.196 | **13.441** |
+| exp | Flax defaults | 18.304 | 15.045 | 14.495 |
+| Learned m = 4 | reference | not run | 14.056 | **13.662** |
+| Learned m = 4 | Flax defaults | 16.384 | fail @12,637 | 14.709 |
 
-References: softmax 14.457; normalized m = 4: fixed Taylor 14.896, learned
-nonnegative 14.742.
+References: softmax 13.514 (reference initialization), 14.457 (Flax defaults);
+normalized m = 4 with Flax defaults: fixed Taylor 14.896, learned nonnegative 14.742.
 
-- **Head RMSNorm recovers normalization.** exp lands 0.04 from softmax: for a
-  positive kernel, RMSNorm of the unnormalized output equals RMSNorm of the softmax
-  output. Learned m = 4 improves by 1.68 and beats both normalized m = 4 kernels
-  while staying signed.
-- **1/t recovers most of it for exp** (3.26 of the 3.85 gap to softmax). Learned
-  m = 4 with 1/t tracked well below the unscaled run (16.40 vs 18.09 at update
-  12,000) until its gradient norm overflowed at update 12,637 with a finite loss
-  (2.79). The cause is undiagnosed; its update-12,500 checkpoint is kept for a replay.
+- **Head RMSNorm recovers normalization.** exp lands at softmax on either
+  initialization (−0.07 with the reference initialization, +0.04 with Flax defaults):
+  for a positive kernel, RMSNorm of the unnormalized output equals RMSNorm of the
+  softmax output. Learned m = 4 stays signed and lands 0.15 above softmax.
+- **The reference initialization helps every variant,** by 0.85–1.05 for the scaled
+  runs and 2.42 for unscaled exp. The ranking is unchanged: head RMSNorm, then 1/t,
+  then no scaling.
+- **Learned m = 4 with 1/t no longer fails.** With Flax defaults its gradient norm
+  overflowed at update 12,637 with a finite loss; with the reference initialization it
+  finished at 14.056, still 0.39 behind head RMSNorm. The Flax-default run's
+  update-12,500 checkpoint is kept for a replay.
 
 ## Limits
 
 - One seed; differences of a few tenths are not established.
-- exp with head RMSNorm trained on H100; the other new runs on B300.
+- Learned m = 4 without scaling has no reference-initialization run, so its row
+  compares scaling across initializations; the normalized m = 4 references use Flax
+  defaults.
+- With the reference initialization, the 1/t runs trained on H100 and the head-RMSNorm
+  runs on B300; with Flax defaults, exp with head RMSNorm trained on H100 and the other
+  scaled runs on B300.
