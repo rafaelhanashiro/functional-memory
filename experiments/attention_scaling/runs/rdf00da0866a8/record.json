@@ -442,7 +442,7 @@
     "sha256": "ff7f66a2b255d93b9311dd3f781934384cbf344d3c79c48f5e6e586484d7a541",
     "size_bytes": 1496073
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup_check/experiments/attention_scaling/runs/rdf00da0866a8/training.log",
+  "log_path": "experiments/attention_scaling/runs/rdf00da0866a8/training.log",
   "metadata": {
     "path": "experiments/attention_scaling/runs/rdf00da0866a8/metadata.json",
     "sha256": "0bba4129f0ccefa8e4e91d5f0834c271b72d4fa78d47b1adde8b08cf4e6f908c",
@@ -454,7 +454,7 @@
     "size_bytes": 241521
   },
   "name": "200m-qk-softmax-transformer-init-warmup400-seed0",
-  "numerical_failure_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup_check/experiments/attention_scaling/runs/rdf00da0866a8/numerical_failure_step_00018408.json",
+  "numerical_failure_path": "experiments/attention_scaling/runs/rdf00da0866a8/numerical_failure_step_00018408.json",
   "record_schema_version": 1,
   "retained_best_checkpoint_step": 19074,
   "retained_terminal_checkpoint_step": 19074,
