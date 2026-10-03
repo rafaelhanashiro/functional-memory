@@ -10,6 +10,21 @@ runs:
     config.yaml:
       path: experiments/attention_scaling/runs/rdf00da0866a8/config.yaml
       sha256: 7c8b77a7df1efa6a315b3a8b89949d65433cc346157a54f9d52a4392e35ce185
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/metrics.jsonl
+      sha256: 09921898d01e171d68018fa91436de46486eca56f1282ecc54e5b23f530d211f
+    completion.json:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/completion.json
+      sha256: 737901beec2f30725b76393c691f710763754de9de3c4667a31954ddcf75da4f
+    metadata.json:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/metadata.json
+      sha256: 0bba4129f0ccefa8e4e91d5f0834c271b72d4fa78d47b1adde8b08cf4e6f908c
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/best_validation.json
+      sha256: dff398331d0901d6a929cc3136220a805525c45c0aff1af36f4fdac4f19b17ae
+    numerical_failure_step_00018408.json:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/numerical_failure_step_00018408.json
+      sha256: d5cd819418feddeb03aa0f078eb2473c80a1071032d4c53bf8bc65e11bdb840b
 - run_id: rbde7fc4c2135
   label: softmax d_K = 64, transformer reference initialization, warmup 2,000
   role: control
