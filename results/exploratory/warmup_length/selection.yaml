@@ -1,0 +1,31 @@
+question: Does the recipe's 2,000-update warmup (10.5% of training) change terminal
+  perplexity materially against a standard 400-update warmup?
+study: experiments/attention_scaling
+metric: terminal validation perplexity
+runs:
+- run_id: rdf00da0866a8
+  label: softmax d_K = 64, transformer reference initialization, warmup 400
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/config.yaml
+      sha256: 7c8b77a7df1efa6a315b3a8b89949d65433cc346157a54f9d52a4392e35ce185
+- run_id: rbde7fc4c2135
+  label: softmax d_K = 64, transformer reference initialization, warmup 2,000
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/config.yaml
+      sha256: 9fa4ffa41817bc592ac325822ceb1d9d5c822e85bea4aac04496d61e79ecaf28
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/metrics.jsonl
+      sha256: 1e52b91c3f087a16c909417cd9d8faa775770bc58791b68d3fc4efb300393446
+    completion.json:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/completion.json
+      sha256: 2be474260e097644a99ddbfe3a838ec5c7c7f6f100d9759e14bdfd7cc40dc8c1
+    metadata.json:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/metadata.json
+      sha256: 7311ac18288b9071eda6a5cfa1f5a3b7fe6633156f82e975a0d882c2f7b92276
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/best_validation.json
+      sha256: b05a2a70f4fb65bca76c0c53cab76a78f49c5f5f588af6b73250ecc0bf1d9411
