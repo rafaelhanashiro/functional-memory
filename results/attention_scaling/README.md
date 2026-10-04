@@ -15,10 +15,9 @@ coefficient diagnostics), and execution metadata under
 Every plotted run uses selective weight decay and QK-norm, except "softmax no QK-norm"
 and Gated DeltaNet, which have no QK-norm. The reference mechanisms use their reference
 initializations: GPT-2/Megatron (`transformer_reference`) for softmax and unnormalized
-exp, the paper's (`gated_deltanet_reference`) for Gated DeltaNet. Normalized fixed
-Taylor `m = 1`, `3`, `8`, and `16` in the heatmap also use `transformer_reference`; the
-other polynomial kernels (heatmap Taylor `m = 2` and `4`, and every degree-chart family)
-still use the scaffold's Flax defaults (see [Limits](#limits)).
+exp, the paper's (`gated_deltanet_reference`) for Gated DeltaNet. Every normalized fixed
+Taylor column in the heatmap also uses `transformer_reference`; the degree-chart
+polynomial families still use the scaffold's Flax defaults (see [Limits](#limits)).
 
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
@@ -70,8 +69,9 @@ Normalized kernels (failures show the update):
 | 16 | 13.519 | | | |
 
 Fixed Taylor `m = 8` and `16` use the reference initialization (Flax defaults: 14.498
-and 14.454); every other cell uses Flax defaults. With the reference initialization the
-heatmap's `m = 1` and `m = 3` fail at updates 35 and 555.
+and 14.454); every other cell uses Flax defaults. In the heatmap, `m = 2` and `4` use the
+reference initialization too (14.911 and 13.774 at `d_K = 64`), and `m = 1` and `m = 3`
+fail at updates 35 and 555.
 
 Unnormalized kernels:
 
@@ -138,9 +138,11 @@ decay rule except at `d_K = 64`.
 - **Normalized fixed Taylor:** higher degree closes the gap to softmax. With both on the
   reference initialization, `m = 16` is within 0.03 of softmax at `d_K >= 16` and 0.11
   above at `d_K = 8` (15.75 vs 15.64); `m = 8` is 0.44 above at `d_K = 8` and within 0.03
-  from `d_K = 64` (13.29 vs 13.30 at 128). The reference initialization improves `m = 8` and
-  `16` by 0.91–1.66, most at small `d_K`, as it does softmax. `m = 2` and `4` (Flax
-  defaults) trail further: 22.44 and 19.07 at `d_K = 8`.
+  from `d_K = 64` (13.29 vs 13.30 at 128). `m = 4` trails softmax by 1.42 at `d_K = 8`,
+  narrowing to 0.15 at 128; `m = 2` by 3.85, narrowing to 1.03. The reference
+  initialization improves every degree, most at small `d_K`: `m = 8` and `16` by
+  0.91–1.66, as it does softmax, and `m = 2` and `4` more (1.47–2.95 and 0.98–2.00), so
+  their gaps to softmax shrink.
 - **Softmax vs Gated DeltaNet** (both on reference initializations): Gated DeltaNet is
   lower at `d_K = 8` (14.85 vs 15.64) and level at 16 (14.29 vs 14.34); softmax is lower
   at 32, 64, and 128 (by 0.19, 0.19, 0.08). Both improve with every doubling of `d_K`.
@@ -150,10 +152,9 @@ decay rule except at `d_K = 64`.
 ## Limits
 
 - One seed per cell; differences of a few tenths are not established.
-- Initializations differ: the references and heatmap Taylor `m = 1`, `3`, `8`, `16` use
-  reference initializations; heatmap Taylor `m = 2`, `4` and the degree-chart families
-  use Flax defaults,
-  which cost softmax and Taylor `m = 8`, `16` 0.9–1.7 and unnormalized exp 2.4
+- Initializations differ: the references and every heatmap Taylor column use
+  reference initializations; the degree-chart families use Flax defaults,
+  which cost softmax and normalized Taylor 0.9–3.0 and unnormalized exp 2.4
   ([reference_init](../exploratory/reference_init/README.md)). Compare Flax-default
   kernels with the references only at equal initialization.
 - Parameter count changes with `d_K`. Gated DeltaNet also changes the architecture and

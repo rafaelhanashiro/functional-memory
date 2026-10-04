@@ -38,7 +38,7 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     assert by_cell["references", "softmax", 64]["terminal_ppl"] == pytest.approx(13.513509197684602)
     assert by_cell["references", "softmax_no_qk_norm", 64]["terminal_ppl"] == pytest.approx(13.932300633414917)
     assert by_cell["references", "softmax", 8]["terminal_ppl"] == pytest.approx(15.639054509735974)
-    assert by_cell["normalized_fixed", "m2", 16]["terminal_ppl"] == pytest.approx(19.310110117314053)
+    assert by_cell["normalized_fixed", "m2", 16]["terminal_ppl"] == pytest.approx(17.153819786680963)
     assert by_cell["normalized_fixed", "m16", 64]["terminal_ppl"] == pytest.approx(13.518513230372008)
 
     csv_rows = list(csv.DictReader((output / "summary.csv").open()))
