@@ -52,8 +52,9 @@ Runs keep their original home cluster: **Kennel or ORCD**, recorded per run in
 ORCD artifacts live under
 `/orcd/pool/006/rafah/functional_memory/artifacts/experiments/attention_scaling/runs/`,
 and their records state the absolute paths. ORCD ran every Flax-default GLA execution,
-the Flax-default QK-norm softmax runs at `d_K = 8, 16, 32, 128`, and the
-reference-initialization normalized fixed Taylor `m = 2` and `4` at every `d_K`.
+the Flax-default QK-norm softmax runs at `d_K = 8, 16, 32, 128`, the
+reference-initialization normalized fixed Taylor `m = 2` and `4` at every `d_K`, and the
+reference-initialization unnormalized learned Taylor `m = 1–4` at `d_K = 64`.
 Artifacts on the other cluster are unavailable in each checkout.
 Git carries the compact measurements and recipes, not checkpoints or logs.
 

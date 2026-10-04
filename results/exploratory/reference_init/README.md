@@ -3,13 +3,13 @@
 Opened 2026-10-02. The reference mechanisms and every normalized fixed Taylor column
 (`m = 1, 2, 3, 4, 8, 16`) in [`results/attention_scaling/`](../../attention_scaling/README.md)
 now use these reference-initialization runs. Open decision: rerun the degree-chart
-families, which still use Flax defaults.
+families, which still use Flax defaults; unnormalized learned Taylor is rerun here.
 
 The scaffold's Flax defaults draw Linear weights truncated normal with variance
 `1/fan_in` and no depth scaling. Do they handicap the models against the recipes their
 authors train with? Softmax and normalized fixed Taylor `m = 2`, `4`, `8`, and `16` at
-every `d_K`, and softmax no QK-norm, unnormalized exp, Taylor `m = 1` and `3`, and GLA at
-`d_K = 64`, repeat the
+every `d_K`, and softmax no QK-norm, unnormalized exp, Taylor `m = 1` and `3`,
+unnormalized learned Taylor `m = 1–4`, and GLA at `d_K = 64`, repeat the
 Flax-default recipes and change only
 `model.initialization`
 ([scaffold](../../../scaffolds/transformer/README.md#weight-initialization)):
@@ -34,6 +34,10 @@ Terminal validation perplexity:
 | Softmax | 128 | 14.225 | **13.303** | −0.92 |
 | Softmax no QK-norm | 64 | 14.665 | **13.932** | −0.73 |
 | Unnormalized exp | 64 | 18.304 | **15.885** | −2.42 |
+| Unnormalized learned Taylor m = 1 | 64 | 20.279 | **17.883** | −2.40 |
+| Unnormalized learned Taylor m = 2 | 64 | 17.599 | **15.507** | −2.09 |
+| Unnormalized learned Taylor m = 3 | 64 | 16.330 | **14.657** | −1.67 |
+| Unnormalized learned Taylor m = 4 | 64 | 16.384 | **14.720** | −1.66 |
 | Taylor m = 1 | 64 | fail @31 | fail @35 | |
 | Taylor m = 2 | 8 | 22.440 | **19.491** | −2.95 |
 | Taylor m = 2 | 16 | 19.310 | **17.154** | −2.16 |
@@ -82,9 +86,14 @@ Gap by update at `d_K = 64` (reference minus Flax defaults):
   at 8 (+0.79).
 - **Odd-degree normalized Taylor still fails** (row sums cross zero), a few updates to
   136 updates later than with Flax defaults.
-- **The degree-chart polynomial kernels are likely handicapped too.** Every normalized
-  fixed Taylor degree that finishes gained as much as softmax (within 0.01) or more; until those
-  families are rerun, compare them with the references only at equal initialization.
+- **Unnormalized learned Taylor gains 1.66–2.40, most at low degree** (`m = 1` −2.40,
+  `m = 4` −1.66), like unnormalized exp. Its ordering is unchanged: `m = 3` (14.657) and
+  `m = 4` (14.720) are best, and both beat unnormalized exp (15.885) on either
+  initialization.
+- **The other degree-chart polynomial kernels are likely handicapped too.** Every
+  normalized fixed Taylor degree that finishes gained as much as softmax (within 0.01) or
+  more; until those families are rerun, compare them with the references only at equal
+  initialization.
 
 ## Limits
 
@@ -93,5 +102,6 @@ Gap by update at `d_K = 64` (reference minus Flax defaults):
   softmax `d_K = 8`, softmax no QK-norm, and GLA (H100). The Taylor `m = 1`, `3`, `8`, and
   `16` runs trained on H100, except `d_K = 16`, `m = 16` and `d_K = 64, 128`, `m = 8`,
   which resumed across H100 and B300 after preemptions. Taylor `m = 2` and `4` trained
-  on ORCD (2×H200); their Flax-default controls trained on Kennel. The Flax-default GLA run and softmax at
+  on ORCD (2×H200), as did unnormalized learned Taylor; the Flax-default controls of both
+  trained on Kennel. The Flax-default GLA run and softmax at
   `d_K = 8, 16, 32, 128` trained on ORCD.
