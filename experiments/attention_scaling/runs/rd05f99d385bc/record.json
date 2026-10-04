@@ -1,11 +1,690 @@
 {
+  "acceptance": {
+    "sha256": "9dc0215200751d6d21cdc2ff824ef11ad26a2c85b7b7b8c4a439599475e075a1",
+    "summary": {
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-10-03T20:07:35.235296+00:00",
+      "hardware": {
+        "attention_backend": "fused",
+        "device_kinds": [
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "e94cf3110a66578f9bf76307269c14b7cf9ca53d61d3a4fe4eb0f7587111542f",
+      "slurm_job_id": "206155",
+      "slurm_restart_count": "14",
+      "source_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "status": "passed"
+    }
+  },
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": [
+    {
+      "path": "experiments/attention_scaling/runs/rd05f99d385bc/best_validation.json",
+      "sha256": "29a42e6510b77c12d6a0f98a487c5a79893f29537f2074d7d30468e4ed47e9f1",
+      "size_bytes": 185
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd05f99d385bc/completion.json",
+      "sha256": "32deb9e5e6529aafd481644e6374ae199c124a7d6f01cdb1c7272eecc30d1137",
+      "size_bytes": 25962
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd05f99d385bc/config.json",
+      "sha256": "4dbdd28b69c464d764c04b35c922d54d853eef65c7e693bbd1e299874fb4d2b4",
+      "size_bytes": 2832
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd05f99d385bc/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd05f99d385bc/metadata.json",
+      "sha256": "cafdb09a73af6b9051978fe45654f323ec08e061b52fe35fdcd5172dffe20773",
+      "size_bytes": 29196
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd05f99d385bc/metrics.jsonl",
+      "sha256": "7107b3417fb025e2c527fed0dfa8539ad855015cf4ea9c7c272afd4b670a1f59",
+      "size_bytes": 244805
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd05f99d385bc/retention.json",
+      "sha256": "9d2db26bdf3b15e15dbf52dce9361d24ddf44533e0cd63c13a11c1a56132633c",
+      "size_bytes": 436
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd05f99d385bc/wandb_run.json",
+      "sha256": "9a5d5c692f5c8b6a24b3a585fbb8f3e09b040f634e9001a24e98c31596e04aa8",
+      "size_bytes": 203
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd05f99d385bc/training.log",
+      "sha256": "242f95f55a82e4471f6690187bf848d630f367d4eea2ad2e23d5190608da8371",
+      "size_bytes": 1488504
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20075 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:16 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-02T19:10:30 EligibleTime=2026-10-03T00:49:11 AccrueTime=2026-10-03T00:49:11 StartTime=2026-10-03T06:06:59 EndTime=2026-10-05T06:06:59 Deadline=N/A PreemptEligibleTime=2026-10-03T06:06:59 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T06:06:59 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T10:32:41.536289+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-03T10:07:15.574304+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20070 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=1 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:06 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T06:32:42 EligibleTime=2026-10-03T06:34:43 AccrueTime=2026-10-03T06:34:43 StartTime=2026-10-03T08:31:56 EndTime=2026-10-05T08:31:56 Deadline=N/A PreemptEligibleTime=2026-10-03T08:31:56 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T08:31:56 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T12:46:55.629328+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "1",
+      "started_utc": "2026-10-03T12:32:02.883551+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20070 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=2 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T08:46:56 EligibleTime=2026-10-03T08:48:57 AccrueTime=2026-10-03T08:48:57 StartTime=2026-10-03T08:50:10 EndTime=2026-10-05T08:50:10 Deadline=N/A PreemptEligibleTime=2026-10-03T08:50:10 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T08:50:10 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T12:51:51.618765+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "2",
+      "started_utc": "2026-10-03T12:50:15.068233+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20067 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=3 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T08:51:52 EligibleTime=2026-10-03T08:53:53 AccrueTime=2026-10-03T08:53:53 StartTime=2026-10-03T09:01:21 EndTime=2026-10-05T09:01:21 Deadline=N/A PreemptEligibleTime=2026-10-03T09:01:21 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T09:01:21 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T13:35:43.905040+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "3",
+      "started_utc": "2026-10-03T13:01:26.061405+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20067 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=4 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:06 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T09:35:44 EligibleTime=2026-10-03T09:37:45 AccrueTime=2026-10-03T09:37:45 StartTime=2026-10-03T09:55:15 EndTime=2026-10-05T09:55:15 Deadline=N/A PreemptEligibleTime=2026-10-03T09:55:15 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T09:55:15 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T13:56:51.641695+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "4",
+      "started_utc": "2026-10-03T13:55:20.985596+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20067 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=5 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:04 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T09:56:52 EligibleTime=2026-10-03T09:58:53 AccrueTime=2026-10-03T09:58:53 StartTime=2026-10-03T10:09:20 EndTime=2026-10-05T10:09:20 Deadline=N/A PreemptEligibleTime=2026-10-03T10:09:20 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T10:09:20 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T14:10:43.960261+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "5",
+      "started_utc": "2026-10-03T14:09:24.658210+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/H100-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20067 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=6 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:02 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T10:10:45 EligibleTime=2026-10-03T10:12:46 AccrueTime=2026-10-03T10:12:46 StartTime=2026-10-03T10:27:59 EndTime=2026-10-05T10:27:59 Deadline=N/A PreemptEligibleTime=2026-10-03T10:27:59 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T10:27:59 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T14:31:16.623041+00:00",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "6",
+      "started_utc": "2026-10-03T14:28:01.968445+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20067 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=7 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:06 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T10:31:17 EligibleTime=2026-10-03T10:33:18 AccrueTime=2026-10-03T10:33:18 StartTime=2026-10-03T10:40:06 EndTime=2026-10-05T10:40:06 Deadline=N/A PreemptEligibleTime=2026-10-03T10:40:06 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T10:40:06 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T14:43:25.611285+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "7",
+      "started_utc": "2026-10-03T14:40:12.875842+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20067 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=8 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T10:43:26 EligibleTime=2026-10-03T10:45:27 AccrueTime=2026-10-03T10:45:27 StartTime=2026-10-03T10:47:52 EndTime=2026-10-03T10:48:55 Deadline=N/A PreemptEligibleTime=2026-10-03T10:47:52 PreemptTime=2026-10-03T10:47:55 SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T10:47:52 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T14:48:56.067792+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "8",
+      "started_utc": "2026-10-03T14:47:57.367996+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20067 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=9 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:06 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T10:48:57 EligibleTime=2026-10-03T10:50:58 AccrueTime=2026-10-03T10:50:58 StartTime=2026-10-03T10:55:45 EndTime=2026-10-05T10:55:45 Deadline=N/A PreemptEligibleTime=2026-10-03T10:55:45 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T10:55:45 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T14:57:21.558409+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "9",
+      "started_utc": "2026-10-03T14:55:51.741454+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20069 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=10 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:10 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T10:57:22 EligibleTime=2026-10-03T10:59:23 AccrueTime=2026-10-03T10:59:23 StartTime=2026-10-03T12:04:59 EndTime=2026-10-05T12:04:59 Deadline=N/A PreemptEligibleTime=2026-10-03T12:04:59 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T12:04:59 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T17:01:51.591296+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "10",
+      "started_utc": "2026-10-03T16:05:09.199776+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20068 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=11 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:04 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T13:01:52 EligibleTime=2026-10-03T13:03:53 AccrueTime=2026-10-03T13:03:53 StartTime=2026-10-03T13:29:47 EndTime=2026-10-05T13:29:47 Deadline=N/A PreemptEligibleTime=2026-10-03T13:29:47 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T13:29:47 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T18:18:51.682551+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "11",
+      "started_utc": "2026-10-03T17:29:51.862170+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20051 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=12 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T14:18:52 EligibleTime=2026-10-03T14:20:53 AccrueTime=2026-10-03T14:20:53 StartTime=2026-10-03T14:21:10 EndTime=2026-10-05T14:21:10 Deadline=N/A PreemptEligibleTime=2026-10-03T14:21:10 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T14:21:10 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T18:30:15.287717+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "12",
+      "started_utc": "2026-10-03T18:21:15.182774+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/B300-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20053 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=13 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T14:30:16 EligibleTime=2026-10-03T14:32:17 AccrueTime=2026-10-03T14:32:17 StartTime=2026-10-03T15:48:40 EndTime=2026-10-05T15:48:40 Deadline=N/A PreemptEligibleTime=2026-10-03T15:48:40 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T15:48:40 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T19:51:21.591890+00:00",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "13",
+      "started_utc": "2026-10-03T19:48:45.820807+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/.runtime/acceptance/H100-4",
+      "allocation": "JobId=206155 JobName=taylor-dk016-m016 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20053 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=14 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:06 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-03T15:51:22 EligibleTime=2026-10-03T15:53:23 AccrueTime=2026-10-03T15:53:23 StartTime=2026-10-03T15:53:26 EndTime=2026-10-05T15:53:26 Deadline=N/A PreemptEligibleTime=2026-10-03T15:53:26 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-03T15:53:26 Scheduler=Main Partition=long AllocNode:Sid=kennel:806712 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
+      "config_sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde",
+      "exit_code": 0,
+      "finished_utc": "2026-10-03T21:25:53.680995+00:00",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+      "slurm_job_id": "206155",
+      "slurm_partition": "long",
+      "slurm_restart_count": "14",
+      "started_utc": "2026-10-03T19:53:32.853533+00:00"
+    }
+  ],
+  "best_validation": {
+    "path": "experiments/attention_scaling/runs/rd05f99d385bc/best_validation.json",
+    "sha256": "29a42e6510b77c12d6a0f98a487c5a79893f29537f2074d7d30468e4ed47e9f1",
+    "size_bytes": 185
+  },
+  "checkpoint_retention": {
+    "best_checkpoint_step": 19074,
+    "completion_sha256": "32deb9e5e6529aafd481644e6374ae199c124a7d6f01cdb1c7272eecc30d1137",
+    "format": "shared-transformer-checkpoint-retention",
+    "seed": 0,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 19074,
+    "validation_nll": 2.664258965424129,
+    "version": 1
+  },
+  "completion": {
+    "path": "experiments/attention_scaling/runs/rd05f99d385bc/completion.json",
+    "sha256": "32deb9e5e6529aafd481644e6374ae199c124a7d6f01cdb1c7272eecc30d1137",
+    "size_bytes": 25962
+  },
   "config": {
     "path": "experiments/attention_scaling/runs/rd05f99d385bc/config.yaml",
     "sha256": "c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde"
   },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "path": "experiments/attention_scaling/runs/rd05f99d385bc/data_identity.json",
+    "sequence_length": 2049,
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "error": null,
+  "execution": {
+    "attention_backend": "fused",
+    "raw_config": {
+      "path": "config.json",
+      "sha256": "4dbdd28b69c464d764c04b35c922d54d853eef65c7e693bbd1e299874fb4d2b4"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": "cafdb09a73af6b9051978fe45654f323ec08e061b52fe35fdcd5172dffe20773"
+    },
+    "resolved_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "fused",
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_sharing": "global",
+        "attention_coefficients": "fixed",
+        "attention_degree": 16,
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_mechanism": "dot_product",
+        "attention_normalization": true,
+        "attention_output_scaling": "none",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 1024,
+        "initialization": "transformer_reference",
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 16,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_head",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 2000,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "attention_scaling",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "200m-qk-dk016-m016-transformer-init-seed0",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor_high_degree_reference_init/experiments/attention_scaling/runs/rd05f99d385bc"
+      }
+    },
+    "resolved_config_sha256": "36ae9649b24d82a78eeb228630c0f8fbfc824a7b190deacc26bb826f923487ed",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 1,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 2,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 3,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA B300 SXM6 AC",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA B300 SXM6 AC",
+              "platform": "gpu"
+            },
+            {
+              "id": 2,
+              "kind": "NVIDIA B300 SXM6 AC",
+              "platform": "gpu"
+            },
+            {
+              "id": 3,
+              "kind": "NVIDIA B300 SXM6 AC",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "206155",
+        "timestamp_utc": "2026-10-03T10:32:03.258135+00:00"
+      },
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 2,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 3,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "206155",
+        "timestamp_utc": "2026-10-03T20:08:22.791556+00:00"
+      }
+    ]
+  },
+  "frozen_execution_sha256": "0dabd60ec77f96bb34fa8529357c8f7ffdd975b71a058d086350f33790407fb0",
+  "home_cluster": "kennel",
   "label": "200m-qk-dk016-m016-transformer-init-seed0",
+  "log": {
+    "path": "experiments/attention_scaling/runs/rd05f99d385bc/training.log",
+    "sha256": "242f95f55a82e4471f6690187bf848d630f367d4eea2ad2e23d5190608da8371",
+    "size_bytes": 1488504
+  },
+  "log_path": "experiments/attention_scaling/runs/rd05f99d385bc/training.log",
+  "metadata": {
+    "path": "experiments/attention_scaling/runs/rd05f99d385bc/metadata.json",
+    "sha256": "cafdb09a73af6b9051978fe45654f323ec08e061b52fe35fdcd5172dffe20773",
+    "size_bytes": 29196
+  },
+  "metrics": {
+    "path": "experiments/attention_scaling/runs/rd05f99d385bc/metrics.jsonl",
+    "sha256": "7107b3417fb025e2c527fed0dfa8539ad855015cf4ea9c7c272afd4b670a1f59",
+    "size_bytes": 244805
+  },
   "name": "200m-qk-dk016-m016-transformer-init-seed0",
   "record_schema_version": 1,
+  "retained_best_checkpoint_step": 19074,
+  "retained_terminal_checkpoint_step": 19074,
+  "retention": {
+    "path": "experiments/attention_scaling/runs/rd05f99d385bc/retention.json",
+    "sha256": "9d2db26bdf3b15e15dbf52dce9361d24ddf44533e0cd63c13a11c1a56132633c",
+    "size_bytes": 436
+  },
   "run_id": "rd05f99d385bc",
-  "status": "planned"
+  "seed": 0,
+  "selected_checkpoint": {
+    "file_count": 13,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "34124f24106f49ea8898a163d207001b8f24d28c113d833abe44bc3d7d195181",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "861806226f1ce3c82bd0d473d090b4aae328071949060dc677cb2cfb120b8cbe",
+        "size_bytes": 143573
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "e42fb7a6fc049d6c676926fefc5c8bfb5783df4eb2164d1b30c6d07dbac3d7d0",
+        "size_bytes": 88321
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "150ae90d2955d39be873de574c96015885048ded4ab108033027640bc1e724f9",
+        "size_bytes": 49565
+      },
+      {
+        "path": "default/d/8854448a763ddb282f120ff26528bbc0",
+        "sha256": "6ff92033d314df78cd656c15a4bc5962e77de0cadde87950c1900c8dc5f02a87",
+        "size_bytes": 5333
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "2d68e8fe50c81325c8aa886005de2f8d72db20a19f890891c096cc15603777d5",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/0c2bae35abac976155e139402336c9f3",
+        "sha256": "b77a14957afdf21126d440ff07adab5d2cc550c4449e7db25cdde8e2536428a1",
+        "size_bytes": 4205
+      },
+      {
+        "path": "default/ocdbt.process_0/d/69259cfd47f5b9d8e8cd5b0f0c7ccd86",
+        "sha256": "5f41913fbfd4eaa951e6606a15430f27d8abac6514440047a4458ef86738bbec",
+        "size_bytes": 925130752
+      },
+      {
+        "path": "default/ocdbt.process_0/d/6a6e84e4ce3b55968f822225afa34a12",
+        "sha256": "b51a659ecbdbf757b147c5d5c76a8f782525465c705ca59259163eb4ce3ff4d9",
+        "size_bytes": 1964234
+      },
+      {
+        "path": "default/ocdbt.process_0/d/8911a7d5fa3865f56adf138a0e10ca5e",
+        "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+        "size_bytes": 195
+      },
+      {
+        "path": "default/ocdbt.process_0/d/c614e9249c9f006368c34b94e6d46a28",
+        "sha256": "55b14aafe6b9e8343f2aeb88746c015d3726bd896269a39225f8aa44d7babc94",
+        "size_bytes": 1095168000
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "5d6354d00b38ca7e4d6986e9c62708dcb30c743f4e8c5dddc1804b00d7fb1848",
+        "size_bytes": 320
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "c0a05f39d305d0cfea39dfe7a46201d30531fab5b39f3b8452c3741542e70c71",
+        "size_bytes": 138
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "experiments/attention_scaling/runs/rd05f99d385bc/checkpoints/19074",
+    "sha256": "d7cce1d500214d8c2b855fcec154ba53b598aa3ef74b1ee0afaae9a95735e59d",
+    "size_bytes": 2022555120,
+    "step": 19074,
+    "validation_nll": 2.664258965424129
+  },
+  "source_commit": "90c7f55b4944c98c8b7b28c9b928c105ec5d49eb",
+  "status": "complete",
+  "step": 19074,
+  "training_tokens": 10000269312,
+  "updated_utc": "2026-10-03T21:25:44.811882+00:00",
+  "wandb_run": {
+    "path": "experiments/attention_scaling/runs/rd05f99d385bc/wandb_run.json",
+    "sha256": "9a5d5c692f5c8b6a24b3a585fbb8f3e09b040f634e9001a24e98c31596e04aa8",
+    "size_bytes": 203
+  }
 }
