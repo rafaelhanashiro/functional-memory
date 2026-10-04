@@ -3,9 +3,26 @@
     "path": "experiments/attention_scaling/runs/rf0bd67774e8c/config.yaml",
     "sha256": "3e6bdf3fd87e0ebea33f575c9905ac7bb5c801bee28c94bb91d548732a13e252"
   },
+  "home_cluster": "orcd",
   "label": "200m-qk-m003-unnormalized-transformer-init-seed0",
   "name": "200m-qk-m003-unnormalized-transformer-init-seed0",
   "record_schema_version": 1,
   "run_id": "rf0bd67774e8c",
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "excluded_nodes": [
+      "node2500"
+    ],
+    "gpu_count": 2,
+    "gpu_type": "H200",
+    "launch_commit": "ad6faf4ebfa1ee44e3bbedde617dcbacadc97eb7",
+    "launcher": "scaffolds/transformer/launchers/orcd.sbatch",
+    "nice": 100,
+    "partitions": [
+      "mit_preemptable",
+      "mit_normal_gpu"
+    ],
+    "slurm_job_id": "24790094",
+    "submitted_utc": "2026-10-04T05:18:59+00:00"
+  }
 }
