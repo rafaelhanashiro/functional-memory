@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rd2003e215536/config.yaml",
+    "sha256": "620cbd5c72084a7ce3492630ec3ed7dee502efe0c2ed6fde4218a4934db425d2"
+  },
+  "label": "200m-qk-m004-unnormalized-transformer-init-seed0",
+  "name": "200m-qk-m004-unnormalized-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "rd2003e215536",
+  "status": "planned"
+}
