@@ -227,7 +227,7 @@ def test_committed_comparison_sources() -> None:
     assert not any(row["legacy"] for row in rows)
     failures = {(row["panel"], row["column"]): row["failure_step"]
                 for row in rows if row["status"] == "numerical_failure"}
-    assert failures == {("normalized_fixed", "m1"): 31, ("normalized_fixed", "m3"): 419}
+    assert failures == {("normalized_fixed", "m1"): 35, ("normalized_fixed", "m3"): 555}
     assert all(row["d_k"] == 64 for row in rows if row["status"] == "numerical_failure")
 
     chart = yaml.safe_load((root / "results/attention_scaling/degree_chart.yaml").read_text())
