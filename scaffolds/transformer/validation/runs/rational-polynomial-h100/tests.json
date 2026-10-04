@@ -1,0 +1,25 @@
+{
+  "completed_utc": "2026-10-04T01:18:40+00:00",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "device_kinds": [
+    "NVIDIA H100 PCIe"
+  ],
+  "exit_code": 0,
+  "gpu_type": "H100",
+  "home_cluster": "kennel",
+  "junit": {
+    "path": "scaffolds/transformer/validation/logs/rational-polynomial/gpu-tests-207486.xml",
+    "sha256": "23df181186d434d2e45ecd3f99d893299fe4b8bf428eefb55c75f2f1faac2d27"
+  },
+  "node": "mastiff",
+  "rational_cases": 14,
+  "slurm_job_id": "207486",
+  "source_commit": "8cee781f80db7959511191b4546f1faae4ad1b04",
+  "status": "passed",
+  "test_files": [
+    "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py",
+    "scaffolds/transformer/tests/test_learned_polynomial_normalized.py",
+    "scaffolds/transformer/tests/test_qk_norm.py"
+  ],
+  "tests_passed": 63
+}

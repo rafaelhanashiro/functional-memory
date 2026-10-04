@@ -158,8 +158,12 @@ def _log(run, payload: dict, step: int) -> None:
               flush=True)
 
 
-def log_train(run, step: int, nll: float, perplexity: float, learning_rate: float) -> None:
-    _log(run, {"train/nll": nll, "train/ppl": perplexity, "train/learning_rate": learning_rate}, step)
+def log_train(run, step: int, nll: float, perplexity: float, learning_rate: float,
+              coefficient_penalty: float | None = None) -> None:
+    payload = {"train/nll": nll, "train/ppl": perplexity, "train/learning_rate": learning_rate}
+    if coefficient_penalty is not None:
+        payload["train/coefficient_penalty"] = coefficient_penalty
+    _log(run, payload, step)
 
 
 def log_validation(run, record: dict) -> None:
@@ -176,6 +180,8 @@ def log_validation(run, record: dict) -> None:
         "model/parameter_count": record["parameter_count"],
         **attention_metrics(record.get("attention_diagnostics") or {}),
     }
+    if "train_coefficient_penalty" in record:
+        payload["train/coefficient_penalty"] = record["train_coefficient_penalty"]
     _log(run, payload, int(record["step"]))
 
 

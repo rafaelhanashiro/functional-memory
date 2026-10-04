@@ -36,7 +36,10 @@ Taylor uses `sum_r s^r/r!`. The fixed standard-normal Hermite approximation is
 `exp(1/2) sum_r He_r(s)/r!`, expressed by the coefficients in each recipe;
 its normalized degree-two factored form avoids cancellation near its root.
 Learned unrestricted polynomials train their coefficients; sum-of-squares recipes
-train factors that guarantee a nonnegative polynomial. QK normalization changes
+train factors that guarantee a nonnegative polynomial; rational recipes train a
+numerator and a separate denominator polynomial (`b_0 = 1`), optionally starting at
+linear attention (`attention_coefficient_initialization`) and with a penalty on
+high-order coefficients in the training loss (`optim.coefficient_penalty`). QK normalization changes
 the scores independently of normalization of the attention weights. Unnormalized
 attention may rescale each head's output before the output projection, by `1/t` or
 by a per-head RMSNorm (`attention_output_scaling`). GLA uses its

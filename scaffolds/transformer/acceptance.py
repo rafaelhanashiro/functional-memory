@@ -100,7 +100,8 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
         quadratic = model.get("quadratic_mode", "fixed") != "fixed"
         fixed = (model.get("attention_fixed_coefficients") is not None
                  or model.get("attention_fixed_square_factors") is not None)
-        square = model.get("attention_coefficient_parameterization", "direct") == "sum_of_squares"
+        parameterization = model.get("attention_coefficient_parameterization", "direct")
+        square = parameterization == "sum_of_squares"
         if cpu:
             tests.append("attention")
         if model.get("qk_norm") and (cpu or resolved_backend in ("fused", "cudnn")):
@@ -116,6 +117,8 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
                     tests.append("learned_polynomial_normalized")
                     if square:
                         tests.append("learned_polynomial_nonnegative")
+                    if parameterization == "rational":
+                        tests.append("learned_polynomial_rational")
                 if fused:
                     tests.append("normalized_polynomial_fused_attention")
             elif fused:
@@ -285,7 +288,8 @@ def matches_softmax_initialization(config) -> dict:
     control = replace(config, model=replace(config.model, attention_degree=None, attention_normalization=True,
                                            attention_output_scaling="none",
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
-                                           attention_coefficient_parameterization="direct"))
+                                           attention_coefficient_parameterization="direct",
+                                           attention_coefficient_initialization="taylor"))
     expected = initialization_facts(control)
     if actual != expected:
         raise RuntimeError(f"Initialization differs from the exact-softmax counterpart: {actual} != {expected}")
@@ -319,7 +323,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         config.model, attention_degree=None, attention_normalization=True, attention_output_scaling="none",
         quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
         attention_fixed_square_factors=None,
-        attention_coefficient_parameterization="direct", qk_norm=False))
+        attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",
+        qk_norm=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
     added = {(spec.name,) for spec in specs}
     if set(actual) - set(expected) != added or set(expected) - set(actual):

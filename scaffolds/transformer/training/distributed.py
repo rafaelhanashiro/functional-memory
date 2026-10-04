@@ -15,6 +15,7 @@ from scaffolds.transformer.configs import Config
 from scaffolds.transformer.training.randomness import model_forward_rngs
 from scaffolds.transformer.training.state import TrainState
 from scaffolds.transformer.training.numerics import checked_update_loss, update_numerics
+from scaffolds.transformer.training.regularization import coefficient_penalty_sum
 
 
 DATA_AXIS = "data"
@@ -135,7 +136,10 @@ def _loss_and_grads(
     optimizer_step: jax.Array,
     batch: jax.Array,
     rng: jax.Array,
+    *,
+    coefficient_penalty: float = 0.0,
 ):
+    """The microbatch NLL and the gradient of NLL + coefficient_penalty * coefficient penalty sum."""
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
@@ -146,11 +150,15 @@ def _loss_and_grads(
             deterministic=False,
             rngs=model_forward_rngs(rng),
         )
-        return _cross_entropy(logits, targets)
+        nll = _cross_entropy(logits, targets)
+        if coefficient_penalty:
+            return nll + coefficient_penalty * coefficient_penalty_sum(current_params, model.config), nll
+        return nll, nll
 
     # ``params`` is already a pure NNX State pytree, so the base JAX transform
     # composes cleanly with the surrounding scan and shard_map traces.
-    return jax.value_and_grad(loss_fn)(params)
+    (_, nll), grads = jax.value_and_grad(loss_fn, has_aux=True)(params)
+    return nll, grads
 
 
 def _cross_entropy(logits: jax.Array, targets: jax.Array) -> jax.Array:
@@ -173,6 +181,7 @@ def make_data_parallel_functions(
     state: TrainState,
     devices: Sequence[jax.Device],
     *, check_all_gradients: bool = False,
+    coefficient_penalty: float = 0.0,
 ) -> DataParallelFunctions:
     if len(devices) < 2:
         raise ValueError("Data-parallel functions require at least two devices")
@@ -218,6 +227,7 @@ def make_data_parallel_functions(
                 current_state.step,
                 micro_batch,
                 micro_rng,
+                **({"coefficient_penalty": coefficient_penalty} if coefficient_penalty else {}),
             )
             return (
                 current_loss_sum + loss,

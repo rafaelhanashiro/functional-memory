@@ -15,8 +15,8 @@ from scaffolds.transformer.data.loaders import make_eval_iterator
 from scaffolds.transformer.data.packed import manifest_fingerprint
 from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE
 from scaffolds.transformer.training.numerics import (
-    has_fixed_polynomial, has_fixed_square_factors, has_learned_polynomial, has_sum_of_squares_kernel,
-    is_odd_taylor, is_signed_kernel,
+    has_fixed_polynomial, has_fixed_square_factors, has_learned_polynomial, has_rational_kernel,
+    has_sum_of_squares_kernel, is_odd_taylor, is_signed_kernel,
 )
 
 
@@ -32,6 +32,12 @@ UNNORMALIZED_MEASUREMENTS = frozenset((
     "weight_sum_min", "weight_sum_max", "min_abs_weight_sum",
     "cancellation_ratio_max", "cancellation_ratio_mean",
 ))
+
+
+def _initialization_text(model) -> str:
+    """How the learned coefficients start, for formula strings."""
+    initialization = getattr(model, "attention_coefficient_initialization", "taylor")
+    return "1/r!" if initialization == "taylor" else "linear attention (a_1 = 1, every other coefficient 0)"
 
 
 def attention_identity(config) -> dict:
@@ -86,8 +92,11 @@ def attention_identity(config) -> dict:
     mode = config.model.quadratic_mode
     normalized = config.model.attention_normalization
     learned_polynomial = has_learned_polynomial(config.model)
+    rational = has_rational_kernel(config.model)
     fixed_polynomial = has_fixed_polynomial(config.model)
     fixed_square_factors = has_fixed_square_factors(config.model)
+    sharing = config.model.attention_coefficient_sharing
+    initialized = _initialization_text(config.model)
     identity = {
         "attention_degree": degree,
         "attention_normalization": normalized,
@@ -97,6 +106,7 @@ def attention_identity(config) -> dict:
                              "learned_quadratic" if mode != "fixed" else
                              "fixed_polynomial_sum_of_squares" if fixed_square_factors else
                              "learned_polynomial_sum_of_squares" if has_sum_of_squares_kernel(config.model) else
+                             "learned_polynomial_rational" if rational else
                              "learned_polynomial" if learned_polynomial else
                              "softmax" if degree is None else "taylor"),
         "attention_backend": config.model.attention_backend,
@@ -109,7 +119,7 @@ def attention_identity(config) -> dict:
     if not normalized:
         formula = ("causal_exp(QK^T / sqrt(d_k)) V" if degree is None else
                    f"causal_p_{degree}(QK^T / sqrt(d_k)) V, p(x) = sum_(r<={degree}) c_r x^r, "
-                   f"learned c ({config.model.attention_coefficient_sharing}) initialized at 1/r!"
+                   f"learned c ({sharing}) initialized at {initialized}"
                    if learned_polynomial else
                    f"causal_p_{degree}(QK^T / sqrt(d_k)) V, p_m(x) = sum_(n<=m) x^n / n!")
         identity.update(attention_formula=formula,
@@ -130,10 +140,16 @@ def attention_identity(config) -> dict:
                                f"deg q1 = {degree // 2}, deg q2 = {degree // 2 - 1}, learned "
                                f"({config.model.attention_coefficient_sharing}) and initialized so p = T_{degree}"),
             attention_score_scale="1/sqrt(d_k)", attention_output_normalization="positive_row_sum")
+    elif rational:
+        identity.update(
+            attention_formula=(f"causal_p_{degree}(s) V / sum_j q_{degree}(s_j), s = QK^T / sqrt(d_k), "
+                               f"p(x) = sum_(r<={degree}) a_r x^r, q(x) = 1 + sum_(1<=r<={degree}) b_r x^r, "
+                               f"learned a, b ({sharing}) initialized at {initialized}"),
+            attention_score_scale="1/sqrt(d_k)", attention_output_normalization="signed_denominator_row_sum")
     elif learned_polynomial:
         identity.update(
             attention_formula=(f"causal_p_{degree}(QK^T / sqrt(d_k)) V / rowsum, p(x) = sum_(r<={degree}) c_r x^r, "
-                               f"learned c ({config.model.attention_coefficient_sharing}) initialized at 1/r!"),
+                               f"learned c ({sharing}) initialized at {initialized}"),
             attention_score_scale="1/sqrt(d_k)", attention_output_normalization="signed_row_sum")
     if fixed_polynomial:
         identity.update(
@@ -154,14 +170,21 @@ def attention_identity(config) -> dict:
     if is_signed_kernel(config.model):
         identity["attention_signed"] = True
     if learned_polynomial:
+        penalty = getattr(getattr(config, "optim", None), "coefficient_penalty", 0.0)
         identity.update({
             "attention_coefficients": "learned",
             "attention_coefficient_parameterization": config.model.attention_coefficient_parameterization,
-            "attention_coefficient_sharing": config.model.attention_coefficient_sharing,
-            "attention_coefficient_count": (degree + 1) * (
-                1 if config.model.attention_coefficient_sharing == "global"
-                else config.model.num_layers * config.model.num_heads),
+            "attention_coefficient_initialization": getattr(config.model, "attention_coefficient_initialization", "taylor"),
+            "attention_coefficient_sharing": sharing,
+            "attention_coefficient_count": (degree + 1 + (degree if rational else 0)) * (
+                1 if sharing == "global" else config.model.num_layers * config.model.num_heads),
+            "coefficient_penalty": penalty,
         })
+        if penalty:
+            identity["coefficient_penalty_formula"] = (
+                "training loss = NLL + coefficient_penalty * sum over polynomials of "
+                "a_0^2 + sum_(r>=2) r^2 a_r^2" + (" + sum_(r>=1) r^2 b_r^2" if rational else "")
+                + "; a_1 unpenalized; validation loss and recorded NLL exclude it")
     if mode != "fixed":
         identity.update({
             "quadratic_mode": mode,
@@ -243,6 +266,10 @@ def quadratic_coefficient_report(params, config) -> dict:
 COEFFICIENT_NAMES = ("constant", "linear", "quadratic", "cubic", "quartic")
 
 
+def _coefficient_name(order: int) -> str:
+    return COEFFICIENT_NAMES[order] if order < len(COEFFICIENT_NAMES) else f"degree_{order}"
+
+
 def polynomial_coefficient_report(params, config) -> dict:
     """Record the learned coefficients c_0..c_m, shared ([m+1]) or per layer and head ([L, H, m+1]).
 
@@ -255,12 +282,25 @@ def polynomial_coefficient_report(params, config) -> dict:
         raw = np.asarray(jax.device_get(params["polynomial_square_factors"][...]), dtype=np.float64)
         raw_names = factor_names(config.model.attention_degree)
         effective = effective_coefficients_numpy(raw, config.model.attention_degree)
+    elif has_rational_kernel(config.model):
+        from scaffolds.transformer.attention.rational_polynomial import denominator_names
+
+        # Numerator a_0..a_m, then denominator b_1..b_m; the parameters are the coefficients.
+        numerator = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
+        denominator = np.asarray(jax.device_get(params["polynomial_denominator_coefficients"][...]), dtype=np.float64)
+        raw = np.concatenate([numerator, denominator], axis=-1)
+        raw_names = [f"a{order}" for order in range(numerator.shape[-1])] + denominator_names(config.model.attention_degree)
+        effective = raw
     else:
         raw = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
         raw_names = [f"c{order}" for order in range(raw.shape[-1])]
         effective = raw
-    names = [COEFFICIENT_NAMES[order] if order < len(COEFFICIENT_NAMES) else f"degree_{order}"
-             for order in range(effective.shape[-1])]
+    if has_rational_kernel(config.model):
+        degree = config.model.attention_degree
+        names = ([f"numerator_{_coefficient_name(order)}" for order in range(degree + 1)]
+                 + [f"denominator_{_coefficient_name(order)}" for order in range(1, degree + 1)])
+    else:
+        names = [_coefficient_name(order) for order in range(effective.shape[-1])]
     return {
         "raw_parameter_names": raw_names,
         "raw": _serializable(raw),

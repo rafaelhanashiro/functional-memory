@@ -82,6 +82,7 @@ The existing scientific configuration fields remain supported:
 | `attention_degree: m >= 1`, `attention_normalization: false`, `attention_coefficients: learned` | Unnormalized `sum_r c_r (QKᵀ / sqrt(d_K))^r V` with every coefficient learned from `1/r!`; signed |
 | `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; fused or blocked |
 | Even `attention_degree: m >= 2`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: sum_of_squares` | Normalized `(q1(s)^2 + q2(s)^2) V / rowsum` with `deg q1 = m/2`, `deg q2 = m/2 - 1` learned and initialized to reproduce `T_m` exactly; nonnegative weights, positive row sums; fused or blocked |
+| `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: rational` | Normalized `p_a(s) V / sum_j p_b(s_j)` with a learned numerator `p_a(s) = sum_r a_r s^r` and a learned denominator `p_b(s) = 1 + sum_(r>=1) b_r s^r`; signed weights and signed denominator sums; fused or blocked |
 | `attention_degree: 0` | Uniform causal-prefix averaging |
 | Nonnegative `attention_degree`, `quadratic_mode: fixed` | Fixed Taylor polynomial; odd degrees permit signed weights |
 | `attention_degree: 2`, `quadratic_mode: positive` | Learned `0.5 * (1 + (a*s+b)^2)` |
@@ -107,6 +108,35 @@ cancellation near a zero minimum could round below zero. Kernel values may be
 exactly zero; a zero row sum is invalid. Diagnostics report the factors as raw
 parameters and the coefficients of `q1^2 + q2^2` as the effective ones.
 
+With `attention_coefficient_parameterization: rational` the learned arrays are
+`polynomial_coefficients` (the numerator `a_0..a_m`) and
+`polynomial_denominator_coefficients` (`b_1..b_m`; the constant `b_0 = 1` is fixed,
+which removes the common scale of the two polynomials), each `[m + 1]`/`[m]` shared or
+`[num_layers, num_heads, m + 1]`/`[num_layers, num_heads, m]` per head
+(`attention/rational_polynomial.py`). The weights are `p_a(s_ij) / sum_(j<=i) p_b(s_ij)`.
+Both polynomials are signed: a negative nonzero denominator sum is valid, an exactly
+zero or nonfinite sum poisons its row, with no clipping or epsilon. Diagnostics report
+the numerator as `kernel_*`, the denominator values as `denominator_*`, and the
+cancellation ratio of the denominator sums.
+
+`attention_coefficient_initialization` chooses where learned coefficients start:
+`taylor` (default) sets every learned polynomial to `sum_r s^r / r!`, so a rational
+kernel equals normalized Taylor attention at initialization; `linear` sets `a_1 = 1`
+and every other coefficient to 0, so a direct kernel starts at `s` and a rational
+kernel at linear attention divided by the number of visible keys,
+`sum_(j<=i) s_ij v_j / (i + 1)`. Sum-of-squares factors always start at `T_m`.
+
+`optim.coefficient_penalty` adds `lambda` times
+`sum over polynomials [a_0^2 + sum_(r>=2) r^2 a_r^2 + sum_(r>=1) r^2 b_r^2]` to the
+training loss (`training/regularization.py`), for learned direct or rational
+coefficients; `a_1` is unpenalized and the sum runs over every learned coefficient
+set (each layer and head with `per_head` sharing). The recorded training NLL,
+perplexities, and the validation loss exclude the penalty; its value at the logged
+step's parameters is printed as `train_coefficient_penalty`, stored as
+`train_coefficient_penalty` in each validation record, and mirrored to W&B as
+`train/coefficient_penalty`. AdamW weight decay never touches polynomial
+coefficients, so the penalty is the only shrinkage they receive.
+
 `qk_head_dim` controls projection geometry independently of the mechanism.
 `quadratic_sharing: global` stores one pair across all layers and heads;
 `per_head` stores `[num_layers, num_heads, 2]`. Each layer keeps its own projections.
@@ -117,10 +147,11 @@ Horner's rule with or without normalization. Without normalization,
 `attention/backends/fused_learned_polynomial.py` is the fused kernel, whose custom
 backward also returns each head's coefficient gradient `sum_{i>=j} S_ij^r (dY_i · V_j)`.
 With normalization (`attention/learned_polynomial.py`),
-`attention/backends/fused_normalized_polynomial.py` supports both direct coefficients
-and sum-of-squares factors. Direct coefficients use a two-pass forward calculation
-that divides by the final signed row sum; nonnegative factors use one-pass online
-normalization. Both evaluate causal tiles without storing a sequence-square matrix,
+`attention/backends/fused_normalized_polynomial.py` supports direct coefficients,
+sum-of-squares factors, and rational numerator/denominator pairs. Direct and rational
+coefficients use a two-pass forward calculation that divides by the final signed row
+sum (of the denominator polynomial for rational kernels); nonnegative factors use
+one-pass online normalization. Both evaluate causal tiles without storing a sequence-square matrix,
 retain FP32 output for the custom backward, and differentiate every learned value
 through both the numerator and denominator. Factor evaluation stays in sum-of-squares
 form. Parameter gradients are reduced from query-tile partials without atomics;

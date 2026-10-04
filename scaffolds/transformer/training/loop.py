@@ -63,6 +63,7 @@ from scaffolds.transformer.training.metrics import (
 from scaffolds.transformer.training.optim import make_learning_rate_schedule
 from scaffolds.transformer.training.numerics import checked_update_loss, requires_update_checks, update_numerics
 from scaffolds.transformer.training.randomness import model_forward_rngs
+from scaffolds.transformer.training.regularization import coefficient_penalty_sum
 from scaffolds.transformer.training.state import TrainState, create_state
 
 
@@ -82,7 +83,16 @@ def cross_entropy_loss(logits: jax.Array, targets: jax.Array) -> jax.Array:
     ).mean()
 
 
-def loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Array):
+def _penalty_arguments(coefficient_penalty: float) -> dict:
+    """Forward the penalty weight only when it acts; zero keeps the plain call signature."""
+    return {"coefficient_penalty": coefficient_penalty} if coefficient_penalty else {}
+
+
+def loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Array, *, coefficient_penalty: float = 0.0):
+    """The batch's NLL and the gradient of NLL + coefficient_penalty * coefficient penalty sum.
+
+    The returned loss is the task NLL alone; the penalty enters only the gradient.
+    """
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
@@ -93,14 +103,19 @@ def loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Array):
             deterministic=False,
             rngs=model_forward_rngs(rng),
         )
-        return cross_entropy_loss(logits, targets)
+        nll = cross_entropy_loss(logits, targets)
+        if coefficient_penalty:
+            return nll + coefficient_penalty * coefficient_penalty_sum(params, model.config), nll
+        return nll, nll
 
-    return nnx.value_and_grad(loss_fn)(state.params)
+    (_, nll), grads = nnx.value_and_grad(loss_fn, has_aux=True)(state.params)
+    return nll, grads
 
 
-@partial(nnx.jit, static_argnames=("check_all_gradients",))
-def train_step(state: TrainState, batch: jax.Array, rng: jax.Array, *, check_all_gradients=False):
-    loss, grads = loss_and_grads(state, batch, rng)
+@partial(nnx.jit, static_argnames=("check_all_gradients", "coefficient_penalty"))
+def train_step(state: TrainState, batch: jax.Array, rng: jax.Array, *, check_all_gradients=False,
+               coefficient_penalty: float = 0.0):
+    loss, grads = loss_and_grads(state, batch, rng, **_penalty_arguments(coefficient_penalty))
     updated = state.apply_gradients(grads=grads)
     checked_loss = checked_update_loss(state.params, grads, updated.params, loss,
                                       check_all_gradients=check_all_gradients)
@@ -109,9 +124,9 @@ def train_step(state: TrainState, batch: jax.Array, rng: jax.Array, *, check_all
     return updated, checked_loss
 
 
-@nnx.jit
-def microbatch_loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Array):
-    return loss_and_grads(state, batch, rng)
+@partial(nnx.jit, static_argnames=("coefficient_penalty",))
+def microbatch_loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Array, *, coefficient_penalty: float = 0.0):
+    return loss_and_grads(state, batch, rng, **_penalty_arguments(coefficient_penalty))
 
 
 @nnx.jit
@@ -119,11 +134,12 @@ def apply_gradients_step(state: TrainState, grads):
     return state.apply_gradients(grads=grads)
 
 
-def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Array, *, check_all_gradients=False):
+def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Array, *, check_all_gradients=False,
+                           coefficient_penalty: float = 0.0):
     grad_sum = None
     loss_sum = None
     for batch, rng in zip(batches, rngs, strict=True):
-        loss, grads = microbatch_loss_and_grads(state, batch, rng)
+        loss, grads = microbatch_loss_and_grads(state, batch, rng, **_penalty_arguments(coefficient_penalty))
         if grad_sum is None:
             grad_sum = grads
             loss_sum = loss
@@ -621,9 +637,13 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
     print(f"param_count={parameter_count} restored_step={restored_step} packed_data_start_sequence={start_sequence}", flush=True)
     print(f"data_parallel_devices={layout.device_count} global_batch_size={layout.global_batch_size} "
           f"global_micro_batch_size={layout.global_micro_batch_size} grad_accum_steps={layout.grad_accum_steps}", flush=True)
+    penalty_weight = config.optim.coefficient_penalty
+    penalty_sum = (jax.jit(partial(coefficient_penalty_sum, model=config.model)) if penalty_weight else None)
+    penalty_value = None
     data_parallel = None
     if layout.device_count > 1:
-        data_parallel = make_data_parallel_functions(state, devices, check_all_gradients=check_all_gradients)
+        data_parallel = make_data_parallel_functions(state, devices, check_all_gradients=check_all_gradients,
+                                                    **_penalty_arguments(penalty_weight))
         state = put_replicated(state, data_parallel.replicated_sharding)
     train_iter = make_train_iterator(
         replace(config.data, batch_size=layout.global_micro_batch_size),
@@ -659,15 +679,19 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 batch = jnp.asarray(next(train_iter))
                 if audit is not None and step == start_step + 1:
                     audit["first_update"] = _update_audit(step, batch[None], step_rng)
-                step_result = (train_step(state, batch, step_rng, check_all_gradients=True) if check_all_gradients
-                               else train_step(state, batch, step_rng))
+                step_result = (train_step(state, batch, step_rng, check_all_gradients=True,
+                                          **_penalty_arguments(penalty_weight)) if check_all_gradients
+                               else train_step(state, batch, step_rng, **_penalty_arguments(penalty_weight)))
             else:
                 batches = jnp.asarray(np.stack([next(train_iter) for _ in range(layout.grad_accum_steps)]))
                 if audit is not None and step == start_step + 1:
                     audit["first_update"] = _update_audit(step, batches, step_rng)
                 micro_rngs = jax.random.split(step_rng, layout.grad_accum_steps)
-                step_result = (accumulated_train_step(state, batches, micro_rngs, check_all_gradients=True)
-                               if check_all_gradients else accumulated_train_step(state, batches, micro_rngs))
+                step_result = (accumulated_train_step(state, batches, micro_rngs, check_all_gradients=True,
+                                                      **_penalty_arguments(penalty_weight))
+                               if check_all_gradients
+                               else accumulated_train_step(state, batches, micro_rngs,
+                                                           **_penalty_arguments(penalty_weight)))
             state, loss, *numerical_metrics = step_result
             is_log = step == start_step + 1 or step % config.train.log_every == 0
             is_eval = step % config.train.eval_every == 0 or step == config.optim.total_steps
@@ -683,11 +707,18 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                                f"Nonfinite training loss or optimizer update at step {step}: {loss_value}",
                                diagnostic_sample, diagnostic_provenance, loss=loss_value,
                                numerical_metrics=numerical_metrics[0] if numerical_metrics else None)
+            if (is_log or is_eval) and penalty_sum is not None:
+                # The penalty term as added to the loss, at the updated parameters; the
+                # recorded training NLL and perplexities exclude it.
+                penalty_value = penalty_weight * float(penalty_sum(state.params))
             if is_log:
                 train_losses.append(loss_value)
                 train_ppl = _perplexity(config, state, step, loss_value, diagnostic_sample, diagnostic_provenance)
-                print(f"step={step} train_nll={loss_value:.6f} train_ppl={train_ppl:.4f}", flush=True)
-                tracking.log_train(wandb_run, step, loss_value, train_ppl, float(schedule(step - 1)))
+                print(f"step={step} train_nll={loss_value:.6f} train_ppl={train_ppl:.4f}"
+                      + (f" train_coefficient_penalty={penalty_value:.6f}" if penalty_value is not None else ""),
+                      flush=True)
+                tracking.log_train(wandb_run, step, loss_value, train_ppl, float(schedule(step - 1)),
+                                   coefficient_penalty=penalty_value)
             if is_eval:
                 interval_seconds = time.perf_counter() - window_time
                 evaluation_start = time.perf_counter()
@@ -730,6 +761,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                     "validation_batches": config.train.eval_batches,
                     "validation_sequences": config.train.eval_batches * config.data.batch_size,
                     "validation_tokens": config.train.eval_batches * tokens_per_step,
+                    **({"train_coefficient_penalty": penalty_value} if penalty_value is not None else {}),
                     "learning_rate": float(schedule(step - 1)), "tokens_per_second": throughput,
                     "tokens_per_second_per_device": throughput / layout.device_count,
                     "training_interval_seconds": interval_seconds, "parameter_count": parameter_count,
