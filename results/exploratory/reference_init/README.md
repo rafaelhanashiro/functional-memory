@@ -2,14 +2,17 @@
 
 Opened 2026-10-02. The reference mechanisms and every normalized fixed Taylor column
 (`m = 1, 2, 3, 4, 8, 16`) in [`results/attention_scaling/`](../../attention_scaling/README.md)
-now use these reference-initialization runs. Open decision: rerun the degree-chart
-families, which still use Flax defaults; unnormalized learned Taylor is rerun here.
+now use these reference-initialization runs. Every degree-chart family at `d_K = 64` has
+been rerun too (nonnegative learned `m = 4` is still training); the degree chart switches
+once it finishes. Open decision: promote these findings into the canonical results or
+keep the topic as the record of the Flax-default controls.
 
 The scaffold's Flax defaults draw Linear weights truncated normal with variance
 `1/fan_in` and no depth scaling. Do they handicap the models against the recipes their
 authors train with? Softmax and normalized fixed Taylor `m = 2`, `4`, `8`, and `16` at
-every `d_K`, and softmax no QK-norm, unnormalized exp, Taylor `m = 1` and `3`,
-unnormalized learned Taylor `m = 1–4`, and GLA at `d_K = 64`, repeat the
+every `d_K`, and at `d_K = 64` softmax no QK-norm, unnormalized exp, Taylor `m = 1` and
+`3`, every degree-chart family (unnormalized fixed Taylor and Hermite, unnormalized
+learned, normalized fixed Hermite and learned, nonnegative learned), and GLA, repeat the
 Flax-default recipes and change only
 `model.initialization`
 ([scaffold](../../../scaffolds/transformer/README.md#weight-initialization)):
@@ -38,6 +41,23 @@ Terminal validation perplexity:
 | Unnormalized learned Taylor m = 2 | 64 | 17.599 | **15.507** | −2.09 |
 | Unnormalized learned Taylor m = 3 | 64 | 16.330 | **14.657** | −1.67 |
 | Unnormalized learned Taylor m = 4 | 64 | 16.384 | **14.720** | −1.66 |
+| Unnormalized fixed Taylor m = 1 | 64 | 20.316 | **17.903** | −2.41 |
+| Unnormalized fixed Taylor m = 2 | 64 | 21.748 | **18.166** | −3.58 |
+| Unnormalized fixed Taylor m = 3 | 64 | 17.631 | **15.621** | −2.01 |
+| Unnormalized fixed Taylor m = 4 | 64 | 18.181 | **15.888** | −2.29 |
+| Unnormalized fixed Hermite m = 1 | 64 | 20.870 | **18.196** | −2.67 |
+| Unnormalized fixed Hermite m = 2 | 64 | 17.468 | **15.673** | −1.79 |
+| Unnormalized fixed Hermite m = 3 | 64 | 17.894 | **15.747** | −2.15 |
+| Unnormalized fixed Hermite m = 4 | 64 | 17.246 | **15.278** | −1.97 |
+| Normalized nonnegative learned m = 2 | 64 | 16.176 | **14.666** | −1.51 |
+| Normalized fixed Hermite m = 1 | 64 | fail @5 | fail @374 | |
+| Normalized fixed Hermite m = 2 | 64 | fail @3,829 | fail @176 | |
+| Normalized fixed Hermite m = 3 | 64 | fail @802 | fail @549 | |
+| Normalized fixed Hermite m = 4 | 64 | fail @1,390 | fail @680 | |
+| Normalized learned Taylor m = 1 | 64 | fail @27 | fail @60 | |
+| Normalized learned Taylor m = 2 | 64 | fail @1,857 | fail @1,923 | |
+| Normalized learned Taylor m = 3 | 64 | fail @318 | fail @336 | |
+| Normalized learned Taylor m = 4 | 64 | fail @1,456 | fail @1,143 | |
 | Taylor m = 1 | 64 | fail @31 | fail @35 | |
 | Taylor m = 2 | 8 | 22.440 | **19.491** | −2.95 |
 | Taylor m = 2 | 16 | 19.310 | **17.154** | −2.16 |
@@ -90,14 +110,25 @@ Gap by update at `d_K = 64` (reference minus Flax defaults):
   `m = 4` −1.66), like unnormalized exp. Its ordering is unchanged: `m = 3` (14.657) and
   `m = 4` (14.720) are best, and both beat unnormalized exp (15.885) on either
   initialization.
-- **The other degree-chart polynomial kernels are likely handicapped too.** Every
-  normalized fixed Taylor degree that finishes gained as much as softmax (within 0.01) or
-  more; until those families are rerun, compare them with the references only at equal
-  initialization.
+- **Every unnormalized polynomial kernel gains 1.66–3.58,** like unnormalized exp:
+  fixed Taylor 2.01–3.58, fixed Hermite 1.79–2.67, learned 1.66–2.40. Nonnegative learned
+  `m = 2` gains 1.51.
+- **The signed normalized kernels still fail.** Fixed Hermite and learned Taylor fail at
+  every degree on either initialization; the failure update moves both ways (Hermite
+  `m = 2` from 3,829 to 176, learned `m = 1` from 27 to 60).
 
 ## Limits
 
 - One seed per run.
+- Fifteen Flax-default polynomial controls at `d_K = 64` (normalized fixed Taylor
+  `m = 1, 2, 3, 4, 8, 16`, normalized learned `m = 1–4`, nonnegative learned `m = 4`,
+  unnormalized learned `m = 1–4`) ran on code from before two
+  2026-09-26 fixes to the gradients of normalized polynomial attention (`c2c405e`,
+  `38dc585`); for those pairs the difference mixes initialization and code version. The
+  reference-initialization runs all use code from 2026-10-02 or later.
+- The degree-chart reruns on Kennel trained on H100, except unnormalized fixed Taylor
+  `m = 2`, `4` and unnormalized fixed Hermite `m = 1`, `4`, which resumed across B300 and
+  H100 after preemptions.
 - Reference-initialization softmax and unnormalized exp runs trained on B300, except
   softmax `d_K = 8`, softmax no QK-norm, and GLA (H100). The Taylor `m = 1`, `3`, `8`, and
   `16` runs trained on H100, except `d_K = 16`, `m = 16` and `d_K = 64, 128`, `m = 8`,
