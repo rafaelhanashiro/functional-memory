@@ -90,7 +90,9 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         if isinstance(fixed_square_factors, (tuple, list)):
             value["model"]["attention_fixed_square_factors"] = list(fixed_square_factors)
         value["model"].setdefault("attention_coefficient_parameterization", "direct")
+        value["model"].setdefault("attention_coefficient_initialization", "taylor")
         value["model"].setdefault("attention_coefficient_sharing", "global")
+        value.setdefault("optim", {}).setdefault("coefficient_penalty", 0.0)
         for key, default in (("qk_norm", False), ("qk_norm_sharing", "per_head"),
                              ("qk_norm_initial_scale", None), ("qk_norm_eps", 1e-6)):
             value["model"].setdefault(key, default)

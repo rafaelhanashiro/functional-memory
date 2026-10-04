@@ -74,8 +74,16 @@ class ModelConfig:
     attention_fixed_square_factors: tuple[float, ...] | None = None
     attention_coefficient_sharing: Literal["global", "per_head"] = "global"
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
-    # (even m, row-normalized only), so the kernel is nonnegative by construction.
-    attention_coefficient_parameterization: Literal["direct", "sum_of_squares"] = "direct"
+    # (even m, row-normalized only), so the kernel is nonnegative by construction;
+    # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
+    # 1 + b_1 s + ... + b_m s^m, so the weights are p_a(s) / sum_j p_b(s_j).
+    attention_coefficient_parameterization: Literal["direct", "sum_of_squares", "rational"] = "direct"
+    # Initial learned coefficients: "taylor" starts every learned polynomial at
+    # sum_r s^r / r! (a rational kernel then equals normalized Taylor attention);
+    # "linear" starts the numerator at s and the denominator at 1 (a_1 = 1, b_0 = 1,
+    # all other coefficients 0), so a rational kernel starts at linear attention
+    # divided by the number of visible keys. Not available with sum_of_squares.
+    attention_coefficient_initialization: Literal["taylor", "linear"] = "taylor"
     # Cosine scores for any dot-product mechanism: s = exp(gamma) * cos(q, k) with a
     # learned log scale gamma per layer and head (or one shared), initialized at
     # log(qk_norm_initial_scale); null selects sqrt(qk_head_dim).
@@ -176,8 +184,20 @@ class ModelConfig:
                 raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")
             if self.attention_degree is None or self.attention_degree < 1:
                 raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
-        if self.attention_coefficient_parameterization not in ("direct", "sum_of_squares"):
+        if self.attention_coefficient_parameterization not in ("direct", "sum_of_squares", "rational"):
             raise ValueError(f"Unknown coefficient parameterization: {self.attention_coefficient_parameterization}")
+        if self.attention_coefficient_initialization not in ("taylor", "linear"):
+            raise ValueError(f"Unknown coefficient initialization: {self.attention_coefficient_initialization}")
+        if self.attention_coefficient_initialization != "taylor":
+            if self.attention_coefficients != "learned":
+                raise ValueError("model.attention_coefficient_initialization applies to learned polynomial coefficients only")
+            if self.attention_coefficient_parameterization == "sum_of_squares":
+                raise ValueError("A sum-of-squares kernel cannot start at linear attention; use the taylor initialization")
+        if self.attention_coefficient_parameterization == "rational":
+            if self.attention_coefficients != "learned":
+                raise ValueError("A rational kernel requires learned polynomial coefficients")
+            if not self.attention_normalization:
+                raise ValueError("A rational kernel's denominator is its row sum; it requires normalized attention")
         if self.attention_fixed_coefficients is not None and self.attention_fixed_square_factors is not None:
             raise ValueError("Specify either model.attention_fixed_coefficients or attention_fixed_square_factors")
         if self.attention_fixed_coefficients is not None:
@@ -253,6 +273,11 @@ class OptimConfig:
     min_learning_rate: float = 1e-4
     weight_decay: float = 0.1
     weight_decay_policy: Literal["exclude_embeddings_norms_biases_v1"] = "exclude_embeddings_norms_biases_v1"
+    # Penalty weight lambda on learned polynomial coefficients, added to the training
+    # loss as lambda * sum over polynomials of a_0^2 + sum_(r>=2) r^2 a_r^2
+    # (+ sum_(r>=1) r^2 b_r^2 for a rational denominator); a_1 is unpenalized
+    # (training/regularization.py). Validation loss never includes it.
+    coefficient_penalty: float = 0.0
     beta1: float = 0.9
     beta2: float = 0.95
     grad_clip_norm: float = 1.0
@@ -340,3 +365,10 @@ def validate_config(config: Config) -> None:
         raise ValueError("Adam betas must be in [0, 1)")
     if optim.weight_decay < 0 or optim.grad_clip_norm <= 0:
         raise ValueError("Require weight_decay >= 0 and grad_clip_norm > 0")
+    penalty = optim.coefficient_penalty
+    if (not isinstance(penalty, (int, float)) or isinstance(penalty, bool)
+            or not math.isfinite(penalty) or penalty < 0):
+        raise ValueError("optim.coefficient_penalty must be a finite number >= 0")
+    if penalty > 0 and (config.model.attention_coefficients != "learned"
+                        or config.model.attention_coefficient_parameterization not in ("direct", "rational")):
+        raise ValueError("optim.coefficient_penalty requires learned direct or rational polynomial coefficients")

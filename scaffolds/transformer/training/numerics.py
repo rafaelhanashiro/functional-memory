@@ -28,6 +28,12 @@ def has_sum_of_squares_kernel(model) -> bool:
                 and getattr(model, "attention_coefficient_parameterization", "direct") == "sum_of_squares"))
 
 
+def has_rational_kernel(model) -> bool:
+    """Separate learned numerator and denominator polynomials (normalized attention)."""
+    return (has_learned_polynomial(model)
+            and getattr(model, "attention_coefficient_parameterization", "direct") == "rational")
+
+
 def is_signed_kernel(model) -> bool:
     """Kernels whose weights may be negative or zero by design."""
     return (is_odd_taylor(model) or has_fixed_polynomial(model) or model.quadratic_mode == "unrestricted"

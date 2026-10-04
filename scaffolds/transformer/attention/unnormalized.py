@@ -6,16 +6,24 @@ import jax
 import jax.numpy as jnp
 
 
-def parameter_specs(*, degree: int, sharing: str):
-    """Learned coefficients c_0..c_m of sum_r c_r s^r, initialized at the Taylor values 1/r!."""
-    from scaffolds.transformer.attention.parameters import AttentionParameterSpec
-
+def initial_coefficients(degree: int, initialization: str = "taylor") -> tuple[float, ...]:
+    """Initial c_0..c_m: the Taylor values 1/r!, or linear attention (c_1 = 1, every other 0)."""
     if isinstance(degree, bool) or not isinstance(degree, int) or degree < 1:
         raise ValueError("Learned polynomial coefficients require an integer degree >= 1")
+    if initialization == "taylor":
+        return tuple(1.0 / math.factorial(order) for order in range(degree + 1))
+    if initialization == "linear":
+        return tuple(1.0 if order == 1 else 0.0 for order in range(degree + 1))
+    raise ValueError(f"Unknown coefficient initialization: {initialization}")
+
+
+def parameter_specs(*, degree: int, sharing: str, initialization: str = "taylor"):
+    """Learned coefficients c_0..c_m of sum_r c_r s^r (see ``initial_coefficients``)."""
+    from scaffolds.transformer.attention.parameters import AttentionParameterSpec
+
     return (AttentionParameterSpec(
         name="polynomial_coefficients", argument="polynomial_coefficients",
-        initial=tuple(1.0 / math.factorial(order) for order in range(degree + 1)),
-        sharing=sharing, weight_decay=False,
+        initial=initial_coefficients(degree, initialization), sharing=sharing, weight_decay=False,
     ),)
 
 

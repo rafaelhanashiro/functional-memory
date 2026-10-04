@@ -174,11 +174,13 @@ class MultiHeadAttention(nnx.Module):
                 raise ValueError("Coefficients were supplied twice")
             parameters = {**parameters, "coefficients": coefficients}
         if self.attention_fixed_coefficients is not None:
-            if any(name in parameters for name in ("coefficients", "polynomial_coefficients", "polynomial_square_factors")):
+            if any(name in parameters for name in ("coefficients", "polynomial_coefficients", "polynomial_square_factors",
+                                                "polynomial_denominator_coefficients")):
                 raise ValueError("Fixed polynomial coefficients cannot be combined with supplied attention coefficients")
             parameters["polynomial_coefficients"] = jnp.asarray(self.attention_fixed_coefficients, dtype=jnp.float32)
         if self.attention_fixed_square_factors is not None:
-            if any(name in parameters for name in ("coefficients", "polynomial_coefficients", "polynomial_square_factors")):
+            if any(name in parameters for name in ("coefficients", "polynomial_coefficients", "polynomial_square_factors",
+                                                "polynomial_denominator_coefficients")):
                 raise ValueError("Fixed square factors cannot be combined with supplied attention coefficients")
             parameters["polynomial_square_factors"] = jnp.asarray(self.attention_fixed_square_factors, dtype=jnp.float32)
         result = attention_core(
