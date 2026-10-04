@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r4b3575f76cd9/config.yaml",
+    "sha256": "dc027ee929947c4f14ec4fdd5a5ec000bccaea7088d7a875bbd4d7ed97653098"
+  },
+  "label": "200m-qk-m004-nonnegative-transformer-init-seed0",
+  "name": "200m-qk-m004-nonnegative-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "r4b3575f76cd9",
+  "status": "planned"
+}
