@@ -282,14 +282,14 @@
     "sha256": "0dd119170160d37fb30c7a37ab7e8cfb8f95270aa8ce0447a11e4b40c25a19ac",
     "size_bytes": 16902
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/rational_polynomial/experiments/attention_scaling/runs/r9c52f40605fb/training.log",
+  "log_path": "experiments/attention_scaling/runs/r9c52f40605fb/training.log",
   "metadata": {
     "path": "experiments/attention_scaling/runs/r9c52f40605fb/metadata.json",
     "sha256": "f2db25c4054369d71927ba5c0e977844ca9617307269d41604ba1adc204c44cc",
     "size_bytes": 148667
   },
   "name": "200m-qk-m008-rational-transformer-init-seed0",
-  "numerical_failure_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/rational_polynomial/experiments/attention_scaling/runs/r9c52f40605fb/numerical_failure_step_00000131.json",
+  "numerical_failure_path": "experiments/attention_scaling/runs/r9c52f40605fb/numerical_failure_step_00000131.json",
   "record_schema_version": 1,
   "run_id": "r9c52f40605fb",
   "seed": 0,
