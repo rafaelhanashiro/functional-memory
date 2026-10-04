@@ -1,0 +1,51 @@
+question: Does a separate learned denominator polynomial, with a penalty on high-order
+  coefficients, let normalized learned polynomial attention train through?
+study: experiments/attention_scaling
+metric: terminal validation perplexity
+runs:
+- run_id: r9c52f40605fb
+  label: rational degree 8, lambda = 0.01, linear-attention start, transformer reference
+    initialization
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r9c52f40605fb/config.yaml
+      sha256: 18b0dc84c62f18b6f9e5e20d4fe603f9fbf286dd6542e8d327f826ce6e9619c5
+- run_id: rbde7fc4c2135
+  label: softmax, transformer reference initialization
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/config.yaml
+      sha256: 9fa4ffa41817bc592ac325822ceb1d9d5c822e85bea4aac04496d61e79ecaf28
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/metrics.jsonl
+      sha256: 1e52b91c3f087a16c909417cd9d8faa775770bc58791b68d3fc4efb300393446
+    completion.json:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/completion.json
+      sha256: 2be474260e097644a99ddbfe3a838ec5c7c7f6f100d9759e14bdfd7cc40dc8c1
+    metadata.json:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/metadata.json
+      sha256: 7311ac18288b9071eda6a5cfa1f5a3b7fe6633156f82e975a0d882c2f7b92276
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/best_validation.json
+      sha256: b05a2a70f4fb65bca76c0c53cab76a78f49c5f5f588af6b73250ecc0bf1d9411
+- run_id: r4923c6939e74
+  label: normalized fixed Taylor degree 8, Flax defaults
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r4923c6939e74/config.yaml
+      sha256: 8c7806458b6b1b1c66306e518ed75303d62849dc10511fb1a17d0820c4fcaa6a
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r4923c6939e74/metrics.jsonl
+      sha256: a6a6d987b7779241b5ddc6b15e43c5622cd1c40275d7f8dee98fd73d38d55b35
+    completion.json:
+      path: experiments/attention_scaling/runs/r4923c6939e74/completion.json
+      sha256: 4891b76b4e7674df0b2ba311e8a0cfaab6133c155d1fa018171e1a7b9a153085
+    metadata.json:
+      path: experiments/attention_scaling/runs/r4923c6939e74/metadata.json
+      sha256: 202873338c143c54528ec28e6c4c7c578feabd52c9e08b0f05e20fcd0f0f8108
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r4923c6939e74/best_validation.json
+      sha256: 4a33931d3684fb029798a7016e2dbf83e5182cb296389997285186bf2a41f004

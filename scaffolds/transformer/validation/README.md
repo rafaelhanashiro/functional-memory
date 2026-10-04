@@ -298,6 +298,20 @@ settings, test counts, and retained log hashes are in the
 [manifest](provenance/manifest.json). Existing experiment worktrees and their
 resolved backends were not changed.
 
+The rational parameterization (numerator `a_0..a_m`, denominator
+`1 + sum_(r>=1) b_r s^r`) extends the same two-pass kernel: the first pass sums the
+denominator polynomial, and the reverse pass carries the numerator sensitivity
+`(dY . V) / Z` and the denominator sensitivity `-(dY . Y) / Z` through separate
+Horner recurrences. Its qualification adds rational cases to the same suite: FP64
+value and VJP comparisons at degrees 1–4 and 8, odd widths and tile boundaries, zero
+denominator sums, masked overflow, shared parameters, prefix independence, BF16
+QK-norm at 2,048 tokens at degrees 4 and 8, and the Transformer training/resume
+fixture. On one H100 (`mastiff`, job 207486) the fused normalized-polynomial,
+normalized learned-polynomial, and QK-norm GPU suites passed 63 cases, 14 of them
+rational, at the scaffold source of commit `8cee781f80db`
+([record](runs/rational-polynomial-h100/tests.json)); the CPU suite passed 1,055
+tests with 14 expected skips.
+
 <!-- BEGIN GENERATED NORMALIZED POLYNOMIAL THROUGHPUT -->
 Kernel forward and backward, including all parameter gradients:
 
