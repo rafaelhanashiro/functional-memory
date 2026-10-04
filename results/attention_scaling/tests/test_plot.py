@@ -32,8 +32,8 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     assert Counter(row["status"] for row in rows) == {"complete": 31, "numerical_failure": 2, "not_run": 12}
     assert not any(row["legacy"] for row in rows)
     by_cell = {(r["panel"], r["column"], r["d_k"]): r for r in rows}
-    assert by_cell["normalized_fixed", "m1", 64]["failure_step"] == 31
-    assert by_cell["normalized_fixed", "m3", 64]["failure_step"] == 419
+    assert by_cell["normalized_fixed", "m1", 64]["failure_step"] == 35
+    assert by_cell["normalized_fixed", "m3", 64]["failure_step"] == 555
     assert by_cell["references", "gated_deltanet", 128]["terminal_ppl"] == pytest.approx(13.38022395757579)
     assert by_cell["references", "softmax", 64]["terminal_ppl"] == pytest.approx(13.513509197684602)
     assert by_cell["references", "softmax_no_qk_norm", 64]["terminal_ppl"] == pytest.approx(13.932300633414917)

@@ -1,14 +1,15 @@
 # Reference initializations
 
-Opened 2026-10-02. The reference mechanisms and normalized Taylor `m = 8` and `16` in
+Opened 2026-10-02. The reference mechanisms and normalized Taylor `m = 1`, `3`, `8`, `16` in
 [`results/attention_scaling/`](../../attention_scaling/README.md) now use these
 reference-initialization runs. Open decision: rerun the remaining polynomial kernels
-(Taylor `m = 1–4` and the degree-chart families), which still use Flax defaults.
+(Taylor `m = 2` and `4` and the degree-chart families), which still use Flax defaults.
 
 The scaffold's Flax defaults draw Linear weights truncated normal with variance
 `1/fan_in` and no depth scaling. Do they handicap the models against the recipes their
 authors train with? Softmax and normalized fixed Taylor `m = 8` and `16` at every
-`d_K`, and softmax no QK-norm, unnormalized exp, and GLA at `d_K = 64`, repeat the
+`d_K`, and softmax no QK-norm, unnormalized exp, Taylor `m = 1` and `3`, and GLA at
+`d_K = 64`, repeat the
 Flax-default recipes and change only
 `model.initialization`
 ([scaffold](../../../scaffolds/transformer/README.md#weight-initialization)):
@@ -33,6 +34,8 @@ Terminal validation perplexity:
 | Softmax | 128 | 14.225 | **13.303** | −0.92 |
 | Softmax no QK-norm | 64 | 14.665 | **13.932** | −0.73 |
 | Unnormalized exp | 64 | 18.304 | **15.885** | −2.42 |
+| Taylor m = 1 | 64 | fail @31 | fail @35 | |
+| Taylor m = 3 | 64 | fail @419 | fail @555 | |
 | Taylor m = 8 | 8 | 17.743 | **16.081** | −1.66 |
 | Taylor m = 8 | 16 | 15.871 | **14.563** | −1.31 |
 | Taylor m = 8 | 32 | 15.018 | **13.854** | −1.16 |
@@ -64,6 +67,8 @@ Gap by update at `d_K = 64` (reference minus Flax defaults):
 - **Against Gated DeltaNet** (paper initialization), reference-initialized softmax
   is ahead at `d_K >= 32` (by 0.19, 0.19, 0.08), level at 16 (+0.05), and behind
   at 8 (+0.79).
+- **Odd-degree normalized Taylor still fails** (row sums cross zero), a few updates to
+  136 updates later than with Flax defaults.
 - **The remaining polynomial kernels are likely handicapped too.** Taylor `m = 8` and
   `16` gained as much as softmax; until the others are rerun, compare them with the
   references only at equal initialization.

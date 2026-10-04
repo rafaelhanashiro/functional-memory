@@ -16,9 +16,9 @@ Every plotted run uses selective weight decay and QK-norm, except "softmax no QK
 and Gated DeltaNet, which have no QK-norm. The reference mechanisms use their reference
 initializations: GPT-2/Megatron (`transformer_reference`) for softmax and unnormalized
 exp, the paper's (`gated_deltanet_reference`) for Gated DeltaNet. Normalized fixed
-Taylor `m = 8` and `16` also use `transformer_reference`; the other polynomial kernels
-(Taylor `m = 1–4` and every degree-chart family) still use the scaffold's Flax defaults
-(see [Limits](#limits)).
+Taylor `m = 1`, `3`, `8`, and `16` in the heatmap also use `transformer_reference`; the
+other polynomial kernels (heatmap Taylor `m = 2` and `4`, and every degree-chart family)
+still use the scaffold's Flax defaults (see [Limits](#limits)).
 
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
@@ -70,7 +70,8 @@ Normalized kernels (failures show the update):
 | 16 | 13.519 | | | |
 
 Fixed Taylor `m = 8` and `16` use the reference initialization (Flax defaults: 14.498
-and 14.454); every other cell uses Flax defaults.
+and 14.454); every other cell uses Flax defaults. With the reference initialization the
+heatmap's `m = 1` and `m = 3` fail at updates 35 and 555.
 
 Unnormalized kernels:
 
@@ -149,8 +150,9 @@ decay rule except at `d_K = 64`.
 ## Limits
 
 - One seed per cell; differences of a few tenths are not established.
-- Initializations differ: the references and Taylor `m = 8` and `16` use reference
-  initializations; Taylor `m = 1–4` and the degree-chart families use Flax defaults,
+- Initializations differ: the references and heatmap Taylor `m = 1`, `3`, `8`, `16` use
+  reference initializations; heatmap Taylor `m = 2`, `4` and the degree-chart families
+  use Flax defaults,
   which cost softmax and Taylor `m = 8`, `16` 0.9–1.7 and unnormalized exp 2.4
   ([reference_init](../exploratory/reference_init/README.md)). Compare Flax-default
   kernels with the references only at equal initialization.
