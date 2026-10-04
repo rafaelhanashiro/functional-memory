@@ -11,6 +11,12 @@ runs:
     config.yaml:
       path: experiments/attention_scaling/runs/r9c52f40605fb/config.yaml
       sha256: 18b0dc84c62f18b6f9e5e20d4fe603f9fbf286dd6542e8d327f826ce6e9619c5
+    metadata.json:
+      path: experiments/attention_scaling/runs/r9c52f40605fb/metadata.json
+      sha256: f2db25c4054369d71927ba5c0e977844ca9617307269d41604ba1adc204c44cc
+    numerical_failure_step_00000131.json:
+      path: experiments/attention_scaling/runs/r9c52f40605fb/numerical_failure_step_00000131.json
+      sha256: 352a43b09bdbcf15d809e45ff0daf1f15c53486f08061f0b9c2ff00b9f427d9d
 - run_id: rbde7fc4c2135
   label: softmax, transformer reference initialization
   role: control
@@ -30,6 +36,25 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/rbde7fc4c2135/best_validation.json
       sha256: b05a2a70f4fb65bca76c0c53cab76a78f49c5f5f588af6b73250ecc0bf1d9411
+- run_id: r7d911aee60ed
+  label: normalized fixed Taylor degree 8, transformer reference initialization
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r7d911aee60ed/config.yaml
+      sha256: 9bba1023631b280a2dde63db75fd30c6613b5d1a637984d1c4d1d1e2d04c40cf
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r7d911aee60ed/metrics.jsonl
+      sha256: 4c37b469cb982abb6de1b8847580ab1c26d1dd59dd8e65c9ba2b67d62aea59df
+    completion.json:
+      path: experiments/attention_scaling/runs/r7d911aee60ed/completion.json
+      sha256: bd23b2bb98311a5c04f8358e47b81d95de46914fedfa90afa0be1cda3344720b
+    metadata.json:
+      path: experiments/attention_scaling/runs/r7d911aee60ed/metadata.json
+      sha256: 4ec24bf2bed022a1581133ec2b30d44cefdb6e525bfc13b6af879873485a2593
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r7d911aee60ed/best_validation.json
+      sha256: fb6a2d25eb7362b5b3219bac22d04a996b7391de69be07cff31ccec7f32a05f1
 - run_id: r4923c6939e74
   label: normalized fixed Taylor degree 8, Flax defaults
   role: control
