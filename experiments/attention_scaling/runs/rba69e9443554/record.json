@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rba69e9443554/config.yaml",
+    "sha256": "19ad3c4649ef40af72c825af73bd87b95cb3f3015afb344ed5b31c74a64774c7"
+  },
+  "label": "200m-qk-hermite-m004-unnormalized-transformer-init-seed0",
+  "name": "200m-qk-hermite-m004-unnormalized-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "rba69e9443554",
+  "status": "planned"
+}

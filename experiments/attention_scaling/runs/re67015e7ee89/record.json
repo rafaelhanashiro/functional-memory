@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/re67015e7ee89/config.yaml",
+    "sha256": "750e415513eb5a8ada7cb9638c30fa7daf6d686664692f1b595e949f8882df76"
+  },
+  "label": "200m-qk-hermite-m004-normalized-transformer-init-seed0",
+  "name": "200m-qk-hermite-m004-normalized-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "re67015e7ee89",
+  "status": "planned"
+}

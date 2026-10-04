@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rebdf113401ae/config.yaml",
+    "sha256": "66d82befc868dd65b9590f196e0f26c4d12e74aeaf1d64737e72063d39c9e623"
+  },
+  "label": "200m-qk-m004-normalized-transformer-init-seed0",
+  "name": "200m-qk-m004-normalized-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "rebdf113401ae",
+  "status": "planned"
+}

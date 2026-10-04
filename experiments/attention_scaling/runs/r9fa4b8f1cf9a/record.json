@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r9fa4b8f1cf9a/config.yaml",
+    "sha256": "3e8efdf7196ed30ddcff19f230df8928f506c127a8ec78dbc7b00b09e866d064"
+  },
+  "label": "200m-qk-m003-normalized-transformer-init-seed0",
+  "name": "200m-qk-m003-normalized-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "r9fa4b8f1cf9a",
+  "status": "planned"
+}

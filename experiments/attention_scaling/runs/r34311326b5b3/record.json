@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r34311326b5b3/config.yaml",
+    "sha256": "242eca02cfb9c5ae2a47e3cfa3e1739fcc1b808fa3d67a9d0df7acbd175e8e81"
+  },
+  "label": "200m-qk-dk064-m003-transformer-init-seed0",
+  "name": "200m-qk-dk064-m003-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "r34311326b5b3",
+  "status": "planned"
+}
