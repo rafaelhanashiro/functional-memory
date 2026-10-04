@@ -1,0 +1,311 @@
+{
+  "acceptance": {
+    "sha256": "029cb08891754879470c6eb4d9d0a148481d107216e4ec31f54562d503792669",
+    "summary": {
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-10-04T06:51:56.479241+00:00",
+      "hardware": {
+        "attention_backend": "fused",
+        "device_kinds": [
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "6373300ffd215db7d681ee69d084edff67eb3bbc3948f09e91f00c51e3c9c82b",
+      "slurm_job_id": "207493",
+      "slurm_restart_count": "0",
+      "source_commit": "c92b918210869d4d43e74cfa84d065df7c954285",
+      "status": "passed"
+    }
+  },
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": [
+    {
+      "path": "experiments/attention_scaling/runs/re67015e7ee89/config.json",
+      "sha256": "183947e54a76df61e1be44488268004f30edaefc3365ec0bf46cf9b543099bd7",
+      "size_bytes": 2967
+    },
+    {
+      "path": "experiments/attention_scaling/runs/re67015e7ee89/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/attention_scaling/runs/re67015e7ee89/metadata.json",
+      "sha256": "a4bdbacdf4efe97bcacfe6066c7b6810223e2de7e42731ed22c7e11f54f0f161",
+      "size_bytes": 34517
+    },
+    {
+      "path": "experiments/attention_scaling/runs/re67015e7ee89/numerical_failure_step_00000680.json",
+      "sha256": "847f6de5268f918ed28b555e48e269acc0a5574dc25587f791faf3ca37abbbd4",
+      "size_bytes": 31713
+    },
+    {
+      "path": "experiments/attention_scaling/runs/re67015e7ee89/wandb_run.json",
+      "sha256": "320d6f703402e6a65821caec83fdc8f0f1954d76051e43be489cea41ef8c8cfc",
+      "size_bytes": 216
+    },
+    {
+      "path": "experiments/attention_scaling/runs/re67015e7ee89/training.log",
+      "sha256": "fa95a0cbd14f7c10def2a8f2a6f83f2ec0465e9866e82db1d45716bd5a3eeaed",
+      "size_bytes": 53470
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/degree_chart_reference_init/experiments/attention_scaling/runs/re67015e7ee89/.runtime/acceptance/H100-4",
+      "allocation": "JobId=207493 JobName=reinit-nh-m4 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20051 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:03 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-04T01:13:41 EligibleTime=2026-10-04T02:38:35 AccrueTime=Unknown StartTime=2026-10-04T02:38:35 EndTime=2026-10-05T02:38:35 Deadline=N/A PreemptEligibleTime=2026-10-04T04:38:35 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-04T02:38:35 Scheduler=Main Partition=standard AllocNode:Sid=kennel:2414500 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/degree_chart_reference_init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/degree_chart_reference_init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/degree_chart_reference_init/experiments/attention_scaling/runs/re67015e7ee89/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/degree_chart_reference_init/experiments/attention_scaling/runs/re67015e7ee89/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/re67015e7ee89/config.yaml",
+      "config_sha256": "750e415513eb5a8ada7cb9638c30fa7daf6d686664692f1b595e949f8882df76",
+      "exit_code": 1,
+      "finished_utc": "2026-10-04T06:59:16.329204+00:00",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "c92b918210869d4d43e74cfa84d065df7c954285",
+      "slurm_job_id": "207493",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-04T06:38:38.851583+00:00"
+    }
+  ],
+  "config": {
+    "path": "experiments/attention_scaling/runs/re67015e7ee89/config.yaml",
+    "sha256": "750e415513eb5a8ada7cb9638c30fa7daf6d686664692f1b595e949f8882df76"
+  },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "path": "experiments/attention_scaling/runs/re67015e7ee89/data_identity.json",
+    "sequence_length": 2049,
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "error": "FloatingPointError: Nonfinite training loss or optimizer update at step 680: nan",
+  "execution": {
+    "attention_backend": "fused",
+    "raw_config": {
+      "path": "config.json",
+      "sha256": "183947e54a76df61e1be44488268004f30edaefc3365ec0bf46cf9b543099bd7"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": "a4bdbacdf4efe97bcacfe6066c7b6810223e2de7e42731ed22c7e11f54f0f161"
+    },
+    "resolved_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "fused",
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_sharing": "global",
+        "attention_coefficients": "fixed",
+        "attention_degree": 4,
+        "attention_fixed_coefficients": [
+          1.0304507941875802,
+          0.8243606353500641,
+          0.41218031767503205,
+          0.27478687845002137,
+          0.06869671961250534
+        ],
+        "attention_fixed_square_factors": null,
+        "attention_mechanism": "dot_product",
+        "attention_normalization": true,
+        "attention_output_scaling": "none",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 1024,
+        "initialization": "transformer_reference",
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 64,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_head",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 2000,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/degree_chart_reference_init/experiments/attention_scaling/runs/re67015e7ee89/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "c92b918210869d4d43e74cfa84d065df7c954285",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "attention_scaling",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "200m-qk-hermite-m004-normalized-transformer-init-seed0",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/degree_chart_reference_init/experiments/attention_scaling/runs/re67015e7ee89"
+      }
+    },
+    "resolved_config_sha256": "0374d81ecb7556d628110fc079101d78dceed5a7cc2d39996f8c277112d82efe",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 1,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 2,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 3,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 2,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 3,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "207493",
+        "timestamp_utc": "2026-10-04T06:52:22.343494+00:00"
+      }
+    ]
+  },
+  "frozen_execution_sha256": "7fab33481242c786935bc855b5ef76907a2fe231b32f683436be3161eb088457",
+  "home_cluster": "kennel",
+  "label": "200m-qk-hermite-m004-normalized-transformer-init-seed0",
+  "log": {
+    "path": "experiments/attention_scaling/runs/re67015e7ee89/training.log",
+    "sha256": "fa95a0cbd14f7c10def2a8f2a6f83f2ec0465e9866e82db1d45716bd5a3eeaed",
+    "size_bytes": 53470
+  },
+  "log_path": "experiments/attention_scaling/runs/re67015e7ee89/training.log",
+  "metadata": {
+    "path": "experiments/attention_scaling/runs/re67015e7ee89/metadata.json",
+    "sha256": "a4bdbacdf4efe97bcacfe6066c7b6810223e2de7e42731ed22c7e11f54f0f161",
+    "size_bytes": 34517
+  },
+  "name": "200m-qk-hermite-m004-normalized-transformer-init-seed0",
+  "numerical_failure_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/degree_chart_reference_init/experiments/attention_scaling/runs/re67015e7ee89/numerical_failure_step_00000680.json",
+  "record_schema_version": 1,
+  "run_id": "re67015e7ee89",
+  "seed": 0,
+  "source_commit": "c92b918210869d4d43e74cfa84d065df7c954285",
+  "status": "numerical_failure",
+  "step": 680,
+  "training_tokens": 356515840,
+  "updated_utc": "2026-10-04T06:59:12.923702+00:00",
+  "wandb_run": {
+    "path": "experiments/attention_scaling/runs/re67015e7ee89/wandb_run.json",
+    "sha256": "320d6f703402e6a65821caec83fdc8f0f1954d76051e43be489cea41ef8c8cfc",
+    "size_bytes": 216
+  }
+}
