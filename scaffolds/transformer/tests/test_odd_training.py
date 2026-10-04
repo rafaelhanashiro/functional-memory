@@ -172,6 +172,9 @@ def test_odd_finite_loss_invalid_gradient_persists_scientific_failure(tmp_path, 
 def test_odd_best_only_retention_preserves_terminal_metrics_and_resume_is_idempotent(tmp_path, monkeypatch, degree, tied):
     from scaffolds.transformer.retention import finalize_run
 
+    # A scratch run directory, not a launched production run: under a launcher the source
+    # commit is set and the loop would demand a preallocated recipe for this run root.
+    monkeypatch.delenv("SHARED_TRANSFORMER_SOURCE_COMMIT", raising=False)
     name = f"test-m{degree:03d}"
     config = odd_config(tmp_path / "experiments" / "odd_taylor_attention" / "runs" / name, degree)
     config.train.source_commit = "a" * 40
