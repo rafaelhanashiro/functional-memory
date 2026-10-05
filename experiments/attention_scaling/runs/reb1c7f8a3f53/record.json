@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/reb1c7f8a3f53/config.yaml",
+    "sha256": "e6d2ad36a720323d279705d58eb12491737e4c0d0a7a19d11bcd31e1e29ab9ee"
+  },
+  "label": "200m-qk-m008-rational-linear-denominator-transformer-init-seed0",
+  "name": "200m-qk-m008-rational-linear-denominator-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "reb1c7f8a3f53",
+  "status": "planned"
+}

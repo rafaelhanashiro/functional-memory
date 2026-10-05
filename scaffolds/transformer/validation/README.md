@@ -312,6 +312,18 @@ rational, at the scaffold source of commit `8cee781f80db`
 ([record](runs/rational-polynomial-h100/tests.json)); the CPU suite passed 1,055
 tests with 14 expected skips.
 
+The kernel describes each head's parameters with a static layout, so the denominator
+can have its own degree and a nonnegative form, `(1 + sum u_r s^r)^2 + (sum w_r s^r)^2`.
+New cases cover a linear and a nonnegative quadratic denominator with numerators of
+degree 1–8 against FP64. At 2,048 tokens in BF16, one head's QK-norm log-scale
+gradient nearly cancels for the quadratic denominator: the fused and blocked BF16
+paths agreed to 2.5% while both were about 70% from FP64, and fused was no farther
+from FP64 than blocked on any quantity. That check now compares both paths with an
+FP32 evaluation of the blocked reference. On one H100 (`dogo`, job 208617) the GPU
+suites passed 82 cases, 28 rational, at commit `8fdf2cbbb301`
+([record](runs/rational-denominators-h100/tests.json)); the CPU suite passed 1,099
+tests with 14 expected skips.
+
 <!-- BEGIN GENERATED NORMALIZED POLYNOMIAL THROUGHPUT -->
 Kernel forward and backward, including all parameter gradients:
 

@@ -1,0 +1,25 @@
+{
+  "completed_utc": "2026-10-05T01:14:30+00:00",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "device_kinds": [
+    "NVIDIA H100 80GB HBM3"
+  ],
+  "exit_code": 0,
+  "gpu_type": "H100",
+  "home_cluster": "kennel",
+  "junit": {
+    "path": "scaffolds/transformer/validation/logs/rational-denominators/gpu-tests-208617.xml",
+    "sha256": "25af2867410cef3faba87bb86138b001fd1d0a373d9d9c49eee615ae0be5e548"
+  },
+  "node": "dogo",
+  "rational_cases": 33,
+  "slurm_job_id": "208617",
+  "source_commit": "8fdf2cbbb30157f002bfe6fd6c9f05657ec35a43",
+  "status": "passed",
+  "test_files": [
+    "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py",
+    "scaffolds/transformer/tests/test_learned_polynomial_normalized.py",
+    "scaffolds/transformer/tests/test_qk_norm.py"
+  ],
+  "tests_passed": 82
+}

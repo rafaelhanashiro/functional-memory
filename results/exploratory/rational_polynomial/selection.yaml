@@ -1,5 +1,5 @@
-question: Does a separate learned denominator polynomial, with a penalty on high-order
-  coefficients, let normalized learned polynomial attention train through?
+question: Does a separate learned denominator polynomial let normalized learned polynomial
+  attention train through?
 study: experiments/attention_scaling
 metric: terminal validation perplexity
 runs:
@@ -17,6 +17,22 @@ runs:
     numerical_failure_step_00000131.json:
       path: experiments/attention_scaling/runs/r9c52f40605fb/numerical_failure_step_00000131.json
       sha256: 352a43b09bdbcf15d809e45ff0daf1f15c53486f08061f0b9c2ff00b9f427d9d
+- run_id: reb1c7f8a3f53
+  label: rational degree 8, linear denominator, numerator-only lambda = 0.01, linear-attention
+    start
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/reb1c7f8a3f53/config.yaml
+      sha256: e6d2ad36a720323d279705d58eb12491737e4c0d0a7a19d11bcd31e1e29ab9ee
+- run_id: rb5f4cb9e0d85
+  label: rational degree 8, nonnegative quadratic denominator, numerator-only lambda
+    = 0.01, linear-attention start
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rb5f4cb9e0d85/config.yaml
+      sha256: ef83922ffe50c2d659606238f31c8e566b7d55911bc429404119873414bb0f7c
 - run_id: rbde7fc4c2135
   label: softmax, transformer reference initialization
   role: control

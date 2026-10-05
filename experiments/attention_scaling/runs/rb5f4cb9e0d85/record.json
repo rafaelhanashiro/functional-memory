@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rb5f4cb9e0d85/config.yaml",
+    "sha256": "ef83922ffe50c2d659606238f31c8e566b7d55911bc429404119873414bb0f7c"
+  },
+  "label": "200m-qk-m008-rational-nonnegative-quadratic-denominator-transformer-init-seed0",
+  "name": "200m-qk-m008-rational-nonnegative-quadratic-denominator-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "rb5f4cb9e0d85",
+  "status": "planned"
+}
