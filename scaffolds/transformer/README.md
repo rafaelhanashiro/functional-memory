@@ -213,9 +213,11 @@ do not use it.
 
 `attention_output_scaling` rescales each head's unnormalized output
 `o_t = sum_(j<=t) k(s_tj) v_j` before the output projection
-(`attention/output_scaling.py`); only unnormalized dot-product attention accepts it.
+(`attention/output_scaling.py`); only dot-product attention accepts it.
 Normalized attention equals `o_t / sum_j k(s_tj)`, so `o_t` is the normalized output
-times the row's kernel sum.
+times the row's kernel sum. `head_rms_norm` also applies to normalized attention,
+where it normalizes `o_t / sum_j k(s_tj)`; for a positive kernel such as exp the two
+agree up to `rms_norm_eps`. `inverse_position` requires unnormalized attention.
 
 | `attention_output_scaling` | Output |
 |---|---|

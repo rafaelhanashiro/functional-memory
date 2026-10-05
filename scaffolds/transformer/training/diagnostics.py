@@ -225,7 +225,7 @@ def attention_identity(config) -> dict:
     if scaling != "none":
         identity.update(
             attention_output_scaling=scaling, attention_output_normalization=scaling,
-            attention_formula=identity["attention_formula"] + (
+            attention_formula=identity.get("attention_formula", "causal_softmax(QK^T / sqrt(d_k)) V") + (
                 ", divided by the number of visible keys t" if scaling == "inverse_position"
                 else ", then per-head RMSNorm over value channels with a learned gain"))
     if config.model.attention_backend == "fused":
