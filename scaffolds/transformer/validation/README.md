@@ -320,7 +320,7 @@ gradient nearly cancels for the quadratic denominator: the fused and blocked BF1
 paths agreed to 2.5% while both were about 70% from FP64, and fused was no farther
 from FP64 than blocked on any quantity. That check now compares both paths with an
 FP32 evaluation of the blocked reference. On one H100 (`dogo`, job 208617) the GPU
-suites passed 82 cases, 28 rational, at commit `8fdf2cbbb301`
+suites passed 82 cases, 33 rational, at commit `8fdf2cbbb301`
 ([record](runs/rational-denominators-h100/tests.json)); the CPU suite passed 1,099
 tests with 14 expected skips.
 
