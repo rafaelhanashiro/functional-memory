@@ -1,0 +1,45 @@
+question: Is the shared peak learning rate 3e-4 near-optimal for the 200M recipe with
+  the reference initialization?
+study: experiments/attention_scaling
+metric: terminal validation perplexity
+runs:
+- run_id: ra846aac754ee
+  label: softmax d_K = 64, transformer reference initialization, peak learning rate
+    6e-4
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/ra846aac754ee/config.yaml
+      sha256: c406ddd098131e310c6d85c0c2c16d6a3fb5cd080970d2702eb5513b74761d6c
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/ra846aac754ee/metrics.jsonl
+      sha256: 7b0fba5eea00614c8f74157ad68e41b0470cb2ea078b365190ebfd3bf219284a
+    completion.json:
+      path: experiments/attention_scaling/runs/ra846aac754ee/completion.json
+      sha256: 416d55507867dabd5fd52ff60388469a817a1a8bfbedfde73809cf94e9029776
+    metadata.json:
+      path: experiments/attention_scaling/runs/ra846aac754ee/metadata.json
+      sha256: 3b316fe5c7cb4de6ae395fce8229dfdb930e650f141bd43fe103f2663264c55d
+    best_validation.json:
+      path: experiments/attention_scaling/runs/ra846aac754ee/best_validation.json
+      sha256: 65502a096aebd3738e5f84cf26815efa4557065ba98f5c203dada12ebf2417db
+- run_id: rbde7fc4c2135
+  label: softmax d_K = 64, transformer reference initialization, peak learning rate
+    3e-4
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/config.yaml
+      sha256: 9fa4ffa41817bc592ac325822ceb1d9d5c822e85bea4aac04496d61e79ecaf28
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/metrics.jsonl
+      sha256: 1e52b91c3f087a16c909417cd9d8faa775770bc58791b68d3fc4efb300393446
+    completion.json:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/completion.json
+      sha256: 2be474260e097644a99ddbfe3a838ec5c7c7f6f100d9759e14bdfd7cc40dc8c1
+    metadata.json:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/metadata.json
+      sha256: 7311ac18288b9071eda6a5cfa1f5a3b7fe6633156f82e975a0d882c2f7b92276
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rbde7fc4c2135/best_validation.json
+      sha256: b05a2a70f4fb65bca76c0c53cab76a78f49c5f5f588af6b73250ecc0bf1d9411
