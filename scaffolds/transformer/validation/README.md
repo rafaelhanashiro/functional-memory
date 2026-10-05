@@ -394,6 +394,41 @@ sbatch --gres=gpu:h100:1 --nodelist=dogo \
 # For B300, use --gres=gpu:b300:1 --nodelist=akita and pass B300.
 ```
 
+## B300 cuBLAS concurrency: checkpoint replay
+
+The locked cuBLAS 12.9 is in the range (12.8–13.1) where some Blackwell kernels free
+tensor memory twice; JAX warns that a cuBLAS kernel running concurrently with another
+can silently corrupt data. Two B300 runs failed with an infinite gradient norm at a
+finite loss (`rc40145fd32c7` at update 12,637; `rdf00da0866a8` at 18,408).
+`replay_checkpoint.py` resumes a run from a retained checkpoint in a scratch directory,
+leaving the run untouched; `replay_checkpoint.sbatch` repeats it in one allocation,
+optionally with `--xla_gpu_disable_async_collectives=ALLCOLLECTIVES` ("sync"), which keeps
+the gradient all-reduce on the compute stream. On 2026-10-04 `rc40145fd32c7` was replayed
+from its update-12,500 checkpoint through update 12,900 on its source commit
+`a63a416775f31a6297076b4ba261df2a7c26df41`:
+
+| Job | GPU | Replays | Result | Updates/s |
+| --- | --- | --- | --- | ---: |
+| 208436 (`akita`) | 4×B300 | default, sync, default, sync | all pass 12,637 and 12,900 | 2.10 (both) |
+| 208437 (`dogo`) | 4×H100 | default, default | both pass | 1.98 |
+
+The replays track the original losses within 1e-4 through update 12,630, then train past
+the failure: it does not follow from the model state. That is consistent with transient
+corruption but does not prove it. Keeping collectives synchronous costs no measurable
+throughput, so Kennel B300 launches set it (`launchers/kennel_runtime.sh`,
+[CLUSTERS.md](../../../CLUSTERS.md)) until B300 runs use cuBLAS >= 13.2. Retained logs
+(Kennel, `validation/logs/`): `replay-b300-208436.log`
+(`b722bc63a32d8de642e5677fdf566126bdba1083a4e7ef03e826fb83f9e75759`) and
+`replay-h100-208437.log`
+(`cc643e429c1e5267bdbc3638efcdb6bca8f02f2f8ccf5c4396fe4a481660973f`). Submitted from the
+primary checkout with a detached worktree at the run's commit:
+
+```bash
+sbatch -w akita --output=scaffolds/transformer/validation/logs/replay-b300-%j.log \
+  scaffolds/transformer/validation/replay_checkpoint.sbatch worktrees/b300_replay \
+  experiments/attention_scaling/runs/rc40145fd32c7 12500 12900 <scratch> default sync default sync
+```
+
 ## Reproduction
 
 From a worktree with the scaffold environment synced
