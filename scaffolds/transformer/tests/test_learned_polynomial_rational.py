@@ -558,7 +558,8 @@ def test_run_index_exposes_initialization_and_penalty(tmp_path):
     assert row["coefficient_sharing"] == "per_head"
 
 
-DENOMINATORS = [(8, 1, "direct"), (8, 2, "sum_of_squares"), (3, 4, "sum_of_squares"), (2, 5, "direct")]
+DENOMINATORS = [(8, 1, "direct"), (8, 2, "sum_of_squares"), (3, 4, "sum_of_squares"), (2, 5, "direct"),
+                (8, 8, "sum_of_squares")]
 DENOMINATOR_ARRAYS = {"direct": "polynomial_denominator_coefficients",
                       "sum_of_squares": "polynomial_denominator_square_factors"}
 
@@ -720,7 +721,7 @@ def test_penalty_can_leave_the_denominator_out(tmp_path):
                               np.asarray(plain["polynomial_coefficients"][...]))
 
 
-@pytest.mark.parametrize("count,form", [(1, "direct"), (2, "sum_of_squares")])
+@pytest.mark.parametrize("count,form", [(1, "direct"), (2, "sum_of_squares"), (8, "sum_of_squares")])
 def test_denominator_parameter_counts_and_softmax_backbone(count, form):
     base = load_config(BASE_CONFIG).model
     production = replace(base, attention_degree=8, attention_normalization=True, attention_backend="blocked",
@@ -736,8 +737,10 @@ def test_denominator_parameter_counts_and_softmax_backbone(count, form):
     config.model = production
     facts = matches_softmax_backbone_initialization(config)
     assert set(facts["mechanism_parameters"]) == {"polynomial_coefficients", DENOMINATOR_ARRAYS[form], "qk_norm_log_scale"}
+    half = count // 2
     assert facts["mechanism_parameters"][DENOMINATOR_ARRAYS[form]]["initial"] == (
-        [0.0] if form == "direct" else [0.0, LINEAR_START_SQUARE_FACTOR])
+        [0.0] * count if form == "direct"
+        else [0.0] * half + [LINEAR_START_SQUARE_FACTOR] + [0.0] * (half - 1))
     assert facts["mechanism_parameters"][DENOMINATOR_ARRAYS[form]]["weight_decay"] is False
 
 
@@ -794,7 +797,7 @@ def test_fused_wrapper_passes_the_denominator_layout(monkeypatch, count, form):
     np.testing.assert_array_equal(gradients[1], jnp.full_like(denominator, v.size))
 
 
-@pytest.mark.parametrize("count,form", [(1, "direct"), (2, "sum_of_squares")])
+@pytest.mark.parametrize("count,form", [(1, "direct"), (2, "sum_of_squares"), (8, "sum_of_squares")])
 def test_training_resume_with_a_denominator_of_its_own_degree(tmp_path, count, form):
     config = tiny_config(tmp_path / "full")
     model = config.model
