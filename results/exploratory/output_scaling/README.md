@@ -25,6 +25,7 @@ Terminal validation perplexity:
 | exp | Flax defaults | 18.304 | 15.045 | 14.495 |
 | Learned m = 4 | reference | 14.720 | 14.056 | **13.662** |
 | Learned m = 4 | Flax defaults | 16.384 | fail @12,637 | 14.709 |
+| softmax (normalized exp) | reference | 13.514 | — | 13.433 |
 
 References, reference initialization (Flax defaults in parentheses): softmax 13.514
 (14.457); normalized m = 4: fixed Taylor 13.774 (14.896), learned nonnegative 13.689
@@ -36,6 +37,13 @@ References, reference initialization (Flax defaults in parentheses): softmax 13.
   softmax output. Learned m = 4 stays signed, lands 0.15 above softmax, and beats both
   normalized m = 4 kernels on either initialization (by 0.03 and 0.11 with the
   reference initialization).
+- **Softmax with head RMSNorm repeats exp with head RMSNorm.** The per-head RMSNorm
+  cancels softmax's positive row sum, so the two are one model up to `rms_norm_eps`; the
+  run differs in its kernel (cuDNN softmax) and GPU count. It finished at 13.433 against
+  13.441, and from update 5,000 on the validation curves stay within 0.022 (mean
+  −0.002). Numerics alone therefore move one run by about 0.01. The 0.07 by which exp
+  with head RMSNorm beats softmax is the gain from adding head RMSNorm to softmax
+  (13.433 against 13.514), not from dropping normalization.
 - **The reference initialization helps every variant,** by 0.85–1.05 for the scaled
   runs and 1.66–2.42 unscaled. The ranking is unchanged: head RMSNorm, then 1/t, then
   no scaling (learned m = 4: 13.662, 14.056, 14.720).
@@ -48,5 +56,5 @@ References, reference initialization (Flax defaults in parentheses): softmax 13.
 
 - One seed; differences of a few tenths are not established.
 - With the reference initialization, the 1/t runs trained on H100 and the head-RMSNorm
-  runs on B300; with Flax defaults, exp with head RMSNorm trained on H100 and the other
+  runs on B300 (softmax with head RMSNorm on 2 GPUs, the others on 4); with Flax defaults, exp with head RMSNorm trained on H100 and the other
   scaled runs on B300.
