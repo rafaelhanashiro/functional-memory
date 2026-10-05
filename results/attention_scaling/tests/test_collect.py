@@ -235,11 +235,11 @@ def test_committed_comparison_sources() -> None:
     assert len(chart_rows) == 30
     chart_failures = {(row["panel"], row["column"]): row["failure_step"]
                       for row in chart_rows if row["status"] == "numerical_failure"}
-    assert chart_failures == {("normalized_learned_taylor", "m1"): 27, ("normalized_learned_taylor", "m2"): 1857,
-                              ("normalized_learned_taylor", "m3"): 318, ("normalized_learned_taylor", "m4"): 1456,
-                              ("normalized_fixed_hermite", "m1"): 5, ("normalized_fixed_hermite", "m2"): 3829,
-                              ("normalized_fixed_hermite", "m3"): 802, ("normalized_fixed_hermite", "m4"): 1390,
-                              ("normalized_fixed", "m1"): 31, ("normalized_fixed", "m3"): 419}
+    assert chart_failures == {("normalized_learned_taylor", "m1"): 60, ("normalized_learned_taylor", "m2"): 1923,
+                              ("normalized_learned_taylor", "m3"): 336, ("normalized_learned_taylor", "m4"): 1143,
+                              ("normalized_fixed_hermite", "m1"): 374, ("normalized_fixed_hermite", "m2"): 176,
+                              ("normalized_fixed_hermite", "m3"): 549, ("normalized_fixed_hermite", "m4"): 680,
+                              ("normalized_fixed", "m1"): 35, ("normalized_fixed", "m3"): 555}
     legacy = {(row["panel"], row["column"]) for row in chart_rows if row["legacy"]}
     assert legacy == set()
 

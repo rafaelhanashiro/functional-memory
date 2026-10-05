@@ -13,11 +13,11 @@ coefficient diagnostics), and execution metadata under
 [`experiments/attention_scaling/runs/`](../../experiments/attention_scaling/runs/).
 
 Every plotted run uses selective weight decay and QK-norm, except "softmax no QK-norm"
-and Gated DeltaNet, which have no QK-norm. The reference mechanisms use their reference
-initializations: GPT-2/Megatron (`transformer_reference`) for softmax and unnormalized
-exp, the paper's (`gated_deltanet_reference`) for Gated DeltaNet. Every normalized fixed
-Taylor column in the heatmap also uses `transformer_reference`; the degree-chart
-polynomial families still use the scaffold's Flax defaults (see [Limits](#limits)).
+and Gated DeltaNet, which have no QK-norm, and its reference initialization:
+GPT-2/Megatron (`transformer_reference`) for softmax, unnormalized exp, and every
+polynomial kernel; the paper's (`gated_deltanet_reference`) for Gated DeltaNet. What the
+reference initialization changed is in
+[reference_init](../exploratory/reference_init/README.md).
 
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
@@ -47,61 +47,57 @@ polynomial families still use the scaffold's Flax defaults (see [Limits](#limits
   "Nonnegative" writes the kernel as `q1^2 + q2^2`, so it exists only at even degrees.
   Fixed Hermite uses the standard-normal projection
   `p_m(s) = exp(1/2) sum_(r<=m) He_r(s)/r!` (normalized `m = 2` evaluated as
-  `exp(1/2) (s+1)^2 / 2`). Normalized Hermite `m = 1` failed in its 20-update
-  qualification pilot (production model, data, and optimizer).
+  `exp(1/2) (s+1)^2 / 2`).
 
 ## Results at d_K = 64
 
-References, each on its reference initialization: softmax **13.514**, Gated DeltaNet
-**13.705**, softmax no QK-norm **13.932**, unnormalized exp with QK-norm **15.885**.
-With Flax defaults, as the degree-chart kernels use, they were 14.457, 14.665, and 18.304
-([reference_init](../exploratory/reference_init/README.md)).
+References: softmax **13.514**, Gated DeltaNet **13.705**, softmax no QK-norm
+**13.932**, unnormalized exp with QK-norm **15.885**.
 
 Normalized kernels (failures show the update):
 
 | m | Fixed Taylor | Fixed Hermite | Learned | Learned nonnegative |
 | ---: | ---: | ---: | ---: | ---: |
-| 1 | fail @31 | fail @5 | fail @27 | — |
-| 2 | 16.511 | fail @3,829 | fail @1,857 | 16.176 |
-| 3 | fail @419 | fail @802 | fail @318 | — |
-| 4 | 14.896 | fail @1,390 | fail @1,456 | 14.742 |
+| 1 | fail @35 | fail @374 | fail @60 | — |
+| 2 | 14.911 | fail @176 | fail @1,923 | 14.666 |
+| 3 | fail @555 | fail @549 | fail @336 | — |
+| 4 | 13.774 | fail @680 | fail @1,143 | **13.689** |
 | 8 | 13.543 | | | |
-| 16 | 13.519 | | | |
-
-Fixed Taylor `m = 8` and `16` use the reference initialization (Flax defaults: 14.498
-and 14.454); every other cell uses Flax defaults. In the heatmap, `m = 2` and `4` use the
-reference initialization too (14.911 and 13.774 at `d_K = 64`), and `m = 1` and `m = 3`
-fail at updates 35 and 555.
+| 16 | **13.519** | | | |
 
 Unnormalized kernels:
 
 | m | Fixed Taylor | Fixed Hermite | Learned Taylor |
 | ---: | ---: | ---: | ---: |
-| 1 | 20.316 | 20.870 | 20.279 |
-| 2 | 21.748 | 17.468 | 17.599 |
-| 3 | 17.631 | 17.894 | 16.330 |
-| 4 | 18.181 | 17.246 | 16.384 |
+| 1 | 17.903 | 18.196 | 17.883 |
+| 2 | 18.166 | 15.673 | 15.507 |
+| 3 | 15.621 | 15.747 | **14.657** |
+| 4 | 15.888 | 15.278 | 14.720 |
 
 - **Normalized kernels need a nonnegative kernel.** Signed kernels fail when a row sum
   crosses zero: every odd degree, the signed learned kernels, and Hermite `m = 4`
   (negative for `s` in about (−2.8, −1.6)). Even-degree Taylor is strictly positive and
-  finishes. Hermite `m = 2` is nonnegative but zero at `s = -1` and failed late; the
-  learned sum-of-squares kernels also learned a zero and finished.
-- **Normalized Taylor `m = 16` ties softmax on either initialization** (13.519 vs
-  13.514 with the reference initialization, 14.454 vs 14.457 with Flax defaults);
-  `m = 8` is 0.03 above (0.04 with Flax defaults).
-- **Hermite vs Taylor, unnormalized:** Hermite is better at even degrees (−4.28 at
-  `m = 2`, −0.94 at `m = 4`) and worse at odd degrees (+0.55, +0.26). Runs without
-  QK-norm show the same signs.
-- **Normalized Hermite `m = 2` led Taylor until it failed** (33.85 vs 38.86 at update
-  3,000). The cause is unconfirmed; its step-3,500 checkpoint is kept for a replay.
-  Hermite `m = 4` was far behind before failing (551 vs 105 at update 1,000).
-- **Learned beats fixed Taylor, unnormalized,** at every degree (by 0.04 at `m = 1` to
-  4.15 at `m = 2`).
+  finishes. Hermite `m = 2` is nonnegative but zero at `s = -1` and fails (at update 176;
+  3,829 with Flax defaults); the learned sum-of-squares kernels also learned a zero and
+  finished.
+- **Normalized Taylor `m = 16` ties softmax** (13.519 vs 13.514); `m = 8` is 0.03 above.
+  Nonnegative learned `m = 4` (13.689) is 0.18 above softmax and 0.08 below fixed Taylor
+  `m = 4`; at `m = 2` it is 0.24 below fixed Taylor.
+- **Hermite vs Taylor, unnormalized:** Hermite is better at even degrees (−2.49 at
+  `m = 2`, −0.61 at `m = 4`) and worse at odd degrees (+0.29, +0.13), the same signs as
+  with Flax defaults and without QK-norm.
+- **Learned beats fixed Taylor, unnormalized,** at every degree (by 0.02 at `m = 1` to
+  2.66 at `m = 2`). Learned `m = 3` and `4`, Hermite `m = 4`, and Taylor `m = 3` beat
+  unnormalized exp (15.885).
+- **The reference initialization helps every kernel that finishes,** by 0.94–3.58
+  (unnormalized kernels 1.66–3.58), and leaves the signed normalized kernels failing;
+  the orderings above match those with Flax defaults
+  ([reference_init](../exploratory/reference_init/README.md)).
 
 ## Effect of QK-norm
 
-Change in PPL when the same kernel is rerun with QK-norm (negative is better). Except
+All runs in this section use Flax defaults. Change in PPL when the same kernel is rerun
+with QK-norm (negative is better). Except
 for softmax, the runs without QK-norm also used the old decay rule, which moved
 softmax by 0.03.
 
@@ -114,11 +110,10 @@ softmax by 0.03.
 | Unnormalized exp | +0.85 | | | | | |
 
 QK-norm helps unnormalized polynomial kernels at `m >= 2` by 1.8–3.8 PPL but hurts the
-unnormalized exponential by 0.85 (18.304 vs 17.458). These rows compare Flax-default
-runs; with the reference initialization QK-norm improves softmax by 0.42 at `d_K = 64`
-(13.514 vs 13.932).
+unnormalized exponential by 0.85 (18.304 vs 17.458). With the reference initialization
+QK-norm improves softmax by 0.42 at `d_K = 64` (13.514 vs 13.932).
 
-For normalized fixed Taylor (Flax-default runs) the effect depends on `d_K` and `m`: QK-norm hurts most at
+For normalized fixed Taylor the effect depends on `d_K` and `m`: QK-norm hurts most at
 small `d_K` and low degree (+1.86 at `d_K = 8`, `m = 2`). At `m >= 4` and
 `d_K >= 32` it changes perplexity by at most 0.25.
 
@@ -130,8 +125,8 @@ small `d_K` and low degree (+1.86 at `d_K = 8`, `m = 2`). At `m >= 4` and
 | 16 | +0.49 | +0.02 | −0.13 | −0.25 | −0.16 |
 | softmax | +0.52 | +0.01 | −0.12 | −0.21 | −0.15 |
 
-Softmax (Flax defaults) follows the same pattern. Its runs without QK-norm used the old
-decay rule except at `d_K = 64`.
+Softmax follows the same pattern. Its runs without QK-norm used the old decay rule
+except at `d_K = 64`.
 
 ## Other widths
 
@@ -152,18 +147,21 @@ decay rule except at `d_K = 64`.
 ## Limits
 
 - One seed per cell; differences of a few tenths are not established.
-- Initializations differ: the references and every heatmap Taylor column use
-  reference initializations; the degree-chart families use Flax defaults,
-  which cost softmax and normalized Taylor 0.9–3.0 and unnormalized exp 2.4
-  ([reference_init](../exploratory/reference_init/README.md)). Compare Flax-default
-  kernels with the references only at equal initialization.
+- Nonnegative learned `m = 4` runs on the fused kernel; its Flax-default control ran on
+  the blocked reference (same function, about 3.5× slower).
 - Parameter count changes with `d_K`. Gated DeltaNet also changes the architecture and
   has 10.9–11.0M (5–6%) more parameters than softmax at the same `d_K`.
-- Some runs resumed on another GPU type after preemption: unnormalized Hermite `m = 2`
-  (B300, then H100 from update 14,500), unnormalized Taylor `m = 4` (B300, then
-  H100 from update 500), Gated DeltaNet `d_K = 128` (H100, then B300 from update
-  13,500), and normalized Taylor `d_K = 16`, `m = 16` and `d_K = 64, 128`, `m = 8`
-  (attempts on both H100 and B300; see their records).
+- Some runs resumed on another GPU type after preemption: Gated DeltaNet `d_K = 128`
+  (H100, then B300 from update 13,500); normalized Taylor `d_K = 16`, `m = 16` and
+  `d_K = 64, 128`, `m = 8`; unnormalized fixed Taylor `m = 2`, `4` and fixed Hermite
+  `m = 1`, `4` (attempts on both H100 and B300; see their records).
+- Unnormalized fixed Taylor and Hermite `m = 1` train with recurring loss spikes (up to
+  +3.8 and +6.1 nats at updates 2,900–8,200) and recover; their Flax-default runs did
+  not spike. No other plotted run with a Kennel log spikes.
+- Runs on B300 use cuBLAS 12.9, which JAX warns can silently corrupt data when a cuBLAS
+  kernel runs concurrently with another kernel. No plotted run shows a B300-specific loss
+  spike or numerical failure: the Taylor `m = 1` spikes occur on H100 too, and the
+  normalized failures repeat on H100.
 
 ## Reproduce
 

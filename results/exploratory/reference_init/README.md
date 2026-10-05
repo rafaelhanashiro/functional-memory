@@ -2,10 +2,10 @@
 
 Opened 2026-10-02. The reference mechanisms and every normalized fixed Taylor column
 (`m = 1, 2, 3, 4, 8, 16`) in [`results/attention_scaling/`](../../attention_scaling/README.md)
-now use these reference-initialization runs. Every degree-chart family at `d_K = 64` has
-been rerun too (nonnegative learned `m = 4` is still training); the degree chart switches
-once it finishes. Open decision: promote these findings into the canonical results or
-keep the topic as the record of the Flax-default controls.
+and every degree-chart family now use these reference-initialization runs, so every
+plotted run uses its reference initialization. Open decision: promote these findings
+into the canonical results or keep the topic as the record of the Flax-default
+controls.
 
 The scaffold's Flax defaults draw Linear weights truncated normal with variance
 `1/fan_in` and no depth scaling. Do they handicap the models against the recipes their
@@ -50,6 +50,7 @@ Terminal validation perplexity:
 | Unnormalized fixed Hermite m = 3 | 64 | 17.894 | **15.747** | −2.15 |
 | Unnormalized fixed Hermite m = 4 | 64 | 17.246 | **15.278** | −1.97 |
 | Normalized nonnegative learned m = 2 | 64 | 16.176 | **14.666** | −1.51 |
+| Normalized nonnegative learned m = 4 | 64 | 14.742 | **13.689** | −1.05 |
 | Normalized fixed Hermite m = 1 | 64 | fail @5 | fail @374 | |
 | Normalized fixed Hermite m = 2 | 64 | fail @3,829 | fail @176 | |
 | Normalized fixed Hermite m = 3 | 64 | fail @802 | fail @549 | |
@@ -112,7 +113,7 @@ Gap by update at `d_K = 64` (reference minus Flax defaults):
   initialization.
 - **Every unnormalized polynomial kernel gains 1.66–3.58,** like unnormalized exp:
   fixed Taylor 2.01–3.58, fixed Hermite 1.79–2.67, learned 1.66–2.40. Nonnegative learned
-  `m = 2` gains 1.51.
+  `m = 2` and `4` gain 1.51 and 1.05.
 - **The signed normalized kernels still fail.** Fixed Hermite and learned Taylor fail at
   every degree on either initialization; the failure update moves both ways (Hermite
   `m = 2` from 3,829 to 176, learned `m = 1` from 27 to 60).
@@ -126,6 +127,8 @@ Gap by update at `d_K = 64` (reference minus Flax defaults):
   2026-09-26 fixes to the gradients of normalized polynomial attention (`c2c405e`,
   `38dc585`); for those pairs the difference mixes initialization and code version. The
   reference-initialization runs all use code from 2026-10-02 or later.
+- Nonnegative learned `m = 4` ran on the fused kernel; its Flax-default control ran on
+  the blocked reference (same function).
 - The degree-chart reruns on Kennel trained on H100, except unnormalized fixed Taylor
   `m = 2`, `4` and unnormalized fixed Hermite `m = 1`, `4`, which resumed across B300 and
   H100 after preemptions.

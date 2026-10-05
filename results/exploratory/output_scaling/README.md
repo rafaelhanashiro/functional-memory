@@ -23,19 +23,22 @@ Terminal validation perplexity:
 | --- | --- | ---: | ---: | ---: |
 | exp | reference | 15.885 | 14.196 | **13.441** |
 | exp | Flax defaults | 18.304 | 15.045 | 14.495 |
-| Learned m = 4 | reference | not run | 14.056 | **13.662** |
+| Learned m = 4 | reference | 14.720 | 14.056 | **13.662** |
 | Learned m = 4 | Flax defaults | 16.384 | fail @12,637 | 14.709 |
 
-References: softmax 13.514 (reference initialization), 14.457 (Flax defaults);
-normalized m = 4 with Flax defaults: fixed Taylor 14.896, learned nonnegative 14.742.
+References, reference initialization (Flax defaults in parentheses): softmax 13.514
+(14.457); normalized m = 4: fixed Taylor 13.774 (14.896), learned nonnegative 13.689
+(14.742).
 
 - **Head RMSNorm recovers normalization.** exp lands at softmax on either
   initialization (−0.07 with the reference initialization, +0.04 with Flax defaults):
   for a positive kernel, RMSNorm of the unnormalized output equals RMSNorm of the
-  softmax output. Learned m = 4 stays signed and lands 0.15 above softmax.
+  softmax output. Learned m = 4 stays signed, lands 0.15 above softmax, and beats both
+  normalized m = 4 kernels on either initialization (by 0.03 and 0.11 with the
+  reference initialization).
 - **The reference initialization helps every variant,** by 0.85–1.05 for the scaled
-  runs and 2.42 for unscaled exp. The ranking is unchanged: head RMSNorm, then 1/t,
-  then no scaling.
+  runs and 1.66–2.42 unscaled. The ranking is unchanged: head RMSNorm, then 1/t, then
+  no scaling (learned m = 4: 13.662, 14.056, 14.720).
 - **Learned m = 4 with 1/t no longer fails.** With Flax defaults its gradient norm
   overflowed at update 12,637 with a finite loss; with the reference initialization it
   finished at 14.056, still 0.39 behind head RMSNorm. The Flax-default run's
@@ -44,9 +47,6 @@ normalized m = 4 with Flax defaults: fixed Taylor 14.896, learned nonnegative 14
 ## Limits
 
 - One seed; differences of a few tenths are not established.
-- Learned m = 4 without scaling has no reference-initialization run, so its row
-  compares scaling across initializations; the normalized m = 4 references use Flax
-  defaults.
 - With the reference initialization, the 1/t runs trained on H100 and the head-RMSNorm
   runs on B300; with Flax defaults, exp with head RMSNorm trained on H100 and the other
   scaled runs on B300.

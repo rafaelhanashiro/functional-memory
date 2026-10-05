@@ -905,6 +905,25 @@ runs:
     numerical_failure_step_00001143.json:
       path: experiments/attention_scaling/runs/rebdf113401ae/numerical_failure_step_00001143.json
       sha256: f53b757380c9dfe8fa116a2b033b4f3e3570b8900b9fd016baa1c1843e3fc5af
+- run_id: r4b3575f76cd9
+  label: normalized nonnegative learned m = 4 d_K = 64, transformer reference initialization
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r4b3575f76cd9/config.yaml
+      sha256: dc027ee929947c4f14ec4fdd5a5ec000bccaea7088d7a875bbd4d7ed97653098
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r4b3575f76cd9/metrics.jsonl
+      sha256: e3645f37b4d016647ae02fcc809ff638a58b34149724069aa9c0a1e14f105fc5
+    completion.json:
+      path: experiments/attention_scaling/runs/r4b3575f76cd9/completion.json
+      sha256: 28ad315d40a69bd25f46311b2a8966dd5887ea0d5ba33b1bbbc1929b068db278
+    metadata.json:
+      path: experiments/attention_scaling/runs/r4b3575f76cd9/metadata.json
+      sha256: a25bc36212ed3cb8af715f85f0fc672e3d175cae41a8b4b0af3d6254b4556346
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r4b3575f76cd9/best_validation.json
+      sha256: e3b6b32c7e178d67673dfc5fbd44e3f8bfb60c0773fdab9dc6593bba564d2c13
 - run_id: rb42889502961
   label: GLA d_K = 64, official GLA initialization
   role: primary
@@ -1838,6 +1857,25 @@ runs:
     numerical_failure_step_00001456.json:
       path: experiments/attention_scaling/runs/re554c79caddb/numerical_failure_step_00001456.json
       sha256: c966641492325599c0aa250357e707e2756216e28bd4a9b6e32352f1fdf8ca54
+- run_id: r507d1c2632b2
+  label: normalized nonnegative learned m = 4 d_K = 64, Flax defaults
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r507d1c2632b2/config.yaml
+      sha256: b86fbefeb080890491195d2d53d008917a9456cef9a55ed1a8a0ba030421a25e
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r507d1c2632b2/metrics.jsonl
+      sha256: e56c31b577a252f4b88522c76b4939257669c2c66a466936c5a1ad78dfd90f4b
+    completion.json:
+      path: experiments/attention_scaling/runs/r507d1c2632b2/completion.json
+      sha256: bb3c734e7004a4b5482449ea4514efb13dff91e10e74460d2f8d71c1dcb2b9d2
+    metadata.json:
+      path: experiments/attention_scaling/runs/r507d1c2632b2/metadata.json
+      sha256: 8354fbcf845dcb0a05ce5e4490b0c0727f6139c6e4df057fa00b2830c9447d35
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r507d1c2632b2/best_validation.json
+      sha256: f63736cfffbcdba50ab6653f776f7028ba238cf072004b17f71e72360f17593a
 - run_id: r6e11d7bd996d
   label: GLA d_K = 64, Flax defaults
   role: control
