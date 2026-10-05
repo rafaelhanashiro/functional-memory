@@ -3,9 +3,23 @@
     "path": "experiments/attention_scaling/runs/rdf74e4289926/config.yaml",
     "sha256": "693aefd056f9c5c5752d896e83706e0e27f4b3527621934f94109ce02549a86a"
   },
+  "home_cluster": "orcd",
   "label": "200m-dk064-gdn-warmup400-seed0",
   "name": "200m-dk064-gdn-warmup400-seed0",
   "record_schema_version": 1,
   "run_id": "rdf74e4289926",
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "gpu_count": 2,
+    "gpu_type": "H200",
+    "launch_commit": "ccb167141a761ace65c2f0c992efa72ae4386f0d",
+    "launcher": "scaffolds/transformer/launchers/orcd.sbatch",
+    "nice": 0,
+    "partitions": [
+      "mit_preemptable",
+      "mit_normal_gpu"
+    ],
+    "slurm_job_id": "24890607",
+    "submitted_utc": "2026-10-05T05:11:28+00:00"
+  }
 }
