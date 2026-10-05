@@ -138,6 +138,7 @@ def _loss_and_grads(
     rng: jax.Array,
     *,
     coefficient_penalty: float = 0.0,
+    coefficient_penalty_denominator: bool = True,
 ):
     """The microbatch NLL and the gradient of NLL + coefficient_penalty * coefficient penalty sum."""
     inputs = batch[:, :-1]
@@ -152,7 +153,9 @@ def _loss_and_grads(
         )
         nll = _cross_entropy(logits, targets)
         if coefficient_penalty:
-            return nll + coefficient_penalty * coefficient_penalty_sum(current_params, model.config), nll
+            penalty = coefficient_penalty_sum(current_params, model.config,
+                                              include_denominator=coefficient_penalty_denominator)
+            return nll + coefficient_penalty * penalty, nll
         return nll, nll
 
     # ``params`` is already a pure NNX State pytree, so the base JAX transform
@@ -182,6 +185,7 @@ def make_data_parallel_functions(
     devices: Sequence[jax.Device],
     *, check_all_gradients: bool = False,
     coefficient_penalty: float = 0.0,
+    coefficient_penalty_denominator: bool = True,
 ) -> DataParallelFunctions:
     if len(devices) < 2:
         raise ValueError("Data-parallel functions require at least two devices")
@@ -227,7 +231,9 @@ def make_data_parallel_functions(
                 current_state.step,
                 micro_batch,
                 micro_rng,
-                **({"coefficient_penalty": coefficient_penalty} if coefficient_penalty else {}),
+                **({"coefficient_penalty": coefficient_penalty,
+                    "coefficient_penalty_denominator": coefficient_penalty_denominator}
+                   if coefficient_penalty else {}),
             )
             return (
                 current_loss_sum + loss,

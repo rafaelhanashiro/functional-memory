@@ -21,14 +21,32 @@ from scaffolds.transformer.attention.nonnegative_polynomial import taylor_square
 from scaffolds.transformer.attention.qk_norm import cosine_score_operands
 
 
+# Families name a parameterization and, for rational kernels, the denominator:
+# "rational" has a direct denominator of the numerator's degree, "rational_linear" a
+# direct linear one, "rational_sos2" a nonnegative quadratic (1 + u s)^2 + (w s)^2.
+FAMILY_OPTIONS = {
+    "direct": dict(parameterization="direct"),
+    "sum_of_squares": dict(parameterization="sum_of_squares"),
+    "rational": dict(parameterization="rational"),
+    "rational_linear": dict(parameterization="rational", denominator_degree=1, denominator_form="direct"),
+    "rational_sos2": dict(parameterization="rational", denominator_degree=2, denominator_form="sum_of_squares"),
+}
 FAMILIES = ([("direct", degree) for degree in (1, 2, 3, 4, 8)] + [("sum_of_squares", degree) for degree in (2, 4, 8)]
-            + [("rational", degree) for degree in (1, 2, 3, 4, 8)])
-PARAMETERIZATIONS = ("direct", "sum_of_squares", "rational")
+            + [("rational", degree) for degree in (1, 2, 3, 4, 8)]
+            + [("rational_linear", degree) for degree in (1, 2, 8)]
+            + [("rational_sos2", degree) for degree in (1, 4, 8)])
+PARAMETERIZATIONS = ("direct", "sum_of_squares", "rational", "rational_linear", "rational_sos2")
 
 
-def _degree(parameters, parameterization):
-    count = parameters.shape[-1]
-    return (count - 1) // 2 if parameterization == "rational" else count - 1
+def _denominator_count(parameters, family):
+    options = FAMILY_OPTIONS[family]
+    if options["parameterization"] != "rational":
+        return 0
+    return options.get("denominator_degree") or (parameters.shape[-1] - 1) // 2
+
+
+def _degree(parameters, family):
+    return parameters.shape[-1] - _denominator_count(parameters, family) - 1
 
 
 def _inputs(shape, parameterization, degree, *, dtype=jnp.float32, seed=719):
@@ -51,6 +69,12 @@ def _inputs(shape, parameterization, degree, *, dtype=jnp.float32, seed=719):
         numerator[:, 1] = np.linspace(0.8, 1.2, heads)
         denominator = rng.uniform(-0.03, 0.03, size=(heads, degree)) / factorials[1:]
         parameters = np.concatenate([numerator, denominator], axis=-1)
+    elif parameterization in ("rational_linear", "rational_sos2"):
+        numerator = rng.uniform(-0.5, 0.5, size=(heads, degree + 1)) / factorials
+        numerator[:, 1] = np.linspace(0.8, 1.2, heads)
+        denominator = (rng.uniform(-0.03, 0.03, size=(heads, 1)) if parameterization == "rational_linear"
+                       else np.stack([rng.uniform(-0.1, 0.1, heads), rng.uniform(0.1, 0.3, heads)], axis=-1))
+        parameters = np.concatenate([numerator, denominator], axis=-1)
     else:
         parameters = np.asarray(taylor_square_factors(degree))[None, :] * (
             1 + rng.uniform(-0.15, 0.15, size=(heads, degree + 1)))
@@ -63,7 +87,16 @@ def _dense_reference(q, k, v, parameters, *, parameterization, score_offset=None
         scores = scores + score_offset
     degree = _degree(parameters, parameterization)
     parameters = jnp.broadcast_to(parameters, (q.shape[2], parameters.shape[-1]))
-    if parameterization == "direct":
+    if parameterization in ("rational_linear", "rational_sos2"):
+        values = sum(parameters[:, order][None, :, None, None] * scores ** order
+                     for order in range(degree + 1))
+        rest = parameters[:, degree + 1:]
+        if parameterization == "rational_linear":
+            denominators = 1 + rest[:, 0][None, :, None, None] * scores
+        else:
+            denominators = ((1 + rest[:, 0][None, :, None, None] * scores) ** 2
+                            + (rest[:, 1][None, :, None, None] * scores) ** 2)
+    elif parameterization == "direct":
         values = sum(parameters[:, order][None, :, None, None] * scores ** order
                      for order in range(degree + 1))
         denominators = values
@@ -88,9 +121,10 @@ def _dense_reference(q, k, v, parameters, *, parameterization, score_offset=None
 def _learned(parameters, parameterization):
     """Keyword arguments naming the learned arrays of one parameterization."""
     degree = _degree(parameters, parameterization)
-    if parameterization == "rational":
-        return {"polynomial_coefficients": parameters[..., :degree + 1],
-                "polynomial_denominator_coefficients": parameters[..., degree + 1:]}
+    if parameterization.startswith("rational"):
+        key = ("polynomial_denominator_square_factors" if parameterization == "rational_sos2"
+               else "polynomial_denominator_coefficients")
+        return {"polynomial_coefficients": parameters[..., :degree + 1], key: parameters[..., degree + 1:]}
     keyword = "polynomial_coefficients" if parameterization == "direct" else "polynomial_square_factors"
     return {keyword: parameters}
 
@@ -148,8 +182,7 @@ def kernel(request, monkeypatch):
     if request.param == "compiled":
         if jax.default_backend() != "gpu":
             pytest.skip("Compiled Pallas/Triton requires a CUDA allocation")
-        return lambda parameterization: partial(fused.fused_normalized_polynomial_attention,
-                                                 parameterization=parameterization)
+        return lambda family: partial(fused.fused_normalized_polynomial_attention, **FAMILY_OPTIONS[family])
     monkeypatch.setattr(fused, "_dot", lambda a, b: jnp.matmul(
         a.astype(jnp.float32), b.astype(jnp.float32), precision=jax.lax.Precision.HIGHEST))
 
@@ -159,7 +192,8 @@ def kernel(request, monkeypatch):
                               mask=(rows[:, None] < time) & (columns[None, :] < width), other=0)
 
     monkeypatch.setattr(fused, "_load", interpreted_load)
-    return lambda parameterization: partial(fused._attention, parameterization=parameterization, interpret=True)
+    return lambda family: partial(fused.fused_normalized_polynomial_attention, interpret=True,
+                                  **FAMILY_OPTIONS[family])
 
 
 @pytest.mark.parametrize("parameterization,degree", FAMILIES)
@@ -216,6 +250,21 @@ def test_exact_zero_final_sum_is_invalid_without_poisoning_earlier_rows(kernel):
     output = jax.jit(kernel("direct"))(*operands)
     assert np.isfinite(np.asarray(output[:, :-1])).all()
     assert np.isnan(np.asarray(output[:, -1])).all()
+
+
+def test_denominator_options_are_validated():
+    q = jnp.zeros((1, 4, 2, 4), jnp.float32)
+    attend = partial(fused.fused_normalized_polynomial_attention, q, q, q)
+    with pytest.raises(ValueError, match="rational parameterization only"):
+        attend(jnp.zeros((2, 3), jnp.float32), parameterization="direct", denominator_degree=1)
+    with pytest.raises(ValueError, match="even degree"):
+        attend(jnp.zeros((2, 6), jnp.float32), parameterization="rational", denominator_degree=3,
+               denominator_form="sum_of_squares")
+    with pytest.raises(ValueError, match="numerator degree >= 1"):
+        attend(jnp.zeros((2, 3), jnp.float32), parameterization="rational", denominator_degree=2)
+    with pytest.raises(ValueError, match="denominator_form"):
+        attend(jnp.zeros((2, 3), jnp.float32), parameterization="rational", denominator_degree=1,
+               denominator_form="positive")
 
 
 def test_rational_zero_denominator_sums_are_invalid_and_zero_numerators_are_valid(kernel):
@@ -378,8 +427,9 @@ def test_sos_near_roots_use_factors_without_expansion_or_clipping(kernel):
 
 @pytest.mark.parametrize("parameterization", PARAMETERIZATIONS)
 def test_masked_overflow_and_invalid_causal_values(kernel, parameterization):
-    # The rational kernel uses the same numerator with a constant denominator.
-    parameters = jnp.asarray([[1., 1., 0.5, 0., 0.]] if parameterization == "rational" else [[1., 1., 0.5]], jnp.float32)
+    # Rational kernels use the same numerator with a constant denominator.
+    denominator = {"rational": [0., 0.], "rational_linear": [0.], "rational_sos2": [0., 0.]}.get(parameterization, [])
+    parameters = jnp.asarray([[1., 1., 0.5, *denominator]], jnp.float32)
     attend = jax.jit(kernel(parameterization))
     q = jnp.asarray([1., 0.], jnp.float32).reshape(1, 2, 1, 1)
     k = jnp.asarray([0., 1e30], jnp.float32).reshape(q.shape)
@@ -458,7 +508,8 @@ def require_gpu():
 @pytest.mark.gpu
 @pytest.mark.parametrize("parameterization,degree", ([("direct", d) for d in (1, 2, 3, 4)]
                                                       + [("sum_of_squares", 2), ("sum_of_squares", 4)]
-                                                      + [("rational", 4), ("rational", 8)]))
+                                                      + [("rational", 4), ("rational", 8)]
+                                                      + [("rational_linear", 8), ("rational_sos2", 8)]))
 def test_bf16_full_context_with_qk_norm_and_all_gradients(require_gpu, parameterization, degree):
     operands, cotangent = _inputs((1, 2048, 2, 64, 64), parameterization, degree, dtype=jnp.bfloat16, seed=75)
     log_scale = jnp.asarray([[math.log(8.0)], [math.log(6.0)]], jnp.float32)
@@ -467,7 +518,7 @@ def test_bf16_full_context_with_qk_norm_and_all_gradients(require_gpu, parameter
         q, k = cosine_score_operands(q, k, scale, eps=1e-6)
         return attend(q, k, v, parameters)
 
-    attend = partial(fused.fused_normalized_polynomial_attention, parameterization=parameterization)
+    attend = partial(fused.fused_normalized_polynomial_attention, **FAMILY_OPTIONS[parameterization])
     actual = _evaluate(partial(compose, attend), (*operands, log_scale), cotangent)
     expected = _evaluate(partial(compose, partial(_blocked, parameterization=parameterization)),
                          (*operands, log_scale), cotangent)
@@ -491,7 +542,7 @@ def test_bf16_full_context_with_qk_norm_and_all_gradients(require_gpu, parameter
 @pytest.mark.parametrize("parameterization", PARAMETERIZATIONS)
 def test_bf16_odd_widths_match_fp64(require_gpu, parameterization):
     operands, cotangent = _inputs((2, 131, 3, 33, 17), parameterization, 4, dtype=jnp.bfloat16)
-    attend = partial(fused.fused_normalized_polynomial_attention, parameterization=parameterization)
+    attend = partial(fused.fused_normalized_polynomial_attention, **FAMILY_OPTIONS[parameterization])
     _assert_result(_evaluate(attend, operands, cotangent),
                    _fp64(partial(_dense_reference, parameterization=parameterization), operands, cotangent),
                    output_tolerance=0.006, gradient_tolerances=(0.025, 0.025, 0.015, 0.012))
@@ -499,7 +550,7 @@ def test_bf16_odd_widths_match_fp64(require_gpu, parameterization):
 
 @pytest.mark.gpu
 @pytest.mark.parametrize("parameterization,sharing", [("direct", "per_head"), ("sum_of_squares", "global"),
-                                                       ("rational", "per_head")])
+                                                       ("rational", "per_head"), ("rational_sos2", "per_head")])
 def test_transformer_training_and_checkpoint_resume(require_gpu, tmp_path, parameterization, sharing):
     from scaffolds.transformer.tests.packed_fixtures import PackedSequenceWriter
     from scaffolds.transformer.tests.test_training import tiny_config
@@ -511,7 +562,11 @@ def test_transformer_training_and_checkpoint_resume(require_gpu, tmp_path, param
     config.model.attention_degree = 4
     config.model.attention_coefficients = "learned"
     config.model.attention_normalization = True
-    config.model.attention_coefficient_parameterization = parameterization
+    options = FAMILY_OPTIONS[parameterization]
+    config.model.attention_coefficient_parameterization = options["parameterization"]
+    if parameterization == "rational_sos2":
+        config.model.attention_denominator_degree = 2
+        config.model.attention_denominator_parameterization = "sum_of_squares"
     config.model.attention_coefficient_sharing = sharing
     config.model.attention_backend = "fused"
     config.model.qk_norm = True
@@ -541,7 +596,8 @@ def test_transformer_training_and_checkpoint_resume(require_gpu, tmp_path, param
     assert all(np.isfinite(np.asarray(leaf)).all() for leaf in jax.tree.leaves(grads))
     parameters = (("polynomial_square_factors",) if parameterization == "sum_of_squares" else
                   ("polynomial_coefficients", "polynomial_denominator_coefficients") if parameterization == "rational"
-                  else ("polynomial_coefficients",))
+                  else ("polynomial_coefficients", "polynomial_denominator_square_factors")
+                  if parameterization == "rational_sos2" else ("polynomial_coefficients",))
     for name in (*parameters, "qk_norm_log_scale"):
         assert np.linalg.norm(np.asarray(grads[name][...])) > 0, name
 

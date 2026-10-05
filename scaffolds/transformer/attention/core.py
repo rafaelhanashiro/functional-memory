@@ -22,6 +22,7 @@ def attention_core(
     polynomial_coefficients: jax.Array | None = None,
     polynomial_square_factors: jax.Array | None = None,
     polynomial_denominator_coefficients: jax.Array | None = None,
+    polynomial_denominator_square_factors: jax.Array | None = None,
     return_diagnostics: bool = False,
     dropout=None,
     deterministic: bool = True,
@@ -38,14 +39,14 @@ def attention_core(
             raise ValueError("Unnormalized attention requires the exponential or a fixed Taylor kernel")
         if polynomial_square_factors is not None:
             raise ValueError("A sum-of-squares kernel is implemented for row-normalized attention only")
-        if polynomial_denominator_coefficients is not None:
+        if polynomial_denominator_coefficients is not None or polynomial_denominator_square_factors is not None:
             raise ValueError("A rational kernel's denominator is its row sum; it requires normalized attention")
         return unnormalized_attention(
             q, k, v, attention_degree=attention_degree, backend=backend,
             return_diagnostics=return_diagnostics, polynomial_coefficients=polynomial_coefficients,
         )
     if (polynomial_coefficients is not None or polynomial_square_factors is not None
-            or polynomial_denominator_coefficients is not None):
+            or polynomial_denominator_coefficients is not None or polynomial_denominator_square_factors is not None):
         from scaffolds.transformer.attention.learned_polynomial import normalized_learned_polynomial_attention
 
         if quadratic_mode != "fixed" or coefficients is not None:
@@ -54,6 +55,7 @@ def attention_core(
             q, k, v, attention_degree=attention_degree, polynomial_coefficients=polynomial_coefficients,
             polynomial_square_factors=polynomial_square_factors,
             polynomial_denominator_coefficients=polynomial_denominator_coefficients,
+            polynomial_denominator_square_factors=polynomial_denominator_square_factors,
             backend=backend, return_diagnostics=return_diagnostics,
         )
     if quadratic_mode != "fixed":

@@ -84,6 +84,12 @@ class ModelConfig:
     # all other coefficients 0), so a rational kernel starts at linear attention
     # divided by the number of visible keys. Not available with sum_of_squares.
     attention_coefficient_initialization: Literal["taylor", "linear"] = "taylor"
+    # Rational kernels only: the denominator's degree (null: attention_degree) and form.
+    # "direct" learns b_1..b_d of 1 + sum_r b_r s^r; "sum_of_squares" (even d) learns
+    # u_1..u_k, w_1..w_k of (1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2, a nonnegative
+    # denominator with constant 1 (attention/rational_polynomial.py).
+    attention_denominator_degree: int | None = None
+    attention_denominator_parameterization: Literal["direct", "sum_of_squares"] = "direct"
     # Cosine scores for any dot-product mechanism: s = exp(gamma) * cos(q, k) with a
     # learned log scale gamma per layer and head (or one shared), initialized at
     # log(qk_norm_initial_scale); null selects sqrt(qk_head_dim).
@@ -198,6 +204,21 @@ class ModelConfig:
                 raise ValueError("A rational kernel requires learned polynomial coefficients")
             if not self.attention_normalization:
                 raise ValueError("A rational kernel's denominator is its row sum; it requires normalized attention")
+        if self.attention_denominator_parameterization not in ("direct", "sum_of_squares"):
+            raise ValueError(f"Unknown denominator parameterization: {self.attention_denominator_parameterization}")
+        if ((self.attention_denominator_degree is not None or self.attention_denominator_parameterization != "direct")
+                and self.attention_coefficient_parameterization != "rational"):
+            raise ValueError("model.attention_denominator_degree and attention_denominator_parameterization "
+                             "apply to rational kernels only")
+        if self.attention_denominator_degree is not None and (
+                isinstance(self.attention_denominator_degree, bool)
+                or not isinstance(self.attention_denominator_degree, int) or self.attention_denominator_degree < 1):
+            raise ValueError("model.attention_denominator_degree must be null or an integer >= 1")
+        if self.attention_coefficient_parameterization == "rational" and self.attention_denominator_parameterization == "sum_of_squares":
+            degree = (self.attention_degree if self.attention_denominator_degree is None
+                      else self.attention_denominator_degree)
+            if degree % 2:
+                raise ValueError("A sum-of-squares denominator requires an even denominator degree")
         if self.attention_fixed_coefficients is not None and self.attention_fixed_square_factors is not None:
             raise ValueError("Specify either model.attention_fixed_coefficients or attention_fixed_square_factors")
         if self.attention_fixed_coefficients is not None:
@@ -278,6 +299,9 @@ class OptimConfig:
     # (+ sum_(r>=1) r^2 b_r^2 for a rational denominator); a_1 is unpenalized
     # (training/regularization.py). Validation loss never includes it.
     coefficient_penalty: float = 0.0
+    # Whether that penalty includes a rational kernel's direct denominator coefficients
+    # b_r; false penalizes the numerator only.
+    coefficient_penalty_denominator: bool = True
     beta1: float = 0.9
     beta2: float = 0.95
     grad_clip_norm: float = 1.0
@@ -372,3 +396,13 @@ def validate_config(config: Config) -> None:
     if penalty > 0 and (config.model.attention_coefficients != "learned"
                         or config.model.attention_coefficient_parameterization not in ("direct", "rational")):
         raise ValueError("optim.coefficient_penalty requires learned direct or rational polynomial coefficients")
+    if not isinstance(optim.coefficient_penalty_denominator, bool):
+        raise ValueError("optim.coefficient_penalty_denominator must be a boolean")
+    rational = (config.model.attention_coefficients == "learned"
+                and config.model.attention_coefficient_parameterization == "rational")
+    if not optim.coefficient_penalty_denominator and not rational:
+        raise ValueError("optim.coefficient_penalty_denominator: false applies to rational kernels only")
+    if (penalty > 0 and rational and optim.coefficient_penalty_denominator
+            and config.model.attention_denominator_parameterization != "direct"):
+        raise ValueError("The coefficient penalty is defined on direct denominator coefficients; "
+                         "set optim.coefficient_penalty_denominator: false for a sum-of-squares denominator")
