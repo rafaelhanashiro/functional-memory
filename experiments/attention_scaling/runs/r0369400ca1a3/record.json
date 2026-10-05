@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r0369400ca1a3/config.yaml",
+    "sha256": "f2aac18b37fbf76b7c8d76a5a971582cb9d58f31e176ad174e19844daaeeceb7"
+  },
+  "label": "200m-qk-softmax-head-rmsnorm-transformer-init-seed0",
+  "name": "200m-qk-softmax-head-rmsnorm-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "r0369400ca1a3",
+  "status": "planned"
+}
