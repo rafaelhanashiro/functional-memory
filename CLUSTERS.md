@@ -57,6 +57,17 @@ rejects Triton's PTX. Triton 3.7 picks its PTX version from its bundled assemble
 13.1 for Blackwell, PTX 9.1), which the locked `ptxas` rejects on B300, so the launcher
 also sets `TRITON_PTXAS_PATH` and `TRITON_PTXAS_BLACKWELL_PATH` to the locked `ptxas`.
 
+The locked environment's cuBLAS 12.9 has an NVIDIA bug on Blackwell (cuBLAS 12.8–13.1):
+some kernels free tensor memory twice, which can silently corrupt data when a cuBLAS kernel
+runs concurrently with another kernel. On B300 allocations `kennel_runtime.sh` therefore
+adds `--xla_gpu_disable_async_collectives=ALLCOLLECTIVES` to `XLA_FLAGS`, so the gradient
+all-reduce runs on the compute stream; it cost no measurable throughput in a 200M replay
+(2.10 updates/s either way). The real fix is cuBLAS >= 13.2, which needs JAX's CUDA 13
+plugin (`jax-cuda13-plugin`, available at the locked JAX 0.10.0) and driver >= 580:
+`akita` qualifies (CUDA 13.0 toolkit); `dogo` had driver 560 (CUDA 12.6) on 2026-10-04,
+so H100 jobs would need the CUDA 12 environment or a driver upgrade. Remove the flag once
+B300 runs use cuBLAS >= 13.2.
+
 The retained joint-sweep checks cover all 20 B300 and host-staged A6000
 configurations and 16 new H100 configurations. On `samoyed`, direct peer transfers
 corrupted replicas and batches; the host-staged A100 pilot passed training,

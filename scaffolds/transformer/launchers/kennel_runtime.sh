@@ -19,6 +19,15 @@ transformer_configure_kennel_runtime() {
   fi
   case "$gpu_names" in
     *A6000*) export XLA_PYTHON_CLIENT_MEM_FRACTION="${XLA_PYTHON_CLIENT_MEM_FRACTION:-0.90}" ;;
+    *B300*)
+      # cuBLAS 12.8-13.1 can silently corrupt data on Blackwell when a cuBLAS kernel runs
+      # concurrently with another kernel. Keep collectives on the compute stream until the
+      # B300 environment has cuBLAS >= 13.2 (CUDA 13); see CLUSTERS.md.
+      case " ${XLA_FLAGS:-} " in
+        *" --xla_gpu_disable_async_collectives="*) ;;
+        *) export XLA_FLAGS="${XLA_FLAGS:+$XLA_FLAGS }--xla_gpu_disable_async_collectives=ALLCOLLECTIVES" ;;
+      esac
+      ;;
   esac
   export XLA_PYTHON_CLIENT_PREALLOCATE=false
 }
