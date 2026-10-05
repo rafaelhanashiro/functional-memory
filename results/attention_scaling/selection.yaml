@@ -17,39 +17,29 @@ panels:
   columns:
   - id: m1
     label: m=1
-    initialization: transformer_reference
   - id: m2
     label: m=2
-    initialization: transformer_reference
   - id: m3
     label: m=3
-    initialization: transformer_reference
   - id: m4
     label: m=4
-    initialization: transformer_reference
   - id: m8
     label: m=8
-    initialization: transformer_reference
   - id: m16
     label: m=16
-    initialization: transformer_reference
 - id: references
   title: Reference mechanisms
   columns:
   - id: softmax
     label: softmax
-    initialization: transformer_reference
   - id: softmax_no_qk_norm
     label: 'softmax
 
       no QK-norm'
     qk_norm: false
-    initialization: transformer_reference
   - id: gated_deltanet
     label: Gated DeltaNet
     qk_norm: null
-    initialization: gated_deltanet_reference
-caption: Taylor and the reference mechanisms all use reference initializations.
 cells:
 - panel: normalized_fixed
   column: m2

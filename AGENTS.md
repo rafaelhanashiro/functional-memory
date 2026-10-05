@@ -163,6 +163,14 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   attention do not use QK normalization. Preserve historical recipes and resume
   settings unchanged; a QK-normalized rerun receives a fresh run ID. Fresh CLI
   allocation of an explicitly requested plain-score run requires `--allow-plain-qk`.
+- New Transformer experiments use their attention mechanism's reference
+  initialization (`transformer_reference` for dot-product attention, `gla_reference`,
+  `gated_deltanet_reference`) unless the user explicitly requests Flax defaults, and
+  each architecture keeps its own even where layers are shared; the optimizer recipe
+  stays shared. `scaffolds.records create` writes the reference into a recipe that leaves
+  `model.initialization` unset, so a copied legacy recipe does not inherit Flax
+  defaults; fresh allocation of an explicitly requested Flax-default run requires
+  `--allow-flax-default-init`. Historical recipes and resumptions keep their settings.
 - Experiments sharing a model family use one shared model, attention, data pipeline,
   optimizer, trainer, evaluation, and checkpoint implementation. Keep cluster names,
   GPU-model workarounds, and transport policy out of model definitions, optimizer

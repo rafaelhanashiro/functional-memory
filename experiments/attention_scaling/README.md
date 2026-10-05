@@ -44,8 +44,9 @@ the scores independently of normalization of the attention weights. Unnormalized
 attention may rescale each head's output before the output projection, by `1/t` or
 by a per-head RMSNorm (`attention_output_scaling`). GLA uses its
 own gated recurrence, and Gated DeltaNet its gated delta rule (FLA's kernels).
-`model.initialization` selects the scaffold's Flax defaults or an architecture's
-reference recipe. The shared scaffold defines each mechanism and its kernels.
+New runs use each mechanism's reference initialization (`model.initialization`); runs
+whose recipes omit the field used the scaffold's Flax defaults. The shared scaffold defines each mechanism
+and its kernels.
 
 ## Cluster and artifacts
 
@@ -79,6 +80,8 @@ uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardli
 
 Prepare a complete recipe with the desired settings and dataset paths for the home
 cluster. New dot-product runs use `model.qk_norm: true`; GLA and degree zero do not.
+New runs use their mechanism's reference initialization, which `records create` fills in
+when the recipe leaves `model.initialization` unset.
 Untied embeddings and the scaffold's selective weight decay are canonical. The
 following allocates a fresh execution from an existing QK-normalized Taylor recipe:
 

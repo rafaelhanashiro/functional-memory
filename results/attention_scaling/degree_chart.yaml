@@ -14,70 +14,52 @@ panels:
   columns:
   - id: m1
     label: m=1
-    initialization: transformer_reference
   - id: m2
     label: m=2
-    initialization: transformer_reference
   - id: m3
     label: m=3
-    initialization: transformer_reference
   - id: m4
     label: m=4
-    initialization: transformer_reference
 - id: normalized_fixed_hermite
   title: Normalized, fixed Hermite
   columns: &id001
   - id: m1
     label: m=1
-    initialization: transformer_reference
   - id: m2
     label: m=2
-    initialization: transformer_reference
   - id: m3
     label: m=3
-    initialization: transformer_reference
   - id: m4
     label: m=4
-    initialization: transformer_reference
 - id: normalized_learned_taylor
   title: Normalized, learned
   columns:
   - id: m1
     label: m=1
-    initialization: transformer_reference
   - id: m2
     label: m=2
-    initialization: transformer_reference
   - id: m3
     label: m=3
-    initialization: transformer_reference
   - id: m4
     label: m=4
-    initialization: transformer_reference
 - id: normalized_nonnegative
   title: Normalized, learned nonnegative
   columns:
   - id: m2
     label: m=2
-    initialization: transformer_reference
   - id: m4
     label: m=4
-    initialization: transformer_reference
 - id: unnormalized_fixed
   title: Unnormalized, fixed Taylor
   columns:
   - id: m1
     label: m=1
-    initialization: transformer_reference
   - id: m2
     label: m=2
-    initialization: transformer_reference
   - id: m3
     label: m=3
-    initialization: transformer_reference
   - id: m4
     label: m=4
-    initialization: transformer_reference
 - id: unnormalized_fixed_hermite
   title: Unnormalized, fixed Hermite
   columns: *id001
@@ -86,34 +68,25 @@ panels:
   columns:
   - id: m1
     label: m=1
-    initialization: transformer_reference
   - id: m2
     label: m=2
-    initialization: transformer_reference
   - id: m3
     label: m=3
-    initialization: transformer_reference
   - id: m4
     label: m=4
-    initialization: transformer_reference
 - id: references
   title: Reference mechanisms
   columns:
   - id: softmax
     label: softmax
-    initialization: transformer_reference
   - id: softmax_no_qk_norm
     label: softmax no QK-norm
     qk_norm: false
-    initialization: transformer_reference
   - id: gated_deltanet
     label: Gated DeltaNet
     qk_norm: null
-    initialization: gated_deltanet_reference
   - id: unnormalized_exp
     label: unnormalized exp
-    initialization: transformer_reference
-caption: Every kernel and reference uses its reference initialization.
 cells:
 - panel: unnormalized_fixed
   column: m1

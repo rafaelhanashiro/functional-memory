@@ -24,7 +24,7 @@ _STATUS_STYLE = {
 }
 # Runs that predate the current defaults keep their perplexity color and get this outline.
 _LEGACY_EDGE, _LEGACY_WIDTH, _LEGACY_INSET = "#b45309", 2.2, 0.07
-_LEGACY_LABEL = "Legacy run: decay on all parameters, no QK-norm (to be rerun)"
+_LEGACY_LABEL = "Legacy run: predates the current defaults (to be rerun)"
 
 
 def _coordinate_rows(rows: list[dict], config: dict) -> dict[tuple[str, str, int], dict]:

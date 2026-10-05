@@ -32,6 +32,8 @@ INITIALIZATIONS = ("flax_default", "transformer_reference", "gla_reference", "ga
 # Each reference scheme belongs to one attention mechanism.
 MECHANISMS = {"transformer_reference": "dot_product", "gla_reference": "gla",
               "gated_deltanet_reference": "gated_deltanet"}
+# The canonical initialization of each attention mechanism: its reference scheme.
+REFERENCE = {mechanism: scheme for scheme, mechanism in MECHANISMS.items()}
 _GLA_XAVIER = ("q_proj", "k_proj", "gate_low_rank", "gate_proj")
 
 
