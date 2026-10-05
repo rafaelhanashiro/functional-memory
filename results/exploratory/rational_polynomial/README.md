@@ -49,11 +49,39 @@ All runs: 200M, `d_K = 64`, QK-norm, transformer reference initialization, seed 
 | Run | Denominator | Penalized denominator | Outcome |
 | --- | --- | --- | ---: |
 | `r9c52f40605fb` | degree 8 | yes | fail @131 |
-| `reb1c7f8a3f53` | linear | no | running |
-| `rb5f4cb9e0d85` | nonnegative quadratic | no | running |
+| `reb1c7f8a3f53` | linear | no | 15.157 |
+| `rb5f4cb9e0d85` | nonnegative quadratic | no | 15.162 |
 | `rbde7fc4c2135` | softmax (control) | | 13.514 |
 | `r7d911aee60ed` | normalized fixed Taylor, degree 8 (control) | | 13.543 |
 | `r4923c6939e74` | normalized fixed Taylor, degree 8, Flax-default initialization (control) | | 14.498 |
+
+Outcomes are terminal validation perplexity.
+
+## Low-degree denominators
+
+Both runs trained to the end without a numerical failure. They finished 1.6 above
+softmax and fixed Taylor, and within 0.005 of each other. Validation-best perplexity is
+15.157 at update 19,074 for the linear denominator and 15.155 at 19,000 for the
+quadratic.
+
+| Validation PPL at update | 1,000 | 2,000 | 5,000 | 10,000 | 19,074 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Linear denominator | 54.33 | 29.93 | 20.16 | 16.93 | 15.157 |
+| Nonnegative quadratic denominator | 54.44 | 30.04 | 20.09 | 16.90 | 15.162 |
+| Softmax | 54.08 | 26.48 | 17.83 | 15.08 | 13.514 |
+| Fixed Taylor, degree 8 | 54.85 | 26.85 | 17.89 | 15.12 | 13.543 |
+
+- **The gap opens between updates 1,000 and 2,000**, reaching 3.5 against softmax, then
+  narrows to 1.6 by the end.
+- **The numerator is not linear.** Coefficients beyond `a_1` stay below 0.01, but
+  within `|s| <= 3` they outweigh `a_1 s` by a median factor of 7 across heads. The
+  penalty term was 5e-4 nats at the end.
+- **The linear denominator turned negative for some keys.** `b_1` ranges from −0.73 to
+  0.50, and per-key values reach −2.3 in layers 4 to 9. Row sums on the diagnostic
+  sample stayed at least 0.84 in magnitude.
+- **The quadratic denominator left its start.** `w` has median 0.23 against its start
+  of 1e-3, and the expanded `b_2` reaches 1.56. Four of 160 heads have `|w| < 1e-3`, a
+  near-double root.
 
 ## Degree-8 denominator
 
@@ -76,6 +104,7 @@ to 10.18 by update 130, while softmax fell to 7.23. The penalty term was 1.1e-4 
 ## Limits
 
 - One seed, one numerator degree, one penalty weight, one coefficient initialization.
+- The linear-denominator run trained on B300, the quadratic one on H100.
 - No checkpoint precedes the degree-8 failure, so its failing update cannot be replayed.
 - The Flax-default Taylor control is not an equal-initialization comparison; the
   softmax and reference-initialization Taylor controls are.
