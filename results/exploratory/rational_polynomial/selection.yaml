@@ -57,6 +57,14 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/rb5f4cb9e0d85/best_validation.json
       sha256: be0ed25e95c2a34a9124980d3d27ccbfe75aff4c2490208fa5d9761da380bbd1
+- run_id: r3d2e6bee54aa
+  label: rational degree 8, nonnegative degree-8 denominator, numerator-only lambda
+    = 0.01, linear-attention start
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r3d2e6bee54aa/config.yaml
+      sha256: b0dadb247bafd72405bfffa702cf4fd8727933c0f7c5c17cc31d5a54303a2770
 - run_id: rbde7fc4c2135
   label: softmax, transformer reference initialization
   role: control

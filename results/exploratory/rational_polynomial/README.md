@@ -20,6 +20,7 @@ has constant 1 and is one of:
 | degree 8 | `1 + sum_(1<=r<=8) b_r s^r` | signed |
 | linear | `1 + b_1 s` | signed |
 | nonnegative quadratic | `(1 + u s)^2 + (w s)^2`, every nonnegative quadratic with constant 1 | `>= 0` |
+| nonnegative degree 8 | `(1 + sum_(r<=4) u_r s^r)^2 + (sum_(r<=4) w_r s^r)^2`, every nonnegative degree-8 polynomial with constant 1 | `>= 0` |
 
 The training loss is
 
@@ -37,7 +38,7 @@ Settings shared by these runs, each a candidate for tuning later:
 | Setting | Value | Recipe field |
 | --- | --- | --- |
 | Initialization | linear attention: `a_1 = 1`, other numerator coefficients 0, denominator 1, so attention starts at `sum_(j<=i) s_ij v_j / (i + 1)` | `model.attention_coefficient_initialization: linear` |
-| Nonnegative quadratic start | `u = 0`, `w = 10^-3` (all-zero `w` gets no gradient), so `p_b = 1 + 10^-6 s^2` | fixed in `attention/rational_polynomial.py` |
+| Nonnegative denominator start | `u_r = 0`, `w_1 = 10^-3`, other `w_r = 0` (all-zero `w` gets no gradient), so `p_b = 1 + 10^-6 s^2` | fixed in `attention/rational_polynomial.py` |
 | Penalty weight `lambda` | 0.01 | `optim.coefficient_penalty` |
 | AdamW weight decay (other parameters) | 0.1, the study's canonical value; polynomial coefficients are never decayed | `optim.weight_decay` |
 
@@ -51,6 +52,7 @@ All runs: 200M, `d_K = 64`, QK-norm, transformer reference initialization, seed 
 | `r9c52f40605fb` | degree 8 | yes | fail @131 |
 | `reb1c7f8a3f53` | linear | no | 15.157 |
 | `rb5f4cb9e0d85` | nonnegative quadratic | no | 15.162 |
+| `r3d2e6bee54aa` | nonnegative degree 8 | no | running |
 | `rbde7fc4c2135` | softmax (control) | | 13.514 |
 | `r7d911aee60ed` | normalized fixed Taylor, degree 8 (control) | | 13.543 |
 | `r4923c6939e74` | normalized fixed Taylor, degree 8, Flax-default initialization (control) | | 14.498 |
