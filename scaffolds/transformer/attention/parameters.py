@@ -33,7 +33,8 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                     degree=config.attention_degree, sharing=config.attention_coefficient_sharing,
                     initialization=initialization,
                     denominator_degree=getattr(config, "attention_denominator_degree", None),
-                    denominator_parameterization=getattr(config, "attention_denominator_parameterization", "direct"))
+                    denominator_parameterization=getattr(config, "attention_denominator_parameterization", "direct"),
+                    denominator_constant=getattr(config, "attention_denominator_constant", "fixed"))
             else:
                 from scaffolds.transformer.attention.unnormalized import parameter_specs
 

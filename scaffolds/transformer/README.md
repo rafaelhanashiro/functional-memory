@@ -111,17 +111,19 @@ parameters and the coefficients of `q1^2 + q2^2` as the effective ones.
 With `attention_coefficient_parameterization: rational` the weights are
 `p_a(s_ij) / sum_(j<=i) p_b(s_ij)` (`attention/rational_polynomial.py`). The numerator
 `a_0..a_m` is `polynomial_coefficients`. The denominator has degree `d`
-(`attention_denominator_degree`, default `m`) and a fixed constant 1, which removes the
-common scale of the two polynomials. `attention_denominator_parameterization` selects
-its form:
+(`attention_denominator_degree`, default `m`). `attention_denominator_parameterization`
+selects its form and `attention_denominator_constant` whether its constant is fixed at 1
+(default), which removes the common scale of the two polynomials, or learned:
 
-| Form | Learned array | Denominator |
+| Form, constant | Learned array | Denominator |
 |---|---|---|
-| `direct` (default) | `polynomial_denominator_coefficients`, `b_1..b_d` | `1 + sum_r b_r s^r`, signed |
-| `sum_of_squares`, even `d = 2k` | `polynomial_denominator_square_factors`, `u_1..u_k, w_1..w_k` | `(1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2`, nonnegative |
+| `direct`, `fixed` (default) | `polynomial_denominator_coefficients`, `b_1..b_d` | `1 + sum_r b_r s^r`, signed |
+| `direct`, `learned` | `polynomial_denominator_coefficients_with_constant`, `b_0..b_d` | `sum_r b_r s^r`, signed |
+| `sum_of_squares`, `fixed`, even `d = 2k` | `polynomial_denominator_square_factors`, `u_1..u_k, w_1..w_k` | `(1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2`, nonnegative |
+| `sum_of_squares`, `learned`, even `d = 2k` | `polynomial_denominator_square_factors_with_constant`, `q1_0..q1_k, q2_0..q2_(k-1)` | `q1(s)^2 + q2(s)^2`, nonnegative |
 
-Every nonnegative polynomial of degree `2k` with constant 1 has the second form, so it
-is complete. Arrays are shared or `[num_layers, num_heads, ·]` per head. A negative
+Every nonnegative polynomial of degree `2k` (with constant 1, for the fixed form) has the
+sum-of-squares form, so it is complete. Arrays are shared or `[num_layers, num_heads, ·]` per head. A negative
 nonzero denominator sum is valid; an exactly zero or nonfinite sum poisons its row, with
 no clipping or epsilon. Diagnostics report the numerator as `kernel_*`, the denominator
 values as `denominator_*`, the cancellation ratio of the denominator sums, and the
@@ -132,9 +134,10 @@ expanded denominator coefficients `b_r` of either form.
 kernel with equal degrees equals normalized Taylor attention at initialization; `linear`
 sets `a_1 = 1` and every other coefficient to 0, so a direct kernel starts at `s` and a
 rational kernel at linear attention divided by the number of visible keys,
-`sum_(j<=i) s_ij v_j / (i + 1)`. A sum-of-squares denominator with all `w_r = 0` gives
-every `w_r` a zero gradient, so its linear start sets `w_1 = 10^-3`, a denominator of
-`1 + 10^-6 s^2`. Sum-of-squares kernels always start at `T_m`.
+`sum_(j<=i) s_ij v_j / (i + 1)`. A sum-of-squares denominator with constant 1 and all
+`w_r = 0` gives every `w_r` a zero gradient, so its linear start sets `w_1 = 10^-3`, a
+denominator of `1 + 10^-6 s^2`; with a learned constant it starts exactly at 1 as
+`q1 = q2 = 1/sqrt(2)`. Sum-of-squares kernels always start at `T_m`.
 
 `optim.coefficient_penalty` adds `lambda` times
 `sum over polynomials [a_0^2 + sum_(r>=2) r^2 a_r^2 + sum_(r>=1) r^2 b_r^2]` to the
@@ -142,7 +145,9 @@ training loss (`training/regularization.py`), for learned direct or rational
 coefficients; `a_1` is unpenalized and the sum runs over every learned coefficient
 set (each layer and head with `per_head` sharing).
 `optim.coefficient_penalty_denominator: false` drops the `b_r` term, penalizing the
-numerator only; a sum-of-squares denominator requires it. The recorded training NLL,
+numerator only; a learned denominator constant requires it. A sum-of-squares
+denominator is penalized through its expanded coefficients `b_r`, differentiated through
+its factors. The recorded training NLL,
 perplexities, and the validation loss exclude the penalty; its value at the logged
 step's parameters is printed as `train_coefficient_penalty`, stored as
 `train_coefficient_penalty` in each validation record, and mirrored to W&B as

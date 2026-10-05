@@ -24,7 +24,8 @@ from scaffolds.transformer.attention.qk_norm import cosine_score_operands
 # Families name a parameterization and, for rational kernels, the denominator:
 # "rational" has a direct denominator of the numerator's degree, "rational_linear" a
 # direct linear one, "rational_sos2" a nonnegative quadratic (1 + u s)^2 + (w s)^2,
-# "rational_sos8" a nonnegative degree-8 (1 + sum u_r s^r)^2 + (sum w_r s^r)^2.
+# "rational_sos8" a nonnegative degree-8 (1 + sum u_r s^r)^2 + (sum w_r s^r)^2. The
+# "_c" families learn the denominator's constant: b_0 + b_1 s, and q1(s)^2 + q2^2.
 FAMILY_OPTIONS = {
     "direct": dict(parameterization="direct"),
     "sum_of_squares": dict(parameterization="sum_of_squares"),
@@ -32,20 +33,29 @@ FAMILY_OPTIONS = {
     "rational_linear": dict(parameterization="rational", denominator_degree=1, denominator_form="direct"),
     "rational_sos2": dict(parameterization="rational", denominator_degree=2, denominator_form="sum_of_squares"),
     "rational_sos8": dict(parameterization="rational", denominator_degree=8, denominator_form="sum_of_squares"),
+    "rational_linear_c": dict(parameterization="rational", denominator_degree=1, denominator_form="direct",
+                              denominator_constant="learned"),
+    "rational_sos2_c": dict(parameterization="rational", denominator_degree=2, denominator_form="sum_of_squares",
+                            denominator_constant="learned"),
 }
+RATIONAL_FAMILIES = ("rational_linear", "rational_sos2", "rational_sos8", "rational_linear_c", "rational_sos2_c")
 FAMILIES = ([("direct", degree) for degree in (1, 2, 3, 4, 8)] + [("sum_of_squares", degree) for degree in (2, 4, 8)]
             + [("rational", degree) for degree in (1, 2, 3, 4, 8)]
             + [("rational_linear", degree) for degree in (1, 2, 8)]
             + [("rational_sos2", degree) for degree in (1, 4, 8)]
-            + [("rational_sos8", degree) for degree in (2, 8)])
-PARAMETERIZATIONS = ("direct", "sum_of_squares", "rational", "rational_linear", "rational_sos2", "rational_sos8")
+            + [("rational_sos8", degree) for degree in (2, 8)]
+            + [("rational_linear_c", degree) for degree in (1, 8)]
+            + [("rational_sos2_c", degree) for degree in (2, 8)])
+PARAMETERIZATIONS = ("direct", "sum_of_squares", "rational", *RATIONAL_FAMILIES)
 
 
 def _denominator_count(parameters, family):
     options = FAMILY_OPTIONS[family]
     if options["parameterization"] != "rational":
         return 0
-    return options.get("denominator_degree") or (parameters.shape[-1] - 1) // 2
+    if "denominator_degree" not in options:
+        return (parameters.shape[-1] - 1) // 2
+    return options["denominator_degree"] + (options.get("denominator_constant") == "learned")
 
 
 def _degree(parameters, family):
@@ -72,11 +82,17 @@ def _inputs(shape, parameterization, degree, *, dtype=jnp.float32, seed=719):
         numerator[:, 1] = np.linspace(0.8, 1.2, heads)
         denominator = rng.uniform(-0.03, 0.03, size=(heads, degree)) / factorials[1:]
         parameters = np.concatenate([numerator, denominator], axis=-1)
-    elif parameterization in ("rational_linear", "rational_sos2", "rational_sos8"):
+    elif parameterization in RATIONAL_FAMILIES:
         numerator = rng.uniform(-0.5, 0.5, size=(heads, degree + 1)) / factorials
         numerator[:, 1] = np.linspace(0.8, 1.2, heads)
         if parameterization == "rational_linear":
             denominator = rng.uniform(-0.03, 0.03, size=(heads, 1))
+        elif parameterization == "rational_linear_c":
+            denominator = np.stack([np.linspace(0.8, 1.2, heads), rng.uniform(-0.03, 0.03, heads)], axis=-1)
+        elif parameterization == "rational_sos2_c":
+            # q1 = c_0 + c_1 s with c_0 near 0.7, q2 = d_0 near 0.5.
+            denominator = np.stack([np.linspace(0.6, 0.8, heads), rng.uniform(-0.1, 0.1, heads),
+                                    np.linspace(0.4, 0.6, heads)], axis=-1)
         else:
             # u_r near 0 and w_r of order 0.2, each divided by r! like Taylor coefficients.
             half = FAMILY_OPTIONS[parameterization]["denominator_degree"] // 2
@@ -96,11 +112,16 @@ def _dense_reference(q, k, v, parameters, *, parameterization, score_offset=None
         scores = scores + score_offset
     degree = _degree(parameters, parameterization)
     parameters = jnp.broadcast_to(parameters, (q.shape[2], parameters.shape[-1]))
-    if parameterization in ("rational_linear", "rational_sos2", "rational_sos8"):
+    if parameterization in RATIONAL_FAMILIES:
         values = sum(parameters[:, order][None, :, None, None] * scores ** order
                      for order in range(degree + 1))
         rest = parameters[:, degree + 1:]
-        if parameterization == "rational_linear":
+        if parameterization == "rational_linear_c":
+            denominators = rest[:, 0][None, :, None, None] + rest[:, 1][None, :, None, None] * scores
+        elif parameterization == "rational_sos2_c":
+            denominators = ((rest[:, 0][None, :, None, None] + rest[:, 1][None, :, None, None] * scores) ** 2
+                            + rest[:, 2][None, :, None, None] ** 2)
+        elif parameterization == "rational_linear":
             denominators = 1 + rest[:, 0][None, :, None, None] * scores
         else:
             half = rest.shape[-1] // 2
@@ -134,8 +155,12 @@ def _learned(parameters, parameterization):
     """Keyword arguments naming the learned arrays of one parameterization."""
     degree = _degree(parameters, parameterization)
     if parameterization.startswith("rational"):
-        key = ("polynomial_denominator_square_factors" if parameterization.startswith("rational_sos")
-               else "polynomial_denominator_coefficients")
+        options = FAMILY_OPTIONS[parameterization]
+        key = {("direct", "fixed"): "polynomial_denominator_coefficients",
+               ("direct", "learned"): "polynomial_denominator_coefficients_with_constant",
+               ("sum_of_squares", "fixed"): "polynomial_denominator_square_factors",
+               ("sum_of_squares", "learned"): "polynomial_denominator_square_factors_with_constant"}[
+            (options.get("denominator_form", "direct"), options.get("denominator_constant", "fixed"))]
         return {"polynomial_coefficients": parameters[..., :degree + 1], key: parameters[..., degree + 1:]}
     keyword = "polynomial_coefficients" if parameterization == "direct" else "polynomial_square_factors"
     return {keyword: parameters}
@@ -274,6 +299,11 @@ def test_denominator_options_are_validated():
                denominator_form="sum_of_squares")
     with pytest.raises(ValueError, match="numerator degree >= 1"):
         attend(jnp.zeros((2, 3), jnp.float32), parameterization="rational", denominator_degree=2)
+    with pytest.raises(ValueError, match="explicit denominator_degree"):
+        attend(jnp.zeros((2, 4), jnp.float32), parameterization="rational", denominator_constant="learned")
+    with pytest.raises(ValueError, match="denominator_constant"):
+        attend(jnp.zeros((2, 4), jnp.float32), parameterization="rational", denominator_degree=1,
+               denominator_constant="free")
     with pytest.raises(ValueError, match="denominator_form"):
         attend(jnp.zeros((2, 3), jnp.float32), parameterization="rational", denominator_degree=1,
                denominator_form="positive")
@@ -441,7 +471,8 @@ def test_sos_near_roots_use_factors_without_expansion_or_clipping(kernel):
 def test_masked_overflow_and_invalid_causal_values(kernel, parameterization):
     # Rational kernels use the same numerator with a constant denominator.
     denominator = {"rational": [0., 0.], "rational_linear": [0.], "rational_sos2": [0., 0.],
-                   "rational_sos8": [0.] * 8}.get(parameterization, [])
+                   "rational_sos8": [0.] * 8, "rational_linear_c": [1., 0.],
+                   "rational_sos2_c": [1., 0., 0.]}.get(parameterization, [])
     parameters = jnp.asarray([[1., 1., 0.5, *denominator]], jnp.float32)
     attend = jax.jit(kernel(parameterization))
     q = jnp.asarray([1., 0.], jnp.float32).reshape(1, 2, 1, 1)
@@ -523,7 +554,8 @@ def require_gpu():
                                                       + [("sum_of_squares", 2), ("sum_of_squares", 4)]
                                                       + [("rational", 4), ("rational", 8)]
                                                       + [("rational_linear", 8), ("rational_sos2", 8),
-                                                         ("rational_sos8", 8)]))
+                                                         ("rational_sos8", 8), ("rational_linear_c", 8),
+                                                         ("rational_sos2_c", 8)]))
 def test_bf16_full_context_with_qk_norm_and_all_gradients(require_gpu, parameterization, degree):
     operands, cotangent = _inputs((1, 2048, 2, 64, 64), parameterization, degree, dtype=jnp.bfloat16, seed=75)
     log_scale = jnp.asarray([[math.log(8.0)], [math.log(6.0)]], jnp.float32)
