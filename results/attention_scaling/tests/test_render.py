@@ -111,7 +111,7 @@ def test_legacy_runs_keep_their_color_and_get_an_outline():
         # The outline does not replace the perplexity color: the legacy cell is still drawn from the grid.
         assert axis.images[0].get_array()[0, 0] == 12.5
         assert figure.legends[0].get_texts()[-1].get_text() == (
-            "Legacy run: decay on all parameters, no QK-norm (to be rerun)")
+            "Legacy run: predates the current defaults (to be rerun)")
         assert any("Outlined cells" in text.get_text() for text in figure.texts)
     finally:
         import matplotlib.pyplot as plt

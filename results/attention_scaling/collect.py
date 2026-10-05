@@ -8,12 +8,13 @@ import math
 import re
 import yaml
 from scaffolds.records import load_run, load_study
+from scaffolds.transformer.models.initialization import REFERENCE
 from scaffolds.records.selections import verify_pinned_runs
 from pathlib import Path
 
 
-# The scaffold's current defaults. Runs trained under anything else are shown as
-# legacy cells until their experiment is rerun.
+# The scaffold's current defaults, with each mechanism's reference initialization
+# (REFERENCE). Runs trained under anything else are shown as legacy cells until rerun.
 CANONICAL_WEIGHT_DECAY_POLICY = "exclude_embeddings_norms_biases_v1"
 _REFERENCE_KERNELS = {"softmax": "softmax", "softmax_no_qk_norm": "softmax",
                       "gated_deltanet": "gated_deltanet", "unnormalized_exp": "exp_unnormalized"}
@@ -98,15 +99,18 @@ def _mechanism(cell: dict, model: dict, metadata: dict, label: str) -> None:
 
 
 def _defaults_status(config: dict, column: dict, label: str) -> dict:
-    """How a run relates to the current defaults: its resolved decay policy and QK-norm.
+    """How a run relates to the current defaults: decay policy, QK-norm, and initialization.
 
-    The run's `config.yaml` states both; a recipe without a policy decays all
-    parameters, and one without `qk_norm` uses plain scores. A column may
+    The run's `config.yaml` states all three; a recipe without a policy decays all
+    parameters, one without `qk_norm` uses plain scores, and one without
+    `initialization` predates the option and used Flax defaults. A column may
     declare `qk_norm: false` (a plain-score reference) or `qk_norm: null` (a mechanism
     QK-norm does not apply to); otherwise QK-norm is expected.
     """
+    model = config.get("model", {})
     policy = config.get("optim", {}).get("weight_decay_policy")
-    qk_norm = bool(config.get("model", {}).get("qk_norm", False))
+    qk_norm = bool(model.get("qk_norm", False))
+    initialization = model.get("initialization", "flax_default")
     expects = column.get("qk_norm", True)
     reasons = []
     if policy != CANONICAL_WEIGHT_DECAY_POLICY:
@@ -115,7 +119,10 @@ def _defaults_status(config: dict, column: dict, label: str) -> dict:
         reasons.append("no QK-norm")
     if expects is False and qk_norm:
         raise ValueError(f"{label} uses QK-norm but its column is the plain-score reference")
-    return {"weight_decay_policy": policy, "qk_norm": qk_norm, "legacy": bool(reasons), "legacy_reasons": reasons}
+    if initialization != REFERENCE[model.get("attention_mechanism", "dot_product")]:
+        reasons.append("Flax-default initialization")
+    return {"weight_decay_policy": policy, "qk_norm": qk_norm, "initialization": initialization,
+            "legacy": bool(reasons), "legacy_reasons": reasons}
 
 
 def _data_identity(metadata: dict, expected: dict, label: str) -> None:
@@ -149,9 +156,6 @@ def _collect_referenced(repo_root: Path, cell: dict, run: dict, step: int, token
     model = config.get("model", {})
     _match(model.get("qk_head_dim"), width, f"{label} recipe d_K")
     _optional_match(model, "attention_degree", degree, f"{label} recipe")
-    # A column that departs from the scaffold's Flax-default initialization declares it.
-    _match(model.get("initialization", "flax_default"), (column or {}).get("initialization", "flax_default"),
-           f"{label} initialization")
     failures = sorted(directory.glob("numerical_failure_step_*.json"))
     if failures:
         status = "numerical_failure"
@@ -295,7 +299,7 @@ def collect_rows(repo_root: Path, config: dict) -> list[dict]:
                "status": "not_run", "terminal_ppl": None, "terminal_nll": None,
                "failure_step": None, "experiment": None, "run": None,
                "source_commit": None, "artifacts": {}, "weight_decay_policy": None,
-               "qk_norm": None, "legacy": False, "legacy_reasons": []}
+               "qk_norm": None, "initialization": None, "legacy": False, "legacy_reasons": []}
         if coordinate in references:
             cell, run = references[coordinate]
             row.update(_collect_referenced(repo_root, cell, run, step, tokens, seed, data_identity,

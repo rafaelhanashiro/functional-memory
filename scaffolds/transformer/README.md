@@ -233,16 +233,20 @@ and the training loop do not need separate copies.
 
 ### Weight initialization
 
-`model.initialization` selects the weight initialization; the default
-`flax_default` keeps the scaffold's Flax draws (Linear kernels truncated normal with
-variance `1/fan_in`, embeddings variance `1/features`). A reference scheme re-draws the
+`model.initialization` selects the weight initialization. New runs use their
+mechanism's reference scheme: `python -m scaffolds.records create` writes it into the
+frozen recipe when the field is unset, and an explicit `flax_default` (the scaffold's
+Flax draws: Linear kernels truncated normal with variance `1/fan_in`, embeddings
+variance `1/features`) needs `--allow-flax-default-init`. The config default stays
+`flax_default`, so recipes from before the option, which omit it, keep their meaning. A
+reference scheme re-draws the
 weights after construction from one extra draw of the run's parameter key, keeping
 parameter metadata, norm scales of one, zero biases, and the declared initial values of
 mechanism-owned attention parameters (`models/initialization.py`).
 
 | `initialization` | Mechanism | Weights |
 |---|---|---|
-| `flax_default` (default) | any | Flax defaults |
+| `flax_default` | any | Flax defaults |
 | `transformer_reference` | dot-product | N(0, 0.02); attention `o_proj` and MLP `down_proj` N(0, 0.02/√(2L)) (GPT-2/Megatron) |
 | `gla_reference` | GLA | N(0, 0.02); query, key, and both low-rank gate projections Xavier-uniform, gain 2^-2.5 (official GLA code) |
 | `gated_deltanet_reference` | Gated DeltaNet | Embeddings and output head N(0, 0.02); Linear weights Uniform(±1/√fan_in); MLP `down_proj` also divided by √(2L) (official `lit_gpt`, `mamba_init`) |

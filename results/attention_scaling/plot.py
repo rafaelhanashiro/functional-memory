@@ -21,7 +21,7 @@ FIELDS = (
     "figure", "panel", "column", "d_k", "status", "terminal_nll", "terminal_ppl", "failure_step",
     "source_experiment", "source_run", "source_commit", "metrics_path", "metrics_sha256",
     "completion_path", "completion_sha256", "failure_path", "failure_sha256",
-    "weight_decay_policy", "qk_norm", "legacy", "legacy_reasons",
+    "weight_decay_policy", "qk_norm", "initialization", "legacy", "legacy_reasons",
 )
 
 
@@ -56,6 +56,7 @@ def csv_row(row: dict, figure: str) -> dict:
         "failure_sha256": artifact_field("failure", "sha256"),
         "weight_decay_policy": row.get("weight_decay_policy") or "",
         "qk_norm": "" if row.get("qk_norm") is None else str(bool(row["qk_norm"])).lower(),
+        "initialization": row.get("initialization") or "",
         "legacy": str(bool(row.get("legacy"))).lower(),
         "legacy_reasons": "; ".join(row.get("legacy_reasons") or []),
     }
@@ -122,6 +123,7 @@ def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
          "experiment": row["experiment"], "run": row["run"], "status": row["status"],
          "source_commit": row.get("source_commit"), "artifacts": row.get("artifacts", {}),
          "weight_decay_policy": row.get("weight_decay_policy"), "qk_norm": row.get("qk_norm"),
+         "initialization": row.get("initialization"),
          "legacy": bool(row.get("legacy")), "legacy_reasons": row.get("legacy_reasons", [])}
         for figure, figure_rows in (("heatmap", rows), ("degree_chart", chart_rows))
         for row in figure_rows if row["status"] != "not_run"

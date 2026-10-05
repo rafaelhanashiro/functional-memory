@@ -12,7 +12,7 @@ when normalized, can be explored without normalization.
 `head_rms_norm` applies a per-head RMSNorm with a learned gain. All runs: `d_K = 64`,
 QK-norm, selective decay, 19,074 updates (10.0B tokens), seed 0. Each scaled run exists
 with Flax defaults and with the transformer reference initialization
-([reference_init](../reference_init/README.md)). Runs and roles:
+([attention scaling](../../attention_scaling/README.md#initialization)). Runs and roles:
 [`selection.yaml`](selection.yaml).
 
 ## Results

@@ -325,7 +325,40 @@ def test_cli_resolves_model_only_recipe_to_canonical_qk_norm(tmp_path, monkeypat
     run = Path(capsys.readouterr().out.strip())
     saved = yaml.safe_load((run / "config.yaml").read_text())
     assert saved["model"]["qk_norm"] is True
+    assert saved["model"]["initialization"] == "transformer_reference"
     assert saved["train"]["source_commit"] == "auto"
+    validate_record(run)
+
+
+@pytest.mark.parametrize("mechanism, scheme", [("gla", "gla_reference"), ("gated_deltanet", "gated_deltanet_reference")])
+def test_cli_resolves_each_mechanism_to_its_reference_initialization(tmp_path, monkeypatch, capsys, mechanism, scheme):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    source.write_text(f"model:\n  attention_mechanism: {mechanism}\n")
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "study"), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["initialization"] == scheme
+
+
+def test_cli_requires_explicit_opt_out_for_flax_default_initialization(tmp_path, monkeypatch, capsys):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "flax.yaml"
+    source.write_text("model:\n  initialization: flax_default\ntrain: {}\n")
+    study = tmp_path / "study"
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source)])
+    with pytest.raises(SystemExit) as failure:
+        main()
+    assert failure.value.code == 2
+    assert "--allow-flax-default-init" in capsys.readouterr().err
+    assert not study.exists()
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source),
+                                    "--allow-flax-default-init"])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["initialization"] == "flax_default"
     validate_record(run)
 
 

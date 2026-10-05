@@ -114,7 +114,7 @@ def test_terminal_validation_and_failed_and_missing_cells(tmp_path: Path) -> Non
     assert set(completed["artifacts"]) == {"metadata", "metrics", "completion"}
     # A recipe without a decay policy or qk_norm predates the current defaults on both counts.
     assert completed["legacy"] is True
-    assert completed["legacy_reasons"] == ["weight decay on all parameters", "no QK-norm"]
+    assert completed["legacy_reasons"] == ["weight decay on all parameters", "no QK-norm", "Flax-default initialization"]
     assert (completed["weight_decay_policy"], completed["qk_norm"]) == (None, False)
     assert rows[0]["legacy"] is False and rows[0]["legacy_reasons"] == []
     failed = rows[1]
@@ -127,7 +127,8 @@ def test_current_defaults_are_read_from_the_resolved_configuration(tmp_path: Pat
     config = _fixture(tmp_path)
     run_dir = tmp_path / "experiments/toy_taylor/runs/r000000000001"
     resolved = {"optim": {"weight_decay_policy": "exclude_embeddings_norms_biases_v1"},
-                "model": {"qk_head_dim": 8, "attention_degree": 2, "qk_norm": True}}
+                "model": {"qk_head_dim": 8, "attention_degree": 2, "qk_norm": True,
+                          "initialization": "transformer_reference"}}
     _write(run_dir / "config.yaml", resolved)
     config = _pin(tmp_path, config)
     row = collect_rows(tmp_path, config)[2]
@@ -149,20 +150,19 @@ def test_current_defaults_are_read_from_the_resolved_configuration(tmp_path: Pat
     assert (row["legacy"], row["legacy_reasons"]) == (True, ["no QK-norm"])
 
 
-def test_a_column_states_any_initialization_other_than_flax_defaults(tmp_path: Path) -> None:
+def test_initialization_other_than_the_mechanisms_reference_is_legacy(tmp_path: Path) -> None:
     config = _fixture(tmp_path)
     run_dir = tmp_path / "experiments/toy_taylor/runs/r000000000001"
-    recipe = {"model": {"qk_head_dim": 8, "attention_degree": 2, "initialization": "transformer_reference"}}
-    _write(run_dir / "config.yaml", recipe)
-    config = _pin(tmp_path, config)
-    with pytest.raises(ValueError, match="initialization: expected 'flax_default'"):
-        collect_rows(tmp_path, config)
-    config["panels"][0]["columns"][1]["initialization"] = "transformer_reference"
-    assert collect_rows(tmp_path, config)[2]["status"] == "complete"
-    recipe["model"].pop("initialization")
-    _write(run_dir / "config.yaml", recipe)
-    with pytest.raises(ValueError, match="initialization: expected 'transformer_reference'"):
-        collect_rows(tmp_path, _pin(tmp_path, config))
+    recipe = {"optim": {"weight_decay_policy": "exclude_embeddings_norms_biases_v1"},
+              "model": {"qk_head_dim": 8, "attention_degree": 2, "qk_norm": True}}
+    for initialization, legacy in ((None, True), ("flax_default", True), ("transformer_reference", False)):
+        if initialization is not None:
+            recipe["model"]["initialization"] = initialization
+        _write(run_dir / "config.yaml", recipe)
+        row = collect_rows(tmp_path, _pin(tmp_path, config))[2]
+        assert row["legacy"] is legacy
+        assert row["legacy_reasons"] == (["Flax-default initialization"] if legacy else [])
+        assert row["initialization"] == (initialization or "flax_default")
 
 
 def test_rejects_changed_inputs_and_reference_errors(tmp_path: Path) -> None:

@@ -15,9 +15,9 @@ coefficient diagnostics), and execution metadata under
 Every plotted run uses selective weight decay and QK-norm, except "softmax no QK-norm"
 and Gated DeltaNet, which have no QK-norm, and its reference initialization:
 GPT-2/Megatron (`transformer_reference`) for softmax, unnormalized exp, and every
-polynomial kernel; the paper's (`gated_deltanet_reference`) for Gated DeltaNet. What the
-reference initialization changed is in
-[reference_init](../exploratory/reference_init/README.md).
+polynomial kernel; the paper's (`gated_deltanet_reference`) for Gated DeltaNet. The
+[Initialization](#initialization) section compares them with the scaffold's former Flax
+defaults.
 
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
@@ -91,8 +91,45 @@ Unnormalized kernels:
   unnormalized exp (15.885).
 - **The reference initialization helps every kernel that finishes,** by 0.94–3.58
   (unnormalized kernels 1.66–3.58), and leaves the signed normalized kernels failing;
-  the orderings above match those with Flax defaults
-  ([reference_init](../exploratory/reference_init/README.md)).
+  the orderings above match those with Flax defaults ([Initialization](#initialization)).
+
+## Initialization
+
+Every plotted run uses its mechanism's reference initialization, now the scaffold's
+default. [`initialization.yaml`](initialization.yaml) pairs 52 of them with the same
+recipe on the scaffold's former Flax defaults (Linear weights with variance `1/fan_in`,
+no depth scaling); `tests/test_initialization.py` checks that each pair differs only in
+`model.initialization`. Change in terminal perplexity, reference minus Flax defaults:
+
+| Runs | Change |
+| --- | ---: |
+| Softmax, `d_K = 8–128` | −0.92 to −1.59 |
+| Softmax no QK-norm, `d_K = 64` | −0.73 |
+| Normalized fixed Taylor `m = 8, 16`, `d_K = 8–128` | −0.91 to −1.66 |
+| Normalized fixed Taylor `m = 2, 4`, `d_K = 8–128` | −0.98 to −2.95 |
+| Normalized learned nonnegative `m = 2, 4`, `d_K = 64` | −1.51, −1.05 |
+| Unnormalized fixed Taylor, fixed Hermite, learned, `m = 1–4`, `d_K = 64` | −1.66 to −3.58 |
+| Unnormalized exp, `d_K = 64` | −2.42 |
+| GLA (its reference), `d_K = 64` | −0.52 |
+| Normalized odd Taylor, fixed Hermite, signed learned | fail on both |
+
+- **The gains persist to the end.** At `d_K = 64` the softmax gap is −38.5 at update
+  1,000, −1.18 at 10,000, and stays near −0.95 over the last 4,000 updates (GLA −0.52).
+- **They are largest at small `d_K` and for unnormalized kernels.** Flax defaults keep
+  each block's output at the input's scale, so blocks add about 20× the embedding's
+  size; unnormalized attention sums over keys, and its residual stream reaches about
+  1,300 at initialization (length 512). The reference initialization shrinks the
+  attention and MLP output projections by `1/sqrt(2L)`, which cuts this about 10×.
+- **Conclusions hold.** Within each family the ordering is unchanged; the larger gains
+  narrow the gaps of unnormalized and low-degree kernels to softmax (unnormalized exp
+  from 3.85 to 2.37; Taylor `m = 2` at `d_K = 8` from 5.22 to 3.85). Against Gated
+  DeltaNet, softmax moves from behind at every width to ahead at `d_K >= 32`.
+- **Failure updates move both ways** (normalized Hermite `m = 2` from 3,829 to 176,
+  learned `m = 1` from 27 to 60), and unnormalized `m = 1` trains with loss spikes it did
+  not have with Flax defaults.
+- Fifteen Flax-default polynomial controls at `d_K = 64` ran on code from before the
+  2026-09-26 gradient fixes for normalized polynomial attention (`c2c405e`, `38dc585`);
+  for those pairs the change also includes the code version.
 
 ## Effect of QK-norm
 
