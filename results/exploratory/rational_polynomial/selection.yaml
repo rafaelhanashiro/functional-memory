@@ -57,6 +57,30 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/rb5f4cb9e0d85/best_validation.json
       sha256: be0ed25e95c2a34a9124980d3d27ccbfe75aff4c2490208fa5d9761da380bbd1
+- run_id: re21d093cf4ac
+  label: rational degree 8, linear denominator with learned constant, numerator-only
+    lambda = 0.01
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/re21d093cf4ac/config.yaml
+      sha256: cfcf920a509029873c611172a07d0c4b47be7d4bc8843525d515f23eefb6dd00
+- run_id: r45c9067c8d64
+  label: rational degree 8, nonnegative quadratic denominator with learned constant,
+    numerator-only lambda = 0.01
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r45c9067c8d64/config.yaml
+      sha256: 7b05c426e2e672086fe8df152ddc91e1b15df0ed5168e5a3262dfd824de52bb7
+- run_id: r817963a69c2c
+  label: rational degree 8, nonnegative degree-8 denominator, lambda = 0.01 on both,
+    weight decay 0.01
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r817963a69c2c/config.yaml
+      sha256: 63fcc9c27fbd25c6a768f56add8a8ae826625110becc270ad351a86abbc71a2f
 - run_id: rbde7fc4c2135
   label: softmax, transformer reference initialization
   role: control

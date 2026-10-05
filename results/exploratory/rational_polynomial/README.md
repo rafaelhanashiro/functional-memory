@@ -13,48 +13,56 @@ attn_ij = p_a(s_ij) / sum_(k<=i) p_b(s_ik),   p_a(s) = sum_(r<=8) a_r s^r
 ```
 
 with cosine (QK-norm) scores and coefficients per layer and head. The denominator `p_b`
-has constant 1 and is one of:
+is one of:
 
 | Denominator | `p_b(s)` | Sign |
 | --- | --- | --- |
 | degree 8 | `1 + sum_(1<=r<=8) b_r s^r` | signed |
 | linear | `1 + b_1 s` | signed |
+| linear, learned constant | `b_0 + b_1 s` | signed |
 | nonnegative quadratic | `(1 + u s)^2 + (w s)^2`, every nonnegative quadratic with constant 1 | `>= 0` |
+| nonnegative quadratic, learned constant | `(c_0 + c_1 s)^2 + d_0^2`, every nonnegative quadratic | `>= 0` |
 | nonnegative degree 8 | `(1 + sum_(r<=4) u_r s^r)^2 + (sum_(r<=4) w_r s^r)^2`, every nonnegative degree-8 polynomial with constant 1 | `>= 0` |
 
-The training loss is
+With a learned constant, numerator and denominator can scale together without changing
+the attention weights. The training loss is
 
 ```text
 NLL + lambda * sum over layers and heads [ a_0^2 + sum_(r>=2) r^2 a_r^2 (+ sum_(r>=1) r^2 b_r^2) ]
 ```
 
-with `a_1` unpenalized; the `b_r` term applies to the degree-8 denominator only. An
-exactly zero row sum is a numerical failure, recorded as such. The validation loss and
-the recorded training NLL exclude the penalty; `metrics.jsonl` records the penalty term
-separately ([scaffold](../../../scaffolds/transformer/README.md#attention-and-parameter-ownership)).
+with `a_1` unpenalized. The `b_r` term, on the expanded denominator for the nonnegative
+form, applies only where the runs table says so. An exactly zero row sum is a numerical
+failure, recorded as such. The validation loss and the recorded training NLL exclude the
+penalty; `metrics.jsonl` records the penalty term separately
+([scaffold](../../../scaffolds/transformer/README.md#attention-and-parameter-ownership)).
 
 Settings shared by these runs, each a candidate for tuning later:
 
 | Setting | Value | Recipe field |
 | --- | --- | --- |
 | Initialization | linear attention: `a_1 = 1`, other numerator coefficients 0, denominator 1, so attention starts at `sum_(j<=i) s_ij v_j / (i + 1)` | `model.attention_coefficient_initialization: linear` |
-| Nonnegative denominator start | `u_r = 0`, `w_1 = 10^-3`, other `w_r = 0` (all-zero `w` gets no gradient), so `p_b = 1 + 10^-6 s^2` | fixed in `attention/rational_polynomial.py` |
+| Nonnegative denominator start, constant 1 | `u_r = 0`, `w_1 = 10^-3`, other `w_r = 0` (all-zero `w` gets no gradient), so `p_b = 1 + 10^-6 s^2` | fixed in `attention/rational_polynomial.py` |
+| Nonnegative denominator start, learned constant | `c_0 = d_0 = 1/sqrt(2)`, `c_1 = 0`, so `p_b = 1` exactly | fixed in `attention/rational_polynomial.py` |
 | Penalty weight `lambda` | 0.01 | `optim.coefficient_penalty` |
-| AdamW weight decay (other parameters) | 0.1, the study's canonical value; polynomial coefficients are never decayed | `optim.weight_decay` |
+| AdamW weight decay (other parameters) | 0.1, the study's canonical value, or 0.01 as in the original specification; polynomial coefficients are never decayed | `optim.weight_decay` |
 
 All runs: 200M, `d_K = 64`, QK-norm, transformer reference initialization, seed 0,
 19,074 updates (10.0B tokens) budget. Runs and roles: [`selection.yaml`](selection.yaml).
 
 ## Runs
 
-| Run | Denominator | Penalized denominator | Outcome |
-| --- | --- | --- | ---: |
-| `r9c52f40605fb` | degree 8 | yes | fail @131 |
-| `reb1c7f8a3f53` | linear | no | 15.157 |
-| `rb5f4cb9e0d85` | nonnegative quadratic | no | 15.162 |
-| `rbde7fc4c2135` | softmax (control) | | 13.514 |
-| `r7d911aee60ed` | normalized fixed Taylor, degree 8 (control) | | 13.543 |
-| `r4923c6939e74` | normalized fixed Taylor, degree 8, Flax-default initialization (control) | | 14.498 |
+| Run | Denominator | Penalized denominator | Weight decay | Outcome |
+| --- | --- | --- | ---: | ---: |
+| `r9c52f40605fb` | degree 8 | yes | 0.1 | fail @131 |
+| `reb1c7f8a3f53` | linear | no | 0.1 | 15.157 |
+| `rb5f4cb9e0d85` | nonnegative quadratic | no | 0.1 | 15.162 |
+| `re21d093cf4ac` | linear, learned constant | no | 0.1 | running |
+| `r45c9067c8d64` | nonnegative quadratic, learned constant | no | 0.1 | running |
+| `r817963a69c2c` | nonnegative degree 8 | yes | 0.01 | running |
+| `rbde7fc4c2135` | softmax (control) | | 0.1 | 13.514 |
+| `r7d911aee60ed` | normalized fixed Taylor, degree 8 (control) | | 0.1 | 13.543 |
+| `r4923c6939e74` | normalized fixed Taylor, degree 8, Flax-default initialization (control) | | 0.1 | 14.498 |
 
 Outcomes are terminal validation perplexity.
 
@@ -105,6 +113,8 @@ to 10.18 by update 130, while softmax fell to 7.23. The penalty term was 1.1e-4 
 ## Limits
 
 - One seed, one numerator degree, one penalty weight, one coefficient initialization.
+- `r817963a69c2c` changes both the denominator penalty and the weight decay against the
+  other runs, so neither effect is isolated.
 - The linear-denominator run trained on B300, the quadratic one on H100.
 - No checkpoint precedes the degree-8 failure, so its failing update cannot be replayed.
 - The Flax-default Taylor control is not an equal-initialization comparison; the
