@@ -52,7 +52,6 @@ All runs: 200M, `d_K = 64`, QK-norm, transformer reference initialization, seed 
 | `r9c52f40605fb` | degree 8 | yes | fail @131 |
 | `reb1c7f8a3f53` | linear | no | 15.157 |
 | `rb5f4cb9e0d85` | nonnegative quadratic | no | 15.162 |
-| `r3d2e6bee54aa` | nonnegative degree 8 | no | running |
 | `rbde7fc4c2135` | softmax (control) | | 13.514 |
 | `r7d911aee60ed` | normalized fixed Taylor, degree 8 (control) | | 13.543 |
 | `r4923c6939e74` | normalized fixed Taylor, degree 8, Flax-default initialization (control) | | 14.498 |
