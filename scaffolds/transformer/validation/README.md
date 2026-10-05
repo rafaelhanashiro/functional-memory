@@ -322,7 +322,10 @@ from FP64 than blocked on any quantity. That check now compares both paths with 
 FP32 evaluation of the blocked reference. On one H100 (`dogo`, job 208617) the GPU
 suites passed 82 cases, 33 rational, at commit `8fdf2cbbb301`
 ([record](runs/rational-denominators-h100/tests.json)); the CPU suite passed 1,099
-tests with 14 expected skips.
+tests with 14 expected skips. A degree-8 nonnegative denominator then passed the
+same suite through `launchers/qualify_normalized_polynomial.sbatch`: 81 cases, 8 of
+them for that denominator, on one H100 (`dogo`, job 208968, commit `536e3e3`;
+[record](runs/rational-nonnegative-degree8-h100/)).
 
 <!-- BEGIN GENERATED NORMALIZED POLYNOMIAL THROUGHPUT -->
 Kernel forward and backward, including all parameter gradients:
