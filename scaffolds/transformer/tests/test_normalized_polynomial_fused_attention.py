@@ -522,8 +522,23 @@ def test_bf16_full_context_with_qk_norm_and_all_gradients(require_gpu, parameter
     actual = _evaluate(partial(compose, attend), (*operands, log_scale), cotangent)
     expected = _evaluate(partial(compose, partial(_blocked, parameterization=parameterization)),
                          (*operands, log_scale), cotangent)
-    _assert_result(actual, expected, output_tolerance=0.006,
-                   gradient_tolerances=(0.025, 0.025, 0.015, 0.012, 0.025))
+    _assert_result((actual[0], actual[1][:4]), (expected[0], expected[1][:4]), output_tolerance=0.006,
+                   gradient_tolerances=(0.025, 0.025, 0.015, 0.012))
+    # The log-scale gradient sums ds * s over every causal pair and can nearly cancel
+    # for a head; BF16 operands then leave both BF16 paths far from its exact value
+    # while they agree with each other (rational_sos2 at degree 8: about 70% for one
+    # head, against FP64). Compare both with an FP32 evaluation of the blocked
+    # reference instead: the fused error must be within the old 2.5% of it, or no
+    # larger than the reference's own error.
+    with jax.default_matmul_precision("highest"):
+        exact = _evaluate(partial(compose, partial(_blocked, parameterization=parameterization)),
+                          (*(x.astype(jnp.float32) for x in operands), log_scale), cotangent.astype(jnp.float32))
+    exact_scale = np.asarray(exact[1][4], np.float64)
+    fused_error = np.abs(np.asarray(actual[1][4], np.float64) - exact_scale)
+    reference_error = np.abs(np.asarray(expected[1][4], np.float64) - exact_scale)
+    assert np.all(np.isfinite(fused_error))
+    assert np.all(fused_error <= np.maximum(0.025 * np.abs(exact_scale), 1.25 * reference_error)), (
+        f"log-scale gradient errors {fused_error.ravel()} against the reference's {reference_error.ravel()}")
     assert actual[0].dtype == jnp.bfloat16
     assert all(x.dtype == jnp.bfloat16 for x in actual[1][:3])
     assert all(x.dtype == jnp.float32 for x in actual[1][3:])
