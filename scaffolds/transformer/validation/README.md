@@ -325,7 +325,9 @@ suites passed 82 cases, 33 rational, at commit `8fdf2cbbb301`
 tests with 14 expected skips. A degree-8 nonnegative denominator then passed the
 same suite through `launchers/qualify_normalized_polynomial.sbatch`: 81 cases, 8 of
 them for that denominator, on one H100 (`dogo`, job 208968, commit `536e3e3`;
-[record](runs/rational-nonnegative-degree8-h100/)).
+[record](runs/rational-nonnegative-degree8-h100/)). Learned denominator constants, `b_0 + b_1 s`
+and `q1(s)^2 + q2^2`, then passed it with 97 cases, 16 of them for those denominators
+(`dogo`, job 208982, commit `1b0f018`; [record](runs/rational-learned-constant-h100/)).
 
 <!-- BEGIN GENERATED NORMALIZED POLYNOMIAL THROUGHPUT -->
 Kernel forward and backward, including all parameter gradients:
