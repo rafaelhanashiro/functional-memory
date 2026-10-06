@@ -58,7 +58,6 @@ All runs: 200M, `d_K = 64`, QK-norm, transformer reference initialization, seed 
 | `r817963a69c2c` | nonnegative degree 8 | yes | 0.01 | 15.288 |
 | `rbde7fc4c2135` | softmax (control) | | 0.1 | 13.514 |
 | `r7d911aee60ed` | normalized fixed Taylor, degree 8 (control) | | 0.1 | 13.543 |
-| `r4923c6939e74` | normalized fixed Taylor, degree 8, Flax-default initialization (control) | | 0.1 | 14.498 |
 
 Outcomes are terminal validation perplexity; for the three completed runs it is also the
 validation best.
@@ -114,5 +113,3 @@ to 10.18 by update 130, while softmax fell to 7.23. The penalty term was 1.1e-4 
 - `r817963a69c2c` changes both the denominator penalty and the weight decay against the
   other runs, so neither effect is isolated.
 - No checkpoint precedes the degree-8 failure, so its failing update cannot be replayed.
-- The Flax-default Taylor control is not an equal-initialization comparison; the
-  softmax and reference-initialization Taylor controls are.
