@@ -25,6 +25,12 @@ runs:
     config.yaml:
       path: experiments/attention_scaling/runs/r275ba0d547a2/config.yaml
       sha256: 605307b56c569aca64f797da4f0737b323240515cd5f71768a1d596cc0aa68b8
+    metadata.json:
+      path: experiments/attention_scaling/runs/r275ba0d547a2/metadata.json
+      sha256: c4d5dc9e14da14b3bbc4ee2e274c00a8299342c94f661513951b68ccd33dcf18
+    numerical_failure_step_00000270.json:
+      path: experiments/attention_scaling/runs/r275ba0d547a2/numerical_failure_step_00000270.json
+      sha256: 2c9f6092d5de3aebcb73e4c2b96cc338e220dfed25732d22d2fbbafda9ff79f8
 - run_id: re21d093cf4ac
   label: rational degree 8, linear denominator with learned constant, numerator-only
     lambda = 0.01

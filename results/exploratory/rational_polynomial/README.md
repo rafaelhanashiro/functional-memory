@@ -53,7 +53,7 @@ All runs: 200M, `d_K = 64`, QK-norm, transformer reference initialization, seed 
 | Run | Denominator | Penalized denominator | Weight decay | Outcome |
 | --- | --- | --- | ---: | ---: |
 | `r9c52f40605fb` | signed degree 8 | yes | 0.1 | fail @131 |
-| `r275ba0d547a2` | signed degree 8 | yes | 0.01 | running |
+| `r275ba0d547a2` | signed degree 8 | yes | 0.01 | fail @270 |
 | `re21d093cf4ac` | linear, learned constant | no | 0.1 | 15.206 |
 | `r45c9067c8d64` | nonnegative quadratic, learned constant | no | 0.1 | 15.157 |
 | `r817963a69c2c` | nonnegative degree 8 | yes | 0.01 | 15.288 |
@@ -92,7 +92,7 @@ the end without a numerical failure, 1.6 to 1.8 above softmax.
 
 ## Signed degree-8 denominator
 
-The run failed at update 131 (67M tokens, 0.7% of the budget) with a NaN forward loss
+`r9c52f40605fb` failed at update 131 (67M tokens, 0.7% of the budget) with a NaN forward loss
 on finite parameters. The training NLL fell from 10.58 to 8.57 at update 70, then rose
 to 10.18 by update 130, while softmax fell to 7.23. The penalty term was 1.1e-4 nats.
 
@@ -106,11 +106,15 @@ to 10.18 by update 130, while softmax fell to 7.23. The penalty term was 1.1e-4 
   −9.8 to 10.6 within one layer.
 - **`lambda = 0.01` cannot act.** Under Adam the update direction is the task
   gradient's; the penalty's gradient on `b_8` was about 1e-3.
-- **Weight decay is irrelevant**: coefficients are never decayed.
+- **Weight decay 0.01 fails the same way, later.** `r275ba0d547a2` matched the original's
+  training NLL through update 70, rose the same way, stalled at 9.4 to 9.6, and failed at
+  update 270 with a NaN forward loss. It ran on 2 GPUs instead of 4, which changes the
+  reduction order, so the later failure is not attributable to weight decay alone.
 
 ## Limits
 
 - One seed, one numerator degree, one penalty weight, one coefficient initialization.
 - `r817963a69c2c` changes both the denominator penalty and the weight decay against the
   other runs, so neither effect is isolated.
-- No checkpoint precedes the degree-8 failure, so its failing update cannot be replayed.
+- No checkpoint precedes either signed degree-8 failure, so the failing updates cannot be
+  replayed.
