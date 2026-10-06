@@ -7,5 +7,21 @@
   "name": "200m-qk-hermite-m004-unnormalized-transformer-init-warmup400-seed0",
   "record_schema_version": 1,
   "run_id": "r780717f99165",
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "dependency": "after:25054702",
+    "gpu_count": 2,
+    "gpu_type": "H200",
+    "launch_commit": "13f018ffab989e203977cbb6040b87bb0d11c930",
+    "launcher": "scaffolds/transformer/launchers/orcd.sbatch",
+    "nice": 100,
+    "partitions": [
+      "mit_preemptable",
+      "mit_normal_gpu"
+    ],
+    "slurm_job_id": "25084051",
+    "submitted_utc": "2026-10-06T21:24:35+00:00",
+    "time_limit": "12:00:00",
+    "time_min": "06:00:00"
+  }
 }
