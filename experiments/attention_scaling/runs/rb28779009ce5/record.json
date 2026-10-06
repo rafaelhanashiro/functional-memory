@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rb28779009ce5/config.yaml",
+    "sha256": "871be35e641f2adb0fadfdb978d1b2e9917bff68cc5ea2d3262e0d2eb8e1dcad"
+  },
+  "label": "200m-softmax-transformer-init-warmup400-seed0",
+  "name": "200m-softmax-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "rb28779009ce5",
+  "status": "planned"
+}

@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/raf4c8249eb5a/config.yaml",
+    "sha256": "7b3eb3507a75acdf41ff2e6d52f7bcb900eea29f97a1ec64fc855f63674c617d"
+  },
+  "label": "200m-qk-m001-unnormalized-transformer-init-warmup400-seed0",
+  "name": "200m-qk-m001-unnormalized-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "raf4c8249eb5a",
+  "status": "planned"
+}

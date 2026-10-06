@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r2ae88e422d60/config.yaml",
+    "sha256": "ee0f43525a135733151a3117ee3fb135649b44fa8b2d57f0a89cbd5aace947aa"
+  },
+  "label": "200m-qk-m004-nonnegative-transformer-init-warmup400-seed0",
+  "name": "200m-qk-m004-nonnegative-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r2ae88e422d60",
+  "status": "planned"
+}
