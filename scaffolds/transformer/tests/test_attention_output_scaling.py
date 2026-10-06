@@ -1,9 +1,10 @@
-"""Contracts for rescaling unnormalized attention outputs: 1/t and per-head RMSNorm.
+"""Contracts for rescaling attention outputs: 1/t and per-head RMSNorm.
 
-``inverse_position`` divides query t's output by its t visible keys. ``head_rms_norm``
-normalizes each head's value vector and multiplies a learned gain; for a positive
-kernel it equals the RMSNorm of the row-normalized output, so unnormalized exp and
-softmax coincide after it.
+``inverse_position`` divides query t's output by its t visible keys and requires
+unnormalized attention. ``head_rms_norm`` normalizes each head's value vector and
+multiplies a learned gain; for a positive kernel it equals the RMSNorm of the
+normalized output, so unnormalized exp and softmax coincide after it, and it also
+applies to softmax itself.
 """
 
 import copy
@@ -126,14 +127,32 @@ def test_module_applies_the_scaling_before_the_output_projection():
                            rngs=nnx.Rngs(8))
 
 
-@pytest.mark.parametrize("updates,error", [
-    (dict(attention_normalization=True), "only to unnormalized dot-product"),
-    (dict(attention_mechanism="gla", attention_normalization=True, qk_norm=False), "only to unnormalized dot-product"),
-    (dict(attention_output_scaling="mean"), "Unknown attention output scaling"),
+def test_softmax_with_head_rms_norm_matches_unnormalized_exp_with_head_rms_norm():
+    kwargs = dict(hidden_size=32, num_heads=4, num_kv_heads=4, qk_head_dim=8, value_head_dim=8,
+                  backend="blocked", attention_output_scaling="head_rms_norm")
+    x = jnp.asarray(np.random.default_rng(2).normal(size=(2, 11, 32)), jnp.float32)
+    softmax = MultiHeadAttention(**kwargs, attention_normalization=True, rngs=nnx.Rngs(8))
+    unnormalized = MultiHeadAttention(**kwargs, attention_normalization=False, rngs=nnx.Rngs(8))
+    gain = {"output_norm_scale": jnp.asarray(np.random.default_rng(4).uniform(0.5, 2.0, size=(4, 8)), jnp.float32)}
+    with jax.default_matmul_precision("highest"):
+        # Same weights; the two differ only through rms_norm_eps relative to each row's kernel sum.
+        np.testing.assert_allclose(softmax(x, attention_parameters=dict(gain)),
+                                   unnormalized(x, attention_parameters=dict(gain)), rtol=1e-4, atol=1e-5)
+    config = _config_for(_model_config("head_rms_norm", attention_normalization=True))
+    assert TEST_PATH in attention_test_paths(config_to_dict(config), "fused", True)
+    assert "RMSNorm" in attention_identity(config)["attention_formula"]
+    matches_softmax_backbone_initialization(config)
+
+
+@pytest.mark.parametrize("scaling,updates,error", [
+    ("inverse_position", dict(attention_normalization=True), "inverse_position applies only to unnormalized"),
+    ("head_rms_norm", dict(attention_mechanism="gla", attention_normalization=True, qk_norm=False),
+     "only to dot-product attention"),
+    ("inverse_position", dict(attention_output_scaling="mean"), "Unknown attention output scaling"),
 ])
-def test_invalid_configurations_are_rejected(updates, error):
+def test_invalid_configurations_are_rejected(scaling, updates, error):
     with pytest.raises(ValueError, match=error):
-        _model_config("inverse_position", **updates)
+        _model_config(scaling, **updates)
 
 
 def test_default_and_recipes_without_the_field_mean_no_scaling():
@@ -176,15 +195,16 @@ def test_identity_tags_and_acceptance_name_the_scaling():
     assert TEST_PATH not in attention_test_paths(config_to_dict(plain), "fused", True)
 
 
-@pytest.mark.parametrize("scaling,degree,coefficients", [
-    ("inverse_position", None, "fixed"),
-    ("head_rms_norm", 2, "learned"),
+@pytest.mark.parametrize("scaling,degree,coefficients,normalization", [
+    ("inverse_position", None, "fixed", False),
+    ("head_rms_norm", 2, "learned", False),
+    ("head_rms_norm", None, "fixed", True),
 ])
-def test_training_resumes_exactly(tmp_path, scaling, degree, coefficients):
+def test_training_resumes_exactly(tmp_path, scaling, degree, coefficients, normalization):
     config = tiny_config(tmp_path / "full")
     config.model.attention_backend = "blocked"
     config.model.attention_degree = degree
-    config.model.attention_normalization = False
+    config.model.attention_normalization = normalization
     config.model.attention_coefficients = coefficients
     config.model.attention_coefficient_sharing = "per_head"
     config.model.qk_norm = True

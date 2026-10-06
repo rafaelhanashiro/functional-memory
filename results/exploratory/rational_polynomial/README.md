@@ -17,10 +17,8 @@ is one of:
 
 | Denominator | `p_b(s)` | Sign |
 | --- | --- | --- |
-| degree 8 | `1 + sum_(1<=r<=8) b_r s^r` | signed |
-| linear | `1 + b_1 s` | signed |
+| signed degree 8 | `1 + sum_(1<=r<=8) b_r s^r` | signed |
 | linear, learned constant | `b_0 + b_1 s` | signed |
-| nonnegative quadratic | `(1 + u s)^2 + (w s)^2`, every nonnegative quadratic with constant 1 | `>= 0` |
 | nonnegative quadratic, learned constant | `(c_0 + c_1 s)^2 + d_0^2`, every nonnegative quadratic | `>= 0` |
 | nonnegative degree 8 | `(1 + sum_(r<=4) u_r s^r)^2 + (sum_(r<=4) w_r s^r)^2`, every nonnegative degree-8 polynomial with constant 1 | `>= 0` |
 
@@ -54,45 +52,45 @@ All runs: 200M, `d_K = 64`, QK-norm, transformer reference initialization, seed 
 
 | Run | Denominator | Penalized denominator | Weight decay | Outcome |
 | --- | --- | --- | ---: | ---: |
-| `r9c52f40605fb` | degree 8 | yes | 0.1 | fail @131 |
-| `reb1c7f8a3f53` | linear | no | 0.1 | 15.157 |
-| `rb5f4cb9e0d85` | nonnegative quadratic | no | 0.1 | 15.162 |
-| `re21d093cf4ac` | linear, learned constant | no | 0.1 | running |
-| `r45c9067c8d64` | nonnegative quadratic, learned constant | no | 0.1 | running |
-| `r817963a69c2c` | nonnegative degree 8 | yes | 0.01 | running |
+| `r9c52f40605fb` | signed degree 8 | yes | 0.1 | fail @131 |
+| `re21d093cf4ac` | linear, learned constant | no | 0.1 | 15.206 |
+| `r45c9067c8d64` | nonnegative quadratic, learned constant | no | 0.1 | 15.157 |
+| `r817963a69c2c` | nonnegative degree 8 | yes | 0.01 | 15.288 |
 | `rbde7fc4c2135` | softmax (control) | | 0.1 | 13.514 |
 | `r7d911aee60ed` | normalized fixed Taylor, degree 8 (control) | | 0.1 | 13.543 |
 | `r4923c6939e74` | normalized fixed Taylor, degree 8, Flax-default initialization (control) | | 0.1 | 14.498 |
 
-Outcomes are terminal validation perplexity.
+Outcomes are terminal validation perplexity; for the three completed runs it is also the
+validation best.
 
-## Low-degree denominators
+## Completed runs
 
-Both runs trained to the end without a numerical failure. They finished 1.6 above
-softmax and fixed Taylor, and within 0.005 of each other. Validation-best perplexity is
-15.157 at update 19,074 for the linear denominator and 15.155 at 19,000 for the
-quadratic.
+The linear, nonnegative quadratic, and nonnegative degree-8 denominators all trained to
+the end without a numerical failure, 1.6 to 1.8 above softmax.
 
 | Validation PPL at update | 1,000 | 2,000 | 5,000 | 10,000 | 19,074 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Linear denominator | 54.33 | 29.93 | 20.16 | 16.93 | 15.157 |
-| Nonnegative quadratic denominator | 54.44 | 30.04 | 20.09 | 16.90 | 15.162 |
+| Linear, learned constant | 53.93 | 30.32 | 20.28 | 17.03 | 15.206 |
+| Nonnegative quadratic, learned constant | 54.30 | 30.20 | 20.27 | 16.94 | 15.157 |
+| Nonnegative degree 8 | 51.41 | 28.83 | 20.00 | 17.08 | 15.288 |
 | Softmax | 54.08 | 26.48 | 17.83 | 15.08 | 13.514 |
 | Fixed Taylor, degree 8 | 54.85 | 26.85 | 17.89 | 15.12 | 13.543 |
 
-- **The gap opens between updates 1,000 and 2,000**, reaching 3.5 against softmax, then
-  narrows to 1.6 by the end.
-- **The numerator is not linear.** Coefficients beyond `a_1` stay below 0.01, but
-  within `|s| <= 3` they outweigh `a_1 s` by a median factor of 7 across heads. The
-  penalty term was 5e-4 nats at the end.
-- **The linear denominator turned negative for some keys.** `b_1` ranges from −0.73 to
-  0.50, and per-key values reach −2.3 in layers 4 to 9. Row sums on the diagnostic
-  sample stayed at least 0.84 in magnitude.
-- **The quadratic denominator left its start.** `w` has median 0.23 against its start
-  of 1e-3, and the expanded `b_2` reaches 1.56. Four of 160 heads have `|w| < 1e-3`, a
-  near-double root.
+- **The degree-8 denominator led early and finished last.** It was 2.7 below softmax at
+  update 1,000, 2.4 above it at 2,000, and 0.08 to 0.13 above the low-degree runs at the end.
+- **Learned constants grew rather than shrinking the common scale:** median 1.19
+  (linear) and 1.51 (quadratic), never below 0.69.
+- **Low-degree denominators stayed close to their constant.** Over `|s| <= 3` they vary
+  by a median 38% (linear) and 71% (quadratic) of it. The linear one is negative for
+  some keys (down to −2.1), but row sums on the diagnostic sample stayed at least 0.88.
+- **The degree-8 denominator's coefficients stayed below 0.003 but still matter.** Over
+  `|s| <= 3` it varies by a median 2.9 times its constant (up to 16); its values come
+  within 0.008 of zero, and row sums stayed at least 1.0.
+- **No numerator is linear.** Within `|s| <= 3`, the terms beyond `a_1 s` outweigh it by
+  a median factor of 6.2 (linear), 5.9 (quadratic), and 10 (degree 8). The penalty term
+  ended at 5e-4 to 7e-4 nats.
 
-## Degree-8 denominator
+## Signed degree-8 denominator
 
 The run failed at update 131 (67M tokens, 0.7% of the budget) with a NaN forward loss
 on finite parameters. The training NLL fell from 10.58 to 8.57 at update 70, then rose
@@ -115,7 +113,6 @@ to 10.18 by update 130, while softmax fell to 7.23. The penalty term was 1.1e-4 
 - One seed, one numerator degree, one penalty weight, one coefficient initialization.
 - `r817963a69c2c` changes both the denominator penalty and the weight decay against the
   other runs, so neither effect is isolated.
-- The linear-denominator run trained on B300, the quadratic one on H100.
 - No checkpoint precedes the degree-8 failure, so its failing update cannot be replayed.
 - The Flax-default Taylor control is not an equal-initialization comparison; the
   softmax and reference-initialization Taylor controls are.

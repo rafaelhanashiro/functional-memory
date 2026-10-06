@@ -249,6 +249,55 @@ def test_capture_uses_explicit_best_checkpoint_and_detects_shard_changes(tmp_pat
         validate_record(run)
 
 
+def test_checkpoint_size_check_reads_no_contents_and_detects_changed_files(tmp_path):
+    run = create_run(tmp_path / "study", recipe())
+    best = run / "checkpoints" / "10"
+    best.mkdir(parents=True)
+    (best / "shard").write_bytes(b"validation best")
+    update_record(run, capture_artifacts(run, best))
+    stored = load_run(run)["selected_checkpoint"]["path"]
+    result = validate_record(run, checkpoint_hashes=False)
+    assert result["size_checked"] == [stored] and stored not in result["verified"]
+    # Same-size edits need contents, which only the full hash reads.
+    (best / "shard").write_bytes(b"validation BEST")
+    validate_record(run, checkpoint_hashes=False)
+    with pytest.raises(ValueError, match="tree checksum mismatch"):
+        validate_record(run)
+    (best / "shard").write_bytes(b"validation best")
+    (best / "extra").write_bytes(b"")
+    with pytest.raises(ValueError, match="names or sizes"):
+        validate_record(run, checkpoint_hashes=False)
+    (best / "extra").unlink()
+    (best / "shard").write_bytes(b"truncated")
+    with pytest.raises(ValueError, match="names or sizes"):
+        validate_record(run, checkpoint_hashes=False)
+
+
+@pytest.mark.parametrize("checkpoint_hashes", [False, True])
+def test_cli_validates_named_runs_and_hashes_checkpoints_only_on_request(
+        tmp_path, monkeypatch, capsys, checkpoint_hashes):
+    from scaffolds.records.__main__ import main
+
+    study = tmp_path / "study"
+    first, second = create_run(study, recipe(), "first"), create_run(study, recipe(), "second")
+    best = first / "checkpoints" / "10"
+    best.mkdir(parents=True)
+    (best / "shard").write_bytes(b"validation best")
+    update_record(first, capture_artifacts(first, best))
+    arguments = ["records", "validate", str(study), "first"]
+    monkeypatch.setattr("sys.argv", arguments + (["--checkpoint-hashes"] if checkpoint_hashes else []))
+    main()
+    [result] = json.loads(capsys.readouterr().out)["runs"]
+    stored = load_run(first)["selected_checkpoint"]["path"]
+    assert result["run_id"] == load_run(first)["run_id"]
+    assert (stored in result["verified"]) is checkpoint_hashes
+    assert (stored in result["size_checked"]) is not checkpoint_hashes
+    monkeypatch.setattr("sys.argv", ["records", "validate", str(study)])
+    main()
+    assert [run["run_id"] for run in json.loads(capsys.readouterr().out)["runs"]] == [
+        load_run(first)["run_id"], load_run(second)["run_id"]]
+
+
 def test_capture_never_silently_ignores_unavailable_selected_checkpoint(tmp_path):
     run = create_run(tmp_path / "study", recipe())
     with pytest.raises(ValueError, match="unavailable"):

@@ -218,9 +218,11 @@ do not use it.
 
 `attention_output_scaling` rescales each head's unnormalized output
 `o_t = sum_(j<=t) k(s_tj) v_j` before the output projection
-(`attention/output_scaling.py`); only unnormalized dot-product attention accepts it.
+(`attention/output_scaling.py`); only dot-product attention accepts it.
 Normalized attention equals `o_t / sum_j k(s_tj)`, so `o_t` is the normalized output
-times the row's kernel sum.
+times the row's kernel sum. `head_rms_norm` also applies to normalized attention,
+where it normalizes `o_t / sum_j k(s_tj)`; for a positive kernel such as exp the two
+agree up to `rms_norm_eps`. `inverse_position` requires unnormalized attention.
 
 | `attention_output_scaling` | Output |
 |---|---|
@@ -452,8 +454,8 @@ Studies configure these shared modules with execution modules at their root
   `config.yaml`, root execution modules, and shared record/launch helpers. Metrics,
   records and `results/` remain editable while jobs run.
 - `launchers/orcd.sbatch` does the same on ORCD. Its allocations fit that cluster's
-  per-user GPU caps and 6-hour limit, and a job requeues itself before the limit
-  (see [CLUSTERS.md](../../CLUSTERS.md)).
+  per-user GPU caps; a job asks for 12 hours, accepts `mit_normal_gpu`'s 6-hour
+  maximum, and requeues itself before its limit (see [CLUSTERS.md](../../CLUSTERS.md)).
 - `acceptance.py` runs identity-keyed acceptance in the production allocation: CPU
   tests, distributed CPU tests on two forced host devices, and single-GPU kernel tests
   (no skips), an initialization hash, a full-recipe pilot, and an exact fresh-process
@@ -462,7 +464,11 @@ Studies configure these shared modules with execution modules at their root
   runtime environment. A study execution module passes this factory to `main`;
   specialized studies can supply an `AcceptanceSpec` directly. Launchers invoke
   `<acceptance_module> <config.yaml> --runtime-env` before starting workers so GLA
-  bridge settings apply only to GLA recipes.
+  bridge settings apply only to GLA recipes. Both launchers pass `--test-cache`, so a
+  passed test stage is reused by the worktree's other runs that select the same tests
+  under the same source, lock, runtime settings, and (for GPU tests) GPU type; the
+  reusing run copies the report into its own acceptance directory and records its
+  origin in `success.json` under `reused_tests`.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
   the selection.
 
@@ -480,10 +486,18 @@ JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 \
   scaffolds/transformer/.venv/bin/python -m pytest \
   -c scaffolds/transformer/pyproject.toml scaffolds/transformer/tests \
   --import-mode=importlib -m 'not gpu' -k distributed
+
+# In a GPU allocation; the Triton kernels need the locked toolkit, as the launchers set it.
+export CUDA_HOME="$(scaffolds/transformer/.venv/bin/python -c 'import importlib.util; print(next(iter(importlib.util.find_spec("nvidia.cuda_nvcc").submodule_search_locations)))')"
+TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas" \
+  scaffolds/transformer/.venv/bin/python -m pytest \
+  -c scaffolds/transformer/pyproject.toml scaffolds/transformer/tests \
+  --import-mode=importlib -m gpu
 ```
 
 The suite covers independent FP64 attention and gradient references, signed and
 unnormalized kernels, QK-norm cosine scores, learned parameter sharing, optimizer exclusions, distributed
 accumulation, packed-data cursors, interruption and resume, checkpoint audits,
-acceptance, and retention. GPU-marked tests (`-m gpu`, in a GPU allocation) exercise
-the fused forward and backward implementations.
+acceptance, and retention. GPU-marked tests exercise the fused forward and backward
+implementations; without the locked toolkit, a node's older `ptxas` rejects the Triton
+kernels' PTX and the Gated DeltaNet and GLA kernel tests fail.

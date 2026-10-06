@@ -15,18 +15,18 @@
   },
   "model": {
     "attention_backend": "fused",
-    "attention_coefficient_initialization": "linear",
-    "attention_coefficient_parameterization": "rational",
-    "attention_coefficient_sharing": "per_head",
-    "attention_coefficients": "learned",
-    "attention_degree": 8,
-    "attention_denominator_degree": 1,
+    "attention_coefficient_initialization": "taylor",
+    "attention_coefficient_parameterization": "direct",
+    "attention_coefficient_sharing": "global",
+    "attention_coefficients": "fixed",
+    "attention_degree": null,
+    "attention_denominator_degree": null,
     "attention_denominator_parameterization": "direct",
     "attention_fixed_coefficients": null,
     "attention_fixed_square_factors": null,
     "attention_mechanism": "dot_product",
     "attention_normalization": true,
-    "attention_output_scaling": "none",
+    "attention_output_scaling": "head_rms_norm",
     "dropout": 0.0,
     "gdn_conv_size": 4,
     "gla_chunk_size": 64,
@@ -59,8 +59,8 @@
   "optim": {
     "beta1": 0.9,
     "beta2": 0.95,
-    "coefficient_penalty": 0.01,
-    "coefficient_penalty_denominator": false,
+    "coefficient_penalty": 0.0,
+    "coefficient_penalty_denominator": true,
     "grad_clip_norm": 1.0,
     "learning_rate": 0.0003,
     "min_learning_rate": 3e-05,
@@ -70,7 +70,7 @@
     "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
   },
   "train": {
-    "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/rational_denominators/experiments/attention_scaling/runs/reb1c7f8a3f53/checkpoints",
+    "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax_head_rms_norm/experiments/attention_scaling/runs/r0369400ca1a3/checkpoints",
     "ckpt_every": 500,
     "dtype": "bfloat16",
     "eval_batches": 7,
@@ -78,13 +78,13 @@
     "log_every": 10,
     "micro_batch_size": 64,
     "seed": 0,
-    "source_commit": "0ef68419dbe1d8afc7abb2286b44beb202cb5095",
+    "source_commit": "d26ed792498dc9f3e1f3093f42e91db1da483e6c",
     "wandb_dir": null,
     "wandb_entity": "rafah-massachusetts-institute-of-technology",
     "wandb_group": "attention_scaling",
     "wandb_mode": "online",
     "wandb_project": "functional-memory",
-    "wandb_run_name": "200m-qk-m008-rational-linear-denominator-transformer-init-seed0",
-    "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/rational_denominators/experiments/attention_scaling/runs/reb1c7f8a3f53"
+    "wandb_run_name": "200m-qk-softmax-head-rmsnorm-transformer-init-seed0",
+    "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax_head_rms_norm/experiments/attention_scaling/runs/r0369400ca1a3"
   }
 }

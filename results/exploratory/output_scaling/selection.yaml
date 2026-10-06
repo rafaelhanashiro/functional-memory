@@ -344,3 +344,22 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/r507d1c2632b2/best_validation.json
       sha256: f63736cfffbcdba50ab6653f776f7028ba238cf072004b17f71e72360f17593a
+- run_id: r0369400ca1a3
+  label: softmax, head RMSNorm, reference initialization
+  role: replicate of exp, head RMSNorm, reference initialization
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r0369400ca1a3/config.yaml
+      sha256: f2aac18b37fbf76b7c8d76a5a971582cb9d58f31e176ad174e19844daaeeceb7
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r0369400ca1a3/metrics.jsonl
+      sha256: aa84b10f513be4af73a0e1422987cf1c35b7273b07e5136a48c8f57d6cdea499
+    completion.json:
+      path: experiments/attention_scaling/runs/r0369400ca1a3/completion.json
+      sha256: 7372e27d76562ae84db83be17c97b6a83db708d311bea1560a247c1c1d0d2787
+    metadata.json:
+      path: experiments/attention_scaling/runs/r0369400ca1a3/metadata.json
+      sha256: 3f1117a6eab6f8459a9d7b91c75444d77bf5126a710c57f3c39ac5be1af28538
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r0369400ca1a3/best_validation.json
+      sha256: 9bc87251c25687b52221d6dea97ad71252681936414743ec335a8a8bb9791f4f

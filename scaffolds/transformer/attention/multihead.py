@@ -76,8 +76,8 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Unnormalized attention requires a fixed exp/Taylor kernel and a blocked/fused backend")
         if attention_output_scaling not in OUTPUT_SCALINGS:
             raise ValueError(f"Unknown attention output scaling: {attention_output_scaling}")
-        if attention_output_scaling != "none" and attention_normalization:
-            raise ValueError("Attention output scaling applies only to unnormalized attention")
+        if attention_output_scaling == "inverse_position" and attention_normalization:
+            raise ValueError("Inverse-position output scaling applies only to unnormalized attention")
         if quadratic_mode not in ("fixed", "positive", "unrestricted"):
             raise ValueError(f"Unknown quadratic mode: {quadratic_mode}")
         if quadratic_mode != "fixed" and attention_degree != 2:
