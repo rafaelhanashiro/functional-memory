@@ -10,8 +10,12 @@ manifests, GPU type and count, and runtime settings:
 3. a full-recipe pilot with validation and valid attention diagnostics;
 4. an exact fresh-process resume (state, next batch, and RNG hashes).
 
-Matching passed stages are reused on requeue. Worker processes re-invoke the
-adapter module by name, so scaffold code never imports experiment code.
+Matching passed stages are reused on requeue. With ``--test-cache``, a passed
+test stage is also shared with other runs: the recipe only selects which tests
+run, so runs whose selected tests, source, dependency lock, runtime settings,
+and (for GPU tests) GPU type match reuse one result. Each run still checks its
+own initialization, pilot, and resume. Worker processes re-invoke the adapter
+module by name, so scaffold code never imports experiment code.
 """
 from __future__ import annotations
 
@@ -238,6 +242,48 @@ def record(path: Path, experiment: dict, **fields) -> None:
     })
 
 
+def stage_identity(experiment: dict, stage: str, paths, selection, *, cpu: bool) -> str:
+    """What a test stage's outcome depends on; the recipe only chooses the tests."""
+    payload = {
+        "stage": stage, "tests": list(paths), "selection": list(selection),
+        "source_commit": experiment["source_commit"],
+        "dependency_lock_sha256": experiment["dependency_lock_sha256"],
+        "runtime": experiment["runtime"], "gpu_type": None if cpu else experiment["gpu_type"],
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+
+
+def _replace_shared(path: Path, write) -> None:
+    # Concurrent runs may publish the same key; a per-process temporary keeps each write whole.
+    temporary = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    write(temporary)
+    temporary.replace(path)
+
+
+def share_tests(cache: Path, key: str, junit: Path, directory: Path) -> None:
+    """Publish a passed stage's report for runs with the same test identity."""
+    cache.mkdir(parents=True, exist_ok=True)
+    _replace_shared(cache / f"{key}.xml", lambda path: shutil.copyfile(junit, path))
+    entry = {"test_identity": key, "junit_sha256": sha256(junit), "acceptance_directory": str(directory),
+             "slurm_job_id": os.environ.get("SLURM_JOB_ID"), "completed_utc": datetime.now(UTC).isoformat()}
+    _replace_shared(cache / f"{key}.json",
+                    lambda path: path.write_text(json.dumps(entry, indent=2, sort_keys=True) + "\n"))
+
+
+def reuse_tests(cache: Path, key: str, junit: Path) -> dict | None:
+    """Copy a matching passed report into this run's evidence and return its origin."""
+    entry, report = cache / f"{key}.json", cache / f"{key}.xml"
+    try:
+        origin = json.loads(entry.read_text())
+        shutil.copyfile(report, junit)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+    # A report replaced by a concurrent publisher no longer matches its entry; rerun instead.
+    if origin.get("test_identity") != key or sha256(junit) != origin.get("junit_sha256"):
+        return None
+    return origin
+
+
 def require_passing_tests(path: Path) -> int:
     cases = list(ET.parse(path).iter("testcase"))
     failed = [case for case in cases if any(case.find(tag) is not None for tag in ("failure", "error", "skipped"))]
@@ -419,6 +465,13 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
                 record(path, experiment, tests_passed=0, note="no tests declared")
                 continue
             junit = directory / f"{stage}.xml"
+            cache = getattr(args, "test_cache", None)
+            key = stage_identity(experiment, stage, paths, selection, cpu=cpu) if cache else None
+            origin = reuse_tests(cache, key, junit) if cache else None
+            if origin is not None:
+                record(path, experiment, tests_passed=require_passing_tests(junit), reused_from=origin)
+                print(f"acceptance_reused={stage} from={origin['acceptance_directory']}", flush=True)
+                continue
             env = dict(os.environ, JAX_PLATFORMS="cpu" if cpu else "cuda")
             if stage == "cpu-distributed-tests":
                 env["XLA_FLAGS"] = f"{env.get('XLA_FLAGS', '')} --xla_force_host_platform_device_count=2".strip()
@@ -433,6 +486,8 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             if result.returncode != 0:
                 raise RuntimeError(f"Acceptance {stage} failed with pytest exit code {result.returncode}")
             record(path, experiment, tests_passed=require_passing_tests(junit))
+            if cache:
+                share_tests(cache, key, junit, directory)
         stage = "initialization"
         path = directory / f"{stage}.json"
         if not passed(path, experiment):
@@ -480,7 +535,11 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             if restored == spec.pilot_steps:
                 validate_resume_audit(json.loads((directory / "pilot.json").read_text())["outcome"], outcome)
             record(path, experiment, outcome=outcome)
-        record(directory / "success.json", experiment, checks=list(CHECKS), hardware=hardware)
+        reused = {name: json.loads((directory / f"{name}.json").read_text()).get("reused_from")
+                  for name, _, _ in TEST_STAGES}
+        reused = {name: origin for name, origin in reused.items() if origin}
+        record(directory / "success.json", experiment, checks=list(CHECKS), hardware=hardware,
+               **({"reused_tests": reused} if reused else {}))
         shutil.rmtree(directory / "pilot")  # The disposable pilot checkpoint is no longer needed.
         print(f"acceptance_success={directory / 'success.json'}", flush=True)
     except BaseException as error:
@@ -500,6 +559,8 @@ def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--stop-after-step", type=int)
     parser.add_argument("--runtime-env", action="store_true", help="Print shell exports for the launcher and exit")
+    parser.add_argument("--test-cache", type=Path,
+                        help="Directory sharing passed test stages between runs with the same test identity")
     args = parser.parse_args(argv)
     if not isinstance(spec, AcceptanceSpec):
         if args.config is None:
@@ -516,6 +577,8 @@ def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
     if not os.environ.get("SLURM_JOB_ID"):
         parser.error("Run acceptance inside a Slurm allocation")
     args.config, args.directory = args.config.resolve(), args.directory.resolve()
+    if args.test_cache is not None:
+        args.test_cache = args.test_cache.resolve()
     experiment = identity(spec, args.config, args.gpu_count, args.gpu_type)
     if args.worker:
         if args.output is None:

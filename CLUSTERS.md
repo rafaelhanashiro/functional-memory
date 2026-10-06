@@ -122,11 +122,23 @@ CPUs in `mit_normal_gpu`, 4 GPUs in `mit_preemptable`. H200 nodes have 8 GPUs,
 `scaffolds/transformer/launchers/orcd.sbatch` requests 2×H200 in either
 `mit_preemptable` or `mit_normal_gpu`, whichever frees first. Because the caps are
 per user, 2-GPU jobs can hold three allocations (six GPUs) at once, while 4-GPU jobs
-fit only in `mit_preemptable`. Every job asks for 6 hours, the `mit_normal_gpu`
-maximum. Ten minutes before the limit it requeues itself and resumes from its latest
-checkpoint, so it loses at most one checkpoint interval. H200 uses direct device
-transfer. Order a sweep's runs with `sbatch --nice`: 1000 priority points equal about
-8 hours of queue age.
+fit only in `mit_preemptable`. Every job asks for 12 hours with
+`--time-min=06:00:00`, so a whole 200M run fits one `mit_preemptable` allocation, and
+Slurm's backfill can still start the job in `mit_normal_gpu`, trimming its limit to
+that partition's 6-hour maximum (on 2026-10-05 a 12-hour request with a lower
+`--time-min` started there with a 6-hour limit). Ten minutes before its limit a job
+requeues itself and resumes from its latest checkpoint, losing at most one checkpoint
+interval. `mit_preemptable` preempts without grace time (`GraceTime=0`) whenever a
+higher-tier job needs the node, which also loses up to one checkpoint interval;
+`mit_normal_gpu` never preempts. A requeue or preemption resets the job's submit time
+and with it its queue age, so later runs of the same sweep can overtake it. H200 uses
+direct device transfer. Order a sweep's runs with `sbatch --nice`: 1000 priority points
+equal about 8 hours of queue age.
+
+Acceptance shares passed test stages through the worktree's
+`.cache/<study>/acceptance-tests/`, so a sweep runs each selection of CPU and GPU tests
+once per source commit, environment, runtime, and GPU type; every run still performs
+its own initialization check, pilot, and resume in its allocation.
 
 ## Everyday use
 

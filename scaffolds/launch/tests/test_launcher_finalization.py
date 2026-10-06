@@ -80,6 +80,17 @@ def test_successful_finalization_leaves_the_recorded_log_unchanged(
     assert record["log"]["sha256"] == hashlib.sha256(log.read_bytes()).hexdigest()
 
 
+def test_orcd_launcher_time_limit_fits_both_partitions():
+    launcher = (ROOT / "scaffolds/transformer/launchers/orcd.sbatch").read_text()
+
+    def hours(option):
+        h, m, s = re.search(rf"^#SBATCH --{option}=(\d+):(\d\d):(\d\d)$", launcher, re.M).groups()
+        return int(h) + int(m) / 60 + int(s) / 3600
+
+    # Backfill trims --time to mit_normal_gpu's 6-hour maximum only when --time-min fits it.
+    assert hours("time-min") <= 6 < hours("time") <= 48
+
+
 def test_orcd_launcher_requeues_its_worker_before_the_time_limit(tmp_path):
     launcher = (ROOT / "scaffolds/transformer/launchers/orcd.sbatch").read_text()
     assert re.search(r"^#SBATCH --signal=B:USR1@\d+$", launcher, re.M)

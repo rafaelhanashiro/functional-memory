@@ -259,7 +259,10 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 - At completion:
   1. Move (not copy) the retained artifacts into the home cluster's artifact root:
      each run's metrics, its validation-best checkpoint, and one successful log.
-  2. Verify their checksums.
+  2. Verify their checksums, for those runs only:
+     `python -m scaffolds.records validate experiments/<study> <run_id>... --checkpoint-hashes`.
+     Without `--checkpoint-hashes`, `validate` checks checkpoints by file names and sizes
+     and reads none of them; that suffices for routine record changes.
   3. Record the final locations in the run records and regenerate the study index.
   4. Merge the branch into `main`, reconciling any scaffold changes `main` made in the
      meantime.

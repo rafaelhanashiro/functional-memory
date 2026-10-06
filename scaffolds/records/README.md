@@ -13,7 +13,7 @@ Use the environment of the scaffold executing the study:
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records create \
   --study experiments/<study> --config <recipe.yaml> --label <description>
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records index experiments/<study>
-PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records validate experiments/<study>
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records validate experiments/<study> [<run> ...]
 ```
 
 `create` prints the allocated directory. It generates a collision-checked ID,
@@ -22,6 +22,13 @@ recipes the CLI resolves scaffold defaults into a complete config and resets the
 source-commit request to `auto`; execution resolves that request separately. The CLI
 also assigns the target study as the W&B group, uses the new label or ID as its
 name, and clears the copied local W&B directory.
+`validate` checks every run, or only the named IDs or labels. It re-hashes each
+run's recipe and raw outputs, but checks retained checkpoints only against their
+recorded file names and sizes, because re-hashing reads every checkpoint byte (tens of
+gigabytes per study on a shared filesystem). Add `--checkpoint-hashes` to re-hash
+checkpoint contents, and name only the runs whose checkpoints were copied, for example
+after moving completed runs into the artifact root or migrating them between clusters.
+
 Changing scientific settings requires a fresh allocation. A resume reuses the same
 ID and recipe; it does not call `create`.
 
@@ -55,9 +62,11 @@ whole sweep before any jobs can run or requeue.
   available outputs and returns provenance updates. Pass the selected checkpoint's
   step directory after pruning. Launchers capture the final log after the worker
   exits through `python -m scaffolds.launch.finalize --run <run> --exit-code <code>`.
-- `validate_record(run, verify_hashes=True)` checks identity, recipe integrity, and
-  available artifact hashes. Missing external artifacts are reported as unavailable;
-  missing or modified input recipes are errors.
+- `validate_record(run, verify_hashes=True, checkpoint_hashes=True)` checks identity,
+  recipe integrity, and available artifact hashes. With `checkpoint_hashes=False`,
+  checkpoint trees are compared by file names and sizes and listed as `size_checked`.
+  Missing external artifacts are reported as unavailable; missing or modified input
+  recipes are errors.
 - `regenerate_index(study)` derives a deterministic CSV from recipes, records, and
   raw metrics, including attention family, home cluster, and training budget.
   Missing historical settings remain empty; current defaults are not
