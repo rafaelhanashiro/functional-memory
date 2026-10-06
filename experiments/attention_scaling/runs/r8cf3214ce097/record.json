@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r8cf3214ce097/config.yaml",
+    "sha256": "aa9cdacc8844802239b3923bb5dffc6c7dee4ab27b91770db7f658633a70c2ef"
+  },
+  "label": "200m-qk-taylor-m003-unnormalized-transformer-init-warmup400-seed0",
+  "name": "200m-qk-taylor-m003-unnormalized-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r8cf3214ce097",
+  "status": "planned"
+}
