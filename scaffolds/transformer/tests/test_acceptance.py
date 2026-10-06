@@ -81,6 +81,64 @@ def test_production_acceptance_runs_required_gpu_tests_with_an_empty_adapter_lis
     assert len(gpu_calls) == 1 and preflight.NORMALIZED_POLYNOMIAL_TESTS in gpu_calls[0]
 
 
+def test_runs_selecting_the_same_tests_share_passed_stages(tmp_path, monkeypatch):
+    import json
+    from pathlib import Path
+    from types import SimpleNamespace
+    from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
+
+    ran = []
+
+    def worker(spec, args, name, output, **unused):
+        if name == "hardware":
+            return {"attention_backend": "fused"}
+        raise RuntimeError("stop after testing")
+
+    def run(command, **options):
+        junit = Path(next(value.split("=", 1)[1] for value in command if value.startswith("--junitxml=")))
+        ran.append(junit.stem)
+        junit.write_text('<testsuite><testcase name="case"/></testsuite>')
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(preflight, "_run_worker", worker)
+    monkeypatch.setattr(preflight.subprocess, "run", run)
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=("scaffolds/transformer/tests/test_model.py",),
+                                    select_tests=preflight.attention_test_paths)
+    cache = tmp_path / "cache"
+
+    def acceptance(name, degree, gpu_type, source="a" * 40):
+        config = config_to_dict(Config(model=ModelConfig(attention_degree=degree)))
+        experiment = {"identity": name, "source_commit": source, "config": config, "gpu_type": gpu_type,
+                      "dependency_lock_sha256": "b" * 64, "runtime": {"TRANSFORMER_HOST_STAGING": "0"}}
+        args = SimpleNamespace(directory=tmp_path / name, config=tmp_path / "recipe.yaml", gpu_count=2,
+                               gpu_type=gpu_type, test_cache=cache)
+        ran.clear()
+        with pytest.raises(RuntimeError, match="stop after testing"):
+            preflight._run(spec, args, experiment)
+        return list(ran)
+
+    stages = ["cpu-tests", "cpu-distributed-tests", "gpu-tests"]
+    assert acceptance("first", 4, "H200") == stages
+    # Another recipe that selects the same tests reruns none of them, and records where they passed.
+    assert acceptance("second", 8, "H200") == []
+    reused = json.loads((tmp_path / "second" / "gpu-tests.json").read_text())
+    assert reused["identity"] == "second" and reused["tests_passed"] == 1
+    assert reused["reused_from"]["acceptance_directory"] == str(tmp_path / "first")
+    assert (tmp_path / "second" / "gpu-tests.xml").read_text() == (tmp_path / "first" / "gpu-tests.xml").read_text()
+    # GPU tests are per GPU type; other source or tests rerun everything they change.
+    assert acceptance("third", 8, "H100") == ["gpu-tests"]
+    assert acceptance("fourth", 8, "H200", source="c" * 40) == stages
+    assert acceptance("odd", 3, "H200") == stages
+    # A report that no longer matches its entry is never reused.
+    key = preflight.stage_identity({"source_commit": "a" * 40, "dependency_lock_sha256": "b" * 64,
+                                   "runtime": {"TRANSFORMER_HOST_STAGING": "0"}, "gpu_type": "H200"},
+                                  "gpu-tests", preflight.test_paths(spec, config_to_dict(Config(model=ModelConfig(
+                                      attention_degree=4))), resolved_backend="fused", cpu=False),
+                                  ("-m", "gpu"), cpu=False)
+    (cache / f"{key}.xml").write_text('<testsuite><testcase name="other"/></testsuite>')
+    assert acceptance("fifth", 4, "H200") == ["gpu-tests"]
+
+
 def test_runtime_identity_requires_resolved_transfer_policy_and_records_toolkit(monkeypatch):
     monkeypatch.setenv("TRANSFORMER_HOST_STAGING", "auto")
     with pytest.raises(ValueError, match="resolved"):

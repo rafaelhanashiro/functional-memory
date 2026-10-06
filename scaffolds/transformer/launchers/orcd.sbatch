@@ -7,11 +7,12 @@
 #     experiments.<study>.acceptance \
 #     experiments/<study>/runs/<run>/config.yaml "$(git rev-parse HEAD)" [GPU_COUNT] [GPU_TYPES]
 #
-# A job starts in whichever GPU partition frees first. Both accept a 6-hour limit
-# (mit_normal_gpu's maximum); ten minutes before it the job requeues itself and
-# resumes from its latest checkpoint. Preemption in mit_preemptable also requeues.
-# Per-user caps are 2 GPUs in mit_normal_gpu and 4 in mit_preemptable, so
-# 2-GPU jobs can hold three allocations at once.
+# A job starts in whichever GPU partition frees first. It asks for 12 hours, enough
+# for a whole run, with a 6-hour minimum: Slurm's backfill trims the limit to
+# mit_normal_gpu's 6-hour maximum when it starts the job there. Ten minutes before
+# the limit the job requeues itself and resumes from its latest checkpoint.
+# Preemption in mit_preemptable also requeues. Per-user caps are 2 GPUs in
+# mit_normal_gpu and 4 in mit_preemptable, so 2-GPU jobs can hold three allocations.
 #SBATCH --job-name=transformer
 #SBATCH --partition=mit_preemptable,mit_normal_gpu
 #SBATCH --nodes=1
@@ -19,7 +20,8 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
 #SBATCH --gres=gpu:h200:2
-#SBATCH --time=06:00:00
+#SBATCH --time=12:00:00
+#SBATCH --time-min=06:00:00
 #SBATCH --signal=B:USR1@600
 #SBATCH --requeue
 #SBATCH --open-mode=append
@@ -135,9 +137,10 @@ update_record(run_root, {
     "log_path": str(run_root / "training.log"),
 })
 PY
-# Acceptance and production share the allocation; matching passed stages are reused on requeue.
+# Acceptance and production share the allocation; matching passed stages are reused on requeue,
+# and passed test stages are shared with the worktree's other runs.
 run_step "$PYTHON" -m "$ADAPTER" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
-  --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE"
+  --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --test-cache "$CACHE/acceptance-tests"
 "$PYTHON" - "$RUN_ROOT" "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT/success.json" <<'PY'
 import hashlib, json, sys
 from pathlib import Path
