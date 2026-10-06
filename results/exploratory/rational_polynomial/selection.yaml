@@ -17,6 +17,14 @@ runs:
     numerical_failure_step_00000131.json:
       path: experiments/attention_scaling/runs/r9c52f40605fb/numerical_failure_step_00000131.json
       sha256: 352a43b09bdbcf15d809e45ff0daf1f15c53486f08061f0b9c2ff00b9f427d9d
+- run_id: r275ba0d547a2
+  label: rational degree 8, signed degree-8 denominator, lambda = 0.01 on both, weight
+    decay 0.01
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r275ba0d547a2/config.yaml
+      sha256: 605307b56c569aca64f797da4f0737b323240515cd5f71768a1d596cc0aa68b8
 - run_id: re21d093cf4ac
   label: rational degree 8, linear denominator with learned constant, numerator-only
     lambda = 0.01

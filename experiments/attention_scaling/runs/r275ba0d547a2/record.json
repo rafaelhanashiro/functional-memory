@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r275ba0d547a2/config.yaml",
+    "sha256": "605307b56c569aca64f797da4f0737b323240515cd5f71768a1d596cc0aa68b8"
+  },
+  "label": "200m-qk-m008-rational-signed-degree8-denominator-wd001-transformer-init-seed0",
+  "name": "200m-qk-m008-rational-signed-degree8-denominator-wd001-transformer-init-seed0",
+  "record_schema_version": 1,
+  "run_id": "r275ba0d547a2",
+  "status": "planned"
+}

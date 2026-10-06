@@ -53,6 +53,7 @@ All runs: 200M, `d_K = 64`, QK-norm, transformer reference initialization, seed 
 | Run | Denominator | Penalized denominator | Weight decay | Outcome |
 | --- | --- | --- | ---: | ---: |
 | `r9c52f40605fb` | signed degree 8 | yes | 0.1 | fail @131 |
+| `r275ba0d547a2` | signed degree 8 | yes | 0.01 | running |
 | `re21d093cf4ac` | linear, learned constant | no | 0.1 | 15.206 |
 | `r45c9067c8d64` | nonnegative quadratic, learned constant | no | 0.1 | 15.157 |
 | `r817963a69c2c` | nonnegative degree 8 | yes | 0.01 | 15.288 |
