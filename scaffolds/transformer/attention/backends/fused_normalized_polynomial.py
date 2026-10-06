@@ -5,8 +5,9 @@ row sums are valid. Its two-pass forward first computes final row sums, then
 recomputes score tiles to accumulate p(s)/sum(p(s)) times V. ``rational`` takes
 numerator coefficients a_0..a_m followed by the denominator's parameters: b_1..b_d
 of 1 + sum_r b_r s^r (``direct``), or u_1..u_k, w_1..w_k of
-(1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2 with d = 2k (``sum_of_squares``). The
-first pass sums p_b(s), the second accumulates p_a(s)/sum(p_b(s)) times V, and the
+(1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2 with d = 2k (``sum_of_squares``); with a
+learned constant, b_0..b_d of sum_r b_r s^r, or q1_0..q1_k, q2_0..q2_(k-1) of
+q1(s)^2 + q2(s)^2. The first pass sums p_b(s), the second accumulates p_a(s)/sum(p_b(s)) times V, and the
 reverse pass carries the numerator sensitivity (dY . V) / Z and the denominator
 sensitivity -(dY . Y) / Z separately through their Horner recurrences.
 ``sum_of_squares`` evaluates
@@ -44,6 +45,7 @@ from scaffolds.transformer.attention.backends.fused_learned_polynomial import (
 
 PARAMETERIZATIONS = ("direct", "sum_of_squares", "rational")
 DENOMINATOR_FORMS = ("direct", "sum_of_squares")
+DENOMINATOR_CONSTANTS = ("fixed", "learned")
 
 
 class _Layout(NamedTuple):
@@ -52,29 +54,35 @@ class _Layout(NamedTuple):
     parameterization: str
     numerator_count: int
     denominator_form: str | None = None
+    denominator_constant: str = "fixed"
 
 
 def _split(parameters, layout):
     """(numerator, denominator factors); the denominator is None unless rational.
 
-    A direct denominator is one factor (1, b_1, ..., b_d) evaluated by Horner's rule;
-    a sum-of-squares denominator is two, (1, u_1, ..., u_k) and (0, w_1, ..., w_k),
-    whose squares add.
+    Each denominator factor is (coefficients, first_is_parameter): a direct denominator
+    is one factor evaluated by Horner's rule, (1, b_1, ..., b_d) or (b_0, ..., b_d); a
+    sum-of-squares denominator is two whose squares add, (1, u_1, ..., u_k) and
+    (0, w_1, ..., w_k), or (q1_0, ..., q1_k) and (q2_0, ..., q2_(k-1)).
     """
     numerator = parameters[:layout.numerator_count]
     if layout.parameterization != "rational":
         return numerator, None
     rest = parameters[layout.numerator_count:]
+    learned = layout.denominator_constant == "learned"
     if layout.denominator_form == "direct":
-        return numerator, ((1.0, *rest),)
+        return numerator, ((tuple(rest), True),) if learned else (((1.0, *rest), False),)
+    if learned:
+        half = (len(rest) + 1) // 2
+        return numerator, ((tuple(rest[:half]), True), (tuple(rest[half:]), True))
     half = len(rest) // 2
-    return numerator, ((1.0, *rest[:half]), (0.0, *rest[half:]))
+    return numerator, (((1.0, *rest[:half]), False), ((0.0, *rest[half:]), False))
 
 
 def _denominator_values(scores, denominator):
     if len(denominator) == 1:
-        return _values(scores, denominator[0])
-    first, second = (_values(scores, factor) for factor in denominator)
+        return _values(scores, denominator[0][0])
+    first, second = (_values(scores, coefficients) for coefficients, _ in denominator)
     return first * first + second * second
 
 
@@ -143,19 +151,17 @@ def _tile_sensitivities(safe_scores, parameters, layout, dot_do_v, delta, normal
     values, ds = _horner_and_scaled_derivative(safe_scores, numerator, dp)
     segments = [(dp, len(numerator))]
     if len(denominator) == 1:
-        _, dz_ds = _horner_and_scaled_derivative(safe_scores, denominator[0], dz)
-        # Denominator parameters start at b_1, whose sensitivity is dz * s.
-        segments.append((dz * safe_scores, len(denominator[0]) - 1))
+        sensitivities = (dz,)
     else:
-        first, second = (_values(safe_scores, factor) for factor in denominator)
         # Scale each factor before differentiating its square, as for SOS kernels.
-        scaled_first, scaled_second = (dz * first) * 2.0, (dz * second) * 2.0
-        _, dfirst = _horner_and_scaled_derivative(safe_scores, denominator[0], scaled_first)
-        _, dsecond = _horner_and_scaled_derivative(safe_scores, denominator[1], scaled_second)
-        dz_ds = dfirst + dsecond
-        # u_r and w_r start at r = 1: their sensitivities are 2 dz q1 s^r and 2 dz q2 s^r.
-        segments += [(scaled_first * safe_scores, len(denominator[0]) - 1),
-                     (scaled_second * safe_scores, len(denominator[1]) - 1)]
+        sensitivities = tuple((dz * _values(safe_scores, coefficients)) * 2.0 for coefficients, _ in denominator)
+    dz_ds = jnp.zeros_like(ds)
+    for (coefficients, first_is_parameter), sensitivity in zip(denominator, sensitivities, strict=True):
+        _, derivative = _horner_and_scaled_derivative(safe_scores, coefficients, sensitivity)
+        dz_ds += derivative
+        # A pinned constant is no parameter: its factor's parameters start at s^1.
+        segments.append((sensitivity, len(coefficients)) if first_is_parameter
+                        else (sensitivity * safe_scores, len(coefficients) - 1))
     return values, ds + dz_ds, tuple(segments)
 
 
@@ -316,7 +322,7 @@ def _dkv_kernel(q_ref, k_ref, v_ref, *refs, count, layout, time, dq, dv, block_q
 def _name(layout, count):
     name = f"normalized_polynomial_{layout.parameterization}_{layout.numerator_count - 1}"
     if layout.parameterization == "rational":
-        name += f"_{layout.denominator_form}_{count - layout.numerator_count}"
+        name += f"_{layout.denominator_form}_{layout.denominator_constant}_{count - layout.numerator_count}"
     return name
 
 
@@ -388,7 +394,8 @@ _attention.defvjp(_attention_fwd, _attention_bwd)
 
 
 def fused_normalized_polynomial_attention(q, k, v, parameters, *, parameterization="direct",
-                                          denominator_degree=None, denominator_form="direct", interpret=False):
+                                          denominator_degree=None, denominator_form="direct",
+                                          denominator_constant="fixed", interpret=False):
     """Causal row-normalized p_h(QK^T / sqrt(d_k))V, with learned FP32 parameters.
 
     Parameters have shape [heads, n]. ``direct`` supplies ascending coefficients
@@ -399,6 +406,8 @@ def fused_normalized_polynomial_attention(q, k, v, parameters, *, parameterizati
     b_1..b_d of p_b(s) = 1 + sum_r b_r s^r with ``denominator_form="direct"``, or, for
     even d = 2k, u_1..u_k then w_1..w_k of p_b(s) = (1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2
     with ``denominator_form="sum_of_squares"``. ``denominator_degree=None`` means d = m.
+    ``denominator_constant="learned"`` adds the constant as a parameter: b_0..b_d, or
+    q1_0..q1_k then q2_0..q2_(k-1) of q1(s)^2 + q2(s)^2 (d + 1 parameters).
     Q/K/V use [batch, time, heads, channels], a common FP32/BF16 dtype, and
     widths up to 128. Compiled execution requires Ampere-or-newer NVIDIA GPUs;
     ``interpret=True`` runs the Pallas programs on CPU for tests.
@@ -420,7 +429,7 @@ def fused_normalized_polynomial_attention(q, k, v, parameters, *, parameterizati
         raise ValueError("Polynomial parameters must be float32 with shape [heads, m+1], m >= 1")
     count = parameters.shape[-1]
     if parameterization != "rational":
-        if denominator_degree is not None or denominator_form != "direct":
+        if denominator_degree is not None or denominator_form != "direct" or denominator_constant != "fixed":
             raise ValueError("Denominator options apply to the rational parameterization only")
         if parameterization == "sum_of_squares" and (count < 3 or count % 2 == 0):
             raise ValueError("A sum-of-squares polynomial requires an even degree >= 2")
@@ -428,14 +437,19 @@ def fused_normalized_polynomial_attention(q, k, v, parameters, *, parameterizati
     else:
         if denominator_form not in DENOMINATOR_FORMS:
             raise ValueError("denominator_form must be 'direct' or 'sum_of_squares'")
+        if denominator_constant not in DENOMINATOR_CONSTANTS:
+            raise ValueError("denominator_constant must be 'fixed' or 'learned'")
+        if denominator_degree is None and denominator_constant != "fixed":
+            raise ValueError("A learned denominator constant requires an explicit denominator_degree")
         if denominator_degree is None:
             if count < 3 or count % 2 == 0:
                 raise ValueError("A rational kernel requires 2m+1 parameters (a_0..a_m, b_1..b_m) with m >= 1")
             denominator_degree = (count - 1) // 2
-        if (isinstance(denominator_degree, bool) or not isinstance(denominator_degree, int)
-                or denominator_degree < 1 or count - denominator_degree < 2):
+        denominator_count = denominator_degree + (denominator_constant == "learned") if isinstance(
+            denominator_degree, int) and not isinstance(denominator_degree, bool) else None
+        if denominator_count is None or denominator_degree < 1 or count - denominator_count < 2:
             raise ValueError("A rational kernel needs numerator degree >= 1 and denominator degree >= 1")
         if denominator_form == "sum_of_squares" and denominator_degree % 2:
             raise ValueError("A sum-of-squares denominator requires an even degree")
-        layout = _Layout("rational", count - denominator_degree, denominator_form)
+        layout = _Layout("rational", count - denominator_count, denominator_form, denominator_constant)
     return _attention(q, k, v, parameters, layout, bool(interpret))

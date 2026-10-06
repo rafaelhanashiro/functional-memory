@@ -21,15 +21,24 @@ def attention_core(
     coefficients: jax.Array | None = None,
     polynomial_coefficients: jax.Array | None = None,
     polynomial_square_factors: jax.Array | None = None,
-    polynomial_denominator_coefficients: jax.Array | None = None,
-    polynomial_denominator_square_factors: jax.Array | None = None,
     return_diagnostics: bool = False,
     dropout=None,
     deterministic: bool = True,
     rngs=None,
     weights_dtype=None,
+    **denominators,
 ):
-    """Apply the mechanism selected by the existing flat model configuration."""
+    """Apply the mechanism selected by the existing flat model configuration.
+
+    ``denominators`` holds at most one rational-kernel denominator array, named as in
+    ``rational_polynomial.DENOMINATOR_KINDS``.
+    """
+    from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
+
+    unknown = set(denominators) - set(DENOMINATOR_KINDS)
+    if unknown:
+        raise TypeError(f"Unknown attention arguments: {sorted(unknown)}")
+    denominators = {name: array for name, array in denominators.items() if array is not None}
     if not isinstance(attention_normalization, bool):
         raise ValueError("attention_normalization must be a boolean")
     if not attention_normalization:
@@ -39,14 +48,13 @@ def attention_core(
             raise ValueError("Unnormalized attention requires the exponential or a fixed Taylor kernel")
         if polynomial_square_factors is not None:
             raise ValueError("A sum-of-squares kernel is implemented for row-normalized attention only")
-        if polynomial_denominator_coefficients is not None or polynomial_denominator_square_factors is not None:
+        if denominators:
             raise ValueError("A rational kernel's denominator is its row sum; it requires normalized attention")
         return unnormalized_attention(
             q, k, v, attention_degree=attention_degree, backend=backend,
             return_diagnostics=return_diagnostics, polynomial_coefficients=polynomial_coefficients,
         )
-    if (polynomial_coefficients is not None or polynomial_square_factors is not None
-            or polynomial_denominator_coefficients is not None or polynomial_denominator_square_factors is not None):
+    if polynomial_coefficients is not None or polynomial_square_factors is not None or denominators:
         from scaffolds.transformer.attention.learned_polynomial import normalized_learned_polynomial_attention
 
         if quadratic_mode != "fixed" or coefficients is not None:
@@ -54,9 +62,7 @@ def attention_core(
         return normalized_learned_polynomial_attention(
             q, k, v, attention_degree=attention_degree, polynomial_coefficients=polynomial_coefficients,
             polynomial_square_factors=polynomial_square_factors,
-            polynomial_denominator_coefficients=polynomial_denominator_coefficients,
-            polynomial_denominator_square_factors=polynomial_denominator_square_factors,
-            backend=backend, return_diagnostics=return_diagnostics,
+            backend=backend, return_diagnostics=return_diagnostics, **denominators,
         )
     if quadratic_mode != "fixed":
         from scaffolds.transformer.attention.learned_quadratic import learned_quadratic_attention

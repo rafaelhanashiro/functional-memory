@@ -93,6 +93,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("attention_coefficient_initialization", "taylor")
         value["model"].setdefault("attention_denominator_degree", None)
         value["model"].setdefault("attention_denominator_parameterization", "direct")
+        value["model"].setdefault("attention_denominator_constant", "fixed")
         value.setdefault("optim", {}).setdefault("coefficient_penalty_denominator", True)
         value["model"].setdefault("attention_coefficient_sharing", "global")
         value.setdefault("optim", {}).setdefault("coefficient_penalty", 0.0)

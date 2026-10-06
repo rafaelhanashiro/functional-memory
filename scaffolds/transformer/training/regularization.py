@@ -4,10 +4,12 @@ With weight lambda = ``optim.coefficient_penalty`` the training loss is
 
     NLL + lambda * sum over polynomials [ a_0^2 + sum_(r>=2) r^2 a_r^2 + sum_(r>=1) r^2 b_r^2 ]
 
-where a_r are the numerator (or the only) coefficients and b_r the direct
-denominator coefficients of a rational kernel, which ``optim.coefficient_penalty_denominator:
-false`` leaves out. The linear numerator coefficient a_1 is not penalized; the fixed
-denominator constant has no parameter. "Polynomials" are the
+where a_r are the numerator (or the only) coefficients and b_r the denominator
+coefficients of a rational kernel, which ``optim.coefficient_penalty_denominator:
+false`` leaves out. For a sum-of-squares denominator, b_r are the coefficients of the
+expanded polynomial, differentiated through its factors. The linear numerator
+coefficient a_1 is not penalized; the denominator penalty requires the constant fixed
+at b_0 = 1. "Polynomials" are the
 model's learned coefficient sets: one per layer and head with ``per_head`` sharing,
 one in total with ``global``. The validation loss, the recorded training NLL, and
 the perplexities never include the penalty; its value is recorded separately.
@@ -32,7 +34,10 @@ def penalty_weights(degree: int, denominator_degree: int | None = None) -> tuple
 
 def coefficient_penalty_sum(params, model, *, include_denominator: bool = True) -> jax.Array:
     """The bracketed sum above, unweighted by lambda, over every learned polynomial."""
-    from scaffolds.transformer.attention.rational_polynomial import denominator_degree, denominator_parameterization
+    from scaffolds.transformer.attention.rational_polynomial import (
+        denominator_argument, denominator_constant, denominator_degree, denominator_parameterization,
+        expanded_denominator,
+    )
 
     parameterization = getattr(model, "attention_coefficient_parameterization", "direct")
     if not has_learned_polynomial(model) or parameterization not in ("direct", "rational"):
@@ -43,8 +48,9 @@ def coefficient_penalty_sum(params, model, *, include_denominator: bool = True) 
     numerator = params["polynomial_coefficients"][...].astype(jnp.float32)
     total = jnp.sum(jnp.asarray(numerator_weights, jnp.float32) * jnp.square(numerator))
     if rational and include_denominator:
-        if denominator_parameterization(model) != "direct":
-            raise ValueError("The coefficient penalty is defined on direct denominator coefficients")
-        denominator = params["polynomial_denominator_coefficients"][...].astype(jnp.float32)
+        if denominator_constant(model) != "fixed":
+            raise ValueError("The denominator penalty is defined with its constant fixed at 1")
+        denominator = expanded_denominator(params[denominator_argument(model)][...],
+                                           denominator_parameterization(model), "fixed")[..., 1:]
         total = total + jnp.sum(jnp.asarray(denominator_weights, jnp.float32) * jnp.square(denominator))
     return total

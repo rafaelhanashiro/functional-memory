@@ -11,46 +11,35 @@ returns gradients of Q, K, V, and every learned coefficient.
 q1(s)^2 + q2(s)^2 (see ``nonnegative_polynomial``): the kernel is nonnegative by
 construction, and only a zero row sum is invalid.
 
-``polynomial_denominator_coefficients`` (b_1..b_d) or
-``polynomial_denominator_square_factors`` (u_1..u_k, w_1..w_k; see
-``rational_polynomial``) adds a separate denominator: the weights are
-p_a(s) / sum_j p_b(s_j) with the numerator's coefficients a_0..a_m in
-``polynomial_coefficients``. A direct denominator is signed; a sum-of-squares one is
-nonnegative. Only an exactly zero or nonfinite denominator sum is invalid.
+A denominator array (any name of ``rational_polynomial.DENOMINATOR_KINDS``) adds a
+separate denominator: the weights are p_a(s) / sum_j p_b(s_j) with the numerator's
+coefficients a_0..a_m in ``polynomial_coefficients``. A direct denominator is signed; a
+sum-of-squares one is nonnegative. Only an exactly zero or nonfinite denominator sum is
+invalid.
 """
 
 import jax.numpy as jnp
 
 
 def normalized_learned_polynomial_attention(q, k, v, *, attention_degree, polynomial_coefficients=None,
-                                            polynomial_square_factors=None,
-                                            polynomial_denominator_coefficients=None,
-                                            polynomial_denominator_square_factors=None, backend="blocked",
-                                            return_diagnostics=False):
+                                            polynomial_square_factors=None, backend="blocked",
+                                            return_diagnostics=False, **denominators):
     from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
     from scaffolds.transformer.attention.nonnegative_polynomial import validate_factors
-    from scaffolds.transformer.attention.rational_polynomial import validate_denominator
+    from scaffolds.transformer.attention.rational_polynomial import select_denominator
     from scaffolds.transformer.attention.unnormalized import _validate_coefficients
 
     if (polynomial_coefficients is None) == (polynomial_square_factors is None):
         raise ValueError("Provide exactly one of polynomial_coefficients and polynomial_square_factors")
-    if polynomial_denominator_coefficients is not None and polynomial_denominator_square_factors is not None:
-        raise ValueError("Provide at most one denominator: coefficients or square factors")
-    denominator = (polynomial_denominator_coefficients if polynomial_denominator_square_factors is None
-                   else polynomial_denominator_square_factors)
-    denominator_form = "direct" if polynomial_denominator_square_factors is None else "sum_of_squares"
     heads = q.shape[2]
+    selected = select_denominator(heads, **denominators)
+    denominators = {name: array for name, array in denominators.items() if array is not None}
     if polynomial_coefficients is not None:
         _validate_coefficients(polynomial_coefficients, attention_degree, heads)
-        learned = {"polynomial_coefficients": polynomial_coefficients}
-        parameters, parameterization = polynomial_coefficients, "direct"
-        if denominator is not None:
-            denominator_degree = validate_denominator(denominator, heads, square=denominator_form == "sum_of_squares")
-            learned[("polynomial_denominator_coefficients" if denominator_form == "direct"
-                     else "polynomial_denominator_square_factors")] = denominator
-            parameterization = "rational"
+        learned = {"polynomial_coefficients": polynomial_coefficients, **denominators}
+        parameters, parameterization = polynomial_coefficients, "direct" if selected is None else "rational"
     else:
-        if denominator is not None:
+        if selected is not None:
             raise ValueError("A rational kernel's numerator is its direct polynomial_coefficients, not square factors")
         validate_factors(polynomial_square_factors, attention_degree, heads)
         learned = {"polynomial_square_factors": polynomial_square_factors}
@@ -69,10 +58,13 @@ def normalized_learned_polynomial_attention(q, k, v, *, attention_degree, polyno
     # Broadcasting a shared array sums its per-head gradients in the VJP.
     parameters = jnp.broadcast_to(parameters, (heads, attention_degree + 1)).astype(jnp.float32)
     options = {}
-    if parameterization == "rational":
-        denominator = jnp.broadcast_to(denominator, (heads, denominator_degree))
-        parameters = jnp.concatenate([parameters, denominator.astype(jnp.float32)], axis=-1)
-        options = {"denominator_degree": denominator_degree, "denominator_form": denominator_form}
+    if selected is not None:
+        array, form, constant, degree = selected
+        array = jnp.broadcast_to(array, (heads, array.shape[-1]))
+        parameters = jnp.concatenate([parameters, array.astype(jnp.float32)], axis=-1)
+        options = {"denominator_degree": degree, "denominator_form": form}
+        if constant != "fixed":
+            options["denominator_constant"] = constant
     output = fused_normalized_polynomial_attention(q, k, v, parameters, parameterization=parameterization, **options)
     if not return_diagnostics:
         return output
