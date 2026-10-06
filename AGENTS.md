@@ -66,6 +66,10 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   coefficient diagnostics remain available in run measurements; add a maintained
   diagnostic figure only when it serves a requested comparison. State-rank results
   belong to `results/state_rank/`.
+- Results and reports compare runs on their mechanism's reference initialization only.
+  Flax-default runs stay in their study as legacy records but enter no selection,
+  figure, table, finding, or status report; `results/attention_scaling/collect.py`
+  rejects them.
 - Exploratory experiments, whose place in the canonical results is not yet decided,
   report under `results/exploratory/<topic>/`, one directory per question with flat
   files: a README with the question, runs, findings, the open decision, and the date

@@ -2061,7 +2061,7 @@
     "code": {
       "collect.py": {
         "path": "results/attention_scaling/collect.py",
-        "sha256": "79bdc59e9a62621f15a8895c8ab3f2552724b23a5235bf401f80f103d779fcba"
+        "sha256": "477098566a5d130fc6c1ac95723c7548480daf2b1299780d74c8349b8095cc6e"
       },
       "render.py": {
         "path": "results/attention_scaling/render.py",
@@ -2084,7 +2084,7 @@
     },
     "readme": {
       "path": "results/attention_scaling/README.md",
-      "sha256": "0276f8a1f849864d3dc38b9830687b22a40b2c67cfe0e83d6d82b9769a736e04"
+      "sha256": "9d6e4060e0e05c73152472f18ca55fa1899ef3f65e3df5da37a4256ff568c271"
     },
     "combined_terminal_ppl_pdf": {
       "path": "results/attention_scaling/combined_terminal_ppl.pdf",
