@@ -46,7 +46,14 @@ def _forward_kernel(q_ref, k_ref, v_ref, *refs, degree, time, dq, dv, block_q, b
     qi = pl.program_id(0) * block_q + jnp.arange(block_q)
     q = plt.load(q_ref, mask=(qi[:, None] < time) & (jnp.arange(q_ref.shape[-1])[None, :] < dq), other=0)
     if query_guard:
-        guard = plt.load(refs[degree + 1], mask=qi[:, None] < time, other=0)
+        # Load columns through reference indexing: slicing a loaded [block_q,2]
+        # array is not supported by Pallas Triton lowering. Array-only indices
+        # also keep this path executable in the CPU interpreter.
+        rows = jnp.arange(block_q)
+        guard_c0 = plt.load(refs[degree + 1].at[rows, jnp.zeros((block_q,), jnp.int32)],
+                            mask=qi < time, other=0)
+        guard_c1 = plt.load(refs[degree + 1].at[rows, jnp.ones((block_q,), jnp.int32)],
+                            mask=qi < time, other=0)
     initial = (jnp.zeros((block_q, v_ref.shape[-1]), jnp.float32),
                jnp.zeros((block_q,), jnp.bool_))
 
@@ -59,7 +66,7 @@ def _forward_kernel(q_ref, k_ref, v_ref, *refs, degree, time, dq, dv, block_q, b
         values = _values(jnp.where(causal, scores, 0.0), coefficients)
         invalid_entries = causal & (~jnp.isfinite(scores) | ~jnp.isfinite(values))
         if query_guard:
-            actual_kernel = guard[:, 0, None] + guard[:, 1, None] * jnp.where(causal, scores, 0.0)
+            actual_kernel = guard_c0[:, None] + guard_c1[:, None] * jnp.where(causal, scores, 0.0)
             invalid_entries |= causal & ~jnp.isfinite(actual_kernel)
         invalid |= jnp.max(invalid_entries.astype(jnp.int32), axis=1) != 0
         output += _dot(jnp.where(causal, values, 0.0), v)
