@@ -8,10 +8,10 @@ when both use per-head output RMSNorm and 400 warmup steps?
 
 ## Runs and method
 
-| Role | Run ID | Coefficients | Status |
-| --- | --- | --- | --- |
-| Primary | `r9cf9589b9855` | Query-dependent affine projection | Prepared |
-| Control | `r03bfa6fd7b2e` | Input-independent, learned per layer and head | Prepared |
+| Role | Run ID | Coefficients | Job | Status |
+| --- | --- | --- | --- | --- |
+| Primary | `r9cf9589b9855` | Query-dependent affine projection | `209648` | Production training |
+| Control | `r03bfa6fd7b2e` | Input-independent, learned per layer and head | `209556` | Production training |
 
 Explicit inputs and roles are in [selection.yaml](selection.yaml); scientific run
 files live under [the attention study](../../../experiments/attention_scaling/README.md).
@@ -27,6 +27,9 @@ effective batch 256, global microbatch 64, the same FineWeb data order, 19,074
 updates (10.0B tokens), and learning rates 3e-4 to 3e-5 with 400 warmup updates.
 Coefficient parameters are FP32 and excluded from weight decay in both variants.
 The predictor adds 327,680 weights; the backbone and its initial weights match.
+Each run uses two H100 GPUs on Kennel's `standard` partition at nice 0.
+The primary uses `XLA_PYTHON_CLIENT_MEM_FRACTION=0.90`; the control uses the default
+memory fraction. This runtime setting does not change either scientific recipe.
 
 The [shared scaffold](../../../scaffolds/transformer/README.md#input-dependent-linear-coefficients)
 defines the mechanism. Exact launch commands are in the
@@ -34,8 +37,12 @@ defines the mechanism. Exact launch commands are in the
 
 ## Findings and limitations
 
-No training results yet. The control isolates query conditioning from the effects
-of output RMSNorm and warmup length. This comparison uses one seed and does not add
+Both runs passed CPU, distributed, and GPU tests, canonical initialization checks,
+full-recipe pilots with validation, and exact fresh-process checkpoint resumption.
+Both have started production training with finite losses. No production validation
+comparison is available yet. The control isolates query
+conditioning from the effects of output RMSNorm and warmup length.
+This comparison uses one seed and does not add
 GDN's write gates, forgetting, or delta correction. Report terminal validation
 perplexity separately from validation-best perplexity; keep incomplete runs and
 numerical failures visible. These runs are outside the canonical plot selections.

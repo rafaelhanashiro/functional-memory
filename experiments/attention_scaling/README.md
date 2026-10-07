@@ -135,21 +135,30 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records index \
 
 ## Input-dependent coefficient comparison
 
-The prepared pair is `r9cf9589b9855` (query-dependent) and `r03bfa6fd7b2e`
+The pair is `r9cf9589b9855` (query-dependent) and `r03bfa6fd7b2e`
 (input-independent learned control). Both use output RMSNorm and 400 warmup steps.
 From `worktrees/input-dependent-m1` on Kennel, after committing all inputs and code:
 
 ```bash
-for RUN in r9cf9589b9855 r03bfa6fd7b2e; do
-  sbatch --partition=standard --time=1-00:00:00 --gres=gpu:h100:2 \
-    --cpus-per-task=16 --mem=128G --job-name="$RUN" \
-    --output="experiments/attention_scaling/runs/$RUN/training.log" \
-    scaffolds/transformer/launchers/kennel.sbatch \
-    experiments.attention_scaling.acceptance \
-    "experiments/attention_scaling/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 2 H100
-done
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.90 sbatch \
+  --nice=0 --partition=standard --time=1-00:00:00 --gres=gpu:h100:2 \
+  --cpus-per-task=16 --mem=128G --job-name=r9cf9589b9855 \
+  --output=experiments/attention_scaling/runs/r9cf9589b9855/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.attention_scaling.acceptance \
+  experiments/attention_scaling/runs/r9cf9589b9855/config.yaml "$(git rev-parse HEAD)" 2 H100
+
+env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch \
+  --nice=0 --partition=standard --time=1-00:00:00 --gres=gpu:h100:2 \
+  --cpus-per-task=16 --mem=128G --job-name=r03bfa6fd7b2e \
+  --output=experiments/attention_scaling/runs/r03bfa6fd7b2e/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.attention_scaling.acceptance \
+  experiments/attention_scaling/runs/r03bfa6fd7b2e/config.yaml "$(git rev-parse HEAD)" 2 H100
 ```
 
+The query-dependent run uses a GPU memory fraction of 0.90; the control uses the
+runtime default. These are execution settings, separate from their scientific recipes.
 The shared acceptance checks must pass on each allocation before production starts.
 Question, input selections, outcomes, and the open scientific decision live in the
 [comparison README](../../results/exploratory/input_dependent_coefficients/README.md).

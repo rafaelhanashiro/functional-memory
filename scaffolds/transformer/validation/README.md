@@ -11,6 +11,30 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Query-dependent degree-one coefficients
+
+The H100 check for input-dependent constant and linear coefficients passed all
+five CUDA cases on 2026-10-07, job `209554` on `mastiff` (H100 PCIe). The compact
+[test record](runs/input-dependent-m1-h100/tests.json) pins the tested source,
+dependency lock, test cases, and successful log. Coverage includes an independent
+FP64 forward/gradient oracle for blocked and fused FP32/BF16 execution, irregular
+sequence lengths, all six Q/K/V/input/projection gradients, a 2,048-token BF16
+comparison, and rejection of actual kernel overflow even when values are zero.
+
+Run the mechanism tests in an H100 allocation with the locked environment and
+the CUDA assembler settings from `launchers/kennel.sbatch`:
+
+```bash
+JAX_PLATFORMS=cuda scaffolds/transformer/.venv/bin/python -m pytest -q -m gpu \
+  scaffolds/transformer/tests/test_input_dependent_coefficients.py
+```
+
+The shared acceptance gate additionally requires the mechanism's CPU/GPU tests,
+canonical backbone and coefficient initialization checks, a full-recipe pilot,
+and exact fresh-process checkpoint resumption in each production allocation.
+
+### Shared scaffold
+
 Does one shared model, attention interface, trainer, and checkpoint implementation
 preserve the separate scientific implementations and their cost? Source `d493a41`
 introduced the shared implementation. The mechanism interface keeps learned
