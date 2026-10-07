@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r56825fdc3ac0/config.yaml",
+    "sha256": "60b6e68bdf126c71e3e48f21259a3b51f5dd55a18af3cd02a5cdbf696ee163b7"
+  },
+  "label": "200m-qk-exp-inverse-position-transformer-init-warmup400-seed0",
+  "name": "200m-qk-exp-inverse-position-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r56825fdc3ac0",
+  "status": "planned"
+}

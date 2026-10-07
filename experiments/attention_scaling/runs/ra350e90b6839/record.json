@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/ra350e90b6839/config.yaml",
+    "sha256": "f414ca61f0118fdb218253c63a766d7b9c5d4feb776f1d839315dc0a47ae7bb7"
+  },
+  "label": "200m-qk-m004-unnormalized-inverse-position-transformer-init-warmup400-seed0",
+  "name": "200m-qk-m004-unnormalized-inverse-position-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "ra350e90b6839",
+  "status": "planned"
+}
