@@ -54,6 +54,8 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
         tags.append(f"m{identity['attention_degree']}")
     if identity.get("qk_norm"):
         tags.append("qk_norm")
+    if identity.get("attention_coefficient_conditioning") == "query":
+        tags.append("query_conditioned_coefficients")
     if identity.get("attention_output_scaling"):
         tags.append(f"output_{identity['attention_output_scaling']}")
     if config.model.initialization != "flax_default":
@@ -131,6 +133,15 @@ def attention_metrics(diagnostics: dict) -> dict:
 def _summarize_effective_values(payload: dict, prefix: str, report: dict) -> None:
     """Mirror a parameter report's effective values: scalars directly, arrays as mean/min/max."""
     names = report.get("effective_coefficient_names", ())
+    if "effective_summary" in report:
+        for statistic, array in report["effective_summary"].items():
+            values = np.asarray(array, dtype=np.float64)
+            for layer in range(values.shape[0]):
+                for head in range(values.shape[1]):
+                    for index, name in enumerate(names):
+                        payload[f"{prefix}/layer{layer:02d}/head{head:02d}/{name}/{statistic}"] = float(
+                            values[layer, head, index])
+        return
     try:
         # The last axis indexes named values; nonfinite values arrive as JSON strings.
         values = np.asarray(report.get("effective", ()), dtype=np.float64)

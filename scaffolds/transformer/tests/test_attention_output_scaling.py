@@ -195,22 +195,29 @@ def test_identity_tags_and_acceptance_name_the_scaling():
     assert TEST_PATH not in attention_test_paths(config_to_dict(plain), "fused", True)
 
 
-@pytest.mark.parametrize("scaling,degree,coefficients,normalization", [
-    ("inverse_position", None, "fixed", False),
-    ("head_rms_norm", 2, "learned", False),
-    ("head_rms_norm", None, "fixed", True),
+@pytest.mark.parametrize("scaling,degree,coefficients,normalization,conditioning", [
+    ("inverse_position", None, "fixed", False, "static"),
+    ("head_rms_norm", 2, "learned", False, "static"),
+    ("head_rms_norm", None, "fixed", True, "static"),
+    pytest.param("head_rms_norm", 1, "learned", False, "query", id="query"),
 ])
-def test_training_resumes_exactly(tmp_path, scaling, degree, coefficients, normalization):
+def test_training_resumes_exactly(tmp_path, scaling, degree, coefficients, normalization, conditioning):
     config = tiny_config(tmp_path / "full")
     config.model.attention_backend = "blocked"
     config.model.attention_degree = degree
     config.model.attention_normalization = normalization
     config.model.attention_coefficients = coefficients
+    config.model.attention_coefficient_conditioning = conditioning
     config.model.attention_coefficient_sharing = "per_head"
     config.model.qk_norm = True
     config.model.attention_output_scaling = scaling
     config.optim.learning_rate, config.optim.min_learning_rate = 1e-2, 1e-3
+    if conditioning == "query":
+        config.model.initialization = "transformer_reference"
     validate_config(config)
+    if conditioning == "query":
+        initial = create_state(config, jax.random.PRNGKey(0))
+        assert np.all(np.asarray(initial.params["query_polynomial_kernel"][...]) == 0)
     loop.run_training(config)
     resumed_config = replace(config, train=replace(config.train, workdir=tmp_path / "resumed"))
     interrupted = loop.run_training(resumed_config, stop_after_step=1, audit_checkpoint=True)
@@ -232,3 +239,21 @@ def test_training_resumes_exactly(tmp_path, scaling, degree, coefficients, norma
         assert np.any(np.asarray(states[0].params["output_norm_scale"][...]) != 1)
     metadata = json.loads((config.train.workdir / "metadata.json").read_text())
     assert metadata["attention_output_scaling"] == scaling
+    if conditioning == "query":
+        assert np.any(np.asarray(states[0].params["query_polynomial_kernel"][...]) != 0)
+        assert (interrupted["checkpoint_audit"]["next_update"]
+                == resumed["checkpoint_audit"]["first_update"])
+        assert metadata["attention_coefficient_conditioning"] == "query"
+        assert metadata["attention_coefficient_input"] == "pre_attention_rmsnorm_activation"
+        measurements = [json.loads(line) for line in (config.train.workdir / "metrics.jsonl").read_text().splitlines()]
+        diagnostics = [row["attention_diagnostics"] for row in measurements if "attention_diagnostics" in row]
+        assert diagnostics and all(report["valid"] for report in diagnostics)
+        coefficients = diagnostics[-1]["coefficients"]
+        assert coefficients["conditioning"] == "query" and coefficients["finite"]
+        assert "effective" not in coefficients  # Biases alone are not the input-dependent coefficients.
+        summary = {name: np.asarray(value) for name, value in coefficients["effective_summary"].items()}
+        expected_shape = (config.model.num_layers, config.model.num_heads, 2)
+        assert all(value.shape == expected_shape for value in summary.values())
+        assert np.any(summary["std"] > 0)
+        assert np.all(summary["min"] <= summary["mean"])
+        assert np.all(summary["mean"] <= summary["max"])

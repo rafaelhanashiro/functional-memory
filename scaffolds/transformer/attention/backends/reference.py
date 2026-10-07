@@ -25,6 +25,7 @@ def blocked_dot_product_attention(
     quadratic_mode: str = "fixed",
     polynomial_coefficients: jax.Array | None = None,
     polynomial_square_factors: jax.Array | None = None,
+    query_polynomial_coefficients: jax.Array | None = None,
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
     **denominators,
@@ -73,6 +74,11 @@ def blocked_dot_product_attention(
             raise ValueError("Learned polynomial coefficients exclude the learned quadratic modes")
         if attention_degree is None or attention_degree < 1:
             raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
+    query_conditioned = query_polynomial_coefficients is not None
+    if query_conditioned and (attention_normalization or attention_degree != 1
+                              or polynomial_coefficients is not None or coefficients is not None
+                              or polynomial_square_factors is not None or denominators):
+        raise ValueError("Query coefficients define an unnormalized degree-one kernel alone")
     nonnegative = polynomial_square_factors is not None
     if nonnegative:
         if polynomial_coefficients is not None or quadratic_mode != "fixed" or not attention_normalization:
@@ -84,7 +90,7 @@ def blocked_dot_product_attention(
         if polynomial_coefficients is None or not attention_normalization:
             raise ValueError("Denominator coefficients require learned numerator coefficients and row normalization")
         denominator_factor_arrays = denominator_factors(selected[0], selected[1], selected[2])
-    signed = polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (
+    signed = query_conditioned or polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (
         not nonnegative and quadratic_mode == "fixed"
         and attention_degree is not None and attention_degree % 2 == 1
     )
@@ -101,6 +107,8 @@ def blocked_dot_product_attention(
     if polynomial_coefficients is not None and polynomial_coefficients.shape not in (
             (attention_degree + 1,), (heads, attention_degree + 1)):
         raise ValueError("Polynomial coefficients must have shape (m+1,) or (heads, m+1)")
+    if query_conditioned and query_polynomial_coefficients.shape != (batch, time, heads, 2):
+        raise ValueError("Query coefficients must have shape [batch,time,heads,2]")
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -110,6 +118,9 @@ def blocked_dot_product_attention(
     queries = jnp.pad(q, ((0, 0), (0, pad), (0, 0), (0, 0)))
     queries = queries.reshape(batch, block_count, block_size, heads, qk_dim)
     queries = jnp.swapaxes(queries, 0, 1)
+    if query_conditioned:
+        padded_coefficients = jnp.pad(query_polynomial_coefficients.astype(jnp.float32),
+                                      ((0, 0), (0, pad), (0, 0), (0, 0)))
     starts = jnp.arange(block_count, dtype=jnp.int32) * block_size
     key_positions = jnp.arange(time)
 
@@ -138,7 +149,12 @@ def blocked_dot_product_attention(
         else:
             # Evaluate masked positions at zero, never at masking sentinels.
             safe_scores = jnp.where(causal, scores, 0.0)
-            kernel = (_learned_polynomial(safe_scores, polynomial_coefficients) if polynomial_coefficients is not None
+            if query_conditioned:
+                query_coefficients = jax.lax.dynamic_slice_in_dim(padded_coefficients, start, block_size, axis=1)
+                c0, c1 = (jnp.swapaxes(query_coefficients[..., order], 1, 2)[..., None] for order in (0, 1))
+                kernel = c0 + c1 * safe_scores
+            else:
+                kernel = (_learned_polynomial(safe_scores, polynomial_coefficients) if polynomial_coefficients is not None
                       else square_sum_polynomial(safe_scores, polynomial_square_factors, attention_degree)
                       if nonnegative
                       else _taylor_polynomial(safe_scores, attention_degree) if quadratic_mode == "fixed"

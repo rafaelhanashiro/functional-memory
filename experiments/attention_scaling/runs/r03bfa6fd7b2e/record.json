@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r03bfa6fd7b2e/config.yaml",
+    "sha256": "2ce2f5203443e8d7a30463bc2055d5a3923a1e6386c38e29b68e587864a23dc8"
+  },
+  "home_cluster": "kennel",
+  "label": "200m-qk-m001-static-head-rms-warmup400-seed0",
+  "name": "200m-qk-m001-static-head-rms-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r03bfa6fd7b2e",
+  "status": "planned"
+}

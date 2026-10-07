@@ -1,0 +1,26 @@
+question: Do query-dependent constant and linear coefficients improve unnormalized
+  m=1 attention with per-head output RMSNorm?
+settings:
+  metric: terminal_validation_perplexity
+  validation_best_reported_separately: true
+  warmup_steps: 400
+  seed: 0
+  qk_head_dim: 64
+runs:
+- study: attention_scaling
+  run_id: r9cf9589b9855
+  role: primary
+  label: query-dependent m=1, head RMSNorm, warmup 400
+  control: r03bfa6fd7b2e
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r9cf9589b9855/config.yaml
+      sha256: ea2b2a3cfe15c7eae1f60035e0249c480b9a137994c03f27127c856ef60b6df7
+- study: attention_scaling
+  run_id: r03bfa6fd7b2e
+  role: control
+  label: input-independent learned m=1, head RMSNorm, warmup 400
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r03bfa6fd7b2e/config.yaml
+      sha256: 2ce2f5203443e8d7a30463bc2055d5a3923a1e6386c38e29b68e587864a23dc8

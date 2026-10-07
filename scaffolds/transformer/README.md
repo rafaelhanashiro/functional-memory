@@ -214,6 +214,31 @@ and maximum. Recipes and metadata identify the option with `qk_norm`,
 `qk_norm_sharing`, `qk_norm_initial_scale`, and `qk_norm_eps`. GLA and degree 0
 do not use it.
 
+### Input-dependent linear coefficients
+
+`attention_coefficient_conditioning: query` predicts signed coefficients
+`c_0(x_t), c_1(x_t)` from the current token's incoming attention activation, after
+the block's input RMSNorm. Each layer and head owns an affine projection. It
+requires `attention_degree: 1`, `attention_coefficients: learned`, direct
+parameterization, per-head sharing, Taylor coefficient initialization, and
+unnormalized attention. The default `static` keeps input-independent coefficients.
+
+The output before any output scaling is
+`c_0(x_t) sum_(i<=t) v_i + c_1(x_t) sum_(i<=t) s_ti v_i`. The existing QK
+normalization, score scaling, and RoPE define `s_ti`. Query conditioning changes
+the read at `t`; it does not add write gates, forgetting, or delta corrections.
+The fused implementation uses the existing linear polynomial kernel and an FP32
+causal value sum. The blocked implementation is the explicit polynomial reference.
+
+`query_polynomial_kernel` and `query_polynomial_bias` are FP32 model-owned arrays,
+with shapes `[layers, heads, hidden_size, 2]` and `[layers, heads, 2]`. The kernel
+starts at zero and the bias at `(1, 1)`, without consuming RNG draws, so the
+backbone keeps its canonical initialization and the initial kernel is `1 + s`.
+Both arrays are excluded from weight decay, like the static learned coefficients.
+Per-head output RMSNorm remains an independent option through
+`attention_output_scaling: head_rms_norm`. Validation diagnostics report the
+actual input-dependent coefficients.
+
 ### Unnormalized output scaling
 
 `attention_output_scaling` rescales each head's unnormalized output
