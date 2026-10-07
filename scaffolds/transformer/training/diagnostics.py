@@ -141,11 +141,36 @@ def attention_identity(config) -> dict:
                                f"({config.model.attention_coefficient_sharing}) and initialized so p = T_{degree}"),
             attention_score_scale="1/sqrt(d_k)", attention_output_normalization="positive_row_sum")
     elif rational:
+        from scaffolds.transformer.attention.rational_polynomial import (
+            LINEAR_START_SQUARE_FACTOR, denominator_constant, denominator_degree, denominator_parameterization,
+        )
+
+        denominator, form = denominator_degree(config.model), denominator_parameterization(config.model)
+        constant = denominator_constant(config.model)
+        half = denominator // 2
+        if form == "direct" and constant == "fixed":
+            denominator_formula = f"q(x) = 1 + sum_(1<=r<={denominator}) b_r x^r, learned a, b"
+        elif form == "direct":
+            denominator_formula = f"q(x) = sum_(r<={denominator}) b_r x^r, learned a, b including b_0"
+        elif constant == "fixed":
+            denominator_formula = (f"q(x) = (1 + sum_(1<=r<={half}) u_r x^r)^2 "
+                                   f"+ (sum_(1<=r<={half}) w_r x^r)^2, learned a, u, w")
+        else:
+            denominator_formula = (f"q(x) = (sum_(r<={half}) q1_r x^r)^2 + (sum_(r<={half - 1}) q2_r x^r)^2, "
+                                   f"learned a, q1, q2")
+        start = initialized
+        if config.model.attention_coefficient_initialization == "linear" and form == "sum_of_squares":
+            start += (f", except w_1 = {LINEAR_START_SQUARE_FACTOR:g}" if constant == "fixed"
+                      else ", denominator q1_0 = q2_0 = 1/sqrt(2)")
         identity.update(
-            attention_formula=(f"causal_p_{degree}(s) V / sum_j q_{degree}(s_j), s = QK^T / sqrt(d_k), "
-                               f"p(x) = sum_(r<={degree}) a_r x^r, q(x) = 1 + sum_(1<=r<={degree}) b_r x^r, "
-                               f"learned a, b ({sharing}) initialized at {initialized}"),
-            attention_score_scale="1/sqrt(d_k)", attention_output_normalization="signed_denominator_row_sum")
+            attention_formula=(f"causal_p_{degree}(s) V / sum_j q_{denominator}(s_j), s = QK^T / sqrt(d_k), "
+                               f"p(x) = sum_(r<={degree}) a_r x^r, {denominator_formula} ({sharing}) "
+                               f"initialized at {start}"),
+            attention_score_scale="1/sqrt(d_k)",
+            attention_output_normalization=("signed_denominator_row_sum" if form == "direct"
+                                            else "nonnegative_denominator_row_sum"),
+            attention_denominator_degree=denominator, attention_denominator_parameterization=form,
+            attention_denominator_constant=constant)
     elif learned_polynomial:
         identity.update(
             attention_formula=(f"causal_p_{degree}(QK^T / sqrt(d_k)) V / rowsum, p(x) = sum_(r<={degree}) c_r x^r, "
@@ -170,21 +195,32 @@ def attention_identity(config) -> dict:
     if is_signed_kernel(config.model):
         identity["attention_signed"] = True
     if learned_polynomial:
-        penalty = getattr(getattr(config, "optim", None), "coefficient_penalty", 0.0)
+        optim = getattr(config, "optim", None)
+        penalty = getattr(optim, "coefficient_penalty", 0.0)
+        penalize_denominator = rational and getattr(optim, "coefficient_penalty_denominator", True)
+        if rational:
+            from scaffolds.transformer.attention.rational_polynomial import denominator_constant, denominator_degree
+
+            per_polynomial = degree + 1 + denominator_degree(config.model) + (denominator_constant(config.model) == "learned")
+        else:
+            per_polynomial = degree + 1
         identity.update({
             "attention_coefficients": "learned",
             "attention_coefficient_parameterization": config.model.attention_coefficient_parameterization,
             "attention_coefficient_initialization": getattr(config.model, "attention_coefficient_initialization", "taylor"),
             "attention_coefficient_sharing": sharing,
-            "attention_coefficient_count": (degree + 1 + (degree if rational else 0)) * (
+            "attention_coefficient_count": per_polynomial * (
                 1 if sharing == "global" else config.model.num_layers * config.model.num_heads),
             "coefficient_penalty": penalty,
         })
+        if rational:
+            identity["coefficient_penalty_denominator"] = penalize_denominator
         if penalty:
             identity["coefficient_penalty_formula"] = (
                 "training loss = NLL + coefficient_penalty * sum over polynomials of "
-                "a_0^2 + sum_(r>=2) r^2 a_r^2" + (" + sum_(r>=1) r^2 b_r^2" if rational else "")
-                + "; a_1 unpenalized; validation loss and recorded NLL exclude it")
+                "a_0^2 + sum_(r>=2) r^2 a_r^2" + (" + sum_(r>=1) r^2 b_r^2" if penalize_denominator else "")
+                + "; a_1 unpenalized" + ("; denominator unpenalized" if rational and not penalize_denominator else "")
+                + "; validation loss and recorded NLL exclude it")
     if mode != "fixed":
         identity.update({
             "quadratic_mode": mode,
@@ -198,7 +234,7 @@ def attention_identity(config) -> dict:
     if scaling != "none":
         identity.update(
             attention_output_scaling=scaling, attention_output_normalization=scaling,
-            attention_formula=identity["attention_formula"] + (
+            attention_formula=identity.get("attention_formula", "causal_softmax(QK^T / sqrt(d_k)) V") + (
                 ", divided by the number of visible keys t" if scaling == "inverse_position"
                 else ", then per-head RMSNorm over value channels with a learned gain"))
     if config.model.attention_backend == "fused":
@@ -283,22 +319,33 @@ def polynomial_coefficient_report(params, config) -> dict:
         raw_names = factor_names(config.model.attention_degree)
         effective = effective_coefficients_numpy(raw, config.model.attention_degree)
     elif has_rational_kernel(config.model):
-        from scaffolds.transformer.attention.rational_polynomial import denominator_names
+        from scaffolds.transformer.attention.rational_polynomial import (
+            denominator_argument, denominator_constant, denominator_degree, denominator_names,
+            denominator_parameterization, expanded_denominator,
+        )
 
-        # Numerator a_0..a_m, then denominator b_1..b_m; the parameters are the coefficients.
+        # Numerator a_0..a_m, then the denominator's parameters; effective values are
+        # a_0..a_m followed by the expanded denominator's b_1..b_d, from b_0 when learned.
+        form, constant = denominator_parameterization(config.model), denominator_constant(config.model)
         numerator = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
-        denominator = np.asarray(jax.device_get(params["polynomial_denominator_coefficients"][...]), dtype=np.float64)
+        stored = jax.device_get(params[denominator_argument(config.model)][...])
+        denominator = np.asarray(stored, dtype=np.float64)
         raw = np.concatenate([numerator, denominator], axis=-1)
-        raw_names = [f"a{order}" for order in range(numerator.shape[-1])] + denominator_names(config.model.attention_degree)
-        effective = raw
+        raw_names = ([f"a{order}" for order in range(numerator.shape[-1])]
+                     + denominator_names(denominator_degree(config.model), form, constant))
+        expanded = np.asarray(expanded_denominator(jnp.asarray(stored), form, constant), dtype=np.float64)
+        effective = np.concatenate([numerator, expanded if constant == "learned" else expanded[..., 1:]], axis=-1)
     else:
         raw = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
         raw_names = [f"c{order}" for order in range(raw.shape[-1])]
         effective = raw
     if has_rational_kernel(config.model):
+        from scaffolds.transformer.attention.rational_polynomial import denominator_constant, denominator_degree
+
         degree = config.model.attention_degree
+        first = 0 if denominator_constant(config.model) == "learned" else 1
         names = ([f"numerator_{_coefficient_name(order)}" for order in range(degree + 1)]
-                 + [f"denominator_{_coefficient_name(order)}" for order in range(1, degree + 1)])
+                 + [f"denominator_{_coefficient_name(order)}" for order in range(first, denominator_degree(config.model) + 1)])
     else:
         names = [_coefficient_name(order) for order in range(effective.shape[-1])]
     return {

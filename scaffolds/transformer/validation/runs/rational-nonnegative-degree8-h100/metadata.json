@@ -1,0 +1,22 @@
+{
+  "source_commit": "536e3e339a77e9fa5b686d07c3a6e07e4a74d04b",
+  "phase": "kernel",
+  "home_cluster": "kennel",
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/rational_nonnegative_degree8",
+  "hostname": "dogo.csail.mit.edu",
+  "started_utc": "2026-10-05T21:03:26.125450+00:00",
+  "frozen_execution_set_sha256": "46d9078a1f7cb15ab2439029f7bd4f4603b2945d0da6e37b7a5ea71f254f8833",
+  "slurm_job_id": "208968",
+  "partition": "debug",
+  "hardware": [
+    "NVIDIA H100 80GB HBM3, GPU-6ba0d532-b7aa-afda-fee3-8412d43350bb, 560.35.05"
+  ],
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/rational_nonnegative_degree8/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "JAX_PLATFORMS": "cuda",
+    "CUDA_VISIBLE_DEVICES": "0",
+    "TRANSFORMER_HOST_STAGING": "0",
+    "NCCL_P2P_DISABLE": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  }
+}

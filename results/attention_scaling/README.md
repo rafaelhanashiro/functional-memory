@@ -15,9 +15,7 @@ coefficient diagnostics), and execution metadata under
 Every plotted run uses selective weight decay and QK-norm, except "softmax no QK-norm"
 and Gated DeltaNet, which have no QK-norm, and its reference initialization:
 GPT-2/Megatron (`transformer_reference`) for softmax, unnormalized exp, and every
-polynomial kernel; the paper's (`gated_deltanet_reference`) for Gated DeltaNet. The
-[Initialization](#initialization) section compares them with the scaffold's former Flax
-defaults.
+polynomial kernel; the paper's (`gated_deltanet_reference`) for Gated DeltaNet.
 
 <!-- BEGIN GENERATED RESULTS -->
 ### Heatmap
@@ -77,115 +75,34 @@ Unnormalized kernels:
 - **Normalized kernels need a nonnegative kernel.** Signed kernels fail when a row sum
   crosses zero: every odd degree, the signed learned kernels, and Hermite `m = 4`
   (negative for `s` in about (−2.8, −1.6)). Even-degree Taylor is strictly positive and
-  finishes. Hermite `m = 2` is nonnegative but zero at `s = -1` and fails (at update 176;
-  3,829 with Flax defaults); the learned sum-of-squares kernels also learned a zero and
-  finished.
+  finishes. Hermite `m = 2` is nonnegative but zero at `s = -1` and fails (at update 176);
+  the learned sum-of-squares kernels also learned a zero and finished.
 - **Normalized Taylor `m = 16` ties softmax** (13.519 vs 13.514); `m = 8` is 0.03 above.
   Nonnegative learned `m = 4` (13.689) is 0.18 above softmax and 0.08 below fixed Taylor
   `m = 4`; at `m = 2` it is 0.24 below fixed Taylor.
 - **Hermite vs Taylor, unnormalized:** Hermite is better at even degrees (−2.49 at
-  `m = 2`, −0.61 at `m = 4`) and worse at odd degrees (+0.29, +0.13), the same signs as
-  with Flax defaults and without QK-norm.
+  `m = 2`, −0.61 at `m = 4`) and worse at odd degrees (+0.29, +0.13).
 - **Learned beats fixed Taylor, unnormalized,** at every degree (by 0.02 at `m = 1` to
   2.66 at `m = 2`). Learned `m = 3` and `4`, Hermite `m = 4`, and Taylor `m = 3` beat
   unnormalized exp (15.885).
-- **The reference initialization helps every kernel that finishes,** by 0.94–3.58
-  (unnormalized kernels 1.66–3.58), and leaves the signed normalized kernels failing;
-  the orderings above match those with Flax defaults ([Initialization](#initialization)).
-
-## Initialization
-
-Every plotted run uses its mechanism's reference initialization, now the scaffold's
-default. [`initialization.yaml`](initialization.yaml) pairs 52 of them with the same
-recipe on the scaffold's former Flax defaults (Linear weights with variance `1/fan_in`,
-no depth scaling); `tests/test_initialization.py` checks that each pair differs only in
-`model.initialization`. Change in terminal perplexity, reference minus Flax defaults:
-
-| Runs | Change |
-| --- | ---: |
-| Softmax, `d_K = 8–128` | −0.92 to −1.59 |
-| Softmax no QK-norm, `d_K = 64` | −0.73 |
-| Normalized fixed Taylor `m = 8, 16`, `d_K = 8–128` | −0.91 to −1.66 |
-| Normalized fixed Taylor `m = 2, 4`, `d_K = 8–128` | −0.98 to −2.95 |
-| Normalized learned nonnegative `m = 2, 4`, `d_K = 64` | −1.51, −1.05 |
-| Unnormalized fixed Taylor, fixed Hermite, learned, `m = 1–4`, `d_K = 64` | −1.66 to −3.58 |
-| Unnormalized exp, `d_K = 64` | −2.42 |
-| GLA (its reference), `d_K = 64` | −0.52 |
-| Normalized odd Taylor, fixed Hermite, signed learned | fail on both |
-
-- **The gains persist to the end.** At `d_K = 64` the softmax gap is −38.5 at update
-  1,000, −1.18 at 10,000, and stays near −0.95 over the last 4,000 updates (GLA −0.52).
-- **They are largest at small `d_K` and for unnormalized kernels.** Flax defaults keep
-  each block's output at the input's scale, so blocks add about 20× the embedding's
-  size; unnormalized attention sums over keys, and its residual stream reaches about
-  1,300 at initialization (length 512). The reference initialization shrinks the
-  attention and MLP output projections by `1/sqrt(2L)`, which cuts this about 10×.
-- **Conclusions hold.** Within each family the ordering is unchanged; the larger gains
-  narrow the gaps of unnormalized and low-degree kernels to softmax (unnormalized exp
-  from 3.85 to 2.37; Taylor `m = 2` at `d_K = 8` from 5.22 to 3.85). Against Gated
-  DeltaNet, softmax moves from behind at every width to ahead at `d_K >= 32`.
-- **Failure updates move both ways** (normalized Hermite `m = 2` from 3,829 to 176,
-  learned `m = 1` from 27 to 60), and unnormalized `m = 1` trains with loss spikes it did
-  not have with Flax defaults.
-- Fifteen Flax-default polynomial controls at `d_K = 64` ran on code from before the
-  2026-09-26 gradient fixes for normalized polynomial attention (`c2c405e`, `38dc585`);
-  for those pairs the change also includes the code version.
-
-## Effect of QK-norm
-
-All runs in this section use Flax defaults. Change in PPL when the same kernel is rerun
-with QK-norm (negative is better). Except
-for softmax, the runs without QK-norm also used the old decay rule, which moved
-softmax by 0.03.
-
-| Kernel | m = 1 | m = 2 | m = 3 | m = 4 | m = 8 | m = 16 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Unnormalized fixed Taylor | −0.45 | −1.76 | −2.61 | −3.28 | | |
-| Unnormalized learned Taylor | −0.43 | −2.46 | −2.20 | −3.76 | | |
-| Normalized fixed Taylor | fails (@9 → @31) | +0.23 | fails (@17 → @419) | −0.09 | −0.18 | −0.25 |
-| Softmax | −0.21 | | | | | |
-| Unnormalized exp | +0.85 | | | | | |
-
-QK-norm helps unnormalized polynomial kernels at `m >= 2` by 1.8–3.8 PPL but hurts the
-unnormalized exponential by 0.85 (18.304 vs 17.458). With the reference initialization
-QK-norm improves softmax by 0.42 at `d_K = 64` (13.514 vs 13.932).
-
-For normalized fixed Taylor the effect depends on `d_K` and `m`: QK-norm hurts most at
-small `d_K` and low degree (+1.86 at `d_K = 8`, `m = 2`). At `m >= 4` and
-`d_K >= 32` it changes perplexity by at most 0.25.
-
-| m | d_K = 8 | 16 | 32 | 64 | 128 |
-| ---: | ---: | ---: | ---: | ---: | ---: |
-| 2 | +1.86 | +0.81 | +0.39 | +0.23 | +0.08 |
-| 4 | +0.89 | +0.24 | +0.04 | −0.09 | −0.09 |
-| 8 | +0.56 | +0.07 | −0.05 | −0.18 | −0.16 |
-| 16 | +0.49 | +0.02 | −0.13 | −0.25 | −0.16 |
-| softmax | +0.52 | +0.01 | −0.12 | −0.21 | −0.15 |
-
-Softmax follows the same pattern. Its runs without QK-norm used the old decay rule
-except at `d_K = 64`.
+- **QK-norm improves softmax by 0.42** (13.514 vs 13.932), the only comparison of a
+  kernel with and without QK-norm.
 
 ## Other widths
 
-- **Normalized fixed Taylor:** higher degree closes the gap to softmax. With both on the
-  reference initialization, `m = 16` is within 0.03 of softmax at `d_K >= 16` and 0.11
-  above at `d_K = 8` (15.75 vs 15.64); `m = 8` is 0.44 above at `d_K = 8` and within 0.03
-  from `d_K = 64` (13.29 vs 13.30 at 128). `m = 4` trails softmax by 1.42 at `d_K = 8`,
-  narrowing to 0.15 at 128; `m = 2` by 3.85, narrowing to 1.03. The reference
-  initialization improves every degree, most at small `d_K`: `m = 8` and `16` by
-  0.91–1.66, as it does softmax, and `m = 2` and `4` more (1.47–2.95 and 0.98–2.00), so
-  their gaps to softmax shrink.
-- **Softmax vs Gated DeltaNet** (both on reference initializations): Gated DeltaNet is
+- **Normalized fixed Taylor:** higher degree closes the gap to softmax. `m = 16` is
+  within 0.03 of softmax at `d_K >= 16` and 0.11 above at `d_K = 8` (15.75 vs 15.64);
+  `m = 8` is 0.44 above at `d_K = 8` and within 0.03 from `d_K = 64` (13.29 vs 13.30 at
+  128). `m = 4` trails softmax by 1.42 at `d_K = 8`, narrowing to 0.15 at 128; `m = 2`
+  by 3.85, narrowing to 1.03.
+- **Softmax vs Gated DeltaNet:** Gated DeltaNet is
   lower at `d_K = 8` (14.85 vs 15.64) and level at 16 (14.29 vs 14.34); softmax is lower
   at 32, 64, and 128 (by 0.19, 0.19, 0.08). Both improve with every doubling of `d_K`.
-  At `d_K = 64` Gated DeltaNet beats GLA by 1.67 (13.705 vs 15.376), both on reference
-  initializations.
+  At `d_K = 64` Gated DeltaNet beats GLA by 1.67 (13.705 vs 15.376).
 
 ## Limits
 
 - One seed per cell; differences of a few tenths are not established.
-- Nonnegative learned `m = 4` runs on the fused kernel; its Flax-default control ran on
-  the blocked reference (same function, about 3.5× slower).
 - Parameter count changes with `d_K`. Gated DeltaNet also changes the architecture and
   has 10.9–11.0M (5–6%) more parameters than softmax at the same `d_K`.
 - Some runs resumed on another GPU type after preemption: Gated DeltaNet `d_K = 128`
@@ -193,8 +110,8 @@ except at `d_K = 64`.
   `d_K = 64, 128`, `m = 8`; unnormalized fixed Taylor `m = 2`, `4` and fixed Hermite
   `m = 1`, `4` (attempts on both H100 and B300; see their records).
 - Unnormalized fixed Taylor and Hermite `m = 1` train with recurring loss spikes (up to
-  +3.8 and +6.1 nats at updates 2,900–8,200) and recover; their Flax-default runs did
-  not spike. No other plotted run with a Kennel log spikes.
+  +3.8 and +6.1 nats at updates 2,900–8,200) and recover. No other plotted run with a
+  Kennel log spikes.
 - Runs on B300 use cuBLAS 12.9, which JAX warns can silently corrupt data when a cuBLAS
   kernel runs concurrently with another kernel. No plotted run shows a B300-specific loss
   spike or numerical failure: the Taylor `m = 1` spikes occur on H100 too, and the

@@ -6,88 +6,115 @@ normalized column of the degree chart) or discard.
 
 Every normalized learned polynomial with one signed polynomial failed when a row sum
 crossed zero (degree chart, learned column: fail at updates 27 to 1,857). Does a
-separate denominator polynomial, regularized toward low order, train through?
-The kernel is
+separate denominator polynomial let it train through? The kernel is
 
 ```text
-attn_ij = p_a(s_ij) / sum_(k<=i) p_b(s_ik),   p_a(s) = sum_(r<=8) a_r s^r,   p_b(s) = 1 + sum_(1<=r<=8) b_r s^r
+attn_ij = p_a(s_ij) / sum_(k<=i) p_b(s_ik),   p_a(s) = sum_(r<=8) a_r s^r
 ```
 
-with cosine (QK-norm) scores, coefficients per layer and head, and the training loss
+with cosine (QK-norm) scores and coefficients per layer and head. The denominator `p_b`
+is one of:
+
+| Denominator | `p_b(s)` | Sign |
+| --- | --- | --- |
+| signed degree 8 | `1 + sum_(1<=r<=8) b_r s^r` | signed |
+| linear, learned constant | `b_0 + b_1 s` | signed |
+| nonnegative quadratic, learned constant | `(c_0 + c_1 s)^2 + d_0^2`, every nonnegative quadratic | `>= 0` |
+| nonnegative degree 8 | `(1 + sum_(r<=4) u_r s^r)^2 + (sum_(r<=4) w_r s^r)^2`, every nonnegative degree-8 polynomial with constant 1 | `>= 0` |
+
+With a learned constant, numerator and denominator can scale together without changing
+the attention weights. The training loss is
 
 ```text
-NLL + lambda * sum over layers and heads [ a_0^2 + sum_(r>=2) r^2 a_r^2 + sum_(r>=1) r^2 b_r^2 ]
+NLL + lambda * sum over layers and heads [ a_0^2 + sum_(r>=2) r^2 a_r^2 (+ sum_(r>=1) r^2 b_r^2) ]
 ```
 
-(`a_1` unpenalized). The denominator stays signed: an exactly zero row sum is a
-numerical failure, recorded as such. The validation loss and the recorded training NLL
-exclude the penalty; `metrics.jsonl` records the penalty term separately
+with `a_1` unpenalized. The `b_r` term, on the expanded denominator for the nonnegative
+form, applies only where the runs table says so. An exactly zero row sum is a numerical
+failure, recorded as such. The validation loss and the recorded training NLL exclude the
+penalty; `metrics.jsonl` records the penalty term separately
 ([scaffold](../../../scaffolds/transformer/README.md#attention-and-parameter-ownership)).
 
-Settings chosen for this first run, each a candidate for tuning later:
+Settings shared by these runs, each a candidate for tuning later:
 
 | Setting | Value | Recipe field |
 | --- | --- | --- |
-| Initialization | linear attention: `a_1 = 1`, every other coefficient 0, so attention starts at `sum_(j<=i) s_ij v_j / (i + 1)` | `model.attention_coefficient_initialization: linear` |
+| Initialization | linear attention: `a_1 = 1`, other numerator coefficients 0, denominator 1, so attention starts at `sum_(j<=i) s_ij v_j / (i + 1)` | `model.attention_coefficient_initialization: linear` |
+| Nonnegative denominator start, constant 1 | `u_r = 0`, `w_1 = 10^-3`, other `w_r = 0` (all-zero `w` gets no gradient), so `p_b = 1 + 10^-6 s^2` | fixed in `attention/rational_polynomial.py` |
+| Nonnegative denominator start, learned constant | `c_0 = d_0 = 1/sqrt(2)`, `c_1 = 0`, so `p_b = 1` exactly | fixed in `attention/rational_polynomial.py` |
 | Penalty weight `lambda` | 0.01 | `optim.coefficient_penalty` |
-| AdamW weight decay (other parameters) | 0.1, the study's canonical value; polynomial coefficients are never decayed | `optim.weight_decay` |
+| AdamW weight decay (other parameters) | 0.1, the study's canonical value, or 0.01 as in the original specification; polynomial coefficients are never decayed | `optim.weight_decay` |
 
 All runs: 200M, `d_K = 64`, QK-norm, transformer reference initialization, seed 0,
 19,074 updates (10.0B tokens) budget. Runs and roles: [`selection.yaml`](selection.yaml).
 
-## Result
+## Runs
 
-The run failed at update 131 (67M tokens, 0.7% of the budget) with a nonfinite loss:
-a numerical failure, as the shared signed polynomials did at updates 27 to 1,857.
-The loss had already turned: the training NLL fell from 10.58 to 8.57 at update 70,
-then rose to 10.18 by update 130. The penalty term was 1.1e-4 nats at update 130,
-negligible next to the NLL.
+| Run | Denominator | Penalized denominator | Weight decay | Outcome |
+| --- | --- | --- | ---: | ---: |
+| `r9c52f40605fb` | signed degree 8 | yes | 0.1 | fail @131 |
+| `r275ba0d547a2` | signed degree 8 | yes | 0.01 | fail @270 |
+| `re21d093cf4ac` | linear, learned constant | no | 0.1 | 15.206 |
+| `r45c9067c8d64` | nonnegative quadratic, learned constant | no | 0.1 | 15.157 |
+| `r817963a69c2c` | nonnegative degree 8 | yes | 0.01 | 15.288 |
+| `rbde7fc4c2135` | softmax (control) | | 0.1 | 13.514 |
+| `r7d911aee60ed` | normalized fixed Taylor, degree 8 (control) | | 0.1 | 13.543 |
 
-| Run | Kernel | Outcome |
-| --- | --- | ---: |
-| `r9c52f40605fb` | rational, degree 8, `lambda = 0.01`, linear-attention start | fail @131 |
-| `rbde7fc4c2135` | softmax (control) | 13.514 |
-| `r7d911aee60ed` | normalized fixed Taylor, degree 8 (control) | 13.543 |
-| `r4923c6939e74` | normalized fixed Taylor, degree 8, Flax-default initialization (control) | 14.498 |
+Outcomes are terminal validation perplexity; for the three completed runs it is also the
+validation best.
 
-Evidence from the acceptance pilot at update 20 (`numerical_failure_step_00000131.json`
-holds only the poisoned post-update state):
+## Completed runs
 
-- Every coefficient had moved by at most 2.9e-5 from its start (Adam moves each
-  coefficient by about the learning rate per update, whatever its gradient).
-- Cosine scores already spanned about ±5 (QK-norm scale 8), so `s^8` reaches 4e5 and
-  those 1e-5-sized high-order terms dominated both polynomials: denominators ranged
-  from −9.8 to 11.9 and numerators from −23 to 16 within one layer, while the row sums
-  stayed near their initial values (1 to 2,050) only because most scores are small.
-- By update 130 the coefficients were of order 1e-3 (penalty / lambda = 0.011 summed
-  over 160 polynomials), a thousand times 1/8! = 2.5e-5, and the signed denominator
-  sums crossed zero.
+The linear, nonnegative quadratic, and nonnegative degree-8 denominators all trained to
+the end without a numerical failure, 1.6 to 1.8 above softmax.
 
-What this says about the three settings chosen for tuning:
+| Validation PPL at update | 1,000 | 2,000 | 5,000 | 10,000 | 19,074 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Linear, learned constant | 53.93 | 30.32 | 20.28 | 17.03 | 15.206 |
+| Nonnegative quadratic, learned constant | 54.30 | 30.20 | 20.27 | 16.94 | 15.157 |
+| Nonnegative degree 8 | 51.41 | 28.83 | 20.00 | 17.08 | 15.288 |
+| Softmax | 54.08 | 26.48 | 17.83 | 15.08 | 13.514 |
+| Fixed Taylor, degree 8 | 54.85 | 26.85 | 17.89 | 15.12 | 13.543 |
 
-- **The penalty at `lambda = 0.01` cannot act.** Its gradient on `b_8` is
-  `2 * lambda * 64 * b_8`, about 1e-3 at failure, against a task gradient scaled by
-  `sum s^8`; under Adam the update direction is the task's. Raising `lambda` by several
-  orders of magnitude, or normalizing the penalty to the score scale, would be needed
-  for it to matter.
-- **The linear-attention start does not keep the denominator positive.** Nothing
-  constrains `p_b`, and the monomial basis in `s` with `|s|` up to 8 is so
-  ill-conditioned at degree 8 that the first Adam updates already make the top terms
-  the largest. Taylor's `1/r!` scaling is what keeps fixed degree-8 attention
-  (13.543 with the same reference initialization) well-behaved.
-- **Weight decay 0.1 is irrelevant here**: coefficients are never decayed.
+- **The degree-8 denominator led early and finished last.** It was 2.7 below softmax at
+  update 1,000, 2.4 above it at 2,000, and 0.08 to 0.13 above the low-degree runs at the end.
+- **Learned constants grew rather than shrinking the common scale:** median 1.19
+  (linear) and 1.51 (quadratic), never below 0.69.
+- **Low-degree denominators stayed close to their constant.** Over `|s| <= 3` they vary
+  by a median 38% (linear) and 71% (quadratic) of it. The linear one is negative for
+  some keys (down to −2.1), but row sums on the diagnostic sample stayed at least 0.88.
+- **The degree-8 denominator's coefficients stayed below 0.003 but still matter.** Over
+  `|s| <= 3` it varies by a median 2.9 times its constant (up to 16); its values come
+  within 0.008 of zero, and row sums stayed at least 1.0.
+- **No numerator is linear.** Within `|s| <= 3`, the terms beyond `a_1 s` outweigh it by
+  a median factor of 6.2 (linear), 5.9 (quadratic), and 10 (degree 8). The penalty term
+  ended at 5e-4 to 7e-4 nats.
 
-Possible next steps, not started: scale learned coefficients as `c_r = c_r' / r!` (or
-by the QK-norm scale to the power `r`) so an update of size `lr` moves every term
-comparably; a positive denominator (sum-of-squares factors with the constant pinned);
-a smaller learning rate or a lower initial QK-norm scale for the coefficients; a lower
-degree first.
+## Signed degree-8 denominator
+
+`r9c52f40605fb` failed at update 131 (67M tokens, 0.7% of the budget) with a NaN forward loss
+on finite parameters. The training NLL fell from 10.58 to 8.57 at update 70, then rose
+to 10.18 by update 130, while softmax fell to 7.23. The penalty term was 1.1e-4 nats.
+
+- **Not overflow.** QK-norm bounds scores by 8, and Adam moves each coefficient by at
+  most 1.3e-3 by update 131, so `|p_b| <= 2.5e4`, far below FP32 or BF16 overflow.
+- **A zero denominator sum, inferred.** With bounded scores and coefficients, the only
+  forward NaN the kernel produces is an exactly zero row sum. The failure state is
+  NaN throughout, so the sum itself was not measured.
+- **High-order terms set the sign.** At `|s| = 5`, `s^8 = 3.9e5`: at update 20,
+  coefficients within 2.9e-5 of their start already gave denominator values from
+  −9.8 to 10.6 within one layer.
+- **`lambda = 0.01` cannot act.** Under Adam the update direction is the task
+  gradient's; the penalty's gradient on `b_8` was about 1e-3.
+- **Weight decay 0.01 fails the same way, later.** `r275ba0d547a2` matched the original's
+  training NLL through update 70, rose the same way, stalled at 9.4 to 9.6, and failed at
+  update 270 with a NaN forward loss. It ran on 2 GPUs instead of 4, which changes the
+  reduction order, so the later failure is not attributable to weight decay alone.
 
 ## Limits
 
-- One seed, one degree, one penalty weight, one coefficient initialization.
-- No checkpoint precedes the failure (the first resume checkpoint is at update 500),
-  so the failing update cannot be replayed; the pilot's update-20 diagnostics are the
-  only pre-failure attention measurements.
-- The Flax-default Taylor control is not an equal-initialization comparison; the
-  softmax and reference-initialization Taylor controls are.
+- One seed, one numerator degree, one penalty weight, one coefficient initialization.
+- `r817963a69c2c` changes both the denominator penalty and the weight decay against the
+  other runs, so neither effect is isolated.
+- No checkpoint precedes either signed degree-8 failure, so the failing updates cannot be
+  replayed.

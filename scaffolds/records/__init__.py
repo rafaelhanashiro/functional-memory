@@ -30,7 +30,9 @@ INDEX_COLUMNS = (
     "attention_mechanism", "attention_family", "attention_kernel", "qk_head_dim",
     "attention_degree", "attention_normalization", "attention_output_scaling", "qk_norm", "initialization",
     "coefficient_mode", "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing",
-    "coefficient_penalty", "quadratic_mode", "weight_decay_policy", "seed", "training_steps", "prediction_tokens",
+    "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
+    "coefficient_penalty_denominator",
+    "quadratic_mode", "weight_decay_policy", "seed", "training_steps", "prediction_tokens",
     "source_commit",
     "terminal_step", "terminal_validation_nll", "terminal_validation_perplexity",
     "config", "record", "metrics",
@@ -284,11 +286,20 @@ def capture_artifacts(
     return updates
 
 
-def validate_record(path: str | Path, verify_hashes: bool = True) -> dict[str, Any]:
+def _tree_sizes(directory: Path) -> dict[str, int]:
+    """Relative path and size of every file in a tree, read from metadata alone."""
+    return {path.relative_to(directory).as_posix(): path.stat().st_size
+            for path in directory.rglob("*") if path.is_file()}
+
+
+def validate_record(path: str | Path, verify_hashes: bool = True, checkpoint_hashes: bool = True) -> dict[str, Any]:
     """Validate identity and recipe integrity, plus hashes of available artifacts.
 
     Checkpoints and logs can live on another cluster. Missing references are
     returned as ``unavailable``; a missing canonical recipe is always an error.
+    Re-hashing a checkpoint reads all of it. With ``checkpoint_hashes=False`` a
+    checkpoint tree is instead compared with its recorded file names and sizes,
+    and is reported as ``size_checked`` rather than ``verified``.
     """
     run = _run_path(path)
     record = load_run(run)
@@ -303,7 +314,7 @@ def validate_record(path: str | Path, verify_hashes: bool = True) -> dict[str, A
         raise ValueError("The canonical recipe must be the run's config.yaml")
     if not (run / "config.yaml").is_file():
         raise ValueError(f"Missing canonical recipe in {run}")
-    result: dict[str, Any] = {"run_id": record["run_id"], "verified": [], "unavailable": []}
+    result: dict[str, Any] = {"run_id": record["run_id"], "verified": [], "size_checked": [], "unavailable": []}
     if not verify_hashes:
         return result
 
@@ -312,11 +323,16 @@ def validate_record(path: str | Path, verify_hashes: bool = True) -> dict[str, A
             if isinstance(value.get("path"), str) and isinstance(value.get("sha256"), str):
                 artifact = _artifact_path(run, value["path"])
                 if value.get("kind") == "directory":
-                    if artifact.is_dir():
+                    if artifact.is_dir() and checkpoint_hashes:
                         actual = _tree_descriptor(artifact)
                         if any(actual[key] != value.get(key) for key in ("sha256", "files", "file_count", "size_bytes")):
                             raise ValueError(f"Checkpoint tree checksum mismatch: {artifact}")
                         result["verified"].append(value["path"])
+                    elif artifact.is_dir():
+                        recorded = {item["path"]: item["size_bytes"] for item in value.get("files", [])}
+                        if _tree_sizes(artifact) != recorded:
+                            raise ValueError(f"Checkpoint tree file names or sizes differ from the record: {artifact}")
+                        result["size_checked"].append(value["path"])
                     else:
                         result["unavailable"].append(value["path"])
                     return
@@ -333,8 +349,8 @@ def validate_record(path: str | Path, verify_hashes: bool = True) -> dict[str, A
                 visit(nested)
 
     visit(record)
-    result["verified"] = sorted(set(result["verified"]))
-    result["unavailable"] = sorted(set(result["unavailable"]))
+    for key in ("verified", "size_checked", "unavailable"):
+        result[key] = sorted(set(result[key]))
     return result
 
 
@@ -431,7 +447,11 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "coefficient_parameterization": _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
         "coefficient_initialization": model.get("attention_coefficient_initialization"),
         "coefficient_sharing": sharing,
+        "denominator_degree": model.get("attention_denominator_degree"),
+        "denominator_parameterization": model.get("attention_denominator_parameterization"),
+        "denominator_constant": model.get("attention_denominator_constant"),
         "coefficient_penalty": optim.get("coefficient_penalty"),
+        "coefficient_penalty_denominator": optim.get("coefficient_penalty_denominator"),
         "quadratic_mode": model.get("quadratic_mode"),
         "weight_decay_policy": optim.get("weight_decay_policy"),
         "seed": _first(train.get("seed"), config.get("seed"), condition_seed, record.get("seed"), metadata.get("seed")),

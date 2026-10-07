@@ -66,6 +66,10 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   coefficient diagnostics remain available in run measurements; add a maintained
   diagnostic figure only when it serves a requested comparison. State-rank results
   belong to `results/state_rank/`.
+- Results and reports compare runs on their mechanism's reference initialization only.
+  Flax-default runs stay in their study as legacy records but enter no selection,
+  figure, table, finding, or status report; `results/attention_scaling/collect.py`
+  rejects them.
 - Exploratory experiments, whose place in the canonical results is not yet decided,
   report under `results/exploratory/<topic>/`, one directory per question with flat
   files: a README with the question, runs, findings, the open decision, and the date
@@ -259,7 +263,10 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 - At completion:
   1. Move (not copy) the retained artifacts into the home cluster's artifact root:
      each run's metrics, its validation-best checkpoint, and one successful log.
-  2. Verify their checksums.
+  2. Verify their checksums, for those runs only:
+     `python -m scaffolds.records validate experiments/<study> <run_id>... --checkpoint-hashes`.
+     Without `--checkpoint-hashes`, `validate` checks checkpoints by file names and sizes
+     and reads none of them; that suffices for routine record changes.
   3. Record the final locations in the run records and regenerate the study index.
   4. Merge the branch into `main`, reconciling any scaffold changes `main` made in the
      meantime.

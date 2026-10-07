@@ -8,7 +8,7 @@ import jax.numpy as jnp
 from scaffolds.transformer.attention.taylor import _taylor_polynomial, _validate_degree
 from scaffolds.transformer.attention.learned_quadratic import _quadratic_polynomial
 from scaffolds.transformer.attention.nonnegative_polynomial import square_sum_polynomial, validate_factors
-from scaffolds.transformer.attention.rational_polynomial import full_denominator, validate_denominator
+from scaffolds.transformer.attention.rational_polynomial import denominator_factors, select_denominator
 from scaffolds.transformer.attention.unnormalized import _learned_polynomial
 
 QUERY_BLOCK_SIZE = 128
@@ -25,9 +25,9 @@ def blocked_dot_product_attention(
     quadratic_mode: str = "fixed",
     polynomial_coefficients: jax.Array | None = None,
     polynomial_square_factors: jax.Array | None = None,
-    polynomial_denominator_coefficients: jax.Array | None = None,
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
+    **denominators,
 ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array]]:
     """Attend to the full causal prefix using bounded, recomputed score blocks.
 
@@ -47,10 +47,12 @@ def blocked_dot_product_attention(
     with normalization they divide by the signed row sum like odd Taylor kernels.
     Square factors ([m+1] or [heads, m+1], even m) give q1^2 + q2^2: nonnegative
     kernel values, exact zeros allowed, and only a positive row sum is valid.
-    Denominator coefficients ([m] or [heads, m]) with learned polynomial coefficients
+    Denominator coefficients ([d] or [heads, d]) with learned polynomial coefficients
     give the rational kernel p_a(s) / sum_j p_b(s_j), p_b(s) = 1 + sum_r b_r s^r: the
     numerator weights and the denominator sum are signed, and only an exactly zero
-    or nonfinite denominator sum is invalid. Its ``kernel_*`` diagnostics describe
+    or nonfinite denominator sum is invalid. ``denominators`` holds that one array under
+    any name of ``rational_polynomial.DENOMINATOR_KINDS``: coefficients or square
+    factors, with the constant fixed at 1 or learned. Its ``kernel_*`` diagnostics describe
     the numerator, ``denominator_*`` the denominator values, and the cancellation
     ratio is sum_j |p_b(s_j)| / |sum_j p_b(s_j)|.
     Diagnostics exclude padded queries and masked future entries.
@@ -76,11 +78,12 @@ def blocked_dot_product_attention(
         if polynomial_coefficients is not None or quadratic_mode != "fixed" or not attention_normalization:
             raise ValueError("Square factors define the kernel alone, under row normalization")
         validate_factors(polynomial_square_factors, attention_degree, q.shape[2])
-    rational = polynomial_denominator_coefficients is not None
+    selected = select_denominator(q.shape[2], **denominators)
+    rational = selected is not None
     if rational:
         if polynomial_coefficients is None or not attention_normalization:
             raise ValueError("Denominator coefficients require learned numerator coefficients and row normalization")
-        validate_denominator(polynomial_denominator_coefficients, attention_degree, q.shape[2])
+        denominator_factor_arrays = denominator_factors(selected[0], selected[1], selected[2])
     signed = polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (
         not nonnegative and quadratic_mode == "fixed"
         and attention_degree is not None and attention_degree % 2 == 1
@@ -148,7 +151,9 @@ def blocked_dot_product_attention(
                 invalid_kernel = invalid_kernel | (kernel <= 0)
         kernel = jnp.where(causal, kernel, 0.0)
         if rational:
-            denominator = _learned_polynomial(safe_scores, full_denominator(polynomial_denominator_coefficients))
+            factor_values = [_learned_polynomial(safe_scores, factor) for factor in denominator_factor_arrays]
+            denominator = (factor_values[0] if len(factor_values) == 1
+                           else jnp.square(factor_values[0]) + jnp.square(factor_values[1]))
             invalid_kernel = invalid_kernel | ~jnp.isfinite(denominator)
             denominator = jnp.where(causal, denominator, 0.0)
             normalizer = jnp.sum(denominator, axis=-1, keepdims=True, dtype=jnp.float32)

@@ -13,8 +13,9 @@ from scaffolds.records.selections import verify_pinned_runs
 from pathlib import Path
 
 
-# The scaffold's current defaults, with each mechanism's reference initialization
-# (REFERENCE). Runs trained under anything else are shown as legacy cells until rerun.
+# The scaffold's current defaults. Runs with an older decay policy or without QK-norm are
+# shown as legacy cells until rerun; a run on any initialization other than its
+# mechanism's reference (REFERENCE) is rejected, since results compare those runs only.
 CANONICAL_WEIGHT_DECAY_POLICY = "exclude_embeddings_norms_biases_v1"
 _REFERENCE_KERNELS = {"softmax": "softmax", "softmax_no_qk_norm": "softmax",
                       "gated_deltanet": "gated_deltanet", "unnormalized_exp": "exp_unnormalized"}
@@ -103,7 +104,8 @@ def _defaults_status(config: dict, column: dict, label: str) -> dict:
 
     The run's `config.yaml` states all three; a recipe without a policy decays all
     parameters, one without `qk_norm` uses plain scores, and one without
-    `initialization` predates the option and used Flax defaults. A column may
+    `initialization` predates the option and used Flax defaults. Any initialization
+    other than the mechanism's reference raises an error. A column may
     declare `qk_norm: false` (a plain-score reference) or `qk_norm: null` (a mechanism
     QK-norm does not apply to); otherwise QK-norm is expected.
     """
@@ -120,7 +122,8 @@ def _defaults_status(config: dict, column: dict, label: str) -> dict:
     if expects is False and qk_norm:
         raise ValueError(f"{label} uses QK-norm but its column is the plain-score reference")
     if initialization != REFERENCE[model.get("attention_mechanism", "dot_product")]:
-        reasons.append("Flax-default initialization")
+        raise ValueError(f"{label} uses {initialization} initialization; "
+                         "results compare runs on their mechanism's reference initialization only")
     return {"weight_decay_policy": policy, "qk_norm": qk_norm, "initialization": initialization,
             "legacy": bool(reasons), "legacy_reasons": reasons}
 

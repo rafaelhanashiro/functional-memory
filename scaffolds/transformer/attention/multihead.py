@@ -10,6 +10,7 @@ from flax import nnx
 from scaffolds.transformer.attention.core import attention_core
 from scaffolds.transformer.attention.output_scaling import OUTPUT_SCALINGS, scale_attention_output
 from scaffolds.transformer.attention.qk_norm import cosine_score_operands
+from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
 from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
 
@@ -75,8 +76,8 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Unnormalized attention requires a fixed exp/Taylor kernel and a blocked/fused backend")
         if attention_output_scaling not in OUTPUT_SCALINGS:
             raise ValueError(f"Unknown attention output scaling: {attention_output_scaling}")
-        if attention_output_scaling != "none" and attention_normalization:
-            raise ValueError("Attention output scaling applies only to unnormalized attention")
+        if attention_output_scaling == "inverse_position" and attention_normalization:
+            raise ValueError("Inverse-position output scaling applies only to unnormalized attention")
         if quadratic_mode not in ("fixed", "positive", "unrestricted"):
             raise ValueError(f"Unknown quadratic mode: {quadratic_mode}")
         if quadratic_mode != "fixed" and attention_degree != 2:
@@ -175,12 +176,12 @@ class MultiHeadAttention(nnx.Module):
             parameters = {**parameters, "coefficients": coefficients}
         if self.attention_fixed_coefficients is not None:
             if any(name in parameters for name in ("coefficients", "polynomial_coefficients", "polynomial_square_factors",
-                                                "polynomial_denominator_coefficients")):
+                                                *DENOMINATOR_KINDS)):
                 raise ValueError("Fixed polynomial coefficients cannot be combined with supplied attention coefficients")
             parameters["polynomial_coefficients"] = jnp.asarray(self.attention_fixed_coefficients, dtype=jnp.float32)
         if self.attention_fixed_square_factors is not None:
             if any(name in parameters for name in ("coefficients", "polynomial_coefficients", "polynomial_square_factors",
-                                                "polynomial_denominator_coefficients")):
+                                                *DENOMINATOR_KINDS)):
                 raise ValueError("Fixed square factors cannot be combined with supplied attention coefficients")
             parameters["polynomial_square_factors"] = jnp.asarray(self.attention_fixed_square_factors, dtype=jnp.float32)
         result = attention_core(

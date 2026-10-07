@@ -82,7 +82,7 @@ The existing scientific configuration fields remain supported:
 | `attention_degree: m >= 1`, `attention_normalization: false`, `attention_coefficients: learned` | Unnormalized `sum_r c_r (QKᵀ / sqrt(d_K))^r V` with every coefficient learned from `1/r!`; signed |
 | `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; fused or blocked |
 | Even `attention_degree: m >= 2`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: sum_of_squares` | Normalized `(q1(s)^2 + q2(s)^2) V / rowsum` with `deg q1 = m/2`, `deg q2 = m/2 - 1` learned and initialized to reproduce `T_m` exactly; nonnegative weights, positive row sums; fused or blocked |
-| `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: rational` | Normalized `p_a(s) V / sum_j p_b(s_j)` with a learned numerator `p_a(s) = sum_r a_r s^r` and a learned denominator `p_b(s) = 1 + sum_(r>=1) b_r s^r`; signed weights and signed denominator sums; fused or blocked |
+| `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: rational` | Normalized `p_a(s) V / sum_j p_b(s_j)` with a learned numerator `p_a(s) = sum_r a_r s^r` and a learned denominator with constant 1 of degree `attention_denominator_degree` (default `m`): signed `1 + sum_r b_r s^r`, or nonnegative `(1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2` (`attention_denominator_parameterization: sum_of_squares`); fused or blocked |
 | `attention_degree: 0` | Uniform causal-prefix averaging |
 | Nonnegative `attention_degree`, `quadratic_mode: fixed` | Fixed Taylor polynomial; odd degrees permit signed weights |
 | `attention_degree: 2`, `quadratic_mode: positive` | Learned `0.5 * (1 + (a*s+b)^2)` |
@@ -108,29 +108,46 @@ cancellation near a zero minimum could round below zero. Kernel values may be
 exactly zero; a zero row sum is invalid. Diagnostics report the factors as raw
 parameters and the coefficients of `q1^2 + q2^2` as the effective ones.
 
-With `attention_coefficient_parameterization: rational` the learned arrays are
-`polynomial_coefficients` (the numerator `a_0..a_m`) and
-`polynomial_denominator_coefficients` (`b_1..b_m`; the constant `b_0 = 1` is fixed,
-which removes the common scale of the two polynomials), each `[m + 1]`/`[m]` shared or
-`[num_layers, num_heads, m + 1]`/`[num_layers, num_heads, m]` per head
-(`attention/rational_polynomial.py`). The weights are `p_a(s_ij) / sum_(j<=i) p_b(s_ij)`.
-Both polynomials are signed: a negative nonzero denominator sum is valid, an exactly
-zero or nonfinite sum poisons its row, with no clipping or epsilon. Diagnostics report
-the numerator as `kernel_*`, the denominator values as `denominator_*`, and the
-cancellation ratio of the denominator sums.
+With `attention_coefficient_parameterization: rational` the weights are
+`p_a(s_ij) / sum_(j<=i) p_b(s_ij)` (`attention/rational_polynomial.py`). The numerator
+`a_0..a_m` is `polynomial_coefficients`. The denominator has degree `d`
+(`attention_denominator_degree`, default `m`). `attention_denominator_parameterization`
+selects its form and `attention_denominator_constant` whether its constant is fixed at 1
+(default), which removes the common scale of the two polynomials, or learned:
+
+| Form, constant | Learned array | Denominator |
+|---|---|---|
+| `direct`, `fixed` (default) | `polynomial_denominator_coefficients`, `b_1..b_d` | `1 + sum_r b_r s^r`, signed |
+| `direct`, `learned` | `polynomial_denominator_coefficients_with_constant`, `b_0..b_d` | `sum_r b_r s^r`, signed |
+| `sum_of_squares`, `fixed`, even `d = 2k` | `polynomial_denominator_square_factors`, `u_1..u_k, w_1..w_k` | `(1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2`, nonnegative |
+| `sum_of_squares`, `learned`, even `d = 2k` | `polynomial_denominator_square_factors_with_constant`, `q1_0..q1_k, q2_0..q2_(k-1)` | `q1(s)^2 + q2(s)^2`, nonnegative |
+
+Every nonnegative polynomial of degree `2k` (with constant 1, for the fixed form) has the
+sum-of-squares form, so it is complete. Arrays are shared or `[num_layers, num_heads, ·]` per head. A negative
+nonzero denominator sum is valid; an exactly zero or nonfinite sum poisons its row, with
+no clipping or epsilon. Diagnostics report the numerator as `kernel_*`, the denominator
+values as `denominator_*`, the cancellation ratio of the denominator sums, and the
+expanded denominator coefficients `b_r` of either form.
 
 `attention_coefficient_initialization` chooses where learned coefficients start:
 `taylor` (default) sets every learned polynomial to `sum_r s^r / r!`, so a rational
-kernel equals normalized Taylor attention at initialization; `linear` sets `a_1 = 1`
-and every other coefficient to 0, so a direct kernel starts at `s` and a rational
-kernel at linear attention divided by the number of visible keys,
-`sum_(j<=i) s_ij v_j / (i + 1)`. Sum-of-squares factors always start at `T_m`.
+kernel with equal degrees equals normalized Taylor attention at initialization; `linear`
+sets `a_1 = 1` and every other coefficient to 0, so a direct kernel starts at `s` and a
+rational kernel at linear attention divided by the number of visible keys,
+`sum_(j<=i) s_ij v_j / (i + 1)`. A sum-of-squares denominator with constant 1 and all
+`w_r = 0` gives every `w_r` a zero gradient, so its linear start sets `w_1 = 10^-3`, a
+denominator of `1 + 10^-6 s^2`; with a learned constant it starts exactly at 1 as
+`q1 = q2 = 1/sqrt(2)`. Sum-of-squares kernels always start at `T_m`.
 
 `optim.coefficient_penalty` adds `lambda` times
 `sum over polynomials [a_0^2 + sum_(r>=2) r^2 a_r^2 + sum_(r>=1) r^2 b_r^2]` to the
 training loss (`training/regularization.py`), for learned direct or rational
 coefficients; `a_1` is unpenalized and the sum runs over every learned coefficient
-set (each layer and head with `per_head` sharing). The recorded training NLL,
+set (each layer and head with `per_head` sharing).
+`optim.coefficient_penalty_denominator: false` drops the `b_r` term, penalizing the
+numerator only; a learned denominator constant requires it. A sum-of-squares
+denominator is penalized through its expanded coefficients `b_r`, differentiated through
+its factors. The recorded training NLL,
 perplexities, and the validation loss exclude the penalty; its value at the logged
 step's parameters is printed as `train_coefficient_penalty`, stored as
 `train_coefficient_penalty` in each validation record, and mirrored to W&B as
@@ -201,9 +218,11 @@ do not use it.
 
 `attention_output_scaling` rescales each head's unnormalized output
 `o_t = sum_(j<=t) k(s_tj) v_j` before the output projection
-(`attention/output_scaling.py`); only unnormalized dot-product attention accepts it.
+(`attention/output_scaling.py`); only dot-product attention accepts it.
 Normalized attention equals `o_t / sum_j k(s_tj)`, so `o_t` is the normalized output
-times the row's kernel sum.
+times the row's kernel sum. `head_rms_norm` also applies to normalized attention,
+where it normalizes `o_t / sum_j k(s_tj)`; for a positive kernel such as exp the two
+agree up to `rms_norm_eps`. `inverse_position` requires unnormalized attention.
 
 | `attention_output_scaling` | Output |
 |---|---|
@@ -435,8 +454,8 @@ Studies configure these shared modules with execution modules at their root
   `config.yaml`, root execution modules, and shared record/launch helpers. Metrics,
   records and `results/` remain editable while jobs run.
 - `launchers/orcd.sbatch` does the same on ORCD. Its allocations fit that cluster's
-  per-user GPU caps and 6-hour limit, and a job requeues itself before the limit
-  (see [CLUSTERS.md](../../CLUSTERS.md)).
+  per-user GPU caps; a job asks for 12 hours, accepts `mit_normal_gpu`'s 6-hour
+  maximum, and requeues itself before its limit (see [CLUSTERS.md](../../CLUSTERS.md)).
 - `acceptance.py` runs identity-keyed acceptance in the production allocation: CPU
   tests, distributed CPU tests on two forced host devices, and single-GPU kernel tests
   (no skips), an initialization hash, a full-recipe pilot, and an exact fresh-process
@@ -445,7 +464,11 @@ Studies configure these shared modules with execution modules at their root
   runtime environment. A study execution module passes this factory to `main`;
   specialized studies can supply an `AcceptanceSpec` directly. Launchers invoke
   `<acceptance_module> <config.yaml> --runtime-env` before starting workers so GLA
-  bridge settings apply only to GLA recipes.
+  bridge settings apply only to GLA recipes. Both launchers pass `--test-cache`, so a
+  passed test stage is reused by the worktree's other runs that select the same tests
+  under the same source, lock, runtime settings, and (for GPU tests) GPU type; the
+  reusing run copies the report into its own acceptance directory and records its
+  origin in `success.json` under `reused_tests`.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
   the selection.
 
@@ -463,10 +486,18 @@ JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 \
   scaffolds/transformer/.venv/bin/python -m pytest \
   -c scaffolds/transformer/pyproject.toml scaffolds/transformer/tests \
   --import-mode=importlib -m 'not gpu' -k distributed
+
+# In a GPU allocation; the Triton kernels need the locked toolkit, as the launchers set it.
+export CUDA_HOME="$(scaffolds/transformer/.venv/bin/python -c 'import importlib.util; print(next(iter(importlib.util.find_spec("nvidia.cuda_nvcc").submodule_search_locations)))')"
+TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas" \
+  scaffolds/transformer/.venv/bin/python -m pytest \
+  -c scaffolds/transformer/pyproject.toml scaffolds/transformer/tests \
+  --import-mode=importlib -m gpu
 ```
 
 The suite covers independent FP64 attention and gradient references, signed and
 unnormalized kernels, QK-norm cosine scores, learned parameter sharing, optimizer exclusions, distributed
 accumulation, packed-data cursors, interruption and resume, checkpoint audits,
-acceptance, and retention. GPU-marked tests (`-m gpu`, in a GPU allocation) exercise
-the fused forward and backward implementations.
+acceptance, and retention. GPU-marked tests exercise the fused forward and backward
+implementations; without the locked toolkit, a node's older `ptxas` rejects the Triton
+kernels' PTX and the Gated DeltaNet and GLA kernel tests fail.

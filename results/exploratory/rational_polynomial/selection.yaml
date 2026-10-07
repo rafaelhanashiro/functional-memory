@@ -1,5 +1,5 @@
-question: Does a separate learned denominator polynomial, with a penalty on high-order
-  coefficients, let normalized learned polynomial attention train through?
+question: Does a separate learned denominator polynomial let normalized learned polynomial
+  attention train through?
 study: experiments/attention_scaling
 metric: terminal validation perplexity
 runs:
@@ -17,6 +17,80 @@ runs:
     numerical_failure_step_00000131.json:
       path: experiments/attention_scaling/runs/r9c52f40605fb/numerical_failure_step_00000131.json
       sha256: 352a43b09bdbcf15d809e45ff0daf1f15c53486f08061f0b9c2ff00b9f427d9d
+- run_id: r275ba0d547a2
+  label: rational degree 8, signed degree-8 denominator, lambda = 0.01 on both, weight
+    decay 0.01
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r275ba0d547a2/config.yaml
+      sha256: 605307b56c569aca64f797da4f0737b323240515cd5f71768a1d596cc0aa68b8
+    metadata.json:
+      path: experiments/attention_scaling/runs/r275ba0d547a2/metadata.json
+      sha256: c4d5dc9e14da14b3bbc4ee2e274c00a8299342c94f661513951b68ccd33dcf18
+    numerical_failure_step_00000270.json:
+      path: experiments/attention_scaling/runs/r275ba0d547a2/numerical_failure_step_00000270.json
+      sha256: 2c9f6092d5de3aebcb73e4c2b96cc338e220dfed25732d22d2fbbafda9ff79f8
+- run_id: re21d093cf4ac
+  label: rational degree 8, linear denominator with learned constant, numerator-only
+    lambda = 0.01
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/re21d093cf4ac/config.yaml
+      sha256: cfcf920a509029873c611172a07d0c4b47be7d4bc8843525d515f23eefb6dd00
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/re21d093cf4ac/metrics.jsonl
+      sha256: 0b8af963a25dab37eb29d8b9f0f2a9f03e052e749ecc2153b86afea4b3670c41
+    completion.json:
+      path: experiments/attention_scaling/runs/re21d093cf4ac/completion.json
+      sha256: e87d75da40bebee50fe4eb89168308de2418b69ab20d3338aeb1f9395ad157d4
+    metadata.json:
+      path: experiments/attention_scaling/runs/re21d093cf4ac/metadata.json
+      sha256: 87c845d9de92a9729059e81548e4f98a2fec8d561a132f0147417cf07a289132
+    best_validation.json:
+      path: experiments/attention_scaling/runs/re21d093cf4ac/best_validation.json
+      sha256: 31ad1a7d80e6fee4595be25abd02919c223f9c7401376df224928230db9b6a54
+- run_id: r45c9067c8d64
+  label: rational degree 8, nonnegative quadratic denominator with learned constant,
+    numerator-only lambda = 0.01
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r45c9067c8d64/config.yaml
+      sha256: 7b05c426e2e672086fe8df152ddc91e1b15df0ed5168e5a3262dfd824de52bb7
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r45c9067c8d64/metrics.jsonl
+      sha256: 366e7c89f25954161ef1365cce7a4059142b7f749b0c3309e355eeae04a113ea
+    completion.json:
+      path: experiments/attention_scaling/runs/r45c9067c8d64/completion.json
+      sha256: 5b17939e9975812b3737683f61afdc532b87b289360843ba5823fd904dda9b67
+    metadata.json:
+      path: experiments/attention_scaling/runs/r45c9067c8d64/metadata.json
+      sha256: bfdffb5456149cbea9209d6baca9c030c2510e9f14d632ced3445e99de5ba2d4
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r45c9067c8d64/best_validation.json
+      sha256: dd0383e94fa2411e9bb4b0043e1a1b5431bab342c7225fecc5d830c039a34da3
+- run_id: r817963a69c2c
+  label: rational degree 8, nonnegative degree-8 denominator, lambda = 0.01 on both,
+    weight decay 0.01
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r817963a69c2c/config.yaml
+      sha256: 63fcc9c27fbd25c6a768f56add8a8ae826625110becc270ad351a86abbc71a2f
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r817963a69c2c/metrics.jsonl
+      sha256: ea382cc8d6b4ea77a9f5cf1633bd72546fc9999e97db981241c7ca2b47dd92cd
+    completion.json:
+      path: experiments/attention_scaling/runs/r817963a69c2c/completion.json
+      sha256: 7e6460cfb66e28dbe6e9c29451fff960e3fc8d6942166b8596cff4c70b0d5d1a
+    metadata.json:
+      path: experiments/attention_scaling/runs/r817963a69c2c/metadata.json
+      sha256: b35391336942779742572a266b1520e1fd26a13cb94e42d1cd460b8a4571bbd9
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r817963a69c2c/best_validation.json
+      sha256: 3de4aa1d5876ec9f67a89fcad81f2109b1917b58d1814ef05b52425e9dfcfb82
 - run_id: rbde7fc4c2135
   label: softmax, transformer reference initialization
   role: control
@@ -55,22 +129,3 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/r7d911aee60ed/best_validation.json
       sha256: fb6a2d25eb7362b5b3219bac22d04a996b7391de69be07cff31ccec7f32a05f1
-- run_id: r4923c6939e74
-  label: normalized fixed Taylor degree 8, Flax defaults
-  role: control
-  sources:
-    config.yaml:
-      path: experiments/attention_scaling/runs/r4923c6939e74/config.yaml
-      sha256: 8c7806458b6b1b1c66306e518ed75303d62849dc10511fb1a17d0820c4fcaa6a
-    metrics.jsonl:
-      path: experiments/attention_scaling/runs/r4923c6939e74/metrics.jsonl
-      sha256: a6a6d987b7779241b5ddc6b15e43c5622cd1c40275d7f8dee98fd73d38d55b35
-    completion.json:
-      path: experiments/attention_scaling/runs/r4923c6939e74/completion.json
-      sha256: 4891b76b4e7674df0b2ba311e8a0cfaab6133c155d1fa018171e1a7b9a153085
-    metadata.json:
-      path: experiments/attention_scaling/runs/r4923c6939e74/metadata.json
-      sha256: 202873338c143c54528ec28e6c4c7c578feabd52c9e08b0f05e20fcd0f0f8108
-    best_validation.json:
-      path: experiments/attention_scaling/runs/r4923c6939e74/best_validation.json
-      sha256: 4a33931d3684fb029798a7016e2dbf83e5182cb296389997285186bf2a41f004

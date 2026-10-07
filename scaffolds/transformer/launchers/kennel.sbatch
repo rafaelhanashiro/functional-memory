@@ -125,9 +125,10 @@ update_record(run_root, {
     "log_path": str(run_root / "training.log"),
 })
 PY
-# Acceptance and production share the allocation; matching passed stages are reused on requeue.
+# Acceptance and production share the allocation; matching passed stages are reused on requeue,
+# and passed test stages are shared with the worktree's other runs.
 "$PYTHON" -m "$ADAPTER" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
-  --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE"
+  --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --test-cache "$CACHE/acceptance-tests"
 "$PYTHON" - "$RUN_ROOT" "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT/success.json" <<'PY'
 import hashlib, json, sys
 from pathlib import Path

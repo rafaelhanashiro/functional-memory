@@ -1,0 +1,1314 @@
+{
+  "completed_at_utc": "2026-10-05T21:10:24.752409+00:00",
+  "configuration": {
+    "batch_size": 16,
+    "degrees": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "dtype": "bfloat16",
+    "head_dim": 64,
+    "implementations": [
+      "blocked",
+      "fused"
+    ],
+    "iterations": 10,
+    "num_heads": 16,
+    "output": "scaffolds/transformer/validation/runs/rational-nonnegative-degree8-h100/benchmark.json",
+    "parameterizations": [
+      "direct",
+      "sum_of_squares"
+    ],
+    "seed": 0,
+    "sequence_length": 2048,
+    "warmup": 3
+  },
+  "created_at_utc": "2026-10-05T21:09:31.776395+00:00",
+  "format": "normalized-learned-polynomial-kernel-benchmark",
+  "input_distribution": "independent Gaussian Q/K/V, QK-norm with scale sqrt(d_K); Taylor parameters",
+  "memory": "compiler buffer estimates; not measured allocator peaks",
+  "provenance": {
+    "device": {
+      "description": "cuda:0",
+      "id": 0,
+      "kind": "NVIDIA H100 80GB HBM3",
+      "platform": "gpu",
+      "process_index": 0
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "208968",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": null
+    },
+    "hostname": "dogo.csail.mit.edu",
+    "package_versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda12-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cudnn-cu12": "9.22.0.52"
+    },
+    "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "source_commit": "85158f79ca56190908bc6bb8bff63ceccebfaba0",
+    "source_dirty": true,
+    "source_sha256": {
+      "scaffolds/transformer/attention/__init__.py": "0a21df8dcefe750872141602b4c96aff999c403997438957926250c916cb2913",
+      "scaffolds/transformer/attention/backends/__init__.py": "fc73b96b509d55a0f8a4df7d0cf1cc1ec2c3888d89e7173e4bc5e463a60307e1",
+      "scaffolds/transformer/attention/backends/chunked_gla_triton.py": "41414d6211c843e4baf595d6f4e10da6711ac3cc0a6cc742b33166315b38c554",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/__init__.py": "ef92364015dd7b51126b31aa2b8d02bb351c576851c1a975b003cb7f398b5317",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "202fbb5809a2549b49acfb45289d495f8fa757ac3e8c2d079f415b10f6e494b0",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "a9ede1bf1babb7a8998b3049b8b7c04095ef648725404f45b358ba71871f27ec",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "7b7498f83a5a40cfebedea5e67245da977a04a168903f28d47366ff3611fa513",
+      "scaffolds/transformer/attention/backends/fused_learned_polynomial.py": "e7db65a9001e884c218fd437b48fdf74c6cb98cc88e84d0a9631c90b1709d461",
+      "scaffolds/transformer/attention/backends/fused_normalized_polynomial.py": "39c8683ee752886f6a95267ea23cf6dd88db576ed13bd8fdaf16ec8c75d63d29",
+      "scaffolds/transformer/attention/backends/fused_quadratic.py": "0f0fca19c8af2d7d616c9e96d788c86c58d8a226db69e4f5cb36b1c39b246fef",
+      "scaffolds/transformer/attention/backends/fused_taylor.py": "b0eccdbff0701b02be950f64ab5db5a1dcaff0c6fca8b68c01fd3277ef2d157a",
+      "scaffolds/transformer/attention/backends/fused_unnormalized.py": "97f01d04d630e256fe1a1506574030045526a510b0108e31a9bdc783c2d2b99d",
+      "scaffolds/transformer/attention/backends/reference.py": "09d3b54bc0659391f832fbe40117a85b7f851f61cac06dc2fd3352b608c1bcf7",
+      "scaffolds/transformer/attention/backends/selection.py": "8dda0619412187ccd93db74bb56e1c301fd0fd5c2e5b3a814bead3115b698219",
+      "scaffolds/transformer/attention/core.py": "511730bf9999fd7a5ee31890b746122eee85521acd998877a2ba7821ffaa5a99",
+      "scaffolds/transformer/attention/gated_deltanet.py": "4d66ebc6f9ec3e3c01df683925b9df580d3855454aaaff67824b6e48620823e4",
+      "scaffolds/transformer/attention/gla.py": "15fcedae8355786adcf0c386d8d597065bdd5e412011c6eb12bfa7d1592fa72a",
+      "scaffolds/transformer/attention/learned_polynomial.py": "d8bfe1e4d24a8c1cdf15a403f4eac8ec12354def87561e4df7ba5c12a3296c6d",
+      "scaffolds/transformer/attention/learned_quadratic.py": "2dd52c7b2f839836f8b7ea799ab382d8974957160902cc30d6c710a00b9b4f40",
+      "scaffolds/transformer/attention/multihead.py": "7104b2299e505776eca676c1604adff31695fe4751e5b9eb4fed3ab9ce4f7d20",
+      "scaffolds/transformer/attention/nonnegative_polynomial.py": "e9162adc1772395c4e677350d0a8938d12e523ea371cae3db037ec50d4e82df6",
+      "scaffolds/transformer/attention/output_scaling.py": "7c8c1db9aa3e952b8ada8cf36db2ef9a802c98f970466ac1114a1e600af516d3",
+      "scaffolds/transformer/attention/parameters.py": "b85cd5dd80d09d05160ea14c4753af291c9d20dc29f0bf7c3cab023f6a00f1fb",
+      "scaffolds/transformer/attention/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269",
+      "scaffolds/transformer/attention/qk_norm.py": "919e84929d39664444267a2e5446c8e715b007129a7211168d33c6f7afac4f65",
+      "scaffolds/transformer/attention/rational_polynomial.py": "2596d73c321e468efaa8c7418d68a844d5ed42899b2bc31d752e931a59c2cdb6",
+      "scaffolds/transformer/attention/softmax.py": "47470b42e8e212c91a5044d448f4c36b4d30b9d0b581d3153e6fb73f91f4b04d",
+      "scaffolds/transformer/attention/taylor.py": "285147e3abb43c19087877d0e2e9b36ac2f1d86d9b667c0183a5a0536ab994aa",
+      "scaffolds/transformer/attention/unnormalized.py": "f028d0076443b1baa11820e20cc10fc121fcd8e380aa66f85bbb9aed2349f1ca",
+      "scaffolds/transformer/benchmarks/benchmark_attention.py": "e07681b2c193e6a2c5642d150bc9a8d39b3ffd87de9812ea281010b21f9ec400",
+      "scaffolds/transformer/benchmarks/benchmark_normalized_polynomial.py": "5b16290fa6bd9bc77a6f02c9e25bc864a8a2d64cd520caa484b698e75037ee04",
+      "scaffolds/transformer/uv.lock": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ]
+  },
+  "results": [
+    {
+      "degree": 1,
+      "implementations": {
+        "blocked": {
+          "forward": {
+            "compilation_seconds": 2.8284902409650385,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326720,
+              "available": true,
+              "generated_code_size_in_bytes": 70900,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 478192448
+            },
+            "max_ms": 9.082421194761992,
+            "median_ms": 9.062325116246939,
+            "min_ms": 8.984107989817858,
+            "p10_ms": 9.022547816857696,
+            "p90_ms": 9.079054184257984,
+            "samples_ms": [
+              8.984107989817858,
+              9.026818908751011,
+              9.078680071979761,
+              9.063499979674816,
+              9.060460142791271,
+              9.061450138688087,
+              9.049398824572563,
+              9.082421194761992,
+              9.06320009380579,
+              9.065838996320963
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 6.83188034594059,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435584,
+              "available": true,
+              "generated_code_size_in_bytes": 215444,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 268435624,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 1481026408
+            },
+            "max_ms": 42.37625375390053,
+            "median_ms": 42.338423896580935,
+            "min_ms": 42.26927179843187,
+            "p10_ms": 42.29948562569916,
+            "p90_ms": 42.367137176916,
+            "samples_ms": [
+              42.26927179843187,
+              42.37625375390053,
+              42.30284271761775,
+              42.36184433102608,
+              42.332223150879145,
+              42.34348377212882,
+              42.35621402040124,
+              42.325722984969616,
+              42.33336402103305,
+              42.36612422391772
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          }
+        },
+        "fused": {
+          "forward": {
+            "compilation_seconds": 0.8060149000957608,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326720,
+              "available": true,
+              "generated_code_size_in_bytes": 40512,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134218304
+            },
+            "max_ms": 1.761609222739935,
+            "median_ms": 1.7038725782185793,
+            "min_ms": 1.6709072515368462,
+            "p10_ms": 1.690212870016694,
+            "p90_ms": 1.737884245812893,
+            "samples_ms": [
+              1.7088470049202442,
+              1.7035780474543571,
+              1.695337239652872,
+              1.6923579387366772,
+              1.7041671089828014,
+              1.6709072515368462,
+              1.7075869254767895,
+              1.7010080628097057,
+              1.761609222739935,
+              1.7352481372654438
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.570607588160783,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435584,
+              "available": true,
+              "generated_code_size_in_bytes": 106000,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 268435624,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134219032
+            },
+            "max_ms": 5.021200980991125,
+            "median_ms": 5.00455079600215,
+            "min_ms": 4.889497999101877,
+            "p10_ms": 4.960041772574186,
+            "p90_ms": 5.013010185211897,
+            "samples_ms": [
+              4.889497999101877,
+              5.000989884138107,
+              4.967879969626665,
+              5.006220191717148,
+              4.998239688575268,
+              5.002881400287151,
+              5.012100096791983,
+              5.021200980991125,
+              5.007749889045954,
+              5.0090099684894085
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          }
+        }
+      },
+      "parameterization": "direct",
+      "parity_against_blocked": {
+        "gradient_k": {
+          "all_finite": true,
+          "l2_error": 793.091552734375,
+          "max_abs_error": 512.0,
+          "reference_l2": 708203.875,
+          "reference_max_abs": 67584.0,
+          "relative_l2_error": 0.0011198633341767228
+        },
+        "gradient_parameters": {
+          "all_finite": true,
+          "l2_error": 1.3161693811416626,
+          "max_abs_error": 0.84375,
+          "reference_l2": 321429.5625,
+          "reference_max_abs": 202404.609375,
+          "relative_l2_error": 4.0947365603363335e-06
+        },
+        "gradient_q": {
+          "all_finite": true,
+          "l2_error": 8.567084312438965,
+          "max_abs_error": 4.0,
+          "reference_l2": 11317.9033203125,
+          "reference_max_abs": 2784.0,
+          "relative_l2_error": 0.0007569497697566848
+        },
+        "gradient_v": {
+          "all_finite": true,
+          "l2_error": 3.685267925262451,
+          "max_abs_error": 1.0,
+          "reference_l2": 1252.986328125,
+          "reference_max_abs": 189.0,
+          "relative_l2_error": 0.0029411876590682185
+        },
+        "output": {
+          "all_finite": true,
+          "l2_error": 0.8193693161010742,
+          "max_abs_error": 0.25,
+          "reference_l2": 1235.1375732421875,
+          "reference_max_abs": 223.0,
+          "relative_l2_error": 0.0006633830383365814
+        }
+      },
+      "speedup_blocked_over_fused": {
+        "forward": 5.318663632536253,
+        "forward_backward": 8.459984846272855
+      }
+    },
+    {
+      "degree": 2,
+      "implementations": {
+        "blocked": {
+          "forward": {
+            "compilation_seconds": 0.7415309878997505,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326784,
+              "available": true,
+              "generated_code_size_in_bytes": 71412,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 478192448
+            },
+            "max_ms": 9.101101197302341,
+            "median_ms": 9.063549805432558,
+            "min_ms": 9.044169913977385,
+            "p10_ms": 9.054664056748152,
+            "p90_ms": 9.07625094987452,
+            "samples_ms": [
+              9.044169913977385,
+              9.101101197302341,
+              9.070320054888725,
+              9.05973045155406,
+              9.071249980479479,
+              9.064639918506145,
+              9.06245969235897,
+              9.073489811271429,
+              9.060889948159456,
+              9.05583007261157
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.175030403304845,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435648,
+              "available": true,
+              "generated_code_size_in_bytes": 223724,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 268435688,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 1481026672
+            },
+            "max_ms": 42.493856977671385,
+            "median_ms": 42.454096022993326,
+            "min_ms": 42.27250209078193,
+            "p10_ms": 42.37723690457642,
+            "p90_ms": 42.47135575860739,
+            "samples_ms": [
+              42.27250209078193,
+              42.38887410610914,
+              42.419425677508116,
+              42.45398612692952,
+              42.46637597680092,
+              42.46885562315583,
+              42.493856977671385,
+              42.45420591905713,
+              42.457726784050465,
+              42.44435578584671
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          }
+        },
+        "fused": {
+          "forward": {
+            "compilation_seconds": 0.5556425601243973,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326784,
+              "available": true,
+              "generated_code_size_in_bytes": 44392,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134218560
+            },
+            "max_ms": 1.8127602525055408,
+            "median_ms": 1.7810538411140442,
+            "min_ms": 1.7489888705313206,
+            "p10_ms": 1.749645173549652,
+            "p90_ms": 1.8101949710398912,
+            "samples_ms": [
+              1.7489888705313206,
+              1.766148954629898,
+              1.7497180961072445,
+              1.7660390585660934,
+              1.7693587578833103,
+              1.8127602525055408,
+              1.792869996279478,
+              1.8099099397659302,
+              1.792748924344778,
+              1.793950330466032
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.676883390173316,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435648,
+              "available": true,
+              "generated_code_size_in_bytes": 117208,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 268435688,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134252064
+            },
+            "max_ms": 5.330287851393223,
+            "median_ms": 5.282631143927574,
+            "min_ms": 5.171143915504217,
+            "p10_ms": 5.204391153529286,
+            "p90_ms": 5.316841183230281,
+            "samples_ms": [
+              5.171143915504217,
+              5.255655851215124,
+              5.208085291087627,
+              5.224344786256552,
+              5.269626155495644,
+              5.298465956002474,
+              5.295636132359505,
+              5.299407057464123,
+              5.330287851393223,
+              5.315347108989954
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          }
+        }
+      },
+      "parameterization": "direct",
+      "parity_against_blocked": {
+        "gradient_k": {
+          "all_finite": true,
+          "l2_error": 8.308794021606445,
+          "max_abs_error": 0.125,
+          "reference_l2": 2376.406494140625,
+          "reference_max_abs": 24.625,
+          "relative_l2_error": 0.0034963690101390407
+        },
+        "gradient_parameters": {
+          "all_finite": true,
+          "l2_error": 0.00018835610535461456,
+          "max_abs_error": 7.62939453125e-05,
+          "reference_l2": 398.2501525878906,
+          "reference_max_abs": 178.72312927246094,
+          "relative_l2_error": 4.7295927981608464e-07
+        },
+        "gradient_q": {
+          "all_finite": true,
+          "l2_error": 0.03251521289348602,
+          "max_abs_error": 0.001953125,
+          "reference_l2": 36.72676467895508,
+          "reference_max_abs": 0.412109375,
+          "relative_l2_error": 0.0008853274492789089
+        },
+        "gradient_v": {
+          "all_finite": true,
+          "l2_error": 1.5084517002105713,
+          "max_abs_error": 0.03125,
+          "reference_l2": 444.3421630859375,
+          "reference_max_abs": 5.8125,
+          "relative_l2_error": 0.003394797580617689
+        },
+        "output": {
+          "all_finite": true,
+          "l2_error": 0.3792346715927124,
+          "max_abs_error": 0.015625,
+          "reference_l2": 446.926513671875,
+          "reference_max_abs": 4.03125,
+          "relative_l2_error": 0.0008485392116860163
+        }
+      },
+      "speedup_blocked_over_fused": {
+        "forward": 5.088869070776284,
+        "forward_backward": 8.036543696940614
+      }
+    },
+    {
+      "degree": 3,
+      "implementations": {
+        "blocked": {
+          "forward": {
+            "compilation_seconds": 0.6961426478810608,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326848,
+              "available": true,
+              "generated_code_size_in_bytes": 72180,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 478192448
+            },
+            "max_ms": 9.07424883916974,
+            "median_ms": 9.059234289452434,
+            "min_ms": 8.961937855929136,
+            "p10_ms": 9.013661742210388,
+            "p90_ms": 9.06807598657906,
+            "samples_ms": [
+              8.961937855929136,
+              9.019408840686083,
+              9.07424883916974,
+              9.055628906935453,
+              9.061750024557114,
+              9.053429123014212,
+              9.05876886099577,
+              9.067390114068985,
+              9.062979836016893,
+              9.059699717909098
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.285679291933775,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435712,
+              "available": true,
+              "generated_code_size_in_bytes": 231492,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 268435752,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 1481026936
+            },
+            "max_ms": 42.5958801060915,
+            "median_ms": 42.552032973617315,
+            "min_ms": 42.514277156442404,
+            "p10_ms": 42.5375968683511,
+            "p90_ms": 42.580749932676554,
+            "samples_ms": [
+              42.55241807550192,
+              42.579068802297115,
+              42.54018794745207,
+              42.55164787173271,
+              42.56333876401186,
+              42.564948089420795,
+              42.54676913842559,
+              42.5958801060915,
+              42.54376795142889,
+              42.514277156442404
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          }
+        },
+        "fused": {
+          "forward": {
+            "compilation_seconds": 0.5844362550415099,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326848,
+              "available": true,
+              "generated_code_size_in_bytes": 48400,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134218816
+            },
+            "max_ms": 1.8413802608847618,
+            "median_ms": 1.8258900381624699,
+            "min_ms": 1.8169102258980274,
+            "p10_ms": 1.8169823102653027,
+            "p90_ms": 1.8386720679700375,
+            "samples_ms": [
+              1.818009652197361,
+              1.821179874241352,
+              1.8169102258980274,
+              1.8413802608847618,
+              1.8383711576461792,
+              1.8169903196394444,
+              1.8230900168418884,
+              1.830470748245716,
+              1.8333299085497856,
+              1.8286900594830513
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.8212346220389009,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435712,
+              "available": true,
+              "generated_code_size_in_bytes": 130080,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 268435752,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134285096
+            },
+            "max_ms": 5.8710286393761635,
+            "median_ms": 5.816849181428552,
+            "min_ms": 5.772727075964212,
+            "p10_ms": 5.7803860399872065,
+            "p90_ms": 5.856088735163212,
+            "samples_ms": [
+              5.772727075964212,
+              5.812409333884716,
+              5.79857686534524,
+              5.782078020274639,
+              5.781237035989761,
+              5.837528966367245,
+              5.821289028972387,
+              5.8710286393761635,
+              5.850399378687143,
+              5.854428745806217
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          }
+        }
+      },
+      "parameterization": "direct",
+      "parity_against_blocked": {
+        "gradient_k": {
+          "all_finite": true,
+          "l2_error": 36.005958557128906,
+          "max_abs_error": 16.0,
+          "reference_l2": 63279.16015625,
+          "reference_max_abs": 18432.0,
+          "relative_l2_error": 0.0005690018399141576
+        },
+        "gradient_parameters": {
+          "all_finite": true,
+          "l2_error": 0.007176029961556196,
+          "max_abs_error": 0.005859375,
+          "reference_l2": 71094.0859375,
+          "reference_max_abs": 64334.51953125,
+          "relative_l2_error": 1.0093708733894918e-07
+        },
+        "gradient_q": {
+          "all_finite": true,
+          "l2_error": 1.1270630359649658,
+          "max_abs_error": 1.0,
+          "reference_l2": 1038.604736328125,
+          "reference_max_abs": 278.0,
+          "relative_l2_error": 0.0010851703218199983
+        },
+        "gradient_v": {
+          "all_finite": true,
+          "l2_error": 1.8507413864135742,
+          "max_abs_error": 0.25,
+          "reference_l2": 541.1891479492188,
+          "reference_max_abs": 40.75,
+          "relative_l2_error": 0.0034197681040478555
+        },
+        "output": {
+          "all_finite": true,
+          "l2_error": 0.5970077514648438,
+          "max_abs_error": 0.25,
+          "reference_l2": 549.6094360351562,
+          "reference_max_abs": 52.0,
+          "relative_l2_error": 0.0010862399957533764
+        }
+      },
+      "speedup_blocked_over_fused": {
+        "forward": 4.961544288050019,
+        "forward_backward": 7.315306215858776
+      }
+    },
+    {
+      "degree": 4,
+      "implementations": {
+        "blocked": {
+          "forward": {
+            "compilation_seconds": 0.8592580836266279,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326912,
+              "available": true,
+              "generated_code_size_in_bytes": 76340,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 478192448
+            },
+            "max_ms": 9.086370002478361,
+            "median_ms": 9.059340227395296,
+            "min_ms": 9.011088870465755,
+            "p10_ms": 9.033048618584871,
+            "p90_ms": 9.081096947193146,
+            "samples_ms": [
+              9.011088870465755,
+              9.043668862432241,
+              9.080511052161455,
+              9.078940376639366,
+              9.058650117367506,
+              9.086370002478361,
+              9.056949988007545,
+              9.060030337423086,
+              9.065330028533936,
+              9.035488590598106
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.379869557917118,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435776,
+              "available": true,
+              "generated_code_size_in_bytes": 240028,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 268435816,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 1481027200
+            },
+            "max_ms": 42.542648036032915,
+            "median_ms": 42.51729277893901,
+            "min_ms": 42.503017000854015,
+            "p10_ms": 42.5053836312145,
+            "p90_ms": 42.5403798930347,
+            "samples_ms": [
+              42.503017000854015,
+              42.50564659014344,
+              42.50821704044938,
+              42.52060828730464,
+              42.542648036032915,
+              42.50922705978155,
+              42.540127877146006,
+              42.5205179490149,
+              42.51765739172697,
+              42.51692816615105
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          }
+        },
+        "fused": {
+          "forward": {
+            "compilation_seconds": 0.5957991350442171,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326912,
+              "available": true,
+              "generated_code_size_in_bytes": 52280,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134219072
+            },
+            "max_ms": 1.898131798952818,
+            "median_ms": 1.8569312524050474,
+            "min_ms": 1.846160739660263,
+            "p10_ms": 1.8489690963178873,
+            "p90_ms": 1.8797180149704218,
+            "samples_ms": [
+              1.8570711836218834,
+              1.8567913211882114,
+              1.8563014455139637,
+              1.846160739660263,
+              1.8492811359465122,
+              1.8538995645940304,
+              1.898131798952818,
+              1.8776720389723778,
+              1.877570990473032,
+              1.8723509274423122
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.847910669632256,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435776,
+              "available": true,
+              "generated_code_size_in_bytes": 139880,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 268435816,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134318128
+            },
+            "max_ms": 6.50021294131875,
+            "median_ms": 6.426102248951793,
+            "min_ms": 6.392281036823988,
+            "p10_ms": 6.402154080569744,
+            "p90_ms": 6.495632650330663,
+            "samples_ms": [
+              6.392281036823988,
+              6.427252199500799,
+              6.40832120552659,
+              6.403251085430384,
+              6.424952298402786,
+              6.459841970354319,
+              6.409811787307262,
+              6.468362174928188,
+              6.495123729109764,
+              6.50021294131875
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          }
+        }
+      },
+      "parameterization": "direct",
+      "parity_against_blocked": {
+        "gradient_k": {
+          "all_finite": true,
+          "l2_error": 11.76778507232666,
+          "max_abs_error": 0.125,
+          "reference_l2": 3301.46142578125,
+          "reference_max_abs": 27.625,
+          "relative_l2_error": 0.003564416951969069
+        },
+        "gradient_parameters": {
+          "all_finite": true,
+          "l2_error": 0.0006349282921291888,
+          "max_abs_error": 0.00030517578125,
+          "reference_l2": 2090.512451171875,
+          "reference_max_abs": 838.5467529296875,
+          "relative_l2_error": 3.037189717637262e-07
+        },
+        "gradient_q": {
+          "all_finite": true,
+          "l2_error": 0.045167382806539536,
+          "max_abs_error": 0.001953125,
+          "reference_l2": 50.75663375854492,
+          "reference_max_abs": 0.49609375,
+          "relative_l2_error": 0.0008898813704117163
+        },
+        "gradient_v": {
+          "all_finite": true,
+          "l2_error": 1.72944176197052,
+          "max_abs_error": 0.03125,
+          "reference_l2": 502.24798583984375,
+          "reference_max_abs": 6.0625,
+          "relative_l2_error": 0.003443402085682037
+        },
+        "output": {
+          "all_finite": true,
+          "l2_error": 0.43335485458374023,
+          "max_abs_error": 0.015625,
+          "reference_l2": 504.5036315917969,
+          "reference_max_abs": 4.03125,
+          "relative_l2_error": 0.0008589727158483084
+        }
+      },
+      "speedup_blocked_over_fused": {
+        "forward": 4.878662155996288,
+        "forward_backward": 6.616342400383422
+      }
+    },
+    {
+      "degree": 2,
+      "implementations": {
+        "blocked": {
+          "forward": {
+            "compilation_seconds": 0.6960027241148055,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326784,
+              "available": true,
+              "generated_code_size_in_bytes": 65892,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 478323520
+            },
+            "max_ms": 9.032438974827528,
+            "median_ms": 9.010562906041741,
+            "min_ms": 8.90741590410471,
+            "p10_ms": 8.952858811244369,
+            "p90_ms": 9.020523261278868,
+            "samples_ms": [
+              8.90741590410471,
+              8.969177957624197,
+              8.957908023148775,
+              9.032438974827528,
+              9.018299169838428,
+              9.009587578475475,
+              9.019199293106794,
+              9.005048777908087,
+              9.014949202537537,
+              9.011538233608007
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.9024575832299888,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435648,
+              "available": true,
+              "generated_code_size_in_bytes": 197564,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 268435688,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 1476832104
+            },
+            "max_ms": 47.61474998667836,
+            "median_ms": 47.5751084741205,
+            "min_ms": 47.39970527589321,
+            "p10_ms": 47.52570874989033,
+            "p90_ms": 47.60150113143027,
+            "samples_ms": [
+              47.39970527589321,
+              47.5944890640676,
+              47.544839326292276,
+              47.56606789305806,
+              47.53970913589001,
+              47.6000290364027,
+              47.558889258652925,
+              47.59151907637715,
+              47.61474998667836,
+              47.584149055182934
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          }
+        },
+        "fused": {
+          "forward": {
+            "compilation_seconds": 0.4345446298830211,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326784,
+              "available": true,
+              "generated_code_size_in_bytes": 34536,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134218560
+            },
+            "max_ms": 1.2217769399285316,
+            "median_ms": 1.155470497906208,
+            "min_ms": 1.1452948674559593,
+            "p10_ms": 1.1455739848315716,
+            "p90_ms": 1.2199861463159323,
+            "samples_ms": [
+              1.2197871692478657,
+              1.2217769399285316,
+              1.2173866853117943,
+              1.1465060524642467,
+              1.1471151374280453,
+              1.161706168204546,
+              1.1531845666468143,
+              1.1456049978733063,
+              1.1577564291656017,
+              1.1452948674559593
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.4702207832597196,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435648,
+              "available": true,
+              "generated_code_size_in_bytes": 108120,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 268435688,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134252064
+            },
+            "max_ms": 4.727334249764681,
+            "median_ms": 4.715133924037218,
+            "min_ms": 4.599851090461016,
+            "p10_ms": 4.637428000569344,
+            "p90_ms": 4.7235452104359865,
+            "samples_ms": [
+              4.599851090461016,
+              4.662852734327316,
+              4.641603212803602,
+              4.717784002423286,
+              4.720553755760193,
+              4.706234205514193,
+              4.727334249764681,
+              4.7204638831317425,
+              4.723124206066132,
+              4.71248384565115
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          }
+        }
+      },
+      "parameterization": "sum_of_squares",
+      "parity_against_blocked": {
+        "gradient_k": {
+          "all_finite": true,
+          "l2_error": 8.308860778808594,
+          "max_abs_error": 0.125,
+          "reference_l2": 2376.406494140625,
+          "reference_max_abs": 24.625,
+          "relative_l2_error": 0.0034963971017985753
+        },
+        "gradient_parameters": {
+          "all_finite": true,
+          "l2_error": 0.0003049969964195043,
+          "max_abs_error": 0.0001125335693359375,
+          "reference_l2": 405.6764831542969,
+          "reference_max_abs": 136.6348876953125,
+          "relative_l2_error": 7.518232115601838e-07
+        },
+        "gradient_q": {
+          "all_finite": true,
+          "l2_error": 0.03251631557941437,
+          "max_abs_error": 0.001953125,
+          "reference_l2": 36.72676467895508,
+          "reference_max_abs": 0.412109375,
+          "relative_l2_error": 0.0008853574733209932
+        },
+        "gradient_v": {
+          "all_finite": true,
+          "l2_error": 1.5084550380706787,
+          "max_abs_error": 0.03125,
+          "reference_l2": 444.34210205078125,
+          "reference_max_abs": 5.8125,
+          "relative_l2_error": 0.003394805558844582
+        },
+        "output": {
+          "all_finite": true,
+          "l2_error": 0.379230797290802,
+          "max_abs_error": 0.015625,
+          "reference_l2": 446.926513671875,
+          "reference_max_abs": 4.03125,
+          "relative_l2_error": 0.0008485305429187987
+        }
+      },
+      "speedup_blocked_over_fused": {
+        "forward": 7.79817651975494,
+        "forward_backward": 10.08987427304832
+      }
+    },
+    {
+      "degree": 4,
+      "implementations": {
+        "blocked": {
+          "forward": {
+            "compilation_seconds": 0.8372670100070536,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326912,
+              "available": true,
+              "generated_code_size_in_bytes": 71076,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 478323520
+            },
+            "max_ms": 9.111860767006874,
+            "median_ms": 9.0792051050812,
+            "min_ms": 8.935697376728058,
+            "p10_ms": 9.02389888651669,
+            "p90_ms": 9.1001789085567,
+            "samples_ms": [
+              8.935697376728058,
+              9.033699054270983,
+              9.097541216760874,
+              9.080170188099146,
+              9.078240022063255,
+              9.111860767006874,
+              9.098880924284458,
+              9.073849767446518,
+              9.0825199149549,
+              9.073279798030853
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.15747059462592,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435776,
+              "available": true,
+              "generated_code_size_in_bytes": 210700,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 268435816,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 1476832376
+            },
+            "max_ms": 43.57547964900732,
+            "median_ms": 43.52444945834577,
+            "min_ms": 43.379887007176876,
+            "p10_ms": 43.46674741245806,
+            "p90_ms": 43.56685006059706,
+            "samples_ms": [
+              43.379887007176876,
+              43.52428903803229,
+              43.52119006216526,
+              43.52622991427779,
+              43.476398568600416,
+              43.56589121744037,
+              43.53478876873851,
+              43.57547964900732,
+              43.52460987865925,
+              43.515689205378294
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          }
+        },
+        "fused": {
+          "forward": {
+            "compilation_seconds": 0.4804987530224025,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 201326912,
+              "available": true,
+              "generated_code_size_in_bytes": 40888,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 67108864,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134219072
+            },
+            "max_ms": 1.342829316854477,
+            "median_ms": 1.3027738314121962,
+            "min_ms": 1.2761480174958706,
+            "p10_ms": 1.286444766446948,
+            "p90_ms": 1.3271782081574202,
+            "samples_ms": [
+              1.2875888496637344,
+              1.2955479323863983,
+              1.3005887158215046,
+              1.2964592315256596,
+              1.2761480174958706,
+              1.3179490342736244,
+              1.3254391960799694,
+              1.3049589470028877,
+              1.342829316854477,
+              1.3131489977240562
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 1.8655520589090884,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 268435776,
+              "available": true,
+              "generated_code_size_in_bytes": 130664,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 268435816,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 134318128
+            },
+            "max_ms": 6.044122856110334,
+            "median_ms": 5.991151323541999,
+            "min_ms": 5.857259035110474,
+            "p10_ms": 5.951554607599974,
+            "p90_ms": 6.040280172601342,
+            "samples_ms": [
+              5.857259035110474,
+              5.966771859675646,
+              5.96203189343214,
+              5.980060901492834,
+              6.002241745591164,
+              5.976811982691288,
+              6.03985320776701,
+              6.034743040800095,
+              6.044122856110334,
+              6.027273368090391
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          }
+        }
+      },
+      "parameterization": "sum_of_squares",
+      "parity_against_blocked": {
+        "gradient_k": {
+          "all_finite": true,
+          "l2_error": 11.767733573913574,
+          "max_abs_error": 0.125,
+          "reference_l2": 3301.461669921875,
+          "reference_max_abs": 27.625,
+          "relative_l2_error": 0.003564401089712498
+        },
+        "gradient_parameters": {
+          "all_finite": true,
+          "l2_error": 0.00047925004037097096,
+          "max_abs_error": 0.0001373291015625,
+          "reference_l2": 764.666015625,
+          "reference_max_abs": 335.3315124511719,
+          "relative_l2_error": 6.267442655722784e-07
+        },
+        "gradient_q": {
+          "all_finite": true,
+          "l2_error": 0.04516118764877319,
+          "max_abs_error": 0.001953125,
+          "reference_l2": 50.75664138793945,
+          "reference_max_abs": 0.49609375,
+          "relative_l2_error": 0.0008897591805494084
+        },
+        "gradient_v": {
+          "all_finite": true,
+          "l2_error": 1.729475975036621,
+          "max_abs_error": 0.03125,
+          "reference_l2": 502.2480773925781,
+          "reference_max_abs": 6.0625,
+          "relative_l2_error": 0.0034434695778532373
+        },
+        "output": {
+          "all_finite": true,
+          "l2_error": 0.4333212375640869,
+          "max_abs_error": 0.015625,
+          "reference_l2": 504.503662109375,
+          "reference_max_abs": 4.03125,
+          "relative_l2_error": 0.0008589060300421448
+        }
+      },
+      "speedup_blocked_over_fused": {
+        "forward": 6.969133771469309,
+        "forward_backward": 7.264788870766479
+      }
+    }
+  ],
+  "schema_version": 1,
+  "scope": "attention only, including Q/K/V and every coefficient or square-factor gradient",
+  "shape": [
+    16,
+    2048,
+    16,
+    64
+  ],
+  "status": "complete",
+  "timing": "synchronized compiled calls; compilation and diagnostics excluded"
+}

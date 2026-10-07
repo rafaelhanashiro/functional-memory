@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml
 
-from . import create_run, load_study, regenerate_index, validate_record
+from . import create_run, load_study, regenerate_index, run_directory, validate_record
 from .selections import refresh_selection
 
 
@@ -24,9 +24,16 @@ def main() -> None:
         "--allow-flax-default-init", action="store_true",
         help="explicitly opt a fresh experiment out of its mechanism's reference initialization",
     )
-    for name in ("index", "validate"):
-        command = commands.add_parser(name)
-        command.add_argument("study", type=Path)
+    index = commands.add_parser("index")
+    index.add_argument("study", type=Path)
+    validate = commands.add_parser(
+        "validate", help="check run identities, recipes, and artifact hashes; checkpoints by names and sizes")
+    validate.add_argument("study", type=Path)
+    validate.add_argument("runs", nargs="*", metavar="run", help="IDs or labels to check (default: every run)")
+    validate.add_argument(
+        "--checkpoint-hashes", action="store_true",
+        help="also re-hash retained checkpoints, which reads every byte of them; use after copying checkpoints",
+    )
     refresh = commands.add_parser("refresh", help="re-pin a result's selections to its runs' scientific files")
     refresh.add_argument("result", type=Path, nargs="+")
     args = parser.parse_args()
@@ -71,7 +78,9 @@ def main() -> None:
         print(regenerate_index(args.study))
     else:
         study = args.study.parent if args.study.name == "sweep.yaml" else args.study
-        results = [validate_record(study / "runs" / run["run_id"]) for run in load_study(study)["runs"]]
+        runs = ([run_directory(study, run) for run in args.runs] if args.runs
+                else [study / "runs" / run["run_id"] for run in load_study(study)["runs"]])
+        results = [validate_record(run, checkpoint_hashes=args.checkpoint_hashes) for run in runs]
         print(json.dumps({"study": str(study), "runs": results}, indent=2))
 
 
