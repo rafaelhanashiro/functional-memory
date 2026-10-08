@@ -56,10 +56,13 @@ def test_accumulation_matches_full_batch_before_clipping(tmp_path):
     rng = jax.random.PRNGKey(0)
     state = create_state(cfg, rng)
     batch = jnp.asarray(np.arange(20).reshape(4, 5) % 16)
-    full, loss = loop.train_step(state, batch, rng)
-    accum, accum_loss = loop.accumulated_train_step(state, batch.reshape(2, 2, 5), jax.random.split(rng, 2))
+    full, loss, full_numerics = loop.train_step(state, batch, rng, check_all_gradients=True)
+    accum, accum_loss, accumulated_numerics = loop.accumulated_train_step(
+        state, batch.reshape(2, 2, 5), jax.random.split(rng, 2), check_all_gradients=True)
     assert_state_close(full, accum)
     np.testing.assert_allclose(loss, accum_loss, rtol=1e-6)
+    np.testing.assert_allclose(full_numerics[1], accumulated_numerics[1], rtol=1e-6)
+    assert float(accumulated_numerics[1]) > cfg.optim.grad_clip_norm
 
 
 def test_bfloat16_compute_preserves_float32_parameters(tmp_path):
@@ -239,14 +242,16 @@ def test_distributed_accumulation_matches_single_device(tmp_path, mode, sharing)
         cfg.model.attention_degree = 2
     state = create_state(cfg, jax.random.PRNGKey(0))
     batch = np.arange(20, dtype=np.int32).reshape(4, 5) % 16
-    expected, expected_loss = loop.train_step(state, jnp.asarray(batch), jax.random.PRNGKey(1))
+    expected, expected_loss, expected_numerics = loop.train_step(
+        state, jnp.asarray(batch), jax.random.PRNGKey(1), check_all_gradients=True)
     layout = resolve_batch_layout(cfg)
-    distributed = make_data_parallel_functions(state, tuple(jax.local_devices()))
+    distributed = make_data_parallel_functions(state, tuple(jax.local_devices()), check_all_gradients=True)
     replicated = put_replicated(state, distributed.replicated_sharding)
     batches = put_train_batches(batch.reshape(layout.grad_accum_steps, layout.global_micro_batch_size, 5), distributed.train_batch_sharding)
-    actual, actual_loss = distributed.train_step(replicated, batches, jax.random.PRNGKey(1))
+    actual, actual_loss, actual_numerics = distributed.train_step(replicated, batches, jax.random.PRNGKey(1))
     assert_state_close(expected, actual)
     np.testing.assert_allclose(expected_loss, actual_loss, rtol=1e-6)
+    np.testing.assert_allclose(expected_numerics[1], actual_numerics[1], rtol=1e-6)
     sample, provenance = diagnostic_tools.fixed_diagnostic_sample(cfg)
     report = diagnostic_tools.attention_diagnostics(actual, cfg, sample, provenance)
     assert report["valid"] and report["sample"]["num_sequences"] == 1

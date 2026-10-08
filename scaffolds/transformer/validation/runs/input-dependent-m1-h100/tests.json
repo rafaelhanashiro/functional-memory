@@ -1,0 +1,35 @@
+{
+  "cases": [
+    "test_gpu_forward_and_all_gradients_match_fp64[float32-blocked]",
+    "test_gpu_forward_and_all_gradients_match_fp64[float32-fused]",
+    "test_gpu_forward_and_all_gradients_match_fp64[bfloat16-blocked]",
+    "test_gpu_forward_and_all_gradients_match_fp64[bfloat16-fused]",
+    "test_gpu_bf16_production_context_and_nonfinite_kernel_guard"
+  ],
+  "command": [
+    "scaffolds/transformer/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "-m",
+    "gpu",
+    "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
+  ],
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "driver_version": "560.35.05",
+  "elapsed_seconds": 20.55,
+  "errors": 0,
+  "failures": 0,
+  "gpu_count": 1,
+  "gpu_type": "NVIDIA H100 PCIe",
+  "home_cluster": "kennel",
+  "log": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/input-dependent-m1-gpu.log",
+    "sha256": "dde8f0e4826917448cfeeaa50e58e21289f3084d6654ceb7c02154412e68c513"
+  },
+  "node": "mastiff",
+  "slurm_job_id": "209554",
+  "source_commit": "1e78579354087d3d3f62fdda865d90913068e960",
+  "status": "passed",
+  "tests": 5
+}

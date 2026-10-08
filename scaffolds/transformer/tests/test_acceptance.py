@@ -51,6 +51,18 @@ def test_required_kernel_tests_follow_resolved_backend_and_keep_adapter_checks()
         assert preflight.test_paths(spec, config_to_dict(other), resolved_backend="fused", cpu=True) == spec.cpu_tests
 
 
+@pytest.mark.parametrize("cpu", (False, True))
+@pytest.mark.parametrize("backend", ("blocked", "fused"))
+def test_query_conditioning_requires_its_checks_even_with_an_empty_adapter(cpu, backend):
+    config = {"model": {"attention_degree": 1, "attention_coefficients": "learned",
+                        "attention_coefficient_conditioning": "query", "attention_normalization": False}}
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    assert preflight.test_paths(spec, config, resolved_backend=backend, cpu=cpu) == (
+        preflight.INPUT_DEPENDENT_COEFFICIENT_TESTS,)
+    config["model"]["attention_coefficient_conditioning"] = "static"
+    assert preflight.test_paths(spec, config, resolved_backend=backend, cpu=cpu) == ()
+
+
 def test_production_acceptance_runs_required_gpu_tests_with_an_empty_adapter_list(tmp_path, monkeypatch):
     from types import SimpleNamespace
     from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict

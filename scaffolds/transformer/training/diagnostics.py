@@ -92,6 +92,7 @@ def attention_identity(config) -> dict:
     mode = config.model.quadratic_mode
     normalized = config.model.attention_normalization
     learned_polynomial = has_learned_polynomial(config.model)
+    query_conditioned = config.model.attention_coefficient_conditioning == "query"
     rational = has_rational_kernel(config.model)
     fixed_polynomial = has_fixed_polynomial(config.model)
     fixed_square_factors = has_fixed_square_factors(config.model)
@@ -203,7 +204,7 @@ def attention_identity(config) -> dict:
 
             per_polynomial = degree + 1 + denominator_degree(config.model) + (denominator_constant(config.model) == "learned")
         else:
-            per_polynomial = degree + 1
+            per_polynomial = (degree + 1) * (config.model.hidden_size + 1 if query_conditioned else 1)
         identity.update({
             "attention_coefficients": "learned",
             "attention_coefficient_parameterization": config.model.attention_coefficient_parameterization,
@@ -221,6 +222,16 @@ def attention_identity(config) -> dict:
                 "a_0^2 + sum_(r>=2) r^2 a_r^2" + (" + sum_(r>=1) r^2 b_r^2" if penalize_denominator else "")
                 + "; a_1 unpenalized" + ("; denominator unpenalized" if rational and not penalize_denominator else "")
                 + "; validation loss and recorded NLL exclude it")
+    if query_conditioned:
+        identity.update(
+            attention_kernel="query_polynomial_unnormalized",
+            attention_coefficient_conditioning="query",
+            attention_coefficient_input="pre_attention_rmsnorm_activation",
+            attention_coefficient_projection_dtype="float32",
+            attention_formula=("sum_(i<=t) (c0(x_t) + c1(x_t) s_ti) v_i, s_ti = Q_t K_i^T / sqrt(d_k); "
+                               "c(x_t) = x_t W + b per layer/head, W initially zero, b initially (1,1); "
+                               "x_t is the activation after the block input RMSNorm"),
+        )
     if mode != "fixed":
         identity.update({
             "quadratic_mode": mode,
@@ -245,7 +256,8 @@ def attention_identity(config) -> dict:
         block_q, block_k = ((None, None) if degree is None and normalized else
                            _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
         identity.update({
-            "attention_implementation": "cudnn" if degree is None and normalized else "pallas_triton",
+            "attention_implementation": ("pallas_triton_linear_plus_fp32_prefix_sum" if query_conditioned else
+                                         "cudnn" if degree is None and normalized else "pallas_triton"),
             "query_block_size": block_q,
             "key_block_size": block_k,
             "diagnostic_backend": "blocked",
@@ -357,6 +369,30 @@ def polynomial_coefficient_report(params, config) -> dict:
     }
 
 
+
+def query_coefficient_report(params, raw_layers) -> dict:
+    """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
+
+    Projection biases are explicitly named; they are never presented as the
+    effective coefficients. Summary arrays have shape [layers,heads,2].
+    """
+    bias = np.asarray(jax.device_get(params["query_polynomial_bias"][...]), dtype=np.float64)
+    kernel = np.asarray(jax.device_get(params["query_polynomial_kernel"][...]), dtype=np.float64)
+    summaries = {
+        statistic: np.stack([layer[f"query_coefficient_{statistic}"] for layer in raw_layers])
+        for statistic in ("mean", "std", "min", "max")
+    }
+    return {
+        "conditioning": "query",
+        "sample": "fixed_diagnostic_sample",
+        "effective_coefficient_names": ["constant", "linear"],
+        "effective_summary": {name: _serializable(values) for name, values in summaries.items()},
+        "projection_bias": _serializable(bias),
+        "projection_kernel_l2": _serializable(np.linalg.norm(kernel, axis=-2)),
+        "finite": bool(np.isfinite(bias).all() and np.isfinite(kernel).all()
+                       and all(np.isfinite(values).all() for values in summaries.values())),
+    }
+
 def qk_norm_scale_report(params, config) -> dict:
     """Record the log scales gamma and the score bounds exp(gamma), shared ([1]) or per layer and head ([L, H, 1])."""
     raw = np.asarray(jax.device_get(params["qk_norm_log_scale"][...]), dtype=np.float64)
@@ -434,6 +470,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     for index, raw in enumerate(raw_layers):
         layer = {"layer": index}
         for name, value in raw.items():
+            if name.startswith("query_coefficient_"):
+                continue  # Per-head/order arrays are summarized in the coefficient report.
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
             diagnostic_only_sum = (not config.model.attention_normalization
@@ -467,6 +505,10 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         coefficient_report = quadratic_coefficient_report(params, config)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite quadratic coefficients")
+    elif config.model.attention_coefficient_conditioning == "query":
+        coefficient_report = query_coefficient_report(params, raw_layers)
+        if not coefficient_report["finite"]:
+            issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
     elif has_learned_polynomial(config.model):
         coefficient_report = polynomial_coefficient_report(params, config)
         if not coefficient_report["finite"]:
@@ -527,6 +569,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         report["kernel_values"] = "unshifted_fixed_polynomial"
     elif has_fixed_square_factors(config.model):
         report["kernel_values"] = "unshifted_fixed_sum_of_squares"
+    if config.model.attention_coefficient_conditioning == "query":
+        report["kernel_values"] = "unshifted_query_polynomial"
     if scale_report is not None:
         report["qk_norm_scale"] = scale_report
     return report

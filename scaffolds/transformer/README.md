@@ -214,6 +214,31 @@ and maximum. Recipes and metadata identify the option with `qk_norm`,
 `qk_norm_sharing`, `qk_norm_initial_scale`, and `qk_norm_eps`. GLA and degree 0
 do not use it.
 
+### Input-dependent linear coefficients
+
+`attention_coefficient_conditioning: query` predicts signed coefficients
+`c_0(x_t), c_1(x_t)` from the current token's incoming attention activation, after
+the block's input RMSNorm. Each layer and head owns an affine projection. It
+requires `attention_degree: 1`, `attention_coefficients: learned`, direct
+parameterization, per-head sharing, Taylor coefficient initialization, and
+unnormalized attention. The default `static` keeps input-independent coefficients.
+
+The output before any output scaling is
+`c_0(x_t) sum_(i<=t) v_i + c_1(x_t) sum_(i<=t) s_ti v_i`. The existing QK
+normalization, score scaling, and RoPE define `s_ti`. Query conditioning changes
+the read at `t`; it does not add write gates, forgetting, or delta corrections.
+The fused implementation uses the existing linear polynomial kernel and an FP32
+causal value sum. The blocked implementation is the explicit polynomial reference.
+
+`query_polynomial_kernel` and `query_polynomial_bias` are FP32 model-owned arrays,
+with shapes `[layers, heads, hidden_size, 2]` and `[layers, heads, 2]`. The kernel
+starts at zero and the bias at `(1, 1)`, without consuming RNG draws, so the
+backbone keeps its canonical initialization and the initial kernel is `1 + s`.
+Both arrays are excluded from weight decay, like the static learned coefficients.
+Per-head output RMSNorm remains an independent option through
+`attention_output_scaling: head_rms_norm`. Validation diagnostics report the
+actual input-dependent coefficients.
+
 ### Unnormalized output scaling
 
 `attention_output_scaling` rescales each head's unnormalized output
@@ -434,6 +459,20 @@ and each validation window), `val/`, and `attention/<kernel>/layerNN/<statistic>
 against a `step` axis, so updates relogged after a resume are kept; terminal and
 validation-best metrics go to the run summary. `wandb_run.json` in the run directory
 pins the W&B run id across requeues.
+
+Gradient diagnostics are standard for every mechanism. At each normal log step,
+W&B plots `train/gradient_norm_pre_clip`, `train/gradient_norm_post_clip`,
+`train/gradient_clip_scale`, and `train/gradient_clipped`. The norm is taken after
+all microbatch and data-parallel averaging, before clipping, and includes any
+coefficient penalty in the training objective. The optimizer already computes
+this norm for its numerical checks; logging adds no gradient-tree reduction.
+Retained training logs keep the sampled norm and clipping scale. Each validation
+event in `metrics.jsonl` stores the norm count, mean, maximum, and clipped fraction
+over **every update** since the preceding validation or resume, together with the
+clipping threshold. W&B also plots the window mean, maximum, and clipped fraction.
+The default saved workspace from `views.experiment_workspace` includes gradient
+norm plots on a logarithmic axis and separate clipping-scale/fraction plots.
+Historical runs without these measurements retain unknown gradient diagnostics.
 
 Recipes leave `train.wandb_mode` at `disabled`; the Kennel and ORCD launchers pass
 `--wandb-mode online` (set `TRANSFORMER_WANDB_MODE=offline` or `disabled` when

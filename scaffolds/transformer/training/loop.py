@@ -676,6 +676,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         window_time = time.perf_counter()
         window_step = start_step
         train_losses = []
+        gradient_norms = []
         attempt_id = f"{os.environ.get('SLURM_JOB_ID', 'local')}:{os.environ.get('SLURM_RESTART_COUNT', '0')}:{uuid.uuid4().hex[:8]}"
         for step in trange(start_step + 1, end_step + 1, desc="train"):
             train_step_start = time.perf_counter()
@@ -716,6 +717,14 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                                f"Nonfinite training loss or optimizer update at step {step}: {loss_value}",
                                diagnostic_sample, diagnostic_provenance, loss=loss_value,
                                numerical_metrics=numerical_metrics[0] if numerical_metrics else None)
+            # This is the already-computed norm of the full, averaged gradient
+            # before the optimizer clips it, including any coefficient penalty.
+            gradient_norm = (float(np.asarray(jax.device_get(numerical_metrics[0]))[1])
+                             if numerical_metrics else None)
+            if gradient_norm is not None:
+                gradient_norms.append(gradient_norm)
+            clipped = gradient_norm is not None and gradient_norm > config.optim.grad_clip_norm
+            clip_scale = config.optim.grad_clip_norm / gradient_norm if clipped else 1.0
             if (is_log or is_eval) and penalty_sum is not None:
                 # The penalty term as added to the loss, at the updated parameters; the
                 # recorded training NLL and perplexities exclude it.
@@ -724,10 +733,15 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 train_losses.append(loss_value)
                 train_ppl = _perplexity(config, state, step, loss_value, diagnostic_sample, diagnostic_provenance)
                 print(f"step={step} train_nll={loss_value:.6f} train_ppl={train_ppl:.4f}"
-                      + (f" train_coefficient_penalty={penalty_value:.6f}" if penalty_value is not None else ""),
+                      + (f" train_coefficient_penalty={penalty_value:.6f}" if penalty_value is not None else "")
+                      # Retained logs keep the individual sampled points; the
+                      # validation record summarizes every update in its window.
+                      + (f" gradient_norm_pre_clip={gradient_norm:.6f} gradient_clip_scale={clip_scale:.6f}"
+                         if gradient_norm is not None else ""),
                       flush=True)
                 tracking.log_train(wandb_run, step, loss_value, train_ppl, float(schedule(step - 1)),
-                                   coefficient_penalty=penalty_value)
+                                   coefficient_penalty=penalty_value, gradient_norm=gradient_norm,
+                                   gradient_clip_norm=config.optim.grad_clip_norm)
             if is_eval:
                 interval_seconds = time.perf_counter() - window_time
                 evaluation_start = time.perf_counter()
@@ -770,6 +784,14 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                     "validation_batches": config.train.eval_batches,
                     "validation_sequences": config.train.eval_batches * config.data.batch_size,
                     "validation_tokens": config.train.eval_batches * tokens_per_step,
+                    **({
+                        "train_gradient_norm_count": len(gradient_norms),
+                        "train_gradient_norm_mean": float(np.mean(gradient_norms)),
+                        "train_gradient_norm_max": max(gradient_norms),
+                        "train_gradient_clipped_fraction": float(np.mean(
+                            np.asarray(gradient_norms) > config.optim.grad_clip_norm)),
+                        "gradient_clip_norm": config.optim.grad_clip_norm,
+                    } if gradient_norms else {}),
                     **({"train_coefficient_penalty": penalty_value} if penalty_value is not None else {}),
                     "learning_rate": float(schedule(step - 1)), "tokens_per_second": throughput,
                     "tokens_per_second_per_device": throughput / layout.device_count,
@@ -802,6 +824,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                               rng_state={"seed": config.train.seed, "completed_updates": step})
                 print(f"step={step} val_nll={eval_loss:.6f} val_ppl={eval_ppl:.4f} best={is_best}", flush=True)
                 window_time, window_step, train_losses = time.perf_counter(), step, []
+                gradient_norms = []
             elif is_checkpoint:
                 if not save_checkpoint(manager, step, state, metrics=None):
                     raise RuntimeError(f"Failed to save resume checkpoint at step {step}")
