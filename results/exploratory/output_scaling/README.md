@@ -40,8 +40,37 @@ References: softmax 13.514; normalized m = 4: fixed Taylor 13.774, learned nonne
 - **Head RMSNorm beats 1/t, which beats no scaling,** for both kernels (learned m = 4:
   13.662, 14.056, 14.720; exp: 13.441, 14.196, 15.885).
 
+## Learned m = 1–4 with head RMSNorm at warmup 400
+
+Same recipe with `optim.warmup_steps` 400 instead of 2,000; each head-RMSNorm run is
+paired with the no-scaling run at the same warmup ([warmup_length](../warmup_length/README.md)
+compares the two warmups).
+
+| Learned degree | No scaling | Head RMSNorm | Difference |
+| --- | ---: | ---: | ---: |
+| m = 1 | 17.874 | 17.554 | −0.32 |
+| m = 2 | 15.461 | 14.630 | −0.83 |
+| m = 3 | 14.630 | 13.988 | −0.64 |
+| m = 4 | 14.742 | **13.639** | −1.10 |
+
+References at warmup 400: softmax 13.731, exp with head RMSNorm 13.411, learned m = 4
+with 1/t 13.816.
+
+- **Head RMSNorm helps at every degree, most at high degree:** from 0.32 at m = 1 to
+  1.10 at m = 4.
+- **It restores the degree order.** Without output scaling m = 3 beats m = 4 at both
+  warmups; with head RMSNorm m = 4 leads m = 3 by 0.35.
+- **Learned m = 4 with head RMSNorm beats softmax at the same warmup** (13.639 against
+  13.731); exp with head RMSNorm stays ahead of both.
+- **No loss spikes at any degree** (largest training-loss jump 0.2 nats), including
+  m = 1, which spikes by up to 7.4 nats without output scaling.
+
 ## Limits
 
 - One seed; differences of a few tenths are not established.
 - The 1/t runs trained on H100 and the head-RMSNorm runs on B300 (softmax with head
   RMSNorm on 2 GPUs, the others on 4).
+- Warmup-400 head-RMSNorm line: m = 1 trained on 2 H100 PCIe GPUs (mastiff GRES 6–7,
+  not its faulty card) with `attention_coefficient_conditioning: static`, the plain
+  learned-coefficient case; m = 2, 3, and 4 on 4 GPUs, each across H100 and B300 after
+  requeues. m = 2 and 3 ran a later scaffold commit that only adds gradient-norm logging.

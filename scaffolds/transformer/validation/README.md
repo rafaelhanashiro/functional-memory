@@ -494,6 +494,19 @@ and an exact fresh-process resume, with direct device transfer. Each run's
   update, against about 1.07 and 1.45 s on 2×H200; `m = 1` failed numerically at update
   67, a property of odd-degree normalized kernels rather than of the hardware.
 
+The warmup-length unnormalized fixed Hermite runs (source `13f018f`) added two more:
+
+- **Unnormalized fixed Hermite on ORCD H100 and H200:** 310 CPU, 5 distributed, and 43 GPU
+  tests passed on 2×H100 80GB HBM3 (job 25089881, 2026-10-07), and the GPU tests again on
+  2×H200 (job 25089882). Later allocations reused these through the shared test results
+  and ran their own initialization check, pilot (0.85–0.89 s per update), and resume.
+- **2×H100 NVL, first use** (`node1709`): job 25089884 passed the initialization check, a
+  pilot at 1.39 s per update, and the resume on 2026-10-08, then trained updates
+  3,001–19,074 at about 1.5 s per update, about 1.6× slower than H100 80GB HBM3 or H200.
+  Its GPU unit tests did not run on the NVL: the shared test results are keyed by the
+  launcher's GPU type, `H100`, which covers both models, so it reused the H100 80GB HBM3
+  results.
+
 ## B300 cuBLAS concurrency: checkpoint replay
 
 The locked cuBLAS 12.9 is in the range (12.8–13.1) where some Blackwell kernels free
