@@ -1,11 +1,31 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/input-dependent-tanh/experiments/attention_scaling/runs/r80300a4cd5fa/.runtime/acceptance/B300-4",
+      "allocation": "JobId=210240 JobName=r80300a4cd5fa UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20051 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-08T00:24:08 EligibleTime=2026-10-08T00:24:08 AccrueTime=2026-10-08T00:24:08 StartTime=2026-10-08T00:24:20 EndTime=2026-10-09T00:24:20 Deadline=N/A PreemptEligibleTime=2026-10-08T02:24:20 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-08T00:24:20 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1842508 ReqNodeList=akita ExcNodeList=collie,doodle,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/input-dependent-tanh/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/input-dependent-tanh StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/input-dependent-tanh/experiments/attention_scaling/runs/r80300a4cd5fa/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/input-dependent-tanh/experiments/attention_scaling/runs/r80300a4cd5fa/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:b300:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/r80300a4cd5fa/config.yaml",
+      "config_sha256": "d71cadc221cc1bbb6b13b8a74516f31c0fe270d88c9956826a45fa214548bc2a",
+      "gpu_count": 4,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "254cab9",
+      "slurm_job_id": "210240",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-08T04:24:25.669278+00:00"
+    }
+  ],
   "config": {
     "path": "experiments/attention_scaling/runs/r80300a4cd5fa/config.yaml",
     "sha256": "d71cadc221cc1bbb6b13b8a74516f31c0fe270d88c9956826a45fa214548bc2a"
   },
+  "frozen_execution_sha256": "29c90f63ed7a5a2c3016ba4ecd18241b58d538e00f1bac9f85f886e7d2d3e046",
+  "home_cluster": "kennel",
   "label": "200m-qk-m001-query-tanh-head-rms-warmup400-seed0",
+  "log_path": "experiments/attention_scaling/runs/r80300a4cd5fa/training.log",
   "name": "200m-qk-m001-query-tanh-head-rms-warmup400-seed0",
   "record_schema_version": 1,
   "run_id": "r80300a4cd5fa",
-  "status": "planned"
+  "source_commit": "254cab9",
+  "status": "acceptance"
 }

@@ -13,9 +13,9 @@ degrees one, two, and three.
 | --- | --- | --- | --- | --- |
 | Affine reference, m = 1 | `r9cf9589b9855` | Query-dependent affine projection | `209648` | Complete, 19,074 updates |
 | Static reference, m = 1 | `r03bfa6fd7b2e` | Input-independent, learned per layer and head | `209556` | Complete, 19,074 updates |
-| Primary, m = 1 | `r80300a4cd5fa` | `b_r + a_r tanh(w_r^T x_t)` | — | Prepared |
-| Primary, m = 2 | `rbfe1750cc24c` | `b_r + a_r tanh(w_r^T x_t)` | — | Prepared |
-| Primary, m = 3 | `r0bc57959ef6c` | `b_r + a_r tanh(w_r^T x_t)` | — | Prepared |
+| Primary, m = 1 | `r80300a4cd5fa` | `b_r + a_r tanh(w_r^T x_t)` | `210240` | Acceptance, 4 B300 on akita |
+| Primary, m = 2 | `rbfe1750cc24c` | `b_r + a_r tanh(w_r^T x_t)` | `210241` | Acceptance, 4 H100 on dogo |
+| Primary, m = 3 | `r0bc57959ef6c` | `b_r + a_r tanh(w_r^T x_t)` | `210242` | Acceptance, 4 H100 on mastiff |
 
 Explicit inputs and roles are in [selection.yaml](selection.yaml); scientific run
 files live under [the attention study](../../../experiments/attention_scaling/README.md).
@@ -41,8 +41,9 @@ The tanh runs learn `c_r(x_t) = b_r + a_r tanh(w_r^T x_t)` for every order
 activation. There is no bias inside tanh. Initial values `b_r = 1/r!`, `a_r = 1`,
 and `w_r = 0` reproduce the degree-`m` Taylor kernel exactly. The modulation is
 bounded by the learned amplitude for fixed parameters; its bound can change as
-the amplitudes learn. These runs request four H100 or B300 GPUs on Kennel's
-`standard` or `long` partition at nice 0 and use direct fused polynomial attention.
+the amplitudes learn. Degree one has four B300 GPUs on Kennel's `standard`
+partition; degrees two and three each have four H100 GPUs on `long`. All have
+nice 0, use direct fused polynomial attention, and execute source `254cab9`.
 Every hardware allocation must pass the shared acceptance checks before production.
 
 The [shared scaffold](../../../scaffolds/transformer/README.md#input-dependent-polynomial-coefficients)
@@ -80,7 +81,11 @@ other input-dependent parameterizations help. Neither variant adds GDN's write
 gates, forgetting, or delta correction. These runs remain outside the canonical
 plot selections.
 
-The three tanh runs have no results yet. Degree one allows comparison with both
+The three tanh runs are undergoing acceptance and have no training results yet.
+The direct fused kernel passed all 12 standalone H100 GPU checks across the three
+degrees; [qualification evidence](../../../scaffolds/transformer/validation/runs/query-tanh-h100/tests.json)
+is separate from each production allocation's required checks.
+Degree one allows comparison with both
 completed references; degrees two and three also change polynomial capacity, so
 their comparison with the static degree-one reference does not isolate conditioning.
 

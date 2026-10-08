@@ -11,6 +11,30 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Query-dependent tanh polynomial coefficients
+
+The direct fused query-polynomial kernel passed all 12 H100 CUDA cases on
+2026-10-08, job `210239` on `mastiff` (one H100 PCIe), source `254cab9`.
+The compact [test record](runs/query-tanh-h100/tests.json) pins the source,
+dependency lock, runtime settings, and JUnit evidence. The checks cover degrees
+one, two, and three: FP32/BF16 forward and all parameter/input gradients against
+an independent FP64 oracle, 2,048-token BF16 forward/backward comparison with the
+blocked reference, and explicit failure for actual kernel overflow and nonfinite
+causally visible keys. Future invalid keys do not contaminate earlier queries.
+
+Run these checks in a qualified NVIDIA GPU allocation with the locked environment
+and CUDA assembler settings from `launchers/kennel.sbatch`:
+
+```bash
+JAX_PLATFORMS=cuda scaffolds/transformer/.venv/bin/python -m pytest -q -m gpu \
+  scaffolds/transformer/tests/test_query_tanh_polynomial.py
+```
+
+This standalone result qualifies the kernel checks on H100. Production still
+requires its own CPU/distributed/GPU checks, canonical initialization, full-recipe
+pilot with validation, and exact fresh-process checkpoint resumption. B300 runs
+must pass those checks on B300 before training.
+
 ### Query-dependent degree-one coefficients
 
 The H100 check for input-dependent constant and linear coefficients passed all

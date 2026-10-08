@@ -1,0 +1,29 @@
+{
+  "completed_utc": "2026-10-08T04:23:32.045415+00:00",
+  "degrees": [
+    1,
+    2,
+    3
+  ],
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "device_kinds": [
+    "NVIDIA H100 PCIe"
+  ],
+  "exit_code": 0,
+  "gpu_type": "H100",
+  "home_cluster": "kennel",
+  "junit": {
+    "path": "scaffolds/transformer/validation/logs/query-tanh-h100-210239.xml",
+    "sha256": "e8eb16b856c165393fed7a57f66742c550605a5cb6b1127d62419cf855d4f2c6"
+  },
+  "node": "mastiff",
+  "runtime_environment": {
+    "XLA_FLAGS": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "slurm_job_id": "210239",
+  "source_commit": "254cab9",
+  "status": "passed",
+  "tests_passed": 12
+}
