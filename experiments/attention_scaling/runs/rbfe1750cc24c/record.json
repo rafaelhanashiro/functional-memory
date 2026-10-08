@@ -65,7 +65,6 @@
       "identity": "1ad0df0a769896be8b1161d880380653e0cc9960007a708b56cd50c6b584aa42",
       "reused_tests": {
         "cpu-distributed-tests": {
-          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/input-dependent-tanh/experiments/attention_scaling/runs/r0bc57959ef6c/.runtime/acceptance/H100-4",
           "completed_utc": "2026-10-08T04:33:05.633206+00:00",
           "junit_sha256": "9692e0da74a02de72a0702001f2beff921a01a95155540013bacbb2f5e77ebbc",
           "slurm_job_id": "210242",

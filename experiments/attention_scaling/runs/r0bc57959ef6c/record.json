@@ -65,21 +65,18 @@
       "identity": "edfb477f662d8780b0df92c7944ecaca1005342543a6f92c2e3a21308143f7bc",
       "reused_tests": {
         "cpu-distributed-tests": {
-          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/input-dependent-tanh/experiments/attention_scaling/runs/r80300a4cd5fa/.runtime/acceptance/B300-4",
           "completed_utc": "2026-10-08T04:42:53.836943+00:00",
           "junit_sha256": "ebe6e053698d6f840cb31af94d47b7dd7ad6ad9fc2afe3a697bb56fb6cc86934",
           "slurm_job_id": "210240",
           "test_identity": "945d32df6ee9b92f797eaf096e90f904bf69f52fe89546233b3090f0ce651955"
         },
         "cpu-tests": {
-          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/input-dependent-tanh/experiments/attention_scaling/runs/r80300a4cd5fa/.runtime/acceptance/B300-4",
           "completed_utc": "2026-10-08T04:42:53.834263+00:00",
           "junit_sha256": "197e0730b2afec6a3bb17750cb90e9350ea13e777f26f1340c1489d7354b0785",
           "slurm_job_id": "210240",
           "test_identity": "36709ba086f4387df60ee1d6f94ac70efee80eddcd7e8b6864ddfb674fc1dc25"
         },
         "gpu-tests": {
-          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/input-dependent-tanh/experiments/attention_scaling/runs/r80300a4cd5fa/.runtime/acceptance/B300-4",
           "completed_utc": "2026-10-08T04:42:53.839451+00:00",
           "junit_sha256": "d8459e173b5a7064154aea231ddb23d3c0658b4ff15017d77ff212f12ca23a9e",
           "slurm_job_id": "210240",
