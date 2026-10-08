@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r4ca180050f16/config.yaml",
+    "sha256": "c8b3f8e62372bbfda651038ffcba16fd38e2916359941eae4ef48990d8180666"
+  },
+  "label": "200m-qk-m001-normalized-transformer-init-warmup400-seed0",
+  "name": "200m-qk-m001-normalized-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r4ca180050f16",
+  "status": "planned"
+}

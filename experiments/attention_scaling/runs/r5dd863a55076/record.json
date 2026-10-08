@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r5dd863a55076/config.yaml",
+    "sha256": "a50ac23fefccaac89390762ad9b71a0aa7cfbc166d848487a0770ecd2e4728eb"
+  },
+  "label": "200m-qk-hermite-m003-normalized-transformer-init-warmup400-seed0",
+  "name": "200m-qk-hermite-m003-normalized-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r5dd863a55076",
+  "status": "planned"
+}
