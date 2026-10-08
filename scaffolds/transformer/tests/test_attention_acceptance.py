@@ -77,6 +77,10 @@ def test_reference_gla_does_not_require_a_fused_kernel():
     {"attention_degree": 4, "attention_coefficients": "learned", "attention_coefficient_sharing": "per_head"},
     {"attention_degree": 4, "attention_coefficients": "learned",
      "attention_coefficient_parameterization": "sum_of_squares"},
+    {"attention_degree": 1, "attention_coefficients": "learned",
+     "attention_coefficient_conditioning": "query", "attention_coefficient_sharing": "per_head",
+     "attention_normalization": False, "attention_output_scaling": "head_rms_norm",
+     "qk_norm": True, "initialization": "transformer_reference"},
     {"attention_degree": 2, "attention_fixed_coefficients": (0.5, 1.0, 0.5)},
 ])
 def test_shared_initialization_check_accepts_each_parameter_ownership(changes):

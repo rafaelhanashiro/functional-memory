@@ -1,0 +1,50 @@
+question: Do query-dependent constant and linear coefficients improve unnormalized
+  m=1 attention with per-head output RMSNorm?
+settings:
+  metric: terminal_validation_perplexity
+  validation_best_reported_separately: true
+  warmup_steps: 400
+  seed: 0
+  qk_head_dim: 64
+runs:
+- study: attention_scaling
+  run_id: r9cf9589b9855
+  role: primary
+  label: query-dependent m=1, head RMSNorm, warmup 400
+  control: r03bfa6fd7b2e
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r9cf9589b9855/config.yaml
+      sha256: ea2b2a3cfe15c7eae1f60035e0249c480b9a137994c03f27127c856ef60b6df7
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r9cf9589b9855/metrics.jsonl
+      sha256: b92ba35cce86406780b1962bcc2d722f123cf777673767e64e37d00b4e07c447
+    completion.json:
+      path: experiments/attention_scaling/runs/r9cf9589b9855/completion.json
+      sha256: 9d72e28f145bdee9084d70341725705a16af2f102e2a08b2936060a771a34b47
+    metadata.json:
+      path: experiments/attention_scaling/runs/r9cf9589b9855/metadata.json
+      sha256: 98f750389fb2cb6b7b15e7bb739475cb6531eca70a21d8fd80963fe3b6e41690
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r9cf9589b9855/best_validation.json
+      sha256: 4514e6dca34b793c43e557120a558b6d75b57798aafb9a62c0a1c0199a49bd03
+- study: attention_scaling
+  run_id: r03bfa6fd7b2e
+  role: control
+  label: input-independent learned m=1, head RMSNorm, warmup 400
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r03bfa6fd7b2e/config.yaml
+      sha256: 2ce2f5203443e8d7a30463bc2055d5a3923a1e6386c38e29b68e587864a23dc8
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r03bfa6fd7b2e/metrics.jsonl
+      sha256: e95e069b6d69b2a36372efa5637588c35431282d7c607b938b7a90035be3c755
+    completion.json:
+      path: experiments/attention_scaling/runs/r03bfa6fd7b2e/completion.json
+      sha256: 3e84ade09060b6578ab2f138464ddc70faeff638e98b720b96abb1238dce23e9
+    metadata.json:
+      path: experiments/attention_scaling/runs/r03bfa6fd7b2e/metadata.json
+      sha256: f3a8d7c1fc8c87373f69c76fbb4bc746cbc58984b00bb0bb2144e97496dae882
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r03bfa6fd7b2e/best_validation.json
+      sha256: 41d041b81aa60c6c5fbd0905784e020d2ea1555018835947c0fd558a70327f29

@@ -49,6 +49,7 @@ NO_TESTS_COLLECTED = 5
 RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHON_CLIENT_PREALLOCATE",
                 "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME")
 NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
+INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 
 
 @dataclass(frozen=True)
@@ -79,6 +80,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if spec.select_tests is not None:
         paths.extend(spec.select_tests(config, resolved_backend, cpu))
     model = config["model"]
+    if model.get("attention_coefficient_conditioning", "static") == "query":
+        paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)
     if (resolved_backend == "fused" and model.get("attention_mechanism", "dot_product") == "dot_product"
             and model.get("attention_normalization", True)
             and (model.get("attention_coefficients") == "learned"
@@ -335,6 +338,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_output_scaling="none",
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
                                            attention_coefficient_parameterization="direct",
+                                           attention_coefficient_conditioning="static",
                                            attention_coefficient_initialization="taylor",
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
@@ -373,6 +377,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
         attention_fixed_square_factors=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",
+        attention_coefficient_conditioning="static",
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
@@ -384,6 +389,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
             raise RuntimeError(f"Backbone parameter {path} differs from the exact-softmax control")
     for spec in specs:
         initial = np.asarray(spec.initial, dtype=np.float32)
+        if getattr(spec, "initial_shape", None) is not None:
+            initial = initial.reshape(spec.initial_shape)
         if not np.array_equal(actual[(spec.name,)], np.broadcast_to(initial, actual[(spec.name,)].shape)):
             raise RuntimeError(f"{spec.name} does not hold its declared initial value")
     return {
