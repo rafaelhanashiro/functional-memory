@@ -460,6 +460,20 @@ against a `step` axis, so updates relogged after a resume are kept; terminal and
 validation-best metrics go to the run summary. `wandb_run.json` in the run directory
 pins the W&B run id across requeues.
 
+Gradient diagnostics are standard for every mechanism. At each normal log step,
+W&B plots `train/gradient_norm_pre_clip`, `train/gradient_norm_post_clip`,
+`train/gradient_clip_scale`, and `train/gradient_clipped`. The norm is taken after
+all microbatch and data-parallel averaging, before clipping, and includes any
+coefficient penalty in the training objective. The optimizer already computes
+this norm for its numerical checks; logging adds no gradient-tree reduction.
+Retained training logs keep the sampled norm and clipping scale. Each validation
+event in `metrics.jsonl` stores the norm count, mean, maximum, and clipped fraction
+over **every update** since the preceding validation or resume, together with the
+clipping threshold. W&B also plots the window mean, maximum, and clipped fraction.
+The default saved workspace from `views.experiment_workspace` includes gradient
+norm plots on a logarithmic axis and separate clipping-scale/fraction plots.
+Historical runs without these measurements retain unknown gradient diagnostics.
+
 Recipes leave `train.wandb_mode` at `disabled`; the Kennel and ORCD launchers pass
 `--wandb-mode online` (set `TRANSFORMER_WANDB_MODE=offline` or `disabled` when
 submitting to change it), and acceptance pilots never log. Saved workspace views are

@@ -1,0 +1,65 @@
+{
+  "backend": "cpu",
+  "checks": [
+    {
+      "command": [
+        "scaffolds/transformer/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "scaffolds/transformer/tests/test_tracking.py",
+        "scaffolds/transformer/tests/test_metrics.py",
+        "scaffolds/transformer/tests/test_training.py",
+        "scaffolds/transformer/tests/test_update_numerics.py",
+        "-m",
+        "not gpu"
+      ],
+      "elapsed_seconds": 22.29,
+      "environment": {
+        "JAX_PLATFORMS": "cpu",
+        "PYTHONPATH": "."
+      },
+      "passed": 67,
+      "skipped": 6
+    },
+    {
+      "command": [
+        "scaffolds/transformer/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "scaffolds/transformer/tests/test_training.py",
+        "-k",
+        "distributed_accumulation_matches_single_device or interrupted_packed_training_matches_uninterrupted"
+      ],
+      "deselected": 9,
+      "elapsed_seconds": 16.76,
+      "environment": {
+        "JAX_NUM_CPU_DEVICES": "2",
+        "JAX_PLATFORMS": "cpu",
+        "PYTHONPATH": "."
+      },
+      "passed": 6
+    },
+    {
+      "check": "Construct default W&B workspace without saving or publishing",
+      "gradient_clipping_panels": 2,
+      "gradient_norm_panels": 4,
+      "status": "passed"
+    }
+  ],
+  "coverage": [
+    "full-batch and accumulated gradient norm equivalence before clipping",
+    "data-parallel gradient norm equivalence after averaging",
+    "clipped, unclipped, and zero-norm W&B metrics",
+    "all-update validation-window statistics including spikes between log steps",
+    "checkpoint resume state equivalence",
+    "offline W&B training mirror",
+    "unchanged numerical-failure checks"
+  ],
+  "data": "synthetic test fixtures",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "home_cluster": "kennel",
+  "source_commit": "201926079f774aab9f2302907b2042cc7281339f",
+  "status": "passed"
+}

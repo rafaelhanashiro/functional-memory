@@ -57,6 +57,18 @@ provenance, and launcher policy. The existing two-device accumulation comparison
 passed seven cases across fixed, learned, and odd attention. These checks do not
 replace GPU qualification for a new mechanism.
 
+## Standard gradient diagnostics
+
+The [gradient logging check record](runs/gradient-norm-diagnostics/tests.json)
+pins the source and exact commands: 67 CPU checks passed, plus six two-device
+averaging and checkpoint-resume checks in a separate execution. Coverage includes
+the full averaged gradient norm before clipping, zero-norm handling, spikes on
+updates between log steps, offline W&B mirroring, and unchanged numerical-failure
+checks. The default workspace constructed four gradient-norm panels and two
+clipping panels locally; no W&B view was published. Training updates and saved
+optimizer state are unchanged. These are synthetic software checks, with no
+retained checkpoint or GPU throughput measurement.
+
 ## Sampled performance
 
 Benchmarks used one H100, four layers of width256, eight heads, sequence length512,
@@ -434,6 +446,29 @@ sbatch --gres=gpu:h100:1 --nodelist=dogo \
   84dedd777c2f1def16ef9ef74ea11ec6c94cdda9 H100
 # For B300, use --gres=gpu:b300:1 --nodelist=akita and pass B300.
 ```
+
+## Gated DeltaNet on ORCD H200, and ORCD H100
+
+These qualifications come from the production acceptance of the
+[warmup-length runs](../../../results/exploratory/warmup_length/README.md) at source
+`ccb1671`. Each allocation ran its CPU, distributed-CPU, and GPU tests with no failures
+or skips, the initialization check, a 20-update full-recipe pilot on the fused backend,
+and an exact fresh-process resume, with direct device transfer. Each run's
+`record.json` holds its acceptance summary and hash.
+
+- **Gated DeltaNet on 2×H200**, its first H200 qualification (it had run only on B300
+  and H100): job 24890607 (`node5001`) passed on 2026-10-05 with 102 CPU, 5 distributed,
+  and 12 GPU tests and a pilot on the `fla_chunk_gated_delta_rule_triton` kernel at
+  0.81 s per update. Run `rdf74e4289926` then trained all 19,074 updates there without a
+  numerical failure.
+- **2×H100 on ORCD** (H100 80GB HBM3), previously used only on Kennel: normalized fixed
+  Taylor `m = 1` (job 25048157, `node4109`; 187 CPU, 7 distributed, 23 GPU tests; pilot
+  0.92 s per update), `m = 2` (job 25048180, `node3409`; 178, 5, 159; 0.95 s), and
+  `m = 16` (job 25054702, `node2905`; 178, 5, 159; 1.39 s) passed on 2026-10-06 and 07.
+  The 200M recipe fits two 80 GB devices. `m = 2` and `m = 16` resumed H200 checkpoints
+  (steps 1,000 and 7,000) and trained their remaining updates at 0.99 and 1.43 s per
+  update, against about 1.07 and 1.45 s on 2×H200; `m = 1` failed numerically at update
+  67, a property of odd-degree normalized kernels rather than of the hardware.
 
 ## B300 cuBLAS concurrency: checkpoint replay
 

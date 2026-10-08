@@ -42,6 +42,11 @@ def experiment_workspace(experiment: str, *, name: str | None = None, extra_sect
     sections = [
         line_section("Validation", ["val/ppl", "val/nll"]),
         line_section("Training", ["train/nll", "train/ppl", "train/learning_rate", "train/tokens_per_second"]),
+        line_section("Gradient norms", [
+            "train/gradient_norm_pre_clip", "train/gradient_norm_post_clip",
+            "train/gradient_norm_pre_clip_window_mean", "train/gradient_norm_pre_clip_window_max",
+        ], log_y=True),
+        line_section("Gradient clipping", ["train/gradient_clip_scale", "train/gradient_clipped_fraction"]),
         *extra_sections,
         regex_section("Attention diagnostics", r"attention/.*"),
     ]
