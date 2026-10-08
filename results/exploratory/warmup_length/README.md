@@ -36,6 +36,10 @@ terminal, and failures show their update.
 | Unnormalized, fixed Taylor m = 2 | 18.166 | 18.099 | −0.07 |
 | Unnormalized, fixed Taylor m = 3 | 15.621 | 15.604 | −0.02 |
 | Unnormalized, fixed Taylor m = 4 | 15.888 | 15.862 | −0.03 |
+| Unnormalized, fixed Hermite m = 1 | 18.196 | 18.233 | +0.04 |
+| Unnormalized, fixed Hermite m = 2 | 15.673 | 15.624 | −0.05 |
+| Unnormalized, fixed Hermite m = 3 | 15.747 | 15.794 | +0.05 |
+| Unnormalized, fixed Hermite m = 4 | 15.278 | 15.238 | −0.04 |
 | Unnormalized, learned m = 1 | 17.883 | 17.874 | −0.01 |
 | Unnormalized, learned m = 2 | 15.507 | 15.461 | −0.05 |
 | Unnormalized, learned m = 3 | 14.657 | 14.630 | −0.03 |
@@ -53,20 +57,23 @@ Unnormalized attention with output scaling (`attention_output_scaling`), same co
 | Unnormalized learned m = 4, head RMSNorm | 13.662 | 13.639 | −0.02 |
 
 - **Not a constant shift.** Normalized attention, both softmax lines included, loses
-  0.10–0.25 with the short warmup; unnormalized polynomials, fixed Taylor and learned,
-  are unchanged (−0.07 to +0.03); unnormalized exp gains 0.22 and Gated DeltaNet 0.11. Within
+  0.10–0.25 with the short warmup; unnormalized polynomials, fixed Taylor, fixed Hermite,
+  and learned, are unchanged (−0.07 to +0.05); unnormalized exp gains 0.22 and Gated
+  DeltaNet 0.11. Within
   normalized fixed Taylor the loss grows with degree, from 0.10 at m = 2 to 0.22 at
   m = 16, the same as softmax.
-- **Orders within each line hold.** Unnormalized learned ranks m = 3, 4, 2, 1 and
-  unnormalized fixed Taylor m = 3, 4, 1, 2 at both warmups; normalized fixed Taylor ranks m = 16, 8, 4, 2 (m = 16 and 8 tie at warmup 400,
+- **Orders within each line hold.** Unnormalized learned ranks m = 3, 4, 2, 1,
+  unnormalized fixed Taylor m = 3, 4, 1, 2, and unnormalized fixed Hermite m = 4, 2, 3, 1
+  at both warmups; normalized fixed Taylor ranks m = 16, 8, 4, 2 (m = 16 and 8 tie at warmup 400,
   13.740 against 13.741); softmax stays ahead of softmax without QK-norm (by 0.42, then
   0.45); exp stays between unnormalized learned m = 1 and m = 2.
 - **Learned coefficients are not what makes unnormalized polynomials insensitive.** Fixed
-  Taylor coefficients move as little as learned ones; among unnormalized kernels only exp
+  Taylor and fixed Hermite coefficients move as little as learned ones; among unnormalized kernels only exp
   gains from the short warmup.
 - **m = 3 still beats m = 4 in both unnormalized polynomial lines.** Learned: by 0.06 at
   warmup 2,000 and 0.11 at warmup 400; fixed Taylor: by 0.27 and 0.26. The inversion is
-  not caused by the long warmup.
+  not caused by the long warmup. Fixed Hermite does not invert: its m = 4 leads m = 3 by
+  0.47, then 0.56.
 - **Gated DeltaNet changes places.** At warmup 2,000 it trails softmax by 0.19 and also
   fixed Taylor m = 8 and 16 and learned nonnegative m = 4; at warmup 400 it leads every
   `d_K = 64` cell, softmax by 0.14. The `d_K = 64` softmax-against-Gated DeltaNet
@@ -90,7 +97,12 @@ Unnormalized attention with output scaling (`attention_output_scaling`), same co
   −0.02). Softmax with head RMSNorm equals exp with head RMSNorm (RMSNorm cancels the
   row sum), so it has no separate cell.
 
-Unnormalized fixed Hermite `m = 1–4` at warmup 400 runs on ORCD.
+- **Unnormalized fixed Hermite moves like the other unnormalized polynomials.** Its
+  differences are +0.04, −0.05, +0.05, and −0.04 at m = 1–4, within the fixed Taylor
+  (−0.07 to +0.03) and learned (−0.05 to +0.02) ranges and unlike unnormalized exp
+  (−0.22). Its comparisons hold: fixed Taylor stays ahead at odd degrees (m = 1 by 0.29,
+  then 0.30; m = 3 by 0.13, then 0.19), Hermite at even degrees (m = 2 by 2.49, then 2.48;
+  m = 4 by 0.61, then 0.62), and learned leads Hermite at every degree.
 
 Loss spikes: unnormalized `m = 1`, fixed Taylor and learned, spikes at both warmups and
 recovers; no `m ≥ 2` run spikes. Spikes are training-loss jumps of more than 0.5 nats
@@ -105,7 +117,10 @@ with head RMSNorm on B300 then H100 (each resumed from a checkpoint after a requ
 fixed Taylor and Gated DeltaNet) ran on 2×H200, except fixed Taylor m = 1 on H100 and
 m = 2 and 16, which moved from H200 to H100 after updates 1,000 and 7,000. Their controls
 ran on ORCD H200 (fixed Taylor m = 2 and 4) or on Kennel, so the Gated DeltaNet pair also
-differs in hardware.
+differs in hardware. The ORCD unnormalized fixed Hermite cells, whose controls ran on
+Kennel, trained on H100 (m = 1), on H200 then H100 after update 1,000 (m = 2), on H100
+with updates 12,501–13,000 on H200 (m = 3), and on H200 then H100 NVL after update 3,000
+(m = 4).
 
 ## Softmax in detail
 
