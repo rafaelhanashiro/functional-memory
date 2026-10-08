@@ -10,8 +10,8 @@ when both use per-head output RMSNorm and 400 warmup steps?
 
 | Role | Run ID | Coefficients | Job | Status |
 | --- | --- | --- | --- | --- |
-| Primary | `r9cf9589b9855` | Query-dependent affine projection | `209648` | Production training |
-| Control | `r03bfa6fd7b2e` | Input-independent, learned per layer and head | `209556` | Production training |
+| Primary | `r9cf9589b9855` | Query-dependent affine projection | `209648` | Complete, 19,074 updates |
+| Control | `r03bfa6fd7b2e` | Input-independent, learned per layer and head | `209556` | Complete, 19,074 updates |
 
 Explicit inputs and roles are in [selection.yaml](selection.yaml); scientific run
 files live under [the attention study](../../../experiments/attention_scaling/README.md).
@@ -39,17 +39,37 @@ defines the mechanism. Exact launch commands are in the
 
 Both runs passed CPU, distributed, and GPU tests, canonical initialization checks,
 full-recipe pilots with validation, and exact fresh-process checkpoint resumption.
-Both have started production training with finite losses. No production validation
-comparison is available yet. The control isolates query
-conditioning from the effects of output RMSNorm and warmup length.
-This comparison uses one seed and does not add
-GDN's write gates, forgetting, or delta correction. Report terminal validation
-perplexity separately from validation-best perplexity; keep incomplete runs and
-numerical failures visible. These runs are outside the canonical plot selections.
+Both completed on 2026-10-07 with finite attention diagnostics at every recorded
+validation. The static control performs better at the end of training:
+
+| Coefficients | Terminal validation NLL | Terminal perplexity | Best validation perplexity | Best checkpoint |
+| --- | ---: | ---: | ---: | ---: |
+| Query-dependent affine | 2.941899 | 18.951802 | 18.951802 | 19,074 |
+| Input-independent learned | 2.865257 | 17.553569 | 17.553569 | 19,074 |
+
+The affine predictor is worse by 1.398234 perplexity (7.97%) and 0.076642 validation
+NLL. It leads at updates 1,000 and 2,000, then trails the control at every recorded
+validation from update 3,000 onward. Terminal and validation-best metrics coincide
+for each run; only their validation-best checkpoints are retained.
+
+The final training sample mean NLL is also worse: 2.976463 versus 2.898437
+(difference 0.078026). These means cover seven logged training batches over updates
+19,001–19,074, rather than the whole training dataset. Their differences from
+validation NLL are similar, 0.034564 and 0.033180. The result therefore does not
+show a larger training–validation gap as the main explanation for the affine
+predictor's deficit; it does not distinguish optimization from representation
+limitations.
+
+The matched control isolates query conditioning from output RMSNorm and warmup
+length. This is one seed and one affine predictor, so it does not settle whether
+other input-dependent parameterizations help. Neither variant adds GDN's write
+gates, forgetting, or delta correction. These runs remain outside the canonical
+plot selections.
 
 ## Regeneration
 
-From the experiment worktree, refresh the derived index and pinned inputs:
+From a checkout containing these committed run measurements, refresh the derived
+index and pinned inputs:
 
 ```bash
 scaffolds/transformer/.venv/bin/python -m scaffolds.records index experiments/attention_scaling
@@ -60,5 +80,7 @@ Metrics and coefficient diagnostics stay in each run's `metrics.jsonl`.
 
 ## Open decision
 
-After the pair finishes, decide whether to promote the comparison into the
-maintained attention results or discard the exploratory topic and its runs.
+Keep the affine pair as the explicit comparison while evaluating whether a
+bounded input-dependent coefficient function changes this outcome. Then decide
+whether to promote the comparison into the maintained attention results or
+discard the exploratory topic and its runs.
