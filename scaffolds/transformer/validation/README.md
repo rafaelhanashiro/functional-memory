@@ -33,6 +33,18 @@ provenance, and launcher policy. The existing two-device accumulation comparison
 passed seven cases across fixed, learned, and odd attention. These checks do not
 replace GPU qualification for a new mechanism.
 
+## Standard gradient diagnostics
+
+The [gradient logging check record](runs/gradient-norm-diagnostics/tests.json)
+pins the source and exact commands: 67 CPU checks passed, plus six two-device
+averaging and checkpoint-resume checks in a separate execution. Coverage includes
+the full averaged gradient norm before clipping, zero-norm handling, spikes on
+updates between log steps, offline W&B mirroring, and unchanged numerical-failure
+checks. The default workspace constructed four gradient-norm panels and two
+clipping panels locally; no W&B view was published. Training updates and saved
+optimizer state are unchanged. These are synthetic software checks, with no
+retained checkpoint or GPU throughput measurement.
+
 ## Sampled performance
 
 Benchmarks used one H100, four layers of width256, eight heads, sequence length512,
