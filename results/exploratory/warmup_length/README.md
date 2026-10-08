@@ -43,6 +43,15 @@ terminal, and failures show their update.
 | Unnormalized exp | 15.885 | 15.663 | −0.22 |
 | Gated DeltaNet | 13.705 | 13.594 | −0.11 |
 
+Unnormalized attention with output scaling (`attention_output_scaling`), same comparison:
+
+| Cell | Warmup 2,000 | Warmup 400 | Difference |
+| --- | ---: | ---: | ---: |
+| Unnormalized exp, 1/t | 14.196 | 13.933 | −0.26 |
+| Unnormalized exp, head RMSNorm | 13.441 | 13.411 | −0.03 |
+| Unnormalized learned m = 4, 1/t | 14.056 | 13.816 | −0.24 |
+| Unnormalized learned m = 4, head RMSNorm | 13.662 | 13.639 | −0.02 |
+
 - **Not a constant shift.** Normalized attention, both softmax lines included, loses
   0.10–0.25 with the short warmup; unnormalized polynomials, fixed Taylor and learned,
   are unchanged (−0.07 to +0.03); unnormalized exp gains 0.22 and Gated DeltaNet 0.11. Within
@@ -75,6 +84,12 @@ terminal, and failures show their update.
   and m = 3 at 218 (555): the short warmup moves the failure in both directions and
   rescues neither.
 
+- **Output scaling decides whether unnormalized attention gains from the short warmup.**
+  With 1/t, exp and learned m = 4 both gain about 0.25, as plain exp does (0.22) while
+  plain learned m = 4 does not (+0.02). With head RMSNorm both are unchanged (−0.03,
+  −0.02). Softmax with head RMSNorm equals exp with head RMSNorm (RMSNorm cancels the
+  row sum), so it has no separate cell.
+
 Unnormalized fixed Hermite `m = 1–4` at warmup 400 runs on ORCD.
 
 Loss spikes: unnormalized `m = 1`, fixed Taylor and learned, spikes at both warmups and
@@ -85,8 +100,8 @@ four of up to +3.8 at warmup 2,000) and learned `m = 1` two (+7.4 and +2.7); eac
 recovers within 50 updates. The learned `m = 1` warmup-2,000 log is on ORCD.
 
 Limits: one seed per cell. Learned nonnegative m = 4 trained on B300 then H100, and
-unnormalized learned m = 2 and fixed Taylor m = 4 on H100 then B300 (each resumed from a
-checkpoint after a requeue); the other Kennel cells each ran on one GPU type. The ORCD cells (normalized
+unnormalized learned m = 2 and fixed Taylor m = 4 on H100 then B300, and learned m = 4
+with head RMSNorm on B300 then H100 (each resumed from a checkpoint after a requeue); the other Kennel cells each ran on one GPU type. The ORCD cells (normalized
 fixed Taylor and Gated DeltaNet) ran on 2×H200, except fixed Taylor m = 1 on H100 and
 m = 2 and 16, which moved from H200 to H100 after updates 1,000 and 7,000. Their controls
 ran on ORCD H200 (fixed Taylor m = 2 and 4) or on Kennel, so the Gated DeltaNet pair also
