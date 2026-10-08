@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rbfe1750cc24c/config.yaml",
+    "sha256": "c47a583233a0e26b972d2c24efdaf456fc5dce42ecb82f882fc018e08a3bc47e"
+  },
+  "label": "200m-qk-m002-query-tanh-head-rms-warmup400-seed0",
+  "name": "200m-qk-m002-query-tanh-head-rms-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "rbfe1750cc24c",
+  "status": "planned"
+}

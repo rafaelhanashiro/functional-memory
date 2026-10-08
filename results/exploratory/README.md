@@ -6,7 +6,7 @@ either promoted into a canonical result collection or deleted with its runs; see
 
 | Topic | Question | Opened |
 | --- | --- | --- |
-| [input_dependent_coefficients](input_dependent_coefficients/README.md) | Do query-dependent constant and linear coefficients improve unnormalized m = 1 with output RMSNorm and warmup 400? | 2026-10-07 |
+| [input_dependent_coefficients](input_dependent_coefficients/README.md) | Do affine or tanh query-dependent polynomial coefficients improve unnormalized attention with output RMSNorm and warmup 400? | 2026-10-07 |
 | [learning_rate](learning_rate/README.md) | Is the shared peak learning rate 3e-4 near-optimal for the 200M recipe? | 2026-10-04 |
 | [output_scaling](output_scaling/README.md) | Can rescaling unnormalized attention outputs replace normalization? | 2026-10-01 |
 | [rational_polynomial](rational_polynomial/README.md) | Does a separate learned denominator polynomial let normalized learned polynomial attention train through where the shared signed polynomial failed? | 2026-10-04 |

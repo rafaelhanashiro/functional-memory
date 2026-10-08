@@ -50,6 +50,7 @@ RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHO
                 "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME")
 NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
+QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
 
 
 @dataclass(frozen=True)
@@ -82,6 +83,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     model = config["model"]
     if model.get("attention_coefficient_conditioning", "static") == "query":
         paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)
+        if model.get("attention_coefficient_activation", "identity") == "tanh":
+            paths.append(QUERY_TANH_POLYNOMIAL_TESTS)
     if (resolved_backend == "fused" and model.get("attention_mechanism", "dot_product") == "dot_product"
             and model.get("attention_normalization", True)
             and (model.get("attention_coefficients") == "learned"
@@ -339,6 +342,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
                                            attention_coefficient_parameterization="direct",
                                            attention_coefficient_conditioning="static",
+                                           attention_coefficient_activation="identity",
                                            attention_coefficient_initialization="taylor",
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
@@ -378,6 +382,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_fixed_square_factors=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",
         attention_coefficient_conditioning="static",
+        attention_coefficient_activation="identity",
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)

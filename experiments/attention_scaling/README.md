@@ -162,6 +162,35 @@ env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch \
 
 The query-dependent run uses a GPU memory fraction of 0.90; the control uses the
 runtime default. These are execution settings, separate from their scientific recipes.
+
+### Tanh coefficients, degrees 1–3
+
+Runs `r80300a4cd5fa` (`m = 1`), `rbfe1750cc24c` (`m = 2`), and `r0bc57959ef6c`
+(`m = 3`) use `c_r(x_t) = b_r + a_r tanh(w_r^T x_t)` independently per layer and
+head. The input is the activation after the block input RMSNorm. The coefficient
+projection has no bias inside tanh; `b_r` starts at `1/r!`, `a_r` at one, and
+`w_r` at zero. All coefficient parameters are FP32 and excluded from weight decay.
+The recipes set `attention_coefficient_conditioning: query` and
+`attention_coefficient_activation: tanh`, with unnormalized attention, per-head
+output RMSNorm, QK normalization, `transformer_reference` initialization, and
+400 warmup updates. They retain the 200M model, seed 0, and 19,074-update/10.0B-token
+recipe. Each frozen run config contains the complete settings.
+
+The new tanh mechanisms use direct fused query-dependent polynomial attention.
+Submit from `worktrees/input-dependent-tanh` on Kennel after committing inputs
+and code; the allocation must qualify its H100 or B300 hardware before production:
+
+```bash
+for RUN in r80300a4cd5fa rbfe1750cc24c r0bc57959ef6c; do
+  sbatch --nice=0 --partition=standard,long --time=1-00:00:00 --gres=gpu:4 \
+    --cpus-per-task=32 --mem=256G --job-name="$RUN" \
+    --output="experiments/attention_scaling/runs/$RUN/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.attention_scaling.acceptance \
+    "experiments/attention_scaling/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 4 B300,H100
+done
+```
+
 The shared acceptance checks must pass on each allocation before production starts.
 Question, input selections, outcomes, and the open scientific decision live in the
 [comparison README](../../results/exploratory/input_dependent_coefficients/README.md).
