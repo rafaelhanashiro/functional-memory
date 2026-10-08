@@ -21,6 +21,9 @@ results/<analysis>/
 results/exploratory/
   README.md                 open exploratory topics and the date each opened
   <topic>/                  README.md, optional selection.yaml and figures
+results/simplified/
+  README.md                 purpose, sources, regeneration commands
+  <analysis>/               presentation figures simplifying results/<analysis>/, plot.py
 experiments/<study>/
   README.md                 scientific question, methods, launch instructions
   sweep.yaml                common recipe and study provenance; run membership
@@ -83,6 +86,13 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   or discard it (delete the topic and its runs with their artifacts). Exploratory
   topics are exempt from the one-collection rule and from tests, not from the
   provenance rules.
+- `results/simplified/<analysis>/` holds presentation figures: simplified, easy-to-read
+  versions of a canonical collection's figures for sending to people outside the
+  project. They read that collection's selections and code (no selection, findings, or
+  tests of their own), regenerate byte-identically, and are regenerated whenever the
+  source collection changes. Findings and discussion stay in the source collection.
+  No other file (root README, study or result READMEs, records) links to or cites
+  them unless the user asks.
 - Keep figures and analysis files directly in the result directory. Keep each run's
   recipe, provenance, raw output, retained checkpoint, and log together. Do not create
   parallel experiment-level `configs/`, `provenance/`, `logs/`, `checkpoints/`, or

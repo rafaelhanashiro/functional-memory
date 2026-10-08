@@ -46,6 +46,8 @@ def blocked_dot_product_attention(
     kernel multiplies V directly; its row sum is measured but never divided by.
     Learned polynomial coefficients ([m+1] or [heads, m+1]) permit signed kernels;
     with normalization they divide by the signed row sum like odd Taylor kernels.
+    Query coefficients [batch,time,heads,m+1] instead define one unnormalized
+    polynomial of degree m>=1 for each query and head.
     Square factors ([m+1] or [heads, m+1], even m) give q1^2 + q2^2: nonnegative
     kernel values, exact zeros allowed, and only a positive row sum is valid.
     Denominator coefficients ([d] or [heads, d]) with learned polynomial coefficients
@@ -75,10 +77,10 @@ def blocked_dot_product_attention(
         if attention_degree is None or attention_degree < 1:
             raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
     query_conditioned = query_polynomial_coefficients is not None
-    if query_conditioned and (attention_normalization or attention_degree != 1
+    if query_conditioned and (attention_normalization or attention_degree is None or attention_degree < 1
                               or polynomial_coefficients is not None or coefficients is not None
                               or polynomial_square_factors is not None or denominators):
-        raise ValueError("Query coefficients define an unnormalized degree-one kernel alone")
+        raise ValueError("Query coefficients define an unnormalized polynomial of degree >= 1 alone")
     nonnegative = polynomial_square_factors is not None
     if nonnegative:
         if polynomial_coefficients is not None or quadratic_mode != "fixed" or not attention_normalization:
@@ -107,8 +109,8 @@ def blocked_dot_product_attention(
     if polynomial_coefficients is not None and polynomial_coefficients.shape not in (
             (attention_degree + 1,), (heads, attention_degree + 1)):
         raise ValueError("Polynomial coefficients must have shape (m+1,) or (heads, m+1)")
-    if query_conditioned and query_polynomial_coefficients.shape != (batch, time, heads, 2):
-        raise ValueError("Query coefficients must have shape [batch,time,heads,2]")
+    if query_conditioned and query_polynomial_coefficients.shape != (batch, time, heads, attention_degree + 1):
+        raise ValueError("Query coefficients must have shape [batch,time,heads,m+1]")
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -151,8 +153,11 @@ def blocked_dot_product_attention(
             safe_scores = jnp.where(causal, scores, 0.0)
             if query_conditioned:
                 query_coefficients = jax.lax.dynamic_slice_in_dim(padded_coefficients, start, block_size, axis=1)
-                c0, c1 = (jnp.swapaxes(query_coefficients[..., order], 1, 2)[..., None] for order in (0, 1))
-                kernel = c0 + c1 * safe_scores
+                kernel = jnp.broadcast_to(
+                    jnp.swapaxes(query_coefficients[..., -1], 1, 2)[..., None], safe_scores.shape)
+                for order in range(attention_degree - 1, -1, -1):
+                    coefficient = jnp.swapaxes(query_coefficients[..., order], 1, 2)[..., None]
+                    kernel = kernel * safe_scores + coefficient
             else:
                 kernel = (_learned_polynomial(safe_scores, polynomial_coefficients) if polynomial_coefficients is not None
                       else square_sum_polynomial(safe_scores, polynomial_square_factors, attention_degree)

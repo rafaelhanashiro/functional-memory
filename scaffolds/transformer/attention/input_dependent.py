@@ -1,40 +1,90 @@
-"""Unnormalized degree-one attention with query-dependent affine coefficients.
+"""Unnormalized polynomials with query-dependent coefficients.
 
 The incoming attention activation (after the block's pre-attention RMSNorm)
-produces c0,c1 per query and head. The score operands, including QK normalization
+produces coefficients per query and head. The score operands, including QK normalization
 and RoPE, retain the ordinary dot-product path. Coefficient projection and basis
 combination use FP32; the final attention output has V's dtype.
 """
+
+import math
 
 import jax
 import jax.numpy as jnp
 
 
-def parameter_specs(*, hidden_size: int):
+def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity"):
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
-    return (
+    count = degree + 1
+    specs = (
         AttentionParameterSpec(
             name="query_polynomial_bias", argument="query_polynomial_bias",
-            initial=(1.0, 1.0), sharing="per_head", weight_decay=False,
+            initial=tuple(1.0 / math.factorial(r) for r in range(count)), sharing="per_head", weight_decay=False,
         ),
         AttentionParameterSpec(
             name="query_polynomial_kernel", argument="query_polynomial_kernel",
-            initial=(0.0,) * (hidden_size * 2), initial_shape=(hidden_size, 2),
+            initial=(0.0,) * (hidden_size * count), initial_shape=(hidden_size, count),
             sharing="per_head", weight_decay=False,
         ),
     )
+    if activation == "tanh":
+        specs += (AttentionParameterSpec(
+            name="query_polynomial_amplitude", argument="query_polynomial_amplitude",
+            initial=(1.0,) * count, sharing="per_head", weight_decay=False,
+        ),)
+    elif activation != "identity":
+        raise ValueError(f"Unknown coefficient activation: {activation}")
+    return specs
 
 
-def project_coefficients(x, kernel, bias):
-    """FP32 affine projection [B,T,D] x [H,D,2] + [H,2] -> [B,T,H,2]."""
-    if (x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1:] != (x.shape[-1], 2)
-            or bias.shape != (kernel.shape[0], 2)):
-        raise ValueError("Query coefficient projection requires x [B,T,D], kernel [H,D,2], bias [H,2]")
-    return jnp.einsum(
+def project_coefficients(x, kernel, bias, *, amplitude=None, activation="identity"):
+    """FP32 c=b+xW or c=b+a*tanh(xW); no bias inside tanh."""
+    if (x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1]
+            or bias.shape != (kernel.shape[0], kernel.shape[-1])):
+        raise ValueError("Query coefficient projection requires x [B,T,D], kernel [H,D,R], bias [H,R]")
+    projected = jnp.einsum(
         "btd,hdr->bthr", x.astype(jnp.float32), kernel.astype(jnp.float32),
         precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32,
-    ) + bias.astype(jnp.float32)
+    )
+    if activation == "tanh":
+        if amplitude is None or amplitude.shape != bias.shape:
+            raise ValueError("Tanh coefficients require a model-owned amplitude with the bias shape")
+        projected = amplitude.astype(jnp.float32) * jnp.tanh(projected)
+    elif activation != "identity" or amplitude is not None:
+        raise ValueError("Identity coefficients cannot receive an amplitude; unknown activation otherwise")
+    return projected + bias.astype(jnp.float32)
+
+
+def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False):
+    """Apply a per-query polynomial directly in one fused attention operation."""
+    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+
+    if (coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3]
+            or coefficients.shape[-1] < 2):
+        raise ValueError("Query coefficients require [batch,time,heads,degree+1], degree >= 1")
+    degree = coefficients.shape[-1] - 1
+    if backend == "blocked":
+        result = blocked_dot_product_attention(
+            q, k, v, attention_degree=degree, attention_normalization=False,
+            query_polynomial_coefficients=coefficients, return_diagnostics=return_diagnostics,
+        )
+        if not return_diagnostics:
+            return result
+        output, diagnostics = result
+    elif backend == "fused":
+        from scaffolds.transformer.attention.backends.fused_query_polynomial import fused_query_polynomial_attention
+
+        output = fused_query_polynomial_attention(q, k, v, coefficients)
+        if not return_diagnostics:
+            return output
+        _, diagnostics = blocked_dot_product_attention(
+            q, k, v, attention_degree=degree, attention_normalization=False,
+            query_polynomial_coefficients=coefficients, return_diagnostics=True,
+        )
+    else:
+        raise ValueError("Query-conditioned attention requires a blocked or fused backend")
+    diagnostics.update(jax.lax.stop_gradient(coefficient_statistics(coefficients)))
+    return output, diagnostics
 
 
 def coefficient_statistics(coefficients):

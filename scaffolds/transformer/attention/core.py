@@ -22,6 +22,7 @@ def attention_core(
     polynomial_coefficients: jax.Array | None = None,
     polynomial_square_factors: jax.Array | None = None,
     query_polynomial_coefficients: jax.Array | None = None,
+    attention_coefficient_activation: str = "identity",
     return_diagnostics: bool = False,
     dropout=None,
     deterministic: bool = True,
@@ -43,14 +44,24 @@ def attention_core(
     if not isinstance(attention_normalization, bool):
         raise ValueError("attention_normalization must be a boolean")
     if query_polynomial_coefficients is not None:
-        from scaffolds.transformer.attention.input_dependent import query_linear_attention
+        from scaffolds.transformer.attention.input_dependent import query_linear_attention, query_polynomial_attention
 
-        if (attention_normalization or attention_degree != 1 or quadratic_mode != "fixed"
+        if (attention_normalization or attention_degree is None or attention_degree < 1 or quadratic_mode != "fixed"
                 or coefficients is not None or polynomial_coefficients is not None
                 or polynomial_square_factors is not None or denominators):
-            raise ValueError("Query coefficients define an unnormalized degree-one kernel alone")
-        return query_linear_attention(q, k, v, query_polynomial_coefficients, backend=backend,
-                                      return_diagnostics=return_diagnostics)
+            raise ValueError("Query coefficients define an unnormalized polynomial kernel alone")
+        if query_polynomial_coefficients.shape[-1] != attention_degree + 1:
+            raise ValueError("Query coefficient count must match attention degree")
+        if attention_coefficient_activation == "identity":
+            if attention_degree != 1:
+                raise ValueError("Identity query coefficients require degree-one attention")
+            operation = query_linear_attention
+        elif attention_coefficient_activation == "tanh":
+            operation = query_polynomial_attention
+        else:
+            raise ValueError("Unknown attention coefficient activation")
+        return operation(q, k, v, query_polynomial_coefficients, backend=backend,
+                         return_diagnostics=return_diagnostics)
     if not attention_normalization:
         from scaffolds.transformer.attention.unnormalized import unnormalized_attention
 

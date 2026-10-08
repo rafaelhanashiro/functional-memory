@@ -73,9 +73,10 @@ class ModelConfig:
     # p(s) = q1(s)^2 + q2(s)^2. Evaluated without expanding near real roots.
     attention_fixed_square_factors: tuple[float, ...] | None = None
     attention_coefficient_sharing: Literal["global", "per_head"] = "global"
-    # Query-conditioned c0,c1 = x W + b, using the incoming attention activation.
-    # Only the unnormalized, learned/direct, per-head degree-one kernel supports this.
+    # Query coefficients use the incoming attention activation, per layer/head.
     attention_coefficient_conditioning: Literal["static", "query"] = "static"
+    # Legacy identity is degree-one affine; tanh supports b + a*tanh(x W).
+    attention_coefficient_activation: Literal["identity", "tanh"] = "identity"
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
     # (even m, row-normalized only), so the kernel is nonnegative by construction;
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
@@ -194,14 +195,20 @@ class ModelConfig:
             raise ValueError(f"Unknown attention coefficient sharing: {self.attention_coefficient_sharing}")
         if self.attention_coefficient_conditioning not in ("static", "query"):
             raise ValueError(f"Unknown attention coefficient conditioning: {self.attention_coefficient_conditioning}")
+        if self.attention_coefficient_activation not in ("identity", "tanh"):
+            raise ValueError(f"Unknown attention coefficient activation: {self.attention_coefficient_activation}")
+        if self.attention_coefficient_activation != "identity" and self.attention_coefficient_conditioning != "query":
+            raise ValueError("Nonlinear coefficient activation requires query-conditioned coefficients")
         if self.attention_coefficient_conditioning == "query":
             if (self.attention_mechanism != "dot_product" or self.attention_coefficients != "learned"
                     or self.attention_coefficient_parameterization != "direct"
                     or self.attention_coefficient_sharing != "per_head"
-                    or self.attention_degree != 1 or self.attention_normalization
+                    or self.attention_degree is None or self.attention_degree < 1 or self.attention_normalization
                     or self.attention_coefficient_initialization != "taylor"):
                 raise ValueError("Query-conditioned coefficients require unnormalized learned/direct "
-                                 "per_head degree-one attention with Taylor initialization")
+                                 "per_head polynomial attention with Taylor initialization")
+            if self.attention_coefficient_activation == "identity" and self.attention_degree != 1:
+                raise ValueError("Query-conditioned identity coefficients require degree-one attention")
         if self.attention_coefficients == "learned":
             if self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed":
                 raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")
