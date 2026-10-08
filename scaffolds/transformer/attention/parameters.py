@@ -14,13 +14,18 @@ class AttentionParameterSpec:
     initial: tuple[float, ...]
     sharing: Literal["global", "per_head"]
     weight_decay: bool = False
+    initial_shape: tuple[int, ...] | None = None
 
 
 def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
     """Ask the configured mechanism, then the score option, which trainable arrays they need."""
     if getattr(config, "attention_coefficients", "fixed") == "learned":
         parameterization = getattr(config, "attention_coefficient_parameterization", "direct")
-        if parameterization == "sum_of_squares":
+        if getattr(config, "attention_coefficient_conditioning", "static") == "query":
+            from scaffolds.transformer.attention.input_dependent import parameter_specs
+
+            specs = parameter_specs(hidden_size=config.hidden_size)
+        elif parameterization == "sum_of_squares":
             from scaffolds.transformer.attention.nonnegative_polynomial import parameter_specs
 
             specs = parameter_specs(degree=config.attention_degree, sharing=config.attention_coefficient_sharing)
@@ -67,6 +72,8 @@ def initialize_attention_parameters(owner, specs, *, num_layers: int, num_heads:
         if spec.sharing not in ("global", "per_head"):
             raise ValueError(f"Unknown attention parameter sharing: {spec.sharing}")
         initial = jnp.asarray(spec.initial, dtype=jnp.float32)
+        if spec.initial_shape is not None:
+            initial = initial.reshape(spec.initial_shape)
         shape = initial.shape if spec.sharing == "global" else (num_layers, num_heads, *initial.shape)
         setattr(owner, spec.name, nnx.Param(jnp.broadcast_to(initial, shape)))
 

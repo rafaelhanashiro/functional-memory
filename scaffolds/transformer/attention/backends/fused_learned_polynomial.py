@@ -40,11 +40,20 @@ def _values_and_derivative(scores, coefficients):
     return value, derivative
 
 
-def _forward_kernel(q_ref, k_ref, v_ref, *refs, degree, time, dq, dv, block_q, block_k):
+def _forward_kernel(q_ref, k_ref, v_ref, *refs, degree, time, dq, dv, block_q, block_k, query_guard=False):
     coefficients = tuple(ref[...] for ref in refs[:degree + 1])
-    out_ref = refs[degree + 1]
+    out_ref = refs[degree + 1 + int(query_guard)]
     qi = pl.program_id(0) * block_q + jnp.arange(block_q)
     q = plt.load(q_ref, mask=(qi[:, None] < time) & (jnp.arange(q_ref.shape[-1])[None, :] < dq), other=0)
+    if query_guard:
+        # Load columns through reference indexing: slicing a loaded [block_q,2]
+        # array is not supported by Pallas Triton lowering. Array-only indices
+        # also keep this path executable in the CPU interpreter.
+        rows = jnp.arange(block_q)
+        guard_c0 = plt.load(refs[degree + 1].at[rows, jnp.zeros((block_q,), jnp.int32)],
+                            mask=qi < time, other=0)
+        guard_c1 = plt.load(refs[degree + 1].at[rows, jnp.ones((block_q,), jnp.int32)],
+                            mask=qi < time, other=0)
     initial = (jnp.zeros((block_q, v_ref.shape[-1]), jnp.float32),
                jnp.zeros((block_q,), jnp.bool_))
 
@@ -56,6 +65,9 @@ def _forward_kernel(q_ref, k_ref, v_ref, *refs, degree, time, dq, dv, block_q, b
         causal = (qi[:, None] >= ki[None, :]) & (ki[None, :] < time)
         values = _values(jnp.where(causal, scores, 0.0), coefficients)
         invalid_entries = causal & (~jnp.isfinite(scores) | ~jnp.isfinite(values))
+        if query_guard:
+            actual_kernel = guard_c0[:, None] + guard_c1[:, None] * jnp.where(causal, scores, 0.0)
+            invalid_entries |= causal & ~jnp.isfinite(actual_kernel)
         invalid |= jnp.max(invalid_entries.astype(jnp.int32), axis=1) != 0
         output += _dot(jnp.where(causal, values, 0.0), v)
         return output, invalid
@@ -141,20 +153,24 @@ def _columns(coefficients):
     return tuple(coefficients[:, order] for order in range(coefficients.shape[-1]))
 
 
-def _forward(q, k, v, coefficients, interpret):
+def _forward(q, k, v, coefficients, interpret, query_kernel_guard=None):
     batch, time, heads, dq = q.shape
     dv, degree = v.shape[-1], coefficients.shape[-1] - 1
     block_q, block_k = _tile_sizes(dq, dv)
+    guard_inputs = () if query_kernel_guard is None else (query_kernel_guard,)
+    guard_specs = (() if query_kernel_guard is None else
+                   (pl.BlockSpec((None, block_q, None, 2), lambda i, b, h: (b, i, h, 0)),))
     return pl.pallas_call(
-        partial(_forward_kernel, degree=degree, time=time, dq=dq, dv=dv, block_q=block_q, block_k=block_k),
+        partial(_forward_kernel, degree=degree, time=time, dq=dq, dv=dv, block_q=block_q, block_k=block_k,
+                query_guard=query_kernel_guard is not None),
         out_shape=jax.ShapeDtypeStruct(v.shape, jnp.float32),
         grid=(pl.cdiv(time, block_q), batch, heads),
         in_specs=(_spec(block_q, dq), _full_spec(time, dq), _full_spec(time, dv),
-                  *(_coefficient_spec(),) * (degree + 1)),
+                  *(_coefficient_spec(),) * (degree + 1), *guard_specs),
         out_specs=_spec(block_q, dv),
         compiler_params=plt.CompilerParams(num_warps=NUM_WARPS, num_stages=NUM_STAGES),
         interpret=interpret, name=f"learned_polynomial_{degree}_unnormalized_forward",
-    )(q, k, v, *_columns(coefficients))
+    )(q, k, v, *_columns(coefficients), *guard_inputs)
 
 
 @partial(jax.custom_vjp, nondiff_argnums=(4,))
@@ -202,13 +218,51 @@ def _attention_bwd(interpret, residuals, do):
 _attention.defvjp(_attention_fwd, _attention_bwd)
 
 
-def fused_learned_polynomial_attention(q, k, v, coefficients):
+@partial(jax.custom_vjp, nondiff_argnums=(4,))
+def _attention_fp32(q, k, v, coefficients, interpret):
+    return _forward(q, k, v, coefficients, interpret)
+
+
+def _attention_fp32_fwd(q, k, v, coefficients, interpret):
+    return _forward(q, k, v, coefficients, interpret), (q, k, v, coefficients)
+
+
+_attention_fp32.defvjp(_attention_fp32_fwd, _attention_bwd)
+
+
+@partial(jax.custom_vjp, nondiff_argnums=(5,))
+def _attention_guarded_fp32(q, k, v, coefficients, guard, interpret):
+    return _forward(q, k, v, coefficients, interpret, query_kernel_guard=guard)
+
+
+def _attention_guarded_fp32_fwd(q, k, v, coefficients, guard, interpret):
+    return (_forward(q, k, v, coefficients, interpret, query_kernel_guard=guard),
+            (q, k, v, coefficients, guard))
+
+
+def _attention_guarded_fp32_bwd(interpret, residuals, do):
+    # The extra argument only guards invalid rows; valid output arithmetic and
+    # its derivatives remain the basis polynomial. Coefficient learning flows
+    # through the caller's FP32 combination of the basis outputs.
+    *ordinary, guard = residuals
+    return (*_attention_bwd(interpret, tuple(ordinary), do), jnp.zeros_like(guard))
+
+
+_attention_guarded_fp32.defvjp(_attention_guarded_fp32_fwd, _attention_guarded_fp32_bwd)
+
+
+def fused_learned_polynomial_attention(q, k, v, coefficients, *, keep_output_float32=False,
+                                       query_kernel_guard=None):
     """Causal p_h(QK^T / sqrt(d_k))V with learned FP32 coefficients [heads, m+1], m >= 1.
 
     Q/K/V use [batch, time, heads, channels], a common FP32/BF16 dtype, and head
     widths up to 128. GPU execution requires an Ampere-or-newer NVIDIA device.
     Nonfinite causal scores or kernel values poison their rows with NaN. The
     blocked implementation remains the scalar-diagnostics reference.
+    ``keep_output_float32`` retains the accumulator for later FP32 combinations.
+    The default preserves the established output cast to V's dtype.
+    An optional [B,T,H,2] ``query_kernel_guard`` checks finiteness of the actual
+    query-dependent c0+c1*s kernel while accumulating a linear basis.
     """
     if q.ndim != 4 or k.ndim != 4 or v.ndim != 4:
         raise ValueError("Q, K, V must have shape [batch, time, heads, channels]")
@@ -223,4 +277,9 @@ def fused_learned_polynomial_attention(q, k, v, coefficients):
     if (coefficients.ndim != 2 or coefficients.shape[0] != q.shape[2] or coefficients.shape[1] < 2
             or coefficients.dtype != jnp.float32):
         raise ValueError("Polynomial coefficients must be float32 with shape [heads, m+1], m >= 1")
-    return _attention(q, k, v, coefficients, False)
+    if query_kernel_guard is not None:
+        if not keep_output_float32 or query_kernel_guard.shape != (*q.shape[:3], 2):
+            raise ValueError("Query kernel guard requires FP32 output and shape [batch,time,heads,2]")
+        return _attention_guarded_fp32(q, k, v, coefficients, query_kernel_guard.astype(jnp.float32), False)
+    operation = _attention_fp32 if keep_output_float32 else _attention
+    return operation(q, k, v, coefficients, False)

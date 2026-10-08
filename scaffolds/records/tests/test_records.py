@@ -75,6 +75,7 @@ def test_index_reproduces_bytes_and_preserves_unknown_legacy_fields(tmp_path):
     assert row["attention_normalization"] == "False"
     assert row["qk_norm"] == ""
     assert row["coefficient_mode"] == ""
+    assert row["coefficient_conditioning"] == ""
     assert row["attention_family"] == ""
     assert row["home_cluster"] == ""
     assert row["training_steps"] == ""
@@ -119,6 +120,28 @@ def test_index_recognizes_legacy_learned_quadratic_recipe(tmp_path, quadratic_mo
     assert row["coefficient_mode"] == "learned"
     assert row["quadratic_mode"] == quadratic_mode
     assert row["coefficient_sharing"] == "per_head"
+
+
+def test_index_distinguishes_query_conditioning_and_keeps_recipe_identity(tmp_path):
+    study = tmp_path / "study"
+    runs = {}
+    for conditioning in ("static", "query"):
+        config = {"model": {"attention_degree": 1, "attention_coefficients": "learned",
+                            "attention_coefficient_conditioning": conditioning,
+                            "attention_coefficient_sharing": "per_head",
+                            "attention_normalization": False,
+                            "attention_output_scaling": "head_rms_norm"},
+                  "optim": {"warmup_steps": 400}}
+        runs[conditioning] = create_run(study, config)
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    for conditioning, run in runs.items():
+        assert rows[run.name]["coefficient_conditioning"] == conditioning
+        assert rows[run.name]["attention_family"] == "learned_polynomial"
+        assert rows[run.name]["attention_output_scaling"] == "head_rms_norm"
+    assert load_run(runs["query"])["config"]["sha256"] != load_run(runs["static"])["config"]["sha256"]
+    first = (study / "runs.csv").read_bytes()
+    assert regenerate_index(study).read_bytes() == first
 
 
 def test_index_keeps_custom_polynomial_distinct_without_inventing_basis(tmp_path):

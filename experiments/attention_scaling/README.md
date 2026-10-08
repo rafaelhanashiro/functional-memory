@@ -13,7 +13,7 @@ learned polynomial attention, GLA, and Gated DeltaNet.
 
 Each `runs/<run_id>/` holds one complete recipe and execution. Settings are fields
 in `config.yaml` and columns in `runs.csv`: attention family, `d_K`, degree,
-normalization, output scaling, QK normalization, coefficient learning and
+normalization, output scaling, QK normalization, coefficient learning, input conditioning, and
 restrictions, sharing, seed, training budget, and outcome. Varying these settings adds runs here;
 it does not create another study directory. Use permanent IDs for lookups:
 descriptive labels need not be unique.
@@ -49,6 +49,12 @@ own gated recurrence, and Gated DeltaNet its gated delta rule (FLA's kernels).
 New runs use each mechanism's reference initialization (`model.initialization`); runs
 whose recipes omit the field used the scaffold's Flax defaults. The shared scaffold defines each mechanism
 and its kernels.
+
+Query-conditioned degree-one runs predict a signed constant and linear coefficient
+from the current attention input, per layer and head
+(`model.attention_coefficient_conditioning: query`). The
+[exploratory comparison](../../results/exploratory/input_dependent_coefficients/README.md)
+uses input-independent learned coefficients as its matched control.
 
 ## Cluster and artifacts
 
@@ -126,6 +132,39 @@ Refresh the derived run index after collecting outputs:
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records index \
   experiments/attention_scaling
 ```
+
+## Input-dependent coefficient comparison
+
+The pair is `r9cf9589b9855` (query-dependent) and `r03bfa6fd7b2e`
+(input-independent learned control). Both use output RMSNorm and 400 warmup steps.
+Both completed all 19,074 updates; their findings remain in the linked exploratory
+comparison. Their executed source is `1e78579354087d3d3f62fdda865d90913068e960`.
+The launch commands, from the experiment worktree on Kennel after committing all
+inputs and code, were:
+
+```bash
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.90 sbatch \
+  --nice=0 --partition=standard --time=1-00:00:00 --gres=gpu:h100:2 \
+  --cpus-per-task=16 --mem=128G --job-name=r9cf9589b9855 \
+  --output=experiments/attention_scaling/runs/r9cf9589b9855/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.attention_scaling.acceptance \
+  experiments/attention_scaling/runs/r9cf9589b9855/config.yaml "$(git rev-parse HEAD)" 2 H100
+
+env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch \
+  --nice=0 --partition=standard --time=1-00:00:00 --gres=gpu:h100:2 \
+  --cpus-per-task=16 --mem=128G --job-name=r03bfa6fd7b2e \
+  --output=experiments/attention_scaling/runs/r03bfa6fd7b2e/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.attention_scaling.acceptance \
+  experiments/attention_scaling/runs/r03bfa6fd7b2e/config.yaml "$(git rev-parse HEAD)" 2 H100
+```
+
+The query-dependent run uses a GPU memory fraction of 0.90; the control uses the
+runtime default. These are execution settings, separate from their scientific recipes.
+The shared acceptance checks must pass on each allocation before production starts.
+Question, input selections, outcomes, and the open scientific decision live in the
+[comparison README](../../results/exploratory/input_dependent_coefficients/README.md).
 
 To update a figure, change its explicit run selection, run
 `python -m scaffolds.records refresh results/<analysis>` in the scaffold environment,

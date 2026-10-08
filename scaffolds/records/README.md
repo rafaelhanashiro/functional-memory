@@ -68,7 +68,9 @@ whole sweep before any jobs can run or requeue.
   Missing external artifacts are reported as unavailable; missing or modified input
   recipes are errors.
 - `regenerate_index(study)` derives a deterministic CSV from recipes, records, and
-  raw metrics, including attention family, home cluster, and training budget.
+  raw metrics, including attention family, coefficient conditioning, home cluster,
+  and training budget. Coefficient conditioning distinguishes static learned
+  coefficients from coefficients predicted from the incoming query activation.
   Missing historical settings remain empty; current defaults are not
   retroactively assigned to old results.
 
