@@ -24,7 +24,7 @@
   "gpu_type": "NVIDIA H100 PCIe",
   "home_cluster": "kennel",
   "log": {
-    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/input-dependent-m1/scaffolds/transformer/validation/logs/input-dependent-m1-gpu.log",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/input-dependent-m1-gpu.log",
     "sha256": "dde8f0e4826917448cfeeaa50e58e21289f3084d6654ceb7c02154412e68c513"
   },
   "node": "mastiff",

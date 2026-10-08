@@ -137,7 +137,10 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records index \
 
 The pair is `r9cf9589b9855` (query-dependent) and `r03bfa6fd7b2e`
 (input-independent learned control). Both use output RMSNorm and 400 warmup steps.
-From `worktrees/input-dependent-m1` on Kennel, after committing all inputs and code:
+Both completed all 19,074 updates; their findings remain in the linked exploratory
+comparison. Their executed source is `1e78579354087d3d3f62fdda865d90913068e960`.
+The launch commands, from the experiment worktree on Kennel after committing all
+inputs and code, were:
 
 ```bash
 XLA_PYTHON_CLIENT_MEM_FRACTION=0.90 sbatch \
