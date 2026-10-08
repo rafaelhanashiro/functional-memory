@@ -159,10 +159,20 @@ def _log(run, payload: dict, step: int) -> None:
 
 
 def log_train(run, step: int, nll: float, perplexity: float, learning_rate: float,
-              coefficient_penalty: float | None = None) -> None:
+              coefficient_penalty: float | None = None, *,
+              gradient_norm: float | None = None, gradient_clip_norm: float | None = None) -> None:
     payload = {"train/nll": nll, "train/ppl": perplexity, "train/learning_rate": learning_rate}
     if coefficient_penalty is not None:
         payload["train/coefficient_penalty"] = coefficient_penalty
+    if gradient_norm is not None:
+        payload["train/gradient_norm_pre_clip"] = gradient_norm
+        if gradient_clip_norm is not None:
+            clipped = gradient_norm > gradient_clip_norm
+            payload.update({
+                "train/gradient_norm_post_clip": min(gradient_norm, gradient_clip_norm),
+                "train/gradient_clip_scale": gradient_clip_norm / gradient_norm if clipped else 1.0,
+                "train/gradient_clipped": int(clipped),
+            })
     _log(run, payload, step)
 
 
@@ -182,6 +192,13 @@ def log_validation(run, record: dict) -> None:
     }
     if "train_coefficient_penalty" in record:
         payload["train/coefficient_penalty"] = record["train_coefficient_penalty"]
+    for source, destination in (
+        ("train_gradient_norm_mean", "train/gradient_norm_pre_clip_window_mean"),
+        ("train_gradient_norm_max", "train/gradient_norm_pre_clip_window_max"),
+        ("train_gradient_clipped_fraction", "train/gradient_clipped_fraction"),
+    ):
+        if source in record:
+            payload[destination] = record[source]
     _log(run, payload, int(record["step"]))
 
 
