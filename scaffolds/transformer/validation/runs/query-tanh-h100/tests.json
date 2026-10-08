@@ -13,7 +13,7 @@
   "gpu_type": "H100",
   "home_cluster": "kennel",
   "junit": {
-    "path": "scaffolds/transformer/validation/logs/query-tanh-h100-210239.xml",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-tanh-h100-210239.xml",
     "sha256": "e8eb16b856c165393fed7a57f66742c550605a5cb6b1127d62419cf855d4f2c6"
   },
   "node": "mastiff",
