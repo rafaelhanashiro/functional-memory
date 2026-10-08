@@ -30,6 +30,14 @@ terminal, and failures show their update.
 | Normalized, fixed Taylor m = 4 | 13.774 | 13.927 | +0.15 |
 | Normalized, fixed Taylor m = 8 | 13.543 | 13.741 | +0.20 |
 | Normalized, fixed Taylor m = 16 | 13.519 | 13.740 | +0.22 |
+| Normalized, fixed Hermite m = 1 | fail @374 | fail @192 | — |
+| Normalized, fixed Hermite m = 2 | fail @176 | fail @2,875 | — |
+| Normalized, fixed Hermite m = 3 | fail @549 | fail @254 | — |
+| Normalized, fixed Hermite m = 4 | fail @680 | fail @1,122 | — |
+| Normalized, learned m = 1 | fail @60 | fail @73 | — |
+| Normalized, learned m = 2 | fail @1,923 | fail @937 | — |
+| Normalized, learned m = 3 | fail @336 | fail @203 | — |
+| Normalized, learned m = 4 | fail @1,143 | fail @1,395 | — |
 | Normalized, learned nonnegative m = 2 | 14.666 | 14.771 | +0.11 |
 | Normalized, learned nonnegative m = 4 | 13.689 | 13.815 | +0.13 |
 | Unnormalized, fixed Taylor m = 1 | 17.903 | 17.930 | +0.03 |
@@ -87,9 +95,16 @@ Unnormalized attention with output scaling (`attention_output_scaling`), same co
   both warmups.
 - **Learned nonnegative still leads normalized fixed Taylor.** It is ahead by 0.24 at
   m = 2 (0.25 at warmup 2,000) and by 0.11 at m = 4 (0.09).
-- **Odd fixed Taylor degrees still fail.** m = 1 fails at update 67 (35 at warmup 2,000)
-  and m = 3 at 218 (555): the short warmup moves the failure in both directions and
-  rescues neither.
+- **Normalized kernels that are signed or reach zero still fail.** All ten that fail at
+  warmup 2,000 fail at warmup 400: fixed Taylor m = 1 and 3, learned m = 1–4, and fixed
+  Hermite m = 1–4. The short warmup moves the failure earlier in five (fixed Taylor m = 3,
+  learned m = 2 and 3, Hermite m = 1 and 3) and later in five, and rescues none. Hermite
+  m = 2, nonnegative but zero at `s = −1`, lasts longest: update 2,875 against 176, at
+  validation perplexity 26.5 at update 2,000 against softmax's 22.1.
+- **A failure update is one draw, not a threshold.** Hermite m = 4 failed at update 1,122
+  after resuming from its update-1,000 checkpoint on H100; two earlier H100 executions,
+  one from update 0 and one from the same checkpoint, passed 1,122 and were preempted at
+  1,283 and 1,425.
 
 - **Output scaling decides whether unnormalized attention gains from the short warmup.**
   With 1/t, exp and learned m = 4 both gain about 0.25, as plain exp does (0.22) while
@@ -113,7 +128,7 @@ recovers within 50 updates. The learned `m = 1` warmup-2,000 log is on ORCD.
 
 Limits: one seed per cell. Learned nonnegative m = 4 trained on B300 then H100, and
 unnormalized learned m = 2 and fixed Taylor m = 4 on H100 then B300, and learned m = 4
-with head RMSNorm on B300 then H100 (each resumed from a checkpoint after a requeue); the other Kennel cells each ran on one GPU type. The ORCD cells (normalized
+with head RMSNorm on B300 then H100 (each resumed from a checkpoint after a requeue); the other Kennel cells each ran on one GPU type. Of the normalized learned and fixed Hermite cells, learned m = 1 and 2 trained on four H100s, learned m = 3 on four B300s, learned m = 4 and Hermite m = 1 on two B300s, and Hermite m = 2–4 on two H100 PCIe; two-GPU runs keep the global batch. The ORCD cells (normalized
 fixed Taylor and Gated DeltaNet) ran on 2×H200, except fixed Taylor m = 1 on H100 and
 m = 2 and 16, which moved from H200 to H100 after updates 1,000 and 7,000. Their controls
 ran on ORCD H200 (fixed Taylor m = 2 and 4) or on Kennel, so the Gated DeltaNet pair also
