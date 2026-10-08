@@ -1,6 +1,6 @@
-"""Simplified heatmap and degree chart from the canonical attention_scaling selections.
+"""Simplified heatmap and degree chart from the results/attention_scaling selections.
 
-    python -m results.simplified.plot
+    PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m results.simplified.attention_scaling.plot
 """
 from pathlib import Path
 
@@ -14,7 +14,7 @@ from results.attention_scaling.collect import collect_rows
 from results.attention_scaling.render import _build_figure
 
 OUT = Path(__file__).resolve().parent
-ROOT = OUT.parents[1]
+ROOT = OUT.parents[2]
 SELECTIONS = ROOT / "results/attention_scaling"
 INK, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"
 FAMILIES = [  # panel, label, color, marker

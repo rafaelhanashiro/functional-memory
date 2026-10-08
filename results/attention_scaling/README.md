@@ -98,7 +98,6 @@ Unnormalized kernels:
 - **Softmax vs Gated DeltaNet:** Gated DeltaNet is
   lower at `d_K = 8` (14.85 vs 15.64) and level at 16 (14.29 vs 14.34); softmax is lower
   at 32, 64, and 128 (by 0.19, 0.19, 0.08). Both improve with every doubling of `d_K`.
-  At `d_K = 64` Gated DeltaNet beats GLA by 1.67 (13.705 vs 15.376).
 
 ## Limits
 
