@@ -177,9 +177,11 @@ output RMSNorm, QK normalization, `transformer_reference` initialization, and
 recipe. Each frozen run config contains the complete settings.
 
 The new tanh mechanisms use direct fused query-dependent polynomial attention.
-Source `254cab9` runs as job `210240` on four B300 GPUs (`akita`, `standard`),
-job `210241` on four H100 GPUs (`dogo`, `long`), and job `210242` on four H100 GPUs
-(`mastiff`, `long`), respectively. All have nice 0 and are undergoing acceptance.
+Source `254cab946e637cd6cd5c004b6976351b1dee3651` runs as job `210243` on four B300
+GPUs (`akita`, `standard`), job `210244` on four H100 GPUs (`dogo`, `long`), and
+job `210245` on four B300 GPUs (`akita`, `long`), respectively. All have nice 0.
+All three passed full acceptance, including full-recipe pilots and exact
+fresh-process checkpoint resumption, and are running production training.
 The launch commands from `worktrees/input-dependent-tanh` on Kennel are:
 
 ```bash
@@ -187,19 +189,19 @@ sbatch --nice=0 --partition=standard --nodelist=akita --gres=gpu:b300:4 \
   --time=1-00:00:00 --cpus-per-task=32 --mem=256G --job-name=r80300a4cd5fa \
   --output=experiments/attention_scaling/runs/r80300a4cd5fa/training.log \
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
-  experiments/attention_scaling/runs/r80300a4cd5fa/config.yaml 254cab9 4 B300,H100
+  experiments/attention_scaling/runs/r80300a4cd5fa/config.yaml 254cab946e637cd6cd5c004b6976351b1dee3651 4 B300
 
 sbatch --nice=0 --partition=long --nodelist=dogo --gres=gpu:h100:4 \
   --time=1-00:00:00 --cpus-per-task=32 --mem=256G --job-name=rbfe1750cc24c \
   --output=experiments/attention_scaling/runs/rbfe1750cc24c/training.log \
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
-  experiments/attention_scaling/runs/rbfe1750cc24c/config.yaml 254cab9 4 B300,H100
+  experiments/attention_scaling/runs/rbfe1750cc24c/config.yaml 254cab946e637cd6cd5c004b6976351b1dee3651 4 H100
 
-sbatch --nice=0 --partition=long --nodelist=mastiff --gres=gpu:h100:4 \
+sbatch --nice=0 --partition=long --nodelist=akita --gres=gpu:b300:4 \
   --time=1-00:00:00 --cpus-per-task=32 --mem=256G --job-name=r0bc57959ef6c \
   --output=experiments/attention_scaling/runs/r0bc57959ef6c/training.log \
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
-  experiments/attention_scaling/runs/r0bc57959ef6c/config.yaml 254cab9 4 B300,H100
+  experiments/attention_scaling/runs/r0bc57959ef6c/config.yaml 254cab946e637cd6cd5c004b6976351b1dee3651 4 B300
 ```
 
 The shared acceptance checks must pass on each allocation before production starts.

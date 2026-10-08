@@ -13,9 +13,13 @@ degrees one, two, and three.
 | --- | --- | --- | --- | --- |
 | Affine reference, m = 1 | `r9cf9589b9855` | Query-dependent affine projection | `209648` | Complete, 19,074 updates |
 | Static reference, m = 1 | `r03bfa6fd7b2e` | Input-independent, learned per layer and head | `209556` | Complete, 19,074 updates |
-| Primary, m = 1 | `r80300a4cd5fa` | `b_r + a_r tanh(w_r^T x_t)` | `210240` | Acceptance, 4 B300 on akita |
-| Primary, m = 2 | `rbfe1750cc24c` | `b_r + a_r tanh(w_r^T x_t)` | `210241` | Acceptance, 4 H100 on dogo |
-| Primary, m = 3 | `r0bc57959ef6c` | `b_r + a_r tanh(w_r^T x_t)` | `210242` | Acceptance, 4 H100 on mastiff |
+| Primary, m = 1 | `r80300a4cd5fa` | `b_r + a_r tanh(w_r^T x_t)` | `210243` | Running, 4 B300 on akita |
+| Primary, m = 2 | `rbfe1750cc24c` | `b_r + a_r tanh(w_r^T x_t)` | `210244` | Running, 4 H100 on dogo |
+| Primary, m = 3 | `r0bc57959ef6c` | `b_r + a_r tanh(w_r^T x_t)` | `210245` | Running, 4 B300 on akita |
+
+Live W&B monitoring: [tanh m = 1](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/e431fdc66cea454fa0a0297b2a33435b),
+[tanh m = 2](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/344eba83b1e043c284e14d8b0a753526),
+and [tanh m = 3](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/a3b484f37f624f908ed272388d4fe555).
 
 Explicit inputs and roles are in [selection.yaml](selection.yaml); scientific run
 files live under [the attention study](../../../experiments/attention_scaling/README.md).
@@ -42,8 +46,9 @@ activation. There is no bias inside tanh. Initial values `b_r = 1/r!`, `a_r = 1`
 and `w_r = 0` reproduce the degree-`m` Taylor kernel exactly. The modulation is
 bounded by the learned amplitude for fixed parameters; its bound can change as
 the amplitudes learn. Degree one has four B300 GPUs on Kennel's `standard`
-partition; degrees two and three each have four H100 GPUs on `long`. All have
-nice 0, use direct fused polynomial attention, and execute source `254cab9`.
+partition; degree two has four H100 GPUs on `long`, and degree three has four
+B300 GPUs on `long`. All have nice 0, use direct fused polynomial attention, and
+execute source `254cab946e637cd6cd5c004b6976351b1dee3651`.
 Every hardware allocation must pass the shared acceptance checks before production.
 
 The [shared scaffold](../../../scaffolds/transformer/README.md#input-dependent-polynomial-coefficients)
@@ -81,7 +86,10 @@ other input-dependent parameterizations help. Neither variant adds GDN's write
 gates, forgetting, or delta correction. These runs remain outside the canonical
 plot selections.
 
-The three tanh runs are undergoing acceptance and have no training results yet.
+All three tanh runs passed full acceptance on their production hardware,
+including full-recipe validation pilots and exact fresh-process checkpoint
+resumption. Production training is running; no validation comparison is
+available yet.
 The direct fused kernel passed all 12 standalone H100 GPU checks across the three
 degrees; [qualification evidence](../../../scaffolds/transformer/validation/runs/query-tanh-h100/tests.json)
 is separate from each production allocation's required checks.
