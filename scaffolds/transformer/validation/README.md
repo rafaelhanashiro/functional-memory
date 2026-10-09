@@ -22,6 +22,17 @@ an independent FP64 oracle, 2,048-token BF16 forward/backward comparison with th
 blocked reference, and explicit failure for actual kernel overflow and nonfinite
 causally visible keys. Future invalid keys do not contaminate earlier queries.
 
+On 2026-10-09 UTC, all 16 tanh GPU cases across degrees one through four passed
+within the 52-check GPU acceptance suite for run `r5e46fc3c92a7`, job `212131`
+on `akita` (four B300 GPUs), source
+`ee1224b3410a87d357df4dcd6807dde55f9b745b`. The
+[B300 test record](runs/query-tanh-b300/tests.json) pins the source, dependency
+lock, runtime, test names, and transient acceptance JUnit checksum. Coverage
+includes all input and parameter gradients in FP32 and BF16, the 2,048-token
+BF16 forward/backward comparison at head width 64, and overflow/nonfinite-key
+checks at every degree. This records GPU kernel qualification; full production
+acceptance remains separately recorded by the run.
+
 Run these checks in a qualified NVIDIA GPU allocation with the locked environment
 and CUDA assembler settings from `launchers/kennel.sbatch`:
 
@@ -30,8 +41,8 @@ JAX_PLATFORMS=cuda scaffolds/transformer/.venv/bin/python -m pytest -q -m gpu \
   scaffolds/transformer/tests/test_query_tanh_polynomial.py
 ```
 
-This standalone result qualifies the kernel checks on H100. Production still
-requires its own CPU/distributed/GPU checks, canonical initialization, full-recipe
+The recorded standalone result qualifies degrees one through three on H100.
+Production still requires its own CPU/distributed/GPU checks, canonical initialization, full-recipe
 pilot with validation, and exact fresh-process checkpoint resumption. B300 runs
 must pass those checks on B300 before training.
 
