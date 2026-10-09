@@ -205,18 +205,18 @@ sbatch --nice=0 --partition=long --nodelist=akita --gres=gpu:b300:4 \
 ```
 
 Run `r5e46fc3c92a7` extends this comparison to `m = 4`, retaining the complete
-degree-three recipe apart from degree and run identity. Job `212127` is running
-acceptance on four H100 GPUs on `mastiff`, partition `standard`, at nice 0;
+degree-three recipe apart from degree and run identity. Job `212131` is running
+acceptance on four B300 GPUs on `akita`, partition `standard`, at nice 0;
 production results are not yet available. Its preselected static degree-four
 control is `rc2b555b905dd`. The 12 degree-four CPU checks passed before launch.
 From `worktrees/input-dependent-tanh-m4`, the launch command is:
 
 ```bash
-sbatch --nice=0 --partition=standard --nodelist=mastiff --gres=gpu:h100:4 \
+sbatch --nice=0 --partition=standard --nodelist=akita --gres=gpu:b300:4 \
   --time=1-00:00:00 --cpus-per-task=32 --mem=256G --job-name=r5e46fc3c92a7 \
   --output=experiments/attention_scaling/runs/r5e46fc3c92a7/training.log \
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
-  experiments/attention_scaling/runs/r5e46fc3c92a7/config.yaml ee1224b3410a87d357df4dcd6807dde55f9b745b 4 H100
+  experiments/attention_scaling/runs/r5e46fc3c92a7/config.yaml ee1224b3410a87d357df4dcd6807dde55f9b745b 4 B300,H100
 ```
 
 The shared acceptance checks must pass on each allocation before production starts.

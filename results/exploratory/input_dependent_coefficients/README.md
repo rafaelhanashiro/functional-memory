@@ -19,7 +19,7 @@ Each degree has a preselected static learned control.
 | Primary, m = 3 | `r0bc57959ef6c` | `b_r + a_r tanh(w_r^T x_t)` | Complete, 19,074 updates |
 | Static reference, m = 2 | `rfb43d69f60dc` | Input-independent, learned per layer and head | Complete, 19,074 updates |
 | Static reference, m = 3 | `r5ae483d40d62` | Input-independent, learned per layer and head | Complete, 19,074 updates |
-| Primary, m = 4 | `r5e46fc3c92a7` | `b_r + a_r tanh(w_r^T x_t)` | In acceptance, job 212127; no production results |
+| Primary, m = 4 | `r5e46fc3c92a7` | `b_r + a_r tanh(w_r^T x_t)` | In acceptance, job 212131; no production results |
 | Static reference, m = 4 | `rc2b555b905dd` | Input-independent, learned per layer and head | Complete, 19,074 updates |
 
 W&B: [tanh m = 1](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/e431fdc66cea454fa0a0297b2a33435b),
@@ -60,7 +60,7 @@ the three degrees; [qualification evidence](../../../scaffolds/transformer/valid
 is separate from production acceptance.
 
 Degree four uses the same frozen recipe as degree three apart from degree and
-run identity. Job `212127` requests four H100 GPUs on `mastiff`, partition
+run identity. Job `212131` uses four B300 GPUs on `akita`, partition
 `standard`, at nice 0, using source
 `ee1224b3410a87d357df4dcd6807dde55f9b745b`. All 12 degree-four CPU checks
 passed before launch. Full allocation acceptance, including GPU checks,
