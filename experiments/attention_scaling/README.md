@@ -236,3 +236,38 @@ Question, input selections, outcomes, and the open scientific decision live in t
 To update a figure, change its explicit run selection, run
 `python -m scaffolds.records refresh results/<analysis>` in the scaffold environment,
 and use that result collection's regeneration command.
+
+## Independent GDN erase gate
+
+Run `rf7341031e3d5` asks whether GDN benefits from separate scalar erase and write
+projections. It uses `model.gdn_erase_mode: independent`, with the erase projection
+initialized from the write projection as a separate parameter. All original weights
+match tied GDN at initialization. It preserves the canonical GDN block and reference
+initialization, 400 warmup updates, standard training telemetry, and the 19,074-update
+FineWeb recipe. The preselected control is `rf640fc13f3a8`; comparison findings and
+current status belong in the [exploratory result](../../results/exploratory/gdn_independent_erase/README.md).
+Its home cluster is Kennel. The run is prepared for priority submission from
+`worktrees/gdn-independent-erase` after GPU qualification:
+
+```bash
+sbatch --nice=0 --partition=standard --nodelist=akita --gres=gpu:b300:2 \
+  --time=1-00:00:00 --cpus-per-task=32 --mem=256G \
+  --job-name=rf7341031e3d5 \
+  --output=experiments/attention_scaling/runs/rf7341031e3d5/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.attention_scaling.acceptance \
+  experiments/attention_scaling/runs/rf7341031e3d5/config.yaml \
+  "$(git rev-parse HEAD)" 2 B300
+```
+
+The allocation runs shared CPU and distributed checks, all GDN GPU forward/gradient
+checks, the full-recipe initialization/pilot, and exact checkpoint resumption before
+production. A separate one-GPU qualification command is:
+
+```bash
+sbatch --nice=0 --partition=debug --nodelist=mastiff --gres=gpu:h100:1 \
+  --job-name=gdn-independent-check \
+  --output=scaffolds/transformer/validation/logs/gdn-independent-%j.log \
+  scaffolds/transformer/validation/qualify_gdn_independent.sbatch \
+  "$(git rev-parse HEAD)" H100
+```

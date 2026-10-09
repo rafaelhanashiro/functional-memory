@@ -55,6 +55,9 @@ class ModelConfig:
     attention_mechanism: Literal["dot_product", "gla", "gated_deltanet"] = "dot_product"
     # Gated DeltaNet's causal depthwise short-convolution width (FLA and paper default 4).
     gdn_conv_size: int = 4
+    # Independent erasure learns a separate per-token/head sigmoid gate, initially
+    # copied from beta; tied retains GDN's shared erase/write gate.
+    gdn_erase_mode: Literal["tied", "independent"] = "tied"
     gla_gate_rank: int = 16
     gla_gate_tau: float = 16.0
     gla_chunk_size: int = 64
@@ -158,6 +161,10 @@ class ModelConfig:
                 raise ValueError("Gated DeltaNet requires backend='auto', 'blocked' or 'fused'")
         if not isinstance(self.gdn_conv_size, int) or isinstance(self.gdn_conv_size, bool) or self.gdn_conv_size <= 0:
             raise ValueError("model.gdn_conv_size must be a positive integer")
+        if self.gdn_erase_mode not in ("tied", "independent"):
+            raise ValueError("model.gdn_erase_mode must be tied or independent")
+        if self.gdn_erase_mode != "tied" and self.attention_mechanism != "gated_deltanet":
+            raise ValueError("model.gdn_erase_mode independent requires gated_deltanet")
         for name in ("gla_gate_rank", "gla_chunk_size", "gla_inner_chunk_size"):
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:

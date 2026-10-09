@@ -69,22 +69,30 @@ def attention_identity(config) -> dict:
         return identity
     if config.model.attention_mechanism == "gated_deltanet":
         model = config.model
+        independent = model.gdn_erase_mode == "independent"
         return {
             "attention_mechanism": "gated_deltanet",
             "attention_kernel": "gated_deltanet",
             "attention_backend": model.attention_backend,
             "attention_backend_requested": getattr(config, "_attention_backend_request", model.attention_backend),
-            "attention_implementation": ("fla_chunk_gated_delta_rule_triton" if model.attention_backend == "fused"
+            "attention_implementation": (("fla_chunk_independent_gated_delta_rule_triton" if independent
+                                           else "fla_chunk_gated_delta_rule_triton") if model.attention_backend == "fused"
                                          else "token_recurrence_reference"),
-            "attention_formula": ("S_t=a_t S_{t-1}+b_t k_t (v_t-a_t S_{t-1}^T k_t)^T; o_t=S_t^T q_t/sqrt(d_k); "
+            "attention_formula": (("S_t=a_t S_{t-1}+k_t (b_t v_t-lambda_t a_t S_{t-1}^T k_t)^T; "
+                                   "lambda_t=sigmoid(W_lambda x); " if independent else
+                                   "S_t=a_t S_{t-1}+b_t k_t (v_t-a_t S_{t-1}^T k_t)^T; ") +
+                                  "o_t=S_t^T q_t/sqrt(d_k); "
                                   "q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); "
                                   "b_t=sigmoid(W_b x)"),
             "attention_score_scale": "1/sqrt(d_k)",
             "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
             "gdn_conv_size": model.gdn_conv_size,
+            "gdn_erase_mode": model.gdn_erase_mode,
+            "gdn_erase_initialization": "copy_write_projection" if independent else "shared_write_gate",
             "gdn_state_elements_per_layer": model.num_heads * model.qk_head_dim * model.value_head_dim,
             "gdn_initial_state": "zero_each_sequence",
-            "gdn_kernel_source": "flash-linear-attention chunk_gated_delta_rule (pinned in the scaffold lock)",
+            "gdn_kernel_source": ("flash-linear-attention chunk_gated_delta_rule with local independent-gate WY kernels"
+                                  if independent else "flash-linear-attention chunk_gated_delta_rule (pinned in the scaffold lock)"),
             "gdn_chunk_size": 64 if model.attention_backend == "fused" else None,
             "diagnostic_backend": model.attention_backend,
         }

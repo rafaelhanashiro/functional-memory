@@ -16,6 +16,11 @@ from fla.ops.common import chunk_o as _fla_chunk_o
 from fla.ops.gated_delta_rule import chunk_fwd as _fla_chunk_fwd
 from fla.ops.gated_delta_rule import wy_fast as _fla_wy_fast
 
+from scaffolds.transformer.attention.backends.fla_independent_gated_delta_rule_kernels import (
+    recompute_w_u_independent,
+    wy_bwd_independent,
+)
+
 
 def _base(kernel):
     """FLA kernels are Heuristics(Autotuner(JITFunction)); the wrappers call the JIT function."""

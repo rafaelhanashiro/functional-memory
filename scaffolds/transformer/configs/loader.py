@@ -73,6 +73,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("attention_output_scaling", "none")
         value["model"].setdefault("initialization", "flax_default")
         value["model"].setdefault("gdn_conv_size", 4)
+        value["model"].setdefault("gdn_erase_mode", "tied")
         value["model"].setdefault("attention_mechanism", "dot_product")
         for key, default in (("gla_gate_rank", 16), ("gla_gate_tau", 16.0),
                              ("gla_chunk_size", 64), ("gla_inner_chunk_size", 16),

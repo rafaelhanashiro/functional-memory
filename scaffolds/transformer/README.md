@@ -335,6 +335,19 @@ from the device's shared memory. Triton must be ≥ 3.7.1 on Hopper (FLA #640). 
 path requires an sm90+ GPU and prediction length divisible by 64; `auto` selects it there
 and the reference elsewhere. It passes its GPU tests on H100 and B300.
 
+`gdn_erase_mode: independent` gives erasure its own per-head gate
+`lambda_t = sigmoid(W_lambda x_t)`, while `beta_t = sigmoid(W_b x_t)` controls writing:
+`S_t = a_t S_{t-1} + k_t (beta_t v_t - lambda_t a_t S_{t-1}^T k_t)^T`.
+The default `tied` mode preserves the original GDN update. The independent projection
+is a separate parameter copied from the write projection at initialization. It consumes
+no additional initialization RNG draws, and reference initialization re-copies it after
+initializing the original weights, so all shared parameters match tied GDN exactly.
+The fused independent path shares FLA's triangular solve, state, and read kernels;
+local WY preparation and its backward pass use separate erase/write gates and gradients.
+Neither pass divides by a gate, so zero erasure with nonzero writing is supported.
+Training telemetry records both gates, their difference, raw attention output statistics,
+and separate erase/write/decay/output-gate parameter-group norms.
+
 ### Gated linear attention
 
 `attention_mechanism: gla` replaces the attention module inside the same residual

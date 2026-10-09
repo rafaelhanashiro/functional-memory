@@ -88,6 +88,11 @@ def test_parameter_groups_cover_the_model_roles():
     assert telemetry.parameter_group(keys("layers_3", "ffn_norm", "scale")) == "norm_scales"
     assert telemetry.parameter_group(keys("qk_norm_log_scale")) == "qk_norm_scale"
     assert telemetry.parameter_group(keys("output_norm_scale")) == "attention_output_norm"
+    assert telemetry.parameter_group(keys("layers_0", "attention", "lambda_proj", "kernel")) == "attention_erase_gate"
+    assert telemetry.parameter_group(keys("layers_0", "attention", "b_proj", "kernel")) == "attention_write_gate"
+    assert telemetry.parameter_group(keys("layers_0", "attention", "a_proj", "kernel")) == "attention_decay_gate"
+    assert telemetry.parameter_group(keys("layers_0", "attention", "A_log")) == "attention_decay_gate"
+    assert telemetry.parameter_group(keys("layers_0", "attention", "o_norm_scale")) == "attention_output_norm"
     assert telemetry.parameter_group(keys("polynomial_coefficients")) == "attention_coefficients"
     assert telemetry.parameter_group(keys("lm_head", "kernel")) == "output_head"
 
