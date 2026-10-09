@@ -6,6 +6,7 @@ either promoted into a canonical result collection or deleted with its runs; see
 
 | Topic | Question | Opened |
 | --- | --- | --- |
+| [gradient_spikes](gradient_spikes/README.md) | Are the gradient spikes of learned coefficients with head RMSNorm also in the references, exp with head RMSNorm, and learned coefficients without RMSNorm? | 2026-10-09 |
 | [input_dependent_coefficients](input_dependent_coefficients/README.md) | Do affine or tanh query-dependent polynomial coefficients improve unnormalized attention with output RMSNorm and warmup 400? | 2026-10-07 |
 | [learning_rate](learning_rate/README.md) | Is the shared peak learning rate 3e-4 near-optimal for the 200M recipe? | 2026-10-04 |
 | [output_scaling](output_scaling/README.md) | Can rescaling unnormalized attention outputs replace normalization? | 2026-10-01 |
