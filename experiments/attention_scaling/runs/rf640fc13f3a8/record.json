@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rf640fc13f3a8/config.yaml",
+    "sha256": "02571345b370d587b1103f2c49d2468ce44bcd3a3c1b40898af41870a1142380"
+  },
+  "label": "200m-dk064-gdn-warmup400-telemetry-seed0",
+  "name": "200m-dk064-gdn-warmup400-telemetry-seed0",
+  "record_schema_version": 1,
+  "run_id": "rf640fc13f3a8",
+  "status": "planned"
+}

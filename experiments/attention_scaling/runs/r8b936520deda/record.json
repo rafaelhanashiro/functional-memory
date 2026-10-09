@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r8b936520deda/config.yaml",
+    "sha256": "a19fbf05e6ba2a998688874f210be2810f89a22bdb33bd45d347940baa174cc4"
+  },
+  "label": "200m-qk-m002-unnormalized-transformer-init-warmup400-telemetry-seed0",
+  "name": "200m-qk-m002-unnormalized-transformer-init-warmup400-telemetry-seed0",
+  "record_schema_version": 1,
+  "run_id": "r8b936520deda",
+  "status": "planned"
+}

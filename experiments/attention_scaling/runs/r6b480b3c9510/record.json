@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r6b480b3c9510/config.yaml",
+    "sha256": "351b92a4aee97054c85821c2ac79720ae3f8f9dae6a7c1a3d4082df1d4fe2dd9"
+  },
+  "label": "200m-qk-m003-unnormalized-transformer-init-warmup400-telemetry-seed0",
+  "name": "200m-qk-m003-unnormalized-transformer-init-warmup400-telemetry-seed0",
+  "record_schema_version": 1,
+  "run_id": "r6b480b3c9510",
+  "status": "planned"
+}

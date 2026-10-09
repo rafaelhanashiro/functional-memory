@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rc2fa883c75c0/config.yaml",
+    "sha256": "b7c0de4c286990399d9545ce4d8656264f71bb2fc20bf3facf495ad9aff06a8c"
+  },
+  "label": "200m-qk-softmax-transformer-init-warmup400-telemetry-seed0",
+  "name": "200m-qk-softmax-transformer-init-warmup400-telemetry-seed0",
+  "record_schema_version": 1,
+  "run_id": "rc2fa883c75c0",
+  "status": "planned"
+}
