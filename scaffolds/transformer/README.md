@@ -490,6 +490,36 @@ The default saved workspace from `views.experiment_workspace` includes gradient
 norm plots on a logarithmic axis and separate clipping-scale/fraction plots.
 Historical runs without these measurements retain unknown gradient diagnostics.
 
+Training telemetry (`training/telemetry.py`) is standard for data-parallel training
+with `model.remat: false`. Every update returns, in one packed vector:
+
+| Statistic | Reduction over microbatches and GPUs |
+| --- | --- |
+| `layer_<i>/residual_rms`, `final/residual_rms`: residual stream entering block *i* / the final norm | RMS |
+| `layer_<i>/residual_max_abs`, `final/residual_max_abs` | maximum |
+| `layer_<i>/attention_output_rms`: dot-product attention output before output scaling | RMS |
+| `layer_<i>/attention_output_head_rms_min`: smallest RMS of one head at one position | minimum |
+| `layer_<i>/head_rms_norm_gain_max` (head RMSNorm): largest `1/sqrt(mean(y^2) + eps)` | maximum |
+| `update/<group>/{gradient_norm,parameter_norm,update_norm}` | computed on the averaged gradient |
+
+Parameter groups are embedding, output head, attention Q/K/V, attention output
+projection, MLP, norm scales, QK-norm scales, attention-output norm scales,
+attention coefficients, and other. `update_norm` is the actual parameter change
+after the whole AdamW step. Gated DeltaNet and GLA record the residual and update
+statistics only. Recording never changes the update: on CPU the update is
+bit-identical with and without it, and on GPU the differences match GPU
+nondeterminism between identical updates.
+
+Each log line adds the smallest `attention_output_head_rms_min`, largest
+`head_rms_norm_gain_max`, and largest `residual_max_abs` over layers; W&B receives
+every statistic as `train/telemetry/<name>`. Each validation event stores
+`train_telemetry` (every statistic's mean, minimum, and maximum over every update in
+the window), `train_gradient_spike_count`, and `train_gradient_spikes`: the complete
+statistics of up to 20 updates whose gradient norm exceeds 5× the median of the
+preceding 100 updates (after 20 updates). A numerical-failure record keeps the failed
+and preceding updates' statistics. `benchmarks/benchmark_telemetry.py` measures the
+cost; see the validation record.
+
 Recipes leave `train.wandb_mode` at `disabled`; the Kennel and ORCD launchers pass
 `--wandb-mode online` (set `TRANSFORMER_WANDB_MODE=offline` or `disabled` when
 submitting to change it), and acceptance pilots never log. Saved workspace views are

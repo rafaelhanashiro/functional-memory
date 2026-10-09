@@ -10,6 +10,7 @@ from scaffolds.transformer.attention.parameters import (
 )
 from scaffolds.transformer.models.components.normalization import RMSNorm
 from scaffolds.transformer.models.initialization import apply_initialization
+from scaffolds.transformer.training import telemetry
 
 
 def _call_block_remat(
@@ -107,6 +108,8 @@ class TransformerLM(nnx.Module):
         x = self.token_embedding(tokens)
         x = self.dropout(x, deterministic=deterministic, rngs=rngs)
 
+        if cfg.remat and telemetry.active():
+            raise ValueError("Training telemetry requires model.remat == False")
         diagnostics = []
         for index, layer_name in enumerate(self.layer_names):
             layer = getattr(self, layer_name)
@@ -116,14 +119,18 @@ class TransformerLM(nnx.Module):
                     layer, x, deterministic, rngs, return_diagnostics, parameters,
                 )
             else:
-                result = layer(x, deterministic=deterministic, rngs=rngs,
-                               return_diagnostics=return_diagnostics, attention_parameters=parameters)
+                with telemetry.scope(f"layer_{index:02d}"):
+                    telemetry.record_residual(x)
+                    result = layer(x, deterministic=deterministic, rngs=rngs,
+                                   return_diagnostics=return_diagnostics, attention_parameters=parameters)
             if return_diagnostics:
                 x, layer_diagnostics = result
                 diagnostics.append(layer_diagnostics)
             else:
                 x = result
 
+        with telemetry.scope("final"):
+            telemetry.record_residual(x)
         x = self.final_norm(x)
         with jax.named_scope("vocabulary_projection"):
             logits = self.lm_head(x)

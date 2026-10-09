@@ -37,7 +37,7 @@ from scaffolds.transformer.training.checkpointing import (
     state_sha256,
     validate_resume_progress,
 )
-from scaffolds.transformer.training import tracking
+from scaffolds.transformer.training import telemetry, tracking
 from scaffolds.transformer.training.distributed import (
     BatchLayout,
     DataParallelFunctions,
@@ -497,7 +497,7 @@ def _update_run_record(config: Config, metadata: dict) -> None:
 
 
 def _fail_numerics(config, state, step, message, sample, provenance, *, diagnostics=None, loss=None,
-                   numerical_metrics=None):
+                   numerical_metrics=None, telemetry_record=None):
     """Persist the offending state diagnostics before aborting without a repair."""
     failure = {
         "format": "shared-transformer-numerical-failure", "version": 1,
@@ -515,6 +515,11 @@ def _fail_numerics(config, state, step, message, sample, provenance, *, diagnost
             ("forward_loss", "global_gradient_norm", "updated_parameter_norm"),
             (json_number(value) for value in numerical_metrics), strict=True,
         ))
+    if telemetry_record is not None:
+        failure["training_telemetry"] = {
+            name: {key: json_number(value) for key, value in values.items()} if values is not None else None
+            for name, values in telemetry_record.items()
+        }
     try:
         failure["attention_diagnostics"] = diagnostics if diagnostics is not None else attention_diagnostics(
             state, config, sample, provenance,
@@ -651,9 +656,11 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                    if penalty_weight else None)
     penalty_value = None
     data_parallel = None
+    # Telemetry is standard for data-parallel training; recording cannot cross remat.
+    collect_telemetry = layout.device_count > 1 and not config.model.remat
     if layout.device_count > 1:
         data_parallel = make_data_parallel_functions(state, devices, check_all_gradients=check_all_gradients,
-                                                    **penalty_options)
+                                                    collect_telemetry=collect_telemetry, **penalty_options)
         state = put_replicated(state, data_parallel.replicated_sharding)
     train_iter = make_train_iterator(
         replace(config.data, batch_size=layout.global_micro_batch_size),
@@ -677,6 +684,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         window_step = start_step
         train_losses = []
         gradient_norms = []
+        telemetry_window = telemetry.TelemetryWindow()
+        telemetry_values = previous_telemetry = None
         attempt_id = f"{os.environ.get('SLURM_JOB_ID', 'local')}:{os.environ.get('SLURM_RESTART_COUNT', '0')}:{uuid.uuid4().hex[:8]}"
         for step in trange(start_step + 1, end_step + 1, desc="train"):
             train_step_start = time.perf_counter()
@@ -703,6 +712,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                                if check_all_gradients
                                else accumulated_train_step(state, batches, micro_rngs, **penalty_options))
             state, loss, *numerical_metrics = step_result
+            telemetry_vector = numerical_metrics.pop() if collect_telemetry else None
             is_log = step == start_step + 1 or step % config.train.log_every == 0
             is_eval = step % config.train.eval_every == 0 or step == config.optim.total_steps
             is_checkpoint = is_eval or step % config.train.ckpt_every == 0 or step == end_step
@@ -712,11 +722,18 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             # so pilots can separate compilation from steady training speed.
             if len(timing["train_step_seconds"]) < 8:
                 timing["train_step_seconds"].append(time.perf_counter() - train_step_start)
+            if telemetry_vector is not None:
+                previous_telemetry = telemetry_values
+                telemetry_values = dict(zip(data_parallel.telemetry_keys,
+                                            np.asarray(jax.device_get(telemetry_vector)).tolist(), strict=True))
             if not math.isfinite(loss_value):
                 _fail_numerics(config, state, step,
                                f"Nonfinite training loss or optimizer update at step {step}: {loss_value}",
                                diagnostic_sample, diagnostic_provenance, loss=loss_value,
-                               numerical_metrics=numerical_metrics[0] if numerical_metrics else None)
+                               numerical_metrics=numerical_metrics[0] if numerical_metrics else None,
+                               telemetry_record=({"failed_update": telemetry_values,
+                                                  "preceding_update": previous_telemetry}
+                                                 if telemetry_values is not None else None))
             # This is the already-computed norm of the full, averaged gradient
             # before the optimizer clips it, including any coefficient penalty.
             gradient_norm = (float(np.asarray(jax.device_get(numerical_metrics[0]))[1])
@@ -725,6 +742,14 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 gradient_norms.append(gradient_norm)
             clipped = gradient_norm is not None and gradient_norm > config.optim.grad_clip_norm
             clip_scale = config.optim.grad_clip_norm / gradient_norm if clipped else 1.0
+            if telemetry_values is not None:
+                spike = telemetry_window.add(step, data_parallel.telemetry_keys,
+                                             list(telemetry_values.values()), gradient_norm)
+                if spike is not None:
+                    print(f"gradient_spike step={step} gradient_norm={gradient_norm:.6f} "
+                          f"running_median={spike['running_median']:.6f}"
+                          + "".join(f" {key}={value:.6g}" for key, value in telemetry.log_summary(telemetry_values).items()),
+                          flush=True)
             if (is_log or is_eval) and penalty_sum is not None:
                 # The penalty term as added to the loss, at the updated parameters; the
                 # recorded training NLL and perplexities exclude it.
@@ -737,11 +762,13 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                       # Retained logs keep the individual sampled points; the
                       # validation record summarizes every update in its window.
                       + (f" gradient_norm_pre_clip={gradient_norm:.6f} gradient_clip_scale={clip_scale:.6f}"
-                         if gradient_norm is not None else ""),
+                         if gradient_norm is not None else "")
+                      + ("".join(f" {key}={value:.6g}" for key, value in telemetry.log_summary(telemetry_values).items())
+                         if telemetry_values is not None else ""),
                       flush=True)
                 tracking.log_train(wandb_run, step, loss_value, train_ppl, float(schedule(step - 1)),
                                    coefficient_penalty=penalty_value, gradient_norm=gradient_norm,
-                                   gradient_clip_norm=config.optim.grad_clip_norm)
+                                   gradient_clip_norm=config.optim.grad_clip_norm, telemetry=telemetry_values)
             if is_eval:
                 interval_seconds = time.perf_counter() - window_time
                 evaluation_start = time.perf_counter()
@@ -793,6 +820,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                         "gradient_clip_norm": config.optim.grad_clip_norm,
                     } if gradient_norms else {}),
                     **({"train_coefficient_penalty": penalty_value} if penalty_value is not None else {}),
+                    **(telemetry_window.summary(data_parallel.telemetry_keys) if collect_telemetry else {}),
                     "learning_rate": float(schedule(step - 1)), "tokens_per_second": throughput,
                     "tokens_per_second_per_device": throughput / layout.device_count,
                     "training_interval_seconds": interval_seconds, "parameter_count": parameter_count,
@@ -825,6 +853,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 print(f"step={step} val_nll={eval_loss:.6f} val_ppl={eval_ppl:.4f} best={is_best}", flush=True)
                 window_time, window_step, train_losses = time.perf_counter(), step, []
                 gradient_norms = []
+                telemetry_window.reset()
             elif is_checkpoint:
                 if not save_checkpoint(manager, step, state, metrics=None):
                     raise RuntimeError(f"Failed to save resume checkpoint at step {step}")
