@@ -5,7 +5,7 @@ the recipe's batch shape (global batch, microbatch, sequence length). Telemetry-
 telemetry-on trials alternate on the same devices, each from the same initial
 parameters and optimizer state with the same tokens and update RNGs. Every update
 synchronizes the loss and the update numerics as the training loop does; telemetry
-trials also fetch the statistics every ``--log-every`` updates. Compilation and warmup
+trials also fetch the packed statistics every update, as the loop does. Compilation and warmup
 updates are excluded from the timings. Run this in an allocation, never on the login node.
 
   python -m scaffolds.transformer.benchmarks.benchmark_telemetry \\
@@ -41,8 +41,11 @@ def run_trial(state, functions, batches, rngs, *, collect: bool, warmup: int, it
         state = outputs[0]
         loss = float(outputs[1])
         np.asarray(jax.device_get(outputs[2]))
-        if collect and (index + 1) % log_every == 0:
-            statistics = {key: float(value) for key, value in jax.device_get(outputs[3]).items()}
+        if collect:
+            # The training loop fetches every update's packed statistics.
+            values = np.asarray(jax.device_get(outputs[3]))
+            if (index + 1) % log_every == 0:
+                statistics = dict(zip(functions.telemetry_keys, values.tolist(), strict=True))
         elapsed = time.perf_counter() - start
         if not math.isfinite(loss):
             raise FloatingPointError(f"Nonfinite loss at update {index + 1}: {loss}")
@@ -86,7 +89,7 @@ def benchmark(args) -> dict:
             "token_shape": list(token_shape), "token_sha256": hashlib.sha256(tokens.tobytes()).hexdigest(),
             "warmup": args.warmup, "iterations": args.iterations, "trials": args.trials, "log_every": args.log_every,
             "timing": ("one update: compiled data-parallel step, loss and update-numerics synchronization, and "
-                       "(telemetry trials) the statistics fetch every log_every updates"),
+                       "(telemetry trials) the packed statistics fetch"),
             "order": "trials alternate which variant runs first",
         },
         "trials": [],

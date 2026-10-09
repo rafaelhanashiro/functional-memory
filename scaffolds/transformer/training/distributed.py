@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 from typing import Callable, Sequence
 
@@ -81,6 +81,9 @@ class DataParallelFunctions:
     eval_batch_sharding: NamedSharding
     train_step: Callable[[TrainState, jax.Array, jax.Array], tuple[TrainState, jax.Array]]
     eval_step: Callable[[TrainState, jax.Array, jax.Array], jax.Array]
+    telemetry_keys: list[str] = field(default_factory=list)
+    """Names of the packed telemetry vector's entries, filled when the step is traced."""
+    telemetry_kinds: dict[str, str] = field(default_factory=dict)
 
 
 def resolve_batch_layout(
@@ -207,8 +210,9 @@ def make_data_parallel_functions(
     coefficient_penalty_denominator: bool = True,
     collect_telemetry: bool = False,
 ) -> DataParallelFunctions:
-    """With ``collect_telemetry``, the train step also returns a dict of activation
-    and per-group update statistics (see ``training.telemetry``) as its last output."""
+    """With ``collect_telemetry``, the train step also returns, as its last output, one
+    vector of activation and per-group update statistics (see ``training.telemetry``);
+    ``telemetry_keys`` names its entries once the step has been traced."""
     if len(devices) < 2:
         raise ValueError("Data-parallel functions require at least two devices")
 
@@ -218,6 +222,8 @@ def make_data_parallel_functions(
     train_batch_sharding = NamedSharding(mesh, P(None, DATA_AXIS, None))
     eval_batch_sharding = NamedSharding(mesh, P(DATA_AXIS, None))
     graphdef = state.graphdef
+    telemetry_keys: list[str] = []
+    telemetry_kinds: dict[str, str] = {}
 
     def local_train_step(
         current_state: TrainState,
@@ -285,8 +291,16 @@ def make_data_parallel_functions(
         if collect_telemetry:
             statistics = telemetry.reduce_devices(
                 telemetry.reduce_microbatches(stacked_statistics, reductions), reductions, DATA_AXIS)
-            statistics.update(telemetry.update_statistics(current_state.params, global_grads, updated.params))
-            outputs += (statistics,)
+            update = telemetry.update_statistics(current_state.params, global_grads, updated.params)
+            statistics.update(update)
+            kinds = {**reductions, **{key: "norm" for key in update}}
+            keys = sorted(statistics)
+            if telemetry_keys and telemetry_keys != keys:
+                raise RuntimeError("Telemetry keys changed between traces")
+            telemetry_keys[:] = keys
+            telemetry_kinds.update(kinds)
+            # One vector, so the host fetches every update's statistics in a single transfer.
+            outputs += (jnp.stack([statistics[key] for key in keys]),)
         return outputs
 
     def local_eval_step(
@@ -364,6 +378,8 @@ def make_data_parallel_functions(
         eval_batch_sharding=eval_batch_sharding,
         train_step=train_step_with_mesh,
         eval_step=eval_step_with_mesh,
+        telemetry_keys=telemetry_keys,
+        telemetry_kinds=telemetry_kinds,
     )
 
 

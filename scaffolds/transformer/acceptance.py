@@ -178,7 +178,7 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
     return AcceptanceSpec(
         entry_module=entry_module,
         cpu_tests=tuple(f"scaffolds/transformer/tests/test_{name}.py" for name in (
-            "model", "training", "checkpoint_audit", "parameter_policy")),
+            "model", "training", "telemetry", "checkpoint_audit", "parameter_policy")),
         check_config=validate_config,
         required_backend=None if request == "auto" else request,
         check_initialization=(None if config.model.attention_mechanism in ("gla", "gated_deltanet")

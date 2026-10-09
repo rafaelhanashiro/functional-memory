@@ -1,4 +1,5 @@
 from dataclasses import replace
+import json
 
 import jax
 import jax.numpy as jnp
@@ -7,7 +8,7 @@ import pytest
 from flax import nnx
 
 from scaffolds.transformer.tests.test_training import tiny_config
-from scaffolds.transformer.training import telemetry
+from scaffolds.transformer.training import loop, telemetry
 from scaffolds.transformer.training.distributed import make_data_parallel_functions, put_replicated, put_train_batches
 from scaffolds.transformer.training.state import create_state
 
@@ -25,22 +26,24 @@ def _run(cfg, devices, *, collect):
     state = put_replicated(state, functions.replicated_sharding)
     batches = put_train_batches(np.arange(40, dtype=np.int64).reshape(2, 4, 5) % 16, functions.train_batch_sharding)
     outputs = functions.train_step(state, batches, jax.random.PRNGKey(3))
-    return state, outputs
+    return functions, outputs
 
 
 @pytest.mark.parametrize("scaling", ["none", "head_rms_norm"])
-def test_telemetry_leaves_the_update_unchanged(tmp_path, scaling):
+def test_distributed_telemetry_leaves_the_update_unchanged(tmp_path, scaling):
     devices = _devices()
     cfg = tiny_config(tmp_path)
     cfg.model = replace(cfg.model, attention_output_scaling=scaling, attention_normalization=scaling == "none")
     _, plain = _run(cfg, devices, collect=False)
-    _, observed = _run(cfg, devices, collect=True)
+    functions, observed = _run(cfg, devices, collect=True)
     assert len(plain) == 3 and len(observed) == 4
     np.testing.assert_array_equal(np.asarray(plain[1]), np.asarray(observed[1]))
     np.testing.assert_array_equal(np.asarray(plain[2]), np.asarray(observed[2]))
     for before, after in zip(jax.tree.leaves(plain[0].params), jax.tree.leaves(observed[0].params), strict=True):
         np.testing.assert_array_equal(np.asarray(before), np.asarray(after))
-    statistics = {key: float(value) for key, value in observed[3].items()}
+    statistics = dict(zip(functions.telemetry_keys, np.asarray(observed[3]).tolist(), strict=True))
+    assert functions.telemetry_kinds["layer_00/attention_output_head_rms_min"] == "min"
+    assert functions.telemetry_kinds["update/mlp/gradient_norm"] == "norm"
     assert all(np.isfinite(value) for value in statistics.values())
     expected = {"layer_00/residual_rms", "layer_00/residual_max_abs", "layer_00/attention_output_rms",
                 "layer_00/attention_output_head_rms_min", "final/residual_rms", "final/residual_max_abs"}
@@ -87,3 +90,65 @@ def test_parameter_groups_cover_the_model_roles():
     assert telemetry.parameter_group(keys("output_norm_scale")) == "attention_output_norm"
     assert telemetry.parameter_group(keys("polynomial_coefficients")) == "attention_coefficients"
     assert telemetry.parameter_group(keys("lm_head", "kernel")) == "output_head"
+
+
+def test_window_summarizes_updates_and_records_gradient_spikes():
+    window = telemetry.TelemetryWindow()
+    keys = ["layer_00/attention_output_head_rms_min", "update/mlp/gradient_norm"]
+    for step in range(1, 31):
+        assert window.add(step, keys, [0.5, 1.0], 1.0) is None
+    spike = window.add(31, keys, [0.01, 9.0], 9.0)
+    assert spike["step"] == 31 and spike["running_median"] == 1.0
+    assert spike["statistics"]["layer_00/attention_output_head_rms_min"] == 0.01
+    summary = window.summary(keys)
+    assert summary["train_telemetry_update_count"] == 31 and summary["train_gradient_spike_count"] == 1
+    assert summary["train_telemetry"]["layer_00/attention_output_head_rms_min"]["min"] == 0.01
+    assert summary["train_telemetry"]["update/mlp/gradient_norm"]["max"] == 9.0
+    window.reset()
+    assert window.summary(keys) == {}
+    # The running median spans validation windows.
+    assert window.add(32, keys, [0.5, 1.0], 6.0) is not None
+
+
+def test_log_summary_takes_extremes_over_layers():
+    values = {"layer_00/attention_output_head_rms_min": 0.3, "layer_01/attention_output_head_rms_min": 0.1,
+              "layer_00/residual_max_abs": 2.0, "final/residual_max_abs": 5.0}
+    assert telemetry.log_summary(values) == {"attention_output_head_rms_min": 0.1, "residual_max_abs": 5.0}
+
+
+def test_distributed_training_records_telemetry(tmp_path, capsys):
+    _devices()
+    cfg = tiny_config(tmp_path)
+    loop.run_training(cfg)
+    output = capsys.readouterr().out
+    assert "attention_output_head_rms_min=" in output and "residual_max_abs=" in output
+    records = [json.loads(line) for line in (tmp_path / "metrics.jsonl").read_text().splitlines()]
+    assert [record["train_telemetry_update_count"] for record in records] == [2, 2]
+    summary = records[0]["train_telemetry"]
+    assert {"layer_00/attention_output_head_rms_min", "final/residual_rms", "update/mlp/gradient_norm"} <= summary.keys()
+    assert summary["update/mlp/gradient_norm"]["min"] <= summary["update/mlp/gradient_norm"]["max"]
+    assert records[0]["train_gradient_spike_count"] == 0 and records[0]["train_gradient_spikes"] == []
+
+
+def test_distributed_numerical_failure_keeps_telemetry(tmp_path, monkeypatch):
+    _devices()
+    cfg = tiny_config(tmp_path)
+    cfg.train.log_every, cfg.train.eval_every, cfg.train.ckpt_every = 3, 4, 4
+    actual = loop.make_data_parallel_functions
+
+    def failing_second_update(*args, **kwargs):
+        functions = actual(*args, **kwargs)
+
+        def train_step(state, batches, rng):
+            updated, loss, *rest = functions.train_step(state, batches, rng)
+            return (updated, jnp.where(updated.step == 2, jnp.nan, loss), *rest)
+
+        return replace(functions, train_step=train_step)
+
+    monkeypatch.setattr(loop, "make_data_parallel_functions", failing_second_update)
+    with pytest.raises(FloatingPointError, match="at step 2"):
+        loop.run_training(cfg)
+    failure = json.loads((tmp_path / "numerical_failure_step_00000002.json").read_text())
+    recorded = failure["training_telemetry"]
+    assert recorded["failed_update"]["layer_00/attention_output_head_rms_min"] > 0
+    assert recorded["preceding_update"]["update/mlp/gradient_norm"] > 0

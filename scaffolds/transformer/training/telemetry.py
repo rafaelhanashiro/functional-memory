@@ -15,15 +15,24 @@ after it, grouped by parameter role.
 """
 from __future__ import annotations
 
+from collections import deque
 import contextlib
 import contextvars
+import math
 import re
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 DATA_AXIS = "data"
 REDUCTIONS = ("rms", "mean", "min", "max")
+# A gradient spike is an update whose global gradient norm exceeds SPIKE_FACTOR times
+# the median of the preceding SPIKE_HISTORY updates (once SPIKE_MIN_HISTORY exist).
+SPIKE_FACTOR = 5.0
+SPIKE_HISTORY = 100
+SPIKE_MIN_HISTORY = 20
+MAX_RECORDED_SPIKES = 20
 
 _COLLECTOR: contextvars.ContextVar = contextvars.ContextVar("transformer_telemetry", default=None)
 
@@ -174,3 +183,79 @@ def update_statistics(params, grads, updated_params) -> dict[str, jax.Array]:
         statistics[f"update/{group}/parameter_norm"] = jnp.sqrt(parameter[group])
         statistics[f"update/{group}/update_norm"] = jnp.sqrt(update[group])
     return statistics
+
+
+def _number(value: float):
+    """JSON-safe float: nonfinite values become strings, as in the diagnostics records."""
+    value = float(value)
+    return value if math.isfinite(value) else ("NaN" if math.isnan(value) else ("Infinity" if value > 0 else "-Infinity"))
+
+
+class TelemetryWindow:
+    """Host-side record of every update's telemetry between validation events.
+
+    ``summary`` gives each statistic's mean, minimum, and maximum over the window's
+    updates. Gradient spikes keep their update's complete statistics (the first
+    ``MAX_RECORDED_SPIKES`` per window; all are counted). The spike reference is the
+    running median of preceding updates, which spans windows within one process.
+    """
+
+    def __init__(self):
+        self.recent_gradient_norms: deque[float] = deque(maxlen=SPIKE_HISTORY)
+        self.reset()
+
+    def reset(self) -> None:
+        self.count = 0
+        self.total = self.minimum = self.maximum = None
+        self.spikes: list[dict] = []
+        self.spike_count = 0
+
+    def add(self, step: int, keys: list[str], values: np.ndarray, gradient_norm: float | None) -> dict | None:
+        """Accumulate one update; return its spike record when it is a gradient spike."""
+        values = np.asarray(values, dtype=np.float64)
+        if self.count == 0:
+            self.total, self.minimum, self.maximum = values.copy(), values.copy(), values.copy()
+        else:
+            self.total += values
+            np.fmin(self.minimum, values, out=self.minimum)
+            np.fmax(self.maximum, values, out=self.maximum)
+        self.count += 1
+        spike = None
+        if gradient_norm is not None and math.isfinite(gradient_norm):
+            if len(self.recent_gradient_norms) >= SPIKE_MIN_HISTORY:
+                median = float(np.median(self.recent_gradient_norms))
+                if gradient_norm > SPIKE_FACTOR * median:
+                    spike = {"step": step, "gradient_norm": gradient_norm, "running_median": median,
+                             "statistics": dict(zip(keys, (_number(value) for value in values)))}
+                    self.spike_count += 1
+                    if len(self.spikes) < MAX_RECORDED_SPIKES:
+                        self.spikes.append(spike)
+            self.recent_gradient_norms.append(gradient_norm)
+        return spike
+
+    def summary(self, keys: list[str]) -> dict:
+        if self.count == 0:
+            return {}
+        mean = self.total / self.count
+        return {
+            "train_telemetry_update_count": self.count,
+            "train_telemetry": {key: {"mean": _number(mean[index]), "min": _number(self.minimum[index]),
+                                      "max": _number(self.maximum[index])} for index, key in enumerate(keys)},
+            "train_gradient_spike_count": self.spike_count,
+            "train_gradient_spikes": self.spikes,
+            "gradient_spike_rule": {"factor": SPIKE_FACTOR, "history": SPIKE_HISTORY,
+                                    "minimum_history": SPIKE_MIN_HISTORY, "recorded_limit": MAX_RECORDED_SPIKES},
+        }
+
+
+def log_summary(values: dict[str, float]) -> dict[str, float]:
+    """The few extremes printed on each training log line."""
+    def extreme(suffix, function):
+        matches = [value for key, value in values.items() if key.endswith(suffix)]
+        return function(matches) if matches else None
+    summary = {
+        "attention_output_head_rms_min": extreme("/attention_output_head_rms_min", min),
+        "head_rms_norm_gain_max": extreme("/head_rms_norm_gain_max", max),
+        "residual_max_abs": extreme("/residual_max_abs", max),
+    }
+    return {key: value for key, value in summary.items() if value is not None}
