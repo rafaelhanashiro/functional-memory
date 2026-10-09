@@ -546,9 +546,9 @@ The warmup-length unnormalized fixed Hermite runs (source `13f018f`) added two m
 - **2×H100 NVL, first use** (`node1709`): job 25089884 passed the initialization check, a
   pilot at 1.39 s per update, and the resume on 2026-10-08, then trained updates
   3,001–19,074 at about 1.5 s per update, about 1.6× slower than H100 80GB HBM3 or H200.
-  Its GPU unit tests did not run on the NVL: the shared test results are keyed by the
-  launcher's GPU type, `H100`, which covers both models, so it reused the H100 80GB HBM3
-  results.
+  Its GPU unit tests did not run on the NVL: the shared test results were then keyed by
+  the launcher's GPU type, `H100`, which covers both models, so it reused the H100 80GB
+  HBM3 results. They are now keyed by GPU model, so an NVL allocation runs its own.
 
 Softmax without QK-norm (plain QK scores) at `d_K = 8, 16, 32, 128` (source `e39410e`)
 passed 131 CPU, 5 distributed, and 1 GPU test on 2×H100 80GB HBM3 (job 25236653,

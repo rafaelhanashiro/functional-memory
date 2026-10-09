@@ -13,7 +13,7 @@ manifests, GPU type and count, and runtime settings:
 Matching passed stages are reused on requeue. With ``--test-cache``, a passed
 test stage is also shared with other runs: the recipe only selects which tests
 run, so runs whose selected tests, source, dependency lock, runtime settings,
-and (for GPU tests) GPU type match reuse one result. Each run still checks its
+and (for GPU tests) GPU model match reuse one result. Each run still checks its
 own initialization, pilot, and resume. Worker processes re-invoke the adapter
 module by name, so scaffold code never imports experiment code.
 """
@@ -248,13 +248,18 @@ def record(path: Path, experiment: dict, **fields) -> None:
     })
 
 
-def stage_identity(experiment: dict, stage: str, paths, selection, *, cpu: bool) -> str:
-    """What a test stage's outcome depends on; the recipe only chooses the tests."""
+def stage_identity(experiment: dict, stage: str, paths, selection, *, cpu: bool, device_kinds=()) -> str:
+    """What a test stage's outcome depends on; the recipe only chooses the tests.
+
+    GPU tests also key on the allocated devices' model names, since one launcher
+    GPU type (for example ``H100``) can cover several models (SXM and NVL).
+    """
     payload = {
         "stage": stage, "tests": list(paths), "selection": list(selection),
         "source_commit": experiment["source_commit"],
         "dependency_lock_sha256": experiment["dependency_lock_sha256"],
         "runtime": experiment["runtime"], "gpu_type": None if cpu else experiment["gpu_type"],
+        "device_kinds": None if cpu else sorted(set(device_kinds)),
     }
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
 
@@ -479,7 +484,8 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
                 continue
             junit = directory / f"{stage}.xml"
             cache = getattr(args, "test_cache", None)
-            key = stage_identity(experiment, stage, paths, selection, cpu=cpu) if cache else None
+            key = (stage_identity(experiment, stage, paths, selection, cpu=cpu,
+                                  device_kinds=hardware.get("device_kinds", ())) if cache else None)
             origin = reuse_tests(cache, key, junit) if cache else None
             if origin is not None:
                 record(path, experiment, tests_passed=require_passing_tests(junit), reused_from=origin)
