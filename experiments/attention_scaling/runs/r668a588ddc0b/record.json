@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r668a588ddc0b/config.yaml",
+    "sha256": "285b2dffb3be60a1a949f0fa63122b1e13763d00031e54bd099727c9fa0d3121"
+  },
+  "label": "200m-qk-dk008-softmax-transformer-init-warmup400-seed0",
+  "name": "200m-qk-dk008-softmax-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r668a588ddc0b",
+  "status": "planned"
+}
