@@ -4,8 +4,9 @@ Opened 2026-10-07. Updated 2026-10-08. Home cluster: **Kennel**.
 
 Does letting the current token choose polynomial coefficients improve
 unnormalized attention with per-head output RMSNorm and 400 warmup steps?
-This comparison includes an affine degree-one predictor, tanh predictors at
-degrees one, two, and three, and a static learned control at each degree.
+This comparison includes an affine degree-one predictor, completed tanh
+predictors at degrees one, two, and three, and a degree-four tanh run in acceptance.
+Each degree has a preselected static learned control.
 
 ## Runs and method
 
@@ -18,20 +19,26 @@ degrees one, two, and three, and a static learned control at each degree.
 | Primary, m = 3 | `r0bc57959ef6c` | `b_r + a_r tanh(w_r^T x_t)` | Complete, 19,074 updates |
 | Static reference, m = 2 | `rfb43d69f60dc` | Input-independent, learned per layer and head | Complete, 19,074 updates |
 | Static reference, m = 3 | `r5ae483d40d62` | Input-independent, learned per layer and head | Complete, 19,074 updates |
+| Primary, m = 4 | `r5e46fc3c92a7` | `b_r + a_r tanh(w_r^T x_t)` | In acceptance, job 212127; no production results |
+| Static reference, m = 4 | `rc2b555b905dd` | Input-independent, learned per layer and head | Complete, 19,074 updates |
 
 W&B: [tanh m = 1](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/e431fdc66cea454fa0a0297b2a33435b),
 [tanh m = 2](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/344eba83b1e043c284e14d8b0a753526),
 and [tanh m = 3](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/a3b484f37f624f908ed272388d4fe555).
 
-Explicit runs, roles, and scientific input checksums are in [selection.yaml](selection.yaml).
+The seven completed runs at degrees one through three, their roles, and
+scientific input checksums are in [selection.yaml](selection.yaml). The pending
+degree-four comparison is explicitly identified above; it has not entered the
+selection, generated table, or figure. Its static control has terminal validation
+perplexity **13.639175**, and the tanh result is not yet available.
 Measurements live under [the attention study](../../../experiments/attention_scaling/README.md).
 All runs use the canonical `transformer_reference` initialization, QK normalization,
 unnormalized attention, per-head output RMSNorm, `d_K = d_V = 64`, 10 layers,
 width 1024, 16 heads, seed 0, BF16 training, effective batch 256, global microbatch
 64, the same FineWeb data order, 19,074 updates (10.0B tokens), and learning rates
 3e-4 to 3e-5 with 400 warmup updates. The train and evaluation manifest hashes
-match for all seven runs. Coefficient parameters are FP32 and excluded from
-weight decay. Each degree-matched pair has the same optimizer, data, and training
+match for the seven runs in the current selection. Coefficient parameters are
+FP32 and excluded from weight decay. Each degree-matched pair has the same optimizer, data, and training
 settings; execution source, hardware, and attention implementation differ.
 
 The predictors use the incoming attention activation after the block input
@@ -43,14 +50,22 @@ There is no bias inside tanh. Initial values `b_r = 1/r!`, `a_r = 1`, and
 start with the same Taylor coefficients. The amplitude bounds the modulation
 for fixed parameters, but this bound changes as the amplitude learns.
 
-The tanh runs used four GPUs each at nice 0: B300 on `standard` for degree one,
-H100 on `long` for degree two, and B300 on `long` for degree three. They used
+The completed tanh runs used four GPUs each at nice 0: B300 on `standard` for
+degree one, H100 on `long` for degree two, and B300 on `long` for degree three. They used
 source `254cab946e637cd6cd5c004b6976351b1dee3651` and direct fused polynomial
 attention. All passed CPU and GPU checks, canonical initialization checks,
 full-recipe pilots with validation, and exact fresh-process checkpoint resumption.
 The direct fused kernel also passed all 12 standalone H100 GPU checks across
 the three degrees; [qualification evidence](../../../scaffolds/transformer/validation/runs/query-tanh-h100/tests.json)
 is separate from production acceptance.
+
+Degree four uses the same frozen recipe as degree three apart from degree and
+run identity. Job `212127` requests four H100 GPUs on `mastiff`, partition
+`standard`, at nice 0, using source
+`ee1224b3410a87d357df4dcd6807dde55f9b745b`. All 12 degree-four CPU checks
+passed before launch. Full allocation acceptance, including GPU checks,
+the full-recipe pilot, validation, and exact fresh-process resumption, must pass
+before production training starts. No degree-four training outcome is available.
 
 The [shared scaffold](../../../scaffolds/transformer/README.md#input-dependent-polynomial-coefficients)
 defines the mechanism. Exact launch commands are in the
@@ -134,7 +149,9 @@ Metrics and full coefficient diagnostics stay in each run's `metrics.jsonl`.
 
 ## Open decision
 
-The affine and tanh comparisons are complete and show no benefit over matched
-static coefficients with this recipe. Decide whether to promote this negative
-comparison into the maintained attention results, investigate the optimization
-and saturation behavior within this topic, or discard the topic and its runs.
+The completed affine and degree-one through degree-three tanh comparisons show
+no benefit over matched static coefficients with this recipe. The pending
+degree-four comparison tests whether the shrinking deficit continues at higher
+degree. After that result, decide whether to promote the comparison into the
+maintained attention results, investigate the optimization and saturation
+behavior within this topic, or discard the topic and its runs.
