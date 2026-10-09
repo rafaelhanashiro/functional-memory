@@ -204,21 +204,21 @@ sbatch --nice=0 --partition=long --nodelist=akita --gres=gpu:b300:4 \
   experiments/attention_scaling/runs/r0bc57959ef6c/config.yaml 254cab946e637cd6cd5c004b6976351b1dee3651 4 B300
 ```
 
-Run `r5e46fc3c92a7` extends this comparison to `m = 4`, retaining the complete
-degree-three recipe apart from degree and run identity. Job `212131`, allocated
-four B300 GPUs on `akita`, partition `standard`, at nice 0, was cancelled at the
-user's request. It has no terminal training outcome. Its preselected static degree-four
-control is `rc2b555b905dd`. All acceptance stages passed: 354 CPU checks, five
-distributed CPU checks, 52 GPU checks, canonical initialization, a full-recipe
-20-update pilot with validation, and exact fresh-process checkpoint resumption.
-The executed launch command from `worktrees/input-dependent-tanh-m4` was:
+Run `rfee72428a45e` extends this comparison to `m = 4`, retaining the complete
+degree-three recipe apart from degree and run identity. It is preparing for a
+fresh launch on four B300 GPUs on `akita`, partition `standard`, at nice 0.
+It has no training results. Its preselected static degree-four control is
+`rc2b555b905dd`. Full allocation acceptance must pass on the current source,
+including the telemetry-enabled full-recipe pilot, before production starts.
+After committing the frozen inputs and code, launch from
+`worktrees/input-dependent-tanh-m4` with:
 
 ```bash
 sbatch --nice=0 --partition=standard --nodelist=akita --gres=gpu:b300:4 \
-  --time=1-00:00:00 --cpus-per-task=32 --mem=256G --job-name=r5e46fc3c92a7 \
-  --output=experiments/attention_scaling/runs/r5e46fc3c92a7/training.log \
+  --time=1-00:00:00 --cpus-per-task=32 --mem=256G --job-name=rfee72428a45e \
+  --output=experiments/attention_scaling/runs/rfee72428a45e/training.log \
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
-  experiments/attention_scaling/runs/r5e46fc3c92a7/config.yaml ee1224b3410a87d357df4dcd6807dde55f9b745b 4 B300,H100
+  experiments/attention_scaling/runs/rfee72428a45e/config.yaml "$(git rev-parse HEAD)" 4 B300,H100
 ```
 
 The shared acceptance checks must pass on each allocation before production starts.
@@ -227,7 +227,6 @@ commit. The four-GPU recipe with `model.remat: false` automatically enables
 [standard training telemetry](../../scaffolds/transformer/README.md): every-update
 activation and parameter-group statistics, W&B samples at the logging cadence,
 and validation-window summaries and gradient-spike diagnostics in `metrics.jsonl`.
-The cancelled run remains stopped pending a separate request to launch a fresh run.
 Question, input selections, outcomes, and the open scientific decision live in the
 [comparison README](../../results/exploratory/input_dependent_coefficients/README.md).
 

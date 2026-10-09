@@ -72,8 +72,8 @@ train:
   seed: 0
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/attention_scaling/runs/r5e46fc3c92a7
-  checkpoint_dir: experiments/attention_scaling/runs/r5e46fc3c92a7/checkpoints
+  workdir: experiments/attention_scaling/runs/rfee72428a45e
+  checkpoint_dir: experiments/attention_scaling/runs/rfee72428a45e/checkpoints
   micro_batch_size: 64
   log_every: 10
   eval_every: 1000

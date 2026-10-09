@@ -1,12 +1,12 @@
 # Input-dependent polynomial coefficients
 
-Opened 2026-10-07. Updated 2026-10-08. Home cluster: **Kennel**.
+Opened 2026-10-07. Updated 2026-10-09. Home cluster: **Kennel**.
 
 Does letting the current token choose polynomial coefficients improve
 unnormalized attention with per-head output RMSNorm and 400 warmup steps?
 This comparison includes an affine degree-one predictor, completed tanh
-predictors at degrees one, two, and three, and a degree-four tanh run cancelled
-at the user's request.
+predictors at degrees one, two, and three, and a degree-four tanh run preparing
+for launch.
 Each degree has a preselected static learned control.
 
 ## Runs and method
@@ -20,19 +20,18 @@ Each degree has a preselected static learned control.
 | Primary, m = 3 | `r0bc57959ef6c` | `b_r + a_r tanh(w_r^T x_t)` | Complete, 19,074 updates |
 | Static reference, m = 2 | `rfb43d69f60dc` | Input-independent, learned per layer and head | Complete, 19,074 updates |
 | Static reference, m = 3 | `r5ae483d40d62` | Input-independent, learned per layer and head | Complete, 19,074 updates |
-| Primary, m = 4 | `r5e46fc3c92a7` | `b_r + a_r tanh(w_r^T x_t)` | Cancelled at user request, job 212131; no terminal result |
+| Primary, m = 4 | `rfee72428a45e` | `b_r + a_r tanh(w_r^T x_t)` | Preparing for launch; no training results |
 | Static reference, m = 4 | `rc2b555b905dd` | Input-independent, learned per layer and head | Complete, 19,074 updates |
 
 W&B: [tanh m = 1](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/e431fdc66cea454fa0a0297b2a33435b),
 [tanh m = 2](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/344eba83b1e043c284e14d8b0a753526),
-[tanh m = 3](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/a3b484f37f624f908ed272388d4fe555),
-and [tanh m = 4](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/9c6a253d4e434da881b487298e3c9a7d).
+and [tanh m = 3](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/a3b484f37f624f908ed272388d4fe555).
 
 The seven completed runs at degrees one through three, their roles, and
-scientific input checksums are in [selection.yaml](selection.yaml). The cancelled
+scientific input checksums are in [selection.yaml](selection.yaml). The pending
 degree-four comparison is explicitly identified above; it has not entered the
 selection, generated table, or figure. Its static control has terminal validation
-perplexity **13.639175**, and the tanh run has no terminal training outcome.
+perplexity **13.639175**, and the tanh run has no training results.
 Measurements live under [the attention study](../../../experiments/attention_scaling/README.md).
 All runs use the canonical `transformer_reference` initialization, QK normalization,
 unnormalized attention, per-head output RMSNorm, `d_K = d_V = 64`, 10 layers,
@@ -62,14 +61,13 @@ the three degrees; [qualification evidence](../../../scaffolds/transformer/valid
 is separate from production acceptance.
 
 Degree four uses the same frozen recipe as degree three apart from degree and
-run identity. Job `212131` used four B300 GPUs on `akita`, partition
-`standard`, at nice 0, using source
-`ee1224b3410a87d357df4dcd6807dde55f9b745b`. All 12 degree-four CPU checks
-passed before launch. Full allocation acceptance passed: 354 CPU checks, five
-distributed CPU checks, 52 GPU checks, canonical initialization, a 20-update
-full-recipe pilot with finite validation and attention diagnostics, and exact
-fresh-process checkpoint resumption. The run was cancelled at the user's request
-and has no terminal degree-four training outcome.
+run identity. The planned allocation is four B300 GPUs on `akita`, partition
+`standard`, at nice 0. The current source automatically enables standard
+training telemetry for this four-GPU recipe with `model.remat: false`, including
+activation and parameter-group statistics and gradient-spike diagnostics.
+Fresh CPU, distributed CPU, GPU, canonical-initialization, full-recipe pilot,
+validation, and exact fresh-process resumption checks must pass before
+production training. No degree-four training outcome is available.
 
 The [shared scaffold](../../../scaffolds/transformer/README.md#input-dependent-polynomial-coefficients)
 defines the mechanism. Exact launch commands are in the
@@ -154,8 +152,9 @@ Metrics and full coefficient diagnostics stay in each run's `metrics.jsonl`.
 ## Open decision
 
 The completed affine and degree-one through degree-three tanh comparisons show
-no benefit over matched static coefficients with this recipe. The degree-four
-run is cancelled; a fresh run awaits a separate user request. The open decision
-is whether to promote the completed comparison into the maintained attention
-results, investigate the optimization and saturation behavior within this topic,
-or discard the topic and its runs.
+no benefit over matched static coefficients with this recipe. The pending
+degree-four comparison tests whether the shrinking deficit continues at higher
+degree, with activation and gradient telemetry available to examine its
+training behavior. The open decision is whether to promote the comparison into
+the maintained attention results, investigate the optimization and saturation
+behavior within this topic, or discard the topic and its runs.
