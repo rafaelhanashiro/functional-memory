@@ -115,17 +115,21 @@ def reduce_microbatches(stacked: dict[str, jax.Array], reductions: dict[str, str
 
 def reduce_devices(values: dict[str, jax.Array], reductions: dict[str, str],
                    axis_name: str = DATA_AXIS) -> dict[str, jax.Array]:
-    """Reduce across data-parallel devices and convert mean squares to RMS."""
+    """Reduce across data-parallel devices and convert mean squares to RMS.
+
+    Statistics are packed into one vector per collective (mean, min, max), so the
+    number of cross-device reductions does not grow with the number of statistics.
+    """
+    collectives = {"mean": jax.lax.pmean, "min": jax.lax.pmin, "max": jax.lax.pmax}
     reduced = {}
-    for key, value in values.items():
-        kind = reductions[key]
-        if kind == "min":
-            reduced[key] = jax.lax.pmin(value, axis_name)
-        elif kind == "max":
-            reduced[key] = jax.lax.pmax(value, axis_name)
-        else:
-            mean = jax.lax.pmean(value, axis_name)
-            reduced[key] = jnp.sqrt(mean) if kind == "rms" else mean
+    for collective, operation in collectives.items():
+        keys = sorted(key for key in values
+                      if (reductions[key] in ("rms", "mean") if collective == "mean" else reductions[key] == collective))
+        if not keys:
+            continue
+        packed = operation(jnp.stack([values[key] for key in keys]), axis_name)
+        for index, key in enumerate(keys):
+            reduced[key] = jnp.sqrt(packed[index]) if reductions[key] == "rms" else packed[index]
     return reduced
 
 
