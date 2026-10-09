@@ -93,6 +93,32 @@ clipping panels locally; no W&B view was published. Training updates and saved
 optimizer state are unchanged. These are synthetic software checks, with no
 retained checkpoint or GPU throughput measurement.
 
+## Training telemetry
+
+Checks: `tests/test_telemetry.py` (in acceptance's CPU stages). On two CPU devices,
+updates with and without telemetry give bit-identical loss, gradient norm, and
+parameters. Recorded activation statistics match direct computation, and group
+gradient norms combine to the global norm. Runs of the full training loop record
+window summaries, gradient spikes, and numerical-failure statistics.
+
+Cost on four B300s (`akita`, job 212284, source `b039b6a`): reports in
+[`runs/telemetry-overhead-b300/`](runs/telemetry-overhead-b300/). Each recipe ran four
+alternating off/on trials of 40 timed updates (after 5 warmup updates) from the same
+initial state, synthetic tokens, and update RNGs. The timing includes fetching the
+packed statistics every update, as the training loop does.
+
+| Recipe (run) | Off, ms/update | On, ms/update | Overhead | Statistics |
+| --- | ---: | ---: | ---: | ---: |
+| Learned m = 4 + head RMSNorm (`rc2b555b905dd`) | 454.4 | 457.5 | +0.68% | 79 |
+| Softmax (`rdf00da0866a8`) | 193.3 | 196.5 | +1.64% | 63 |
+| Exp + head RMSNorm (`r8ad66f3912c2`) | 369.0 | 372.0 | +0.83% | 76 |
+| Normalized fixed Taylor m = 4 (`r512daaa27a15`) | 442.2 | 445.7 | +0.78% | 63 |
+
+Telemetry adds 3.0–3.5 ms per update, about one minute per 19,074-update run. Every
+trial pair shows it. Losses with and without telemetry differ by 2.3e-5–7.9e-5 over
+40 timed updates, the same order as repeated identical trials without it (2.4e-5–5.3e-5,
+GPU nondeterminism). H100 is not yet measured.
+
 ## Sampled performance
 
 Benchmarks used one H100, four layers of width256, eight heads, sequence length512,
