@@ -5,8 +5,8 @@ Opened 2026-10-07. Updated 2026-10-09. Home cluster: **Kennel**.
 Does letting the current token choose polynomial coefficients improve
 unnormalized attention with per-head output RMSNorm and 400 warmup steps?
 This comparison includes an affine degree-one predictor, completed tanh
-predictors at degrees one, two, and three, and a degree-four tanh run preparing
-for launch.
+predictors at degrees one, two, and three, and a degree-four tanh run undergoing
+acceptance.
 Each degree has a preselected static learned control.
 
 ## Runs and method
@@ -20,7 +20,7 @@ Each degree has a preselected static learned control.
 | Primary, m = 3 | `r0bc57959ef6c` | `b_r + a_r tanh(w_r^T x_t)` | Complete, 19,074 updates |
 | Static reference, m = 2 | `rfb43d69f60dc` | Input-independent, learned per layer and head | Complete, 19,074 updates |
 | Static reference, m = 3 | `r5ae483d40d62` | Input-independent, learned per layer and head | Complete, 19,074 updates |
-| Primary, m = 4 | `rfee72428a45e` | `b_r + a_r tanh(w_r^T x_t)` | Preparing for launch; no training results |
+| Primary, m = 4 | `rfee72428a45e` | `b_r + a_r tanh(w_r^T x_t)` | Acceptance running, job 213697; no training results |
 | Static reference, m = 4 | `rc2b555b905dd` | Input-independent, learned per layer and head | Complete, 19,074 updates |
 
 W&B: [tanh m = 1](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/e431fdc66cea454fa0a0297b2a33435b),
@@ -61,8 +61,9 @@ the three degrees; [qualification evidence](../../../scaffolds/transformer/valid
 is separate from production acceptance.
 
 Degree four uses the same frozen recipe as degree three apart from degree and
-run identity. The planned allocation is four B300 GPUs on `akita`, partition
-`standard`, at nice 0. The current source automatically enables standard
+run identity. Job `213697` is running acceptance on four B300 GPUs on `akita`,
+partition `standard`, at nice 0, using source
+`ec96b6cbaf04dfefd059fafc601559652204fcc6`. This source automatically enables standard
 training telemetry for this four-GPU recipe with `model.remat: false`, including
 activation and parameter-group statistics and gradient-spike diagnostics.
 Fresh CPU, distributed CPU, GPU, canonical-initialization, full-recipe pilot,

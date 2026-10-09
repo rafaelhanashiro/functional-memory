@@ -205,20 +205,19 @@ sbatch --nice=0 --partition=long --nodelist=akita --gres=gpu:b300:4 \
 ```
 
 Run `rfee72428a45e` extends this comparison to `m = 4`, retaining the complete
-degree-three recipe apart from degree and run identity. It is preparing for a
-fresh launch on four B300 GPUs on `akita`, partition `standard`, at nice 0.
+degree-three recipe apart from degree and run identity. Job `213697` is running
+acceptance on four B300 GPUs on `akita`, partition `standard`, at nice 0.
 It has no training results. Its preselected static degree-four control is
 `rc2b555b905dd`. Full allocation acceptance must pass on the current source,
 including the telemetry-enabled full-recipe pilot, before production starts.
-After committing the frozen inputs and code, launch from
-`worktrees/input-dependent-tanh-m4` with:
+The launch command from `worktrees/input-dependent-tanh-m4` was:
 
 ```bash
 sbatch --nice=0 --partition=standard --nodelist=akita --gres=gpu:b300:4 \
   --time=1-00:00:00 --cpus-per-task=32 --mem=256G --job-name=rfee72428a45e \
   --output=experiments/attention_scaling/runs/rfee72428a45e/training.log \
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
-  experiments/attention_scaling/runs/rfee72428a45e/config.yaml "$(git rev-parse HEAD)" 4 B300,H100
+  experiments/attention_scaling/runs/rfee72428a45e/config.yaml ec96b6cbaf04dfefd059fafc601559652204fcc6 4 B300,H100
 ```
 
 The shared acceptance checks must pass on each allocation before production starts.
