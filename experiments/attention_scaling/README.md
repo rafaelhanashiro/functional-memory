@@ -205,14 +205,15 @@ sbatch --nice=0 --partition=long --nodelist=akita --gres=gpu:b300:4 \
 ```
 
 Run `rfee72428a45e` extends this comparison to `m = 4`, retaining the complete
-degree-three recipe apart from degree and run identity. Job `213697` is training
-on four B300 GPUs on `akita`, partition `standard`, at nice 0.
-Its preselected static degree-four control is `rc2b555b905dd`; no terminal
-training outcome is available. All acceptance stages passed: 359 CPU checks,
+degree-three recipe apart from degree and run identity. Job `213697` completed
+all 19,074 training updates on four B300 GPUs on `akita`, partition `standard`,
+at nice 0. Its preselected static degree-four control is `rc2b555b905dd`.
+All acceptance stages passed: 359 CPU checks,
 nine distributed CPU checks, 52 GPU checks, canonical initialization, a
 20-update full-recipe pilot, and exact checkpoint resumption. The pilot recorded
-79 finite telemetry statistics over every update. Production starts from step
-zero with a fresh W&B identity.
+79 finite telemetry statistics over every update. Production started from step
+zero with a fresh W&B identity, and all 79 statistics remained finite across
+the completed production run.
 The launch command from `worktrees/input-dependent-tanh-m4` was:
 
 ```bash

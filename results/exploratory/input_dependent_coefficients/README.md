@@ -5,7 +5,7 @@ Opened 2026-10-07. Updated 2026-10-09. Home cluster: **Kennel**.
 Does letting the current token choose polynomial coefficients improve
 unnormalized attention with per-head output RMSNorm and 400 warmup steps?
 This comparison includes an affine degree-one predictor, completed tanh
-predictors at degrees one, two, and three, and a degree-four tanh run in training.
+predictors at degrees one through four.
 Each degree has a preselected static learned control.
 
 ## Runs and method
@@ -19,7 +19,7 @@ Each degree has a preselected static learned control.
 | Primary, m = 3 | `r0bc57959ef6c` | `b_r + a_r tanh(w_r^T x_t)` | Complete, 19,074 updates |
 | Static reference, m = 2 | `rfb43d69f60dc` | Input-independent, learned per layer and head | Complete, 19,074 updates |
 | Static reference, m = 3 | `r5ae483d40d62` | Input-independent, learned per layer and head | Complete, 19,074 updates |
-| Primary, m = 4 | `rfee72428a45e` | `b_r + a_r tanh(w_r^T x_t)` | Training, job 213697; no terminal result |
+| Primary, m = 4 | `rfee72428a45e` | `b_r + a_r tanh(w_r^T x_t)` | Complete, 19,074 updates |
 | Static reference, m = 4 | `rc2b555b905dd` | Input-independent, learned per layer and head | Complete, 19,074 updates |
 
 W&B: [tanh m = 1](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/e431fdc66cea454fa0a0297b2a33435b),
@@ -27,18 +27,15 @@ W&B: [tanh m = 1](https://wandb.ai/rafah-massachusetts-institute-of-technology/f
 [tanh m = 3](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/a3b484f37f624f908ed272388d4fe555),
 and [tanh m = 4](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/cef5a634be974f0a978cbaa8d0405dec).
 
-The seven completed runs at degrees one through three, their roles, and
-scientific input checksums are in [selection.yaml](selection.yaml). The pending
-degree-four comparison is explicitly identified above; it has not entered the
-selection, generated table, or figure. Its static control has terminal validation
-perplexity **13.639175**, and the tanh run has no terminal training result.
+The nine completed runs, their roles, and scientific input checksums are in
+[selection.yaml](selection.yaml).
 Measurements live under [the attention study](../../../experiments/attention_scaling/README.md).
 All runs use the canonical `transformer_reference` initialization, QK normalization,
 unnormalized attention, per-head output RMSNorm, `d_K = d_V = 64`, 10 layers,
 width 1024, 16 heads, seed 0, BF16 training, effective batch 256, global microbatch
 64, the same FineWeb data order, a budget of 19,074 updates (10.0B tokens), and learning rates
 3e-4 to 3e-5 with 400 warmup updates. The train and evaluation manifest hashes
-match for the seven runs in the current selection. Coefficient parameters are
+match for all nine runs in the current selection. Coefficient parameters are
 FP32 and excluded from weight decay. Each degree-matched pair has the same optimizer, data, and training
 settings; execution source, hardware, and attention implementation differ.
 
@@ -51,8 +48,9 @@ There is no bias inside tanh. Initial values `b_r = 1/r!`, `a_r = 1`, and
 start with the same Taylor coefficients. The amplitude bounds the modulation
 for fixed parameters, but this bound changes as the amplitude learns.
 
-The completed tanh runs used four GPUs each at nice 0: B300 on `standard` for
-degree one, H100 on `long` for degree two, and B300 on `long` for degree three. They used
+The degree-one through degree-three tanh runs used four GPUs each at nice 0:
+B300 on `standard` for degree one, H100 on `long` for degree two, and B300 on
+`long` for degree three. They used
 source `254cab946e637cd6cd5c004b6976351b1dee3651` and direct fused polynomial
 attention. All passed CPU and GPU checks, canonical initialization checks,
 full-recipe pilots with validation, and exact fresh-process checkpoint resumption.
@@ -61,7 +59,7 @@ the three degrees; [qualification evidence](../../../scaffolds/transformer/valid
 is separate from production acceptance.
 
 Degree four uses the same frozen recipe as degree three apart from degree and
-run identity. Job `213697` is training on four B300 GPUs on `akita`,
+run identity. Job `213697` completed all 19,074 updates on four B300 GPUs on `akita`,
 partition `standard`, at nice 0, using source
 `ec96b6cbaf04dfefd059fafc601559652204fcc6`. This source automatically enables standard
 training telemetry for this four-GPU recipe with `model.remat: false`, including
@@ -70,8 +68,8 @@ Acceptance passed all 359 CPU, nine distributed CPU, and 52 GPU checks,
 canonical initialization, the full-recipe pilot with validation, and exact
 fresh-process checkpoint resumption. The pilot retained all 79 telemetry
 statistics across its 20 updates, with finite values throughout. Production
-started from step zero and the initial data position. No terminal degree-four
-training outcome is available.
+started from step zero and the initial data position. All 79 telemetry statistics
+remained finite across the 19,074 production updates.
 
 The [shared scaffold](../../../scaffolds/transformer/README.md#input-dependent-polynomial-coefficients)
 defines the mechanism. Exact launch commands are in the
@@ -79,12 +77,14 @@ defines the mechanism. Exact launch commands are in the
 
 ## Findings and limitations
 
-All three tanh models finish worse than their degree-matched static controls.
-The deficit shrinks with degree: **7.49%**, **4.68%**, and **1.68%** higher
-validation perplexity for degrees one, two, and three. Tanh degree one improves
-only 0.44% over the earlier affine predictor. Increasing degree helps both
-families; the improvement across tanh degrees does not establish a benefit from
-input dependence.
+All four tanh models finish worse than their degree-matched static controls.
+The validation-perplexity deficits are **7.49%**, **4.68%**, **1.68%**, and
+**4.21%** for degrees one through four. The shrinking deficit through degree
+three does not continue at degree four: tanh barely improves from **14.222367**
+to **14.212903**, while static improves from **13.987648** to **13.639175**.
+Tanh degree one improves only 0.44% over the earlier affine predictor. Increasing
+degree helps both families; the improvement across tanh degrees does not
+establish a benefit from input dependence.
 
 <!-- BEGIN GENERATED RESULTS -->
 
@@ -97,25 +97,32 @@ input dependence.
 | 2 | tanh | 2.728845 | 15.315193 | 15.315193 | 19,074 |
 | 3 | static | 2.638175 | 13.987648 | 13.987648 | 19,074 |
 | 3 | tanh | 2.654816 | 14.222367 | 14.222367 | 19,074 |
+| 4 | static | 2.612946 | 13.639175 | 13.639175 | 19,074 |
+| 4 | tanh | 2.654150 | 14.212903 | 14.212903 | 19,074 |
 
 <!-- END GENERATED RESULTS -->
 
-All seven runs completed 10.0B tokens. Terminal and validation-best metrics
+All nine runs completed 10.0B tokens. Terminal and validation-best metrics
 coincide at update 19,074. Each validation NLL curve decreases at all 20 recorded
 points, and all recorded attention diagnostics are valid and finite. The tanh
 runs initially lead their static controls, but the static curves overtake them
-by update 3,000 for degrees one and two, and update 5,000 for degree three.
+by update 3,000 for degrees one, two, and four, and update 5,000 for degree three.
 There is no recorded validation-loss spike or numerical failure explaining the
-final difference.
+final difference. The new degree-four telemetry does record **137 gradient-spike
+detections**, using the configured five-times-rolling-baseline criterion; its
+maximum raw gradient norm is **42.83**. These detections did not cause a
+nonfinite update or a recorded validation-loss reversal, and do not by themselves
+establish the cause of the performance deficit. Earlier runs lack this complete
+every-update telemetry, so their spike counts cannot be compared.
 
 ![Degree-matched validation learning curves](learning_curves.png)
 
 [PDF](learning_curves.pdf) · [Derived measurements and input checksums](summary.csv)
 
 Final sampled training NLL is also worse with tanh: **2.971880 vs 2.898437**,
-**2.758711 vs 2.710249**, and **2.681989 vs 2.664114** for degrees one, two, and
-three. These are means of seven logged training batches over updates
-19,001–19,074, not evaluations of the whole training dataset. Their gaps to
+**2.758711 vs 2.710249**, **2.681989 vs 2.664114**, and
+**2.680430 vs 2.638479** for degrees one through four. These are means of seven
+logged training batches over updates 19,001–19,074, not evaluations of the whole training dataset. Their gaps to
 validation NLL are similar within each pair, so the observed deficit is not
 primarily a larger training–validation gap. A more expressive parameterization
 can contain the static model without the optimizer finding an equally good
@@ -123,12 +130,13 @@ solution within this training budget.
 
 The learned input-dependent branches are active. On the final pinned diagnostic
 sequence, mean coefficient standard deviation across tokens is about 0.22 for
-each degree. Some branches are also strongly saturated: the fractions of
-layer/head/order branches with `|mean_tanh| > 0.99` are 33.75%, 20.42%, and 10.47%.
+degrees one through three and 0.24 for degree four. Some branches are also strongly
+saturated: the fractions of layer/head/order branches with `|mean_tanh| > 0.99`
+are 33.75%, 20.42%, 10.47%, and 9.62% for degrees one through four.
 These are fractions of branches, not fractions of tokens. The approximate mean
-local tanh derivatives inferred from coefficient moments are 0.154, 0.228, and
-0.208. These statistics cover one fixed held-out sequence of 2,048 prediction
-tokens. They show substantial saturation alongside input variation, but do not
+local tanh derivatives inferred from coefficient moments are 0.154, 0.228,
+0.208, and 0.200. These statistics cover one fixed held-out sequence of 2,048
+prediction tokens. They show substantial saturation alongside input variation, but do not
 establish saturation as the cause of the performance deficit. They regenerate
 from recorded coefficient means, standard deviations, biases, and amplitudes;
 no checkpoint is required.
@@ -147,7 +155,7 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh results/expl
 scaffolds/transformer/.venv/bin/python -m results.exploratory.input_dependent_coefficients.plot
 ```
 
-The plot verifies pinned scientific inputs before producing the three-panel
+The plot verifies pinned scientific inputs before producing the four-panel
 figure, CSV, and generated table. `summary.csv` contains terminal and
 validation-best metrics separately, matched-control differences, and diagnostic
 statistics. Learning curves use every recorded validation, without smoothing.
@@ -155,10 +163,10 @@ Metrics and full coefficient diagnostics stay in each run's `metrics.jsonl`.
 
 ## Open decision
 
-The completed affine and degree-one through degree-three tanh comparisons show
-no benefit over matched static coefficients with this recipe. The pending
-degree-four comparison tests whether the shrinking deficit continues at higher
-degree, with activation and gradient telemetry available to examine its
-training behavior. The open decision is whether to promote the comparison into
-the maintained attention results, investigate the optimization and saturation
-behavior within this topic, or discard the topic and its runs.
+The completed affine and degree-one through degree-four tanh comparisons show
+no benefit over matched static coefficients with this recipe. Degree four
+does not continue the shrinking deficit seen through degree three; its new
+activation and gradient telemetry is available to examine this behavior. The
+open decision is whether to promote the comparison into the maintained attention
+results, investigate the optimization and saturation behavior within this topic,
+or discard the topic and its runs.

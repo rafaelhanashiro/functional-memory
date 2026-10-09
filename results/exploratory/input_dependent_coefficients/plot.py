@@ -101,7 +101,8 @@ def render(rows, curves):
     styles = {"static": ("#276FBF", "-", "Static learned"),
               "tanh": ("#D65F00", "-", "Input-dependent tanh"),
               "affine": ("#707070", ":", "Input-dependent affine")}
-    fig, axes = plt.subplots(1, 3, figsize=(12, 3.7))
+    fig, axes = plt.subplots(2, 2, figsize=(10, 7.2))
+    axes = axes.ravel()
     for degree, ax in enumerate(axes, 1):
         for function in ("static", "tanh", "affine"):
             for row in rows:
@@ -123,7 +124,8 @@ def render(rows, curves):
         ax.set_xlabel("Training tokens (billions)")
         ax.set_xlim(0, 10.25)
         ax.grid(alpha=.18)
-    axes[0].set_ylabel("Validation NLL (lower is better)")
+    for ax in axes[::2]:
+        ax.set_ylabel("Validation NLL (lower is better)")
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=3, frameon=False, bbox_to_anchor=(.5, -.01))
     fig.suptitle("Input-dependent coefficients: matched degree, warmup 400, output RMSNorm", fontsize=12)
