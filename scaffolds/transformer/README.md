@@ -551,7 +551,8 @@ Studies configure these shared modules with execution modules at their root
   `<acceptance_module> <config.yaml> --runtime-env` before starting workers so GLA
   bridge settings apply only to GLA recipes. Both launchers pass `--test-cache`, so a
   passed test stage is reused by the worktree's other runs that select the same tests
-  under the same source, lock, runtime settings, and (for GPU tests) GPU type; the
+  under the same source, lock, runtime settings, and (for GPU tests) GPU model, such as
+  H100 80GB HBM3 or H100 NVL rather than the launcher's `H100`; the
   reusing run copies the report into its own acceptance directory and records its
   origin in `success.json` under `reused_tests`.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
