@@ -222,6 +222,12 @@ sbatch --nice=0 --partition=standard --nodelist=akita --gres=gpu:b300:4 \
 ```
 
 The shared acceptance checks must pass on each allocation before production starts.
+For a fresh execution, allocate a new run ID and launch from the current source
+commit. The four-GPU recipe with `model.remat: false` automatically enables
+[standard training telemetry](../../scaffolds/transformer/README.md): every-update
+activation and parameter-group statistics, W&B samples at the logging cadence,
+and validation-window summaries and gradient-spike diagnostics in `metrics.jsonl`.
+The cancelled run remains stopped pending a separate request to launch a fresh run.
 Question, input selections, outcomes, and the open scientific decision live in the
 [comparison README](../../results/exploratory/input_dependent_coefficients/README.md).
 
