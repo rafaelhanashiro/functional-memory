@@ -539,6 +539,11 @@ The warmup-length unnormalized fixed Hermite runs (source `13f018f`) added two m
   launcher's GPU type, `H100`, which covers both models, so it reused the H100 80GB HBM3
   results.
 
+Softmax without QK-norm (plain QK scores) at `d_K = 8, 16, 32, 128` (source `e39410e`)
+passed 131 CPU, 5 distributed, and 1 GPU test on 2×H100 80GB HBM3 (job 25236653,
+2026-10-08), and each run its own initialization check, pilot, and resume. `d_K = 16`
+started on 2×H100 NVL, which again reused the H100 80GB HBM3 test results.
+
 ## B300 cuBLAS concurrency: checkpoint replay
 
 The locked cuBLAS 12.9 is in the range (12.8–13.1) where some Blackwell kernels free
