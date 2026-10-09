@@ -166,7 +166,6 @@ def _loss_and_grads(
                     deterministic=False,
                     rngs=model_forward_rngs(rng),
                 )
-                telemetry.record_logits(logits)
             telemetry_reductions.update(collector.reductions)
             statistics = collector.values
         nll = _cross_entropy(logits, targets)

@@ -103,14 +103,6 @@ def record_attention_output(y: jax.Array, *, head_rms_norm_eps: float | None = N
         record("head_rms_norm_gain_max", jax.lax.rsqrt(smallest + head_rms_norm_eps), "max")
 
 
-def record_logits(logits: jax.Array) -> None:
-    if not active():
-        return
-    value = logits.astype(jnp.float32)
-    record("logits/max_abs", jnp.max(jnp.abs(value)), "max")
-    record("logits/logsumexp_mean", jnp.mean(jax.nn.logsumexp(value, axis=-1)), "mean")
-
-
 def reduce_microbatches(stacked: dict[str, jax.Array], reductions: dict[str, str]) -> dict[str, jax.Array]:
     """Reduce scan-stacked ``[microbatches]`` statistics within one device."""
     reduced = {}

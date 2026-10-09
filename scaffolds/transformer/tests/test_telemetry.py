@@ -43,8 +43,7 @@ def test_telemetry_leaves_the_update_unchanged(tmp_path, scaling):
     statistics = {key: float(value) for key, value in observed[3].items()}
     assert all(np.isfinite(value) for value in statistics.values())
     expected = {"layer_00/residual_rms", "layer_00/residual_max_abs", "layer_00/attention_output_rms",
-                "layer_00/attention_output_head_rms_min", "final/residual_rms", "final/residual_max_abs",
-                "logits/max_abs", "logits/logsumexp_mean"}
+                "layer_00/attention_output_head_rms_min", "final/residual_rms", "final/residual_max_abs"}
     assert expected <= statistics.keys()
     assert ("layer_00/head_rms_norm_gain_max" in statistics) == (scaling == "head_rms_norm")
     assert 0 < statistics["layer_00/attention_output_head_rms_min"] <= statistics["layer_00/attention_output_rms"]
@@ -60,12 +59,10 @@ def test_activation_statistics_match_direct_computation(tmp_path):
     tokens = jnp.asarray(np.arange(8).reshape(2, 4) % 16)
     with telemetry.collect() as collector:
         logits = model(tokens, deterministic=True)
-        telemetry.record_logits(logits)
     values = {key: float(value) for key, value in collector.values.items()}
     embedded = model.token_embedding(tokens).astype(jnp.float32)
     np.testing.assert_allclose(values["layer_00/residual_rms"], float(jnp.mean(jnp.square(embedded))), rtol=1e-6)
     np.testing.assert_allclose(values["layer_00/residual_max_abs"], float(jnp.max(jnp.abs(embedded))), rtol=1e-6)
-    np.testing.assert_allclose(values["logits/max_abs"], float(jnp.max(jnp.abs(logits))), rtol=1e-6)
     assert collector.reductions["layer_00/residual_rms"] == "rms"
     assert collector.reductions["layer_00/attention_output_head_rms_min"] == "min"
     # Outside a collector, recording is a no-op and the forward is unchanged.
