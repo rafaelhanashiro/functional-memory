@@ -117,7 +117,13 @@ packed statistics every update, as the training loop does.
 Telemetry adds 3.0–3.5 ms per update, about one minute per 19,074-update run. Every
 trial pair shows it. Losses with and without telemetry differ by 2.3e-5–7.9e-5 over
 40 timed updates, the same order as repeated identical trials without it (2.4e-5–5.3e-5,
-GPU nondeterminism). H100 is not yet measured.
+GPU nondeterminism).
+
+On two H100 PCIe (`mastiff`, job 212211, source `57784b2`, shared with other jobs;
+[`runs/telemetry-overhead-h100/`](runs/telemetry-overhead-h100/)), the same benchmark
+measured +0.59%, +1.12%, +0.19%, and +1.26% for the four recipes in the order above
+(updates of 1.35–1.73 s). Individual trials ranged from −0.8% to +7.9% because of the
+node's other load; losses again differed by no more than between identical trials.
 
 ## Sampled performance
 
@@ -532,6 +538,11 @@ The warmup-length unnormalized fixed Hermite runs (source `13f018f`) added two m
   Its GPU unit tests did not run on the NVL: the shared test results are keyed by the
   launcher's GPU type, `H100`, which covers both models, so it reused the H100 80GB HBM3
   results.
+
+Softmax without QK-norm (plain QK scores) at `d_K = 8, 16, 32, 128` (source `e39410e`)
+passed 131 CPU, 5 distributed, and 1 GPU test on 2×H100 80GB HBM3 (job 25236653,
+2026-10-08), and each run its own initialization check, pilot, and resume. `d_K = 16`
+started on 2×H100 NVL, which again reused the H100 80GB HBM3 test results.
 
 ## B300 cuBLAS concurrency: checkpoint replay
 
