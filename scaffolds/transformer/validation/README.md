@@ -117,7 +117,13 @@ packed statistics every update, as the training loop does.
 Telemetry adds 3.0–3.5 ms per update, about one minute per 19,074-update run. Every
 trial pair shows it. Losses with and without telemetry differ by 2.3e-5–7.9e-5 over
 40 timed updates, the same order as repeated identical trials without it (2.4e-5–5.3e-5,
-GPU nondeterminism). H100 is not yet measured.
+GPU nondeterminism).
+
+On two H100 PCIe (`mastiff`, job 212211, source `57784b2`, shared with other jobs;
+[`runs/telemetry-overhead-h100/`](runs/telemetry-overhead-h100/)), the same benchmark
+measured +0.59%, +1.12%, +0.19%, and +1.26% for the four recipes in the order above
+(updates of 1.35–1.73 s). Individual trials ranged from −0.8% to +7.9% because of the
+node's other load; losses again differed by no more than between identical trials.
 
 ## Sampled performance
 
