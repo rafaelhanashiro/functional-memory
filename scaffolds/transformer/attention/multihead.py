@@ -13,6 +13,7 @@ from scaffolds.transformer.attention.qk_norm import cosine_score_operands
 from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
 from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
+from scaffolds.transformer.training import telemetry
 
 AttentionBackend = Literal["blocked", "fused", "manual", "auto", "xla", "cudnn"]
 
@@ -225,6 +226,8 @@ class MultiHeadAttention(nnx.Module):
             deterministic=deterministic, rngs=rngs, weights_dtype=x.dtype,
         )
         y, diagnostics = result if return_diagnostics else (result, None)
+        telemetry.record_attention_output(
+            y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None)
         y = scale_attention_output(y, self.attention_output_scaling,
                                    output_norm_scale=output_norm_scale, eps=self.rms_norm_eps)
         output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))

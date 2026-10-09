@@ -16,6 +16,7 @@ from scaffolds.transformer.training.randomness import model_forward_rngs
 from scaffolds.transformer.training.state import TrainState
 from scaffolds.transformer.training.numerics import checked_update_loss, update_numerics
 from scaffolds.transformer.training.regularization import coefficient_penalty_sum
+from scaffolds.transformer.training import telemetry
 
 
 DATA_AXIS = "data"
@@ -139,29 +140,48 @@ def _loss_and_grads(
     *,
     coefficient_penalty: float = 0.0,
     coefficient_penalty_denominator: bool = True,
+    telemetry_reductions: dict[str, str] | None = None,
 ):
-    """The microbatch NLL and the gradient of NLL + coefficient_penalty * coefficient penalty sum."""
+    """The microbatch NLL and the gradient of NLL + coefficient_penalty * coefficient penalty sum.
+
+    With ``telemetry_reductions`` (a dict filled at trace time with each statistic's
+    reduction), also return the forward pass's recorded activation statistics.
+    """
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
     def loss_fn(current_params):
         model = nnx.merge(graphdef, current_params)
-        logits = model(
-            inputs,
-            deterministic=False,
-            rngs=model_forward_rngs(rng),
-        )
+        statistics = None
+        if telemetry_reductions is None:
+            logits = model(
+                inputs,
+                deterministic=False,
+                rngs=model_forward_rngs(rng),
+            )
+        else:
+            with telemetry.collect() as collector:
+                logits = model(
+                    inputs,
+                    deterministic=False,
+                    rngs=model_forward_rngs(rng),
+                )
+                telemetry.record_logits(logits)
+            telemetry_reductions.update(collector.reductions)
+            statistics = collector.values
         nll = _cross_entropy(logits, targets)
         if coefficient_penalty:
             penalty = coefficient_penalty_sum(current_params, model.config,
                                               include_denominator=coefficient_penalty_denominator)
-            return nll + coefficient_penalty * penalty, nll
-        return nll, nll
+            return nll + coefficient_penalty * penalty, (nll, statistics)
+        return nll, (nll, statistics)
 
     # ``params`` is already a pure NNX State pytree, so the base JAX transform
     # composes cleanly with the surrounding scan and shard_map traces.
-    (_, nll), grads = jax.value_and_grad(loss_fn, has_aux=True)(params)
-    return nll, grads
+    (_, (nll, statistics)), grads = jax.value_and_grad(loss_fn, has_aux=True)(params)
+    if telemetry_reductions is None:
+        return nll, grads
+    return nll, grads, statistics
 
 
 def _cross_entropy(logits: jax.Array, targets: jax.Array) -> jax.Array:
@@ -186,7 +206,10 @@ def make_data_parallel_functions(
     *, check_all_gradients: bool = False,
     coefficient_penalty: float = 0.0,
     coefficient_penalty_denominator: bool = True,
+    collect_telemetry: bool = False,
 ) -> DataParallelFunctions:
+    """With ``collect_telemetry``, the train step also returns a dict of activation
+    and per-group update statistics (see ``training.telemetry``) as its last output."""
     if len(devices) < 2:
         raise ValueError("Data-parallel functions require at least two devices")
 
@@ -216,6 +239,7 @@ def make_data_parallel_functions(
             to="varying",
         )
         device_index = jax.lax.axis_index(DATA_AXIS)
+        reductions: dict[str, str] = {}
 
         def accumulate(carry, values):
             current_loss_sum, current_grad_sum = carry
@@ -225,7 +249,7 @@ def make_data_parallel_functions(
                 micro_index,
                 device_index,
             )
-            loss, grads = _loss_and_grads(
+            result = _loss_and_grads(
                 graphdef,
                 current_state.params,
                 current_state.step,
@@ -234,13 +258,15 @@ def make_data_parallel_functions(
                 **({"coefficient_penalty": coefficient_penalty,
                     "coefficient_penalty_denominator": coefficient_penalty_denominator}
                    if coefficient_penalty else {}),
+                **({"telemetry_reductions": reductions} if collect_telemetry else {}),
             )
+            loss, grads, statistics = result if collect_telemetry else (*result, None)
             return (
                 current_loss_sum + loss,
                 jax.tree.map(jnp.add, current_grad_sum, grads),
-            ), None
+            ), statistics
 
-        (loss_sum, grad_sum), _ = jax.lax.scan(
+        (loss_sum, grad_sum), stacked_statistics = jax.lax.scan(
             accumulate,
             (loss_sum, grad_sum),
             (local_batches, jnp.arange(local_batches.shape[0], dtype=jnp.uint32)),
@@ -254,9 +280,15 @@ def make_data_parallel_functions(
         updated = current_state.apply_gradients(grads=global_grads)
         checked_loss = checked_update_loss(current_state.params, global_grads, updated.params, global_loss,
                                           check_all_gradients=check_all_gradients)
+        outputs = (updated, checked_loss)
         if check_all_gradients:
-            return updated, checked_loss, update_numerics(global_grads, updated.params, global_loss)
-        return updated, checked_loss
+            outputs += (update_numerics(global_grads, updated.params, global_loss),)
+        if collect_telemetry:
+            statistics = telemetry.reduce_devices(
+                telemetry.reduce_microbatches(stacked_statistics, reductions), reductions, DATA_AXIS)
+            statistics.update(telemetry.update_statistics(current_state.params, global_grads, updated.params))
+            outputs += (statistics,)
+        return outputs
 
     def local_eval_step(
         current_state: TrainState,
@@ -281,7 +313,7 @@ def make_data_parallel_functions(
         local_train_step,
         mesh=mesh,
         in_specs=(P(), P(None, DATA_AXIS, None), P()),
-        out_specs=(P(), P(), P()) if check_all_gradients else (P(), P()),
+        out_specs=(P(),) * (2 + int(check_all_gradients) + int(collect_telemetry)),
         # cuDNN attention's custom VJP does not currently preserve shard_map's
         # explicit varying-axis annotation even though its values are correctly
         # local to each data shard. The explicit pmean above establishes the
@@ -298,7 +330,7 @@ def make_data_parallel_functions(
     compiled_train_step = jax.jit(
         mapped_train_step,
         in_shardings=(replicated, train_batch_sharding, replicated),
-        out_shardings=(replicated, replicated, replicated) if check_all_gradients else (replicated, replicated),
+        out_shardings=(replicated,) * (2 + int(check_all_gradients) + int(collect_telemetry)),
         donate_argnums=(0,),
     )
     compiled_eval_step = jax.jit(
