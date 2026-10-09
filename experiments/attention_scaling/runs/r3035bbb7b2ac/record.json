@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r3035bbb7b2ac/config.yaml",
+    "sha256": "e9efdd1076969fb15a77736e0f915cc2de85cfcd50b7b94b70d48b45473a5483"
+  },
+  "label": "200m-dk032-gdn-warmup400-seed0",
+  "name": "200m-dk032-gdn-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r3035bbb7b2ac",
+  "status": "planned"
+}
