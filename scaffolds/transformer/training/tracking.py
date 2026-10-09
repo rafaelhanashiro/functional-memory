@@ -172,7 +172,8 @@ def _log(run, payload: dict, step: int) -> None:
 
 def log_train(run, step: int, nll: float, perplexity: float, learning_rate: float,
               coefficient_penalty: float | None = None, *,
-              gradient_norm: float | None = None, gradient_clip_norm: float | None = None) -> None:
+              gradient_norm: float | None = None, gradient_clip_norm: float | None = None,
+              telemetry: dict[str, float] | None = None) -> None:
     payload = {"train/nll": nll, "train/ppl": perplexity, "train/learning_rate": learning_rate}
     if coefficient_penalty is not None:
         payload["train/coefficient_penalty"] = coefficient_penalty
@@ -185,6 +186,8 @@ def log_train(run, step: int, nll: float, perplexity: float, learning_rate: floa
                 "train/gradient_clip_scale": gradient_clip_norm / gradient_norm if clipped else 1.0,
                 "train/gradient_clipped": int(clipped),
             })
+    if telemetry is not None:
+        payload.update({f"train/telemetry/{key}": value for key, value in telemetry.items()})
     _log(run, payload, step)
 
 
@@ -208,6 +211,7 @@ def log_validation(run, record: dict) -> None:
         ("train_gradient_norm_mean", "train/gradient_norm_pre_clip_window_mean"),
         ("train_gradient_norm_max", "train/gradient_norm_pre_clip_window_max"),
         ("train_gradient_clipped_fraction", "train/gradient_clipped_fraction"),
+        ("train_gradient_spike_count", "train/gradient_spike_count"),
     ):
         if source in record:
             payload[destination] = record[source]
