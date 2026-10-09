@@ -23,9 +23,9 @@ blocked reference, and explicit failure for actual kernel overflow and nonfinite
 causally visible keys. Future invalid keys do not contaminate earlier queries.
 
 On 2026-10-09 UTC, all 16 tanh GPU cases across degrees one through four passed
-within the 52-check GPU acceptance suite for run `r5e46fc3c92a7`, job `212131`
+within the 52-check GPU acceptance suite for run `rfee72428a45e`, job `213697`
 on `akita` (four B300 GPUs), source
-`ee1224b3410a87d357df4dcd6807dde55f9b745b`. The
+`ec96b6cbaf04dfefd059fafc601559652204fcc6`. The
 [B300 test record](runs/query-tanh-b300/tests.json) pins the source, dependency
 lock, runtime, test names, and transient acceptance JUnit checksum. Coverage
 includes all input and parameter gradients in FP32 and BF16, the 2,048-token

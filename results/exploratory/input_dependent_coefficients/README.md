@@ -5,8 +5,7 @@ Opened 2026-10-07. Updated 2026-10-09. Home cluster: **Kennel**.
 Does letting the current token choose polynomial coefficients improve
 unnormalized attention with per-head output RMSNorm and 400 warmup steps?
 This comparison includes an affine degree-one predictor, completed tanh
-predictors at degrees one, two, and three, and a degree-four tanh run undergoing
-acceptance.
+predictors at degrees one, two, and three, and a degree-four tanh run in training.
 Each degree has a preselected static learned control.
 
 ## Runs and method
@@ -20,18 +19,19 @@ Each degree has a preselected static learned control.
 | Primary, m = 3 | `r0bc57959ef6c` | `b_r + a_r tanh(w_r^T x_t)` | Complete, 19,074 updates |
 | Static reference, m = 2 | `rfb43d69f60dc` | Input-independent, learned per layer and head | Complete, 19,074 updates |
 | Static reference, m = 3 | `r5ae483d40d62` | Input-independent, learned per layer and head | Complete, 19,074 updates |
-| Primary, m = 4 | `rfee72428a45e` | `b_r + a_r tanh(w_r^T x_t)` | Acceptance running, job 213697; no training results |
+| Primary, m = 4 | `rfee72428a45e` | `b_r + a_r tanh(w_r^T x_t)` | Training, job 213697; no terminal result |
 | Static reference, m = 4 | `rc2b555b905dd` | Input-independent, learned per layer and head | Complete, 19,074 updates |
 
 W&B: [tanh m = 1](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/e431fdc66cea454fa0a0297b2a33435b),
 [tanh m = 2](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/344eba83b1e043c284e14d8b0a753526),
-and [tanh m = 3](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/a3b484f37f624f908ed272388d4fe555).
+[tanh m = 3](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/a3b484f37f624f908ed272388d4fe555),
+and [tanh m = 4](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/cef5a634be974f0a978cbaa8d0405dec).
 
 The seven completed runs at degrees one through three, their roles, and
 scientific input checksums are in [selection.yaml](selection.yaml). The pending
 degree-four comparison is explicitly identified above; it has not entered the
 selection, generated table, or figure. Its static control has terminal validation
-perplexity **13.639175**, and the tanh run has no training results.
+perplexity **13.639175**, and the tanh run has no terminal training result.
 Measurements live under [the attention study](../../../experiments/attention_scaling/README.md).
 All runs use the canonical `transformer_reference` initialization, QK normalization,
 unnormalized attention, per-head output RMSNorm, `d_K = d_V = 64`, 10 layers,
@@ -61,14 +61,17 @@ the three degrees; [qualification evidence](../../../scaffolds/transformer/valid
 is separate from production acceptance.
 
 Degree four uses the same frozen recipe as degree three apart from degree and
-run identity. Job `213697` is running acceptance on four B300 GPUs on `akita`,
+run identity. Job `213697` is training on four B300 GPUs on `akita`,
 partition `standard`, at nice 0, using source
 `ec96b6cbaf04dfefd059fafc601559652204fcc6`. This source automatically enables standard
 training telemetry for this four-GPU recipe with `model.remat: false`, including
 activation and parameter-group statistics and gradient-spike diagnostics.
-Fresh CPU, distributed CPU, GPU, canonical-initialization, full-recipe pilot,
-validation, and exact fresh-process resumption checks must pass before
-production training. No degree-four training outcome is available.
+Acceptance passed all 359 CPU, nine distributed CPU, and 52 GPU checks,
+canonical initialization, the full-recipe pilot with validation, and exact
+fresh-process checkpoint resumption. The pilot retained all 79 telemetry
+statistics across its 20 updates, with finite values throughout. Production
+started from step zero and the initial data position. No terminal degree-four
+training outcome is available.
 
 The [shared scaffold](../../../scaffolds/transformer/README.md#input-dependent-polynomial-coefficients)
 defines the mechanism. Exact launch commands are in the

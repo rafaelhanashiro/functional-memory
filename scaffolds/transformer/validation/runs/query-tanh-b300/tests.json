@@ -1,5 +1,5 @@
 {
-  "completed_utc": "2026-10-09T01:15:06.783405+00:00",
+  "completed_utc": "2026-10-09T16:16:00.712473+00:00",
   "degrees": [
     1,
     2,
@@ -18,10 +18,10 @@
   "gpu_type": "B300",
   "home_cluster": "kennel",
   "junit": {
-    "acceptance_identity": "1d18d4c06a2cad8768ad4fecc66706950d6d837ca9a9087dcf67b8c52b5b46ea",
+    "acceptance_identity": "6c13efd88bc5c394bd37ed4d503ff4a0f3a5480edc88e779428a09ade724cd43",
     "acceptance_stage": "B300-4/gpu-tests",
-    "run_id": "r5e46fc3c92a7",
-    "sha256": "a6538dbc3a6b3ed6e59d2cb16faf03cc805dc70299772982f39fc68d34cea236",
+    "run_id": "rfee72428a45e",
+    "sha256": "5a59ddb39ef66060495b0620776c7dc33ec61d36a2499cf2c715be07da873969",
     "study": "attention_scaling"
   },
   "node": "akita.csail.mit.edu",
@@ -43,8 +43,8 @@
     "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
     "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
   },
-  "slurm_job_id": "212131",
-  "source_commit": "ee1224b3410a87d357df4dcd6807dde55f9b745b",
+  "slurm_job_id": "213697",
+  "source_commit": "ec96b6cbaf04dfefd059fafc601559652204fcc6",
   "status": "passed",
   "test_cases": [
     "test_gpu_forward_and_all_gradients_match_independent_fp64[float32-1]",
