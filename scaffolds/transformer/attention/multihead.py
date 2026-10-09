@@ -13,6 +13,7 @@ from scaffolds.transformer.attention.qk_norm import cosine_score_operands
 from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
 from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
+from scaffolds.transformer.training import telemetry
 
 AttentionBackend = Literal["blocked", "fused", "manual", "auto", "xla", "cudnn"]
 
@@ -47,6 +48,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_normalization=config.attention_normalization,
         attention_fixed_coefficients=config.attention_fixed_coefficients,
         attention_coefficient_conditioning=config.attention_coefficient_conditioning,
+        attention_coefficient_activation=config.attention_coefficient_activation,
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
@@ -65,6 +67,7 @@ class MultiHeadAttention(nnx.Module):
         attention_fixed_square_factors: tuple[float, ...] | None = None,
         attention_output_scaling: str = "none", rms_norm_eps: float = 1e-6,
         attention_coefficient_conditioning: str = "static",
+        attention_coefficient_activation: str = "identity",
         rngs: nnx.Rngs,
     ):
         _validate_degree(attention_degree)
@@ -121,11 +124,19 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Blocked/fused attention requires dropout=0")
         if attention_coefficient_conditioning not in ("static", "query"):
             raise ValueError("Unknown attention coefficient conditioning")
+        if attention_coefficient_activation not in ("identity", "tanh"):
+            raise ValueError("Unknown attention coefficient activation")
+        if attention_coefficient_activation != "identity" and attention_coefficient_conditioning != "query":
+            raise ValueError("Tanh coefficients require query conditioning")
         if attention_coefficient_conditioning == "query" and (
-                attention_normalization or attention_degree != 1 or quadratic_mode != "fixed"
+                attention_normalization or attention_degree is None or attention_degree < 1 or quadratic_mode != "fixed"
                 or attention_fixed_coefficients is not None or attention_fixed_square_factors is not None):
-            raise ValueError("Query-conditioned coefficients require unnormalized degree-one attention")
+            raise ValueError("Query-conditioned coefficients require unnormalized polynomial attention")
+        if (attention_coefficient_conditioning == "query" and attention_coefficient_activation == "identity"
+                and attention_degree != 1):
+            raise ValueError("Identity query coefficients require degree-one attention")
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
+        self.attention_coefficient_activation = attention_coefficient_activation
         self.hidden_size = hidden_size
         self.num_heads = num_heads
         self.num_kv_heads = num_kv_heads
@@ -167,13 +178,16 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Head RMSNorm output scaling requires exactly its model-owned output_norm_scale parameter")
         query_kernel = parameters.pop("query_polynomial_kernel", None)
         query_bias = parameters.pop("query_polynomial_bias", None)
+        query_amplitude = parameters.pop("query_polynomial_amplitude", None)
         if self.attention_coefficient_conditioning == "query":
             from scaffolds.transformer.attention.input_dependent import project_coefficients
 
             if query_kernel is None or query_bias is None:
                 raise ValueError("Query-conditioned attention requires its model-owned kernel and bias")
-            parameters["query_polynomial_coefficients"] = project_coefficients(x, query_kernel, query_bias)
-        elif query_kernel is not None or query_bias is not None:
+            parameters["query_polynomial_coefficients"] = project_coefficients(
+                x, query_kernel, query_bias, amplitude=query_amplitude,
+                activation=self.attention_coefficient_activation)
+        elif query_kernel is not None or query_bias is not None or query_amplitude is not None:
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
         q, k, v = self.q_proj(x), self.k_proj(x), self.v_proj(x)
         if self.backend != "manual":
@@ -206,11 +220,14 @@ class MultiHeadAttention(nnx.Module):
         result = attention_core(
             q, k, v, backend=self.backend, attention_degree=self.attention_degree,
             attention_normalization=self.attention_normalization,
+            attention_coefficient_activation=self.attention_coefficient_activation,
             quadratic_mode=self.quadratic_mode, **parameters,
             return_diagnostics=return_diagnostics, dropout=self.dropout,
             deterministic=deterministic, rngs=rngs, weights_dtype=x.dtype,
         )
         y, diagnostics = result if return_diagnostics else (result, None)
+        telemetry.record_attention_output(
+            y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None)
         y = scale_attention_output(y, self.attention_output_scaling,
                                    output_norm_scale=output_norm_scale, eps=self.rms_norm_eps)
         output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))

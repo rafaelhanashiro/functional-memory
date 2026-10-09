@@ -93,6 +93,7 @@ def attention_identity(config) -> dict:
     normalized = config.model.attention_normalization
     learned_polynomial = has_learned_polynomial(config.model)
     query_conditioned = config.model.attention_coefficient_conditioning == "query"
+    query_tanh = query_conditioned and config.model.attention_coefficient_activation == "tanh"
     rational = has_rational_kernel(config.model)
     fixed_polynomial = has_fixed_polynomial(config.model)
     fixed_square_factors = has_fixed_square_factors(config.model)
@@ -204,7 +205,7 @@ def attention_identity(config) -> dict:
 
             per_polynomial = degree + 1 + denominator_degree(config.model) + (denominator_constant(config.model) == "learned")
         else:
-            per_polynomial = (degree + 1) * (config.model.hidden_size + 1 if query_conditioned else 1)
+            per_polynomial = (degree + 1) * (config.model.hidden_size + 1 + int(query_tanh) if query_conditioned else 1)
         identity.update({
             "attention_coefficients": "learned",
             "attention_coefficient_parameterization": config.model.attention_coefficient_parameterization,
@@ -226,10 +227,13 @@ def attention_identity(config) -> dict:
         identity.update(
             attention_kernel="query_polynomial_unnormalized",
             attention_coefficient_conditioning="query",
+            attention_coefficient_activation=config.model.attention_coefficient_activation,
             attention_coefficient_input="pre_attention_rmsnorm_activation",
             attention_coefficient_projection_dtype="float32",
-            attention_formula=("sum_(i<=t) (c0(x_t) + c1(x_t) s_ti) v_i, s_ti = Q_t K_i^T / sqrt(d_k); "
-                               "c(x_t) = x_t W + b per layer/head, W initially zero, b initially (1,1); "
+            attention_formula=(f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i, s_ti = Q_t K_i^T / sqrt(d_k); "
+                               + ("c(x_t) = b + a*tanh(x_t W) per layer/head, W initially zero, a initially 1, b_r initially 1/r!; "
+                                  if query_tanh else "c(x_t) = x_t W + b per layer/head, W initially zero, b initially (1,1); ")
+                               +
                                "x_t is the activation after the block input RMSNorm"),
         )
     if mode != "fixed":
@@ -256,7 +260,8 @@ def attention_identity(config) -> dict:
         block_q, block_k = ((None, None) if degree is None and normalized else
                            _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
         identity.update({
-            "attention_implementation": ("pallas_triton_linear_plus_fp32_prefix_sum" if query_conditioned else
+            "attention_implementation": ("pallas_triton_query_polynomial" if query_tanh else
+                                         "pallas_triton_linear_plus_fp32_prefix_sum" if query_conditioned else
                                          "cudnn" if degree is None and normalized else "pallas_triton"),
             "query_block_size": block_q,
             "key_block_size": block_k,
@@ -374,24 +379,30 @@ def query_coefficient_report(params, raw_layers) -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
-    effective coefficients. Summary arrays have shape [layers,heads,2].
+    effective coefficients. Summary arrays have shape [layers,heads,degree+1].
     """
     bias = np.asarray(jax.device_get(params["query_polynomial_bias"][...]), dtype=np.float64)
     kernel = np.asarray(jax.device_get(params["query_polynomial_kernel"][...]), dtype=np.float64)
+    amplitude = (np.asarray(jax.device_get(params["query_polynomial_amplitude"][...]), dtype=np.float64)
+                 if "query_polynomial_amplitude" in params else None)
     summaries = {
         statistic: np.stack([layer[f"query_coefficient_{statistic}"] for layer in raw_layers])
         for statistic in ("mean", "std", "min", "max")
     }
-    return {
+    report = {
         "conditioning": "query",
         "sample": "fixed_diagnostic_sample",
-        "effective_coefficient_names": ["constant", "linear"],
+        "effective_coefficient_names": [_coefficient_name(r) for r in range(bias.shape[-1])],
         "effective_summary": {name: _serializable(values) for name, values in summaries.items()},
         "projection_bias": _serializable(bias),
         "projection_kernel_l2": _serializable(np.linalg.norm(kernel, axis=-2)),
         "finite": bool(np.isfinite(bias).all() and np.isfinite(kernel).all()
+                       and (amplitude is None or np.isfinite(amplitude).all())
                        and all(np.isfinite(values).all() for values in summaries.values())),
     }
+    if amplitude is not None:
+        report.update(activation="tanh", modulation_amplitude=_serializable(amplitude))
+    return report
 
 def qk_norm_scale_report(params, config) -> dict:
     """Record the log scales gamma and the score bounds exp(gamma), shared ([1]) or per layer and head ([L, H, 1])."""

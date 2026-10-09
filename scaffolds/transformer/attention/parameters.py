@@ -24,7 +24,8 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         if getattr(config, "attention_coefficient_conditioning", "static") == "query":
             from scaffolds.transformer.attention.input_dependent import parameter_specs
 
-            specs = parameter_specs(hidden_size=config.hidden_size)
+            specs = parameter_specs(hidden_size=config.hidden_size, degree=config.attention_degree,
+                                    activation=config.attention_coefficient_activation)
         elif parameterization == "sum_of_squares":
             from scaffolds.transformer.attention.nonnegative_polynomial import parameter_specs
 

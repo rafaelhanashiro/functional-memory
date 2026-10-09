@@ -97,6 +97,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value.setdefault("optim", {}).setdefault("coefficient_penalty_denominator", True)
         value["model"].setdefault("attention_coefficient_sharing", "global")
         value["model"].setdefault("attention_coefficient_conditioning", "static")
+        value["model"].setdefault("attention_coefficient_activation", "identity")
         value.setdefault("optim", {}).setdefault("coefficient_penalty", 0.0)
         for key, default in (("qk_norm", False), ("qk_norm_sharing", "per_head"),
                              ("qk_norm_initial_scale", None), ("qk_norm_eps", 1e-6)):

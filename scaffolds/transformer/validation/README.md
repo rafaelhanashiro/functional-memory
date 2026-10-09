@@ -11,6 +11,30 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Query-dependent tanh polynomial coefficients
+
+The direct fused query-polynomial kernel passed all 12 H100 CUDA cases on
+2026-10-08, job `210239` on `mastiff` (one H100 PCIe), source `254cab9`.
+The compact [test record](runs/query-tanh-h100/tests.json) pins the source,
+dependency lock, runtime settings, and JUnit evidence. The checks cover degrees
+one, two, and three: FP32/BF16 forward and all parameter/input gradients against
+an independent FP64 oracle, 2,048-token BF16 forward/backward comparison with the
+blocked reference, and explicit failure for actual kernel overflow and nonfinite
+causally visible keys. Future invalid keys do not contaminate earlier queries.
+
+Run these checks in a qualified NVIDIA GPU allocation with the locked environment
+and CUDA assembler settings from `launchers/kennel.sbatch`:
+
+```bash
+JAX_PLATFORMS=cuda scaffolds/transformer/.venv/bin/python -m pytest -q -m gpu \
+  scaffolds/transformer/tests/test_query_tanh_polynomial.py
+```
+
+This standalone result qualifies the kernel checks on H100. Production still
+requires its own CPU/distributed/GPU checks, canonical initialization, full-recipe
+pilot with validation, and exact fresh-process checkpoint resumption. B300 runs
+must pass those checks on B300 before training.
+
 ### Query-dependent degree-one coefficients
 
 The H100 check for input-dependent constant and linear coefficients passed all
@@ -68,6 +92,38 @@ checks. The default workspace constructed four gradient-norm panels and two
 clipping panels locally; no W&B view was published. Training updates and saved
 optimizer state are unchanged. These are synthetic software checks, with no
 retained checkpoint or GPU throughput measurement.
+
+## Training telemetry
+
+Checks: `tests/test_telemetry.py` (in acceptance's CPU stages). On two CPU devices,
+updates with and without telemetry give bit-identical loss, gradient norm, and
+parameters. Recorded activation statistics match direct computation, and group
+gradient norms combine to the global norm. Runs of the full training loop record
+window summaries, gradient spikes, and numerical-failure statistics.
+
+Cost on four B300s (`akita`, job 212284, source `b039b6a`): reports in
+[`runs/telemetry-overhead-b300/`](runs/telemetry-overhead-b300/). Each recipe ran four
+alternating off/on trials of 40 timed updates (after 5 warmup updates) from the same
+initial state, synthetic tokens, and update RNGs. The timing includes fetching the
+packed statistics every update, as the training loop does.
+
+| Recipe (run) | Off, ms/update | On, ms/update | Overhead | Statistics |
+| --- | ---: | ---: | ---: | ---: |
+| Learned m = 4 + head RMSNorm (`rc2b555b905dd`) | 454.4 | 457.5 | +0.68% | 79 |
+| Softmax (`rdf00da0866a8`) | 193.3 | 196.5 | +1.64% | 63 |
+| Exp + head RMSNorm (`r8ad66f3912c2`) | 369.0 | 372.0 | +0.83% | 76 |
+| Normalized fixed Taylor m = 4 (`r512daaa27a15`) | 442.2 | 445.7 | +0.78% | 63 |
+
+Telemetry adds 3.0–3.5 ms per update, about one minute per 19,074-update run. Every
+trial pair shows it. Losses with and without telemetry differ by 2.3e-5–7.9e-5 over
+40 timed updates, the same order as repeated identical trials without it (2.4e-5–5.3e-5,
+GPU nondeterminism).
+
+On two H100 PCIe (`mastiff`, job 212211, source `57784b2`, shared with other jobs;
+[`runs/telemetry-overhead-h100/`](runs/telemetry-overhead-h100/)), the same benchmark
+measured +0.59%, +1.12%, +0.19%, and +1.26% for the four recipes in the order above
+(updates of 1.35–1.73 s). Individual trials ranged from −0.8% to +7.9% because of the
+node's other load; losses again differed by no more than between identical trials.
 
 ## Sampled performance
 
@@ -469,6 +525,19 @@ and an exact fresh-process resume, with direct device transfer. Each run's
   (steps 1,000 and 7,000) and trained their remaining updates at 0.99 and 1.43 s per
   update, against about 1.07 and 1.45 s on 2×H200; `m = 1` failed numerically at update
   67, a property of odd-degree normalized kernels rather than of the hardware.
+
+The warmup-length unnormalized fixed Hermite runs (source `13f018f`) added two more:
+
+- **Unnormalized fixed Hermite on ORCD H100 and H200:** 310 CPU, 5 distributed, and 43 GPU
+  tests passed on 2×H100 80GB HBM3 (job 25089881, 2026-10-07), and the GPU tests again on
+  2×H200 (job 25089882). Later allocations reused these through the shared test results
+  and ran their own initialization check, pilot (0.85–0.89 s per update), and resume.
+- **2×H100 NVL, first use** (`node1709`): job 25089884 passed the initialization check, a
+  pilot at 1.39 s per update, and the resume on 2026-10-08, then trained updates
+  3,001–19,074 at about 1.5 s per update, about 1.6× slower than H100 80GB HBM3 or H200.
+  Its GPU unit tests did not run on the NVL: the shared test results are keyed by the
+  launcher's GPU type, `H100`, which covers both models, so it reused the H100 80GB HBM3
+  results.
 
 ## B300 cuBLAS concurrency: checkpoint replay
 

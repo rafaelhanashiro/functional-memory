@@ -1,0 +1,7 @@
+{
+  "selection_rule": "lowest_validation_nll",
+  "step": 2000,
+  "training_tokens": 1048576000,
+  "validation_nll": 3.278546929359436,
+  "validation_perplexity": 26.53718426746225
+}

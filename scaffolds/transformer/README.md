@@ -80,6 +80,7 @@ The existing scientific configuration fields remain supported:
 | `attention_degree: null`, `attention_normalization: false` | Unnormalized causal `exp(QKᵀ / sqrt(d_K)) V` |
 | Nonnegative `attention_degree`, `attention_normalization: false` | Unnormalized fixed Taylor `p_m(QKᵀ / sqrt(d_K)) V`; odd degrees permit signed weights |
 | `attention_degree: m >= 1`, `attention_normalization: false`, `attention_coefficients: learned` | Unnormalized `sum_r c_r (QKᵀ / sqrt(d_K))^r V` with every coefficient learned from `1/r!`; signed |
+| The preceding settings plus `attention_coefficient_conditioning: query`, `attention_coefficient_activation: tanh`, `attention_coefficient_sharing: per_head` | Query-dependent signed coefficients `c_r(x_t) = b_r + a_r tanh(w_r^T x_t)`, independently per layer and head; direct parameterization, fused or blocked |
 | `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; fused or blocked |
 | Even `attention_degree: m >= 2`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: sum_of_squares` | Normalized `(q1(s)^2 + q2(s)^2) V / rowsum` with `deg q1 = m/2`, `deg q2 = m/2 - 1` learned and initialized to reproduce `T_m` exactly; nonnegative weights, positive row sums; fused or blocked |
 | `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: rational` | Normalized `p_a(s) V / sum_j p_b(s_j)` with a learned numerator `p_a(s) = sum_r a_r s^r` and a learned denominator with constant 1 of degree `attention_denominator_degree` (default `m`): signed `1 + sum_r b_r s^r`, or nonnegative `(1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2` (`attention_denominator_parameterization: sum_of_squares`); fused or blocked |
@@ -214,30 +215,45 @@ and maximum. Recipes and metadata identify the option with `qk_norm`,
 `qk_norm_sharing`, `qk_norm_initial_scale`, and `qk_norm_eps`. GLA and degree 0
 do not use it.
 
-### Input-dependent linear coefficients
+### Input-dependent polynomial coefficients
 
 `attention_coefficient_conditioning: query` predicts signed coefficients
-`c_0(x_t), c_1(x_t)` from the current token's incoming attention activation, after
-the block's input RMSNorm. Each layer and head owns an affine projection. It
-requires `attention_degree: 1`, `attention_coefficients: learned`, direct
+`c_0(x_t), ..., c_m(x_t)` from the current token's incoming attention activation,
+after the block's input RMSNorm. It requires learned coefficients, direct
 parameterization, per-head sharing, Taylor coefficient initialization, and
-unnormalized attention. The default `static` keeps input-independent coefficients.
+unnormalized dot-product attention. The default `static` keeps input-independent
+coefficients.
 
-The output before any output scaling is
-`c_0(x_t) sum_(i<=t) v_i + c_1(x_t) sum_(i<=t) s_ti v_i`. The existing QK
-normalization, score scaling, and RoPE define `s_ti`. Query conditioning changes
-the read at `t`; it does not add write gates, forgetting, or delta corrections.
-The fused implementation uses the existing linear polynomial kernel and an FP32
-causal value sum. The blocked implementation is the explicit polynomial reference.
+`attention_coefficient_activation` selects the coefficient function:
 
-`query_polynomial_kernel` and `query_polynomial_bias` are FP32 model-owned arrays,
-with shapes `[layers, heads, hidden_size, 2]` and `[layers, heads, 2]`. The kernel
-starts at zero and the bias at `(1, 1)`, without consuming RNG draws, so the
-backbone keeps its canonical initialization and the initial kernel is `1 + s`.
-Both arrays are excluded from weight decay, like the static learned coefficients.
+| Activation | Coefficients | Degree |
+| --- | --- | --- |
+| `identity` (default) | `c_r(x_t) = b_r + w_r^T x_t` | `m = 1` |
+| `tanh` | `c_r(x_t) = b_r + a_r tanh(w_r^T x_t)` | `m >= 1` |
+
+Every layer, head, and polynomial order has independent parameters. There is no
+bias inside `tanh`. For fixed parameters its coefficient lies within
+`b_r +/- abs(a_r)`; both offsets and signed amplitudes learn, so this is not a
+fixed bound throughout training. The output before output scaling is
+`sum_(i<=t) sum_(r=0)^m c_r(x_t) s_ti^r v_i`. QK normalization, score scaling,
+and RoPE define `s_ti` as in input-independent attention. Query conditioning
+changes the read at `t`; it does not add write gates, forgetting, or delta corrections.
+
+`query_polynomial_kernel` has shape `[layers, heads, hidden_size, m+1]`, while
+`query_polynomial_bias` and the tanh-only `query_polynomial_amplitude` have shape
+`[layers, heads, m+1]`. These FP32 model-owned arrays are excluded from weight
+decay. The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
+at one, without consuming RNG draws. The backbone keeps its canonical
+initialization and the initial attention kernel is the degree-`m` Taylor polynomial.
+
+The tanh path uses a dedicated fused kernel that directly evaluates the
+query-dependent polynomial, with gradients for Q/K/V and every coefficient.
+The historical identity path retains its linear polynomial kernel plus FP32
+causal value sum. Both have an explicit blocked polynomial reference.
 Per-head output RMSNorm remains an independent option through
 `attention_output_scaling: head_rms_norm`. Validation diagnostics report the
-actual input-dependent coefficients.
+actual input-dependent coefficient means, standard deviations, minima, and
+maxima on the fixed diagnostic sample, separately from projection parameters.
 
 ### Unnormalized output scaling
 
@@ -473,6 +489,36 @@ clipping threshold. W&B also plots the window mean, maximum, and clipped fractio
 The default saved workspace from `views.experiment_workspace` includes gradient
 norm plots on a logarithmic axis and separate clipping-scale/fraction plots.
 Historical runs without these measurements retain unknown gradient diagnostics.
+
+Training telemetry (`training/telemetry.py`) is standard for data-parallel training
+with `model.remat: false`. Every update returns, in one packed vector:
+
+| Statistic | Reduction over microbatches and GPUs |
+| --- | --- |
+| `layer_<i>/residual_rms`, `final/residual_rms`: residual stream entering block *i* / the final norm | RMS |
+| `layer_<i>/residual_max_abs`, `final/residual_max_abs` | maximum |
+| `layer_<i>/attention_output_rms`: dot-product attention output before output scaling | RMS |
+| `layer_<i>/attention_output_head_rms_min`: smallest RMS of one head at one position | minimum |
+| `layer_<i>/head_rms_norm_gain_max` (head RMSNorm): largest `1/sqrt(mean(y^2) + eps)` | maximum |
+| `update/<group>/{gradient_norm,parameter_norm,update_norm}` | computed on the averaged gradient |
+
+Parameter groups are embedding, output head, attention Q/K/V, attention output
+projection, MLP, norm scales, QK-norm scales, attention-output norm scales,
+attention coefficients, and other. `update_norm` is the actual parameter change
+after the whole AdamW step. Gated DeltaNet and GLA record the residual and update
+statistics only. Recording never changes the update: on CPU the update is
+bit-identical with and without it, and on GPU the differences match GPU
+nondeterminism between identical updates.
+
+Each log line adds the smallest `attention_output_head_rms_min`, largest
+`head_rms_norm_gain_max`, and largest `residual_max_abs` over layers; W&B receives
+every statistic as `train/telemetry/<name>`. Each validation event stores
+`train_telemetry` (every statistic's mean, minimum, and maximum over every update in
+the window), `train_gradient_spike_count`, and `train_gradient_spikes`: the complete
+statistics of up to 20 updates whose gradient norm exceeds 5× the median of the
+preceding 100 updates (after 20 updates). A numerical-failure record keeps the failed
+and preceding updates' statistics. `benchmarks/benchmark_telemetry.py` measures the
+cost; see the validation record.
 
 Recipes leave `train.wandb_mode` at `disabled`; the Kennel and ORCD launchers pass
 `--wandb-mode online` (set `TRANSFORMER_WANDB_MODE=offline` or `disabled` when
