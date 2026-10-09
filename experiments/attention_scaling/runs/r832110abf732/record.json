@@ -7,6 +7,22 @@
   "name": "200m-qk-dk032-softmax-transformer-init-warmup400-seed0",
   "record_schema_version": 1,
   "run_id": "r832110abf732",
-  "status": "planned",
-  "submission": null
+  "status": "submitted",
+  "submission": {
+    "excluded_nodes": "node[1463,1632-1634,1704-1705,1804-1805,1917-1918,1927-1928,2000-2005,2100-2104,2119,2300-2304,2319,2403,2414-2418,2643-2644,2804,2809-2810,2902-2903,3002-3009,3102,3202-3208,3302,3402-3408,3500-3512,3600,3615,3619-3620,3804-3811,3903-3911,4000-4001,4004,4007-4008,4102-4108,4200-4213,4302-4309,4401-4404,4417,4501-4507,5002-5005,5101,5103-5104,5106,5202-5204]",
+    "gpu_count": 2,
+    "gpu_type": "H200,H100",
+    "gres": "gpu:2",
+    "launch_commit": "4ed7397dda106a1d72ec0671c413cc1d44eba4ce",
+    "launcher": "scaffolds/transformer/launchers/orcd.sbatch",
+    "nice": 120,
+    "partitions": [
+      "mit_preemptable",
+      "mit_normal_gpu"
+    ],
+    "slurm_job_id": "25356456",
+    "submitted_utc": "2026-10-09T03:10:55+00:00",
+    "time_limit": "12:00:00",
+    "time_min": "06:00:00"
+  }
 }
