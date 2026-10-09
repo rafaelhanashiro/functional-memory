@@ -24,6 +24,7 @@ results/exploratory/
 results/simplified/
   README.md                 purpose, sources, regeneration commands
   <analysis>/               presentation figures simplifying results/<analysis>/, plot.py
+results/temp/               ignored, temporary files made for the user to view
 experiments/<study>/
   README.md                 scientific question, methods, launch instructions
   sweep.yaml                common recipe and study provenance; run membership
@@ -93,6 +94,10 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   source collection changes. Findings and discussion stay in the source collection.
   No other file (root README, study or result READMEs, records) links to or cites
   them unless the user asks.
+- `results/temp/` holds temporary, ad-hoc files (for example a quick figure) made for
+  the user to view. It is ignored by Git: never commit, reference, or cite its files
+  anywhere (READMEs, records, selections, memory), keep no copies elsewhere, and delete
+  them when the user asks or at periodic cleanup.
 - Keep figures and analysis files directly in the result directory. Keep each run's
   recipe, provenance, raw output, retained checkpoint, and log together. Do not create
   parallel experiment-level `configs/`, `provenance/`, `logs/`, `checkpoints/`, or
