@@ -3,10 +3,44 @@
     "path": "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
     "sha256": "36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252"
   },
+  "frozen_execution_sha256": "c980c33a160708051b324c70709fb48ff1cb8612277a423cbf29b18e5227339c",
   "home_cluster": "kennel",
   "label": "200m-dk064-gdn-independent-erase-warmup400-seed0",
   "name": "200m-dk064-gdn-independent-erase-warmup400-seed0",
   "record_schema_version": 1,
   "run_id": "rf7341031e3d5",
-  "status": "planned"
+  "seed": 0,
+  "source_commit": "d9c5aea542be96cb6c2217e85cb965040d441f7e",
+  "status": "queued",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--nice=0",
+      "--partition=standard",
+      "--nodelist=akita",
+      "--gres=gpu:b300:2",
+      "--time=1-00:00:00",
+      "--cpus-per-task=32",
+      "--mem=256G",
+      "--dependency=afterok:214022",
+      "--kill-on-invalid-dep=yes",
+      "--job-name=rf7341031e3d5",
+      "--output=experiments/attention_scaling/runs/rf7341031e3d5/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.attention_scaling.acceptance",
+      "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
+      "d9c5aea542be96cb6c2217e85cb965040d441f7e",
+      "2",
+      "B300"
+    ],
+    "nice": 0,
+    "qualification_dependency": "afterok:214022",
+    "requested_gpu_count": 2,
+    "requested_gpu_type": "B300",
+    "slurm_job_id": "214023",
+    "slurm_partition": "standard",
+    "submitted_utc": "2026-10-09T23:29:25+00:00",
+    "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase"
+  }
 }
