@@ -139,7 +139,7 @@ Kennel, trained on H100 (m = 1), on H200 then H100 after update 1,000 (m = 2), o
 with updates 12,501–13,000 on H200 (m = 3), and on H200 then H100 NVL after update 3,000
 (m = 4).
 
-## Softmax and Gated DeltaNet across d_K
+## Softmax, Gated DeltaNet, and normalized fixed Taylor across d_K
 
 Terminal validation perplexity of the heatmap's softmax (QK-norm, transformer reference
 initialization) and Gated DeltaNet (its reference initialization) cells at every width;
@@ -166,6 +166,35 @@ Limits: one seed per cell; the controls ran on Kennel. These runs record the tra
 telemetry. Softmax trained on H100 NVL (`d_K = 8`), on H200 then H100 after update
 15,000 (16), on H100 (32), and on H100 with updates 7,001–14,500 on H200 (128); Gated
 DeltaNet on H200 (8 and 128) and H100 (16 and 32).
+
+Normalized fixed Taylor (QK-norm, transformer reference initialization) at `m = 4`, 8,
+and 16, terminal validation perplexity; every run's validation best is terminal. The
+`d_K = 64` rows are the ones above.
+
+| `d_K` | m = 4, 2,000 | m = 4, 400 | Difference | m = 8, 2,000 | m = 8, 400 | Difference | m = 16, 2,000 | m = 16, 400 | Difference |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 32 | 14.278 | 14.482 | +0.20 | 13.854 | 14.119 | +0.27 | 13.775 | 14.028 | +0.25 |
+| 64 | 13.774 | 13.927 | +0.15 | 13.543 | 13.741 | +0.20 | 13.519 | 13.740 | +0.22 |
+| 128 | 13.455 | 13.611 | +0.16 | 13.288 | 13.495 | +0.21 | 13.307 | 13.517 | +0.21 |
+
+- **At `d_K = 128` the fixed Taylor shift matches `d_K = 64`; at `d_K = 32` it is
+  larger.** `d_K = 128` loses 0.16, 0.21, and 0.21 at m = 4, 8, and 16 against 0.15,
+  0.20, and 0.22 at `d_K = 64`. `d_K = 32` loses 0.20, 0.27, and 0.25, 0.03–0.07 more,
+  as softmax does there (0.27 against 0.22).
+- **The loss grows from m = 4 to m = 8 at every width** and is then flat to m = 16; at
+  m = 16 it is within 0.02 of softmax's at each width (0.25, 0.22, 0.21 against 0.27,
+  0.22, 0.22).
+- **Orders hold.** Within each width the degrees keep their order at both warmups
+  (`d_K = 32`: m = 16, 8, 4; `d_K = 128`: m = 8, 16, 4), and m = 16 stays within 0.02 of
+  softmax at both warmups (warmup 400: 14.028 against 14.028 at `d_K = 32`, 13.517
+  against 13.520 at 128).
+
+Limits: one seed per cell. The warmup-400 runs trained on Kennel with the training
+telemetry: four B300s (`d_K = 32`, m = 4; `d_K = 128`, m = 4 and 16), two B300s
+(`d_K = 128`, m = 8), two H100 PCIe (`d_K = 32`, m = 16), and two H100 PCIe then two
+B300s after update 16,500 (`d_K = 32`, m = 8). Their controls ran on ORCD's two H200s
+(`d_K = 32` and 128 at m = 4) or on Kennel's four H100s (`d_K = 128`, m = 8: B300 and
+H100).
 
 ## Softmax in detail
 
