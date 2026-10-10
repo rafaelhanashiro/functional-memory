@@ -142,7 +142,7 @@ Acceptance shares passed test stages through the worktree's
 `.cache/<study>/acceptance-tests/`, so a sweep runs each selection of CPU and GPU tests
 once per source commit, environment, runtime, and GPU model (H100 SXM and NVL apart);
 every run still performs its own initialization check, pilot, and resume in its
-allocation.
+allocation, and repeats them when a requeue lands on another GPU model.
 
 ## Everyday use
 
@@ -158,6 +158,15 @@ Submit from the experiment's worktree after syncing that worktree's own environm
 and caches stay outside Git; never modify an environment while jobs use it. Transformer
 experiments submit `scaffolds/transformer/launchers/kennel.sbatch` with their study’s
 acceptance module; each README gives the exact command.
+
+Both Transformer launchers end a job whose `training.log` has not grown for 20 minutes
+(set `TRANSFORMER_STALL_MINUTES` when submitting to change it), well above normal
+silences such as the first update's compilation (at most 3.5 minutes, for Gated
+DeltaNet). A GPU that fails, for example by running out of memory, can otherwise leave
+its data-parallel peer waiting in a collective until the time limit. The job logs
+`nvidia-smi` state, exits with code 124, and its record reads `failed` with a stall
+error; it does not requeue. Resubmit the run, excluding the node if its GPUs were at
+fault, to resume from its latest checkpoint.
 
 To move an experiment, transfer required artifacts separately (for example with
 `rsync`), verify checksums, recreate the environment, and update provenance before

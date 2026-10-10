@@ -65,16 +65,19 @@ export SHARED_TRANSFORMER_SOURCE_COMMIT="$LAUNCH_COMMIT"
 export TRANSFORMER_CLUSTER=kennel TRANSFORMER_GPU_TYPE="$GPU_TYPE"
 WANDB_MODE_SETTING="${TRANSFORMER_WANDB_MODE:-online}"
 export PYTHONPATH="$EXECUTION_ROOT"
+source scaffolds/launch/watchdog.sh
 finish_record() {
   local result=$?
   local finalizer_result=0
   trap - EXIT
+  stop_watchdog
   "$PYTHON" -m scaffolds.launch.finalize --run "$RUN_ROOT" --exit-code "$result" || finalizer_result=$?
   # Preserve the worker's failure even if recording it also fails.
   if (( result == 0 )); then result=$finalizer_result; fi
   exit "$result"
 }
 trap finish_record EXIT
+start_watchdog "$RUN_ROOT/training.log"
 export JAX_PLATFORMS=cuda
 export TRANSFORMER_HOST_STAGING="${TRANSFORMER_HOST_STAGING:-0}"
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
@@ -125,9 +128,9 @@ update_record(run_root, {
     "log_path": str(run_root / "training.log"),
 })
 PY
-# Acceptance and production share the allocation; matching passed stages are reused on requeue,
-# and passed test stages are shared with the worktree's other runs.
-"$PYTHON" -m "$ADAPTER" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
+# Acceptance and production share the allocation; matching passed stages are reused on a requeue
+# to the same GPU model, and passed test stages are shared with the worktree's other runs.
+run_step "$PYTHON" -m "$ADAPTER" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
   --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --test-cache "$CACHE/acceptance-tests"
 "$PYTHON" - "$RUN_ROOT" "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT/success.json" <<'PY'
 import hashlib, json, sys
@@ -137,5 +140,5 @@ root, path = map(Path, sys.argv[1:])
 summary = json.loads(path.read_text())
 update_record(root, {"acceptance": {"summary": summary, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}})
 PY
-"$PYTHON" -m scaffolds.transformer.train "$CONFIG" --wandb-mode "$WANDB_MODE_SETTING"
-"$PYTHON" -m scaffolds.transformer.retention "$RUN_ROOT/config.json"
+run_step "$PYTHON" -m scaffolds.transformer.train "$CONFIG" --wandb-mode "$WANDB_MODE_SETTING"
+run_step "$PYTHON" -m scaffolds.transformer.retention "$RUN_ROOT/config.json"

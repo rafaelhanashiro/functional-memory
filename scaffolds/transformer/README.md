@@ -537,14 +537,19 @@ Studies configure these shared modules with execution modules at their root
   to the locked CUDA toolkit, runs acceptance, then trains; `training.log` appends
   across requeues. The frozen set includes study `sweep.yaml`, every run's
   `config.yaml`, root execution modules, and shared record/launch helpers. Metrics,
-  records and `results/` remain editable while jobs run.
+  records and `results/` remain editable while jobs run. Both launchers source
+  `scaffolds/launch/watchdog.sh`: when `training.log` has not grown for
+  `TRANSFORMER_STALL_MINUTES` (default 20), the job logs its GPUs' state, ends the
+  running step, and exits with code 124, which the finalizer records as a stall.
 - `launchers/orcd.sbatch` does the same on ORCD. Its allocations fit that cluster's
   per-user GPU caps; a job asks for 12 hours, accepts `mit_normal_gpu`'s 6-hour
   maximum, and requeues itself before its limit (see [CLUSTERS.md](../../CLUSTERS.md)).
 - `acceptance.py` runs identity-keyed acceptance in the production allocation: CPU
   tests, distributed CPU tests on two forced host devices, and single-GPU kernel tests
   (no skips), an initialization hash, a full-recipe pilot, and an exact fresh-process
-  resume. `attention_spec(config, entry_module=...)` selects correctness and kernel
+  resume. The identity includes the allocated GPU model, so a requeue onto another
+  model under the same launcher GPU type (H100 NVL after H100 80GB HBM3) repeats
+  them. `attention_spec(config, entry_module=...)` selects correctness and kernel
   tests from the recipe and resolved backend, plus the initialization check and
   runtime environment. A study execution module passes this factory to `main`;
   specialized studies can supply an `AcceptanceSpec` directly. Launchers invoke
