@@ -65,7 +65,7 @@ def table(runs: list[dict]) -> str:
 
 
 def figure(runs: list[dict]) -> None:
-    columns = 4
+    columns = 3
     rows = -(-len(runs) // columns)
     fig, axes = plt.subplots(rows, columns, figsize=(4 * columns, 3.2 * rows), sharex=True, sharey=True,
                              constrained_layout=True)
