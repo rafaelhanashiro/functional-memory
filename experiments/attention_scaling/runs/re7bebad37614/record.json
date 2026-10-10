@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/re7bebad37614/config.yaml",
+    "sha256": "0a793914f87da2a78b870935fa912a06f0eda5cb18ba2ca243fc74fa4f305954"
+  },
+  "label": "200m-qk-m004-unnormalized-head-rmsnorm-transformer-init-warmup400-telemetry-seed0",
+  "name": "200m-qk-m004-unnormalized-head-rmsnorm-transformer-init-warmup400-telemetry-seed0",
+  "record_schema_version": 1,
+  "run_id": "re7bebad37614",
+  "status": "planned"
+}
