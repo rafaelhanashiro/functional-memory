@@ -27,6 +27,7 @@ Runs, roles, and pinned inputs: [`selection.yaml`](selection.yaml).
 | unnormalized learned m = 1 + head RMSNorm | `rb096ae6c7cb5` | 17.627 | 32 | 176 (update 146), 23 after update 1,000 | Q/K/V 18, attention output projection 14 |
 | unnormalized learned m = 2 + head RMSNorm | `rdd5ac28a16e5` | 14.634 | 24 | 47 | coefficients 13, attention output projection 9, Q/K/V 1, embedding 1 |
 | unnormalized learned m = 3 + head RMSNorm | `r884251bdf38b` | 13.987 | 14 | 37 | attention output projection 10, coefficients 4 |
+| unnormalized learned m = 4 + head RMSNorm | `re7bebad37614` | 13.652 | 13 | 38 | attention output projection 5, coefficients 5, MLP 1, Q/K/V 1, embedding 1 |
 
 - **The references spike rarely and mildly.** Softmax has 8 spikes, at most 19× its
   median, and none after update 8,021; Gated DeltaNet has 3, at most 6×. Their spikes
@@ -55,8 +56,10 @@ Runs, roles, and pinned inputs: [`selection.yaml`](selection.yaml).
   26 up to 120×, with clipping on 0.2% of updates against 99.9%; m = 2 24 times up to
   47× against 29 up to 58×. The coefficients' share of the gradient norm falls from
   0.89 to 0.64 (m = 2) and 0.99 to 0.52 (m = 3), and about half the spikes move to the
-  attention output projection. Every head RMSNorm run still spikes more than softmax
-  (8 spikes, at most 19×) and Gated DeltaNet (3, at most 6×).
+  attention output projection. m = 4 with head RMSNorm, which has no run without it here,
+  spikes 13 times up to 38×, split between the attention output projection and the
+  coefficients. Every head RMSNorm run still spikes more than softmax (8 spikes, at
+  most 19×) and Gated DeltaNet (3, at most 6×).
 - **Small attention outputs before head RMSNorm do not predict spikes.** In exp + head
   RMSNorm the largest RMSNorm gain `1/sqrt(mean(y^2) + eps)` grew to 935 at quiet updates
   but was 125–258 at its spikes.
