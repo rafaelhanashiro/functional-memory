@@ -163,7 +163,7 @@ env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch \
 The query-dependent run uses a GPU memory fraction of 0.90; the control uses the
 runtime default. These are execution settings, separate from their scientific recipes.
 
-### Tanh coefficients, degrees 1–3
+### Tanh coefficients, degrees 1–4
 
 Runs `r80300a4cd5fa` (`m = 1`), `rbfe1750cc24c` (`m = 2`), and `r0bc57959ef6c`
 (`m = 3`) use `c_r(x_t) = b_r + a_r tanh(w_r^T x_t)` independently per layer and
@@ -176,12 +176,12 @@ output RMSNorm, QK normalization, `transformer_reference` initialization, and
 400 warmup updates. They retain the 200M model, seed 0, and 19,074-update/10.0B-token
 recipe. Each frozen run config contains the complete settings.
 
-The new tanh mechanisms use direct fused query-dependent polynomial attention.
-Source `254cab946e637cd6cd5c004b6976351b1dee3651` runs as job `210243` on four B300
+The tanh mechanisms use direct fused query-dependent polynomial attention.
+Source `254cab946e637cd6cd5c004b6976351b1dee3651` ran as job `210243` on four B300
 GPUs (`akita`, `standard`), job `210244` on four H100 GPUs (`dogo`, `long`), and
 job `210245` on four B300 GPUs (`akita`, `long`), respectively. All have nice 0.
 All three passed full acceptance, including full-recipe pilots and exact
-fresh-process checkpoint resumption, and are running production training.
+fresh-process checkpoint resumption, and completed all 19,074 training updates.
 The launch commands from `worktrees/input-dependent-tanh` on Kennel are:
 
 ```bash
@@ -204,7 +204,32 @@ sbatch --nice=0 --partition=long --nodelist=akita --gres=gpu:b300:4 \
   experiments/attention_scaling/runs/r0bc57959ef6c/config.yaml 254cab946e637cd6cd5c004b6976351b1dee3651 4 B300
 ```
 
+Run `rfee72428a45e` extends this comparison to `m = 4`, retaining the complete
+degree-three recipe apart from degree and run identity. Job `213697` completed
+all 19,074 training updates on four B300 GPUs on `akita`, partition `standard`,
+at nice 0. Its preselected static degree-four control is `rc2b555b905dd`.
+All acceptance stages passed: 359 CPU checks,
+nine distributed CPU checks, 52 GPU checks, canonical initialization, a
+20-update full-recipe pilot, and exact checkpoint resumption. The pilot recorded
+79 finite telemetry statistics over every update. Production started from step
+zero with a fresh W&B identity, and all 79 statistics remained finite across
+the completed production run.
+The launch command from `worktrees/input-dependent-tanh-m4` was:
+
+```bash
+sbatch --nice=0 --partition=standard --nodelist=akita --gres=gpu:b300:4 \
+  --time=1-00:00:00 --cpus-per-task=32 --mem=256G --job-name=rfee72428a45e \
+  --output=experiments/attention_scaling/runs/rfee72428a45e/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  experiments/attention_scaling/runs/rfee72428a45e/config.yaml ec96b6cbaf04dfefd059fafc601559652204fcc6 4 B300,H100
+```
+
 The shared acceptance checks must pass on each allocation before production starts.
+For a fresh execution, allocate a new run ID and launch from the current source
+commit. The four-GPU recipe with `model.remat: false` automatically enables
+[standard training telemetry](../../scaffolds/transformer/README.md): every-update
+activation and parameter-group statistics, W&B samples at the logging cadence,
+and validation-window summaries and gradient-spike diagnostics in `metrics.jsonl`.
 Question, input selections, outcomes, and the open scientific decision live in the
 [comparison README](../../results/exploratory/input_dependent_coefficients/README.md).
 
