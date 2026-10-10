@@ -555,6 +555,20 @@ passed 131 CPU, 5 distributed, and 1 GPU test on 2×H100 80GB HBM3 (job 25236653
 2026-10-08), and each run its own initialization check, pilot, and resume. `d_K = 16`
 started on 2×H100 NVL, which again reused the H100 80GB HBM3 test results.
 
+The warmup-length softmax and Gated DeltaNet runs at other widths (sources `4ed7397` and
+`2ab5aa1`, both with training telemetry) added:
+
+- **Gated DeltaNet on 2×H100 80GB HBM3:** 107 CPU, 9 distributed, and 12 GPU tests passed
+  (job 25356457, 2026-10-09), and the GPU tests again on 2×H200 (jobs 25426442 and
+  25356460), each with its own pilot and resume.
+- **Gated DeltaNet `d_K = 128` ran out of memory on 2×H100 NVL:** it uses 71–75 GiB per
+  H200, and on H100 NVL (job 25356460, 2026-10-10) its first update failed to allocate
+  59.8 GiB. A requeue had reused the run's H100 80GB HBM3 acceptance, keyed by the
+  launcher's `H100`, so no pilot ran on the NVL. The failed device stopped while the
+  other waited in a collective until the job was preempted 33 minutes later: an
+  allocation failure on one device can hang a data-parallel job instead of ending it.
+- **Softmax on 2×H100 NVL** (job 25426441) ran its own GPU tests under the GPU-model key.
+
 ## B300 cuBLAS concurrency: checkpoint replay
 
 The locked cuBLAS 12.9 is in the range (12.8–13.1) where some Blackwell kernels free
