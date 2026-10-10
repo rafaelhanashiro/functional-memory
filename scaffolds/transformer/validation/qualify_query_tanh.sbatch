@@ -1,5 +1,5 @@
 #!/bin/bash
-# Qualify the direct per-query polynomial kernel for all three requested degrees.
+# Qualify the direct per-query polynomial kernel for all four requested degrees.
 #SBATCH --partition=debug
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -45,7 +45,7 @@ value = {
     "source_commit": commit, "completed_utc": datetime.now(UTC).isoformat(),
     "home_cluster": "kennel", "slurm_job_id": os.environ["SLURM_JOB_ID"],
     "node": os.environ["SLURMD_NODENAME"], "gpu_type": gpu, "device_kinds": devices,
-    "degrees": [1, 2, 3], "status": "passed" if status == 0 else "failed",
+    "degrees": [1, 2, 3, 4], "status": "passed" if status == 0 else "failed",
     "tests_passed": count, "exit_code": status,
     "dependency_lock_sha256": hashlib.sha256(Path("scaffolds/transformer/uv.lock").read_bytes()).hexdigest(),
     "runtime_environment": {key: os.environ.get(key) for key in (

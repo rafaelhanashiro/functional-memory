@@ -132,14 +132,15 @@ interval. `mit_preemptable` preempts without grace time (`GraceTime=0`) whenever
 higher-tier job needs the node, which also loses up to one checkpoint interval;
 `mit_normal_gpu` never preempts. On 2026-10-08 GPU 0 of `node3009` (8×H100) ran at 93°C,
 throttled to 345 MHz, and slowed a 2-GPU job about 3.5×; exclude it until it is repaired.
-A requeue or preemption resets the job's submit time and with it its queue age, so later runs of the same sweep can overtake it. H200 uses
-direct device transfer. Order a sweep's runs with `sbatch --nice`: 1000 priority points
-equal about 8 hours of queue age.
+A requeue or preemption resets the job's submit time and with it its queue age, so
+later runs of the same sweep can overtake it. H200 uses direct device transfer. Order a
+sweep's runs with `sbatch --nice`: 1000 priority points equal about 8 hours of queue age.
 
 Acceptance shares passed test stages through the worktree's
 `.cache/<study>/acceptance-tests/`, so a sweep runs each selection of CPU and GPU tests
-once per source commit, environment, runtime, and GPU type; every run still performs
-its own initialization check, pilot, and resume in its allocation.
+once per source commit, environment, runtime, and GPU model (H100 SXM and NVL apart);
+every run still performs its own initialization check, pilot, and resume in its
+allocation.
 
 ## Everyday use
 

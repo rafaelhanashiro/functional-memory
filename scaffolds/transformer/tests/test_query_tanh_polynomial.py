@@ -25,7 +25,7 @@ from scaffolds.transformer.training.state import create_state
 from scaffolds.transformer.training.tracking import attention_metrics
 
 
-DEGREES = (1, 2, 3)
+DEGREES = (1, 2, 3, 4)
 
 
 def _model(degree=3, **updates):

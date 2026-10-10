@@ -100,10 +100,12 @@ def test_runs_selecting_the_same_tests_share_passed_stages(tmp_path, monkeypatch
     from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
 
     ran = []
+    models = {"H200": "NVIDIA H200", "H100": "NVIDIA H100 80GB HBM3"}
+    allocated = {}
 
     def worker(spec, args, name, output, **unused):
         if name == "hardware":
-            return {"attention_backend": "fused"}
+            return {"attention_backend": "fused", "device_kinds": [allocated["model"]] * args.gpu_count}
         raise RuntimeError("stop after testing")
 
     def run(command, **options):
@@ -118,7 +120,8 @@ def test_runs_selecting_the_same_tests_share_passed_stages(tmp_path, monkeypatch
                                     select_tests=preflight.attention_test_paths)
     cache = tmp_path / "cache"
 
-    def acceptance(name, degree, gpu_type, source="a" * 40):
+    def acceptance(name, degree, gpu_type, source="a" * 40, model=None):
+        allocated["model"] = model or models[gpu_type]
         config = config_to_dict(Config(model=ModelConfig(attention_degree=degree)))
         experiment = {"identity": name, "source_commit": source, "config": config, "gpu_type": gpu_type,
                       "dependency_lock_sha256": "b" * 64, "runtime": {"TRANSFORMER_HOST_STAGING": "0"}}
@@ -137,8 +140,11 @@ def test_runs_selecting_the_same_tests_share_passed_stages(tmp_path, monkeypatch
     assert reused["identity"] == "second" and reused["tests_passed"] == 1
     assert reused["reused_from"]["acceptance_directory"] == str(tmp_path / "first")
     assert (tmp_path / "second" / "gpu-tests.xml").read_text() == (tmp_path / "first" / "gpu-tests.xml").read_text()
-    # GPU tests are per GPU type; other source or tests rerun everything they change.
+    # GPU tests are per GPU model, even under one launcher GPU type; other source or tests
+    # rerun everything they change.
     assert acceptance("third", 8, "H100") == ["gpu-tests"]
+    assert acceptance("nvl", 8, "H100", model="NVIDIA H100 NVL") == ["gpu-tests"]
+    assert acceptance("nvl-again", 4, "H100", model="NVIDIA H100 NVL") == []
     assert acceptance("fourth", 8, "H200", source="c" * 40) == stages
     assert acceptance("odd", 3, "H200") == stages
     # A report that no longer matches its entry is never reused.
@@ -146,7 +152,7 @@ def test_runs_selecting_the_same_tests_share_passed_stages(tmp_path, monkeypatch
                                    "runtime": {"TRANSFORMER_HOST_STAGING": "0"}, "gpu_type": "H200"},
                                   "gpu-tests", preflight.test_paths(spec, config_to_dict(Config(model=ModelConfig(
                                       attention_degree=4))), resolved_backend="fused", cpu=False),
-                                  ("-m", "gpu"), cpu=False)
+                                  ("-m", "gpu"), cpu=False, device_kinds=["NVIDIA H200"] * 2)
     (cache / f"{key}.xml").write_text('<testsuite><testcase name="other"/></testsuite>')
     assert acceptance("fifth", 4, "H200") == ["gpu-tests"]
 

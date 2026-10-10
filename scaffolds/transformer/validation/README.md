@@ -22,6 +22,17 @@ an independent FP64 oracle, 2,048-token BF16 forward/backward comparison with th
 blocked reference, and explicit failure for actual kernel overflow and nonfinite
 causally visible keys. Future invalid keys do not contaminate earlier queries.
 
+On 2026-10-09 UTC, all 16 tanh GPU cases across degrees one through four passed
+within the 52-check GPU acceptance suite for run `rfee72428a45e`, job `213697`
+on `akita` (four B300 GPUs), source
+`ec96b6cbaf04dfefd059fafc601559652204fcc6`. The
+[B300 test record](runs/query-tanh-b300/tests.json) pins the source, dependency
+lock, runtime, test names, and transient acceptance JUnit checksum. Coverage
+includes all input and parameter gradients in FP32 and BF16, the 2,048-token
+BF16 forward/backward comparison at head width 64, and overflow/nonfinite-key
+checks at every degree. This records GPU kernel qualification; full production
+acceptance remains separately recorded by the run.
+
 Run these checks in a qualified NVIDIA GPU allocation with the locked environment
 and CUDA assembler settings from `launchers/kennel.sbatch`:
 
@@ -30,8 +41,8 @@ JAX_PLATFORMS=cuda scaffolds/transformer/.venv/bin/python -m pytest -q -m gpu \
   scaffolds/transformer/tests/test_query_tanh_polynomial.py
 ```
 
-This standalone result qualifies the kernel checks on H100. Production still
-requires its own CPU/distributed/GPU checks, canonical initialization, full-recipe
+The recorded standalone result qualifies degrees one through three on H100.
+Production still requires its own CPU/distributed/GPU checks, canonical initialization, full-recipe
 pilot with validation, and exact fresh-process checkpoint resumption. B300 runs
 must pass those checks on B300 before training.
 
@@ -535,9 +546,9 @@ The warmup-length unnormalized fixed Hermite runs (source `13f018f`) added two m
 - **2×H100 NVL, first use** (`node1709`): job 25089884 passed the initialization check, a
   pilot at 1.39 s per update, and the resume on 2026-10-08, then trained updates
   3,001–19,074 at about 1.5 s per update, about 1.6× slower than H100 80GB HBM3 or H200.
-  Its GPU unit tests did not run on the NVL: the shared test results are keyed by the
-  launcher's GPU type, `H100`, which covers both models, so it reused the H100 80GB HBM3
-  results.
+  Its GPU unit tests did not run on the NVL: the shared test results were then keyed by
+  the launcher's GPU type, `H100`, which covers both models, so it reused the H100 80GB
+  HBM3 results. They are now keyed by GPU model, so an NVL allocation runs its own.
 
 Softmax without QK-norm (plain QK scores) at `d_K = 8, 16, 32, 128` (source `e39410e`)
 passed 131 CPU, 5 distributed, and 1 GPU test on 2×H100 80GB HBM3 (job 25236653,
