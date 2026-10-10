@@ -10,6 +10,9 @@ from pathlib import Path
 
 from scaffolds.records import capture_artifacts, load_run, update_record
 
+STALLED_EXIT_CODE = 124
+"""Exit code with which a launcher's watchdog (``watchdog.sh``) ends a job whose log stopped growing."""
+
 
 def _acceptance_failure(attempt: dict) -> dict:
     """Retain qualification failures separately from production outcomes."""
@@ -62,7 +65,9 @@ def finalize_attempt(run: Path, exit_code: int) -> None:
                                 "finished_utc": datetime.now(UTC).isoformat()}]
     if exit_code and record.get("status") in {"planned", "submitted", "acceptance", "running"}:
         changes["status"] = "failed"
-        changes["error"] = f"Job process exited with code {exit_code}; see training.log"
+        changes["error"] = (f"Stalled: the log stopped growing and the launcher ended the job (exit code {exit_code}); "
+                            "see training.log" if exit_code == STALLED_EXIT_CODE
+                            else f"Job process exited with code {exit_code}; see training.log")
         if (record.get("status") == "acceptance" and attempts
                 and attempts[-1].get("slurm_job_id") == os.environ.get("SLURM_JOB_ID")):
             changes.update(_acceptance_failure(attempts[-1]))

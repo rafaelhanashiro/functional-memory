@@ -567,6 +567,8 @@ The warmup-length softmax and Gated DeltaNet runs at other widths (sources `4ed7
   launcher's `H100`, so no pilot ran on the NVL. The failed device stopped while the
   other waited in a collective until the job was preempted 33 minutes later: an
   allocation failure on one device can hang a data-parallel job instead of ending it.
+  Acceptance is now keyed by GPU model, so such a requeue repeats the pilot, and the
+  launchers end a job whose log stops growing for 20 minutes.
 - **Softmax on 2×H100 NVL** (job 25426441) ran its own GPU tests under the GPU-model key.
 
 ## B300 cuBLAS concurrency: checkpoint replay
