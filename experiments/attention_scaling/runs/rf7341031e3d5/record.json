@@ -3,15 +3,27 @@
     "path": "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
     "sha256": "36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252"
   },
+  "error": "Production job 214023 cancelled before allocation: prerequisite H100 kernel qualification job 214022 failed two repeated-key key-gradient comparisons.",
   "frozen_execution_sha256": "c980c33a160708051b324c70709fb48ff1cb8612277a423cbf29b18e5227339c",
   "home_cluster": "kennel",
   "label": "200m-dk064-gdn-independent-erase-warmup400-seed0",
   "name": "200m-dk064-gdn-independent-erase-warmup400-seed0",
+  "qualification": {
+    "completed_utc": "2026-10-09T23:47:33.207966+00:00",
+    "record": {
+      "path": "scaffolds/transformer/validation/runs/gdn-independent-h100/tests.json",
+      "sha256": "01772097e378b6f896e3d4f5e7c448c8ac963f7dd95a1a95b87f3e3af5dd3fc7"
+    },
+    "slurm_job_id": "214022",
+    "status": "failed",
+    "tests_failed": 2,
+    "tests_passed": 26
+  },
   "record_schema_version": 1,
   "run_id": "rf7341031e3d5",
   "seed": 0,
   "source_commit": "d9c5aea542be96cb6c2217e85cb965040d441f7e",
-  "status": "queued",
+  "status": "cancelled",
   "submission": {
     "command": [
       "sbatch",
@@ -42,5 +54,7 @@
     "slurm_partition": "standard",
     "submitted_utc": "2026-10-09T23:29:25+00:00",
     "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase"
-  }
+  },
+  "training_started": false,
+  "updated_utc": "2026-10-10T23:47:03.952218+00:00"
 }

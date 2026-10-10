@@ -246,9 +246,13 @@ match tied GDN at initialization. It preserves the canonical GDN block and refer
 initialization, 400 warmup updates, standard training telemetry, and the 19,074-update
 FineWeb recipe. The preselected control is `rf640fc13f3a8`; comparison findings and
 current status belong in the [exploratory result](../../results/exploratory/gdn_independent_erase/README.md).
-Its home cluster is Kennel. Job `214023` is queued on `standard` at nice 0 for two
-B300 GPUs on `akita`, submitted from `worktrees/gdn-independent-erase`. It depends
-on successful completion of H100 kernel qualification job `214022`:
+Its home cluster is Kennel. Job `214023`, submitted on `standard` at nice 0 for two
+B300 GPUs on `akita`, was cancelled before allocation because H100 kernel
+qualification job `214022` failed. No training updates or W&B run exist. The
+qualification passed 26 tests and failed two repeated-key gradient checks; its
+[validation record](../../scaffolds/transformer/validation/runs/gdn-independent-h100/tests.json)
+retains the source and hardware identity. The production submission from
+`worktrees/gdn-independent-erase` was:
 
 ```bash
 sbatch --nice=0 --partition=standard --nodelist=akita --gres=gpu:b300:2 \

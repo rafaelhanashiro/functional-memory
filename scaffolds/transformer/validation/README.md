@@ -514,6 +514,22 @@ sbatch --gres=gpu:h100:1 --nodelist=dogo \
 # For B300, use --gres=gpu:b300:1 --nodelist=akita and pass B300.
 ```
 
+## Independent GDN erase/write kernel
+
+Source `d9c5aea542be96cb6c2217e85cb965040d441f7e` failed qualification on one
+H100 PCIe on Kennel (`mastiff`, job `214022`) on 2026-10-09:
+26 tests passed and two failed. Both failures used identical unit keys,
+unit erase strength, and no decay. Forward comparisons passed, but relative
+key-gradient errors were 0.5846% in FP32 (0.5% tolerance) and 4.7263% in BF16
+(2% tolerance). These results do not distinguish a derivative defect from
+numerical error; the kernel remains unqualified.
+
+The [record](runs/gdn-independent-h100/tests.json) pins source, dependency lock,
+hardware, and JUnit evidence. The matching log is
+`validation/logs/gdn-independent-214022.log` in the experiment worktree on Kennel.
+The dependent production job was cancelled before allocation. No training
+result follows from this software check.
+
 ## Gated DeltaNet on ORCD H200, and ORCD H100
 
 These qualifications come from the production acceptance of the
