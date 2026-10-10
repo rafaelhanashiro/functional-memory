@@ -1,0 +1,12 @@
+{
+  "best_checkpoint_step": 19074,
+  "completion_sha256": "24c38301e680b5913ec72bbc387b3320723d3d298d112c37c20a0f9bd044e028",
+  "format": "shared-transformer-checkpoint-retention",
+  "seed": 0,
+  "selection_rule": "lowest_validation_nll_latest_on_tie",
+  "source_commit": "2ab5aa11ed4d12d9d00f24519597f8925313597e",
+  "terminal_metrics_preserved": true,
+  "terminal_step": 19074,
+  "validation_nll": 2.695724206311362,
+  "version": 1
+}

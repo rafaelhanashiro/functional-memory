@@ -8,8 +8,9 @@ inherited from the OFM recipe when `total_steps` shrank to 19,074.
 
 Does a standard warmup shift every mechanism's terminal perplexity by a small constant,
 leaving the comparisons in [`results/attention_scaling/`](../../attention_scaling/README.md)
-intact, or does it change them? Each warmup-400 run repeats one `d_K = 64` cell of the
-heatmap or degree chart with its reference initialization and changes only
+intact, or does it change them? Each warmup-400 run repeats one cell of the heatmap or
+degree chart (at `d_K = 64` unless its section says otherwise) with its reference
+initialization and changes only
 `optim.warmup_steps` from 2,000 to 400 (2.1%, 210M tokens); peak and minimum learning
 rates stay 3e-4 and 3e-5. Each is paired with its warmup-2,000 source.
 
@@ -85,7 +86,8 @@ Unnormalized attention with output scaling (`attention_output_scaling`), same co
 - **Gated DeltaNet changes places.** At warmup 2,000 it trails softmax by 0.19 and also
   fixed Taylor m = 8 and 16 and learned nonnegative m = 4; at warmup 400 it leads every
   `d_K = 64` cell, softmax by 0.14. The `d_K = 64` softmax-against-Gated DeltaNet
-  comparison in the attention scaling results therefore reverses with the warmup.
+  comparison in the attention scaling results therefore reverses with the warmup, as it
+  does at every other width (next section).
 - **Distances between families shrink.** Normalized minus unnormalized gaps narrow by
   0.1–0.45: softmax against unnormalized learned m = 3 from 1.14 to 0.90, learned
   nonnegative m = 4 against unnormalized learned m = 4 from 1.03 to 0.93, softmax against
@@ -136,6 +138,34 @@ differs in hardware. The ORCD unnormalized fixed Hermite cells, whose controls r
 Kennel, trained on H100 (m = 1), on H200 then H100 after update 1,000 (m = 2), on H100
 with updates 12,501–13,000 on H200 (m = 3), and on H200 then H100 NVL after update 3,000
 (m = 4).
+
+## Softmax and Gated DeltaNet across d_K
+
+Terminal validation perplexity of the heatmap's softmax (QK-norm, transformer reference
+initialization) and Gated DeltaNet (its reference initialization) cells at every width;
+every run's validation best is terminal. The `d_K = 64` pair is the one above.
+
+| `d_K` | Softmax, 2,000 | Softmax, 400 | Difference | Gated DeltaNet, 2,000 | Gated DeltaNet, 400 | Difference | Gated DeltaNet − softmax, 2,000 → 400 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 8 | 15.639 | 15.732 | +0.09 | 14.847 | 14.816 | −0.03 | −0.79 → −0.92 |
+| 16 | 14.335 | 14.470 | +0.13 | 14.290 | 14.217 | −0.07 | −0.04 → −0.25 |
+| 32 | 13.762 | 14.028 | +0.27 | 13.952 | 13.908 | −0.04 | +0.19 → −0.12 |
+| 64 | 13.514 | 13.731 | +0.22 | 13.705 | 13.594 | −0.11 | +0.19 → −0.14 |
+| 128 | 13.303 | 13.520 | +0.22 | 13.380 | 13.327 | −0.05 | +0.08 → −0.19 |
+
+- **Gated DeltaNet leads softmax at every width at warmup 400.** At warmup 2,000 softmax
+  leads at `d_K = 32`, 64, and 128 (by 0.19, 0.19, and 0.08); at warmup 400 Gated
+  DeltaNet leads there by 0.12, 0.14, and 0.19, and its lead at `d_K = 8` and 16 grows
+  (0.79 to 0.92, 0.04 to 0.25). The attention scaling results' "softmax is lower at 32,
+  64, and 128" reverses at all three widths.
+- **The two mechanisms move in opposite directions at every width.** Softmax loses
+  0.09–0.27 with the short warmup, least at `d_K = 8`; Gated DeltaNet gains 0.03–0.11.
+- **Both still improve with every doubling of `d_K`** at both warmups.
+
+Limits: one seed per cell; the controls ran on Kennel. These runs record the training
+telemetry. Softmax trained on H100 NVL (`d_K = 8`), on H200 then H100 after update
+15,000 (16), on H100 (32), and on H100 with updates 7,001–14,500 on H200 (128); Gated
+DeltaNet on H200 (8 and 128) and H100 (16 and 32).
 
 ## Softmax in detail
 
