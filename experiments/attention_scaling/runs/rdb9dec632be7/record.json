@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rdb9dec632be7/config.yaml",
+    "sha256": "4d633c1f6d41fa0028c946a79cd01191bda6950bad8b1888d7cdb8574c8febc8"
+  },
+  "label": "200m-qk-dk008-m016-transformer-init-warmup400-seed0",
+  "name": "200m-qk-dk008-m016-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "rdb9dec632be7",
+  "status": "planned"
+}
