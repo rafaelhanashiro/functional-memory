@@ -149,7 +149,8 @@ def _watched(tmp_path, worker):
     script = (f"set -euo pipefail\nsource {WATCHDOG}\nSTALL_SECONDS=2 STALL_POLL_SECONDS=1\n"
               'start_watchdog "$LOG"\n'
               f"run_step bash -c 'echo $$ >> \"$PIDS\"; {worker}'\n"
-              'stop_watchdog\nprintf "worker finished\\n"\n')
+              # The finalizer runs after the watchdog stops, as in the launchers' EXIT trap.
+              'stop_watchdog\nsleep 1\nprintf "worker finished\\n"\n')
     env = {**os.environ, "PATH": f"{tmp_path}{os.pathsep}{os.environ['PATH']}", "SLURM_JOB_ID": "123",
            "LOG": str(log), "PIDS": str(pids)}
     try:
@@ -179,7 +180,8 @@ def test_the_watchdog_ends_a_step_whose_log_stops_growing(tmp_path):
 def test_the_watchdog_leaves_a_step_that_keeps_logging(tmp_path):
     result, _ = _watched(tmp_path, 'for i in 1 2 3 4 5 6; do echo step=$i >> "$LOG"; sleep 0.5; done')
     assert result.returncode == 0
-    assert result.stdout == "worker finished\n"
+    # Stopping the watchdog leaves no job-termination notice in the run's log.
+    assert result.stdout == "worker finished\n" and result.stderr == ""
 
 
 def test_a_stalled_job_is_recorded_as_a_stall(tmp_path, monkeypatch):

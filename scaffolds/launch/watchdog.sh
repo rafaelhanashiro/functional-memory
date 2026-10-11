@@ -52,5 +52,9 @@ start_watchdog() {
 # cannot interrupt finalization.
 stop_watchdog() {
   trap '' USR2
-  if [[ -n "$WATCHDOG_PID" ]]; then kill "$WATCHDOG_PID" 2>/dev/null || true; fi
+  if [[ -n "$WATCHDOG_PID" ]]; then
+    kill "$WATCHDOG_PID" 2>/dev/null || true
+    # Reaping it here keeps bash's job-termination notice out of the run's log.
+    wait "$WATCHDOG_PID" 2>/dev/null || true
+  fi
 }
