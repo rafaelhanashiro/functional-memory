@@ -1,0 +1,135 @@
+{
+  "acceptance_identity": "b5311f6310c5dc103b13c62cb10abb9cb5833b35d26b71096db1bb980bf08deb",
+  "candidate_explanation": {
+    "basis": "The failing test uses small B=2, T=256, H=4, K=V=64 operands. CUDA reported out of memory from gpuLaunchKernel and emitted two autotune candidate launch warnings.",
+    "description": "Preallocating 90% of device memory may leave too little memory outside the JAX pool for CUDA-managed resources during Triton kernel launch or autotuning.",
+    "limitations": "No allocation trace or kernel resource measurement establishes the exact allocation that failed. Kernel local-memory spill storage is a candidate, not a confirmed cause.",
+    "status": "inference_not_confirmed"
+  },
+  "checks": {
+    "cpu-distributed-tests": {
+      "errors": 0,
+      "failed": 0,
+      "junit_at_failure": {
+        "path": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-2/cpu-distributed-tests.xml",
+        "sha256": "b30ecec22ae529bf1d4f57fd3f4ec95a401e6065d0498a98a919d0e79a04641f",
+        "size_bytes": 1418
+      },
+      "passed": 9,
+      "skipped": 0,
+      "status": "passed",
+      "tests_recorded": 9
+    },
+    "cpu-tests": {
+      "errors": 0,
+      "failed": 0,
+      "junit_at_failure": {
+        "path": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-2/cpu-tests.xml",
+        "sha256": "6badd7097e601508a2fa218337dc5b994233eea5ec9989300be45c491f66df0f",
+        "size_bytes": 17188
+      },
+      "passed": 128,
+      "skipped": 0,
+      "status": "passed",
+      "tests_recorded": 128
+    },
+    "gpu-tests": {
+      "errors": 0,
+      "failed": 1,
+      "junit_at_failure": {
+        "path": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-2/gpu-tests.xml",
+        "sha256": "35f842f79947ca91e84f97a1e9093806ff9d26b33c5b0acd46d98cdd388e25ab",
+        "size_bytes": 4350
+      },
+      "passed": 3,
+      "pytest_exit_code": 2,
+      "skipped": 0,
+      "status": "interrupted_after_runtime_failure",
+      "tests_recorded": 4
+    }
+  },
+  "config_sha256": "36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "failure": {
+    "autotune_launch_warnings": [
+      "BV: 64, num_warps: 2, num_ctas: 1, num_stages: 4, maxnreg: None",
+      "BV: 64, num_warps: 4, num_ctas: 1, num_stages: 4, maxnreg: None"
+    ],
+    "exception": "jax.errors.JaxRuntimeError",
+    "failed_utc": "2026-10-11T23:44:15.614980+00:00",
+    "interpretation": "Runtime allocation or launch failure; the reported failure is CUDA out of memory, not a failed numerical-accuracy comparison.",
+    "message": "INTERNAL: CustomCall failed: jaxlib/gpu/triton_kernels.cc:447: operation gpuLaunchKernel( kernel, grid[0], grid[1], grid[2], block_dim_x_, 1, 1, shared_mem_bytes_, stream, params, nullptr) failed: CUDA_ERROR_OUT_OF_MEMORY",
+    "stage": "gpu-tests",
+    "termination": "GPU pytest was interrupted after this failure; the remaining GPU cases and later acceptance stages did not run.",
+    "test_node": "scaffolds/transformer/tests/test_gated_deltanet_kernel.py::test_fused_output_and_all_gradients_match_the_recurrence[float32-0.005-64]"
+  },
+  "format": "gdn-runtime-qualification-diagnostic",
+  "hardware": {
+    "attention_backend": "fused",
+    "device_kinds": [
+      "NVIDIA H100 PCIe",
+      "NVIDIA H100 PCIe"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1"
+    ],
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "home_cluster": "kennel",
+  "pilot_started": false,
+  "pilot_steps_completed": 0,
+  "production_training_started": false,
+  "recorded_utc": "2026-10-11T23:48:14.047973+00:00",
+  "retained_log": {
+    "path": "scaffolds/transformer/validation/logs/gdn-runtime-216985.log",
+    "sha256": "1d05e4805893e6d74ab24f81abdd40cb8c69a098d004194bdcffc9a7a96ccbe0",
+    "size_bytes": 6437
+  },
+  "run_id": "rf7341031e3d5",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "NCCL_P2P_DISABLE": null,
+    "TRANSFORMER_HOST_STAGING": "0",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "true"
+  },
+  "schema_version": 1,
+  "slurm": {
+    "cpus": 32,
+    "elapsed": "00:13:48",
+    "exit_code": "1:0",
+    "finished_utc": "2026-10-11T23:44:15Z",
+    "gpu_count": 2,
+    "gpu_type": "H100",
+    "job_id": "216985",
+    "memory_gib": 256,
+    "node": "mastiff",
+    "partition": "debug",
+    "started_utc": "2026-10-11T23:30:27Z",
+    "state": "FAILED"
+  },
+  "source_commit": "d144ba0c8205ea0971675e81196fca354a374fec",
+  "source_sha256": {
+    "scaffolds/transformer/acceptance.py": "f8ac1bcdfceffb2aaa213cc4d9dc503616738661420090bb0499870e3b40edca",
+    "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "32a0ae7ea27451992c9db03e6540f84ef7f80c8c5a3d4848d6cf6a72f21db118",
+    "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "dca24c3fb46f68f09a4a9347befaa4fbe4ba771e764ef493633ca2017e4c74d8",
+    "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "17d23066f78dfb4505d115d82fdd01da84355cdd05afa83190dfac2938dae272",
+    "scaffolds/transformer/attention/backends/fla_independent_gated_delta_rule_kernels.py": "06bedf24690a1180660df5eb927a04719a0ff341410461d9e8dc3e051d4ee264",
+    "scaffolds/transformer/launchers/kennel_runtime.sh": "efbc5144268320ab52b5d2fab0cff1adae431a40cc190b7f85e8ea93b30d4c89",
+    "scaffolds/transformer/tests/test_gated_deltanet_kernel.py": "194d61c42d5d85afdc9524c950a3ee55eae38d0a2fae80524b93bb072445b239",
+    "scaffolds/transformer/validation/qualify_gdn_runtime.sbatch": "234779250bc589f19cafdd24410a6218d06a08f36bb2ab110a530a49aa240894"
+  },
+  "status": "failed_runtime_qualification",
+  "temporary_evidence": {
+    "note": "JUnit descriptors capture the completed failure evidence; this disposable acceptance directory may be overwritten by a later qualification. The completed Slurm log is retained.",
+    "retained": false
+  }
+}

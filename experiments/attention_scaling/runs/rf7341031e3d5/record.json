@@ -52,7 +52,6 @@
   "record_schema_version": 1,
   "run_id": "rf7341031e3d5",
   "runtime_qualification": {
-    "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-2",
     "command": [
       "sbatch",
       "--parsable",
@@ -60,27 +59,44 @@
       "--partition=debug",
       "--nodelist=mastiff",
       "--gres=gpu:h100:2",
-      "--time=01:00:00",
+      "--time=00:40:00",
       "--cpus-per-task=32",
       "--mem=256G",
-      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=true,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90",
-      "--job-name=gdn-runtime-qualification",
-      "--output=scaffolds/transformer/validation/logs/gdn-runtime-%j.log",
-      "scaffolds/transformer/validation/qualify_gdn_runtime.sbatch",
+      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90",
+      "--job-name=gdn-memory-probe",
+      "--output=scaffolds/transformer/validation/logs/gdn-memory-%j.log",
+      "scaffolds/transformer/validation/probe_gdn_memory.sbatch",
       "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
       "d144ba0c8205ea0971675e81196fca354a374fec",
-      "H100",
-      "24"
+      "H100"
     ],
     "gpu_count": 2,
     "gpu_type": "H100",
+    "kernel_test": {
+      "duration_seconds": 122.48,
+      "junit": {
+        "path": "scaffolds/transformer/validation/logs/gdn-memory-216990.xml",
+        "sha256": "fe3b62ae80028f8b29945b6ff1738e9f7b92adfb86d3db93ef45b903fa838719"
+      },
+      "node_id": "scaffolds/transformer/tests/test_gated_deltanet_kernel.py::test_fused_output_and_all_gradients_match_the_recurrence[float32-0.005-64]",
+      "status": "passed",
+      "tests_passed": 1
+    },
+    "kind": "memory_probe",
+    "log_path": "scaffolds/transformer/validation/logs/gdn-memory-216990.log",
+    "node": "mastiff",
+    "pilot_output_path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/memory-probe-216990.json",
+    "probe_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/.runtime/memory-probe/H100-2-216990",
     "runtime_environment": {
       "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
-      "XLA_PYTHON_CLIENT_PREALLOCATE": "true"
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
     },
-    "slurm_job_id": "216985",
+    "slurm_job_id": "216990",
+    "slurm_partition": "debug",
     "source_commit": "d144ba0c8205ea0971675e81196fca354a374fec",
-    "status": "queued"
+    "stage": "full_recipe_pilot",
+    "status": "running",
+    "submitted_utc": "2026-10-11T23:48:02+00:00"
   },
   "seed": 0,
   "source_commit": "d144ba0c8205ea0971675e81196fca354a374fec",
@@ -96,8 +112,8 @@
       "--time=1-00:00:00",
       "--cpus-per-task=32",
       "--mem=256G",
-      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=true,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90",
-      "--dependency=afterok:216985",
+      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90",
+      "--dependency=afterok:216990",
       "--kill-on-invalid-dep=yes",
       "--job-name=rf7341031e3d5",
       "--output=experiments/attention_scaling/runs/rf7341031e3d5/training.log",
@@ -109,18 +125,19 @@
       "H100"
     ],
     "nice": 0,
-    "qualification_dependency": "afterok:216985",
+    "qualification_dependency": "afterok:216990",
     "requested_gpu_count": 2,
     "requested_gpu_type": "H100",
+    "requested_node": "mastiff",
     "runtime_environment": {
       "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
-      "XLA_PYTHON_CLIENT_PREALLOCATE": "true"
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
     },
-    "slurm_job_id": "216986",
+    "slurm_job_id": "216991",
     "slurm_partition": "standard",
-    "submitted_utc": "2026-10-11T23:29:28.652633+00:00",
+    "submitted_utc": "2026-10-11T23:49:19+00:00",
     "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase"
   },
   "training_started": false,
-  "updated_utc": "2026-10-11T23:29:28.585489+00:00"
+  "updated_utc": "2026-10-11T23:53:28.376275+00:00"
 }

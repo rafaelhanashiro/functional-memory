@@ -9,17 +9,20 @@ language-model performance under the canonical 400-step-warmup recipe?
 
 | Role | Run ID | Erase gate | Status |
 | --- | --- | --- | --- |
-| Primary | `rf7341031e3d5` | Independent learned projection | Queued behind full-runtime qualification |
+| Primary | `rf7341031e3d5` | Independent learned projection | Queued behind memory probe |
 | Control | `rf640fc13f3a8` | Shared with the write gate | Complete, 19,074 updates |
 
 The control is explicitly selected for its canonical GDN initialization, degree-one
 key space, width, data, training recipe, and current telemetry on Kennel. Its terminal
 validation perplexity is 13.582856. Selection does not depend on its performance.
 
-Primary job `216986` is queued at nice 0 on Kennel's standard partition for two
-H100 GPUs, dependent on full-runtime qualification job `216985`. The runtime
-preallocates 90% of GPU memory; the full-model pilot and resume must pass before
-production. There are no production training measurements or W&B run yet.
+Primary job `216991` is queued at nice 0 on Kennel's standard partition for two
+H100 PCIe GPUs on `mastiff`, dependent on memory probe `216990` on the same node.
+Both use GPU allocation growth (`XLA_PYTHON_CLIENT_PREALLOCATE=false`) with a
+90% memory-pool limit. The probe's FP32 width-64 kernel test passed; its full-recipe
+two-GPU pilot is running. Production still requires the complete acceptance checks,
+including exact checkpoint resumption. There are no production training
+measurements or W&B run yet.
 Source: `d144ba0c8205ea0971675e81196fca354a374fec`.
 The [scaffold validation record](../../../scaffolds/transformer/validation/README.md#fp32-chunk-precision-repair)
 contains the kernel accuracy evidence.
