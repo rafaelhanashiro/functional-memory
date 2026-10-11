@@ -9,19 +9,24 @@ language-model performance under the canonical 400-step-warmup recipe?
 
 | Role | Run ID | Erase gate | Status |
 | --- | --- | --- | --- |
-| Primary | `rf7341031e3d5` | Independent learned projection | Cancelled before training; kernel qualification failed |
+| Primary | `rf7341031e3d5` | Independent learned projection | Queued behind repaired-kernel qualification |
 | Control | `rf640fc13f3a8` | Shared with the write gate | Complete, 19,074 updates |
 
 The control is explicitly selected for its canonical GDN initialization, degree-one
 key space, width, data, training recipe, and current telemetry on Kennel. Its terminal
 validation perplexity is 13.582856. Selection does not depend on its performance.
 
-Primary job `214023` was cancelled before allocation when H100 kernel qualification
-job `214022` failed on 2026-10-09. There are no training measurements or W&B run.
-The qualification passed 26 tests and failed two repeated-key gradient checks;
-this is a software qualification failure, with no scientific training outcome.
-The source is `d9c5aea542be96cb6c2217e85cb965040d441f7e`; details belong to the
-[scaffold validation record](../../../scaffolds/transformer/validation/README.md#independent-gdn-erasewrite-kernel).
+Primary job `216970` is queued at nice 0 on Kennel's standard partition for two
+H100 GPUs. It depends on precision qualification and benchmark job `216969`;
+full-model acceptance must also pass before training. There are no training
+measurements or W&B run yet. Source: `4b7573e31a1475ef01f7e6313ab36f14a587b0ee`.
+The [scaffold validation record](../../../scaffolds/transformer/validation/README.md#independent-gdn-erasewrite-kernel)
+contains the kernel accuracy evidence.
+
+The primary uses repaired FP32 chunk intermediates and TF32x3 products. The
+historical control used the earlier reduced-precision kernel, so a performance
+difference between these executions cannot be attributed solely to gate separation.
+A matched control using the repaired arithmetic would be needed for that conclusion.
 
 Both models use the existing GDN block: linear projections, width-four causal
 depthwise convolutions and SiLU for Q/K/V, per-head L2 normalization of Q/K, Mamba-2

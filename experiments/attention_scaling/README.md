@@ -246,24 +246,23 @@ match tied GDN at initialization. It preserves the canonical GDN block and refer
 initialization, 400 warmup updates, standard training telemetry, and the 19,074-update
 FineWeb recipe. The preselected control is `rf640fc13f3a8`; comparison findings and
 current status belong in the [exploratory result](../../results/exploratory/gdn_independent_erase/README.md).
-Its home cluster is Kennel. Job `214023`, submitted on `standard` at nice 0 for two
-B300 GPUs on `akita`, was cancelled before allocation because H100 kernel
-qualification job `214022` failed. No training updates or W&B run exist. The
-qualification passed 26 tests and failed two repeated-key gradient checks; its
-[validation record](../../scaffolds/transformer/validation/runs/gdn-independent-h100/tests.json)
-retains the source and hardware identity. The production submission from
-`worktrees/gdn-independent-erase` was:
+Its home cluster is Kennel. Job `216970` is queued on `standard` at nice 0 for two
+H100 GPUs on `mastiff`, dependent on precision-repair qualification and benchmark
+job `216969`. No training measurements or W&B run exist yet. The kernel retains
+FP32 chunk intermediates and uses TF32x3 products for tied and independent gates;
+[scaffold validation](../../scaffolds/transformer/validation/README.md#independent-gdn-erasewrite-kernel)
+records the accuracy checks. Submit from `worktrees/gdn-independent-erase`:
 
 ```bash
-sbatch --nice=0 --partition=standard --nodelist=akita --gres=gpu:b300:2 \
+sbatch --nice=0 --partition=standard --nodelist=mastiff --gres=gpu:h100:2 \
   --time=1-00:00:00 --cpus-per-task=32 --mem=256G \
-  --dependency=afterok:214022 --kill-on-invalid-dep=yes \
+  --dependency=afterok:216969 --kill-on-invalid-dep=yes \
   --job-name=rf7341031e3d5 \
   --output=experiments/attention_scaling/runs/rf7341031e3d5/training.log \
   scaffolds/transformer/launchers/kennel.sbatch \
   experiments.attention_scaling.acceptance \
   experiments/attention_scaling/runs/rf7341031e3d5/config.yaml \
-  d9c5aea542be96cb6c2217e85cb965040d441f7e 2 B300
+  4b7573e31a1475ef01f7e6313ab36f14a587b0ee 2 H100
 ```
 
 The allocation runs shared CPU and distributed checks, all GDN GPU forward/gradient
@@ -272,8 +271,8 @@ production. The one-GPU qualification job was submitted with:
 
 ```bash
 sbatch --nice=0 --partition=debug --nodelist=mastiff --gres=gpu:h100:1 \
-  --job-name=gdn-independent-check \
-  --output=scaffolds/transformer/validation/logs/gdn-independent-%j.log \
+  --job-name=gdn-precision-repair \
+  --output=scaffolds/transformer/validation/logs/gdn-repair-%j.log \
   scaffolds/transformer/validation/qualify_gdn_independent.sbatch \
-  d9c5aea542be96cb6c2217e85cb965040d441f7e H100
+  4b7573e31a1475ef01f7e6313ab36f14a587b0ee H100
 ```
