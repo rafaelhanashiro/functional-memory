@@ -49,6 +49,10 @@ Explicit environment settings can override these choices for isolated diagnostic
 The shared runtime owns placement and replica verification; model and optimizer
 code do not select hardware policy.
 
+Kennel launchers default to `XLA_PYTHON_CLIENT_PREALLOCATE=false` and preserve
+explicit allocator settings supplied with `sbatch --export`. Acceptance records
+the resolved preallocation setting and memory fraction and qualifies that runtime.
+
 Kennel launchers put disposable compiler and test-capture temporary files in a
 unique job directory under `SLURM_TMPDIR` or `/tmp`, and remove it at exit.
 Using NFS for these files can leave processes waiting on NFS RPCs with an idle GPU.

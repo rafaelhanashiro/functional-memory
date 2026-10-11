@@ -1,0 +1,86 @@
+{
+  "candidate_explanation": {
+    "basis": "Pinned XLA allocates executable buffers before acquiring collective cliques and before executing Triton calls. Its BFC allocator enables growth when preallocation is false and retains the default disabled garbage collection. The asymmetric reserved memory and flat CPU time favor investigating allocation/setup first.",
+    "description": "Rank 0 may be blocked in initial buffer allocation or related setup while rank 1 waits at initial collective-clique acquisition. Allocation growth, fragmentation or memory-budget pressure are candidates; the memory snapshot does not distinguish them.",
+    "limitations": "No native thread stack or allocator-failure report established the exact cause. The successful tiny collective does not qualify the full graph. This train-step Triton autotune is not demonstrated to have started.",
+    "status": "inference_not_confirmed"
+  },
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "diagnostic_runtime_change": {
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": ".90",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "true",
+    "result": "not assessed by this record",
+    "scope": "Runtime allocation only; frozen model, optimizer, recipe and kernel source unchanged."
+  },
+  "home_cluster": "kennel",
+  "node": "mastiff",
+  "observed_facts": {
+    "collective_control": {
+      "observer": "root agent",
+      "operation": "separate tiny two-GPU pmap psum in the same allocation",
+      "outputs": [
+        3,
+        3
+      ],
+      "status": "passed"
+    },
+    "collective_warning": "E1011 19:19:13.744241  850159 rendezvous.cc:116] [id=0] This thread has been waiting for `[1] [rank=1] [run_id=-1381940240] Acquire clique: devices=2:[0,1]; local_participants=2; communication_id=0; incarnations=[]` for 10 seconds and may be stuck. Expected 2 threads to join the rendezvous, but not all of them arrived on time.",
+    "gpu_snapshot": [
+      {
+        "device_kind": "NVIDIA H100 PCIe",
+        "index": 0,
+        "memory_used_mib": 16950,
+        "utilization_percent": 0
+      },
+      {
+        "device_kind": "NVIDIA H100 PCIe",
+        "index": 1,
+        "memory_used_mib": 61308,
+        "utilization_percent": 0
+      }
+    ],
+    "gpu_snapshot_command": "srun --jobid=216970 --overlap --nodes=1 --ntasks=1 --cpus-per-task=1 --mem=0 nvidia-smi --query-gpu=index,name,memory.used,utilization.gpu --format=csv,noheader",
+    "job_cancelled_utc": "2026-10-11T23:24:17Z",
+    "process_cpu_observation": {
+      "cumulative_cpu_seconds": 272,
+      "observer": "root agent monitoring the live pilot process",
+      "unchanged_for_approximately_seconds": 300
+    },
+    "python_compilation_observation": "AST compilation had finished and the JAX executable was in the cache; no update completed."
+  },
+  "pilot_steps_completed": 0,
+  "primary_source_references": [
+    {
+      "supports": "Execution-buffer allocation precedes ExecuteThunks.",
+      "url": "https://github.com/openxla/xla/blob/b6f37ab7767f428fd6f993de5e211643d47d4deb/xla/service/gpu/gpu_executable.cc#L1259"
+    },
+    {
+      "supports": "Clique acquisition precedes thunk initialization and execution.",
+      "url": "https://github.com/openxla/xla/blob/b6f37ab7767f428fd6f993de5e211643d47d4deb/xla/service/gpu/gpu_executable.cc#L734"
+    },
+    {
+      "supports": "BFC allow_growth is the inverse of preallocate.",
+      "url": "https://github.com/openxla/xla/blob/b6f37ab7767f428fd6f993de5e211643d47d4deb/xla/pjrt/gpu/gpu_helpers.cc#L148"
+    },
+    {
+      "supports": "Default BFC options permit allocation retries and disable garbage collection.",
+      "url": "https://github.com/openxla/xla/blob/b6f37ab7767f428fd6f993de5e211643d47d4deb/xla/tsl/framework/bfc_allocator.h#L53"
+    }
+  ],
+  "process_id": 850083,
+  "production_training_started": false,
+  "recorded_utc": "2026-10-11T23:25:08.431603+00:00",
+  "run_id": "rf7341031e3d5",
+  "runtime": {
+    "NCCL_P2P_DISABLE": null,
+    "TRANSFORMER_HOST_STAGING": "0",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "slurm_job_id": "216970",
+  "source_commit": "4b7573e31a1475ef01f7e6313ab36f14a587b0ee",
+  "stage": "full-recipe acceptance pilot",
+  "status": "stalled_before_first_update"
+}
