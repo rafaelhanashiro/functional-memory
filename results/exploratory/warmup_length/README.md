@@ -169,32 +169,38 @@ DeltaNet on H200 (8 and 128) and H100 (16 and 32).
 
 Normalized fixed Taylor (QK-norm, transformer reference initialization) at `m = 4`, 8,
 and 16, terminal validation perplexity; every run's validation best is terminal. The
-`d_K = 64` rows are the ones above.
+`d_K = 64` rows are the ones above; m = 4 at `d_K = 8` and 16 is not yet run.
 
 | `d_K` | m = 4, 2,000 | m = 4, 400 | Difference | m = 8, 2,000 | m = 8, 400 | Difference | m = 16, 2,000 | m = 16, 400 | Difference |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 8 | — | — | — | 16.081 | 16.170 | +0.09 | 15.749 | 15.835 | +0.09 |
+| 16 | — | — | — | 14.563 | 14.717 | +0.15 | 14.357 | 14.529 | +0.17 |
 | 32 | 14.278 | 14.482 | +0.20 | 13.854 | 14.119 | +0.27 | 13.775 | 14.028 | +0.25 |
 | 64 | 13.774 | 13.927 | +0.15 | 13.543 | 13.741 | +0.20 | 13.519 | 13.740 | +0.22 |
 | 128 | 13.455 | 13.611 | +0.16 | 13.288 | 13.495 | +0.21 | 13.307 | 13.517 | +0.21 |
 
-- **At `d_K = 128` the fixed Taylor shift matches `d_K = 64`; at `d_K = 32` it is
-  larger.** `d_K = 128` loses 0.16, 0.21, and 0.21 at m = 4, 8, and 16 against 0.15,
-  0.20, and 0.22 at `d_K = 64`. `d_K = 32` loses 0.20, 0.27, and 0.25, 0.03–0.07 more,
-  as softmax does there (0.27 against 0.22).
-- **The loss grows from m = 4 to m = 8 at every width** and is then flat to m = 16; at
-  m = 16 it is within 0.02 of softmax's at each width (0.25, 0.22, 0.21 against 0.27,
-  0.22, 0.22).
+- **Fixed Taylor's loss follows softmax's across `d_K`.** At m = 8 and 16 the short
+  warmup costs least at `d_K = 8` (0.09, as for softmax), more at 16 (0.15 and 0.17
+  against 0.13), most at 32 (0.27 and 0.25 against 0.27), and 0.20–0.22 at 64 and 128.
+  At m = 16 the shift is within 0.02 of softmax's at every width except `d_K = 16`
+  (0.04).
+- **At `d_K = 128` the shift matches `d_K = 64`; at `d_K = 32` it is larger.** `d_K =
+  128` loses 0.16, 0.21, and 0.21 at m = 4, 8, and 16 against 0.15, 0.20, and 0.22 at
+  `d_K = 64`; `d_K = 32` loses 0.20, 0.27, and 0.25. Where m = 4 exists, the loss grows
+  from m = 4 to m = 8.
 - **Orders hold.** Within each width the degrees keep their order at both warmups
-  (`d_K = 32`: m = 16, 8, 4; `d_K = 128`: m = 8, 16, 4), and m = 16 stays within 0.02 of
-  softmax at both warmups (warmup 400: 14.028 against 14.028 at `d_K = 32`, 13.517
-  against 13.520 at 128).
+  (`d_K = 8` and 16: m = 16, 8; 32: m = 16, 8, 4; 128: m = 8, 16, 4). From `d_K = 32`
+  up, m = 16 stays within 0.02 of softmax at both warmups (warmup 400: 14.028 against
+  14.028 at 32, 13.517 against 13.520 at 128); at `d_K = 8` it trails softmax by 0.11
+  and 0.10, and at 16 by 0.02 and 0.06.
 
 Limits: one seed per cell. The warmup-400 runs trained on Kennel with the training
 telemetry: four B300s (`d_K = 32`, m = 4; `d_K = 128`, m = 4 and 16), two B300s
-(`d_K = 128`, m = 8), two H100 PCIe (`d_K = 32`, m = 16), and two H100 PCIe then two
-B300s after update 16,500 (`d_K = 32`, m = 8). Their controls ran on ORCD's two H200s
-(`d_K = 32` and 128 at m = 4) or on Kennel's four H100s (`d_K = 128`, m = 8: B300 and
-H100).
+(`d_K = 128`, m = 8), four H100 PCIe (`d_K = 16`, m = 16), two H100s (`d_K = 8`, m = 8
+and 16; `d_K = 16`, m = 8; `d_K = 32`, m = 16), and two H100 PCIe then two B300s after
+update 16,500 (`d_K = 32`, m = 8). Their controls ran on ORCD's two H200s (`d_K = 32`
+and 128 at m = 4) or on Kennel's four H100s (`d_K = 128`, m = 8, and `d_K = 16`, m = 16:
+B300 and H100).
 
 ## Softmax in detail
 
