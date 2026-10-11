@@ -13,22 +13,22 @@ GPU_TYPE="${2:?Expected H100 or B300}"
 PYTHON="$PWD/scaffolds/transformer/.venv/bin/python"
 DIRECTORY="scaffolds/transformer/validation/runs/gdn-independent-precision-${GPU_TYPE,,}"
 python3 scaffolds/launch/frozen.py check --launch-commit "$LAUNCH_COMMIT" --experiment attention_scaling --scaffold transformer
-mkdir -p "$DIRECTORY" scaffolds/transformer/validation/logs .cache/gdn-independent-qualification/tmp
+mkdir -p "$DIRECTORY" scaffolds/transformer/validation/logs
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda XLA_PYTHON_CLIENT_PREALLOCATE=false
 export OMP_NUM_THREADS=8 PYTHONUNBUFFERED=1 TRANSFORMER_HOST_STAGING=0
 export XLA_FLAGS="--xla_gpu_enable_command_buffer="
 export EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/gdn-independent-qualification/triton"
-export TMPDIR="$PWD/.cache/gdn-independent-qualification/tmp"
+GDN_JOB_TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/gdn-qualification-${SLURM_JOB_ID}.XXXXXX")"
+export TMPDIR="$GDN_JOB_TMPDIR"
+trap 'rm -rf -- "$GDN_JOB_TMPDIR"' EXIT
 export JAX_COMPILATION_CACHE_DIR="$PWD/.cache/gdn-independent-qualification/jax"
 source scaffolds/transformer/launchers/kennel_runtime.sh
 CUDA_HOME="$("$PYTHON" -c 'import importlib.util; print(next(iter(importlib.util.find_spec("nvidia.cuda_nvcc").submodule_search_locations)))')"
 export CUDA_HOME
 export TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
 JUNIT="scaffolds/transformer/validation/logs/gdn-independent-${GPU_TYPE,,}-$SLURM_JOB_ID.xml"
-# Fail early on the analytic cancellation cases before compiling the width grid.
-"$PYTHON" -m pytest -q -m gpu scaffolds/transformer/tests/test_gated_deltanet_kernel.py -k repeated_key
 result=0
-"$PYTHON" -m pytest -q -m gpu scaffolds/transformer/tests/test_gated_deltanet_kernel.py \
+"$PYTHON" -m pytest -q -s -m gpu scaffolds/transformer/tests/test_gated_deltanet_kernel.py \
   --junitxml="$JUNIT" || result=$?
 "$PYTHON" - "$DIRECTORY" "$JUNIT" "$LAUNCH_COMMIT" "$GPU_TYPE" "$result" <<'PY'
 from datetime import UTC, datetime

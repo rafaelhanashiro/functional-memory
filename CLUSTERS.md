@@ -49,6 +49,12 @@ Explicit environment settings can override these choices for isolated diagnostic
 The shared runtime owns placement and replica verification; model and optimizer
 code do not select hardware policy.
 
+Kennel launchers put disposable compiler and test-capture temporary files in a
+unique job directory under `SLURM_TMPDIR` or `/tmp`, and remove it at exit.
+Using NFS for these files can leave processes waiting on NFS RPCs with an idle GPU.
+Recipes, logs, checkpoints, environments, and persistent compilation caches stay
+in the worktree on NFS.
+
 Node CUDA toolkits differ: on 2026-09-24 `dogo` had CUDA 12.6 in `/usr/local/cuda`
 and `akita` CUDA 13.0. jaxlib assembles Triton custom-call PTX with that `ptxas`
 unless `CUDA_HOME` names another toolkit; `scaffolds/transformer/launchers/kennel.sbatch`

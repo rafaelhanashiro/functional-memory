@@ -17,8 +17,10 @@ export OMP_NUM_THREADS=8 PYTHONUNBUFFERED=1 TRANSFORMER_HOST_STAGING=0
 export XLA_FLAGS="--xla_gpu_enable_command_buffer="
 export EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/gdn-independent-qualification/triton"
 export JAX_COMPILATION_CACHE_DIR="$PWD/.cache/gdn-independent-qualification/jax"
-export TMPDIR="$PWD/.cache/gdn-independent-qualification/tmp"
-mkdir -p "$TMPDIR" scaffolds/transformer/validation/logs
+GDN_JOB_TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/gdn-benchmark-${SLURM_JOB_ID}.XXXXXX")"
+export TMPDIR="$GDN_JOB_TMPDIR"
+trap 'rm -rf -- "$GDN_JOB_TMPDIR"' EXIT
+mkdir -p scaffolds/transformer/validation/logs
 source scaffolds/transformer/launchers/kennel_runtime.sh
 CUDA_HOME="$("$PYTHON" -c 'import importlib.util; print(next(iter(importlib.util.find_spec("nvidia.cuda_nvcc").submodule_search_locations)))')"
 export CUDA_HOME
