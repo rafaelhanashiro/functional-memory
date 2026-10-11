@@ -1,10 +1,19 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/training.log",
+      "sha256": "6cec45cd2185f3857a1bcc818ff6c5ee7e369cd3854068b22be68b613b57d68c",
+      "size_bytes": 1757
+    }
+  ],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-2",
       "allocation": "JobId=216970 JobName=rf7341031e3d5 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20067 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:03 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-11T18:47:06 EligibleTime=2026-10-11T19:08:13 AccrueTime=Unknown StartTime=2026-10-11T19:08:13 EndTime=2026-10-12T19:08:13 Deadline=N/A PreemptEligibleTime=2026-10-11T21:08:13 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-11T19:08:13 Scheduler=Main Partition=standard AllocNode:Sid=kennel:301369 ReqNodeList=mastiff ExcNodeList=collie,doodle,samoyed,terrier NodeList=mastiff BatchHost=mastiff NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=2 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=2 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/training.log Power= KillOInInvalidDependent=Yes MemPerTres=gpu:32000 TresPerNode=gres/gpu:h100:2 TresPerTask=cpu:32",
       "config_path": "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
       "config_sha256": "36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252",
+      "exit_code": 0,
+      "finished_utc": "2026-10-11T23:24:17.211614+00:00",
       "gpu_count": 2,
       "gpu_type": "H100",
       "home_cluster": "kennel",
@@ -19,9 +28,14 @@
     "path": "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
     "sha256": "36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252"
   },
-  "frozen_execution_sha256": "4bccf34b2e3f371474e405a780aa686c52e221a8d85b5bab2c8c5632f9129eb7",
+  "frozen_execution_sha256": "958de9a869b55759a15d0561b2aae61a81e023fc7dc87bf0cafd0aa007f69403",
   "home_cluster": "kennel",
   "label": "200m-dk064-gdn-independent-erase-warmup400-seed0",
+  "log": {
+    "path": "experiments/attention_scaling/runs/rf7341031e3d5/training.log",
+    "sha256": "6cec45cd2185f3857a1bcc818ff6c5ee7e369cd3854068b22be68b613b57d68c",
+    "size_bytes": 1757
+  },
   "log_path": "experiments/attention_scaling/runs/rf7341031e3d5/training.log",
   "name": "200m-dk064-gdn-independent-erase-warmup400-seed0",
   "qualification": {
@@ -37,9 +51,40 @@
   },
   "record_schema_version": 1,
   "run_id": "rf7341031e3d5",
+  "runtime_qualification": {
+    "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-2",
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--nice=0",
+      "--partition=debug",
+      "--nodelist=mastiff",
+      "--gres=gpu:h100:2",
+      "--time=01:00:00",
+      "--cpus-per-task=32",
+      "--mem=256G",
+      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=true,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90",
+      "--job-name=gdn-runtime-qualification",
+      "--output=scaffolds/transformer/validation/logs/gdn-runtime-%j.log",
+      "scaffolds/transformer/validation/qualify_gdn_runtime.sbatch",
+      "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
+      "d144ba0c8205ea0971675e81196fca354a374fec",
+      "H100",
+      "24"
+    ],
+    "gpu_count": 2,
+    "gpu_type": "H100",
+    "runtime_environment": {
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "true"
+    },
+    "slurm_job_id": "216985",
+    "source_commit": "d144ba0c8205ea0971675e81196fca354a374fec",
+    "status": "queued"
+  },
   "seed": 0,
-  "source_commit": "4b7573e31a1475ef01f7e6313ab36f14a587b0ee",
-  "status": "acceptance",
+  "source_commit": "d144ba0c8205ea0971675e81196fca354a374fec",
+  "status": "queued",
   "submission": {
     "command": [
       "sbatch",
@@ -51,26 +96,31 @@
       "--time=1-00:00:00",
       "--cpus-per-task=32",
       "--mem=256G",
-      "--dependency=afterok:216969",
+      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=true,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90",
+      "--dependency=afterok:216985",
       "--kill-on-invalid-dep=yes",
       "--job-name=rf7341031e3d5",
       "--output=experiments/attention_scaling/runs/rf7341031e3d5/training.log",
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.attention_scaling.acceptance",
       "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
-      "4b7573e31a1475ef01f7e6313ab36f14a587b0ee",
+      "d144ba0c8205ea0971675e81196fca354a374fec",
       "2",
       "H100"
     ],
     "nice": 0,
-    "qualification_dependency": "afterok:216969",
+    "qualification_dependency": "afterok:216985",
     "requested_gpu_count": 2,
     "requested_gpu_type": "H100",
-    "slurm_job_id": "216970",
+    "runtime_environment": {
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "true"
+    },
+    "slurm_job_id": "216986",
     "slurm_partition": "standard",
-    "submitted_utc": "2026-10-11T22:47:20.521979+00:00",
+    "submitted_utc": "2026-10-11T23:29:28.652633+00:00",
     "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase"
   },
   "training_started": false,
-  "updated_utc": "2026-10-11T22:47:20.521957+00:00"
+  "updated_utc": "2026-10-11T23:29:28.585489+00:00"
 }

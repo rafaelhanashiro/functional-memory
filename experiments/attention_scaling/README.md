@@ -246,28 +246,44 @@ match tied GDN at initialization. It preserves the canonical GDN block and refer
 initialization, 400 warmup updates, standard training telemetry, and the 19,074-update
 FineWeb recipe. The preselected control is `rf640fc13f3a8`; comparison findings and
 current status belong in the [exploratory result](../../results/exploratory/gdn_independent_erase/README.md).
-Its home cluster is Kennel. Job `216970` is running acceptance on `standard` at nice 0
-with two H100 GPUs on `mastiff` after qualification/benchmark job `216969` passed
-all 34 GPU tests. No training measurements or W&B run exist yet. The kernel retains
-FP32 chunk intermediates and uses TF32x3 products for tied and independent gates;
-[scaffold validation](../../scaffolds/transformer/validation/README.md#independent-gdn-erasewrite-kernel)
+Its home cluster is Kennel. Production job `216986` is queued on `standard` at
+nice 0 for two H100 GPUs on `mastiff`, dependent on full-runtime qualification
+job `216985`. The runtime preallocates 90% of GPU memory. No production training
+measurements or W&B run exist yet. The kernel retains FP32 chunk intermediates
+and uses TF32x3 products for tied and independent gates;
+[scaffold validation](../../scaffolds/transformer/validation/README.md#fp32-chunk-precision-repair)
 records the accuracy checks. Submit from `worktrees/gdn-independent-erase`:
 
 ```bash
 sbatch --nice=0 --partition=standard --nodelist=mastiff --gres=gpu:h100:2 \
   --time=1-00:00:00 --cpus-per-task=32 --mem=256G \
-  --dependency=afterok:216969 --kill-on-invalid-dep=yes \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=true,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90 \
+  --dependency=afterok:216985 --kill-on-invalid-dep=yes \
   --job-name=rf7341031e3d5 \
   --output=experiments/attention_scaling/runs/rf7341031e3d5/training.log \
   scaffolds/transformer/launchers/kennel.sbatch \
   experiments.attention_scaling.acceptance \
   experiments/attention_scaling/runs/rf7341031e3d5/config.yaml \
-  4b7573e31a1475ef01f7e6313ab36f14a587b0ee 2 H100
+  d144ba0c8205ea0971675e81196fca354a374fec 2 H100
 ```
 
 The allocation runs shared CPU and distributed checks, all GDN GPU forward/gradient
 checks, the full-recipe initialization/pilot, and exact checkpoint resumption before
-production. The one-GPU qualification job was submitted with:
+production. The full-runtime qualifier performs those checks on the same hardware
+and allocator settings, so the dependent production job can reuse its matching
+acceptance. It also checks the projected duration against the 24-hour allocation:
+
+```bash
+sbatch --nice=0 --partition=debug --nodelist=mastiff --gres=gpu:h100:2 \
+  --time=01:00:00 --cpus-per-task=32 --mem=256G \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=true,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90 \
+  --output=scaffolds/transformer/validation/logs/gdn-runtime-%j.log \
+  scaffolds/transformer/validation/qualify_gdn_runtime.sbatch \
+  experiments/attention_scaling/runs/rf7341031e3d5/config.yaml \
+  d144ba0c8205ea0971675e81196fca354a374fec H100 24
+```
+
+The one-GPU precision qualification and benchmark use:
 
 ```bash
 sbatch --nice=0 --partition=debug --nodelist=mastiff --gres=gpu:h100:1 \
