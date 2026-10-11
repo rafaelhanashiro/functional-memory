@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/raf32fab4ba52/config.yaml",
+    "sha256": "5a171abb638ffbcb072597359b6144120a795f81848a3649e080204b157d7db1"
+  },
+  "label": "200m-qk-dk032-m002-transformer-init-warmup400-seed0",
+  "name": "200m-qk-dk032-m002-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "raf32fab4ba52",
+  "status": "planned"
+}
