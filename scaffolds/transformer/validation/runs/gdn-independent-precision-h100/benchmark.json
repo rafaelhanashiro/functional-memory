@@ -1,0 +1,864 @@
+{
+  "completed_at_utc": "2026-10-11T23:08:11.686824+00:00",
+  "configuration": {
+    "backward_objective": "sum(float32(output) * float32(cotangent)); all input gradients",
+    "batches": [
+      1,
+      32
+    ],
+    "dtype": "bfloat16",
+    "heads": 16,
+    "iterations": 20,
+    "length": 2048,
+    "log_decay_dtype": "float32",
+    "memory": "compiled.memory_analysis estimates; not measured allocator peaks or full-model memory",
+    "modes": [
+      "tied",
+      "independent"
+    ],
+    "seed": 46,
+    "timing": "compiled call plus host dispatch; synchronize all outputs after every call",
+    "warmup": 3,
+    "width": 64
+  },
+  "created_at_utc": "2026-10-11T23:04:54.155675+00:00",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "format": "gdn-precision-kernel-benchmark",
+  "launch_source_commit": "4b7573e31a1475ef01f7e6313ab36f14a587b0ee",
+  "measurements": [
+    {
+      "batch": 1,
+      "compilation_seconds": 30.33176230301615,
+      "compiled_memory": {
+        "alias_size_in_bytes": 0,
+        "argument_size_in_bytes": 12779520,
+        "available": true,
+        "generated_code_size_in_bytes": 13400,
+        "host_alias_size_in_bytes": 0,
+        "host_argument_size_in_bytes": 0,
+        "host_output_size_in_bytes": 0,
+        "host_temp_size_in_bytes": 0,
+        "is_measured_allocator_peak": false,
+        "output_size_in_bytes": 4194304,
+        "source": "compiled.memory_analysis",
+        "temp_size_in_bytes": 42074384
+      },
+      "max_ms": 0.48732501454651356,
+      "median_ms": 0.4616765072569251,
+      "min_ms": 0.4527620039880276,
+      "mode": "tied",
+      "operation": "forward",
+      "outputs": [
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.177734375,
+          "shape": [
+            1,
+            2048,
+            16,
+            64
+          ]
+        }
+      ],
+      "p10_ms": 0.45369588769972324,
+      "p90_ms": 0.4805154399946332,
+      "samples_ms": [
+        0.4830480320379138,
+        0.48023404087871313,
+        0.4568189615383744,
+        0.4766379715874791,
+        0.46071398537606,
+        0.4674149677157402,
+        0.4606751026585698,
+        0.4583710106089711,
+        0.47481502406299114,
+        0.47544599510729313,
+        0.4591729957610369,
+        0.4527620039880276,
+        0.48732501454651356,
+        0.453763990662992,
+        0.4673450021073222,
+        0.4609150346368551,
+        0.4624379798769951,
+        0.45308296103030443,
+        0.4745048936456442,
+        0.4601239925250411
+      ],
+      "timed_iterations": 20,
+      "warmup_iterations": 3
+    },
+    {
+      "batch": 1,
+      "compilation_seconds": 38.11768457805738,
+      "compiled_memory": {
+        "alias_size_in_bytes": 0,
+        "argument_size_in_bytes": 16973824,
+        "available": true,
+        "generated_code_size_in_bytes": 34880,
+        "host_alias_size_in_bytes": 0,
+        "host_argument_size_in_bytes": 0,
+        "host_output_size_in_bytes": 0,
+        "host_temp_size_in_bytes": 0,
+        "is_measured_allocator_peak": false,
+        "output_size_in_bytes": 16973884,
+        "source": "compiled.memory_analysis",
+        "temp_size_in_bytes": 100795680
+      },
+      "max_ms": 0.8973230142146349,
+      "median_ms": 0.8828715072013438,
+      "min_ms": 0.8695110445842147,
+      "mode": "tied",
+      "operation": "forward_and_backward",
+      "outputs": [
+        {
+          "dtype": "float32",
+          "finite": true,
+          "max_abs": 12.642273902893066,
+          "shape": []
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.177734375,
+          "shape": [
+            1,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 1.4765625,
+          "shape": [
+            1,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 2.109375,
+          "shape": [
+            1,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.291015625,
+          "shape": [
+            1,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "float32",
+          "finite": true,
+          "max_abs": 3.7844882011413574,
+          "shape": [
+            1,
+            2048,
+            16
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 2.421875,
+          "shape": [
+            1,
+            2048,
+            16
+          ]
+        }
+      ],
+      "p10_ms": 0.872274802532047,
+      "p90_ms": 0.8959490223787725,
+      "samples_ms": [
+        0.8973230142146349,
+        0.8959310362115502,
+        0.8725059451535344,
+        0.8906419388949871,
+        0.8809790015220642,
+        0.890352064743638,
+        0.8818189380690455,
+        0.8695110445842147,
+        0.8860960369929671,
+        0.8961108978837729,
+        0.8711930131539702,
+        0.8723950013518333,
+        0.8764310041442513,
+        0.8823600364848971,
+        0.888139009475708,
+        0.8954000659286976,
+        0.8920649997889996,
+        0.8822809904813766,
+        0.8817189373075962,
+        0.8833829779177904
+      ],
+      "timed_iterations": 20,
+      "warmup_iterations": 3
+    },
+    {
+      "batch": 1,
+      "compilation_seconds": 4.3548787659965456,
+      "compiled_memory": {
+        "alias_size_in_bytes": 0,
+        "argument_size_in_bytes": 12845056,
+        "available": true,
+        "generated_code_size_in_bytes": 13400,
+        "host_alias_size_in_bytes": 0,
+        "host_argument_size_in_bytes": 0,
+        "host_output_size_in_bytes": 0,
+        "host_temp_size_in_bytes": 0,
+        "is_measured_allocator_peak": false,
+        "output_size_in_bytes": 4194304,
+        "source": "compiled.memory_analysis",
+        "temp_size_in_bytes": 42205456
+      },
+      "max_ms": 0.5319119663909078,
+      "median_ms": 0.4527375567704439,
+      "min_ms": 0.4043690860271454,
+      "mode": "independent",
+      "operation": "forward",
+      "outputs": [
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.1767578125,
+          "shape": [
+            1,
+            2048,
+            16,
+            64
+          ]
+        }
+      ],
+      "p10_ms": 0.40649581933394074,
+      "p90_ms": 0.4873589379712939,
+      "samples_ms": [
+        0.4266629694029689,
+        0.4066330147907138,
+        0.5319119663909078,
+        0.41198101826012135,
+        0.4081960069015622,
+        0.4301989683881402,
+        0.4043690860271454,
+        0.42058399412781,
+        0.40526106022298336,
+        0.42239599861204624,
+        0.4616660298779607,
+        0.44882704969495535,
+        0.48739498015493155,
+        0.47145108692348003,
+        0.4780599847435951,
+        0.4585109418258071,
+        0.4794930573552847,
+        0.4566480638459325,
+        0.4873549332842231,
+        0.4595729988068342
+      ],
+      "timed_iterations": 20,
+      "warmup_iterations": 3
+    },
+    {
+      "batch": 1,
+      "compilation_seconds": 14.39236683701165,
+      "compiled_memory": {
+        "alias_size_in_bytes": 0,
+        "argument_size_in_bytes": 17039360,
+        "available": true,
+        "generated_code_size_in_bytes": 34880,
+        "host_alias_size_in_bytes": 0,
+        "host_argument_size_in_bytes": 0,
+        "host_output_size_in_bytes": 0,
+        "host_temp_size_in_bytes": 0,
+        "is_measured_allocator_peak": false,
+        "output_size_in_bytes": 17039428,
+        "source": "compiled.memory_analysis",
+        "temp_size_in_bytes": 100795688
+      },
+      "max_ms": 0.9226909605786204,
+      "median_ms": 0.9122560149990022,
+      "min_ms": 0.8956709643825889,
+      "mode": "independent",
+      "operation": "forward_and_backward",
+      "outputs": [
+        {
+          "dtype": "float32",
+          "finite": true,
+          "max_abs": 9.37470531463623,
+          "shape": []
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.1767578125,
+          "shape": [
+            1,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 1.5546875,
+          "shape": [
+            1,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 2.09375,
+          "shape": [
+            1,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.294921875,
+          "shape": [
+            1,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "float32",
+          "finite": true,
+          "max_abs": 3.969139575958252,
+          "shape": [
+            1,
+            2048,
+            16
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 2.171875,
+          "shape": [
+            1,
+            2048,
+            16
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.52734375,
+          "shape": [
+            1,
+            2048,
+            16
+          ]
+        }
+      ],
+      "p10_ms": 0.9012648952193558,
+      "p90_ms": 0.920211139600724,
+      "samples_ms": [
+        0.9183849906548858,
+        0.9174830047413707,
+        0.9200980421155691,
+        0.9212290169671178,
+        0.9118650341406465,
+        0.9226909605786204,
+        0.9143879869952798,
+        0.912385992705822,
+        0.9194160811603069,
+        0.9128160309046507,
+        0.9106929646804929,
+        0.8956709643825889,
+        0.9040429722517729,
+        0.9113450068980455,
+        0.9148389799520373,
+        0.9005079045891762,
+        0.91198505833745,
+        0.9013490052893758,
+        0.9105229983106256,
+        0.9121260372921824
+      ],
+      "timed_iterations": 20,
+      "warmup_iterations": 3
+    },
+    {
+      "batch": 32,
+      "compilation_seconds": 0.25736427702941,
+      "compiled_memory": {
+        "alias_size_in_bytes": 0,
+        "argument_size_in_bytes": 408944640,
+        "available": true,
+        "generated_code_size_in_bytes": 14112,
+        "host_alias_size_in_bytes": 0,
+        "host_argument_size_in_bytes": 0,
+        "host_output_size_in_bytes": 0,
+        "host_temp_size_in_bytes": 0,
+        "is_measured_allocator_peak": false,
+        "output_size_in_bytes": 134217728,
+        "source": "compiled.memory_analysis",
+        "temp_size_in_bytes": 1346371856
+      },
+      "max_ms": 4.8846539575606585,
+      "median_ms": 4.715960472822189,
+      "min_ms": 4.6722040278837085,
+      "mode": "tied",
+      "operation": "forward",
+      "outputs": [
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.2412109375,
+          "shape": [
+            32,
+            2048,
+            16,
+            64
+          ]
+        }
+      ],
+      "p10_ms": 4.688261810224503,
+      "p90_ms": 4.866972519084811,
+      "samples_ms": [
+        4.708179039880633,
+        4.709950997494161,
+        4.727457999251783,
+        4.703850951045752,
+        4.6883790055289865,
+        4.687207052484155,
+        4.691003006882966,
+        4.700066056102514,
+        4.6722040278837085,
+        4.7219699481502175,
+        4.7085590194910765,
+        4.709461005404592,
+        4.810673068277538,
+        4.8846539575606585,
+        4.817542969249189,
+        4.865796072408557,
+        4.843482980504632,
+        4.866568022407591,
+        4.8541390569880605,
+        4.87061298917979
+      ],
+      "timed_iterations": 20,
+      "warmup_iterations": 3
+    },
+    {
+      "batch": 32,
+      "compilation_seconds": 8.93025445600506,
+      "compiled_memory": {
+        "alias_size_in_bytes": 0,
+        "argument_size_in_bytes": 543162368,
+        "available": true,
+        "generated_code_size_in_bytes": 36976,
+        "host_alias_size_in_bytes": 0,
+        "host_argument_size_in_bytes": 0,
+        "host_output_size_in_bytes": 0,
+        "host_temp_size_in_bytes": 0,
+        "is_measured_allocator_peak": false,
+        "output_size_in_bytes": 543162428,
+        "source": "compiled.memory_analysis",
+        "temp_size_in_bytes": 3225421088
+      },
+      "max_ms": 16.08010393101722,
+      "median_ms": 15.777066524606198,
+      "min_ms": 15.439738985151052,
+      "mode": "tied",
+      "operation": "forward_and_backward",
+      "outputs": [
+        {
+          "dtype": "float32",
+          "finite": true,
+          "max_abs": 144.01138305664062,
+          "shape": []
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.2412109375,
+          "shape": [
+            32,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 2.03125,
+          "shape": [
+            32,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 3.53125,
+          "shape": [
+            32,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.359375,
+          "shape": [
+            32,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "float32",
+          "finite": true,
+          "max_abs": 5.558231353759766,
+          "shape": [
+            32,
+            2048,
+            16
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 2.734375,
+          "shape": [
+            32,
+            2048,
+            16
+          ]
+        }
+      ],
+      "p10_ms": 15.655594738200307,
+      "p90_ms": 15.95906688598916,
+      "samples_ms": [
+        15.439738985151052,
+        15.758028021082282,
+        16.08010393101722,
+        16.04888599831611,
+        15.949086984619498,
+        15.934934956021607,
+        15.917688957415521,
+        15.782854985445738,
+        15.849445946514606,
+        15.856466954573989,
+        15.820461907424033,
+        15.892470022663474,
+        15.698869014158845,
+        15.74869395699352,
+        15.771278063766658,
+        15.732810948975384,
+        15.685859019868076,
+        15.576634905301034,
+        15.68196399603039,
+        15.664368052966893
+      ],
+      "timed_iterations": 20,
+      "warmup_iterations": 3
+    },
+    {
+      "batch": 32,
+      "compilation_seconds": 0.262603156035766,
+      "compiled_memory": {
+        "alias_size_in_bytes": 0,
+        "argument_size_in_bytes": 411041792,
+        "available": true,
+        "generated_code_size_in_bytes": 14112,
+        "host_alias_size_in_bytes": 0,
+        "host_argument_size_in_bytes": 0,
+        "host_output_size_in_bytes": 0,
+        "host_temp_size_in_bytes": 0,
+        "is_measured_allocator_peak": false,
+        "output_size_in_bytes": 134217728,
+        "source": "compiled.memory_analysis",
+        "temp_size_in_bytes": 1350566160
+      },
+      "max_ms": 4.996423958800733,
+      "median_ms": 4.872215504292399,
+      "min_ms": 4.756260896101594,
+      "mode": "independent",
+      "operation": "forward",
+      "outputs": [
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.2392578125,
+          "shape": [
+            32,
+            2048,
+            16,
+            64
+          ]
+        }
+      ],
+      "p10_ms": 4.784804652445018,
+      "p90_ms": 4.982422571629286,
+      "samples_ms": [
+        4.799565998837352,
+        4.78606706019491,
+        4.788339021615684,
+        4.785716067999601,
+        4.776601912453771,
+        4.756260896101594,
+        4.884915077127516,
+        4.836771986447275,
+        4.82911104336381,
+        4.846957977861166,
+        4.886807058937848,
+        4.9002779414877295,
+        4.981389967724681,
+        4.909270908683538,
+        4.859515931457281,
+        4.910924006253481,
+        4.947419976815581,
+        4.996423958800733,
+        4.99171600677073,
+        4.949433030560613
+      ],
+      "timed_iterations": 20,
+      "warmup_iterations": 3
+    },
+    {
+      "batch": 32,
+      "compilation_seconds": 0.7064038630342111,
+      "compiled_memory": {
+        "alias_size_in_bytes": 0,
+        "argument_size_in_bytes": 545259520,
+        "available": true,
+        "generated_code_size_in_bytes": 36976,
+        "host_alias_size_in_bytes": 0,
+        "host_argument_size_in_bytes": 0,
+        "host_output_size_in_bytes": 0,
+        "host_temp_size_in_bytes": 0,
+        "is_measured_allocator_peak": false,
+        "output_size_in_bytes": 545259588,
+        "source": "compiled.memory_analysis",
+        "temp_size_in_bytes": 3225421096
+      },
+      "max_ms": 16.721972031518817,
+      "median_ms": 16.267556929960847,
+      "min_ms": 16.073603997938335,
+      "mode": "independent",
+      "operation": "forward_and_backward",
+      "outputs": [
+        {
+          "dtype": "float32",
+          "finite": true,
+          "max_abs": 119.978515625,
+          "shape": []
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.2392578125,
+          "shape": [
+            32,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 2.078125,
+          "shape": [
+            32,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 3.328125,
+          "shape": [
+            32,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.3359375,
+          "shape": [
+            32,
+            2048,
+            16,
+            64
+          ]
+        },
+        {
+          "dtype": "float32",
+          "finite": true,
+          "max_abs": 5.7469706535339355,
+          "shape": [
+            32,
+            2048,
+            16
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 2.6875,
+          "shape": [
+            32,
+            2048,
+            16
+          ]
+        },
+        {
+          "dtype": "bfloat16",
+          "finite": true,
+          "max_abs": 0.91015625,
+          "shape": [
+            32,
+            2048,
+            16
+          ]
+        }
+      ],
+      "p10_ms": 16.16024379618466,
+      "p90_ms": 16.54709775466472,
+      "samples_ms": [
+        16.073603997938335,
+        16.721972031518817,
+        16.671844990924,
+        16.499395947903395,
+        16.47230505477637,
+        16.53323695063591,
+        16.42898004502058,
+        16.42535498831421,
+        16.39058196451515,
+        16.273565939627588,
+        16.181507031433284,
+        16.201075981371105,
+        16.246163984760642,
+        16.209439025260508,
+        16.16105600260198,
+        16.161557054147124,
+        16.15293393842876,
+        16.247365972958505,
+        16.289760009385645,
+        16.261547920294106
+      ],
+      "timed_iterations": 20,
+      "warmup_iterations": 3
+    }
+  ],
+  "provenance": {
+    "device": {
+      "description": "cuda:0",
+      "id": 0,
+      "kind": "NVIDIA H100 PCIe",
+      "platform": "gpu",
+      "process_index": 0
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "216969",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": "--xla_gpu_enable_command_buffer="
+    },
+    "hostname": "mastiff.csail.mit.edu",
+    "package_versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda12-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cudnn-cu12": "9.22.0.52"
+    },
+    "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "source_commit": "f076553a0385d7a404d3605dcaa89a0fb34568a0",
+    "source_dirty": true,
+    "source_sha256": {
+      "scaffolds/transformer/attention/__init__.py": "0a21df8dcefe750872141602b4c96aff999c403997438957926250c916cb2913",
+      "scaffolds/transformer/attention/backends/__init__.py": "fc73b96b509d55a0f8a4df7d0cf1cc1ec2c3888d89e7173e4bc5e463a60307e1",
+      "scaffolds/transformer/attention/backends/chunked_gla_triton.py": "41414d6211c843e4baf595d6f4e10da6711ac3cc0a6cc742b33166315b38c554",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/__init__.py": "ef92364015dd7b51126b31aa2b8d02bb351c576851c1a975b003cb7f398b5317",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "32a0ae7ea27451992c9db03e6540f84ef7f80c8c5a3d4848d6cf6a72f21db118",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "dca24c3fb46f68f09a4a9347befaa4fbe4ba771e764ef493633ca2017e4c74d8",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "17d23066f78dfb4505d115d82fdd01da84355cdd05afa83190dfac2938dae272",
+      "scaffolds/transformer/attention/backends/fla_independent_gated_delta_rule_kernels.py": "06bedf24690a1180660df5eb927a04719a0ff341410461d9e8dc3e051d4ee264",
+      "scaffolds/transformer/attention/backends/fused_learned_polynomial.py": "39fb6f0f882ed4cb0227dddff7480398eddc2210b3efb9f810b698b13d52903e",
+      "scaffolds/transformer/attention/backends/fused_normalized_polynomial.py": "5ddf0f0590e7a84586fce84a6231ff9d870c61f634b56b02aa804602513bd770",
+      "scaffolds/transformer/attention/backends/fused_quadratic.py": "0f0fca19c8af2d7d616c9e96d788c86c58d8a226db69e4f5cb36b1c39b246fef",
+      "scaffolds/transformer/attention/backends/fused_query_polynomial.py": "06b65fa98394728709beae046848a57427dac9e7b3ccee48371a5d8db22be80c",
+      "scaffolds/transformer/attention/backends/fused_taylor.py": "b0eccdbff0701b02be950f64ab5db5a1dcaff0c6fca8b68c01fd3277ef2d157a",
+      "scaffolds/transformer/attention/backends/fused_unnormalized.py": "97f01d04d630e256fe1a1506574030045526a510b0108e31a9bdc783c2d2b99d",
+      "scaffolds/transformer/attention/backends/reference.py": "e0f29420fc94598e88cc91b7053fe9d098964a9838683595efd4f179bad5651c",
+      "scaffolds/transformer/attention/backends/selection.py": "8dda0619412187ccd93db74bb56e1c301fd0fd5c2e5b3a814bead3115b698219",
+      "scaffolds/transformer/attention/core.py": "29bcbf883574490926c658bf8ec55b4fe026849fb02d984cbceae1951a5ee52d",
+      "scaffolds/transformer/attention/gated_deltanet.py": "5f1c0a4c10090f6d0bb8fa2d4bb4c6904bd9e0801e23a7fa9984a8ff01e25744",
+      "scaffolds/transformer/attention/gla.py": "15fcedae8355786adcf0c386d8d597065bdd5e412011c6eb12bfa7d1592fa72a",
+      "scaffolds/transformer/attention/input_dependent.py": "1881557ee369dce1b61871cf406089c6a64b73af585ac1bc1dd56db131cb212b",
+      "scaffolds/transformer/attention/learned_polynomial.py": "ffcc1cc0eef829864f13bfb4413e14f97c3c4390e879492947d07d73199b88dd",
+      "scaffolds/transformer/attention/learned_quadratic.py": "2dd52c7b2f839836f8b7ea799ab382d8974957160902cc30d6c710a00b9b4f40",
+      "scaffolds/transformer/attention/multihead.py": "f2fdcb90d02a6a29fd705d332184454bc52dc11075a3ddcb74a67e06155cf9a4",
+      "scaffolds/transformer/attention/nonnegative_polynomial.py": "e9162adc1772395c4e677350d0a8938d12e523ea371cae3db037ec50d4e82df6",
+      "scaffolds/transformer/attention/output_scaling.py": "575d9ea927319a3d55039b621e7ff00028aca0d3b06085168edf9609f78bd708",
+      "scaffolds/transformer/attention/parameters.py": "6a86ed5a3bdd396ce94fc8b9426a55fe5e3a313b5312f06d5806fffdaa8280bc",
+      "scaffolds/transformer/attention/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269",
+      "scaffolds/transformer/attention/qk_norm.py": "919e84929d39664444267a2e5446c8e715b007129a7211168d33c6f7afac4f65",
+      "scaffolds/transformer/attention/rational_polynomial.py": "83907937199331c5f1815369543a83a1372e8154343ae072c48a12a9d0b823f9",
+      "scaffolds/transformer/attention/softmax.py": "47470b42e8e212c91a5044d448f4c36b4d30b9d0b581d3153e6fb73f91f4b04d",
+      "scaffolds/transformer/attention/taylor.py": "285147e3abb43c19087877d0e2e9b36ac2f1d86d9b667c0183a5a0536ab994aa",
+      "scaffolds/transformer/attention/unnormalized.py": "f028d0076443b1baa11820e20cc10fc121fcd8e380aa66f85bbb9aed2349f1ca",
+      "scaffolds/transformer/benchmarks/benchmark_attention.py": "e07681b2c193e6a2c5642d150bc9a8d39b3ffd87de9812ea281010b21f9ec400",
+      "scaffolds/transformer/uv.lock": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 PCIe"
+      }
+    ]
+  },
+  "runtime_environment": {
+    "TRANSFORMER_HOST_STAGING": "0",
+    "TRITON_F32_DEFAULT": null,
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "schema_version": 1,
+  "script_sha256": "23e1d81eb0d84ef67d20739561fef543a6bb7afd519bd2b36751ed7a0345224c",
+  "status": "complete"
+}

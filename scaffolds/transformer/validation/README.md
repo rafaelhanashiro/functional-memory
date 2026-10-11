@@ -522,8 +522,8 @@ H100 PCIe on Kennel (`mastiff`, job `214022`) on 2026-10-09:
 unit erase strength, and no decay. Forward comparisons passed, but relative
 key-gradient errors were 0.5846% in FP32 (0.5% tolerance) and 4.7263% in BF16
 (2% tolerance). The precision audit below identifies cancellation amplified by
-reduced-precision arithmetic in this fixture. The production kernel remains
-unqualified.
+reduced-precision arithmetic in this fixture. The repaired kernels passed the
+H100 qualification described under [FP32 chunk precision repair](#fp32-chunk-precision-repair).
 
 The [record](runs/gdn-independent-h100/tests.json) pins source, dependency lock,
 hardware, and JUnit evidence. The matching log is
@@ -573,12 +573,12 @@ falls from 0.559970% with TF32 products to 0.000143% with IEEE products.
 
 The BF16 stress fixture exposes a 9.738% erase-gradient error and a log-decay
 gradient with L2 norm 0.756763 instead of zero. Promoted FP32 plus IEEE reduces
-those to 0.000182% and `4.72e-5`, respectively. The latter residual still exceeds
-the existing `2e-5` absolute allowance for an exactly zero reference; this audit
-does not constitute a passing qualification. No assertion or production kernel
-was changed. Performance, a minimal precision repair, and H100/B300
-requalification remain unresolved. These synthetic findings establish no
-language-model training outcome.
+those to 0.000182% and `4.72e-5`, respectively. The latter residual exceeded the
+then-existing `2e-5` absolute allowance for an exactly zero reference. This
+diagnostic changed no assertion or production kernel and did not constitute a
+passing qualification. The production repair and H100 qualification are recorded
+below; the repaired kernels have not been qualified on B300. These synthetic
+findings establish no language-model training outcome.
 
 Reproduction from the committed worktree and its locked environment:
 
@@ -597,6 +597,80 @@ The GPU launcher runs fresh processes and separate compilation caches with
 inside upstream kernels are preserved. The log is
 `validation/logs/gdn-precision-215578.log` in the experiment worktree on Kennel;
 the compact records pin the source, scripts, dependency lock, device, and runtime.
+
+### FP32 chunk precision repair
+
+The repaired tied and independent kernels retain FP32 throughout the chunk
+algebra, including the triangular inverse, transformed values, chunk states and
+backward partials. The direct and WY key-gradient contributions combine before
+the final dtype conversion. FP32 products use TF32x3, including the triangular
+solve, through an explicit per-call bridge setting that participates in the
+compiled-kernel cache identity. Public outputs and input gradients retain their
+input dtypes. Saved Q/K/V remain in their original dtype and are promoted again
+for backward recomputation, limiting retained activation memory. The recurrence,
+gate parameterization and initialization are unchanged.
+
+On 2026-10-11, source `4b7573e31a1475ef01f7e6313ab36f14a587b0ee` passed
+**34 GPU tests with no failures or skips** on one NVIDIA H100 PCIe on Kennel
+(`mastiff`, job `216969`). The allocation completed successfully in 21m11s,
+including the kernel benchmark. The
+[qualification record](runs/gdn-independent-precision-h100/tests.json) pins the
+source, locked dependencies, runtime and JUnit evidence. Separately,
+[74 CPU tests](runs/gdn-precision-repair-cpu/tests.json) passed at kernel source
+`9b56ed2d66849e346c36f0228f49dbbebf7f3fba`, covering model/reference behavior,
+bridge precision isolation and caching, and acceptance.
+
+The [runtime snapshot](runs/gdn-independent-precision-h100/runtime.json) records
+the allowlisted environment observed in the allocation's live benchmark process;
+the preceding GPU tests used the same settings. The passing JUnit is published
+through the supported shared-test cache under its matching acceptance identity,
+allowing production acceptance to reuse this GPU-test stage while retaining its
+own full-recipe pilot and resume checks.
+
+The repeated-key regression now uses independent FP64 analytic outputs and all
+gradients, both coordinate-axis and dense exactly unit keys, and tied and
+independent gates. Nonzero quantities use tighter relative L2 tolerances:
+`5e-5` for FP32 and `5e-3` for BF16. For the exactly zero decay gradient, the test
+uses an FP32 roundoff budget scaled by dimensions and the uncancelled products:
+`gamma_(V + 2C) * ||s sum_v |c_t,v a_(t-1),v|||_2`, with
+`gamma_n = n*u/(1-n*u)`, FP32 unit roundoff `u`, and chunk length `C=64`.
+This is an explicit numerical error budget, not a proven bound for every
+operation in the composed kernel. It does not depend on the observed residual
+or BF16 epsilon. The other recurrence-comparison tolerances are unchanged, and
+all gradient channels are checked even when an earlier channel fails.
+
+The [benchmark record](runs/gdn-independent-precision-h100/benchmark.json)
+measures BF16 interfaces with `T=2048`, `H=16`, and `K=V=64`. Each case excludes
+compilation and three warmups, then times twenty calls with all returned tensors
+synchronized. Every output and gradient was finite.
+
+| Local batch | Gate mode | Forward median (ms) | Forward + backward median (ms) |
+| --- | --- | ---: | ---: |
+| 1 | Tied | 0.462 | 0.883 |
+| 1 | Independent | 0.453 | 0.912 |
+| 32 | Tied | 4.716 | 15.777 |
+| 32 | Independent | 4.872 | 16.268 |
+
+Batch 32 matches each GPU's attention shape in the canonical two-device recipe.
+The compiler estimates 3.004 GiB of temporary buffers for either batch-32
+forward-plus-backward call, excluding arguments and returned tensors. This is
+an attention-kernel estimate, not a measured allocator peak or full-model memory
+measurement. The timings compare the two repaired kernels and do not measure
+the repair's overhead against the previous implementation. Full-model memory
+fit, update throughput, validation and checkpoint resume remain each scientific
+allocation's acceptance checks. This repair is qualified on H100 PCIe only;
+B300 qualification remains outstanding.
+
+The retained log is `validation/logs/gdn-repair-216969.log` in the experiment
+worktree on Kennel. The [manifest](provenance/manifest.json) pins the completed
+log, CPU tests, H100 qualification and benchmark. Reproduction on H100:
+
+```bash
+sbatch --nice=0 --partition=debug --nodelist=mastiff --gres=gpu:h100:1 \
+  --output=scaffolds/transformer/validation/logs/gdn-repair-%j.log \
+  scaffolds/transformer/validation/qualify_gdn_independent.sbatch \
+  4b7573e31a1475ef01f7e6313ab36f14a587b0ee H100
+```
 
 ## Gated DeltaNet on ORCD H200, and ORCD H100
 

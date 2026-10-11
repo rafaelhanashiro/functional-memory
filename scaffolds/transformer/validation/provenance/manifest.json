@@ -2960,7 +2960,6 @@
   "gdn_independent_precision_audit": {
     "home_cluster": "kennel",
     "status": "diagnosed",
-    "production_qualified": false,
     "gpu_job_id": "215578",
     "gpu_source_commit": "99c415b200fa5e8767c4d438fccc7e1b288df684",
     "records": [
@@ -3000,6 +2999,62 @@
         "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/validation/logs/gdn-precision-cpu.log",
         "sha256": "f8d8abbe941b924c7832811640e275cdc8da6711eff9b7188b8eaa68cbc844f0",
         "size_bytes": 11002
+      }
+    ],
+    "scope": "Numerical diagnostic of the pre-repair kernels; current repair qualification is recorded separately."
+  },
+  "gdn_precision_repair": {
+    "home_cluster": "kennel",
+    "status": "qualified_h100_pcie",
+    "kernel_source_commit": "9b56ed2d66849e346c36f0228f49dbbebf7f3fba",
+    "launch_source_commit": "4b7573e31a1475ef01f7e6313ab36f14a587b0ee",
+    "gpu_job_id": "216969",
+    "gpu_type": "NVIDIA H100 PCIe",
+    "node": "mastiff",
+    "erase_modes": [
+      "tied",
+      "independent"
+    ],
+    "gpu_tests_passed": 34,
+    "cpu_tests_passed": 74,
+    "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+    "precision": {
+      "intermediate_dtype": "float32",
+      "dot_input_precision": "tf32x3",
+      "external_dtype": "preserved"
+    },
+    "limits": [
+      "The repaired kernels have not been qualified on B300.",
+      "Kernel benchmark memory is a compiler buffer estimate, not a measured allocator peak or full-model memory.",
+      "Each scientific allocation still requires full-recipe pilot and checkpoint-resume acceptance."
+    ],
+    "records": [
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-precision-repair-cpu/tests.json",
+        "sha256": "a05de617b22b7a7970f76bdce0ae222539f43d98de538df93345925ff0f2bc57",
+        "size_bytes": 1100
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/tests.json",
+        "sha256": "b8fa020f4070c967522fecd488a13d84f279554b44bddca9e5fbcb9e235644c6",
+        "size_bytes": 838
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/benchmark.json",
+        "sha256": "c9868ee3067ad8a7537969bbfef0c23b036bdef1294c54fb27e5e2c3ea0ffb00",
+        "size_bytes": 25652
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/runtime.json",
+        "sha256": "b3c9490d1de7678af7adfae4b0d43bab156713dfd919372b2eb54c7a51871857",
+        "size_bytes": 1004
+      }
+    ],
+    "logs": [
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/validation/logs/gdn-repair-216969.log",
+        "sha256": "5f0766f3db5194c48ffc76b010931a70952702905f9714ac3e174e59ea398014",
+        "size_bytes": 10719
       }
     ]
   }
