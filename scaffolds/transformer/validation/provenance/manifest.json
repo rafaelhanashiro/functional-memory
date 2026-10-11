@@ -2956,5 +2956,51 @@
         "data_note": "GPU correctness tests use seeded synthetic arrays and a temporary packed-token fixture; benchmarks use resident synthetic arrays/tokens. No external dataset is read, and no checkpoints are retained."
       }
     }
-  ]
+  ],
+  "gdn_independent_precision_audit": {
+    "home_cluster": "kennel",
+    "status": "diagnosed",
+    "production_qualified": false,
+    "gpu_job_id": "215578",
+    "gpu_source_commit": "99c415b200fa5e8767c4d438fccc7e1b288df684",
+    "records": [
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-h100/tests.json",
+        "sha256": "01772097e378b6f896e3d4f5e7c448c8ac963f7dd95a1a95b87f3e3af5dd3fc7",
+        "size_bytes": 840
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-cpu/diagnostics.json",
+        "sha256": "f8d8abbe941b924c7832811640e275cdc8da6711eff9b7188b8eaa68cbc844f0",
+        "size_bytes": 11002
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-precision-215578/tf32.json",
+        "sha256": "cda312f785ce43f262477cbd300b10975f00b697e2476344dbe3516ad7db3fb8",
+        "size_bytes": 11288
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-precision-215578/ieee.json",
+        "sha256": "6dc1514f18ad55ed7b99796a046a8ecb2d41f2ccc3e2fc577c95b99f1a31b263",
+        "size_bytes": 11420
+      }
+    ],
+    "logs": [
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/validation/logs/gdn-independent-214022.log",
+        "sha256": "5b7c2cba70c86806d664816e2742a03011fc0941b721819dbac6141d6a89f258",
+        "size_bytes": 9093
+      },
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/validation/logs/gdn-precision-215578.log",
+        "sha256": "e3fd96a639021814004c6cb5a05f32fc31aa70305677a0c12568db56e8b7a903",
+        "size_bytes": 23940
+      },
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/validation/logs/gdn-precision-cpu.log",
+        "sha256": "f8d8abbe941b924c7832811640e275cdc8da6711eff9b7188b8eaa68cbc844f0",
+        "size_bytes": 11002
+      }
+    ]
+  }
 }

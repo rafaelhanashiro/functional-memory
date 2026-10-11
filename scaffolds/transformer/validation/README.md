@@ -521,14 +521,82 @@ H100 PCIe on Kennel (`mastiff`, job `214022`) on 2026-10-09:
 26 tests passed and two failed. Both failures used identical unit keys,
 unit erase strength, and no decay. Forward comparisons passed, but relative
 key-gradient errors were 0.5846% in FP32 (0.5% tolerance) and 4.7263% in BF16
-(2% tolerance). These results do not distinguish a derivative defect from
-numerical error; the kernel remains unqualified.
+(2% tolerance). The precision audit below identifies cancellation amplified by
+reduced-precision arithmetic in this fixture. The production kernel remains
+unqualified.
 
 The [record](runs/gdn-independent-h100/tests.json) pins source, dependency lock,
 hardware, and JUnit evidence. The matching log is
 `validation/logs/gdn-independent-214022.log` in the experiment worktree on Kennel.
 The dependent production job was cancelled before allocation. No training
 result follows from this software check.
+
+### Repeated-key precision audit
+
+On 2026-10-10, diagnostic job `215578` completed on an available RTX A6000 on
+Kennel (`terrier`), source `99c415b200fa5e8767c4d438fccc7e1b288df684`.
+It reproduced the H100 BF16 key-gradient error exactly. The diagnostic used the
+same seed-44 fixture and compared every output/gradient channel against an
+independent analytic oracle; it did not stop at the first failed tolerance.
+
+For identical keys and queries `e1`, no decay, and full erasure, write
+`a_t = beta_t v_t`, `a_0 = 0`, output cotangent `c_t`, and `s = 1/sqrt(d_K)`.
+The exact output is `s a_t`; the key gradient is
+`s e1 [c_t^T(a_t - 2 a_{t-1})]`, erase gradient is
+`-s c_t^T a_{t-1}`, and log-decay gradient is zero. The
+[CPU oracle record](runs/gdn-independent-precision-cpu/diagnostics.json)
+confirms the scan and exact two-chunk equations in FP64. FP32 scan key-gradient
+relative error is `8.0e-8`. The norms of the two separately accumulated key-gradient
+terms sum to 6.68 times the final gradient norm, demonstrating cancellation.
+
+The [default TF32 record](runs/gdn-precision-215578/tf32.json) and
+[IEEE record](runs/gdn-precision-215578/ieee.json) distinguish product precision
+from intermediate storage. All percentages below are relative L2 key-gradient
+errors against the analytic oracle, with the same BF16-representable inputs:
+
+| Implementation / arithmetic | Key-gradient error |
+| --- | ---: |
+| Independent gates, native BF16 | 4.726266% |
+| Original tied GDN with equivalent pre-scaled values, native BF16 | 4.726266% |
+| Independent gates, native BF16, IEEE default for FP32 dots | 4.726266% |
+| Independent gates, promoted FP32, TF32 products | 0.494907% |
+| Independent gates, promoted FP32, IEEE products | 0.000137% |
+
+The original-kernel comparison uses the identity
+`independent(q,k,v,g,beta,erase) = tied(q,k,(beta/erase)v,g,erase)` for nonzero
+erase, here exactly one. Division is used only in this diagnostic, never in the
+production independent-gate implementation. Original and independent kernels
+produce identical output, query/key gradients, and log-decay gradients in this
+BF16 fixture. Thus the observed discrepancy is shared arithmetic, not a new
+effect of splitting the write and erase gates. FP32-input key-gradient error also
+falls from 0.559970% with TF32 products to 0.000143% with IEEE products.
+
+The BF16 stress fixture exposes a 9.738% erase-gradient error and a log-decay
+gradient with L2 norm 0.756763 instead of zero. Promoted FP32 plus IEEE reduces
+those to 0.000182% and `4.72e-5`, respectively. The latter residual still exceeds
+the existing `2e-5` absolute allowance for an exactly zero reference; this audit
+does not constitute a passing qualification. No assertion or production kernel
+was changed. Performance, a minimal precision repair, and H100/B300
+requalification remain unresolved. These synthetic findings establish no
+language-model training outcome.
+
+Reproduction from the committed worktree and its locked environment:
+
+```bash
+JAX_PLATFORMS=cpu OMP_NUM_THREADS=4 scaffolds/transformer/.venv/bin/python \
+  scaffolds/transformer/validation/gdn_precision_cpu.py
+sbatch --nice=0 --partition=debug --nodelist=terrier --gres=gpu:a6000:1 \
+  --job-name=gdn-precision \
+  --output=scaffolds/transformer/validation/logs/gdn-precision-%j.log \
+  scaffolds/transformer/validation/diagnose_gdn_precision.sbatch \
+  99c415b200fa5e8767c4d438fccc7e1b288df684
+```
+
+The GPU launcher runs fresh processes and separate compilation caches with
+`TRITON_F32_DEFAULT=tf32` and `ieee`. Explicit dot-product precision settings
+inside upstream kernels are preserved. The log is
+`validation/logs/gdn-precision-215578.log` in the experiment worktree on Kennel;
+the compact records pin the source, scripts, dependency lock, device, and runtime.
 
 ## Gated DeltaNet on ORCD H200, and ORCD H100
 
