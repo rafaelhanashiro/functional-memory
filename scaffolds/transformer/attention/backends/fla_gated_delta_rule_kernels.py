@@ -29,9 +29,10 @@ def _base(kernel):
     return kernel
 
 
-# FLA picks this from torch's view of the device at import; with the scaffold's CPU-only
-# torch it would fall back to IEEE. Use FLA's GPU choice (TF32, every sm >= 80).
-_fla_chunk_fwd.SOLVE_TRIL_DOT_PRECISION = tl.constexpr("tf32")
+# FLA picks this from torch's view of the device at import. The inverse must use
+# the same accurate FP32 products as the remaining chunk algebra: ordinary TF32
+# loses information before the inverse-adjoint cancellations.
+_fla_chunk_fwd.SOLVE_TRIL_DOT_PRECISION = tl.constexpr("tf32x3")
 
 FLA_KKT_SOLVE = _base(_fla_chunk_fwd.chunk_gated_delta_rule_fwd_kkt_solve_kernel)
 FLA_RECOMPUTE_W_U = _base(_fla_wy_fast.recompute_w_u_fwd_kernel)

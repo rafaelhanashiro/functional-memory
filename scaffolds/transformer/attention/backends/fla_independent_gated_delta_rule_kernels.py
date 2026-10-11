@@ -58,7 +58,7 @@ def recompute_w_u_independent(k, v, beta, erase, A, g, T, w, u, H: tl.constexpr,
         o_value = (bos * HV + i_h) * V + o_t[:, None] * (HV * V) + o_v[None, :]
         b_v = tl.load(v + o_value, mask=m_v, other=0.0)
         b_v_beta = (b_v * b_beta[:, None]).to(b_v.dtype)
-        b_u = tl.dot(b_A, b_v_beta, allow_tf32=False)
+        b_u = tl.dot(b_A, b_v_beta, input_precision="tf32x3")
         tl.store(u + o_value, b_u.to(u.dtype.element_ty), mask=m_v)
 
     b_g = exp2(tl.load(g + o_gate, mask=m_t, other=0.0))

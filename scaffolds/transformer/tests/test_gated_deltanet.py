@@ -101,6 +101,30 @@ def test_reference_recurrence_reduces_to_known_cases():
     np.testing.assert_allclose(stored, v, rtol=1e-5, atol=1e-5)
 
 
+@pytest.mark.parametrize("direction", ["axis", "dense"])
+@pytest.mark.parametrize("tied", [False, True], ids=["independent", "tied"])
+def test_repeated_key_analytic_gradients_match_the_reference(direction, tied):
+    from scaffolds.transformer.tests.test_gated_deltanet_kernel import (
+        _repeated_key_fixture,
+        _repeated_key_oracle,
+    )
+
+    args, cotangent = _repeated_key_fixture(jnp.float32, direction, tied=tied)
+    expected, _ = _repeated_key_oracle(args, cotangent)
+    if tied:
+        args = args[:5]
+        expected["dbeta"] += expected.pop("derase")
+
+    def function(q, k, v, g, beta, erase=None):
+        return gated_delta_rule_reference(q, k, v, g, beta, 64 ** -0.5, erase=erase)
+
+    with jax.default_matmul_precision("highest"):
+        output = function(*args)
+        gradients = jax.grad(lambda *a: jnp.sum(function(*a) * cotangent), argnums=range(len(args)))(*args)
+    for (name, reference), actual in zip(expected.items(), (output, *gradients), strict=True):
+        np.testing.assert_allclose(actual, reference, rtol=3e-5, atol=2e-6, err_msg=name)
+
+
 def test_short_convolution_is_causal_and_starts_at_pytorch_default_bound():
     conv = ShortConvolution(5, 4, rngs=nnx.Rngs(0))
     assert np.abs(np.asarray(conv.weight[...])).max() <= 0.5

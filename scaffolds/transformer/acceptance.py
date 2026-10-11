@@ -103,6 +103,8 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
         tests = ["gla", "gla_bridge", "gla_integration"] if cpu else (["gla_kernel"] if fused else [])
     elif model.get("attention_mechanism", "dot_product") == "gated_deltanet":
         tests = ["gated_deltanet"] if cpu else (["gated_deltanet_kernel"] if fused else [])
+        if cpu and fused:
+            tests.append("triton_bridge_precision")
     else:
         degree = model.get("attention_degree")
         normalized = model.get("attention_normalization", True)

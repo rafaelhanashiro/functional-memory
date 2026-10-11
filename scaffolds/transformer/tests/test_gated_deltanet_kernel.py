@@ -155,19 +155,97 @@ def test_independent_zero_or_tiny_erase_preserves_nonzero_writes(erase_value, dt
         assert error <= tolerance * float(jnp.linalg.norm(expected)) + 2e-5
 
 
-@pytest.mark.parametrize("dtype,tolerance", [(jnp.float32, 5e-3), (jnp.bfloat16, 2e-2)])
-def test_independent_repeated_key_erases_old_values_without_erasing_write_gate(dtype, tolerance):
-    _require_gpu()
+def _repeated_key_fixture(dtype, direction="axis", *, tied=False):
     args, cotangent = _operands(64, dtype, batch=1, heads=2, length=128, seed=44)
     _, _, v, g, beta = args
-    q = k = jnp.zeros_like(args[0]).at[..., 0].set(1)
-    g, erase = jnp.zeros_like(g), jnp.ones_like(beta)
-    output, _ = _check_independent_output_and_gradients((q, k, v, g, beta, erase), cotangent, tolerance)
-    # Unit key and erase=1 overwrite the association at every token. The write
-    # strength is independently beta, not forced to the same value as erase.
-    expected = beta.astype(jnp.float32)[..., None] * v.astype(jnp.float32) * 64 ** -0.5
-    error = float(jnp.linalg.norm(output.astype(jnp.float32) - expected))
-    assert error <= tolerance * float(jnp.linalg.norm(expected)) + 2e-5
+    if direction == "axis":
+        key = jnp.zeros_like(args[0]).at[..., 0].set(1)
+    else:
+        assert direction == "dense"
+        # Each coordinate and the unit norm are exact even in BF16. This exercises
+        # value/key reductions beyond the coordinate-axis special case.
+        key = jnp.broadcast_to(jnp.where(jnp.arange(64) % 2, -0.125, 0.125), args[0].shape).astype(dtype)
+    if tied:
+        beta = jnp.ones_like(beta)
+    return (key, key, v, jnp.zeros_like(g), beta, jnp.ones_like(beta)), cotangent
+
+
+def _repeated_key_oracle(args, cotangent):
+    """FP64 closed form for constant unit q=k, zero decay and complete erasure.
+
+    The raw q and k arguments are differentiated independently; no derivative
+    through key normalization is included. With a_t=beta_t*v_t, the previous
+    association a_{t-1} disappears from the output but contributes to dk/derase.
+    """
+    q, k, v, g, beta, erase = (np.asarray(a, np.float64) for a in args)
+    c = np.asarray(cotangent, np.float64)
+    np.testing.assert_array_equal(q, k)
+    np.testing.assert_array_equal(k, np.broadcast_to(k[:, :1], k.shape))
+    np.testing.assert_array_equal(np.sum(k * k, axis=-1), np.ones_like(g))
+    np.testing.assert_array_equal(g, np.zeros_like(g))
+    np.testing.assert_array_equal(erase, np.ones_like(erase))
+    scale = k.shape[-1] ** -0.5
+    association = beta[..., None] * v
+    previous = np.concatenate((np.zeros_like(association[:, :1]), association[:, :-1]), axis=1)
+    dot = lambda a: np.sum(c * a, axis=-1)
+    expected = {
+        "output": scale * association,
+        "dq": scale * q * dot(association)[..., None],
+        "dk": scale * k * dot(association - 2 * previous)[..., None],
+        "dv": scale * beta[..., None] * c,
+        "dg": np.zeros_like(g),
+        "dbeta": scale * dot(v),
+        "derase": -scale * dot(previous),
+    }
+    # dg is identically zero, so relative error is undefined. Budget FP32
+    # accumulation roundoff against the uncancelled state/cotangent products.
+    # Use the standard gamma_n summation factor with one value reduction and two
+    # chunk-length reductions as a numerical error budget, not a proven bound
+    # for every operation in the composed kernel. It depends on dimensions/input
+    # scale, not the observed residual or BF16 epsilon: accumulations must be FP32.
+    from scaffolds.transformer.attention.backends.fla_gated_delta_rule import CHUNK_SIZE
+
+    unit_roundoff = np.finfo(np.float32).eps / 2
+    reductions = v.shape[-1] + 2 * CHUNK_SIZE
+    gamma = reductions * unit_roundoff / (1 - reductions * unit_roundoff)
+    cancellation_scale = scale * np.sum(np.abs(c * previous), axis=-1)
+    zero_decay_bound = gamma * np.linalg.norm(cancellation_scale)
+    return expected, zero_decay_bound
+
+
+@pytest.mark.parametrize("dtype,tolerance", [(jnp.float32, 5e-5), (jnp.bfloat16, 5e-3)])
+@pytest.mark.parametrize("direction", ["axis", "dense"])
+@pytest.mark.parametrize("tied", [False, True], ids=["independent", "tied"])
+def test_repeated_key_erases_old_values_with_analytic_gradients(dtype, tolerance, direction, tied):
+    _require_gpu()
+    from scaffolds.transformer.attention.backends.fla_gated_delta_rule import (
+        fla_gated_delta_rule,
+        fla_independent_gated_delta_rule,
+    )
+
+    args, cotangent = _repeated_key_fixture(dtype, direction, tied=tied)
+    expected, zero_decay_bound = _repeated_key_oracle(args, cotangent)
+    if tied:
+        function, args = fla_gated_delta_rule, args[:5]
+        # The original gate controls both writing and erasure.
+        expected["dbeta"] += expected.pop("derase")
+    else:
+        function = fla_independent_gated_delta_rule
+    scale = args[0].shape[-1] ** -0.5
+    output = function(*args, scale)
+    gradients = jax.grad(lambda *a: jnp.sum(function(*a, scale).astype(jnp.float32)
+                                           * cotangent.astype(jnp.float32)), argnums=range(len(args)))(*args)
+    assert output.dtype == args[2].dtype
+    assert tuple(gradient.dtype for gradient in gradients) == tuple(arg.dtype for arg in args)
+    failures = []
+    for (name, reference), actual in zip(expected.items(), (output, *gradients), strict=True):
+        actual = np.asarray(actual, np.float64)
+        error = np.linalg.norm(actual - reference)
+        bound = zero_decay_bound if name == "dg" else tolerance * np.linalg.norm(reference)
+        if not np.all(np.isfinite(actual)) or error > bound:
+            failures.append((name, float(error), float(bound)))
+    # Report every failed quantity; a dk failure must not hide derase/dg errors.
+    assert not failures, failures
 
 
 @pytest.mark.parametrize("dtype,tolerance", [(jnp.float32, 5e-3), (jnp.bfloat16, 2e-2)])

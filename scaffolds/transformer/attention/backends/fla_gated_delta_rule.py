@@ -14,6 +14,12 @@ per-token natural-log decay ``g`` [B, T, H] (<= 0) and ``beta`` [B, T, H]. Outpu
 ``o_t = S_t^T (scale q_t)`` with ``S_t = a_t S_{t-1} + b_t k_t (v_t - a_t S_{t-1}^T k_t)^T``.
 The independent-gate entry point keeps the write gate beta and accepts a separate
 erase gate: ``S_t = a_t (I - erase_t k_t k_t^T) S_{t-1} + beta_t k_t v_t^T``.
+
+The chunk algebra runs in FP32 with TF32x3 products. BF16 intermediate rounding
+before the backward pass's cancellations corrupts repeated-key gradients; FP32
+storage with ordinary TF32 products is also insufficient. Public outputs and
+input cotangents retain their input dtypes. Saved q/k/v retain their original
+storage dtype and are promoted again when recomputing the backward intermediates.
 """
 
 from functools import lru_cache, partial
@@ -105,7 +111,7 @@ def _call(kernel, *args, out, grid, name, zeroed=(), **meta):
     from scaffolds.transformer.attention.backends.ejkernel_bridge import triton_call
 
     return triton_call(*args, kernel=kernel, out_shape=out, grid=grid, name=f"fla::gdn::{name}",
-                       zeroed_outputs=zeroed, **meta)
+                       zeroed_outputs=zeroed, default_dot_input_precision="tf32x3", **meta)
 
 
 def _shape(shape, dtype):
@@ -150,6 +156,9 @@ def _forward_pieces(kernels, k, v, g, beta, erase=None):
 
 
 def _gated_delta_rule_fwd(q, k, v, g, beta, scale, erase=None):
+    original_q, original_k, original_v, original_beta, original_erase = q, k, v, beta, erase
+    q, k, v, beta = (a.astype(jnp.float32) for a in (q, k, v, beta))
+    erase = None if erase is None else erase.astype(jnp.float32)
     kernels = _kernels()
     batch, length, heads, key_dim = q.shape
     value_dim = v.shape[-1]
@@ -160,13 +169,18 @@ def _gated_delta_rule_fwd(q, k, v, g, beta, scale, erase=None):
     o = _call(kernels[0]["fwd_o"], q, k, v_new, h, g_chunk, float(scale), length, out=_shape(v.shape, v.dtype),
               grid=lambda m: (-(-value_dim // m["BV"]), length // CHUNK_SIZE, batch * heads), name="fwd_o",
               H=heads, HV=heads, K=key_dim, V=value_dim, BT=CHUNK_SIZE)
-    residuals = (q, k, v, g_chunk, beta, a)
-    return o, residuals if erase is None else (*residuals, erase)
+    residuals = (original_q, original_k, original_v, g_chunk, original_beta, a)
+    return o.astype(original_v.dtype), residuals if erase is None else (*residuals, original_erase)
 
 
 def _gated_delta_rule_bwd(scale, residuals, do):
     q, k, v, g_chunk, beta, a = residuals[:6]
     erase = residuals[6] if len(residuals) == 7 else None
+    input_dtypes = (q.dtype, k.dtype, v.dtype, jnp.float32, beta.dtype)
+    if erase is not None:
+        input_dtypes = (*input_dtypes, erase.dtype)
+    q, k, v, beta = (a.astype(jnp.float32) for a in (q, k, v, beta))
+    erase = None if erase is None else erase.astype(jnp.float32)
     kernels = _kernels()
     tuned, tile, wy_tile = kernels
     batch, length, heads, key_dim = q.shape
@@ -206,7 +220,8 @@ def _gated_delta_rule_bwd(scale, residuals, do):
     dk = (dk.astype(jnp.float32) + dk2.astype(jnp.float32)).astype(k.dtype)
     dg = _chunk_cumsum(dg.sum(0) + dg2, reverse=True)
     gradients = (dq, dk, dv, dg, db)
-    return gradients if erase is None else (*gradients, de)
+    gradients = gradients if erase is None else (*gradients, de)
+    return tuple(gradient.astype(dtype) for gradient, dtype in zip(gradients, input_dtypes, strict=True))
 
 
 @partial(jax.custom_vjp, nondiff_argnums=(5,))

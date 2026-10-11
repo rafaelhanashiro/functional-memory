@@ -5,13 +5,13 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --time=00:30:00
+#SBATCH --time=01:00:00
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?}"
 LAUNCH_COMMIT="${1:?Expected committed source}"
 GPU_TYPE="${2:?Expected H100 or B300}"
 PYTHON="$PWD/scaffolds/transformer/.venv/bin/python"
-DIRECTORY="scaffolds/transformer/validation/runs/gdn-independent-${GPU_TYPE,,}"
+DIRECTORY="scaffolds/transformer/validation/runs/gdn-independent-precision-${GPU_TYPE,,}"
 python3 scaffolds/launch/frozen.py check --launch-commit "$LAUNCH_COMMIT" --experiment attention_scaling --scaffold transformer
 mkdir -p "$DIRECTORY" scaffolds/transformer/validation/logs .cache/gdn-independent-qualification/tmp
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda XLA_PYTHON_CLIENT_PREALLOCATE=false
@@ -25,6 +25,8 @@ CUDA_HOME="$("$PYTHON" -c 'import importlib.util; print(next(iter(importlib.util
 export CUDA_HOME
 export TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
 JUNIT="scaffolds/transformer/validation/logs/gdn-independent-${GPU_TYPE,,}-$SLURM_JOB_ID.xml"
+# Fail early on the analytic cancellation cases before compiling the width grid.
+"$PYTHON" -m pytest -q -m gpu scaffolds/transformer/tests/test_gated_deltanet_kernel.py -k repeated_key
 result=0
 "$PYTHON" -m pytest -q -m gpu scaffolds/transformer/tests/test_gated_deltanet_kernel.py \
   --junitxml="$JUNIT" || result=$?
@@ -58,3 +60,6 @@ Path(directory, "tests.json").write_text(json.dumps(value, indent=2, sort_keys=T
 print(json.dumps(value), flush=True)
 raise SystemExit(status)
 PY
+export GDN_BENCHMARK_SOURCE="$LAUNCH_COMMIT"
+"$PYTHON" -m scaffolds.transformer.validation.benchmark_gdn_precision \
+  --output "$DIRECTORY/benchmark.json"
