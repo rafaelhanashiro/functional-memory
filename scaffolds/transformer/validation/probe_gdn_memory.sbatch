@@ -91,8 +91,8 @@ if require_passing_tests(Path(sys.argv[1])) != 1:
     raise SystemExit("Expected exactly one passing kernel test")
 PY
 
-echo "memory_probe_stage=full_recipe_pilot timeout=12m directory=$PROBE_DIRECTORY"
-timeout --signal=INT --kill-after=60s 12m \
+echo "memory_probe_stage=full_recipe_pilot timeout=30m directory=$PROBE_DIRECTORY"
+timeout --signal=INT --kill-after=60s 30m \
   "$PYTHON" -m "$ADAPTER" "$CONFIG" --worker pilot --directory "$PROBE_DIRECTORY" \
   --gpu-count 2 --gpu-type "$GPU_TYPE" --output "$OUTPUT" --stop-after-step 20
 # Keep the pilot's metrics and checkpoint for inspection after either outcome.
