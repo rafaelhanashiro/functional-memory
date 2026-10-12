@@ -2,7 +2,8 @@
 # Diagnose GDN allocator settings with one sensitive kernel test and a full-recipe
 # two-GPU pilot. This is not full acceptance and never launches production training.
 #
-#   sbatch ... probe_gdn_memory.sbatch experiments/attention_scaling/runs/<run>/config.yaml <source> [H100]
+#   sbatch ... probe_gdn_memory.sbatch experiments/attention_scaling/runs/<run>/config.yaml <source> [H100] [all|pilot]
+# The pilot-only mode skips the kernel test and is diagnostic-only.
 #SBATCH --partition=debug
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -14,6 +15,11 @@ set -euo pipefail
 CONFIG="${1:?Expected experiments/attention_scaling/runs/<run>/config.yaml}"
 LAUNCH_COMMIT="${2:?Expected committed source}"
 GPU_TYPE="${3:-H100}"
+PROBE_STAGE="${4:-all}"
+case "$PROBE_STAGE" in
+  all|pilot) ;;
+  *) echo "Expected probe stage all or pilot, got: $PROBE_STAGE" >&2; exit 1 ;;
+esac
 EXECUTION_ROOT="${SLURM_SUBMIT_DIR:?Submit from the experiment worktree root}"
 ADAPTER=experiments.attention_scaling.acceptance
 cd "$EXECUTION_ROOT"
@@ -56,7 +62,7 @@ JUNIT="scaffolds/transformer/validation/logs/gdn-memory-$SLURM_JOB_ID.xml"
 OUTPUT="$VALIDATION_DIRECTORY/memory-probe-$SLURM_JOB_ID.json"
 mkdir -p "$PROBE_DIRECTORY" "$VALIDATION_DIRECTORY" scaffolds/transformer/validation/logs \
   "$JAX_COMPILATION_CACHE_DIR" "$XDG_CACHE_HOME"
-"$PYTHON" - "$LAUNCH_COMMIT" "${BASH_SOURCE[0]}" <<'PY'
+"$PYTHON" - "$LAUNCH_COMMIT" "${BASH_SOURCE[0]}" "$PROBE_STAGE" <<'PY'
 import hashlib
 import json
 import os
@@ -67,6 +73,7 @@ from scaffolds.transformer.acceptance import runtime_identity
 
 print(json.dumps({
     "diagnostic": "gdn_memory_probe", "launch_source_commit": sys.argv[1],
+    "probe_stage": sys.argv[3], "diagnostic_only": True,
     "checkout_head": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
     "executed_script_sha256": hashlib.sha256(Path(sys.argv[2]).read_bytes()).hexdigest(),
     "slurm_job_id": os.environ["SLURM_JOB_ID"], "node": os.environ.get("SLURMD_NODENAME"),
@@ -75,14 +82,15 @@ print(json.dumps({
 }, sort_keys=True), flush=True)
 PY
 
-GDN_PROBE_FIRST_GPU="${CUDA_VISIBLE_DEVICES:-0}"
-GDN_PROBE_FIRST_GPU="${GDN_PROBE_FIRST_GPU%%,*}"
-echo "memory_probe_stage=kernel_test timeout=8m first_visible_gpu=$GDN_PROBE_FIRST_GPU"
-CUDA_VISIBLE_DEVICES="$GDN_PROBE_FIRST_GPU" timeout --signal=INT --kill-after=60s 8m \
-  "$PYTHON" -m pytest -c scaffolds/transformer/pyproject.toml -q -s -x --import-mode=importlib \
-  'scaffolds/transformer/tests/test_gated_deltanet_kernel.py::test_fused_output_and_all_gradients_match_the_recurrence[float32-0.005-64]' \
-  --junitxml="$JUNIT"
-"$PYTHON" - "$JUNIT" <<'PY'
+if [[ "$PROBE_STAGE" == all ]]; then
+  GDN_PROBE_FIRST_GPU="${CUDA_VISIBLE_DEVICES:-0}"
+  GDN_PROBE_FIRST_GPU="${GDN_PROBE_FIRST_GPU%%,*}"
+  echo "memory_probe_stage=kernel_test timeout=8m first_visible_gpu=$GDN_PROBE_FIRST_GPU"
+  CUDA_VISIBLE_DEVICES="$GDN_PROBE_FIRST_GPU" timeout --signal=INT --kill-after=60s 8m \
+    "$PYTHON" -m pytest -c scaffolds/transformer/pyproject.toml -q -s -x --import-mode=importlib \
+    'scaffolds/transformer/tests/test_gated_deltanet_kernel.py::test_fused_output_and_all_gradients_match_the_recurrence[float32-0.005-64]' \
+    --junitxml="$JUNIT"
+  "$PYTHON" - "$JUNIT" <<'PY'
 from pathlib import Path
 import sys
 from scaffolds.transformer.acceptance import require_passing_tests
@@ -90,6 +98,9 @@ from scaffolds.transformer.acceptance import require_passing_tests
 if require_passing_tests(Path(sys.argv[1])) != 1:
     raise SystemExit("Expected exactly one passing kernel test")
 PY
+else
+  echo "memory_probe_stage=kernel_test skipped=true diagnostic_only=true reason=pilot_only_mode"
+fi
 
 echo "memory_probe_stage=full_recipe_pilot timeout=30m directory=$PROBE_DIRECTORY"
 timeout --signal=INT --kill-after=60s 30m \
