@@ -706,7 +706,20 @@ The [runtime failure record](runs/gdn-independent-precision-h100/sxm-default-oom
 retains the matching log. This is a runtime acceptance failure with no production
 training measurements. It does not qualify the default allocator on this hardware;
 the completed PCIe pilot above applies to its own hardware/runtime combination.
-A 90% memory-pool limit with allocation on demand is undergoing separate qualification.
+The [90% memory-pool check](runs/gdn-independent-precision-h100/sxm-growth90-oom.json)
+also passed the tests but failed its first full-model kernel launch with CUDA
+out-of-memory. Neither two-GPU SXM runtime is qualified for this recipe.
+
+The [four-GPU qualification](runs/gdn-independent-precision-h100/sxm-four-gpu.json)
+passed with allocation on demand and the default memory fraction. The global batch
+(256), global microbatch (64), and four accumulation steps are unchanged; each GPU
+holds 16 sequences instead of 32. Job `217971` reused matching 139 CPU/distributed
+and 34 GPU checks, completed 20 full-recipe updates with finite diagnostics,
+validated, saved checkpoint 20, and resumed exactly to update 21 in a fresh process.
+The state, next-batch, and RNG fingerprints matched the checkpoint audit.
+Steady updates took 0.61–0.63 seconds; the conservative full-run projection is
+4.24 hours, within the 22-hour budget. Qualification completed successfully in
+8m39s. Twenty updates do not establish long-run stability or scientific performance.
 
 ## Gated DeltaNet on ORCD H200, and ORCD H100
 

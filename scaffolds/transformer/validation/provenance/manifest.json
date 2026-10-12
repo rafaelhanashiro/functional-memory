@@ -3122,5 +3122,25 @@
       "sha256": "b082e5feb3d1fba2d0224dde82d66822caa74fdefd49044ee2adf72c8aa410b2",
       "size_bytes": 2747
     }
+  },
+  "gdn_sxm_growth90_runtime": {
+    "home_cluster": "kennel",
+    "status": "failed_pilot_kernel_launch",
+    "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+    "record": {
+      "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-growth90-oom.json",
+      "sha256": "ffc8470ab4a5b4ab4ec0a69672637294f0e6786794b8ec6c067448ab8e758e58",
+      "size_bytes": 3427
+    }
+  },
+  "gdn_sxm_four_gpu": {
+    "home_cluster": "kennel",
+    "status": "passed",
+    "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+    "record": {
+      "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-four-gpu.json",
+      "sha256": "954c2b842575379184dbdd9031c323f4a3d0fa531ad08e8a38163e6e89302d65",
+      "size_bytes": 8361
+    }
   }
 }

@@ -1,0 +1,212 @@
+{
+  "acceptance_identity": "d1cb12e0c207f468b012387a18998a598f0f2d209adf181b584c289f0c66c158",
+  "acceptance_records": [
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-4/identity.json",
+      "sha256": "cb5d697169efdb20597f3dcad185c89b6829dea311f41c86270e861f967797d2",
+      "size_bytes": 4487
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-4/hardware.json",
+      "sha256": "973eaf7425fb1f33bd1e45aef7bb21e2c974785cd6b313bff070e311abb32b92",
+      "size_bytes": 370
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-4/cpu-tests.json",
+      "sha256": "be450211c83bd126608545d91513cf5179a5fe2e5fe30bb7a034a0a13aa5a760",
+      "size_bytes": 781
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-4/cpu-distributed-tests.json",
+      "sha256": "8209a2d389a3fb2ea60cde5a7a7825de5748340e6843bdfd8d3feca4ac083add",
+      "size_bytes": 779
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-4/gpu-tests.json",
+      "sha256": "cd68ab4b7697140fcd81d1b70fa2291a2f714ee0ad4ac601ffc3b7495a4066e6",
+      "size_bytes": 780
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-4/initialization.json",
+      "sha256": "03d0de704e8dfd30b43ba0883eaa746d9010cc286a0cd4aefa9088c31c3acaa1",
+      "size_bytes": 427
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-4/pilot.json",
+      "sha256": "43b33c5d386cc90fb28e80a5381a29a2b9759c6d7ced644ccd1cf8cbd2b2b7ea",
+      "size_bytes": 37519
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-4/resume.json",
+      "sha256": "f83fbb53e1e9e2bcf9803350c44cc34a3148e2b5771faa60df561f1c31bb91cf",
+      "size_bytes": 2606
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-4/success.json",
+      "sha256": "da5cae33c1f0ae51bada70451739c3a80bb4354e9e62bfa8800583982f11f53e",
+      "size_bytes": 2335
+    }
+  ],
+  "batch_layout": {
+    "global_batch_size": 256,
+    "global_micro_batch_size": 64,
+    "gradient_accumulation_steps": 4,
+    "local_micro_batch_size": 16
+  },
+  "config_sha256": "36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "exact_resume": {
+    "completed_step": 21,
+    "data_start_sequence": 5120,
+    "first_update": {
+      "batch_sha256": "b61f8b1402afd06332b4a01ac3655d57aa18cd2a3de93aa151f99be056c5a240",
+      "rng_sha256": "c952d7c8272d985c15ea28dd1ce800ea3107946123e8fe8ee13bd6f6b93bd6ea",
+      "step": 21
+    },
+    "first_update_matches_pilot_next_update": true,
+    "pilot_checkpoint_state_sha256": "a18a1c206111144668853e6d1c813f59508ab43ad4e4291f54a3e9c922d1c510",
+    "restored_step": 20,
+    "resumed_checkpoint_state_sha256": "ff1d53442c8e0779ed9c79fba482614a11e9f63a80b98686dcb6a51c6a3106f9",
+    "resumed_final_state_sha256": "ff1d53442c8e0779ed9c79fba482614a11e9f63a80b98686dcb6a51c6a3106f9",
+    "resumed_start_state_sha256": "a18a1c206111144668853e6d1c813f59508ab43ad4e4291f54a3e9c922d1c510",
+    "status": "passed"
+  },
+  "format": "gdn-runtime-qualification",
+  "hardware": {
+    "attention_backend": "fused",
+    "device_kinds": [
+      "NVIDIA H100 80GB HBM3",
+      "NVIDIA H100 80GB HBM3",
+      "NVIDIA H100 80GB HBM3",
+      "NVIDIA H100 80GB HBM3"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "home_cluster": "kennel",
+  "initialization": {
+    "parameter_count": 211007424,
+    "parameter_sha256": "e8e945919dd9280d28bfb13f3dac752b87fc3e7a5e15784b2cfb14a157810cf7"
+  },
+  "limitations": [
+    "Twenty updates and one resumed update qualify startup and checkpoint behavior, not long-run training stability or scientific performance.",
+    "Two Triton autotune candidates emitted launch warnings in both pilot processes; both processes selected usable kernels and completed successfully.",
+    "Temporary pilot metrics and checkpoints were removed after successful acceptance; the pinned pilot and resume records retain their summaries and audit hashes."
+  ],
+  "pilot": {
+    "all_recorded_telemetry_numeric_values_finite": true,
+    "attention_diagnostic_invalid_counts": {
+      "invalid_erase_count": 0,
+      "invalid_gate_count": 0,
+      "invalid_output_count": 0,
+      "invalid_projection_count": 0,
+      "invalid_read_count": 0
+    },
+    "attention_diagnostics_valid": true,
+    "gradient_clipped_fraction": 1.0,
+    "gradient_norm_max": 1.9388307332992554,
+    "gradient_norm_mean": 1.9327889323234557,
+    "gradient_norm_observations": 20,
+    "gradient_spike_count": 0,
+    "steps_completed": 20,
+    "telemetry_updates": 20,
+    "training_tokens": 10485760,
+    "validation_nll": 10.518749952316284,
+    "validation_nll_finite": true,
+    "validation_perplexity": 37002.840254535695
+  },
+  "qualification_helper": {
+    "path": "scaffolds/transformer/validation/qualify_gdn_runtime.sbatch",
+    "sha256": "ae6330ebdcaf825c7764932bd35b8dbb89d9855ab14ea6bc7fb06b6619aafb73",
+    "size_bytes": 4535,
+    "source_commit": "8ff82337e685e3104b66831a80c34485d6e2294f"
+  },
+  "recorded_utc": "2026-10-12T19:02:40.364325+00:00",
+  "retained_log": {
+    "path": "scaffolds/transformer/validation/logs/gdn-runtime-217971.log",
+    "sha256": "1eb7d6365934f76b15ad2e0f680ef4a3749f36a300a257c0af2515dfffa6213b",
+    "size_bytes": 5785
+  },
+  "run_id": "rf7341031e3d5",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "NCCL_P2P_DISABLE": null,
+    "TRANSFORMER_HOST_STAGING": "0",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "runtime_projection": {
+    "maximum_projected_hours": 22,
+    "production_allocation_hours": 24,
+    "projected_hours": 4.235552048709667,
+    "scope": "Conservative synchronized pilot estimate; production timing remains to be measured.",
+    "within_budget": true
+  },
+  "schema_version": 1,
+  "slurm": {
+    "elapsed_seconds": 519,
+    "exit_code": "0:0",
+    "finished_utc": "2026-10-12T19:01:10+00:00",
+    "gpu_count": 4,
+    "job_id": "217971",
+    "nice": 0,
+    "node": "dogo",
+    "partition": "standard",
+    "started_utc": "2026-10-12T18:52:31+00:00",
+    "state": "COMPLETED"
+  },
+  "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+  "status": "passed",
+  "synchronized_timing": {
+    "checkpoint_seconds": [
+      24.910762811021414
+    ],
+    "evaluation_seconds": [
+      15.01010093302466
+    ],
+    "first_update_seconds": 175.00585897400742,
+    "pilot_runtime_seconds": 249.83518691000063,
+    "steady_update_count": 7,
+    "steady_update_seconds_max": 0.625208048033528,
+    "steady_update_seconds_median": 0.6226777129922993,
+    "steady_update_seconds_min": 0.6107816339936107
+  },
+  "tests": {
+    "cpu-distributed-tests": {
+      "junit_sha256": "50fd94b08852bb5e0e7fa4edc46cdfba320373e62bb5b2dc7b638596a45edd3d",
+      "origin_slurm_job_id": "217000",
+      "reused": true,
+      "status": "passed",
+      "test_identity": "e5eae4c1ddd7d207754b7dae1f1f9329d0ee7df65fc4466eb11d5c14149f5780",
+      "tests_passed": 9
+    },
+    "cpu-tests": {
+      "junit_sha256": "5a76994d7589f2b4fe18ab7bd59b0150c342322a90f0989feae6fced195ae376",
+      "origin_slurm_job_id": "217000",
+      "reused": true,
+      "status": "passed",
+      "test_identity": "b537657956af692e5d4dbb1b1a7fb6386c1b54ce890db2187bf8883b3d7ce6f9",
+      "tests_passed": 130
+    },
+    "gpu-tests": {
+      "junit_sha256": "272c4b695ac5f0a6f0a4e0dea6b3199eed8554415ed16bb3fd8bd31163073866",
+      "origin_slurm_job_id": "217000",
+      "reused": true,
+      "status": "passed",
+      "test_identity": "51194c01303a9f0a3092c1a1ecedcf47aa35cd59f3e2b8cef49ac8d639bc386c",
+      "tests_passed": 34
+    }
+  }
+}

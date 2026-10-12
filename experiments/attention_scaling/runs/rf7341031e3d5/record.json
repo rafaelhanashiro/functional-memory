@@ -1,7 +1,88 @@
 {
+  "acceptance": {
+    "sha256": "da5cae33c1f0ae51bada70451739c3a80bb4354e9e62bfa8800583982f11f53e",
+    "summary": {
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-10-12T19:01:09.240364+00:00",
+      "hardware": {
+        "attention_backend": "fused",
+        "device_kinds": [
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3"
+        ],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "d1cb12e0c207f468b012387a18998a598f0f2d209adf181b584c289f0c66c158",
+      "reused_tests": {
+        "cpu-distributed-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-2",
+          "completed_utc": "2026-10-12T00:35:20.049441+00:00",
+          "junit_sha256": "50fd94b08852bb5e0e7fa4edc46cdfba320373e62bb5b2dc7b638596a45edd3d",
+          "slurm_job_id": "217000",
+          "test_identity": "e5eae4c1ddd7d207754b7dae1f1f9329d0ee7df65fc4466eb11d5c14149f5780"
+        },
+        "cpu-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-2",
+          "completed_utc": "2026-10-12T00:34:59.218671+00:00",
+          "junit_sha256": "5a76994d7589f2b4fe18ab7bd59b0150c342322a90f0989feae6fced195ae376",
+          "slurm_job_id": "217000",
+          "test_identity": "b537657956af692e5d4dbb1b1a7fb6386c1b54ce890db2187bf8883b3d7ce6f9"
+        },
+        "gpu-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-2",
+          "completed_utc": "2026-10-12T00:52:14.426804+00:00",
+          "junit_sha256": "272c4b695ac5f0a6f0a4e0dea6b3199eed8554415ed16bb3fd8bd31163073866",
+          "slurm_job_id": "217000",
+          "test_identity": "51194c01303a9f0a3092c1a1ecedcf47aa35cd59f3e2b8cef49ac8d639bc386c"
+        }
+      },
+      "slurm_job_id": "217971",
+      "slurm_restart_count": "0",
+      "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+      "status": "passed"
+    }
+  },
   "artifacts": [
     {
       "path": "experiments/attention_scaling/runs/rf7341031e3d5/training.log"
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/config.json",
+      "sha256": "0fa9e96051f919b750d3a2c703112f67f930067458c1ae3d496c601e46da8eeb",
+      "size_bytes": 3240
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/wandb_run.json",
+      "sha256": "37b816cb263043250e692d2f8af3c9092b36778437d16b9f741d263b287dd282",
+      "size_bytes": 210
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/metadata.json"
     }
   ],
   "attempts": [
@@ -62,11 +143,212 @@
       "slurm_state": "CANCELLED",
       "started_utc": "2026-10-12T00:30:32.967807+00:00",
       "termination_reason": "Acceptance pilot GPU0 allocator out of memory on the first update; GPU1 remained in a peer rendezvous."
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-4",
+      "allocation": "JobId=217974 JobName=rf7341031e3d5 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20067 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-12T14:52:37 EligibleTime=2026-10-12T15:01:10 AccrueTime=Unknown StartTime=2026-10-12T15:01:10 EndTime=2026-10-13T15:01:10 Deadline=N/A PreemptEligibleTime=2026-10-12T17:01:10 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-12T15:01:10 Scheduler=Main Partition=standard AllocNode:Sid=kennel:986052 ReqNodeList=dogo ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/training.log Power= KillOInInvalidDependent=Yes MemPerTres=gpu:32000 TresPerNode=gres/gpu:h100:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
+      "config_sha256": "36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+      "slurm_job_id": "217974",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-12T19:01:15.202636+00:00"
     }
   ],
   "config": {
     "path": "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
     "sha256": "36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252"
+  },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "error": null,
+  "execution": {
+    "attention_backend": "fused",
+    "raw_config": {
+      "path": "config.json",
+      "sha256": "0fa9e96051f919b750d3a2c703112f67f930067458c1ae3d496c601e46da8eeb"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": null
+    },
+    "resolved_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "fused",
+        "attention_coefficient_activation": "identity",
+        "attention_coefficient_conditioning": "static",
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_sharing": "global",
+        "attention_coefficients": "fixed",
+        "attention_degree": null,
+        "attention_denominator_constant": "fixed",
+        "attention_denominator_degree": null,
+        "attention_denominator_parameterization": "direct",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_mechanism": "gated_deltanet",
+        "attention_normalization": true,
+        "attention_output_scaling": "none",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "independent",
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 1024,
+        "initialization": "gated_deltanet_reference",
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 64,
+        "qk_norm": false,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_head",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.0,
+        "coefficient_penalty_denominator": true,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 400,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "attention_scaling",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "200m-dk064-gdn-independent-erase-warmup400-seed0",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5"
+      }
+    },
+    "resolved_config_sha256": "deffc021cff72ca27fc9ee907cf157e98aa485a2a297ca788539e114dcb535dd",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 1,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 2,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 3,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 2,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 3,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "217974",
+        "timestamp_utc": "2026-10-12T19:01:46.321874+00:00"
+      }
+    ]
   },
   "frozen_execution_sha256": "3bbb21a92ffd77784e0721faff2c940db8c79ba35871d5e71f51addc0f2510de",
   "home_cluster": "kennel",
@@ -74,8 +356,17 @@
   "log": {
     "path": "experiments/attention_scaling/runs/rf7341031e3d5/training.log"
   },
-  "log_path": "experiments/attention_scaling/runs/rf7341031e3d5/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/training.log",
   "name": "200m-dk064-gdn-independent-erase-warmup400-seed0",
+  "progress_observation": {
+    "completed_step": 120,
+    "gradient_norm_pre_clip": 0.34699,
+    "observed_utc": "2026-10-12T19:05:45.200227+00:00",
+    "printed_activation_and_gradient_diagnostics_finite": true,
+    "slurm_job_id": "217974",
+    "source": "training.log",
+    "training_nll": 7.130742
+  },
   "qualification": {
     "completed_utc": "2026-10-11T23:04:52.794250+00:00",
     "record": {
@@ -151,63 +442,101 @@
     "validation_nll": 10.518869400024414
   },
   "run_id": "rf7341031e3d5",
-  "runtime_qualification": {
-    "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-2",
-    "allocation_hours": 1,
-    "command": [
-      "sbatch",
-      "--parsable",
-      "--nice=0",
-      "--partition=debug",
-      "--nodelist=dogo",
-      "--gres=gpu:h100:2",
-      "--time=01:00:00",
-      "--cpus-per-task=32",
-      "--mem=256G",
-      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90",
-      "--job-name=gdn-runtime-growth90",
-      "--output=scaffolds/transformer/validation/logs/gdn-runtime-%j.log",
-      "scaffolds/transformer/validation/qualify_gdn_runtime.sbatch",
-      "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
-      "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
-      "H100",
-      "24"
-    ],
-    "gpu_count": 2,
-    "gpu_type": "H100",
-    "kind": "full_acceptance",
-    "log_path": "scaffolds/transformer/validation/logs/gdn-runtime-217802.log",
-    "maximum_projected_training_hours": 22,
-    "nice": 0,
-    "node": "dogo",
-    "production_allocation_hours": 24,
-    "runtime_environment": {
-      "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
-      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
-    },
-    "slurm_job_id": "217802",
-    "slurm_partition": "debug",
-    "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
-    "started_utc": "2026-10-12T18:23:00+00:00",
-    "status": "running",
-    "submitted_utc": "2026-10-12T18:23:00+00:00"
+  "runtime_diagnostics": {
+    "sxm_two_gpu_growth90": {
+      "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-growth90-oom.json",
+      "sha256": "ffc8470ab4a5b4ab4ec0a69672637294f0e6786794b8ec6c067448ab8e758e58"
+    }
   },
-  "seed": 0,
-  "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
-  "status": "acceptance",
-  "submission": {
+  "runtime_qualification": {
+    "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-4",
+    "allocation_hours": 1,
+    "batch_layout": {
+      "global_batch_size": 256,
+      "global_micro_batch_size": 64,
+      "gradient_accumulation_steps": 4,
+      "local_micro_batch_size": 16
+    },
     "command": [
+      "env",
+      "-u",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION",
       "sbatch",
       "--parsable",
       "--nice=0",
       "--partition=standard",
       "--nodelist=dogo",
-      "--gres=gpu:h100:2",
+      "--gres=gpu:h100:4",
+      "--time=01:00:00",
+      "--cpus-per-task=32",
+      "--mem=256G",
+      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false",
+      "--job-name=gdn-runtime-four-gpu",
+      "--output=scaffolds/transformer/validation/logs/gdn-runtime-%j.log",
+      "scaffolds/transformer/validation/qualify_gdn_runtime.sbatch",
+      "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
+      "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+      "H100",
+      "24",
+      "4"
+    ],
+    "completed_utc": "2026-10-12T19:01:10+00:00",
+    "diagnostic_source_commit": "8ff82337e685e3104b66831a80c34485d6e2294f",
+    "exact_resume_passed": true,
+    "executed_script_sha256": "ae6330ebdcaf825c7764932bd35b8dbb89d9855ab14ea6bc7fb06b6619aafb73",
+    "gpu_count": 4,
+    "gpu_type": "H100",
+    "kind": "full_acceptance",
+    "log_path": "scaffolds/transformer/validation/logs/gdn-runtime-217971.log",
+    "maximum_projected_training_hours": 22,
+    "nice": 0,
+    "node": "dogo",
+    "pilot_steps_completed": 20,
+    "production_allocation_hours": 24,
+    "projected_hours": 4.235552048709667,
+    "record": {
+      "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-four-gpu.json",
+      "sha256": "954c2b842575379184dbdd9031c323f4a3d0fa531ad08e8a38163e6e89302d65"
+    },
+    "runtime_environment": {
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "slurm_exit_code": "0:0",
+    "slurm_job_id": "217971",
+    "slurm_partition": "standard",
+    "slurm_state": "COMPLETED",
+    "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+    "started_utc": "2026-10-12T18:52:31+00:00",
+    "status": "passed",
+    "submitted_utc": "2026-10-12T18:52:29+00:00"
+  },
+  "seed": 0,
+  "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+  "status": "running",
+  "step": 120,
+  "submission": {
+    "batch_layout": {
+      "global_batch_size": 256,
+      "global_micro_batch_size": 64,
+      "gradient_accumulation_steps": 4,
+      "local_micro_batch_size": 16
+    },
+    "command": [
+      "env",
+      "-u",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION",
+      "sbatch",
+      "--parsable",
+      "--nice=0",
+      "--partition=standard",
+      "--nodelist=dogo",
+      "--gres=gpu:h100:4",
       "--time=1-00:00:00",
       "--cpus-per-task=32",
       "--mem=256G",
-      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90",
-      "--dependency=afterok:217802",
+      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false",
+      "--dependency=afterok:217971",
       "--kill-on-invalid-dep=yes",
       "--job-name=rf7341031e3d5",
       "--output=experiments/attention_scaling/runs/rf7341031e3d5/training.log",
@@ -215,27 +544,31 @@
       "experiments.attention_scaling.acceptance",
       "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
       "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
-      "2",
+      "4",
       "H100"
     ],
     "nice": 0,
-    "pending_reason": "Dependency",
-    "production_acceptance_required": "Full acceptance must pass on dogo H100 SXM GPUs with the configured allocator settings, including the 20-update full-recipe pilot and exact checkpoint resumption.",
-    "qualification_dependency": "afterok:217802",
-    "qualification_dependency_satisfied": false,
-    "requested_gpu_count": 2,
+    "pending_reason": null,
+    "production_acceptance_required": "Full acceptance must pass on four dogo H100 SXM GPUs with the configured allocator settings, including the 20-update full-recipe pilot and exact checkpoint resumption.",
+    "qualification_dependency": "afterok:217971",
+    "qualification_dependency_satisfied": true,
+    "requested_gpu_count": 4,
     "requested_gpu_type": "H100",
     "requested_node": "dogo",
     "runtime_environment": {
-      "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
       "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
     },
-    "slurm_job_id": "217803",
+    "slurm_job_id": "217974",
     "slurm_partition": "standard",
-    "slurm_state": "PENDING",
-    "submitted_utc": "2026-10-12T18:23:07+00:00",
+    "slurm_state": "RUNNING",
+    "started_utc": "2026-10-12T19:01:10+00:00",
+    "submitted_utc": "2026-10-12T18:52:37+00:00",
     "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase"
   },
-  "training_started": false,
-  "updated_utc": "2026-10-12T18:24:16.688030+00:00"
+  "training_started": true,
+  "training_tokens": 62914560,
+  "updated_utc": "2026-10-12T19:05:45.200227+00:00",
+  "wandb_run_id": "3113f4ce156c46c78fcc7c87efb60273",
+  "wandb_url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/3113f4ce156c46c78fcc7c87efb60273"
 }

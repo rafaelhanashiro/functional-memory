@@ -246,20 +246,22 @@ match tied GDN at initialization. It preserves the canonical GDN block and refer
 initialization, 400 warmup updates, standard training telemetry, and the 19,074-update
 FineWeb recipe. The preselected control is `rf640fc13f3a8`; comparison findings and
 current status belong in the [exploratory result](../../results/exploratory/gdn_independent_erase/README.md).
-Its home cluster is Kennel. Runtime qualification `217802` is running on `debug`
-at nice 0 with two H100 SXM GPUs on `dogo`. Production job `217803` is queued on
-`standard`, also at nice 0, and depends on successful qualification. Both use
-`XLA_PYTHON_CLIENT_PREALLOCATE=false` and `XLA_PYTHON_CLIENT_MEM_FRACTION=0.90`.
-Acceptance includes the complete test suite, a 20-update full-recipe pilot,
-validation, checkpoint saving, and exact fresh-process resumption. The pilot must
-project at most 22 hours of training within the 24-hour production allocation.
-The default memory-fraction runtime failed its SXM acceptance pilot before the
-first update with a GPU allocation error; this is a runtime failure, not a
-numerical training result. No production training measurements or W&B run exist yet.
-Full-recipe pilot `216999` passed 20 updates, finite validation, and checkpoint
-verification on two H100 PCIe GPUs on `mastiff`, with preallocation disabled and
-the memory fraction unset. That pilot does not qualify the SXM hardware or the
-new memory-fraction setting.
+Its home cluster is Kennel. Production job `217974` is training on `standard`
+at nice 0 with four H100 SXM GPUs on `dogo`. At 15:05 EDT on 2026-10-12 it had
+completed update 120 with finite printed activation and gradient diagnostics.
+[W&B run](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/3113f4ce156c46c78fcc7c87efb60273):
+`200m-dk064-gdn-independent-erase-warmup400-seed0`.
+Production and passed runtime qualification `217971` use
+`XLA_PYTHON_CLIENT_PREALLOCATE=false`, with the memory fraction unset. The frozen
+global batch remains 256, global microbatch 64, and gradient accumulation four;
+four devices divide each microbatch into 16 sequences per GPU.
+Acceptance passed the complete test suite, a 20-update full-recipe pilot,
+finite validation, checkpoint saving, and exact fresh-process resumption from
+update 20 to 21. The pilot projects 4.24 hours of training, within the 22-hour
+budget for the 24-hour production allocation; production timing remains to be
+measured. The [qualification record](../../scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-four-gpu.json)
+pins the evidence. The canonical 400-update warmup and gated output RMSNorm remain active.
+No production validation measurement is available yet.
 Source `d3d93bc6ccaa8a76fc4b29124c80988ae1593405`
 retains FP32 chunk intermediates and TF32x3 products for tied and independent gates.
 The independently optimized erase and write projections have separate device
@@ -269,25 +271,25 @@ contains the accuracy and runtime checks.
 Qualification and production commands, from `worktrees/gdn-independent-erase`:
 
 ```bash
-sbatch --parsable --nice=0 --partition=debug --nodelist=dogo --gres=gpu:h100:2 \
+env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable --nice=0 --partition=standard --nodelist=dogo --gres=gpu:h100:4 \
   --time=01:00:00 --cpus-per-task=32 --mem=256G \
-  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90 \
-  --job-name=gdn-runtime-growth90 \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false \
+  --job-name=gdn-runtime-four-gpu \
   --output=scaffolds/transformer/validation/logs/gdn-runtime-%j.log \
   scaffolds/transformer/validation/qualify_gdn_runtime.sbatch \
   experiments/attention_scaling/runs/rf7341031e3d5/config.yaml \
-  d3d93bc6ccaa8a76fc4b29124c80988ae1593405 H100 24
+  d3d93bc6ccaa8a76fc4b29124c80988ae1593405 H100 24 4
 
-sbatch --parsable --nice=0 --partition=standard --nodelist=dogo --gres=gpu:h100:2 \
+env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable --nice=0 --partition=standard --nodelist=dogo --gres=gpu:h100:4 \
   --time=1-00:00:00 --cpus-per-task=32 --mem=256G \
-  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90 \
-  --dependency=afterok:217802 --kill-on-invalid-dep=yes \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false \
+  --dependency=afterok:217971 --kill-on-invalid-dep=yes \
   --job-name=rf7341031e3d5 \
   --output=experiments/attention_scaling/runs/rf7341031e3d5/training.log \
   scaffolds/transformer/launchers/kennel.sbatch \
   experiments.attention_scaling.acceptance \
   experiments/attention_scaling/runs/rf7341031e3d5/config.yaml \
-  d3d93bc6ccaa8a76fc4b29124c80988ae1593405 2 H100
+  d3d93bc6ccaa8a76fc4b29124c80988ae1593405 4 H100
 ```
 
 Production verifies acceptance with the same source, recipe, hardware, and runtime

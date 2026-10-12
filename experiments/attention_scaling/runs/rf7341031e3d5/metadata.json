@@ -1,0 +1,135 @@
+{
+  "attention_backend": "fused",
+  "attention_backend_requested": "fused",
+  "attention_formula": "S_t=a_t S_{t-1}+k_t (b_t v_t-lambda_t a_t S_{t-1}^T k_t)^T; lambda_t=sigmoid(W_lambda x); o_t=S_t^T q_t/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); b_t=sigmoid(W_b x)",
+  "attention_implementation": "fla_chunk_independent_gated_delta_rule_triton",
+  "attention_kernel": "gated_deltanet",
+  "attention_mechanism": "gated_deltanet",
+  "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+  "attention_score_scale": "1/sqrt(d_k)",
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "diagnostic_backend": "fused",
+  "diagnostic_sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "error": null,
+  "execution_runtime": {
+    "batch_transfer": "host_to_shard",
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      }
+    ],
+    "environment": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct"
+  },
+  "gdn_chunk_size": 64,
+  "gdn_conv_size": 4,
+  "gdn_erase_initialization": "copy_write_projection",
+  "gdn_erase_mode": "independent",
+  "gdn_initial_state": "zero_each_sequence",
+  "gdn_kernel_source": "flash-linear-attention chunk_gated_delta_rule with local independent-gate WY kernels",
+  "gdn_state_elements_per_layer": 65536,
+  "next_train_sequence": 0,
+  "parameter_count": 211007424,
+  "qk_head_dim": 64,
+  "rng_state": {
+    "completed_updates": 0,
+    "seed": 0
+  },
+  "runtime_history": [
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 2,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 3,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "217974",
+      "timestamp_utc": "2026-10-12T19:01:46.321874+00:00"
+    }
+  ],
+  "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "seed": 0,
+  "slurm_job_id": "217974",
+  "slurm_restart_count": 0,
+  "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+  "status": "running",
+  "step": 0,
+  "target_steps": 19074,
+  "target_tokens": 10000269312,
+  "training_tokens": 0,
+  "updated_utc": "2026-10-12T19:01:46.592415+00:00",
+  "value_head_dim": 64
+}

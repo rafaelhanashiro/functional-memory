@@ -1,0 +1,90 @@
+{
+  "acceptance_identity": "ec332600be44867b0e42a7270200e819ce08c5d6ec460d51887e53d1ad2f2c4f",
+  "batch_layout": {
+    "global_batch_size": 256,
+    "global_micro_batch_size": 64,
+    "gradient_accumulation_steps": 4,
+    "local_micro_batch_size": 32
+  },
+  "config_sha256": "36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "dependent_production": {
+    "elapsed_seconds": 0,
+    "finished_utc": "2026-10-12T18:48:53+00:00",
+    "job_id": "217803",
+    "reason": "Failed afterok dependency on qualification 217802.",
+    "started": false,
+    "state": "CANCELLED"
+  },
+  "failure": {
+    "autotune_launch_warnings": [
+      "BV: 64, num_warps: 2, num_ctas: 1, num_stages: 4, maxnreg: None",
+      "BV: 64, num_warps: 4, num_ctas: 1, num_stages: 4, maxnreg: None"
+    ],
+    "exception": "jax.errors.JaxRuntimeError",
+    "message": "INTERNAL: CustomCall failed: jaxlib/gpu/triton_kernels.cc:447: operation gpuLaunchKernel failed: CUDA_ERROR_OUT_OF_MEMORY",
+    "reported_utc": "2026-10-12T18:48:52.755007+00:00",
+    "stage": "pilot_first_update"
+  },
+  "format": "gdn-runtime-acceptance-failure",
+  "hardware": {
+    "attention_backend": "fused",
+    "device_kinds": [
+      "NVIDIA H100 80GB HBM3",
+      "NVIDIA H100 80GB HBM3"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1"
+    ],
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "home_cluster": "kennel",
+  "interpretation": "The 0.90 memory fraction passed CPU and GPU kernel tests, but the full-model pilot failed a CUDA kernel launch before completing its first update. This runtime is not qualified for two H100 SXM GPUs. The log does not identify the allocation responsible for the kernel-launch failure. No numerical training outcome exists.",
+  "passed_acceptance": {
+    "cpu_tests": 130,
+    "distributed_cpu_tests": 9,
+    "gpu_tests": 34,
+    "initialization_parameter_count": 211007424,
+    "initialization_parameter_sha256": "e8e945919dd9280d28bfb13f3dac752b87fc3e7a5e15784b2cfb14a157810cf7"
+  },
+  "pilot_steps_completed": 0,
+  "recorded_utc": "2026-10-12T18:53:56.737815+00:00",
+  "resume_attempted": false,
+  "retained_log": {
+    "path": "scaffolds/transformer/validation/logs/gdn-runtime-217802.log",
+    "sha256": "e02081439e0b728af3a805da3183d475e69b1aec2746d7f891c53b298789fac9",
+    "size_bytes": 7502
+  },
+  "run_id": "rf7341031e3d5",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "NCCL_P2P_DISABLE": null,
+    "TRANSFORMER_HOST_STAGING": "0",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "schema_version": 1,
+  "slurm": {
+    "elapsed_seconds": 1553,
+    "exit_code": "1:0",
+    "finished_utc": "2026-10-12T18:48:53+00:00",
+    "gpu_count": 2,
+    "job_id": "217802",
+    "nice": 0,
+    "node": "dogo",
+    "partition": "debug",
+    "started_utc": "2026-10-12T18:23:00+00:00",
+    "state": "FAILED"
+  },
+  "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+  "status": "failed_pilot_kernel_launch",
+  "training_started": false
+}
