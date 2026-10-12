@@ -1,9 +1,7 @@
 {
   "artifacts": [
     {
-      "path": "experiments/attention_scaling/runs/rf7341031e3d5/training.log",
-      "sha256": "6cec45cd2185f3857a1bcc818ff6c5ee7e369cd3854068b22be68b613b57d68c",
-      "size_bytes": 1757
+      "path": "experiments/attention_scaling/runs/rf7341031e3d5/training.log"
     }
   ],
   "attempts": [
@@ -22,19 +20,41 @@
       "slurm_partition": "standard",
       "slurm_restart_count": "0",
       "started_utc": "2026-10-11T23:08:16.406947+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/.runtime/acceptance/H100-2",
+      "allocation": "JobId=217000 JobName=rf7341031e3d5 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20067 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:07 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-11T20:22:47 EligibleTime=2026-10-11T20:27:05 AccrueTime=2026-10-11T20:27:05 StartTime=2026-10-11T20:30:25 EndTime=2026-10-12T20:30:25 Deadline=N/A PreemptEligibleTime=2026-10-11T22:30:25 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-11T20:30:25 Scheduler=Main Partition=standard AllocNode:Sid=kennel:2417620 ReqNodeList=dogo ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=2 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=2 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/training.log Power= KillOInInvalidDependent=Yes MemPerTres=gpu:32000 TresPerNode=gres/gpu:h100:2 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
+      "config_sha256": "36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252",
+      "device_kinds": [
+        "NVIDIA H100 80GB HBM3",
+        "NVIDIA H100 80GB HBM3"
+      ],
+      "gpu_count": 2,
+      "gpu_type": "H100",
+      "gpu_uuids": [
+        "GPU-cc856901-15a0-f509-d652-315564ea70ef",
+        "GPU-355f34a2-be0c-ba44-022b-1a056f643b80"
+      ],
+      "home_cluster": "kennel",
+      "launch_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+      "node": "dogo",
+      "slurm_job_id": "217000",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "slurm_started_utc": "2026-10-12T00:30:25+00:00",
+      "started_utc": "2026-10-12T00:30:32.967807+00:00"
     }
   ],
   "config": {
     "path": "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
     "sha256": "36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252"
   },
-  "frozen_execution_sha256": "958de9a869b55759a15d0561b2aae61a81e023fc7dc87bf0cafd0aa007f69403",
+  "frozen_execution_sha256": "3bbb21a92ffd77784e0721faff2c940db8c79ba35871d5e71f51addc0f2510de",
   "home_cluster": "kennel",
   "label": "200m-dk064-gdn-independent-erase-warmup400-seed0",
   "log": {
-    "path": "experiments/attention_scaling/runs/rf7341031e3d5/training.log",
-    "sha256": "6cec45cd2185f3857a1bcc818ff6c5ee7e369cd3854068b22be68b613b57d68c",
-    "size_bytes": 1757
+    "path": "experiments/attention_scaling/runs/rf7341031e3d5/training.log"
   },
   "log_path": "experiments/attention_scaling/runs/rf7341031e3d5/training.log",
   "name": "200m-dk064-gdn-independent-erase-warmup400-seed0",
@@ -52,6 +72,8 @@
   "record_schema_version": 1,
   "run_id": "rf7341031e3d5",
   "runtime_qualification": {
+    "attention_diagnostics_valid": true,
+    "checkpoint_state_matches_final_state": true,
     "command": [
       "sbatch",
       "--parsable",
@@ -62,45 +84,58 @@
       "--time=00:40:00",
       "--cpus-per-task=32",
       "--mem=256G",
-      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90",
-      "--job-name=gdn-memory-probe",
+      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false",
+      "--job-name=gdn-alias-repair-pilot",
       "--output=scaffolds/transformer/validation/logs/gdn-memory-%j.log",
       "scaffolds/transformer/validation/probe_gdn_memory.sbatch",
       "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
-      "d144ba0c8205ea0971675e81196fca354a374fec",
-      "H100"
+      "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+      "H100",
+      "pilot"
     ],
+    "completed_utc": "2026-10-12T00:27:05+00:00",
+    "diagnostic_only": true,
+    "diagnostic_source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+    "executed_script_sha256": "2600885527bbde0661bd2f54a5d20de2909c6095604409a39d89506335dcc90c",
+    "final_step": 20,
     "gpu_count": 2,
     "gpu_type": "H100",
     "kernel_test": {
-      "duration_seconds": 122.48,
-      "junit": {
-        "path": "scaffolds/transformer/validation/logs/gdn-memory-216990.xml",
-        "sha256": "fe3b62ae80028f8b29945b6ff1738e9f7b92adfb86d3db93ef45b903fa838719"
-      },
-      "node_id": "scaffolds/transformer/tests/test_gated_deltanet_kernel.py::test_fused_output_and_all_gradients_match_the_recurrence[float32-0.005-64]",
-      "status": "passed",
-      "tests_passed": 1
+      "reason": "pilot_only_mode",
+      "status": "skipped"
     },
     "kind": "memory_probe",
-    "log_path": "scaffolds/transformer/validation/logs/gdn-memory-216990.log",
+    "log_path": "scaffolds/transformer/validation/logs/gdn-memory-216999.log",
     "node": "mastiff",
-    "pilot_output_path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/memory-probe-216990.json",
-    "probe_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/experiments/attention_scaling/runs/rf7341031e3d5/.runtime/memory-probe/H100-2-216990",
+    "pilot_output_path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/memory-probe-216999.json",
+    "pilot_timeout_seconds": 1800,
+    "probe_stage": "pilot",
+    "record": {
+      "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/memory-probe-216999.json",
+      "sha256": "fc21bec6ca311b651aa6281b88f901a612e18bf8ede64790c0093f319b25eef2",
+      "size_bytes": 2447
+    },
     "runtime_environment": {
-      "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+      "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
       "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
     },
-    "slurm_job_id": "216990",
+    "slurm_job_id": "216999",
     "slurm_partition": "debug",
-    "source_commit": "d144ba0c8205ea0971675e81196fca354a374fec",
-    "stage": "full_recipe_pilot",
-    "status": "running",
-    "submitted_utc": "2026-10-11T23:48:02+00:00"
+    "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+    "stage": "pilot",
+    "status": "passed",
+    "submitted_utc": "2026-10-12T00:22:40+00:00",
+    "temporary_outputs_retained": false,
+    "validation_nll": 10.518869400024414
   },
   "seed": 0,
-  "source_commit": "d144ba0c8205ea0971675e81196fca354a374fec",
-  "status": "queued",
+  "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+  "status": "acceptance",
   "submission": {
     "command": [
       "sbatch",
@@ -112,32 +147,34 @@
       "--time=1-00:00:00",
       "--cpus-per-task=32",
       "--mem=256G",
-      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90",
-      "--dependency=afterok:216990",
+      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false",
+      "--dependency=afterok:216999",
       "--kill-on-invalid-dep=yes",
       "--job-name=rf7341031e3d5",
       "--output=experiments/attention_scaling/runs/rf7341031e3d5/training.log",
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.attention_scaling.acceptance",
       "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
-      "d144ba0c8205ea0971675e81196fca354a374fec",
+      "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
       "2",
       "H100"
     ],
     "nice": 0,
-    "qualification_dependency": "afterok:216990",
+    "production_acceptance_required": "Fresh acceptance on the allocated dogo H100 SXM GPUs before training; the mastiff H100 PCIe pilot does not qualify this hardware.",
+    "qualification_dependency": "afterok:216999",
+    "qualification_dependency_satisfied": true,
     "requested_gpu_count": 2,
     "requested_gpu_type": "H100",
-    "requested_node": "mastiff",
+    "requested_node": "dogo",
     "runtime_environment": {
-      "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.90",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
       "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
     },
-    "slurm_job_id": "216991",
+    "slurm_job_id": "217000",
     "slurm_partition": "standard",
-    "submitted_utc": "2026-10-11T23:49:19+00:00",
+    "submitted_utc": "2026-10-12T00:22:47+00:00",
     "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase"
   },
   "training_started": false,
-  "updated_utc": "2026-10-11T23:53:28.376275+00:00"
+  "updated_utc": "2026-10-12T00:34:02.002067+00:00"
 }

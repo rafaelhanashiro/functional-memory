@@ -9,21 +9,22 @@ language-model performance under the canonical 400-step-warmup recipe?
 
 | Role | Run ID | Erase gate | Status |
 | --- | --- | --- | --- |
-| Primary | `rf7341031e3d5` | Independent learned projection | Queued behind memory probe |
+| Primary | `rf7341031e3d5` | Independent learned projection | Running SXM acceptance; training pending |
 | Control | `rf640fc13f3a8` | Shared with the write gate | Complete, 19,074 updates |
 
 The control is explicitly selected for its canonical GDN initialization, degree-one
 key space, width, data, training recipe, and current telemetry on Kennel. Its terminal
 validation perplexity is 13.582856. Selection does not depend on its performance.
 
-Primary job `216991` is queued at nice 0 on Kennel's standard partition for two
-H100 PCIe GPUs on `mastiff`, dependent on memory probe `216990` on the same node.
-Both use GPU allocation growth (`XLA_PYTHON_CLIENT_PREALLOCATE=false`) with a
-90% memory-pool limit. The probe's FP32 width-64 kernel test passed; its full-recipe
-two-GPU pilot is running. Production still requires the complete acceptance checks,
-including exact checkpoint resumption. There are no production training
-measurements or W&B run yet.
-Source: `d144ba0c8205ea0971675e81196fca354a374fec`.
+Primary job `217000` is running fresh acceptance at nice 0 on Kennel's standard
+partition with two H100 SXM GPUs on `dogo`; production training has not started.
+Full-recipe pilot `216999` passed 20 updates, finite
+validation, and checkpoint verification on two H100 PCIe GPUs on `mastiff`.
+Production must pass fresh acceptance on the SXM hardware, including exact
+checkpoint resumption, before training. Both use
+`XLA_PYTHON_CLIENT_PREALLOCATE=false`, with the memory-fraction override unset.
+There are no production training measurements or W&B run yet.
+Source: `d3d93bc6ccaa8a76fc4b29124c80988ae1593405`.
 The [scaffold validation record](../../../scaffolds/transformer/validation/README.md#fp32-chunk-precision-repair)
 contains the kernel accuracy evidence.
 
@@ -38,7 +39,9 @@ scalar decay, gated output RMSNorm, and no RoPE. The new update, in keys-first l
 is `S_t = alpha_t S_{t-1} + k_t (beta_t v_t - lambda_t alpha_t S_{t-1}^T k_t)^T`.
 Both `beta_t = sigmoid(W_beta x_t)` and `lambda_t = sigmoid(W_lambda x_t)` are scalar
 per token, layer, and head. The bias-free erase projection starts as a copy of the
-write projection but is optimized independently. All original model parameters have
+write projection in a separate device buffer and is optimized independently. The
+copy preserves canonical values and the original RNG draws. All original model
+parameters have
 the same initialization as tied GDN. The key feature space is unchanged; this run
 does not introduce polynomial features.
 

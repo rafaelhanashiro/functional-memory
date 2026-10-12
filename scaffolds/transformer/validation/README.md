@@ -672,6 +672,30 @@ sbatch --nice=0 --partition=debug --nodelist=mastiff --gres=gpu:h100:1 \
   4b7573e31a1475ef01f7e6313ab36f14a587b0ee H100
 ```
 
+### Independent gate storage
+
+Source `d3d93bc6ccaa8a76fc4b29124c80988ae1593405` also fixes independent-gate
+initialization: the write and erase projections keep exactly equal initial values
+but own separate JAX buffers. Cloning the NNX parameter object and assigning its
+array directly had shared storage. A donated update then rejected the duplicate
+buffer on the source device; replication created separate buffers on the other
+device, which could wait indefinitely for its peer at the initial collective.
+The [CPU record](runs/gdn-independent-precision-h100/alias-repair-cpu.json)
+captures the reproducer and 39 passing GDN/initialization tests, including donated
+updates for both initialization schemes. Existing tests verify that every original
+parameter retains its tied-GDN initialization value.
+
+The [execution trace](runs/gdn-independent-precision-h100/allocator-trace.json)
+shows the pre-fix peer allocating its 50.07 GiB workspace while the source device
+never entered that executable's allocation stage. After the copy fix,
+[pilot 216999](runs/gdn-independent-precision-h100/alias-repair-runtime.json)
+completed 20 updates, validation, and checkpoint saving on two H100 PCIe GPUs,
+with finite gradient and attention diagnostics. It used the original allocator
+settings: allocation on demand and the default memory fraction. Steady updates
+took 1.84–1.87 seconds; the acceptance formula projects 10.99 hours for the complete
+recipe, within the 22-hour budget of a 24-hour allocation. This pilot does not
+replace complete production acceptance or its fresh-process resume check.
+
 ## Gated DeltaNet on ORCD H200, and ORCD H100
 
 These qualifications come from the production acceptance of the

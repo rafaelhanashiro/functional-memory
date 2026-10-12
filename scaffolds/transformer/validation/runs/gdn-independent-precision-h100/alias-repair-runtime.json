@@ -1,0 +1,160 @@
+{
+  "checkpoint_audit": {
+    "checkpoint_state_sha256": "e92e546218e0be0daf7927bb5f5454a661c291f1a8e95ab98cfd4da57c6ba039",
+    "final_state_sha256": "e92e546218e0be0daf7927bb5f5454a661c291f1a8e95ab98cfd4da57c6ba039",
+    "first_update": {
+      "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+      "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+      "step": 1
+    },
+    "next_update": {
+      "batch_sha256": "b61f8b1402afd06332b4a01ac3655d57aa18cd2a3de93aa151f99be056c5a240",
+      "rng_sha256": "c952d7c8272d985c15ea28dd1ce800ea3107946123e8fe8ee13bd6f6b93bd6ea",
+      "step": 21
+    },
+    "start_state_sha256": "6b870aaf0de68e3897de6be7185f0ad6055f46d84c877425f6447b59cd049bc5"
+  },
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "executed_script_sha256": "2600885527bbde0661bd2f54a5d20de2909c6095604409a39d89506335dcc90c",
+  "format": "gdn-alias-repair-runtime-pilot",
+  "hardware": {
+    "device_kinds": [
+      "NVIDIA H100 PCIe",
+      "NVIDIA H100 PCIe"
+    ],
+    "gpu_count": 2,
+    "node": "mastiff"
+  },
+  "home_cluster": "kennel",
+  "interpretation": "Giving the independently learnable write and erase projections distinct array buffers resolved the prior startup stall on the same two H100 PCIe GPUs with the original allocator settings. The repaired run completed 20 updates and finite evaluation.",
+  "limitations": [
+    "Pilot-only execution, not the complete CPU/GPU acceptance suite.",
+    "No fresh-process resume was performed by this probe; the live-state/durable-checkpoint equality check passed.",
+    "Twenty updates do not establish long-run training stability or scientific performance.",
+    "No B300 qualification is implied."
+  ],
+  "model": {
+    "attention_backend": "fused",
+    "attention_implementation": "fla_chunk_independent_gated_delta_rule_triton",
+    "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+    "dtype": "bfloat16",
+    "initial_hash_scope": "Complete initialized training state, including optimizer state; not a parameters-only hash.",
+    "initial_training_state_sha256": "6b870aaf0de68e3897de6be7185f0ad6055f46d84c877425f6447b59cd049bc5",
+    "initialization": "gated_deltanet_reference",
+    "parameter_count": 211007424,
+    "warmup_steps": 400
+  },
+  "pilot": {
+    "all_recorded_telemetry_numeric_values_finite": true,
+    "attention_diagnostic_invalid_counts": {
+      "invalid_erase_count": 0,
+      "invalid_gate_count": 0,
+      "invalid_output_count": 0,
+      "invalid_projection_count": 0,
+      "invalid_read_count": 0
+    },
+    "attention_diagnostics_valid": true,
+    "global_batch_size": 256,
+    "global_micro_batch_size": 64,
+    "gradient_accumulation_steps": 4,
+    "gradient_clipped_fraction": 1.0,
+    "gradient_norm_max": 1.9380135536193848,
+    "gradient_norm_mean": 1.9326530039310454,
+    "gradient_norm_observations": 20,
+    "gradient_spike_count": 0,
+    "steps_completed": 20,
+    "telemetry_updates": 20,
+    "training_tokens": 10485760,
+    "validation_nll": 10.518869400024414,
+    "validation_nll_finite": true
+  },
+  "recipe": {
+    "path": "experiments/attention_scaling/runs/rf7341031e3d5/config.yaml",
+    "sha256": "36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252",
+    "size_bytes": 2515
+  },
+  "recorded_utc": "2026-10-12T00:31:11.520349+00:00",
+  "retained_log": {
+    "path": "scaffolds/transformer/validation/logs/gdn-memory-216999.log",
+    "sha256": "a1274b692e17ef294b88c8364b409b4c5311cb4fca5950f1e8dbc338b59d2e5a",
+    "size_bytes": 4385
+  },
+  "retained_worker_outcome": {
+    "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/memory-probe-216999.json",
+    "sha256": "fc21bec6ca311b651aa6281b88f901a612e18bf8ede64790c0093f319b25eef2",
+    "size_bytes": 2447
+  },
+  "run_id": "rf7341031e3d5",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "NCCL_P2P_DISABLE": null,
+    "TRANSFORMER_HOST_STAGING": "0",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "runtime_projection": {
+    "evaluation_batches_per_event": 7,
+    "formula": "(pilot runtime + max steady update * total_steps + max evaluation batch * evaluation_batches * planned_evaluations + max checkpoint * planned_checkpoints) / 3600",
+    "maximum_projected_hours": 22,
+    "planned_checkpoints": 39,
+    "planned_evaluations": 20,
+    "production_allocation_hours": 24,
+    "projected_hours": 10.987346106887886,
+    "reserve_hours": 2,
+    "scope": "Conservative synchronized pilot estimate; production timing remains to be measured.",
+    "total_steps": 19074,
+    "within_budget": true
+  },
+  "schema_version": 1,
+  "slurm": {
+    "elapsed": "00:04:25",
+    "exit_code": "0:0",
+    "finished_utc": "2026-10-12T00:27:05Z",
+    "job_id": "216999",
+    "partition": "debug",
+    "started_utc": "2026-10-12T00:22:40Z",
+    "state": "COMPLETED"
+  },
+  "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+  "source_sha256": {
+    "scaffolds/transformer/acceptance.py": "f8ac1bcdfceffb2aaa213cc4d9dc503616738661420090bb0499870e3b40edca",
+    "scaffolds/transformer/attention/gated_deltanet.py": "b8e16359eb697b8a33d4e63b0f48779d04465c2aa9f251ae678e311a0d945453",
+    "scaffolds/transformer/models/initialization.py": "97a1fb08e445b6b46bd91185c78ec66f44d85ea096821075207fdc91dce616e3",
+    "scaffolds/transformer/training/distributed.py": "b067570340082c9b95af0ca2b5f6e5d074c9c18eac65f34601b15cab32d86661",
+    "scaffolds/transformer/validation/probe_gdn_memory.sbatch": "2600885527bbde0661bd2f54a5d20de2909c6095604409a39d89506335dcc90c"
+  },
+  "status": "passed",
+  "synchronized_timing": {
+    "checkpoint_seconds": [
+      23.920674418099225
+    ],
+    "evaluation_seconds": [
+      18.988979157060385
+    ],
+    "runtime_seconds": 249.25074440403841,
+    "steady_update_count": 7,
+    "steady_update_seconds_max": 1.8723829220980406,
+    "steady_update_seconds_median": 1.8510232949629426,
+    "steady_update_seconds_min": 1.8440961180021986,
+    "timing_semantics": "Each update duration ends after the host loss scalar synchronizes execution. Steady statistics exclude the first update, which includes compilation and autotuning.",
+    "train_step_seconds": [
+      147.9206933400128,
+      1.8440961180021986,
+      1.8670675859320909,
+      1.846053609973751,
+      1.8450906169600785,
+      1.8510232949629426,
+      1.8723829220980406,
+      1.8647038189228624
+    ]
+  },
+  "temporary_pilot_metrics": {
+    "path_at_capture": "experiments/attention_scaling/runs/rf7341031e3d5/.runtime/memory-probe/H100-2-216999/pilot/metrics.jsonl",
+    "retained": false,
+    "retention_note": "Disposable pilot metrics; this digest and compact summary remain after pilot checkpoint/temporary-output cleanup. This record does not require that path to remain available.",
+    "sha256": "4cd77ea52309d9adfe7a354ed5342072955a4af3dff948fe15937fde1b2de49d",
+    "size_bytes": 24807
+  }
+}

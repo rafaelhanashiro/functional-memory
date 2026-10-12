@@ -1,0 +1,87 @@
+{
+  "allocator_trace": {
+    "collective_warning": "E1011 20:17:36.531728  869425 rendezvous.cc:116] [id=0] This thread has been waiting for `[1] [rank=1] [run_id=-1381940240] Acquire clique: devices=2:[0,1]; local_participants=2; communication_id=0; incarnations=[]` for 10 seconds and may be stuck. Expected 2 threads to join the rendezvous, but not all of them arrived on time.",
+    "gpu0_corresponding_workspace_allocation_logged": false,
+    "gpu0_last_logged_pretraining_executable": "jit__threefry_fold_in",
+    "gpu0_local_train_step_constant_resolution_logged": false,
+    "gpu0_local_train_step_prepared_logged": false,
+    "gpu1_peak_live_bfc_bytes": 56297482496,
+    "gpu1_prepared_executable": "jit_local_train_step",
+    "gpu1_workspace_allocation_returned": true,
+    "gpu1_workspace_bytes": 53764325880,
+    "gpu1_workspace_gib": 50.0719304010272
+  },
+  "checkout_head": "2d726d9f676aa22c72a33b8766515e7915528c34",
+  "cpu_alias_reproducer": {
+    "distinct_parameter_objects": true,
+    "donated_operation": "jax.jit(lambda pair: (pair[0] + 1, pair[1] + 2), donate_argnums=(0,))((b, e))",
+    "error": "JaxRuntimeError INVALID_ARGUMENT: Attempt to donate the same buffer twice in Execute() (flattened argument 1, replica 0, partition 0, first use: 0). Toy example for this bug: f(donate(a), donate(a)).",
+    "initializations_checked": [
+      "gated_deltanet_reference",
+      "flax_default"
+    ],
+    "model": "Independent-erase GDN, first layer b_proj and lambda_proj kernels, seed17",
+    "observer": "precision_tests agent; stdout inspected by root agent",
+    "replication_observation": "A separate two-CPU check using put_replicated retained the shared buffer on device0 and produced distinct buffers on device1.",
+    "same_cpu_buffer_pointer": true,
+    "same_jax_array_object": true,
+    "status": "confirmed_cpu_buffer_alias_and_donation_error"
+  },
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "diagnostic_environment": {
+    "TF_CPP_MIN_LOG_LEVEL": "0",
+    "TF_CPP_VMODULE": "bfc_allocator=3,gpu_executable=3"
+  },
+  "executed_script_sha256": "2eb71a63872f1f4e311546ef8dcaf0d3b39090169c4039fb3cae2ab5516ec83f",
+  "format": "gdn-runtime-qualification-diagnostic",
+  "full_recipe_pilot_steps_completed": 0,
+  "home_cluster": "kennel",
+  "interpretation": {
+    "description": "The confirmed beta/lambda buffer alias can make donation reject device0 before executable setup while device1 enters collective-clique acquisition. This explains the asymmetric trace more directly than a failed large BFC allocation.",
+    "limitations": "The pre-repair GPU trace does not itself expose the donation exception. The CPU reproducer confirms the alias, and the separately recorded repaired two-GPU full-model pilot completed 20 updates with the original allocator settings.",
+    "repair_validation": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/alias-repair-runtime.json",
+    "status": "cpu_alias_confirmed_and_repaired_two_gpu_pilot_passed"
+  },
+  "kernel_test_executed": false,
+  "probe_mode": "pilot_only",
+  "production_training_started": false,
+  "recorded_utc": "2026-10-12T00:21:56.200530+00:00",
+  "retained_log": {
+    "path": "scaffolds/transformer/validation/logs/gdn-memory-216998.log",
+    "sha256": "bbdf671b17afcc3c83725b216a89906367075db889ac2b4023a688aeb8a2aed0",
+    "size_bytes": 3171888
+  },
+  "run_id": "rf7341031e3d5",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "NCCL_P2P_DISABLE": null,
+    "TRANSFORMER_HOST_STAGING": "0",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.80",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "true"
+  },
+  "schema_version": 1,
+  "slurm": {
+    "device_kinds": [
+      "NVIDIA H100 PCIe",
+      "NVIDIA H100 PCIe"
+    ],
+    "elapsed": "00:04:44",
+    "exit_code": "0:0",
+    "finished_utc": "2026-10-12T00:20:08Z",
+    "gpu_count": 2,
+    "job_id": "216998",
+    "node": "mastiff",
+    "partition": "debug",
+    "started_utc": "2026-10-12T00:15:24Z",
+    "state": "CANCELLED by 29176"
+  },
+  "source_commit": "d144ba0c8205ea0971675e81196fca354a374fec",
+  "source_sha256": {
+    "scaffolds/transformer/attention/gated_deltanet.py": "5f1c0a4c10090f6d0bb8fa2d4bb4c6904bd9e0801e23a7fa9984a8ff01e25744",
+    "scaffolds/transformer/models/initialization.py": "6d218ab359b3c3eaea8899f5621c307734fcaa5e1c645f8491abbbf44a82e095",
+    "scaffolds/transformer/training/distributed.py": "b067570340082c9b95af0ca2b5f6e5d074c9c18eac65f34601b15cab32d86661"
+  },
+  "status": "stalled_before_first_update"
+}

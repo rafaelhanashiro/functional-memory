@@ -246,45 +246,50 @@ match tied GDN at initialization. It preserves the canonical GDN block and refer
 initialization, 400 warmup updates, standard training telemetry, and the 19,074-update
 FineWeb recipe. The preselected control is `rf640fc13f3a8`; comparison findings and
 current status belong in the [exploratory result](../../results/exploratory/gdn_independent_erase/README.md).
-Its home cluster is Kennel. Production job `216991` is queued on `standard` at
-nice 0 for two H100 PCIe GPUs on `mastiff`, dependent on memory probe `216990`.
-Both use `XLA_PYTHON_CLIENT_PREALLOCATE=false` and
-`XLA_PYTHON_CLIENT_MEM_FRACTION=0.90`. The probe's FP32 width-64 kernel test passed;
-its full-recipe two-GPU pilot is running. Full production acceptance remains
-required. No production training measurements or W&B run exist yet. The kernel
-retains FP32 chunk intermediates and uses TF32x3 products for tied and independent
-gates; [scaffold validation](../../scaffolds/transformer/validation/README.md#fp32-chunk-precision-repair)
-records the accuracy and runtime checks, including the
-[allocator diagnostic](../../scaffolds/transformer/validation/runs/gdn-independent-precision-h100/preallocation90.json).
+Its home cluster is Kennel. Job `217000` is running fresh acceptance on `standard`
+at nice 0 with two H100 SXM GPUs on `dogo`; production training has not started.
+Full-recipe pilot `216999` passed all 20
+updates, finite validation, and checkpoint verification on two H100 PCIe GPUs on
+`mastiff`. Production must pass fresh acceptance on `dogo` before training; the
+PCIe pilot does not qualify the SXM hardware. Both use
+`XLA_PYTHON_CLIENT_PREALLOCATE=false`, with `XLA_PYTHON_CLIENT_MEM_FRACTION`
+unset. No production training measurements or W&B run exist yet.
+Source `d3d93bc6ccaa8a76fc4b29124c80988ae1593405`
+retains FP32 chunk intermediates and TF32x3 products for tied and independent gates.
+The independently optimized erase and write projections have separate device
+buffers while preserving equal canonical initial values and the original RNG draws.
+The [scaffold validation record](../../scaffolds/transformer/validation/README.md#fp32-chunk-precision-repair)
+contains the accuracy and runtime checks.
 Submit from `worktrees/gdn-independent-erase`:
 
 ```bash
-sbatch --nice=0 --partition=standard --nodelist=mastiff --gres=gpu:h100:2 \
+env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --nice=0 --partition=standard --nodelist=dogo --gres=gpu:h100:2 \
   --time=1-00:00:00 --cpus-per-task=32 --mem=256G \
-  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90 \
-  --dependency=afterok:216990 --kill-on-invalid-dep=yes \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false \
+  --dependency=afterok:216999 --kill-on-invalid-dep=yes \
   --job-name=rf7341031e3d5 \
   --output=experiments/attention_scaling/runs/rf7341031e3d5/training.log \
   scaffolds/transformer/launchers/kennel.sbatch \
   experiments.attention_scaling.acceptance \
   experiments/attention_scaling/runs/rf7341031e3d5/config.yaml \
-  d144ba0c8205ea0971675e81196fca354a374fec 2 H100
+  d3d93bc6ccaa8a76fc4b29124c80988ae1593405 2 H100
 ```
 
 The production allocation runs shared CPU and distributed checks, all GDN GPU
 forward/gradient checks, the full-recipe initialization/pilot, and exact checkpoint
-resumption before training. The separate memory probe runs one kernel test and a
-20-update full-recipe pilot; it does not replace these acceptance checks:
+resumption before training. The separate diagnostic runs only the 20-update
+full-recipe pilot with a 30-minute worker budget; it does not replace these
+acceptance checks:
 
 ```bash
-sbatch --nice=0 --partition=debug --nodelist=mastiff --gres=gpu:h100:2 \
+env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --nice=0 --partition=debug --nodelist=mastiff --gres=gpu:h100:2 \
   --time=00:40:00 --cpus-per-task=32 --mem=256G \
-  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,XLA_PYTHON_CLIENT_MEM_FRACTION=0.90 \
-  --job-name=gdn-memory-probe \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false \
+  --job-name=gdn-alias-repair-pilot \
   --output=scaffolds/transformer/validation/logs/gdn-memory-%j.log \
   scaffolds/transformer/validation/probe_gdn_memory.sbatch \
   experiments/attention_scaling/runs/rf7341031e3d5/config.yaml \
-  d144ba0c8205ea0971675e81196fca354a374fec H100
+  d3d93bc6ccaa8a76fc4b29124c80988ae1593405 H100 pilot
 ```
 
 The one-GPU precision qualification and benchmark use:

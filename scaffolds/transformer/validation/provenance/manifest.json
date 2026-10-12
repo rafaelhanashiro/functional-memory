@@ -3057,5 +3057,53 @@
         "size_bytes": 10719
       }
     ]
+  },
+  "gdn_independent_gate_storage": {
+    "home_cluster": "kennel",
+    "status": "cpu_regression_and_h100_pcie_full_model_pilot_passed",
+    "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+    "scope": "Distinct write/erase parameter storage with equal initial values; removes duplicate donation during the first distributed update.",
+    "cpu_tests_passed": 39,
+    "pilot_job_id": "216999",
+    "pilot_steps": 20,
+    "records": [
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/alias-repair-cpu.json",
+        "sha256": "560e236ed23674274b49944f4366d4ec8bf18bb148f233cdd0223b9e8def7888",
+        "size_bytes": 3386
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/allocator-trace.json",
+        "sha256": "c92631e1f34b10daf0260b8312e31d9a1baeb88b18066bf545e7de6235967a6d",
+        "size_bytes": 4773
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/alias-repair-runtime.json",
+        "sha256": "94510bbbae361d62f25fee127e5840015e93ededefeef25984e22ce9a5f012fa",
+        "size_bytes": 7238
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/memory-probe-216999.json",
+        "sha256": "fc21bec6ca311b651aa6281b88f901a612e18bf8ede64790c0093f319b25eef2",
+        "size_bytes": 2447
+      }
+    ],
+    "logs": [
+      {
+        "path": "scaffolds/transformer/validation/logs/gdn-memory-216998.log",
+        "sha256": "bbdf671b17afcc3c83725b216a89906367075db889ac2b4023a688aeb8a2aed0",
+        "size_bytes": 3171888
+      },
+      {
+        "path": "scaffolds/transformer/validation/logs/gdn-memory-216999.log",
+        "sha256": "a1274b692e17ef294b88c8364b409b4c5311cb4fca5950f1e8dbc338b59d2e5a",
+        "size_bytes": 4385
+      }
+    ],
+    "limits": [
+      "The standalone pilot did not include fresh-process resume.",
+      "Production requires full acceptance on its actual hardware.",
+      "Twenty updates do not establish long-run training stability."
+    ]
   }
 }
