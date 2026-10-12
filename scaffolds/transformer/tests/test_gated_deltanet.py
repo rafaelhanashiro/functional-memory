@@ -227,6 +227,30 @@ def test_independent_erase_initialization_preserves_every_existing_parameter(ini
     np.testing.assert_allclose(independent(tokens), tied(tokens), rtol=3e-5, atol=2e-6)
 
 
+@pytest.mark.parametrize("initialization", ["flax_default", "gated_deltanet_reference"])
+def test_independent_gates_support_donated_updates_from_equal_initial_values(initialization):
+    model = build_model(gdn_model(initialization=initialization, gdn_erase_mode="independent"),
+                        jax.random.PRNGKey(17))
+    attention = getattr(model, model.layer_names[0]).attention
+    gates = (attention.b_proj.kernel[...], attention.lambda_proj.kernel[...])
+    initial = np.asarray(gates[0]).copy()
+    np.testing.assert_array_equal(gates[1], initial)
+
+    def update(parameters):
+        # Distinct objectives must update the two equal-initialized projections
+        # independently. Training donates its state; distinct NNX Param objects
+        # alone do not prevent their underlying JAX buffers from aliasing.
+        gradients = jax.grad(lambda pair: jnp.sum((pair[0] - 1) ** 2)
+                             + jnp.sum((pair[1] + 1) ** 2))(parameters)
+        return jax.tree.map(lambda weight, gradient: weight - 0.125 * gradient,
+                            parameters, gradients)
+
+    write, erase = jax.jit(update, donate_argnums=(0,))(gates)
+    np.testing.assert_allclose(write, initial - 0.25 * (initial - 1), rtol=2e-6, atol=2e-7)
+    np.testing.assert_allclose(erase, initial - 0.25 * (initial + 1), rtol=2e-6, atol=2e-7)
+    assert not np.array_equal(write, erase)
+
+
 def test_independent_projection_gradients_and_gate_telemetry():
     module = GatedDeltaNet(32, 4, 8, 8, erase_mode="independent", rngs=nnx.Rngs(19))
     x = jax.random.normal(jax.random.PRNGKey(20), (2, 9, 32))

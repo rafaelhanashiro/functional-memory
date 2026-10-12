@@ -130,6 +130,9 @@ class GatedDeltaNet(nnx.Module):
             # Clone the graph/Param, not the RNG stream: every existing parameter
             # in this layer and subsequent layers retains the tied model's draw.
             self.lambda_proj = nnx.clone(self.b_proj)
+            # nnx.clone shares array storage. Donated training state requires
+            # distinct buffers for these independently updated parameters.
+            self.lambda_proj.kernel[...] = self.b_proj.kernel[...].copy()
 
     def __call__(
         self,

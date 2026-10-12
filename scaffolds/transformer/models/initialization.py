@@ -93,4 +93,5 @@ def apply_initialization(model: nnx.Module, scheme: str, key: jax.Array, *, num_
                 node.bias[...] = jnp.zeros(node.bias.shape, jnp.float32)
             index += 1
     for attention in independent_gdn:
-        attention.lambda_proj.kernel[...] = attention.b_proj.kernel[...]
+        # Match the values without aliasing a buffer donated by the train step.
+        attention.lambda_proj.kernel[...] = attention.b_proj.kernel[...].copy()
