@@ -696,6 +696,18 @@ took 1.84–1.87 seconds; the acceptance formula projects 10.99 hours for the co
 recipe, within the 22-hour budget of a 24-hour allocation. This pilot does not
 replace complete production acceptance or its fresh-process resume check.
 
+### H100 SXM allocation qualification
+
+On two H100 80GB HBM3 GPUs, source `d3d93bc` passed 130 CPU checks, 9 distributed
+checks, all 34 GPU checks, and canonical initialization. With allocation on demand
+and the default memory fraction, the full-model pilot then failed a 50.28 GiB
+allocation before its first update; its peer remained waiting in a collective.
+The [runtime failure record](runs/gdn-independent-precision-h100/sxm-default-oom.json)
+retains the matching log. This is a runtime acceptance failure with no production
+training measurements. It does not qualify the default allocator on this hardware;
+the completed PCIe pilot above applies to its own hardware/runtime combination.
+A 90% memory-pool limit with allocation on demand is undergoing separate qualification.
+
 ## Gated DeltaNet on ORCD H200, and ORCD H100
 
 These qualifications come from the production acceptance of the

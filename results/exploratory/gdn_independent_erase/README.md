@@ -9,21 +9,27 @@ language-model performance under the canonical 400-step-warmup recipe?
 
 | Role | Run ID | Erase gate | Status |
 | --- | --- | --- | --- |
-| Primary | `rf7341031e3d5` | Independent learned projection | Running SXM acceptance; training pending |
+| Primary | `rf7341031e3d5` | Independent learned projection | Qualifying SXM memory settings; production queued |
 | Control | `rf640fc13f3a8` | Shared with the write gate | Complete, 19,074 updates |
 
 The control is explicitly selected for its canonical GDN initialization, degree-one
 key space, width, data, training recipe, and current telemetry on Kennel. Its terminal
 validation perplexity is 13.582856. Selection does not depend on its performance.
 
-Primary job `217000` is running fresh acceptance at nice 0 on Kennel's standard
-partition with two H100 SXM GPUs on `dogo`; production training has not started.
-Full-recipe pilot `216999` passed 20 updates, finite
-validation, and checkpoint verification on two H100 PCIe GPUs on `mastiff`.
-Production must pass fresh acceptance on the SXM hardware, including exact
-checkpoint resumption, before training. Both use
-`XLA_PYTHON_CLIENT_PREALLOCATE=false`, with the memory-fraction override unset.
-There are no production training measurements or W&B run yet.
+Runtime qualification `217802` is running at nice 0 on Kennel's debug partition
+with two H100 SXM GPUs on `dogo`. Production job `217803` is queued on standard
+at nice 0, dependent on successful qualification. Both use preallocation disabled
+and a memory fraction of 0.90. Full acceptance must pass, including a 20-update
+full-recipe pilot, finite validation, and exact fresh-process checkpoint
+resumption, before training. No production training measurements or W&B run exist.
+
+The default memory-fraction runtime passed 139 CPU and 34 GPU tests but failed
+its SXM pilot before the first update with a 50.28 GiB allocation error;
+the [runtime diagnostic](../../../scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-default-oom.json)
+records that failure. It is not a numerical training result. Full-recipe pilot
+`216999` passed 20 updates, finite validation, and checkpoint verification on
+two H100 PCIe GPUs on `mastiff`, with preallocation disabled and the memory
+fraction unset. That pilot does not qualify the SXM hardware or the new runtime.
 Source: `d3d93bc6ccaa8a76fc4b29124c80988ae1593405`.
 The [scaffold validation record](../../../scaffolds/transformer/validation/README.md#fp32-chunk-precision-repair)
 contains the kernel accuracy evidence.

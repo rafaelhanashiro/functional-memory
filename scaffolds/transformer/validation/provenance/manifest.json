@@ -3105,5 +3105,22 @@
       "Production requires full acceptance on its actual hardware.",
       "Twenty updates do not establish long-run training stability."
     ]
+  },
+  "gdn_sxm_default_runtime": {
+    "home_cluster": "kennel",
+    "status": "failed_first_pilot_allocation",
+    "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+    "job_id": "217000",
+    "training_started": false,
+    "record": {
+      "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-default-oom.json",
+      "sha256": "8ff2f895f6e7232c06bafb5ff91289873b5eb109d9843d72a7cc78a0b447c832",
+      "size_bytes": 2323
+    },
+    "retained_log": {
+      "path": "scaffolds/transformer/validation/logs/gdn-runtime-217000.log",
+      "sha256": "b082e5feb3d1fba2d0224dde82d66822caa74fdefd49044ee2adf72c8aa410b2",
+      "size_bytes": 2747
+    }
   }
 }

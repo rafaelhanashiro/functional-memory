@@ -1,0 +1,67 @@
+{
+  "failure": {
+    "before_cancellation_gpu_memory_used_mib": [
+      17018,
+      61376
+    ],
+    "before_cancellation_gpu_utilization_percent": [
+      0,
+      0
+    ],
+    "message": "Allocator (GPU_0_bfc) ran out of memory trying to allocate 50.28GiB",
+    "observed_utc": "2026-10-12T00:58:12.983462+00:00",
+    "peer_wait": "GPU1 waited indefinitely for GPU0 at collective-clique acquisition.",
+    "requested_allocation_bytes": 53991111168,
+    "stage": "pilot_first_update"
+  },
+  "format": "gdn-runtime-acceptance-failure",
+  "hardware": {
+    "device_kinds": [
+      "NVIDIA H100 80GB HBM3",
+      "NVIDIA H100 80GB HBM3"
+    ],
+    "gpu_memory_total_mib": [
+      81559,
+      81559
+    ]
+  },
+  "home_cluster": "kennel",
+  "interpretation": "The repaired kernel tests passed, but the full-model pilot failed a GPU allocation before its first update. The allocation failure then left its peer waiting. Available evidence does not distinguish a memory-pool capacity limit from fragmentation. No production loss or numerical training outcome exists.",
+  "passed_acceptance": {
+    "cpu_tests": 130,
+    "distributed_cpu_tests": 9,
+    "gpu_tests": 34,
+    "initialization_parameter_count": 211007424,
+    "initialization_parameter_sha256": "e8e945919dd9280d28bfb13f3dac752b87fc3e7a5e15784b2cfb14a157810cf7"
+  },
+  "pilot_steps_completed": 0,
+  "recorded_utc": "2026-10-12T18:23:54.408700+00:00",
+  "retained_log": {
+    "path": "scaffolds/transformer/validation/logs/gdn-runtime-217000.log",
+    "sha256": "b082e5feb3d1fba2d0224dde82d66822caa74fdefd49044ee2adf72c8aa410b2",
+    "size_bytes": 2747
+  },
+  "run_id": "rf7341031e3d5",
+  "runtime": {
+    "NCCL_P2P_DISABLE": null,
+    "TRANSFORMER_HOST_STAGING": "0",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "schema_version": 1,
+  "slurm": {
+    "elapsed_seconds": 64303,
+    "finished_utc": "2026-10-12T18:22:08+00:00",
+    "gpu_count": 2,
+    "job_id": "217000",
+    "nice": 0,
+    "node": "dogo",
+    "partition": "standard",
+    "started_utc": "2026-10-12T00:30:25+00:00",
+    "state": "CANCELLED"
+  },
+  "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+  "status": "cancelled_after_pilot_allocation_failure",
+  "training_started": false
+}
