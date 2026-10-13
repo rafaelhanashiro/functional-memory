@@ -1,0 +1,305 @@
+{
+  "acceptance_checks": {
+    "checks": [
+      "cpu-tests",
+      "cpu-distributed-tests",
+      "gpu-tests",
+      "initialization",
+      "pilot",
+      "resume"
+    ],
+    "status": "passed"
+  },
+  "acceptance_identity": "234d137524c973380db762407cebf4074958b3eb3d804cd31bf37d76794c66f0",
+  "acceptance_report_sha256": {
+    "cpu-distributed-tests.json": "f841c5361950cfc617d18a2511d6fb1485d6857cf645ab98b214d0eacafb6538",
+    "cpu-tests.json": "2a68e76df4465d426aba14e583540e88f7b630dfcbe5d988ce839d5c54fbcb8a",
+    "gpu-tests.json": "ef2bc160d3c6f74a6a58e3b146b65769e71a9a7356f9d344944fd3b34244b340",
+    "hardware.json": "e98c1e825187828c92de9a212c47071075ddae27e1f84fb92677f0c4c841baf1",
+    "identity.json": "09f5e6e5512cb6d4a57c842fd212eba8324e4413551fbee41ac1ba1e230a1f85",
+    "initialization.json": "2179e3387cca0844555c0cb51abe7706762c5c8777d092b92773fa1b0ad6c11a",
+    "pilot.json": "088baae13cbd4538003d0eae5d14bb1737b53b76c54abf6be6a88e6d7d514150",
+    "resume.json": "aa4567e53e228157d0bbc038f750017eef8e3873485d2cbbe4fccf9c2077c6d2",
+    "success.json": "9ee6b5eaab24e6373b1dcbe3d5c445620063055181c4e97c8ca2687e19e7c9db"
+  },
+  "batch_layout": {
+    "global_batch_size": 256,
+    "global_micro_batch_size": 64,
+    "gradient_accumulation_steps": 4,
+    "local_micro_batch_size": 16
+  },
+  "config_sha256": "3b271001661b3130e71be9ede46e171599c483ab183d596959a730d564a6f9f5",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "exact_resume": {
+    "completed_step": 21,
+    "data_start_sequence": 5120,
+    "first_update": {
+      "batch_sha256": "b61f8b1402afd06332b4a01ac3655d57aa18cd2a3de93aa151f99be056c5a240",
+      "rng_sha256": "c952d7c8272d985c15ea28dd1ce800ea3107946123e8fe8ee13bd6f6b93bd6ea",
+      "step": 21
+    },
+    "first_update_matches_pilot_next_update": true,
+    "pilot_checkpoint_state_sha256": "668255df11d61bf3224c81137a1d5e57279af11b91f166bc94d914905f2e8459",
+    "restored_step": 20,
+    "resumed_checkpoint_state_sha256": "c17ccd4a15c03cb9f9bf099fb9fbbcb74d16479391dbcbd968f52f120b2f42a1",
+    "resumed_final_state_sha256": "c17ccd4a15c03cb9f9bf099fb9fbbcb74d16479391dbcbd968f52f120b2f42a1",
+    "resumed_start_state_sha256": "668255df11d61bf3224c81137a1d5e57279af11b91f166bc94d914905f2e8459",
+    "status": "passed"
+  },
+  "format": "gdn-runtime-qualification",
+  "frozen_execution_sha256": "2c381f77f8539aaa8525b180bed9812c5eb03c2e5287afb71e7b109ddb994980",
+  "hardware": {
+    "attention_backend": "fused",
+    "device_kinds": [
+      "NVIDIA H100 PCIe",
+      "NVIDIA H100 PCIe",
+      "NVIDIA H100 PCIe",
+      "NVIDIA H100 PCIe"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "home_cluster": "kennel",
+  "initialization": {
+    "parameter_count": 211335104,
+    "parameter_sha256": "10425a562c7058e77d3f6a49f2df5602ac4303b16e33a8c64079888b86d9b166"
+  },
+  "limitations": [
+    "Twenty pilot updates and one resumed update do not establish long-run stability or scientific performance.",
+    "The runtime projection is a pilot estimate, not completed production timing.",
+    "Temporary pilot checkpoints are not retained. Acceptance-report hashes identify the summarized measurements; the compact record does not copy temporary acceptance files.",
+    "The GPU tests emit an FLA platform-discovery warning; explicit JAX hardware checks and the non-skipped CUDA tests ran on H100 PCIe."
+  ],
+  "mechanism": {
+    "attention_formula": "F_t(q)=a_t F_{t-1}(P_t q)+v_t sum_{r=0}^2 beta_{t,r}<q,k_t>^r; P_t=I-lambda_t k_t k_t^T in original key space; beta_0=tanh(W_0 x), beta_1=sigmoid(W_b x), beta_2=tanh(W_2 x); lambda_t=sigmoid(W_lambda x); o_t=F_t(q_t)/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); one decay shared by all degrees",
+    "attention_implementation": "transported_score_polynomial_gated_delta_rule_triton",
+    "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+    "attention_score_scale": "1 (global 1/sqrt(d_k) applied to polynomial read)",
+    "gdn_erase_initialization": "copy_write_projection",
+    "gdn_polynomial_degree": 2,
+    "gdn_query_transport_space": "original_key_space",
+    "gdn_write_activation": [
+      "tanh",
+      "sigmoid",
+      "tanh"
+    ],
+    "gdn_write_initialization": "zero_constant_and_quadratic_projections"
+  },
+  "pilot": {
+    "all_recorded_telemetry_numeric_values_finite": true,
+    "attention_diagnostic_invalid_counts": {
+      "invalid_coefficient_count": 0,
+      "invalid_erase_count": 0,
+      "invalid_gate_count": 0,
+      "invalid_output_count": 0,
+      "invalid_projection_count": 0,
+      "invalid_read_count": 0
+    },
+    "attention_diagnostics_valid": true,
+    "coefficient_diagnostics_by_degree": {
+      "0": {
+        "layer_mean_max": 0.0008798381313681602,
+        "layer_mean_min": 5.1806389819830656e-05,
+        "layer_rms_max": 0.004898236598819494,
+        "layer_rms_min": 0.002122626407071948,
+        "layers_with_nonzero_rms": 10,
+        "maximum_over_layers": 0.030029296875,
+        "minimum_over_layers": -0.0205078125
+      },
+      "1": {
+        "layer_mean_max": 0.5013933181762695,
+        "layer_mean_min": 0.4948902428150177,
+        "layer_rms_max": 0.5190064907073975,
+        "layer_rms_min": 0.5131200551986694,
+        "layers_with_nonzero_rms": 10,
+        "maximum_over_layers": 0.921875,
+        "minimum_over_layers": 0.06640625
+      },
+      "2": {
+        "layer_mean_max": 0.0006974118296056986,
+        "layer_mean_min": 9.311533176514786e-06,
+        "layer_rms_max": 0.0038370750844478607,
+        "layer_rms_min": 0.0017097819363698363,
+        "layers_with_nonzero_rms": 10,
+        "maximum_over_layers": 0.021240234375,
+        "minimum_over_layers": -0.015869140625
+      }
+    },
+    "gradient_clipped_fraction": 1.0,
+    "gradient_norm_max": 11.256853103637695,
+    "gradient_norm_mean": 9.032082509994506,
+    "gradient_norm_observations": 20,
+    "gradient_spike_count": 0,
+    "steps_completed": 20,
+    "training_tokens": 10485760,
+    "validation_nll": 10.477068901062012,
+    "validation_nll_finite": true,
+    "validation_perplexity": 35492.22371057099,
+    "write_projection_gradient_norms": {
+      "0": {
+        "max": 11.08987045288086,
+        "mean": 8.823360800743103,
+        "min": 7.528099060058594
+      },
+      "1": {
+        "max": 0.1436937302350998,
+        "mean": 0.14005708172917367,
+        "min": 0.13549940288066864
+      },
+      "2": {
+        "max": 0.11435436457395554,
+        "mean": 0.10996098667383195,
+        "min": 0.10538122802972794
+      }
+    },
+    "write_projection_update_norms": {
+      "0": {
+        "max": 0.0028402134776115417,
+        "mean": 0.0014464555817539804,
+        "min": 0.0
+      },
+      "1": {
+        "max": 0.001632403931580484,
+        "mean": 0.0009169912751531229,
+        "min": 0.0
+      },
+      "2": {
+        "max": 0.0022890400141477585,
+        "mean": 0.0011953771856497042,
+        "min": 0.0
+      }
+    }
+  },
+  "qualification_helper": {
+    "path": "scaffolds/transformer/validation/qualify_gdn_runtime.sbatch",
+    "sha256": "7cfb14653f87896fd3d1bc6c09f02b377c290791dcf38077e3b576af8f1c3760",
+    "size_bytes": 5038,
+    "source_commit": "46b776c9fc22e7ab5636e28a41f24105dcc508fd"
+  },
+  "recipe_dimensions": {
+    "compute_dtype": "bfloat16",
+    "context_length": 2048,
+    "hidden_size": 1024,
+    "key_head_dim": 64,
+    "num_heads": 16,
+    "num_layers": 10,
+    "total_steps": 19074,
+    "value_head_dim": 64,
+    "warmup_steps": 400
+  },
+  "recorded_utc": "2026-10-13T15:39:15.164473+00:00",
+  "retained_log": {
+    "path": "scaffolds/transformer/validation/logs/gdn-runtime-218426.log",
+    "sha256": "899a831106d805a90601091f468195bc04df776bc31d0ca3aeb5d96285283873",
+    "size_bytes": 5375
+  },
+  "run_id": "rd40af7956426",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quadratic/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "NCCL_P2P_DISABLE": null,
+    "TRANSFORMER_HOST_STAGING": "0",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "runtime_projection": {
+    "maximum_projected_hours": 22,
+    "production_allocation_hours": 24,
+    "projected_hours": 19.936745564479043,
+    "scope": "Conservative synchronized pilot estimate including compilation, evaluation, and checkpoints; production timing is outside this qualification record.",
+    "within_budget": true
+  },
+  "schema_version": 1,
+  "selected_checkpoints": [],
+  "slurm": {
+    "elapsed_seconds": 2249,
+    "exit_code": "0:0",
+    "finished_utc": "2026-10-13T15:39:17+00:00",
+    "gpu_count": 4,
+    "job_id": "218426",
+    "nice": 0,
+    "node": "mastiff",
+    "partition": "standard",
+    "started_utc": "2026-10-13T15:01:48+00:00",
+    "state": "COMPLETED"
+  },
+  "source_commit": "46b776c9fc22e7ab5636e28a41f24105dcc508fd",
+  "status": "passed",
+  "synchronized_timing": {
+    "checkpoint_seconds": [
+      24.24696666491218
+    ],
+    "evaluation_seconds": [
+      11.008788075996563
+    ],
+    "first_update_seconds": 92.77598151110578,
+    "pilot_runtime_seconds": 441.5602137800306,
+    "steady_update_count": 7,
+    "steady_update_seconds_max": 3.609303858014755,
+    "steady_update_seconds_median": 3.432625135057606,
+    "steady_update_seconds_min": 3.3812317380215973
+  },
+  "tests": {
+    "cpu-distributed-tests": {
+      "cases_by_module": {
+        "tests.test_telemetry": 4,
+        "tests.test_training": 5
+      },
+      "errors": 0,
+      "failures": 0,
+      "junit_sha256": "755b6935ea0d7401826e44a72d6176bef1749a21a85c8672ac32c26f01f6958e",
+      "origin_slurm_job_id": "218426",
+      "reused": false,
+      "skipped": 0,
+      "status": "passed",
+      "tests_passed": 9
+    },
+    "cpu-tests": {
+      "cases_by_module": {
+        "tests.test_checkpoint_audit": 29,
+        "tests.test_gated_deltanet": 32,
+        "tests.test_initialization": 7,
+        "tests.test_model": 37,
+        "tests.test_parameter_policy": 4,
+        "tests.test_polynomial_gdn": 14,
+        "tests.test_polynomial_gdn_integration": 13,
+        "tests.test_telemetry": 5,
+        "tests.test_training": 10,
+        "tests.test_triton_bridge_precision": 6
+      },
+      "errors": 0,
+      "failures": 0,
+      "junit_sha256": "d3a78de20e410492fecc7336eb421f3154e449a1944830888c087e9624658613",
+      "origin_slurm_job_id": "218426",
+      "reused": false,
+      "skipped": 0,
+      "status": "passed",
+      "tests_passed": 157
+    },
+    "gpu-tests": {
+      "cases_by_module": {
+        "tests.test_gated_deltanet_kernel": 34,
+        "tests.test_polynomial_gdn_kernel": 21
+      },
+      "errors": 0,
+      "failures": 0,
+      "junit_sha256": "9a077632fe6a47aae4ee97f4f732284bc3dfb39e60bec25239dd6a634d1bf2bb",
+      "origin_slurm_job_id": "218426",
+      "reused": false,
+      "skipped": 0,
+      "status": "passed",
+      "tests_passed": 55
+    }
+  }
+}

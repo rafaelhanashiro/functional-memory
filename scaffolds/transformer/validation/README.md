@@ -43,8 +43,22 @@ and cross-chunk geometry adjoints without changing the recurrence. On one H100
 PCIe at the production per-device shape, forward and backward together measured
 66.58 ms versus 121.99 ms before optimization. All 21 quadratic GPU tests pass
 on source `9152f4ee`; [measurements](runs/gdn-quadratic-h100/benchmark-geometry-split.json)
-retain timings and compiler resource use. Full-recipe runtime qualification is
-pending; an isolated kernel speedup is not a measured training speedup.
+retain timings and compiler resource use.
+
+The optimized [full-recipe qualification](runs/gdn-quadratic-h100/runtime.json)
+passed on four H100 PCIe GPUs (`mastiff`, job `218426`, source `46b776c9`):
+157 CPU, 9 distributed, and 55 GPU tests, a 20-update pilot, and exact
+fresh-process resumption from update 20 to 21. Synchronized steady updates took
+3.381–3.609 seconds (median 3.433); the conservative full-run projection was
+19.94 hours, within the 22-hour guard for a 24-hour allocation. These are pilot
+timings, not a completed production measurement.
+
+The optimized pilot had finite validation and telemetry, zero invalid attention
+counts, and nonzero constant and quadratic coefficients in all ten layers.
+Gradient norms were finite (mean 9.03, maximum 11.26); every pilot update was
+clipped, with the constant-degree write projection contributing most of the
+norm. The run's scientific measurements, including later stability and model
+quality, remain outside this software qualification record.
 
 The runtime qualifier uses the same 20-minute log-stall watchdog as the training
 launcher and requires finite training, evaluation, exact resumption, and a pilot

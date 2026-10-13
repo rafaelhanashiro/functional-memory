@@ -3145,7 +3145,7 @@
   },
   "gdn_quadratic_query_geometry": {
     "home_cluster": "kennel",
-    "status": "optimized_gpu_correctness_passed_runtime_pending",
+    "status": "qualified_h100_pcie",
     "records": [
       {
         "path": "scaffolds/transformer/validation/runs/gdn-quadratic-cpu/tests.json",
@@ -3164,7 +3164,7 @@
     },
     "optimized_kernel": {
       "source_commit": "9152f4ee5ce0451a8200455f94cfeecd6bc747f1",
-      "status": "gpu_correctness_passed_runtime_pending",
+      "status": "gpu_correctness_and_full_recipe_runtime_passed",
       "benchmark": {
         "path": "scaffolds/transformer/validation/runs/gdn-quadratic-h100/benchmark-geometry-split.json",
         "sha256": "81e641e3ec1506d93abdbec0aabfe17d630f8b762ca78966c391a45d5c85fd39",
@@ -3174,6 +3174,17 @@
         "path": "scaffolds/transformer/validation/runs/gdn-quadratic-h100/benchmark-geometry-split-gpu-tests.xml",
         "sha256": "6756d500f3a85cc1cd5de453f8e4617873b45e6b22510672d5e21ee5cc083589",
         "size_bytes": 3676
+      }
+    },
+    "source_commit": "46b776c9fc22e7ab5636e28a41f24105dcc508fd",
+    "runtime": {
+      "status": "passed",
+      "source_commit": "46b776c9fc22e7ab5636e28a41f24105dcc508fd",
+      "gpu_job_id": "218426",
+      "record": {
+        "path": "scaffolds/transformer/validation/runs/gdn-quadratic-h100/runtime.json",
+        "sha256": "6f17964dcf803585e5828144c4aa609b891d308ed165e8abb6158d521c56992a",
+        "size_bytes": 11227
       }
     }
   }
