@@ -116,18 +116,25 @@ def _attention_bwd(scale, residuals, dout):
     chunks = length // CHUNK_SIZE
     history_shape = _shape((batch, heads, chunks * (chunks + 1) // 2, CHUNK_SIZE, key_dim), jnp.float32)
     _, history = _polynomial_call(
-        forward, q, k, v, prefix, beta, erase, inverse, float(scale),
+        # The history-only kernel does not read its value operand. Supplying
+        # dout makes its scheduling depend on this layer's backward pass, so
+        # XLA cannot hoist all layers' quadratic workspaces into the forward.
+        forward, q, k, dout, prefix, beta, erase, inverse, float(scale),
         out=[_shape((), jnp.float32), history_shape], q=q, v=v, name="recompute_queries",
         SAVE_HISTORY=True, COMPUTE_OUTPUT=False)
     dq, dquery_prefix, adjoint_history = _polynomial_call(
         backward_queries, k, v, prefix, beta, erase, inverse, dout, history, float(scale),
         out=[_shape(q.shape, q.dtype), _shape(prefix.shape, jnp.float32), history_shape],
         q=q, v=v, name="backward_queries")
-    dk, dv, dbeta, derase, dinverse, dkey_prefix = _polynomial_call(
+    dummy = _shape((), jnp.float32)
+    _, dv, dbeta, _, _, dkey_prefix = _polynomial_call(
         backward_keys, k, v, prefix, beta, erase, inverse, dout, history, adjoint_history, float(scale),
-        out=[_shape(k.shape, jnp.float32), _shape(v.shape, v.dtype), _shape(beta.shape, beta.dtype),
-             _shape(erase.shape, erase.dtype), _shape(inverse.shape, jnp.float32),
-             _shape(prefix.shape, jnp.float32)], q=q, v=v, name="backward_keys")
+        out=[dummy, _shape(v.shape, v.dtype), _shape(beta.shape, beta.dtype), dummy, dummy,
+             _shape(prefix.shape, jnp.float32)], q=q, v=v, name="backward_key_values", GROUP=1)
+    dk, _, _, derase, dinverse, _ = _polynomial_call(
+        backward_keys, k, v, prefix, beta, erase, inverse, dout, history, adjoint_history, float(scale),
+        out=[_shape(k.shape, jnp.float32), dummy, dummy, _shape(erase.shape, erase.dtype),
+             _shape(inverse.shape, jnp.float32), dummy], q=q, v=v, name="backward_key_geometry", GROUP=2)
     return dq, dk.astype(k.dtype), dv, dquery_prefix + dkey_prefix, dbeta, derase, dinverse
 
 

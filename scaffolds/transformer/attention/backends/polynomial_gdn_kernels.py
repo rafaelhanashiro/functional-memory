@@ -143,7 +143,12 @@ def backward_queries(k, v, prefix, beta, erase, inverse, dout, history, scale,
 def backward_keys(k, v, prefix, beta, erase, inverse, dout, history, adjoint_history, scale,
                   dk, dv, dbeta, derase, dinverse, dkey_prefix,
                   T: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
-                  BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr):
+                  BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr, GROUP: tl.constexpr):
+    # GROUP=0 keeps the full adjoint for benchmarking; 1/2 split its value and
+    # geometry outputs. Reducing simultaneous accumulators avoids register spills
+    # and shared-memory pressure without changing the differentiated equations.
+    VALUES: tl.constexpr = GROUP != 2
+    GEOMETRY: tl.constexpr = GROUP != 1
     kc, bh = tl.program_id(0), tl.program_id(1)
     b, h = bh // H, bh % H
     key = _matrix(k, b, h, kc, T, H, K, BK, BT)
@@ -152,51 +157,58 @@ def backward_keys(k, v, prefix, beta, erase, inverse, dout, history, adjoint_his
     erasure = _gates(erase, b, h, kc, T, H, BT)
     key_decay = _gates(prefix, b, h, kc, T, H, BT)
     beta0, beta1, beta2 = _coefficients(beta, b, h, kc, T, H, BT)
-    grad_key = tl.zeros((BT, BK), tl.float32)
-    grad_value = tl.zeros((BT, BV), tl.float32)
-    grad_inverse = tl.zeros((BT, BT), tl.float32)
-    grad_erase = tl.zeros((BT,), tl.float32)
-    grad_beta0 = tl.zeros((BT,), tl.float32)
-    grad_beta1 = tl.zeros((BT,), tl.float32)
-    grad_beta2 = tl.zeros((BT,), tl.float32)
-    grad_prefix = tl.zeros((BT,), tl.float32)
+    if GEOMETRY:
+        grad_key = tl.zeros((BT, BK), tl.float32)
+        grad_inverse = tl.zeros((BT, BT), tl.float32)
+        grad_erase = tl.zeros((BT,), tl.float32)
+    if VALUES:
+        grad_value = tl.zeros((BT, BV), tl.float32)
+        grad_beta0 = tl.zeros((BT,), tl.float32)
+        grad_beta1 = tl.zeros((BT,), tl.float32)
+        grad_beta2 = tl.zeros((BT,), tl.float32)
+        grad_prefix = tl.zeros((BT,), tl.float32)
     for qc in range(kc, T // BT):
         query = _history(history, bh, qc, kc, T, K, BK, BT)
-        query_adjoint = _history(adjoint_history, bh, qc, kc, T, K, BK, BT)
+        if GEOMETRY:
+            query_adjoint = _history(adjoint_history, bh, qc, kc, T, K, BK, BT)
         do = _matrix(dout, b, h, qc, T, H, V, BV, BT) * scale
         causal = _causal(qc, kc, BT)
         scores = tl.where(causal, tl.dot(query, tl.trans(key), input_precision="tf32x3"), 0.0)
         effective = tl.dot(scores, a, input_precision="tf32x3")
         query_decay = _gates(prefix, b, h, qc, T, H, BT)
         decay = tl.exp(tl.where(causal, query_decay[:, None] - key_decay[None, :], 0.0))
-        polynomial = (beta2[None, :] * effective + beta1[None, :]) * effective + beta0[None, :]
-        weights = tl.where(causal, decay * polynomial, 0.0)
         dweight = tl.dot(do, tl.trans(value), input_precision="tf32x3")
-        grad_prefix -= tl.sum(dweight * weights, 0)
         dpolynomial = tl.where(causal, dweight * decay, 0.0)
-        grad_beta0 += tl.sum(dpolynomial, 0)
-        grad_beta1 += tl.sum(dpolynomial * effective, 0)
-        grad_beta2 += tl.sum(dpolynomial * effective * effective, 0)
-        grad_value += tl.dot(tl.trans(weights), do, input_precision="tf32x3")
-        derivative = beta1[None, :] + 2.0 * beta2[None, :] * effective
-        deffective = dpolynomial * derivative
-        deffective -= tl.dot(query_adjoint, tl.trans(key), input_precision="tf32x3") * erasure[None, :]
-        dscores = tl.where(causal, tl.dot(deffective, tl.trans(a), input_precision="tf32x3"), 0.0)
-        direct = tl.dot(tl.trans(effective), query_adjoint, input_precision="tf32x3")
-        grad_key += tl.dot(tl.trans(dscores), query, input_precision="tf32x3") - erasure[:, None] * direct
-        grad_erase -= tl.sum(direct * key, 1)
-        grad_inverse += tl.dot(tl.trans(scores), deffective, input_precision="tf32x3")
+        if VALUES:
+            polynomial = (beta2[None, :] * effective + beta1[None, :]) * effective + beta0[None, :]
+            weights = tl.where(causal, decay * polynomial, 0.0)
+            grad_prefix -= tl.sum(dweight * weights, 0)
+            grad_beta0 += tl.sum(dpolynomial, 0)
+            grad_beta1 += tl.sum(dpolynomial * effective, 0)
+            grad_beta2 += tl.sum(dpolynomial * effective * effective, 0)
+            grad_value += tl.dot(tl.trans(weights), do, input_precision="tf32x3")
+        if GEOMETRY:
+            derivative = beta1[None, :] + 2.0 * beta2[None, :] * effective
+            deffective = dpolynomial * derivative
+            deffective -= tl.dot(query_adjoint, tl.trans(key), input_precision="tf32x3") * erasure[None, :]
+            dscores = tl.where(causal, tl.dot(deffective, tl.trans(a), input_precision="tf32x3"), 0.0)
+            direct = tl.dot(tl.trans(effective), query_adjoint, input_precision="tf32x3")
+            grad_key += tl.dot(tl.trans(dscores), query, input_precision="tf32x3") - erasure[:, None] * direct
+            grad_erase -= tl.sum(direct * key, 1)
+            grad_inverse += tl.dot(tl.trans(scores), deffective, input_precision="tf32x3")
     rows, columns_k = kc * BT + tl.arange(0, BT), tl.arange(0, BK)
     token_offset = (b * T + rows) * H + h
-    tl.store(dk + token_offset[:, None] * K + columns_k[None, :], grad_key,
-             mask=columns_k[None, :] < K)
-    columns_v = tl.arange(0, BV)
-    tl.store(dv + token_offset[:, None] * V + columns_v[None, :], grad_value,
-             mask=columns_v[None, :] < V)
-    tl.store(dbeta + token_offset * 3, grad_beta0)
-    tl.store(dbeta + token_offset * 3 + 1, grad_beta1)
-    tl.store(dbeta + token_offset * 3 + 2, grad_beta2)
-    tl.store(derase + token_offset, grad_erase)
-    tl.store(dkey_prefix + token_offset, grad_prefix)
-    columns_a = tl.arange(0, BT)
-    tl.store(dinverse + token_offset[:, None] * BT + columns_a[None, :], grad_inverse)
+    if GEOMETRY:
+        tl.store(dk + token_offset[:, None] * K + columns_k[None, :], grad_key,
+                 mask=columns_k[None, :] < K)
+        tl.store(derase + token_offset, grad_erase)
+        columns_a = tl.arange(0, BT)
+        tl.store(dinverse + token_offset[:, None] * BT + columns_a[None, :], grad_inverse)
+    if VALUES:
+        columns_v = tl.arange(0, BV)
+        tl.store(dv + token_offset[:, None] * V + columns_v[None, :], grad_value,
+                 mask=columns_v[None, :] < V)
+        tl.store(dbeta + token_offset * 3, grad_beta0)
+        tl.store(dbeta + token_offset * 3 + 1, grad_beta1)
+        tl.store(dbeta + token_offset * 3 + 2, grad_beta2)
+        tl.store(dkey_prefix + token_offset, grad_prefix)
