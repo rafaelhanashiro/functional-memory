@@ -87,23 +87,24 @@ def _polynomial_call(kernel, *args, out, q, v, name, **extra):
                        num_warps=4, num_stages=1, **_metadata(q, v), **extra)
 
 
-def _forward(q, k, v, prefix, beta, erase, inverse, scale):
+def _forward(q, k, v, prefix, beta, erase, inverse, transformed, scale):
     from scaffolds.transformer.attention.backends.polynomial_gdn_kernels import forward
 
     output, _ = _polynomial_call(
-        forward, q, k, v, prefix, beta, erase, inverse, float(scale),
+        forward, q, k, v, prefix, beta, erase, inverse, transformed, float(scale),
         out=[_shape(v.shape, v.dtype), _shape((), jnp.float32)], q=q, v=v, name="forward",
         SAVE_HISTORY=False, COMPUTE_OUTPUT=True)
     return output
 
 
-@partial(jax.custom_vjp, nondiff_argnums=(7,))
-def _attention(q, k, v, prefix, beta, erase, inverse, scale):
-    return _forward(q, k, v, prefix, beta, erase, inverse, scale)
+@partial(jax.custom_vjp, nondiff_argnums=(8,))
+def _attention(q, k, v, prefix, beta, erase, inverse, transformed, scale):
+    return _forward(q, k, v, prefix, beta, erase, inverse, transformed, scale)
 
 
-def _attention_fwd(q, k, v, prefix, beta, erase, inverse, scale):
-    return _forward(q, k, v, prefix, beta, erase, inverse, scale), (q, k, v, prefix, beta, erase, inverse)
+def _attention_fwd(q, k, v, prefix, beta, erase, inverse, transformed, scale):
+    return _forward(q, k, v, prefix, beta, erase, inverse, transformed, scale), (
+        q, k, v, prefix, beta, erase, inverse, transformed)
 
 
 def _attention_bwd(scale, residuals, dout):
@@ -111,7 +112,7 @@ def _attention_bwd(scale, residuals, dout):
         forward, backward_queries, backward_keys,
     )
 
-    q, k, v, prefix, beta, erase, inverse = residuals
+    q, k, v, prefix, beta, erase, inverse, transformed = residuals
     batch, length, heads, key_dim = q.shape
     chunks = length // CHUNK_SIZE
     history_shape = _shape((batch, heads, chunks * (chunks + 1) // 2, CHUNK_SIZE, key_dim), jnp.float32)
@@ -119,23 +120,24 @@ def _attention_bwd(scale, residuals, dout):
         # The history-only kernel does not read its value operand. Supplying
         # dout makes its scheduling depend on this layer's backward pass, so
         # XLA cannot hoist all layers' quadratic workspaces into the forward.
-        forward, q, k, dout, prefix, beta, erase, inverse, float(scale),
+        forward, q, k, dout, prefix, beta, erase, inverse, transformed, float(scale),
         out=[_shape((), jnp.float32), history_shape], q=q, v=v, name="recompute_queries",
         SAVE_HISTORY=True, COMPUTE_OUTPUT=False)
     dq, dquery_prefix, adjoint_history = _polynomial_call(
-        backward_queries, k, v, prefix, beta, erase, inverse, dout, history, float(scale),
+        backward_queries, k, v, prefix, beta, erase, inverse, transformed, dout, history, float(scale),
         out=[_shape(q.shape, q.dtype), _shape(prefix.shape, jnp.float32), history_shape],
         q=q, v=v, name="backward_queries")
     dummy = _shape((), jnp.float32)
-    _, dv, dbeta, _, _, dkey_prefix = _polynomial_call(
-        backward_keys, k, v, prefix, beta, erase, inverse, dout, history, adjoint_history, float(scale),
-        out=[dummy, _shape(v.shape, v.dtype), _shape(beta.shape, beta.dtype), dummy, dummy,
-             _shape(prefix.shape, jnp.float32)], q=q, v=v, name="backward_key_values", GROUP=1, BQ=32)
-    dk, _, _, derase, dinverse, _ = _polynomial_call(
-        backward_keys, k, v, prefix, beta, erase, inverse, dout, history, adjoint_history, float(scale),
+    _, dv, dbeta, _, _, _, dkey_prefix = _polynomial_call(
+        backward_keys, k, v, prefix, beta, erase, inverse, transformed, dout, history, adjoint_history, float(scale),
+        out=[dummy, _shape(v.shape, v.dtype), _shape(beta.shape, beta.dtype), dummy, dummy, dummy,
+             _shape(prefix.shape, jnp.float32)], q=q, v=v, name="backward_key_values", GROUP=1, BQ=64)
+    dk, _, _, derase, dinverse, dtransformed, _ = _polynomial_call(
+        backward_keys, k, v, prefix, beta, erase, inverse, transformed, dout, history, adjoint_history, float(scale),
         out=[_shape(k.shape, jnp.float32), dummy, dummy, _shape(erase.shape, erase.dtype),
-             _shape(inverse.shape, jnp.float32), dummy], q=q, v=v, name="backward_key_geometry", GROUP=2, BQ=32)
-    return dq, dk.astype(k.dtype), dv, dquery_prefix + dkey_prefix, dbeta, derase, dinverse
+             _shape(inverse.shape, jnp.float32), _shape(transformed.shape, jnp.float32), dummy],
+        q=q, v=v, name="backward_key_geometry", GROUP=2, BQ=64)
+    return dq, dk.astype(k.dtype), dv, dquery_prefix + dkey_prefix, dbeta, derase, dinverse, dtransformed
 
 
 _attention.defvjp(_attention_fwd, _attention_bwd)
@@ -159,5 +161,10 @@ def polynomial_gated_delta_rule(q, k, v, g, beta, erase, scale):
     k32 = k.astype(jnp.float32)
     erase32, beta32 = erase.astype(jnp.float32), beta.astype(jnp.float32)
     inverse = _inverse(k32, erase32)
+    # Outside the query's own chunk, E=Q K^T A=Q R^T with R=A^T K.
+    # Prepare R once per key chunk instead of multiplying by A for every query
+    # chunk; autodiff adds its local key/inverse adjoints in FP32.
+    with jax.default_matmul_precision("highest"):
+        transformed = _token_view(jnp.swapaxes(_chunk_view(inverse), -1, -2) @ _chunk_view(k32))
     prefix = jnp.cumsum(g.astype(jnp.float32), axis=1)
-    return _attention(q, k32, v, prefix, beta32, erase32, inverse, float(scale))
+    return _attention(q, k32, v, prefix, beta32, erase32, inverse, transformed, float(scale))

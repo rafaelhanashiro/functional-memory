@@ -106,12 +106,14 @@ def main():
     prefix = jnp.cumsum(g, axis=1)
     inverse = jax.jit(backend._inverse_forward)(k32, erase)
     jax.block_until_ready(inverse)
+    with jax.default_matmul_precision("highest"):
+        transformed = backend._token_view(jnp.swapaxes(backend._chunk_view(inverse), -1, -2) @ backend._chunk_view(k32))
     chunks = args.length // backend.CHUNK_SIZE
     history_shape = jax.ShapeDtypeStruct(
         (args.batch, args.heads, chunks * (chunks + 1) // 2, backend.CHUNK_SIZE, args.width), jnp.float32)
     scalar_shape = jax.ShapeDtypeStruct((), jnp.float32)
     scale = args.width ** -.5
-    raw_inputs = (q, k32, v, prefix, beta, erase, inverse)
+    raw_inputs = (q, k32, v, prefix, beta, erase, inverse, transformed)
     full_inputs = (q, k, v, g, beta, erase)
     baseline = None
 
@@ -174,7 +176,7 @@ def main():
                                    SAVE_HISTORY=True, COMPUTE_OUTPUT=False)[1]
         _, entry["timings"]["forward"] = measure("forward", lambda *a: backend._forward(*a, scale), raw_inputs)
         history, entry["timings"]["history"] = measure("history", history_call, raw_inputs)
-        query_inputs = (k32, v, prefix, beta, erase, inverse, dout, history)
+        query_inputs = (k32, v, prefix, beta, erase, inverse, transformed, dout, history)
         def query_call(*a):
             return configured_call(
                 kernels.backward_queries, *a, float(scale),
@@ -188,22 +190,24 @@ def main():
                 kernels.backward_keys, *a, float(scale),
                 out=[jax.ShapeDtypeStruct(k.shape, jnp.float32), jax.ShapeDtypeStruct(v.shape, v.dtype),
                      jax.ShapeDtypeStruct(beta.shape, beta.dtype), jax.ShapeDtypeStruct(erase.shape, erase.dtype),
-                     jax.ShapeDtypeStruct(inverse.shape, jnp.float32), jax.ShapeDtypeStruct(prefix.shape, jnp.float32)],
+                     jax.ShapeDtypeStruct(inverse.shape, jnp.float32), jax.ShapeDtypeStruct(transformed.shape, jnp.float32),
+                     jax.ShapeDtypeStruct(prefix.shape, jnp.float32)],
                 q=q, v=v, name="backward_keys", GROUP=0, BQ=64)
         _, entry["timings"]["backward_keys"] = measure("backward_keys", key_call, key_inputs)
         def key_values_call(*a):
             return configured_call(
                 kernels.backward_keys, *a, float(scale),
                 out=[scalar_shape, jax.ShapeDtypeStruct(v.shape, v.dtype),
-                     jax.ShapeDtypeStruct(beta.shape, beta.dtype), scalar_shape, scalar_shape,
+                     jax.ShapeDtypeStruct(beta.shape, beta.dtype), scalar_shape, scalar_shape, scalar_shape,
                      jax.ShapeDtypeStruct(prefix.shape, jnp.float32)],
-                q=q, v=v, name="backward_key_values", GROUP=1, BQ=32)
+                q=q, v=v, name="backward_key_values", GROUP=1, BQ=64)
         def key_geometry_call(*a):
             return configured_call(
                 kernels.backward_keys, *a, float(scale),
                 out=[jax.ShapeDtypeStruct(k.shape, jnp.float32), scalar_shape, scalar_shape,
                      jax.ShapeDtypeStruct(erase.shape, erase.dtype), jax.ShapeDtypeStruct(inverse.shape, jnp.float32),
-                     scalar_shape], q=q, v=v, name="backward_key_geometry", GROUP=2, BQ=32)
+                     jax.ShapeDtypeStruct(transformed.shape, jnp.float32), scalar_shape],
+                q=q, v=v, name="backward_key_geometry", GROUP=2, BQ=64)
         _, entry["timings"]["backward_key_values"] = measure("backward_key_values", key_values_call, key_inputs)
         _, entry["timings"]["backward_key_geometry"] = measure("backward_key_geometry", key_geometry_call, key_inputs)
         _, entry["timings"]["inverse_backward"] = measure(

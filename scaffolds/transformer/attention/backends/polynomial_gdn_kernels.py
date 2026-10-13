@@ -78,7 +78,7 @@ def _causal(qc, kc, BT: tl.constexpr):
 
 
 @triton.jit
-def forward(q, k, v, prefix, beta, erase, inverse, scale, output, history,
+def forward(q, k, v, prefix, beta, erase, inverse, transformed, scale, output, history,
             T: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
             BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr,
             SAVE_HISTORY: tl.constexpr, COMPUTE_OUTPUT: tl.constexpr):
@@ -93,11 +93,15 @@ def forward(q, k, v, prefix, beta, erase, inverse, scale, output, history,
         if SAVE_HISTORY:
             _store_history(history, query, bh, qc, kc, T, K, BK, BT)
         key = _matrix(k, b, h, kc, T, H, K, BK, BT)
-        a = _matrix(inverse, b, h, kc, T, H, BT, BT, BT)
         erasure = _gates(erase, b, h, kc, T, H, BT)
         causal = _causal(qc, kc, BT)
-        scores = tl.where(causal, tl.dot(query, tl.trans(key), input_precision="tf32x3"), 0.0)
-        effective = tl.dot(scores, a, input_precision="tf32x3")
+        if kc == qc:
+            a = _matrix(inverse, b, h, kc, T, H, BT, BT, BT)
+            scores = tl.where(causal, tl.dot(query, tl.trans(key), input_precision="tf32x3"), 0.0)
+            effective = tl.dot(scores, a, input_precision="tf32x3")
+        else:
+            r = _matrix(transformed, b, h, kc, T, H, K, BK, BT)
+            effective = tl.dot(query, tl.trans(r), input_precision="tf32x3")
         if COMPUTE_OUTPUT:
             value = _matrix(v, b, h, kc, T, H, V, BV, BT)
             key_decay = _gates(prefix, b, h, kc, T, H, BT)
@@ -114,7 +118,7 @@ def forward(q, k, v, prefix, beta, erase, inverse, scale, output, history,
 
 
 @triton.jit
-def backward_queries(k, v, prefix, beta, erase, inverse, dout, history, scale,
+def backward_queries(k, v, prefix, beta, erase, inverse, transformed, dout, history, scale,
                      dq, dquery_prefix, adjoint_history,
                      T: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
                      BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr):
@@ -129,11 +133,15 @@ def backward_queries(k, v, prefix, beta, erase, inverse, dout, history, scale,
         query = _history(history, bh, qc, kc, T, K, BK, BT)
         key = _matrix(k, b, h, kc, T, H, K, BK, BT)
         value = _matrix(v, b, h, kc, T, H, V, BV, BT)
-        a = _matrix(inverse, b, h, kc, T, H, BT, BT, BT)
         erasure = _gates(erase, b, h, kc, T, H, BT)
         causal = _causal(qc, kc, BT)
-        scores = tl.where(causal, tl.dot(query, tl.trans(key), input_precision="tf32x3"), 0.0)
-        effective = tl.dot(scores, a, input_precision="tf32x3")
+        if kc == qc:
+            a = _matrix(inverse, b, h, kc, T, H, BT, BT, BT)
+            scores = tl.where(causal, tl.dot(query, tl.trans(key), input_precision="tf32x3"), 0.0)
+            effective = tl.dot(scores, a, input_precision="tf32x3")
+        else:
+            r = _matrix(transformed, b, h, kc, T, H, K, BK, BT)
+            effective = tl.dot(query, tl.trans(r), input_precision="tf32x3")
         key_decay = _gates(prefix, b, h, kc, T, H, BT)
         decay = tl.exp(tl.where(causal, query_decay[:, None] - key_decay[None, :], 0.0))
         beta0, beta1, beta2 = _coefficients(beta, b, h, kc, T, H, BT)
@@ -143,9 +151,14 @@ def backward_queries(k, v, prefix, beta, erase, inverse, dout, history, scale,
         derivative = beta1[None, :] + 2.0 * beta2[None, :] * effective
         deffective = tl.where(causal, dweight * decay * derivative, 0.0)
         deffective -= tl.dot(query_adjoint, tl.trans(key), input_precision="tf32x3") * erasure[None, :]
-        dscores = tl.dot(deffective, tl.trans(a), input_precision="tf32x3")
-        dscores = tl.where(causal, dscores, 0.0)
-        query_adjoint += tl.dot(dscores, key, input_precision="tf32x3")
+        if kc == qc:
+            a_backward = _matrix(inverse, b, h, kc, T, H, BT, BT, BT)
+            dscores = tl.dot(deffective, tl.trans(a_backward), input_precision="tf32x3")
+            dscores = tl.where(causal, dscores, 0.0)
+            query_adjoint += tl.dot(dscores, key, input_precision="tf32x3")
+        else:
+            r_backward = _matrix(transformed, b, h, kc, T, H, K, BK, BT)
+            query_adjoint += tl.dot(deffective, r_backward, input_precision="tf32x3")
     rows, cols = qc * BT + tl.arange(0, BT), tl.arange(0, BK)
     offsets = ((b * T + rows[:, None]) * H + h) * K + cols[None, :]
     tl.store(dq + offsets, query_adjoint, mask=cols[None, :] < K)
@@ -153,8 +166,8 @@ def backward_queries(k, v, prefix, beta, erase, inverse, dout, history, scale,
 
 
 @triton.jit
-def backward_keys(k, v, prefix, beta, erase, inverse, dout, history, adjoint_history, scale,
-                  dk, dv, dbeta, derase, dinverse, dkey_prefix,
+def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history, adjoint_history, scale,
+                  dk, dv, dbeta, derase, dinverse, dtransformed, dkey_prefix,
                   T: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
                   BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr,
                   GROUP: tl.constexpr, BQ: tl.constexpr):
@@ -163,17 +176,18 @@ def backward_keys(k, v, prefix, beta, erase, inverse, dout, history, adjoint_his
     # and shared-memory pressure without changing the differentiated equations.
     VALUES: tl.constexpr = GROUP != 2
     GEOMETRY: tl.constexpr = GROUP != 1
+    tl.static_assert(BQ == BT)
     kc, bh = tl.program_id(0), tl.program_id(1)
     b, h = bh // H, bh % H
     key = _matrix(k, b, h, kc, T, H, K, BK, BT)
     value = _matrix(v, b, h, kc, T, H, V, BV, BT)
-    a = _matrix(inverse, b, h, kc, T, H, BT, BT, BT)
+    r = _matrix(transformed, b, h, kc, T, H, K, BK, BT)
     erasure = _gates(erase, b, h, kc, T, H, BT)
     key_decay = _gates(prefix, b, h, kc, T, H, BT)
     beta0, beta1, beta2 = _coefficients(beta, b, h, kc, T, H, BT)
     if GEOMETRY:
         grad_key = tl.zeros((BT, BK), tl.float32)
-        grad_inverse = tl.zeros((BT, BT), tl.float32)
+        grad_transformed = tl.zeros((BT, BK), tl.float32)
         grad_erase = tl.zeros((BT,), tl.float32)
     if VALUES:
         grad_value = tl.zeros((BT, BV), tl.float32)
@@ -187,8 +201,12 @@ def backward_keys(k, v, prefix, beta, erase, inverse, dout, history, adjoint_his
             query_adjoint = _history_rows(adjoint_history, bh, qb, kc, T, K, BK, BT, BQ)
         do = _matrix(dout, b, h, qb, T, H, V, BV, BQ) * scale
         causal = qb * BQ + tl.arange(0, BQ)[:, None] >= kc * BT + tl.arange(0, BT)[None, :]
-        scores = tl.where(causal, tl.dot(query, tl.trans(key), input_precision="tf32x3"), 0.0)
-        effective = tl.dot(scores, a, input_precision="tf32x3")
+        if qb == kc:
+            a = _matrix(inverse, b, h, kc, T, H, BT, BT, BT)
+            scores = tl.where(causal, tl.dot(query, tl.trans(key), input_precision="tf32x3"), 0.0)
+            effective = tl.dot(scores, a, input_precision="tf32x3")
+        else:
+            effective = tl.dot(query, tl.trans(r), input_precision="tf32x3")
         query_decay = _gates(prefix, b, h, qb, T, H, BQ)
         decay = tl.exp(tl.where(causal, query_decay[:, None] - key_decay[None, :], 0.0))
         dweight = tl.dot(do, tl.trans(value), input_precision="tf32x3")
@@ -205,19 +223,29 @@ def backward_keys(k, v, prefix, beta, erase, inverse, dout, history, adjoint_his
             derivative = beta1[None, :] + 2.0 * beta2[None, :] * effective
             deffective = dpolynomial * derivative
             deffective -= tl.dot(query_adjoint, tl.trans(key), input_precision="tf32x3") * erasure[None, :]
-            dscores = tl.where(causal, tl.dot(deffective, tl.trans(a), input_precision="tf32x3"), 0.0)
             direct = tl.dot(tl.trans(effective), query_adjoint, input_precision="tf32x3")
-            grad_key += tl.dot(tl.trans(dscores), query, input_precision="tf32x3") - erasure[:, None] * direct
+            grad_key -= erasure[:, None] * direct
             grad_erase -= tl.sum(direct * key, 1)
-            grad_inverse += tl.dot(tl.trans(scores), deffective, input_precision="tf32x3")
+            if qb == kc:
+                a_backward = _matrix(inverse, b, h, kc, T, H, BT, BT, BT)
+                scores_backward = tl.where(causal, tl.dot(query, tl.trans(key), input_precision="tf32x3"), 0.0)
+                dscores = tl.where(causal, tl.dot(deffective, tl.trans(a_backward), input_precision="tf32x3"), 0.0)
+                grad_key += tl.dot(tl.trans(dscores), query, input_precision="tf32x3")
+                grad_inverse = tl.dot(tl.trans(scores_backward), deffective, input_precision="tf32x3")
+                inverse_rows = kc * BT + tl.arange(0, BT)
+                inverse_columns = tl.arange(0, BT)
+                inverse_offsets = ((b * T + inverse_rows[:, None]) * H + h) * BT + inverse_columns[None, :]
+                tl.store(dinverse + inverse_offsets, grad_inverse)
+            else:
+                grad_transformed += tl.dot(tl.trans(deffective), query, input_precision="tf32x3")
     rows, columns_k = kc * BT + tl.arange(0, BT), tl.arange(0, BK)
     token_offset = (b * T + rows) * H + h
     if GEOMETRY:
         tl.store(dk + token_offset[:, None] * K + columns_k[None, :], grad_key,
                  mask=columns_k[None, :] < K)
         tl.store(derase + token_offset, grad_erase)
-        columns_a = tl.arange(0, BT)
-        tl.store(dinverse + token_offset[:, None] * BT + columns_a[None, :], grad_inverse)
+        tl.store(dtransformed + token_offset[:, None] * K + columns_k[None, :], grad_transformed,
+                 mask=columns_k[None, :] < K)
     if VALUES:
         columns_v = tl.arange(0, BV)
         tl.store(dv + token_offset[:, None] * V + columns_v[None, :], grad_value,
