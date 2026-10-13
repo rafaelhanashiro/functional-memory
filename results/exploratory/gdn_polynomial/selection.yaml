@@ -1,0 +1,40 @@
+question: Does quadratic memory improve GDN with the same original-key-space query
+  transformation?
+settings:
+  metric: terminal_validation_perplexity
+  validation_best_reported_separately: true
+  warmup_steps: 400
+  seed: 0
+  qk_head_dim: 64
+  comparison_limitation: One seed, with distinct exact training implementations for
+    the two recurrences.
+runs:
+- study: attention_scaling
+  run_id: rd40af7956426
+  role: primary
+  label: quadratic GDN query geometry, nested initialization
+  control: rf7341031e3d5
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rd40af7956426/config.yaml
+      sha256: 3b271001661b3130e71be9ede46e171599c483ab183d596959a730d564a6f9f5
+- study: attention_scaling
+  run_id: rf7341031e3d5
+  role: control
+  label: linear GDN, independent erase, repaired arithmetic
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rf7341031e3d5/config.yaml
+      sha256: 36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rf7341031e3d5/metrics.jsonl
+      sha256: 9a0467cb31457902d8846a209e7cf9bec17fdcc5a473bdeea70b63c321d2170f
+    completion.json:
+      path: experiments/attention_scaling/runs/rf7341031e3d5/completion.json
+      sha256: ee6efac92de2f08e60f47d72dfdc3fbd418f52d99a69feb6669fe5cb7d94ef7a
+    metadata.json:
+      path: experiments/attention_scaling/runs/rf7341031e3d5/metadata.json
+      sha256: 95797a663b6072276162e95862c018e6f8a787cf68754af74eb0cf2255d8709a
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rf7341031e3d5/best_validation.json
+      sha256: 4e8fdc16a2e23bd3cdf5d7622f85ee1587fc342fd9dd238fb39dfdb2f7a0e132

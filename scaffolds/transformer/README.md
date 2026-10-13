@@ -355,6 +355,35 @@ Neither pass divides by a gate, so zero erasure with nonzero writing is supporte
 Training telemetry records both gates, their difference, raw attention output statistics,
 and separate erase/write/decay/output-gate parameter-group norms.
 
+`gdn_polynomial_degree: 2` with `gdn_erase_mode: independent` extends the stored
+function to a quadratic while retaining the original key-space transformation:
+
+```text
+P_t = I - lambda_t k_t k_t^T
+F_t(q) = alpha_t F_{t-1}(P_t q)
+         + v_t [beta_{t,0} + beta_{t,1} <q,k_t> + beta_{t,2} <q,k_t>^2]
+read_t = F_t(q_t) / sqrt(d_K)
+```
+
+The decay multiplies the whole function once; the quadratic state transforms on
+both key axes by `P_t`. It is not a rank-one erase in an expanded feature space.
+`beta_1 = sigmoid(W_b x)` retains GDN's write projection and initialization;
+`beta_0 = tanh(W_0 x)` and `beta_2 = tanh(W_2 x)` have separate zero-initialized
+projections. The added terms start at zero with nonzero parameter derivatives,
+so the initial function equals independent-erase GDN without changing its original
+parameter draws. Queries and keys keep the same L2 normalization, and the read
+keeps the gated output RMSNorm. No causal attention-sum division is introduced.
+
+The `blocked` reference explicitly updates scalar, linear, and quadratic states.
+The `fused` implementation evaluates the same recurrence through causal scores
+`q_t^T P_t ... P_{i+1} k_i`, with degree-specific write coefficients at token `i`
+and the scalar decay outside the polynomial. Its chunk-local triangular solves
+and backward products use FP32 intermediates and TF32x3 products. This training
+implementation has quadratic sequence-length work and avoids materializing the
+quadratic recurrent state. Backward recomputes transported queries instead of
+saving their complete histories for every layer. Degree one keeps the original
+linear-time GDN kernel.
+
 ### Gated linear attention
 
 `attention_mechanism: gla` replaces the attention module inside the same residual

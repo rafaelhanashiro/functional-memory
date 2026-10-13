@@ -70,7 +70,8 @@ def attention_identity(config) -> dict:
     if config.model.attention_mechanism == "gated_deltanet":
         model = config.model
         independent = model.gdn_erase_mode == "independent"
-        return {
+        quadratic = model.gdn_polynomial_degree == 2
+        identity = {
             "attention_mechanism": "gated_deltanet",
             "attention_kernel": "gated_deltanet",
             "attention_backend": model.attention_backend,
@@ -88,6 +89,9 @@ def attention_identity(config) -> dict:
             "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
             "gdn_conv_size": model.gdn_conv_size,
             "gdn_erase_mode": model.gdn_erase_mode,
+            "gdn_polynomial_degree": model.gdn_polynomial_degree,
+            "gdn_write_initialization": ("zero_constant_and_quadratic_projections" if quadratic
+                                          else "sigmoid_write_projection"),
             "gdn_erase_initialization": "copy_write_projection" if independent else "shared_write_gate",
             "gdn_state_elements_per_layer": model.num_heads * model.qk_head_dim * model.value_head_dim,
             "gdn_initial_state": "zero_each_sequence",
@@ -96,6 +100,28 @@ def attention_identity(config) -> dict:
             "gdn_chunk_size": 64 if model.attention_backend == "fused" else None,
             "diagnostic_backend": model.attention_backend,
         }
+        if quadratic:
+            identity.update({
+                "attention_degree": 2,
+                "attention_implementation": ("transported_score_polynomial_gated_delta_rule_triton"
+                                             if model.attention_backend == "fused" else "tensor_recurrence_reference"),
+                "attention_formula": (
+                    "F_t(q)=a_t F_{t-1}(P_t q)+v_t sum_{r=0}^2 beta_{t,r}<q,k_t>^r; "
+                    "P_t=I-lambda_t k_t k_t^T in original key space; "
+                    "beta_0=tanh(W_0 x), beta_1=sigmoid(W_b x), beta_2=tanh(W_2 x); "
+                    "lambda_t=sigmoid(W_lambda x); o_t=F_t(q_t)/sqrt(d_k); "
+                    "q,k L2-normalized after short conv+SiLU; "
+                    "a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); one decay shared by all degrees"
+                ),
+                "attention_score_scale": "1 (global 1/sqrt(d_k) applied to polynomial read)",
+                "gdn_write_activation": ["tanh", "sigmoid", "tanh"],
+                "gdn_query_transport_space": "original_key_space",
+                "gdn_state_elements_per_layer": (model.num_heads * model.value_head_dim
+                                                  * (1 + model.qk_head_dim + model.qk_head_dim ** 2)),
+                "gdn_kernel_source": "local transported-score quadratic GDN kernels",
+                "gdn_chunk_size": 64 if model.attention_backend == "fused" else None,
+            })
+        return identity
     degree = config.model.attention_degree
     mode = config.model.quadratic_mode
     normalized = config.model.attention_normalization
@@ -571,7 +597,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         **attention_identity(config),
         "sample": provenance,
         "kernel_values": ("vector_gated_recurrence" if config.model.attention_mechanism == "gla" else
-                          "gated_delta_rule_recurrence" if config.model.attention_mechanism == "gated_deltanet" else
+                          ("polynomial_gated_delta_rule_recurrence" if config.model.gdn_polynomial_degree == 2
+                           else "gated_delta_rule_recurrence") if config.model.attention_mechanism == "gated_deltanet" else
                           ("unshifted_exp" if config.model.attention_degree is None else
                            "unshifted_learned_polynomial" if has_learned_polynomial(config.model) else "unshifted_taylor")
                           if not config.model.attention_normalization else

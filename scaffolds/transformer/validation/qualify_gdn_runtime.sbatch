@@ -53,7 +53,22 @@ LOGS="$RUN_ROOT/.runtime"
 export JAX_COMPILATION_CACHE_DIR="$CACHE/jax" XDG_CACHE_HOME="$CACHE/xdg"
 GDN_RUNTIME_TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/gdn-runtime-${SLURM_JOB_ID}.XXXXXX")"
 export TMPDIR="$GDN_RUNTIME_TMPDIR"
-trap 'rm -rf -- "$GDN_RUNTIME_TMPDIR"' EXIT
+source scaffolds/launch/watchdog.sh
+finish_qualification() {
+  local result=$?
+  trap - EXIT
+  stop_watchdog
+  rm -rf -- "$GDN_RUNTIME_TMPDIR"
+  exit "$result"
+}
+trap finish_qualification EXIT
+# Resolve Slurm's actual output path, including any caller-selected log name.
+GDN_QUALIFICATION_LOG="$(scontrol show job "$SLURM_JOB_ID" -o | tr ' ' '\n' | sed -n 's/^StdOut=//p')"
+if [[ -z "$GDN_QUALIFICATION_LOG" ]]; then
+  echo "Cannot resolve qualification log for the stall watchdog" >&2
+  exit 1
+fi
+start_watchdog "$GDN_QUALIFICATION_LOG"
 CUDA_HOME="$("$PYTHON" -c 'import importlib.util; print(next(iter(importlib.util.find_spec("nvidia.cuda_nvcc").submodule_search_locations)))')"
 export CUDA_HOME
 export TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
@@ -62,7 +77,7 @@ mkdir -p "$LOGS" "$JAX_COMPILATION_CACHE_DIR" "$XDG_CACHE_HOME"
 echo "runtime_qualification run=$RUN job=$SLURM_JOB_ID launch_commit=$LAUNCH_COMMIT gpu_type=$GPU_TYPE gpu_count=$GPU_COUNT preallocate=$XLA_PYTHON_CLIENT_PREALLOCATE memory_fraction=${XLA_PYTHON_CLIENT_MEM_FRACTION:-default}"
 # The acceptance hardware worker verifies the allocated GPU count and type.
 # It also checks initialization, full-recipe training/evaluation, and exact resume.
-"$PYTHON" -m "$ADAPTER" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
+run_step "$PYTHON" -m "$ADAPTER" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
   --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --test-cache "$CACHE/acceptance-tests"
 # Acceptance's generic limit is 48 hours; enforce the actual planned allocation.
 "$PYTHON" - "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT/pilot.json" "$PRODUCTION_HOURS" <<'PY'

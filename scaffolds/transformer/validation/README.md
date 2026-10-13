@@ -11,6 +11,24 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Quadratic GDN with original-key-space query transport
+
+The quadratic backend implements `F_t(q) = alpha_t F_{t-1}(P_t q) +
+v_t sum_(r=0..2) beta_{t,r}<q,k_t>^r`, with `P_t = I-lambda_t k_t k_t^T` in
+the original key space. Its independent FP64 oracle updates explicit scalar,
+linear, and quadratic states using full transition matrices. Tests compare
+outputs and all six input gradients, including repeated keys, zero/full erasure,
+the linear GDN limit, and the ordinary polynomial-attention limit.
+
+[CPU checks](runs/gdn-quadratic-cpu/tests.json) pass the reference, initialization,
+buffer ownership, gradient, checkpoint-resume, telemetry, acceptance, and run-record
+contracts. The GPU suite includes the production key/value widths and
+length-2,048 strong-decay cases; CPU results do not qualify GPU execution.
+Full-recipe hardware qualification must also pass finite training, evaluation,
+and exact resumption before production. The runtime qualifier uses the same
+20-minute log-stall watchdog as the training launcher and checks its pilot's
+projected duration against the production allocation.
+
 ### Query-dependent tanh polynomial coefficients
 
 The direct fused query-polynomial kernel passed all 12 H100 CUDA cases on

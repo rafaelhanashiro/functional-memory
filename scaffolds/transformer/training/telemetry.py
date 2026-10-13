@@ -149,6 +149,8 @@ _GROUP_RULES = (
     ("attention_output_projection", re.compile(r"/o_proj/")),
     ("attention_erase_gate", re.compile(r"/lambda_proj/")),
     ("attention_write_gate", re.compile(r"/b_proj/")),
+    ("attention_write_degree_0", re.compile(r"/b0_proj/")),
+    ("attention_write_degree_2", re.compile(r"/b2_proj/")),
     ("attention_decay_gate", re.compile(r"/a_proj/|/(A_log|dt_bias)$")),
     ("attention_output_gate", re.compile(r"/g_proj/")),
     ("attention_short_convolution", re.compile(r"/(q_conv|k_conv|v_conv)/")),

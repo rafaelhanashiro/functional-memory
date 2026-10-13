@@ -296,3 +296,49 @@ env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable --nice=0 --partition=sta
 Production verifies acceptance with the same source, recipe, hardware, and runtime
 settings before training; matching passed stages are reused. Hardware qualification
 and kernel benchmarks are documented in the linked scaffold validation record.
+
+## Quadratic GDN query geometry
+
+Run `rd40af7956426` tests `model.gdn_polynomial_degree: 2` with independent erase
+gates. The original key-space map `P_t = I - lambda_t k_t k_t^T` composes with a
+quadratic stored function; the added constant and quadratic tanh write projections
+start at zero, preserving the reference-initialized linear GDN function. The run
+keeps the 400-step warmup, gated output RMSNorm, and the complete training recipe of
+the explicit linear control `rf7341031e3d5`. Its 211,335,104 parameters include
+327,680 new write-projection weights. Methods, selection, and findings belong in
+[the exploratory comparison](../../results/exploratory/gdn_polynomial/README.md).
+
+Home cluster: Kennel. Develop and execute in `worktrees/gdn-quadratic`, with its
+own locked CUDA environment. Full acceptance checks the production batch on four
+H100 GPUs: effective batch 256, global microbatch 64, and 16 sequences per GPU.
+The qualification job verifies GPU correctness, a full-recipe pilot, and exact
+resumption, and rejects a projected training time above 22 hours. Production waits
+for successful qualification and reuses matching acceptance evidence. Both jobs
+use nice 0 on `standard`; the scheduler enforces the user's four-GPU cap.
+
+From the experiment worktree, after committing the frozen inputs:
+
+```bash
+LAUNCH_COMMIT=$(git rev-parse HEAD)
+QUALIFICATION_JOB=$(env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable \
+  --nice=0 --partition=standard --nodelist=mastiff --gres=gpu:h100:4 \
+  --time=01:00:00 --cpus-per-task=32 --mem=256G \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false \
+  --job-name=gdn-quadratic-qualification \
+  --output=scaffolds/transformer/validation/logs/gdn-runtime-%j.log \
+  scaffolds/transformer/validation/qualify_gdn_runtime.sbatch \
+  experiments/attention_scaling/runs/rd40af7956426/config.yaml \
+  "$LAUNCH_COMMIT" H100 24 4)
+
+env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable \
+  --nice=0 --partition=standard --nodelist=mastiff --gres=gpu:h100:4 \
+  --time=1-00:00:00 --cpus-per-task=32 --mem=256G \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false \
+  --dependency="afterok:$QUALIFICATION_JOB" --kill-on-invalid-dep=yes \
+  --job-name=rd40af7956426 \
+  --output=experiments/attention_scaling/runs/rd40af7956426/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.attention_scaling.acceptance \
+  experiments/attention_scaling/runs/rd40af7956426/config.yaml \
+  "$LAUNCH_COMMIT" 4 H100
+```

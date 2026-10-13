@@ -71,6 +71,18 @@ def test_reference_gla_does_not_require_a_fused_kernel():
     assert any(path.endswith("test_gla.py") for path in checks(config, "blocked", True))
 
 
+@pytest.mark.parametrize("dimension", ("qk_head_dim", "value_head_dim"))
+def test_quadratic_gdn_backend_rejects_unsupported_width_before_launch(dimension):
+    from dataclasses import replace
+    from scaffolds.transformer.attention.backends.selection import resolve_attention_backend
+
+    model = ModelConfig(attention_mechanism="gated_deltanet", gdn_erase_mode="independent",
+                        gdn_polynomial_degree=2, max_seq_len=128, **{dimension: 128})
+    assert resolve_attention_backend(model, platform="gpu") == "blocked"
+    with pytest.raises(ValueError, match="at most 64"):
+        resolve_attention_backend(replace(model, attention_backend="fused"), platform="gpu")
+
+
 @pytest.mark.parametrize("changes", [
     {}, {"attention_degree": 0},
     {"attention_degree": 2, "quadratic_mode": "unrestricted"},

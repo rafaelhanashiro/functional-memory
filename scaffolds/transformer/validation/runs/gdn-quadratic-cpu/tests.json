@@ -1,0 +1,58 @@
+{
+  "checks": [
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_polynomial_gdn.py scaffolds/transformer/tests/test_polynomial_gdn_kernel.py",
+      "passed": 14,
+      "scope": "quadratic reference and mathematical limits",
+      "skip_reason": "GPU checks require a CUDA allocation",
+      "skipped": 21
+    },
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_polynomial_gdn_integration.py scaffolds/transformer/tests/test_gated_deltanet.py scaffolds/transformer/tests/test_initialization.py scaffolds/transformer/tests/test_tracking.py scaffolds/transformer/tests/test_telemetry.py scaffolds/records/tests/test_records.py",
+      "passed": 102,
+      "scope": "model integration, GDN regressions, initialization, tracking, telemetry and records",
+      "skip_reason": "GPU/distributed cases require their matching allocation",
+      "skipped": 4
+    },
+    {
+      "command": "JAX_PLATFORMS=cpu OMP_NUM_THREADS=4 scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_acceptance.py scaffolds/transformer/tests/test_attention_acceptance.py scaffolds/records/tests scaffolds/launch/tests",
+      "passed": 172,
+      "scope": "acceptance, records, and launch integration",
+      "skipped": 0
+    }
+  ],
+  "format": "shared-transformer-software-validation",
+  "home_cluster": "kennel",
+  "limits": [
+    "No GPU qualification is claimed by this CPU record.",
+    "Test counts overlap across the listed commands and must not be added as unique tests."
+  ],
+  "recorded_utc": "2026-10-13T06:18:53.935786+00:00",
+  "source_files": [
+    {
+      "path": "scaffolds/transformer/attention/polynomial_gdn_reference.py",
+      "sha256": "938acb2323bd0396ed6663d10009c478fbe9e21ef075034e04afbf08ffd2e58d"
+    },
+    {
+      "path": "scaffolds/transformer/attention/backends/polynomial_gdn.py",
+      "sha256": "894282292e45eb287a07c49bddfd21557a6543ef2503de3c8e683171e609e7bd"
+    },
+    {
+      "path": "scaffolds/transformer/attention/backends/polynomial_gdn_kernels.py",
+      "sha256": "bdaacd3658141d65778c4017fc2fdc908c193851ac4f6379eb4ff26204704b9f"
+    },
+    {
+      "path": "scaffolds/transformer/tests/test_polynomial_gdn.py",
+      "sha256": "0002f705c60f028bf215573f04d0dca70f4d81d2315b5c9cdf244b5372430b24"
+    },
+    {
+      "path": "scaffolds/transformer/tests/test_polynomial_gdn_kernel.py",
+      "sha256": "7fd6163d8531fb1b97975bf8a00142da53bccb54638b98e75d101a388903c816"
+    },
+    {
+      "path": "scaffolds/transformer/tests/test_polynomial_gdn_integration.py",
+      "sha256": "8c3d5e23aef7032cb5179b61c3ac73a6b3f441140adadc3a569f0c9a71b6bcc3"
+    }
+  ],
+  "status": "cpu_passed_gpu_pending"
+}
