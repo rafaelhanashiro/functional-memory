@@ -1,0 +1,18 @@
+{
+  "node": "mastiff",
+  "observation": "Allowlisted environment keys read from /proc/838225/environ through srun --jobid=216969 --overlap while the benchmark process was alive. The same batch shell ran the GPU tests immediately before the benchmark without changing these runtime settings.",
+  "observed_process_id": 838225,
+  "recorded_utc": "2026-10-11T23:11:04.890838+00:00",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "NCCL_P2P_DISABLE": null,
+    "TRANSFORMER_HOST_STAGING": "0",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "slurm_job_id": "216969",
+  "source_commit": "4b7573e31a1475ef01f7e6313ab36f14a587b0ee",
+  "test_identity": "35afdbeb48abc30c860b520402b20da40c7a9f24f77c945b0fea2f24d8f00779"
+}

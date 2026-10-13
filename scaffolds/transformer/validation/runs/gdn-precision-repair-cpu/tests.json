@@ -1,0 +1,37 @@
+{
+  "checks": [
+    {
+      "paths": [
+        "scaffolds/transformer/tests/test_gated_deltanet.py"
+      ],
+      "tests_passed": 30
+    },
+    {
+      "paths": [
+        "scaffolds/transformer/tests/test_triton_bridge_precision.py",
+        "scaffolds/transformer/tests/test_gla_bridge.py"
+      ],
+      "tests_passed": 9
+    },
+    {
+      "log": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-repair-acceptance-cpu.log",
+        "sha256": "c4bd96483704f7423624545d774ff722bd9f29c5145ee2d1b635a395e896d7d0"
+      },
+      "paths": [
+        "scaffolds/transformer/tests/test_acceptance.py"
+      ],
+      "tests_passed": 35
+    }
+  ],
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "platform": "cpu",
+  "recorded_utc": "2026-10-11T22:42:52.837348+00:00",
+  "runtime_environment": {
+    "JAX_PLATFORMS": "cpu",
+    "OMP_NUM_THREADS": "4"
+  },
+  "source_commit": "9b56ed2d66849e346c36f0228f49dbbebf7f3fba",
+  "status": "passed",
+  "tests_passed": 74
+}

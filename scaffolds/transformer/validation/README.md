@@ -514,6 +514,213 @@ sbatch --gres=gpu:h100:1 --nodelist=dogo \
 # For B300, use --gres=gpu:b300:1 --nodelist=akita and pass B300.
 ```
 
+## Independent GDN erase/write kernel
+
+Source `d9c5aea542be96cb6c2217e85cb965040d441f7e` failed qualification on one
+H100 PCIe on Kennel (`mastiff`, job `214022`) on 2026-10-09:
+26 tests passed and two failed. Both failures used identical unit keys,
+unit erase strength, and no decay. Forward comparisons passed, but relative
+key-gradient errors were 0.5846% in FP32 (0.5% tolerance) and 4.7263% in BF16
+(2% tolerance). The precision audit below identifies cancellation amplified by
+reduced-precision arithmetic in this fixture. The repaired kernels passed the
+H100 qualification described under [FP32 chunk precision repair](#fp32-chunk-precision-repair).
+
+The [record](runs/gdn-independent-h100/tests.json) pins source, dependency lock,
+hardware, and JUnit evidence. The matching log is
+`validation/logs/gdn-independent-214022.log` in the experiment worktree on Kennel.
+The dependent production job was cancelled before allocation. No training
+result follows from this software check.
+
+### Repeated-key precision audit
+
+On 2026-10-10, diagnostic job `215578` completed on an available RTX A6000 on
+Kennel (`terrier`), source `99c415b200fa5e8767c4d438fccc7e1b288df684`.
+It reproduced the H100 BF16 key-gradient error exactly. The diagnostic used the
+same seed-44 fixture and compared every output/gradient channel against an
+independent analytic oracle; it did not stop at the first failed tolerance.
+
+For identical keys and queries `e1`, no decay, and full erasure, write
+`a_t = beta_t v_t`, `a_0 = 0`, output cotangent `c_t`, and `s = 1/sqrt(d_K)`.
+The exact output is `s a_t`; the key gradient is
+`s e1 [c_t^T(a_t - 2 a_{t-1})]`, erase gradient is
+`-s c_t^T a_{t-1}`, and log-decay gradient is zero. The
+[CPU oracle record](runs/gdn-independent-precision-cpu/diagnostics.json)
+confirms the scan and exact two-chunk equations in FP64. FP32 scan key-gradient
+relative error is `8.0e-8`. The norms of the two separately accumulated key-gradient
+terms sum to 6.68 times the final gradient norm, demonstrating cancellation.
+
+The [default TF32 record](runs/gdn-precision-215578/tf32.json) and
+[IEEE record](runs/gdn-precision-215578/ieee.json) distinguish product precision
+from intermediate storage. All percentages below are relative L2 key-gradient
+errors against the analytic oracle, with the same BF16-representable inputs:
+
+| Implementation / arithmetic | Key-gradient error |
+| --- | ---: |
+| Independent gates, native BF16 | 4.726266% |
+| Original tied GDN with equivalent pre-scaled values, native BF16 | 4.726266% |
+| Independent gates, native BF16, IEEE default for FP32 dots | 4.726266% |
+| Independent gates, promoted FP32, TF32 products | 0.494907% |
+| Independent gates, promoted FP32, IEEE products | 0.000137% |
+
+The original-kernel comparison uses the identity
+`independent(q,k,v,g,beta,erase) = tied(q,k,(beta/erase)v,g,erase)` for nonzero
+erase, here exactly one. Division is used only in this diagnostic, never in the
+production independent-gate implementation. Original and independent kernels
+produce identical output, query/key gradients, and log-decay gradients in this
+BF16 fixture. Thus the observed discrepancy is shared arithmetic, not a new
+effect of splitting the write and erase gates. FP32-input key-gradient error also
+falls from 0.559970% with TF32 products to 0.000143% with IEEE products.
+
+The BF16 stress fixture exposes a 9.738% erase-gradient error and a log-decay
+gradient with L2 norm 0.756763 instead of zero. Promoted FP32 plus IEEE reduces
+those to 0.000182% and `4.72e-5`, respectively. The latter residual exceeded the
+then-existing `2e-5` absolute allowance for an exactly zero reference. This
+diagnostic changed no assertion or production kernel and did not constitute a
+passing qualification. The production repair and H100 qualification are recorded
+below; the repaired kernels have not been qualified on B300. These synthetic
+findings establish no language-model training outcome.
+
+Reproduction from the committed worktree and its locked environment:
+
+```bash
+JAX_PLATFORMS=cpu OMP_NUM_THREADS=4 scaffolds/transformer/.venv/bin/python \
+  scaffolds/transformer/validation/gdn_precision_cpu.py
+sbatch --nice=0 --partition=debug --nodelist=terrier --gres=gpu:a6000:1 \
+  --job-name=gdn-precision \
+  --output=scaffolds/transformer/validation/logs/gdn-precision-%j.log \
+  scaffolds/transformer/validation/diagnose_gdn_precision.sbatch \
+  99c415b200fa5e8767c4d438fccc7e1b288df684
+```
+
+The GPU launcher runs fresh processes and separate compilation caches with
+`TRITON_F32_DEFAULT=tf32` and `ieee`. Explicit dot-product precision settings
+inside upstream kernels are preserved. The log is
+`validation/logs/gdn-precision-215578.log` in the experiment worktree on Kennel;
+the compact records pin the source, scripts, dependency lock, device, and runtime.
+
+### FP32 chunk precision repair
+
+The repaired tied and independent kernels retain FP32 throughout the chunk
+algebra, including the triangular inverse, transformed values, chunk states and
+backward partials. The direct and WY key-gradient contributions combine before
+the final dtype conversion. FP32 products use TF32x3, including the triangular
+solve, through an explicit per-call bridge setting that participates in the
+compiled-kernel cache identity. Public outputs and input gradients retain their
+input dtypes. Saved Q/K/V remain in their original dtype and are promoted again
+for backward recomputation, limiting retained activation memory. The recurrence,
+gate parameterization and initialization are unchanged.
+
+On 2026-10-11, source `4b7573e31a1475ef01f7e6313ab36f14a587b0ee` passed
+**34 GPU tests with no failures or skips** on one NVIDIA H100 PCIe on Kennel
+(`mastiff`, job `216969`). The allocation completed successfully in 21m11s,
+including the kernel benchmark. The
+[qualification record](runs/gdn-independent-precision-h100/tests.json) pins the
+source, locked dependencies, runtime and JUnit evidence. Separately,
+[74 CPU tests](runs/gdn-precision-repair-cpu/tests.json) passed at kernel source
+`9b56ed2d66849e346c36f0228f49dbbebf7f3fba`, covering model/reference behavior,
+bridge precision isolation and caching, and acceptance.
+
+The [runtime snapshot](runs/gdn-independent-precision-h100/runtime.json) records
+the allowlisted environment observed in the allocation's live benchmark process;
+the preceding GPU tests used the same settings. The passing JUnit is published
+through the supported shared-test cache under its matching acceptance identity,
+allowing production acceptance to reuse this GPU-test stage while retaining its
+own full-recipe pilot and resume checks.
+
+The repeated-key regression now uses independent FP64 analytic outputs and all
+gradients, both coordinate-axis and dense exactly unit keys, and tied and
+independent gates. Nonzero quantities use tighter relative L2 tolerances:
+`5e-5` for FP32 and `5e-3` for BF16. For the exactly zero decay gradient, the test
+uses an FP32 roundoff budget scaled by dimensions and the uncancelled products:
+`gamma_(V + 2C) * ||s sum_v |c_t,v a_(t-1),v|||_2`, with
+`gamma_n = n*u/(1-n*u)`, FP32 unit roundoff `u`, and chunk length `C=64`.
+This is an explicit numerical error budget, not a proven bound for every
+operation in the composed kernel. It does not depend on the observed residual
+or BF16 epsilon. The other recurrence-comparison tolerances are unchanged, and
+all gradient channels are checked even when an earlier channel fails.
+
+The [benchmark record](runs/gdn-independent-precision-h100/benchmark.json)
+measures BF16 interfaces with `T=2048`, `H=16`, and `K=V=64`. Each case excludes
+compilation and three warmups, then times twenty calls with all returned tensors
+synchronized. Every output and gradient was finite.
+
+| Local batch | Gate mode | Forward median (ms) | Forward + backward median (ms) |
+| --- | --- | ---: | ---: |
+| 1 | Tied | 0.462 | 0.883 |
+| 1 | Independent | 0.453 | 0.912 |
+| 32 | Tied | 4.716 | 15.777 |
+| 32 | Independent | 4.872 | 16.268 |
+
+Batch 32 matches each GPU's attention shape in the canonical two-device recipe.
+The compiler estimates 3.004 GiB of temporary buffers for either batch-32
+forward-plus-backward call, excluding arguments and returned tensors. This is
+an attention-kernel estimate, not a measured allocator peak or full-model memory
+measurement. The timings compare the two repaired kernels and do not measure
+the repair's overhead against the previous implementation. Full-model memory
+fit, update throughput, validation and checkpoint resume remain each scientific
+allocation's acceptance checks. This repair is qualified on H100 PCIe only;
+B300 qualification remains outstanding.
+
+The retained log is `validation/logs/gdn-repair-216969.log` in the experiment
+worktree on Kennel. The [manifest](provenance/manifest.json) pins the completed
+log, CPU tests, H100 qualification and benchmark. Reproduction on H100:
+
+```bash
+sbatch --nice=0 --partition=debug --nodelist=mastiff --gres=gpu:h100:1 \
+  --output=scaffolds/transformer/validation/logs/gdn-repair-%j.log \
+  scaffolds/transformer/validation/qualify_gdn_independent.sbatch \
+  4b7573e31a1475ef01f7e6313ab36f14a587b0ee H100
+```
+
+### Independent gate storage
+
+Source `d3d93bc6ccaa8a76fc4b29124c80988ae1593405` also fixes independent-gate
+initialization: the write and erase projections keep exactly equal initial values
+but own separate JAX buffers. Cloning the NNX parameter object and assigning its
+array directly had shared storage. A donated update then rejected the duplicate
+buffer on the source device; replication created separate buffers on the other
+device, which could wait indefinitely for its peer at the initial collective.
+The [CPU record](runs/gdn-independent-precision-h100/alias-repair-cpu.json)
+captures the reproducer and 39 passing GDN/initialization tests, including donated
+updates for both initialization schemes. Existing tests verify that every original
+parameter retains its tied-GDN initialization value.
+
+The [execution trace](runs/gdn-independent-precision-h100/allocator-trace.json)
+shows the pre-fix peer allocating its 50.07 GiB workspace while the source device
+never entered that executable's allocation stage. After the copy fix,
+[pilot 216999](runs/gdn-independent-precision-h100/alias-repair-runtime.json)
+completed 20 updates, validation, and checkpoint saving on two H100 PCIe GPUs,
+with finite gradient and attention diagnostics. It used the original allocator
+settings: allocation on demand and the default memory fraction. Steady updates
+took 1.84–1.87 seconds; the acceptance formula projects 10.99 hours for the complete
+recipe, within the 22-hour budget of a 24-hour allocation. This pilot does not
+replace complete production acceptance or its fresh-process resume check.
+
+### H100 SXM allocation qualification
+
+On two H100 80GB HBM3 GPUs, source `d3d93bc` passed 130 CPU checks, 9 distributed
+checks, all 34 GPU checks, and canonical initialization. With allocation on demand
+and the default memory fraction, the full-model pilot then failed a 50.28 GiB
+allocation before its first update; its peer remained waiting in a collective.
+The [runtime failure record](runs/gdn-independent-precision-h100/sxm-default-oom.json)
+retains the matching log. This is a runtime acceptance failure with no production
+training measurements. It does not qualify the default allocator on this hardware;
+the completed PCIe pilot above applies to its own hardware/runtime combination.
+The [90% memory-pool check](runs/gdn-independent-precision-h100/sxm-growth90-oom.json)
+also passed the tests but failed its first full-model kernel launch with CUDA
+out-of-memory. Neither two-GPU SXM runtime is qualified for this recipe.
+
+The [four-GPU qualification](runs/gdn-independent-precision-h100/sxm-four-gpu.json)
+passed with allocation on demand and the default memory fraction. The global batch
+(256), global microbatch (64), and four accumulation steps are unchanged; each GPU
+holds 16 sequences instead of 32. Job `217971` reused matching 139 CPU/distributed
+and 34 GPU checks, completed 20 full-recipe updates with finite diagnostics,
+validated, saved checkpoint 20, and resumed exactly to update 21 in a fresh process.
+The state, next-batch, and RNG fingerprints matched the checkpoint audit.
+Steady updates took 0.61–0.63 seconds; the conservative full-run projection is
+4.24 hours, within the 22-hour budget. Qualification completed successfully in
+8m39s. Twenty updates do not establish long-run stability or scientific performance.
+
 ## Gated DeltaNet on ORCD H200, and ORCD H100
 
 These qualifications come from the production acceptance of the

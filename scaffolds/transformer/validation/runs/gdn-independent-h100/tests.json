@@ -1,0 +1,28 @@
+{
+  "completed_utc": "2026-10-09T23:47:33.207966+00:00",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "device_kinds": [
+    "NVIDIA H100 PCIe"
+  ],
+  "erase_modes": [
+    "tied",
+    "independent"
+  ],
+  "exit_code": 1,
+  "gpu_type": "H100",
+  "home_cluster": "kennel",
+  "junit": {
+    "path": "scaffolds/transformer/validation/logs/gdn-independent-h100-214022.xml",
+    "sha256": "d2543e74f77af4106bb947b202ea9ab2cafd4f675b9eb71c857bb5a0cfc6d96b"
+  },
+  "node": "mastiff",
+  "runtime_environment": {
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "slurm_job_id": "214022",
+  "source_commit": "d9c5aea542be96cb6c2217e85cb965040d441f7e",
+  "status": "failed",
+  "tests_passed": null
+}

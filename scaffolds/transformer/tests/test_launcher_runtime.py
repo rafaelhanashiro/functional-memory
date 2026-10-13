@@ -25,7 +25,7 @@ def test_kennel_transport_policy(tmp_path, gpu, override, staging, nccl, fractio
     executable.chmod(0o755)
     env = {key: value for key, value in os.environ.items()
            if key not in ("TRANSFORMER_HOST_STAGING", "NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION",
-                          "XLA_FLAGS")}
+                          "XLA_PYTHON_CLIENT_PREALLOCATE", "XLA_FLAGS")}
     env.update(PATH=str(tmp_path) + os.pathsep + env["PATH"], TEST_GPU_NAME=gpu)
     if override is not None:
         env["TRANSFORMER_HOST_STAGING"] = override
@@ -61,3 +61,23 @@ def test_b300_collectives_stay_on_the_compute_stream(tmp_path, gpu, existing, ex
         'import json,os; print(json.dumps(os.environ.get("XLA_FLAGS")))',
     ], env=env, check=True, text=True, capture_output=True)
     assert json.loads(result.stdout) == expected
+
+
+@pytest.mark.parametrize("gpu", ["NVIDIA H100 PCIe", "NVIDIA RTX A6000"])
+@pytest.mark.parametrize("preallocate", ["true", "false"])
+def test_kennel_preserves_explicit_allocator_settings(tmp_path, gpu, preallocate):
+    executable = tmp_path / "nvidia-smi"
+    executable.write_text('#!/bin/sh\nprintf "%s\\n" "$TEST_GPU_NAME"\n')
+    executable.chmod(0o755)
+    env = dict(os.environ, PATH=str(tmp_path) + os.pathsep + os.environ["PATH"],
+               TEST_GPU_NAME=gpu, XLA_PYTHON_CLIENT_PREALLOCATE=preallocate,
+               XLA_PYTHON_CLIENT_MEM_FRACTION="0.82")
+    result = subprocess.run([
+        'bash', '-euc', 'source "$1"; "$2" -c "$3"', 'test', str(SCRIPT), sys.executable,
+        'import json,os; print(json.dumps({k:os.environ[k] for k in '
+        '("XLA_PYTHON_CLIENT_PREALLOCATE", "XLA_PYTHON_CLIENT_MEM_FRACTION")}))',
+    ], env=env, check=True, text=True, capture_output=True)
+    assert json.loads(result.stdout) == {
+        "XLA_PYTHON_CLIENT_PREALLOCATE": preallocate,
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.82",
+    }

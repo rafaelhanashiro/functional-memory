@@ -1,0 +1,63 @@
+{
+  "backend": "cpu",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "format": "gdn-independent-gate-alias-repair-cpu-validation",
+  "pre_fix_diagnostic": {
+    "backend": "cpu",
+    "distinct_nnx_parameters": true,
+    "donated_operation": "jax.jit(lambda pair: (pair[0] + 1, pair[1] + 2), donate_argnums=(0,))((b, e))",
+    "error": "JaxRuntimeError INVALID_ARGUMENT: Attempt to donate the same buffer twice in Execute() (flattened argument 1, replica 0, partition 0, first use: 0). Toy example for this bug: `f(donate(a), donate(a))`.",
+    "fixture": "build_model(gdn_model(initialization=initialization, gdn_erase_mode=\"independent\"), jax.random.PRNGKey(17)); first layer b_proj/lambda_proj kernels",
+    "initializations": [
+      "gated_deltanet_reference",
+      "flax_default"
+    ],
+    "replicated_diagnostic": {
+      "donated_sharded_jit_exit_code": 139,
+      "environment": {
+        "JAX_PLATFORMS": "cpu",
+        "OMP_NUM_THREADS": "4",
+        "XLA_FLAGS": "--xla_force_host_platform_device_count=2"
+      },
+      "initialization": "gated_deltanet_reference",
+      "interpretation": "A CPU diagnostic failure, not a training result and not by itself proof of the GPU stall cause.",
+      "observed_failure": "Segmentation fault after the pointer observations; process terminated before a successful donated result.",
+      "placement": "scaffolds.transformer.training.distributed.put_replicated with NamedSharding(Mesh(two CPU devices), PartitionSpec())",
+      "replica_0_gate_buffers_alias": true,
+      "replica_1_gate_buffers_alias": false,
+      "replicated_arrays_are_distinct_objects": true
+    },
+    "same_buffer_pointer": true,
+    "same_jax_array": true,
+    "source_commit": "d144ba0c8205ea0971675e81196fca354a374fec",
+    "training_execution": false
+  },
+  "recorded_utc": "2026-10-12T00:30:27.524710+00:00",
+  "schema_version": 1,
+  "scope": "Initialization and donated-update correctness; diagnostic only, not production training or GPU runtime qualification.",
+  "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+  "source_sha256": {
+    "scaffolds/transformer/attention/gated_deltanet.py": "b8e16359eb697b8a33d4e63b0f48779d04465c2aa9f251ae678e311a0d945453",
+    "scaffolds/transformer/models/initialization.py": "97a1fb08e445b6b46bd91185c78ec66f44d85ea096821075207fdc91dce616e3",
+    "scaffolds/transformer/tests/test_gated_deltanet.py": "552b714bb2e5a760d6e44778a392d59e643da0858e65c041ef93d987bd25c1e6"
+  },
+  "status": "passed",
+  "verification": {
+    "checks": [
+      "Initial beta/lambda values are exactly equal.",
+      "One JIT-compiled donated gradient update succeeds.",
+      "Different objectives produce the expected independent gate updates."
+    ],
+    "command": "JAX_PLATFORMS=cpu OMP_NUM_THREADS=4 scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_gated_deltanet.py scaffolds/transformer/tests/test_initialization.py",
+    "elapsed_seconds": 51.45,
+    "evidence": "Observed subprocess stdout; no JUnit report or separate test log was requested.",
+    "exit_code": 0,
+    "initializations": [
+      "flax_default",
+      "gated_deltanet_reference"
+    ],
+    "new_regression": "test_independent_gates_support_donated_updates_from_equal_initial_values",
+    "observed_summary": "39 passed in 51.45s",
+    "tests_passed": 39
+  }
+}

@@ -1,0 +1,348 @@
+{
+  "attention_backend": "fused",
+  "attention_backend_requested": "fused",
+  "attention_diagnostics": {
+    "attention_backend": "fused",
+    "attention_backend_requested": "fused",
+    "attention_formula": "S_t=a_t S_{t-1}+k_t (b_t v_t-lambda_t a_t S_{t-1}^T k_t)^T; lambda_t=sigmoid(W_lambda x); o_t=S_t^T q_t/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); b_t=sigmoid(W_b x)",
+    "attention_implementation": "fla_chunk_independent_gated_delta_rule_triton",
+    "attention_kernel": "gated_deltanet",
+    "attention_mechanism": "gated_deltanet",
+    "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+    "attention_score_scale": "1/sqrt(d_k)",
+    "diagnostic_backend": "fused",
+    "format": "shared-transformer-attention-diagnostics",
+    "gdn_chunk_size": 64,
+    "gdn_conv_size": 4,
+    "gdn_erase_initialization": "copy_write_projection",
+    "gdn_erase_mode": "independent",
+    "gdn_initial_state": "zero_each_sequence",
+    "gdn_kernel_source": "flash-linear-attention chunk_gated_delta_rule with local independent-gate WY kernels",
+    "gdn_state_elements_per_layer": 65536,
+    "issues": [],
+    "kernel_values": "gated_delta_rule_recurrence",
+    "layers": [
+      {
+        "beta_max": 0.942506730556488,
+        "beta_min": 0.021948253735899925,
+        "invalid_erase_count": 0,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "lambda_max": 0.9863631129264832,
+        "lambda_min": 0.0012448433553799987,
+        "lambda_minus_beta_rms": 0.3947393000125885,
+        "layer": 0,
+        "log_decay_max": -2.8011463655275293e-05,
+        "log_decay_min": -9.287457466125488,
+        "read_abs_max": 10.76424789428711
+      },
+      {
+        "beta_max": 0.9808759689331055,
+        "beta_min": 0.010986941866576672,
+        "invalid_erase_count": 0,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "lambda_max": 0.9736446738243103,
+        "lambda_min": 0.010013571009039879,
+        "lambda_minus_beta_rms": 0.3217048645019531,
+        "layer": 1,
+        "log_decay_max": -7.47858075555996e-06,
+        "log_decay_min": -23.443742752075195,
+        "read_abs_max": 4.788568496704102
+      },
+      {
+        "beta_max": 0.9230391979217529,
+        "beta_min": 0.014957086183130741,
+        "invalid_erase_count": 0,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "lambda_max": 0.9643214344978333,
+        "lambda_min": 0.003273064736276865,
+        "lambda_minus_beta_rms": 0.27301010489463806,
+        "layer": 2,
+        "log_decay_max": -2.051223873422714e-06,
+        "log_decay_min": -21.163082122802734,
+        "read_abs_max": 2.1989059448242188
+      },
+      {
+        "beta_max": 0.9458011984825134,
+        "beta_min": 0.014957086183130741,
+        "invalid_erase_count": 0,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "lambda_max": 0.9711290597915649,
+        "lambda_min": 0.0024726230185478926,
+        "lambda_minus_beta_rms": 0.2509300410747528,
+        "layer": 3,
+        "log_decay_max": -2.0517468328762334e-06,
+        "log_decay_min": -15.900688171386719,
+        "read_abs_max": 1.723059892654419
+      },
+      {
+        "beta_max": 0.957912266254425,
+        "beta_min": 0.009125636890530586,
+        "invalid_erase_count": 0,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "lambda_max": 0.9603611826896667,
+        "lambda_min": 0.0030753696337342262,
+        "lambda_minus_beta_rms": 0.22081860899925232,
+        "layer": 4,
+        "log_decay_max": -1.3831978895595398e-09,
+        "log_decay_min": -15.818711280822754,
+        "read_abs_max": 0.731958270072937
+      },
+      {
+        "beta_max": 0.9504110217094421,
+        "beta_min": 0.009412589482963085,
+        "invalid_erase_count": 0,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "lambda_max": 0.985496461391449,
+        "lambda_min": 0.007577241398394108,
+        "lambda_minus_beta_rms": 0.21105468273162842,
+        "layer": 5,
+        "log_decay_max": -2.263808028146741e-06,
+        "log_decay_min": -10.552005767822266,
+        "read_abs_max": 0.843302845954895
+      },
+      {
+        "beta_max": 0.9539660811424255,
+        "beta_min": 0.012821214273571968,
+        "invalid_erase_count": 0,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "lambda_max": 0.9867771863937378,
+        "lambda_min": 0.004198795650154352,
+        "lambda_minus_beta_rms": 0.19520385563373566,
+        "layer": 6,
+        "log_decay_max": -6.683023343612149e-07,
+        "log_decay_min": -14.258513450622559,
+        "read_abs_max": 0.5186933279037476
+      },
+      {
+        "beta_max": 0.971563994884491,
+        "beta_min": 0.006903838366270065,
+        "invalid_erase_count": 0,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "lambda_max": 0.9763104915618896,
+        "lambda_min": 0.0044683837331831455,
+        "lambda_minus_beta_rms": 0.14632688462734222,
+        "layer": 7,
+        "log_decay_max": -8.103151571958733e-08,
+        "log_decay_min": -8.585947036743164,
+        "read_abs_max": 0.5924298763275146
+      },
+      {
+        "beta_max": 0.9511421918869019,
+        "beta_min": 0.0059110685251653194,
+        "invalid_erase_count": 0,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "lambda_max": 0.9896718263626099,
+        "lambda_min": 0.010986941866576672,
+        "lambda_minus_beta_rms": 0.18955083191394806,
+        "layer": 8,
+        "log_decay_max": -4.728685780719388e-06,
+        "log_decay_min": -11.660138130187988,
+        "read_abs_max": 0.6086477637290955
+      },
+      {
+        "beta_max": 0.9643214344978333,
+        "beta_min": 0.003273064736276865,
+        "invalid_erase_count": 0,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "lambda_max": 0.9899864196777344,
+        "lambda_min": 0.011687258258461952,
+        "lambda_minus_beta_rms": 0.2139323353767395,
+        "layer": 9,
+        "log_decay_max": -2.366542048548581e-06,
+        "log_decay_min": -24.938552856445312,
+        "read_abs_max": 0.24543702602386475
+      }
+    ],
+    "sample": {
+      "diagnostic_pass_contributes_to_validation_loss": false,
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "num_sequences": 1,
+      "prediction_tokens": 2048,
+      "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+      "selection": "first_heldout_sequence",
+      "sequence_index": 0,
+      "source": "packed"
+    },
+    "step": 19074,
+    "valid": true,
+    "version": 1
+  },
+  "attention_formula": "S_t=a_t S_{t-1}+k_t (b_t v_t-lambda_t a_t S_{t-1}^T k_t)^T; lambda_t=sigmoid(W_lambda x); o_t=S_t^T q_t/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); b_t=sigmoid(W_b x)",
+  "attention_implementation": "fla_chunk_independent_gated_delta_rule_triton",
+  "attention_kernel": "gated_deltanet",
+  "attention_mechanism": "gated_deltanet",
+  "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+  "attention_score_scale": "1/sqrt(d_k)",
+  "checkpoint_retention": {
+    "best_checkpoint_step": 19074,
+    "completion_sha256": "ee6efac92de2f08e60f47d72dfdc3fbd418f52d99a69feb6669fe5cb7d94ef7a",
+    "format": "shared-transformer-checkpoint-retention",
+    "seed": 0,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 19074,
+    "validation_nll": 2.6085545931543623,
+    "version": 1
+  },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "diagnostic_backend": "fused",
+  "diagnostic_sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "error": null,
+  "execution_runtime": {
+    "batch_transfer": "host_to_shard",
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      }
+    ],
+    "environment": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct"
+  },
+  "gdn_chunk_size": 64,
+  "gdn_conv_size": 4,
+  "gdn_erase_initialization": "copy_write_projection",
+  "gdn_erase_mode": "independent",
+  "gdn_initial_state": "zero_each_sequence",
+  "gdn_kernel_source": "flash-linear-attention chunk_gated_delta_rule with local independent-gate WY kernels",
+  "gdn_state_elements_per_layer": 65536,
+  "next_train_sequence": 4882944,
+  "parameter_count": 211007424,
+  "qk_head_dim": 64,
+  "retained_best_checkpoint_step": 19074,
+  "retained_terminal_checkpoint_step": 19074,
+  "rng_state": {
+    "completed_updates": 19074,
+    "seed": 0
+  },
+  "runtime_history": [
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 2,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 3,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "217974",
+      "timestamp_utc": "2026-10-12T19:01:46.321874+00:00"
+    }
+  ],
+  "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "seed": 0,
+  "slurm_job_id": "217974",
+  "slurm_restart_count": 0,
+  "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+  "status": "complete",
+  "step": 19074,
+  "target_steps": 19074,
+  "target_tokens": 10000269312,
+  "training_tokens": 10000269312,
+  "updated_utc": "2026-10-12T22:32:38.243042+00:00",
+  "validation_nll": 2.6085545931543623,
+  "validation_perplexity": 13.579408889368684,
+  "value_head_dim": 64
+}

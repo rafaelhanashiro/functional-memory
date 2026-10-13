@@ -2956,5 +2956,191 @@
         "data_note": "GPU correctness tests use seeded synthetic arrays and a temporary packed-token fixture; benchmarks use resident synthetic arrays/tokens. No external dataset is read, and no checkpoints are retained."
       }
     }
-  ]
+  ],
+  "gdn_independent_precision_audit": {
+    "home_cluster": "kennel",
+    "status": "diagnosed",
+    "gpu_job_id": "215578",
+    "gpu_source_commit": "99c415b200fa5e8767c4d438fccc7e1b288df684",
+    "records": [
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-h100/tests.json",
+        "sha256": "01772097e378b6f896e3d4f5e7c448c8ac963f7dd95a1a95b87f3e3af5dd3fc7",
+        "size_bytes": 840
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-cpu/diagnostics.json",
+        "sha256": "f8d8abbe941b924c7832811640e275cdc8da6711eff9b7188b8eaa68cbc844f0",
+        "size_bytes": 11002
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-precision-215578/tf32.json",
+        "sha256": "cda312f785ce43f262477cbd300b10975f00b697e2476344dbe3516ad7db3fb8",
+        "size_bytes": 11288
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-precision-215578/ieee.json",
+        "sha256": "6dc1514f18ad55ed7b99796a046a8ecb2d41f2ccc3e2fc577c95b99f1a31b263",
+        "size_bytes": 11420
+      }
+    ],
+    "logs": [
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-independent-214022.log",
+        "sha256": "5b7c2cba70c86806d664816e2742a03011fc0941b721819dbac6141d6a89f258",
+        "size_bytes": 9093
+      },
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-precision-215578.log",
+        "sha256": "e3fd96a639021814004c6cb5a05f32fc31aa70305677a0c12568db56e8b7a903",
+        "size_bytes": 23940
+      },
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-precision-cpu.log",
+        "sha256": "f8d8abbe941b924c7832811640e275cdc8da6711eff9b7188b8eaa68cbc844f0",
+        "size_bytes": 11002
+      }
+    ],
+    "scope": "Numerical diagnostic of the pre-repair kernels; current repair qualification is recorded separately."
+  },
+  "gdn_precision_repair": {
+    "home_cluster": "kennel",
+    "status": "qualified_h100_pcie",
+    "kernel_source_commit": "9b56ed2d66849e346c36f0228f49dbbebf7f3fba",
+    "launch_source_commit": "4b7573e31a1475ef01f7e6313ab36f14a587b0ee",
+    "gpu_job_id": "216969",
+    "gpu_type": "NVIDIA H100 PCIe",
+    "node": "mastiff",
+    "erase_modes": [
+      "tied",
+      "independent"
+    ],
+    "gpu_tests_passed": 34,
+    "cpu_tests_passed": 74,
+    "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+    "precision": {
+      "intermediate_dtype": "float32",
+      "dot_input_precision": "tf32x3",
+      "external_dtype": "preserved"
+    },
+    "limits": [
+      "The repaired kernels have not been qualified on B300.",
+      "Kernel benchmark memory is a compiler buffer estimate, not a measured allocator peak or full-model memory.",
+      "Each scientific allocation still requires full-recipe pilot and checkpoint-resume acceptance."
+    ],
+    "records": [
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-precision-repair-cpu/tests.json",
+        "sha256": "a0ced60d0ef841423e01521d561393a586605f7f115aef3c2db915e3de80e92a",
+        "size_bytes": 1068
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/tests.json",
+        "sha256": "b8fa020f4070c967522fecd488a13d84f279554b44bddca9e5fbcb9e235644c6",
+        "size_bytes": 838
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/benchmark.json",
+        "sha256": "c9868ee3067ad8a7537969bbfef0c23b036bdef1294c54fb27e5e2c3ea0ffb00",
+        "size_bytes": 25652
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/runtime.json",
+        "sha256": "b3c9490d1de7678af7adfae4b0d43bab156713dfd919372b2eb54c7a51871857",
+        "size_bytes": 1004
+      }
+    ],
+    "logs": [
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-repair-216969.log",
+        "sha256": "5f0766f3db5194c48ffc76b010931a70952702905f9714ac3e174e59ea398014",
+        "size_bytes": 10719
+      }
+    ]
+  },
+  "gdn_independent_gate_storage": {
+    "home_cluster": "kennel",
+    "status": "cpu_regression_and_h100_pcie_full_model_pilot_passed",
+    "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+    "scope": "Distinct write/erase parameter storage with equal initial values; removes duplicate donation during the first distributed update.",
+    "cpu_tests_passed": 39,
+    "pilot_job_id": "216999",
+    "pilot_steps": 20,
+    "records": [
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/alias-repair-cpu.json",
+        "sha256": "560e236ed23674274b49944f4366d4ec8bf18bb148f233cdd0223b9e8def7888",
+        "size_bytes": 3386
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/allocator-trace.json",
+        "sha256": "c92631e1f34b10daf0260b8312e31d9a1baeb88b18066bf545e7de6235967a6d",
+        "size_bytes": 4773
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/alias-repair-runtime.json",
+        "sha256": "94510bbbae361d62f25fee127e5840015e93ededefeef25984e22ce9a5f012fa",
+        "size_bytes": 7238
+      },
+      {
+        "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/memory-probe-216999.json",
+        "sha256": "fc21bec6ca311b651aa6281b88f901a612e18bf8ede64790c0093f319b25eef2",
+        "size_bytes": 2447
+      }
+    ],
+    "logs": [
+      {
+        "path": "scaffolds/transformer/validation/logs/gdn-memory-216998.log",
+        "sha256": "bbdf671b17afcc3c83725b216a89906367075db889ac2b4023a688aeb8a2aed0",
+        "size_bytes": 3171888
+      },
+      {
+        "path": "scaffolds/transformer/validation/logs/gdn-memory-216999.log",
+        "sha256": "a1274b692e17ef294b88c8364b409b4c5311cb4fca5950f1e8dbc338b59d2e5a",
+        "size_bytes": 4385
+      }
+    ],
+    "limits": [
+      "The standalone pilot did not include fresh-process resume.",
+      "Production requires full acceptance on its actual hardware.",
+      "Twenty updates do not establish long-run training stability."
+    ]
+  },
+  "gdn_sxm_default_runtime": {
+    "home_cluster": "kennel",
+    "status": "failed_first_pilot_allocation",
+    "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+    "job_id": "217000",
+    "training_started": false,
+    "record": {
+      "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-default-oom.json",
+      "sha256": "8ff2f895f6e7232c06bafb5ff91289873b5eb109d9843d72a7cc78a0b447c832",
+      "size_bytes": 2323
+    },
+    "retained_log": {
+      "path": "scaffolds/transformer/validation/logs/gdn-runtime-217000.log",
+      "sha256": "b082e5feb3d1fba2d0224dde82d66822caa74fdefd49044ee2adf72c8aa410b2",
+      "size_bytes": 2747
+    }
+  },
+  "gdn_sxm_growth90_runtime": {
+    "home_cluster": "kennel",
+    "status": "failed_pilot_kernel_launch",
+    "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+    "record": {
+      "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-growth90-oom.json",
+      "sha256": "ffc8470ab4a5b4ab4ec0a69672637294f0e6786794b8ec6c067448ab8e758e58",
+      "size_bytes": 3427
+    }
+  },
+  "gdn_sxm_four_gpu": {
+    "home_cluster": "kennel",
+    "status": "passed",
+    "source_commit": "d3d93bc6ccaa8a76fc4b29124c80988ae1593405",
+    "record": {
+      "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-four-gpu.json",
+      "sha256": "954c2b842575379184dbdd9031c323f4a3d0fa531ad08e8a38163e6e89302d65",
+      "size_bytes": 8361
+    }
+  }
 }

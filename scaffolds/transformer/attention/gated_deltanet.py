@@ -12,6 +12,11 @@ with ``beta_t = sigmoid(W_b x_t)`` and the Mamba-2 decay ``a_t = exp(g_t)``,
 projection. There is no positional encoding; the short convolutions carry local order.
 The ``fused`` backend runs FLA's chunked Triton kernels; ``blocked`` is a token-by-token
 FP32 reference.
+
+With ``erase_mode="independent"``, erasure instead uses a separate sigmoid
+``lambda_t = sigmoid(W_lambda x_t)``: the rank-one update is
+``k_t (beta_t v_t - lambda_t a_t S_{t-1}^T k_t)^T``. Its projection starts as an
+independent copy of the write projection, recovering ordinary GDN initially.
 """
 
 import math
@@ -19,6 +24,8 @@ import math
 import jax
 import jax.numpy as jnp
 from flax import nnx
+
+from scaffolds.transformer.training import telemetry
 
 A_LOG_RANGE = (0.0, 16.0)
 DT_RANGE = (0.001, 0.1)
@@ -31,20 +38,28 @@ def _l2_normalize(x: jax.Array) -> jax.Array:
     return (x32 * jax.lax.rsqrt(jnp.sum(jnp.square(x32), axis=-1, keepdims=True) + L2_NORM_EPS)).astype(x.dtype)
 
 
-def gated_delta_rule_reference(q, k, v, g, beta, scale):
-    """FP32 token-by-token recurrence; ``q, k`` normalized [B,T,H,K], ``v`` [B,T,H,V], ``g, beta`` [B,T,H]."""
+def gated_delta_rule_reference(q, k, v, g, beta, scale, erase=None):
+    """FP32 recurrence with optional independent erase gate, all gates [B,T,H].
+
+    ``q, k`` are normalized [B,T,H,K], ``v`` is [B,T,H,V]. Omitting ``erase``
+    preserves the original tied-gate recurrence and its arithmetic.
+    """
     q, k, v, g, beta = (x.astype(jnp.float32) for x in (q, k, v, g, beta))
+    tied = erase is None
+    erase = beta if tied else erase.astype(jnp.float32)
 
     def step(state, inputs):
-        q_t, k_t, v_t, g_t, beta_t = inputs
+        q_t, k_t, v_t, g_t, beta_t, erase_t = inputs
         state = state * jnp.exp(g_t)[..., None, None]
         prediction = jnp.einsum("bhk,bhkv->bhv", k_t, state)
-        state = state + jnp.einsum("bhk,bhv->bhkv", k_t, beta_t[..., None] * (v_t - prediction))
+        update = (beta_t[..., None] * (v_t - prediction) if tied
+                  else beta_t[..., None] * v_t - erase_t[..., None] * prediction)
+        state = state + jnp.einsum("bhk,bhv->bhkv", k_t, update)
         return state, jnp.einsum("bhk,bhkv->bhv", q_t * scale, state)
 
     batch, _, heads, key_dim = q.shape
     initial = jnp.zeros((batch, heads, key_dim, v.shape[-1]), jnp.float32)
-    _, reads = jax.lax.scan(step, initial, tuple(jnp.moveaxis(x, 1, 0) for x in (q, k, v, g, beta)))
+    _, reads = jax.lax.scan(step, initial, tuple(jnp.moveaxis(x, 1, 0) for x in (q, k, v, g, beta, erase)))
     return jnp.moveaxis(reads, 0, 1)
 
 
@@ -77,16 +92,20 @@ class GatedDeltaNet(nnx.Module):
         norm_eps: float = 1e-6,
         backend: str = "blocked",
         *,
+        erase_mode: str = "tied",
         rngs: nnx.Rngs,
     ):
         if min(hidden_size, num_heads, key_head_dim, value_head_dim, conv_size) <= 0:
             raise ValueError("Gated DeltaNet dimensions and conv_size must be positive")
         if backend not in ("blocked", "fused"):
             raise ValueError(f"Unsupported Gated DeltaNet backend: {backend}")
+        if erase_mode not in ("tied", "independent"):
+            raise ValueError(f"Unsupported Gated DeltaNet erase mode: {erase_mode}")
         self.num_heads, self.key_head_dim, self.value_head_dim = num_heads, key_head_dim, value_head_dim
         self.key_dim, self.value_dim = num_heads * key_head_dim, num_heads * value_head_dim
         self.norm_eps = norm_eps
         self.backend = backend
+        self.erase_mode = erase_mode
         self.dtype = jnp.float32
         self.q_proj = nnx.Linear(hidden_size, self.key_dim, use_bias=False, rngs=rngs)
         self.k_proj = nnx.Linear(hidden_size, self.key_dim, use_bias=False, rngs=rngs)
@@ -107,6 +126,13 @@ class GatedDeltaNet(nnx.Module):
         self.g_proj = nnx.Linear(hidden_size, self.value_dim, use_bias=False, rngs=rngs)
         self.o_norm_scale = nnx.Param(jnp.ones((value_head_dim,), jnp.float32), weight_decay=False)
         self.o_proj = nnx.Linear(self.value_dim, hidden_size, use_bias=False, rngs=rngs)
+        if erase_mode == "independent":
+            # Clone the graph/Param, not the RNG stream: every existing parameter
+            # in this layer and subsequent layers retains the tied model's draw.
+            self.lambda_proj = nnx.clone(self.b_proj)
+            # nnx.clone shares array storage. Donated training state requires
+            # distinct buffers for these independently updated parameters.
+            self.lambda_proj.kernel[...] = self.b_proj.kernel[...].copy()
 
     def __call__(
         self,
@@ -127,16 +153,33 @@ class GatedDeltaNet(nnx.Module):
         v = self.v_conv(self.v_proj(x).astype(self.dtype)).reshape(batch, length, heads, self.value_head_dim)
         q, k = _l2_normalize(q), _l2_normalize(k)
         beta = jax.nn.sigmoid(self.b_proj(x).astype(jnp.float32)).astype(self.dtype)
+        erase = (jax.nn.sigmoid(self.lambda_proj(x).astype(jnp.float32)).astype(self.dtype)
+                 if self.erase_mode == "independent" else None)
         log_decay = -jnp.exp(self.A_log[...]) * jax.nn.softplus(
             self.a_proj(x).astype(jnp.float32) + self.dt_bias[...])
         scale = self.key_head_dim ** -0.5
         if self.backend == "fused":
-            from scaffolds.transformer.attention.backends.fla_gated_delta_rule import fla_gated_delta_rule
+            if erase is None:
+                from scaffolds.transformer.attention.backends.fla_gated_delta_rule import fla_gated_delta_rule
 
-            read = fla_gated_delta_rule(q, k, v, log_decay, beta, scale)
+                read = fla_gated_delta_rule(q, k, v, log_decay, beta, scale)
+            else:
+                from scaffolds.transformer.attention.backends.fla_gated_delta_rule import fla_independent_gated_delta_rule
+
+                read = fla_independent_gated_delta_rule(q, k, v, log_decay, beta, erase, scale)
         else:
-            read = gated_delta_rule_reference(q, k, v, log_decay, beta, scale).astype(self.dtype)
+            read = gated_delta_rule_reference(q, k, v, log_decay, beta, scale, erase=erase).astype(self.dtype)
         read32 = read.astype(jnp.float32)
+        telemetry.record_attention_output(read32, head_rms_norm_eps=self.norm_eps)
+        if telemetry.active():
+            gates = {"beta": beta, "lambda": beta if erase is None else erase}
+            for name, value in gates.items():
+                value = value.astype(jnp.float32)
+                telemetry.record(f"{name}_mean", jnp.mean(value), "mean")
+                telemetry.record(f"{name}_min", jnp.min(value), "min")
+                telemetry.record(f"{name}_max", jnp.max(value), "max")
+            gap = (gates["lambda"].astype(jnp.float32) - beta.astype(jnp.float32))
+            telemetry.record("lambda_minus_beta_rms", jnp.mean(jnp.square(gap)), "rms")
         gate = self.g_proj(x).astype(jnp.float32).reshape(batch, length, heads, self.value_head_dim)
         normed = read32 * jax.lax.rsqrt(jnp.mean(jnp.square(read32), axis=-1, keepdims=True) + self.norm_eps)
         y = (normed * self.o_norm_scale[...] * nnx.silu(gate)).astype(self.dtype)
@@ -155,4 +198,13 @@ class GatedDeltaNet(nnx.Module):
             "invalid_read_count": jnp.sum(~jnp.isfinite(read32), dtype=jnp.int32),
             "invalid_output_count": jnp.sum(~jnp.isfinite(output), dtype=jnp.int32),
         }
+        if erase is not None:
+            erase32, beta32 = erase.astype(jnp.float32), beta.astype(jnp.float32)
+            diagnostics.update({
+                "lambda_min": jnp.min(erase32),
+                "lambda_max": jnp.max(erase32),
+                "lambda_minus_beta_rms": jnp.sqrt(jnp.mean(jnp.square(erase32 - beta32))),
+                "invalid_erase_count": jnp.sum(~jnp.isfinite(erase32) | (erase32 < 0) | (erase32 > 1),
+                                              dtype=jnp.int32),
+            })
         return output, diagnostics

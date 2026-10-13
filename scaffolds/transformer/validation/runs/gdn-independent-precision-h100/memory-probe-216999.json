@@ -1,0 +1,63 @@
+{
+  "attention_backend": "fused",
+  "attention_backend_requested": "fused",
+  "attention_formula": "S_t=a_t S_{t-1}+k_t (b_t v_t-lambda_t a_t S_{t-1}^T k_t)^T; lambda_t=sigmoid(W_lambda x); o_t=S_t^T q_t/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); b_t=sigmoid(W_b x)",
+  "attention_implementation": "fla_chunk_independent_gated_delta_rule_triton",
+  "attention_kernel": "gated_deltanet",
+  "attention_mechanism": "gated_deltanet",
+  "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+  "attention_score_scale": "1/sqrt(d_k)",
+  "best_checkpoint_after": 20,
+  "checkpoint_audit": {
+    "checkpoint_state_sha256": "e92e546218e0be0daf7927bb5f5454a661c291f1a8e95ab98cfd4da57c6ba039",
+    "final_state_sha256": "e92e546218e0be0daf7927bb5f5454a661c291f1a8e95ab98cfd4da57c6ba039",
+    "first_update": {
+      "batch_sha256": "197483d5def4cf03e8cea118946c9d036838203226b92db0a2c21a37b1ccfdfa",
+      "rng_sha256": "cdb82f689a46998677130ffbd1649780705fcc7a7ef59c1638c275bdb278c642",
+      "step": 1
+    },
+    "next_update": {
+      "batch_sha256": "b61f8b1402afd06332b4a01ac3655d57aa18cd2a3de93aa151f99be056c5a240",
+      "rng_sha256": "c952d7c8272d985c15ea28dd1ce800ea3107946123e8fe8ee13bd6f6b93bd6ea",
+      "step": 21
+    },
+    "start_state_sha256": "6b870aaf0de68e3897de6be7185f0ad6055f46d84c877425f6447b59cd049bc5"
+  },
+  "data_parallel_devices": 2,
+  "data_start_sequence": 0,
+  "diagnostic_backend": "fused",
+  "end_step": 20,
+  "final_step": 20,
+  "gdn_chunk_size": 64,
+  "gdn_conv_size": 4,
+  "gdn_erase_initialization": "copy_write_projection",
+  "gdn_erase_mode": "independent",
+  "gdn_initial_state": "zero_each_sequence",
+  "gdn_kernel_source": "flash-linear-attention chunk_gated_delta_rule with local independent-gate WY kernels",
+  "gdn_state_elements_per_layer": 65536,
+  "latest_checkpoint_after": 20,
+  "latest_checkpoint_before": null,
+  "restored": false,
+  "restored_step": null,
+  "start_step": 0,
+  "timing": {
+    "checkpoint_seconds": [
+      23.920674418099225
+    ],
+    "evaluation_seconds": [
+      18.988979157060385
+    ],
+    "runtime_seconds": 249.25074440403841,
+    "train_step_seconds": [
+      147.9206933400128,
+      1.8440961180021986,
+      1.8670675859320909,
+      1.846053609973751,
+      1.8450906169600785,
+      1.8510232949629426,
+      1.8723829220980406,
+      1.8647038189228624
+    ]
+  },
+  "training_tokens": 10485760
+}

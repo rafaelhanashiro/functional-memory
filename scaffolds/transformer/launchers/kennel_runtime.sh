@@ -29,6 +29,6 @@ transformer_configure_kennel_runtime() {
       esac
       ;;
   esac
-  export XLA_PYTHON_CLIENT_PREALLOCATE=false
+  export XLA_PYTHON_CLIENT_PREALLOCATE="${XLA_PYTHON_CLIENT_PREALLOCATE:-false}"
 }
 transformer_configure_kennel_runtime

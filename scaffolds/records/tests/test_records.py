@@ -153,6 +153,22 @@ def test_index_keeps_custom_polynomial_distinct_without_inventing_basis(tmp_path
     assert row["attention_family"] == "polynomial"
 
 
+def test_index_distinguishes_gdn_erase_modes_without_inventing_legacy_settings(tmp_path):
+    study = tmp_path / "study"
+    runs = {}
+    for mode in (None, "tied", "independent"):
+        model = {"attention_mechanism": "gated_deltanet"}
+        if mode is not None:
+            model["gdn_erase_mode"] = mode
+        runs[mode] = create_run(study, {"model": model})
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    for mode, run in runs.items():
+        assert rows[run.name]["gdn_erase_mode"] == (mode or "")
+    first = (study / "runs.csv").read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+
+
 def test_record_updates_preserve_execution_evidence_and_reject_identity_changes(tmp_path):
     run = create_run(tmp_path / "study", recipe(), "label")
     update_record(run, {"execution": {"hardware": "H100", "acceptance": {"passed": 10}}})

@@ -71,6 +71,7 @@ Note:
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import dataclasses
 import functools
@@ -80,6 +81,7 @@ import os
 import pickle
 import shutil
 import tempfile
+import threading
 import types
 import zlib
 from collections import OrderedDict
@@ -835,6 +837,7 @@ def _make_triton_cache_key(
     num_stages: int,
     num_ctas: int,
     enable_fp_fusion: bool,
+    default_dot_input_precision: str | None = None,
 ) -> str:
     """Build a deterministic SHA-256 cache key for a Triton kernel compilation.
 
@@ -853,6 +856,7 @@ def _make_triton_cache_key(
         num_stages: Number of pipeline stages.
         num_ctas: Number of cooperative thread arrays.
         enable_fp_fusion: Whether floating-point fusion is enabled.
+        default_dot_input_precision: Resolved default precision for FP32 dots.
 
     Returns:
         A SHA-256 hex-digest string uniquely identifying this compilation.
@@ -873,6 +877,7 @@ def _make_triton_cache_key(
         num_stages,
         num_ctas,
         enable_fp_fusion,
+        default_dot_input_precision,
     )
     return hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
 
@@ -1023,6 +1028,26 @@ def _lru_set(cache: OrderedDict, key: str, value) -> None:
         cache.popitem(last=False)
 
 
+# Triton 3.7 resolves omitted tl.dot input_precision from a process-global
+# language knob, rather than its compiler option. All bridge AST generation
+# therefore shares this lock, including calls that retain the ambient default.
+_TRITON_AST_COMPILATION_LOCK = threading.RLock()
+
+
+def _resolve_dot_input_precision(precision: str | None) -> str | None:
+    with _TRITON_AST_COMPILATION_LOCK:
+        return triton.knobs.language.fp32_default if precision is None else precision
+
+
+@contextlib.contextmanager
+def _triton_dot_precision_scope(precision: str | None):
+    with _TRITON_AST_COMPILATION_LOCK, triton.knobs.language.scope():
+        # scope restores both the Python knob and its environment variable,
+        # including when nested JIT compilation raises an exception.
+        triton.knobs.language.fp32_default = precision
+        yield
+
+
 def get_or_create_triton_kernel(
     backend_init_func,
     platform,
@@ -1036,6 +1061,7 @@ def get_or_create_triton_kernel(
     num_ctas,
     compute_capability,
     enable_fp_fusion,
+    default_dot_input_precision: str | None = None,
     metaparams,
     dump: bool,
 ) -> tuple[triton_kernel_call_lib.TritonKernel, Any]:  # type: ignore
@@ -1053,6 +1079,10 @@ def get_or_create_triton_kernel(
         num_ctas: Number of cooperative thread arrays.
         compute_capability: Target compute capability.
         enable_fp_fusion: Whether to enable floating point fusion.
+        default_dot_input_precision: Default FP32 dot precision (for example
+            "tf32x3" or "ieee"). None preserves Triton's ambient default.
+            Explicit tl.dot input_precision arguments retain precedence. On
+            Triton 3.7 this default also overrides deprecated allow_tf32 flags.
         metaparams: Kernel metaparameters.
         dump: Whether to dump debug information.
 
@@ -1062,6 +1092,7 @@ def get_or_create_triton_kernel(
     Raises:
         ValueError: For unsupported configurations or compilation errors.
     """
+    default_dot_input_precision = _resolve_dot_input_precision(default_dot_input_precision)
     if num_warps is None:
         num_warps = 4
     if num_stages is None:
@@ -1136,6 +1167,7 @@ def get_or_create_triton_kernel(
         num_stages=num_stages,
         num_ctas=num_ctas,
         enable_fp_fusion=enable_fp_fusion,
+        default_dot_input_precision=default_dot_input_precision,
     )
     kernel = _lru_get(_COMPILED_KERNEL_CACHE, cache_key)
     if kernel is not None:
@@ -1190,20 +1222,23 @@ def get_or_create_triton_kernel(
             "enable_fp_fusion": enable_fp_fusion,
         }
 
+        if default_dot_input_precision is not None:
+            opts["default_dot_input_precision"] = default_dot_input_precision
         options = backend.parse_options(opts)
         context = _triton.ir.context()
         _triton.ir.load_dialects(context)
         backend.load_dialects(context)
         codegen_fns = backend.get_codegen_implementation(options)
 
-        module = code_gen.ast_to_ttir(
-            fn,
-            tc.ASTSource(fn, constexprs=constants, signature=signature, attrs=attrs),
-            options=options,
-            codegen_fns=codegen_fns,
-            context=context,
-            module_map=backend.get_module_map(),
-        )
+        with _triton_dot_precision_scope(default_dot_input_precision):
+            module = code_gen.ast_to_ttir(
+                fn,
+                tc.ASTSource(fn, constexprs=constants, signature=signature, attrs=attrs),
+                options=options,
+                codegen_fns=codegen_fns,
+                context=context,
+                module_map=backend.get_module_map(),
+            )
         ttir = str(module)
 
         compilation_result = compile_ttir_inplace(module, backend, options, compute_capability, platform)
@@ -1263,6 +1298,7 @@ def triton_kernel_call_lowering(
     device,
     compute_capability,
     enable_fp_fusion,
+    default_dot_input_precision: str | None = None,
     input_output_aliases,
     zeroed_outputs,
     debug,
@@ -1290,6 +1326,10 @@ def triton_kernel_call_lowering(
         device: Target device identifier.
         compute_capability: Target compute capability.
         enable_fp_fusion: Whether to enable floating point fusion.
+        default_dot_input_precision: Default FP32 dot precision (for example
+            "tf32x3" or "ieee"). None preserves Triton's ambient default.
+            Explicit tl.dot input_precision arguments retain precedence. On
+            Triton 3.7 this default also overrides deprecated allow_tf32 flags.
         input_output_aliases: Input-output aliasing specifications.
         zeroed_outputs: Outputs to zero-initialize.
         debug: Whether to enable debug output.
@@ -1299,6 +1339,7 @@ def triton_kernel_call_lowering(
     Returns:
         Lowered kernel call rule result.
     """
+    default_dot_input_precision = _resolve_dot_input_precision(default_dot_input_precision)
     kernel_call_name = name
     args = list(ctx.avals_in)
     arg_dtypes = list(safe_map(get_triton_type, ctx.avals_in))
@@ -1435,6 +1476,7 @@ def triton_kernel_call_lowering(
             num_ctas=params["num_ctas"],
             compute_capability=compute_capability,
             enable_fp_fusion=enable_fp_fusion,
+            default_dot_input_precision=default_dot_input_precision,
             metaparams=dict(params["metaparams"]),
             dump=debug,
         )
@@ -1471,7 +1513,8 @@ def triton_kernel_call_lowering(
             for input_idx, output_idx in input_output_aliases
         )
         kernel_call = triton_kernel_call_lib.TritonAutotunedKernelCall(
-            f"{kernel_call_name} ({fn.fn.__name__}) {named_scalar_args}",
+            f"{kernel_call_name} ({fn.fn.__name__}) {named_scalar_args} "
+            f"dot_input_precision={default_dot_input_precision!r}",
             [(call, str(config)) for call, config in safe_zip(kernel_calls, configs)],
             input_output_aliases_with_sizes,
         )
@@ -1556,6 +1599,7 @@ def triton_call(
     device: int = 0,
     compute_capability: int | None = None,
     enable_fp_fusion: bool = True,
+    default_dot_input_precision: str | None = None,
     input_output_aliases: dict[int, int] | None = None,
     zeroed_outputs: Sequence[int] | Callable[[dict[str, Any]], Sequence[int]] = (),
     debug: bool = False,
@@ -1581,6 +1625,10 @@ def triton_call(
         device: Target device identifier.
         compute_capability: Target compute capability (auto-detected if None).
         enable_fp_fusion: Whether to enable floating point fusion.
+        default_dot_input_precision: Default FP32 dot precision (for example
+            "tf32x3" or "ieee"). None preserves Triton's ambient default.
+            Explicit tl.dot input_precision arguments retain precedence. On
+            Triton 3.7 this default also overrides deprecated allow_tf32 flags.
         input_output_aliases: Mapping of input indices to output indices for aliasing.
         zeroed_outputs: Indices of outputs to zero-initialize or callable returning them.
         debug: Whether to enable debug output during compilation.
@@ -1637,6 +1685,7 @@ def triton_call(
         device=device,
         compute_capability=compute_capability,
         enable_fp_fusion=enable_fp_fusion,
+        default_dot_input_precision=default_dot_input_precision,
         input_output_aliases=tuple(input_output_aliases.items()),
         zeroed_outputs=zeroed_outputs,
         debug=debug,

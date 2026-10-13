@@ -65,6 +65,7 @@ export SHARED_TRANSFORMER_SOURCE_COMMIT="$LAUNCH_COMMIT"
 export TRANSFORMER_CLUSTER=kennel TRANSFORMER_GPU_TYPE="$GPU_TYPE"
 WANDB_MODE_SETTING="${TRANSFORMER_WANDB_MODE:-online}"
 export PYTHONPATH="$EXECUTION_ROOT"
+TRANSFORMER_JOB_TMPDIR=""
 source scaffolds/launch/watchdog.sh
 finish_record() {
   local result=$?
@@ -72,6 +73,9 @@ finish_record() {
   trap - EXIT
   stop_watchdog
   "$PYTHON" -m scaffolds.launch.finalize --run "$RUN_ROOT" --exit-code "$result" || finalizer_result=$?
+  if [[ -n "${TRANSFORMER_JOB_TMPDIR:-}" ]]; then
+    rm -rf -- "$TRANSFORMER_JOB_TMPDIR"
+  fi
   # Preserve the worker's failure even if recording it also fails.
   if (( result == 0 )); then result=$finalizer_result; fi
   exit "$result"
@@ -80,11 +84,15 @@ trap finish_record EXIT
 start_watchdog "$RUN_ROOT/training.log"
 export JAX_PLATFORMS=cuda
 export TRANSFORMER_HOST_STAGING="${TRANSFORMER_HOST_STAGING:-0}"
-export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export XLA_PYTHON_CLIENT_PREALLOCATE="${XLA_PYTHON_CLIENT_PREALLOCATE:-false}"
 export PYTHONUNBUFFERED=1 PYTHONFAULTHANDLER=1 MPLBACKEND=Agg
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-4}"
 export MKL_NUM_THREADS="$OMP_NUM_THREADS"
-export JAX_COMPILATION_CACHE_DIR="$CACHE/jax" XDG_CACHE_HOME="$CACHE/xdg" TMPDIR="$CACHE/tmp/$SLURM_JOB_ID"
+export JAX_COMPILATION_CACHE_DIR="$CACHE/jax" XDG_CACHE_HOME="$CACHE/xdg"
+# Compiler and pytest capture temporaries are disposable. NFS temporary-file
+# unlink/read operations can stall an otherwise idle GPU process; keep these local.
+TRANSFORMER_JOB_TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/functional-memory-${SLURM_JOB_ID}.XXXXXX")"
+export TMPDIR="$TRANSFORMER_JOB_TMPDIR"
 # jaxlib assembles Triton custom-call PTX with the first ptxas among its CUDA roots,
 # which is the node's /usr/local/cuda unless CUDA_HOME names another; pin the locked toolkit.
 CUDA_HOME="$("$PYTHON" -c 'import importlib.util; print(next(iter(importlib.util.find_spec("nvidia.cuda_nvcc").submodule_search_locations)))')"

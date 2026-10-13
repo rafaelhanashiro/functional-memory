@@ -20,6 +20,7 @@ from scaffolds.transformer.configs.loader import config_dicts_equal, config_to_d
 from scaffolds.transformer.models import build_model, model_parameter_count
 from scaffolds.transformer.tests.test_training import tiny_config
 from scaffolds.transformer.training import loop, tracking
+from scaffolds.transformer.training import telemetry
 from scaffolds.transformer.training.checkpointing import make_checkpoint_manager, restore_latest_checkpoint
 from scaffolds.transformer.training.diagnostics import attention_identity
 from scaffolds.transformer.training.optim import attention_weight_decay_mask
@@ -61,13 +62,15 @@ def _naive_layer(module, x):
     q = q / np.sqrt((q ** 2).sum(-1, keepdims=True) + 1e-6)
     k = k / np.sqrt((k ** 2).sum(-1, keepdims=True) + 1e-6)
     beta = 1 / (1 + np.exp(-(x @ p["b_proj/kernel"])))
+    erase = 1 / (1 + np.exp(-(x @ p["lambda_proj/kernel"]))) if module.erase_mode == "independent" else beta
     g = -np.exp(p["A_log"]) * np.log1p(np.exp(x @ p["a_proj/kernel"] + p["dt_bias"]))
     out = np.zeros((batch, length, heads, dv))
     state = np.zeros((batch, heads, dk, dv))
     for t in range(length):
         state = state * np.exp(g[:, t])[..., None, None]
         prediction = np.einsum("bhk,bhkv->bhv", k[:, t], state)
-        state = state + np.einsum("bhk,bhv->bhkv", k[:, t], beta[:, t][..., None] * (v[:, t] - prediction))
+        state = state + np.einsum("bhk,bhv->bhkv", k[:, t],
+                                  beta[:, t][..., None] * v[:, t] - erase[:, t][..., None] * prediction)
         out[:, t] = np.einsum("bhk,bhkv->bhv", q[:, t] / math.sqrt(dk), state)
     gate = (x @ p["g_proj/kernel"]).reshape(batch, length, heads, dv)
     normed = out / np.sqrt((out ** 2).mean(-1, keepdims=True) + module.norm_eps)
@@ -75,8 +78,11 @@ def _naive_layer(module, x):
     return y.reshape(batch, length, heads * dv) @ p["o_proj/kernel"]
 
 
-def test_layer_matches_an_independent_fp64_implementation():
-    module = GatedDeltaNet(32, 4, 8, 8, conv_size=4, rngs=nnx.Rngs(3))
+@pytest.mark.parametrize("erase_mode", ["tied", "independent"])
+def test_layer_matches_an_independent_fp64_implementation(erase_mode):
+    module = GatedDeltaNet(32, 4, 8, 8, conv_size=4, erase_mode=erase_mode, rngs=nnx.Rngs(3))
+    if erase_mode == "independent":
+        module.lambda_proj.kernel[...] = 0.3 * module.b_proj.kernel[...] + 0.1
     x = jnp.asarray(np.random.default_rng(0).normal(size=(2, 13, 32)), jnp.float32)
     with jax.default_matmul_precision("highest"):
         np.testing.assert_allclose(module(x), _naive_layer(module, x), rtol=2e-5, atol=2e-6)
@@ -93,6 +99,30 @@ def test_reference_recurrence_reduces_to_known_cases():
     # beta = 1 with unit keys stores v exactly along k: reading with q = k returns v_t (no decay).
     stored = gated_delta_rule_reference(k, k, v, np.zeros((1, 6, 2)), np.ones((1, 6, 2)), 1.0)
     np.testing.assert_allclose(stored, v, rtol=1e-5, atol=1e-5)
+
+
+@pytest.mark.parametrize("direction", ["axis", "dense"])
+@pytest.mark.parametrize("tied", [False, True], ids=["independent", "tied"])
+def test_repeated_key_analytic_gradients_match_the_reference(direction, tied):
+    from scaffolds.transformer.tests.test_gated_deltanet_kernel import (
+        _repeated_key_fixture,
+        _repeated_key_oracle,
+    )
+
+    args, cotangent = _repeated_key_fixture(jnp.float32, direction, tied=tied)
+    expected, _ = _repeated_key_oracle(args, cotangent)
+    if tied:
+        args = args[:5]
+        expected["dbeta"] += expected.pop("derase")
+
+    def function(q, k, v, g, beta, erase=None):
+        return gated_delta_rule_reference(q, k, v, g, beta, 64 ** -0.5, erase=erase)
+
+    with jax.default_matmul_precision("highest"):
+        output = function(*args)
+        gradients = jax.grad(lambda *a: jnp.sum(function(*a) * cotangent), argnums=range(len(args)))(*args)
+    for (name, reference), actual in zip(expected.items(), (output, *gradients), strict=True):
+        np.testing.assert_allclose(actual, reference, rtol=3e-5, atol=2e-6, err_msg=name)
 
 
 def test_short_convolution_is_causal_and_starts_at_pytorch_default_bound():
@@ -114,9 +144,10 @@ def test_decay_parameters_follow_mamba2_and_skip_weight_decay():
         assert parameter.get_metadata("weight_decay", True) is False
 
 
-def test_parameter_count_matches_the_formula_across_key_widths():
+@pytest.mark.parametrize("erase_mode", ["tied", "independent"])
+def test_parameter_count_matches_the_formula_across_key_widths(erase_mode):
     for key_dim in (2, 8, 16):
-        config = gdn_model(qk_head_dim=key_dim)
+        config = gdn_model(qk_head_dim=key_dim, gdn_erase_mode=erase_mode)
         params = nnx.state(build_model(config, jax.random.PRNGKey(0)), nnx.Param)
         assert sum(leaf.size for leaf in jax.tree.leaves(params)) == model_parameter_count(config)
 
@@ -127,11 +158,118 @@ def test_parameter_count_matches_the_formula_across_key_widths():
     (dict(attention_backend="manual"), "backend"),
     (dict(qk_norm=True), "QK-norm"),
     (dict(gdn_conv_size=0), "gdn_conv_size"),
+    (dict(gdn_erase_mode="unknown"), "gdn_erase_mode"),
     (dict(initialization="gla_reference"), "initialization"),
 ])
 def test_invalid_configurations_are_rejected(updates, error):
     with pytest.raises(ValueError, match=error):
         gdn_model(**updates)
+
+
+@pytest.mark.parametrize("mechanism", ["dot_product", "gla"])
+def test_independent_erase_is_rejected_for_other_mechanisms(mechanism):
+    with pytest.raises(ValueError, match="gdn_erase_mode"):
+        gdn_model(attention_mechanism=mechanism, gdn_erase_mode="independent")
+
+
+def test_independent_erase_recovers_addition_and_can_erase_without_writing():
+    rng = np.random.default_rng(11)
+    q, k = (jnp.asarray(rng.normal(size=(1, 7, 2, 4)), jnp.float32) for _ in range(2))
+    v = jnp.asarray(rng.normal(size=(1, 7, 2, 3)), jnp.float32)
+    zeros, ones = jnp.zeros((1, 7, 2)), jnp.ones((1, 7, 2))
+    actual = gated_delta_rule_reference(q, k, v, zeros, ones, 1.0, erase=zeros)
+    scores = jnp.einsum("bthk,bshk->bhts", q, k)
+    expected = jnp.einsum("bhts,bshv->bthv", jnp.tril(scores), v)
+    np.testing.assert_allclose(actual, expected, rtol=2e-6, atol=2e-6)
+    keys = jnp.ones((1, 2, 1, 1))
+    values = jnp.array([2., 9.]).reshape(1, 2, 1, 1)
+    beta = jnp.array([1., 0.]).reshape(1, 2, 1)
+    erase = jnp.array([0., 1.]).reshape(1, 2, 1)
+    actual = gated_delta_rule_reference(keys, keys, values, jnp.zeros_like(beta), beta, 1., erase=erase)
+    np.testing.assert_array_equal(actual.reshape(-1), [2., 0.])
+
+
+def test_independent_erase_recovers_tied_outputs_and_gradient_chain_rule():
+    rng = np.random.default_rng(12)
+    q, k = (jnp.asarray(rng.normal(size=(1, 7, 2, 4)), jnp.float32) for _ in range(2))
+    k = k / jnp.linalg.norm(k, axis=-1, keepdims=True)
+    v = jnp.asarray(rng.normal(size=(1, 7, 2, 3)), jnp.float32)
+    cotangent = jnp.asarray(rng.normal(size=v.shape), jnp.float32)
+    g = -jnp.ones((1, 7, 2)) * 0.1
+    beta = jnp.asarray(rng.uniform(0.1, 0.9, size=g.shape), jnp.float32)
+    tied = lambda write: jnp.sum(gated_delta_rule_reference(q, k, v, g, write, 0.5) * cotangent)
+    free = lambda write, erase: jnp.sum(
+        gated_delta_rule_reference(q, k, v, g, write, 0.5, erase=erase) * cotangent)
+    tied_value, tied_grad = jax.value_and_grad(tied)(beta)
+    free_value, (write_grad, erase_grad) = jax.value_and_grad(free, argnums=(0, 1))(beta, beta)
+    np.testing.assert_allclose(free_value, tied_value, rtol=2e-6, atol=2e-6)
+    np.testing.assert_allclose(write_grad + erase_grad, tied_grad, rtol=2e-6, atol=2e-6)
+    assert np.linalg.norm(write_grad) > 0 and np.linalg.norm(erase_grad) > 0
+    assert not np.allclose(write_grad, erase_grad)
+
+
+@pytest.mark.parametrize("initialization", ["flax_default", "gated_deltanet_reference"])
+def test_independent_erase_initialization_preserves_every_existing_parameter(initialization):
+    config = gdn_model(initialization=initialization)
+    tied = build_model(config, jax.random.PRNGKey(17))
+    independent = build_model(replace(config, gdn_erase_mode="independent"), jax.random.PRNGKey(17))
+    flatten = lambda model: {path: np.asarray(value[...])
+                             for path, value in nnx.to_flat_state(nnx.state(model, nnx.Param))}
+    before, after = flatten(tied), flatten(independent)
+    assert len(after) - len(before) == config.num_layers
+    for path, value in before.items():
+        np.testing.assert_array_equal(after[path], value, err_msg=str(path))
+    for name in independent.layer_names:
+        attention = getattr(independent, name).attention
+        assert attention.lambda_proj.kernel is not attention.b_proj.kernel
+        np.testing.assert_array_equal(attention.lambda_proj.kernel[...], attention.b_proj.kernel[...])
+    tokens = jnp.asarray([[1, 2, 3, 4]])
+    np.testing.assert_allclose(independent(tokens), tied(tokens), rtol=3e-5, atol=2e-6)
+
+
+@pytest.mark.parametrize("initialization", ["flax_default", "gated_deltanet_reference"])
+def test_independent_gates_support_donated_updates_from_equal_initial_values(initialization):
+    model = build_model(gdn_model(initialization=initialization, gdn_erase_mode="independent"),
+                        jax.random.PRNGKey(17))
+    attention = getattr(model, model.layer_names[0]).attention
+    gates = (attention.b_proj.kernel[...], attention.lambda_proj.kernel[...])
+    initial = np.asarray(gates[0]).copy()
+    np.testing.assert_array_equal(gates[1], initial)
+
+    def update(parameters):
+        # Distinct objectives must update the two equal-initialized projections
+        # independently. Training donates its state; distinct NNX Param objects
+        # alone do not prevent their underlying JAX buffers from aliasing.
+        gradients = jax.grad(lambda pair: jnp.sum((pair[0] - 1) ** 2)
+                             + jnp.sum((pair[1] + 1) ** 2))(parameters)
+        return jax.tree.map(lambda weight, gradient: weight - 0.125 * gradient,
+                            parameters, gradients)
+
+    write, erase = jax.jit(update, donate_argnums=(0,))(gates)
+    np.testing.assert_allclose(write, initial - 0.25 * (initial - 1), rtol=2e-6, atol=2e-7)
+    np.testing.assert_allclose(erase, initial - 0.25 * (initial + 1), rtol=2e-6, atol=2e-7)
+    assert not np.array_equal(write, erase)
+
+
+def test_independent_projection_gradients_and_gate_telemetry():
+    module = GatedDeltaNet(32, 4, 8, 8, erase_mode="independent", rngs=nnx.Rngs(19))
+    x = jax.random.normal(jax.random.PRNGKey(20), (2, 9, 32))
+    cotangent = jax.random.normal(jax.random.PRNGKey(21), x.shape)
+    grads = nnx.grad(lambda layer: jnp.sum(layer(x) * cotangent))(module)
+    write, erase = np.asarray(grads.b_proj.kernel[...]), np.asarray(grads.lambda_proj.kernel[...])
+    assert np.linalg.norm(write) > 0 and np.linalg.norm(erase) > 0
+    assert not np.allclose(write, erase)
+    with telemetry.collect() as collector:
+        _, diagnostics = module(x, return_diagnostics=True)
+    assert diagnostics["lambda_minus_beta_rms"] == 0
+    assert diagnostics["invalid_erase_count"] == 0
+    for name in ("beta", "lambda"):
+        assert 0 <= collector.values[f"{name}_min"] <= collector.values[f"{name}_max"] <= 1
+    assert collector.values["lambda_minus_beta_rms"] == 0
+    assert collector.values["attention_output_rms"] > 0
+    module.lambda_proj.kernel[...] = module.lambda_proj.kernel[...] + 0.1
+    _, diagnostics = module(x, return_diagnostics=True)
+    assert diagnostics["lambda_minus_beta_rms"] > 0
 
 
 def test_odd_key_width_is_allowed_without_rope_and_auto_backend_is_blocked_on_cpu():
@@ -175,11 +313,12 @@ def test_identity_tags_acceptance_and_legacy_recipes():
     assert "scaffolds/transformer/tests/test_gated_deltanet_kernel.py" in attention_test_paths(values, "fused", False)
     legacy = config_to_dict(Config())
     assert config_dicts_equal(legacy, {**legacy, "model": {k: v for k, v in legacy["model"].items()
-                                                           if k != "gdn_conv_size"}})
+                                                           if k not in ("gdn_conv_size", "gdn_erase_mode")}})
 
 
-def test_training_reports_diagnostics_and_resumes_exactly(tmp_path):
-    config = gdn_config(tmp_path / "full", initialization="gated_deltanet_reference")
+@pytest.mark.parametrize("erase_mode", ["tied", "independent"])
+def test_training_reports_diagnostics_and_resumes_exactly(tmp_path, erase_mode):
+    config = gdn_config(tmp_path / "full", initialization="gated_deltanet_reference", gdn_erase_mode=erase_mode)
     loop.run_training(config)
     resumed = replace(config, train=replace(config.train, workdir=tmp_path / "resumed"))
     interrupted = loop.run_training(resumed, stop_after_step=1, audit_checkpoint=True)
@@ -204,3 +343,5 @@ def test_training_reports_diagnostics_and_resumes_exactly(tmp_path):
     assert validations and all(r["attention_diagnostics"]["valid"] for r in validations)
     layer = validations[-1]["attention_diagnostics"]["layers"][0]
     assert layer["invalid_gate_count"] == 0 and layer["log_decay_max"] <= 0
+    if erase_mode == "independent":
+        assert layer["invalid_erase_count"] == 0 and layer["lambda_minus_beta_rms"] > 0

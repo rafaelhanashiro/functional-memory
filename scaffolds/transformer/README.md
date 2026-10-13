@@ -330,10 +330,30 @@ the vendored bridge: thin wrappers reorder arguments into the bridge's conventio
 forward and backward follow FLA's launch sequence under `jax.custom_vjp`, and the two
 chunk-local cumulative sums run in JAX. FLA reads the GPU through torch, which the
 environment installs CPU-only to satisfy imports, so the glue applies FLA's GPU choices
-itself: TF32 triangular solves, its Hopper and Blackwell autotune menus, and tile sizes
-from the device's shared memory. Triton must be ≥ 3.7.1 on Hopper (FLA #640). The fused
+itself: its Hopper and Blackwell autotune menus and tile sizes from the device's
+shared memory. Chunk intermediates and backward partials use FP32, with TF32x3
+products including the triangular solve. Keeping only FP32 accumulators while
+rounding intermediate buffers to BF16 loses accuracy in repeated-key cancellation.
+The bridge scopes the dot-product precision to each compilation and includes it in
+the cache identity. Outputs and returned input gradients keep their original dtypes;
+saved Q/K/V retain their original storage dtype and are promoted again in backward.
+Triton must be ≥ 3.7.1 on Hopper (FLA #640). The fused
 path requires an sm90+ GPU and prediction length divisible by 64; `auto` selects it there
-and the reference elsewhere. It passes its GPU tests on H100 and B300.
+and the reference elsewhere. Hardware qualification is recorded in
+[validation](validation/README.md#independent-gdn-erasewrite-kernel).
+
+`gdn_erase_mode: independent` gives erasure its own per-head gate
+`lambda_t = sigmoid(W_lambda x_t)`, while `beta_t = sigmoid(W_b x_t)` controls writing:
+`S_t = a_t S_{t-1} + k_t (beta_t v_t - lambda_t a_t S_{t-1}^T k_t)^T`.
+The default `tied` mode preserves the original GDN update. The independent projection
+is a separate parameter copied from the write projection at initialization. It consumes
+no additional initialization RNG draws, and reference initialization re-copies it after
+initializing the original weights, so all shared parameters match tied GDN exactly.
+The fused independent path shares FLA's triangular solve, state, and read kernels;
+local WY preparation and its backward pass use separate erase/write gates and gradients.
+Neither pass divides by a gate, so zero erasure with nonzero writing is supported.
+Training telemetry records both gates, their difference, raw attention output statistics,
+and separate erase/write/decay/output-gate parameter-group norms.
 
 ### Gated linear attention
 

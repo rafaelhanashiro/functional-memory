@@ -236,3 +236,63 @@ Question, input selections, outcomes, and the open scientific decision live in t
 To update a figure, change its explicit run selection, run
 `python -m scaffolds.records refresh results/<analysis>` in the scaffold environment,
 and use that result collection's regeneration command.
+
+## Independent GDN erase gate
+
+Run `rf7341031e3d5` asks whether GDN benefits from separate scalar erase and write
+projections. It uses `model.gdn_erase_mode: independent`, with the erase projection
+initialized from the write projection as a separate parameter. All original weights
+match tied GDN at initialization. It preserves the canonical GDN block and reference
+initialization, 400 warmup updates, standard training telemetry, and the 19,074-update
+FineWeb recipe. The preselected control is `rf640fc13f3a8`; comparison findings and
+current status belong in the [exploratory result](../../results/exploratory/gdn_independent_erase/README.md).
+Its home cluster is Kennel. Production job `217974` completed all 19,074 updates
+on 2026-10-12 at 18:32 EDT, on `standard` at nice 0 with four H100 SXM GPUs on
+`dogo`. Terminal and validation-best checkpoint both correspond to update 19,074.
+[W&B run](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/3113f4ce156c46c78fcc7c87efb60273):
+`200m-dk064-gdn-independent-erase-warmup400-seed0`.
+Production and passed runtime qualification `217971` use
+`XLA_PYTHON_CLIENT_PREALLOCATE=false`, with the memory fraction unset. The frozen
+global batch remains 256, global microbatch 64, and gradient accumulation four;
+four devices divide each microbatch into 16 sequences per GPU.
+Acceptance passed the complete test suite, a 20-update full-recipe pilot,
+finite validation, checkpoint saving, and exact fresh-process resumption from
+update 20 to 21. Production training, validation, and checkpointing took 3.52 hours.
+The [qualification record](../../scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-four-gpu.json)
+pins the acceptance evidence. The canonical 400-update warmup and gated output
+RMSNorm were active throughout training. Completed findings, diagnostic summaries,
+and the limitations of the historical-control comparison are recorded only in the
+linked exploratory result.
+Source `d3d93bc6ccaa8a76fc4b29124c80988ae1593405`
+retains FP32 chunk intermediates and TF32x3 products for tied and independent gates.
+The independently optimized erase and write projections have separate device
+buffers while preserving equal canonical initial values and the original RNG draws.
+The [scaffold validation record](../../scaffolds/transformer/validation/README.md#fp32-chunk-precision-repair)
+contains the accuracy and runtime checks.
+Qualification and production commands, from `worktrees/gdn-independent-erase`:
+
+```bash
+env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable --nice=0 --partition=standard --nodelist=dogo --gres=gpu:h100:4 \
+  --time=01:00:00 --cpus-per-task=32 --mem=256G \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false \
+  --job-name=gdn-runtime-four-gpu \
+  --output=scaffolds/transformer/validation/logs/gdn-runtime-%j.log \
+  scaffolds/transformer/validation/qualify_gdn_runtime.sbatch \
+  experiments/attention_scaling/runs/rf7341031e3d5/config.yaml \
+  d3d93bc6ccaa8a76fc4b29124c80988ae1593405 H100 24 4
+
+env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable --nice=0 --partition=standard --nodelist=dogo --gres=gpu:h100:4 \
+  --time=1-00:00:00 --cpus-per-task=32 --mem=256G \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false \
+  --dependency=afterok:217971 --kill-on-invalid-dep=yes \
+  --job-name=rf7341031e3d5 \
+  --output=experiments/attention_scaling/runs/rf7341031e3d5/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.attention_scaling.acceptance \
+  experiments/attention_scaling/runs/rf7341031e3d5/config.yaml \
+  d3d93bc6ccaa8a76fc4b29124c80988ae1593405 4 H100
+```
+
+Production verifies acceptance with the same source, recipe, hardware, and runtime
+settings before training; matching passed stages are reused. Hardware qualification
+and kernel benchmarks are documented in the linked scaffold validation record.
