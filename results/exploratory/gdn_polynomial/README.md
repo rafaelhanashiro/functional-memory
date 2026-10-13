@@ -16,9 +16,11 @@ The explicitly selected control uses the repaired arithmetic, canonical GDN
 initialization, independent erase gate, and the same data and optimizer recipe.
 Its terminal and validation-best perplexity is 13.579409 at update 19,074.
 The primary has no measured training outcome yet. Full-recipe qualification job
-`218413` is running on four H100 PCIe GPUs on `mastiff`; production job `218414`
-is queued with an `afterok` dependency. Both use `standard` at nice 0. Neither run is added to a
-canonical result selection by this topic.
+`218426` is running on four H100 PCIe GPUs on `mastiff`, using `standard` at
+nice 0. Production job `218427` waits for successful qualification. The optimized
+kernel passes all 21 quadratic GPU checks; the full-recipe pilot is qualifying
+throughput, memory, and exact resumption. Neither run is added to a canonical
+result selection by this topic.
 
 With GDN's L2-normalized keys and queries, the update is
 

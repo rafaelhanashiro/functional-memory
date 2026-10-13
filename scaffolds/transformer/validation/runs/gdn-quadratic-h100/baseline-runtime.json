@@ -1,0 +1,307 @@
+{
+  "acceptance_checks": {
+    "checks": [
+      "cpu-tests",
+      "cpu-distributed-tests",
+      "gpu-tests",
+      "initialization",
+      "pilot",
+      "resume"
+    ],
+    "status": "passed"
+  },
+  "acceptance_identity": "68d0b25ce771ba823fa3fb6cf2f803a53969d79a908ef932d89d7fc46130bb16",
+  "acceptance_report_sha256": {
+    "cpu-distributed-tests.json": "7e2102fbb4f2f7af49fe6ec57f3a7b228d89173dd9b77afd4a8b2fab743376ec",
+    "cpu-tests.json": "46f8dce325e995754e0e154e282054df9497c15dee8f2317f0aa57bfe1af3b8b",
+    "gpu-tests.json": "f0ad8f16037a7a11f5e8c31e47b190669345de143b0fc1ace2814148c99cf63e",
+    "hardware.json": "e98c1e825187828c92de9a212c47071075ddae27e1f84fb92677f0c4c841baf1",
+    "identity.json": "67357d6b31a687deeeb4718655e4788ea4240fbb4ff880eaf792be02271b9745",
+    "initialization.json": "ef0b9add609be27e114c5919ac5b6ba257dfa511e87f5c8ff85a16a6b471d8ba",
+    "pilot.json": "560dc0daeab345701bc5e4dad1d5e1ea25358e8594cd4edad923559d2dbf0271",
+    "resume.json": "f00ed1b1a9042704400bd3368532d6b057f35f5d65f6957a8dd171745ae14cb1",
+    "success.json": "afc508da64187b17f9ddeea5844d06021eefd72099c2a20281c14cf4ebb6da52"
+  },
+  "batch_layout": {
+    "global_batch_size": 256,
+    "global_micro_batch_size": 64,
+    "gradient_accumulation_steps": 4,
+    "local_micro_batch_size": 16
+  },
+  "config_sha256": "3b271001661b3130e71be9ede46e171599c483ab183d596959a730d564a6f9f5",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "exact_resume": {
+    "completed_step": 21,
+    "data_start_sequence": 5120,
+    "first_update": {
+      "batch_sha256": "b61f8b1402afd06332b4a01ac3655d57aa18cd2a3de93aa151f99be056c5a240",
+      "rng_sha256": "c952d7c8272d985c15ea28dd1ce800ea3107946123e8fe8ee13bd6f6b93bd6ea",
+      "step": 21
+    },
+    "first_update_matches_pilot_next_update": true,
+    "pilot_checkpoint_state_sha256": "5c30f6f2bf68f75b5e874aa3576fc8ca18db9e9825b02beff7759cae89f0edab",
+    "restored_step": 20,
+    "resumed_checkpoint_state_sha256": "62400552f607f4118f22807be411021c69c62452ad1e548ba75136bb7a5b5f72",
+    "resumed_final_state_sha256": "62400552f607f4118f22807be411021c69c62452ad1e548ba75136bb7a5b5f72",
+    "resumed_start_state_sha256": "5c30f6f2bf68f75b5e874aa3576fc8ca18db9e9825b02beff7759cae89f0edab",
+    "status": "passed"
+  },
+  "format": "gdn-runtime-qualification",
+  "frozen_execution_sha256": "4119282a23e007c5c7d914ebf5e7392c3f794a1d31867e29ca3ea0f82de9629a",
+  "hardware": {
+    "attention_backend": "fused",
+    "device_kinds": [
+      "NVIDIA H100 PCIe",
+      "NVIDIA H100 PCIe",
+      "NVIDIA H100 PCIe",
+      "NVIDIA H100 PCIe"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "home_cluster": "kennel",
+  "initialization": {
+    "parameter_count": 211335104,
+    "parameter_sha256": "10425a562c7058e77d3f6a49f2df5602ac4303b16e33a8c64079888b86d9b166"
+  },
+  "limitations": [
+    "This implementation passes correctness, finite training, and exact checkpoint resumption, but is not qualified for the requested 24-hour production allocation.",
+    "The Slurm failure is the runtime-budget guard, not a scientific numerical failure.",
+    "Twenty updates and one resumed update do not establish long-run stability or scientific performance.",
+    "Temporary pilot checkpoints are not retained. Acceptance-report hashes identify the summarized measurements; this record does not retain the temporary acceptance files.",
+    "The GPU tests emit an FLA platform-discovery warning; explicit JAX hardware checks and the non-skipped CUDA tests ran on H100 PCIe."
+  ],
+  "mechanism": {
+    "attention_formula": "F_t(q)=a_t F_{t-1}(P_t q)+v_t sum_{r=0}^2 beta_{t,r}<q,k_t>^r; P_t=I-lambda_t k_t k_t^T in original key space; beta_0=tanh(W_0 x), beta_1=sigmoid(W_b x), beta_2=tanh(W_2 x); lambda_t=sigmoid(W_lambda x); o_t=F_t(q_t)/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); one decay shared by all degrees",
+    "attention_implementation": "transported_score_polynomial_gated_delta_rule_triton",
+    "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+    "attention_score_scale": "1 (global 1/sqrt(d_k) applied to polynomial read)",
+    "gdn_erase_initialization": "copy_write_projection",
+    "gdn_polynomial_degree": 2,
+    "gdn_query_transport_space": "original_key_space",
+    "gdn_write_activation": [
+      "tanh",
+      "sigmoid",
+      "tanh"
+    ],
+    "gdn_write_initialization": "zero_constant_and_quadratic_projections"
+  },
+  "pilot": {
+    "all_recorded_telemetry_numeric_values_finite": true,
+    "attention_diagnostic_invalid_counts": {
+      "invalid_coefficient_count": 0,
+      "invalid_erase_count": 0,
+      "invalid_gate_count": 0,
+      "invalid_output_count": 0,
+      "invalid_projection_count": 0,
+      "invalid_read_count": 0
+    },
+    "attention_diagnostics_valid": true,
+    "coefficient_diagnostics_by_degree": {
+      "0": {
+        "layer_mean_max": 0.0008883964619599283,
+        "layer_mean_min": 5.4457537771668285e-05,
+        "layer_rms_max": 0.004674931522458792,
+        "layer_rms_min": 0.002112166490405798,
+        "layers_with_nonzero_rms": 10,
+        "maximum_over_layers": 0.033447265625,
+        "minimum_over_layers": -0.0205078125
+      },
+      "1": {
+        "layer_mean_max": 0.5015604496002197,
+        "layer_mean_min": 0.4949485659599304,
+        "layer_rms_max": 0.5191659331321716,
+        "layer_rms_min": 0.513200044631958,
+        "layers_with_nonzero_rms": 10,
+        "maximum_over_layers": 0.921875,
+        "minimum_over_layers": 0.0673828125
+      },
+      "2": {
+        "layer_mean_max": 0.0007000940386205912,
+        "layer_mean_min": 1.4549710613209754e-05,
+        "layer_rms_max": 0.0037101341877132654,
+        "layer_rms_min": 0.0017194487154483795,
+        "layers_with_nonzero_rms": 10,
+        "maximum_over_layers": 0.0225830078125,
+        "minimum_over_layers": -0.01544189453125
+      }
+    },
+    "gradient_clipped_fraction": 1.0,
+    "gradient_norm_max": 11.835827827453613,
+    "gradient_norm_mean": 9.068741822242737,
+    "gradient_norm_observations": 20,
+    "gradient_spike_count": 0,
+    "steps_completed": 20,
+    "telemetry_updates": 20,
+    "training_tokens": 10485760,
+    "validation_nll": 10.476945400238037,
+    "validation_nll_finite": true,
+    "validation_perplexity": 35487.84066235865,
+    "write_projection_gradient_norms": {
+      "0": {
+        "max": 11.677120208740234,
+        "mean": 8.86076054573059,
+        "min": 7.6463623046875
+      },
+      "1": {
+        "max": 0.1430891752243042,
+        "mean": 0.13980718627572059,
+        "min": 0.13304559886455536
+      },
+      "2": {
+        "max": 0.1141694188117981,
+        "mean": 0.10982541814446449,
+        "min": 0.10528110712766647
+      }
+    },
+    "write_projection_update_norms": {
+      "0": {
+        "max": 0.0028358905110508204,
+        "mean": 0.0014466356835328043,
+        "min": 0.0
+      },
+      "1": {
+        "max": 0.001629451522603631,
+        "mean": 0.0009177747771900613,
+        "min": 0.0
+      },
+      "2": {
+        "max": 0.0022849482484161854,
+        "mean": 0.001195652352180332,
+        "min": 0.0
+      }
+    }
+  },
+  "qualification_helper": {
+    "path": "scaffolds/transformer/validation/qualify_gdn_runtime.sbatch",
+    "sha256": "7cfb14653f87896fd3d1bc6c09f02b377c290791dcf38077e3b576af8f1c3760",
+    "size_bytes": 5038,
+    "source_commit": "bf837570b6ed4ab4733d3be0c70a014a614aefe9"
+  },
+  "recipe_dimensions": {
+    "compute_dtype": "bfloat16",
+    "context_length": 2048,
+    "hidden_size": 1024,
+    "key_head_dim": 64,
+    "num_heads": 16,
+    "num_layers": 10,
+    "total_steps": 19074,
+    "value_head_dim": 64,
+    "warmup_steps": 400
+  },
+  "recorded_utc": "2026-10-13T07:02:28.920043+00:00",
+  "retained_log": {
+    "path": "scaffolds/transformer/validation/logs/gdn-runtime-218413.log",
+    "sha256": "3e6b7d848d451a61198a278d4c989b556e32a6bea7c0244d8b4102b0899fc89a",
+    "size_bytes": 5402
+  },
+  "run_id": "rd40af7956426",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quadratic/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "NCCL_P2P_DISABLE": null,
+    "TRANSFORMER_HOST_STAGING": "0",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "runtime_projection": {
+    "maximum_projected_hours": 22,
+    "production_allocation_hours": 24,
+    "projected_hours": 30.650460869987793,
+    "scope": "Conservative synchronized pilot estimate, including compilation, evaluation, and checkpoints; no production timing is measured.",
+    "within_budget": false
+  },
+  "schema_version": 1,
+  "selected_checkpoints": [],
+  "slurm": {
+    "elapsed_seconds": 2277,
+    "exit_code": "1:0",
+    "finished_utc": "2026-10-13T06:59:36+00:00",
+    "gpu_count": 4,
+    "job_id": "218413",
+    "nice": 0,
+    "node": "mastiff",
+    "partition": "standard",
+    "started_utc": "2026-10-13T06:21:39+00:00",
+    "state": "FAILED"
+  },
+  "source_commit": "bf837570b6ed4ab4733d3be0c70a014a614aefe9",
+  "status": "passed_correctness_runtime_budget_exceeded",
+  "synchronized_timing": {
+    "checkpoint_seconds": [
+      24.51521857501939
+    ],
+    "evaluation_seconds": [
+      15.75580296490807
+    ],
+    "first_update_seconds": 90.95663179899566,
+    "pilot_runtime_seconds": 469.96090143802576,
+    "steady_update_count": 7,
+    "steady_update_seconds_max": 5.594515691045672,
+    "steady_update_seconds_median": 5.5797539070481434,
+    "steady_update_seconds_min": 5.573207017965615
+  },
+  "tests": {
+    "cpu-distributed-tests": {
+      "cases_by_module": {
+        "tests.test_telemetry": 4,
+        "tests.test_training": 5
+      },
+      "errors": 0,
+      "failures": 0,
+      "junit_sha256": "a503c315959330e53d792bddde49a3d18e30d5c8c1f7c9be1080aaad694340e9",
+      "origin_slurm_job_id": "218413",
+      "reused": false,
+      "skipped": 0,
+      "status": "passed",
+      "tests_passed": 9
+    },
+    "cpu-tests": {
+      "cases_by_module": {
+        "tests.test_checkpoint_audit": 29,
+        "tests.test_gated_deltanet": 32,
+        "tests.test_initialization": 7,
+        "tests.test_model": 37,
+        "tests.test_parameter_policy": 4,
+        "tests.test_polynomial_gdn": 14,
+        "tests.test_polynomial_gdn_integration": 13,
+        "tests.test_telemetry": 5,
+        "tests.test_training": 10,
+        "tests.test_triton_bridge_precision": 6
+      },
+      "errors": 0,
+      "failures": 0,
+      "junit_sha256": "f45c403dfd6860b167cd1c480de42ca09376bf19ae35a1b61aa1286bf7e81340",
+      "origin_slurm_job_id": "218413",
+      "reused": false,
+      "skipped": 0,
+      "status": "passed",
+      "tests_passed": 157
+    },
+    "gpu-tests": {
+      "cases_by_module": {
+        "tests.test_gated_deltanet_kernel": 34,
+        "tests.test_polynomial_gdn_kernel": 21
+      },
+      "errors": 0,
+      "failures": 0,
+      "junit_sha256": "c01d8237d8a58de0dbe06967b6cd72225fd12c0cad934dca1c59fbd23c77199e",
+      "origin_slurm_job_id": "218413",
+      "reused": false,
+      "skipped": 0,
+      "status": "passed",
+      "tests_passed": 55
+    }
+  }
+}

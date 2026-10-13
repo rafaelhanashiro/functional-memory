@@ -3145,13 +3145,36 @@
   },
   "gdn_quadratic_query_geometry": {
     "home_cluster": "kennel",
-    "status": "cpu_passed_gpu_pending",
+    "status": "optimized_gpu_correctness_passed_runtime_pending",
     "records": [
       {
         "path": "scaffolds/transformer/validation/runs/gdn-quadratic-cpu/tests.json",
         "sha256": "d1dd0d74605faae74e0afe52944e949b003e734225a18bca0da39f4eeadb12c1",
         "size_bytes": 2858
       }
-    ]
+    ],
+    "baseline_runtime": {
+      "source_commit": "bf837570b6ed4ab4733d3be0c70a014a614aefe9",
+      "status": "passed_correctness_runtime_budget_exceeded",
+      "record": {
+        "path": "scaffolds/transformer/validation/runs/gdn-quadratic-h100/baseline-runtime.json",
+        "sha256": "e4dd19488df42d3f93ffecde364b5eb86c4dec9c184fe9c4e1ff7b6fbcfe97f2",
+        "size_bytes": 11436
+      }
+    },
+    "optimized_kernel": {
+      "source_commit": "9152f4ee5ce0451a8200455f94cfeecd6bc747f1",
+      "status": "gpu_correctness_passed_runtime_pending",
+      "benchmark": {
+        "path": "scaffolds/transformer/validation/runs/gdn-quadratic-h100/benchmark-geometry-split.json",
+        "sha256": "81e641e3ec1506d93abdbec0aabfe17d630f8b762ca78966c391a45d5c85fd39",
+        "size_bytes": 14502
+      },
+      "tests": {
+        "path": "scaffolds/transformer/validation/runs/gdn-quadratic-h100/benchmark-geometry-split-gpu-tests.xml",
+        "sha256": "6756d500f3a85cc1cd5de453f8e4617873b45e6b22510672d5e21ee5cc083589",
+        "size_bytes": 3676
+      }
+    }
   }
 }

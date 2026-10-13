@@ -3,7 +3,7 @@
     "path": "experiments/attention_scaling/runs/rd40af7956426/config.yaml",
     "sha256": "3b271001661b3130e71be9ede46e171599c483ab183d596959a730d564a6f9f5"
   },
-  "frozen_execution_sha256": "4119282a23e007c5c7d914ebf5e7392c3f794a1d31867e29ca3ea0f82de9629a",
+  "frozen_execution_sha256": "2c381f77f8539aaa8525b180bed9812c5eb03c2e5287afb71e7b109ddb994980",
   "home_cluster": "kennel",
   "label": "200m-dk064-gdn-quadratic-geometry-warmup400-seed0",
   "name": "200m-dk064-gdn-quadratic-geometry-warmup400-seed0",
@@ -25,7 +25,7 @@
       "--output=scaffolds/transformer/validation/logs/gdn-runtime-%j.log",
       "scaffolds/transformer/validation/qualify_gdn_runtime.sbatch",
       "experiments/attention_scaling/runs/rd40af7956426/config.yaml",
-      "bf837570b6ed4ab4733d3be0c70a014a614aefe9",
+      "46b776c9fc22e7ab5636e28a41f24105dcc508fd",
       "H100",
       "24",
       "4"
@@ -33,7 +33,7 @@
     "executed_script_sha256": "7cfb14653f87896fd3d1bc6c09f02b377c290791dcf38077e3b576af8f1c3760",
     "gpu_count": 4,
     "gpu_type": "H100",
-    "log_path": "scaffolds/transformer/validation/logs/gdn-runtime-218413.log",
+    "log_path": "scaffolds/transformer/validation/logs/gdn-runtime-218426.log",
     "nice": 0,
     "node": "mastiff",
     "requested_node": "mastiff",
@@ -41,15 +41,15 @@
       "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
       "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
     },
-    "slurm_job_id": "218413",
+    "slurm_job_id": "218426",
     "slurm_partition": "standard",
     "slurm_state": "RUNNING",
-    "source_commit": "bf837570b6ed4ab4733d3be0c70a014a614aefe9",
+    "source_commit": "46b776c9fc22e7ab5636e28a41f24105dcc508fd",
     "status": "running",
-    "submitted_utc": "2026-10-13T06:21:39.490132+00:00",
+    "submitted_utc": "2026-10-13T15:01:48.884362+00:00",
     "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quadratic"
   },
-  "source_commit": "bf837570b6ed4ab4733d3be0c70a014a614aefe9",
+  "source_commit": "46b776c9fc22e7ab5636e28a41f24105dcc508fd",
   "status": "queued",
   "submission": {
     "command": [
@@ -63,19 +63,19 @@
       "--mem=256G",
       "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false",
       "--time=1-00:00:00",
-      "--dependency=afterok:218413",
+      "--dependency=afterok:218426",
       "--kill-on-invalid-dep=yes",
       "--job-name=rd40af7956426",
       "--output=experiments/attention_scaling/runs/rd40af7956426/training.log",
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.attention_scaling.acceptance",
       "experiments/attention_scaling/runs/rd40af7956426/config.yaml",
-      "bf837570b6ed4ab4733d3be0c70a014a614aefe9",
+      "46b776c9fc22e7ab5636e28a41f24105dcc508fd",
       "4",
       "H100"
     ],
     "nice": 0,
-    "qualification_dependency": "afterok:218413",
+    "qualification_dependency": "afterok:218426",
     "requested_gpu_count": 4,
     "requested_gpu_type": "H100",
     "requested_node": "mastiff",
@@ -83,11 +83,11 @@
       "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
       "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
     },
-    "slurm_job_id": "218414",
+    "slurm_job_id": "218427",
     "slurm_partition": "standard",
     "slurm_state": "PENDING",
-    "source_commit": "bf837570b6ed4ab4733d3be0c70a014a614aefe9",
-    "submitted_utc": "2026-10-13T06:21:39.507372+00:00",
+    "source_commit": "46b776c9fc22e7ab5636e28a41f24105dcc508fd",
+    "submitted_utc": "2026-10-13T15:01:48.884362+00:00",
     "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quadratic"
   }
 }

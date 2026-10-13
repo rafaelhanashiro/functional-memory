@@ -22,12 +22,33 @@ the linear GDN limit, and the ordinary polynomial-attention limit.
 
 [CPU checks](runs/gdn-quadratic-cpu/tests.json) pass the reference, initialization,
 buffer ownership, gradient, checkpoint-resume, telemetry, acceptance, and run-record
-contracts. The GPU suite includes the production key/value widths and
-length-2,048 strong-decay cases; CPU results do not qualify GPU execution.
-Full-recipe hardware qualification must also pass finite training, evaluation,
-and exact resumption before production. The runtime qualifier uses the same
-20-minute log-stall watchdog as the training launcher and checks its pilot's
-projected duration against the production allocation.
+contracts. The [baseline runtime check](runs/gdn-quadratic-h100/baseline-runtime.json)
+on four H100 PCIe GPUs (`mastiff`, job `218413`, source `bf837570`) passed 157 CPU,
+9 distributed, and 55 GPU tests, including production widths and length-2,048
+strong-decay cases. Its 20-update full-recipe pilot had finite telemetry and
+validation, zero invalid attention counts, and exact fresh-process resumption
+from update 20 to 21. Both added coefficient projections received nonzero
+gradients and produced nonzero coefficients in all ten layers.
+
+The pilot measured 5.573–5.595 seconds per steady update and projected 30.65 hours
+for the full recipe. The 24-hour allocation's 22-hour budget therefore rejected
+this implementation; it is not qualified for that allocation. This is a runtime
+budget failure, not a scientific numerical failure. Gradient norms were finite
+(mean 9.07, maximum 11.84); every pilot update was clipped, with the constant-degree
+write projection contributing most of the norm. Twenty updates do not establish
+long-run stability or scientific performance.
+
+The optimized kernel precomputes transformed chunk keys and separates diagonal
+and cross-chunk geometry adjoints without changing the recurrence. On one H100
+PCIe at the production per-device shape, forward and backward together measured
+66.58 ms versus 121.99 ms before optimization. All 21 quadratic GPU tests pass
+on source `9152f4ee`; [measurements](runs/gdn-quadratic-h100/benchmark-geometry-split.json)
+retain timings and compiler resource use. Full-recipe runtime qualification is
+pending; an isolated kernel speedup is not a measured training speedup.
+
+The runtime qualifier uses the same 20-minute log-stall watchdog as the training
+launcher and requires finite training, evaluation, exact resumption, and a pilot
+projection within the production allocation before scientific training starts.
 
 ### Query-dependent tanh polynomial coefficients
 
