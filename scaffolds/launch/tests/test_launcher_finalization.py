@@ -8,10 +8,12 @@ import sys
 
 import pytest
 
+from scaffolds.launch.finalize import STALLED_EXIT_CODE, finalize_attempt
 from scaffolds.records import create_run, load_run, update_record
 
 
 ROOT = Path(__file__).resolve().parents[3]
+WATCHDOG = ROOT / "scaffolds/launch/watchdog.sh"
 LAUNCHERS = [
     "scaffolds/transformer/launchers/kennel.sbatch",
     "scaffolds/transformer/launchers/orcd.sbatch",
@@ -24,7 +26,8 @@ def launcher_exit_script(request):
     launcher = (ROOT / request.param).read_text()
     trap = re.search(r"^finish_record\(\) \{\n.*?^trap finish_record EXIT$", launcher, re.M | re.S)
     assert trap is not None, f"Missing EXIT trap in {request.param}"
-    return 'set -euo pipefail\n' + trap.group() + '\nprintf "worker finished\\n"\n(exit "$WORKER_EXIT")\n'
+    return (f'set -euo pipefail\nsource {WATCHDOG}\n' + trap.group()
+            + '\nprintf "worker finished\\n"\n(exit "$WORKER_EXIT")\n')
 
 
 @pytest.mark.parametrize("worker_exit", [0, 7])
@@ -95,7 +98,7 @@ def test_orcd_launcher_requeues_its_worker_before_the_time_limit(tmp_path):
     launcher = (ROOT / "scaffolds/transformer/launchers/orcd.sbatch").read_text()
     assert re.search(r"^#SBATCH --signal=B:USR1@\d+$", launcher, re.M)
     assert re.search(r"^#SBATCH --requeue$", launcher, re.M)
-    requeue = re.search(r"^requeue_before_limit\(\) \{\n.*?^run_step\(\) .*?$", launcher, re.M | re.S)
+    requeue = re.search(r"^requeue_before_limit\(\) \{\n.*?^trap requeue_before_limit USR1$", launcher, re.M | re.S)
     assert requeue is not None, "Missing the time-limit requeue trap"
     scontrol = tmp_path / "scontrol"
     scontrol.write_text('#!/bin/bash\nprintf "%s\\n" "$@" > "$SCONTROL_ARGS"\n')
@@ -103,7 +106,7 @@ def test_orcd_launcher_requeues_its_worker_before_the_time_limit(tmp_path):
     args_path, worker = tmp_path / "args", tmp_path / "worker.pid"
     # The signal arrives while a long worker runs; the trap must not wait for it to finish.
     # Slurm kills the worker on requeue; here it is detached from the output and killed below.
-    script = ('set -euo pipefail\n' + requeue.group()
+    script = (f'set -euo pipefail\nsource {WATCHDOG}\n' + requeue.group()
               + '\n(sleep 1; kill -USR1 $$) &\n'
               + 'run_step bash -c \'echo $$ > "$WORKER_PID"; exec sleep 60\' >/dev/null 2>&1\n'
               + 'printf "worker finished\\n"\n')
@@ -117,3 +120,75 @@ def test_orcd_launcher_requeues_its_worker_before_the_time_limit(tmp_path):
     assert result.returncode == 128 + 10
     assert args_path.read_text().splitlines() == ["requeue", "123"]
     assert "worker finished" not in result.stdout
+
+
+@pytest.mark.parametrize("launcher", LAUNCHERS[:2])
+def test_transformer_launchers_watch_their_log_and_run_long_steps_under_it(launcher):
+    text = (ROOT / launcher).read_text()
+    assert re.search(r"^source scaffolds/launch/watchdog\.sh$", text, re.M)
+    assert re.search(r'^start_watchdog "\$RUN_ROOT/training\.log"$', text, re.M)
+    assert re.search(r"^  local result=\$\?\n  local finalizer_result=0\n  trap - EXIT\n  stop_watchdog$", text, re.M)
+    # A foreground step would defer the watchdog's signal until it finished.
+    steps = re.findall(r'^(.*)"\$PYTHON" -m ("\$ADAPTER" "\$CONFIG" --directory|scaffolds\.transformer\.\w+)', text, re.M)
+    assert [module for _, module in steps] == ['"$ADAPTER" "$CONFIG" --directory', "scaffolds.transformer.train",
+                                               "scaffolds.transformer.retention"]
+    assert all(prefix == "run_step " for prefix, _ in steps)
+
+
+def test_the_finalizer_and_watchdog_agree_on_the_stall_exit_code():
+    assert re.search(rf"^STALLED_EXIT_CODE={STALLED_EXIT_CODE}$", WATCHDOG.read_text(), re.M)
+
+
+def _watched(tmp_path, worker):
+    """Run a worker under the watchdog with a 2-second stall limit; return the result and its PIDs."""
+    nvidia_smi = tmp_path / "nvidia-smi"
+    nvidia_smi.write_text("#!/bin/bash\necho gpu-state\n")
+    nvidia_smi.chmod(0o755)
+    log, pids = tmp_path / "training.log", tmp_path / "pids"
+    log.touch()
+    script = (f"set -euo pipefail\nsource {WATCHDOG}\nSTALL_SECONDS=2 STALL_POLL_SECONDS=1\n"
+              'start_watchdog "$LOG"\n'
+              f"run_step bash -c 'echo $$ >> \"$PIDS\"; {worker}'\n"
+              # The finalizer runs after the watchdog stops, as in the launchers' EXIT trap.
+              'stop_watchdog\nsleep 1\nprintf "worker finished\\n"\n')
+    env = {**os.environ, "PATH": f"{tmp_path}{os.pathsep}{os.environ['PATH']}", "SLURM_JOB_ID": "123",
+           "LOG": str(log), "PIDS": str(pids)}
+    try:
+        result = subprocess.run(["bash", "-c", script], env=env, text=True, capture_output=True, timeout=30)
+    finally:
+        subprocess.run(["kill", "-KILL", *pids.read_text().split()], capture_output=True)
+    return result, pids.read_text().split()
+
+
+def _ended(pid):
+    # A killed process stays a zombie until its new parent reaps it.
+    try:
+        return Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[0] == "Z"
+    except FileNotFoundError:
+        return True
+
+
+def test_the_watchdog_ends_a_step_whose_log_stops_growing(tmp_path):
+    # The worker's child keeps running, as a data-parallel peer waiting in a collective would.
+    result, pids = _watched(tmp_path, 'sleep 60 & echo $! >> "$PIDS"; wait')
+    assert result.returncode == STALLED_EXIT_CODE
+    assert "ending stalled job 123" in result.stdout and "gpu-state" in result.stdout
+    assert "worker finished" not in result.stdout
+    assert len(pids) == 2 and all(map(_ended, pids))
+
+
+def test_the_watchdog_leaves_a_step_that_keeps_logging(tmp_path):
+    result, _ = _watched(tmp_path, 'for i in 1 2 3 4 5 6; do echo step=$i >> "$LOG"; sleep 0.5; done')
+    assert result.returncode == 0
+    # Stopping the watchdog leaves no job-termination notice in the run's log.
+    assert result.stdout == "worker finished\n" and result.stderr == ""
+
+
+def test_a_stalled_job_is_recorded_as_a_stall(tmp_path, monkeypatch):
+    run = create_run(tmp_path / "study", {"seed": 0})
+    update_record(run, {"status": "running", "attempts": [{"slurm_job_id": "123"}]})
+    monkeypatch.setenv("SLURM_JOB_ID", "123")
+    finalize_attempt(run, STALLED_EXIT_CODE)
+    record = load_run(run)
+    assert record["status"] == "failed" and record["error"].startswith("Stalled:")
+    assert record["attempts"][-1]["exit_code"] == STALLED_EXIT_CODE

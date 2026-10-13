@@ -73,10 +73,12 @@ export SHARED_TRANSFORMER_SOURCE_COMMIT="$LAUNCH_COMMIT"
 export TRANSFORMER_CLUSTER=orcd TRANSFORMER_GPU_TYPE="$GPU_TYPE"
 WANDB_MODE_SETTING="${TRANSFORMER_WANDB_MODE:-online}"
 export PYTHONPATH="$EXECUTION_ROOT"
+source scaffolds/launch/watchdog.sh
 finish_record() {
   local result=$?
   local finalizer_result=0
   trap - EXIT
+  stop_watchdog
   "$PYTHON" -m scaffolds.launch.finalize --run "$RUN_ROOT" --exit-code "$result" || finalizer_result=$?
   # Preserve the worker's failure even if recording it also fails.
   if (( result == 0 )); then result=$finalizer_result; fi
@@ -88,8 +90,7 @@ requeue_before_limit() {
   scontrol requeue "$SLURM_JOB_ID"
 }
 trap requeue_before_limit USR1
-# Bash defers traps until a foreground child exits, so long steps run under `wait`.
-run_step() { "$@" & wait "$!"; }
+start_watchdog "$RUN_ROOT/training.log"
 export JAX_PLATFORMS=cuda
 # ORCD H100/H200 allocations use direct device transfer; an explicit setting overrides it.
 export TRANSFORMER_HOST_STAGING="${TRANSFORMER_HOST_STAGING:-0}"
@@ -137,8 +138,8 @@ update_record(run_root, {
     "log_path": str(run_root / "training.log"),
 })
 PY
-# Acceptance and production share the allocation; matching passed stages are reused on requeue,
-# and passed test stages are shared with the worktree's other runs.
+# Acceptance and production share the allocation; matching passed stages are reused on a requeue
+# to the same GPU model, and passed test stages are shared with the worktree's other runs.
 run_step "$PYTHON" -m "$ADAPTER" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
   --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --test-cache "$CACHE/acceptance-tests"
 "$PYTHON" - "$RUN_ROOT" "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT/success.json" <<'PY'

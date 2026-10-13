@@ -3,19 +3,21 @@
 An experiment adapter describes its checks in an :class:`AcceptanceSpec` and
 calls :func:`main` from its own execution module. Acceptance then runs, in the
 production allocation and keyed to the source, recipe, dependency lock, data
-manifests, GPU type and count, and runtime settings:
+manifests, GPU model and count, and runtime settings:
 
 1. CPU tests and GPU tests (every case must pass; skips fail acceptance);
 2. an initialization check (parameter count and hash, plus any adapter check);
 3. a full-recipe pilot with validation and valid attention diagnostics;
 4. an exact fresh-process resume (state, next batch, and RNG hashes).
 
-Matching passed stages are reused on requeue. With ``--test-cache``, a passed
-test stage is also shared with other runs: the recipe only selects which tests
-run, so runs whose selected tests, source, dependency lock, runtime settings,
-and (for GPU tests) GPU model match reuse one result. Each run still checks its
-own initialization, pilot, and resume. Worker processes re-invoke the adapter
-module by name, so scaffold code never imports experiment code.
+Matching passed stages are reused on requeue; a requeue onto another GPU model
+(for example H100 NVL after H100 80GB HBM3, both the launcher's ``H100``) runs
+them again. With ``--test-cache``, a passed test stage is also shared with other
+runs: the recipe only selects which tests run, so runs whose selected tests,
+source, dependency lock, runtime settings, and (for GPU tests) GPU model match
+reuse one result. Each run still checks its own initialization, pilot, and
+resume. Worker processes re-invoke the adapter module by name, so scaffold code
+never imports experiment code.
 """
 from __future__ import annotations
 
@@ -230,8 +232,21 @@ def identity(spec: AcceptanceSpec, config_path: Path, gpu_count: int, gpu_type: 
         "gpu_count": gpu_count, "gpu_type": gpu_type.upper(),
         "runtime": runtime_identity(),
     }
-    payload["identity"] = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
-    return payload
+    return _sealed(payload)
+
+
+def _sealed(payload: dict) -> dict:
+    payload = {key: value for key, value in payload.items() if key != "identity"}
+    return {**payload, "identity": hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()}
+
+
+def on_devices(experiment: dict, device_kinds) -> dict:
+    """Key acceptance to the allocated GPU model, not only the launcher's GPU type.
+
+    One launcher GPU type (for example ``H100``) can cover models with different memory
+    and speed (SXM and NVL), so a recipe that fits one may not fit the other.
+    """
+    return _sealed({**experiment, "device_kinds": sorted(set(device_kinds))})
 
 
 def passed(path: Path, experiment: dict) -> bool:
@@ -250,18 +265,17 @@ def record(path: Path, experiment: dict, **fields) -> None:
     })
 
 
-def stage_identity(experiment: dict, stage: str, paths, selection, *, cpu: bool, device_kinds=()) -> str:
+def stage_identity(experiment: dict, stage: str, paths, selection, *, cpu: bool) -> str:
     """What a test stage's outcome depends on; the recipe only chooses the tests.
 
-    GPU tests also key on the allocated devices' model names, since one launcher
-    GPU type (for example ``H100``) can cover several models (SXM and NVL).
+    GPU tests also key on the allocated GPU model (see :func:`on_devices`).
     """
     payload = {
         "stage": stage, "tests": list(paths), "selection": list(selection),
         "source_commit": experiment["source_commit"],
         "dependency_lock_sha256": experiment["dependency_lock_sha256"],
         "runtime": experiment["runtime"], "gpu_type": None if cpu else experiment["gpu_type"],
-        "device_kinds": None if cpu else sorted(set(device_kinds)),
+        "device_kinds": None if cpu else experiment["device_kinds"],
     }
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
 
@@ -469,8 +483,9 @@ def _worker(spec: AcceptanceSpec, args, experiment: dict) -> dict:
 def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
     directory = args.directory
     directory.mkdir(parents=True, exist_ok=True)
-    write_json(directory / "identity.json", experiment)
     hardware = _run_worker(spec, args, "hardware", directory / "hardware.json", stop=spec.pilot_steps)
+    experiment = on_devices(experiment, hardware["device_kinds"])
+    write_json(directory / "identity.json", experiment)
     if passed(directory / "success.json", experiment) and all(passed(directory / f"{name}.json", experiment) for name in CHECKS):
         print(f"matching_acceptance_passed={directory / 'success.json'}", flush=True)
         return
@@ -486,8 +501,7 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
                 continue
             junit = directory / f"{stage}.xml"
             cache = getattr(args, "test_cache", None)
-            key = (stage_identity(experiment, stage, paths, selection, cpu=cpu,
-                                  device_kinds=hardware.get("device_kinds", ())) if cache else None)
+            key = stage_identity(experiment, stage, paths, selection, cpu=cpu) if cache else None
             origin = reuse_tests(cache, key, junit) if cache else None
             if origin is not None:
                 record(path, experiment, tests_passed=require_passing_tests(junit), reused_from=origin)

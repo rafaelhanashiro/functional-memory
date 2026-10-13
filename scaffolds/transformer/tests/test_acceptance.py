@@ -74,7 +74,7 @@ def test_production_acceptance_runs_required_gpu_tests_with_an_empty_adapter_lis
 
     def worker(spec, args, name, output, **unused):
         if name == "hardware":
-            return {"attention_backend": "fused"}
+            return {"attention_backend": "fused", "device_kinds": ["NVIDIA H100 80GB HBM3"]}
         raise RuntimeError("stop after testing")
 
     def run(command, **options):
@@ -137,7 +137,8 @@ def test_runs_selecting_the_same_tests_share_passed_stages(tmp_path, monkeypatch
     # Another recipe that selects the same tests reruns none of them, and records where they passed.
     assert acceptance("second", 8, "H200") == []
     reused = json.loads((tmp_path / "second" / "gpu-tests.json").read_text())
-    assert reused["identity"] == "second" and reused["tests_passed"] == 1
+    assert reused["identity"] == json.loads((tmp_path / "second" / "identity.json").read_text())["identity"]
+    assert reused["tests_passed"] == 1
     assert reused["reused_from"]["acceptance_directory"] == str(tmp_path / "first")
     assert (tmp_path / "second" / "gpu-tests.xml").read_text() == (tmp_path / "first" / "gpu-tests.xml").read_text()
     # GPU tests are per GPU model, even under one launcher GPU type; other source or tests
@@ -149,12 +150,44 @@ def test_runs_selecting_the_same_tests_share_passed_stages(tmp_path, monkeypatch
     assert acceptance("odd", 3, "H200") == stages
     # A report that no longer matches its entry is never reused.
     key = preflight.stage_identity({"source_commit": "a" * 40, "dependency_lock_sha256": "b" * 64,
-                                   "runtime": {"TRANSFORMER_HOST_STAGING": "0"}, "gpu_type": "H200"},
+                                   "runtime": {"TRANSFORMER_HOST_STAGING": "0"}, "gpu_type": "H200",
+                                   "device_kinds": ["NVIDIA H200"]},
                                   "gpu-tests", preflight.test_paths(spec, config_to_dict(Config(model=ModelConfig(
                                       attention_degree=4))), resolved_backend="fused", cpu=False),
-                                  ("-m", "gpu"), cpu=False, device_kinds=["NVIDIA H200"] * 2)
+                                  ("-m", "gpu"), cpu=False)
     (cache / f"{key}.xml").write_text('<testsuite><testcase name="other"/></testsuite>')
     assert acceptance("fifth", 4, "H200") == ["gpu-tests"]
+
+
+def test_a_requeue_onto_another_gpu_model_repeats_the_runs_own_acceptance(tmp_path, monkeypatch, capsys):
+    import json
+    from types import SimpleNamespace
+    from scaffolds.transformer.configs import Config, config_to_dict
+
+    allocated = {}
+
+    def worker(spec, args, name, output, **unused):
+        if name == "hardware":
+            return {"attention_backend": "fused", "device_kinds": [allocated["model"]] * args.gpu_count}
+        raise RuntimeError(f"ran {name}")
+
+    monkeypatch.setattr(preflight, "_run_worker", worker)
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    experiment = {"identity": "launcher", "source_commit": "a" * 40, "config": config_to_dict(Config()),
+                  "gpu_type": "H100", "dependency_lock_sha256": "b" * 64, "runtime": {"TRANSFORMER_HOST_STAGING": "0"}}
+    args = SimpleNamespace(directory=tmp_path, config=tmp_path / "recipe.yaml", gpu_count=2, gpu_type="H100")
+    allocated["model"] = "NVIDIA H100 80GB HBM3"
+    passed_on = preflight.on_devices(experiment, [allocated["model"]] * 2)
+    for name in (*preflight.CHECKS, "success"):
+        preflight.record(tmp_path / f"{name}.json", passed_on)
+    preflight._run(spec, args, experiment)
+    assert "matching_acceptance_passed=" in capsys.readouterr().out
+    # The launcher's GPU type is unchanged, but a different model has different memory and speed.
+    allocated["model"] = "NVIDIA H100 NVL"
+    with pytest.raises(RuntimeError, match="ran initialization"):
+        preflight._run(spec, args, experiment)
+    assert "matching_acceptance_passed=" not in capsys.readouterr().out
+    assert json.loads((tmp_path / "identity.json").read_text())["device_kinds"] == ["NVIDIA H100 NVL"]
 
 
 def test_runtime_identity_requires_resolved_transfer_policy_and_records_toolkit(monkeypatch):

@@ -1,0 +1,336 @@
+{
+  "attention_backend": "fused",
+  "attention_backend_requested": "fused",
+  "attention_diagnostics": {
+    "attention_backend": "fused",
+    "attention_backend_requested": "fused",
+    "attention_formula": "S_t=a_t S_{t-1}+b_t k_t (v_t-a_t S_{t-1}^T k_t)^T; o_t=S_t^T q_t/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); b_t=sigmoid(W_b x)",
+    "attention_implementation": "fla_chunk_gated_delta_rule_triton",
+    "attention_kernel": "gated_deltanet",
+    "attention_mechanism": "gated_deltanet",
+    "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+    "attention_score_scale": "1/sqrt(d_k)",
+    "diagnostic_backend": "fused",
+    "format": "shared-transformer-attention-diagnostics",
+    "gdn_chunk_size": 64,
+    "gdn_conv_size": 4,
+    "gdn_initial_state": "zero_each_sequence",
+    "gdn_kernel_source": "flash-linear-attention chunk_gated_delta_rule (pinned in the scaffold lock)",
+    "gdn_state_elements_per_layer": 131072,
+    "issues": [],
+    "kernel_values": "gated_delta_rule_recurrence",
+    "layers": [
+      {
+        "beta_max": 0.9375,
+        "beta_min": 0.0260009765625,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 0,
+        "log_decay_max": -5.586126007983694e-06,
+        "log_decay_min": -9.03357219696045,
+        "read_abs_max": 1.984375
+      },
+      {
+        "beta_max": 0.83984375,
+        "beta_min": 0.016357421875,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 1,
+        "log_decay_max": -1.8879081835621037e-05,
+        "log_decay_min": -17.72411346435547,
+        "read_abs_max": 0.625
+      },
+      {
+        "beta_max": 0.89453125,
+        "beta_min": 0.01324462890625,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 2,
+        "log_decay_max": -7.302847279788693e-06,
+        "log_decay_min": -13.206957817077637,
+        "read_abs_max": 0.498046875
+      },
+      {
+        "beta_max": 0.90234375,
+        "beta_min": 0.01495361328125,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 3,
+        "log_decay_max": -5.510311318346339e-09,
+        "log_decay_min": -26.1663875579834,
+        "read_abs_max": 0.259765625
+      },
+      {
+        "beta_max": 0.99609375,
+        "beta_min": 0.00555419921875,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 4,
+        "log_decay_max": -1.0033436304013321e-08,
+        "log_decay_min": -26.632427215576172,
+        "read_abs_max": 0.31640625
+      },
+      {
+        "beta_max": 0.96875,
+        "beta_min": 0.01068115234375,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 5,
+        "log_decay_max": -8.528578291588929e-06,
+        "log_decay_min": -20.3952579498291,
+        "read_abs_max": 0.12158203125
+      },
+      {
+        "beta_max": 0.9765625,
+        "beta_min": 0.004058837890625,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 6,
+        "log_decay_max": -8.290124924315023e-07,
+        "log_decay_min": -9.68399715423584,
+        "read_abs_max": 0.2470703125
+      },
+      {
+        "beta_max": 0.94140625,
+        "beta_min": 0.001983642578125,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 7,
+        "log_decay_max": -4.4283081024332205e-07,
+        "log_decay_min": -8.115620613098145,
+        "read_abs_max": 0.1875
+      },
+      {
+        "beta_max": 0.953125,
+        "beta_min": 0.00193023681640625,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 8,
+        "log_decay_max": -2.7848251704654103e-08,
+        "log_decay_min": -11.117959976196289,
+        "read_abs_max": 0.1650390625
+      },
+      {
+        "beta_max": 0.9921875,
+        "beta_min": 0.00506591796875,
+        "invalid_gate_count": 0,
+        "invalid_output_count": 0,
+        "invalid_projection_count": 0,
+        "invalid_read_count": 0,
+        "layer": 9,
+        "log_decay_max": -9.956509529729374e-06,
+        "log_decay_min": -16.404552459716797,
+        "read_abs_max": 0.12255859375
+      }
+    ],
+    "sample": {
+      "diagnostic_pass_contributes_to_validation_loss": false,
+      "eval_manifest": "/home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "num_sequences": 1,
+      "prediction_tokens": 2048,
+      "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+      "selection": "first_heldout_sequence",
+      "sequence_index": 0,
+      "source": "packed"
+    },
+    "step": 19074,
+    "valid": true,
+    "version": 1
+  },
+  "attention_formula": "S_t=a_t S_{t-1}+b_t k_t (v_t-a_t S_{t-1}^T k_t)^T; o_t=S_t^T q_t/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); b_t=sigmoid(W_b x)",
+  "attention_implementation": "fla_chunk_gated_delta_rule_triton",
+  "attention_kernel": "gated_deltanet",
+  "attention_mechanism": "gated_deltanet",
+  "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+  "attention_score_scale": "1/sqrt(d_k)",
+  "checkpoint_retention": {
+    "best_checkpoint_step": 19074,
+    "completion_sha256": "7ae366f3b361b47e814e4ce8c19510722859c50f3062d4cf41274eeced9234f9",
+    "format": "shared-transformer-checkpoint-retention",
+    "seed": 0,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "4ed7397dda106a1d72ec0671c413cc1d44eba4ce",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 19074,
+    "validation_nll": 2.5897824253354753,
+    "version": 1
+  },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0",
+    "cuda:1"
+  ],
+  "diagnostic_backend": "fused",
+  "diagnostic_sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "error": null,
+  "execution_runtime": {
+    "batch_transfer": "host_to_shard",
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H200",
+        "platform": "gpu"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H200",
+        "platform": "gpu"
+      }
+    ],
+    "environment": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct"
+  },
+  "gdn_chunk_size": 64,
+  "gdn_conv_size": 4,
+  "gdn_initial_state": "zero_each_sequence",
+  "gdn_kernel_source": "flash-linear-attention chunk_gated_delta_rule (pinned in the scaffold lock)",
+  "gdn_state_elements_per_layer": 131072,
+  "next_train_sequence": 4882944,
+  "parameter_count": 231897024,
+  "qk_head_dim": 128,
+  "retained_best_checkpoint_step": 19074,
+  "retained_terminal_checkpoint_step": 19074,
+  "rng_state": {
+    "completed_updates": 19074,
+    "seed": 0
+  },
+  "runtime_history": [
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "25356460",
+      "timestamp_utc": "2026-10-10T00:44:42.319751+00:00"
+    },
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H100 NVL",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H100 NVL",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "25356460",
+      "timestamp_utc": "2026-10-10T07:34:12.333889+00:00"
+    },
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H200",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H200",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "25356460",
+      "timestamp_utc": "2026-10-10T09:11:01.211721+00:00"
+    }
+  ],
+  "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "seed": 0,
+  "slurm_job_id": "25356460",
+  "slurm_restart_count": 2,
+  "source_commit": "4ed7397dda106a1d72ec0671c413cc1d44eba4ce",
+  "status": "complete",
+  "step": 19074,
+  "target_steps": 19074,
+  "target_tokens": 10000269312,
+  "training_tokens": 10000269312,
+  "updated_utc": "2026-10-10T14:41:47.852276+00:00",
+  "validation_nll": 2.5897824253354753,
+  "validation_perplexity": 13.326871698095397,
+  "value_head_dim": 64
+}

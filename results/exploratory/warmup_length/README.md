@@ -8,8 +8,9 @@ inherited from the OFM recipe when `total_steps` shrank to 19,074.
 
 Does a standard warmup shift every mechanism's terminal perplexity by a small constant,
 leaving the comparisons in [`results/attention_scaling/`](../../attention_scaling/README.md)
-intact, or does it change them? Each warmup-400 run repeats one `d_K = 64` cell of the
-heatmap or degree chart with its reference initialization and changes only
+intact, or does it change them? Each warmup-400 run repeats one cell of the heatmap or
+degree chart (at `d_K = 64` unless its section says otherwise) with its reference
+initialization and changes only
 `optim.warmup_steps` from 2,000 to 400 (2.1%, 210M tokens); peak and minimum learning
 rates stay 3e-4 and 3e-5. Each is paired with its warmup-2,000 source.
 
@@ -85,7 +86,8 @@ Unnormalized attention with output scaling (`attention_output_scaling`), same co
 - **Gated DeltaNet changes places.** At warmup 2,000 it trails softmax by 0.19 and also
   fixed Taylor m = 8 and 16 and learned nonnegative m = 4; at warmup 400 it leads every
   `d_K = 64` cell, softmax by 0.14. The `d_K = 64` softmax-against-Gated DeltaNet
-  comparison in the attention scaling results therefore reverses with the warmup.
+  comparison in the attention scaling results therefore reverses with the warmup, as it
+  does at every other width (next section).
 - **Distances between families shrink.** Normalized minus unnormalized gaps narrow by
   0.1–0.45: softmax against unnormalized learned m = 3 from 1.14 to 0.90, learned
   nonnegative m = 4 against unnormalized learned m = 4 from 1.03 to 0.93, softmax against
@@ -136,6 +138,73 @@ differs in hardware. The ORCD unnormalized fixed Hermite cells, whose controls r
 Kennel, trained on H100 (m = 1), on H200 then H100 after update 1,000 (m = 2), on H100
 with updates 12,501–13,000 on H200 (m = 3), and on H200 then H100 NVL after update 3,000
 (m = 4).
+
+## Softmax, Gated DeltaNet, and normalized fixed Taylor across d_K
+
+Terminal validation perplexity of the heatmap's softmax (QK-norm, transformer reference
+initialization) and Gated DeltaNet (its reference initialization) cells at every width;
+every run's validation best is terminal. The `d_K = 64` pair is the one above.
+
+| `d_K` | Softmax, 2,000 | Softmax, 400 | Difference | Gated DeltaNet, 2,000 | Gated DeltaNet, 400 | Difference | Gated DeltaNet − softmax, 2,000 → 400 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 8 | 15.639 | 15.732 | +0.09 | 14.847 | 14.816 | −0.03 | −0.79 → −0.92 |
+| 16 | 14.335 | 14.470 | +0.13 | 14.290 | 14.217 | −0.07 | −0.04 → −0.25 |
+| 32 | 13.762 | 14.028 | +0.27 | 13.952 | 13.908 | −0.04 | +0.19 → −0.12 |
+| 64 | 13.514 | 13.731 | +0.22 | 13.705 | 13.594 | −0.11 | +0.19 → −0.14 |
+| 128 | 13.303 | 13.520 | +0.22 | 13.380 | 13.327 | −0.05 | +0.08 → −0.19 |
+
+- **Gated DeltaNet leads softmax at every width at warmup 400.** At warmup 2,000 softmax
+  leads at `d_K = 32`, 64, and 128 (by 0.19, 0.19, and 0.08); at warmup 400 Gated
+  DeltaNet leads there by 0.12, 0.14, and 0.19, and its lead at `d_K = 8` and 16 grows
+  (0.79 to 0.92, 0.04 to 0.25). The attention scaling results' "softmax is lower at 32,
+  64, and 128" reverses at all three widths.
+- **The two mechanisms move in opposite directions at every width.** Softmax loses
+  0.09–0.27 with the short warmup, least at `d_K = 8`; Gated DeltaNet gains 0.03–0.11.
+- **Both still improve with every doubling of `d_K`** at both warmups.
+
+Limits: one seed per cell; the controls ran on Kennel. These runs record the training
+telemetry. Softmax trained on H100 NVL (`d_K = 8`), on H200 then H100 after update
+15,000 (16), on H100 (32), and on H100 with updates 7,001–14,500 on H200 (128); Gated
+DeltaNet on H200 (8 and 128) and H100 (16 and 32).
+
+Normalized fixed Taylor (QK-norm, transformer reference initialization) at `m = 2`, 4,
+8, and 16, terminal validation perplexity; every run's validation best is terminal. The
+`d_K = 64` rows are the ones above; m = 2 at `d_K = 8` and m = 4 at `d_K = 8` and 16 are
+not yet in this topic.
+
+| `d_K` | m = 2, 2,000 | m = 2, 400 | Difference | m = 4, 2,000 | m = 4, 400 | Difference | m = 8, 2,000 | m = 8, 400 | Difference | m = 16, 2,000 | m = 16, 400 | Difference |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 8 | — | — | — | — | — | — | 16.081 | 16.170 | +0.09 | 15.749 | 15.835 | +0.09 |
+| 16 | 17.154 | 17.279 | +0.13 | — | — | — | 14.563 | 14.717 | +0.15 | 14.357 | 14.529 | +0.17 |
+| 32 | 15.794 | 15.895 | +0.10 | 14.278 | 14.482 | +0.20 | 13.854 | 14.119 | +0.27 | 13.775 | 14.028 | +0.25 |
+| 64 | 14.911 | 15.014 | +0.10 | 13.774 | 13.927 | +0.15 | 13.543 | 13.741 | +0.20 | 13.519 | 13.740 | +0.22 |
+| 128 | 14.329 | 14.434 | +0.11 | 13.455 | 13.611 | +0.16 | 13.288 | 13.495 | +0.21 | 13.307 | 13.517 | +0.21 |
+
+- **From m = 4 up, fixed Taylor's loss follows softmax's across `d_K`.** At m = 8 and 16 the short
+  warmup costs least at `d_K = 8` (0.09, as for softmax), more at 16 (0.15 and 0.17
+  against 0.13), most at 32 (0.27 and 0.25 against 0.27), and 0.20–0.22 at 64 and 128.
+  At m = 16 the shift is within 0.02 of softmax's at every width except `d_K = 16`
+  (0.04).
+- **At `d_K = 128` the shift matches `d_K = 64`; at `d_K = 32` it is larger from m = 4
+  up.** `d_K = 128` loses 0.11, 0.16, 0.21, and 0.21 at m = 2, 4, 8, and 16 against 0.10,
+  0.15, 0.20, and 0.22 at `d_K = 64`; `d_K = 32` loses 0.10, 0.20, 0.27, and 0.25.
+- **m = 2 loses least, about 0.1 at every width:** 0.13, 0.10, 0.10, and 0.11 at `d_K =
+  16`, 32, 64, and 128, with no peak at `d_K = 32`. At every width the loss grows from
+  m = 2 to m = 8.
+- **Orders hold.** Within each width the degrees keep their order at both warmups
+  (`d_K = 8`: m = 16, 8; 16: m = 16, 8, 2; 32: m = 16, 8, 4, 2; 128: m = 8, 16, 4, 2). From `d_K = 32`
+  up, m = 16 stays within 0.02 of softmax at both warmups (warmup 400: 14.028 against
+  14.028 at 32, 13.517 against 13.520 at 128); at `d_K = 8` it trails softmax by 0.11
+  and 0.10, and at 16 by 0.02 and 0.06.
+
+Limits: one seed per cell. The warmup-400 runs trained on Kennel with the training
+telemetry: four B300s (`d_K = 32`, m = 4; `d_K = 128`, m = 2, 4, and 16), four H100s
+(`d_K = 16` and 32, m = 2), two B300s
+(`d_K = 128`, m = 8), four H100 PCIe (`d_K = 16`, m = 16), two H100s (`d_K = 8`, m = 8
+and 16; `d_K = 16`, m = 8; `d_K = 32`, m = 16), and two H100 PCIe then two B300s after
+update 16,500 (`d_K = 32`, m = 8). Their controls ran on ORCD's two H200s (m = 2; `d_K = 32`
+and 128 at m = 4) or on Kennel's four H100s (`d_K = 128`, m = 8, and `d_K = 16`, m = 16:
+B300 and H100).
 
 ## Softmax in detail
 
