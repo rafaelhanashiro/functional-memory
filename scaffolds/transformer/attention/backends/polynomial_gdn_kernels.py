@@ -59,6 +59,19 @@ def _store_history(ptr, value, bh, qc, kc, T: tl.constexpr, K: tl.constexpr,
 
 
 @triton.jit
+def _history_rows(ptr, bh, qb, kc, T: tl.constexpr, K: tl.constexpr,
+                  BK: tl.constexpr, BT: tl.constexpr, BQ: tl.constexpr):
+    chunks = T // BT
+    pairs = chunks * (chunks + 1) // 2
+    qc = qb // (BT // BQ)
+    pair = qc * (qc + 1) // 2 + kc
+    rows = (qb % (BT // BQ)) * BQ + tl.arange(0, BQ)
+    cols = tl.arange(0, BK)
+    offsets = ((bh * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
+    return tl.load(ptr + offsets, mask=cols[None, :] < K, other=0).to(tl.float32)
+
+
+@triton.jit
 def _causal(qc, kc, BT: tl.constexpr):
     rows = tl.arange(0, BT)
     return qc * BT + rows[:, None] >= kc * BT + rows[None, :]
@@ -143,7 +156,8 @@ def backward_queries(k, v, prefix, beta, erase, inverse, dout, history, scale,
 def backward_keys(k, v, prefix, beta, erase, inverse, dout, history, adjoint_history, scale,
                   dk, dv, dbeta, derase, dinverse, dkey_prefix,
                   T: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
-                  BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr, GROUP: tl.constexpr):
+                  BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr,
+                  GROUP: tl.constexpr, BQ: tl.constexpr):
     # GROUP=0 keeps the full adjoint for benchmarking; 1/2 split its value and
     # geometry outputs. Reducing simultaneous accumulators avoids register spills
     # and shared-memory pressure without changing the differentiated equations.
@@ -167,15 +181,15 @@ def backward_keys(k, v, prefix, beta, erase, inverse, dout, history, adjoint_his
         grad_beta1 = tl.zeros((BT,), tl.float32)
         grad_beta2 = tl.zeros((BT,), tl.float32)
         grad_prefix = tl.zeros((BT,), tl.float32)
-    for qc in range(kc, T // BT):
-        query = _history(history, bh, qc, kc, T, K, BK, BT)
+    for qb in range(kc * (BT // BQ), T // BQ):
+        query = _history_rows(history, bh, qb, kc, T, K, BK, BT, BQ)
         if GEOMETRY:
-            query_adjoint = _history(adjoint_history, bh, qc, kc, T, K, BK, BT)
-        do = _matrix(dout, b, h, qc, T, H, V, BV, BT) * scale
-        causal = _causal(qc, kc, BT)
+            query_adjoint = _history_rows(adjoint_history, bh, qb, kc, T, K, BK, BT, BQ)
+        do = _matrix(dout, b, h, qb, T, H, V, BV, BQ) * scale
+        causal = qb * BQ + tl.arange(0, BQ)[:, None] >= kc * BT + tl.arange(0, BT)[None, :]
         scores = tl.where(causal, tl.dot(query, tl.trans(key), input_precision="tf32x3"), 0.0)
         effective = tl.dot(scores, a, input_precision="tf32x3")
-        query_decay = _gates(prefix, b, h, qc, T, H, BT)
+        query_decay = _gates(prefix, b, h, qb, T, H, BQ)
         decay = tl.exp(tl.where(causal, query_decay[:, None] - key_decay[None, :], 0.0))
         dweight = tl.dot(do, tl.trans(value), input_precision="tf32x3")
         dpolynomial = tl.where(causal, dweight * decay, 0.0)

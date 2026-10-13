@@ -130,11 +130,11 @@ def _attention_bwd(scale, residuals, dout):
     _, dv, dbeta, _, _, dkey_prefix = _polynomial_call(
         backward_keys, k, v, prefix, beta, erase, inverse, dout, history, adjoint_history, float(scale),
         out=[dummy, _shape(v.shape, v.dtype), _shape(beta.shape, beta.dtype), dummy, dummy,
-             _shape(prefix.shape, jnp.float32)], q=q, v=v, name="backward_key_values", GROUP=1)
+             _shape(prefix.shape, jnp.float32)], q=q, v=v, name="backward_key_values", GROUP=1, BQ=32)
     dk, _, _, derase, dinverse, _ = _polynomial_call(
         backward_keys, k, v, prefix, beta, erase, inverse, dout, history, adjoint_history, float(scale),
         out=[_shape(k.shape, jnp.float32), dummy, dummy, _shape(erase.shape, erase.dtype),
-             _shape(inverse.shape, jnp.float32), dummy], q=q, v=v, name="backward_key_geometry", GROUP=2)
+             _shape(inverse.shape, jnp.float32), dummy], q=q, v=v, name="backward_key_geometry", GROUP=2, BQ=32)
     return dq, dk.astype(k.dtype), dv, dquery_prefix + dkey_prefix, dbeta, derase, dinverse
 
 
