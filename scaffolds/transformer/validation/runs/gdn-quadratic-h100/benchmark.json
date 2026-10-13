@@ -1,0 +1,448 @@
+{
+  "compiled_resources": [
+    {
+      "kernel": "forward",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_90a'\nptxas info    : Function properties for forward\n    384 bytes stack frame, 624 bytes spill stores, 496 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 384 bytes cumulative stack size\nptxas info    : Compile time = 446.350 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "shared_bytes": 32768,
+      "spill_load_bytes": 496,
+      "spill_store_bytes": 624,
+      "stack_frame_bytes": 384,
+      "stage": "forward",
+      "variant": "warps_4"
+    },
+    {
+      "kernel": "forward",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_90a'\nptxas info    : Function properties for forward\n    56 bytes stack frame, 68 bytes spill stores, 64 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 56 bytes cumulative stack size\nptxas info    : Compile time = 254.100 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "shared_bytes": 32768,
+      "spill_load_bytes": 64,
+      "spill_store_bytes": 68,
+      "stack_frame_bytes": 56,
+      "stage": "history",
+      "variant": "warps_4"
+    },
+    {
+      "kernel": "backward_queries",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_queries' for 'sm_90a'\nptxas info    : Function properties for backward_queries\n    1208 bytes stack frame, 1224 bytes spill stores, 1220 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 1208 bytes cumulative stack size\nptxas info    : Compile time = 716.515 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "shared_bytes": 98304,
+      "spill_load_bytes": 1220,
+      "spill_store_bytes": 1224,
+      "stack_frame_bytes": 1208,
+      "stage": "backward_queries",
+      "variant": "warps_4"
+    },
+    {
+      "kernel": "backward_keys",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_90a'\nptxas info    : Function properties for backward_keys\n    3040 bytes stack frame, 5168 bytes spill stores, 4908 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 3040 bytes cumulative stack size\nptxas info    : Compile time = 1379.684 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "shared_bytes": 229376,
+      "spill_load_bytes": 4908,
+      "spill_store_bytes": 5168,
+      "stack_frame_bytes": 3040,
+      "stage": "backward_keys",
+      "variant": "warps_4"
+    },
+    {
+      "kernel": "forward",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_90a'\nptxas info    : Function properties for forward\n    640 bytes stack frame, 708 bytes spill stores, 640 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 640 bytes cumulative stack size\nptxas info    : Compile time = 353.331 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "shared_bytes": 65536,
+      "spill_load_bytes": 640,
+      "spill_store_bytes": 708,
+      "stack_frame_bytes": 640,
+      "stage": "forward",
+      "variant": "warps_8"
+    },
+    {
+      "kernel": "forward",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_90a'\nptxas info    : Function properties for forward\n    456 bytes stack frame, 456 bytes spill stores, 456 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 456 bytes cumulative stack size\nptxas info    : Compile time = 206.660 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "shared_bytes": 65536,
+      "spill_load_bytes": 456,
+      "spill_store_bytes": 456,
+      "stack_frame_bytes": 456,
+      "stage": "history",
+      "variant": "warps_8"
+    },
+    {
+      "kernel": "backward_queries",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_queries' for 'sm_90a'\nptxas info    : Function properties for backward_queries\n    1136 bytes stack frame, 1144 bytes spill stores, 1140 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 1136 bytes cumulative stack size\nptxas info    : Compile time = 599.748 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "shared_bytes": 98304,
+      "spill_load_bytes": 1140,
+      "spill_store_bytes": 1144,
+      "stack_frame_bytes": 1136,
+      "stage": "backward_queries",
+      "variant": "warps_8"
+    },
+    {
+      "kernel": "backward_keys",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_90a'\nptxas info    : Function properties for backward_keys\n    4016 bytes stack frame, 5108 bytes spill stores, 4892 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 4016 bytes cumulative stack size\nptxas info    : Compile time = 1378.797 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "shared_bytes": 229376,
+      "spill_load_bytes": 4892,
+      "spill_store_bytes": 5108,
+      "stack_frame_bytes": 4016,
+      "stage": "backward_keys",
+      "variant": "warps_8"
+    }
+  ],
+  "device": "cuda:0",
+  "device_kind": "NVIDIA H100 PCIe",
+  "dtype": "bfloat16",
+  "shape": {
+    "batch": 16,
+    "heads": 16,
+    "key_width": 64,
+    "length": 2048,
+    "value_width": 64
+  },
+  "slurm_job_id": "218415",
+  "source_commit": "564268cd2c4b7071c9535be2e3ec841735f85d19",
+  "status": "passed",
+  "variants": {
+    "mixed_best": {
+      "num_warps": {
+        "backward_keys": 4,
+        "backward_queries": 4,
+        "forward": 4
+      },
+      "relative_difference_from_baseline": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "timings": {
+        "backward_keys": {
+          "compile_seconds": 0.06764711998403072,
+          "median_seconds": 0.0763269355520606,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=0, argument_size_in_bytes=4842323968, output_size_in_bytes=346030128, alias_size_in_bytes=0, temp_size_in_bytes=0, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.07566246890928596,
+          "seconds": [
+            0.07566246890928596,
+            0.07634226407390088,
+            0.07631160703022033,
+            0.07665735797490925,
+            0.07627777603920549,
+            0.0761062380624935,
+            0.07698917796369642,
+            0.0763912060065195
+          ]
+        },
+        "backward_queries": {
+          "compile_seconds": 0.05668379901908338,
+          "median_seconds": 0.020357733010314405,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=0, argument_size_in_bytes=2627731456, output_size_in_bytes=2283798552, alias_size_in_bytes=0, temp_size_in_bytes=0, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.020260642049834132,
+          "seconds": [
+            0.020399900968186557,
+            0.02036993601359427,
+            0.020375214982777834,
+            0.020439121057279408,
+            0.020260642049834132,
+            0.020282002980820835,
+            0.020331387990154326,
+            0.02034553000703454
+          ]
+        },
+        "forward": {
+          "compile_seconds": 0.05049944994971156,
+          "median_seconds": 0.01389916002517566,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=0, argument_size_in_bytes=413138944, output_size_in_bytes=67108864, alias_size_in_bytes=0, temp_size_in_bytes=260, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.013794116908684373,
+          "seconds": [
+            0.013916861033067107,
+            0.013935549999587238,
+            0.013840316911228001,
+            0.013794116908684373,
+            0.013850182062014937,
+            0.013922070036642253,
+            0.013881459017284214,
+            0.014017894049175084
+          ]
+        },
+        "history": {
+          "compile_seconds": 0.025959328981116414,
+          "median_seconds": 0.007651644991710782,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=0, argument_size_in_bytes=413138944, output_size_in_bytes=2214592512, alias_size_in_bytes=0, temp_size_in_bytes=260, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.007598660886287689,
+          "seconds": [
+            0.007598660886287689,
+            0.0076049999333918095,
+            0.007599261938594282,
+            0.007645681034773588,
+            0.007659623050130904,
+            0.007673262967728078,
+            0.007657608948647976,
+            0.007713312981650233
+          ]
+        },
+        "inverse_backward": {
+          "compile_seconds": 0.18447122699581087,
+          "median_seconds": 0.002290697011630982,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=21520, argument_size_in_bytes=404750336, output_size_in_bytes=136314896, alias_size_in_bytes=0, temp_size_in_bytes=570426384, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.00226410198956728,
+          "seconds": [
+            0.002297462080605328,
+            0.0023001160006970167,
+            0.0023028809810057282,
+            0.0022839319426566362,
+            0.002301857923157513,
+            0.002271743956953287,
+            0.002270280965603888,
+            0.00226410198956728
+          ]
+        },
+        "value_and_grad": {
+          "compile_seconds": 31.711067409953102,
+          "median_seconds": 0.12117317551746964,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=201379064, argument_size_in_bytes=211812352, output_size_in_bytes=211812412, alias_size_in_bytes=0, temp_size_in_bytes=5104470320, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.12037984502967447,
+          "seconds": [
+            0.12037984502967447,
+            0.12129688705317676,
+            0.12132501904852688,
+            0.1209630339872092,
+            0.12104946398176253,
+            0.12156481004785746,
+            0.12075304694008082,
+            0.12149088992737234
+          ]
+        }
+      }
+    },
+    "warps_4": {
+      "num_warps": {
+        "backward_keys": 4,
+        "backward_queries": 4,
+        "forward": 4
+      },
+      "timings": {
+        "backward_keys": {
+          "compile_seconds": 3.047150374040939,
+          "median_seconds": 0.07728759752353653,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=0, argument_size_in_bytes=4842323968, output_size_in_bytes=346030128, alias_size_in_bytes=0, temp_size_in_bytes=0, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.07684980798512697,
+          "seconds": [
+            0.07684980798512697,
+            0.07740241102874279,
+            0.07726108795031905,
+            0.07734172896016389,
+            0.0772992450511083,
+            0.07739602099172771,
+            0.0772742269327864,
+            0.07727594999596477
+          ]
+        },
+        "backward_queries": {
+          "compile_seconds": 1.6782290020491928,
+          "median_seconds": 0.020441970031242818,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=0, argument_size_in_bytes=2627731456, output_size_in_bytes=2283798552, alias_size_in_bytes=0, temp_size_in_bytes=0, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.02030937501695007,
+          "seconds": [
+            0.020497860037721694,
+            0.020445851027034223,
+            0.02048017201013863,
+            0.020490897935815156,
+            0.020425900002010167,
+            0.02030937501695007,
+            0.020438089035451412,
+            0.020341733936220407
+          ]
+        },
+        "forward": {
+          "compile_seconds": 1.0893311470281333,
+          "median_seconds": 0.014190690009854734,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=0, argument_size_in_bytes=413138944, output_size_in_bytes=67108864, alias_size_in_bytes=0, temp_size_in_bytes=260, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.013838052982464433,
+          "seconds": [
+            0.014216714072972536,
+            0.014195611933246255,
+            0.01423638395499438,
+            0.014185768086463213,
+            0.014199086930602789,
+            0.013838052982464433,
+            0.0138715939829126,
+            0.01385845395270735
+          ]
+        },
+        "history": {
+          "compile_seconds": 2.3695869869552553,
+          "median_seconds": 0.007574273971840739,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=0, argument_size_in_bytes=413138944, output_size_in_bytes=2214592512, alias_size_in_bytes=0, temp_size_in_bytes=260, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.007503977976739407,
+          "seconds": [
+            0.007537959958426654,
+            0.007503977976739407,
+            0.007545090047642589,
+            0.007607894949615002,
+            0.007548655034042895,
+            0.007624068995937705,
+            0.007599892909638584,
+            0.0076460420386865735
+          ]
+        },
+        "inverse_backward": {
+          "compile_seconds": 0.5609744559042156,
+          "median_seconds": 0.0022975419997237623,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=21520, argument_size_in_bytes=404750336, output_size_in_bytes=136314896, alias_size_in_bytes=0, temp_size_in_bytes=570426384, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.0022582330275326967,
+          "seconds": [
+            0.0023300410248339176,
+            0.002281668013893068,
+            0.0023134159855544567,
+            0.0023242620518431067,
+            0.00231688201893121,
+            0.0022582330275326967,
+            0.0022763300221413374,
+            0.0022770720534026623
+          ]
+        },
+        "value_and_grad": {
+          "compile_seconds": 32.02977590402588,
+          "median_seconds": 0.12199291598517448,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=201379064, argument_size_in_bytes=211812352, output_size_in_bytes=211812412, alias_size_in_bytes=0, temp_size_in_bytes=5104470320, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.12180948001332581,
+          "seconds": [
+            0.12188633601181209,
+            0.12192412198055536,
+            0.12205734301824123,
+            0.12199020199477673,
+            0.12199562997557223,
+            0.12205550004728138,
+            0.12180948001332581,
+            0.12205861590337008
+          ]
+        }
+      }
+    },
+    "warps_8": {
+      "num_warps": {
+        "backward_keys": 8,
+        "backward_queries": 8,
+        "forward": 8
+      },
+      "relative_difference_from_baseline": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4.425522070122822e-08
+      ],
+      "timings": {
+        "backward_keys": {
+          "compile_seconds": 2.835960551048629,
+          "median_seconds": 0.14735337253659964,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=0, argument_size_in_bytes=4842323968, output_size_in_bytes=346030128, alias_size_in_bytes=0, temp_size_in_bytes=0, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.1472512480104342,
+          "seconds": [
+            0.1473262319341302,
+            0.14751416502986103,
+            0.14726172504015267,
+            0.14746896701399237,
+            0.14737818005960435,
+            0.1474304279545322,
+            0.14732856501359493,
+            0.1472512480104342
+          ]
+        },
+        "backward_queries": {
+          "compile_seconds": 1.4111885760212317,
+          "median_seconds": 0.03544038697145879,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=0, argument_size_in_bytes=2627731456, output_size_in_bytes=2283798552, alias_size_in_bytes=0, temp_size_in_bytes=0, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.035402619978412986,
+          "seconds": [
+            0.035976734943687916,
+            0.035440276958979666,
+            0.035402619978412986,
+            0.035451482981443405,
+            0.035437021986581385,
+            0.03544049698393792,
+            0.03541905409656465,
+            0.035455930046737194
+          ]
+        },
+        "forward": {
+          "compile_seconds": 0.9767148409737274,
+          "median_seconds": 0.024134253500960767,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=0, argument_size_in_bytes=413138944, output_size_in_bytes=67108864, alias_size_in_bytes=0, temp_size_in_bytes=260, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.023832172970287502,
+          "seconds": [
+            0.024534031050279737,
+            0.024546639993786812,
+            0.024074889020994306,
+            0.023832172970287502,
+            0.023858143016695976,
+            0.023850450990721583,
+            0.02419361798092723,
+            0.02454318490345031
+          ]
+        },
+        "history": {
+          "compile_seconds": 0.695179923903197,
+          "median_seconds": 0.013389918021857738,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=0, argument_size_in_bytes=413138944, output_size_in_bytes=2214592512, alias_size_in_bytes=0, temp_size_in_bytes=260, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.013210828066803515,
+          "seconds": [
+            0.013235814985819161,
+            0.0133300069719553,
+            0.013373133027926087,
+            0.013421276002191007,
+            0.013439001981168985,
+            0.01340670301578939,
+            0.01345181092619896,
+            0.013210828066803515
+          ]
+        },
+        "inverse_backward": {
+          "compile_seconds": 0.3014787510037422,
+          "median_seconds": 0.0023114229552447796,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=21520, argument_size_in_bytes=404750336, output_size_in_bytes=136314896, alias_size_in_bytes=0, temp_size_in_bytes=570426384, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.0022845329949632287,
+          "seconds": [
+            0.0022928649559617043,
+            0.0022970809368416667,
+            0.0023258349392563105,
+            0.002352895913645625,
+            0.0023257649736478925,
+            0.002286745933815837,
+            0.0022845329949632287,
+            0.002328339032828808
+          ]
+        },
+        "value_and_grad": {
+          "compile_seconds": 31.787893358967267,
+          "median_seconds": 0.22268023999640718,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=201379064, argument_size_in_bytes=211812352, output_size_in_bytes=211812412, alias_size_in_bytes=0, temp_size_in_bytes=5104470320, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.2224625680828467,
+          "seconds": [
+            0.22266546299215406,
+            0.22279117302969098,
+            0.2227954090340063,
+            0.2226950170006603,
+            0.22257564798928797,
+            0.2224625680828467,
+            0.22259190306067467,
+            0.22270803805440664
+          ]
+        }
+      }
+    }
+  }
+}
