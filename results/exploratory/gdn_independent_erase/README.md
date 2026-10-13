@@ -9,36 +9,13 @@ language-model performance under the canonical 400-step-warmup recipe?
 
 | Role | Run ID | Erase gate | Status |
 | --- | --- | --- | --- |
-| Primary | `rf7341031e3d5` | Independent learned projection | Training on four H100 SXM GPUs |
+| Primary | `rf7341031e3d5` | Independent learned projection | Complete, 19,074 updates |
 | Control | `rf640fc13f3a8` | Shared with the write gate | Complete, 19,074 updates |
 
 The control is explicitly selected for its canonical GDN initialization, degree-one
 key space, width, data, training recipe, and current telemetry on Kennel. Its terminal
 validation perplexity is 13.582856. Selection does not depend on its performance.
-
-Production job `217974` is training at nice 0 on Kennel's standard partition
-with four H100 SXM GPUs on `dogo`. It completed update 120 by 15:05 EDT on
-2026-10-12, with finite printed activation and gradient diagnostics. Its
-[W&B run](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/3113f4ce156c46c78fcc7c87efb60273)
-is `200m-dk064-gdn-independent-erase-warmup400-seed0`.
-Production and passed runtime qualification `217971` use preallocation disabled
-and the default memory fraction. Global batch 256, global microbatch 64, and four
-accumulation steps are unchanged; four devices process 16 sequences each per
-microbatch. Full acceptance passed, including a 20-update full-recipe pilot,
-finite validation, and exact fresh-process checkpoint resumption from update 20
-to 21. The [qualification record](../../../scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-four-gpu.json)
-pins the evidence. Its pilot projects 4.24 hours of training; production timing
-remains to be measured. The canonical 400-update warmup and gated output RMSNorm
-remain active. No production validation result is available yet.
-
-Source: `d3d93bc6ccaa8a76fc4b29124c80988ae1593405`.
-The [scaffold validation record](../../../scaffolds/transformer/validation/README.md#fp32-chunk-precision-repair)
-contains the kernel accuracy evidence.
-
-The primary uses repaired FP32 chunk intermediates and TF32x3 products. The
-historical control used the earlier reduced-precision kernel, so a performance
-difference between these executions cannot be attributed solely to gate separation.
-A matched control using the repaired arithmetic would be needed for that conclusion.
+[selection.yaml](selection.yaml) names both roles and pins their scientific inputs.
 
 Both models use the existing GDN block: linear projections, width-four causal
 depthwise convolutions and SiLU for Q/K/V, per-head L2 normalization of Q/K, Mamba-2
@@ -66,13 +43,62 @@ telemetry, plus erase/write gate values and their difference. The original contr
 has the earlier standard telemetry; newly separated gate groups cannot be compared
 directly against a combined historical group.
 
+## Completed findings
+
+The primary completed all 19,074 updates (10,000,269,312 prediction tokens) on
+2026-10-12 at 18:32 EDT. Its final checkpoint is also its validation-best checkpoint.
+Both runs select update 19,074 by lowest validation NLL.
+
+| Run | Terminal validation NLL | Terminal validation perplexity | Validation-best step |
+| --- | ---: | ---: | ---: |
+| Independent erase, `rf7341031e3d5` | 2.608554593 | 13.579408889 | 19,074 |
+| Tied erase/write, `rf640fc13f3a8` | 2.608808373 | 13.582855503 | 19,074 |
+
+The observed difference is -0.000253780 NLL or -0.003446614 perplexity
+(-0.02537% relative perplexity): a numerical near-tie. It does not establish an
+improvement from separating the gates or statistical equivalence. This is one seed,
+and the executions differ in arithmetic and hardware: the primary uses FP32 chunk
+intermediates and TF32x3 products on four H100 SXM GPUs; the control uses the earlier
+reduced-precision kernel on two B300 GPUs. A comparison with matched arithmetic and
+runtime would be needed to isolate the effect of gate separation.
+
+Validation perplexity decreased at every one of the primary's 20 evaluations,
+from 34.225204 at update 1,000 to 13.579409 at update 19,074. Every logged numeric
+measurement is finite, all attention diagnostic passes are valid, and all recorded
+invalid counts are zero. Gradient and activation summaries cover all 19,074 updates.
+The gradient-spike detector (five times the recent median) flagged three isolated
+updates: 6,376 (norm 1.4312), 7,176 (1.1688), and 11,692 (1.0777), with none afterward.
+Gradient clipping at norm 1 applied to 80 updates, including the initial training
+period. The final 74-update window has mean gradient norm 0.2011 and maximum 0.2580.
+
+The erase and write gates did separate: on the fixed held-out diagnostic sequence,
+their final per-layer RMS difference ranges from 0.1463 to 0.3947, despite identical
+initial values. The final training window independently records per-layer mean RMS
+differences of 0.1574 to 0.3930. Thus the added projection is being used, without a
+clear validation advantage in this comparison.
+
 Run recipes, measurements, provenance, and launch instructions live in
 [the attention study](../../../experiments/attention_scaling/README.md#independent-gdn-erase-gate).
 The [shared scaffold](../../../scaffolds/transformer/README.md#gated-deltanet) defines
-the implementation. No outcome is available for the independent-gate run yet.
+the implementation, and its
+[validation record](../../../scaffolds/transformer/validation/README.md#fp32-chunk-precision-repair)
+documents the arithmetic checks. The monitoring mirror is
+[W&B run `200m-dk064-gdn-independent-erase-warmup400-seed0`](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/3113f4ce156c46c78fcc7c87efb60273).
+
+Refresh the source pins from the repository root with:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh \
+  results/exploratory/gdn_independent_erase
+```
+
+The table reads each selected run's `completion.json` and `best_validation.json`;
+the curve, health, and gate summaries read its `metrics.jsonl`. These canonical
+measurements remain under the runs.
 
 ## Open decision
 
-Determine whether independent erasure improves validation loss, how far the erase
-and write gates separate, and whether the new mechanism belongs in the maintained
-attention comparison. The topic remains exploratory until that decision is made.
+Decide whether the near-tie with separated gates warrants a matched-arithmetic
+control and further seeds, and whether independent erasure belongs in the maintained
+attention comparison. No follow-up execution is allocated or queued for this topic.
+It remains exploratory until promoted or discarded.

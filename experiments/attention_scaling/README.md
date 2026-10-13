@@ -246,9 +246,9 @@ match tied GDN at initialization. It preserves the canonical GDN block and refer
 initialization, 400 warmup updates, standard training telemetry, and the 19,074-update
 FineWeb recipe. The preselected control is `rf640fc13f3a8`; comparison findings and
 current status belong in the [exploratory result](../../results/exploratory/gdn_independent_erase/README.md).
-Its home cluster is Kennel. Production job `217974` is training on `standard`
-at nice 0 with four H100 SXM GPUs on `dogo`. At 15:05 EDT on 2026-10-12 it had
-completed update 120 with finite printed activation and gradient diagnostics.
+Its home cluster is Kennel. Production job `217974` completed all 19,074 updates
+on 2026-10-12 at 18:32 EDT, on `standard` at nice 0 with four H100 SXM GPUs on
+`dogo`. Terminal and validation-best checkpoint both correspond to update 19,074.
 [W&B run](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/3113f4ce156c46c78fcc7c87efb60273):
 `200m-dk064-gdn-independent-erase-warmup400-seed0`.
 Production and passed runtime qualification `217971` use
@@ -257,11 +257,12 @@ global batch remains 256, global microbatch 64, and gradient accumulation four;
 four devices divide each microbatch into 16 sequences per GPU.
 Acceptance passed the complete test suite, a 20-update full-recipe pilot,
 finite validation, checkpoint saving, and exact fresh-process resumption from
-update 20 to 21. The pilot projects 4.24 hours of training, within the 22-hour
-budget for the 24-hour production allocation; production timing remains to be
-measured. The [qualification record](../../scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-four-gpu.json)
-pins the evidence. The canonical 400-update warmup and gated output RMSNorm remain active.
-No production validation measurement is available yet.
+update 20 to 21. Production training, validation, and checkpointing took 3.52 hours.
+The [qualification record](../../scaffolds/transformer/validation/runs/gdn-independent-precision-h100/sxm-four-gpu.json)
+pins the acceptance evidence. The canonical 400-update warmup and gated output
+RMSNorm were active throughout training. Completed findings, diagnostic summaries,
+and the limitations of the historical-control comparison are recorded only in the
+linked exploratory result.
 Source `d3d93bc6ccaa8a76fc4b29124c80988ae1593405`
 retains FP32 chunk intermediates and TF32x3 products for tied and independent gates.
 The independently optimized erase and write projections have separate device
@@ -293,27 +294,5 @@ env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable --nice=0 --partition=sta
 ```
 
 Production verifies acceptance with the same source, recipe, hardware, and runtime
-settings before training; matching passed stages are reused. The independent
-PCIe diagnostic ran only the 20-update full-recipe pilot with a 30-minute worker
-budget; it does not replace full acceptance:
-
-```bash
-env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --nice=0 --partition=debug --nodelist=mastiff --gres=gpu:h100:2 \
-  --time=00:40:00 --cpus-per-task=32 --mem=256G \
-  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false \
-  --job-name=gdn-alias-repair-pilot \
-  --output=scaffolds/transformer/validation/logs/gdn-memory-%j.log \
-  scaffolds/transformer/validation/probe_gdn_memory.sbatch \
-  experiments/attention_scaling/runs/rf7341031e3d5/config.yaml \
-  d3d93bc6ccaa8a76fc4b29124c80988ae1593405 H100 pilot
-```
-
-The one-GPU precision qualification and benchmark use:
-
-```bash
-sbatch --nice=0 --partition=debug --nodelist=mastiff --gres=gpu:h100:1 \
-  --job-name=gdn-precision-repair \
-  --output=scaffolds/transformer/validation/logs/gdn-repair-%j.log \
-  scaffolds/transformer/validation/qualify_gdn_independent.sbatch \
-  4b7573e31a1475ef01f7e6313ab36f14a587b0ee H100
-```
+settings before training; matching passed stages are reused. Hardware qualification
+and kernel benchmarks are documented in the linked scaffold validation record.
