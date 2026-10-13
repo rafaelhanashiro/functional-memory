@@ -15,7 +15,7 @@
     },
     {
       "log": {
-        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/validation/logs/gdn-repair-acceptance-cpu.log",
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-repair-acceptance-cpu.log",
         "sha256": "c4bd96483704f7423624545d774ff722bd9f29c5145ee2d1b635a395e896d7d0"
       },
       "paths": [

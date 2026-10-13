@@ -2986,17 +2986,17 @@
     ],
     "logs": [
       {
-        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/validation/logs/gdn-independent-214022.log",
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-independent-214022.log",
         "sha256": "5b7c2cba70c86806d664816e2742a03011fc0941b721819dbac6141d6a89f258",
         "size_bytes": 9093
       },
       {
-        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/validation/logs/gdn-precision-215578.log",
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-precision-215578.log",
         "sha256": "e3fd96a639021814004c6cb5a05f32fc31aa70305677a0c12568db56e8b7a903",
         "size_bytes": 23940
       },
       {
-        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/validation/logs/gdn-precision-cpu.log",
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-precision-cpu.log",
         "sha256": "f8d8abbe941b924c7832811640e275cdc8da6711eff9b7188b8eaa68cbc844f0",
         "size_bytes": 11002
       }
@@ -3031,8 +3031,8 @@
     "records": [
       {
         "path": "scaffolds/transformer/validation/runs/gdn-precision-repair-cpu/tests.json",
-        "sha256": "a05de617b22b7a7970f76bdce0ae222539f43d98de538df93345925ff0f2bc57",
-        "size_bytes": 1100
+        "sha256": "a0ced60d0ef841423e01521d561393a586605f7f115aef3c2db915e3de80e92a",
+        "size_bytes": 1068
       },
       {
         "path": "scaffolds/transformer/validation/runs/gdn-independent-precision-h100/tests.json",
@@ -3052,7 +3052,7 @@
     ],
     "logs": [
       {
-        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-independent-erase/scaffolds/transformer/validation/logs/gdn-repair-216969.log",
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-repair-216969.log",
         "sha256": "5f0766f3db5194c48ffc76b010931a70952702905f9714ac3e174e59ea398014",
         "size_bytes": 10719
       }
