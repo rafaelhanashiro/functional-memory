@@ -16,6 +16,7 @@ from pathlib import Path
 import re
 import statistics
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -37,6 +38,7 @@ def main():
     parser.add_argument("--width", type=int, default=64)
     parser.add_argument("--warps", type=int, nargs="+", default=[4, 8])
     parser.add_argument("--repeats", type=int, default=8)
+    parser.add_argument("--check-kernels", action="store_true")
     args = parser.parse_args()
     if jax.default_backend() != "gpu":
         raise RuntimeError("This benchmark requires an allocated GPU")
@@ -192,7 +194,7 @@ def main():
                      jax.ShapeDtypeStruct(beta.shape, beta.dtype), jax.ShapeDtypeStruct(erase.shape, erase.dtype),
                      jax.ShapeDtypeStruct(inverse.shape, jnp.float32), jax.ShapeDtypeStruct(transformed.shape, jnp.float32),
                      jax.ShapeDtypeStruct(prefix.shape, jnp.float32)],
-                q=q, v=v, name="backward_keys", GROUP=0, BQ=64)
+                q=q, v=v, name="backward_keys", GROUP=0, BQ=64, MODE=0)
         _, entry["timings"]["backward_keys"] = measure("backward_keys", key_call, key_inputs)
         def key_values_call(*a):
             return configured_call(
@@ -200,16 +202,27 @@ def main():
                 out=[scalar_shape, jax.ShapeDtypeStruct(v.shape, v.dtype),
                      jax.ShapeDtypeStruct(beta.shape, beta.dtype), scalar_shape, scalar_shape, scalar_shape,
                      jax.ShapeDtypeStruct(prefix.shape, jnp.float32)],
-                q=q, v=v, name="backward_key_values", GROUP=1, BQ=64)
+                q=q, v=v, name="backward_key_values", GROUP=1, BQ=64, MODE=0)
         def key_geometry_call(*a):
             return configured_call(
                 kernels.backward_keys, *a, float(scale),
                 out=[jax.ShapeDtypeStruct(k.shape, jnp.float32), scalar_shape, scalar_shape,
                      jax.ShapeDtypeStruct(erase.shape, erase.dtype), jax.ShapeDtypeStruct(inverse.shape, jnp.float32),
                      jax.ShapeDtypeStruct(transformed.shape, jnp.float32), scalar_shape],
-                q=q, v=v, name="backward_key_geometry", GROUP=2, BQ=64)
+                q=q, v=v, name="backward_key_geometry", GROUP=2, BQ=64, MODE=0)
         _, entry["timings"]["backward_key_values"] = measure("backward_key_values", key_values_call, key_inputs)
         _, entry["timings"]["backward_key_geometry"] = measure("backward_key_geometry", key_geometry_call, key_inputs)
+        for mode, label in ((1, "diagonal"), (2, "cross")):
+            def geometry_part(*a):
+                return configured_call(
+                    kernels.backward_keys, *a, float(scale),
+                    out=[jax.ShapeDtypeStruct(k.shape, jnp.float32), scalar_shape, scalar_shape,
+                         jax.ShapeDtypeStruct(erase.shape, erase.dtype),
+                         jax.ShapeDtypeStruct(inverse.shape, jnp.float32) if mode == 1 else scalar_shape,
+                         jax.ShapeDtypeStruct(transformed.shape, jnp.float32) if mode == 2 else scalar_shape,
+                         scalar_shape], q=q, v=v, name=f"backward_key_geometry_{label}", GROUP=2, BQ=64, MODE=mode)
+            _, entry["timings"][f"backward_key_geometry_{label}"] = measure(
+                f"backward_key_geometry_{label}", geometry_part, key_inputs)
         _, entry["timings"]["inverse_backward"] = measure(
             "inverse_backward", lambda k,e,a,da: backend._inverse_bwd((k,e,a),da),
             (k32, erase, inverse, jnp.ones_like(inverse)))
@@ -238,6 +251,20 @@ def main():
                 name: timing["median_seconds"] for name, timing in entry["timings"].items()}
         save()
     backend._polynomial_call = original_call
+    if args.check_kernels:
+        xml_path = args.output.with_name(args.output.stem + "-gpu-tests.xml")
+        started = time.perf_counter()
+        checked = subprocess.run([
+            sys.executable, "-m", "pytest", "-q", "-c", "scaffolds/transformer/pyproject.toml",
+            "-m", "gpu", "scaffolds/transformer/tests/test_polynomial_gdn_kernel.py",
+            f"--junitxml={xml_path}",
+        ])
+        report["kernel_tests"] = {"returncode": checked.returncode, "seconds": time.perf_counter() - started,
+                                  "junit_xml": str(xml_path)}
+        if checked.returncode:
+            report["status"] = "failed_kernel_checks"
+            save()
+            raise SystemExit(checked.returncode)
     report["status"] = "passed"
     save()
     print(f"benchmark_result={args.output}", flush=True)

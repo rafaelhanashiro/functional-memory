@@ -131,12 +131,18 @@ def _attention_bwd(scale, residuals, dout):
     _, dv, dbeta, _, _, _, dkey_prefix = _polynomial_call(
         backward_keys, k, v, prefix, beta, erase, inverse, transformed, dout, history, adjoint_history, float(scale),
         out=[dummy, _shape(v.shape, v.dtype), _shape(beta.shape, beta.dtype), dummy, dummy, dummy,
-             _shape(prefix.shape, jnp.float32)], q=q, v=v, name="backward_key_values", GROUP=1, BQ=64)
-    dk, _, _, derase, dinverse, dtransformed, _ = _polynomial_call(
+             _shape(prefix.shape, jnp.float32)], q=q, v=v, name="backward_key_values", GROUP=1, BQ=64, MODE=0)
+    dk_diagonal, _, _, derase_diagonal, dinverse, _, _ = _polynomial_call(
         backward_keys, k, v, prefix, beta, erase, inverse, transformed, dout, history, adjoint_history, float(scale),
         out=[_shape(k.shape, jnp.float32), dummy, dummy, _shape(erase.shape, erase.dtype),
-             _shape(inverse.shape, jnp.float32), _shape(transformed.shape, jnp.float32), dummy],
-        q=q, v=v, name="backward_key_geometry", GROUP=2, BQ=64)
+             _shape(inverse.shape, jnp.float32), dummy, dummy],
+        q=q, v=v, name="backward_key_geometry_diagonal", GROUP=2, BQ=64, MODE=1)
+    dk, _, _, derase, _, dtransformed, _ = _polynomial_call(
+        backward_keys, k, v, prefix, beta, erase, inverse, transformed, dout, history, adjoint_history, float(scale),
+        out=[_shape(k.shape, jnp.float32), dummy, dummy, _shape(erase.shape, erase.dtype),
+             dummy, _shape(transformed.shape, jnp.float32), dummy],
+        q=q, v=v, name="backward_key_geometry_cross", GROUP=2, BQ=64, MODE=2)
+    dk, derase = dk + dk_diagonal, derase + derase_diagonal
     return dq, dk.astype(k.dtype), dv, dquery_prefix + dkey_prefix, dbeta, derase, dinverse, dtransformed
 
 

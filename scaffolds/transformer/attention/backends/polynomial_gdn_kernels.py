@@ -170,7 +170,7 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
                   dk, dv, dbeta, derase, dinverse, dtransformed, dkey_prefix,
                   T: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
                   BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr,
-                  GROUP: tl.constexpr, BQ: tl.constexpr):
+                  GROUP: tl.constexpr, BQ: tl.constexpr, MODE: tl.constexpr):
     # GROUP=0 keeps the full adjoint for benchmarking; 1/2 split its value and
     # geometry outputs. Reducing simultaneous accumulators avoids register spills
     # and shared-memory pressure without changing the differentiated equations.
@@ -181,13 +181,15 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
     b, h = bh // H, bh % H
     key = _matrix(k, b, h, kc, T, H, K, BK, BT)
     value = _matrix(v, b, h, kc, T, H, V, BV, BT)
-    r = _matrix(transformed, b, h, kc, T, H, K, BK, BT)
+    if MODE != 1:
+        r = _matrix(transformed, b, h, kc, T, H, K, BK, BT)
     erasure = _gates(erase, b, h, kc, T, H, BT)
     key_decay = _gates(prefix, b, h, kc, T, H, BT)
     beta0, beta1, beta2 = _coefficients(beta, b, h, kc, T, H, BT)
     if GEOMETRY:
         grad_key = tl.zeros((BT, BK), tl.float32)
-        grad_transformed = tl.zeros((BT, BK), tl.float32)
+        if MODE != 1:
+            grad_transformed = tl.zeros((BT, BK), tl.float32)
         grad_erase = tl.zeros((BT,), tl.float32)
     if VALUES:
         grad_value = tl.zeros((BT, BV), tl.float32)
@@ -195,13 +197,17 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
         grad_beta1 = tl.zeros((BT,), tl.float32)
         grad_beta2 = tl.zeros((BT,), tl.float32)
         grad_prefix = tl.zeros((BT,), tl.float32)
-    for qb in range(kc * (BT // BQ), T // BQ):
+    # Separating the single causal diagonal tile from fully preceding chunks
+    # prevents its larger temporary matrices from spilling in every loop step.
+    start = kc + (1 if MODE == 2 else 0)
+    end = kc + 1 if MODE == 1 else T // BT
+    for qb in range(start, end):
         query = _history_rows(history, bh, qb, kc, T, K, BK, BT, BQ)
         if GEOMETRY:
             query_adjoint = _history_rows(adjoint_history, bh, qb, kc, T, K, BK, BT, BQ)
         do = _matrix(dout, b, h, qb, T, H, V, BV, BQ) * scale
         causal = qb * BQ + tl.arange(0, BQ)[:, None] >= kc * BT + tl.arange(0, BT)[None, :]
-        if qb == kc:
+        if MODE != 2 and (MODE == 1 or qb == kc):
             a = _matrix(inverse, b, h, kc, T, H, BT, BT, BT)
             scores = tl.where(causal, tl.dot(query, tl.trans(key), input_precision="tf32x3"), 0.0)
             effective = tl.dot(scores, a, input_precision="tf32x3")
@@ -226,7 +232,7 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
             direct = tl.dot(tl.trans(effective), query_adjoint, input_precision="tf32x3")
             grad_key -= erasure[:, None] * direct
             grad_erase -= tl.sum(direct * key, 1)
-            if qb == kc:
+            if MODE != 2 and (MODE == 1 or qb == kc):
                 a_backward = _matrix(inverse, b, h, kc, T, H, BT, BT, BT)
                 scores_backward = tl.where(causal, tl.dot(query, tl.trans(key), input_precision="tf32x3"), 0.0)
                 dscores = tl.where(causal, tl.dot(deffective, tl.trans(a_backward), input_precision="tf32x3"), 0.0)
@@ -244,8 +250,9 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
         tl.store(dk + token_offset[:, None] * K + columns_k[None, :], grad_key,
                  mask=columns_k[None, :] < K)
         tl.store(derase + token_offset, grad_erase)
-        tl.store(dtransformed + token_offset[:, None] * K + columns_k[None, :], grad_transformed,
-                 mask=columns_k[None, :] < K)
+        if MODE != 1:
+            tl.store(dtransformed + token_offset[:, None] * K + columns_k[None, :], grad_transformed,
+                     mask=columns_k[None, :] < K)
     if VALUES:
         columns_v = tl.arange(0, BV)
         tl.store(dv + token_offset[:, None] * V + columns_v[None, :], grad_value,
