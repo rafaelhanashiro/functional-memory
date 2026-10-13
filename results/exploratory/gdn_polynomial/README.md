@@ -9,13 +9,15 @@ key-space transformation is unchanged?
 
 | Role | Run ID | Memory function | Status |
 | --- | --- | --- | --- |
-| Primary | `rd40af7956426` | Constant, linear, and quadratic | Prepared for qualification |
+| Primary | `rd40af7956426` | Constant, linear, and quadratic | Qualifying; production queued |
 | Control | `rf7341031e3d5` | Linear, independent erase gate | Complete |
 
 The explicitly selected control uses the repaired arithmetic, canonical GDN
 initialization, independent erase gate, and the same data and optimizer recipe.
 Its terminal and validation-best perplexity is 13.579409 at update 19,074.
-The primary has no measured training outcome yet. Neither run is added to a
+The primary has no measured training outcome yet. Full-recipe qualification job
+`218413` is running on four H100 PCIe GPUs on `mastiff`; production job `218414`
+is queued with an `afterok` dependency. Both use `standard` at nice 0. Neither run is added to a
 canonical result selection by this topic.
 
 With GDN's L2-normalized keys and queries, the update is

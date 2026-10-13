@@ -3149,8 +3149,8 @@
     "records": [
       {
         "path": "scaffolds/transformer/validation/runs/gdn-quadratic-cpu/tests.json",
-        "sha256": "36730db912aaf190c4e3fb09d908d60dab1bd621e2ced4a59605271f7fc87e62",
-        "size_bytes": 2795
+        "sha256": "d1dd0d74605faae74e0afe52944e949b003e734225a18bca0da39f4eeadb12c1",
+        "size_bytes": 2858
       }
     ]
   }

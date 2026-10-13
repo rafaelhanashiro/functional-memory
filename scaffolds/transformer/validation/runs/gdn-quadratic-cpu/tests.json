@@ -28,6 +28,7 @@
     "Test counts overlap across the listed commands and must not be added as unique tests."
   ],
   "recorded_utc": "2026-10-13T06:18:53.935786+00:00",
+  "source_commit": "bf837570b6ed4ab4733d3be0c70a014a614aefe9",
   "source_files": [
     {
       "path": "scaffolds/transformer/attention/polynomial_gdn_reference.py",

@@ -308,7 +308,9 @@ the explicit linear control `rf7341031e3d5`. Its 211,335,104 parameters include
 327,680 new write-projection weights. Methods, selection, and findings belong in
 [the exploratory comparison](../../results/exploratory/gdn_polynomial/README.md).
 
-Home cluster: Kennel. Develop and execute in `worktrees/gdn-quadratic`, with its
+Home cluster: Kennel. Qualification `218413` and dependent production `218414`
+use source `bf837570b6ed4ab4733d3be0c70a014a614aefe9` on `mastiff`.
+Develop and execute in `worktrees/gdn-quadratic`, with its
 own locked CUDA environment. Full acceptance checks the production batch on four
 H100 GPUs: effective batch 256, global microbatch 64, and 16 sequences per GPU.
 The qualification job verifies GPU correctness, a full-recipe pilot, and exact
