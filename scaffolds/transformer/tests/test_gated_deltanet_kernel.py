@@ -31,7 +31,7 @@ def _operands(key_dim, dtype, *, batch=2, length=256, heads=4, value_dim=64, see
     return (cast(q), cast(k), cast(v), cast(g, jnp.float32), cast(beta)), cast(cotangent)
 
 
-@pytest.mark.parametrize("key_dim", [8, 16, 32, 64, 128])
+@pytest.mark.parametrize("key_dim", [8, 16, 32, 64, 128, 256])
 @pytest.mark.parametrize("dtype,tolerance", [(jnp.float32, 5e-3), (jnp.bfloat16, 2e-2)])
 def test_fused_output_and_all_gradients_match_the_recurrence(key_dim, dtype, tolerance):
     _require_gpu()
@@ -122,7 +122,7 @@ def _check_independent_output_and_gradients(args, cotangent, tolerance):
     return fused, fused_grads
 
 
-@pytest.mark.parametrize("key_dim,length", [(16, 256), (64, 256), (128, 256), (64, 2048)])
+@pytest.mark.parametrize("key_dim,length", [(16, 256), (64, 256), (128, 256), (256, 256), (64, 2048)])
 @pytest.mark.parametrize("dtype,tolerance", [(jnp.float32, 5e-3), (jnp.bfloat16, 2e-2)])
 def test_independent_fused_output_and_all_gradients_match_recurrence(key_dim, length, dtype, tolerance):
     _require_gpu()

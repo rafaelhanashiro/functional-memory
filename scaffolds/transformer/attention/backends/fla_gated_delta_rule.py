@@ -30,6 +30,9 @@ import jax.numpy as jnp
 
 CHUNK_SIZE = 64
 RCP_LN2 = 1.0 / math.log(2.0)
+# FLA's state kernels (common/chunk_delta_h.py) hold at most four 64-wide key blocks and
+# would silently ignore wider keys; FLA's own wrappers assert the same limit.
+MAX_KEY_DIM = 256
 
 
 def _next_power_of_2(value: int) -> int:
@@ -164,6 +167,8 @@ def _gated_delta_rule_fwd(q, k, v, g, beta, scale, erase=None):
     value_dim = v.shape[-1]
     if length % CHUNK_SIZE:
         raise ValueError(f"Sequence length must be a multiple of {CHUNK_SIZE}")
+    if key_dim > MAX_KEY_DIM:
+        raise ValueError(f"FLA's delta-rule kernels support key dimensions up to {MAX_KEY_DIM}, not {key_dim}")
     g_chunk = _chunk_cumsum(g) * RCP_LN2  # FLA's kernels use exp2 of the base-2 chunk-local cumulative decay.
     a, _, v_new, h = _forward_pieces(kernels, k, v, g_chunk, beta, erase)
     o = _call(kernels[0]["fwd_o"], q, k, v_new, h, g_chunk, float(scale), length, out=_shape(v.shape, v.dtype),

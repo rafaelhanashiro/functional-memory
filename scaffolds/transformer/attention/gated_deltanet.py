@@ -25,6 +25,7 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 
+from scaffolds.transformer.attention.backends.fla_gated_delta_rule import MAX_KEY_DIM
 from scaffolds.transformer.training import telemetry
 
 A_LOG_RANGE = (0.0, 16.0)
@@ -99,6 +100,8 @@ class GatedDeltaNet(nnx.Module):
             raise ValueError("Gated DeltaNet dimensions and conv_size must be positive")
         if backend not in ("blocked", "fused"):
             raise ValueError(f"Unsupported Gated DeltaNet backend: {backend}")
+        if backend == "fused" and key_head_dim > MAX_KEY_DIM:
+            raise ValueError(f"The fused Gated DeltaNet backend supports key_head_dim up to {MAX_KEY_DIM}")
         if erase_mode not in ("tied", "independent"):
             raise ValueError(f"Unsupported Gated DeltaNet erase mode: {erase_mode}")
         self.num_heads, self.key_head_dim, self.value_head_dim = num_heads, key_head_dim, value_head_dim

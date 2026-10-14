@@ -166,6 +166,14 @@ def test_invalid_configurations_are_rejected(updates, error):
         gdn_model(**updates)
 
 
+def test_fused_backend_rejects_keys_wider_than_its_kernels():
+    # FLA's state kernels hold at most four 64-wide key blocks; wider keys must not run.
+    GatedDeltaNet(32, 2, 256, 8, backend="fused", rngs=nnx.Rngs(5))
+    GatedDeltaNet(32, 2, 512, 8, backend="blocked", rngs=nnx.Rngs(5))
+    with pytest.raises(ValueError, match="key_head_dim up to 256"):
+        GatedDeltaNet(32, 2, 512, 8, backend="fused", rngs=nnx.Rngs(5))
+
+
 @pytest.mark.parametrize("mechanism", ["dot_product", "gla"])
 def test_independent_erase_is_rejected_for_other_mechanisms(mechanism):
     with pytest.raises(ValueError, match="gdn_erase_mode"):
