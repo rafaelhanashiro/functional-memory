@@ -77,14 +77,29 @@ mkdir -p "$LOGS" "$JAX_COMPILATION_CACHE_DIR" "$XDG_CACHE_HOME"
 echo "runtime_qualification run=$RUN job=$SLURM_JOB_ID launch_commit=$LAUNCH_COMMIT gpu_type=$GPU_TYPE gpu_count=$GPU_COUNT preallocate=$XLA_PYTHON_CLIENT_PREALLOCATE memory_fraction=${XLA_PYTHON_CLIENT_MEM_FRACTION:-default}"
 # The acceptance hardware worker verifies the allocated GPU count and type.
 # It also checks initialization, full-recipe training/evaluation, and exact resume.
-run_step "$PYTHON" -m "$ADAPTER" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
+run_step "$PYTHON" -c '
+from dataclasses import replace
+import math
+import sys
+from scaffolds.transformer.acceptance import attention_spec, main
+hours = float(sys.argv[1])
+if not math.isfinite(hours) or hours <= 2:
+    raise SystemExit("Production allocation must exceed the two-hour reserve")
+main(lambda config: replace(attention_spec(config, entry_module="experiments.attention_scaling.acceptance"),
+                            allocation_hours=hours), sys.argv[2:])
+' "$PRODUCTION_HOURS" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
   --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --test-cache "$CACHE/acceptance-tests"
-# Acceptance's generic limit is 48 hours; enforce the actual planned allocation.
+# Enforce and record the planned production allocation even when matching passed
+# acceptance is reused. This budget does not change model/runtime test identities.
 "$PYTHON" - "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT/pilot.json" "$PRODUCTION_HOURS" <<'PY'
 import json
+import hashlib
 import math
+import os
 from pathlib import Path
+import subprocess
 import sys
+from scaffolds.transformer.acceptance import write_json
 
 pilot = json.loads(Path(sys.argv[1]).read_text())
 allocation_hours = float(sys.argv[2])
@@ -99,4 +114,21 @@ if projected_hours > allocation_hours - 2:
         f"budget within the {allocation_hours:.2f}h production allocation"
     )
 print(f"runtime_projection_hours={projected_hours:.3f} production_allocation_hours={allocation_hours:g}", flush=True)
+success_path = Path(sys.argv[1]).with_name("success.json")
+success = json.loads(success_path.read_text())
+if success.get("status") != "passed" or success["identity"] != pilot["identity"]:
+    raise SystemExit("Production budget must refer to the matching passed acceptance")
+success["runtime_budget"] = {
+    "production_allocation_hours": allocation_hours,
+    "maximum_projected_hours": allocation_hours - 2,
+    "projected_hours": projected_hours,
+    "within_budget": True,
+}
+launcher = Path("scaffolds/transformer/validation/qualify_gdn_runtime.sbatch")
+success["qualification"] = {
+    "slurm_job_id": os.environ["SLURM_JOB_ID"],
+    "launcher": {"path": str(launcher), "sha256": hashlib.sha256(launcher.read_bytes()).hexdigest()},
+    "allocation": subprocess.check_output(["scontrol", "show", "job", "-o", os.environ["SLURM_JOB_ID"]], text=True).strip(),
+}
+write_json(success_path, success)
 PY
