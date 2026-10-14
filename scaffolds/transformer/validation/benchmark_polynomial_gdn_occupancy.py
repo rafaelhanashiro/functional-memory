@@ -36,6 +36,8 @@ def main():
     parser.add_argument('--width', type=int, default=64)
     parser.add_argument('--degree', type=int, choices=(2, 3), default=3)
     parser.add_argument('--repeats', type=int, default=5)
+    parser.add_argument('--sweep', action='store_true',
+                        help='Compare additional register-occupancy hints against four-warps hint=1')
     args = parser.parse_args()
     if jax.default_backend() != 'gpu' or jax.local_device_count() != 1:
         raise RuntimeError('Occupancy benchmark requires exactly one allocated GPU')
@@ -131,9 +133,17 @@ def main():
         return result, timing
 
     try:
-        for variant, warps, hint in (('baseline_w4', 4, None), ('hint_w4', 4, 1), ('hint_w8', 8, 1)):
+        variants = [('baseline_w4', 4, None, {}), ('hint_w4', 4, 1, {}), ('hint_w8', 8, 1, {})]
+        if args.sweep:
+            variants = [('hint_w4', 4, 1, {}), ('hint2_w4', 4, 2, {}),
+                        ('hint3_w4', 4, 3, {}), ('hint4_w4', 4, 4, {}),
+                        ('query_hint3_w4', 4, 1, {'backward_queries': 3}),
+                        ('hint_w2', 2, 1, {})]
+        report['baseline_variant'] = variants[0][0]
+        for variant, warps, hint, stage_hints in variants:
             context['variant'] = variant
-            entry = {'num_warps': warps, 'min_ctas_per_sm': hint, 'timings': {}}
+            entry = {'num_warps': warps, 'min_ctas_per_sm': hint,
+                     'stage_min_ctas_per_sm': stage_hints, 'timings': {}}
             report['variants'][variant] = entry
             def configured_call(kernel, *values, out, q, v, name, **extra):
                 return bridge.triton_call(
@@ -141,7 +151,8 @@ def main():
                     grid=(q.shape[1] // backend.CHUNK_SIZE, q.shape[0] * q.shape[2]),
                     name=f'polynomial_gdn_occupancy::{variant}::{name}',
                     default_dot_input_precision='tf32x3', num_warps=warps, num_stages=1,
-                    min_ctas_per_sm=hint, **backend._metadata(q, v), **extra)
+                    min_ctas_per_sm=stage_hints.get(name, hint),
+                    **backend._metadata(q, v), **extra)
             backend._polynomial_call = configured_call
             output, entry['timings']['forward'] = measure(
                 lambda *a: backend.polynomial_gated_delta_rule(*a, scale), 'forward')

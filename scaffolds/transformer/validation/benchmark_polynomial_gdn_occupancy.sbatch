@@ -23,4 +23,4 @@ export TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CU
 BENCHMARK_TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/gdn-occupancy-${SLURM_JOB_ID}.XXXXXX")"
 export TMPDIR="$BENCHMARK_TMPDIR"
 trap 'rm -rf -- "$BENCHMARK_TMPDIR"' EXIT
-"$PYTHON" -m scaffolds.transformer.validation.benchmark_polynomial_gdn_occupancy --output "$OUTPUT" --batch 8 --length 2048 --heads 16 --width 64 --degree 3 --repeats 5
+"$PYTHON" -m scaffolds.transformer.validation.benchmark_polynomial_gdn_occupancy --output "$OUTPUT" --batch 8 --length 2048 --heads 16 --width 64 --degree 3 --repeats 5 "${@:2}"
