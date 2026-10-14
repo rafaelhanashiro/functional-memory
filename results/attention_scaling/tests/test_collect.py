@@ -238,7 +238,7 @@ def test_committed_comparison_sources() -> None:
     assert not any(row["legacy"] for row in rows)
     failures = {(row["panel"], row["column"]): row["failure_step"]
                 for row in rows if row["status"] == "numerical_failure"}
-    assert failures == {("normalized_fixed", "m1"): 35, ("normalized_fixed", "m3"): 555}
+    assert failures == {("normalized_fixed", "m1"): 67, ("normalized_fixed", "m3"): 218}
     assert all(row["d_k"] == 64 for row in rows if row["status"] == "numerical_failure")
 
     chart = yaml.safe_load((root / "results/attention_scaling/degree_chart.yaml").read_text())
@@ -246,11 +246,11 @@ def test_committed_comparison_sources() -> None:
     assert len(chart_rows) == 30
     chart_failures = {(row["panel"], row["column"]): row["failure_step"]
                       for row in chart_rows if row["status"] == "numerical_failure"}
-    assert chart_failures == {("normalized_learned_taylor", "m1"): 60, ("normalized_learned_taylor", "m2"): 1923,
-                              ("normalized_learned_taylor", "m3"): 336, ("normalized_learned_taylor", "m4"): 1143,
-                              ("normalized_fixed_hermite", "m1"): 374, ("normalized_fixed_hermite", "m2"): 176,
-                              ("normalized_fixed_hermite", "m3"): 549, ("normalized_fixed_hermite", "m4"): 680,
-                              ("normalized_fixed", "m1"): 35, ("normalized_fixed", "m3"): 555}
+    assert chart_failures == {("normalized_learned_taylor", "m1"): 73, ("normalized_learned_taylor", "m2"): 937,
+                              ("normalized_learned_taylor", "m3"): 203, ("normalized_learned_taylor", "m4"): 1395,
+                              ("normalized_fixed_hermite", "m1"): 192, ("normalized_fixed_hermite", "m2"): 2875,
+                              ("normalized_fixed_hermite", "m3"): 254, ("normalized_fixed_hermite", "m4"): 1122,
+                              ("normalized_fixed", "m1"): 67, ("normalized_fixed", "m3"): 218}
     legacy = {(row["panel"], row["column"]) for row in chart_rows if row["legacy"]}
     assert legacy == set()
 

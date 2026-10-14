@@ -2,198 +2,144 @@ question: Can rescaling each head's unnormalized attention output replace normal
 study: experiments/attention_scaling
 metric: terminal validation perplexity
 runs:
-- run_id: rf09418e36d8b
+- run_id: r56825fdc3ac0
   label: exp, 1/t, reference initialization
   role: primary
+  control: r9f979b7b3bba
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/rf09418e36d8b/config.yaml
-      sha256: 4b92c0dbfec0dc7ff8392a4a2af7566ba6fb819fa20daa64e2f0609ad3271b9b
+      path: experiments/attention_scaling/runs/r56825fdc3ac0/config.yaml
+      sha256: 60b6e68bdf126c71e3e48f21259a3b51f5dd55a18af3cd02a5cdbf696ee163b7
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/rf09418e36d8b/metrics.jsonl
-      sha256: 877372c16ab6a0f6a42c013f1fab2df209b96a2e140b7e6f42f611969b0d0bc4
+      path: experiments/attention_scaling/runs/r56825fdc3ac0/metrics.jsonl
+      sha256: b8b6bbc5cb2bddefcd68968f4f5319bddbba13476d989aa15f5e8d3c9691474f
     completion.json:
-      path: experiments/attention_scaling/runs/rf09418e36d8b/completion.json
-      sha256: ed9c08dde258900ddc60ba20b9a2ad8482b99280d5d6213d949cde56f9275f9e
+      path: experiments/attention_scaling/runs/r56825fdc3ac0/completion.json
+      sha256: 4f8ede333cc031204d780ccd06be83395f3e7bc9137975973516858c7a3fed10
     metadata.json:
-      path: experiments/attention_scaling/runs/rf09418e36d8b/metadata.json
-      sha256: 9dffa75691d2156109d34a86277dfdd9cb6d031ffa585dc19e9da1175119eb38
+      path: experiments/attention_scaling/runs/r56825fdc3ac0/metadata.json
+      sha256: a8246b1f5be4160e2d8ebe91e6208e5e39075600cbf2e34f78ef40670843f6fa
     best_validation.json:
-      path: experiments/attention_scaling/runs/rf09418e36d8b/best_validation.json
-      sha256: ee131775f867802b1e40b130d07868361ba64ef2ec0c3fe1fa9eea0581e30c6f
-- run_id: r5613919f06af
+      path: experiments/attention_scaling/runs/r56825fdc3ac0/best_validation.json
+      sha256: bb16cc8fd87220a1cb8bff1909df8985395cc61670ce5a698f6ebf332ac0f09b
+- run_id: r8ad66f3912c2
   label: exp, head RMSNorm, reference initialization
   role: primary
+  control: r9f979b7b3bba
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r5613919f06af/config.yaml
-      sha256: 51cb54825e1d149a2614498973ab91c5d9f5bfe0870efeb18479069ee311aa9e
+      path: experiments/attention_scaling/runs/r8ad66f3912c2/config.yaml
+      sha256: 4a95643603768f20a11b5e85246109bd3265d546470c2bc549bd33a01d3b434d
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r5613919f06af/metrics.jsonl
-      sha256: 5ed476e41996bc0446d10ff59b32fce4a75a504eaf9a8b176351989c29a75308
+      path: experiments/attention_scaling/runs/r8ad66f3912c2/metrics.jsonl
+      sha256: 6b5958a9ca2956b7b900e262483860bd47069ff400f01ef3d65ccfe5938ec1e6
     completion.json:
-      path: experiments/attention_scaling/runs/r5613919f06af/completion.json
-      sha256: 7b281403860419b262da434c4ce36c74a534eb9067591a58fbea1fa6f5b00e71
+      path: experiments/attention_scaling/runs/r8ad66f3912c2/completion.json
+      sha256: 61addc05dd1388c14bcc6b76300cdeb1e9da2e09dad9ced074e639b5cc4f424d
     metadata.json:
-      path: experiments/attention_scaling/runs/r5613919f06af/metadata.json
-      sha256: 7b5388d350f76ad3010436c01a80acc2e89e7b0f755b17784118313c7fb81e9b
+      path: experiments/attention_scaling/runs/r8ad66f3912c2/metadata.json
+      sha256: 6e1e4e20fd3dff6fa20b315483a7aeeff3f94fa26a570bcec4866e1047ec5c54
     best_validation.json:
-      path: experiments/attention_scaling/runs/r5613919f06af/best_validation.json
-      sha256: 6c1d3870e95d12db3acdb492e0b6d94884666962cfbf9c6be190813cff05c9b4
-- run_id: r152fb7a657da
+      path: experiments/attention_scaling/runs/r8ad66f3912c2/best_validation.json
+      sha256: 5507cea2a7070a5434f3621136717b828ea85e0868bc62d2709952b850ba1fb7
+- run_id: ra350e90b6839
   label: learned m = 4, 1/t, reference initialization
   role: primary
+  control: r643656c05f32
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r152fb7a657da/config.yaml
-      sha256: 67ef9db62278c1c6384580d7df3e37f9aaa876fed4b81c3df3147b3d67537a7e
+      path: experiments/attention_scaling/runs/ra350e90b6839/config.yaml
+      sha256: f414ca61f0118fdb218253c63a766d7b9c5d4feb776f1d839315dc0a47ae7bb7
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r152fb7a657da/metrics.jsonl
-      sha256: 6f82eb9291b369ededd38d0652e5e8932bd32ef966508ffef6558dcbb0aa8a5f
+      path: experiments/attention_scaling/runs/ra350e90b6839/metrics.jsonl
+      sha256: b7ffe86c1a702fcfe018712040ff4acecd68b86c14dc3d483f654c80c3c7ecb3
     completion.json:
-      path: experiments/attention_scaling/runs/r152fb7a657da/completion.json
-      sha256: af85adca4ba8ccfe02f1f859cded937d38833384c3728d7bfc106c3a4c8ec1dd
+      path: experiments/attention_scaling/runs/ra350e90b6839/completion.json
+      sha256: c16aeffc049246819c1ad4ef9e699115ac440683110f2eecfbb3d2618052b237
     metadata.json:
-      path: experiments/attention_scaling/runs/r152fb7a657da/metadata.json
-      sha256: 05a1ead11bf001ee40ec243f7de3915288ef94ab546d8c4c7e9022f7ef99e7b9
+      path: experiments/attention_scaling/runs/ra350e90b6839/metadata.json
+      sha256: 3aa9fdd305a7398d9845759cd678159e1de7c2d53041913cc03a45534219f639
     best_validation.json:
-      path: experiments/attention_scaling/runs/r152fb7a657da/best_validation.json
-      sha256: 1a8dab2fd4a873a45639b37f6da11df3d2d023ab1012ad8fbf30e7b448702bc4
-- run_id: r0603c2e23137
-  label: learned m = 4, head RMSNorm, reference initialization
-  role: primary
-  sources:
-    config.yaml:
-      path: experiments/attention_scaling/runs/r0603c2e23137/config.yaml
-      sha256: 2fa03fa55c33877e16329c66b5c8801ca514e58233aa5663b21638292ad24446
-    metrics.jsonl:
-      path: experiments/attention_scaling/runs/r0603c2e23137/metrics.jsonl
-      sha256: b71b1789a9a78328e4fb08af6b4413de7cea8d38813c24191d34e130b9f582b3
-    completion.json:
-      path: experiments/attention_scaling/runs/r0603c2e23137/completion.json
-      sha256: 65aeb74d5dcd78c85ddac440d8ffec851f8783222597330302bdff1c5cb53c67
-    metadata.json:
-      path: experiments/attention_scaling/runs/r0603c2e23137/metadata.json
-      sha256: 202856c229ae98e6346ef5193e7de1a1e43d4e82e6906c9b3486dc819ec3368d
-    best_validation.json:
-      path: experiments/attention_scaling/runs/r0603c2e23137/best_validation.json
-      sha256: 0eebd153c495e2d257275a145a18e4f73e91267dbeef4b26fcedae4623b0dd4b
-- run_id: r8a623356c02a
+      path: experiments/attention_scaling/runs/ra350e90b6839/best_validation.json
+      sha256: 30ebcb73954d0b67741c8690b70f3f77693a726ae33e3ecbaeb595992d93f6a1
+- run_id: r9f979b7b3bba
   label: exp, no scaling, reference initialization
   role: control
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r8a623356c02a/config.yaml
-      sha256: 42aa4f5f8466009b99202146eee65c533389cd5dd0b58d7b1384e68e018a49e3
+      path: experiments/attention_scaling/runs/r9f979b7b3bba/config.yaml
+      sha256: eef190da574c025896d5f50cb4d1dc50fe1e0d0fd7d0d3329c5da9dc3c686e77
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r8a623356c02a/metrics.jsonl
-      sha256: da336a5871028146e78be70f72f83c07e4e15c752b990ddcad70a36c6c6d7cb4
+      path: experiments/attention_scaling/runs/r9f979b7b3bba/metrics.jsonl
+      sha256: e78365711f4ba62f6b85fd2cae9c2add2d30d7267f148de55a5d602b06709dd9
     completion.json:
-      path: experiments/attention_scaling/runs/r8a623356c02a/completion.json
-      sha256: 5941e56d8575d23815b97801f10a32d2c0c0c120d4398b0945d236e1b967a9ad
+      path: experiments/attention_scaling/runs/r9f979b7b3bba/completion.json
+      sha256: 28d905c74822f8ca6cb0cd4a33197fae3a8bfed4d155f026cdd358171cac24a7
     metadata.json:
-      path: experiments/attention_scaling/runs/r8a623356c02a/metadata.json
-      sha256: 73ae414906a56541cddcd789102220e4ad9d8fdb39251f2da98596d76d9933f8
+      path: experiments/attention_scaling/runs/r9f979b7b3bba/metadata.json
+      sha256: c65df704a5bd2f20c6608692040d163eb01aebf673714776cde4240c755f8298
     best_validation.json:
-      path: experiments/attention_scaling/runs/r8a623356c02a/best_validation.json
-      sha256: ea90830aeb19ee31e6352548013832b5caec32f202f239f346c51099eadfc1c5
-- run_id: rbde7fc4c2135
+      path: experiments/attention_scaling/runs/r9f979b7b3bba/best_validation.json
+      sha256: b9e92d154cbc0888b302bc7920a7b57ff5af08f9805ddb23bb34d95b5498e80d
+- run_id: rdf00da0866a8
   label: softmax, reference initialization
   role: control
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/rbde7fc4c2135/config.yaml
-      sha256: 9fa4ffa41817bc592ac325822ceb1d9d5c822e85bea4aac04496d61e79ecaf28
+      path: experiments/attention_scaling/runs/rdf00da0866a8/config.yaml
+      sha256: 7c8b77a7df1efa6a315b3a8b89949d65433cc346157a54f9d52a4392e35ce185
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/rbde7fc4c2135/metrics.jsonl
-      sha256: 1e52b91c3f087a16c909417cd9d8faa775770bc58791b68d3fc4efb300393446
+      path: experiments/attention_scaling/runs/rdf00da0866a8/metrics.jsonl
+      sha256: 09921898d01e171d68018fa91436de46486eca56f1282ecc54e5b23f530d211f
     completion.json:
-      path: experiments/attention_scaling/runs/rbde7fc4c2135/completion.json
-      sha256: 2be474260e097644a99ddbfe3a838ec5c7c7f6f100d9759e14bdfd7cc40dc8c1
+      path: experiments/attention_scaling/runs/rdf00da0866a8/completion.json
+      sha256: 737901beec2f30725b76393c691f710763754de9de3c4667a31954ddcf75da4f
     metadata.json:
-      path: experiments/attention_scaling/runs/rbde7fc4c2135/metadata.json
-      sha256: 7311ac18288b9071eda6a5cfa1f5a3b7fe6633156f82e975a0d882c2f7b92276
+      path: experiments/attention_scaling/runs/rdf00da0866a8/metadata.json
+      sha256: 754b2bc56d5b7842548da561bf2e694013f080e9c5d24a2f8657e5979a780801
     best_validation.json:
-      path: experiments/attention_scaling/runs/rbde7fc4c2135/best_validation.json
-      sha256: b05a2a70f4fb65bca76c0c53cab76a78f49c5f5f588af6b73250ecc0bf1d9411
-- run_id: rd2003e215536
-  label: learned m = 4, no scaling, reference initialization
-  role: control
-  sources:
-    config.yaml:
-      path: experiments/attention_scaling/runs/rd2003e215536/config.yaml
-      sha256: 620cbd5c72084a7ce3492630ec3ed7dee502efe0c2ed6fde4218a4934db425d2
-    metrics.jsonl:
-      path: experiments/attention_scaling/runs/rd2003e215536/metrics.jsonl
-      sha256: 8a5e12e5395e9817dcc52c1324fed3583dcc7e0d217f38dcb9d048a0f7598021
-    completion.json:
-      path: experiments/attention_scaling/runs/rd2003e215536/completion.json
-      sha256: 40daf71d768a21942024c74435a1b918b14750c501f7b79ff834b25dcbb03a13
-    metadata.json:
-      path: experiments/attention_scaling/runs/rd2003e215536/metadata.json
-      sha256: a2d2401b8a687dd9b9062059708ccaaf48046724c61f50f5a522acceaf1375d9
-    best_validation.json:
-      path: experiments/attention_scaling/runs/rd2003e215536/best_validation.json
-      sha256: 20628e88c8007e7d7867c150ae785d611921ec20df9d20036d2f62825b94521d
-- run_id: r512daaa27a15
+      path: experiments/attention_scaling/runs/rdf00da0866a8/best_validation.json
+      sha256: dff398331d0901d6a929cc3136220a805525c45c0aff1af36f4fdac4f19b17ae
+- run_id: r67e1c33d19fa
   label: normalized fixed Taylor m = 4, reference initialization
   role: control
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r512daaa27a15/config.yaml
-      sha256: 4eafef75714b430af1b4f2ed01c9687685b10ae7406b9cf55a0025bb62e97d28
+      path: experiments/attention_scaling/runs/r67e1c33d19fa/config.yaml
+      sha256: 3ebe0e3086e80bf45a45d830456b15618c41a9744e7f20882c09dd67d16f437b
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r512daaa27a15/metrics.jsonl
-      sha256: 08e11a11ebaf96dd059e3e5a1e45fa4a17530f5efecae15f7d729dc78d5694ae
+      path: experiments/attention_scaling/runs/r67e1c33d19fa/metrics.jsonl
+      sha256: 42f4ef6d52915e037bf25e3280c724803a99aa8879f8ef3e0ed00d39d9c045c8
     completion.json:
-      path: experiments/attention_scaling/runs/r512daaa27a15/completion.json
-      sha256: 837128a919b1370cccb0f9e82f17e464b91cca0c7ac645318be95a600923db6b
+      path: experiments/attention_scaling/runs/r67e1c33d19fa/completion.json
+      sha256: ff50f0a65108016b7a6c5a49912015b963448d55b51e101acb3aa7acf325d43e
     metadata.json:
-      path: experiments/attention_scaling/runs/r512daaa27a15/metadata.json
-      sha256: 7d47f1a11878b5dd32bb4bc7a186d59568b2dbf0d45ae82b832a445ad5985ccd
+      path: experiments/attention_scaling/runs/r67e1c33d19fa/metadata.json
+      sha256: e212acfbf904c794cbea3eacb1a8c8b401eb270f4ae8c696fde97b7575ea4bad
     best_validation.json:
-      path: experiments/attention_scaling/runs/r512daaa27a15/best_validation.json
-      sha256: 811376a90f12893d127765fb141d609638fc520fa78a294f3cfc7fc178de3fa6
-- run_id: r4b3575f76cd9
+      path: experiments/attention_scaling/runs/r67e1c33d19fa/best_validation.json
+      sha256: 8b989f31776f70680b9d10e1da7ffac22d880c2bb206abd8bf73c44a68c89f37
+- run_id: r2ae88e422d60
   label: normalized nonnegative learned m = 4, reference initialization
   role: control
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r4b3575f76cd9/config.yaml
-      sha256: dc027ee929947c4f14ec4fdd5a5ec000bccaea7088d7a875bbd4d7ed97653098
+      path: experiments/attention_scaling/runs/r2ae88e422d60/config.yaml
+      sha256: ee0f43525a135733151a3117ee3fb135649b44fa8b2d57f0a89cbd5aace947aa
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r4b3575f76cd9/metrics.jsonl
-      sha256: e3645f37b4d016647ae02fcc809ff638a58b34149724069aa9c0a1e14f105fc5
+      path: experiments/attention_scaling/runs/r2ae88e422d60/metrics.jsonl
+      sha256: 06fc5224ad6d2a5afbae2e9efe17d1b3a490119dac9d32f4c2c82b7ac4db5478
     completion.json:
-      path: experiments/attention_scaling/runs/r4b3575f76cd9/completion.json
-      sha256: 28ad315d40a69bd25f46311b2a8966dd5887ea0d5ba33b1bbbc1929b068db278
+      path: experiments/attention_scaling/runs/r2ae88e422d60/completion.json
+      sha256: 2cc03c2012a0bfd6d5b03459511fc208f793173e411dbd3eb1c869524ef56cca
     metadata.json:
-      path: experiments/attention_scaling/runs/r4b3575f76cd9/metadata.json
-      sha256: a25bc36212ed3cb8af715f85f0fc672e3d175cae41a8b4b0af3d6254b4556346
+      path: experiments/attention_scaling/runs/r2ae88e422d60/metadata.json
+      sha256: 977127a3c6f2ea57d7ea7d636af72f97326f73cc300443de8860c8872597a4e8
     best_validation.json:
-      path: experiments/attention_scaling/runs/r4b3575f76cd9/best_validation.json
-      sha256: e3b6b32c7e178d67673dfc5fbd44e3f8bfb60c0773fdab9dc6593bba564d2c13
-- run_id: r0369400ca1a3
-  label: softmax, head RMSNorm, reference initialization
-  role: replicate of exp, head RMSNorm, reference initialization
-  sources:
-    config.yaml:
-      path: experiments/attention_scaling/runs/r0369400ca1a3/config.yaml
-      sha256: f2aac18b37fbf76b7c8d76a5a971582cb9d58f31e176ad174e19844daaeeceb7
-    metrics.jsonl:
-      path: experiments/attention_scaling/runs/r0369400ca1a3/metrics.jsonl
-      sha256: aa84b10f513be4af73a0e1422987cf1c35b7273b07e5136a48c8f57d6cdea499
-    completion.json:
-      path: experiments/attention_scaling/runs/r0369400ca1a3/completion.json
-      sha256: 7372e27d76562ae84db83be17c97b6a83db708d311bea1560a247c1c1d0d2787
-    metadata.json:
-      path: experiments/attention_scaling/runs/r0369400ca1a3/metadata.json
-      sha256: 3f1117a6eab6f8459a9d7b91c75444d77bf5126a710c57f3c39ac5be1af28538
-    best_validation.json:
-      path: experiments/attention_scaling/runs/r0369400ca1a3/best_validation.json
-      sha256: 9bc87251c25687b52221d6dea97ad71252681936414743ec335a8a8bb9791f4f
+      path: experiments/attention_scaling/runs/r2ae88e422d60/best_validation.json
+      sha256: 2e841f69dd9f6b5d02a5f2e2dc3d2fb66aea0cca7ac86e3fcb0123d2fcf3f363
 - run_id: r03bfa6fd7b2e
-  label: learned m = 1, head RMSNorm, reference initialization, warmup 400
+  label: learned m = 1, head RMSNorm, reference initialization
   role: primary
   control: raf4c8249eb5a
   sources:
@@ -213,7 +159,7 @@ runs:
       path: experiments/attention_scaling/runs/r03bfa6fd7b2e/best_validation.json
       sha256: 41d041b81aa60c6c5fbd0905784e020d2ea1555018835947c0fd558a70327f29
 - run_id: raf4c8249eb5a
-  label: learned m = 1, no scaling, reference initialization, warmup 400
+  label: learned m = 1, no scaling, reference initialization
   role: control
   sources:
     config.yaml:
@@ -232,7 +178,7 @@ runs:
       path: experiments/attention_scaling/runs/raf4c8249eb5a/best_validation.json
       sha256: 11b25f415c6ce906a2f71ef638180b0a1c19ef295e4936650e9eb1d679cef108
 - run_id: rfb43d69f60dc
-  label: learned m = 2, head RMSNorm, reference initialization, warmup 400
+  label: learned m = 2, head RMSNorm, reference initialization
   role: primary
   control: raef9f8b87efd
   sources:
@@ -252,7 +198,7 @@ runs:
       path: experiments/attention_scaling/runs/rfb43d69f60dc/best_validation.json
       sha256: 34f9edc456ac65fe7682283be4a39f19abb5b710075140fca5e6137dea5aabab
 - run_id: raef9f8b87efd
-  label: learned m = 2, no scaling, reference initialization, warmup 400
+  label: learned m = 2, no scaling, reference initialization
   role: control
   sources:
     config.yaml:
@@ -271,7 +217,7 @@ runs:
       path: experiments/attention_scaling/runs/raef9f8b87efd/best_validation.json
       sha256: 670aa56529b07d490b01e94af9fdc98bae83ac3d09f94c737c28cf37f4f02036
 - run_id: r5ae483d40d62
-  label: learned m = 3, head RMSNorm, reference initialization, warmup 400
+  label: learned m = 3, head RMSNorm, reference initialization
   role: primary
   control: r30c715becc6b
   sources:
@@ -291,7 +237,7 @@ runs:
       path: experiments/attention_scaling/runs/r5ae483d40d62/best_validation.json
       sha256: a3b2c30b7cd9799ab467b593c5ca5b5bb3675f219ea0ebfa345a9bdd26021063
 - run_id: r30c715becc6b
-  label: learned m = 3, no scaling, reference initialization, warmup 400
+  label: learned m = 3, no scaling, reference initialization
   role: control
   sources:
     config.yaml:
@@ -310,7 +256,7 @@ runs:
       path: experiments/attention_scaling/runs/r30c715becc6b/best_validation.json
       sha256: 6521d581e3dcab8aa69f0c7da2d4aac7270b7f7d7992be0af2338eb29439f973
 - run_id: rc2b555b905dd
-  label: learned m = 4, head RMSNorm, reference initialization, warmup 400
+  label: learned m = 4, head RMSNorm, reference initialization
   role: primary
   control: r643656c05f32
   sources:
@@ -330,7 +276,7 @@ runs:
       path: experiments/attention_scaling/runs/rc2b555b905dd/best_validation.json
       sha256: 7948dc90aa823797914188d21c7fcb1ed37020bac8508ee1b884d70b26013917
 - run_id: r643656c05f32
-  label: learned m = 4, no scaling, reference initialization, warmup 400
+  label: learned m = 4, no scaling, reference initialization
   role: control
   sources:
     config.yaml:
