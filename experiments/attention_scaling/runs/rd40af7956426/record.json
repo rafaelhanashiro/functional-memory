@@ -76,7 +76,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "bc737b47233711bea4eaaeb306570b897f6e42c77212638afb18cb9b909d3a35"
+      "sha256": "fd19f96da248dc1e786eee86dcb5680f69eaedc32837c5424121b961bdbd1784"
     },
     "resolved_config": {
       "data": {
@@ -298,7 +298,7 @@
   "seed": 0,
   "source_commit": "46b776c9fc22e7ab5636e28a41f24105dcc508fd",
   "status": "running",
-  "step": 4000,
+  "step": 10000,
   "submission": {
     "command": [
       "sbatch",
@@ -338,6 +338,6 @@
     "submitted_utc": "2026-10-13T15:01:48.884362+00:00",
     "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quadratic"
   },
-  "training_tokens": 2097152000,
-  "updated_utc": "2026-10-13T20:02:33.928437+00:00"
+  "training_tokens": 5242880000,
+  "updated_utc": "2026-10-14T02:37:37.155384+00:00"
 }

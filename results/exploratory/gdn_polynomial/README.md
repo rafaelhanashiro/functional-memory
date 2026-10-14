@@ -9,7 +9,7 @@ key-space transformation is unchanged?
 
 | Role | Run ID | Memory function | Status |
 | --- | --- | --- | --- |
-| Primary | `rd40af7956426` | Constant, linear, and quadratic | Running; update 4,000 recorded |
+| Primary | `rd40af7956426` | Constant, linear, and quadratic | Running; update 10,000 recorded |
 | Control | `rf7341031e3d5` | Linear, independent erase gate | Complete |
 
 The explicitly selected control uses the repaired arithmetic, canonical GDN
@@ -21,22 +21,24 @@ using `standard` at nice 0. Full qualification `218426` passed correctness,
 pilot projected 19.94 hours for the complete recipe. Neither run is added to a
 canonical result selection by this topic.
 
-At update 4,000 (2.097 billion training tokens), the primary's validation
-perplexity is 17.9501 versus 18.3710 for the linear control at the same step.
-The primary is lower at each of the first four validation points. This is an
-incomplete learning-curve comparison, not a terminal result. Recent training
-intervals average about 3.9 seconds per update, implying roughly 21 hours total
-if the pace holds. The control ran on H100 SXM GPUs; elapsed time is not a matched
-hardware comparison.
+At update 10,000 (5.243 billion training tokens), the primary's validation
+perplexity is 14.5621 versus 14.9685 for the linear control at the same step,
+a 2.71% reduction. The primary is lower at each of the first ten validation
+points. This is an incomplete learning-curve comparison, not a terminal result.
+Recent training intervals average about 3.9 seconds per update, implying roughly
+21 hours total if the pace holds. The control ran on H100 SXM GPUs; elapsed time
+is not a matched hardware comparison.
 
 All recorded numerical metrics are finite and attention diagnostics are valid.
-There are seven detected gradient spikes through update 4,000 (largest norm
-60.07 at update 40), handled by clipping. In updates 3,001–4,000 the gradient norm
-averages 1.794, maximum 16.74, with 98.7% of updates clipped. The linear control
-averages 0.213 in that interval with 0.1% clipped. The added quadratic coefficients
-are active in every layer; their RMS at update 4,000 ranges from 0.87 to 0.97,
-so their bounded tanh outputs are frequently near their limits. Long-run stability
-and terminal performance remain open.
+There are 23 detected gradient spikes through update 10,000, handled by clipping;
+the largest norm was 313.18 at update 6,376. Validation loss decreased at every
+recorded evaluation. Updates 9,001–10,000 had no detected spikes; the gradient
+norm averaged 1.683, maximum 8.03, with 96.1% of updates clipped. The linear
+control averaged 0.190 in that interval with no clipping. This higher gradient
+activity remains a stability concern despite improving validation loss.
+The added quadratic coefficients were active in every layer by update 4,000;
+their RMS then ranged from 0.87 to 0.97. Long-run stability and terminal
+performance remain open.
 
 Live mirror: [W&B run](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/d4ee18120782434cba349e45398d8b6c).
 
