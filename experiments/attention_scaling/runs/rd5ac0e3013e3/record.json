@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/config.yaml",
+    "sha256": "bb99c4beecf30c6a29dd0f5e29ec71cd1d1df91cab98210e52c5cc29425b240a"
+  },
+  "label": "200m-qk-m008-rational-linear-denominator-learned-constant-transformer-init-warmup400-seed0",
+  "name": "200m-qk-m008-rational-linear-denominator-learned-constant-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "rd5ac0e3013e3",
+  "status": "planned"
+}

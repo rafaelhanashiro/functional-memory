@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rbafa372b4e8b/config.yaml",
+    "sha256": "2ba2b19b0ed952c4542c4d6469ac7e9552217d6e5356beb1a6f453e092eabf63"
+  },
+  "label": "200m-qk-m008-rational-nonnegative-degree8-denominator-penalized-wd001-transformer-init-warmup400-seed0",
+  "name": "200m-qk-m008-rational-nonnegative-degree8-denominator-penalized-wd001-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "rbafa372b4e8b",
+  "status": "planned"
+}
