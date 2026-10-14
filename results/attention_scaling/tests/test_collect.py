@@ -69,7 +69,7 @@ def _fixture(tmp_path: Path) -> dict:
         "metrics": ("metrics.jsonl", _write(complete_dir / "metrics.jsonl", [early_validation, last_validation])),
         "completion": ("completion.json", _write(complete_dir / "completion.json", completion)),
     }
-    complete_run = {"name": complete_name, "seed": 0, "qk_head_dim": 8,
+    complete_run = {"name": complete_name, "status": "complete", "seed": 0, "qk_head_dim": 8,
                     "attention_degree": 2, "source_commit": source,
                     "terminal": {"step": 10, "training_tokens": 100,
                                  "validation_nll": 3.0, "validation_perplexity": 20.086}}
@@ -201,6 +201,14 @@ def test_rejects_terminal_metric_disagreement_even_with_fresh_hashes(tmp_path: P
         collect_rows(tmp_path, _pin(tmp_path, config))
 
 
+def test_outcome_comes_from_the_record_and_files_must_agree(tmp_path: Path) -> None:
+    config = _fixture(tmp_path)
+    complete_dir = tmp_path / "experiments/toy_taylor/runs/r000000000001"
+    _write(complete_dir / "numerical_failure_step_00000005.json", {"step": 5, "error": "nonfinite loss"})
+    with pytest.raises(ValueError, match="disagree with its recorded status 'complete'"):
+        collect_rows(tmp_path, _pin(tmp_path, config))
+
+
 def test_declared_but_unfinished_run_is_incomplete(tmp_path: Path) -> None:
     config = _fixture(tmp_path)
     experiment = "toy_taylor"
@@ -230,7 +238,7 @@ def test_committed_comparison_sources() -> None:
     assert not any(row["legacy"] for row in rows)
     failures = {(row["panel"], row["column"]): row["failure_step"]
                 for row in rows if row["status"] == "numerical_failure"}
-    assert failures == {("normalized_fixed", "m1"): 35, ("normalized_fixed", "m3"): 555}
+    assert failures == {("normalized_fixed", "m1"): 67, ("normalized_fixed", "m3"): 218}
     assert all(row["d_k"] == 64 for row in rows if row["status"] == "numerical_failure")
 
     chart = yaml.safe_load((root / "results/attention_scaling/degree_chart.yaml").read_text())
@@ -238,11 +246,11 @@ def test_committed_comparison_sources() -> None:
     assert len(chart_rows) == 30
     chart_failures = {(row["panel"], row["column"]): row["failure_step"]
                       for row in chart_rows if row["status"] == "numerical_failure"}
-    assert chart_failures == {("normalized_learned_taylor", "m1"): 60, ("normalized_learned_taylor", "m2"): 1923,
-                              ("normalized_learned_taylor", "m3"): 336, ("normalized_learned_taylor", "m4"): 1143,
-                              ("normalized_fixed_hermite", "m1"): 374, ("normalized_fixed_hermite", "m2"): 176,
-                              ("normalized_fixed_hermite", "m3"): 549, ("normalized_fixed_hermite", "m4"): 680,
-                              ("normalized_fixed", "m1"): 35, ("normalized_fixed", "m3"): 555}
+    assert chart_failures == {("normalized_learned_taylor", "m1"): 73, ("normalized_learned_taylor", "m2"): 937,
+                              ("normalized_learned_taylor", "m3"): 203, ("normalized_learned_taylor", "m4"): 1395,
+                              ("normalized_fixed_hermite", "m1"): 192, ("normalized_fixed_hermite", "m2"): 2875,
+                              ("normalized_fixed_hermite", "m3"): 254, ("normalized_fixed_hermite", "m4"): 1122,
+                              ("normalized_fixed", "m1"): 67, ("normalized_fixed", "m3"): 218}
     legacy = {(row["panel"], row["column"]) for row in chart_rows if row["legacy"]}
     assert legacy == set()
 

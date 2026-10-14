@@ -1254,7 +1254,7 @@
   "key_block_size": null,
   "m0_qk_parameter_note": null,
   "next_train_sequence": 4882944,
-  "numerical_failure_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup_check/experiments/attention_scaling/runs/rdf00da0866a8/numerical_failure_step_00018408.json",
+  "numerical_failure_path": null,
   "parameter_count": 199906464,
   "qk_head_dim": 64,
   "qk_norm": true,

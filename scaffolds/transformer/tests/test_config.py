@@ -29,7 +29,7 @@ def test_baseline_matches_approved_budget_and_geometry():
     assert config.data.batch_size // config.train.micro_batch_size == 4
     assert config.optim.learning_rate == pytest.approx(3e-4)
     assert config.optim.min_learning_rate == pytest.approx(3e-5)
-    assert config.optim.warmup_steps == 2000
+    assert config.optim.warmup_steps == 400
     assert config.train.source_commit == "auto"
 
 

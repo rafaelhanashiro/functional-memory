@@ -159,15 +159,13 @@ def _collect_referenced(repo_root: Path, cell: dict, run: dict, step: int, token
     model = config.get("model", {})
     _match(model.get("qk_head_dim"), width, f"{label} recipe d_K")
     _optional_match(model, "attention_degree", degree, f"{label} recipe")
+    # The run record's status is the run's single outcome; its outcome files must agree.
+    recorded = run.get("status")
+    status = recorded if recorded in {"complete", "numerical_failure"} else "incomplete"
     failures = sorted(directory.glob("numerical_failure_step_*.json"))
-    if failures:
-        status = "numerical_failure"
-        if (directory / "completion.json").exists():
-            raise ValueError(f"Numerical failure has a completion artifact: {label}")
-    elif (directory / "completion.json").exists():
-        status = "complete"
-    else:
-        status = "incomplete"
+    if ((status == "complete") != (directory / "completion.json").exists()
+            or (status == "numerical_failure") != bool(failures) or len(failures) > 1):
+        raise ValueError(f"Outcome files of {label} disagree with its recorded status {recorded!r}")
 
     result = {"status": status, "terminal_ppl": None, "terminal_nll": None,
               "failure_step": None, "experiment": experiment, "run": name,

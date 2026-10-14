@@ -62,18 +62,13 @@
     },
     {
       "path": "experiments/attention_scaling/runs/rdf00da0866a8/metadata.json",
-      "sha256": "0bba4129f0ccefa8e4e91d5f0834c271b72d4fa78d47b1adde8b08cf4e6f908c",
-      "size_bytes": 30121
+      "sha256": "754b2bc56d5b7842548da561bf2e694013f080e9c5d24a2f8657e5979a780801",
+      "size_bytes": 29966
     },
     {
       "path": "experiments/attention_scaling/runs/rdf00da0866a8/metrics.jsonl",
       "sha256": "09921898d01e171d68018fa91436de46486eca56f1282ecc54e5b23f530d211f",
       "size_bytes": 241521
-    },
-    {
-      "path": "experiments/attention_scaling/runs/rdf00da0866a8/numerical_failure_step_00018408.json",
-      "sha256": "d5cd819418feddeb03aa0f078eb2473c80a1071032d4c53bf8bc65e11bdb840b",
-      "size_bytes": 24947
     },
     {
       "path": "experiments/attention_scaling/runs/rdf00da0866a8/retention.json",
@@ -203,7 +198,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "0bba4129f0ccefa8e4e91d5f0834c271b72d4fa78d47b1adde8b08cf4e6f908c"
+      "sha256": "754b2bc56d5b7842548da561bf2e694013f080e9c5d24a2f8657e5979a780801"
     },
     "resolved_config": {
       "data": {
@@ -445,8 +440,8 @@
   "log_path": "experiments/attention_scaling/runs/rdf00da0866a8/training.log",
   "metadata": {
     "path": "experiments/attention_scaling/runs/rdf00da0866a8/metadata.json",
-    "sha256": "0bba4129f0ccefa8e4e91d5f0834c271b72d4fa78d47b1adde8b08cf4e6f908c",
-    "size_bytes": 30121
+    "sha256": "754b2bc56d5b7842548da561bf2e694013f080e9c5d24a2f8657e5979a780801",
+    "size_bytes": 29966
   },
   "metrics": {
     "path": "experiments/attention_scaling/runs/rdf00da0866a8/metrics.jsonl",
@@ -454,7 +449,7 @@
     "size_bytes": 241521
   },
   "name": "200m-qk-softmax-transformer-init-warmup400-seed0",
-  "numerical_failure_path": "experiments/attention_scaling/runs/rdf00da0866a8/numerical_failure_step_00018408.json",
+  "numerical_failure_path": null,
   "record_schema_version": 1,
   "retained_best_checkpoint_step": 19074,
   "retained_terminal_checkpoint_step": 19074,

@@ -42,7 +42,7 @@ optim:
   beta1: 0.9
   beta2: 0.95
   grad_clip_norm: 1.0
-  warmup_steps: 2000
+  warmup_steps: 400
   # 19,074 * 256 * 2,048 = 10,000,269,312 prediction tokens.
   total_steps: 19074
 

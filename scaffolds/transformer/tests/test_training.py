@@ -199,6 +199,27 @@ def test_nonfinite_loss_between_log_events_persists_failure(tmp_path, monkeypatc
     assert not (tmp_path / "completion.json").exists()
 
 
+def test_training_past_a_numerical_failure_leaves_one_outcome(tmp_path, monkeypatch):
+    cfg = tiny_config(tmp_path)
+    actual_step = loop.accumulated_train_step
+
+    def nonfinite_third_step(*args, **kwargs):
+        state, loss, *numerics = actual_step(*args, **kwargs)
+        return state, jnp.nan if int(state.step) == 3 else loss, *numerics
+
+    monkeypatch.setattr(loop, "accumulated_train_step", nonfinite_third_step)
+    with pytest.raises(FloatingPointError, match="at step 3"):
+        loop.run_training(cfg)
+    assert (tmp_path / "numerical_failure_step_00000003.json").exists()
+    monkeypatch.setattr(loop, "accumulated_train_step", actual_step)
+    completion = loop.run_training(cfg)
+    assert completion["restored_step"] == 2 and completion["final_step"] == 4
+    assert not list(tmp_path.glob("numerical_failure_step_*.json"))
+    metadata = json.loads((tmp_path / "metadata.json").read_text())
+    assert metadata["status"] == "complete"
+    assert metadata["error"] is None and metadata["numerical_failure_path"] is None
+
+
 def test_zero_degree_records_inactive_qk_parameters(tmp_path):
     cfg = tiny_config(tmp_path)
     cfg.model.attention_degree = 0

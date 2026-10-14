@@ -32,26 +32,26 @@ def test_combined_figures_are_source_checked_and_byte_reproducible(tmp_path):
     assert Counter(row["status"] for row in rows) == {"complete": 31, "numerical_failure": 2, "not_run": 12}
     assert not any(row["legacy"] for row in rows)
     by_cell = {(r["panel"], r["column"], r["d_k"]): r for r in rows}
-    assert by_cell["normalized_fixed", "m1", 64]["failure_step"] == 35
-    assert by_cell["normalized_fixed", "m3", 64]["failure_step"] == 555
-    assert by_cell["references", "gated_deltanet", 128]["terminal_ppl"] == pytest.approx(13.38022395757579)
-    assert by_cell["references", "softmax", 64]["terminal_ppl"] == pytest.approx(13.513509197684602)
-    assert by_cell["references", "softmax_no_qk_norm", 64]["terminal_ppl"] == pytest.approx(13.932300633414917)
-    assert by_cell["references", "softmax", 8]["terminal_ppl"] == pytest.approx(15.639054509735974)
-    assert by_cell["normalized_fixed", "m2", 16]["terminal_ppl"] == pytest.approx(17.153819786680963)
-    assert by_cell["normalized_fixed", "m16", 64]["terminal_ppl"] == pytest.approx(13.518513230372008)
+    assert by_cell["normalized_fixed", "m1", 64]["failure_step"] == 67
+    assert by_cell["normalized_fixed", "m3", 64]["failure_step"] == 218
+    assert by_cell["references", "gated_deltanet", 128]["terminal_ppl"] == pytest.approx(13.326871698095397)
+    assert by_cell["references", "softmax", 64]["terminal_ppl"] == pytest.approx(13.731335348660728)
+    assert by_cell["references", "softmax_no_qk_norm", 64]["terminal_ppl"] == pytest.approx(14.183944824873869)
+    assert by_cell["references", "softmax", 8]["terminal_ppl"] == pytest.approx(15.732218014487678)
+    assert by_cell["normalized_fixed", "m2", 16]["terminal_ppl"] == pytest.approx(17.27905787246534)
+    assert by_cell["normalized_fixed", "m16", 64]["terminal_ppl"] == pytest.approx(13.73957880890914)
 
     csv_rows = list(csv.DictReader((output / "summary.csv").open()))
     assert Counter(row["figure"] for row in csv_rows) == {"heatmap": 45, "degree_chart": 30}
     chart = {(row["panel"], row["column"]): row for row in csv_rows if row["figure"] == "degree_chart"}
-    assert float(chart["unnormalized_learned", "m3"]["terminal_ppl"]) == pytest.approx(14.656569440277982)
-    assert chart["normalized_learned_taylor", "m2"]["failure_step"] == "1923"
+    assert float(chart["unnormalized_learned", "m3"]["terminal_ppl"]) == pytest.approx(14.630474939069227)
+    assert chart["normalized_learned_taylor", "m2"]["failure_step"] == "937"
     assert chart["normalized_nonnegative", "m2"]["legacy"] == "false"
-    assert float(chart["normalized_nonnegative", "m4"]["terminal_ppl"]) == pytest.approx(13.689121627772707)
-    assert float(chart["unnormalized_fixed_hermite", "m2"]["terminal_ppl"]) == pytest.approx(15.67321962706582)
-    assert float(chart["unnormalized_fixed", "m2"]["terminal_ppl"]) == pytest.approx(18.165894817786064)
-    assert float(chart["references", "unnormalized_exp"]["terminal_ppl"]) == pytest.approx(15.884992788839899)
-    assert chart["normalized_fixed_hermite", "m2"]["failure_step"] == "176"
+    assert float(chart["normalized_nonnegative", "m4"]["terminal_ppl"]) == pytest.approx(13.815325885598568)
+    assert float(chart["unnormalized_fixed_hermite", "m2"]["terminal_ppl"]) == pytest.approx(15.624292998941916)
+    assert float(chart["unnormalized_fixed", "m2"]["terminal_ppl"]) == pytest.approx(18.099043285164523)
+    assert float(chart["references", "unnormalized_exp"]["terminal_ppl"]) == pytest.approx(15.662688497541682)
+    assert chart["normalized_fixed_hermite", "m2"]["failure_step"] == "2875"
     assert all(row["terminal_ppl"] == "" for row in csv_rows if row["status"] == "numerical_failure")
     provenance = json.loads((output / "manifest.json").read_text())
     assert "source_manifests" not in provenance and "source_records" not in provenance

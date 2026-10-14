@@ -90,13 +90,14 @@ Prepare a complete recipe with the desired settings and dataset paths for the ho
 cluster. New dot-product runs use `model.qk_norm: true`; GLA and degree zero do not.
 New runs use their mechanism's reference initialization, which `records create` fills in
 when the recipe leaves `model.initialization` unset.
-Untied embeddings and the scaffold's selective weight decay are canonical. The
-following allocates a fresh execution from an existing QK-normalized Taylor recipe:
+Untied embeddings, the scaffold's selective weight decay, and 400 warmup updates
+(`optim.warmup_steps`) are canonical. The following allocates a fresh execution from an
+existing QK-normalized Taylor recipe:
 
 ```bash
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records create \
   --study experiments/attention_scaling \
-  --config experiments/attention_scaling/runs/r93c9d0814322/config.yaml \
+  --config experiments/attention_scaling/runs/r044b3356f215/config.yaml \
   --label taylor-example
 ```
 

@@ -460,7 +460,9 @@ failures; diagnostic-only weight sums may underflow or overflow. Signed mechanis
 scaffold does not add clipping or denominator epsilon. Every attention mechanism
 checks the gradient norm and all updated weights on every training step, including
 gradient accumulation and distributed execution. An invalid update stops before
-validation or checkpointing and writes a numerical-failure diagnostic. The legacy
+validation or checkpointing and writes a numerical-failure diagnostic. Training the run
+again from a checkpoint supersedes that failure: the trainer removes its diagnostic and
+clears the failure from the run's status, so the run keeps one outcome. The legacy
 `check_all_gradients` step argument controls additional returned diagnostics only;
 it cannot disable these checks.
 
