@@ -293,6 +293,21 @@ def _tree_sizes(directory: Path) -> dict[str, int]:
             for path in directory.rglob("*") if path.is_file()}
 
 
+FAILURE_STATUSES = frozenset({"numerical_failure", "acceptance_numerical_failure"})
+
+
+def _check_outcome(run: Path, record: Mapping[str, Any]) -> None:
+    """The record's status is the run's single outcome; its outcome files must agree with it."""
+    status = record.get("status")
+    failures = sorted(path.name for path in run.glob("numerical_failure_step_*.json"))
+    if (run / "completion.json").is_file() and status != "complete":
+        raise ValueError(f"{record['run_id']} has a completion record but status {status!r}")
+    if failures and status not in FAILURE_STATUSES:
+        raise ValueError(f"{record['run_id']} has status {status!r} but numerical failure records {failures}")
+    if status == "numerical_failure" and len(failures) != 1:
+        raise ValueError(f"{record['run_id']} is a numerical failure with {len(failures)} failure records")
+
+
 def validate_record(path: str | Path, verify_hashes: bool = True, checkpoint_hashes: bool = True) -> dict[str, Any]:
     """Validate identity and recipe integrity, plus hashes of available artifacts.
 
@@ -315,6 +330,7 @@ def validate_record(path: str | Path, verify_hashes: bool = True, checkpoint_has
         raise ValueError("The canonical recipe must be the run's config.yaml")
     if not (run / "config.yaml").is_file():
         raise ValueError(f"Missing canonical recipe in {run}")
+    _check_outcome(run, record)
     result: dict[str, Any] = {"run_id": record["run_id"], "verified": [], "size_checked": [], "unavailable": []}
     if not verify_hashes:
         return result

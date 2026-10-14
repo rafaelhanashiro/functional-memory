@@ -149,6 +149,11 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 - A concluded numerical failure is a scientific result: preserve its stopping step,
   last valid metrics, failure diagnostics, and matching log. Do not call it completed
   training. Retain a diagnostic checkpoint only when justified by the record.
+- A run's record `status` is its single outcome, and every result reads it from there;
+  `scaffolds.records validate` rejects a run whose completion or failure files disagree
+  with it. Training a run again from its checkpoint after a numerical failure (for
+  example, one traced to a hardware fault) supersedes that failure: the trainer removes
+  its failure record, and the run's outcome is the one it reaches.
 - Records state current facts only; Git is the history. `sweep.yaml` holds study-wide
   facts (home cluster, artifact root, dataset and lock hashes, shared settings the
   analysis reads) and `run_ids`; everything else about a run lives in its record. Do

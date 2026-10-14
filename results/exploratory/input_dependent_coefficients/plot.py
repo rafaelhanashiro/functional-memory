@@ -49,8 +49,8 @@ def load_runs():
         best = json.loads((path / "best_validation.json").read_text())
         if completion["final_step"] != config["optim"]["total_steps"]:
             raise ValueError(f"Selected run is incomplete: {entry['run_id']}")
-        if list(path.glob("numerical_failure_step_*.json")):
-            raise ValueError(f"Selected run has a numerical failure: {entry['run_id']}")
+        if json.loads((path / "record.json").read_text())["status"] != "complete":
+            raise ValueError(f"Selected run is not recorded as complete: {entry['run_id']}")
         function = (model.get("attention_coefficient_activation", "identity")
                     if model.get("attention_coefficient_conditioning", "static") == "query" else "static")
         function = "affine" if function == "identity" else function

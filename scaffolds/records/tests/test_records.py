@@ -281,7 +281,7 @@ def test_capture_uses_explicit_best_checkpoint_and_detects_shard_changes(tmp_pat
     assert Path(updates["selected_checkpoint"]["path"]) == best
     assert updates["selected_checkpoint"]["file_count"] == 1
     assert all(not item["path"].endswith("record.json") for item in updates["artifacts"])
-    update_record(run, updates)
+    update_record(run, {**updates, "status": "complete"})
     validate_record(run)
     (best / "shard").write_bytes(b"changed weights")
     with pytest.raises(ValueError, match="tree checksum mismatch"):
@@ -335,6 +335,24 @@ def test_cli_validates_named_runs_and_hashes_checkpoints_only_on_request(
     main()
     assert [run["run_id"] for run in json.loads(capsys.readouterr().out)["runs"]] == [
         load_run(first)["run_id"], load_run(second)["run_id"]]
+
+
+def test_status_is_the_single_outcome_and_files_must_agree(tmp_path):
+    run = create_run(tmp_path / "study", recipe())
+    failure = run / "numerical_failure_step_00000007.json"
+    failure.write_text("{}")
+    with pytest.raises(ValueError, match="numerical failure records"):
+        validate_record(run)
+    update_record(run, {"status": "numerical_failure"})
+    validate_record(run)
+    (run / "completion.json").write_text("{}")
+    with pytest.raises(ValueError, match="completion record"):
+        validate_record(run)
+    update_record(run, {"status": "complete"})
+    with pytest.raises(ValueError, match="numerical failure records"):
+        validate_record(run)
+    failure.unlink()
+    validate_record(run)
 
 
 def test_capture_never_silently_ignores_unavailable_selected_checkpoint(tmp_path):

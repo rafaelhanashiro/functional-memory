@@ -341,6 +341,7 @@
   },
   "slurm_job_id": "202190",
   "source_commit": "381f1fdf6caf2925a984e3932e58b6e70bfbc6b1",
+  "status": "complete",
   "wandb": {
     "run_id": "2a3a4d814bf242f8b5f9244bd06a8544",
     "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/2a3a4d814bf242f8b5f9244bd06a8544"

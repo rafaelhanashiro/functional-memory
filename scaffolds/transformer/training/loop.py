@@ -642,8 +642,13 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
     audit = {"start_state_sha256": state_sha256(state)} if audit_checkpoint else None
     parameter_count = param_count(state)
     tokens_per_step = config.data.batch_size * (config.data.sequence_length - 1)
+    # A numerical failure ends one execution. Training the run again supersedes it, so the
+    # run keeps a single outcome: the earlier failure record is removed (the log keeps it).
+    for superseded in sorted(config.train.workdir.glob("numerical_failure_step_*.json")):
+        superseded.unlink()
     _write_status(config, status="running", step=start_step, training_tokens=start_step * tokens_per_step,
-                  parameter_count=parameter_count, error=None, devices=[str(d) for d in devices],
+                  parameter_count=parameter_count, error=None, numerical_failure_path=None,
+                  devices=[str(d) for d in devices],
                   rng_state={"seed": config.train.seed, "completed_updates": start_step},
                   next_train_sequence=start_sequence)
     print(f"param_count={parameter_count} restored_step={restored_step} packed_data_start_sequence={start_sequence}", flush=True)

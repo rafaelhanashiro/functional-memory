@@ -237,10 +237,10 @@ Gap by update (warmup 400 minus warmup 2,000):
   QK-norm scales span 5.9–25.5 against 3.1–21.9 (same median, 14.2).
 - **Execution.** Updates 1–1,000 ran on H100 PCIe (two `sweep` preemptions), 1,001–18,000
   on B300, where update 18,408 produced an infinite gradient norm at a finite loss (2.648,
-  no spike in the preceding 140 updates; `numerical_failure_step_00018408.json`). Replaying
-  updates 18,001–19,074 from the step-18,000 checkpoint on H100 reproduced the loss
-  trajectory (2.655403 against 2.655444 at update 18,400) and passed, so the event did not
-  come from the model state. Whether it was B300-specific or a one-off was not tested; the
+  no spike in the preceding 140 updates) and stopped the job. The run resumed from its
+  step-18,000 checkpoint on H100, reproduced the loss trajectory (2.655403 against 2.655444
+  at update 18,400), passed update 18,408, and completed, so the event did not come from
+  the model state. Whether it was B300-specific or a one-off was not tested; the
   step-18,000 checkpoint was not retained.
 
 ## Open decision

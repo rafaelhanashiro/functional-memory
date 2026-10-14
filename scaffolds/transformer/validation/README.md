@@ -782,8 +782,9 @@ The warmup-length softmax and Gated DeltaNet runs at other widths (sources `4ed7
 
 The locked cuBLAS 12.9 is in the range (12.8–13.1) where some Blackwell kernels free
 tensor memory twice; JAX warns that a cuBLAS kernel running concurrently with another
-can silently corrupt data. Two B300 runs failed with an infinite gradient norm at a
-finite loss (`rc40145fd32c7` at update 12,637; `rdf00da0866a8` at 18,408).
+can silently corrupt data. Two B300 runs stopped on an infinite gradient norm at a
+finite loss (`rc40145fd32c7` at update 12,637; `rdf00da0866a8` at 18,408, which then
+resumed on H100 and completed).
 `replay_checkpoint.py` resumes a run from a retained checkpoint in a scratch directory,
 leaving the run untouched; `replay_checkpoint.sbatch` repeats it in one allocation,
 optionally with `--xla_gpu_disable_async_collectives=ALLCOLLECTIVES` ("sync"), which keeps

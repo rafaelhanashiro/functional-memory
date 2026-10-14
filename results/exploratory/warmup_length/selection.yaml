@@ -19,13 +19,10 @@ runs:
       sha256: 737901beec2f30725b76393c691f710763754de9de3c4667a31954ddcf75da4f
     metadata.json:
       path: experiments/attention_scaling/runs/rdf00da0866a8/metadata.json
-      sha256: 0bba4129f0ccefa8e4e91d5f0834c271b72d4fa78d47b1adde8b08cf4e6f908c
+      sha256: 754b2bc56d5b7842548da561bf2e694013f080e9c5d24a2f8657e5979a780801
     best_validation.json:
       path: experiments/attention_scaling/runs/rdf00da0866a8/best_validation.json
       sha256: dff398331d0901d6a929cc3136220a805525c45c0aff1af36f4fdac4f19b17ae
-    numerical_failure_step_00018408.json:
-      path: experiments/attention_scaling/runs/rdf00da0866a8/numerical_failure_step_00018408.json
-      sha256: d5cd819418feddeb03aa0f078eb2473c80a1071032d4c53bf8bc65e11bdb840b
   control: rbde7fc4c2135
 - run_id: rbde7fc4c2135
   label: softmax d_K = 64, transformer reference initialization, warmup 2,000

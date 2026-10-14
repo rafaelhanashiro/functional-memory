@@ -22,7 +22,9 @@ recipes the CLI resolves scaffold defaults into a complete config and resets the
 source-commit request to `auto`; execution resolves that request separately. The CLI
 also assigns the target study as the W&B group, uses the new label or ID as its
 name, and clears the copied local W&B directory.
-`validate` checks every run, or only the named IDs or labels. It re-hashes each
+`validate` checks every run, or only the named IDs or labels. It requires the record's
+`status` to agree with the run's outcome files: `completion.json` only for `complete`, and
+`numerical_failure_step_*.json` only for a numerical failure (exactly one). It re-hashes each
 run's recipe and raw outputs, but checks retained checkpoints only against their
 recorded file names and sizes, because re-hashing reads every checkpoint byte (tens of
 gigabytes per study on a shared filesystem). Add `--checkpoint-hashes` to re-hash

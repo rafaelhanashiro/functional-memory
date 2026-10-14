@@ -69,7 +69,7 @@ def _fixture(tmp_path: Path) -> dict:
         "metrics": ("metrics.jsonl", _write(complete_dir / "metrics.jsonl", [early_validation, last_validation])),
         "completion": ("completion.json", _write(complete_dir / "completion.json", completion)),
     }
-    complete_run = {"name": complete_name, "seed": 0, "qk_head_dim": 8,
+    complete_run = {"name": complete_name, "status": "complete", "seed": 0, "qk_head_dim": 8,
                     "attention_degree": 2, "source_commit": source,
                     "terminal": {"step": 10, "training_tokens": 100,
                                  "validation_nll": 3.0, "validation_perplexity": 20.086}}
@@ -198,6 +198,14 @@ def test_rejects_terminal_metric_disagreement_even_with_fresh_hashes(tmp_path: P
     records[-1]["validation_perplexity"] = 21.0
     _write(metrics_path, records)
     with pytest.raises(ValueError, match="completion validation"):
+        collect_rows(tmp_path, _pin(tmp_path, config))
+
+
+def test_outcome_comes_from_the_record_and_files_must_agree(tmp_path: Path) -> None:
+    config = _fixture(tmp_path)
+    complete_dir = tmp_path / "experiments/toy_taylor/runs/r000000000001"
+    _write(complete_dir / "numerical_failure_step_00000005.json", {"step": 5, "error": "nonfinite loss"})
+    with pytest.raises(ValueError, match="disagree with its recorded status 'complete'"):
         collect_rows(tmp_path, _pin(tmp_path, config))
 
 
