@@ -3187,5 +3187,47 @@
         "size_bytes": 11227
       }
     }
+  },
+  "gdn_cubic_query_geometry": {
+    "home_cluster": "kennel",
+    "status": "qualified_a100_pcie",
+    "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
+    "runtime": {
+      "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
+      "status": "passed",
+      "record": {
+        "path": "scaffolds/transformer/validation/runs/gdn-cubic-a100/runtime.json",
+        "sha256": "10c528adc99aee9ca32b32212b3101558ead4402d696edd3980492de6179ef46",
+        "size_bytes": 15024
+      },
+      "gpu_job_id": "218895"
+    },
+    "baseline_runtime": {
+      "source_commit": "cee9c7f13bdde90be893968955ac30f58ce52777",
+      "status": "numerically_valid_runtime_budget_failed",
+      "record": {
+        "path": "scaffolds/transformer/validation/runs/gdn-cubic-a100/runtime-baseline.json",
+        "sha256": "b22479e9beca63189ce19dbcde0f4f6510f8639fcc051a75fa99c8082c36206f",
+        "size_bytes": 2478
+      }
+    },
+    "occupancy_benchmark": {
+      "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
+      "status": "passed",
+      "record": {
+        "path": "scaffolds/transformer/validation/runs/gdn-cubic-a100/occupancy-benchmark.json",
+        "sha256": "a8a3aef358879310526b321505a403eaa459d4aba05afea7a431d33821d93ccc",
+        "size_bytes": 20956
+      }
+    },
+    "occupancy_sweep": {
+      "source_commit": "0e310509bcb3b47a6295af2e7a66032150668b92",
+      "status": "passed",
+      "record": {
+        "path": "scaffolds/transformer/validation/runs/gdn-cubic-a100/occupancy-sweep.json",
+        "sha256": "02a9841e1c78d2980f895e1b4e3d51cfaf097484d86a36edd16734878b67d698",
+        "size_bytes": 36427
+      }
+    }
   }
 }

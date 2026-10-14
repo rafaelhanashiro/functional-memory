@@ -1,0 +1,398 @@
+{
+  "acceptance_checks": {
+    "checks": [
+      "cpu-tests",
+      "cpu-distributed-tests",
+      "gpu-tests",
+      "initialization",
+      "pilot",
+      "resume"
+    ],
+    "status": "passed"
+  },
+  "acceptance_identity": "adbbb51223ad5cab2962c88f6080698a3954d697a5bbd43327456b10daf78ca4",
+  "acceptance_report_sha256": {
+    "cpu-distributed-tests.json": "efd3cf2a92f055e7326fc169a29340ed3e7d9a822dbba0514d381faf551ad259",
+    "cpu-tests.json": "79e424c5ba4c45e63ed9ba5df3b81798274e673aa6e325337db616fe3bb2d25a",
+    "gpu-tests.json": "bfe5254d1388146e38923fd201ec605066202713da5cb926ee52d95ad665c4b8",
+    "hardware.json": "3393f9cab8058bcd7fbdb5253b154cf9f7b9d3cb78dcd67bf506bcaf34248fe9",
+    "identity.json": "7f7a47c3a20f45bb5925dd01a7ff49237596f98d7b7027750a6b74fa6db91ca6",
+    "initialization.json": "858e43a7a781ff7e80752d536cfee2bc0bd1c7be2f8c5e4bb17fba68bd400cd7",
+    "pilot.json": "277c2e221460c939ec2d7dacc833f28951b94533e9a5a764b9c5619353446e97",
+    "resume.json": "0103ca3980fd4f63078acd1c59077cc9e5ccc2a0325b1b051f146c5093a4f968",
+    "success.json": "a8bdd79a4422d0fd7430b4a26ad36835b5c6b51a9216dd470b89769729c689f3"
+  },
+  "acceptance_stage_provenance": {
+    "cpu-distributed-tests": {
+      "acceptance_identity": "adbbb51223ad5cab2962c88f6080698a3954d697a5bbd43327456b10daf78ca4",
+      "completed_utc": "2026-10-14T06:39:39.994223+00:00",
+      "executed_by_qualification_job": false,
+      "reused_from": null,
+      "slurm_job_id": "218876",
+      "slurm_restart_count": "0",
+      "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4"
+    },
+    "cpu-tests": {
+      "acceptance_identity": "adbbb51223ad5cab2962c88f6080698a3954d697a5bbd43327456b10daf78ca4",
+      "completed_utc": "2026-10-14T06:39:15.041216+00:00",
+      "executed_by_qualification_job": false,
+      "reused_from": null,
+      "slurm_job_id": "218876",
+      "slurm_restart_count": "0",
+      "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4"
+    },
+    "gpu-tests": {
+      "acceptance_identity": "adbbb51223ad5cab2962c88f6080698a3954d697a5bbd43327456b10daf78ca4",
+      "completed_utc": "2026-10-14T07:12:37.272825+00:00",
+      "executed_by_qualification_job": false,
+      "reused_from": null,
+      "slurm_job_id": "218876",
+      "slurm_restart_count": "0",
+      "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4"
+    },
+    "initialization": {
+      "acceptance_identity": "adbbb51223ad5cab2962c88f6080698a3954d697a5bbd43327456b10daf78ca4",
+      "completed_utc": "2026-10-14T07:12:55.177259+00:00",
+      "executed_by_qualification_job": false,
+      "reused_from": null,
+      "slurm_job_id": "218876",
+      "slurm_restart_count": "0",
+      "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4"
+    },
+    "pilot": {
+      "acceptance_identity": "adbbb51223ad5cab2962c88f6080698a3954d697a5bbd43327456b10daf78ca4",
+      "completed_utc": "2026-10-14T07:29:52.435170+00:00",
+      "executed_by_qualification_job": true,
+      "reused_from": null,
+      "slurm_job_id": "218895",
+      "slurm_restart_count": "0",
+      "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4"
+    },
+    "resume": {
+      "acceptance_identity": "adbbb51223ad5cab2962c88f6080698a3954d697a5bbd43327456b10daf78ca4",
+      "completed_utc": "2026-10-14T07:33:05.698557+00:00",
+      "executed_by_qualification_job": true,
+      "reused_from": null,
+      "slurm_job_id": "218895",
+      "slurm_restart_count": "0",
+      "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4"
+    }
+  },
+  "batch_layout": {
+    "global_batch_size": 256,
+    "global_micro_batch_size": 64,
+    "gradient_accumulation_steps": 4,
+    "local_micro_batch_size": 8
+  },
+  "config_sha256": "11f43dfe6b2430f53f4d584bffef9aed9e8ec94296bc7c26d16b67dd207de0ab",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "exact_resume": {
+    "completed_step": 21,
+    "data_start_sequence": 5120,
+    "first_update": {
+      "batch_sha256": "b61f8b1402afd06332b4a01ac3655d57aa18cd2a3de93aa151f99be056c5a240",
+      "rng_sha256": "c952d7c8272d985c15ea28dd1ce800ea3107946123e8fe8ee13bd6f6b93bd6ea",
+      "step": 21
+    },
+    "first_update_matches_pilot_next_update": true,
+    "pilot_checkpoint_state_sha256": "d2b17599e264398fc7d261703115c0f9c72003ad241b18fdedd410081eeacc0d",
+    "restored_step": 20,
+    "resumed_checkpoint_state_sha256": "8f12272fb0bfb77c1ef56d9bd84436815eaaddb48844749b28ae0f7a9a0947e9",
+    "resumed_final_state_sha256": "8f12272fb0bfb77c1ef56d9bd84436815eaaddb48844749b28ae0f7a9a0947e9",
+    "resumed_start_state_sha256": "d2b17599e264398fc7d261703115c0f9c72003ad241b18fdedd410081eeacc0d",
+    "status": "passed"
+  },
+  "format": "gdn-runtime-qualification",
+  "frozen_execution_sha256": "cb5463ee3028d8f348fe7a03d752e25d346f9a3ed763edaced06ccddacd346b8",
+  "hardware": {
+    "attention_backend": "fused",
+    "device_kinds": [
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3",
+      "cuda:4",
+      "cuda:5",
+      "cuda:6",
+      "cuda:7"
+    ],
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "home_cluster": "kennel",
+  "initialization": {
+    "parameter_count": 211498944,
+    "parameter_sha256": "7117d45aff3663d6c4c033d6db52903d256075dffd582cc26f8d7a09c6b79694"
+  },
+  "limitations": [
+    "Twenty pilot updates and one resumed update qualify startup and checkpoint behavior, not long-run stability or scientific performance.",
+    "The runtime projection is a pilot estimate, not completed production timing.",
+    "Temporary pilot checkpoints are not retained. Acceptance-report hashes identify the summarized measurements; this record does not copy temporary acceptance files.",
+    "Test and initialization stages can originate in an earlier allocation with the same acceptance identity; per-stage job provenance is retained."
+  ],
+  "mechanism": {
+    "attention_formula": "F_t(q)=a_t F_{t-1}(P_t q)+v_t sum_{r=0}^3 beta_{t,r}<q,k_t>^r; P_t=I-lambda_t k_t k_t^T in original key space; beta_0=tanh(W_0 x), beta_1=sigmoid(W_b x), beta_2=tanh(W_2 x), beta_3=tanh(W_3 x); lambda_t=sigmoid(W_lambda x); o_t=F_t(q_t)/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); one decay shared by all degrees",
+    "attention_implementation": "transported_score_polynomial_gated_delta_rule_triton",
+    "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+    "attention_score_scale": "1 (global 1/sqrt(d_k) applied to polynomial read)",
+    "gdn_erase_initialization": "copy_write_projection",
+    "gdn_polynomial_degree": 3,
+    "gdn_query_transport_space": "original_key_space",
+    "gdn_write_activation": [
+      "tanh",
+      "sigmoid",
+      "tanh",
+      "tanh"
+    ],
+    "gdn_write_initialization": "zero_constant_quadratic_and_cubic_projections"
+  },
+  "pilot": {
+    "all_recorded_telemetry_numeric_values_finite": true,
+    "attention_diagnostic_invalid_counts": {
+      "invalid_coefficient_count": 0,
+      "invalid_erase_count": 0,
+      "invalid_gate_count": 0,
+      "invalid_output_count": 0,
+      "invalid_projection_count": 0,
+      "invalid_read_count": 0
+    },
+    "attention_diagnostics_valid": true,
+    "coefficient_diagnostics_by_degree": {
+      "0": {
+        "layer_mean_max": 0.0008780311327427626,
+        "layer_mean_min": 3.146342351101339e-05,
+        "layer_rms_max": 0.004697512369602919,
+        "layer_rms_min": 0.00215137773193419,
+        "layers_with_nonzero_rms": 10,
+        "maximum_over_layers": 0.030029296875,
+        "minimum_over_layers": -0.0208740234375
+      },
+      "1": {
+        "layer_mean_max": 0.5011468529701233,
+        "layer_mean_min": 0.49498066306114197,
+        "layer_rms_max": 0.5188009142875671,
+        "layer_rms_min": 0.5132061243057251,
+        "layers_with_nonzero_rms": 10,
+        "maximum_over_layers": 0.921875,
+        "minimum_over_layers": 0.068359375
+      },
+      "2": {
+        "layer_mean_max": 0.0006979889585636556,
+        "layer_mean_min": 2.026485890382901e-05,
+        "layer_rms_max": 0.0036869181785732508,
+        "layer_rms_min": 0.0017053346382454038,
+        "layers_with_nonzero_rms": 10,
+        "maximum_over_layers": 0.0196533203125,
+        "minimum_over_layers": -0.0164794921875
+      },
+      "3": {
+        "layer_mean_max": 7.403203926514834e-05,
+        "layer_mean_min": -0.0003233792376704514,
+        "layer_rms_max": 0.002901707775890827,
+        "layer_rms_min": 0.0012158392928540707,
+        "layers_with_nonzero_rms": 10,
+        "maximum_over_layers": 0.0126953125,
+        "minimum_over_layers": -0.0133056640625
+      }
+    },
+    "gradient_clipped_fraction": 1.0,
+    "gradient_norm_max": 11.246946334838867,
+    "gradient_norm_mean": 8.998674893379212,
+    "gradient_norm_observations": 20,
+    "gradient_spike_count": 0,
+    "steps_completed": 20,
+    "training_tokens": 10485760,
+    "validation_nll": 10.477464199066162,
+    "validation_nll_finite": true,
+    "validation_perplexity": 35506.25648914859,
+    "write_projection_gradient_norms": {
+      "0": {
+        "max": 11.080270767211914,
+        "mean": 8.789719986915589,
+        "min": 7.2149434089660645
+      },
+      "1": {
+        "max": 0.14437933266162872,
+        "mean": 0.13967364355921746,
+        "min": 0.13155314326286316
+      },
+      "2": {
+        "max": 0.11403162777423859,
+        "mean": 0.11008492521941662,
+        "min": 0.10462638735771179
+      },
+      "3": {
+        "max": 0.026805710047483444,
+        "mean": 0.02579263662919402,
+        "min": 0.024425413459539413
+      }
+    },
+    "write_projection_update_norms": {
+      "0": {
+        "max": 0.0028438689187169075,
+        "mean": 0.001446961214969633,
+        "min": 0.0
+      },
+      "1": {
+        "max": 0.0016323495656251907,
+        "mean": 0.0009171751946269069,
+        "min": 0.0
+      },
+      "2": {
+        "max": 0.0022916896268725395,
+        "mean": 0.0011953333036217374,
+        "min": 0.0
+      },
+      "3": {
+        "max": 0.0015954768750816584,
+        "mean": 0.000905911362497136,
+        "min": 0.0
+      }
+    }
+  },
+  "qualification_launcher": {
+    "path": "scaffolds/transformer/validation/qualify_gdn_runtime.sbatch",
+    "sha256": "9387e74be3aa20250676775aa161287a132b13637dbba07c0add1aec016360ed",
+    "size_bytes": 6578,
+    "source_commit": "d29dba9a7970df3d127e20f21f513152a82913ef"
+  },
+  "recipe_dimensions": {
+    "compute_dtype": "bfloat16",
+    "context_length": 2048,
+    "hidden_size": 1024,
+    "key_head_dim": 64,
+    "num_heads": 16,
+    "num_layers": 10,
+    "total_steps": 19074,
+    "value_head_dim": 64,
+    "warmup_steps": 400
+  },
+  "recorded_utc": "2026-10-14T07:33:05.701642+00:00",
+  "retained_log": {
+    "path": "scaffolds/transformer/validation/logs/gdn-cubic-runtime-218895.log",
+    "sha256": "54e8d4343b201a1c68a678f9a3ba01cb50b05db23d42c540cb2ac6e121eb6e5d",
+    "size_bytes": 4314
+  },
+  "run_id": "r83c3394eb730",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "NCCL_P2P_DISABLE": "1",
+    "TRANSFORMER_HOST_STAGING": "1",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "runtime_projection": {
+    "budget_provenance": "Explicit runtime_budget in standalone qualification success.json",
+    "maximum_projected_hours": 70.0,
+    "production_allocation_hours": 72.0,
+    "projected_hours": 48.61237609261233,
+    "scope": "Conservative synchronized pilot estimate including compilation, evaluation, and checkpoints; production timing is outside this qualification record.",
+    "within_budget": true
+  },
+  "schema_version": 1,
+  "selected_checkpoints": [],
+  "slurm": {
+    "allocated_resources": "billing=32,cpu=32,gres/gpu=8,mem=256G,node=1",
+    "allocation_time_limit": "01:00:00",
+    "elapsed_seconds": 574,
+    "exit_code": "0:0",
+    "finished_local": "2026-10-14T03:33:07",
+    "gpu_count": 8,
+    "job_id": "218895",
+    "nice": 0,
+    "node": "samoyed",
+    "partition": "long",
+    "qualification_completed_utc": "2026-10-14T07:33:05.701642+00:00",
+    "scheduler_timezone": "America/New_York",
+    "scope": "Standalone qualification for the recorded planned production budget; this is not a production job record.",
+    "started_local": "2026-10-14T03:23:33",
+    "state": "COMPLETED",
+    "time_limit_minutes": 60
+  },
+  "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
+  "status": "passed",
+  "synchronized_timing": {
+    "checkpoint_seconds": [
+      28.64756279438734
+    ],
+    "evaluation_seconds": [
+      4.013176736421883
+    ],
+    "first_update_seconds": 94.160983026959,
+    "pilot_runtime_seconds": 340.0393120069057,
+    "steady_update_count": 7,
+    "steady_update_seconds_max": 9.069173478521407,
+    "steady_update_seconds_median": 8.830779149197042,
+    "steady_update_seconds_min": 8.794492511078715
+  },
+  "tests": {
+    "cpu-distributed-tests": {
+      "cases_by_module": {
+        "tests.test_telemetry": 4,
+        "tests.test_training": 5
+      },
+      "errors": 0,
+      "failures": 0,
+      "junit_sha256": "0482f8d1431ffd03f53c19e4422738a465da11149b5d61f9f9b6bf57288a8c15",
+      "origin_slurm_job_id": "218876",
+      "reused": true,
+      "skipped": 0,
+      "status": "passed",
+      "tests_passed": 9
+    },
+    "cpu-tests": {
+      "cases_by_module": {
+        "tests.test_checkpoint_audit": 29,
+        "tests.test_cubic_gdn": 13,
+        "tests.test_gated_deltanet": 32,
+        "tests.test_initialization": 7,
+        "tests.test_model": 37,
+        "tests.test_parameter_policy": 4,
+        "tests.test_polynomial_gdn": 14,
+        "tests.test_polynomial_gdn_integration": 22,
+        "tests.test_telemetry": 5,
+        "tests.test_training": 11,
+        "tests.test_triton_bridge_precision": 22
+      },
+      "errors": 0,
+      "failures": 0,
+      "junit_sha256": "657d6f1737f5d169d6d7ecb17cf8b5a89431794278208f9f90949d1bb00eeb1d",
+      "origin_slurm_job_id": "218876",
+      "reused": true,
+      "skipped": 0,
+      "status": "passed",
+      "tests_passed": 196
+    },
+    "gpu-tests": {
+      "cases_by_module": {
+        "tests.test_cubic_gdn_kernel": 20,
+        "tests.test_gated_deltanet_kernel": 34,
+        "tests.test_polynomial_gdn_kernel": 21
+      },
+      "errors": 0,
+      "failures": 0,
+      "junit_sha256": "9d1841f5527f591ac66cbe15bc334dbaab274302a86bfc244db6fc4ba4f6d21c",
+      "origin_slurm_job_id": "218876",
+      "reused": true,
+      "skipped": 0,
+      "status": "passed",
+      "tests_passed": 75
+    }
+  }
+}

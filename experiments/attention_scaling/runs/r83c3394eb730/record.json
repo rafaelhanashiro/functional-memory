@@ -1,4 +1,66 @@
 {
+  "acceptance": {
+    "sha256": "a8bdd79a4422d0fd7430b4a26ad36835b5c6b51a9216dd470b89769729c689f3",
+    "summary": {
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-10-14T07:33:05.701642+00:00",
+      "hardware": {
+        "attention_backend": "fused",
+        "device_kinds": [
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe"
+        ],
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3",
+          "cuda:4",
+          "cuda:5",
+          "cuda:6",
+          "cuda:7"
+        ],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "adbbb51223ad5cab2962c88f6080698a3954d697a5bbd43327456b10daf78ca4",
+      "qualification": {
+        "allocation": "JobId=218895 JobName=cubic-qualification UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20083 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:09:33 TimeLimit=01:00:00 TimeMin=N/A SubmitTime=2026-10-14T03:23:09 EligibleTime=2026-10-14T03:23:09 AccrueTime=2026-10-14T03:23:09 StartTime=2026-10-14T03:23:33 EndTime=2026-10-14T04:23:33 Deadline=N/A PreemptEligibleTime=2026-10-14T03:23:33 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-14T03:23:33 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:1412848 ReqNodeList=samoyed ExcNodeList=akita,collie,dogo,doodle,mastiff,terrier NodeList=samoyed BatchHost=samoyed NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=8 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=8 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/validation/qualify_gdn_runtime.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/validation/logs/gdn-cubic-runtime-218895.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/validation/logs/gdn-cubic-runtime-218895.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:a100:8 TresPerTask=cpu:32",
+        "launcher": {
+          "path": "scaffolds/transformer/validation/qualify_gdn_runtime.sbatch",
+          "sha256": "9387e74be3aa20250676775aa161287a132b13637dbba07c0add1aec016360ed"
+        },
+        "slurm_job_id": "218895"
+      },
+      "runtime_budget": {
+        "maximum_projected_hours": 70.0,
+        "production_allocation_hours": 72.0,
+        "projected_hours": 48.61237609261233,
+        "within_budget": true
+      },
+      "slurm_job_id": "218895",
+      "slurm_restart_count": "0",
+      "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
+      "status": "passed"
+    }
+  },
   "artifacts": [],
   "attempts": [
     {
@@ -38,6 +100,8 @@
       "allocation": "JobId=218862 JobName=r83c3394eb730 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20083 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:10 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-14T01:16:09 EligibleTime=2026-10-14T01:16:09 AccrueTime=2026-10-14T01:16:09 StartTime=2026-10-14T01:16:32 EndTime=2026-10-16T01:16:32 Deadline=N/A PreemptEligibleTime=2026-10-14T01:16:32 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-14T01:16:32 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:2908914 ReqNodeList=samoyed ExcNodeList=akita,collie,dogo,doodle,mastiff,terrier NodeList=samoyed BatchHost=samoyed NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=8 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=8 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:a100:8 TresPerTask=cpu:32",
       "config_path": "experiments/attention_scaling/runs/r83c3394eb730/config.yaml",
       "config_sha256": "11f43dfe6b2430f53f4d584bffef9aed9e8ec94296bc7c26d16b67dd207de0ab",
+      "exit_code": 1,
+      "finished_utc": "2026-10-14T06:13:52.659415+00:00",
       "gpu_count": 8,
       "gpu_type": "A100",
       "home_cluster": "kennel",
@@ -46,26 +110,286 @@
       "slurm_partition": "long",
       "slurm_restart_count": "0",
       "started_utc": "2026-10-14T05:16:41.997581+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/.runtime/acceptance/A100-8",
+      "allocation": "JobId=218876 JobName=r83c3394eb730 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20083 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:04 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-14T02:33:24 EligibleTime=2026-10-14T02:33:24 AccrueTime=2026-10-14T02:33:24 StartTime=2026-10-14T02:33:29 EndTime=2026-10-16T02:33:29 Deadline=N/A PreemptEligibleTime=2026-10-14T02:33:29 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-14T02:33:29 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:360149 ReqNodeList=samoyed ExcNodeList=akita,collie,dogo,doodle,mastiff,terrier NodeList=samoyed BatchHost=samoyed NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=8 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=8 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:a100:8 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/r83c3394eb730/config.yaml",
+      "config_sha256": "11f43dfe6b2430f53f4d584bffef9aed9e8ec94296bc7c26d16b67dd207de0ab",
+      "exit_code": 1,
+      "finished_utc": "2026-10-14T07:19:18.231022+00:00",
+      "gpu_count": 8,
+      "gpu_type": "A100",
+      "home_cluster": "kennel",
+      "launch_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
+      "slurm_job_id": "218876",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-14T06:33:33.529526+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/.runtime/acceptance/A100-8",
+      "allocation": "JobId=218896 JobName=r83c3394eb730 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20083 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=3-00:00:00 TimeMin=N/A SubmitTime=2026-10-14T03:23:28 EligibleTime=2026-10-14T03:33:08 AccrueTime=2026-10-14T03:33:08 StartTime=2026-10-14T03:33:28 EndTime=2026-10-17T03:33:28 Deadline=N/A PreemptEligibleTime=2026-10-14T03:33:28 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-14T03:33:28 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:1419276 ReqNodeList=samoyed ExcNodeList=akita,collie,dogo,doodle,mastiff,terrier NodeList=samoyed BatchHost=samoyed NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=8 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=8 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:a100:8 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/r83c3394eb730/config.yaml",
+      "config_sha256": "11f43dfe6b2430f53f4d584bffef9aed9e8ec94296bc7c26d16b67dd207de0ab",
+      "gpu_count": 8,
+      "gpu_type": "A100",
+      "home_cluster": "kennel",
+      "launch_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
+      "slurm_job_id": "218896",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-14T07:33:33.205712+00:00"
     }
   ],
   "config": {
     "path": "experiments/attention_scaling/runs/r83c3394eb730/config.yaml",
     "sha256": "11f43dfe6b2430f53f4d584bffef9aed9e8ec94296bc7c26d16b67dd207de0ab"
   },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
   "error": null,
-  "frozen_execution_sha256": "530d0332648967bf020a09896f0c8443cd6ebd53d3597143591b46a31441b384",
+  "execution": {
+    "attention_backend": "fused",
+    "raw_config": {
+      "path": "config.json",
+      "sha256": "fd76132726da6442c573d9da4539ee4622fdc609aebc86cf90964b2f8f8c931b"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": "6ebf4275968863308f2d2a3d082c91a73f02a65dfb3111cb5b127d2c7f6e7db3"
+    },
+    "resolved_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "fused",
+        "attention_coefficient_activation": "identity",
+        "attention_coefficient_conditioning": "static",
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_sharing": "global",
+        "attention_coefficients": "fixed",
+        "attention_degree": null,
+        "attention_denominator_constant": "fixed",
+        "attention_denominator_degree": null,
+        "attention_denominator_parameterization": "direct",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_mechanism": "gated_deltanet",
+        "attention_normalization": true,
+        "attention_output_scaling": "none",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "independent",
+        "gdn_polynomial_degree": 3,
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 1024,
+        "initialization": "gated_deltanet_reference",
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 64,
+        "qk_norm": false,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_head",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.0,
+        "coefficient_penalty_denominator": true,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 400,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "attention_scaling",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "200m-dk064-gdn-cubic-geometry-warmup400-seed0",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730"
+      }
+    },
+    "resolved_config_sha256": "312e42b83a9d13f773e5142a3b94cc4ae43d072dbf026c9de859cf12d403d363",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 1,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 2,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 3,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 4,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 5,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 6,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 7,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": "1",
+        "TRANSFORMER_HOST_STAGING": "1",
+        "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "host_staged_verified"
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 2,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 3,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 4,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 5,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 6,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 7,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": "1",
+            "TRANSFORMER_HOST_STAGING": "1",
+            "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "host_staged_verified"
+        },
+        "slurm_job_id": "218896",
+        "timestamp_utc": "2026-10-14T07:34:10.701834+00:00"
+      }
+    ]
+  },
+  "frozen_execution_sha256": "cb5463ee3028d8f348fe7a03d752e25d346f9a3ed763edaced06ccddacd346b8",
   "home_cluster": "kennel",
   "label": "200m-dk064-gdn-cubic-geometry-warmup400-seed0",
   "log": null,
-  "log_path": "experiments/attention_scaling/runs/r83c3394eb730/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/training.log",
   "name": "200m-dk064-gdn-cubic-geometry-warmup400-seed0",
+  "numerical_failure_path": null,
   "record_schema_version": 1,
   "run_id": "r83c3394eb730",
   "seed": 0,
-  "source_commit": "cee9c7f13bdde90be893968955ac30f58ce52777",
-  "status": "acceptance",
+  "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
+  "status": "running",
+  "step": 0,
   "submission": {
     "acceptance_before_training": true,
+    "dependency": "afterok:218895",
     "gpu_count": 8,
     "gpu_types": [
       "A100"
@@ -73,12 +397,21 @@
     "nice": 0,
     "node": "samoyed",
     "partition": "long",
+    "qualification_job_id": "218895",
     "runtime_environment": {
       "NCCL_P2P_DISABLE": "1",
       "TRANSFORMER_HOST_STAGING": "1",
       "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
     },
-    "slurm_job_id": "218862",
-    "time_limit_hours": 48
-  }
+    "slurm_job_id": "218896",
+    "time_limit_hours": 72
+  },
+  "training_tokens": 0,
+  "updated_utc": "2026-10-14T07:34:28.876999+00:00",
+  "wandb_run": {
+    "path": "experiments/attention_scaling/runs/r83c3394eb730/wandb_run.json",
+    "sha256": "57c861a099bf4b9c30d4cef9c49e4ec20ea0edd4712293ea5b080c44d4f6b485",
+    "size_bytes": 207
+  },
+  "wandb_run_id": "911b85e2ddde4223972bde38199aa936"
 }

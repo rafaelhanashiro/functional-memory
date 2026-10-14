@@ -1,0 +1,417 @@
+{
+  "compiled_resources": [
+    {
+      "kernel": "forward",
+      "min_ctas_directive": [],
+      "num_warps": 4,
+      "ptx_sha256": "52aa7e4c3c406d3e458c848698dd93d3bcc6730abfc6dfa041e80ecec52e5aba",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_80'\nptxas info    : Function properties for forward\n    8480 bytes stack frame, 26560 bytes spill stores, 34264 bytes spill loads\nptxas info    : Used 32 registers, used 1 barriers, 8480 bytes cumulative stack size, 456 bytes cmem[0]\nptxas info    : Compile time = 1826.275 ms",
+      "registers": 32,
+      "shared_bytes": 16384,
+      "spill_load_bytes": 34264,
+      "spill_store_bytes": 26560,
+      "stack_frame_bytes": 8480,
+      "stage": "forward",
+      "variant": "baseline_w4"
+    },
+    {
+      "kernel": "forward",
+      "min_ctas_directive": [],
+      "num_warps": 4,
+      "ptx_sha256": "c8dc2771be90dffcea7c649e6a0672072c7e7416240d585b71de0dbaccae2aa7",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_80'\nptxas info    : Function properties for forward\n    1344 bytes stack frame, 1744 bytes spill stores, 2032 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 1344 bytes cumulative stack size, 456 bytes cmem[0]\nptxas info    : Compile time = 906.158 ms",
+      "registers": 255,
+      "shared_bytes": 16384,
+      "spill_load_bytes": 2032,
+      "spill_store_bytes": 1744,
+      "stack_frame_bytes": 1344,
+      "stage": "value_and_grad",
+      "variant": "baseline_w4"
+    },
+    {
+      "kernel": "backward_queries",
+      "min_ctas_directive": [],
+      "num_warps": 4,
+      "ptx_sha256": "1fcfe2a8b8467f4e638e8c9a5093c4f1eb48e4b004b5eb5254781250466970ae",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_queries' for 'sm_80'\nptxas info    : Function properties for backward_queries\n    9648 bytes stack frame, 40096 bytes spill stores, 54128 bytes spill loads\nptxas info    : Used 32 registers, used 1 barriers, 9648 bytes cumulative stack size, 472 bytes cmem[0]\nptxas info    : Compile time = 3191.310 ms",
+      "registers": 32,
+      "shared_bytes": 49152,
+      "spill_load_bytes": 54128,
+      "spill_store_bytes": 40096,
+      "stack_frame_bytes": 9648,
+      "stage": "value_and_grad",
+      "variant": "baseline_w4"
+    },
+    {
+      "kernel": "backward_keys",
+      "min_ctas_directive": [],
+      "num_warps": 4,
+      "ptx_sha256": "52db4a5048ea3a5d7d893f3d64cfe1b195a6014fb06b3774d6d47358b4727c15",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_80'\nptxas info    : Function properties for backward_keys\n    3472 bytes stack frame, 6092 bytes spill stores, 7416 bytes spill loads\nptxas info    : Used 128 registers, used 1 barriers, 3472 bytes cumulative stack size, 512 bytes cmem[0]\nptxas info    : Compile time = 1731.632 ms",
+      "registers": 128,
+      "shared_bytes": 98304,
+      "spill_load_bytes": 7416,
+      "spill_store_bytes": 6092,
+      "stack_frame_bytes": 3472,
+      "stage": "value_and_grad",
+      "variant": "baseline_w4"
+    },
+    {
+      "kernel": "backward_keys",
+      "min_ctas_directive": [],
+      "num_warps": 4,
+      "ptx_sha256": "ea04b9e32b1f3ec57746dbfbaeeb3275abe50b83471e6de6ad4ab64e2158f31e",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_80'\nptxas info    : Function properties for backward_keys\n    14040 bytes stack frame, 39560 bytes spill stores, 51048 bytes spill loads\nptxas info    : Used 32 registers, used 1 barriers, 14040 bytes cumulative stack size, 512 bytes cmem[0]\nptxas info    : Compile time = 4143.680 ms",
+      "registers": 32,
+      "shared_bytes": 131072,
+      "spill_load_bytes": 51048,
+      "spill_store_bytes": 39560,
+      "stack_frame_bytes": 14040,
+      "stage": "value_and_grad",
+      "variant": "baseline_w4"
+    },
+    {
+      "kernel": "backward_keys",
+      "min_ctas_directive": [],
+      "num_warps": 4,
+      "ptx_sha256": "d244b41a95586380c3e026b5bb3eccef2e7ea9c50ad1ca0f04038a7fdd79dc39",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_80'\nptxas info    : Function properties for backward_keys\n    2568 bytes stack frame, 3152 bytes spill stores, 3628 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2568 bytes cumulative stack size, 512 bytes cmem[0]\nptxas info    : Compile time = 1399.313 ms",
+      "registers": 255,
+      "shared_bytes": 131072,
+      "spill_load_bytes": 3628,
+      "spill_store_bytes": 3152,
+      "stack_frame_bytes": 2568,
+      "stage": "value_and_grad",
+      "variant": "baseline_w4"
+    },
+    {
+      "kernel": "forward",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 4,
+      "ptx_sha256": "a039e9ae9c26aa1b0b5c9e874861b6af5cdf2f8ce52ffb86bcf766018e8a6a99",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_80'\nptxas info    : Function properties for forward\n    2376 bytes stack frame, 3564 bytes spill stores, 4212 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2376 bytes cumulative stack size, 456 bytes cmem[0]\nptxas info    : Compile time = 1248.385 ms",
+      "registers": 255,
+      "shared_bytes": 16384,
+      "spill_load_bytes": 4212,
+      "spill_store_bytes": 3564,
+      "stack_frame_bytes": 2376,
+      "stage": "forward",
+      "variant": "hint_w4"
+    },
+    {
+      "kernel": "forward",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 4,
+      "ptx_sha256": "564c896fb9251e77abbffe58d9f0fe9bc52dae33d50589d8741bda6d89fa4234",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_80'\nptxas info    : Function properties for forward\n    1344 bytes stack frame, 1744 bytes spill stores, 2032 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 1344 bytes cumulative stack size, 456 bytes cmem[0]\nptxas info    : Compile time = 765.489 ms",
+      "registers": 255,
+      "shared_bytes": 16384,
+      "spill_load_bytes": 2032,
+      "spill_store_bytes": 1744,
+      "stack_frame_bytes": 1344,
+      "stage": "value_and_grad",
+      "variant": "hint_w4"
+    },
+    {
+      "kernel": "backward_queries",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 4,
+      "ptx_sha256": "77c1601238d75de1fe983ccec71032741dec5be9bc876ecaf4310beaf14553ac",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_queries' for 'sm_80'\nptxas info    : Function properties for backward_queries\n    3992 bytes stack frame, 7196 bytes spill stores, 7760 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 3992 bytes cumulative stack size, 472 bytes cmem[0]\nptxas info    : Compile time = 2270.140 ms",
+      "registers": 255,
+      "shared_bytes": 49152,
+      "spill_load_bytes": 7760,
+      "spill_store_bytes": 7196,
+      "stack_frame_bytes": 3992,
+      "stage": "value_and_grad",
+      "variant": "hint_w4"
+    },
+    {
+      "kernel": "backward_keys",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 4,
+      "ptx_sha256": "bdd2c4efc166b64360d758c92a00ae2d85ce6f958431dbc12aa9836a112ae220",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_80'\nptxas info    : Function properties for backward_keys\n    2568 bytes stack frame, 3448 bytes spill stores, 3604 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2568 bytes cumulative stack size, 512 bytes cmem[0]\nptxas info    : Compile time = 1445.762 ms",
+      "registers": 255,
+      "shared_bytes": 98304,
+      "spill_load_bytes": 3604,
+      "spill_store_bytes": 3448,
+      "stack_frame_bytes": 2568,
+      "stage": "value_and_grad",
+      "variant": "hint_w4"
+    },
+    {
+      "kernel": "backward_keys",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 4,
+      "ptx_sha256": "abe78f5a5cc519b7d1ee6f61f159e7ef18722064596941358b8838d9a2b5ab79",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_80'\nptxas info    : Function properties for backward_keys\n    5408 bytes stack frame, 7024 bytes spill stores, 8780 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 5408 bytes cumulative stack size, 512 bytes cmem[0]\nptxas info    : Compile time = 2568.902 ms",
+      "registers": 255,
+      "shared_bytes": 131072,
+      "spill_load_bytes": 8780,
+      "spill_store_bytes": 7024,
+      "stack_frame_bytes": 5408,
+      "stage": "value_and_grad",
+      "variant": "hint_w4"
+    },
+    {
+      "kernel": "backward_keys",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 4,
+      "ptx_sha256": "bf9086fda220ae6092f90c202b6c35a531461c4dd51e883fd49539d28fc46a2b",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_80'\nptxas info    : Function properties for backward_keys\n    2568 bytes stack frame, 3152 bytes spill stores, 3628 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2568 bytes cumulative stack size, 512 bytes cmem[0]\nptxas info    : Compile time = 1117.411 ms",
+      "registers": 255,
+      "shared_bytes": 131072,
+      "spill_load_bytes": 3628,
+      "spill_store_bytes": 3152,
+      "stack_frame_bytes": 2568,
+      "stage": "value_and_grad",
+      "variant": "hint_w4"
+    },
+    {
+      "kernel": "forward",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 8,
+      "ptx_sha256": "70dce0231df915b667c20b4260083fb34c0e64b03add922df8b9081ea2808b33",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_80'\nptxas info    : Function properties for forward\n    2472 bytes stack frame, 3880 bytes spill stores, 4540 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2472 bytes cumulative stack size, 456 bytes cmem[0]\nptxas info    : Compile time = 1258.420 ms",
+      "registers": 255,
+      "shared_bytes": 16384,
+      "spill_load_bytes": 4540,
+      "spill_store_bytes": 3880,
+      "stack_frame_bytes": 2472,
+      "stage": "forward",
+      "variant": "hint_w8"
+    },
+    {
+      "kernel": "forward",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 8,
+      "ptx_sha256": "385f34590142bad1321220f3cca8edc1293a48c9cb9ce5a9f98f232912b95adf",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_80'\nptxas info    : Function properties for forward\n    1224 bytes stack frame, 1496 bytes spill stores, 1860 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 1224 bytes cumulative stack size, 456 bytes cmem[0]\nptxas info    : Compile time = 739.746 ms",
+      "registers": 255,
+      "shared_bytes": 16384,
+      "spill_load_bytes": 1860,
+      "spill_store_bytes": 1496,
+      "stack_frame_bytes": 1224,
+      "stage": "value_and_grad",
+      "variant": "hint_w8"
+    },
+    {
+      "kernel": "backward_queries",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 8,
+      "ptx_sha256": "f8d336bc5b7a4bf86ec376e85b0afb1de18d202c5539dede1acc9fd08f199c04",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_queries' for 'sm_80'\nptxas info    : Function properties for backward_queries\n    4024 bytes stack frame, 7588 bytes spill stores, 8164 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 4024 bytes cumulative stack size, 472 bytes cmem[0]\nptxas info    : Compile time = 2260.006 ms",
+      "registers": 255,
+      "shared_bytes": 49152,
+      "spill_load_bytes": 8164,
+      "spill_store_bytes": 7588,
+      "stack_frame_bytes": 4024,
+      "stage": "value_and_grad",
+      "variant": "hint_w8"
+    },
+    {
+      "kernel": "backward_keys",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 8,
+      "ptx_sha256": "0a95734957d0f8889d7b75244245c0df26bb361230660cfe72849cb68adb6c0f",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_80'\nptxas info    : Function properties for backward_keys\n    2488 bytes stack frame, 3392 bytes spill stores, 3544 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2488 bytes cumulative stack size, 512 bytes cmem[0], 8 bytes cmem[2]\nptxas info    : Compile time = 1280.508 ms",
+      "registers": 255,
+      "shared_bytes": 98304,
+      "spill_load_bytes": 3544,
+      "spill_store_bytes": 3392,
+      "stack_frame_bytes": 2488,
+      "stage": "value_and_grad",
+      "variant": "hint_w8"
+    },
+    {
+      "kernel": "backward_keys",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 8,
+      "ptx_sha256": "6a2c1a1945445e5644438f9c97dbb2e5cd05f2a049628d5656008ab4769b3b08",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_80'\nptxas info    : Function properties for backward_keys\n    4936 bytes stack frame, 7768 bytes spill stores, 8900 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 4936 bytes cumulative stack size, 512 bytes cmem[0]\nptxas info    : Compile time = 2362.425 ms",
+      "registers": 255,
+      "shared_bytes": 131072,
+      "spill_load_bytes": 8900,
+      "spill_store_bytes": 7768,
+      "stack_frame_bytes": 4936,
+      "stage": "value_and_grad",
+      "variant": "hint_w8"
+    },
+    {
+      "kernel": "backward_keys",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 8,
+      "ptx_sha256": "0f475cec85e1cfbc9595f16aa6edf6d395b88f3e45fb038ab39b69e1f09b0f6a",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_80'\nptxas info    : Function properties for backward_keys\n    2688 bytes stack frame, 3272 bytes spill stores, 3756 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2688 bytes cumulative stack size, 512 bytes cmem[0]\nptxas info    : Compile time = 1117.733 ms",
+      "registers": 255,
+      "shared_bytes": 131072,
+      "spill_load_bytes": 3756,
+      "spill_store_bytes": 3272,
+      "stack_frame_bytes": 2688,
+      "stage": "value_and_grad",
+      "variant": "hint_w8"
+    }
+  ],
+  "device_kind": "NVIDIA A100 80GB PCIe",
+  "dtype": "bfloat16",
+  "shape": {
+    "batch": 8,
+    "degree": 3,
+    "heads": 16,
+    "key_width": 64,
+    "length": 2048,
+    "value_width": 64
+  },
+  "slurm_job_id": "218867",
+  "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
+  "source_files": {
+    "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "9908651b30c4f059a4b262542cfc2c70cbf21bf1a1c1841735c08de2a43ba918",
+    "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/attention/backends/polynomial_gdn.py": "c7527cb93e1ea7ca023d3bc74d9709d8f79f8dc899c6b9892ef42520c10382b6",
+    "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/attention/backends/polynomial_gdn_kernels.py": "7770628fcac115fac63b5ffb86d7f412557cfab5eca5b450df7b3dd7f6053502",
+    "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/validation/benchmark_polynomial_gdn_occupancy.py": "3f6b1a580febfc5cf2f882bc7db769413ad39632fac335562aaf2c8d03a4196e"
+  },
+  "status": "passed",
+  "variants": {
+    "baseline_w4": {
+      "min_ctas_per_sm": null,
+      "num_warps": 4,
+      "timings": {
+        "forward": {
+          "compile_seconds": 20.099584865383804,
+          "median_seconds": 0.20349844358861446,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=17824, argument_size_in_bytes=106954752, output_size_in_bytes=33554432, alias_size_in_bytes=0, temp_size_in_bytes=335544848, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.20324943494051695,
+          "seconds": [
+            0.20324943494051695,
+            0.20349844358861446,
+            0.2033229311928153,
+            0.20367435738444328,
+            0.2038802895694971
+          ]
+        },
+        "value_and_grad": {
+          "compile_seconds": 22.567004348151386,
+          "median_seconds": 0.5468265591189265,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=100723936, argument_size_in_bytes=106954752, output_size_in_bytes=106954812, alias_size_in_bytes=0, temp_size_in_bytes=2954891576, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.5465068100020289,
+          "seconds": [
+            0.5478544076904655,
+            0.5468265591189265,
+            0.547537537291646,
+            0.5466071320697665,
+            0.5465068100020289
+          ]
+        }
+      }
+    },
+    "hint_w4": {
+      "min_ctas_per_sm": 1,
+      "num_warps": 4,
+      "relative_errors_vs_baseline": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "timings": {
+        "forward": {
+          "compile_seconds": 2.632109717465937,
+          "median_seconds": 0.026318593882024288,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=17824, argument_size_in_bytes=106954752, output_size_in_bytes=33554432, alias_size_in_bytes=0, temp_size_in_bytes=335544848, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.02625302877277136,
+          "seconds": [
+            0.0263485386967659,
+            0.02639571763575077,
+            0.02628564927726984,
+            0.026318593882024288,
+            0.02625302877277136
+          ]
+        },
+        "value_and_grad": {
+          "compile_seconds": 17.614357856102288,
+          "median_seconds": 0.15332915540784597,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=100723936, argument_size_in_bytes=106954752, output_size_in_bytes=106954812, alias_size_in_bytes=0, temp_size_in_bytes=2954891576, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.15327045321464539,
+          "seconds": [
+            0.15406178031116724,
+            0.15356716606765985,
+            0.15327045321464539,
+            0.15330157708376646,
+            0.15332915540784597
+          ]
+        }
+      }
+    },
+    "hint_w8": {
+      "min_ctas_per_sm": 1,
+      "num_warps": 8,
+      "relative_errors_vs_baseline": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "timings": {
+        "forward": {
+          "compile_seconds": 2.604686640202999,
+          "median_seconds": 0.0523022310808301,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=17824, argument_size_in_bytes=106954752, output_size_in_bytes=33554432, alias_size_in_bytes=0, temp_size_in_bytes=335544848, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.052217524498701096,
+          "seconds": [
+            0.052217524498701096,
+            0.05230044852942228,
+            0.05255716107785702,
+            0.0523022310808301,
+            0.05256452225148678
+          ]
+        },
+        "value_and_grad": {
+          "compile_seconds": 23.172683193348348,
+          "median_seconds": 0.29102608654648066,
+          "memory_analysis": "CompiledMemoryStats(generated_code_size_in_bytes=100723936, argument_size_in_bytes=106954752, output_size_in_bytes=106954812, alias_size_in_bytes=0, temp_size_in_bytes=2954891576, host_generated_code_size_in_bytes=0, host_argument_size_in_bytes=0, host_output_size_in_bytes=0, host_alias_size_in_bytes=0, host_temp_size_in_bytes=0)",
+          "minimum_seconds": 0.2907307595014572,
+          "seconds": [
+            0.2907307595014572,
+            0.2909542890265584,
+            0.29105279967188835,
+            0.2913678977638483,
+            0.29102608654648066
+          ]
+        }
+      }
+    }
+  }
+}

@@ -359,11 +359,11 @@ Methods and explicit comparisons remain in
 [the exploratory topic](../../results/exploratory/gdn_polynomial/README.md).
 
 Home cluster: Kennel. Develop and execute in `worktrees/gdn-cubic`, with its own
-locked CUDA environment. The launcher runs full acceptance in the production
-allocation before training: CPU and GPU correctness, initialization, 20 full-recipe
-updates with validation, and exact checkpoint resume. Acceptance rejects a
-projected runtime beyond 46 hours of the 48-hour allocation. It qualifies the
-actual GPU model and count; no qualification is borrowed across hardware.
+locked CUDA environment. Standalone qualification checks CPU and GPU correctness,
+initialization, 20 full-recipe updates with validation, and exact checkpoint resume.
+It enforces a 70-hour budget within the planned 72-hour production allocation.
+Production depends on successful qualification and reuses only acceptance matching
+its frozen source, recipe, environment, and actual GPU model/count.
 The job requests eight A100 GPUs on `samoyed`, nice 0 on `long`, while the protected
 quadratic run occupies the four-GPU allowance on `standard`. Global microbatch 64
 and effective batch 256 are unchanged; the local microbatch is eight sequences.
@@ -373,11 +373,22 @@ transport policy. The frozen scientific recipe is unchanged by these runtime cho
 From the experiment worktree, after committing the frozen inputs:
 
 ```bash
-LAUNCH_COMMIT=$(git rev-parse HEAD)
+LAUNCH_COMMIT=6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4
+QUALIFICATION_JOB=$(env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable \
+  --nice=0 --partition=long --nodelist=samoyed --gres=gpu:a100:8 \
+  --exclude=collie,dogo,mastiff,doodle,terrier,akita \
+  --time=01:00:00 --cpus-per-task=32 --mem=256G --requeue --open-mode=append \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,TRANSFORMER_HOST_STAGING=1,NCCL_P2P_DISABLE=1 \
+  --job-name=cubic-qualification \
+  --output=scaffolds/transformer/validation/logs/gdn-cubic-runtime-%j.log \
+  scaffolds/transformer/validation/qualify_gdn_runtime.sbatch \
+  experiments/attention_scaling/runs/r83c3394eb730/config.yaml \
+  "$LAUNCH_COMMIT" A100 72 8)
 env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable \
   --nice=0 --partition=long --nodelist=samoyed --gres=gpu:a100:8 \
   --exclude=collie,dogo,mastiff,doodle,terrier,akita \
-  --time=2-00:00:00 --cpus-per-task=32 --mem=256G \
+  --time=3-00:00:00 --cpus-per-task=32 --mem=256G \
+  --dependency="afterok:$QUALIFICATION_JOB" \
   --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,TRANSFORMER_HOST_STAGING=1,NCCL_P2P_DISABLE=1 \
   --job-name=r83c3394eb730 \
   --output=experiments/attention_scaling/runs/r83c3394eb730/training.log \

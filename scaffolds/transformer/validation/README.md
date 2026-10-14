@@ -11,6 +11,39 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Cubic GDN with original-key-space query transport
+
+The cubic backend extends the same transported-score recurrence through degree
+three, with a separate `beta_3=tanh(W_3 x)` write projection initialized to zero.
+Original GDN weights and the initialized quadratic model's outputs are preserved.
+
+The initial [A100 runtime measurement](runs/gdn-cubic-a100/runtime-baseline.json)
+was numerically valid but took 24.6–24.9 seconds per update and exceeded the
+allocation's runtime budget. The [occupancy benchmark](runs/gdn-cubic-a100/occupancy-benchmark.json)
+showed that an explicit one-CTA-per-SM minimum in the Ampere PTX reduced register
+spills. With four warps, forward and backward time fell from 546.8 to 153.3 ms;
+the benchmark outputs and all six input gradients remained bit-for-bit identical.
+The [occupancy sweep](runs/gdn-cubic-a100/occupancy-sweep.json) compared additional
+launch settings; four warps and the one-CTA hint were retained for qualification.
+
+The [full-recipe qualification](runs/gdn-cubic-a100/runtime.json) passed on 8
+NVIDIA A100 80GB PCIe GPUs (`samoyed`, job `218895`, source `6945d1b8`):
+196 CPU, 9 distributed, and 75 GPU tests,
+a 20-update pilot, and exact fresh-process resumption from update 20 to 21.
+The passed tests and initialization retained their original job provenance; the
+standalone qualification reran the full pilot and exact resume with the same source.
+The GPU checks include cubic outputs and all input gradients, production widths,
+length-2,048 sequences, strong decay, and the quadratic limit.
+
+Pilot validation and telemetry were finite with zero invalid attention counts.
+All four coefficient projections received nonzero gradients and updates; the new
+cubic coefficients had nonzero RMS in all ten layers. Steady updates took
+8.794–9.069 seconds (median 8.831), with a conservative
+full-run projection of 48.61 hours within the 70-hour guard
+for the explicitly qualified 72-hour production allocation.
+These checks qualify startup and numerical behavior on this allocation; long-run
+stability, model quality, and production timing remain scientific run measurements.
+
 ### Quadratic GDN with original-key-space query transport
 
 The quadratic backend implements `F_t(q) = alpha_t F_{t-1}(P_t q) +

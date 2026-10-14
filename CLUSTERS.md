@@ -85,6 +85,13 @@ evaluation, and fresh-process resume for `d_K=8,m=4`. This does not qualify the
 remaining A100 grid or a new attention mechanism. Evidence and limitations are
 recorded in `scaffolds/transformer/validation/README.md`.
 
+The 211.5M cubic GDN recipe is separately qualified on eight host-staged A100s
+on `samoyed`: correctness, full-recipe training/validation, and exact fresh-process
+resume passed. Its pilot projects 48.61 hours; production requests 72 hours on
+`long`. Use the standalone qualification launcher's production-hours argument to
+check this budget before submitting production with an `afterok` dependency.
+The matching source and hardware evidence are in the scaffold validation record.
+
 ## ORCD / Engaging (MIT)
 
 - **Login:** `ssh rafah@orcd-login.mit.edu`, using MIT authentication/Duo.

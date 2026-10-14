@@ -1,0 +1,90 @@
+{
+  "attention_diagnostics_valid": true,
+  "configuration_sha256": "11f43dfe6b2430f53f4d584bffef9aed9e8ec94296bc7c26d16b67dd207de0ab",
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "failure": {
+    "error": "RuntimeError: Pilot projects beyond a 48h allocation: 133.67 hours",
+    "failed_utc": "2026-10-14T06:13:52.053198+00:00",
+    "identity": "2d19b73fc90ca60b17666f3727f1067c47a38c44e6d89a5b0c504133c92d732d",
+    "slurm_job_id": "218862",
+    "stage": "pilot"
+  },
+  "gpu_count": 8,
+  "hardware": {
+    "attention_backend": "fused",
+    "device_kinds": [
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3",
+      "cuda:4",
+      "cuda:5",
+      "cuda:6",
+      "cuda:7"
+    ],
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "parameter_count": 211498944,
+  "resume_tested": false,
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "NCCL_P2P_DISABLE": "1",
+    "TRANSFORMER_HOST_STAGING": "1",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "slurm_job_id": "218862",
+  "source_commit": "cee9c7f13bdde90be893968955ac30f58ce52777",
+  "status": "numerically_valid_runtime_budget_failed",
+  "test_counts": {
+    "cpu-distributed-tests": {
+      "passed": 9,
+      "total": 9
+    },
+    "cpu-tests": {
+      "passed": 180,
+      "total": 180
+    },
+    "gpu-tests": {
+      "passed": 75,
+      "total": 75
+    }
+  },
+  "timing": {
+    "checkpoint_seconds": [
+      28.222222082316875
+    ],
+    "evaluation_seconds": [
+      25.757636396214366
+    ],
+    "runtime_seconds": 927.8033491671085,
+    "train_step_seconds": [
+      146.45714846625924,
+      24.640107094310224,
+      24.668497984297574,
+      24.920542613603175,
+      24.636677846312523,
+      24.89486356638372,
+      24.65247748978436,
+      24.933080403134227
+    ]
+  },
+  "validation_nll": 10.477524042129517
+}

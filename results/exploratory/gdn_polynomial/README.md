@@ -10,7 +10,7 @@ key-space transformation is unchanged?
 | Role | Run ID | Memory function | Status |
 | --- | --- | --- | --- |
 | Primary | `rd40af7956426` | Constant, linear, and quadratic | Running; update 10,000 recorded |
-| Cubic | `r83c3394eb730` | Constant through cubic | Qualifying on eight A100s; job 218862, long, nice 0 |
+| Cubic | `r83c3394eb730` | Constant through cubic | Running on eight A100s; job 218896, long, nice 0 |
 | Control | `rf7341031e3d5` | Linear, independent erase gate | Complete |
 
 The explicitly selected control uses the repaired arithmetic, canonical GDN
@@ -41,7 +41,7 @@ The added quadratic coefficients were active in every layer by update 4,000;
 their RMS then ranged from 0.87 to 0.97. Long-run stability and terminal
 performance remain open.
 
-Live mirror: [W&B run](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/d4ee18120782434cba349e45398d8b6c).
+Quadratic live mirror: [W&B run](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/d4ee18120782434cba349e45398d8b6c).
 
 
 With GDN's L2-normalized keys and queries, the update is
@@ -108,8 +108,13 @@ start at the same reference-initialized linear function. The cubic recipe keeps
 the quadratic run's data, optimizer, warmup, output RMSNorm, and batch layout.
 Its dedicated checks cover the cubic forward and all input gradients, exact
 quadratic nesting at zero cubic write, noncommuting transition order, and
-production sequence length and head widths. GPU qualification remains required
-before production training.
+production sequence length and head widths. Full
+[A100 qualification](../../../scaffolds/transformer/validation/runs/gdn-cubic-a100/runtime.json)
+passed correctness, pilot validation, and exact checkpoint resumption. The pilot
+projects 48.61 hours within the requested 72-hour production allocation.
+This qualifies startup; long-run stability and performance remain open.
+
+Cubic live mirror: [200m-dk064-gdn-cubic-geometry-warmup400-seed0](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/911b85e2ddde4223972bde38199aa936).
 
 ## Open decision
 
