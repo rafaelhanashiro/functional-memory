@@ -3,6 +3,94 @@ question: Does a separate learned denominator polynomial let normalized learned 
 study: experiments/attention_scaling
 metric: terminal validation perplexity
 runs:
+- run_id: r90f6452bba82
+  label: rational degree 8, signed degree-8 denominator, lambda = 0.01 on both, linear-attention
+    start, transformer reference initialization
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r90f6452bba82/config.yaml
+      sha256: e3cb648ec4794b45c749b407e5c6e75d66f4aa948420732ea2e29204042ffb02
+    metadata.json:
+      path: experiments/attention_scaling/runs/r90f6452bba82/metadata.json
+      sha256: 97bbe1ee0a27f74344bd8f2d172511fb87eaf45eb7bd8c6f7f930eecf64a464e
+    numerical_failure_step_00000073.json:
+      path: experiments/attention_scaling/runs/r90f6452bba82/numerical_failure_step_00000073.json
+      sha256: f0acb56c53a3f86a5aeebf4cc095a75ff3d993eb3c14dff70739d57e263ab752
+- run_id: rc8aeb26cf795
+  label: rational degree 8, signed degree-8 denominator, lambda = 0.01 on both, weight
+    decay 0.01, linear-attention start, transformer reference initialization
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rc8aeb26cf795/config.yaml
+      sha256: bba05a1fb64d76bb4e8f84f311da95f75a87a8e32c02ee64e3042eaf43eb4866
+    metadata.json:
+      path: experiments/attention_scaling/runs/rc8aeb26cf795/metadata.json
+      sha256: 94ae92799dcea413f835d752bdf8ed4952f6b69f77d6ee7f3cc9b174126f2055
+    numerical_failure_step_00000044.json:
+      path: experiments/attention_scaling/runs/rc8aeb26cf795/numerical_failure_step_00000044.json
+      sha256: 8c05ae9fde3804c46b5894883835ef88da56c337a5afe73fcc23fe2cce97ab3f
+- run_id: rd5ac0e3013e3
+  label: rational degree 8, linear denominator with learned constant, numerator-only
+    lambda = 0.01, linear-attention start, transformer reference initialization
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rd5ac0e3013e3/config.yaml
+      sha256: bb99c4beecf30c6a29dd0f5e29ec71cd1d1df91cab98210e52c5cc29425b240a
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rd5ac0e3013e3/metrics.jsonl
+      sha256: 44136e947560863d34ec5cfea88aef8572f135a60deac84738e8b23909c3e32f
+    completion.json:
+      path: experiments/attention_scaling/runs/rd5ac0e3013e3/completion.json
+      sha256: 6e49f2c9825091dbb92b554edf0267539ca892686d4c3c8b118224a36cbdb991
+    metadata.json:
+      path: experiments/attention_scaling/runs/rd5ac0e3013e3/metadata.json
+      sha256: 513b9084439ffac097618f550b08d23bf674d4f2ad6562beeda59e94fa703e10
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rd5ac0e3013e3/best_validation.json
+      sha256: d33710c42ab25e1253854eb719ccc7cb44b3d685ac88a9f2d0aea8863d07a768
+- run_id: r05cd33157d94
+  label: rational degree 8, nonnegative quadratic denominator with learned constant,
+    numerator-only lambda = 0.01, linear-attention start, transformer reference initialization
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r05cd33157d94/config.yaml
+      sha256: d4cd5fd53dfc2654d3b2307a3a102c4e6ae174d6162dffddcd1dee787e23f08a
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r05cd33157d94/metrics.jsonl
+      sha256: 3d414b7728af5edb811646ea7a1835d0937ede04c1beac1c173843574bf0ce2a
+    completion.json:
+      path: experiments/attention_scaling/runs/r05cd33157d94/completion.json
+      sha256: bc115658876e14ca11946dc08bd7033671cbfffae0d77ce88a67f12390bcb29f
+    metadata.json:
+      path: experiments/attention_scaling/runs/r05cd33157d94/metadata.json
+      sha256: 36d23093c3db4dee0a1225d25ff6e6e066809c6eda303940a7c154c69acdf831
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r05cd33157d94/best_validation.json
+      sha256: 74209663845af2a7cd47003b2c575aff9c5c5c90a793e63cdadbdea11f9d8910
+- run_id: rbafa372b4e8b
+  label: rational degree 8, nonnegative degree-8 denominator, lambda = 0.01 on both,
+    weight decay 0.01, linear-attention start, transformer reference initialization
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rbafa372b4e8b/config.yaml
+      sha256: 2ba2b19b0ed952c4542c4d6469ac7e9552217d6e5356beb1a6f453e092eabf63
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rbafa372b4e8b/metrics.jsonl
+      sha256: e392f1800b95d84b9fb20fb599222b41a4f52ecbd3e79c1868a1030dd3450c56
+    completion.json:
+      path: experiments/attention_scaling/runs/rbafa372b4e8b/completion.json
+      sha256: 22f57f74cbcfb8e570b8477f958410149076b7d5b007997e7b7d872f65f55809
+    metadata.json:
+      path: experiments/attention_scaling/runs/rbafa372b4e8b/metadata.json
+      sha256: 48d7b26d3115e0aab875c87316942abf55dc68cd29f68fee5007a77e4226e059
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rbafa372b4e8b/best_validation.json
+      sha256: a6796f5e527b41c4f1406035e67e6519fc9caa069168db5f5f69a2dff5f0692d
 - run_id: rdf00da0866a8
   label: softmax, transformer reference initialization
   role: control
