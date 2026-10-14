@@ -3,11 +3,26 @@
     "path": "experiments/attention_scaling/runs/r83c3394eb730/config.yaml",
     "sha256": "11f43dfe6b2430f53f4d584bffef9aed9e8ec94296bc7c26d16b67dd207de0ab"
   },
+  "frozen_execution_sha256": "1d96a67340f3c61de70ceb88c17d527780088dfcc713c5491e93abb9af86b23c",
   "home_cluster": "kennel",
   "label": "200m-dk064-gdn-cubic-geometry-warmup400-seed0",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/training.log",
   "name": "200m-dk064-gdn-cubic-geometry-warmup400-seed0",
   "record_schema_version": 1,
   "run_id": "r83c3394eb730",
   "seed": 0,
-  "status": "planned"
+  "source_commit": "d8ac9add41fa1f1cebc737284fb0be8eb6874ca8",
+  "status": "queued",
+  "submission": {
+    "acceptance_before_training": true,
+    "gpu_count": 4,
+    "gpu_types": [
+      "B300",
+      "H100"
+    ],
+    "nice": 0,
+    "partition": "long",
+    "slurm_job_id": "218822",
+    "time_limit_hours": 48
+  }
 }
