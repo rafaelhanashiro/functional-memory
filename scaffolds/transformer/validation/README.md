@@ -723,9 +723,8 @@ Steady updates took 0.61–0.63 seconds; the conservative full-run projection is
 
 ## Gated DeltaNet on ORCD H200, and ORCD H100
 
-These qualifications come from the production acceptance of the
-[warmup-length runs](../../../results/exploratory/warmup_length/README.md) at source
-`ccb1671`. Each allocation ran its CPU, distributed-CPU, and GPU tests with no failures
+These qualifications come from the production acceptance of the warmup-400 runs at
+source `ccb1671`. Each allocation ran its CPU, distributed-CPU, and GPU tests with no failures
 or skips, the initialization check, a 20-update full-recipe pilot on the fused backend,
 and an exact fresh-process resume, with direct device transfer. Each run's
 `record.json` holds its acceptance summary and hash.
@@ -744,7 +743,7 @@ and an exact fresh-process resume, with direct device transfer. Each run's
   update, against about 1.07 and 1.45 s on 2×H200; `m = 1` failed numerically at update
   67, a property of odd-degree normalized kernels rather than of the hardware.
 
-The warmup-length unnormalized fixed Hermite runs (source `13f018f`) added two more:
+The warmup-400 unnormalized fixed Hermite runs (source `13f018f`) added two more:
 
 - **Unnormalized fixed Hermite on ORCD H100 and H200:** 310 CPU, 5 distributed, and 43 GPU
   tests passed on 2×H100 80GB HBM3 (job 25089881, 2026-10-07), and the GPU tests again on
@@ -762,7 +761,7 @@ passed 131 CPU, 5 distributed, and 1 GPU test on 2×H100 80GB HBM3 (job 25236653
 2026-10-08), and each run its own initialization check, pilot, and resume. `d_K = 16`
 started on 2×H100 NVL, which again reused the H100 80GB HBM3 test results.
 
-The warmup-length softmax and Gated DeltaNet runs at other widths (sources `4ed7397` and
+The warmup-400 softmax and Gated DeltaNet runs at other widths (sources `4ed7397` and
 `2ab5aa1`, both with training telemetry) added:
 
 - **Gated DeltaNet on 2×H100 80GB HBM3:** 107 CPU, 9 distributed, and 12 GPU tests passed
@@ -783,12 +782,12 @@ The warmup-length softmax and Gated DeltaNet runs at other widths (sources `4ed7
 The locked cuBLAS 12.9 is in the range (12.8–13.1) where some Blackwell kernels free
 tensor memory twice; JAX warns that a cuBLAS kernel running concurrently with another
 can silently corrupt data. Two B300 runs stopped on an infinite gradient norm at a
-finite loss (`rc40145fd32c7` at update 12,637; `rdf00da0866a8` at 18,408, which then
-resumed on H100 and completed).
+finite loss (an unnormalized learned `m = 4` run with `1/t` output scaling at update
+12,637; `rdf00da0866a8` at 18,408, which then resumed on H100 and completed).
 `replay_checkpoint.py` resumes a run from a retained checkpoint in a scratch directory,
 leaving the run untouched; `replay_checkpoint.sbatch` repeats it in one allocation,
 optionally with `--xla_gpu_disable_async_collectives=ALLCOLLECTIVES` ("sync"), which keeps
-the gradient all-reduce on the compute stream. On 2026-10-04 `rc40145fd32c7` was replayed
+the gradient all-reduce on the compute stream. On 2026-10-04 the first run was replayed
 from its update-12,500 checkpoint through update 12,900 on its source commit
 `a63a416775f31a6297076b4ba261df2a7c26df41`:
 
@@ -811,7 +810,7 @@ primary checkout with a detached worktree at the run's commit:
 ```bash
 sbatch -w akita --output=scaffolds/transformer/validation/logs/replay-b300-%j.log \
   scaffolds/transformer/validation/replay_checkpoint.sbatch worktrees/b300_replay \
-  experiments/attention_scaling/runs/rc40145fd32c7 12500 12900 <scratch> default sync default sync
+  experiments/attention_scaling/runs/<run> 12500 12900 <scratch> default sync default sync
 ```
 
 ## Reproduction

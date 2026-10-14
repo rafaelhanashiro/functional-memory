@@ -45,814 +45,814 @@ cells:
   column: m2
   d_k: 8
   experiment: attention_scaling
-  run: re7f34348e6ae
-  label: 200m-qk-dk008-m002-transformer-init-seed0
+  run: rc2e4acaf01ff
+  label: 200m-qk-dk008-m002-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m4
   d_k: 8
   experiment: attention_scaling
-  run: re21d068e25c7
-  label: 200m-qk-dk008-m004-transformer-init-seed0
+  run: rb2f51975c4bb
+  label: 200m-qk-dk008-m004-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m8
   d_k: 8
   experiment: attention_scaling
-  run: r19adcf21128c
-  label: 200m-qk-dk008-m008-transformer-init-seed0
+  run: rad524492116f
+  label: 200m-qk-dk008-m008-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m16
   d_k: 8
   experiment: attention_scaling
-  run: r8c8f8624a87a
-  label: 200m-qk-dk008-m016-transformer-init-seed0
+  run: rdb9dec632be7
+  label: 200m-qk-dk008-m016-transformer-init-warmup400-seed0
 - panel: references
   column: softmax
   d_k: 8
   experiment: attention_scaling
-  run: rbfeee56c811b
-  label: 200m-qk-dk008-softmax-transformer-init-seed0
+  run: r668a588ddc0b
+  label: 200m-qk-dk008-softmax-transformer-init-warmup400-seed0
 - panel: references
   column: gated_deltanet
   d_k: 8
   experiment: attention_scaling
-  run: r74f492893587
-  label: 200m-dk008-gdn-seed0
+  run: r353d59c575aa
+  label: 200m-dk008-gdn-warmup400-seed0
 - panel: normalized_fixed
   column: m2
   d_k: 16
   experiment: attention_scaling
-  run: r19f5818e818a
-  label: 200m-qk-dk016-m002-transformer-init-seed0
+  run: r3abedaf51474
+  label: 200m-qk-dk016-m002-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m4
   d_k: 16
   experiment: attention_scaling
-  run: rafa3585e4f1c
-  label: 200m-qk-dk016-m004-transformer-init-seed0
+  run: r5408301aa174
+  label: 200m-qk-dk016-m004-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m8
   d_k: 16
   experiment: attention_scaling
-  run: r81260072928b
-  label: 200m-qk-dk016-m008-transformer-init-seed0
+  run: r987d35acfb2c
+  label: 200m-qk-dk016-m008-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m16
   d_k: 16
   experiment: attention_scaling
-  run: rd05f99d385bc
-  label: 200m-qk-dk016-m016-transformer-init-seed0
+  run: ra0bece83eb7b
+  label: 200m-qk-dk016-m016-transformer-init-warmup400-seed0
 - panel: references
   column: softmax
   d_k: 16
   experiment: attention_scaling
-  run: rfff20b3dbb18
-  label: 200m-qk-dk016-softmax-transformer-init-seed0
+  run: rfe3e43bfcabf
+  label: 200m-qk-dk016-softmax-transformer-init-warmup400-seed0
 - panel: references
   column: gated_deltanet
   d_k: 16
   experiment: attention_scaling
-  run: r09f5913a71c5
-  label: 200m-dk016-gdn-seed0
+  run: rd4b7fe3f1b11
+  label: 200m-dk016-gdn-warmup400-seed0
 - panel: normalized_fixed
   column: m2
   d_k: 32
   experiment: attention_scaling
-  run: rba0327a59191
-  label: 200m-qk-dk032-m002-transformer-init-seed0
+  run: raf32fab4ba52
+  label: 200m-qk-dk032-m002-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m4
   d_k: 32
   experiment: attention_scaling
-  run: r1fc62fb52631
-  label: 200m-qk-dk032-m004-transformer-init-seed0
+  run: r044b3356f215
+  label: 200m-qk-dk032-m004-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m8
   d_k: 32
   experiment: attention_scaling
-  run: r4c59bee0931e
-  label: 200m-qk-dk032-m008-transformer-init-seed0
+  run: r88e2fc31b2e3
+  label: 200m-qk-dk032-m008-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m16
   d_k: 32
   experiment: attention_scaling
-  run: rc54b765d22d8
-  label: 200m-qk-dk032-m016-transformer-init-seed0
+  run: r5bcd4095e392
+  label: 200m-qk-dk032-m016-transformer-init-warmup400-seed0
 - panel: references
   column: softmax
   d_k: 32
   experiment: attention_scaling
-  run: r2dbfae04dcb7
-  label: 200m-qk-dk032-softmax-transformer-init-seed0
+  run: r832110abf732
+  label: 200m-qk-dk032-softmax-transformer-init-warmup400-seed0
 - panel: references
   column: gated_deltanet
   d_k: 32
   experiment: attention_scaling
-  run: r4150da71c076
-  label: 200m-dk032-gdn-seed0
+  run: r3035bbb7b2ac
+  label: 200m-dk032-gdn-warmup400-seed0
 - panel: normalized_fixed
   column: m2
   d_k: 64
   experiment: attention_scaling
-  run: r596270e15ba1
-  label: 200m-qk-dk064-m002-transformer-init-seed0
+  run: r85e7da52f1c4
+  label: 200m-qk-dk064-m002-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m4
   d_k: 64
   experiment: attention_scaling
-  run: r512daaa27a15
-  label: 200m-qk-dk064-m004-transformer-init-seed0
+  run: r67e1c33d19fa
+  label: 200m-qk-dk064-m004-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m8
   d_k: 64
   experiment: attention_scaling
-  run: r7d911aee60ed
-  label: 200m-qk-dk064-m008-transformer-init-seed0
+  run: r10baef5d8428
+  label: 200m-qk-dk064-m008-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m16
   d_k: 64
   experiment: attention_scaling
-  run: r9968775086c3
-  label: 200m-qk-dk064-m016-transformer-init-seed0
+  run: r697221e420ad
+  label: 200m-qk-dk064-m016-transformer-init-warmup400-seed0
 - panel: references
   column: softmax_no_qk_norm
   d_k: 64
   experiment: attention_scaling
-  run: rf7277f076b8f
-  label: 200m-softmax-transformer-init-seed0
+  run: rb28779009ce5
+  label: 200m-softmax-transformer-init-warmup400-seed0
 - panel: references
   column: gated_deltanet
   d_k: 64
   experiment: attention_scaling
-  run: r118c41829531
-  label: 200m-dk064-gdn-seed0
+  run: rdf74e4289926
+  label: 200m-dk064-gdn-warmup400-seed0
 - panel: normalized_fixed
   column: m2
   d_k: 128
   experiment: attention_scaling
-  run: ra14cb10d335d
-  label: 200m-qk-dk128-m002-transformer-init-seed0
+  run: r454c40d18898
+  label: 200m-qk-dk128-m002-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m4
   d_k: 128
   experiment: attention_scaling
-  run: rfedbbc4ec389
-  label: 200m-qk-dk128-m004-transformer-init-seed0
+  run: ra6e06f8356a7
+  label: 200m-qk-dk128-m004-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m8
   d_k: 128
   experiment: attention_scaling
-  run: r60a3e3a79bae
-  label: 200m-qk-dk128-m008-transformer-init-seed0
+  run: rdb9874f67bf1
+  label: 200m-qk-dk128-m008-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m16
   d_k: 128
   experiment: attention_scaling
-  run: rb85a9d2fb62c
-  label: 200m-qk-dk128-m016-transformer-init-seed0
+  run: re81d054a6087
+  label: 200m-qk-dk128-m016-transformer-init-warmup400-seed0
 - panel: references
   column: softmax
   d_k: 128
   experiment: attention_scaling
-  run: r3527098ab9e7
-  label: 200m-qk-dk128-softmax-transformer-init-seed0
+  run: ra1630eecb247
+  label: 200m-qk-dk128-softmax-transformer-init-warmup400-seed0
 - panel: references
   column: gated_deltanet
   d_k: 128
   experiment: attention_scaling
-  run: r86b223e4d9e9
-  label: 200m-dk128-gdn-seed0
+  run: r6e4b2c93c240
+  label: 200m-dk128-gdn-warmup400-seed0
 - panel: normalized_fixed
   column: m1
   d_k: 64
   experiment: attention_scaling
-  run: r9c89729b9f23
-  label: 200m-qk-dk064-m001-transformer-init-seed0
+  run: rbdedf102c655
+  label: 200m-qk-dk064-m001-transformer-init-warmup400-seed0
 - panel: normalized_fixed
   column: m3
   d_k: 64
   experiment: attention_scaling
-  run: r48a4c0358cd2
-  label: 200m-qk-dk064-m003-transformer-init-seed0
+  run: r6ddf65b22727
+  label: 200m-qk-dk064-m003-transformer-init-warmup400-seed0
 - panel: references
   column: softmax
   d_k: 64
   experiment: attention_scaling
-  run: rbde7fc4c2135
-  label: 200m-qk-softmax-transformer-init-seed0
+  run: rdf00da0866a8
+  label: 200m-qk-softmax-transformer-init-warmup400-seed0
 metric: terminal_validation_perplexity
 runs:
 - study: attention_scaling
-  run_id: re7f34348e6ae
-  label: 200m-qk-dk008-m002-transformer-init-seed0
+  run_id: rc2e4acaf01ff
+  label: 200m-qk-dk008-m002-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/re7f34348e6ae/config.yaml
-      sha256: 7f255872d69e0a5c924226d8089c24e8c9108f060831b8096962ffa62806b38a
+      path: experiments/attention_scaling/runs/rc2e4acaf01ff/config.yaml
+      sha256: e0127874ded94e3fc3dbe606df287aee170205ca356c5003d1512884801125ae
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/re7f34348e6ae/metrics.jsonl
-      sha256: dfffa3c4bc15d1843838010ec81948ad31157aa5b48a78782970acaa97ad6940
+      path: experiments/attention_scaling/runs/rc2e4acaf01ff/metrics.jsonl
+      sha256: c5af68c4a3c351d2f87afd0db3e5befed52eab222dbdb8119dee2bc84d047b0a
     completion.json:
-      path: experiments/attention_scaling/runs/re7f34348e6ae/completion.json
-      sha256: 1b524924435307b832d0d09f89bfa6c4fce28b304e5cc5378f5e85fb4ff36f34
+      path: experiments/attention_scaling/runs/rc2e4acaf01ff/completion.json
+      sha256: a1041eb6aa5562ee5208f02a76c96f3a243c5e8acee18cf826e843bb5979959b
     metadata.json:
-      path: experiments/attention_scaling/runs/re7f34348e6ae/metadata.json
-      sha256: 42e78cfb9b9a1f9bf53de6720a79a75f976dd25bd1d8c2d77401bcd092265f1f
+      path: experiments/attention_scaling/runs/rc2e4acaf01ff/metadata.json
+      sha256: b3c885f9b732cfe496cb04acbba421532702ee25a98bf81885a252e409d30e9d
     best_validation.json:
-      path: experiments/attention_scaling/runs/re7f34348e6ae/best_validation.json
-      sha256: 755375fe98421ef333a3621a6fee856bf5930d5671e8c48988b1245b06434d03
+      path: experiments/attention_scaling/runs/rc2e4acaf01ff/best_validation.json
+      sha256: c12e2781ad0b907a685bda08d64b64d61b2dc639d4a0b4952a69bcaaf2e96f13
 - study: attention_scaling
-  run_id: re21d068e25c7
-  label: 200m-qk-dk008-m004-transformer-init-seed0
+  run_id: rb2f51975c4bb
+  label: 200m-qk-dk008-m004-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/re21d068e25c7/config.yaml
-      sha256: 325e8fa335572c3f837ae48c6c713d84270b31db22df6be3d13a511f48fdf05c
+      path: experiments/attention_scaling/runs/rb2f51975c4bb/config.yaml
+      sha256: 287df9b4a1e282834d0625ae42f683c406e8c1335eb152ca00140f7b28c4c8f2
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/re21d068e25c7/metrics.jsonl
-      sha256: 52383149c5c4190b7bdec4d2559b2158875e318e1a991444069f257273c43a44
+      path: experiments/attention_scaling/runs/rb2f51975c4bb/metrics.jsonl
+      sha256: f782c33dfbc3ae9ea7ee4a115ef8a5b5e89c48d1131770cb063f79f43f90c1b9
     completion.json:
-      path: experiments/attention_scaling/runs/re21d068e25c7/completion.json
-      sha256: 70979212f2be405caa1c7ef937c1fd6aab96addf015504a0b025d2e7eed9f555
+      path: experiments/attention_scaling/runs/rb2f51975c4bb/completion.json
+      sha256: c5f90aaca3374c0a57c8cb4e3c9914be305174385b02ee8e0a620b5f96d905ba
     metadata.json:
-      path: experiments/attention_scaling/runs/re21d068e25c7/metadata.json
-      sha256: f57a1f02c79bf2975330ede511711e6f48fc20bccef12326055b60321835d836
+      path: experiments/attention_scaling/runs/rb2f51975c4bb/metadata.json
+      sha256: 6072661aee4c230f2bbbd5fd8ad0b48419b2f7f4f72d2f5bf3d66716a8c7b241
     best_validation.json:
-      path: experiments/attention_scaling/runs/re21d068e25c7/best_validation.json
-      sha256: 2f90b592163c9ca1174dc968757fd039c8166cf95ec40220147387da387d4da4
+      path: experiments/attention_scaling/runs/rb2f51975c4bb/best_validation.json
+      sha256: bab90e97ff98e889414fd6f075676600023f6804665e2de2c92fc596ea9f054c
 - study: attention_scaling
-  run_id: r19adcf21128c
-  label: 200m-qk-dk008-m008-transformer-init-seed0
+  run_id: rad524492116f
+  label: 200m-qk-dk008-m008-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r19adcf21128c/config.yaml
-      sha256: 1bc87830bdfadbe7540ac58c7173dba593e4b785c3aca120e7aa37be87835dad
+      path: experiments/attention_scaling/runs/rad524492116f/config.yaml
+      sha256: cb9a90a095d947e37c1eae2bdfae758b696d31cefd3e4dd0c71b88983f98bf19
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r19adcf21128c/metrics.jsonl
-      sha256: 4788a60fad781ad4a1b9be181edf2ea46531c02203aecb0eb60b9f3e569a4ecb
+      path: experiments/attention_scaling/runs/rad524492116f/metrics.jsonl
+      sha256: b6d1e81c20edc447f77053c765c7126920274860d3dc27fde84fda3037785079
     completion.json:
-      path: experiments/attention_scaling/runs/r19adcf21128c/completion.json
-      sha256: 5d778fed0dd32f8e784ccfb064a3c2df1df9e3ca4ab0f9c9a08f7d4020aad684
+      path: experiments/attention_scaling/runs/rad524492116f/completion.json
+      sha256: ee898af9d1452823449e7e669a68f38e4f82294614114ed1e9be81c01a85b2d7
     metadata.json:
-      path: experiments/attention_scaling/runs/r19adcf21128c/metadata.json
-      sha256: da09cb4ebb810aa89cd6a6fcc9f4cfedd43811136e0d8252ce1a7ac0174a0320
+      path: experiments/attention_scaling/runs/rad524492116f/metadata.json
+      sha256: 8710347e34a54259c116832f35cdbcb81830444f1a9db59e1cd1d94a2c3b17ae
     best_validation.json:
-      path: experiments/attention_scaling/runs/r19adcf21128c/best_validation.json
-      sha256: 157fde9df13fe74e59238d1c593ae890b51e16a5993c4f877189523423624664
+      path: experiments/attention_scaling/runs/rad524492116f/best_validation.json
+      sha256: ecc96c71cc2d2cde3be4108a72f281366ff4befd92863ba4df61ccf229543418
 - study: attention_scaling
-  run_id: r8c8f8624a87a
-  label: 200m-qk-dk008-m016-transformer-init-seed0
+  run_id: rdb9dec632be7
+  label: 200m-qk-dk008-m016-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r8c8f8624a87a/config.yaml
-      sha256: 53243c2f37e36a112a663f7c04dd008b227b5d53b50560860c9c8fd6ef9087aa
+      path: experiments/attention_scaling/runs/rdb9dec632be7/config.yaml
+      sha256: 4d633c1f6d41fa0028c946a79cd01191bda6950bad8b1888d7cdb8574c8febc8
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r8c8f8624a87a/metrics.jsonl
-      sha256: 81ac7eb8944cd6ca7784d86fdd954489459e7eebc9d7c105303d959dd26d219e
+      path: experiments/attention_scaling/runs/rdb9dec632be7/metrics.jsonl
+      sha256: e9bee94762be21dd70765d81abf398bada3b98209b4b887c88fbc23aae5ee9b0
     completion.json:
-      path: experiments/attention_scaling/runs/r8c8f8624a87a/completion.json
-      sha256: f002490c5195c36641750b6e2c04cf4cc0439739c76d9c6e1f28c17c403f3dc3
+      path: experiments/attention_scaling/runs/rdb9dec632be7/completion.json
+      sha256: 669575ef55f537cbaed2e3783eaf017b8f01fe1ac981ad8bd1eb9264c8acbb4e
     metadata.json:
-      path: experiments/attention_scaling/runs/r8c8f8624a87a/metadata.json
-      sha256: 466cdbb391c4decd4d1bb8c4b578b8e0a0ff82937ffcd88657735338c66f473c
+      path: experiments/attention_scaling/runs/rdb9dec632be7/metadata.json
+      sha256: b81cc01428504b199ef7b977dd498dfa191d4bbeaa53961df3b373630cbf0b69
     best_validation.json:
-      path: experiments/attention_scaling/runs/r8c8f8624a87a/best_validation.json
-      sha256: b9f5186bbd36ea8e2ad41a9ef80a0ebcd6e1d7eeb45d0cd6b469b50e538edd5e
+      path: experiments/attention_scaling/runs/rdb9dec632be7/best_validation.json
+      sha256: cc5606ddd0cc2c42b6c44ed69c0f2cb0e21d68d74aaa6f13a774d3bd7f7ce6af
 - study: attention_scaling
-  run_id: rbfeee56c811b
-  label: 200m-qk-dk008-softmax-transformer-init-seed0
+  run_id: r668a588ddc0b
+  label: 200m-qk-dk008-softmax-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/rbfeee56c811b/config.yaml
-      sha256: 26b22d4bcdd498e7ecf8ce4d5ddc48e8b51c357bd53e1264fad5d50daa7c967f
+      path: experiments/attention_scaling/runs/r668a588ddc0b/config.yaml
+      sha256: 285b2dffb3be60a1a949f0fa63122b1e13763d00031e54bd099727c9fa0d3121
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/rbfeee56c811b/metrics.jsonl
-      sha256: 1665ef016f16c67f6691d7ae6a921b25f87f0a3a5ea0fb54c72b95bcde2011e9
+      path: experiments/attention_scaling/runs/r668a588ddc0b/metrics.jsonl
+      sha256: ef6d4d94b6a628c73bba4aeb816a1e24def614d1c91a17ff01e9f70c092c83a9
     completion.json:
-      path: experiments/attention_scaling/runs/rbfeee56c811b/completion.json
-      sha256: 0c8bb0916fd82ec11fd4134e9cd42efea2185ec22be8d003a728f1347e4cd480
+      path: experiments/attention_scaling/runs/r668a588ddc0b/completion.json
+      sha256: a66e0d159e3cad416ca915ca6e17e735628e6bb68d61bf3434451f6cb807efb4
     metadata.json:
-      path: experiments/attention_scaling/runs/rbfeee56c811b/metadata.json
-      sha256: 2e1ef2c760ef9dba9ab89663929ba26db11fcbb9643e4b3329188096496f2abb
+      path: experiments/attention_scaling/runs/r668a588ddc0b/metadata.json
+      sha256: 0534c88e480f1814ef6aa709e0dada66bacb081b4b3a8207ecf5ebe4cded0efa
     best_validation.json:
-      path: experiments/attention_scaling/runs/rbfeee56c811b/best_validation.json
-      sha256: 0935dd14bed1bfdc5ba35fce6b4f61118eefd5af88b08d7725e3ee75df070764
+      path: experiments/attention_scaling/runs/r668a588ddc0b/best_validation.json
+      sha256: cc03a7ba79afadba09c0041c9ccf8c62aad812d043eb99e3ae6f69562feb4f0e
 - study: attention_scaling
-  run_id: r74f492893587
-  label: 200m-dk008-gdn-seed0
+  run_id: r353d59c575aa
+  label: 200m-dk008-gdn-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r74f492893587/config.yaml
-      sha256: f00085b4cbee2335b3d3a518db511eba854fd4ed921aec96fc7c3717a2ba7271
+      path: experiments/attention_scaling/runs/r353d59c575aa/config.yaml
+      sha256: 706a361af2404d00c3835423e65d5cf141e7afa3a2e476f953172ea074185cf0
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r74f492893587/metrics.jsonl
-      sha256: 84a666bec8f1f8fed5845b4510704d1bf08aeaa1efc03bed867e8ec7bc54890f
+      path: experiments/attention_scaling/runs/r353d59c575aa/metrics.jsonl
+      sha256: 1aa95484bfe3bc965a86e456acf98bfcebfea61513f4b37720db759508beeb44
     completion.json:
-      path: experiments/attention_scaling/runs/r74f492893587/completion.json
-      sha256: fbcd23178bf7b2f39da44c8b75ff72e14c1baf4215438cd172eaa8481629efbe
+      path: experiments/attention_scaling/runs/r353d59c575aa/completion.json
+      sha256: 24c38301e680b5913ec72bbc387b3320723d3d298d112c37c20a0f9bd044e028
     metadata.json:
-      path: experiments/attention_scaling/runs/r74f492893587/metadata.json
-      sha256: 98b1ec5616c9df623b2d81b21104cbf745e32f13c10b91eb096bfc8966a48b8f
+      path: experiments/attention_scaling/runs/r353d59c575aa/metadata.json
+      sha256: 5ba7f9ba33d32c3ba1e4ff9852691bdc093d0c8760a1492fdfc7d1087e24f28a
     best_validation.json:
-      path: experiments/attention_scaling/runs/r74f492893587/best_validation.json
-      sha256: 0290b42c594951f1c1404cdb988536ba76e1d612cc66e30c07f8505d4cad1337
+      path: experiments/attention_scaling/runs/r353d59c575aa/best_validation.json
+      sha256: 9a9a514038dc0e6ed9e602e96d554653348584093b07135fb3f853a9a3b9787a
 - study: attention_scaling
-  run_id: r19f5818e818a
-  label: 200m-qk-dk016-m002-transformer-init-seed0
+  run_id: r3abedaf51474
+  label: 200m-qk-dk016-m002-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r19f5818e818a/config.yaml
-      sha256: 69fdd2a3580b4a72efcd593aabd1d3dc5e5f3b4463dd4a8e068c8b14f0ffa3da
+      path: experiments/attention_scaling/runs/r3abedaf51474/config.yaml
+      sha256: e8c2df8fe942e31c11d168f3253248bce137f1120109a5562a56e0fbb101004b
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r19f5818e818a/metrics.jsonl
-      sha256: 6c1823ac97341429abcfdd478313e81a73c47ece9bbf5be2fc73f8a7b9482c6a
+      path: experiments/attention_scaling/runs/r3abedaf51474/metrics.jsonl
+      sha256: d70a59c5c53dfc9e55728c329b64301ccb139d0537050afecd2991c00f6b4ca4
     completion.json:
-      path: experiments/attention_scaling/runs/r19f5818e818a/completion.json
-      sha256: 9e9e58944088d172411a64ccf92746eaee1820203d081c6968335436c0be1341
+      path: experiments/attention_scaling/runs/r3abedaf51474/completion.json
+      sha256: 74ed55728a240af7f8f299685b804b39644f56bffcbd02be6b285017b7a87642
     metadata.json:
-      path: experiments/attention_scaling/runs/r19f5818e818a/metadata.json
-      sha256: bb066a47a449c033b93b34fbbaa17d1952b400288447046f1ff589bbdacf0ba9
+      path: experiments/attention_scaling/runs/r3abedaf51474/metadata.json
+      sha256: 9637b9004c655af07b04bc0d1f9ac44699b7a15ff3324815b312dbba2c9bb5af
     best_validation.json:
-      path: experiments/attention_scaling/runs/r19f5818e818a/best_validation.json
-      sha256: 83b009dd9927665f9e13610882323fa101ce572a4c03226b9ed977f80bbfc009
+      path: experiments/attention_scaling/runs/r3abedaf51474/best_validation.json
+      sha256: 388127136aee7da11e3be43b5e921ec0ec710e63fcad81c0ae92ab60b71f18c0
 - study: attention_scaling
-  run_id: rafa3585e4f1c
-  label: 200m-qk-dk016-m004-transformer-init-seed0
+  run_id: r5408301aa174
+  label: 200m-qk-dk016-m004-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/rafa3585e4f1c/config.yaml
-      sha256: 83e9d97e4bb79a0010e9cd5b743803deda67d46a35cd90ca9ed4d76846a3cfcf
+      path: experiments/attention_scaling/runs/r5408301aa174/config.yaml
+      sha256: a2e5a6314d97627b30a75cbfe65b8113f48e32647473b0b66f13cefd836c9a18
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/rafa3585e4f1c/metrics.jsonl
-      sha256: d5cb7731324715e633ea4806987c23b62dc7f3253351ecfafc5c01ee0998b230
+      path: experiments/attention_scaling/runs/r5408301aa174/metrics.jsonl
+      sha256: c9e9f7d47e975ebe170eb61c1b04466ea2788bc6f7c6357f7bffc1b0617ff956
     completion.json:
-      path: experiments/attention_scaling/runs/rafa3585e4f1c/completion.json
-      sha256: 79bb2e1961a893d832ccde3212e53ef6197b6c12b501b782dd4b85828ddfb871
+      path: experiments/attention_scaling/runs/r5408301aa174/completion.json
+      sha256: 2918a7efe3cf361c685edb2a87d21f40641b2229f876e67cbac07ab056b67fe2
     metadata.json:
-      path: experiments/attention_scaling/runs/rafa3585e4f1c/metadata.json
-      sha256: 40873e0b6afd55a72092c3312dc0eb4bfc81e6ce6a53092fbbac918e97c166c2
+      path: experiments/attention_scaling/runs/r5408301aa174/metadata.json
+      sha256: 223ec8cc6cc9063bdde00a86d835686ceabaf29aef41230203b0c01556b9de83
     best_validation.json:
-      path: experiments/attention_scaling/runs/rafa3585e4f1c/best_validation.json
-      sha256: 56ac407ca8904813baccaa7ae9691df20c98fe3bb68ba3593bc15ec17ee4956b
+      path: experiments/attention_scaling/runs/r5408301aa174/best_validation.json
+      sha256: 80eff9a9a4a8fec9b459eb00e3c4027145a4dfbe0f16fb8f4b91352a812fd8c6
 - study: attention_scaling
-  run_id: r81260072928b
-  label: 200m-qk-dk016-m008-transformer-init-seed0
+  run_id: r987d35acfb2c
+  label: 200m-qk-dk016-m008-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r81260072928b/config.yaml
-      sha256: 7d6f44326705a26e7cdbc3aa041d53118a4ba9724575e91ec7d0086af9593fdf
+      path: experiments/attention_scaling/runs/r987d35acfb2c/config.yaml
+      sha256: 434bb4652fb1a6afcaeec1e832b66b46e82d2e7eb9e4fa9e28a940f3a05d81ec
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r81260072928b/metrics.jsonl
-      sha256: d3d0ff89d682da5350a08cbece2c091db50e6a7157259a5b1f7317ba659d64bb
+      path: experiments/attention_scaling/runs/r987d35acfb2c/metrics.jsonl
+      sha256: b1aa0abdddedacded5251675082066d62a7907063667fe55fa38ba254394f146
     completion.json:
-      path: experiments/attention_scaling/runs/r81260072928b/completion.json
-      sha256: a0f6e8873f5b770df49f66f3b86f436fbfd24d6a4432c919fc5cfb99259c4839
+      path: experiments/attention_scaling/runs/r987d35acfb2c/completion.json
+      sha256: 6d50c6ac1503fdc793a390145bdc7bdf80d8a2421ea16136bb43203c39fd723e
     metadata.json:
-      path: experiments/attention_scaling/runs/r81260072928b/metadata.json
-      sha256: 27ccfbc531bde13daa335e5939ceeed8ee4b759189070f218ff5cb4e9ed3deab
+      path: experiments/attention_scaling/runs/r987d35acfb2c/metadata.json
+      sha256: b7fb509590aef4faae07637f378d4cfd67683651af0e36983bd702cfde13bf16
     best_validation.json:
-      path: experiments/attention_scaling/runs/r81260072928b/best_validation.json
-      sha256: 00ba73da50ddbc09ebed3df8bc3c9a0ce9763b5f3509a9b60407e5ce4ad16b8a
+      path: experiments/attention_scaling/runs/r987d35acfb2c/best_validation.json
+      sha256: 2f494e3ed1b988ed98d7c1f2d9ce81e5086be3ce83299a40dd924325b1db3889
 - study: attention_scaling
-  run_id: rd05f99d385bc
-  label: 200m-qk-dk016-m016-transformer-init-seed0
+  run_id: ra0bece83eb7b
+  label: 200m-qk-dk016-m016-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/rd05f99d385bc/config.yaml
-      sha256: c736b8a3bd0840427ba725086a6d0d9e5f37541b923cdc1ce52daf6f690d7fde
+      path: experiments/attention_scaling/runs/ra0bece83eb7b/config.yaml
+      sha256: 64e2129bfe4528020fb4fd002a10f8dc51476c0a29885a3c3ca5914860bb023b
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/rd05f99d385bc/metrics.jsonl
-      sha256: 7107b3417fb025e2c527fed0dfa8539ad855015cf4ea9c7c272afd4b670a1f59
+      path: experiments/attention_scaling/runs/ra0bece83eb7b/metrics.jsonl
+      sha256: 4688329e3c4bcd392e1ba6504afca8764d474091e55bd948f13723f889320d1f
     completion.json:
-      path: experiments/attention_scaling/runs/rd05f99d385bc/completion.json
-      sha256: 32deb9e5e6529aafd481644e6374ae199c124a7d6f01cdb1c7272eecc30d1137
+      path: experiments/attention_scaling/runs/ra0bece83eb7b/completion.json
+      sha256: 9d72217554d655f1e9ca665bb59eb0a8a3483c7a2b5a099b99cd466a51b1a0ff
     metadata.json:
-      path: experiments/attention_scaling/runs/rd05f99d385bc/metadata.json
-      sha256: cafdb09a73af6b9051978fe45654f323ec08e061b52fe35fdcd5172dffe20773
+      path: experiments/attention_scaling/runs/ra0bece83eb7b/metadata.json
+      sha256: 8a7958218dc225bfc686d7c388233232c837ffafcaa7dd59a75c8ffb1e54f24b
     best_validation.json:
-      path: experiments/attention_scaling/runs/rd05f99d385bc/best_validation.json
-      sha256: 29a42e6510b77c12d6a0f98a487c5a79893f29537f2074d7d30468e4ed47e9f1
+      path: experiments/attention_scaling/runs/ra0bece83eb7b/best_validation.json
+      sha256: 2ba363e963b8415f095b4c6016a4b0777494dbe55a90896b756b93ffe0a20c2c
 - study: attention_scaling
-  run_id: rfff20b3dbb18
-  label: 200m-qk-dk016-softmax-transformer-init-seed0
+  run_id: rfe3e43bfcabf
+  label: 200m-qk-dk016-softmax-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/rfff20b3dbb18/config.yaml
-      sha256: 7d9417813414470957b1a460530653e80ac0d1fbe66ce4b877f249042b371cba
+      path: experiments/attention_scaling/runs/rfe3e43bfcabf/config.yaml
+      sha256: 724a91f3a2b8d638081bdad3a7f61783de36dc0b43bc7539352d0180ec4852ad
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/rfff20b3dbb18/metrics.jsonl
-      sha256: 22b763fd41bb82b8f61cc2d0a80e4ca2f1330e914dc2f119c0f55b81d86f438b
+      path: experiments/attention_scaling/runs/rfe3e43bfcabf/metrics.jsonl
+      sha256: cea9aff1156d129419c270edfea90abf19f57ae0f83286b2eb019998f3d24f74
     completion.json:
-      path: experiments/attention_scaling/runs/rfff20b3dbb18/completion.json
-      sha256: d943571f482961e00fb366ec68fdf4f3bbe6b484c16cd79f316383c6037e1d9b
+      path: experiments/attention_scaling/runs/rfe3e43bfcabf/completion.json
+      sha256: a8098b8f31e325810c66377a6912dda27acf69a7b31d4ef8b88485b1ad566d06
     metadata.json:
-      path: experiments/attention_scaling/runs/rfff20b3dbb18/metadata.json
-      sha256: 60e6a5b38abbe9c6330b54f87c666a5ea932e0342c3e475a488a832e37d99425
+      path: experiments/attention_scaling/runs/rfe3e43bfcabf/metadata.json
+      sha256: 03b90b9b261824855953a87ee18fad7976fae7a02f5eca8084c0236400cd239a
     best_validation.json:
-      path: experiments/attention_scaling/runs/rfff20b3dbb18/best_validation.json
-      sha256: bd29271a3545715e41df0dfaf5e5f6fb50eaab148d95319e54e1ae507cc54771
+      path: experiments/attention_scaling/runs/rfe3e43bfcabf/best_validation.json
+      sha256: d19d0bdcc2e8ea1602093cd26cf79a19672682af5e79e0f24c7b0bba84f81736
 - study: attention_scaling
-  run_id: r09f5913a71c5
-  label: 200m-dk016-gdn-seed0
+  run_id: rd4b7fe3f1b11
+  label: 200m-dk016-gdn-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r09f5913a71c5/config.yaml
-      sha256: f3b4415a27d20488946475b92816d4208e33de3d599988794fe544ad50fad2d6
+      path: experiments/attention_scaling/runs/rd4b7fe3f1b11/config.yaml
+      sha256: 59ad249b418569e0b7c88b8677a23e42f981c1397312797861cc64e05cd61522
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r09f5913a71c5/metrics.jsonl
-      sha256: 4a9c60e996cf3adc1f744df9ed01ed10b1bb921f253f3416ebe47a23a8ed2b8f
+      path: experiments/attention_scaling/runs/rd4b7fe3f1b11/metrics.jsonl
+      sha256: 184b84a415cb614723d97f40bcd0c486618f00770226cff90dff42a24e1ca501
     completion.json:
-      path: experiments/attention_scaling/runs/r09f5913a71c5/completion.json
-      sha256: f0cf081760a67edbfbc87890a3f9c0f12f36b8607cd7edfd0186e91105363100
+      path: experiments/attention_scaling/runs/rd4b7fe3f1b11/completion.json
+      sha256: 7ae1485fdd4461fdaaeeb0d680ec7665c08292f49045ad51128601efbe0684d4
     metadata.json:
-      path: experiments/attention_scaling/runs/r09f5913a71c5/metadata.json
-      sha256: 5ce6b96a1ebe0e0b40645891394d5e0c483da9d2c754b14070519bdab8b16587
+      path: experiments/attention_scaling/runs/rd4b7fe3f1b11/metadata.json
+      sha256: 6450a8b8ada0b3e6d7b05c5e384587f800fcca7853d6bd0ce7d38c911792367b
     best_validation.json:
-      path: experiments/attention_scaling/runs/r09f5913a71c5/best_validation.json
-      sha256: 5264066b0a6021de59a042b94656b38bcaaa29ce617ba8b2f5f96f79a5c00a63
+      path: experiments/attention_scaling/runs/rd4b7fe3f1b11/best_validation.json
+      sha256: b69a13d7bd67d1454449b6b9615297f1e0b8b05463b1f05b51c7c5855d37b99f
 - study: attention_scaling
-  run_id: rba0327a59191
-  label: 200m-qk-dk032-m002-transformer-init-seed0
+  run_id: raf32fab4ba52
+  label: 200m-qk-dk032-m002-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/rba0327a59191/config.yaml
-      sha256: e2609eee67ba817de679f0d2426d3a9d2de3e793a643002ad527d258bb29f828
+      path: experiments/attention_scaling/runs/raf32fab4ba52/config.yaml
+      sha256: 5a171abb638ffbcb072597359b6144120a795f81848a3649e080204b157d7db1
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/rba0327a59191/metrics.jsonl
-      sha256: 829170f5911d05cd1a9430dfc4b0d82ee7041b91d1d8fadfde5699c562989e6e
+      path: experiments/attention_scaling/runs/raf32fab4ba52/metrics.jsonl
+      sha256: 2187a9dab36361b2ad1df001e0e3a6cd17631ff8e6b1ea0d6a2e1b42c0f94c7a
     completion.json:
-      path: experiments/attention_scaling/runs/rba0327a59191/completion.json
-      sha256: 5c5f2469c657c8a6ff18de263acf33a4803f49502c36716f94e2a952843823c1
+      path: experiments/attention_scaling/runs/raf32fab4ba52/completion.json
+      sha256: 281e4b75fd6d641c07e568440beca5397714429552d1e307e1d70ea2625f7ea3
     metadata.json:
-      path: experiments/attention_scaling/runs/rba0327a59191/metadata.json
-      sha256: 979b7ec80c06ed2a99a8b27679cee01e87cbbc56b9efca4e5697d72ec8060b77
+      path: experiments/attention_scaling/runs/raf32fab4ba52/metadata.json
+      sha256: 6cefd79cd58dbfe90712c036f4b7610f7f7eb5cd2131d08eea75ae715b69cc06
     best_validation.json:
-      path: experiments/attention_scaling/runs/rba0327a59191/best_validation.json
-      sha256: 2628c3194965e05d94a7ebd0016adec220d4fe197c7c1bcd84a9af3a81bb5db1
+      path: experiments/attention_scaling/runs/raf32fab4ba52/best_validation.json
+      sha256: 3d6a69ee5b6c48dd7c48dc49f2a24f535a114c61cd0782bc6d8782f3214da9e7
 - study: attention_scaling
-  run_id: r1fc62fb52631
-  label: 200m-qk-dk032-m004-transformer-init-seed0
+  run_id: r044b3356f215
+  label: 200m-qk-dk032-m004-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r1fc62fb52631/config.yaml
-      sha256: 152fae11f14912a66b58a4fc4cec9fbd1be6c4b99a2cb7806729ec7ae00a9a4e
+      path: experiments/attention_scaling/runs/r044b3356f215/config.yaml
+      sha256: b3ef5bee5763c395ce498d33c5bc4241ba70bd87deeb7c89957aac8a4dbd4245
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r1fc62fb52631/metrics.jsonl
-      sha256: bcaed227ba9bcb7d919a0947ae158f941906652eb6d6e30a942e349ea6db2ca7
+      path: experiments/attention_scaling/runs/r044b3356f215/metrics.jsonl
+      sha256: 186510519f5a9c1c8e31cfc4b274233f80639e882099f74367d914673d1ff7e3
     completion.json:
-      path: experiments/attention_scaling/runs/r1fc62fb52631/completion.json
-      sha256: 0fc78c8030bb02b8e5c8bbd0c5559217d9720c92a2f1c5191a96325bd6f8278d
+      path: experiments/attention_scaling/runs/r044b3356f215/completion.json
+      sha256: 094f7fdb93a8f4fce7e8f1923237138dcf4ecbfcd8c736bd78e740afaa0f7c84
     metadata.json:
-      path: experiments/attention_scaling/runs/r1fc62fb52631/metadata.json
-      sha256: 4025ed6330261bbdbc173ab98297b0389c312071a6a1fa0aaf979fed2ba59493
+      path: experiments/attention_scaling/runs/r044b3356f215/metadata.json
+      sha256: 0bd44ff85a255c37c22096eb2d763b74ff0cf9f35827a09fa6c1291adb929d46
     best_validation.json:
-      path: experiments/attention_scaling/runs/r1fc62fb52631/best_validation.json
-      sha256: 56d84b4d82240adeb7fc3043b556b606feff747a46aa4b15cd30514c51fe4c40
+      path: experiments/attention_scaling/runs/r044b3356f215/best_validation.json
+      sha256: 83dbd70dd6b404d6e5e255a7e848a2bb086d59f25541339bc84347778ebed3a9
 - study: attention_scaling
-  run_id: r4c59bee0931e
-  label: 200m-qk-dk032-m008-transformer-init-seed0
+  run_id: r88e2fc31b2e3
+  label: 200m-qk-dk032-m008-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r4c59bee0931e/config.yaml
-      sha256: 7313d99b6d76da0ca73332ff253cba35d63bceb53cf9e62ceb5e973ccfb4d246
+      path: experiments/attention_scaling/runs/r88e2fc31b2e3/config.yaml
+      sha256: e4f0ca8b1f5c07db7a111bf9af0967c7c780e9920b2b3dde22626d86c16cce67
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r4c59bee0931e/metrics.jsonl
-      sha256: c64d5f02b9e52172a3e2a9c47aff9298da3e2e71a61e93f13fc39dfa8d49e030
+      path: experiments/attention_scaling/runs/r88e2fc31b2e3/metrics.jsonl
+      sha256: 20a46bff641105913a94c3223449930972dbba1a4a25d8ea4ff5344e467fd78d
     completion.json:
-      path: experiments/attention_scaling/runs/r4c59bee0931e/completion.json
-      sha256: 7cb5ab34320cd86d78cadae53beca5a8ffcab74d9f76f92b7610af84bb0dc4b7
+      path: experiments/attention_scaling/runs/r88e2fc31b2e3/completion.json
+      sha256: 72651af828301aded4e0ac5aa65911f3030ec21861651c0ffe16761e856b5c97
     metadata.json:
-      path: experiments/attention_scaling/runs/r4c59bee0931e/metadata.json
-      sha256: 57df41b2f6f20953fbc883ea0e10c8afe10c4df53ae52ef154cba9277f50adc6
+      path: experiments/attention_scaling/runs/r88e2fc31b2e3/metadata.json
+      sha256: 2cc7ae3856d9ff5049b87380804770e04556c378f1cd5ab96f772633fc2d20c5
     best_validation.json:
-      path: experiments/attention_scaling/runs/r4c59bee0931e/best_validation.json
-      sha256: 238cc9efa2d4d2e98abe76aba512ce8d96e55d3ab898565c5b7909f2de2225b5
+      path: experiments/attention_scaling/runs/r88e2fc31b2e3/best_validation.json
+      sha256: 8c83988991c6274edf47ab75d192a242cfe36ba0425319ad4d880237ab8264cf
 - study: attention_scaling
-  run_id: rc54b765d22d8
-  label: 200m-qk-dk032-m016-transformer-init-seed0
+  run_id: r5bcd4095e392
+  label: 200m-qk-dk032-m016-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/rc54b765d22d8/config.yaml
-      sha256: abdb1b5397ac50928cbcaf5858bf4adf7eaa60023c421360bf59cf99ffc4c60a
+      path: experiments/attention_scaling/runs/r5bcd4095e392/config.yaml
+      sha256: 8af8fbbf7c3e5a16f1d3c0f120871006f51036dd2b53e7857c196a70dbdf2a9a
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/rc54b765d22d8/metrics.jsonl
-      sha256: dac963b8968b2ebb5a9cc7684dfae6394aa409e47761ff3b5b017f5fb3f4532e
+      path: experiments/attention_scaling/runs/r5bcd4095e392/metrics.jsonl
+      sha256: fbaeece4b0c33fbaffb48a929a05ae571e01a978a72e514a29c0224d5c2fd6e4
     completion.json:
-      path: experiments/attention_scaling/runs/rc54b765d22d8/completion.json
-      sha256: c4160e826d6391f9bb1d3b0cdec662378e552683b714cc66ea471479ace7ea49
+      path: experiments/attention_scaling/runs/r5bcd4095e392/completion.json
+      sha256: 018a66198c9352640f6e0fd30f8754fc959f5495f93674feb3ec554f533a941f
     metadata.json:
-      path: experiments/attention_scaling/runs/rc54b765d22d8/metadata.json
-      sha256: 83ebb0ad71af123b7d6b26fb1a0c9d3b9b018eb47bfc066aef9bba9ec5d91853
+      path: experiments/attention_scaling/runs/r5bcd4095e392/metadata.json
+      sha256: ea1493eea597480126b665459624b34295f1834601f6bcbbd157efde0b038e3f
     best_validation.json:
-      path: experiments/attention_scaling/runs/rc54b765d22d8/best_validation.json
-      sha256: 9f5730f1febbbcaf700427bd00ab15d9d2a2fb87ccc923b201debb93348f0054
+      path: experiments/attention_scaling/runs/r5bcd4095e392/best_validation.json
+      sha256: af7f5872a9d655193d2a6931cf27037b4ec4e7508cefa78b23de401b89912270
 - study: attention_scaling
-  run_id: r2dbfae04dcb7
-  label: 200m-qk-dk032-softmax-transformer-init-seed0
+  run_id: r832110abf732
+  label: 200m-qk-dk032-softmax-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r2dbfae04dcb7/config.yaml
-      sha256: aa8d933e8c7bc4addd9ed8dc70a1e466e4f2686ca623712cf9b0264e4a2642c6
+      path: experiments/attention_scaling/runs/r832110abf732/config.yaml
+      sha256: 7bfa96f694796aa1dcd8255c35a94c474738914384c5724d032af9e6c2ab8d0c
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r2dbfae04dcb7/metrics.jsonl
-      sha256: 3ea699b259d94eeaf63d16bd9ecdb780ca485d794a719e0beef5a412cc8dd460
+      path: experiments/attention_scaling/runs/r832110abf732/metrics.jsonl
+      sha256: a8b1a9a8cce76ddef1019e6800169df8f3c8be7953d33becdc81bf62c30ca111
     completion.json:
-      path: experiments/attention_scaling/runs/r2dbfae04dcb7/completion.json
-      sha256: 5c55d4a73ddea19bcccb5fd07e333c9faa7413c7bd9b6282751b8ee9c6c72de1
+      path: experiments/attention_scaling/runs/r832110abf732/completion.json
+      sha256: 3dcaca48c711af7387f05574c3cbdf0b29b94dbb5f2d7ed29a924caa09eb0fe4
     metadata.json:
-      path: experiments/attention_scaling/runs/r2dbfae04dcb7/metadata.json
-      sha256: ada660cae7f55750c35446825974f342a6cb6d170d4f61fbd3e944c93af5ec7c
+      path: experiments/attention_scaling/runs/r832110abf732/metadata.json
+      sha256: 8c1ac914fac27f93b99299539f5b7ef7269027fd74974f6baadcc6bac30bf9cb
     best_validation.json:
-      path: experiments/attention_scaling/runs/r2dbfae04dcb7/best_validation.json
-      sha256: 467ca232d209beea45de827cb570e543035f6157b2f3ded7384a2ca447888837
+      path: experiments/attention_scaling/runs/r832110abf732/best_validation.json
+      sha256: ce28ed4b45df9878bfa894a9bcf2bfdfd3704869d20a08af81f583e1e48323aa
 - study: attention_scaling
-  run_id: r4150da71c076
-  label: 200m-dk032-gdn-seed0
+  run_id: r3035bbb7b2ac
+  label: 200m-dk032-gdn-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r4150da71c076/config.yaml
-      sha256: 51f97508b946599d060e0ccf10927ad7b14734957fe8576f42ed78906949bb52
+      path: experiments/attention_scaling/runs/r3035bbb7b2ac/config.yaml
+      sha256: e9efdd1076969fb15a77736e0f915cc2de85cfcd50b7b94b70d48b45473a5483
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r4150da71c076/metrics.jsonl
-      sha256: 13c87d8c5c12d0816e83600466ffebf1076d2bb9e4ddee5646ae96be6814a12b
+      path: experiments/attention_scaling/runs/r3035bbb7b2ac/metrics.jsonl
+      sha256: e5384f70ea22c1acc7ec51fa673c4cb31cc9994635a7f154a1a887071fa7d1e2
     completion.json:
-      path: experiments/attention_scaling/runs/r4150da71c076/completion.json
-      sha256: fd1f4a613cbafce851a833f22fa9ba9cdd264b737654873c3c075916cf72da2a
+      path: experiments/attention_scaling/runs/r3035bbb7b2ac/completion.json
+      sha256: 3cdbb4de97689538ee0c38847081782f7aad2c13e06eda13584879a41157e61f
     metadata.json:
-      path: experiments/attention_scaling/runs/r4150da71c076/metadata.json
-      sha256: 5127c62fe4c27774e2dd2db9da1cedb412b9eb94425b3619adaca4d0817bea07
+      path: experiments/attention_scaling/runs/r3035bbb7b2ac/metadata.json
+      sha256: acfc8b0aebe5a44aceef7148d7ac139a5602bff2f1332df98914e194c9fdcdb4
     best_validation.json:
-      path: experiments/attention_scaling/runs/r4150da71c076/best_validation.json
-      sha256: 6c8dd83b45af7760bb5ad91ccb87faabce50683127f762f4fa20d9980566a79b
+      path: experiments/attention_scaling/runs/r3035bbb7b2ac/best_validation.json
+      sha256: 023890c837b07845d3069befd7ad628f379ca70ced9f6fb17aab8ee907853f44
 - study: attention_scaling
-  run_id: r596270e15ba1
-  label: 200m-qk-dk064-m002-transformer-init-seed0
+  run_id: r85e7da52f1c4
+  label: 200m-qk-dk064-m002-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r596270e15ba1/config.yaml
-      sha256: bca75f300988e60b54374864b910d26cb74bd5e1ddd5013db6b8018f6a5aadbf
+      path: experiments/attention_scaling/runs/r85e7da52f1c4/config.yaml
+      sha256: 81e1b2af095fd4f49c2bde1f0ac946f1025d857b915c6e67364902e818f24909
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r596270e15ba1/metrics.jsonl
-      sha256: d2c0b4455bf91e0dd8cdaa145b7ce5ca0b2d6f1ffab5c716463ed7ce6f3d4503
+      path: experiments/attention_scaling/runs/r85e7da52f1c4/metrics.jsonl
+      sha256: 4cdc0eb263114ffe30644f8a5a3ce63b980a20e4e7bf9910c05033987a6f142b
     completion.json:
-      path: experiments/attention_scaling/runs/r596270e15ba1/completion.json
-      sha256: e7e642f014a623386475c4f99b170452b9b78bdf144fd399bf7ddccb212d99b4
+      path: experiments/attention_scaling/runs/r85e7da52f1c4/completion.json
+      sha256: 567726a744ce4bc1ee68e2c7f2b2c581e7a75491cb35933906285123133c618d
     metadata.json:
-      path: experiments/attention_scaling/runs/r596270e15ba1/metadata.json
-      sha256: 27311ad730898c9b4c58f5fe34946cd3789de74aed4a957551d9e63c0bbbea78
+      path: experiments/attention_scaling/runs/r85e7da52f1c4/metadata.json
+      sha256: d61febd86660101c8da9f0ad1349b4b4b58f3f26aa2ee489b9c20be2d4d52e53
     best_validation.json:
-      path: experiments/attention_scaling/runs/r596270e15ba1/best_validation.json
-      sha256: bc204312ac3f792a48b8302f9f7af8690335cde495e4cd60acc55bbb6cf9d6cd
+      path: experiments/attention_scaling/runs/r85e7da52f1c4/best_validation.json
+      sha256: 38762772c832fee89668d561c7ff078586b339f3154e26c9119e77b5b4f7ac07
 - study: attention_scaling
-  run_id: r512daaa27a15
-  label: 200m-qk-dk064-m004-transformer-init-seed0
+  run_id: r67e1c33d19fa
+  label: 200m-qk-dk064-m004-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r512daaa27a15/config.yaml
-      sha256: 4eafef75714b430af1b4f2ed01c9687685b10ae7406b9cf55a0025bb62e97d28
+      path: experiments/attention_scaling/runs/r67e1c33d19fa/config.yaml
+      sha256: 3ebe0e3086e80bf45a45d830456b15618c41a9744e7f20882c09dd67d16f437b
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r512daaa27a15/metrics.jsonl
-      sha256: 08e11a11ebaf96dd059e3e5a1e45fa4a17530f5efecae15f7d729dc78d5694ae
+      path: experiments/attention_scaling/runs/r67e1c33d19fa/metrics.jsonl
+      sha256: 42f4ef6d52915e037bf25e3280c724803a99aa8879f8ef3e0ed00d39d9c045c8
     completion.json:
-      path: experiments/attention_scaling/runs/r512daaa27a15/completion.json
-      sha256: 837128a919b1370cccb0f9e82f17e464b91cca0c7ac645318be95a600923db6b
+      path: experiments/attention_scaling/runs/r67e1c33d19fa/completion.json
+      sha256: ff50f0a65108016b7a6c5a49912015b963448d55b51e101acb3aa7acf325d43e
     metadata.json:
-      path: experiments/attention_scaling/runs/r512daaa27a15/metadata.json
-      sha256: 7d47f1a11878b5dd32bb4bc7a186d59568b2dbf0d45ae82b832a445ad5985ccd
+      path: experiments/attention_scaling/runs/r67e1c33d19fa/metadata.json
+      sha256: e212acfbf904c794cbea3eacb1a8c8b401eb270f4ae8c696fde97b7575ea4bad
     best_validation.json:
-      path: experiments/attention_scaling/runs/r512daaa27a15/best_validation.json
-      sha256: 811376a90f12893d127765fb141d609638fc520fa78a294f3cfc7fc178de3fa6
+      path: experiments/attention_scaling/runs/r67e1c33d19fa/best_validation.json
+      sha256: 8b989f31776f70680b9d10e1da7ffac22d880c2bb206abd8bf73c44a68c89f37
 - study: attention_scaling
-  run_id: r7d911aee60ed
-  label: 200m-qk-dk064-m008-transformer-init-seed0
+  run_id: r10baef5d8428
+  label: 200m-qk-dk064-m008-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r7d911aee60ed/config.yaml
-      sha256: 9bba1023631b280a2dde63db75fd30c6613b5d1a637984d1c4d1d1e2d04c40cf
+      path: experiments/attention_scaling/runs/r10baef5d8428/config.yaml
+      sha256: 886482f49f7e74b93e4e397c90f280ff05d010ad15191c9c7eaa68bb33e44fcc
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r7d911aee60ed/metrics.jsonl
-      sha256: 4c37b469cb982abb6de1b8847580ab1c26d1dd59dd8e65c9ba2b67d62aea59df
+      path: experiments/attention_scaling/runs/r10baef5d8428/metrics.jsonl
+      sha256: 0dac520339c5425238741e18a5d6798eba09e914b9b83a618fb6d15a3bc60e84
     completion.json:
-      path: experiments/attention_scaling/runs/r7d911aee60ed/completion.json
-      sha256: bd23b2bb98311a5c04f8358e47b81d95de46914fedfa90afa0be1cda3344720b
+      path: experiments/attention_scaling/runs/r10baef5d8428/completion.json
+      sha256: d7be4d712cae6543fe7ec236f727cf46f91389817966e0acd6a1357d3e6cc23e
     metadata.json:
-      path: experiments/attention_scaling/runs/r7d911aee60ed/metadata.json
-      sha256: 4ec24bf2bed022a1581133ec2b30d44cefdb6e525bfc13b6af879873485a2593
+      path: experiments/attention_scaling/runs/r10baef5d8428/metadata.json
+      sha256: dd92c1b61c109b9fbf583b5d07754c15f22ffe2c166ff0f690b72d226101d547
     best_validation.json:
-      path: experiments/attention_scaling/runs/r7d911aee60ed/best_validation.json
-      sha256: fb6a2d25eb7362b5b3219bac22d04a996b7391de69be07cff31ccec7f32a05f1
+      path: experiments/attention_scaling/runs/r10baef5d8428/best_validation.json
+      sha256: 43e5b5a72cdb515de7d5e0f1f8938e164d0e2191f017acc8f4d7d22887249d06
 - study: attention_scaling
-  run_id: r9968775086c3
-  label: 200m-qk-dk064-m016-transformer-init-seed0
+  run_id: r697221e420ad
+  label: 200m-qk-dk064-m016-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r9968775086c3/config.yaml
-      sha256: 7c11099c84bec1dca8cb5c7f8b468c81061397d2b0d5f6d52331220c8b767624
+      path: experiments/attention_scaling/runs/r697221e420ad/config.yaml
+      sha256: c19a819c8d0f2570997c28532424c3968cfa027c6b51fafe2c4fe2b03d35a6d9
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r9968775086c3/metrics.jsonl
-      sha256: 863a78480a3b8c0bfcf573813683a60afda14a3a5f9ffcb3339e496dc738ea6e
+      path: experiments/attention_scaling/runs/r697221e420ad/metrics.jsonl
+      sha256: 1d337e43bb0c4fba9c215ae234410c4764f735cfcad1db2a14f673f74c638b0d
     completion.json:
-      path: experiments/attention_scaling/runs/r9968775086c3/completion.json
-      sha256: faf6a504e1c33996bce4dba102a72e47073baa99549aa9d4a85175530501ebfa
+      path: experiments/attention_scaling/runs/r697221e420ad/completion.json
+      sha256: 81c5f219e52bf17c4a828e3ab02e12dca99d6eacb77281fec51841389bccdfcf
     metadata.json:
-      path: experiments/attention_scaling/runs/r9968775086c3/metadata.json
-      sha256: 0af35b7c99d37d4a96f685806c0dbfd8ff91325b502368048d5654dfa9566297
+      path: experiments/attention_scaling/runs/r697221e420ad/metadata.json
+      sha256: 52c332245740da704ca70786866c886fd297c8fe31e9ddc0dc55f6c88d84f679
     best_validation.json:
-      path: experiments/attention_scaling/runs/r9968775086c3/best_validation.json
-      sha256: a2fe86e2d7a12ac0b8c3362c25259ea0d545ba89d17e9bf5517a66554b644c5d
+      path: experiments/attention_scaling/runs/r697221e420ad/best_validation.json
+      sha256: 262104f8b93f1946ebfce283eb0c5983aecc778c3447c040849e45fac31f05bd
 - study: attention_scaling
-  run_id: rf7277f076b8f
-  label: 200m-softmax-transformer-init-seed0
+  run_id: rb28779009ce5
+  label: 200m-softmax-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/rf7277f076b8f/config.yaml
-      sha256: 06395e0efbde03fd9aec3cd83ec0501e343ce42b31669255521b71a36ce8e495
+      path: experiments/attention_scaling/runs/rb28779009ce5/config.yaml
+      sha256: 871be35e641f2adb0fadfdb978d1b2e9917bff68cc5ea2d3262e0d2eb8e1dcad
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/rf7277f076b8f/metrics.jsonl
-      sha256: d447072981d3dfdf5bbaae6a2ce9a744d4aa6b274dffcfe1237b08a7992c2996
+      path: experiments/attention_scaling/runs/rb28779009ce5/metrics.jsonl
+      sha256: 229162e24d6a3418c787374d3ca36491ca0106c4776ef112930e0571b9a62af1
     completion.json:
-      path: experiments/attention_scaling/runs/rf7277f076b8f/completion.json
-      sha256: d01ef5bbda8b80c85c6fa5a28ef9cb543371beb3e468b0106cb32b8d23c8dee2
+      path: experiments/attention_scaling/runs/rb28779009ce5/completion.json
+      sha256: 2c87bd7d9ff8e459a6bfacf747059413f55c91e935bb4fdfb932b7ba805099e0
     metadata.json:
-      path: experiments/attention_scaling/runs/rf7277f076b8f/metadata.json
-      sha256: 373ce607f77162ceace8ca012b6c7b9badd2b4b15e80097873e3e1fcd2e78d03
+      path: experiments/attention_scaling/runs/rb28779009ce5/metadata.json
+      sha256: 7537f4fb43fe5cbe732eed4944b3f88cea3d9308fa570ccd0f9bc78932bdcf98
     best_validation.json:
-      path: experiments/attention_scaling/runs/rf7277f076b8f/best_validation.json
-      sha256: 0c0faa460603d001b71028d0907483053d7afd028d4cf6b6e88a08c8efc45178
+      path: experiments/attention_scaling/runs/rb28779009ce5/best_validation.json
+      sha256: 7ea52d680ab2293251e16d2e3e192b6c75b0e3af4f8dbcab886ffc151849f330
 - study: attention_scaling
-  run_id: r118c41829531
-  label: 200m-dk064-gdn-seed0
+  run_id: rdf74e4289926
+  label: 200m-dk064-gdn-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r118c41829531/config.yaml
-      sha256: 9bfce73a19e5c7e2f9609a9b9837514d7d49000f248692c89bdf571db7fe68a0
+      path: experiments/attention_scaling/runs/rdf74e4289926/config.yaml
+      sha256: 693aefd056f9c5c5752d896e83706e0e27f4b3527621934f94109ce02549a86a
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r118c41829531/metrics.jsonl
-      sha256: 547f377abf89330c93134692afec9272414d971e8a3af7316d269ec02147ee0b
+      path: experiments/attention_scaling/runs/rdf74e4289926/metrics.jsonl
+      sha256: f0fc79bd0f0c56fb85578ae8f2f620e3211fa8b4be721ee74f6d957227c8fdd1
     completion.json:
-      path: experiments/attention_scaling/runs/r118c41829531/completion.json
-      sha256: 69b21b4c425087117c1c82a32e418c8a198a7dd6d8f58ed0c637b8ac10d609f7
+      path: experiments/attention_scaling/runs/rdf74e4289926/completion.json
+      sha256: eb031b2b50a05d702ebfedb4a17cb425a9c06d1bf28fabf89868b8f951bfeb06
     metadata.json:
-      path: experiments/attention_scaling/runs/r118c41829531/metadata.json
-      sha256: a1a7ce8d725255d573b3b54b28fa95daa3361941f47f036a73ceaa0653642c8c
+      path: experiments/attention_scaling/runs/rdf74e4289926/metadata.json
+      sha256: 0e2c2f62c7c015c751bfdab78ad74a24edec5c3dc368b94b6762df268a171ebd
     best_validation.json:
-      path: experiments/attention_scaling/runs/r118c41829531/best_validation.json
-      sha256: 83a845f43b670fcf102afd3996c761a860a0cd3ce0bf67cf0305c42161e17106
+      path: experiments/attention_scaling/runs/rdf74e4289926/best_validation.json
+      sha256: 95539c78231c13a9562fa0f12ed502f2cdd406b69dc4b06489a3ea0f496bfcf0
 - study: attention_scaling
-  run_id: ra14cb10d335d
-  label: 200m-qk-dk128-m002-transformer-init-seed0
+  run_id: r454c40d18898
+  label: 200m-qk-dk128-m002-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/ra14cb10d335d/config.yaml
-      sha256: b27f79b43cd4246f202ad2a141f17e4cf23352b4bc4f95724b32d5e8308d90db
+      path: experiments/attention_scaling/runs/r454c40d18898/config.yaml
+      sha256: 5c94629112ad0295741513109ced8f584c06ce9313a02d53e0d6826bf0769b7e
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/ra14cb10d335d/metrics.jsonl
-      sha256: 7837bf756b132b37a54564bac7ca6b83021d5bbbf9c1ba4165eb2097a30d2406
+      path: experiments/attention_scaling/runs/r454c40d18898/metrics.jsonl
+      sha256: 6f81dd7720779427d409c0eb08778bf00570f858dbc5de0232b5a21962afd20e
     completion.json:
-      path: experiments/attention_scaling/runs/ra14cb10d335d/completion.json
-      sha256: e47b770fb76a9b7186b76f773c77a266199149a6c50c1e6041de0f0e29a298e0
+      path: experiments/attention_scaling/runs/r454c40d18898/completion.json
+      sha256: 988b7663416d945ff87b3ccfd8e0484952efd67570f34fac54949d5c0308c55e
     metadata.json:
-      path: experiments/attention_scaling/runs/ra14cb10d335d/metadata.json
-      sha256: 47ce1a7aa1b7023de64a7ea99b2e0e257d2c65e921695c1caec77241ea56c9b8
+      path: experiments/attention_scaling/runs/r454c40d18898/metadata.json
+      sha256: 84f066b3edcee00297ab462063df3b45cf1c42752d7f405673fd79f6b00b9d6e
     best_validation.json:
-      path: experiments/attention_scaling/runs/ra14cb10d335d/best_validation.json
-      sha256: 85da9f5ce25065c14e898c881dc955f0422a88ab354086ce8fbed3b40a7f85f0
+      path: experiments/attention_scaling/runs/r454c40d18898/best_validation.json
+      sha256: 91f23555aee067c762ae80c399d44b9a7011e4a9ad4a78373fa3f68b7ead8e47
 - study: attention_scaling
-  run_id: rfedbbc4ec389
-  label: 200m-qk-dk128-m004-transformer-init-seed0
+  run_id: ra6e06f8356a7
+  label: 200m-qk-dk128-m004-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/rfedbbc4ec389/config.yaml
-      sha256: 20b3e355e852ccab583679162432198f328b7a07d3d954ea4db240b0f20047de
+      path: experiments/attention_scaling/runs/ra6e06f8356a7/config.yaml
+      sha256: 4880f32ad3d09e856b1f9167eb2b2bff13916f73cae84c52c60fa1ce956a2138
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/rfedbbc4ec389/metrics.jsonl
-      sha256: d8c311479dffa1bd55fe2bea01f3bbdb5a2554191996ef5ea63f7e63731f22e2
+      path: experiments/attention_scaling/runs/ra6e06f8356a7/metrics.jsonl
+      sha256: b62d4edac48e201b5a6f4adc408a4b50df33aaf4c5f58f76b9ce58c88dc6e5b2
     completion.json:
-      path: experiments/attention_scaling/runs/rfedbbc4ec389/completion.json
-      sha256: 91c60e22e5a324bcfa1c5744864d6da48942c79ddd327b69da07a73a8685b8a3
+      path: experiments/attention_scaling/runs/ra6e06f8356a7/completion.json
+      sha256: 69ac24edb08e49fdbd72a8df6ce0f1ab1f4e518ee98762d058bcbb3bbc0351c4
     metadata.json:
-      path: experiments/attention_scaling/runs/rfedbbc4ec389/metadata.json
-      sha256: 61bfebe239890b5fde2cf6deab92eaea15927fb66e99fa92a8c07c49b73b37d5
+      path: experiments/attention_scaling/runs/ra6e06f8356a7/metadata.json
+      sha256: 4b13ff2f8168d47b1794277e3424405c9032f0da8a167d842850a75bc4cd98b2
     best_validation.json:
-      path: experiments/attention_scaling/runs/rfedbbc4ec389/best_validation.json
-      sha256: a40c7bdfa7a73735eb738d0fd73f914568d7342b396c2bf505ac23b4ae14e93b
+      path: experiments/attention_scaling/runs/ra6e06f8356a7/best_validation.json
+      sha256: 2a5dcdced5bd3a09ba3fe94871918316865d0b8dad3d08a5b04ef5749894a597
 - study: attention_scaling
-  run_id: r60a3e3a79bae
-  label: 200m-qk-dk128-m008-transformer-init-seed0
+  run_id: rdb9874f67bf1
+  label: 200m-qk-dk128-m008-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r60a3e3a79bae/config.yaml
-      sha256: 07d8c168cf50e001d1b49c523c81dad8651e171916f5922fddcc0c99e009c5ce
+      path: experiments/attention_scaling/runs/rdb9874f67bf1/config.yaml
+      sha256: 99773e83be66f6b4741fcd621827a113d40bd530ba733339e2877022bc7b5c68
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r60a3e3a79bae/metrics.jsonl
-      sha256: 7e0a3b4ba0f1dd566add7200619b0bb09d9c9a6ca9d04636a827e529de1bd8d0
+      path: experiments/attention_scaling/runs/rdb9874f67bf1/metrics.jsonl
+      sha256: 619672bd30396a635d0e54f1f81af0dac25801c7db15d600e973ed8ea55527fc
     completion.json:
-      path: experiments/attention_scaling/runs/r60a3e3a79bae/completion.json
-      sha256: a554cf12bd42aefc15769bdef8be120824a4099e2ed0a81f298fb6d178365c34
+      path: experiments/attention_scaling/runs/rdb9874f67bf1/completion.json
+      sha256: f63df1f3df126ed113fc60c98a0966a0f713aba0ac39e03a8100dbb3bde0f446
     metadata.json:
-      path: experiments/attention_scaling/runs/r60a3e3a79bae/metadata.json
-      sha256: 9b832e93844cbe35797d84124c731df80c0243ff76611af3ab6184951b89ce07
+      path: experiments/attention_scaling/runs/rdb9874f67bf1/metadata.json
+      sha256: 9a338db96f0a28e9ac7a1e7898794c586f98b25a84ad65cb58bc37b06d3c4764
     best_validation.json:
-      path: experiments/attention_scaling/runs/r60a3e3a79bae/best_validation.json
-      sha256: 2e6f0964b3044e19cc2fa5d956963771d5e2b49d20d0f196256febbbc708244c
+      path: experiments/attention_scaling/runs/rdb9874f67bf1/best_validation.json
+      sha256: 0b55e4bc051400d3440d2d1ba45abfb98a357809a18ce2417f65ac8316d10f53
 - study: attention_scaling
-  run_id: rb85a9d2fb62c
-  label: 200m-qk-dk128-m016-transformer-init-seed0
+  run_id: re81d054a6087
+  label: 200m-qk-dk128-m016-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/rb85a9d2fb62c/config.yaml
-      sha256: 2e6876da8bcf411a44dcba8b539c629bc4f1e5e79a3e02e8573b942d893015cd
+      path: experiments/attention_scaling/runs/re81d054a6087/config.yaml
+      sha256: e5b55f41eb822e4baacffc88e9d79d8127a6241b2f4794ba00842bc97a8570f1
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/rb85a9d2fb62c/metrics.jsonl
-      sha256: 4c7de91926e505c3281314992f946b38dc39e5acfeba4edd7ab4ea65a426b4b4
+      path: experiments/attention_scaling/runs/re81d054a6087/metrics.jsonl
+      sha256: cdd0464331759b06a94ee214ef9b189edad37e6e492ebd23438b6a6c6d1b24e6
     completion.json:
-      path: experiments/attention_scaling/runs/rb85a9d2fb62c/completion.json
-      sha256: 63e2d7c112574550c29b7f1750dbda0d5dc0c31d4e4dc53db23770c4bf6ea8e1
+      path: experiments/attention_scaling/runs/re81d054a6087/completion.json
+      sha256: f9b71f7511a0466a753a751f771aac25136a98134d18a13bce2e945767d2c87d
     metadata.json:
-      path: experiments/attention_scaling/runs/rb85a9d2fb62c/metadata.json
-      sha256: dfed5e837ef8b453f1ca782f98027e516c0be06d157994b3b8ca586370033d7a
+      path: experiments/attention_scaling/runs/re81d054a6087/metadata.json
+      sha256: bda564b0e00e832f99c18e12efbee053dd255556b9e470bf9de4af397b3d865f
     best_validation.json:
-      path: experiments/attention_scaling/runs/rb85a9d2fb62c/best_validation.json
-      sha256: 15ca3d0bb907d829fdf2d8866135339b1734af9bdcbbb930aeebb8991f707941
+      path: experiments/attention_scaling/runs/re81d054a6087/best_validation.json
+      sha256: 49d5720a4baf82a401cf43ba66bc83892685665344f5d2a625a127aca34b185e
 - study: attention_scaling
-  run_id: r3527098ab9e7
-  label: 200m-qk-dk128-softmax-transformer-init-seed0
+  run_id: ra1630eecb247
+  label: 200m-qk-dk128-softmax-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r3527098ab9e7/config.yaml
-      sha256: 2e22e556868b5bbb2d633bbba19ff9421adcca6c7a045f6e2cafc339093870ec
+      path: experiments/attention_scaling/runs/ra1630eecb247/config.yaml
+      sha256: 6c45afe07840d6a52c727abcf20d4f5e8b8d49a13786028899130d5a8bd21726
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r3527098ab9e7/metrics.jsonl
-      sha256: bc6b81fefce977288c4e6ae929e593f03eb7ec5ac1ea6205413f5f22d9bee537
+      path: experiments/attention_scaling/runs/ra1630eecb247/metrics.jsonl
+      sha256: 4bad9030561221195cda2e08631f990734691b49be7ab97ad7d581e6be084e00
     completion.json:
-      path: experiments/attention_scaling/runs/r3527098ab9e7/completion.json
-      sha256: 3d5f5f4d432fb050a5f14a2f87ce3ad1cc4534efd5b736f1a9a25db9145a00cb
+      path: experiments/attention_scaling/runs/ra1630eecb247/completion.json
+      sha256: d9f3d229bd9d2a3cd975641acda16237aba97a28b773a29adf55e7939ead145b
     metadata.json:
-      path: experiments/attention_scaling/runs/r3527098ab9e7/metadata.json
-      sha256: b37e58ccbb5f368f8388f5469d9e03be7967da01ddb077bd759e47ccfcba8ddf
+      path: experiments/attention_scaling/runs/ra1630eecb247/metadata.json
+      sha256: ed2dcaa5e8c7828bcc128482b3f1ceb58b2af7a6603ffeed6d02798d2d00e3b1
     best_validation.json:
-      path: experiments/attention_scaling/runs/r3527098ab9e7/best_validation.json
-      sha256: 0d96296d3d580ff7fe04bd9ecd2719f0f27c3d524c83815175a0ae7fba4b4f7e
+      path: experiments/attention_scaling/runs/ra1630eecb247/best_validation.json
+      sha256: af0127b1e154d97ecbf3645132a737c06d325c3eeeb439bf9cd5d5e9ceab7e3a
 - study: attention_scaling
-  run_id: r86b223e4d9e9
-  label: 200m-dk128-gdn-seed0
+  run_id: r6e4b2c93c240
+  label: 200m-dk128-gdn-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r86b223e4d9e9/config.yaml
-      sha256: b7fe39f93401fe6a87f799bf26e553d8aff00a6426d38bda27e192d34345acc8
+      path: experiments/attention_scaling/runs/r6e4b2c93c240/config.yaml
+      sha256: 8a9752984602a864fdec5cc352f46cf37b6fa252a5f828f830057ba31b3543c5
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r86b223e4d9e9/metrics.jsonl
-      sha256: fa333ba66565973549ab176f2abd77ac4637b2695d22a378a5b7acf8e2ef1bcb
+      path: experiments/attention_scaling/runs/r6e4b2c93c240/metrics.jsonl
+      sha256: 5855d759110f849d7f1f129f913ca46bf48d2d9c5eb6ddf9e8c33248671ef475
     completion.json:
-      path: experiments/attention_scaling/runs/r86b223e4d9e9/completion.json
-      sha256: 43add0f9dd7dac9966760fd0bad857925aed1035b6a14934b6ab4723ea4571a9
+      path: experiments/attention_scaling/runs/r6e4b2c93c240/completion.json
+      sha256: 7ae366f3b361b47e814e4ce8c19510722859c50f3062d4cf41274eeced9234f9
     metadata.json:
-      path: experiments/attention_scaling/runs/r86b223e4d9e9/metadata.json
-      sha256: 850320fb3d1105d2719d003e9ea49b7711e0f281d67c74d5adf9a73f0ff3d8cf
+      path: experiments/attention_scaling/runs/r6e4b2c93c240/metadata.json
+      sha256: aa01534979330c4a9d5a1e27269e24a1acd67a1a5075536cb7f70ceab2a8ddd3
     best_validation.json:
-      path: experiments/attention_scaling/runs/r86b223e4d9e9/best_validation.json
-      sha256: d61d848bcb581006c4dbaa2b33fb6ad889d9508348a3c5f4ce72a97b2da26d8c
+      path: experiments/attention_scaling/runs/r6e4b2c93c240/best_validation.json
+      sha256: 649b9f409f307e736fdd9c1a82ab37d6c49d1e582a06bead817548b153a78c23
 - study: attention_scaling
-  run_id: r9c89729b9f23
-  label: 200m-qk-dk064-m001-transformer-init-seed0
+  run_id: rbdedf102c655
+  label: 200m-qk-dk064-m001-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r9c89729b9f23/config.yaml
-      sha256: 541676a22600aff8e24eda6aea76b3ba77b76b3ed5ea3b94434096213b300273
+      path: experiments/attention_scaling/runs/rbdedf102c655/config.yaml
+      sha256: 36ea536e5555849d2a653b39ff15f70dfa058b6b2cd9dbc865eb5b44e0153905
     metadata.json:
-      path: experiments/attention_scaling/runs/r9c89729b9f23/metadata.json
-      sha256: fa5937f98ceb05a8c1d7872e7ed0d4689d6bcfbc20a45372d2871e1193e3c572
-    numerical_failure_step_00000035.json:
-      path: experiments/attention_scaling/runs/r9c89729b9f23/numerical_failure_step_00000035.json
-      sha256: 66b4c64ce4b0ac7c7e8afee16a254ac8a6b2ef7660aacd289b9241871185d028
+      path: experiments/attention_scaling/runs/rbdedf102c655/metadata.json
+      sha256: d4cbefc386494e12e2ab3d1b62476ac7f4748343d79c5e3c603ea3cf66d6fbf8
+    numerical_failure_step_00000067.json:
+      path: experiments/attention_scaling/runs/rbdedf102c655/numerical_failure_step_00000067.json
+      sha256: 23708c0d4db2bb1759147442dfd49969240d55f63f6c3a5282a413c1710ceaa0
 - study: attention_scaling
-  run_id: r48a4c0358cd2
-  label: 200m-qk-dk064-m003-transformer-init-seed0
+  run_id: r6ddf65b22727
+  label: 200m-qk-dk064-m003-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r48a4c0358cd2/config.yaml
-      sha256: 2922465826ba454c36927f32da012d303a5d20c60c5499199a8b642eae3bf753
+      path: experiments/attention_scaling/runs/r6ddf65b22727/config.yaml
+      sha256: 6fe8d77678f67fe70ee3b58606267317e59132297e5b520ab8fff1705dde6890
     metadata.json:
-      path: experiments/attention_scaling/runs/r48a4c0358cd2/metadata.json
-      sha256: 10491dd19494c0f0281a220eb8e5f5429f1e33a731c18a414f4ec0a34e7404c4
-    numerical_failure_step_00000555.json:
-      path: experiments/attention_scaling/runs/r48a4c0358cd2/numerical_failure_step_00000555.json
-      sha256: e84e81722b5529a5067c0fbc055b6202a2e32d744c1dd2e01b3f524878271838
+      path: experiments/attention_scaling/runs/r6ddf65b22727/metadata.json
+      sha256: f31cdb2519eb787d9863d54d90168b66eef7a572cd9d17aeb9d2f89fe5f7e86e
+    numerical_failure_step_00000218.json:
+      path: experiments/attention_scaling/runs/r6ddf65b22727/numerical_failure_step_00000218.json
+      sha256: c37b89f830a255379cdee9817e8f7f153ab0798dd5c199c25bfd78c1608fd852
 - study: attention_scaling
-  run_id: rbde7fc4c2135
-  label: 200m-qk-softmax-transformer-init-seed0
+  run_id: rdf00da0866a8
+  label: 200m-qk-softmax-transformer-init-warmup400-seed0
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/rbde7fc4c2135/config.yaml
-      sha256: 9fa4ffa41817bc592ac325822ceb1d9d5c822e85bea4aac04496d61e79ecaf28
+      path: experiments/attention_scaling/runs/rdf00da0866a8/config.yaml
+      sha256: 7c8b77a7df1efa6a315b3a8b89949d65433cc346157a54f9d52a4392e35ce185
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/rbde7fc4c2135/metrics.jsonl
-      sha256: 1e52b91c3f087a16c909417cd9d8faa775770bc58791b68d3fc4efb300393446
+      path: experiments/attention_scaling/runs/rdf00da0866a8/metrics.jsonl
+      sha256: 09921898d01e171d68018fa91436de46486eca56f1282ecc54e5b23f530d211f
     completion.json:
-      path: experiments/attention_scaling/runs/rbde7fc4c2135/completion.json
-      sha256: 2be474260e097644a99ddbfe3a838ec5c7c7f6f100d9759e14bdfd7cc40dc8c1
+      path: experiments/attention_scaling/runs/rdf00da0866a8/completion.json
+      sha256: 737901beec2f30725b76393c691f710763754de9de3c4667a31954ddcf75da4f
     metadata.json:
-      path: experiments/attention_scaling/runs/rbde7fc4c2135/metadata.json
-      sha256: 7311ac18288b9071eda6a5cfa1f5a3b7fe6633156f82e975a0d882c2f7b92276
+      path: experiments/attention_scaling/runs/rdf00da0866a8/metadata.json
+      sha256: 754b2bc56d5b7842548da561bf2e694013f080e9c5d24a2f8657e5979a780801
     best_validation.json:
-      path: experiments/attention_scaling/runs/rbde7fc4c2135/best_validation.json
-      sha256: b05a2a70f4fb65bca76c0c53cab76a78f49c5f5f588af6b73250ecc0bf1d9411
+      path: experiments/attention_scaling/runs/rdf00da0866a8/best_validation.json
+      sha256: dff398331d0901d6a929cc3136220a805525c45c0aff1af36f4fdac4f19b17ae

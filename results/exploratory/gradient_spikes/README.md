@@ -47,8 +47,9 @@ Runs, roles, and pinned inputs: [`selection.yaml`](selection.yaml).
   residual stream and attention outputs were unremarkable. A real gradient that large
   would also reach the residual stream and attention parameters, so these look like
   numerical corruption of the MLP backward pass rather than optimization, like the
-  infinite gradient norm of the warmup-400 softmax run on B300
-  ([`warmup_length`](../warmup_length/README.md)). Clipping neutralized them; the run's
+  infinite gradient norm of the `d_K = 64` softmax run on B300
+  ([attention scaling limits](../../attention_scaling/README.md#limits)). Clipping
+  neutralized them; the run's
   terminal perplexity matches its earlier identical run (13.411).
 - **Head RMSNorm shrinks the learned-coefficient spikes and moves them out of the
   coefficients, most at m = 1 and 3.** After update 1,000, m = 1 spikes 22 times up to
