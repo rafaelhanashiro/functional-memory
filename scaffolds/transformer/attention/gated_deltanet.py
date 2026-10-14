@@ -18,10 +18,10 @@ With ``erase_mode="independent"``, erasure instead uses a separate sigmoid
 ``k_t (beta_t v_t - lambda_t a_t S_{t-1}^T k_t)^T``. Its projection starts as an
 independent copy of the write projection, recovering ordinary GDN initially.
 
-With ``polynomial_degree=2``, memory is a quadratic function, transformed as
+With ``polynomial_degree=m`` for m=2 or 3, memory is a polynomial function, transformed as
 ``F_t(q) = alpha_t F_{t-1}((I-lambda_t k_t k_t^T)q)`` before adding
-``v_t (beta_0 + beta_1 <q,k_t> + beta_2 <q,k_t>^2)``. ``beta_1`` retains
-the sigmoid write gate; independent tanh projections produce ``beta_0,beta_2``
+``v_t sum_{r=0}^m beta_r <q,k_t>^r``. ``beta_1`` retains
+the sigmoid write gate; independent tanh projections produce the other coefficients
 and start at zero, nesting the linear model. The final read has a single global
 ``1/sqrt(d_K)`` scale, before the same gated output RMSNorm.
 """
@@ -109,10 +109,10 @@ class GatedDeltaNet(nnx.Module):
             raise ValueError(f"Unsupported Gated DeltaNet backend: {backend}")
         if erase_mode not in ("tied", "independent"):
             raise ValueError(f"Unsupported Gated DeltaNet erase mode: {erase_mode}")
-        if type(polynomial_degree) is not int or polynomial_degree not in (1, 2):
-            raise ValueError("Gated DeltaNet polynomial_degree must be 1 or 2")
-        if polynomial_degree == 2 and erase_mode != "independent":
-            raise ValueError("Quadratic Gated DeltaNet requires independent erasure")
+        if type(polynomial_degree) is not int or polynomial_degree not in (1, 2, 3):
+            raise ValueError("Gated DeltaNet polynomial_degree must be 1, 2, or 3")
+        if polynomial_degree > 1 and erase_mode != "independent":
+            raise ValueError("Polynomial Gated DeltaNet requires independent erasure")
         self.polynomial_degree = polynomial_degree
         self.num_heads, self.key_head_dim, self.value_head_dim = num_heads, key_head_dim, value_head_dim
         self.key_dim, self.value_dim = num_heads * key_head_dim, num_heads * value_head_dim
@@ -146,14 +146,14 @@ class GatedDeltaNet(nnx.Module):
             # nnx.clone shares array storage. Donated training state requires
             # distinct buffers for these independently updated parameters.
             self.lambda_proj.kernel[...] = self.b_proj.kernel[...].copy()
-        if polynomial_degree == 2:
+        if polynomial_degree > 1:
             # Clone only the module structure; no random draw or change to the
             # initialization of this layer or any subsequent layer. Each new
             # zero-initialized weight needs its own donated training buffer.
-            self.b0_proj = nnx.clone(self.b_proj)
-            self.b0_proj.kernel[...] = jnp.zeros_like(self.b_proj.kernel[...])
-            self.b2_proj = nnx.clone(self.b_proj)
-            self.b2_proj.kernel[...] = jnp.zeros_like(self.b_proj.kernel[...])
+            for degree in (0, *range(2, polynomial_degree + 1)):
+                projection = nnx.clone(self.b_proj)
+                projection.kernel[...] = jnp.zeros_like(self.b_proj.kernel[...])
+                setattr(self, f"b{degree}_proj", projection)
 
     def __call__(
         self,
@@ -180,11 +180,11 @@ class GatedDeltaNet(nnx.Module):
             self.a_proj(x).astype(jnp.float32) + self.dt_bias[...])
         scale = self.key_head_dim ** -0.5
         write_coefficients = None
-        if self.polynomial_degree == 2:
-            write_coefficients = jnp.stack((
-                jnp.tanh(self.b0_proj(x).astype(jnp.float32)).astype(self.dtype),
-                beta,
-                jnp.tanh(self.b2_proj(x).astype(jnp.float32)).astype(self.dtype),
+        if self.polynomial_degree > 1:
+            write_coefficients = jnp.stack(tuple(
+                beta if degree == 1 else jnp.tanh(
+                    getattr(self, f"b{degree}_proj")(x).astype(jnp.float32)).astype(self.dtype)
+                for degree in range(self.polynomial_degree + 1)
             ), axis=-1)
             if self.backend == "fused":
                 from scaffolds.transformer.attention.backends.polynomial_gdn import (
@@ -220,7 +220,7 @@ class GatedDeltaNet(nnx.Module):
                 telemetry.record(f"{name}_min", jnp.min(value), "min")
                 telemetry.record(f"{name}_max", jnp.max(value), "max")
             if write_coefficients is not None:
-                for degree in range(3):
+                for degree in range(self.polynomial_degree + 1):
                     value = write_coefficients[..., degree].astype(jnp.float32)
                     telemetry.record(f"beta_degree_{degree}_mean", jnp.mean(value), "mean")
                     telemetry.record(f"beta_degree_{degree}_min", jnp.min(value), "min")
@@ -250,7 +250,7 @@ class GatedDeltaNet(nnx.Module):
             coefficients32 = write_coefficients.astype(jnp.float32)
             diagnostics["invalid_coefficient_count"] = jnp.sum(
                 ~jnp.isfinite(coefficients32) | (jnp.abs(coefficients32) > 1), dtype=jnp.int32)
-            for degree in range(3):
+            for degree in range(self.polynomial_degree + 1):
                 value = coefficients32[..., degree]
                 diagnostics.update({
                     f"beta_degree_{degree}_mean": jnp.mean(value),

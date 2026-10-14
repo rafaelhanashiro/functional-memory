@@ -1,4 +1,4 @@
-"""Exact degree-two GDN dual kernels with original-key-space geometry.
+"""Exact degree-two/three GDN dual kernels with original-key-space geometry.
 
 For each query tile, keys are visited backwards. Its transformed query Q and
 effective scores E obey E=(Q K^T) A and Q'=Q-E diag(erase) K, where A is the
@@ -28,12 +28,33 @@ def _gates(ptr, b, h, chunk, T: tl.constexpr, H: tl.constexpr, BT: tl.constexpr)
 
 
 @triton.jit
-def _coefficients(ptr, b, h, chunk, T: tl.constexpr, H: tl.constexpr, BT: tl.constexpr):
+def _coefficients(ptr, b, h, chunk, T: tl.constexpr, H: tl.constexpr, BT: tl.constexpr,
+                  NBETA: tl.constexpr):
     rows = chunk * BT + tl.arange(0, BT)
-    offsets = ((b * T + rows) * H + h) * 3
+    offsets = ((b * T + rows) * H + h) * NBETA
+    if NBETA == 4:
+        beta3 = tl.load(ptr + offsets + 3).to(tl.float32)
+    else:
+        beta3 = tl.zeros((BT,), tl.float32)
     return (tl.load(ptr + offsets).to(tl.float32),
             tl.load(ptr + offsets + 1).to(tl.float32),
-            tl.load(ptr + offsets + 2).to(tl.float32))
+            tl.load(ptr + offsets + 2).to(tl.float32), beta3)
+
+
+@triton.jit
+def _polynomial(effective, beta0, beta1, beta2, beta3, NBETA: tl.constexpr):
+    polynomial = (beta2[None, :] * effective + beta1[None, :]) * effective + beta0[None, :]
+    if NBETA == 4:
+        polynomial += beta3[None, :] * effective * effective * effective
+    return polynomial
+
+
+@triton.jit
+def _derivative(effective, beta1, beta2, beta3, NBETA: tl.constexpr):
+    derivative = beta1[None, :] + 2.0 * beta2[None, :] * effective
+    if NBETA == 4:
+        derivative += 3.0 * beta3[None, :] * effective * effective
+    return derivative
 
 
 @triton.jit
@@ -81,7 +102,7 @@ def _causal(qc, kc, BT: tl.constexpr):
 def forward(q, k, v, prefix, beta, erase, inverse, transformed, scale, output, history,
             T: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
             BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr,
-            SAVE_HISTORY: tl.constexpr, COMPUTE_OUTPUT: tl.constexpr):
+            SAVE_HISTORY: tl.constexpr, COMPUTE_OUTPUT: tl.constexpr, NBETA: tl.constexpr = 3):
     qc, bh = tl.program_id(0), tl.program_id(1)
     b, h = bh // H, bh % H
     query = _matrix(q, b, h, qc, T, H, K, BK, BT)
@@ -106,8 +127,8 @@ def forward(q, k, v, prefix, beta, erase, inverse, transformed, scale, output, h
             value = _matrix(v, b, h, kc, T, H, V, BV, BT)
             key_decay = _gates(prefix, b, h, kc, T, H, BT)
             decay = tl.exp(tl.where(causal, query_decay[:, None] - key_decay[None, :], 0.0))
-            beta0, beta1, beta2 = _coefficients(beta, b, h, kc, T, H, BT)
-            polynomial = (beta2[None, :] * effective + beta1[None, :]) * effective + beta0[None, :]
+            beta0, beta1, beta2, beta3 = _coefficients(beta, b, h, kc, T, H, BT, NBETA)
+            polynomial = _polynomial(effective, beta0, beta1, beta2, beta3, NBETA)
             weights = tl.where(causal, decay * polynomial, 0.0)
             read += tl.dot(weights, value, input_precision="tf32x3")
         query -= tl.dot(effective * erasure[None, :], key, input_precision="tf32x3")
@@ -121,7 +142,7 @@ def forward(q, k, v, prefix, beta, erase, inverse, transformed, scale, output, h
 def backward_queries(k, v, prefix, beta, erase, inverse, transformed, dout, history, scale,
                      dq, dquery_prefix, adjoint_history,
                      T: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
-                     BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr):
+                     BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr, NBETA: tl.constexpr = 3):
     qc, bh = tl.program_id(0), tl.program_id(1)
     b, h = bh // H, bh % H
     do = _matrix(dout, b, h, qc, T, H, V, BV, BT) * scale
@@ -144,11 +165,11 @@ def backward_queries(k, v, prefix, beta, erase, inverse, transformed, dout, hist
             effective = tl.dot(query, tl.trans(r), input_precision="tf32x3")
         key_decay = _gates(prefix, b, h, kc, T, H, BT)
         decay = tl.exp(tl.where(causal, query_decay[:, None] - key_decay[None, :], 0.0))
-        beta0, beta1, beta2 = _coefficients(beta, b, h, kc, T, H, BT)
-        polynomial = (beta2[None, :] * effective + beta1[None, :]) * effective + beta0[None, :]
+        beta0, beta1, beta2, beta3 = _coefficients(beta, b, h, kc, T, H, BT, NBETA)
+        polynomial = _polynomial(effective, beta0, beta1, beta2, beta3, NBETA)
         dweight = tl.dot(do, tl.trans(value), input_precision="tf32x3")
         grad_prefix += tl.sum(tl.where(causal, dweight * decay * polynomial, 0.0), 1)
-        derivative = beta1[None, :] + 2.0 * beta2[None, :] * effective
+        derivative = _derivative(effective, beta1, beta2, beta3, NBETA)
         deffective = tl.where(causal, dweight * decay * derivative, 0.0)
         deffective -= tl.dot(query_adjoint, tl.trans(key), input_precision="tf32x3") * erasure[None, :]
         if kc == qc:
@@ -170,7 +191,7 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
                   dk, dv, dbeta, derase, dinverse, dtransformed, dkey_prefix,
                   T: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
                   BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr,
-                  GROUP: tl.constexpr, BQ: tl.constexpr, MODE: tl.constexpr):
+                  GROUP: tl.constexpr, BQ: tl.constexpr, MODE: tl.constexpr, NBETA: tl.constexpr = 3):
     # GROUP=0 keeps the full adjoint for benchmarking; 1/2 split its value and
     # geometry outputs. Reducing simultaneous accumulators avoids register spills
     # and shared-memory pressure without changing the differentiated equations.
@@ -185,7 +206,7 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
         r = _matrix(transformed, b, h, kc, T, H, K, BK, BT)
     erasure = _gates(erase, b, h, kc, T, H, BT)
     key_decay = _gates(prefix, b, h, kc, T, H, BT)
-    beta0, beta1, beta2 = _coefficients(beta, b, h, kc, T, H, BT)
+    beta0, beta1, beta2, beta3 = _coefficients(beta, b, h, kc, T, H, BT, NBETA)
     if GEOMETRY:
         grad_key = tl.zeros((BT, BK), tl.float32)
         if MODE != 1:
@@ -196,6 +217,8 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
         grad_beta0 = tl.zeros((BT,), tl.float32)
         grad_beta1 = tl.zeros((BT,), tl.float32)
         grad_beta2 = tl.zeros((BT,), tl.float32)
+        if NBETA == 4:
+            grad_beta3 = tl.zeros((BT,), tl.float32)
         grad_prefix = tl.zeros((BT,), tl.float32)
     # Separating the single causal diagonal tile from fully preceding chunks
     # prevents its larger temporary matrices from spilling in every loop step.
@@ -218,15 +241,17 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
         dweight = tl.dot(do, tl.trans(value), input_precision="tf32x3")
         dpolynomial = tl.where(causal, dweight * decay, 0.0)
         if VALUES:
-            polynomial = (beta2[None, :] * effective + beta1[None, :]) * effective + beta0[None, :]
+            polynomial = _polynomial(effective, beta0, beta1, beta2, beta3, NBETA)
             weights = tl.where(causal, decay * polynomial, 0.0)
             grad_prefix -= tl.sum(dweight * weights, 0)
             grad_beta0 += tl.sum(dpolynomial, 0)
             grad_beta1 += tl.sum(dpolynomial * effective, 0)
             grad_beta2 += tl.sum(dpolynomial * effective * effective, 0)
+            if NBETA == 4:
+                grad_beta3 += tl.sum(dpolynomial * effective * effective * effective, 0)
             grad_value += tl.dot(tl.trans(weights), do, input_precision="tf32x3")
         if GEOMETRY:
-            derivative = beta1[None, :] + 2.0 * beta2[None, :] * effective
+            derivative = _derivative(effective, beta1, beta2, beta3, NBETA)
             deffective = dpolynomial * derivative
             deffective -= tl.dot(query_adjoint, tl.trans(key), input_precision="tf32x3") * erasure[None, :]
             direct = tl.dot(tl.trans(effective), query_adjoint, input_precision="tf32x3")
@@ -257,7 +282,9 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
         columns_v = tl.arange(0, BV)
         tl.store(dv + token_offset[:, None] * V + columns_v[None, :], grad_value,
                  mask=columns_v[None, :] < V)
-        tl.store(dbeta + token_offset * 3, grad_beta0)
-        tl.store(dbeta + token_offset * 3 + 1, grad_beta1)
-        tl.store(dbeta + token_offset * 3 + 2, grad_beta2)
+        tl.store(dbeta + token_offset * NBETA, grad_beta0)
+        tl.store(dbeta + token_offset * NBETA + 1, grad_beta1)
+        tl.store(dbeta + token_offset * NBETA + 2, grad_beta2)
+        if NBETA == 4:
+            tl.store(dbeta + token_offset * NBETA + 3, grad_beta3)
         tl.store(dkey_prefix + token_offset, grad_prefix)

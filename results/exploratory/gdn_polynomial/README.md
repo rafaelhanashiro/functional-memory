@@ -1,8 +1,8 @@
-# Quadratic memory with GDN query geometry
+# Polynomial memory with GDN query geometry
 
 Opened 2026-10-13. Home cluster: **Kennel**.
 
-Does adding quadratic and constant writes improve a GDN memory whose learned
+Do quadratic and cubic writes improve a GDN memory whose learned
 key-space transformation is unchanged?
 
 ## Runs and method
@@ -10,6 +10,7 @@ key-space transformation is unchanged?
 | Role | Run ID | Memory function | Status |
 | --- | --- | --- | --- |
 | Primary | `rd40af7956426` | Constant, linear, and quadratic | Running; update 10,000 recorded |
+| Cubic | `r83c3394eb730` | Constant through cubic | Planned; qualification required |
 | Control | `rf7341031e3d5` | Linear, independent erase gate | Complete |
 
 The explicitly selected control uses the repaired arithmetic, canonical GDN
@@ -99,6 +100,16 @@ Recipes and execution provenance live in
 [selection.yaml](selection.yaml) pins the explicit primary and control.
 Refresh its scientific inputs with
 `python -m scaffolds.records refresh results/exploratory/gdn_polynomial`.
+
+The cubic extension adds `beta_3 = tanh(W_3 x)`, with a separate zero-initialized
+projection and the same `P_t` applied to all three key indices. It has
+211,498,944 parameters, 163,840 more than quadratic. Both higher-degree runs
+start at the same reference-initialized linear function. The cubic recipe keeps
+the quadratic run's data, optimizer, warmup, output RMSNorm, and batch layout.
+Its dedicated checks cover the cubic forward and all input gradients, exact
+quadratic nesting at zero cubic write, noncommuting transition order, and
+production sequence length and head widths. GPU qualification remains required
+before production training.
 
 ## Open decision
 

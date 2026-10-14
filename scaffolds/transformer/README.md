@@ -355,8 +355,9 @@ Neither pass divides by a gate, so zero erasure with nonzero writing is supporte
 Training telemetry records both gates, their difference, raw attention output statistics,
 and separate erase/write/decay/output-gate parameter-group norms.
 
-`gdn_polynomial_degree: 2` with `gdn_erase_mode: independent` extends the stored
-function to a quadratic while retaining the original key-space transformation:
+`gdn_polynomial_degree: 2` or `3` with `gdn_erase_mode: independent` extends the
+stored function to a quadratic or cubic while retaining the original key-space
+transformation:
 
 ```text
 P_t = I - lambda_t k_t k_t^T
@@ -374,13 +375,20 @@ so the initial function equals independent-erase GDN without changing its origin
 parameter draws. Queries and keys keep the same L2 normalization, and the read
 keeps the gated output RMSNorm. No causal attention-sum division is introduced.
 
-The `blocked` reference explicitly updates scalar, linear, and quadratic states.
+Degree three adds `beta_3 = tanh(W_3 x)`, also zero-initialized without consuming
+original parameter RNG draws. The same `P_t` acts on each of its three key axes,
+with one decay factor for the whole state. The fused backend adds the cubic
+transported-score term and its derivatives without an expanded cubic state.
+
+The `blocked` reference explicitly updates the degree-wise tensor states; its
+cubic state costs `O(d_K^3 d_V)` per head and is intended for small correctness
+checks, not full-width training.
 The `fused` implementation evaluates the same recurrence through causal scores
 `q_t^T P_t ... P_{i+1} k_i`, with degree-specific write coefficients at token `i`
 and the scalar decay outside the polynomial. Its chunk-local triangular solves
 and backward products use FP32 intermediates and TF32x3 products. This training
 implementation has quadratic sequence-length work and avoids materializing the
-quadratic recurrent state. Backward recomputes transported queries instead of
+expanded recurrent state. Backward recomputes transported queries instead of
 saving their complete histories for every layer. Degree one keeps the original
 linear-time GDN kernel.
 

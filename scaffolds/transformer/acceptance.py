@@ -56,6 +56,8 @@ QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polyn
 POLYNOMIAL_GDN_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn.py"
 POLYNOMIAL_GDN_INTEGRATION_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn_integration.py"
 POLYNOMIAL_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn_kernel.py"
+CUBIC_GDN_TESTS = "scaffolds/transformer/tests/test_cubic_gdn.py"
+CUBIC_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_cubic_gdn_kernel.py"
 
 
 @dataclass(frozen=True)
@@ -87,11 +89,16 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         paths.extend(spec.select_tests(config, resolved_backend, cpu))
     model = config["model"]
     if (model.get("attention_mechanism") == "gated_deltanet"
-            and model.get("gdn_polynomial_degree", 1) == 2):
+            and model.get("gdn_polynomial_degree", 1) in (2, 3)):
         if cpu:
             paths.extend((POLYNOMIAL_GDN_TESTS, POLYNOMIAL_GDN_INTEGRATION_TESTS))
         elif resolved_backend == "fused":
             paths.append(POLYNOMIAL_GDN_KERNEL_TESTS)
+        if model.get("gdn_polynomial_degree") == 3:
+            if cpu:
+                paths.append(CUBIC_GDN_TESTS)
+            elif resolved_backend == "fused":
+                paths.append(CUBIC_GDN_KERNEL_TESTS)
     if model.get("attention_coefficient_conditioning", "static") == "query":
         paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)
         if model.get("attention_coefficient_activation", "identity") == "tanh":

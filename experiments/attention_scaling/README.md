@@ -345,3 +345,41 @@ env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable \
   experiments/attention_scaling/runs/rd40af7956426/config.yaml \
   "$LAUNCH_COMMIT" 4 H100
 ```
+
+
+## Cubic GDN query geometry
+
+Run `r83c3394eb730` sets `model.gdn_polynomial_degree: 3` and keeps the complete
+canonical recipe of quadratic run `rd40af7956426`: independent erase gates in
+original key space, reference initialization, warmup 400, gated output RMSNorm,
+Q/K L2 normalization, seed zero, and 19,074 updates on packed FineWeb. A separate
+zero-initialized `tanh(W_3 x)` adds the cubic write. Its 211,498,944 parameters
+include 163,840 more than quadratic; initial outputs and existing parameters match.
+Methods and explicit comparisons remain in
+[the exploratory topic](../../results/exploratory/gdn_polynomial/README.md).
+
+Home cluster: Kennel. Develop and execute in `worktrees/gdn-cubic`, with its own
+locked CUDA environment. The launcher runs full acceptance in the production
+allocation before training: CPU and GPU correctness, initialization, 20 full-recipe
+updates with validation, and exact checkpoint resume. Acceptance rejects a
+projected runtime beyond 46 hours of the 48-hour allocation. It qualifies the
+actual allocated GPU model and count; no qualification is borrowed across hardware.
+The job requests four H100 or B300 GPUs, nice 0 on `long`, while the protected
+quadratic run occupies the four-GPU allowance on `standard`.
+
+From the experiment worktree, after committing the frozen inputs:
+
+```bash
+LAUNCH_COMMIT=$(git rev-parse HEAD)
+env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable \
+  --nice=0 --partition=long --gres=gpu:4 \
+  --exclude=collie,samoyed,doodle,terrier \
+  --time=2-00:00:00 --cpus-per-task=32 --mem=256G \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false \
+  --job-name=r83c3394eb730 \
+  --output=experiments/attention_scaling/runs/r83c3394eb730/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.attention_scaling.acceptance \
+  experiments/attention_scaling/runs/r83c3394eb730/config.yaml \
+  "$LAUNCH_COMMIT" 4 B300,H100
+```

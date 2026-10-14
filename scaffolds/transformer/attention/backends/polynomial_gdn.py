@@ -1,7 +1,7 @@
-"""Differentiable exact quadratic GDN without an expanded feature-space state.
+"""Differentiable exact polynomial GDN without an expanded feature-space state.
 
 F_t(q) = exp(g_t) F_{t-1}((I-erase_t k_t k_t^T)q)
-         + v_t sum_{r=0}^2 beta_{t,r} (q^T k_t)^r.
+         + v_t sum_{r=0}^m beta_{t,r} (q^T k_t)^r, m in {2, 3}.
 
 The public read is scale*F_t(q_t). Its erase geometry is in the original key
 space; decay multiplies every degree equally. beta may be signed. FP32 chunk
@@ -93,7 +93,7 @@ def _forward(q, k, v, prefix, beta, erase, inverse, transformed, scale):
     output, _ = _polynomial_call(
         forward, q, k, v, prefix, beta, erase, inverse, transformed, float(scale),
         out=[_shape(v.shape, v.dtype), _shape((), jnp.float32)], q=q, v=v, name="forward",
-        SAVE_HISTORY=False, COMPUTE_OUTPUT=True)
+        SAVE_HISTORY=False, COMPUTE_OUTPUT=True, NBETA=beta.shape[-1])
     return output
 
 
@@ -122,26 +122,27 @@ def _attention_bwd(scale, residuals, dout):
         # XLA cannot hoist all layers' quadratic workspaces into the forward.
         forward, q, k, dout, prefix, beta, erase, inverse, transformed, float(scale),
         out=[_shape((), jnp.float32), history_shape], q=q, v=v, name="recompute_queries",
-        SAVE_HISTORY=True, COMPUTE_OUTPUT=False)
+        SAVE_HISTORY=True, COMPUTE_OUTPUT=False, NBETA=beta.shape[-1])
     dq, dquery_prefix, adjoint_history = _polynomial_call(
         backward_queries, k, v, prefix, beta, erase, inverse, transformed, dout, history, float(scale),
         out=[_shape(q.shape, q.dtype), _shape(prefix.shape, jnp.float32), history_shape],
-        q=q, v=v, name="backward_queries")
+        q=q, v=v, name="backward_queries", NBETA=beta.shape[-1])
     dummy = _shape((), jnp.float32)
     _, dv, dbeta, _, _, _, dkey_prefix = _polynomial_call(
         backward_keys, k, v, prefix, beta, erase, inverse, transformed, dout, history, adjoint_history, float(scale),
         out=[dummy, _shape(v.shape, v.dtype), _shape(beta.shape, beta.dtype), dummy, dummy, dummy,
-             _shape(prefix.shape, jnp.float32)], q=q, v=v, name="backward_key_values", GROUP=1, BQ=64, MODE=0)
+             _shape(prefix.shape, jnp.float32)], q=q, v=v, name="backward_key_values", GROUP=1, BQ=64, MODE=0,
+        NBETA=beta.shape[-1])
     dk_diagonal, _, _, derase_diagonal, dinverse, _, _ = _polynomial_call(
         backward_keys, k, v, prefix, beta, erase, inverse, transformed, dout, history, adjoint_history, float(scale),
         out=[_shape(k.shape, jnp.float32), dummy, dummy, _shape(erase.shape, erase.dtype),
              _shape(inverse.shape, jnp.float32), dummy, dummy],
-        q=q, v=v, name="backward_key_geometry_diagonal", GROUP=2, BQ=64, MODE=1)
+        q=q, v=v, name="backward_key_geometry_diagonal", GROUP=2, BQ=64, MODE=1, NBETA=beta.shape[-1])
     dk, _, _, derase, _, dtransformed, _ = _polynomial_call(
         backward_keys, k, v, prefix, beta, erase, inverse, transformed, dout, history, adjoint_history, float(scale),
         out=[_shape(k.shape, jnp.float32), dummy, dummy, _shape(erase.shape, erase.dtype),
              dummy, _shape(transformed.shape, jnp.float32), dummy],
-        q=q, v=v, name="backward_key_geometry_cross", GROUP=2, BQ=64, MODE=2)
+        q=q, v=v, name="backward_key_geometry_cross", GROUP=2, BQ=64, MODE=2, NBETA=beta.shape[-1])
     dk, derase = dk + dk_diagonal, derase + derase_diagonal
     return dq, dk.astype(k.dtype), dv, dquery_prefix + dkey_prefix, dbeta, derase, dinverse, dtransformed
 
@@ -150,7 +151,7 @@ _attention.defvjp(_attention_fwd, _attention_bwd)
 
 
 def polynomial_gated_delta_rule(q, k, v, g, beta, erase, scale):
-    """Quadratic GDN read, with q/k[B,T,H,K], v[B,T,H,V], beta[B,T,H,3].
+    """Degree-two/three GDN read: q/k[B,T,H,K], v[B,T,H,V], beta[B,T,H,m+1].
 
     g and erase have shape [B,T,H]. Inputs q/k/v may be BF16 or FP32;
     g, beta, and erase use FP32 arithmetic. q/k normalization belongs to the
@@ -158,8 +159,9 @@ def polynomial_gated_delta_rule(q, k, v, g, beta, erase, scale):
     """
     if q.ndim != 4 or k.shape != q.shape or v.shape[:3] != q.shape[:3]:
         raise ValueError("Polynomial GDN expects matching q/k/v[B,T,H,D] dimensions")
-    if beta.shape != (*q.shape[:3], 3) or g.shape != q.shape[:3] or erase.shape != g.shape:
-        raise ValueError("Polynomial GDN expects beta[B,T,H,3] and g/erase[B,T,H]")
+    if (beta.ndim != 4 or beta.shape[:3] != q.shape[:3] or beta.shape[-1] not in (3, 4)
+            or g.shape != q.shape[:3] or erase.shape != g.shape):
+        raise ValueError("Polynomial GDN expects beta[B,T,H,3 or 4] and g/erase[B,T,H]")
     if q.shape[1] % CHUNK_SIZE or not 0 < q.shape[-1] <= 64 or not 0 < v.shape[-1] <= 64:
         raise ValueError("Polynomial GDN fused backend needs T divisible by 64 and 1<=K,V<=64")
     # Keep the two key gradient paths in FP32 until after their sum. Saving k32

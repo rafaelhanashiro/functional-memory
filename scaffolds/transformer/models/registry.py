@@ -39,8 +39,8 @@ def model_parameter_count(config: ModelConfig) -> int:
                       + 2 * config.num_heads + config.value_head_dim)
         if config.gdn_erase_mode == "independent":
             attention += h * config.num_heads
-        if config.gdn_polynomial_degree == 2:
-            attention += 2 * h * config.num_heads
+        if config.gdn_polynomial_degree > 1:
+            attention += config.gdn_polynomial_degree * h * config.num_heads
     feed_forward = 3 * h * config.intermediate_size
     return (
         2 * embedding

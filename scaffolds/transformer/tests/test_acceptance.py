@@ -18,12 +18,16 @@ def test_acceptance_rejects_skipped_or_empty_test_reports(tmp_path):
 
 @pytest.mark.parametrize("cpu", (False, True))
 @pytest.mark.parametrize("backend", ("blocked", "fused"))
-def test_quadratic_gdn_cannot_omit_its_correctness_checks(cpu, backend):
-    config = {"model": {"attention_mechanism": "gated_deltanet", "gdn_polynomial_degree": 2}}
+@pytest.mark.parametrize("degree", (2, 3))
+def test_polynomial_gdn_cannot_omit_its_correctness_checks(cpu, backend, degree):
+    config = {"model": {"attention_mechanism": "gated_deltanet", "gdn_polynomial_degree": degree}}
     spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
     paths = preflight.test_paths(spec, config, resolved_backend=backend, cpu=cpu)
     expected = ((preflight.POLYNOMIAL_GDN_TESTS, preflight.POLYNOMIAL_GDN_INTEGRATION_TESTS) if cpu
                 else (preflight.POLYNOMIAL_GDN_KERNEL_TESTS,) if backend == "fused" else ())
+    if degree == 3:
+        expected += ((preflight.CUBIC_GDN_TESTS,) if cpu
+                     else (preflight.CUBIC_GDN_KERNEL_TESTS,) if backend == "fused" else ())
     assert paths == expected
     config["model"]["gdn_polynomial_degree"] = 1
     assert preflight.test_paths(spec, config, resolved_backend=backend, cpu=cpu) == ()
