@@ -76,7 +76,7 @@ def test_fused_layer_matches_the_reference_layer_with_shared_weights():
         assert np.linalg.norm(left - right) <= 1e-2 * np.linalg.norm(right) + 1e-6, path
 
 
-def test_device_class_uses_fla_hopper_and_blackwell_branches():
+def test_device_class_uses_fla_ampere_hopper_and_blackwell_branches():
     _require_gpu()
     import triton
     from packaging.version import Version
@@ -84,12 +84,19 @@ def test_device_class_uses_fla_hopper_and_blackwell_branches():
     from scaffolds.transformer.attention.backends.fla_gated_delta_rule import _device_class, _kernels
 
     arch, shared = _device_class()
-    assert arch in ("hopper", "blackwell") and shared >= 232448
+    if arch == "other":
+        device = jax.local_devices()[0]
+        assert "A100" in device.device_kind and int(str(device.compute_capability).split(".")[0]) == 8
+        assert shared >= 160 * 1024
+        expected_tiles = (64, 64)
+    else:
+        assert arch in ("hopper", "blackwell") and shared >= 232448
+        expected_tiles = (128, 64)
     if arch == "hopper":
         # FLA #640: gated dqkwg is wrong on Hopper with Triton in [3.4.0, 3.7.1).
         assert Version(triton.__version__) >= Version("3.7.1")
     tuned, tile, wy_tile = _kernels()
-    assert (tile, wy_tile) == (128, 64)
+    assert (tile, wy_tile) == expected_tiles
     fwd_h_warps = {config.num_warps for config in tuned["fwd_h"].configs}
     assert fwd_h_warps == ({2} if arch == "blackwell" else {2, 4})
 

@@ -10,7 +10,7 @@ key-space transformation is unchanged?
 | Role | Run ID | Memory function | Status |
 | --- | --- | --- | --- |
 | Primary | `rd40af7956426` | Constant, linear, and quadratic | Running; update 10,000 recorded |
-| Cubic | `r83c3394eb730` | Constant through cubic | Queued; job 218822, long, nice 0 |
+| Cubic | `r83c3394eb730` | Constant through cubic | Awaiting eight-A100 qualification |
 | Control | `rf7341031e3d5` | Linear, independent erase gate | Complete |
 
 The explicitly selected control uses the repaired arithmetic, canonical GDN

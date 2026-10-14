@@ -363,23 +363,26 @@ locked CUDA environment. The launcher runs full acceptance in the production
 allocation before training: CPU and GPU correctness, initialization, 20 full-recipe
 updates with validation, and exact checkpoint resume. Acceptance rejects a
 projected runtime beyond 46 hours of the 48-hour allocation. It qualifies the
-actual allocated GPU model and count; no qualification is borrowed across hardware.
-The job requests four H100 or B300 GPUs, nice 0 on `long`, while the protected
-quadratic run occupies the four-GPU allowance on `standard`.
+actual GPU model and count; no qualification is borrowed across hardware.
+The job requests eight A100 GPUs on `samoyed`, nice 0 on `long`, while the protected
+quadratic run occupies the four-GPU allowance on `standard`. Global microbatch 64
+and effective batch 256 are unchanged; the local microbatch is eight sequences.
+Host staging and disabled NCCL peer transfers are required by Kennel's A100
+transport policy. The frozen scientific recipe is unchanged by these runtime choices.
 
 From the experiment worktree, after committing the frozen inputs:
 
 ```bash
 LAUNCH_COMMIT=$(git rev-parse HEAD)
 env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable \
-  --nice=0 --partition=long --gres=gpu:4 \
-  --exclude=collie,samoyed,doodle,terrier \
+  --nice=0 --partition=long --nodelist=samoyed --gres=gpu:a100:8 \
+  --exclude=collie,dogo,mastiff,doodle,terrier,akita \
   --time=2-00:00:00 --cpus-per-task=32 --mem=256G \
-  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,TRANSFORMER_HOST_STAGING=1,NCCL_P2P_DISABLE=1 \
   --job-name=r83c3394eb730 \
   --output=experiments/attention_scaling/runs/r83c3394eb730/training.log \
   scaffolds/transformer/launchers/kennel.sbatch \
   experiments.attention_scaling.acceptance \
   experiments/attention_scaling/runs/r83c3394eb730/config.yaml \
-  "$LAUNCH_COMMIT" 4 B300,H100
+  "$LAUNCH_COMMIT" 8 A100
 ```

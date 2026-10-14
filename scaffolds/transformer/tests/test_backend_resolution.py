@@ -45,6 +45,78 @@ def test_explicit_unsupported_choice_never_falls_back(backend, dtype, degree, wi
         resolve_attention_backend(model, dtype=dtype, platform=platform)
 
 
+@pytest.mark.parametrize("degree", (2, 3))
+@pytest.mark.parametrize("capability,shared,expected", [
+    (None, None, "blocked"),
+    (7, None, "blocked"),
+    (8, 100 * 1024, "blocked"),
+    (8, 128 * 1024 - 1, "blocked"),
+    (8, 128 * 1024, "fused"),
+    (8, 160 * 1024, "fused"),
+    (9, None, "fused"),
+    (10, None, "fused"),
+])
+def test_polynomial_gdn_ampere_selection_requires_sufficient_shared_memory(
+        monkeypatch, degree, capability, shared, expected):
+    from scaffolds.transformer.attention.backends import selection
+
+    monkeypatch.setattr(selection, "_runtime_platform", lambda: "gpu")
+    monkeypatch.setattr(selection, "_cuda_compute_capability", lambda: capability)
+    def shared_memory():
+        assert capability == 8 and shared is not None
+        return shared
+    monkeypatch.setattr(selection, "_cuda_min_shared_memory_per_block", shared_memory)
+    model = ModelConfig(attention_mechanism="gated_deltanet", gdn_erase_mode="independent",
+                        gdn_polynomial_degree=degree, max_seq_len=128)
+    assert resolve_attention_backend(model) == expected
+    model.attention_backend = "fused"
+    if expected == "fused":
+        assert resolve_attention_backend(model) == "fused"
+    else:
+        with pytest.raises(ValueError, match="sm80.*128 KiB"):
+            resolve_attention_backend(model)
+
+
+def test_linear_gdn_retains_hopper_requirement_on_ampere(monkeypatch):
+    from scaffolds.transformer.attention.backends import selection
+
+    monkeypatch.setattr(selection, "_runtime_platform", lambda: "gpu")
+    monkeypatch.setattr(selection, "_cuda_compute_capability", lambda: 8)
+    monkeypatch.setattr(selection, "_cuda_min_shared_memory_per_block",
+                        lambda: pytest.fail("Linear GDN must not probe polynomial kernel resources"))
+    model = ModelConfig(attention_mechanism="gated_deltanet", max_seq_len=128)
+    assert resolve_attention_backend(model) == "blocked"
+    model.attention_backend = "fused"
+    with pytest.raises(ValueError, match="sm90"):
+        resolve_attention_backend(model)
+
+
+@pytest.mark.parametrize("degree", (2, 3))
+def test_polynomial_gdn_platform_override_does_not_probe_hardware(monkeypatch, degree):
+    from scaffolds.transformer.attention.backends import selection
+
+    monkeypatch.setattr(selection, "_cuda_compute_capability", lambda: pytest.fail("Unexpected GPU probe"))
+    monkeypatch.setattr(selection, "_cuda_min_shared_memory_per_block", lambda: pytest.fail("Unexpected GPU probe"))
+    model = ModelConfig(attention_mechanism="gated_deltanet", gdn_erase_mode="independent",
+                        gdn_polynomial_degree=degree, max_seq_len=128)
+    assert resolve_attention_backend(model, platform="gpu") == "fused"
+    assert resolve_attention_backend(model, platform="cpu") == "blocked"
+
+
+def test_polynomial_shared_memory_check_covers_every_local_device(monkeypatch):
+    import jax
+    from scaffolds.transformer.attention.backends import fla_gated_delta_rule, selection
+
+    monkeypatch.setattr(jax, "local_devices", lambda backend: (object(), object()))
+    checked = []
+    def shared_memory(ordinal):
+        checked.append(ordinal)
+        return (160 * 1024, 100 * 1024)[ordinal]
+    monkeypatch.setattr(fla_gated_delta_rule, "_max_shared_memory_per_block", shared_memory)
+    assert selection._cuda_min_shared_memory_per_block() == 100 * 1024
+    assert checked == [0, 1]
+
+
 def test_resume_auto_uses_persisted_backend_without_reselection(tmp_path, monkeypatch):
     from scaffolds.transformer.attention.backends import selection
 

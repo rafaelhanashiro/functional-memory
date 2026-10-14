@@ -24,6 +24,15 @@ def _cuda_compute_capability():
     return min(majors) if majors else None
 
 
+def _cuda_min_shared_memory_per_block():
+    """Lowest opt-in shared-memory limit among local training devices."""
+    import jax
+    from scaffolds.transformer.attention.backends.fla_gated_delta_rule import _max_shared_memory_per_block
+
+    return min((_max_shared_memory_per_block(ordinal)
+                for ordinal in range(len(jax.local_devices(backend="gpu")))), default=0)
+
+
 def resolve_attention_backend(model_config, *, dtype="float32", platform=None, sequence_length=None) -> str:
     """Return a concrete backend without changing scientific configuration.
 
@@ -43,15 +52,22 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
             raise ValueError("Gated DeltaNet requires backend='auto', 'blocked' or 'fused'")
         length = model_config.max_seq_len if sequence_length is None else sequence_length
         capability = (9 if platform is not None else _cuda_compute_capability()) if gpu else None
-        # FLA's kernels are qualified here on Hopper (H100) and Blackwell (B300).
-        supports = capability is not None and capability >= 9
         polynomial = getattr(model_config, "gdn_polynomial_degree", 1) >= 2
+        # Linear GDN retains its Hopper/Blackwell policy. Polynomial kernels
+        # also support Ampere, but their largest geometry kernel needs 128 KiB
+        # shared memory per block: A100 fits, smaller sm8x devices do not.
+        supports = capability is not None and capability >= 9
+        if polynomial and capability == 8 and request != "blocked":
+            supports = _cuda_min_shared_memory_per_block() >= 128 * 1024
         fits_width = not polynomial or max(model_config.qk_head_dim, model_config.value_head_dim) <= 64
         if request == "auto":
             return "fused" if length % 64 == 0 and supports and fits_width else "blocked"
         if request == "fused" and not fits_width:
             raise ValueError("Fused polynomial GDN requires key and value head dimensions at most 64")
         if request == "fused" and (length % 64 or not supports):
+            if polynomial:
+                raise ValueError("Fused polynomial GDN requires sequence length divisible by 64 and an sm80+ GPU; "
+                                 "sm8x devices need at least 128 KiB shared memory per block")
             raise ValueError("Fused Gated DeltaNet requires sequence length divisible by 64 and an sm90+ GPU")
         return request
     if model_config.attention_mechanism == "gla":
