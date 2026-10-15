@@ -6,8 +6,21 @@ to the experiment studies and result collections.
 
 ## Frozen-head capture and sparse polynomial fitting
 
-No GPU qualification result has been recorded yet. Before production, run the
-qualification in the experiment's own locked environment on one Kennel H100:
+Qualification **passed** on 2026-10-15 in Kennel job **219054**, one H100 80GB on
+`dogo`, source `aca7d35f51f021c1568bf5e50db3c493a9d3a2dd`. The
+[qualification record](sparse_polynomial_h100.json) preserves data and source
+hashes, hardware, checks, and timings. All 49 feature/capture tests passed in the
+GPU allocation, alongside CUDA forward/gradient agreement, native Llama capture,
+finite fitting updates, and exact checkpoint replay for all ten configurations.
+Native head-output reconstruction differed by at most `5.67e-7` in absolute
+value. TF32 was disabled. The allocation completed in 54 seconds.
+
+One-head forward/backward times were 2.47–3.99 ms and cached-key evaluation
+chunks took 0.65–1.77 ms. A simple projection gives about eight minutes of compute
+for the planned six-head comparison, excluding I/O and other overhead. This is a
+runtime qualification, not a claim of sparse inference speedup.
+
+To reproduce in an experiment's own locked environment:
 
 ```bash
 mkdir -p scaffolds/state_rank/validation/logs

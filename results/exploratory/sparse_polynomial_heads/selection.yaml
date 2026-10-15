@@ -1,0 +1,94 @@
+schema_version: 1
+study: attention_scaling
+opened: '2026-10-15'
+runs:
+- role: dense-47905
+  variant: dense
+  budget: 47905
+  study: attention_scaling
+  run_id: r79ad5ebadada
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r79ad5ebadada/config.yaml
+      sha256: 2ec056b3c46dc05e3a4ca0f9536ebacfcf5f21e4c7d3cd9649c98283c12928fd
+- role: fixed-128
+  variant: fixed
+  budget: 128
+  study: attention_scaling
+  run_id: re2a34e737173
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/re2a34e737173/config.yaml
+      sha256: 37514c8a6030bf1322b157ff2e0115333f3c209ec4a41e2d13e3bb67b5cf4c61
+- role: random-128
+  variant: random
+  budget: 128
+  study: attention_scaling
+  run_id: rfaccbff16fbd
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rfaccbff16fbd/config.yaml
+      sha256: 33dd5303b0c7b0e79787f4da825f89a11a3764b9bc4020437234c5388a0de571
+- role: dynamic-128
+  variant: dynamic
+  budget: 128
+  study: attention_scaling
+  run_id: rb6b8eb9aa58e
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rb6b8eb9aa58e/config.yaml
+      sha256: b9bdda62dab8685010c9851a054c7fd63ef4f11dcd6e1005c354a5e959280a12
+- role: fixed-512
+  variant: fixed
+  budget: 512
+  study: attention_scaling
+  run_id: rc8d38fead82c
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rc8d38fead82c/config.yaml
+      sha256: cb443405b4512314147e74eb7cc76bb83b184064b4177cf4af1f5de63a5cd865
+- role: random-512
+  variant: random
+  budget: 512
+  study: attention_scaling
+  run_id: r57cb14fbf264
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r57cb14fbf264/config.yaml
+      sha256: f0bf8916a3067b6fd35f07479c96a5de414a231f2115945007fc031acd44971b
+- role: dynamic-512
+  variant: dynamic
+  budget: 512
+  study: attention_scaling
+  run_id: ra64f3b7b5e86
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/ra64f3b7b5e86/config.yaml
+      sha256: d88c4d69e94ece54567a22717b37d7482b7df8452aaaafcc85ffddad06f916fe
+- role: fixed-2048
+  variant: fixed
+  budget: 2048
+  study: attention_scaling
+  run_id: r34a8abd83902
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r34a8abd83902/config.yaml
+      sha256: 4dcb8ab97699518e263e9f95737c6554b553e1b9289c8c71f013e02e097859cc
+- role: random-2048
+  variant: random
+  budget: 2048
+  study: attention_scaling
+  run_id: rfb737d019b58
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rfb737d019b58/config.yaml
+      sha256: 08f2199baefa027fb4a3e126927bdc18ac13f57e2792bca8602c57ee0cf9355b
+- role: dynamic-2048
+  variant: dynamic
+  budget: 2048
+  study: attention_scaling
+  run_id: r57edb320f33d
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r57edb320f33d/config.yaml
+      sha256: d394a2e65729e9ef1d82f338417812112640e15e3e1f6ad4d857175de4ee9eec

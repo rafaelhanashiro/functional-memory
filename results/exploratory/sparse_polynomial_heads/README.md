@@ -29,6 +29,15 @@ active and counts toward the budget. Each selected feature has a learned weight.
 | Query-dependent subset | 128, 512, 2,048 | Test whether different queries need different terms |
 | Random fixed subset | 128, 512, 2,048 | Control for learning the subset, with fitted weights |
 
+The fixed subset is selected once from the dense fit by ranking each learned
+weight times its query-feature RMS and key-feature RMS on training documents.
+Its retained weights are then fitted again. This is a screening heuristic, not
+an exhaustive search over sparse subsets. Dynamic selection ranks the current
+query-feature magnitude times key-feature RMS, fitted weight, and learned
+relevance. Its forward pass uses an exact hard budget; fitting uses a sigmoid
+straight-through gradient for relevance. Weights are positive, but monomials
+and kernel values can have either sign.
+
 The selector uses the current query and learned feature relevance; it cannot
 inspect the attention state or teacher output. Key features remain dense.
 Dynamic selection therefore measures the potential to reduce state reads while

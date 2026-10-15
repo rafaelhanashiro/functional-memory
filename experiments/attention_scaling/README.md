@@ -50,7 +50,8 @@ before submitting the printed IDs:
 
 ```bash
 PYTHONPATH=. scaffolds/state_rank/.venv/bin/python -m experiments.attention_scaling.launch_sparse_heads \
-  --submit <printed-run-IDs> --partition debug --hours 2 --node dogo
+  --submit r79ad5ebadada re2a34e737173 rfaccbff16fbd rb6b8eb9aa58e rc8d38fead82c r57cb14fbf264 ra64f3b7b5e86 r34a8abd83902 rfb737d019b58 r57edb320f33d \
+  --partition debug --hours 2 --node dogo
 ```
 
 The launcher uses one H100, appends per-run logs, verifies the frozen execution
