@@ -139,27 +139,26 @@ increased to compensate.
 
 | Order | Run ID | Degree | d_K | Parameters | Slurm job |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `ra79e66bd9121` | 3 | 16 | 195,708,864 | 219005 |
-| 2 | `ra98612db06d4` | 3 | 8 | 193,077,184 | 219006 |
-| 3 | `rf885f946fc9b` | 2 | 16 | 195,545,024 | 219007 |
-| 4 | `r2fb020d67c0d` | 2 | 8 | 192,913,344 | 219008 |
-| 5 | `rae2329afb5bd` | 1 | 16 | 195,217,344 | 219009 |
-| 6 | `r5c9701488368` | 1 | 8 | 192,585,664 | 219010 |
+| 1 | `ra79e66bd9121` | 3 | 16 | 195,708,864 | 219035 |
+| 2 | `ra98612db06d4` | 3 | 8 | 193,077,184 | 219036 |
+| 3 | `rf885f946fc9b` | 2 | 16 | 195,545,024 | 219037 |
+| 4 | `r2fb020d67c0d` | 2 | 8 | 192,913,344 | 219038 |
+| 5 | `rae2329afb5bd` | 1 | 16 | 195,217,344 | 219039 |
+| 6 | `r5c9701488368` | 1 | 8 | 192,585,664 | 219040 |
 
-All six jobs request eight A100s on Kennel `long` at nice 0.
+All six jobs request four H100 or B300 GPUs on Kennel `standard` at nice 0;
+A100 and A6000 nodes are excluded.
 Each run waits for successful completion of the preceding run. Each allocation
 checks the mechanism's outputs and all input gradients, reference initialization,
 a full-recipe training/validation pilot, and exact fresh-process checkpoint resume
 before production. The small-width checks include the masked K=8 tile and the
 production sequence length and value width.
 
-Cubic `d_K=16` is training in job `219005`; the five dependent jobs are queued.
-Its startup passed 303 correctness tests, reference-initialization verification,
-a 20-update full-recipe pilot, and exact fresh-process checkpoint resumption.
-The [scaffold qualification](../../../scaffolds/transformer/validation/runs/gdn-small-key-a100/runtime.json)
-records the evidence and a conservative 29.95-hour production estimate for this
-configuration only. Early production loss and gradients are finite; training is
-incomplete, so no performance conclusion is available.
+Cubic `d_K=16` has an active four-H100 allocation in job `219035` on `mastiff`,
+with hardware qualification in progress; the five dependent jobs are queued.
+The separate width-256 GDN run retains checkpoint 7,000 and stays queued behind
+this sequence. The original width-64 cubic remains held. These runs remain
+incomplete, so no small-key performance conclusion is available.
 Live mirror: [200m-dk016-gdn-cubic-geometry-warmup400-seed0](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/8704571105914c579bc48499fdb99aaf).
 
 The polynomial backend still evaluates transported scores with quadratic work

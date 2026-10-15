@@ -405,7 +405,7 @@ Home cluster: **Kennel**. The exploratory
 adds cubic, quadratic, and independent-erase linear runs at d_K=16 and 8,
 with the canonical warmup-400 recipe and intrinsic GDN output RMSNorm.
 All six recipes are frozen together in `worktrees/gdn-small-width`.
-Run them in this order on the A100 allocation, at nice 0; each successor
+Run them in this order on four H100 or B300 GPUs in `standard`, at nice 0; each successor
 requires successful completion of its predecessor. The existing width-64
 cubic job is held separately and is not a dependency of these runs.
 
@@ -413,21 +413,23 @@ From that worktree, after syncing its own locked environment:
 
 ```bash
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-launch_commit=$(git rev-parse HEAD)
+launch_commit=0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900
 previous_job=
 for run in ra79e66bd9121 ra98612db06d4 rf885f946fc9b r2fb020d67c0d rae2329afb5bd r5c9701488368; do
   dependency=()
   if [[ -n "$previous_job" ]]; then dependency=(--dependency="afterok:$previous_job"); fi
-  previous_job=$(sbatch --parsable --partition=long --nice=0 --nodelist=samoyed \
-    --exclude=akita,collie,dogo,doodle,mastiff,terrier --gres=gpu:a100:8 \
-    --cpus-per-task=32 --mem=256G --time=48:00:00 --job-name="$run" \
+  previous_job=$(sbatch --parsable --partition=standard --nice=0 \
+    --exclude=collie,doodle,samoyed,terrier --gres=gpu:4 \
+    --cpus-per-task=32 --mem=256G --time=24:00:00 --job-name="$run" \
     --output="experiments/attention_scaling/runs/$run/training.log" \
     "${dependency[@]}" scaffolds/transformer/launchers/kennel.sbatch \
     experiments.attention_scaling.acceptance \
-    "experiments/attention_scaling/runs/$run/config.yaml" "$launch_commit" 8 A100)
+    "experiments/attention_scaling/runs/$run/config.yaml" "$launch_commit" 4 H100,B300)
 done
 ```
 
-The launcher selects host staging and disables peer transfers on this hardware.
-Every run must pass acceptance in its allocation before training; the measured
-pilot must project within the allocation budget.
+The launcher selects the qualified transfer policy for the allocated hardware.
+Every run must pass acceptance on its allocated GPU model before training.
+The full-recipe pilot must fit the actual 24-hour allocation, allowing time for
+qualification and shutdown; the frozen acceptance implementation has a generic
+48-hour guard, so the measured projection also needs this stricter check.

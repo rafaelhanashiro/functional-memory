@@ -3,6 +3,7 @@
     "path": "experiments/attention_scaling/runs/rf885f946fc9b/config.yaml",
     "sha256": "5c05492da7d07d57aaeb6cba8fbaa63396e07aeb7f0066a2b378fd3a0fc7a6a1"
   },
+  "error": null,
   "frozen_execution_sha256": "6d9ee1ecfa19d803e99eaeac09a45897b5ed06118c9f2dbc19935acd9008e296",
   "home_cluster": "kennel",
   "label": "200m-dk016-gdn-quadratic-geometry-warmup400-seed0",
@@ -10,37 +11,47 @@
   "record_schema_version": 1,
   "run_id": "rf885f946fc9b",
   "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
-  "status": "submitted",
+  "status": "queued",
   "submission": {
     "command": [
       "sbatch",
       "--parsable",
-      "--partition=long",
+      "--hold",
+      "--partition=standard",
       "--nice=0",
-      "--nodelist=samoyed",
-      "--exclude=akita,collie,dogo,doodle,mastiff,terrier",
-      "--gres=gpu:a100:8",
+      "--exclude=collie,doodle,samoyed,terrier",
+      "--gres=gpu:4",
       "--cpus-per-task=32",
       "--mem=256G",
-      "--time=48:00:00",
+      "--time=24:00:00",
       "--job-name=rf885f946fc9b",
       "--output=experiments/attention_scaling/runs/rf885f946fc9b/training.log",
-      "--dependency=afterok:219006",
+      "--dependency=afterok:219036",
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.attention_scaling.acceptance",
       "experiments/attention_scaling/runs/rf885f946fc9b/config.yaml",
       "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
-      "8",
-      "A100"
+      "4",
+      "H100,B300"
     ],
-    "dependency": "afterok:219006",
-    "gpu_count": 8,
+    "dependency": "afterok:219036",
+    "excluded_nodes": [
+      "collie",
+      "doodle",
+      "samoyed",
+      "terrier"
+    ],
+    "gpu_count": 4,
     "gpu_type": "A100",
+    "gpu_types": [
+      "H100",
+      "B300"
+    ],
     "nice": 0,
     "node": "samoyed",
-    "partition": "long",
-    "slurm_job_id": "219007",
-    "submitted_utc": "2026-10-15T01:53:02.737852+00:00",
-    "time_limit_hours": 48
+    "partition": "standard",
+    "slurm_job_id": "219037",
+    "submitted_utc": "2026-10-15T03:25:09.953750+00:00",
+    "time_limit_hours": 24
   }
 }

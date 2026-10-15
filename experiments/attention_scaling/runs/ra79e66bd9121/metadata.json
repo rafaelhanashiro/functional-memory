@@ -178,13 +178,13 @@
   "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
   "seed": 0,
   "slurm_job_id": "219005",
-  "slurm_restart_count": 0,
+  "slurm_restart_count": 1,
   "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
   "status": "running",
   "step": 0,
   "target_steps": 19074,
   "target_tokens": 10000269312,
   "training_tokens": 0,
-  "updated_utc": "2026-10-15T02:52:12.876310+00:00",
+  "updated_utc": "2026-10-15T03:04:07.386255+00:00",
   "value_head_dim": 64
 }
