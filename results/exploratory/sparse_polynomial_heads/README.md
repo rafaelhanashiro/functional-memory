@@ -25,7 +25,7 @@ active and counts toward the budget. Each selected feature has a learned weight.
 | Variant | Active features per query | Purpose |
 | --- | ---: | --- |
 | Dense polynomial | 47,905 | Full candidate-bank reference |
-| Learned fixed subset | 128, 512, 2,048 | Test a shared sparse set across queries |
+| Fixed ranked subset | 128, 512, 2,048 | Test a shared sparse set across queries |
 | Query-dependent subset | 128, 512, 2,048 | Test whether different queries need different terms |
 | Random fixed subset | 128, 512, 2,048 | Control for learning the subset, with fitted weights |
 
@@ -82,14 +82,60 @@ fixed selection at the same budget would support query-dependent feature utility
 Neither outcome alone establishes sparse writes, polynomial GDN dynamics, or an
 improvement in language-model loss after replacing heads.
 
+This is a short calibration: 3,200 sampled query losses per head for the dense
+fit and another 1,600 for each sparse fit. Poor dense reconstruction can reflect
+insufficient fitting or the positive-weight restriction. Matching a poor dense
+fit does not establish a useful approximation. The random support is uniform
+over monomials, which are predominantly cubic, so beating it can reflect better
+degree allocation as well as better selection within a degree. Dynamic selection
+also adds routing parameters and changes the function class. Output error should
+be interpreted alongside attention error and signed-kernel diagnostics; a later
+uniform-attention control would help distinguish easy head outputs from useful
+feature selection.
+
 ## Findings and run status
 
-No experimental findings are available yet. Runs and measurements will appear
-below only after they have been explicitly selected and regenerated.
+All ten executions completed in Kennel job `219055` on one H100, with a total
+allocation time of **9 minutes 51 seconds**. The result is **inconclusive about
+useful sparsity**, because this fitting recipe did not produce an accurate dense
+reference.
+
+The full 47,905-feature reference has held-out relative output errors of
+`1.651, 2.602, 0.767, 1.198, 2.292, 1.298` for the six heads in the prescribed
+order. Five exceed the zero-output baseline of one. Validation selected step zero
+for the dense run and every fixed or dynamic sparse run: later evaluated fits had
+invalid denominators on at least one head. At the dense terminal checkpoint,
+the worst head has invalid normalization on 1.79% of full-validation queries.
+The three random-subset runs instead selected their final step, 200.
+
+Fixed and query-dependent subsets at 128 features reproduce similarly poor errors
+to the dense reference, and larger budgets show no substantial improvement. Since
+the selected dense, fixed, and dynamic checkpoints precede fitting, these curves
+do not demonstrate learned sparsity or successful learned routing. All selected
+checkpoints have zero invalid-query fractions on both held-out context lengths;
+the terminal validation plot separately exposes the invalid fitted checkpoints.
+
+See [held-out output error](heldout_output_error.png),
+[attention-weight error](heldout_attention_error.png),
+[longer-context output error](long_context_output_error.png), and
+[terminal versus selected validation](validation_output_error.png). The dotted
+line in output plots is the zero-output baseline. The full numerical comparison
+is in [summary.csv](summary.csv), derived from the pinned run measurements.
 
 <!-- BEGIN GENERATED STATUS -->
 
-No selected run status has been generated yet.
+| Variant | Budget | Run ID | Recorded status | Test heads reported | Maximum invalid query fraction |
+| --- | ---: | --- | --- | ---: | ---: |
+| Fixed ranked | 128 | [re2a34e737173](../../../experiments/attention_scaling/runs/re2a34e737173/record.json) | complete | 6/6 | 0 |
+| Fixed ranked | 512 | [rc8d38fead82c](../../../experiments/attention_scaling/runs/rc8d38fead82c/record.json) | complete | 6/6 | 0 |
+| Fixed ranked | 2,048 | [r34a8abd83902](../../../experiments/attention_scaling/runs/r34a8abd83902/record.json) | complete | 6/6 | 0 |
+| Query-dependent | 128 | [rb6b8eb9aa58e](../../../experiments/attention_scaling/runs/rb6b8eb9aa58e/record.json) | complete | 6/6 | 0 |
+| Query-dependent | 512 | [ra64f3b7b5e86](../../../experiments/attention_scaling/runs/ra64f3b7b5e86/record.json) | complete | 6/6 | 0 |
+| Query-dependent | 2,048 | [r57edb320f33d](../../../experiments/attention_scaling/runs/r57edb320f33d/record.json) | complete | 6/6 | 0 |
+| Random fixed | 128 | [rfaccbff16fbd](../../../experiments/attention_scaling/runs/rfaccbff16fbd/record.json) | complete | 6/6 | 0 |
+| Random fixed | 512 | [r57cb14fbf264](../../../experiments/attention_scaling/runs/r57cb14fbf264/record.json) | complete | 6/6 | 0 |
+| Random fixed | 2,048 | [rfb737d019b58](../../../experiments/attention_scaling/runs/rfb737d019b58/record.json) | complete | 6/6 | 0 |
+| Dense polynomial | 47,905 | [r79ad5ebadada](../../../experiments/attention_scaling/runs/r79ad5ebadada/record.json) | complete | 6/6 | 0 |
 
 <!-- END GENERATED STATUS -->
 
@@ -110,7 +156,10 @@ they are not replaced by another run. Figure and CSV output is deterministic.
 
 ## Open decision
 
-After the planned comparison, decide whether the accuracy–feature-budget curves
-justify investigating sparse key writes or structured polynomial features, whether
-to promote the evidence into the maintained attention collection, or whether to
-discard this topic and its runs. No outcome or promotion has been decided.
+Before another sparsity comparison, establish a useful dense polynomial reference
+with stable normalization, distinguish optimization failure from insufficient
+polynomial expressiveness, and include a constant-only causal averaging control.
+The present evidence does not justify a claim about learned sparse features or
+query-dependent routing. Keep this topic exploratory while deciding whether to
+continue that baseline investigation or discard the topic; it enters no canonical
+attention selection.

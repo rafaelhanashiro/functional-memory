@@ -1,0 +1,85 @@
+{
+  "criterion": "lowest aggregate validation relative output MSE; invalid queries disqualify",
+  "heads": [
+    {
+      "active_features": 2048,
+      "attention_relative_rms": 0.9603620039777812,
+      "denominator_min": 0.9461079239845276,
+      "feature_count": 47905,
+      "head": 0,
+      "invalid_fraction": 0.0,
+      "layer": 2,
+      "negative_kernel_fraction": 1.5256926644696692e-05,
+      "output_relative_rms": 1.3978538852718287,
+      "queries": 256,
+      "zero_head_relative_rms": 1.0
+    },
+    {
+      "active_features": 2048,
+      "attention_relative_rms": 0.9608376777545811,
+      "denominator_min": 0.932184636592865,
+      "feature_count": 47905,
+      "head": 16,
+      "invalid_fraction": 0.0,
+      "layer": 2,
+      "negative_kernel_fraction": 0.0,
+      "output_relative_rms": 2.698719017188642,
+      "queries": 256,
+      "zero_head_relative_rms": 1.0
+    },
+    {
+      "active_features": 2048,
+      "attention_relative_rms": 0.87804113909052,
+      "denominator_min": 0.9342118501663208,
+      "feature_count": 47905,
+      "head": 0,
+      "invalid_fraction": 0.0,
+      "layer": 8,
+      "negative_kernel_fraction": 0.0,
+      "output_relative_rms": 0.7683061173330745,
+      "queries": 256,
+      "zero_head_relative_rms": 1.0
+    },
+    {
+      "active_features": 2048,
+      "attention_relative_rms": 0.9394717365872659,
+      "denominator_min": 0.9879403114318848,
+      "feature_count": 47905,
+      "head": 16,
+      "invalid_fraction": 0.0,
+      "layer": 8,
+      "negative_kernel_fraction": 0.0003509093128280239,
+      "output_relative_rms": 1.1761968812431107,
+      "queries": 256,
+      "zero_head_relative_rms": 1.0
+    },
+    {
+      "active_features": 2048,
+      "attention_relative_rms": 0.9613988332385509,
+      "denominator_min": 0.9533975720405579,
+      "feature_count": 47905,
+      "head": 0,
+      "invalid_fraction": 0.0,
+      "layer": 14,
+      "negative_kernel_fraction": 0.0,
+      "output_relative_rms": 2.3509499936556377,
+      "queries": 256,
+      "zero_head_relative_rms": 1.0
+    },
+    {
+      "active_features": 2048,
+      "attention_relative_rms": 0.9421189505337833,
+      "denominator_min": 0.9458554983139038,
+      "feature_count": 47905,
+      "head": 16,
+      "invalid_fraction": 0.0,
+      "layer": 14,
+      "negative_kernel_fraction": 0.0,
+      "output_relative_rms": 1.4044999294851244,
+      "queries": 256,
+      "zero_head_relative_rms": 1.0
+    }
+  ],
+  "score": 3.1183998560459645,
+  "step": 0
+}

@@ -10,12 +10,63 @@
     "source_commit": "aca7d35f51f021c1568bf5e50db3c493a9d3a2dd",
     "status": "passed"
   },
+  "artifacts": [
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rfaccbff16fbd/best_validation.json",
+      "sha256": "f0d451085db9093d4ef064925c28e315bb13639b5ae98bf8cb9a1795aaa04d02",
+      "size_bytes": 2452
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rfaccbff16fbd/completion.json",
+      "sha256": "78bf43058cba7f5f487aa8769dddd87e0afc92a2990a3ba8f52675992b7e19a0",
+      "size_bytes": 12521
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rfaccbff16fbd/metadata.json",
+      "sha256": "71b76594d0e404c424d8746599d79275735022f9908293a72980eaa377fcd907",
+      "size_bytes": 771
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rfaccbff16fbd/metrics.jsonl",
+      "sha256": "cef60b65c3710ec74d5923127d515a3c9222b44327c45bfd449a69b712669a69",
+      "size_bytes": 47862
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rfaccbff16fbd/training.log",
+      "sha256": "1d06c040bd0fee5e9c98f9cc0d552ff1c4d51c69d720e0fbcb1de212a0cb61aa",
+      "size_bytes": 7615
+    }
+  ],
+  "attempts": [
+    {
+      "exit_code": 0,
+      "finished_utc": "2026-10-15T05:48:24.671908+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 80GB HBM3",
+      "node": "dogo.csail.mit.edu",
+      "partition": "debug",
+      "slurm_job_id": "219055",
+      "slurm_restart_count": 0,
+      "source_commit": "ba69cf11248859a4903d9c5e7092d7fa9cc6a817",
+      "started_utc": "2026-10-15T05:47:39.496865+00:00"
+    }
+  ],
   "attention_degree": 3,
   "attention_family": "pretrained_polynomial_probe",
   "attention_normalization": true,
+  "best_validation": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rfaccbff16fbd/best_validation.json",
+    "sha256": "f0d451085db9093d4ef064925c28e315bb13639b5ae98bf8cb9a1795aaa04d02",
+    "size_bytes": 2452
+  },
   "checkpoint_retention": "validation_best",
   "coefficient_mode": "learned",
   "coefficient_parameterization": "positive_monomial_weights",
+  "completion": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rfaccbff16fbd/completion.json",
+    "sha256": "78bf43058cba7f5f487aa8769dddd87e0afc92a2990a3ba8f52675992b7e19a0",
+    "size_bytes": 12521
+  },
   "config": {
     "path": "experiments/attention_scaling/runs/rfaccbff16fbd/config.yaml",
     "sha256": "33dd5303b0c7b0e79787f4da825f89a11a3764b9bc4020437234c5388a0de571"
@@ -24,18 +75,96 @@
     "path": "/data/cl/u/rafah/home/datasets/sparse_polynomial_head_probe/wikitext2_512_seed20261015/manifest.json",
     "sha256": "0f4094d7fcad7b0388c4e199c9254cb9c896dc49ad069faf230b105449d85155"
   },
-  "execution": {
-    "corpus_directory": "/data/cl/u/rafah/home/datasets/sparse_polynomial_head_probe/wikitext2_512_seed20261015"
+  "dependency_lock": {
+    "git_path": "scaffolds/state_rank/uv.lock",
+    "sha256": "b45e2a478deaad456c54221e21e3d154ae3d711948405df7344d67d70527c58d",
+    "source_commit": "ba69cf11248859a4903d9c5e7092d7fa9cc6a817"
   },
+  "execution": {
+    "allow_tf32": false,
+    "backend": "pytorch_cuda_eager",
+    "corpus_directory": "/data/cl/u/rafah/home/datasets/sparse_polynomial_head_probe/wikitext2_512_seed20261015",
+    "dtype": "float32",
+    "torch_version": "2.7.1+cu126"
+  },
+  "frozen_execution_sha256": "2e5df01ee9c94ef2dd7b70e8647fb2fba31dd7b0f490f1d61bce8f29905bae0f",
   "home_cluster": "kennel",
   "label": "llama1b-sparse-polynomial-random-128-seed20261015",
+  "log": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rfaccbff16fbd/training.log",
+    "sha256": "1d06c040bd0fee5e9c98f9cc0d552ff1c4d51c69d720e0fbcb1de212a0cb61aa",
+    "size_bytes": 7615
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rfaccbff16fbd/training.log",
+  "metadata": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rfaccbff16fbd/metadata.json",
+    "sha256": "71b76594d0e404c424d8746599d79275735022f9908293a72980eaa377fcd907",
+    "size_bytes": 771
+  },
+  "metrics": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rfaccbff16fbd/metrics.jsonl",
+    "sha256": "cef60b65c3710ec74d5923127d515a3c9222b44327c45bfd449a69b712669a69",
+    "size_bytes": 47862
+  },
   "model_id": "meta-llama/Llama-3.2-1B",
   "name": "llama1b-sparse-polynomial-random-128-seed20261015",
   "qk_head_dim": 64,
   "record_schema_version": 1,
+  "retained_best_checkpoint_step": 200,
   "run_id": "rfaccbff16fbd",
   "seed": 20261015,
-  "status": "planned",
+  "selected_checkpoint": {
+    "file_count": 1,
+    "files": [
+      {
+        "path": "state.pt",
+        "sha256": "b67905f631238891df604c86f27ed32942efcce5d364740d84b1195f33248570",
+        "size_bytes": 18428195
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rfaccbff16fbd/checkpoints/200",
+    "sha256": "8aec774f82c5b9c0bec90a07ac9cbfb0cca1f0bb473ebd2b94b6c523a2f3ff48",
+    "size_bytes": 18428195
+  },
+  "source_commit": "ba69cf11248859a4903d9c5e7092d7fa9cc6a817",
+  "status": "complete",
+  "step": 200,
+  "submission": {
+    "partition": "debug",
+    "slurm_job_id": "219055",
+    "submitted_utc": "2026-10-15T05:43:41.917107+00:00"
+  },
+  "teacher_activations": {
+    "archives": [
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r79ad5ebadada/activations_test.npz",
+        "sha256": "c90e98d2ead172c5bb5ae5c483ab168837de6975fbcc0d924e184e70b7c21699",
+        "size_bytes": 100669150
+      },
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r79ad5ebadada/activations_test_long.npz",
+        "sha256": "2a70a713962523ba81a1537e85037db4e5a380e3c9c54112e840abc7a37fb881",
+        "size_bytes": 100669150
+      },
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r79ad5ebadada/activations_train.npz",
+        "sha256": "0d9f3f1b6222edcdd31c9341d7d080ff3bfa6e1cc8719f7c307705e240d3a870",
+        "size_bytes": 629151454
+      },
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r79ad5ebadada/activations_validation.npz",
+        "sha256": "ddfbb9646fcab5896dbbb065a1463a1416032eaabced7462fa31817b425204c1",
+        "size_bytes": 100669150
+      }
+    ],
+    "manifest": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r79ad5ebadada/activation_manifest.json",
+      "sha256": "96dc68e8f1d671b267c2b876bd8ddf9f160bc7216bc857a5e25a24dc11393e7b"
+    },
+    "owner_run_id": "r79ad5ebadada"
+  },
   "teacher_artifacts": {
     "files": {
       "config.json": {
@@ -66,5 +195,13 @@
     "model_id": "meta-llama/Llama-3.2-1B",
     "revision": "4e20de362430cd3b72f300e6b0f18e50e7166e08",
     "snapshot": "/data/cl/u/rafah/home/.cache/huggingface/hub/models--meta-llama--Llama-3.2-1B/snapshots/4e20de362430cd3b72f300e6b0f18e50e7166e08"
+  },
+  "wandb_run_id": "rfaccbff16fbd",
+  "wandb_url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/rfaccbff16fbd",
+  "warm_start": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r79ad5ebadada/checkpoints/0/state.pt",
+    "run_id": "r79ad5ebadada",
+    "sha256": "294034bc9548152bf28ce251275a118569498a750307a33de350bf18f75c1b59",
+    "step": 0
   }
 }

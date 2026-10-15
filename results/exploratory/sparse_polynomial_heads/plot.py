@@ -21,7 +21,7 @@ DIRECTORY = Path(__file__).resolve().parent
 ROOT = DIRECTORY.parents[2]
 VARIANTS = ("fixed", "dynamic", "random", "dense")
 STYLES = {
-    "fixed": ("#2878B5", "Learned fixed"),
+    "fixed": ("#2878B5", "Fixed ranked"),
     "dynamic": ("#D65F00", "Query-dependent"),
     "random": ("#6C757D", "Random fixed"),
     "dense": ("#663399", "Dense polynomial"),
@@ -140,7 +140,11 @@ def render(runs, rows, directory: Path = DIRECTORY):
     )
     for stem, title, metric, splits in plots:
         fig, axes = plt.subplots(math.ceil(len(heads) / 3), 3, figsize=(12.2, 7.2), squeeze=False)
+        maximum = max([1.0, *[row[metric] for row in rows
+                              if row["split"] in splits and finite(row[metric])]])
         for ax, (layer, head) in zip(axes.flat, heads):
+            if metric == "output_relative_rms":
+                ax.axhline(1.0, color="#444444", linewidth=1.0, linestyle=":")
             available = [row for row in rows if (row["layer"], row["head"]) == (layer, head)
                          and row["split"] in splits]
             missing, invalid = set(), set()
@@ -181,23 +185,25 @@ def render(runs, rows, directory: Path = DIRECTORY):
             ax.set_xscale("log", base=2)
             ax.set_xticks(budgets, [f"{b:,}" for b in budgets], fontsize=8)
             ax.set_xlim(min(budgets) / 1.5, max(budgets) * 1.5)
-            ax.set_yscale("symlog", linthresh=.02)
-            ax.set_ylim(bottom=0)
-            ax.set_xlabel("Active features per query")
+            ax.set_ylim(0, maximum * 1.10)
+            ax.set_xlabel("Features per query")
             ax.set_ylabel("Relative RMS error")
             ax.grid(alpha=.18)
         for ax in list(axes.flat)[len(heads):]:
             ax.set_visible(False)
         legend = list(styles)
+        if metric == "output_relative_rms":
+            legend.append(Line2D([0], [0], color="#444444", linestyle=":", label="Zero output"))
         if len(splits) == 2:
             legend += [Line2D([0], [0], color="black", marker="o", label="Validation best"),
                        Line2D([0], [0], color="black", linestyle="--", marker="x", label="Terminal")]
-        fig.legend(handles=legend, loc="lower center", ncol=3 if len(splits) == 2 else 4,
+        fig.legend(handles=legend, loc="lower center", ncol=4 if len(splits) == 2 else len(legend),
                    frameon=False, bbox_to_anchor=(.5, .025))
         fig.suptitle(title + "\nFrozen Llama-3.2-1B; degree ≤ 3; dense key updates", fontsize=12)
-        fig.text(.5, .005, "Error axis is linear below 0.02 and logarithmic above; missing measurements remain unavailable.",
+        fig.text(.5, .005, "All panels use the same linear error scale; missing measurements remain unavailable.",
                  ha="center", fontsize=8, color="#555555")
         fig.tight_layout(rect=(0, .11 if len(splits) == 2 else .085, 1, .93))
+        fig.subplots_adjust(wspace=.32)
         save_figure(fig, directory, stem)
 
 
