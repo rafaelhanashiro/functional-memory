@@ -1,4 +1,23 @@
 {
+  "artifacts": [],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/r2fb020d67c0d/.runtime/acceptance/H100-4",
+      "allocation": "JobId=219038 JobName=r2fb020d67c0d UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=19051 Nice=1000 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:04:26 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-14T23:25:09 EligibleTime=2026-10-15T10:51:12 AccrueTime=2026-10-15T10:51:12 StartTime=2026-10-15T10:51:14 EndTime=2026-10-17T10:51:14 Deadline=N/A PreemptEligibleTime=2026-10-15T10:51:14 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-15T10:51:14 Scheduler=Main Partition=long AllocNode:Sid=kennel:2198585 ReqNodeList=(null) ExcNodeList=akita,collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/r2fb020d67c0d/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/r2fb020d67c0d/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/r2fb020d67c0d/config.yaml",
+      "config_sha256": "9869d0758025413079d45b2dab16d6675842acbf5770c246aec5eb7b451c6910",
+      "exit_code": 0,
+      "finished_utc": "2026-10-15T15:07:00.890940+00:00",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
+      "slurm_job_id": "219038",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-15T14:55:39.443160+00:00"
+    }
+  ],
   "config": {
     "path": "experiments/attention_scaling/runs/r2fb020d67c0d/config.yaml",
     "sha256": "9869d0758025413079d45b2dab16d6675842acbf5770c246aec5eb7b451c6910"
@@ -7,6 +26,9 @@
   "frozen_execution_sha256": "6d9ee1ecfa19d803e99eaeac09a45897b5ed06118c9f2dbc19935acd9008e296",
   "home_cluster": "kennel",
   "label": "200m-dk008-gdn-quadratic-geometry-warmup400-seed0",
+  "log": null,
+  "log_path": "experiments/attention_scaling/runs/r2fb020d67c0d/training.log",
+  "metadata": null,
   "name": "200m-dk008-gdn-quadratic-geometry-warmup400-seed0",
   "record_schema_version": 1,
   "run_id": "r2fb020d67c0d",
@@ -47,11 +69,11 @@
       "H100"
     ],
     "nice": 1000,
-    "node": "dogo",
+    "node": null,
     "partition": "long",
     "slurm_job_id": "219038",
     "submitted_utc": "2026-10-15T03:25:09.968913+00:00",
     "time_limit_hours": 48,
-    "updated_utc": "2026-10-15T14:52:18.580921+00:00"
+    "updated_utc": "2026-10-15T15:08:01.723030+00:00"
   }
 }

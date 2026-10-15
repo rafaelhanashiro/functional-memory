@@ -154,7 +154,8 @@ Quartic and cubic runs use nice 0, quadratics nice 1000, and linears nice 2000.
 The quartic runs have first priority for available capacity, beginning with d_K=8;
 they do not wait for cubic d_K=16 to finish. Quartic
 d_K=8 (`219132`) is in acceptance on `dogo` while cubic d_K=16 continues.
-Quadratic d_K=8 (`219038`) remains queued at nice 1000. A100 and
+Quadratic d_K=8 (`219038`) remains queued and eligible at nice 1000.
+Quartic d_K=16 (`219133`) has priority in the `standard` queue. A100 and
 A6000 nodes are excluded. The queued allocations also exclude B300, whose
 current shared-kernel qualification is not passing.
 
