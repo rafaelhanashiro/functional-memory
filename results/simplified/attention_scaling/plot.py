@@ -21,6 +21,7 @@ FAMILIES = [  # panel, label, color, marker
     ("unnormalized_fixed", "Unnormalized Taylor", "#2a78d6", "o"),
     ("unnormalized_fixed_hermite", "Unnormalized Hermite", "#eb6834", "^"),
     ("unnormalized_learned", "Unnormalized learned", "#1baf7a", "D"),
+    ("unnormalized_learned_head_rms_norm", "Unnormalized learned, head RMSNorm", "#7a3fbf", "P"),
     ("normalized_nonnegative", "Normalized learned, nonnegative", "#eda100", "s"),
     ("normalized_fixed", "Normalized Taylor", "#e87ba4", "v"),
 ]

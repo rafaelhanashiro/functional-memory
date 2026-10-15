@@ -145,7 +145,8 @@ cluster. New dot-product runs use `model.qk_norm: true`; GLA and degree zero do 
 New runs use their mechanism's reference initialization, which `records create` fills in
 when the recipe leaves `model.initialization` unset.
 Untied embeddings, the scaffold's selective weight decay, and 400 warmup updates
-(`optim.warmup_steps`) are canonical. The following allocates a fresh execution from an
+(`optim.warmup_steps`) are canonical. New unnormalized runs set
+`model.attention_output_scaling: head_rms_norm`. The following allocates a fresh execution from an
 existing QK-normalized Taylor recipe:
 
 ```bash
