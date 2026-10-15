@@ -10,7 +10,7 @@ key-space transformation is unchanged?
 | Role | Run ID | Memory function | Status |
 | --- | --- | --- | --- |
 | Primary | `rd40af7956426` | Constant, linear, and quadratic | Running; update 10,000 recorded |
-| Cubic | `r83c3394eb730` | Constant through cubic | Running on eight A100s; job 218896, long, nice 0 |
+| Cubic | `r83c3394eb730` | Constant through cubic | Paused by user; job 218896 held, checkpoint 7,000 retained |
 | Control | `rf7341031e3d5` | Linear, independent erase gate | Complete |
 
 The explicitly selected control uses the repaired arithmetic, canonical GDN
@@ -113,6 +113,9 @@ production sequence length and head widths. Full
 passed correctness, pilot validation, and exact checkpoint resumption. The pilot
 projects 48.61 hours within the requested 72-hour production allocation.
 This qualifies startup; long-run stability and performance remain open.
+The width-64 cubic job is now held at the user's request, with checkpoint 7,000
+retained in its original Kennel worktree. Resumption will replay the 260 logged
+updates after that checkpoint. Its source, environment, and recipe remain frozen.
 
 Cubic live mirror: [200m-dk064-gdn-cubic-geometry-warmup400-seed0](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/911b85e2ddde4223972bde38199aa936).
 
@@ -134,15 +137,16 @@ Linear means the independent-erase GDN control. Parameter counts range from
 192.6M to 195.7M because the Q/K projections are narrower. No other width is
 increased to compensate.
 
-| Order | Run ID | Degree | d_K | Parameters |
-| --- | --- | --- | --- | --- |
-| 1 | `ra79e66bd9121` | 3 | 16 | 195,708,864 |
-| 2 | `ra98612db06d4` | 3 | 8 | 193,077,184 |
-| 3 | `rf885f946fc9b` | 2 | 16 | 195,545,024 |
-| 4 | `r2fb020d67c0d` | 2 | 8 | 192,913,344 |
-| 5 | `rae2329afb5bd` | 1 | 16 | 195,217,344 |
-| 6 | `r5c9701488368` | 1 | 8 | 192,585,664 |
+| Order | Run ID | Degree | d_K | Parameters | Slurm job |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `ra79e66bd9121` | 3 | 16 | 195,708,864 | 219005 |
+| 2 | `ra98612db06d4` | 3 | 8 | 193,077,184 | 219006 |
+| 3 | `rf885f946fc9b` | 2 | 16 | 195,545,024 | 219007 |
+| 4 | `r2fb020d67c0d` | 2 | 8 | 192,913,344 | 219008 |
+| 5 | `rae2329afb5bd` | 1 | 16 | 195,217,344 | 219009 |
+| 6 | `r5c9701488368` | 1 | 8 | 192,585,664 | 219010 |
 
+All six jobs request eight A100s on Kennel `long` at nice 0.
 Each run waits for successful completion of the preceding run. Each allocation
 checks the mechanism's outputs and all input gradients, reference initialization,
 a full-recipe training/validation pilot, and exact fresh-process checkpoint resume

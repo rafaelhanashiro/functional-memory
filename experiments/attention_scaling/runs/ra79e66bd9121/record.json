@@ -1,12 +1,62 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/ra79e66bd9121/.runtime/acceptance/A100-8",
+      "allocation": "JobId=219005 JobName=ra79e66bd9121 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20067 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:10 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-14T21:53:02 EligibleTime=2026-10-14T21:53:02 AccrueTime=2026-10-14T21:53:02 StartTime=2026-10-14T21:53:02 EndTime=2026-10-16T21:53:02 Deadline=N/A PreemptEligibleTime=2026-10-14T21:53:02 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-14T21:53:02 Scheduler=Main Partition=long AllocNode:Sid=kennel:232289 ReqNodeList=samoyed ExcNodeList=akita,collie,dogo,doodle,mastiff,terrier NodeList=samoyed BatchHost=samoyed NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=8 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=8 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/ra79e66bd9121/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/ra79e66bd9121/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:a100:8 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/ra79e66bd9121/config.yaml",
+      "config_sha256": "d38aae25114b959dbd881657894c412c0f2f09b4239b56c6d7268c568d1a104a",
+      "gpu_count": 8,
+      "gpu_type": "A100",
+      "home_cluster": "kennel",
+      "launch_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
+      "slurm_job_id": "219005",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-15T01:53:12.976306+00:00"
+    }
+  ],
   "config": {
     "path": "experiments/attention_scaling/runs/ra79e66bd9121/config.yaml",
     "sha256": "d38aae25114b959dbd881657894c412c0f2f09b4239b56c6d7268c568d1a104a"
   },
+  "frozen_execution_sha256": "6d9ee1ecfa19d803e99eaeac09a45897b5ed06118c9f2dbc19935acd9008e296",
   "home_cluster": "kennel",
   "label": "200m-dk016-gdn-cubic-geometry-warmup400-seed0",
+  "log_path": "experiments/attention_scaling/runs/ra79e66bd9121/training.log",
   "name": "200m-dk016-gdn-cubic-geometry-warmup400-seed0",
   "record_schema_version": 1,
   "run_id": "ra79e66bd9121",
-  "status": "planned"
+  "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--nice=0",
+      "--nodelist=samoyed",
+      "--exclude=akita,collie,dogo,doodle,mastiff,terrier",
+      "--gres=gpu:a100:8",
+      "--cpus-per-task=32",
+      "--mem=256G",
+      "--time=48:00:00",
+      "--job-name=ra79e66bd9121",
+      "--output=experiments/attention_scaling/runs/ra79e66bd9121/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.attention_scaling.acceptance",
+      "experiments/attention_scaling/runs/ra79e66bd9121/config.yaml",
+      "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
+      "8",
+      "A100"
+    ],
+    "dependency": null,
+    "gpu_count": 8,
+    "gpu_type": "A100",
+    "nice": 0,
+    "node": "samoyed",
+    "partition": "long",
+    "slurm_job_id": "219005",
+    "submitted_utc": "2026-10-15T01:53:02.706273+00:00",
+    "time_limit_hours": 48
+  }
 }
