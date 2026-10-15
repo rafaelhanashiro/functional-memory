@@ -10,7 +10,7 @@ key-space transformation is unchanged?
 | Role | Run ID | Memory function | Status |
 | --- | --- | --- | --- |
 | Primary | `rd40af7956426` | Constant, linear, and quadratic | Running; update 10,000 recorded |
-| Cubic | `r83c3394eb730` | Constant through cubic | Running on eight A100s; job 218896, long, nice 0 |
+| Cubic | `r83c3394eb730` | Constant through cubic | Paused at user request; job 218896 held, resumable at update 7,000 |
 | Control | `rf7341031e3d5` | Linear, independent erase gate | Complete |
 
 The explicitly selected control uses the repaired arithmetic, canonical GDN
@@ -113,6 +113,14 @@ production sequence length and head widths. Full
 passed correctness, pilot validation, and exact checkpoint resumption. The pilot
 projects 48.61 hours within the requested 72-hour production allocation.
 This qualifies startup; long-run stability and performance remain open.
+
+Cubic is paused at the user's request as of October 14, 2026 (EDT), with
+Slurm job `218896` requeued in a held state. The latest durable checkpoint is
+update 7,000, with validation perplexity 15.637199 and valid attention
+diagnostics. Training reached logged update 7,260 before the pause; resumption
+will replay those 260 updates from checkpoint 7,000. This is an incomplete run,
+with no numerical failure. Its checkpoint, log, source, environment, and W&B
+identity remain in the original Kennel worktree for resumption.
 
 Cubic live mirror: [200m-dk064-gdn-cubic-geometry-warmup400-seed0](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/911b85e2ddde4223972bde38199aa936).
 
