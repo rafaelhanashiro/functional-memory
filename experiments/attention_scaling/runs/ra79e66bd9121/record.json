@@ -128,7 +128,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "cfae552c6bf2c69140456c2daa40eb9f5e755e7f177b4f748cecc3a90453c8cc"
+      "sha256": "328ca94cca312829ed8daa429c03bb409d1f7187db0eee0843aa1bebac11d5bf"
     },
     "resolved_config": {
       "data": {
@@ -369,7 +369,7 @@
   "seed": 0,
   "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
   "status": "running",
-  "step": 0,
+  "step": 16000,
   "submission": {
     "command": [
       "sbatch",
@@ -412,8 +412,8 @@
     "time_limit_hours": 24,
     "updated_utc": "2026-10-15T04:02:18.900779+00:00"
   },
-  "training_tokens": 0,
-  "updated_utc": "2026-10-15T04:08:19.030186+00:00",
+  "training_tokens": 8388608000,
+  "updated_utc": "2026-10-15T14:38:30.161923+00:00",
   "wandb_run": {
     "path": "experiments/attention_scaling/runs/ra79e66bd9121/wandb_run.json",
     "sha256": "6dbbfb5c3b418be4a05dda4a2ea059c37e57c435c73928b0da75084c7efb6633",

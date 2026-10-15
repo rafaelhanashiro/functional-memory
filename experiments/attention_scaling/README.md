@@ -405,10 +405,11 @@ Home cluster: **Kennel**. The exploratory
 adds cubic, quadratic, and independent-erase linear runs at d_K=16 and 8,
 with the canonical warmup-400 recipe and intrinsic GDN output RMSNorm.
 All six recipes are frozen together in `worktrees/gdn-small-width`.
-Run the two key widths in parallel within each degree. Both cubic runs must
-finish before either quadratic starts, and both quadratics must finish before
-either linear starts. The d_K=16 lane uses four H100s in `standard` (24 hours);
-the d_K=8 lane uses four H100s in `long` (48 hours). All six use nice 0.
+The degree groups have no completion dependencies, so eligible runs can use
+spare capacity while cubic d_K=16 finishes. The d_K=16 lane uses four H100s in
+`standard` (24 hours); the d_K=8 lane uses four H100s in `long` (48 hours).
+Cubic runs use nice 0, quadratics nice 1000, and linears nice 2000. New quartic
+runs take priority over these pending quadratic and linear runs.
 A100/A6000 nodes and the currently unqualified B300 node are excluded from
 new allocations. The active d_K=16 cubic allocation is already on H100s.
 The existing width-64 cubic job is held separately.
@@ -418,26 +419,22 @@ From that worktree, after syncing its own locked environment:
 ```bash
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
 launch_commit=0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900
-previous_pair=
+nice=0
 for pair in 'ra79e66bd9121 ra98612db06d4' 'rf885f946fc9b r2fb020d67c0d' 'rae2329afb5bd r5c9701488368'; do
   read -r run16 run8 <<< "$pair"
-  pair_jobs=()
   for run in "$run16" "$run8"; do
     partition=standard
     hours=24
     if [[ "$run" == "$run8" ]]; then partition=long; hours=48; fi
-    dependency=()
-    if [[ -n "$previous_pair" ]]; then dependency=(--dependency="afterok:$previous_pair"); fi
-    job=$(sbatch --parsable --partition="$partition" --nice=0 \
+    sbatch --parsable --partition="$partition" --nice="$nice" \
       --exclude=akita,collie,doodle,samoyed,terrier --gres=gpu:4 \
       --cpus-per-task=32 --mem=256G --time="$hours:00:00" --job-name="$run" \
       --output="experiments/attention_scaling/runs/$run/training.log" \
-      "${dependency[@]}" scaffolds/transformer/launchers/kennel.sbatch \
+      scaffolds/transformer/launchers/kennel.sbatch \
       experiments.attention_scaling.acceptance \
-      "experiments/attention_scaling/runs/$run/config.yaml" "$launch_commit" 4 H100)
-    pair_jobs+=("$job")
+      "experiments/attention_scaling/runs/$run/config.yaml" "$launch_commit" 4 H100
   done
-  previous_pair="${pair_jobs[0]}:${pair_jobs[1]}"
+  nice=$((nice + 1000))
 done
 ```
 

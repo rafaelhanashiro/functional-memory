@@ -137,7 +137,7 @@ Linear means the independent-erase GDN control. Parameter counts range from
 192.6M to 195.7M because the Q/K projections are narrower. No other width is
 increased to compensate.
 
-| Stage | Run ID | Degree | d_K | Parameters | Slurm job |
+| Group | Run ID | Degree | d_K | Parameters | Slurm job |
 | --- | --- | --- | --- | --- | --- |
 | 1 | `ra79e66bd9121` | 3 | 16 | 195,708,864 | 219035 |
 | 1 | `ra98612db06d4` | 3 | 8 | 193,077,184 | 219036 |
@@ -146,18 +146,21 @@ increased to compensate.
 | 3 | `rae2329afb5bd` | 1 | 16 | 195,217,344 | 219039 |
 | 3 | `r5c9701488368` | 1 | 8 | 192,585,664 | 219040 |
 
-The two widths run in parallel within each degree, using four H100s each at
-nice 0. The d_K=16 lane uses `standard` (24 hours); d_K=8 uses `long` (48 hours).
-Both cubic runs must complete successfully before either quadratic starts,
-and both quadratics must complete before either linear starts. A100 and A6000
-nodes are excluded. The queued allocations also exclude B300, whose current
-shared-kernel qualification is not passing.
+Each run requests four H100s. The d_K=16 lane uses `standard` (24 hours);
+d_K=8 uses `long` (48 hours). The degree groups have no completion dependencies.
+Cubic runs use nice 0, quadratics nice 1000, and linears nice 2000; new quartic
+runs take priority over the pending quadratic and linear jobs. Quadratic
+d_K=8 (`219038`) has started on `dogo` while cubic d_K=16 continues. A100 and
+A6000 nodes are excluded. The queued allocations also exclude B300, whose
+current shared-kernel qualification is not passing.
 
-Cubic d_K=16 is training in job `219035` on four H100 PCIe GPUs (`mastiff`).
+Cubic d_K=16 is training in job `219035` on four H100 PCIe GPUs (`mastiff`);
+its latest recorded validation is PPL 13.67152 at step 16,000.
 Its [qualification](../../../scaffolds/transformer/validation/runs/gdn-small-key-h100/runtime.json)
 passed all 303 tests, initialization, the full-recipe pilot, and exact resume;
-the conservative production estimate is 13.604 hours. Cubic d_K=8 is training
-in job `219036` on four H100 HBM3 GPUs (`dogo`). Its
+the conservative production estimate is 13.604 hours. Cubic d_K=8 completed
+all 19,074 updates in job `219036` on four H100 HBM3 GPUs (`dogo`), reaching
+terminal and validation-best PPL 13.81725 at the final step. Its
 [qualification](../../../scaffolds/transformer/validation/runs/gdn-small-key-h100-dogo/runtime.json)
 also passed all 303 tests, initialization, the full-recipe pilot, and exact
 resume; its conservative production estimate is 10.609 hours. These pilot
@@ -168,9 +171,10 @@ fresh-process checkpoint resume before production.
 The small-width checks include the masked K=8 tile and the production sequence
 length and value width.
 
-The separate width-256 GDN run retains checkpoint 7,000 and is queued at
-nice 1000 behind both linear jobs. The original width-64 cubic remains held.
-These runs remain incomplete, so no small-key performance conclusion is available.
+The original width-64 cubic remains held; the width-256 GDN run is outside
+this queue.
+The matched quadratic and linear controls remain incomplete, so this first
+completed cubic run does not establish a small-key degree comparison.
 Cubic d_K=16 live mirror: [200m-dk016-gdn-cubic-geometry-warmup400-seed0](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/8704571105914c579bc48499fdb99aaf).
 Cubic d_K=8 live mirror: [200m-dk008-gdn-cubic-geometry-warmup400-seed0](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/9295f9d8c9d44677bab14d4857698648).
 
