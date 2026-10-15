@@ -245,6 +245,13 @@ changes the read at `t`; it does not add write gates, forgetting, or delta corre
 decay. The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
 at one, without consuming RNG draws. The backbone keeps its canonical
 initialization and the initial attention kernel is the degree-`m` Taylor polynomial.
+For tanh, `attention_coefficient_amplitude_initial` (default 1) sets the starting
+`a_r`, and `attention_coefficient_projection_initial_std` (default 0) draws each kernel
+entry from `N(0, std^2)`. The draw uses a mechanism stream derived from the seed
+(`attention/parameters.py`), so the backbone is still the softmax control's and
+acceptance regenerates the kernel exactly. Starting at `a_r = 0` with a random kernel
+keeps the Taylor start, while the amplitude's gradient `tanh(w_r^T x_t)` is nonzero;
+`a_r = 0` with a zero kernel would leave both gradients zero and is rejected.
 
 The tanh path uses a dedicated fused kernel that directly evaluates the
 query-dependent polynomial, with gradients for Q/K/V and every coefficient.
