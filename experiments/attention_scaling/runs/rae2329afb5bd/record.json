@@ -16,17 +16,16 @@
     "command": [
       "sbatch",
       "--parsable",
-      "--hold",
       "--partition=standard",
       "--nice=0",
-      "--exclude=collie,doodle,samoyed,terrier",
+      "--exclude=akita,collie,doodle,samoyed,terrier",
       "--gres=gpu:4",
       "--cpus-per-task=32",
       "--mem=256G",
       "--time=24:00:00",
       "--job-name=rae2329afb5bd",
       "--output=experiments/attention_scaling/runs/rae2329afb5bd/training.log",
-      "--dependency=afterok:219038",
+      "--dependency=afterok:219037,afterok:219038",
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.attention_scaling.acceptance",
       "experiments/attention_scaling/runs/rae2329afb5bd/config.yaml",
@@ -34,8 +33,10 @@
       "4",
       "H100,B300"
     ],
-    "dependency": "afterok:219038",
+    "command_kind": "equivalent_current_request",
+    "dependency": "afterok:219037,afterok:219038",
     "excluded_nodes": [
+      "akita",
       "collie",
       "doodle",
       "samoyed",
@@ -44,14 +45,14 @@
     "gpu_count": 4,
     "gpu_type": "A100",
     "gpu_types": [
-      "H100",
-      "B300"
+      "H100"
     ],
     "nice": 0,
     "node": "samoyed",
     "partition": "standard",
     "slurm_job_id": "219039",
     "submitted_utc": "2026-10-15T03:25:09.983636+00:00",
-    "time_limit_hours": 24
+    "time_limit_hours": 24,
+    "updated_utc": "2026-10-15T04:02:18.976992+00:00"
   }
 }

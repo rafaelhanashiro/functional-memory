@@ -137,29 +137,33 @@ Linear means the independent-erase GDN control. Parameter counts range from
 192.6M to 195.7M because the Q/K projections are narrower. No other width is
 increased to compensate.
 
-| Order | Run ID | Degree | d_K | Parameters | Slurm job |
+| Stage | Run ID | Degree | d_K | Parameters | Slurm job |
 | --- | --- | --- | --- | --- | --- |
 | 1 | `ra79e66bd9121` | 3 | 16 | 195,708,864 | 219035 |
-| 2 | `ra98612db06d4` | 3 | 8 | 193,077,184 | 219036 |
-| 3 | `rf885f946fc9b` | 2 | 16 | 195,545,024 | 219037 |
-| 4 | `r2fb020d67c0d` | 2 | 8 | 192,913,344 | 219038 |
-| 5 | `rae2329afb5bd` | 1 | 16 | 195,217,344 | 219039 |
-| 6 | `r5c9701488368` | 1 | 8 | 192,585,664 | 219040 |
+| 1 | `ra98612db06d4` | 3 | 8 | 193,077,184 | 219036 |
+| 2 | `rf885f946fc9b` | 2 | 16 | 195,545,024 | 219037 |
+| 2 | `r2fb020d67c0d` | 2 | 8 | 192,913,344 | 219038 |
+| 3 | `rae2329afb5bd` | 1 | 16 | 195,217,344 | 219039 |
+| 3 | `r5c9701488368` | 1 | 8 | 192,585,664 | 219040 |
 
-All six jobs request four H100 or B300 GPUs on Kennel `standard` at nice 0;
-A100 and A6000 nodes are excluded.
-Each run waits for successful completion of the preceding run. Each allocation
-checks the mechanism's outputs and all input gradients, reference initialization,
-a full-recipe training/validation pilot, and exact fresh-process checkpoint resume
-before production. The small-width checks include the masked K=8 tile and the
-production sequence length and value width.
+The two widths run in parallel within each degree, using four H100s each at
+nice 0. The d_K=16 lane uses `standard` (24 hours); d_K=8 uses `long` (48 hours).
+Both cubic runs must complete successfully before either quadratic starts,
+and both quadratics must complete before either linear starts. A100 and A6000
+nodes are excluded. The queued allocations also exclude B300, whose current
+shared-kernel qualification is not passing.
 
-Cubic `d_K=16` has an active four-H100 allocation in job `219035` on `mastiff`,
-with hardware qualification in progress; the five dependent jobs are queued.
-The separate width-256 GDN run retains checkpoint 7,000 and stays queued behind
-this sequence. The original width-64 cubic remains held. These runs remain
-incomplete, so no small-key performance conclusion is available.
-Live mirror: [200m-dk016-gdn-cubic-geometry-warmup400-seed0](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/8704571105914c579bc48499fdb99aaf).
+Cubic jobs `219035` (d_K=16, `mastiff`) and `219036` (d_K=8, `dogo`) have active
+H100 allocations and are completing hardware qualification. Each checks outputs
+and all input gradients, reference initialization, a full-recipe training and
+validation pilot, and exact fresh-process checkpoint resume before production.
+The small-width checks include the masked K=8 tile and the production sequence
+length and value width.
+
+The separate width-256 GDN run retains checkpoint 7,000 and is queued at
+nice 1000 behind both linear jobs. The original width-64 cubic remains held.
+These runs remain incomplete, so no small-key performance conclusion is available.
+Cubic d_K=16 live mirror: [200m-dk016-gdn-cubic-geometry-warmup400-seed0](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/8704571105914c579bc48499fdb99aaf).
 
 The polynomial backend still evaluates transported scores with quadratic work
 in sequence length; it does not use a compressed symmetric-feature recurrent

@@ -1,4 +1,20 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/ra98612db06d4/.runtime/acceptance/H100-4",
+      "allocation": "JobId=219036 JobName=ra98612db06d4 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20067 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:04 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-14T23:25:09 EligibleTime=2026-10-15T00:00:01 AccrueTime=2026-10-15T00:00:01 StartTime=2026-10-15T00:00:05 EndTime=2026-10-17T00:00:05 Deadline=N/A PreemptEligibleTime=2026-10-15T00:00:05 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-15T00:00:05 Scheduler=Main Partition=long AllocNode:Sid=kennel:2198585 ReqNodeList=(null) ExcNodeList=akita,collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/ra98612db06d4/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/ra98612db06d4/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/ra98612db06d4/config.yaml",
+      "config_sha256": "6419b13cd393f67ed44ea7aad16e63b8f1b38762a6893693ffbd66d74700d217",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
+      "slurm_job_id": "219036",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-15T04:00:09.823669+00:00"
+    }
+  ],
   "config": {
     "path": "experiments/attention_scaling/runs/ra98612db06d4/config.yaml",
     "sha256": "6419b13cd393f67ed44ea7aad16e63b8f1b38762a6893693ffbd66d74700d217"
@@ -7,26 +23,25 @@
   "frozen_execution_sha256": "6d9ee1ecfa19d803e99eaeac09a45897b5ed06118c9f2dbc19935acd9008e296",
   "home_cluster": "kennel",
   "label": "200m-dk008-gdn-cubic-geometry-warmup400-seed0",
+  "log_path": "experiments/attention_scaling/runs/ra98612db06d4/training.log",
   "name": "200m-dk008-gdn-cubic-geometry-warmup400-seed0",
   "record_schema_version": 1,
   "run_id": "ra98612db06d4",
   "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
-  "status": "queued",
+  "status": "acceptance",
   "submission": {
     "command": [
       "sbatch",
       "--parsable",
-      "--hold",
-      "--partition=standard",
+      "--partition=long",
       "--nice=0",
-      "--exclude=collie,doodle,samoyed,terrier",
+      "--exclude=akita,collie,doodle,samoyed,terrier",
       "--gres=gpu:4",
       "--cpus-per-task=32",
       "--mem=256G",
-      "--time=24:00:00",
+      "--time=48:00:00",
       "--job-name=ra98612db06d4",
       "--output=experiments/attention_scaling/runs/ra98612db06d4/training.log",
-      "--dependency=afterok:219035",
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.attention_scaling.acceptance",
       "experiments/attention_scaling/runs/ra98612db06d4/config.yaml",
@@ -34,8 +49,10 @@
       "4",
       "H100,B300"
     ],
-    "dependency": "afterok:219035",
+    "command_kind": "equivalent_current_request",
+    "dependency": null,
     "excluded_nodes": [
+      "akita",
       "collie",
       "doodle",
       "samoyed",
@@ -44,14 +61,14 @@
     "gpu_count": 4,
     "gpu_type": "A100",
     "gpu_types": [
-      "H100",
-      "B300"
+      "H100"
     ],
     "nice": 0,
     "node": "samoyed",
-    "partition": "standard",
+    "partition": "long",
     "slurm_job_id": "219036",
     "submitted_utc": "2026-10-15T03:25:09.938132+00:00",
-    "time_limit_hours": 24
+    "time_limit_hours": 48,
+    "updated_utc": "2026-10-15T04:02:18.922236+00:00"
   }
 }

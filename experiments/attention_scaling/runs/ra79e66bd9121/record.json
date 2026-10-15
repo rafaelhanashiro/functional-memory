@@ -365,7 +365,6 @@
     "command": [
       "sbatch",
       "--parsable",
-      "--hold",
       "--partition=standard",
       "--nice=0",
       "--exclude=collie,doodle,samoyed,terrier",
@@ -382,6 +381,7 @@
       "4",
       "H100,B300"
     ],
+    "command_kind": "equivalent_current_request",
     "dependency": null,
     "excluded_nodes": [
       "collie",
@@ -400,7 +400,8 @@
     "partition": "standard",
     "slurm_job_id": "219035",
     "submitted_utc": "2026-10-15T03:25:09.911904+00:00",
-    "time_limit_hours": 24
+    "time_limit_hours": 24,
+    "updated_utc": "2026-10-15T04:02:18.900779+00:00"
   },
   "training_tokens": 0,
   "updated_utc": "2026-10-15T03:30:00.719623+00:00",
