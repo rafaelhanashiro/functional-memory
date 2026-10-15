@@ -30,6 +30,16 @@ updates took 4.870–5.443 seconds (median 5.187), projecting 29.95 hours within
 parameters and retains reference initialization, warmup 400, and intrinsic GDN
 QK normalization and gated output RMSNorm.
 
+The [four-H100 PCIe qualification](runs/gdn-small-key-h100/runtime.json) repeated
+all 303 checks on the same source in job `219035` (`mastiff`), using direct device
+transfers and local microbatch 16. The cubic `d_K=16` pilot and exact 20-to-21
+resume passed with finite telemetry and zero invalid attention counts. Steady
+updates took 2.019–2.384 seconds (median 2.025), with a conservative production
+projection of 13.604 hours. Including all elapsed acceptance time gives 14.314
+hours, below a 22-hour guard for the actual 24-hour standard allocation. This
+allocation check is recorded separately because the frozen acceptance code
+uses a 48-hour budget.
+
 The full-recipe runtime measurement here applies only to cubic `d_K=16`; the
 other widths and degrees still require their own pilots. These startup checks
 do not establish long-run stability or scientific performance. No pilot

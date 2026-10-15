@@ -20,11 +20,7 @@
     "cuda:0",
     "cuda:1",
     "cuda:2",
-    "cuda:3",
-    "cuda:4",
-    "cuda:5",
-    "cuda:6",
-    "cuda:7"
+    "cuda:3"
   ],
   "diagnostic_backend": "fused",
   "diagnostic_sample": {
@@ -44,53 +40,33 @@
     "devices": [
       {
         "id": 0,
-        "kind": "NVIDIA A100 80GB PCIe",
+        "kind": "NVIDIA H100 PCIe",
         "platform": "gpu"
       },
       {
         "id": 1,
-        "kind": "NVIDIA A100 80GB PCIe",
+        "kind": "NVIDIA H100 PCIe",
         "platform": "gpu"
       },
       {
         "id": 2,
-        "kind": "NVIDIA A100 80GB PCIe",
+        "kind": "NVIDIA H100 PCIe",
         "platform": "gpu"
       },
       {
         "id": 3,
-        "kind": "NVIDIA A100 80GB PCIe",
-        "platform": "gpu"
-      },
-      {
-        "id": 4,
-        "kind": "NVIDIA A100 80GB PCIe",
-        "platform": "gpu"
-      },
-      {
-        "id": 5,
-        "kind": "NVIDIA A100 80GB PCIe",
-        "platform": "gpu"
-      },
-      {
-        "id": 6,
-        "kind": "NVIDIA A100 80GB PCIe",
-        "platform": "gpu"
-      },
-      {
-        "id": 7,
-        "kind": "NVIDIA A100 80GB PCIe",
+        "kind": "NVIDIA H100 PCIe",
         "platform": "gpu"
       }
     ],
     "environment": {
-      "NCCL_P2P_DISABLE": "1",
-      "TRANSFORMER_HOST_STAGING": "1",
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
       "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
       "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
       "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
     },
-    "state_transfer": "host_staged_verified"
+    "state_transfer": "direct"
   },
   "gdn_chunk_size": 64,
   "gdn_conv_size": 4,
@@ -173,11 +149,48 @@
       },
       "slurm_job_id": "219005",
       "timestamp_utc": "2026-10-15T02:51:54.255137+00:00"
+    },
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H100 PCIe",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H100 PCIe",
+            "platform": "gpu"
+          },
+          {
+            "id": 2,
+            "kind": "NVIDIA H100 PCIe",
+            "platform": "gpu"
+          },
+          {
+            "id": 3,
+            "kind": "NVIDIA H100 PCIe",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "219035",
+      "timestamp_utc": "2026-10-15T04:08:18.710091+00:00"
     }
   ],
   "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
   "seed": 0,
-  "slurm_job_id": "219005",
+  "slurm_job_id": "219035",
   "slurm_restart_count": 1,
   "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
   "status": "running",
@@ -185,6 +198,6 @@
   "target_steps": 19074,
   "target_tokens": 10000269312,
   "training_tokens": 0,
-  "updated_utc": "2026-10-15T03:04:07.386255+00:00",
+  "updated_utc": "2026-10-15T04:08:19.030186+00:00",
   "value_head_dim": 64
 }

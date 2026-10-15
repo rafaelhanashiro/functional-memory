@@ -43,12 +43,12 @@
       "terrier"
     ],
     "gpu_count": 4,
-    "gpu_type": "A100",
+    "gpu_type": "H100",
     "gpu_types": [
       "H100"
     ],
     "nice": 0,
-    "node": "samoyed",
+    "node": null,
     "partition": "long",
     "slurm_job_id": "219038",
     "submitted_utc": "2026-10-15T03:25:09.968913+00:00",
