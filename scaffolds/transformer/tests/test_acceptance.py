@@ -4,6 +4,17 @@ import pytest
 from scaffolds.transformer import acceptance as preflight
 
 
+@pytest.mark.parametrize("cpu,backend,expected", [
+    (True, "blocked", preflight.TANH_WRITE_GDN_TESTS),
+    (True, "fused", preflight.TANH_WRITE_GDN_TESTS),
+    (False, "fused", preflight.TANH_WRITE_GDN_KERNEL_TESTS),
+])
+def test_tanh_gdn_acceptance_cannot_omit_signed_write_checks(cpu, backend, expected):
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    config = {"model": {"attention_mechanism": "gated_deltanet", "gdn_write_activation": "tanh"}}
+    assert expected in preflight.test_paths(spec, config, resolved_backend=backend, cpu=cpu)
+
+
 def test_acceptance_rejects_skipped_or_empty_test_reports(tmp_path):
     report = tmp_path / "report.xml"
     report.write_text('<testsuite><testcase name="a"/><testcase name="b"><skipped/></testcase></testsuite>')

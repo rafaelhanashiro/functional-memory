@@ -355,6 +355,16 @@ Neither pass divides by a gate, so zero erasure with nonzero writing is supporte
 Training telemetry records both gates, their difference, raw attention output statistics,
 and separate erase/write/decay/output-gate parameter-group norms.
 
+`gdn_write_activation: tanh` changes the degree-one write to
+`beta_t = tanh(W_b x_t)`. It requires independent erasure, which remains
+`lambda_t = sigmoid(W_lambda x_t)`. The default `sigmoid` preserves historical
+recipes and outputs. Both choices use exactly the same reference-initialized
+projection weights and RNG draws; changing the activation changes the initial
+function. Signed writes range from -1 to 1 and do not change the decay, Q/K
+normalization, or gated output RMSNorm. The activation is part of checkpoint
+compatibility, run identity, and the generated study index; tanh runs carry the
+`tanh_write` W&B tag.
+
 `gdn_polynomial_degree: 2`, `3`, or `4` with `gdn_erase_mode: independent` extends
 the stored function through quadratic, cubic, or quartic degree while retaining
 the original key-space
@@ -369,10 +379,11 @@ read_t = F_t(q_t) / sqrt(d_K)
 
 The decay multiplies the whole function once; the degree-r tensor state transforms
 on each of its r key axes by the same `P_t`. It is not a rank-one erase in an expanded feature space.
-`beta_1 = sigmoid(W_b x)` retains GDN's write projection and initialization;
+`beta_1` uses the selected `gdn_write_activation` (default `sigmoid(W_b x)`),
+retaining GDN's write projection and initialization;
 `beta_0 = tanh(W_0 x)` and `beta_2 = tanh(W_2 x)` have separate zero-initialized
 projections. The added terms start at zero with nonzero parameter derivatives,
-so the initial function equals independent-erase GDN without changing its original
+so the initial function equals the corresponding degree-one independent-erase GDN without changing its original
 parameter draws. Queries and keys keep the same L2 normalization, and the read
 keeps the gated output RMSNorm. No causal attention-sum division is introduced.
 

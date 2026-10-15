@@ -71,6 +71,7 @@ def attention_identity(config) -> dict:
         model = config.model
         independent = model.gdn_erase_mode == "independent"
         degree = model.gdn_polynomial_degree
+        write_activation = model.gdn_write_activation
         polynomial = degree > 1
         identity = {
             "attention_mechanism": "gated_deltanet",
@@ -85,14 +86,15 @@ def attention_identity(config) -> dict:
                                    "S_t=a_t S_{t-1}+b_t k_t (v_t-a_t S_{t-1}^T k_t)^T; ") +
                                   "o_t=S_t^T q_t/sqrt(d_k); "
                                   "q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); "
-                                  "b_t=sigmoid(W_b x)"),
+                                  f"b_t={write_activation}(W_b x)"),
             "attention_score_scale": "1/sqrt(d_k)",
             "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
             "gdn_conv_size": model.gdn_conv_size,
             "gdn_erase_mode": model.gdn_erase_mode,
             "gdn_polynomial_degree": model.gdn_polynomial_degree,
+            "gdn_linear_write_activation": write_activation,
             "gdn_write_initialization": {
-                1: "sigmoid_write_projection",
+                1: f"{write_activation}_write_projection",
                 2: "zero_constant_and_quadratic_projections",
                 3: "zero_constant_quadratic_and_cubic_projections",
                 4: "zero_constant_quadratic_cubic_and_quartic_projections",
@@ -107,7 +109,7 @@ def attention_identity(config) -> dict:
         }
         if polynomial:
             write_formulas = ", ".join(
-                "beta_1=sigmoid(W_b x)" if r == 1 else f"beta_{r}=tanh(W_{r} x)"
+                f"beta_1={write_activation}(W_b x)" if r == 1 else f"beta_{r}=tanh(W_{r} x)"
                 for r in range(degree + 1))
             identity.update({
                 "attention_degree": degree,
@@ -122,7 +124,7 @@ def attention_identity(config) -> dict:
                     "a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); one decay shared by all degrees"
                 ),
                 "attention_score_scale": "1 (global 1/sqrt(d_k) applied to polynomial read)",
-                "gdn_write_activation": ["sigmoid" if r == 1 else "tanh" for r in range(degree + 1)],
+                "gdn_write_activation": [write_activation if r == 1 else "tanh" for r in range(degree + 1)],
                 "gdn_query_transport_space": "original_key_space",
                 "gdn_state_elements_per_layer": (model.num_heads * model.value_head_dim
                                                   * sum(model.qk_head_dim ** r for r in range(degree + 1))),

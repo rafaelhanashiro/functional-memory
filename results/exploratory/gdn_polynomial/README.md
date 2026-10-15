@@ -5,6 +5,9 @@ Opened 2026-10-13. Home cluster: **Kennel**.
 Do quadratic, cubic, and quartic writes improve a GDN memory whose learned
 key-space transformation is unchanged?
 
+The degree-one activation ablation below asks whether the linear write can also
+use tanh, allowing a common activation across polynomial degrees.
+
 ## Runs and method
 
 | Role | Run ID | Memory function | Status |
@@ -129,6 +132,8 @@ improvement, and the two mechanisms use different training kernels.
 
 ## Small-key comparison
 
+The tanh linear write ablation has scheduling priority over these pending runs.
+
 The eight Kennel runs below compare degrees 4, 3, 2, and 1 at key widths 16 and 8.
 They keep value width 64, 16 heads, 10 layers, hidden width 1024, MLP width 3008,
 the canonical GDN reference initialization, intrinsic Q/K L2 normalization and
@@ -204,3 +209,27 @@ kernel. Thus the theoretical feature-state dimensions alone do not predict
 training time. The open comparison is whether these narrower models preserve
 the higher-degree benefit against their width-matched linear controls. These
 runs remain exploratory and enter no canonical selection.
+
+## Tanh linear write ablation
+
+Run `rf65d38ec0552` (planned, d_K=64, degree one) compares
+`beta_t=tanh(W_beta x_t)` with the completed sigmoid-write control
+`rf7341031e3d5`. The recurrence is
+`S_t = alpha_t (I-lambda_t k_t k_t^T) S_{t-1} + beta_t k_t v_t^T`, with
+`lambda_t=sigmoid(W_lambda x_t)` in both. There is no constant write term.
+The read is `S_t^T q_t / sqrt(d_K)` followed by the same gated output RMSNorm.
+
+Only the write activation changes: canonical reference projection weights and
+all original random draws are retained, including the separate erase projection
+initialized as a copy of the write projection. The tanh run therefore starts with
+signed writes and differs in its initial function; it is not zero-initialized.
+The models have 211,007,424 parameters, 10 layers, hidden width 1024, 16 heads,
+value width 64, and the same FineWeb data, seed 0, optimizer, warmup 400, batch
+layout, and 19,074-update horizon. Both execute on four H100 HBM3 GPUs on dogo.
+
+The explicit selection pins this run and the existing sigmoid control. No tanh
+training result is available yet. Compare terminal validation PPL separately from
+validation best, together with write-coefficient, gradient, and activation metrics.
+The open decision is whether using tanh for the linear coefficient is a useful
+basis for subsequent all-tanh higher-degree runs; this one-seed linear ablation
+does not establish their performance.

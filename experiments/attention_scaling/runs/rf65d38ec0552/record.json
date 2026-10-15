@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rf65d38ec0552/config.yaml",
+    "sha256": "16fda7abf903021f751a91a91e3a3960bc58eb2cbba3a662b51b4a47108a945b"
+  },
+  "home_cluster": "kennel",
+  "label": "200m-dk064-gdn-tanh-write-warmup400-seed0",
+  "name": "200m-dk064-gdn-tanh-write-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "rf65d38ec0552",
+  "status": "planned"
+}

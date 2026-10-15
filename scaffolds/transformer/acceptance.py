@@ -60,6 +60,8 @@ CUBIC_GDN_TESTS = "scaffolds/transformer/tests/test_cubic_gdn.py"
 CUBIC_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_cubic_gdn_kernel.py"
 QUARTIC_GDN_TESTS = "scaffolds/transformer/tests/test_quartic_gdn.py"
 QUARTIC_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_quartic_gdn_kernel.py"
+TANH_WRITE_GDN_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write.py"
+TANH_WRITE_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write_kernel.py"
 
 
 @dataclass(frozen=True)
@@ -90,6 +92,12 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if spec.select_tests is not None:
         paths.extend(spec.select_tests(config, resolved_backend, cpu))
     model = config["model"]
+    if (model.get("attention_mechanism") == "gated_deltanet"
+            and model.get("gdn_write_activation", "sigmoid") == "tanh"):
+        if cpu:
+            paths.append(TANH_WRITE_GDN_TESTS)
+        elif resolved_backend == "fused":
+            paths.append(TANH_WRITE_GDN_KERNEL_TESTS)
     if (model.get("attention_mechanism") == "gated_deltanet"
             and model.get("gdn_polynomial_degree", 1) in (2, 3, 4)):
         if cpu:

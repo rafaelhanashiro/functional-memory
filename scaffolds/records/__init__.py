@@ -28,7 +28,7 @@ RUN_ID = re.compile(r"r[0-9a-f]{12}\Z")
 INDEX_COLUMNS = (
     "run_id", "label", "status", "home_cluster", "model_id", "condition",
     "attention_mechanism", "attention_family", "attention_kernel", "qk_head_dim",
-    "gdn_erase_mode", "gdn_polynomial_degree", "gdn_write_initialization",
+    "gdn_erase_mode", "gdn_polynomial_degree", "gdn_write_activation", "gdn_write_initialization",
     "attention_degree", "attention_normalization", "attention_output_scaling", "qk_norm", "initialization",
     "coefficient_mode", "coefficient_conditioning", "coefficient_activation", "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing",
     "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
@@ -458,8 +458,11 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
             if model.get("attention_mechanism") == "gated_deltanet" else None,
         "gdn_polynomial_degree": _first(model.get("gdn_polynomial_degree"), get("gdn_polynomial_degree"))
             if model.get("attention_mechanism") == "gated_deltanet" else None,
+        "gdn_write_activation": _first(model.get("gdn_write_activation"), get("gdn_linear_write_activation"))
+            if model.get("attention_mechanism") == "gated_deltanet" else None,
         "gdn_write_initialization": _first(get("gdn_write_initialization"),
-            {2: "zero_constant_and_quadratic_projections", 3: "zero_constant_quadratic_and_cubic_projections",
+            {1: (f"{model['gdn_write_activation']}_write_projection" if model.get("gdn_write_activation") else None),
+             2: "zero_constant_and_quadratic_projections", 3: "zero_constant_quadratic_and_cubic_projections",
              4: "zero_constant_quadratic_cubic_and_quartic_projections"}
             .get(model.get("gdn_polynomial_degree")))
             if model.get("attention_mechanism") == "gated_deltanet" else None,

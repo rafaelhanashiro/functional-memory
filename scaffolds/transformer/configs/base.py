@@ -58,6 +58,9 @@ class ModelConfig:
     # Independent erasure learns a separate per-token/head sigmoid gate, initially
     # copied from beta; tied retains GDN's shared erase/write gate.
     gdn_erase_mode: Literal["tied", "independent"] = "tied"
+    # Degree-one write coefficient; signed tanh writes require independent,
+    # sigmoid erasure. The reference GDN and historical recipes use sigmoid.
+    gdn_write_activation: Literal["sigmoid", "tanh"] = "sigmoid"
     # Degrees two through four compose polynomial memory with the same original-key-space
     # erase map. Degree one preserves the historical GDN architecture.
     gdn_polynomial_degree: Literal[1, 2, 3, 4] = 1
@@ -168,6 +171,11 @@ class ModelConfig:
             raise ValueError("model.gdn_erase_mode must be tied or independent")
         if self.gdn_erase_mode != "tied" and self.attention_mechanism != "gated_deltanet":
             raise ValueError("model.gdn_erase_mode independent requires gated_deltanet")
+        if self.gdn_write_activation not in ("sigmoid", "tanh"):
+            raise ValueError("model.gdn_write_activation must be sigmoid or tanh")
+        if self.gdn_write_activation == "tanh":
+            if self.attention_mechanism != "gated_deltanet" or self.gdn_erase_mode != "independent":
+                raise ValueError("model.gdn_write_activation tanh requires gated_deltanet with independent erasure")
         if type(self.gdn_polynomial_degree) is not int or self.gdn_polynomial_degree not in (1, 2, 3, 4):
             raise ValueError("model.gdn_polynomial_degree must be 1, 2, 3, or 4")
         if self.gdn_polynomial_degree > 1:

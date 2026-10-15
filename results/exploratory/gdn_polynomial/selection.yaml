@@ -159,3 +159,12 @@ runs:
     config.yaml:
       path: experiments/attention_scaling/runs/r1d67ac6f0223/config.yaml
       sha256: debafe0b58e41c631f384817c7ff1158e96cb2f51f86fa1690b96b976849c0c6
+- study: attention_scaling
+  run_id: rf65d38ec0552
+  role: primary
+  label: d_K=64, linear tanh write, independent sigmoid erase
+  control: rf7341031e3d5
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rf65d38ec0552/config.yaml
+      sha256: 16fda7abf903021f751a91a91e3a3960bc58eb2cbba3a662b51b4a47108a945b

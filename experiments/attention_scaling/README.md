@@ -492,3 +492,34 @@ chunks and prediction length 2,048 with value width 64 in an exact four-dimensio
 invariant subspace. The production pilot uses dense model activations. Shared
 qualification evidence belongs in the scaffold validation record; these recipes
 remain exploratory scientific runs.
+
+## Tanh linear GDN write coefficient
+
+Home cluster: **Kennel**. Run `rf65d38ec0552` changes only the degree-one write
+activation of the canonical d_K=64 independent-erase recipe to
+`model.gdn_write_activation: tanh`. Its control is `rf7341031e3d5`. Both have
+211,007,424 parameters and the same reference parameter initialization, intrinsic
+Q/K L2 normalization, gated output RMSNorm, warmup 400, and 19,074-update recipe.
+The erase gate remains sigmoid. Scientific comparison and the open decision are in
+the [polynomial GDN exploration](../../results/exploratory/gdn_polynomial/README.md#tanh-linear-write-ablation).
+
+Develop and execute in `worktrees/gdn-tanh-write` with its own locked environment.
+This run has priority over quartic, quadratic, and small-width linear jobs; the
+nearly completed cubic remains running. Four H100s on dogo use `long` at nice 0.
+Our pending standard jobs use mastiff, allowing them to use the capacity released
+by cubic without preempting this allocation. The signed-write CPU/GPU checks,
+full-recipe pilot, and exact checkpoint resume must pass before production.
+
+```bash
+uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+tanh_launch_commit=$(git rev-parse HEAD)
+sbatch --parsable --partition=long --nice=0 --nodelist=dogo \
+  --exclude=akita,collie,doodle,samoyed,terrier --gres=gpu:4 \
+  --cpus-per-task=32 --mem=256G --time=24:00:00 --requeue --open-mode=append \
+  --job-name=rf65d38ec0552 \
+  --output=experiments/attention_scaling/runs/rf65d38ec0552/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.attention_scaling.acceptance \
+  experiments/attention_scaling/runs/rf65d38ec0552/config.yaml \
+  "$tanh_launch_commit" 4 H100 24
+```
