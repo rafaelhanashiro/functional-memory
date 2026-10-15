@@ -38,7 +38,12 @@ def _check_against_tensor_reference(args, cotangent, *, tolerance):
     return actual, expected
 
 
-@pytest.mark.parametrize("key_dim,length,value_dim", [(8, 64, 8), (64, 192, 64), (8, 2048, 4)])
+@pytest.mark.parametrize("key_dim,length,value_dim", [
+    (8, 64, 8), (64, 192, 64), (8, 2048, 4),
+    # Production length/value width for both small-key experiments, including
+    # the masked K=8 portion of the minimum 16-wide key tile.
+    (8, 2048, 64), (16, 2048, 64),
+])
 @pytest.mark.parametrize("dtype,tolerance", [(jnp.float32, 3e-4), (jnp.bfloat16, 1e-2)])
 def test_fused_outputs_and_all_input_gradients_match_tensor_recurrence(key_dim, length, value_dim, dtype, tolerance):
     _fused()

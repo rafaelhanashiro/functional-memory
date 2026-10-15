@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r2fb020d67c0d/config.yaml",
+    "sha256": "9869d0758025413079d45b2dab16d6675842acbf5770c246aec5eb7b451c6910"
+  },
+  "home_cluster": "kennel",
+  "label": "200m-dk008-gdn-quadratic-geometry-warmup400-seed0",
+  "name": "200m-dk008-gdn-quadratic-geometry-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r2fb020d67c0d",
+  "status": "planned"
+}

@@ -123,3 +123,35 @@ and use of the new degree-wise writes against the selected linear control.
 Decide whether the mechanism warrants further matched runs and promotion into
 the maintained attention comparison. One seed does not establish statistical
 improvement, and the two mechanisms use different training kernels.
+
+## Small-key comparison
+
+The six Kennel runs below compare degrees 3, 2, and 1 at key widths 16 and 8.
+They keep value width 64, 16 heads, 10 layers, hidden width 1024, MLP width 3008,
+the canonical GDN reference initialization, intrinsic Q/K L2 normalization and
+gated output RMSNorm, warmup 400, and the same 19,074-update training recipe.
+Linear means the independent-erase GDN control. Parameter counts range from
+192.6M to 195.7M because the Q/K projections are narrower. No other width is
+increased to compensate.
+
+| Order | Run ID | Degree | d_K | Parameters |
+| --- | --- | --- | --- | --- |
+| 1 | `ra79e66bd9121` | 3 | 16 | 195,708,864 |
+| 2 | `ra98612db06d4` | 3 | 8 | 193,077,184 |
+| 3 | `rf885f946fc9b` | 2 | 16 | 195,545,024 |
+| 4 | `r2fb020d67c0d` | 2 | 8 | 192,913,344 |
+| 5 | `rae2329afb5bd` | 1 | 16 | 195,217,344 |
+| 6 | `r5c9701488368` | 1 | 8 | 192,585,664 |
+
+Each run waits for successful completion of the preceding run. Each allocation
+checks the mechanism's outputs and all input gradients, reference initialization,
+a full-recipe training/validation pilot, and exact fresh-process checkpoint resume
+before production. The small-width checks include the masked K=8 tile and the
+production sequence length and value width.
+
+The polynomial backend still evaluates transported scores with quadratic work
+in sequence length; it does not use a compressed symmetric-feature recurrent
+kernel. Thus the theoretical feature-state dimensions alone do not predict
+training time. The open comparison is whether these narrower models preserve
+the higher-degree benefit against their width-matched linear controls. These
+runs remain exploratory and enter no canonical selection.

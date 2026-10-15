@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r5c9701488368/config.yaml",
+    "sha256": "688fa4def3bf42b74236cbcc16b9ebfc7673983a7626f1a7fe4a7cbcb4d6b9d4"
+  },
+  "home_cluster": "kennel",
+  "label": "200m-dk008-gdn-independent-erase-warmup400-seed0",
+  "name": "200m-dk008-gdn-independent-erase-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r5c9701488368",
+  "status": "planned"
+}

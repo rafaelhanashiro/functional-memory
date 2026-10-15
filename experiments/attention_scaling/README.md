@@ -397,3 +397,37 @@ env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable \
   experiments/attention_scaling/runs/r83c3394eb730/config.yaml \
   "$LAUNCH_COMMIT" 8 A100
 ```
+
+## Small-key polynomial GDN
+
+Home cluster: **Kennel**. The exploratory
+[GDN polynomial comparison](../../results/exploratory/gdn_polynomial/README.md#small-key-comparison)
+adds cubic, quadratic, and independent-erase linear runs at d_K=16 and 8,
+with the canonical warmup-400 recipe and intrinsic GDN output RMSNorm.
+All six recipes are frozen together in `worktrees/gdn-small-width`.
+Run them in this order on the A100 allocation, at nice 0; each successor
+requires successful completion of its predecessor. The existing width-64
+cubic job is held separately and is not a dependency of these runs.
+
+From that worktree, after syncing its own locked environment:
+
+```bash
+uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+launch_commit=$(git rev-parse HEAD)
+previous_job=
+for run in ra79e66bd9121 ra98612db06d4 rf885f946fc9b r2fb020d67c0d rae2329afb5bd r5c9701488368; do
+  dependency=()
+  if [[ -n "$previous_job" ]]; then dependency=(--dependency="afterok:$previous_job"); fi
+  previous_job=$(sbatch --parsable --partition=long --nice=0 --nodelist=samoyed \
+    --exclude=akita,collie,dogo,doodle,mastiff,terrier --gres=gpu:a100:8 \
+    --cpus-per-task=32 --mem=256G --time=48:00:00 --job-name="$run" \
+    --output="experiments/attention_scaling/runs/$run/training.log" \
+    "${dependency[@]}" scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.attention_scaling.acceptance \
+    "experiments/attention_scaling/runs/$run/config.yaml" "$launch_commit" 8 A100)
+done
+```
+
+The launcher selects host staging and disables peer transfers on this hardware.
+Every run must pass acceptance in its allocation before training; the measured
+pilot must project within the allocation budget.

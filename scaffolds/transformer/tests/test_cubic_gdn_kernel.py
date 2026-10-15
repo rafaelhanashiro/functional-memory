@@ -42,10 +42,12 @@ def test_cubic_gpu_matches_fp64_tensor_state_and_all_input_gradients(dtype, tole
     assert_outputs_and_gradients(actual, expected, rtol=tolerance, atol=3e-5)
 
 
+@pytest.mark.parametrize("key_dim", [8, 16, 64])
 @pytest.mark.parametrize("dtype,tolerance", [(jnp.float32, 3e-4), (jnp.bfloat16, 1e-2)])
-def test_cubic_production_width_multichunk_matches_independent_source_evolution(dtype, tolerance):
+def test_cubic_production_width_multichunk_matches_independent_source_evolution(key_dim, dtype, tolerance):
     _fused()
-    args, cotangent = cubic_operands(dtype=dtype, key_dim=64, length=192, heads=1, value_dim=64, seed=192)
+    # K=8 exercises the masked portion of the minimum 16-wide key tile.
+    args, cotangent = cubic_operands(dtype=dtype, key_dim=key_dim, length=192, heads=1, value_dim=64, seed=192)
     check_cubic(args, cotangent, oracle=evolving_keys_oracle, tolerance=tolerance)
 
 
@@ -60,13 +62,15 @@ def test_cubic_full_length_strong_decay_near_complete_erase_matches_tensor_state
     check_cubic(args, cotangent, tolerance=tolerance)
 
 
-def test_cubic_full_production_width_and_length_bf16_matches_embedded_tensor_state():
+@pytest.mark.parametrize("key_dim", [8, 16, 64])
+def test_cubic_full_production_width_and_length_bf16_matches_embedded_tensor_state(key_dim):
     _fused()
     args, cotangent = cubic_operands(dtype=jnp.bfloat16, key_dim=4, length=2048, heads=1, value_dim=64, seed=194)
     q, k, v, g, beta, erase = args
     # An invariant coordinate subspace gives an exact small tensor oracle for
-    # the actual K=V=64,T=2048 kernel; gradients outside the subspace are zero.
-    q, k = (jnp.pad(a, ((0, 0), (0, 0), (0, 0), (0, 60))) for a in (q, k))
+    # the actual K=8/16/64,V=64,T=2048 kernel; gradients outside the subspace
+    # are zero. Dense keys at each width are covered by the multi-chunk test.
+    q, k = (jnp.pad(a, ((0, 0), (0, 0), (0, 0), (0, key_dim - 4))) for a in (q, k))
     args = (q, k, v, g, beta, erase)
 
     def embedded_state(q, k, v, g, beta, erase, scale):
