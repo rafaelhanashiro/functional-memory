@@ -18,6 +18,29 @@ def recipe():
     return {"model": {"attention_degree": 2, "qk_head_dim": 64, "attention_normalization": False}, "train": {"seed": 0}}
 
 
+def test_pretrained_head_index_distinguishes_reconstruction_from_lm_loss(tmp_path):
+    study = tmp_path / "study"
+    run = create_run(study, {"experiment_kind": "frozen_pretrained_head_distillation",
+                             "fit": {"variant": "dynamic", "budget": 512, "steps": 200}})
+    (run / "completion.json").write_text(json.dumps({
+        "terminal_validation": [{"output_relative_rms": 0.3, "invalid_fraction": 0},
+                                {"output_relative_rms": 0.4, "invalid_fraction": 0}],
+        "best_validation": [{"output_relative_rms": None, "invalid_fraction": 0.1}],
+    }))
+    update_record(run, {"status": "complete"})
+    regenerate_index(study)
+    with (study / "runs.csv").open() as stream:
+        row = next(csv.DictReader(stream))
+    assert row["feature_selection"] == "dynamic"
+    assert row["active_features"] == "512"
+    assert row["training_steps"] == "200"
+    assert float(row["terminal_validation_relative_output_rms"]) == pytest.approx((0.125) ** 0.5)
+    assert row["best_validation_relative_output_rms"] == ""
+    assert row["terminal_validation_nll"] == ""
+    assert row["terminal_validation_perplexity"] == ""
+    assert row["prediction_tokens"] == ""
+
+
 def test_identical_recipes_get_distinct_ids_and_resume_keeps_identity(tmp_path):
     study = tmp_path / "study"
     first = create_run(study, recipe(), "same-label")

@@ -9,6 +9,59 @@ learned polynomial attention, GLA, and Gated DeltaNet.
 [Run index](runs.csv) · [Study membership](sweep.yaml) ·
 [Shared implementation](../../scaffolds/transformer/README.md)
 
+## Frozen pretrained-head polynomial sparsity
+
+This exploratory experiment asks whether fixed or query-dependent subsets of
+polynomial monomials reproduce frozen pretrained softmax heads at a small active
+feature budget. Its home cluster is **Kennel**. The
+[exploratory collection](../../results/exploratory/sparse_polynomial_heads/README.md)
+owns the explicit comparison, findings, and figures. It enters no canonical
+attention selection.
+
+The teacher is pinned Llama-3.2-1B, with its native Q/K/V projections, RoPE, score
+scaling and pretrained weights preserved. This is calibration of a pretrained
+model, not allocation or pretraining of a new Transformer; QK normalization is
+therefore not inserted into the teacher. Six query heads (0 and 16 in layers 2,
+8, 14) are fixed before fitting. WikiText-2 documents use their official train,
+validation and test splits, with duplicate titles/bodies removed across splits.
+One 512-token window is selected per article: 200 training, 32 validation and 32
+test windows, plus eight 2,048-token test windows. Model, tokenizer, dataset
+revision, source files and token windows are pinned and hashed.
+
+Ten executions compare the full 47,905-feature degree-three bank with fixed,
+random and query-dependent supports of 128, 512 or 2,048 features, including the
+constant. All variants learn positive monomial weights. Sparse variants start
+from the dense run's validation-best weights and receive equal fitting budgets.
+The six heads fit independently within each run; checkpoint selection uses their
+aggregate held-out validation error. The full polynomial is a reference, not a
+lower bound for the query-dependent function class. Key writes remain dense.
+
+Use a dedicated worktree and its own locked PyTorch environment:
+
+```bash
+uv sync --project scaffolds/state_rank --locked --link-mode hardlink
+PYTHONPATH=. scaffolds/state_rank/.venv/bin/python -m experiments.attention_scaling.launch_sparse_heads \
+  --prepare --corpus /data/cl/u/rafah/home/datasets/sparse_polynomial_head_probe/wikitext2_512_seed20261015
+```
+
+Preparation allocates permanent run IDs and prints them in execution order.
+Commit the new recipes, sweep membership, execution modules and scaffold code
+before submitting the printed IDs:
+
+```bash
+PYTHONPATH=. scaffolds/state_rank/.venv/bin/python -m experiments.attention_scaling.launch_sparse_heads \
+  --submit <printed-run-IDs> --partition debug --hours 2 --node dogo
+```
+
+The launcher uses one H100, appends per-run logs, verifies the frozen execution
+set on every start/requeue, and runs the configurations serially. Checkpoints
+retain the latest resumable fit and the validation best. A time-limit warning
+saves progress before requeue. The dense run owns the ignored teacher activation
+archives; sparse runs reference those archives rather than copying them. Compact
+metrics and execution records stay in each run. At completion retain only each
+validation-best checkpoint and move retained artifacts into Kennel's primary
+checkout before integration, following the repository lifecycle.
+
 ## Runs and comparisons
 
 Each `runs/<run_id>/` holds one complete recipe and execution. Settings are fields
