@@ -95,6 +95,7 @@ def attention_identity(config) -> dict:
                 1: "sigmoid_write_projection",
                 2: "zero_constant_and_quadratic_projections",
                 3: "zero_constant_quadratic_and_cubic_projections",
+                4: "zero_constant_quadratic_cubic_and_quartic_projections",
             }[degree],
             "gdn_erase_initialization": "copy_write_projection" if independent else "shared_write_gate",
             "gdn_state_elements_per_layer": model.num_heads * model.qk_head_dim * model.value_head_dim,
@@ -125,7 +126,7 @@ def attention_identity(config) -> dict:
                 "gdn_query_transport_space": "original_key_space",
                 "gdn_state_elements_per_layer": (model.num_heads * model.value_head_dim
                                                   * sum(model.qk_head_dim ** r for r in range(degree + 1))),
-                "gdn_kernel_source": f"local transported-score {'quadratic' if degree == 2 else 'cubic'} GDN kernels",
+                "gdn_kernel_source": "local transported-score " + {2: "quadratic", 3: "cubic", 4: "quartic"}[degree] + " GDN kernels",
                 "gdn_chunk_size": 64 if model.attention_backend == "fused" else None,
             })
         return identity

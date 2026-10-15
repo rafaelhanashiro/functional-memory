@@ -459,12 +459,13 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "gdn_polynomial_degree": _first(model.get("gdn_polynomial_degree"), get("gdn_polynomial_degree"))
             if model.get("attention_mechanism") == "gated_deltanet" else None,
         "gdn_write_initialization": _first(get("gdn_write_initialization"),
-            {2: "zero_constant_and_quadratic_projections", 3: "zero_constant_quadratic_and_cubic_projections"}
+            {2: "zero_constant_and_quadratic_projections", 3: "zero_constant_quadratic_and_cubic_projections",
+             4: "zero_constant_quadratic_cubic_and_quartic_projections"}
             .get(model.get("gdn_polynomial_degree")))
             if model.get("attention_mechanism") == "gated_deltanet" else None,
         "qk_head_dim": _first(model.get("qk_head_dim"), record.get("qk_head_dim"), metadata.get("qk_head_dim")),
         "attention_degree": _first(model.get("gdn_polynomial_degree")
-            if model.get("attention_mechanism") == "gated_deltanet" and model.get("gdn_polynomial_degree") in (2, 3) else None,
+            if model.get("attention_mechanism") == "gated_deltanet" and model.get("gdn_polynomial_degree") in (2, 3, 4) else None,
             model.get("attention_degree"), record.get("attention_degree"), metadata.get("attention_degree")),
         "attention_normalization": _first(model.get("attention_normalization"), record.get("attention_normalization"), metadata.get("attention_normalization")),
         "attention_output_scaling": model.get("attention_output_scaling"),

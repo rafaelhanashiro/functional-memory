@@ -72,7 +72,7 @@ def test_reference_gla_does_not_require_a_fused_kernel():
 
 
 @pytest.mark.parametrize("dimension", ("qk_head_dim", "value_head_dim"))
-@pytest.mark.parametrize("degree", (2, 3))
+@pytest.mark.parametrize("degree", (2, 3, 4))
 def test_polynomial_gdn_backend_rejects_unsupported_width_before_launch(dimension, degree):
     from dataclasses import replace
     from scaffolds.transformer.attention.backends.selection import resolve_attention_backend

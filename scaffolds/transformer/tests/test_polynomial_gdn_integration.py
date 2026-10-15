@@ -1,6 +1,7 @@
 """Polynomial GDN integration: nested initialization, trainability, and provenance."""
 
 import csv
+import itertools
 import json
 from dataclasses import replace
 
@@ -31,11 +32,13 @@ def zero_degrees(degree):
 
 
 @pytest.mark.parametrize("updates", [
-    {"gdn_polynomial_degree": 0}, {"gdn_polynomial_degree": 4}, {"gdn_polynomial_degree": True},
+    {"gdn_polynomial_degree": 0}, {"gdn_polynomial_degree": 5}, {"gdn_polynomial_degree": True},
     {"gdn_polynomial_degree": 2, "gdn_erase_mode": "tied"},
     {"gdn_polynomial_degree": 3, "gdn_erase_mode": "tied"},
+    {"gdn_polynomial_degree": 4, "gdn_erase_mode": "tied"},
     {"gdn_polynomial_degree": 2, "attention_mechanism": "dot_product"},
     {"gdn_polynomial_degree": 3, "attention_mechanism": "dot_product"},
+    {"gdn_polynomial_degree": 4, "attention_mechanism": "dot_product"},
 ])
 def test_degree_configuration_rejects_ambiguous_architectures(updates):
     with pytest.raises(ValueError, match="gdn_polynomial_degree"):
@@ -49,14 +52,15 @@ def test_legacy_recipes_remain_degree_one_and_degrees_are_not_resume_compatible(
     legacy = {**linear, "model": {k: v for k, v in linear["model"].items() if k != "gdn_polynomial_degree"}}
     assert config_dicts_equal(linear, legacy)
     polynomial = [{**linear, "model": {**linear["model"], "gdn_polynomial_degree": degree}}
-                  for degree in (2, 3)]
+                  for degree in (2, 3, 4)]
     for recipe in polynomial:
         assert not config_dicts_equal(recipe, legacy)
-    assert not config_dicts_equal(*polynomial)
+    for left, right in itertools.combinations(polynomial, 2):
+        assert not config_dicts_equal(left, right)
 
 
 @pytest.mark.parametrize("initialization", ["flax_default", "gated_deltanet_reference"])
-@pytest.mark.parametrize("degree", (2, 3))
+@pytest.mark.parametrize("degree", (2, 3, 4))
 def test_polynomial_initialization_nests_linear_without_perturbing_existing_draws(initialization, degree):
     config = gdn_model(gdn_erase_mode="independent", initialization=initialization)
     linear = build_model(config, jax.random.PRNGKey(17))
@@ -78,15 +82,15 @@ def test_polynomial_initialization_nests_linear_without_perturbing_existing_draw
         degree * config.num_layers * config.hidden_size * config.num_heads)
     tokens = jnp.asarray([[1, 2, 3, 4, 5], [6, 4, 2, 0, 7]])
     np.testing.assert_allclose(polynomial(tokens), linear(tokens), rtol=3e-5, atol=7e-6)
-    if degree == 3:
-        quadratic = build_model(replace(config, gdn_polynomial_degree=2), jax.random.PRNGKey(17))
-        for path, value in flatten(quadratic).items():
+    if degree >= 3:
+        lower = build_model(replace(config, gdn_polynomial_degree=degree - 1), jax.random.PRNGKey(17))
+        for path, value in flatten(lower).items():
             np.testing.assert_array_equal(new[path], value, err_msg=str(path))
-        np.testing.assert_array_equal(polynomial(tokens), quadratic(tokens))
+        np.testing.assert_array_equal(polynomial(tokens), lower(tokens))
 
 
 @pytest.mark.parametrize("initialization", ["flax_default", "gated_deltanet_reference"])
-@pytest.mark.parametrize("degree", (2, 3))
+@pytest.mark.parametrize("degree", (2, 3, 4))
 def test_zero_coefficient_projections_have_independent_donated_buffers(initialization, degree):
     model = build_model(polynomial_model(degree, initialization=initialization), jax.random.PRNGKey(17))
     layer = getattr(model, model.layer_names[0]).attention
@@ -101,7 +105,7 @@ def test_zero_coefficient_projections_have_independent_donated_buffers(initializ
         np.testing.assert_allclose(new, old + index + 1, rtol=2e-6, atol=2e-7)
 
 
-@pytest.mark.parametrize("degree", (2, 3))
+@pytest.mark.parametrize("degree", (2, 3, 4))
 def test_zero_initialized_coefficients_receive_task_gradients_and_degree_telemetry(degree):
     module = GatedDeltaNet(32, 4, 8, 8, erase_mode="independent", polynomial_degree=degree, rngs=nnx.Rngs(19))
     x = jax.random.normal(jax.random.PRNGKey(20), (2, 9, 32))
@@ -126,7 +130,7 @@ def test_zero_initialized_coefficients_receive_task_gradients_and_degree_telemet
     assert invalid["invalid_output_count"] > 0
 
 
-@pytest.mark.parametrize("degree", (2, 3))
+@pytest.mark.parametrize("degree", (2, 3, 4))
 def test_identity_tags_and_run_index_expose_geometry_degree_and_gate_initialization(tmp_path, degree):
     config = Config()
     config.model = polynomial_model(degree, initialization="gated_deltanet_reference")
@@ -139,9 +143,10 @@ def test_identity_tags_and_run_index_expose_geometry_degree_and_gate_initializat
     assert f"sum_{{r=0}}^{degree}" in identity["attention_formula"]
     assert f"beta_{degree}=tanh(W_{degree} x)" in identity["attention_formula"]
     assert identity["gdn_write_initialization"] == {
-        2: "zero_constant_and_quadratic_projections", 3: "zero_constant_quadratic_and_cubic_projections"}[degree]
+        2: "zero_constant_and_quadratic_projections", 3: "zero_constant_quadratic_and_cubic_projections",
+        4: "zero_constant_quadratic_cubic_and_quartic_projections"}[degree]
     tags = tracking.run_tags(config, {})
-    assert f"m{degree}" in tags and {2: "quadratic_gdn", 3: "cubic_gdn"}[degree] in tags and "erase_independent" in tags
+    assert f"m{degree}" in tags and {2: "quadratic_gdn", 3: "cubic_gdn", 4: "quartic_gdn"}[degree] in tags and "erase_independent" in tags
     study = tmp_path / "study"
     create_run(study, config_to_dict(config))
     with regenerate_index(study).open() as stream:
@@ -150,7 +155,7 @@ def test_identity_tags_and_run_index_expose_geometry_degree_and_gate_initializat
     assert row["gdn_write_initialization"] == identity["gdn_write_initialization"]
 
 
-@pytest.mark.parametrize("degree", (2, 3))
+@pytest.mark.parametrize("degree", (2, 3, 4))
 def test_polynomial_training_learns_zero_gates_and_resumes_exactly(tmp_path, degree):
     config = gdn_config(tmp_path / "full", initialization="gated_deltanet_reference",
                         gdn_erase_mode="independent", gdn_polynomial_degree=degree)

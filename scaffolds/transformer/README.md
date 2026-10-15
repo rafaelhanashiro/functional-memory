@@ -355,19 +355,20 @@ Neither pass divides by a gate, so zero erasure with nonzero writing is supporte
 Training telemetry records both gates, their difference, raw attention output statistics,
 and separate erase/write/decay/output-gate parameter-group norms.
 
-`gdn_polynomial_degree: 2` or `3` with `gdn_erase_mode: independent` extends the
-stored function to a quadratic or cubic while retaining the original key-space
+`gdn_polynomial_degree: 2`, `3`, or `4` with `gdn_erase_mode: independent` extends
+the stored function through quadratic, cubic, or quartic degree while retaining
+the original key-space
 transformation:
 
 ```text
 P_t = I - lambda_t k_t k_t^T
 F_t(q) = alpha_t F_{t-1}(P_t q)
-         + v_t [beta_{t,0} + beta_{t,1} <q,k_t> + beta_{t,2} <q,k_t>^2]
+         + v_t sum_(r=0..m) beta_{t,r} <q,k_t>^r
 read_t = F_t(q_t) / sqrt(d_K)
 ```
 
-The decay multiplies the whole function once; the quadratic state transforms on
-both key axes by `P_t`. It is not a rank-one erase in an expanded feature space.
+The decay multiplies the whole function once; the degree-r tensor state transforms
+on each of its r key axes by the same `P_t`. It is not a rank-one erase in an expanded feature space.
 `beta_1 = sigmoid(W_b x)` retains GDN's write projection and initialization;
 `beta_0 = tanh(W_0 x)` and `beta_2 = tanh(W_2 x)` have separate zero-initialized
 projections. The added terms start at zero with nonzero parameter derivatives,
@@ -375,14 +376,17 @@ so the initial function equals independent-erase GDN without changing its origin
 parameter draws. Queries and keys keep the same L2 normalization, and the read
 keeps the gated output RMSNorm. No causal attention-sum division is introduced.
 
-Degree three adds `beta_3 = tanh(W_3 x)`, also zero-initialized without consuming
-original parameter RNG draws. The same `P_t` acts on each of its three key axes,
-with one decay factor for the whole state. The fused backend adds the cubic
-transported-score term and its derivatives without an expanded cubic state.
+Degree three adds `beta_3 = tanh(W_3 x)` and degree four adds
+`beta_4 = tanh(W_4 x)`. Each projection starts at zero without consuming original
+parameter RNG draws. A zero quartic write recovers the cubic function, and all
+added writes start from the same reference-initialized linear function. Separate
+parameter-group and coefficient telemetry includes each added degree. The fused
+backend adds the corresponding transported-score terms and their derivatives
+without an expanded tensor state.
 
 The `blocked` reference explicitly updates the degree-wise tensor states; its
-cubic state costs `O(d_K^3 d_V)` per head and is intended for small correctness
-checks, not full-width training.
+highest-degree state costs `O(d_K^m d_V)` per head and is intended for small
+correctness checks, not full-width training.
 The `fused` implementation evaluates the same recurrence through causal scores
 `q_t^T P_t ... P_{i+1} k_i`, with degree-specific write coefficients at token `i`
 and the scalar decay outside the polynomial. Its chunk-local triangular solves

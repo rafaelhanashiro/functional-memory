@@ -5,7 +5,8 @@
 #   sbatch --job-name=<run> --output=experiments/<study>/runs/<run>/training.log \
 #     scaffolds/transformer/launchers/kennel.sbatch \
 #     experiments.<study>.acceptance \
-#     experiments/<study>/runs/<run>/config.yaml "$(git rev-parse HEAD)" [GPU_COUNT] [GPU_TYPES]
+#     experiments/<study>/runs/<run>/config.yaml "$(git rev-parse HEAD)" [GPU_COUNT] [GPU_TYPES] [ALLOCATION_HOURS]
+# Match ALLOCATION_HOURS (default 48) to --time, e.g. 24 for the standard partition.
 #SBATCH --job-name=transformer
 #SBATCH --partition=sweep
 #SBATCH --nodes=1
@@ -23,6 +24,7 @@ CONFIG="${2:?Expected experiments/<study>/runs/<run>/config.yaml}"
 LAUNCH_COMMIT="${3:?Expected the launch commit}"
 GPU_COUNT="${4:-4}"
 GPU_TYPES="${5:-B300,H100}"
+ALLOCATION_HOURS="${6:-48}"
 EXECUTION_ROOT="${SLURM_SUBMIT_DIR:?Submit from the experiment worktree root}"
 cd "$EXECUTION_ROOT"
 if [[ ! "$CONFIG" =~ ^experiments/([A-Za-z0-9_]+)/runs/(r[0-9a-f]{12})/config\.yaml$ ]]; then
@@ -139,7 +141,8 @@ PY
 # Acceptance and production share the allocation; matching passed stages are reused on a requeue
 # to the same GPU model, and passed test stages are shared with the worktree's other runs.
 run_step "$PYTHON" -m "$ADAPTER" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
-  --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --test-cache "$CACHE/acceptance-tests"
+  --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --test-cache "$CACHE/acceptance-tests" \
+  --allocation-hours "$ALLOCATION_HOURS"
 "$PYTHON" - "$RUN_ROOT" "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT/success.json" <<'PY'
 import hashlib, json, sys
 from pathlib import Path

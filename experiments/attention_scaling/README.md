@@ -443,3 +443,52 @@ Every run must pass acceptance on its allocated GPU model before training.
 Each full-recipe pilot must fit its actual allocation, allowing time for
 qualification and shutdown. The frozen acceptance implementation has a generic
 48-hour guard; the `standard` lane also needs its stricter 24-hour check.
+
+## Quartic GDN query geometry
+
+Home cluster: **Kennel**. Runs `r4f60c2ce2f1f` (d_K=8, 193,241,024 parameters)
+and `r1d67ac6f0223` (d_K=16, 195,872,704 parameters) extend the small-key comparison
+to `model.gdn_polynomial_degree: 4`. They use the same canonical reference
+initialization, independent erase map in original key space, intrinsic Q/K L2
+normalization, gated output RMSNorm, warmup 400, and 19,074-update FineWeb recipe.
+A separate zero-initialized `beta_4 = tanh(W_4 x)` adds the quartic write without
+changing existing initialization draws or the initial linear function. The same
+`P_t` acts on each of the four key indices; one scalar decay multiplies the whole
+function. The full recipes and current execution status live in the run records;
+methods and explicit controls remain in the
+[exploratory comparison](../../results/exploratory/gdn_polynomial/README.md#small-key-comparison).
+
+Develop and execute both runs in `worktrees/gdn-quartic` with its own locked CUDA
+environment. Submit d_K=8 first on `long` (48 hours), then d_K=16 on `standard`
+(24 hours), each on four H100s at nice 0. These runs have first priority over the
+pending quadratic and linear controls, without a completion dependency on the
+remaining cubic run or on each other. A100/A6000 and the currently unqualified
+B300 node are excluded. Each allocation must pass correctness, reference
+initialization, a 20-update full-recipe pilot with validation, and exact checkpoint
+resumption before production; its projected duration must fit the actual walltime.
+
+From `worktrees/gdn-quartic`, after committing the frozen inputs:
+
+```bash
+uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+quartic_launch_commit=$(git rev-parse HEAD)
+for request in 'r4f60c2ce2f1f long 48' 'r1d67ac6f0223 standard 24'; do
+  read -r quartic_run quartic_partition quartic_hours <<< "$request"
+  sbatch --parsable --partition="$quartic_partition" --nice=0 \
+    --exclude=akita,collie,doodle,samoyed,terrier --gres=gpu:4 \
+    --cpus-per-task=32 --mem=256G --time="$quartic_hours:00:00" \
+    --requeue --open-mode=append --job-name="$quartic_run" \
+    --output="experiments/attention_scaling/runs/$quartic_run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.attention_scaling.acceptance \
+    "experiments/attention_scaling/runs/$quartic_run/config.yaml" \
+    "$quartic_launch_commit" 4 H100 "$quartic_hours"
+done
+```
+
+The GPU correctness checks compare all input gradients against independent tensor
+and source-evolution oracles, including dense keys at d_K=8/16 across multiple
+chunks and prediction length 2,048 with value width 64 in an exact four-dimensional
+invariant subspace. The production pilot uses dense model activations. Shared
+qualification evidence belongs in the scaffold validation record; these recipes
+remain exploratory scientific runs.

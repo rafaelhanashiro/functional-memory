@@ -72,7 +72,7 @@ def test_joint_best_only_archive_resumes_without_touching_terminal_records(tmp_p
     assert metadata["retained_terminal_checkpoint_step"] is None
 
 
-@pytest.mark.parametrize("degree", [1, 2, 3])
+@pytest.mark.parametrize("degree", [1, 2, 3, 4])
 def test_gdn_retention_uses_resolved_degree_and_rejects_mismatch(tmp_path, monkeypatch, degree):
     from scaffolds.transformer.retention import finalize_run
     from scaffolds.transformer.tests.test_gated_deltanet import gdn_config

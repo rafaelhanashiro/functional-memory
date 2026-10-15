@@ -1,7 +1,7 @@
 """Differentiable exact polynomial GDN without an expanded feature-space state.
 
 F_t(q) = exp(g_t) F_{t-1}((I-erase_t k_t k_t^T)q)
-         + v_t sum_{r=0}^m beta_{t,r} (q^T k_t)^r, m in {2, 3}.
+         + v_t sum_{r=0}^m beta_{t,r} (q^T k_t)^r, m in {2, 3, 4}.
 
 The public read is scale*F_t(q_t). Its erase geometry is in the original key
 space; decay multiplies every degree equally. beta may be signed. FP32 chunk
@@ -157,7 +157,7 @@ _attention.defvjp(_attention_fwd, _attention_bwd)
 
 
 def polynomial_gated_delta_rule(q, k, v, g, beta, erase, scale):
-    """Degree-two/three GDN read: q/k[B,T,H,K], v[B,T,H,V], beta[B,T,H,m+1].
+    """Degree-two/three/four GDN read: q/k[B,T,H,K], v[B,T,H,V], beta[B,T,H,m+1].
 
     g and erase have shape [B,T,H]. Inputs q/k/v may be BF16 or FP32;
     g, beta, and erase use FP32 arithmetic. q/k normalization belongs to the
@@ -165,9 +165,9 @@ def polynomial_gated_delta_rule(q, k, v, g, beta, erase, scale):
     """
     if q.ndim != 4 or k.shape != q.shape or v.shape[:3] != q.shape[:3]:
         raise ValueError("Polynomial GDN expects matching q/k/v[B,T,H,D] dimensions")
-    if (beta.ndim != 4 or beta.shape[:3] != q.shape[:3] or beta.shape[-1] not in (3, 4)
+    if (beta.ndim != 4 or beta.shape[:3] != q.shape[:3] or beta.shape[-1] not in (3, 4, 5)
             or g.shape != q.shape[:3] or erase.shape != g.shape):
-        raise ValueError("Polynomial GDN expects beta[B,T,H,3 or 4] and g/erase[B,T,H]")
+        raise ValueError("Polynomial GDN expects beta[B,T,H,3, 4, or 5] and g/erase[B,T,H]")
     if q.shape[1] % CHUNK_SIZE or not 0 < q.shape[-1] <= 64 or not 0 < v.shape[-1] <= 64:
         raise ValueError("Polynomial GDN fused backend needs T divisible by 64 and 1<=K,V<=64")
     # Keep the two key gradient paths in FP32 until after their sum. Saving k32

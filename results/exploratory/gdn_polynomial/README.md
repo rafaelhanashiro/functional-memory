@@ -2,7 +2,7 @@
 
 Opened 2026-10-13. Home cluster: **Kennel**.
 
-Do quadratic and cubic writes improve a GDN memory whose learned
+Do quadratic, cubic, and quartic writes improve a GDN memory whose learned
 key-space transformation is unchanged?
 
 ## Runs and method
@@ -129,27 +129,30 @@ improvement, and the two mechanisms use different training kernels.
 
 ## Small-key comparison
 
-The six Kennel runs below compare degrees 3, 2, and 1 at key widths 16 and 8.
+The eight Kennel runs below compare degrees 4, 3, 2, and 1 at key widths 16 and 8.
 They keep value width 64, 16 heads, 10 layers, hidden width 1024, MLP width 3008,
 the canonical GDN reference initialization, intrinsic Q/K L2 normalization and
 gated output RMSNorm, warmup 400, and the same 19,074-update training recipe.
 Linear means the independent-erase GDN control. Parameter counts range from
-192.6M to 195.7M because the Q/K projections are narrower. No other width is
+192.6M to 195.9M because the Q/K projections are narrower. No other width is
 increased to compensate.
 
-| Group | Run ID | Degree | d_K | Parameters | Slurm job |
+| Memory | Run ID | Degree | d_K | Parameters | Slurm job / status |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `ra79e66bd9121` | 3 | 16 | 195,708,864 | 219035 |
-| 1 | `ra98612db06d4` | 3 | 8 | 193,077,184 | 219036 |
-| 2 | `rf885f946fc9b` | 2 | 16 | 195,545,024 | 219037 |
-| 2 | `r2fb020d67c0d` | 2 | 8 | 192,913,344 | 219038 |
-| 3 | `rae2329afb5bd` | 1 | 16 | 195,217,344 | 219039 |
-| 3 | `r5c9701488368` | 1 | 8 | 192,585,664 | 219040 |
+| Quartic | `r4f60c2ce2f1f` | 4 | 8 | 193,241,024 | Planned; first quartic priority |
+| Quartic | `r1d67ac6f0223` | 4 | 16 | 195,872,704 | Planned; second quartic priority |
+| Cubic | `ra79e66bd9121` | 3 | 16 | 195,708,864 | 219035 |
+| Cubic | `ra98612db06d4` | 3 | 8 | 193,077,184 | 219036 |
+| Quadratic | `rf885f946fc9b` | 2 | 16 | 195,545,024 | 219037 |
+| Quadratic | `r2fb020d67c0d` | 2 | 8 | 192,913,344 | 219038 |
+| Linear | `rae2329afb5bd` | 1 | 16 | 195,217,344 | 219039 |
+| Linear | `r5c9701488368` | 1 | 8 | 192,585,664 | 219040 |
 
 Each run requests four H100s. The d_K=16 lane uses `standard` (24 hours);
 d_K=8 uses `long` (48 hours). The degree groups have no completion dependencies.
-Cubic runs use nice 0, quadratics nice 1000, and linears nice 2000; new quartic
-runs take priority over the pending quadratic and linear jobs. Quadratic
+Quartic and cubic runs use nice 0, quadratics nice 1000, and linears nice 2000.
+The quartic runs have first priority for available capacity, beginning with d_K=8;
+they do not wait for cubic d_K=16 to finish. Quadratic
 d_K=8 (`219038`) has started on `dogo` while cubic d_K=16 continues. A100 and
 A6000 nodes are excluded. The queued allocations also exclude B300, whose
 current shared-kernel qualification is not passing.
@@ -170,6 +173,21 @@ reference initialization, a full-recipe training and validation pilot, and exact
 fresh-process checkpoint resume before production.
 The small-width checks include the masked K=8 tile and the production sequence
 length and value width.
+
+The quartic recipes are frozen in their separate `worktrees/gdn-quartic` checkout.
+They add `beta_4 = tanh(W_4 x)` with a separate zero-initialized projection, keeping
+all existing canonical parameter draws and the initial linear function unchanged.
+The original key-space `P_t` acts on all four key indices, and `alpha_t` multiplies
+the whole function once. Both widths retain warmup 400, intrinsic Q/K L2
+normalization, gated output RMSNorm, and the same data, optimizer, and batch recipe.
+No quartic training metrics are available yet. The explicit width-matched controls
+are `r5c9701488368` for d_K=8 and `rae2329afb5bd` for d_K=16. The quartic mechanism
+must pass independent tensor/source-evolution checks of outputs and all six input
+gradients, including dense K=8/16 multichunk cases and length-2,048 cases embedded
+in a four-dimensional invariant subspace, followed by a dense full-model pilot
+and exact checkpoint resume before production.
+The theoretical symmetric-feature widths for quartic are 495 at d_K=8 and 4,845
+at d_K=16; the training backend still uses transported scores.
 
 The original width-64 cubic remains held; the width-256 GDN run is outside
 this queue.

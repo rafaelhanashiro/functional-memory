@@ -18,16 +18,19 @@ def test_acceptance_rejects_skipped_or_empty_test_reports(tmp_path):
 
 @pytest.mark.parametrize("cpu", (False, True))
 @pytest.mark.parametrize("backend", ("blocked", "fused"))
-@pytest.mark.parametrize("degree", (2, 3))
+@pytest.mark.parametrize("degree", (2, 3, 4))
 def test_polynomial_gdn_cannot_omit_its_correctness_checks(cpu, backend, degree):
     config = {"model": {"attention_mechanism": "gated_deltanet", "gdn_polynomial_degree": degree}}
     spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
     paths = preflight.test_paths(spec, config, resolved_backend=backend, cpu=cpu)
     expected = ((preflight.POLYNOMIAL_GDN_TESTS, preflight.POLYNOMIAL_GDN_INTEGRATION_TESTS) if cpu
                 else (preflight.POLYNOMIAL_GDN_KERNEL_TESTS,) if backend == "fused" else ())
-    if degree == 3:
+    if degree >= 3:
         expected += ((preflight.CUBIC_GDN_TESTS,) if cpu
                      else (preflight.CUBIC_GDN_KERNEL_TESTS,) if backend == "fused" else ())
+    if degree == 4:
+        expected += ((preflight.QUARTIC_GDN_TESTS,) if cpu
+                     else (preflight.QUARTIC_GDN_KERNEL_TESTS,) if backend == "fused" else ())
     assert paths == expected
     config["model"]["gdn_polynomial_degree"] = 1
     assert preflight.test_paths(spec, config, resolved_backend=backend, cpu=cpu) == ()
@@ -280,3 +283,104 @@ def test_workers_reinvoke_the_adapter_module_when_it_runs_as_main(monkeypatch):
     monkeypatch.setitem(sys.modules, "__main__", main)
     assert preflight.entry_module(preflight.AcceptanceSpec("__main__", ())) == main.__spec__.name
     assert preflight.entry_module(preflight.AcceptanceSpec("named.module", ())) == "named.module"
+
+
+@pytest.mark.parametrize("hours", ("2", "nan", "inf"))
+def test_allocation_hours_argument_rejects_invalid_budgets(hours, capsys):
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    with pytest.raises(SystemExit) as error:
+        preflight.main(spec, ["--allocation-hours", hours])
+    assert error.value.code == 2
+    assert "finite and greater than 2" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("override,expected", ((None, 48), (24.5, 24.5)))
+def test_allocation_override_applies_before_identity_and_execution(tmp_path, monkeypatch, override, expected):
+    seen = []
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    monkeypatch.setenv("SLURM_JOB_ID", "test")
+
+    def identify(selected, *args):
+        seen.append(("identity", selected.allocation_hours))
+        return {"identity": "test"}
+
+    monkeypatch.setattr(preflight, "identity", identify)
+    monkeypatch.setattr(preflight, "_run", lambda selected, *args: seen.append(("run", selected.allocation_hours)))
+    argv = [str(tmp_path / "recipe.yaml"), "--directory", str(tmp_path)]
+    if override is not None:
+        argv += ["--allocation-hours", str(override)]
+    preflight.main(spec, argv)
+    assert seen == [("identity", expected), ("run", expected)]
+    assert spec.allocation_hours == 48
+
+
+def test_worker_receives_the_resolved_allocation_budget(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    calls = []
+    output = tmp_path / "worker.json"
+
+    def run(command, **kwargs):
+        calls.append(command)
+        output.write_text('{"passed": true}')
+
+    monkeypatch.setattr(preflight.subprocess, "run", run)
+    spec = preflight.AcceptanceSpec(entry_module="experiments.demo.acceptance", cpu_tests=(), allocation_hours=24.5)
+    args = SimpleNamespace(config=tmp_path / "recipe.yaml", directory=tmp_path, gpu_count=4, gpu_type="H100")
+    assert preflight._run_worker(spec, args, "pilot", output, stop=20) == {"passed": True}
+    assert calls[0][calls[0].index("--allocation-hours") + 1] == "24.5"
+
+
+def test_shorter_allocation_cannot_reuse_longer_pilot_acceptance(tmp_path, monkeypatch, capsys):
+    import json
+    from dataclasses import replace
+    from types import SimpleNamespace
+    from scaffolds.transformer.configs import Config
+
+    config = Config()
+    config.optim.total_steps = 100
+    config.train.source_commit = "auto"
+    monkeypatch.setattr(preflight, "load_config", lambda path: config)
+    monkeypatch.setattr(preflight, "sha256", lambda path: "fixture-sha256")
+    monkeypatch.setenv("SHARED_TRANSFORMER_SOURCE_COMMIT", "a" * 40)
+    monkeypatch.setenv("TRANSFORMER_HOST_STAGING", "0")
+    args = SimpleNamespace(config=tmp_path / "recipe.yaml", directory=tmp_path, gpu_count=1, gpu_type="H100")
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), allocation_hours=48.)
+    device_kinds = ["NVIDIA H100 80GB HBM3"]
+    original = preflight.identity(spec, args.config, args.gpu_count, args.gpu_type)
+    qualified = preflight.on_devices(original, device_kinds)
+    for stage in (*preflight.CHECKS, "success"):
+        preflight.record(tmp_path / f"{stage}.json", qualified)
+
+    def worker(selected, arguments, name, output, **unused):
+        if name == "hardware":
+            return {"attention_backend": "fused", "device_kinds": device_kinds}
+        if name == "initialization":
+            return {}
+        assert name == "pilot"
+        pilot = tmp_path / "pilot"
+        pilot.mkdir()
+        (pilot / "metrics.jsonl").write_text(json.dumps({
+            "step": 20, "validation_nll": 2., "attention_diagnostics": {"valid": True},
+        }) + "\n")
+        # A 25-hour projection fits the old 48-hour allocation, but fails the
+        # standard partition's 22-hour production guard after a budget change.
+        return {"final_step": 20, "data_parallel_devices": 1,
+                "timing": {"train_step_seconds": [1., 900.], "runtime_seconds": 0.,
+                           "evaluation_seconds": [0.], "checkpoint_seconds": [0.]}}
+
+    monkeypatch.setattr(preflight, "_run_worker", worker)
+    preflight._run(spec, args, original)
+    assert "matching_acceptance_passed=" in capsys.readouterr().out
+    shortened = replace(spec, allocation_hours=24.)
+    changed = preflight.identity(shortened, args.config, args.gpu_count, args.gpu_type)
+    assert changed["allocation_hours"] == 24.
+    assert not preflight.passed(tmp_path / "success.json", preflight.on_devices(changed, device_kinds))
+    # CPU/GPU correctness results are still shareable; only run qualification
+    # depends on whether the pilot fits this allocation's wall-clock budget.
+    assert preflight.stage_identity(qualified, "gpu-tests", ("kernel.py",), ("-m", "gpu"), cpu=False) == (
+        preflight.stage_identity(preflight.on_devices(changed, device_kinds), "gpu-tests", ("kernel.py",),
+                                 ("-m", "gpu"), cpu=False))
+    with pytest.raises(RuntimeError, match="24.0h allocation: 25.00 hours"):
+        preflight._run(shortened, args, changed)
+    assert json.loads((tmp_path / "failure.json").read_text())["stage"] == "pilot"

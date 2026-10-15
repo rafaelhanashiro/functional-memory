@@ -58,9 +58,9 @@ class ModelConfig:
     # Independent erasure learns a separate per-token/head sigmoid gate, initially
     # copied from beta; tied retains GDN's shared erase/write gate.
     gdn_erase_mode: Literal["tied", "independent"] = "tied"
-    # Degrees two and three compose polynomial memory with the same original-key-space
+    # Degrees two through four compose polynomial memory with the same original-key-space
     # erase map. Degree one preserves the historical GDN architecture.
-    gdn_polynomial_degree: Literal[1, 2, 3] = 1
+    gdn_polynomial_degree: Literal[1, 2, 3, 4] = 1
     gla_gate_rank: int = 16
     gla_gate_tau: float = 16.0
     gla_chunk_size: int = 64
@@ -168,8 +168,8 @@ class ModelConfig:
             raise ValueError("model.gdn_erase_mode must be tied or independent")
         if self.gdn_erase_mode != "tied" and self.attention_mechanism != "gated_deltanet":
             raise ValueError("model.gdn_erase_mode independent requires gated_deltanet")
-        if type(self.gdn_polynomial_degree) is not int or self.gdn_polynomial_degree not in (1, 2, 3):
-            raise ValueError("model.gdn_polynomial_degree must be 1, 2, or 3")
+        if type(self.gdn_polynomial_degree) is not int or self.gdn_polynomial_degree not in (1, 2, 3, 4):
+            raise ValueError("model.gdn_polynomial_degree must be 1, 2, 3, or 4")
         if self.gdn_polynomial_degree > 1:
             if self.attention_mechanism != "gated_deltanet" or self.gdn_erase_mode != "independent":
                 raise ValueError("model.gdn_polynomial_degree > 1 requires gated_deltanet with independent erasure")

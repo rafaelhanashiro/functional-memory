@@ -82,7 +82,7 @@ def apply_initialization(model: nnx.Module, scheme: str, key: jax.Array, *, num_
                 independent_gdn.append(node)
         if isinstance(node, (nnx.Linear, nnx.Embed)):
             path = tuple(str(part) for part in path)
-            if scheme == "gated_deltanet_reference" and path[-1] in ("lambda_proj", "b0_proj", "b2_proj", "b3_proj"):
+            if scheme == "gated_deltanet_reference" and path[-1] in ("lambda_proj", "b0_proj", "b2_proj", "b3_proj", "b4_proj"):
                 # Do not consume an initialization index: adding a gate must keep
                 # all of the original GDN model's weights bit-identical.
                 continue

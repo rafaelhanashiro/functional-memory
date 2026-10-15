@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 import hashlib
 import json
@@ -58,6 +58,8 @@ POLYNOMIAL_GDN_INTEGRATION_TESTS = "scaffolds/transformer/tests/test_polynomial_
 POLYNOMIAL_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn_kernel.py"
 CUBIC_GDN_TESTS = "scaffolds/transformer/tests/test_cubic_gdn.py"
 CUBIC_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_cubic_gdn_kernel.py"
+QUARTIC_GDN_TESTS = "scaffolds/transformer/tests/test_quartic_gdn.py"
+QUARTIC_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_quartic_gdn_kernel.py"
 
 
 @dataclass(frozen=True)
@@ -77,7 +79,7 @@ class AcceptanceSpec:
     runtime_env: dict[str, str] = field(default_factory=dict)
     """Environment the launcher exports for this experiment (for example XLA flags)."""
     pilot_steps: int = 20
-    allocation_hours: int = 48
+    allocation_hours: float = 48
     select_tests: Callable | None = None
     """Optional recipe/backend selector called as ``(config, resolved_backend, cpu)``."""
 
@@ -89,16 +91,21 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         paths.extend(spec.select_tests(config, resolved_backend, cpu))
     model = config["model"]
     if (model.get("attention_mechanism") == "gated_deltanet"
-            and model.get("gdn_polynomial_degree", 1) in (2, 3)):
+            and model.get("gdn_polynomial_degree", 1) in (2, 3, 4)):
         if cpu:
             paths.extend((POLYNOMIAL_GDN_TESTS, POLYNOMIAL_GDN_INTEGRATION_TESTS))
         elif resolved_backend == "fused":
             paths.append(POLYNOMIAL_GDN_KERNEL_TESTS)
-        if model.get("gdn_polynomial_degree") == 3:
+        if model.get("gdn_polynomial_degree") >= 3:
             if cpu:
                 paths.append(CUBIC_GDN_TESTS)
             elif resolved_backend == "fused":
                 paths.append(CUBIC_GDN_KERNEL_TESTS)
+        if model.get("gdn_polynomial_degree") == 4:
+            if cpu:
+                paths.append(QUARTIC_GDN_TESTS)
+            elif resolved_backend == "fused":
+                paths.append(QUARTIC_GDN_KERNEL_TESTS)
     if model.get("attention_coefficient_conditioning", "static") == "query":
         paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)
         if model.get("attention_coefficient_activation", "identity") == "tanh":
@@ -246,6 +253,9 @@ def identity(spec: AcceptanceSpec, config_path: Path, gpu_count: int, gpu_type: 
         "data_manifests": {split: {"path": path, "sha256": sha256(path)} for split, path in
                            (("train", config.data.train_manifest), ("eval", config.data.eval_manifest))},
         "gpu_count": gpu_count, "gpu_type": gpu_type.upper(),
+        # A prior pilot qualified for a longer allocation cannot authorize a
+        # shorter job. Test-stage sharing remains independent of this budget.
+        "allocation_hours": float(spec.allocation_hours),
         "runtime": runtime_identity(),
     }
     return _sealed(payload)
@@ -455,7 +465,8 @@ def entry_module(spec: AcceptanceSpec) -> str:
 def _run_worker(spec, args, name, output, *, stop, cpu=False) -> dict:
     command = [sys.executable, "-m", entry_module(spec), str(args.config), "--directory", str(args.directory),
                "--gpu-count", str(args.gpu_count), "--gpu-type", args.gpu_type, "--worker", name,
-               "--output", str(output), "--stop-after-step", str(stop)]
+               "--output", str(output), "--stop-after-step", str(stop),
+               "--allocation-hours", str(spec.allocation_hours)]
     subprocess.run(command, cwd=ROOT, env=dict(os.environ, JAX_PLATFORMS="cpu" if cpu else "cuda"), check=True)
     return json.loads(Path(output).read_text())
 
@@ -606,6 +617,8 @@ def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
     parser.add_argument("--directory", type=Path)
     parser.add_argument("--gpu-count", type=int, default=4)
     parser.add_argument("--gpu-type", default="H100")
+    parser.add_argument("--allocation-hours", type=float,
+                        help="Allocation duration in hours; overrides the adapter's budget (must exceed 2)")
     parser.add_argument("--worker", choices=("hardware", "initialization", "pilot"))
     parser.add_argument("--output", type=Path)
     parser.add_argument("--stop-after-step", type=int)
@@ -613,10 +626,14 @@ def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
     parser.add_argument("--test-cache", type=Path,
                         help="Directory sharing passed test stages between runs with the same test identity")
     args = parser.parse_args(argv)
+    if args.allocation_hours is not None and (not math.isfinite(args.allocation_hours) or args.allocation_hours <= 2):
+        parser.error("--allocation-hours must be finite and greater than 2")
     if not isinstance(spec, AcceptanceSpec):
         if args.config is None:
             parser.error("config is required to select attention acceptance checks and runtime settings")
         spec = spec(load_config(args.config))
+    if args.allocation_hours is not None:
+        spec = replace(spec, allocation_hours=args.allocation_hours)
     if args.stop_after_step is None:
         args.stop_after_step = spec.pilot_steps
     if args.runtime_env:

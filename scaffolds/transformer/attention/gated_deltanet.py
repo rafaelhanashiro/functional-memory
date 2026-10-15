@@ -18,7 +18,7 @@ With ``erase_mode="independent"``, erasure instead uses a separate sigmoid
 ``k_t (beta_t v_t - lambda_t a_t S_{t-1}^T k_t)^T``. Its projection starts as an
 independent copy of the write projection, recovering ordinary GDN initially.
 
-With ``polynomial_degree=m`` for m=2 or 3, memory is a polynomial function, transformed as
+With ``polynomial_degree=m`` for m=2, 3, or 4, memory is a polynomial function, transformed as
 ``F_t(q) = alpha_t F_{t-1}((I-lambda_t k_t k_t^T)q)`` before adding
 ``v_t sum_{r=0}^m beta_r <q,k_t>^r``. ``beta_1`` retains
 the sigmoid write gate; independent tanh projections produce the other coefficients
@@ -109,8 +109,8 @@ class GatedDeltaNet(nnx.Module):
             raise ValueError(f"Unsupported Gated DeltaNet backend: {backend}")
         if erase_mode not in ("tied", "independent"):
             raise ValueError(f"Unsupported Gated DeltaNet erase mode: {erase_mode}")
-        if type(polynomial_degree) is not int or polynomial_degree not in (1, 2, 3):
-            raise ValueError("Gated DeltaNet polynomial_degree must be 1, 2, or 3")
+        if type(polynomial_degree) is not int or polynomial_degree not in (1, 2, 3, 4):
+            raise ValueError("Gated DeltaNet polynomial_degree must be 1, 2, 3, or 4")
         if polynomial_degree > 1 and erase_mode != "independent":
             raise ValueError("Polynomial Gated DeltaNet requires independent erasure")
         self.polynomial_degree = polynomial_degree

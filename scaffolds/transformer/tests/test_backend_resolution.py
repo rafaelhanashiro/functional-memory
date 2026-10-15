@@ -45,7 +45,7 @@ def test_explicit_unsupported_choice_never_falls_back(backend, dtype, degree, wi
         resolve_attention_backend(model, dtype=dtype, platform=platform)
 
 
-@pytest.mark.parametrize("degree", (2, 3))
+@pytest.mark.parametrize("degree", (2, 3, 4))
 @pytest.mark.parametrize("capability,shared,expected", [
     (None, None, "blocked"),
     (7, None, "blocked"),
@@ -91,7 +91,7 @@ def test_linear_gdn_retains_hopper_requirement_on_ampere(monkeypatch):
         resolve_attention_backend(model)
 
 
-@pytest.mark.parametrize("degree", (2, 3))
+@pytest.mark.parametrize("degree", (2, 3, 4))
 def test_polynomial_gdn_platform_override_does_not_probe_hardware(monkeypatch, degree):
     from scaffolds.transformer.attention.backends import selection
 

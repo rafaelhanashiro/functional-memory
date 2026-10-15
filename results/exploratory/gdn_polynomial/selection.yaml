@@ -1,4 +1,4 @@
-question: Do quadratic and cubic memory improve GDN with the same original-key-space
+question: Do quadratic, cubic, and quartic memory improve GDN with the same original-key-space
   query transformation?
 settings:
   metric: terminal_validation_perplexity
@@ -6,7 +6,7 @@ settings:
   warmup_steps: 400
   seed: 0
   comparison_limitation: One seed, with distinct exact training implementations for
-    the two recurrences.
+    degree-one and higher-degree recurrences.
   qk_head_dims:
   - 64
   - 16
@@ -141,3 +141,21 @@ runs:
     config.yaml:
       path: experiments/attention_scaling/runs/r5c9701488368/config.yaml
       sha256: 688fa4def3bf42b74236cbcc16b9ebfc7673983a7626f1a7fe4a7cbcb4d6b9d4
+- study: attention_scaling
+  run_id: r4f60c2ce2f1f
+  role: primary
+  label: d_K=8, degree=4, independent erase
+  control: r5c9701488368
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r4f60c2ce2f1f/config.yaml
+      sha256: 91879ac1bad557cb7360d290d2a6df7f058f62c96e01738a5075d66ac6a3882e
+- study: attention_scaling
+  run_id: r1d67ac6f0223
+  role: primary
+  label: d_K=16, degree=4, independent erase
+  control: rae2329afb5bd
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r1d67ac6f0223/config.yaml
+      sha256: debafe0b58e41c631f384817c7ff1158e96cb2f51f86fa1690b96b976849c0c6
