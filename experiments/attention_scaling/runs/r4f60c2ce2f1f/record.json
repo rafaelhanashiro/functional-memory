@@ -1,13 +1,65 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quartic/experiments/attention_scaling/runs/r4f60c2ce2f1f/.runtime/acceptance/H100-4",
+      "allocation": "JobId=219132 JobName=r4f60c2ce2f1f UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20051 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:03 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-15T11:06:33 EligibleTime=2026-10-15T11:06:33 AccrueTime=2026-10-15T11:06:33 StartTime=2026-10-15T11:07:03 EndTime=2026-10-17T11:07:03 Deadline=N/A PreemptEligibleTime=2026-10-15T11:07:03 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-15T11:07:03 Scheduler=Main Partition=long AllocNode:Sid=kennel:258285 ReqNodeList=(null) ExcNodeList=akita,collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quartic/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quartic StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quartic/experiments/attention_scaling/runs/r4f60c2ce2f1f/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quartic/experiments/attention_scaling/runs/r4f60c2ce2f1f/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/r4f60c2ce2f1f/config.yaml",
+      "config_sha256": "91879ac1bad557cb7360d290d2a6df7f058f62c96e01738a5075d66ac6a3882e",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "6931354badb319f2af2b0574ace086d1fba82797",
+      "slurm_job_id": "219132",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-15T15:07:06.648137+00:00"
+    }
+  ],
   "config": {
     "path": "experiments/attention_scaling/runs/r4f60c2ce2f1f/config.yaml",
     "sha256": "91879ac1bad557cb7360d290d2a6df7f058f62c96e01738a5075d66ac6a3882e"
   },
+  "frozen_execution_sha256": "80f97016ed9bc52495952c0b62347867123abbeba4bc7033f15dcfd849b19358",
   "home_cluster": "kennel",
   "label": "200m-dk008-gdn-quartic-geometry-warmup400-seed0",
+  "log_path": "experiments/attention_scaling/runs/r4f60c2ce2f1f/training.log",
   "name": "200m-dk008-gdn-quartic-geometry-warmup400-seed0",
   "record_schema_version": 1,
   "run_id": "r4f60c2ce2f1f",
   "seed": 0,
-  "status": "planned"
+  "source_commit": "6931354badb319f2af2b0574ace086d1fba82797",
+  "status": "acceptance",
+  "submission": {
+    "allocation_hours": 48,
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--nice=0",
+      "--exclude=akita,collie,doodle,samoyed,terrier",
+      "--gres=gpu:4",
+      "--cpus-per-task=32",
+      "--mem=256G",
+      "--time=48:00:00",
+      "--requeue",
+      "--open-mode=append",
+      "--job-name=r4f60c2ce2f1f",
+      "--output=experiments/attention_scaling/runs/r4f60c2ce2f1f/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.attention_scaling.acceptance",
+      "experiments/attention_scaling/runs/r4f60c2ce2f1f/config.yaml",
+      "6931354badb319f2af2b0574ace086d1fba82797",
+      "4",
+      "H100",
+      "48"
+    ],
+    "dependency": null,
+    "execution_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quartic",
+    "gpu_count": 4,
+    "gpu_type": "H100",
+    "nice": 0,
+    "partition": "long",
+    "slurm_job_id": "219132",
+    "submitted_utc": "2026-10-15T15:06:33.142133+00:00"
+  }
 }

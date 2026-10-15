@@ -3,11 +3,46 @@
     "path": "experiments/attention_scaling/runs/r1d67ac6f0223/config.yaml",
     "sha256": "debafe0b58e41c631f384817c7ff1158e96cb2f51f86fa1690b96b976849c0c6"
   },
+  "frozen_execution_sha256": "80f97016ed9bc52495952c0b62347867123abbeba4bc7033f15dcfd849b19358",
   "home_cluster": "kennel",
   "label": "200m-dk016-gdn-quartic-geometry-warmup400-seed0",
   "name": "200m-dk016-gdn-quartic-geometry-warmup400-seed0",
   "record_schema_version": 1,
   "run_id": "r1d67ac6f0223",
   "seed": 0,
-  "status": "planned"
+  "source_commit": "6931354badb319f2af2b0574ace086d1fba82797",
+  "status": "queued",
+  "submission": {
+    "allocation_hours": 24,
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--nice=0",
+      "--exclude=akita,collie,doodle,samoyed,terrier",
+      "--gres=gpu:4",
+      "--cpus-per-task=32",
+      "--mem=256G",
+      "--time=24:00:00",
+      "--requeue",
+      "--open-mode=append",
+      "--job-name=r1d67ac6f0223",
+      "--output=experiments/attention_scaling/runs/r1d67ac6f0223/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.attention_scaling.acceptance",
+      "experiments/attention_scaling/runs/r1d67ac6f0223/config.yaml",
+      "6931354badb319f2af2b0574ace086d1fba82797",
+      "4",
+      "H100",
+      "24"
+    ],
+    "dependency": null,
+    "execution_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quartic",
+    "gpu_count": 4,
+    "gpu_type": "H100",
+    "nice": 0,
+    "partition": "standard",
+    "slurm_job_id": "219133",
+    "submitted_utc": "2026-10-15T15:06:33.216856+00:00"
+  }
 }

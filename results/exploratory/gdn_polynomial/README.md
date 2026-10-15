@@ -139,8 +139,8 @@ increased to compensate.
 
 | Memory | Run ID | Degree | d_K | Parameters | Slurm job / status |
 | --- | --- | --- | --- | --- | --- |
-| Quartic | `r4f60c2ce2f1f` | 4 | 8 | 193,241,024 | Planned; first quartic priority |
-| Quartic | `r1d67ac6f0223` | 4 | 16 | 195,872,704 | Planned; second quartic priority |
+| Quartic | `r4f60c2ce2f1f` | 4 | 8 | 193,241,024 | 219132; acceptance on four H100s |
+| Quartic | `r1d67ac6f0223` | 4 | 16 | 195,872,704 | 219133; queued first in standard |
 | Cubic | `ra79e66bd9121` | 3 | 16 | 195,708,864 | 219035 |
 | Cubic | `ra98612db06d4` | 3 | 8 | 193,077,184 | 219036 |
 | Quadratic | `rf885f946fc9b` | 2 | 16 | 195,545,024 | 219037 |
@@ -152,8 +152,9 @@ Each run requests four H100s. The d_K=16 lane uses `standard` (24 hours);
 d_K=8 uses `long` (48 hours). The degree groups have no completion dependencies.
 Quartic and cubic runs use nice 0, quadratics nice 1000, and linears nice 2000.
 The quartic runs have first priority for available capacity, beginning with d_K=8;
-they do not wait for cubic d_K=16 to finish. Quadratic
-d_K=8 (`219038`) has started on `dogo` while cubic d_K=16 continues. A100 and
+they do not wait for cubic d_K=16 to finish. Quartic
+d_K=8 (`219132`) is in acceptance on `dogo` while cubic d_K=16 continues.
+Quadratic d_K=8 (`219038`) remains queued at nice 1000. A100 and
 A6000 nodes are excluded. The queued allocations also exclude B300, whose
 current shared-kernel qualification is not passing.
 
