@@ -40,10 +40,19 @@ hours, below a 22-hour guard for the actual 24-hour standard allocation. This
 allocation check is recorded separately because the frozen acceptance code
 uses a 48-hour budget.
 
-The full-recipe runtime measurement here applies only to cubic `d_K=16`; the
-other widths and degrees still require their own pilots. These startup checks
-do not establish long-run stability or scientific performance. No pilot
-checkpoint or production log is copied into this validation record.
+The [cubic `d_K=8` qualification](runs/gdn-small-key-h100-dogo/runtime.json) passed
+on four H100 80GB HBM3 GPUs in job `219036` (`dogo`), with direct transfers and
+local microbatch 16. It reused the 205 CPU and 9 distributed checks and reran all
+89 GPU cases for this GPU model. Its 20-update pilot and exact 20-to-21 resume
+passed with finite telemetry, zero invalid attention counts, and all four
+coefficient degrees active in all ten layers. Steady updates took 1.432–1.821
+seconds (median 1.450), projecting 10.609 hours; including acceptance gives
+11.204 hours, below the 46-hour guard for its 48-hour long allocation.
+
+Full-recipe runtime coverage here applies to cubic `d_K=8,16` on their recorded
+allocations; quadratic and linear recipes still require their own pilots. These
+startup checks do not establish long-run stability or scientific performance.
+No pilot checkpoint or production log is copied into this validation record.
 
 ### Cubic GDN with original-key-space query transport
 

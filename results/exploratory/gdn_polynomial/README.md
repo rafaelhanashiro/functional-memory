@@ -156,9 +156,13 @@ shared-kernel qualification is not passing.
 Cubic d_K=16 is training in job `219035` on four H100 PCIe GPUs (`mastiff`).
 Its [qualification](../../../scaffolds/transformer/validation/runs/gdn-small-key-h100/runtime.json)
 passed all 303 tests, initialization, the full-recipe pilot, and exact resume;
-the conservative production estimate is 13.604 hours. Cubic d_K=8 has an active
-four-H100 HBM3 allocation in job `219036` (`dogo`) and is completing its own
-hardware qualification. Every allocation checks outputs and all input gradients,
+the conservative production estimate is 13.604 hours. Cubic d_K=8 is training
+in job `219036` on four H100 HBM3 GPUs (`dogo`). Its
+[qualification](../../../scaffolds/transformer/validation/runs/gdn-small-key-h100-dogo/runtime.json)
+also passed all 303 tests, initialization, the full-recipe pilot, and exact
+resume; its conservative production estimate is 10.609 hours. These pilot
+estimates do not establish long-run throughput or stability.
+Every allocation checks outputs and all input gradients,
 reference initialization, a full-recipe training and validation pilot, and exact
 fresh-process checkpoint resume before production.
 The small-width checks include the masked K=8 tile and the production sequence
@@ -168,6 +172,7 @@ The separate width-256 GDN run retains checkpoint 7,000 and is queued at
 nice 1000 behind both linear jobs. The original width-64 cubic remains held.
 These runs remain incomplete, so no small-key performance conclusion is available.
 Cubic d_K=16 live mirror: [200m-dk016-gdn-cubic-geometry-warmup400-seed0](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/8704571105914c579bc48499fdb99aaf).
+Cubic d_K=8 live mirror: [200m-dk008-gdn-cubic-geometry-warmup400-seed0](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/9295f9d8c9d44677bab14d4857698648).
 
 The polynomial backend still evaluates transported scores with quadratic work
 in sequence length; it does not use a compressed symmetric-feature recurrent

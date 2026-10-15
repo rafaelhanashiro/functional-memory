@@ -1,0 +1,146 @@
+{
+  "attention_backend": "fused",
+  "attention_backend_requested": "fused",
+  "attention_degree": 3,
+  "attention_formula": "F_t(q)=a_t F_{t-1}(P_t q)+v_t sum_{r=0}^3 beta_{t,r}<q,k_t>^r; P_t=I-lambda_t k_t k_t^T in original key space; beta_0=tanh(W_0 x), beta_1=sigmoid(W_b x), beta_2=tanh(W_2 x), beta_3=tanh(W_3 x); lambda_t=sigmoid(W_lambda x); o_t=F_t(q_t)/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); one decay shared by all degrees",
+  "attention_implementation": "transported_score_polynomial_gated_delta_rule_triton",
+  "attention_kernel": "gated_deltanet",
+  "attention_mechanism": "gated_deltanet",
+  "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+  "attention_score_scale": "1 (global 1/sqrt(d_k) applied to polynomial read)",
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0",
+    "cuda:1",
+    "cuda:2",
+    "cuda:3"
+  ],
+  "diagnostic_backend": "fused",
+  "diagnostic_sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "error": null,
+  "execution_runtime": {
+    "batch_transfer": "host_to_shard",
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      },
+      {
+        "id": 1,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      },
+      {
+        "id": 2,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      },
+      {
+        "id": 3,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      }
+    ],
+    "environment": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct"
+  },
+  "gdn_chunk_size": 64,
+  "gdn_conv_size": 4,
+  "gdn_erase_initialization": "copy_write_projection",
+  "gdn_erase_mode": "independent",
+  "gdn_initial_state": "zero_each_sequence",
+  "gdn_kernel_source": "local transported-score cubic GDN kernels",
+  "gdn_polynomial_degree": 3,
+  "gdn_query_transport_space": "original_key_space",
+  "gdn_state_elements_per_layer": 599040,
+  "gdn_write_activation": [
+    "tanh",
+    "sigmoid",
+    "tanh",
+    "tanh"
+  ],
+  "gdn_write_initialization": "zero_constant_quadratic_and_cubic_projections",
+  "next_train_sequence": 0,
+  "numerical_failure_path": null,
+  "parameter_count": 193077184,
+  "qk_head_dim": 8,
+  "rng_state": {
+    "completed_updates": 0,
+    "seed": 0
+  },
+  "runtime_history": [
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 1,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 2,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          },
+          {
+            "id": 3,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "219036",
+      "timestamp_utc": "2026-10-15T04:36:11.679133+00:00"
+    }
+  ],
+  "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "seed": 0,
+  "slurm_job_id": "219036",
+  "slurm_restart_count": 0,
+  "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
+  "status": "running",
+  "step": 0,
+  "target_steps": 19074,
+  "target_tokens": 10000269312,
+  "training_tokens": 0,
+  "updated_utc": "2026-10-15T04:36:11.936094+00:00",
+  "value_head_dim": 64
+}
