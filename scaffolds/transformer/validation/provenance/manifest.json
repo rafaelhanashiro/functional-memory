@@ -3229,5 +3229,35 @@
         "size_bytes": 36427
       }
     }
+  },
+  "gdn_small_key_query_geometry": {
+    "home_cluster": "kennel",
+    "status": "small_key_kernels_and_cubic_k16_runtime_qualified_a100_pcie",
+    "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
+    "gpu_job_id": "219005",
+    "kernel_correctness": {
+      "degrees": [
+        1,
+        2,
+        3
+      ],
+      "key_head_dims": [
+        8,
+        16
+      ],
+      "gpu_tests_passed": 89
+    },
+    "full_recipe_runtime": {
+      "gdn_polynomial_degree": 3,
+      "key_head_dim": 16,
+      "gpu_count": 8,
+      "pilot_steps": 20,
+      "exact_resume": true
+    },
+    "record": {
+      "path": "scaffolds/transformer/validation/runs/gdn-small-key-a100/runtime.json",
+      "sha256": "13f251f0896887e93504c46f8682868a37d7b4ae49f5726f02e54bb9f3eafae2",
+      "size_bytes": 12604
+    }
   }
 }

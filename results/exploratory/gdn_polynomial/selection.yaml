@@ -77,6 +77,9 @@ runs:
     config.yaml:
       path: experiments/attention_scaling/runs/ra79e66bd9121/config.yaml
       sha256: d38aae25114b959dbd881657894c412c0f2f09b4239b56c6d7268c568d1a104a
+    metadata.json:
+      path: experiments/attention_scaling/runs/ra79e66bd9121/metadata.json
+      sha256: bbaa3cc5a15503f9d7acf90b15113b59e69780e13319c39c7d1ea26a7eff0d37
 - study: attention_scaling
   run_id: ra98612db06d4
   role: primary

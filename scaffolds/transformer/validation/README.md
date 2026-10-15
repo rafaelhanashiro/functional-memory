@@ -11,6 +11,30 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Small-key GDN kernels and cubic runtime
+
+The [small-key A100 qualification](runs/gdn-small-key-a100/runtime.json) passed
+on source `0e28ffaf`, job `219005` on `samoyed`: 205 CPU, 9 distributed, and 89 GPU
+tests, followed by a cubic `d_K=16` full-recipe pilot on eight A100 80GB PCIe GPUs.
+The GPU checks cover outputs and all six input gradients at `d_K=8,16`, `d_V=64`:
+linear and quadratic use dense keys at length 2,048; cubic uses dense keys at
+length 192 and an exact embedded tensor-state oracle at length 2,048. These
+include the masked portion of the minimum 16-wide kernel tile at `d_K=8`.
+
+The cubic `d_K=16` pilot completed 20 updates with finite validation and
+telemetry, zero invalid attention counts, and nonzero coefficients and projection
+gradients for all four degrees. Exact fresh-process resumption from update 20 to
+21 preserved the checkpoint state and next batch/RNG hashes. Synchronized steady
+updates took 4.870–5.443 seconds (median 5.187), projecting 29.95 hours within the
+46-hour guard for a 48-hour allocation. The initialized model has 195,708,864
+parameters and retains reference initialization, warmup 400, and intrinsic GDN
+QK normalization and gated output RMSNorm.
+
+The full-recipe runtime measurement here applies only to cubic `d_K=16`; the
+other widths and degrees still require their own pilots. These startup checks
+do not establish long-run stability or scientific performance. No pilot
+checkpoint or production log is copied into this validation record.
+
 ### Cubic GDN with original-key-space query transport
 
 The cubic backend extends the same transported-score recurrence through degree

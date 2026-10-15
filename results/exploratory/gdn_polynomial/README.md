@@ -153,6 +153,15 @@ a full-recipe training/validation pilot, and exact fresh-process checkpoint resu
 before production. The small-width checks include the masked K=8 tile and the
 production sequence length and value width.
 
+Cubic `d_K=16` is training in job `219005`; the five dependent jobs are queued.
+Its startup passed 303 correctness tests, reference-initialization verification,
+a 20-update full-recipe pilot, and exact fresh-process checkpoint resumption.
+The [scaffold qualification](../../../scaffolds/transformer/validation/runs/gdn-small-key-a100/runtime.json)
+records the evidence and a conservative 29.95-hour production estimate for this
+configuration only. Early production loss and gradients are finite; training is
+incomplete, so no performance conclusion is available.
+Live mirror: [200m-dk016-gdn-cubic-geometry-warmup400-seed0](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/8704571105914c579bc48499fdb99aaf).
+
 The polynomial backend still evaluates transported scores with quadratic work
 in sequence length; it does not use a compressed symmetric-feature recurrent
 kernel. Thus the theoretical feature-state dimensions alone do not predict

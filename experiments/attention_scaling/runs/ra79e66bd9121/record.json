@@ -1,4 +1,52 @@
 {
+  "acceptance": {
+    "sha256": "819273d59dd3bd55e8ff6c719832fe0c9772fe6671ab377b753073b80b9f2c00",
+    "summary": {
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-10-15T02:51:24.566254+00:00",
+      "hardware": {
+        "attention_backend": "fused",
+        "device_kinds": [
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe",
+          "NVIDIA A100 80GB PCIe"
+        ],
+        "devices": [
+          "cuda:0",
+          "cuda:1",
+          "cuda:2",
+          "cuda:3",
+          "cuda:4",
+          "cuda:5",
+          "cuda:6",
+          "cuda:7"
+        ],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "48c2b9d29ba9dabcc9e3a198a69c68547e18eefdd0084248fd78c2a46db6812e",
+      "slurm_job_id": "219005",
+      "slurm_restart_count": "0",
+      "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
+      "status": "passed"
+    }
+  },
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/ra79e66bd9121/.runtime/acceptance/A100-8",
@@ -19,15 +67,246 @@
     "path": "experiments/attention_scaling/runs/ra79e66bd9121/config.yaml",
     "sha256": "d38aae25114b959dbd881657894c412c0f2f09b4239b56c6d7268c568d1a104a"
   },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "error": null,
+  "execution": {
+    "attention_backend": "fused",
+    "raw_config": {
+      "path": "config.json",
+      "sha256": "77da9a6c210c17fea4ddcd5b49cf106dca2d3e33dafa0aa92392c5a930f14870"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": "bbaa3cc5a15503f9d7acf90b15113b59e69780e13319c39c7d1ea26a7eff0d37"
+    },
+    "resolved_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "fused",
+        "attention_coefficient_activation": "identity",
+        "attention_coefficient_conditioning": "static",
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_sharing": "global",
+        "attention_coefficients": "fixed",
+        "attention_degree": null,
+        "attention_denominator_constant": "fixed",
+        "attention_denominator_degree": null,
+        "attention_denominator_parameterization": "direct",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_mechanism": "gated_deltanet",
+        "attention_normalization": true,
+        "attention_output_scaling": "none",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "independent",
+        "gdn_polynomial_degree": 3,
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 1024,
+        "initialization": "gated_deltanet_reference",
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 16,
+        "qk_norm": false,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_head",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.0,
+        "coefficient_penalty_denominator": true,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 400,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/ra79e66bd9121/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "attention_scaling",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "200m-dk016-gdn-cubic-geometry-warmup400-seed0",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/ra79e66bd9121"
+      }
+    },
+    "resolved_config_sha256": "cff5e1e5aac968391e34a34fbc3c33773fbf6042b0f810c35263438fa3704ec0",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 1,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 2,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 3,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 4,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 5,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 6,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 7,
+          "kind": "NVIDIA A100 80GB PCIe",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": "1",
+        "TRANSFORMER_HOST_STAGING": "1",
+        "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "host_staged_verified"
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 2,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 3,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 4,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 5,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 6,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            },
+            {
+              "id": 7,
+              "kind": "NVIDIA A100 80GB PCIe",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": "1",
+            "TRANSFORMER_HOST_STAGING": "1",
+            "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "host_staged_verified"
+        },
+        "slurm_job_id": "219005",
+        "timestamp_utc": "2026-10-15T02:51:54.255137+00:00"
+      }
+    ]
+  },
   "frozen_execution_sha256": "6d9ee1ecfa19d803e99eaeac09a45897b5ed06118c9f2dbc19935acd9008e296",
   "home_cluster": "kennel",
   "label": "200m-dk016-gdn-cubic-geometry-warmup400-seed0",
-  "log_path": "experiments/attention_scaling/runs/ra79e66bd9121/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/ra79e66bd9121/training.log",
   "name": "200m-dk016-gdn-cubic-geometry-warmup400-seed0",
+  "numerical_failure_path": null,
   "record_schema_version": 1,
   "run_id": "ra79e66bd9121",
+  "seed": 0,
   "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
-  "status": "acceptance",
+  "status": "running",
+  "step": 0,
   "submission": {
     "command": [
       "sbatch",
@@ -58,5 +337,8 @@
     "slurm_job_id": "219005",
     "submitted_utc": "2026-10-15T01:53:02.706273+00:00",
     "time_limit_hours": 48
-  }
+  },
+  "training_tokens": 0,
+  "updated_utc": "2026-10-15T02:52:12.876310+00:00",
+  "wandb_run_id": "8704571105914c579bc48499fdb99aaf"
 }

@@ -1,0 +1,395 @@
+{
+  "acceptance_checks": [
+    "cpu-tests",
+    "cpu-distributed-tests",
+    "gpu-tests",
+    "initialization",
+    "pilot",
+    "resume"
+  ],
+  "acceptance_identity": "48c2b9d29ba9dabcc9e3a198a69c68547e18eefdd0084248fd78c2a46db6812e",
+  "acceptance_report_sha256": {
+    "cpu-distributed-tests.json": "477939d665772bc43dfb974c0c6d7a96dff43fe905281479e53602c63ae11c9d",
+    "cpu-tests.json": "e9e5b53254525a75695299db94dc007cba3f6d92157973593e6c34e0bb7f780f",
+    "gpu-tests.json": "ba464e5d40cf0f49b0fae34607a8eb080d32c8459786a419572c15a21baa6c3e",
+    "hardware.json": "3393f9cab8058bcd7fbdb5253b154cf9f7b9d3cb78dcd67bf506bcaf34248fe9",
+    "identity.json": "65d78328275ced9934955fa61096a9fae5ea9525cbb1246f82a347093c169a7e",
+    "initialization-result.json": "187f3a39a15b6df2215f874702e394c6a61aaf291017935c6f8a68035aedc0d8",
+    "initialization.json": "474890c26dcfa7f91b33bef059072096904e7e2cde4838312200ae878c387c91",
+    "pilot-result.json": "c22a4de468593ae8b4d030930bd06a16879f41e01192bfc5058f5d1a28eea019",
+    "pilot.json": "f0ee8b37a71567b230c489643cc6a9af04844015289a89d4e7162c53c97e572c",
+    "resume-result.json": "31e3fbd9947e233f76ee3407a74b3a4a37ed739453eb3816748fcf8ba630cd43",
+    "resume.json": "da4aea620c25e8780f61ab8f4581c784b3c6a94e5121e5626e66fbf8211fdba7",
+    "success.json": "819273d59dd3bd55e8ff6c719832fe0c9772fe6671ab377b753073b80b9f2c00"
+  },
+  "batch_layout": {
+    "global_batch_size": 256,
+    "global_micro_batch_size": 64,
+    "gradient_accumulation_steps": 4,
+    "local_micro_batch_size": 8
+  },
+  "config_sha256": "d38aae25114b959dbd881657894c412c0f2f09b4239b56c6d7268c568d1a104a",
+  "data_manifests": {
+    "eval": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    "train": {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    }
+  },
+  "dependency_lock_sha256": "ad1c79d7f5a97391054fbf3825cc9dae7a1ab82490b01da0f5bfac1ac20fb0f3",
+  "exact_resume": {
+    "completed_step": 21,
+    "data_start_sequence": 5120,
+    "first_update": {
+      "batch_sha256": "b61f8b1402afd06332b4a01ac3655d57aa18cd2a3de93aa151f99be056c5a240",
+      "rng_sha256": "c952d7c8272d985c15ea28dd1ce800ea3107946123e8fe8ee13bd6f6b93bd6ea",
+      "step": 21
+    },
+    "first_update_matches_pilot_next_update": true,
+    "pilot_checkpoint_state_sha256": "8c24b367cc83f7cb55daee3f29ac0f0177c6862e28b3395d80af268654e68ebc",
+    "restored_step": 20,
+    "resumed_checkpoint_state_sha256": "88caa14e064c000a70ad91f3a2a9b437046149eca17d5ae1471ee0d8a9e74212",
+    "resumed_final_state_sha256": "88caa14e064c000a70ad91f3a2a9b437046149eca17d5ae1471ee0d8a9e74212",
+    "resumed_start_state_sha256": "8c24b367cc83f7cb55daee3f29ac0f0177c6862e28b3395d80af268654e68ebc",
+    "status": "passed"
+  },
+  "format": "gdn-runtime-qualification",
+  "frozen_execution_sha256": "6d9ee1ecfa19d803e99eaeac09a45897b5ed06118c9f2dbc19935acd9008e296",
+  "hardware": {
+    "attention_backend": "fused",
+    "device_kinds": [
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe",
+      "NVIDIA A100 80GB PCIe"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3",
+      "cuda:4",
+      "cuda:5",
+      "cuda:6",
+      "cuda:7"
+    ],
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "home_cluster": "kennel",
+  "initialization": {
+    "parameter_count": 195708864,
+    "parameter_sha256": "5a8c3ed9dc1dc9d199451c072b629c71a39ca1f2edb7cd04d382ca9bdbbc9e6d"
+  },
+  "limitations": [
+    "Kernel correctness covers K=8 and K=16 for independent linear, quadratic and cubic GDN; the full-recipe pilot and runtime projection here cover cubic K=16 only.",
+    "Twenty pilot updates and one resumed update qualify startup and checkpoint behavior, not long-run stability or scientific performance.",
+    "The cubic T=2048 tensor oracle uses an invariant four-dimensional subspace; dense cubic K=8/16 keys are independently checked at T=192.",
+    "Temporary acceptance checkpoints are not retained. Source acceptance reports are identified by hashes; no checkpoint or production log is copied into this record."
+  ],
+  "pilot": {
+    "all_recorded_telemetry_numeric_values_finite": true,
+    "attention_diagnostic_invalid_counts": {
+      "invalid_coefficient_count": 0,
+      "invalid_erase_count": 0,
+      "invalid_gate_count": 0,
+      "invalid_output_count": 0,
+      "invalid_projection_count": 0,
+      "invalid_read_count": 0
+    },
+    "attention_diagnostics_valid": true,
+    "coefficients_by_degree": {
+      "0": {
+        "layer_rms_max": 0.0034158844500780106,
+        "layer_rms_min": 0.0017643956234678626,
+        "layers_with_nonzero_rms": 10,
+        "projection_gradient_norm": {
+          "max": 13.24137020111084,
+          "mean": 9.300525355339051,
+          "min": 7.764310359954834
+        },
+        "projection_update_norm": {
+          "max": 0.0026455747429281473,
+          "mean": 0.0013827245129505172,
+          "min": 0.0
+        }
+      },
+      "1": {
+        "layer_rms_max": 0.5185073018074036,
+        "layer_rms_min": 0.5141297578811646,
+        "layers_with_nonzero_rms": 10,
+        "projection_gradient_norm": {
+          "max": 0.20161794126033783,
+          "mean": 0.1947615809738636,
+          "min": 0.1885198950767517
+        },
+        "projection_update_norm": {
+          "max": 0.001549273612909019,
+          "mean": 0.0009065766651474405,
+          "min": 0.0
+        }
+      },
+      "2": {
+        "layer_rms_max": 0.0024228503461927176,
+        "layer_rms_min": 0.0013995910994708538,
+        "layers_with_nonzero_rms": 10,
+        "projection_gradient_norm": {
+          "max": 0.2760147452354431,
+          "mean": 0.2685116559267044,
+          "min": 0.2624887228012085
+        },
+        "projection_update_norm": {
+          "max": 0.0019786865450441837,
+          "mean": 0.0010831957937625703,
+          "min": 0.0
+        }
+      },
+      "3": {
+        "layer_rms_max": 0.0027615458238869905,
+        "layer_rms_min": 0.0011458629742264748,
+        "layers_with_nonzero_rms": 10,
+        "projection_gradient_norm": {
+          "max": 0.11341141164302826,
+          "mean": 0.11093106642365455,
+          "min": 0.10805066674947739
+        },
+        "projection_update_norm": {
+          "max": 0.0015395769150927663,
+          "mean": 0.0009034181042807176,
+          "min": 0.0
+        }
+      }
+    },
+    "gradient_clipped_fraction": 1.0,
+    "gradient_norm_max": 13.555329322814941,
+    "gradient_norm_mean": 9.74618091583252,
+    "gradient_norm_observations": 20,
+    "gradient_spike_count": 0,
+    "steps_completed": 20,
+    "training_tokens": 10485760,
+    "validation_batches": 1,
+    "validation_nll": 10.52144169807434,
+    "validation_nll_finite": true,
+    "validation_perplexity": 37102.576665137
+  },
+  "recipe_dimensions": {
+    "compute_dtype": "bfloat16",
+    "context_length": 2048,
+    "gdn_polynomial_degree": 3,
+    "hidden_size": 1024,
+    "initialization": "gated_deltanet_reference",
+    "key_head_dim": 16,
+    "num_heads": 16,
+    "num_layers": 10,
+    "total_steps": 19074,
+    "value_head_dim": 64,
+    "warmup_steps": 400
+  },
+  "recorded_utc": "2026-10-15T02:51:24.566254+00:00",
+  "run_id": "ra79e66bd9121",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "NCCL_P2P_DISABLE": "1",
+    "TRANSFORMER_HOST_STAGING": "1",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "runtime_projection": {
+    "maximum_projected_hours": 46,
+    "production_allocation_hours": 48,
+    "projected_hours": 29.94712522937942,
+    "scope": "Conservative pilot estimate including compilation, validation and checkpoint costs; not a production timing measurement.",
+    "within_budget": true
+  },
+  "schema_version": 1,
+  "selected_checkpoints": [],
+  "slurm": {
+    "allocation_hours": 48,
+    "gpu_count": 8,
+    "job_id": "219005",
+    "nice": 0,
+    "node": "samoyed",
+    "partition": "long",
+    "restart_count": 0,
+    "scope": "Acceptance completed inside an active production allocation; this is not the production outcome."
+  },
+  "small_key_kernel_coverage": [
+    {
+      "degrees": [
+        1
+      ],
+      "dtypes": [
+        "float32",
+        "bfloat16"
+      ],
+      "key_head_dims": [
+        8,
+        16
+      ],
+      "oracle": "FP32 linear tensor-state recurrence with independent erase/write gates",
+      "quantities": [
+        "output",
+        "dq",
+        "dk",
+        "dv",
+        "dg",
+        "dbeta",
+        "derase"
+      ],
+      "sequence_length": 2048,
+      "value_head_dim": 64
+    },
+    {
+      "degrees": [
+        2
+      ],
+      "dtypes": [
+        "float32",
+        "bfloat16"
+      ],
+      "key_head_dims": [
+        8,
+        16
+      ],
+      "oracle": "FP32 full quadratic tensor-state recurrence",
+      "quantities": [
+        "output",
+        "dq",
+        "dk",
+        "dv",
+        "dg",
+        "dbeta",
+        "derase"
+      ],
+      "sequence_length": 2048,
+      "value_head_dim": 64
+    },
+    {
+      "degrees": [
+        3
+      ],
+      "dtypes": [
+        "float32",
+        "bfloat16"
+      ],
+      "key_head_dims": [
+        8,
+        16
+      ],
+      "oracle": "Independent forward evolution of source keys with full transition matrices",
+      "quantities": [
+        "output",
+        "dq",
+        "dk",
+        "dv",
+        "dg",
+        "dbeta",
+        "derase"
+      ],
+      "sequence_length": 192,
+      "value_head_dim": 64
+    },
+    {
+      "degrees": [
+        3
+      ],
+      "dtypes": [
+        "bfloat16"
+      ],
+      "key_head_dims": [
+        8,
+        16
+      ],
+      "oracle": "Exact invariant four-dimensional subspace embedded in the actual kernel width; FP32 cubic tensor-state reference",
+      "quantities": [
+        "output",
+        "dq",
+        "dk",
+        "dv",
+        "dg",
+        "dbeta",
+        "derase"
+      ],
+      "sequence_length": 2048,
+      "value_head_dim": 64
+    }
+  ],
+  "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
+  "status": "passed",
+  "synchronized_timing": {
+    "checkpoint_seconds": [
+      25.875704971142113
+    ],
+    "evaluation_seconds": [
+      17.401400685310364
+    ],
+    "first_update_seconds": 164.34392507188022,
+    "pilot_runtime_seconds": 553.1463688164949,
+    "steady_update_count": 7,
+    "steady_update_seconds_max": 5.442547754384577,
+    "steady_update_seconds_median": 5.187440472654998,
+    "steady_update_seconds_min": 4.869876119308174
+  },
+  "tests": {
+    "cpu-distributed-tests": {
+      "cases_by_module": {
+        "tests.test_telemetry": 4,
+        "tests.test_training": 5
+      },
+      "errors": 0,
+      "failures": 0,
+      "junit_sha256": "ae6312aea04b36738900b0692a51e56725d1bc0781e297720686f79ff34ae630",
+      "seconds": 21.117,
+      "skipped": 0,
+      "tests_passed": 9
+    },
+    "cpu-tests": {
+      "cases_by_module": {
+        "tests.test_checkpoint_audit": 29,
+        "tests.test_cubic_gdn": 13,
+        "tests.test_gated_deltanet": 32,
+        "tests.test_initialization": 7,
+        "tests.test_model": 37,
+        "tests.test_parameter_policy": 4,
+        "tests.test_polynomial_gdn": 14,
+        "tests.test_polynomial_gdn_integration": 22,
+        "tests.test_retention_policy": 9,
+        "tests.test_telemetry": 5,
+        "tests.test_training": 11,
+        "tests.test_triton_bridge_precision": 22
+      },
+      "errors": 0,
+      "failures": 0,
+      "junit_sha256": "87cf85fc77d3680c2a2bbd7832ea82eb825d6b41bd4820bbdbcb6393f1a0573c",
+      "seconds": 356.362,
+      "skipped": 0,
+      "tests_passed": 205
+    },
+    "gpu-tests": {
+      "cases_by_module": {
+        "tests.test_cubic_gdn_kernel": 26,
+        "tests.test_gated_deltanet_kernel": 38,
+        "tests.test_polynomial_gdn_kernel": 25
+      },
+      "errors": 0,
+      "failures": 0,
+      "junit_sha256": "a05a72ef1259ba11ecbab27f451ef99a8933bb20a05b5a140aa5d517cad92d69",
+      "seconds": 2306.226,
+      "skipped": 0,
+      "tests_passed": 89
+    }
+  }
+}
