@@ -1,0 +1,529 @@
+{
+  "acceptance": {
+    "sha256": "fae6df5b54f5e4e6265c5664bcde6fa03b3e1419943d5e17f0458ad13ee2e2ae",
+    "summary": {
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-10-14T08:29:52.519627+00:00",
+      "hardware": {
+        "attention_backend": "fused",
+        "device_kinds": [
+          "NVIDIA H100 80GB HBM3",
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "devices": [
+          "cuda:0",
+          "cuda:1"
+        ],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "870561ce7d8510dd6b713ddb0f1c3cb1bcaf3f7a9d73ee4ea098f86553334c23",
+      "reused_tests": {
+        "cpu-distributed-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/.runtime/acceptance/H100-4",
+          "completed_utc": "2026-10-14T02:46:24.092186+00:00",
+          "junit_sha256": "74e76c10d6fe77fe1142028e427d4b43e8b4e8b245b7c6ebce7ee08dd1b6bb2c",
+          "slurm_job_id": "218804",
+          "test_identity": "f8b483ea7ac1f5bc1a7e843a1f86cf0e63c893a9ce1f6a770d257045251d6bae"
+        },
+        "cpu-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/.runtime/acceptance/H100-4",
+          "completed_utc": "2026-10-14T02:45:59.478631+00:00",
+          "junit_sha256": "27506be6c9b38cb1310fddb855582e4e5dce539a54238f5c8d188ada193b2f90",
+          "slurm_job_id": "218804",
+          "test_identity": "801915e02d04cbea60123a0e9b7f301db6cffa9467489168f66021ccae936c04"
+        },
+        "gpu-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/.runtime/acceptance/H100-4",
+          "completed_utc": "2026-10-14T02:53:41.991376+00:00",
+          "junit_sha256": "dc3eca7ae02625ab8c070288f202aa443901464e42aed313066e2c5761a090ea",
+          "slurm_job_id": "218804",
+          "test_identity": "8fa042dde51dd641c50d62658f0856ae445b98c58e67ecf3d7ed0976ca6a501b"
+        }
+      },
+      "slurm_job_id": "218897",
+      "slurm_restart_count": "0",
+      "source_commit": "1190c4a5b3a6ca5d1449e6e78a538cfb4117f424",
+      "status": "passed"
+    }
+  },
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory",
+  "artifacts": [
+    {
+      "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/best_validation.json",
+      "sha256": "d33710c42ab25e1253854eb719ccc7cb44b3d685ac88a9f2d0aea8863d07a768",
+      "size_bytes": 184
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/completion.json",
+      "sha256": "6e49f2c9825091dbb92b554edf0267539ca892686d4c3c8b118224a36cbdb991",
+      "size_bytes": 164536
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/config.json",
+      "sha256": "f84f5b5be13fb55514f81fdb492442a261be9cf35ee539f6326f21ab9441f658",
+      "size_bytes": 3288
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/metadata.json",
+      "sha256": "513b9084439ffac097618f550b08d23bf674d4f2ad6562beeda59e94fa703e10",
+      "size_bytes": 167730
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/metrics.jsonl",
+      "sha256": "44136e947560863d34ec5cfea88aef8572f135a60deac84738e8b23909c3e32f",
+      "size_bytes": 2098584
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/retention.json",
+      "sha256": "6bb093b2236420dc57e933d792c4602941e5d35b54b16cd4178f1001d96a4a61",
+      "size_bytes": 436
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/wandb_run.json",
+      "sha256": "49bed60d01670181af75da3a304da7d84e5c14d32451b50b04f3d2a57a9d9ee2",
+      "size_bytes": 252
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/training.log",
+      "sha256": "f72c28159715c2c23af3cb312c76fde0eaa3c464433f55a9a5361e540b7bc320",
+      "size_bytes": 1868347
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/.runtime/acceptance/H100-4",
+      "allocation": "JobId=218804 JobName=rd5ac0e3013e3 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20073 Nice=10 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-13T22:22:26 EligibleTime=2026-10-13T22:22:26 AccrueTime=2026-10-13T22:22:26 StartTime=2026-10-13T22:33:03 EndTime=2026-10-15T22:33:03 Deadline=N/A PreemptEligibleTime=2026-10-13T22:33:03 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-13T22:33:03 Scheduler=Main Partition=long AllocNode:Sid=kennel:3394236 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd5ac0e3013e3/config.yaml",
+      "config_sha256": "bb99c4beecf30c6a29dd0f5e29ec71cd1d1df91cab98210e52c5cc29425b240a",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "1190c4a5b3a6ca5d1449e6e78a538cfb4117f424",
+      "slurm_job_id": "218804",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-14T02:33:08.857385+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/.runtime/acceptance/H100-4",
+      "allocation": "JobId=218804 JobName=rd5ac0e3013e3 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20075 Nice=10 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=1 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:04 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-13T23:36:43 EligibleTime=2026-10-13T23:38:44 AccrueTime=2026-10-13T23:38:44 StartTime=2026-10-14T01:01:03 EndTime=2026-10-16T01:01:03 Deadline=N/A PreemptEligibleTime=2026-10-14T01:01:03 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-14T01:01:03 Scheduler=Main Partition=long AllocNode:Sid=kennel:3394236 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=mastiff BatchHost=mastiff NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=4 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:4 TresPerTask=cpu:32",
+      "config_path": "experiments/attention_scaling/runs/rd5ac0e3013e3/config.yaml",
+      "config_sha256": "bb99c4beecf30c6a29dd0f5e29ec71cd1d1df91cab98210e52c5cc29425b240a",
+      "exit_code": 0,
+      "finished_utc": "2026-10-14T05:02:49.338808+00:00",
+      "gpu_count": 4,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "1190c4a5b3a6ca5d1449e6e78a538cfb4117f424",
+      "slurm_job_id": "218804",
+      "slurm_partition": "long",
+      "slurm_restart_count": "1",
+      "started_utc": "2026-10-14T05:01:07.071941+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/.runtime/acceptance/H100-2",
+      "allocation": "JobId=218897 JobName=rd5ac0e3013e3 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20071 Nice=10 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:03 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-14T04:25:17 EligibleTime=2026-10-14T04:25:17 AccrueTime=2026-10-14T04:25:17 StartTime=2026-10-14T04:25:30 EndTime=2026-10-16T04:25:30 Deadline=N/A PreemptEligibleTime=2026-10-14T04:25:30 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-14T04:25:30 Scheduler=Main Partition=long AllocNode:Sid=kennel:2730998 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=2 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=2 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:2 TresPerTask=cpu:16",
+      "config_path": "experiments/attention_scaling/runs/rd5ac0e3013e3/config.yaml",
+      "config_sha256": "bb99c4beecf30c6a29dd0f5e29ec71cd1d1df91cab98210e52c5cc29425b240a",
+      "exit_code": 0,
+      "finished_utc": "2026-10-14T14:20:35.642355+00:00",
+      "gpu_count": 2,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "1190c4a5b3a6ca5d1449e6e78a538cfb4117f424",
+      "slurm_job_id": "218897",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-14T08:25:33.076602+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/.runtime/acceptance/H100-2",
+      "allocation": "JobId=218897 JobName=rd5ac0e3013e3 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20055 Nice=10 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=1 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:03 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-14T10:20:36 EligibleTime=2026-10-14T10:22:37 AccrueTime=2026-10-14T10:22:37 StartTime=2026-10-14T10:23:05 EndTime=2026-10-15T10:23:05 Deadline=N/A PreemptEligibleTime=2026-10-14T12:23:05 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-14T10:23:05 Scheduler=Main Partition=standard AllocNode:Sid=kennel:2730998 ReqNodeList=(null) ExcNodeList=collie,samoyed,doodle,terrier,akita NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=2 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=2 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:2 TresPerTask=cpu:16",
+      "config_path": "experiments/attention_scaling/runs/rd5ac0e3013e3/config.yaml",
+      "config_sha256": "bb99c4beecf30c6a29dd0f5e29ec71cd1d1df91cab98210e52c5cc29425b240a",
+      "exit_code": 0,
+      "finished_utc": "2026-10-14T14:48:21.048670+00:00",
+      "gpu_count": 2,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "1190c4a5b3a6ca5d1449e6e78a538cfb4117f424",
+      "slurm_job_id": "218897",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "1",
+      "started_utc": "2026-10-14T14:23:08.453661+00:00"
+    }
+  ],
+  "best_validation": {
+    "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/best_validation.json",
+    "sha256": "d33710c42ab25e1253854eb719ccc7cb44b3d685ac88a9f2d0aea8863d07a768",
+    "size_bytes": 184
+  },
+  "checkpoint_retention": {
+    "best_checkpoint_step": 19074,
+    "completion_sha256": "6e49f2c9825091dbb92b554edf0267539ca892686d4c3c8b118224a36cbdb991",
+    "format": "shared-transformer-checkpoint-retention",
+    "seed": 0,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "1190c4a5b3a6ca5d1449e6e78a538cfb4117f424",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 19074,
+    "validation_nll": 2.718585797718593,
+    "version": 1
+  },
+  "completion": {
+    "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/completion.json",
+    "sha256": "6e49f2c9825091dbb92b554edf0267539ca892686d4c3c8b118224a36cbdb991",
+    "size_bytes": 164536
+  },
+  "config": {
+    "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/config.yaml",
+    "sha256": "bb99c4beecf30c6a29dd0f5e29ec71cd1d1df91cab98210e52c5cc29425b240a"
+  },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/data_identity.json",
+    "sequence_length": 2049,
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "error": null,
+  "execution": {
+    "attention_backend": "fused",
+    "raw_config": {
+      "path": "config.json",
+      "sha256": "f84f5b5be13fb55514f81fdb492442a261be9cf35ee539f6326f21ab9441f658"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": "513b9084439ffac097618f550b08d23bf674d4f2ad6562beeda59e94fa703e10"
+    },
+    "resolved_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "fused",
+        "attention_coefficient_activation": "identity",
+        "attention_coefficient_conditioning": "static",
+        "attention_coefficient_initialization": "linear",
+        "attention_coefficient_parameterization": "rational",
+        "attention_coefficient_sharing": "per_head",
+        "attention_coefficients": "learned",
+        "attention_degree": 8,
+        "attention_denominator_constant": "learned",
+        "attention_denominator_degree": 1,
+        "attention_denominator_parameterization": "direct",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_mechanism": "dot_product",
+        "attention_normalization": true,
+        "attention_output_scaling": "none",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "tied",
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 1024,
+        "initialization": "transformer_reference",
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 64,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_head",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.01,
+        "coefficient_penalty_denominator": false,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 400,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "1190c4a5b3a6ca5d1449e6e78a538cfb4117f424",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "attention_scaling",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "200m-qk-m008-rational-linear-denominator-learned-constant-transformer-init-warmup400-seed0",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/warmup400_rational_polynomial/experiments/attention_scaling/runs/rd5ac0e3013e3"
+      }
+    },
+    "resolved_config_sha256": "824b8ad43212bc0e9d5af05a0b69597db96af21690ec045624101ad9125e8f9c",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        },
+        {
+          "id": 1,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_FLAGS": null,
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 2,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 3,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "218804",
+        "timestamp_utc": "2026-10-14T03:01:16.579482+00:00"
+      },
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            },
+            {
+              "id": 1,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "218897",
+        "timestamp_utc": "2026-10-14T08:30:44.577537+00:00"
+      }
+    ]
+  },
+  "frozen_execution_sha256": "48e9245e48e640f24cfc8cf25e57adcaffae6f99d97a3e9cf4c8e342331c7c20",
+  "home_cluster": "kennel",
+  "label": "200m-qk-m008-rational-linear-denominator-learned-constant-transformer-init-warmup400-seed0",
+  "log": {
+    "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/training.log",
+    "sha256": "f72c28159715c2c23af3cb312c76fde0eaa3c464433f55a9a5361e540b7bc320",
+    "size_bytes": 1868347
+  },
+  "log_path": "experiments/attention_scaling/runs/rd5ac0e3013e3/training.log",
+  "metadata": {
+    "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/metadata.json",
+    "sha256": "513b9084439ffac097618f550b08d23bf674d4f2ad6562beeda59e94fa703e10",
+    "size_bytes": 167730
+  },
+  "metrics": {
+    "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/metrics.jsonl",
+    "sha256": "44136e947560863d34ec5cfea88aef8572f135a60deac84738e8b23909c3e32f",
+    "size_bytes": 2098584
+  },
+  "name": "200m-qk-m008-rational-linear-denominator-learned-constant-transformer-init-warmup400-seed0",
+  "numerical_failure_path": null,
+  "record_schema_version": 1,
+  "retained_best_checkpoint_step": 19074,
+  "retained_terminal_checkpoint_step": 19074,
+  "retention": {
+    "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/retention.json",
+    "sha256": "6bb093b2236420dc57e933d792c4602941e5d35b54b16cd4178f1001d96a4a61",
+    "size_bytes": 436
+  },
+  "run_id": "rd5ac0e3013e3",
+  "seed": 0,
+  "selected_checkpoint": {
+    "file_count": 14,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "2ad4b5109820d8793094138cc26123f336c20fb1bda36a1420c32960ab560ba0",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "6c17443e58efabd47759550bde96e72e1751252e49c931a72f96113b2d75212a",
+        "size_bytes": 146221
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "7eaf3d20bae7d1ac2dc04a4eb3c20611d8817515a31bd820f738106af775b3c2",
+        "size_bytes": 82647
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "79512719f487fc62d3a3125134420529f87abb633195dc88aad1b8f515450962",
+        "size_bytes": 50763
+      },
+      {
+        "path": "default/d/7477d05743e2f76d08a1e68d5561a517",
+        "sha256": "1c16aeabf628b4a4aa9ce84a8404c59cf895a9e58fded26d40f74bc8b43fc68f",
+        "size_bytes": 5556
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "18275e58bd44ec1de5e419a33c38fa50dc7e0917c5ae5bc96d3027a0d2c8f149",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/398e56efeefdaebff47e24685cdc2473",
+        "sha256": "eba0a1ac9691c4d879c06d2911203092395332ff069737280f64e02e56191531",
+        "size_bytes": 496279552
+      },
+      {
+        "path": "default/ocdbt.process_0/d/88a51b5c2c8f7bc197acf477fb3d474b",
+        "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+        "size_bytes": 195
+      },
+      {
+        "path": "default/ocdbt.process_0/d/b59146431eb4040104fac0a8a341cd7b",
+        "sha256": "216600a04f8c04a69b697f8947142a24e627a56b9d1d9f10fd69372195ed25b2",
+        "size_bytes": 498434048
+      },
+      {
+        "path": "default/ocdbt.process_0/d/b6f39fa44dc7512b23d8032337c3e02c",
+        "sha256": "643808c25c60f1aa0bb44bc87ed045ba2736c3791d8470b8d9745643d150d4af",
+        "size_bytes": 827
+      },
+      {
+        "path": "default/ocdbt.process_0/d/b85036edb51ae88cd4f2ee2e51d24a1c",
+        "sha256": "234768f0189d4545e5ef1cf2b4a283b172cd77f3ff7d607ddfa1f5bb0a3d9a09",
+        "size_bytes": 728
+      },
+      {
+        "path": "default/ocdbt.process_0/d/f33bdba96ac890444da000b42e74bc92",
+        "sha256": "a2f21797dce4cb7af6eca3c8e0e0020b0fe6f8d746a5d293c8ee99c0ecc9de22",
+        "size_bytes": 1203261440
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "f04b144265713b678acacc272e29dea667cbf6623b134836d4008d6c370b83fc",
+        "size_bytes": 368
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "fa59df73fb725e7c6ee2e8b3fed4b40682c02ebd7e2b0119370b473faf3452c7",
+        "size_bytes": 137
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/checkpoints/19074",
+    "sha256": "3d9dec4f51ed2470932dac00179f77665ce2140a2a43c7343464dfb680c1aa17",
+    "size_bytes": 2198262966,
+    "step": 19074,
+    "validation_nll": 2.718585797718593
+  },
+  "source_commit": "1190c4a5b3a6ca5d1449e6e78a538cfb4117f424",
+  "status": "complete",
+  "step": 19074,
+  "training_tokens": 10000269312,
+  "updated_utc": "2026-10-14T14:48:07.501717+00:00",
+  "wandb_run": {
+    "path": "experiments/attention_scaling/runs/rd5ac0e3013e3/wandb_run.json",
+    "sha256": "49bed60d01670181af75da3a304da7d84e5c14d32451b50b04f3d2a57a9d9ee2",
+    "size_bytes": 252
+  }
+}
