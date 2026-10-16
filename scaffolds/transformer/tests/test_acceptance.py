@@ -63,6 +63,19 @@ def test_query_conditioning_requires_its_checks_even_with_an_empty_adapter(cpu, 
     assert preflight.test_paths(spec, config, resolved_backend=backend, cpu=cpu) == ()
 
 
+@pytest.mark.parametrize("conditioning,kernel_tests", (("static", "mosaic_taylor"), ("query", "mosaic_query")))
+def test_mosaic_backend_requires_its_kernel_and_repeatability_tests(conditioning, kernel_tests):
+    config = {"model": {"attention_degree": 2, "attention_normalization": conditioning == "static",
+                        "attention_coefficients": "fixed" if conditioning == "static" else "learned",
+                        "attention_coefficient_conditioning": conditioning, "attention_coefficient_activation":
+                        "identity" if conditioning == "static" else "tanh"}}
+    paths = preflight.attention_test_paths(config, "mosaic", cpu=False)
+    assert paths[-2:] == (f"scaffolds/transformer/tests/test_{kernel_tests}.py",
+                          "scaffolds/transformer/tests/test_mosaic_repeatability.py")
+    assert not any("mosaic" in path for path in preflight.attention_test_paths(config, "mosaic", cpu=True))
+    assert not any("mosaic" in path for path in preflight.attention_test_paths(config, "fused", cpu=False))
+
+
 def test_production_acceptance_runs_required_gpu_tests_with_an_empty_adapter_list(tmp_path, monkeypatch):
     from types import SimpleNamespace
     from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict

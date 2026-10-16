@@ -142,3 +142,14 @@ def test_unsupported_inputs_raise(change):
         q, k, v, c = q[:, :200], k[:, :200], v[:, :200], c[:, :200]
     with pytest.raises(ValueError):
         query_polynomial_attention(q, k, v, c)
+
+
+def test_model_dispatch_uses_the_kernel_and_reports_diagnostics():
+    from scaffolds.transformer.attention.core import attention_core
+
+    (q, k, v, coefficients), _ = _inputs(3, 64)
+    output, diagnostics = attention_core(
+        q, k, v, backend="mosaic", attention_degree=3, attention_normalization=False,
+        query_polynomial_coefficients=coefficients, attention_coefficient_activation="tanh", return_diagnostics=True)
+    np.testing.assert_array_equal(np.asarray(output), np.asarray(query_polynomial_attention(q, k, v, coefficients)))
+    assert diagnostics and all(bool(jnp.all(jnp.isfinite(value))) for value in diagnostics.values())

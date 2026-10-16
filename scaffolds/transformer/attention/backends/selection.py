@@ -32,7 +32,7 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
     Explicit choices never fall back when they are unsupported.
     """
     request = model_config.attention_backend
-    if request not in ("auto", "blocked", "fused", "manual", "xla", "cudnn"):
+    if request not in ("auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"):
         raise ValueError(f"Unknown attention backend: {request}")
     if dtype not in ("float32", "bfloat16"):
         raise ValueError("Attention requires float32 or bfloat16 computation")
@@ -65,6 +65,21 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
                 raise ValueError("Fused GLA requires sequence length divisible by 64 and chunk sizes 64/16")
             if not supports_gla:
                 raise ValueError("Fused GLA requires an Ampere-or-newer NVIDIA GPU")
+        return request
+    if request == "mosaic":
+        # Mosaic GPU kernels exist for Hopper (sm90) and Blackwell (sm10x); the recipe-level
+        # mechanism, width, and degree checks live in ModelConfig._validate_mosaic.
+        if not gpu:
+            raise ValueError("Mosaic attention requires a GPU")
+        if dtype != "bfloat16":
+            raise ValueError("Mosaic attention requires train.dtype=bfloat16")
+        capability = 9 if platform is not None else _cuda_compute_capability()
+        if capability not in (9, 10):
+            raise ValueError(f"Mosaic attention requires an H100 (sm90) or B300 (sm10x) GPU, got sm{capability}x")
+        length = model_config.max_seq_len if sequence_length is None else sequence_length
+        multiple = 128 if capability == 9 else 256
+        if length % multiple:
+            raise ValueError(f"Mosaic attention on sm{capability}x requires sequence length divisible by {multiple}")
         return request
     polynomial = model_config.attention_degree is not None
     unnormalized = not model_config.attention_normalization

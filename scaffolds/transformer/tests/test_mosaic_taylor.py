@@ -110,3 +110,12 @@ def test_unsupported_inputs_raise(change):
         degree = 0
     with pytest.raises(ValueError):
         taylor_attention(q, k, v, attention_degree=degree)
+
+
+def test_model_dispatch_uses_the_kernel_and_reports_diagnostics():
+    from scaffolds.transformer.attention.core import attention_core
+
+    (q, k, v), _ = _inputs((1, 512, 2, 64, 64), dtype=jnp.bfloat16, seed=97)
+    output, diagnostics = attention_core(q, k, v, backend="mosaic", attention_degree=2, return_diagnostics=True)
+    np.testing.assert_array_equal(np.asarray(output), np.asarray(taylor_attention(q, k, v, attention_degree=2)))
+    assert diagnostics and all(bool(jnp.all(jnp.isfinite(value))) for value in diagnostics.values())
