@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from scaffolds.transformer.attention.backends.fused_taylor import fused_polynomial_attention
-from scaffolds.transformer.attention.backends.mosaic.taylor import WIDTHS, taylor_attention
+from scaffolds.transformer.attention.backends.mosaic.api import WIDTHS, taylor_attention
 from scaffolds.transformer.tests.test_fused_attention import _assert_result, _compiled_forward_and_vjp, _inputs
 
 DEGREES = (1, 2, 3, 4, 8, 16)

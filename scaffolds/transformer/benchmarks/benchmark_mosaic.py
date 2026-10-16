@@ -1,7 +1,9 @@
-"""Forward and forward+backward time of normalized Taylor attention, Mosaic GPU against
-Pallas-Triton, at the production per-GPU shape (16 x 2048 x 16 heads, value width 64).
+"""Forward and forward+backward time of the Mosaic GPU attention kernels against their
+Pallas-Triton counterparts, at the production per-GPU shape (16 x 2048 x 16 heads, value
+width 64): normalized Taylor attention over Q/K widths and degrees, then query-conditioned
+polynomial attention at width 64 (gradients include the coefficients).
 
-    python -m scaffolds.transformer.benchmarks.benchmark_mosaic_taylor   # in an H100 or B300 allocation
+    python -m scaffolds.transformer.benchmarks.benchmark_mosaic   # in an H100 or B300 allocation
 """
 import math
 import time
@@ -9,7 +11,8 @@ import time
 import jax
 import jax.numpy as jnp
 
-from scaffolds.transformer.attention.backends.mosaic.taylor import taylor_attention
+from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial_attention, taylor_attention
+from scaffolds.transformer.attention.backends.fused_query_polynomial import fused_query_polynomial_attention
 from scaffolds.transformer.attention.backends.fused_taylor import fused_polynomial_attention
 print(jax.devices()[0].device_kind, flush=True)
 def bench(f, *a, n=10):
@@ -38,3 +41,11 @@ for width in (8, 16, 32, 64, 128):
             except Exception as e:
                 row += f" | {name} {type(e).__name__}: {str(e)[:80]}"
         print(row, flush=True)
+q, k, v, do = inputs(64)
+for degree in (1, 2, 3):
+    c = jnp.tile(jnp.array([1 / math.factorial(r) for r in range(degree + 1)], jnp.float32), (16, 2048, 16, 1))
+    row = f"query m={degree:<2}"
+    for name, fn in (("Triton", fused_query_polynomial_attention), ("Mosaic", query_polynomial_attention)):
+        g = jax.jit(jax.grad(lambda q, k, v, c: jnp.sum(fn(q, k, v, c).astype(jnp.float32) * do), argnums=(0, 1, 2, 3)))
+        row += f" | {name} fwd {bench(jax.jit(fn), q, k, v, c):6.3f} fwd+bwd {bench(g, q, k, v, c):6.3f}"
+    print(row, flush=True)
