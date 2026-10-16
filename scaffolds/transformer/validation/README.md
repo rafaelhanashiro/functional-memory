@@ -878,23 +878,25 @@ and score gradients enter the tensor cores as three BF16 components; NaN rows fo
 nonfinite, nonpositive (even degree), or zero (odd degree) row sum or an overflowing
 output. `taylor.taylor_attention` accepts BF16 inputs, Q/K width 8, 16, 32, 64, or 128,
 value width 64, degree >= 1, and time a multiple of 128 (H100) or 256 (B300), and raises
-`ValueError` otherwise. It is not yet a backend selectable from a recipe.
+`ValueError` otherwise. Tensor cores contract in steps of one shared-memory swizzle row, so
+Q/K tiles use 32-, 64-, and 128-byte swizzles at widths 16, 32, and 64 or more; width 8 is
+zero-padded to the 16-element minimum. It is not yet a backend selectable from a recipe.
 
-`tests/test_mosaic_taylor.py` passed 41 cases on one H100 (`dogo`, CUDA 12.9.1, job 219786)
-and one B300 (`akita`, CUDA 13.2, job 219787): degrees 1, 2, 3, 4, 8, 16 at every width
+`tests/test_mosaic_taylor.py` passed 41 cases on one H100 (`dogo`, CUDA 12.9.1, job 219812)
+and one B300 (`akita`, CUDA 13.2, job 219813): degrees 1, 2, 3, 4, 8, 16 at every width
 against an independent NumPy FP64 output and VJP and against the Triton kernel, the
 production context against Triton, causality, zero signed row sums, and the rejected inputs.
 
-Forward + backward per layer at 16 x 2048 x 16 heads, value width 64
-(`benchmarks/benchmark_mosaic_taylor.py`), Triton time divided by Mosaic time:
+Forward + backward per layer at 16 x 2048 x 16 heads, value width 64, degrees 1, 2, 4, and
+16 (`benchmarks/benchmark_mosaic_taylor.py`), Triton time divided by Mosaic time:
 
 | | H100 | B300 |
 | --- | ---: | ---: |
-| d_K 8-64, m 1-4 | 1.4-1.7x | 2.3-3.8x |
-| d_K 8-64, m = 16 | 2.6-2.8x | 7-10x |
-| d_K 128, m 1-16 | 3.4-4.1x | 3.8-4.4x |
+| d_K 8-64, m 1-4 | 1.6-1.8x | 2.4-3.8x |
+| d_K 8-64, m = 16 | 2.8-3.0x | 7.4-10.2x |
+| d_K 128, m 1-16 | 3.4-4.0x | 3.8-4.4x |
 
-At d_K = 64 and m = 2 this is 2.49 ms against 3.95 ms on H100 and 1.85 ms against 6.52 ms
+At d_K = 64 and m = 2 this is 2.46 ms against 3.95 ms on H100 and 1.89 ms against 6.55 ms
 on B300; cuDNN softmax takes 1.47 ms and 0.71 ms.
 
 ## Reproduction

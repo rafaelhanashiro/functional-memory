@@ -23,7 +23,11 @@ WGS = 2
 
 
 def _smem(shape):
-    return plgpu.SMEM(shape, jnp.bfloat16, transforms=(plgpu.TilingTransform((8, 64)), plgpu.SwizzleTransform(128)))
+    """BF16 tile with the widest swizzle its rows allow: 128 bytes at width >= 64, 64 at 32, 32 at 16.
+
+    wgmma contracts in groups of one swizzle width, so narrow Q/K need narrow swizzles."""
+    swizzle = plgpu.find_swizzle(shape[-1] * 16)
+    return plgpu.SMEM(shape, jnp.bfloat16, transforms=(plgpu.TilingTransform((8, swizzle // 2)), plgpu.SwizzleTransform(swizzle)))
 
 
 @partial(jax.jit, static_argnames=("degree", "scale", "block_k", "stages"))
@@ -121,7 +125,6 @@ def forward(q, k, v, *, degree, scale, block_k=64, stages=3):
 
             lax.fori_loop(0, cta_steps, load, None)
 
-    tiling, swizzle = plgpu.TilingTransform((8, 64)), plgpu.SwizzleTransform(128)
     f = plgpu.kernel(
         kernel,
         out_shape=(jax.ShapeDtypeStruct((batch, time, heads, dv), jnp.float32),
@@ -129,9 +132,9 @@ def forward(q, k, v, *, degree, scale, block_k=64, stages=3):
         grid=(time // (BQ * WGS), batch, heads), grid_names=("q", "b", "h"),
         num_threads=WGS + 1, thread_name="wg",
         scratch_shapes=dict(
-            q_smem=plgpu.SMEM((WGS, BQ, dq), jnp.bfloat16, transforms=(tiling, swizzle)),
-            k_smem=plgpu.SMEM((stages, block_k, dq), jnp.bfloat16, transforms=(tiling, swizzle)),
-            v_smem=plgpu.SMEM((stages, block_k, dv), jnp.bfloat16, transforms=(tiling, swizzle)),
+            q_smem=_smem((WGS, BQ, dq)),
+            k_smem=_smem((stages, block_k, dq)),
+            v_smem=_smem((stages, block_k, dv)),
             o_smem=plgpu.SMEM((WGS, BQ, dv), jnp.float32),
             n_smem=plgpu.SMEM((WGS, BQ), jnp.float32),
             q_bar=plgpu.Barrier(num_barriers=WGS),

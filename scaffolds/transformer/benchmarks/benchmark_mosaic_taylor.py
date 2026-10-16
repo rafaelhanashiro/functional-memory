@@ -26,7 +26,7 @@ def inputs(width):
 q, k, v, do = inputs(64)  # warm the GPU so the first measured cell is not slowed
 for fn in (fused_polynomial_attention, taylor_attention):
     bench(jax.jit(lambda q, k, v: fn(q, k, v, attention_degree=2)), q, k, v)
-for width in (8, 32, 64, 128):
+for width in (8, 16, 32, 64, 128):
     q, k, v, do = inputs(width)
     for degree in (1, 2, 4, 16):
         row = f"d_K={width:<3} m={degree:<2}"

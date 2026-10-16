@@ -7,7 +7,8 @@ degree) or zero (odd degree), or whose output overflows, is NaN. The output is d
 its row sum once, after accumulation, so signed odd degrees need a single pass.
 
 Supported: BF16 Q/K/V of shape [batch, time, heads, channels], Q/K width 8, 16, 32, 64, or
-128 (widths below 64 are zero-padded, which leaves every score unchanged), value width 64,
+128 (width 8 is zero-padded to the tensor cores' minimum of 16, which leaves every score
+unchanged; narrower tiles use narrower shared-memory swizzles), value width 64,
 degree >= 1, and time a multiple of 128 (H100) or 256 (B300). Anything else, and any GPU
 other than compute capability 9.0 or 10.x, raises ValueError.
 """
@@ -51,9 +52,12 @@ def check(q, k, v, degree):
         raise ValueError(f"Mosaic Taylor attention on {arch} requires time to be a multiple of {multiple}, got {q.shape[1]}")
 
 
+MIN_WIDTH = 16  # BF16 tensor-core contraction step on Hopper and Blackwell
+
+
 def _pad(x):
     width = x.shape[-1]
-    return x if width >= 64 else jnp.pad(x, ((0, 0), (0, 0), (0, 0), (0, 64 - width)))
+    return x if width >= MIN_WIDTH else jnp.pad(x, ((0, 0), (0, 0), (0, 0), (0, MIN_WIDTH - width)))
 
 
 def _forward(q, k, v, degree):
