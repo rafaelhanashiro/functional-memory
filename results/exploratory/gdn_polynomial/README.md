@@ -1,9 +1,12 @@
-# Independent GDN erase and write gates
+# Polynomial GDN: independent erasure and memory degree
 
 Opened 2026-10-09. Home cluster: **Kennel**.
 
-Does giving Gated DeltaNet separate sigmoid erase and write gates improve its
-language-model performance under the canonical 400-step-warmup recipe?
+This topic studies separate erase and write gates, polynomial memory extensions,
+and write-coefficient activations in Gated DeltaNet under the canonical
+400-step-warmup recipe. The selected runs below cover the independent-erase
+comparison: does giving GDN separate sigmoid erase and write gates improve
+language-model performance?
 
 ## Runs and method
 
@@ -89,7 +92,7 @@ Refresh the source pins from the repository root with:
 
 ```bash
 scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh \
-  results/exploratory/gdn_independent_erase
+  results/exploratory/gdn_polynomial
 ```
 
 The table reads each selected run's `completion.json` and `best_validation.json`;
@@ -99,6 +102,7 @@ measurements remain under the runs.
 ## Open decision
 
 Decide whether the near-tie with separated gates warrants a matched-arithmetic
-control and further seeds, and whether independent erasure belongs in the maintained
-attention comparison. No follow-up execution is allocated or queued for this topic.
-It remains exploratory until promoted or discarded.
+control and further seeds, and whether polynomial memory or alternative write
+activations improve on this independent-erase baseline. Promotion of these GDN
+extensions into the maintained attention comparison remains open. This topic
+remains exploratory until promoted or discarded.

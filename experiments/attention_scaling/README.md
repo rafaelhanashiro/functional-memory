@@ -301,7 +301,7 @@ initialized from the write projection as a separate parameter. All original weig
 match tied GDN at initialization. It preserves the canonical GDN block and reference
 initialization, 400 warmup updates, standard training telemetry, and the 19,074-update
 FineWeb recipe. The preselected control is `rf640fc13f3a8`; comparison findings and
-current status belong in the [exploratory result](../../results/exploratory/gdn_independent_erase/README.md).
+current status belong in the [exploratory result](../../results/exploratory/gdn_polynomial/README.md).
 Its home cluster is Kennel. Production job `217974` completed all 19,074 updates
 on 2026-10-12 at 18:32 EDT, on `standard` at nice 0 with four H100 SXM GPUs on
 `dogo`. Terminal and validation-best checkpoint both correspond to update 19,074.
