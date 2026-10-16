@@ -25,11 +25,14 @@ def prepare(run: Path, checkpoint: int, scratch: Path) -> Path:
     recipe = yaml.safe_load((run / "config.yaml").read_text())
     recipe["train"].update(workdir=str(scratch), checkpoint_dir=str(scratch / "checkpoints"), wandb_mode="disabled")
     (scratch / "config.yaml").write_text(yaml.safe_dump(recipe, sort_keys=False))
-    for name in ("data_identity.json", "best_validation.json"):
-        shutil.copy2(run / name, scratch / name)
-    kept = [line for line in (run / "metrics.jsonl").read_text().splitlines()
-            if line.strip() and json.loads(line).get("step", 0) <= checkpoint]
-    (scratch / "metrics.jsonl").write_text("".join(line + "\n" for line in kept))
+    shutil.copy2(run / "data_identity.json", scratch / "data_identity.json")
+    # A run that failed before its first validation has no validation history yet.
+    if (run / "best_validation.json").exists():
+        shutil.copy2(run / "best_validation.json", scratch / "best_validation.json")
+    if (run / "metrics.jsonl").exists():
+        kept = [line for line in (run / "metrics.jsonl").read_text().splitlines()
+                if line.strip() and json.loads(line).get("step", 0) <= checkpoint]
+        (scratch / "metrics.jsonl").write_text("".join(line + "\n" for line in kept))
     shutil.copytree(run / "checkpoints" / str(checkpoint), scratch / "checkpoints" / str(checkpoint))
     return scratch / "config.yaml"
 
