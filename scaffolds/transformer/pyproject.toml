@@ -23,6 +23,15 @@ cuda = [
     "flash-linear-attention", "torch==2.9.1",
 ]
 
+# B300 (Blackwell) environment: cuBLAS 12.8-13.1 can silently corrupt data there when a
+# cuBLAS kernel overlaps another kernel; 13.2 fixes it. Needs a CUDA 13 driver (>= 580).
+cuda13 = [
+    "jax[cuda13]==0.10.0", "nvidia-cublas>=13.2,<13.3", "nvidia-cuda-runtime>=13.2,<13.3",
+    "nvidia-cuda-nvcc>=13.2,<13.3", "nvidia-cuda-nvrtc>=13.2,<13.3", "nvidia-nvjitlink>=13.2,<13.3",
+    "nvidia-cuda-cupti>=13.2,<13.3", "nvidia-nvvm>=13.2,<13.3", "nvidia-cudnn-cu13==9.22.0.52", "triton==3.7.1",
+    "flash-linear-attention", "torch==2.9.1",
+]
+
 [dependency-groups]
 dev = ["pytest>=8.3.0"]
 # Saved W&B workspace views, built by experiment analysis code.
@@ -30,6 +39,8 @@ views = ["wandb-workspaces==0.4.11"]
 
 [tool.uv]
 package = false
+# One lock, two environments: .venv (cuda) and .venv-cuda13 (cuda13), chosen by GPU type.
+conflicts = [[{ extra = "cuda" }, { extra = "cuda13" }]]
 
 [tool.uv.sources]
 flash-linear-attention = { git = "https://github.com/fla-org/flash-linear-attention.git", rev = "516143e31fce09925e6c39ac37148444bad176c4" }

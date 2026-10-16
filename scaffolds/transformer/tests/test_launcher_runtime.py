@@ -81,3 +81,38 @@ def test_kennel_preserves_explicit_allocator_settings(tmp_path, gpu, preallocate
         "XLA_PYTHON_CLIENT_PREALLOCATE": preallocate,
         "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.82",
     }
+
+
+@pytest.mark.parametrize("gpu,environment,directory", [
+    ("NVIDIA B300 SXM6 AC", "cuda13", ".venv-cuda13"),
+    ("NVIDIA H100 80GB HBM3", "cuda12", ".venv"),
+    ("NVIDIA A100-PCIE-40GB", "cuda12", ".venv"),
+])
+def test_b300_uses_the_cuda13_environment(tmp_path, gpu, environment, directory):
+    executable = tmp_path / "nvidia-smi"
+    executable.write_text('#!/bin/sh\nprintf "%s\\n" "$TEST_GPU_NAME"\n')
+    executable.chmod(0o755)
+    env = {key: value for key, value in os.environ.items()
+           if key not in ("TRANSFORMER_CUDA_ENVIRONMENT", "TRANSFORMER_ENVIRONMENT_DIR")}
+    env.update(PATH=str(tmp_path) + os.pathsep + env["PATH"], TEST_GPU_NAME=gpu)
+    result = subprocess.run([
+        'bash', '-euc', 'source "$1"; echo "$TRANSFORMER_CUDA_ENVIRONMENT $TRANSFORMER_ENVIRONMENT_DIR"',
+        'test', str(SCRIPT)], env=env, check=True, text=True, capture_output=True)
+    assert result.stdout.split() == [environment, directory]
+
+
+def test_cuda_home_finds_the_toolkit_of_either_wheel_layout(tmp_path):
+    executable = tmp_path / "nvidia-smi"
+    executable.write_text('#!/bin/sh\necho "NVIDIA H100 80GB HBM3"\n')
+    executable.chmod(0o755)
+    for package in ("cuda_nvcc", "cu13"):
+        root = tmp_path / package
+        (root / "nvidia" / package).mkdir(parents=True)
+        # A regular package first on the path, so the interpreter's own nvidia wheels stay hidden.
+        (root / "nvidia" / "__init__.py").write_text("")
+        (root / "nvidia" / package / "__init__.py").write_text("")
+        env = dict(os.environ, PYTHONPATH=str(root), PATH=str(tmp_path) + os.pathsep + os.environ["PATH"])
+        result = subprocess.run([
+            'bash', '-euc', 'source "$1"; transformer_cuda_home "$2"', 'test', str(SCRIPT), sys.executable,
+        ], env=env, check=True, text=True, capture_output=True)
+        assert result.stdout.strip() == str(root / "nvidia" / package)
