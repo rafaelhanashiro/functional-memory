@@ -232,14 +232,20 @@ def attention_identity(config) -> dict:
                 + "; a_1 unpenalized" + ("; denominator unpenalized" if rational and not penalize_denominator else "")
                 + "; validation loss and recorded NLL exclude it")
     if query_conditioned:
+        amplitude = config.model.attention_coefficient_amplitude_initial
+        spread = config.model.attention_coefficient_projection_initial_std
+        tanh_start = (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero") + (
+            f", a initially {amplitude:g}" if amplitude != 1.0 else ", a initially 1")
         identity.update(
             attention_kernel="query_polynomial_unnormalized",
             attention_coefficient_conditioning="query",
             attention_coefficient_activation=config.model.attention_coefficient_activation,
             attention_coefficient_input="pre_attention_rmsnorm_activation",
             attention_coefficient_projection_dtype="float32",
+            **({"attention_coefficient_amplitude_initial": amplitude,
+                "attention_coefficient_projection_initial_std": spread} if (amplitude, spread) != (1.0, 0.0) else {}),
             attention_formula=(f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i, s_ti = Q_t K_i^T / sqrt(d_k); "
-                               + ("c(x_t) = b + a*tanh(x_t W) per layer/head, W initially zero, a initially 1, b_r initially 1/r!; "
+                               + (f"c(x_t) = b + a*tanh(x_t W) per layer/head, {tanh_start}, b_r initially 1/r!; "
                                   if query_tanh else "c(x_t) = x_t W + b per layer/head, W initially zero, b initially (1,1); ")
                                +
                                "x_t is the activation after the block input RMSNorm"),

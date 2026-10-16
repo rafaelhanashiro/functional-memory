@@ -2,9 +2,14 @@
 
 from dataclasses import dataclass
 from typing import Literal
+import zlib
 
+import jax
 import jax.numpy as jnp
 from flax import nnx
+
+# fold_in tag of the mechanism's random stream, far above the model's draw counts.
+MECHANISM_STREAM = 2**31 - 2
 
 
 @dataclass(frozen=True)
@@ -15,6 +20,9 @@ class AttentionParameterSpec:
     sharing: Literal["global", "per_head"]
     weight_decay: bool = False
     initial_shape: tuple[int, ...] | None = None
+    # Independent N(0, initial_std^2) noise added to every stored entry, drawn from the
+    # mechanism stream so the backbone's initialization is unchanged.
+    initial_std: float = 0.0
 
 
 def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
@@ -24,8 +32,11 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         if getattr(config, "attention_coefficient_conditioning", "static") == "query":
             from scaffolds.transformer.attention.input_dependent import parameter_specs
 
-            specs = parameter_specs(hidden_size=config.hidden_size, degree=config.attention_degree,
-                                    activation=config.attention_coefficient_activation)
+            specs = parameter_specs(
+                hidden_size=config.hidden_size, degree=config.attention_degree,
+                activation=config.attention_coefficient_activation,
+                amplitude_initial=getattr(config, "attention_coefficient_amplitude_initial", 1.0),
+                projection_initial_std=getattr(config, "attention_coefficient_projection_initial_std", 0.0))
         elif parameterization == "sum_of_squares":
             from scaffolds.transformer.attention.nonnegative_polynomial import parameter_specs
 
@@ -63,12 +74,15 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
     return specs
 
 
-def initialize_attention_parameters(owner, specs, *, num_layers: int, num_heads: int) -> None:
-    """Register once on the model, keeping existing names and initialization order.
+def mechanism_key(base_key: jax.Array) -> jax.Array:
+    """The mechanism's random stream: a function of the seed that consumes none of the model's draws."""
+    return jax.random.fold_in(base_key, MECHANISM_STREAM)
 
-    No RNG is consumed. Globally shared parameters are stored once; independent
-    layer/head parameters remain one compact array in the checkpoint tree.
-    """
+
+def initial_attention_parameter_values(specs, *, num_layers: int, num_heads: int,
+                                       key: jax.Array | None = None) -> dict[str, jax.Array]:
+    """Each declared array's starting value; random entries come from ``key`` by parameter name."""
+    values = {}
     for spec in specs:
         if spec.sharing not in ("global", "per_head"):
             raise ValueError(f"Unknown attention parameter sharing: {spec.sharing}")
@@ -76,7 +90,27 @@ def initialize_attention_parameters(owner, specs, *, num_layers: int, num_heads:
         if spec.initial_shape is not None:
             initial = initial.reshape(spec.initial_shape)
         shape = initial.shape if spec.sharing == "global" else (num_layers, num_heads, *initial.shape)
-        setattr(owner, spec.name, nnx.Param(jnp.broadcast_to(initial, shape)))
+        value = jnp.broadcast_to(initial, shape)
+        if spec.initial_std:
+            if key is None:
+                raise ValueError(f"{spec.name} has a random initialization and needs the mechanism key")
+            name_key = jax.random.fold_in(key, zlib.crc32(spec.name.encode()) & 0x7FFFFFFF)
+            value = value + spec.initial_std * jax.random.normal(name_key, shape, jnp.float32)
+        values[spec.name] = value
+    return values
+
+
+def initialize_attention_parameters(owner, specs, *, num_layers: int, num_heads: int,
+                                    key: jax.Array | None = None) -> None:
+    """Register once on the model, keeping existing names and initialization order.
+
+    No model RNG is consumed; random entries use the mechanism ``key``. Globally shared
+    parameters are stored once; independent layer/head parameters remain one compact
+    array in the checkpoint tree.
+    """
+    values = initial_attention_parameter_values(specs, num_layers=num_layers, num_heads=num_heads, key=key)
+    for spec in specs:
+        setattr(owner, spec.name, nnx.Param(values[spec.name]))
 
 
 def attention_parameter_count(config) -> int:
