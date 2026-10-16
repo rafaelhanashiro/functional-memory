@@ -868,6 +868,35 @@ sbatch -w akita --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
   scaffolds/transformer/validation/replay_checkpoint.sbatch "$PWD" <run> 500 1000 <scratch> default default
 ```
 
+## Mosaic GPU normalized Taylor kernels on H100 and B300
+
+`attention/backends/mosaic/` implements normalized causal Taylor attention (forward, dQ,
+dK, dV) on Mosaic GPU: `hopper.py` (wgmma, FlashAttention-3 structure) and
+`blackwell.py` (tcgen05 with tensor memory, warp-specialized). The mathematics and failure
+rules match `fused_taylor`: FP32 scores, polynomials, sums, and accumulators; FP32 weights
+and score gradients enter the tensor cores as three BF16 components; NaN rows for a
+nonfinite, nonpositive (even degree), or zero (odd degree) row sum or an overflowing
+output. `taylor.taylor_attention` accepts BF16 inputs, Q/K width 8, 16, 32, 64, or 128,
+value width 64, degree >= 1, and time a multiple of 128 (H100) or 256 (B300), and raises
+`ValueError` otherwise. It is not yet a backend selectable from a recipe.
+
+`tests/test_mosaic_taylor.py` passed 41 cases on one H100 (`dogo`, CUDA 12.9.1, job 219786)
+and one B300 (`akita`, CUDA 13.2, job 219787): degrees 1, 2, 3, 4, 8, 16 at every width
+against an independent NumPy FP64 output and VJP and against the Triton kernel, the
+production context against Triton, causality, zero signed row sums, and the rejected inputs.
+
+Forward + backward per layer at 16 x 2048 x 16 heads, value width 64
+(`benchmarks/benchmark_mosaic_taylor.py`), Triton time divided by Mosaic time:
+
+| | H100 | B300 |
+| --- | ---: | ---: |
+| d_K 8-64, m 1-4 | 1.4-1.7x | 2.3-3.8x |
+| d_K 8-64, m = 16 | 2.6-2.8x | 7-10x |
+| d_K 128, m 1-16 | 3.4-4.1x | 3.8-4.4x |
+
+At d_K = 64 and m = 2 this is 2.49 ms against 3.95 ms on H100 and 1.85 ms against 6.52 ms
+on B300; cuDNN softmax takes 1.47 ms and 0.71 ms.
+
 ## Reproduction
 
 From a worktree with the scaffold environment synced
