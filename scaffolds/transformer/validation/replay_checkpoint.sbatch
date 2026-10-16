@@ -19,18 +19,19 @@ REPLAY="$SLURM_SUBMIT_DIR/scaffolds/transformer/validation/replay_checkpoint.py"
 EXECUTION_ROOT=$(cd "$1" && pwd); RUN_DIR=$(cd "$2" && pwd); CHECKPOINT=$3; STOP=$4; OUT_DIR=$5; shift 5
 cd "$EXECUTION_ROOT"
 source scaffolds/transformer/launchers/kennel_runtime.sh
-PYTHON="$EXECUTION_ROOT/scaffolds/transformer/.venv/bin/python"
+PYTHON="$EXECUTION_ROOT/scaffolds/transformer/$TRANSFORMER_ENVIRONMENT_DIR/bin/python"
 CACHE="$EXECUTION_ROOT/.cache/replay"
 mkdir -p "$CACHE/jax" "$CACHE/xdg" "$CACHE/tmp/$SLURM_JOB_ID" "$OUT_DIR"
 export PYTHONPATH="$EXECUTION_ROOT" JAX_PLATFORMS=cuda TRANSFORMER_HOST_STAGING="${TRANSFORMER_HOST_STAGING:-0}"
 export SHARED_TRANSFORMER_SOURCE_COMMIT="$(git rev-parse HEAD)" WANDB_MODE=disabled
 export PYTHONUNBUFFERED=1 OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-4}"
 export JAX_COMPILATION_CACHE_DIR="$CACHE/jax" XDG_CACHE_HOME="$CACHE/xdg" TMPDIR="$CACHE/tmp/$SLURM_JOB_ID"
-CUDA_HOME="$("$PYTHON" -c 'import importlib.util; print(next(iter(importlib.util.find_spec("nvidia.cuda_nvcc").submodule_search_locations)))')"
-export CUDA_HOME
+CUDA_HOME="$(transformer_cuda_home "$PYTHON")"
+export CUDA_HOME TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
 BASE_XLA_FLAGS="${XLA_FLAGS:-}"
 GPU=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -1)
-echo "job=$SLURM_JOB_ID node=$(hostname) gpu=$GPU commit=$SHARED_TRANSFORMER_SOURCE_COMMIT run=$RUN_DIR checkpoint=$CHECKPOINT stop=$STOP"
+DRIVER=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader | head -1)
+echo "job=$SLURM_JOB_ID node=$(hostname) gpu=$GPU driver=$DRIVER cuda_environment=$TRANSFORMER_CUDA_ENVIRONMENT commit=$SHARED_TRANSFORMER_SOURCE_COMMIT run=$RUN_DIR checkpoint=$CHECKPOINT stop=$STOP"
 index=0
 for variant in "$@"; do
   index=$((index + 1))

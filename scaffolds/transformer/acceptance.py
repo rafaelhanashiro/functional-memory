@@ -49,7 +49,7 @@ TEST_STAGES = (
 )
 NO_TESTS_COLLECTED = 5
 RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHON_CLIENT_PREALLOCATE",
-                "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME")
+                "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME", "TRANSFORMER_CUDA_ENVIRONMENT")
 NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
@@ -364,6 +364,8 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_parameterization="direct",
                                            attention_coefficient_conditioning="static",
                                            attention_coefficient_activation="identity",
+                                           attention_coefficient_amplitude_initial=1.0,
+                                           attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_initialization="taylor",
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
@@ -378,8 +380,9 @@ def matches_softmax_backbone_initialization(config) -> dict:
     """Require the exact-softmax control's backbone weights plus declared initial mechanism parameters.
 
     Mechanisms that add trainable attention arrays register them without drawing
-    random numbers, so every other parameter must equal the softmax control's and
-    each added array must hold its declared initial value.
+    model random numbers, so every other parameter must equal the softmax control's and
+    each added array must hold its declared initial value, regenerated from the
+    mechanism stream where it is random.
     """
     from dataclasses import replace
 
@@ -387,7 +390,9 @@ def matches_softmax_backbone_initialization(config) -> dict:
     import numpy as np
     from flax import nnx
 
-    from scaffolds.transformer.attention.parameters import attention_parameter_specs
+    from scaffolds.transformer.attention.parameters import (
+        attention_parameter_specs, initial_attention_parameter_values, mechanism_key,
+    )
     from scaffolds.transformer.models import build_model
 
     def flat_parameters(current):
@@ -403,7 +408,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_fixed_square_factors=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",
         attention_coefficient_conditioning="static",
-        attention_coefficient_activation="identity",
+        attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
+        attention_coefficient_projection_initial_std=0.0,
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
@@ -413,15 +419,16 @@ def matches_softmax_backbone_initialization(config) -> dict:
     for path, value in expected.items():
         if not np.array_equal(actual[path], value):
             raise RuntimeError(f"Backbone parameter {path} differs from the exact-softmax control")
+    declared = initial_attention_parameter_values(
+        specs, num_layers=config.model.num_layers, num_heads=config.model.num_heads,
+        key=mechanism_key(jax.random.PRNGKey(config.train.seed)))
     for spec in specs:
-        initial = np.asarray(spec.initial, dtype=np.float32)
-        if getattr(spec, "initial_shape", None) is not None:
-            initial = initial.reshape(spec.initial_shape)
-        if not np.array_equal(actual[(spec.name,)], np.broadcast_to(initial, actual[(spec.name,)].shape)):
+        if not np.array_equal(actual[(spec.name,)], np.asarray(declared[spec.name])):
             raise RuntimeError(f"{spec.name} does not hold its declared initial value")
     return {
         "softmax_counterpart_parameter_sha256": initialization_facts(control)["parameter_sha256"],
         "mechanism_parameters": {spec.name: {"shape": list(actual[(spec.name,)].shape), "initial": list(spec.initial),
+                                             **({"initial_std": spec.initial_std} if spec.initial_std else {}),
                                              "weight_decay": spec.weight_decay} for spec in specs},
     }
 

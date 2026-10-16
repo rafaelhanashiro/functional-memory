@@ -1,0 +1,67 @@
+{
+  "artifacts": {
+    "test": {
+      "filename": "activations_test.npz",
+      "sha256": "c90e98d2ead172c5bb5ae5c483ab168837de6975fbcc0d924e184e70b7c21699",
+      "size_bytes": 100669150
+    },
+    "test_long": {
+      "filename": "activations_test_long.npz",
+      "sha256": "2a70a713962523ba81a1537e85037db4e5a380e3c9c54112e840abc7a37fb881",
+      "size_bytes": 100669150
+    },
+    "train": {
+      "filename": "activations_train.npz",
+      "sha256": "0d9f3f1b6222edcdd31c9341d7d080ff3bfa6e1cc8719f7c307705e240d3a870",
+      "size_bytes": 629151454
+    },
+    "validation": {
+      "filename": "activations_validation.npz",
+      "sha256": "ddfbb9646fcab5896dbbb065a1463a1416032eaabced7462fa31817b425204c1",
+      "size_bytes": 100669150
+    }
+  },
+  "capture_seconds": 30.175371179007925,
+  "created_utc": "2026-10-15T05:45:49.248597+00:00",
+  "heads": [
+    {
+      "head": 0,
+      "layer": 2
+    },
+    {
+      "head": 16,
+      "layer": 2
+    },
+    {
+      "head": 0,
+      "layer": 8
+    },
+    {
+      "head": 16,
+      "layer": 8
+    },
+    {
+      "head": 0,
+      "layer": 14
+    },
+    {
+      "head": 16,
+      "layer": 14
+    }
+  ],
+  "native_output_max_abs_errors": {
+    "test": 8.642673492431641e-07,
+    "test_long": 3.0100345611572266e-06,
+    "train": 9.5367431640625e-07,
+    "validation": 7.748603820800781e-07
+  },
+  "teacher": {
+    "attention_implementation": "eager",
+    "dtype": "float32",
+    "frozen": true,
+    "model_id": "meta-llama/Llama-3.2-1B",
+    "qk_preprocessing": "preserve_pretrained_post_rope_scores",
+    "revision": "4e20de362430cd3b72f300e6b0f18e50e7166e08"
+  },
+  "tokens_sha256": "5865aa94ac195b7928af79958798923589a9a80a5f16f60d8cc241d780684d3b"
+}

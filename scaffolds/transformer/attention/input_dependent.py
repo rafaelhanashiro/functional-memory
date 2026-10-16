@@ -12,7 +12,9 @@ import jax
 import jax.numpy as jnp
 
 
-def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity"):
+def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",
+                    amplitude_initial: float = 1.0, projection_initial_std: float = 0.0):
+    """b starts at 1/r!; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     count = degree + 1
@@ -24,13 +26,13 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
         AttentionParameterSpec(
             name="query_polynomial_kernel", argument="query_polynomial_kernel",
             initial=(0.0,) * (hidden_size * count), initial_shape=(hidden_size, count),
-            sharing="per_head", weight_decay=False,
+            sharing="per_head", weight_decay=False, initial_std=float(projection_initial_std),
         ),
     )
     if activation == "tanh":
         specs += (AttentionParameterSpec(
             name="query_polynomial_amplitude", argument="query_polynomial_amplitude",
-            initial=(1.0,) * count, sharing="per_head", weight_decay=False,
+            initial=(float(amplitude_initial),) * count, sharing="per_head", weight_decay=False,
         ),)
     elif activation != "identity":
         raise ValueError(f"Unknown coefficient activation: {activation}")

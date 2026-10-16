@@ -197,6 +197,12 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   `model.initialization` unset, so a copied legacy recipe does not inherit Flax
   defaults; fresh allocation of an explicitly requested Flax-default run requires
   `--allow-flax-default-init`. Historical recipes and resumptions keep their settings.
+- New unnormalized attention experiments use per-head RMSNorm output scaling
+  (`model.attention_output_scaling: head_rms_norm`) unless the user explicitly requests
+  otherwise; it improved every unnormalized kernel tested
+  ([attention scaling results](results/attention_scaling/README.md)). This is a practice
+  for new runs: historical recipes and resumptions keep their settings, and the
+  scaffold's default stays `none`.
 - Experiments sharing a model family use one shared model, attention, data pipeline,
   optimizer, trainer, evaluation, and checkpoint implementation. Keep cluster names,
   GPU-model workarounds, and transport policy out of model definitions, optimizer
@@ -225,6 +231,11 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   uv cache, so an additional environment costs almost no disk. Never copy an
   environment directory, and never modify installed packages in place: hardlinked files
   are shared by every environment.
+- Kennel B300 jobs use a second environment from the same lock, `.venv-cuda13` (CUDA 13,
+  cuBLAS >= 13.2, which fixes Blackwell data corruption); the launcher chooses by GPU.
+  Sync it too in any worktree that may run on B300 (`UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13
+  uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink`;
+  see `CLUSTERS.md`).
 - Launchers use the worktree's own environment, so dependency changes on `main` cannot
   reach a running experiment.
 

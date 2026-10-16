@@ -1,0 +1,681 @@
+{
+  "benchmarks": [
+    {
+      "all_gradients_finite": true,
+      "budget": 47905,
+      "checkpoint_replay_exact": true,
+      "evaluation_chunk_seconds": [
+        0.0016218149103224277,
+        0.001370560028590262,
+        0.0013206979492679238,
+        0.0013120489893481135,
+        0.001334568951278925,
+        0.0012943580513820052,
+        0.0012997990706935525,
+        0.0010729930363595486,
+        0.0009275199845433235,
+        0.0009314999915659428
+      ],
+      "evaluation_query_batch": 16,
+      "feature_count": 47905,
+      "forward_backward_seconds": [
+        0.0030112649546936154,
+        0.0029606849420815706,
+        0.002986494917422533,
+        0.002964794053696096,
+        0.002934883930720389,
+        0.0029352540150284767,
+        0.0028931830311194062,
+        0.0029359239852055907,
+        0.0027734600007534027,
+        0.0029773350106552243
+      ],
+      "iterations": 10,
+      "key_feature_seconds": 0.0007641770644113421,
+      "keys": 512,
+      "median_evaluation_chunk_seconds": 0.001305924030020833,
+      "median_forward_backward_seconds": 0.0029483044636435807,
+      "median_optimizer_seconds": 0.0007215709774754941,
+      "mode": "dense",
+      "optimizer_seconds": [
+        0.0007236059755086899,
+        0.0007540060905739665,
+        0.0007512259762734175,
+        0.000707964994944632,
+        0.0006970949470996857,
+        0.0007344660116359591,
+        0.0007256359094753861,
+        0.0007195359794422984,
+        0.0007021148921921849,
+        0.0006688049761578441
+      ],
+      "peak_evaluation_allocated_bytes": 179856896,
+      "peak_training_allocated_bytes": 369447936,
+      "query_batch": 8,
+      "timing_scope": "one captured head; forward/backward includes Q/K feature construction; eval caches K features"
+    },
+    {
+      "all_gradients_finite": true,
+      "budget": 128,
+      "checkpoint_replay_exact": true,
+      "evaluation_chunk_seconds": [
+        0.0013577500358223915,
+        0.0011714650318026543,
+        0.001036431989632547,
+        0.0010220820549875498,
+        0.0010269919876009226,
+        0.00101582205388695,
+        0.0010224130237475038,
+        0.0010156820062547922,
+        0.001020211959257722,
+        0.0010135920019820333
+      ],
+      "evaluation_query_batch": 16,
+      "feature_count": 47905,
+      "forward_backward_seconds": [
+        0.0029646650655195117,
+        0.0029477239586412907,
+        0.0029283829499036074,
+        0.0029121229890733957,
+        0.0029261440504342318,
+        0.0029352339915931225,
+        0.0029012729646638036,
+        0.0029101530089974403,
+        0.0028988829581066966,
+        0.002890302916057408
+      ],
+      "iterations": 10,
+      "key_feature_seconds": 0.0007449060212820768,
+      "keys": 512,
+      "median_evaluation_chunk_seconds": 0.0010222475393675268,
+      "median_forward_backward_seconds": 0.0029191335197538137,
+      "median_optimizer_seconds": 0.0006425239844247699,
+      "mode": "fixed",
+      "optimizer_seconds": [
+        0.0006702439859509468,
+        0.0006298830267041922,
+        0.0006183540681377053,
+        0.0006195539608597755,
+        0.0006085430504754186,
+        0.0006314340280368924,
+        0.0006536139408126473,
+        0.0006736650830134749,
+        0.0006566339870914817,
+        0.0006586449453607202
+      ],
+      "peak_evaluation_allocated_bytes": 180626432,
+      "peak_training_allocated_bytes": 370217472,
+      "query_batch": 8,
+      "timing_scope": "one captured head; forward/backward includes Q/K feature construction; eval caches K features"
+    },
+    {
+      "all_gradients_finite": true,
+      "budget": 512,
+      "checkpoint_replay_exact": true,
+      "evaluation_chunk_seconds": [
+        0.0011226049391552806,
+        0.0009877219563350081,
+        0.0009637409821152687,
+        0.0009531310060992837,
+        0.0009926019702106714,
+        0.000960181001573801,
+        0.0009503100300207734,
+        0.005898177972994745,
+        0.0005641620373353362,
+        0.0005341919604688883
+      ],
+      "evaluation_query_batch": 16,
+      "feature_count": 47905,
+      "forward_backward_seconds": [
+        0.0025483350036665797,
+        0.0025777959963306785,
+        0.0025512150023132563,
+        0.0025644259294494987,
+        0.0025300950510427356,
+        0.002349030924960971,
+        0.0025862460024654865,
+        0.002593336976133287,
+        0.0025597650092095137,
+        0.0025462449993938208
+      ],
+      "iterations": 10,
+      "key_feature_seconds": 0.0007238959660753608,
+      "keys": 512,
+      "median_evaluation_chunk_seconds": 0.0009619609918445349,
+      "median_forward_backward_seconds": 0.002555490005761385,
+      "median_optimizer_seconds": 0.0004946954431943595,
+      "mode": "fixed",
+      "optimizer_seconds": [
+        0.0005101410206407309,
+        0.0004957710625603795,
+        0.0004905610112473369,
+        0.000508361030369997,
+        0.000494070933200419,
+        0.0004742399323731661,
+        0.0004894210724160075,
+        0.0005166711052879691,
+        0.0004953199531883001,
+        0.00047822005581110716
+      ],
+      "peak_evaluation_allocated_bytes": 181782528,
+      "peak_training_allocated_bytes": 371373568,
+      "query_batch": 8,
+      "timing_scope": "one captured head; forward/backward includes Q/K feature construction; eval caches K features"
+    },
+    {
+      "all_gradients_finite": true,
+      "budget": 2048,
+      "checkpoint_replay_exact": true,
+      "evaluation_chunk_seconds": [
+        0.0010728630004450679,
+        0.0010045220842584968,
+        0.000993171939626336,
+        0.000982481986284256,
+        0.0008033770136535168,
+        0.000559142092242837,
+        0.0005477719241753221,
+        0.000556741957552731,
+        0.0005547519540414214,
+        0.000542772002518177
+      ],
+      "evaluation_query_batch": 16,
+      "feature_count": 47905,
+      "forward_backward_seconds": [
+        0.0025901769986376166,
+        0.0026258870493620634,
+        0.0026255659759044647,
+        0.002619787002913654,
+        0.0026069770101457834,
+        0.0024219530168920755,
+        0.0023940519895404577,
+        0.0023718610173091292,
+        0.0026021860539913177,
+        0.0026025070110335946
+      ],
+      "iterations": 10,
+      "key_feature_seconds": 0.0007119359215721488,
+      "keys": 512,
+      "median_evaluation_chunk_seconds": 0.0006812595529481769,
+      "median_forward_backward_seconds": 0.002602346532512456,
+      "median_optimizer_seconds": 0.0005001410027034581,
+      "mode": "fixed",
+      "optimizer_seconds": [
+        0.0004912210861220956,
+        0.0005117310211062431,
+        0.0005129310302436352,
+        0.0004977710777893662,
+        0.0004840309266000986,
+        0.0005074010696262121,
+        0.0005025109276175499,
+        0.0004805200733244419,
+        0.0005301820347085595,
+        0.00047434098087251186
+      ],
+      "peak_evaluation_allocated_bytes": 182950912,
+      "peak_training_allocated_bytes": 372541952,
+      "query_batch": 8,
+      "timing_scope": "one captured head; forward/backward includes Q/K feature construction; eval caches K features"
+    },
+    {
+      "all_gradients_finite": true,
+      "budget": 128,
+      "checkpoint_replay_exact": true,
+      "evaluation_chunk_seconds": [
+        0.0010232020867988467,
+        0.001014831941574812,
+        0.0009946220088750124,
+        0.0009863419691100717,
+        0.000990792061202228,
+        0.000708115054294467,
+        0.000561452005058527,
+        0.0005479319952428341,
+        0.0005569820059463382,
+        0.0005578330019488931
+      ],
+      "evaluation_query_batch": 16,
+      "feature_count": 47905,
+      "forward_backward_seconds": [
+        0.0026397070614621043,
+        0.0026596980169415474,
+        0.0026417269837111235,
+        0.002630838076584041,
+        0.002614496974274516,
+        0.0024561940226703882,
+        0.0024223830550909042,
+        0.0024253129959106445,
+        0.0026548580499365926,
+        0.0026126960292458534
+      ],
+      "iterations": 10,
+      "key_feature_seconds": 0.0007125060074031353,
+      "keys": 512,
+      "median_evaluation_chunk_seconds": 0.0008472285117022693,
+      "median_forward_backward_seconds": 0.0026226675254292786,
+      "median_optimizer_seconds": 0.0004969610017724335,
+      "mode": "random",
+      "optimizer_seconds": [
+        0.0004970009904354811,
+        0.000512171071022749,
+        0.0005212110700085759,
+        0.0004942408995702863,
+        0.0004874609876424074,
+        0.000496921013109386,
+        0.0004921000218018889,
+        0.0005336519097909331,
+        0.0004978709621354938,
+        0.0004938700003549457
+      ],
+      "peak_evaluation_allocated_bytes": 184103936,
+      "peak_training_allocated_bytes": 373694976,
+      "query_batch": 8,
+      "timing_scope": "one captured head; forward/backward includes Q/K feature construction; eval caches K features"
+    },
+    {
+      "all_gradients_finite": true,
+      "budget": 512,
+      "checkpoint_replay_exact": true,
+      "evaluation_chunk_seconds": [
+        0.0009976320434361696,
+        0.0009917920688167214,
+        0.0009744110284373164,
+        0.0009762709960341454,
+        0.0007531170267611742,
+        0.0005508220056071877,
+        0.0005350420251488686,
+        0.0005461219698190689,
+        0.0005350119899958372,
+        0.0005440320819616318
+      ],
+      "evaluation_query_batch": 16,
+      "feature_count": 47905,
+      "forward_backward_seconds": [
+        0.002569264965131879,
+        0.0025652049807831645,
+        0.0025467959931120276,
+        0.002583275898359716,
+        0.002545815077610314,
+        0.00236204091925174,
+        0.0023662709863856435,
+        0.0023455109912902117,
+        0.002389651956036687,
+        0.002321220003068447
+      ],
+      "iterations": 10,
+      "key_feature_seconds": 0.0007115560583770275,
+      "keys": 512,
+      "median_evaluation_chunk_seconds": 0.000651969516184181,
+      "median_forward_backward_seconds": 0.0024677335168235004,
+      "median_optimizer_seconds": 0.0004948260029777884,
+      "mode": "random",
+      "optimizer_seconds": [
+        0.0004906510002911091,
+        0.0005367620615288615,
+        0.0004990010056644678,
+        0.0005036910297349095,
+        0.00048420007806271315,
+        0.0004902199143543839,
+        0.0005087710451334715,
+        0.0004891910357400775,
+        0.0004733199020847678,
+        0.0005252320552244782
+      ],
+      "peak_evaluation_allocated_bytes": 185260032,
+      "peak_training_allocated_bytes": 374851072,
+      "query_batch": 8,
+      "timing_scope": "one captured head; forward/backward includes Q/K feature construction; eval caches K features"
+    },
+    {
+      "all_gradients_finite": true,
+      "budget": 2048,
+      "checkpoint_replay_exact": true,
+      "evaluation_chunk_seconds": [
+        0.0010151619790121913,
+        0.001003070967271924,
+        0.0009837310062721372,
+        0.000984080950729549,
+        0.0009734320919960737,
+        0.0005801919614896178,
+        0.0005390610313042998,
+        0.0005505119916051626,
+        0.0005449120653793216,
+        0.0005494320066645741
+      ],
+      "evaluation_query_batch": 16,
+      "feature_count": 47905,
+      "forward_backward_seconds": [
+        0.0026139869587495923,
+        0.0024293330498039722,
+        0.0026243169559165835,
+        0.0026150770718231797,
+        0.0026042660465463996,
+        0.002406283048912883,
+        0.002374651958234608,
+        0.002355861011892557,
+        0.0023912210017442703,
+        0.0025834059342741966
+      ],
+      "iterations": 10,
+      "key_feature_seconds": 0.0007083059754222631,
+      "keys": 512,
+      "median_evaluation_chunk_seconds": 0.0007768120267428458,
+      "median_forward_backward_seconds": 0.0025063694920390844,
+      "median_optimizer_seconds": 0.0004985559498891234,
+      "mode": "random",
+      "optimizer_seconds": [
+        0.0005135000683367252,
+        0.0005244009662419558,
+        0.0004828099627047777,
+        0.0005120709538459778,
+        0.0004837409360334277,
+        0.0004824900534003973,
+        0.0004979110090062022,
+        0.0004992008907720447,
+        0.0004899699706584215,
+        0.0005297110183164477
+      ],
+      "peak_evaluation_allocated_bytes": 179106304,
+      "peak_training_allocated_bytes": 368697344,
+      "query_batch": 8,
+      "timing_scope": "one captured head; forward/backward includes Q/K feature construction; eval caches K features"
+    },
+    {
+      "all_gradients_finite": true,
+      "budget": 128,
+      "checkpoint_replay_exact": true,
+      "evaluation_chunk_seconds": [
+        0.06055436399765313,
+        0.0019800920272246003,
+        0.0017984389560297132,
+        0.0017771880375221372,
+        0.0017800580244511366,
+        0.0017636279808357358,
+        0.0017462280811741948,
+        0.001763978973031044,
+        0.0017593579832464457,
+        0.001756247947923839
+      ],
+      "evaluation_query_batch": 16,
+      "feature_count": 47905,
+      "forward_backward_seconds": [
+        0.003129728022031486,
+        0.003992527024820447,
+        0.003992576966993511,
+        0.003985036979429424,
+        0.004001267021521926,
+        0.003970076912082732,
+        0.00409100903198123,
+        0.003988916985690594,
+        0.003957896027714014,
+        0.003982135909609497
+      ],
+      "iterations": 10,
+      "key_feature_seconds": 0.0007622659904882312,
+      "keys": 512,
+      "median_evaluation_chunk_seconds": 0.0017705835052765906,
+      "median_forward_backward_seconds": 0.003986976982560009,
+      "median_optimizer_seconds": 0.0007108410354703665,
+      "mode": "dynamic",
+      "optimizer_seconds": [
+        0.0007183559937402606,
+        0.0007227660389617085,
+        0.0006919449660927057,
+        0.0007047560065984726,
+        0.0006915749981999397,
+        0.0007178561063483357,
+        0.0006876749685034156,
+        0.0007199359824880958,
+        0.0007169260643422604,
+        0.0006558939348906279
+      ],
+      "peak_evaluation_allocated_bytes": 181254144,
+      "peak_training_allocated_bytes": 370434560,
+      "query_batch": 8,
+      "timing_scope": "one captured head; forward/backward includes Q/K feature construction; eval caches K features"
+    },
+    {
+      "all_gradients_finite": true,
+      "budget": 512,
+      "checkpoint_replay_exact": true,
+      "evaluation_chunk_seconds": [
+        0.0014548719627782702,
+        0.001280277967453003,
+        0.001258237985894084,
+        0.0012456569820642471,
+        0.001261758035980165,
+        0.0012414769735187292,
+        0.001175774959847331,
+        0.0007079659262672067,
+        0.0007098549976944923,
+        0.0007017350289970636
+      ],
+      "evaluation_query_batch": 16,
+      "feature_count": 47905,
+      "forward_backward_seconds": [
+        0.003971586003899574,
+        0.0040063869673758745,
+        0.003997316933237016,
+        0.003535505966283381,
+        0.003247199929319322,
+        0.0032626409083604813,
+        0.0032546110451221466,
+        0.0032513500191271305,
+        0.0032389400294050574,
+        0.0032228599302470684
+      ],
+      "iterations": 10,
+      "key_feature_seconds": 0.0007201959379017353,
+      "keys": 512,
+      "median_evaluation_chunk_seconds": 0.0012435669777914882,
+      "median_forward_backward_seconds": 0.003258625976741314,
+      "median_optimizer_seconds": 0.0005084315198473632,
+      "mode": "dynamic",
+      "optimizer_seconds": [
+        0.000715504982508719,
+        0.0007337760180234909,
+        0.0006928050424903631,
+        0.0005040809046477079,
+        0.0005044509889557958,
+        0.0005072209751233459,
+        0.0004957610508427024,
+        0.0004883009241893888,
+        0.0005096420645713806,
+        0.0005270210094749928
+      ],
+      "peak_evaluation_allocated_bytes": 193256960,
+      "peak_training_allocated_bytes": 371999232,
+      "query_batch": 8,
+      "timing_scope": "one captured head; forward/backward includes Q/K feature construction; eval caches K features"
+    },
+    {
+      "all_gradients_finite": true,
+      "budget": 2048,
+      "checkpoint_replay_exact": true,
+      "evaluation_chunk_seconds": [
+        0.0013483300572261214,
+        0.0012862980365753174,
+        0.0012791879707947373,
+        0.0008935689693316817,
+        0.0007010650588199496,
+        0.0007120550144463778,
+        0.0007048759143799543,
+        0.000694365007802844,
+        0.0007062159711495042,
+        0.0007088149432092905
+      ],
+      "evaluation_query_batch": 16,
+      "feature_count": 47905,
+      "forward_backward_seconds": [
+        0.0032952309120446444,
+        0.0033043520525097847,
+        0.0032804410438984632,
+        0.0032756610307842493,
+        0.003273700946010649,
+        0.0032838210463523865,
+        0.0032819509506225586,
+        0.0032803710782900453,
+        0.003245230996981263,
+        0.0033019320107996464
+      ],
+      "iterations": 10,
+      "key_feature_seconds": 0.0007080649957060814,
+      "keys": 512,
+      "median_evaluation_chunk_seconds": 0.0007104349788278341,
+      "median_forward_backward_seconds": 0.003281195997260511,
+      "median_optimizer_seconds": 0.0005166060291230679,
+      "mode": "dynamic",
+      "optimizer_seconds": [
+        0.000506561016663909,
+        0.0005315410671755672,
+        0.0005020509706810117,
+        0.0005090909544378519,
+        0.0005268409149721265,
+        0.0005351719446480274,
+        0.000517470994964242,
+        0.0005157410632818937,
+        0.0005082510178908706,
+        0.0005270621040835977
+      ],
+      "peak_evaluation_allocated_bytes": 245534208,
+      "peak_training_allocated_bytes": 373649920,
+      "query_batch": 8,
+      "timing_scope": "one captured head; forward/backward includes Q/K feature construction; eval caches K features"
+    }
+  ],
+  "capture": {
+    "dtype": "float32",
+    "heads": [
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        16
+      ],
+      [
+        8,
+        0
+      ],
+      [
+        8,
+        16
+      ],
+      [
+        14,
+        0
+      ],
+      [
+        14,
+        16
+      ]
+    ],
+    "load_seconds": 20.9022137200227,
+    "median_window_seconds": 0.10183897445676848,
+    "model_id": "meta-llama/Llama-3.2-1B",
+    "model_revision": "4e20de362430cd3b72f300e6b0f18e50e7166e08",
+    "native_max_abs_errors": [
+      {
+        "14:0": 9.685754776000977e-08,
+        "14:16": 2.682209014892578e-07,
+        "2:0": 1.4156103134155273e-07,
+        "2:16": 2.0116567611694336e-07,
+        "8:0": 2.384185791015625e-07,
+        "8:16": 5.662441253662109e-07
+      },
+      {
+        "14:0": 2.086162567138672e-07,
+        "14:16": 2.980232238769531e-07,
+        "2:0": 1.2665987014770508e-07,
+        "2:16": 2.086162567138672e-07,
+        "8:0": 2.384185791015625e-07,
+        "8:16": 4.023313522338867e-07
+      }
+    ],
+    "tokens_per_window": 512,
+    "training_window_indices": [
+      0,
+      1
+    ],
+    "window_seconds": [
+      0.1633613349404186,
+      0.040316613973118365
+    ]
+  },
+  "checkpoint_policy": "Roundtrip checkpoints are disposable qualification artifacts; the passed replay checks are retained here.",
+  "corpus_manifest_sha256": "0f4094d7fcad7b0388c4e199c9254cb9c896dc49ad069faf230b105449d85155",
+  "cpu_tests": {
+    "command": [
+      "scaffolds/state_rank/.venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "scaffolds/state_rank/tests/test_head_capture.py",
+      "scaffolds/state_rank/tests/test_sparse_polynomial.py"
+    ],
+    "junit_sha256": "9153225409161e70340c8d7847c7924f6ffcb40a528dcdea7e3b993d301451f3",
+    "passed": true
+  },
+  "finished_utc": "2026-10-15T05:41:30.611027+00:00",
+  "frozen_execution_sha256": "7cd5dc29036441d638a4d7ed072e906dcd5b693702c7c0a75fcfe602af818391",
+  "hardware": {
+    "cudnn_allow_tf32": false,
+    "gpu_count": 1,
+    "gpu_name": "NVIDIA H100 80GB HBM3",
+    "matmul_allow_tf32": false,
+    "torch_cuda_version": "12.6",
+    "torch_version": "2.7.1+cu126",
+    "total_memory_bytes": 85049802752
+  },
+  "kind": "software_hardware_qualification",
+  "raw_evidence": {
+    "relative_path": "scaffolds/state_rank/validation/logs/sparse-head-219054-0/qualification.json",
+    "sha256": "b132e238d3358aa0d77ba659afd8b4cf53aefa6066e5622f0575b310912ca448"
+  },
+  "runtime_projection_notes": "Multiply each mode's update latency by six heads and its frozen optimizer-step budget. Add cached-key feature construction per evaluation window and eval-chunk latency per query batch. These measurements use one head and 512-token inputs; longer-context evaluation, validation frequency, I/O, checkpointing, scheduling and head-dependent work require separate allowance.",
+  "script_sha256": "d7135920f4709be553b4cad7fb5e4fc5e615aecd39cef0e8890ff7347d0923e7",
+  "slurm_job_id": "219054",
+  "slurm_restart_count": "0",
+  "source_commit": "aca7d35f51f021c1568bf5e50db3c493a9d3a2dd",
+  "started_utc": "2026-10-15T05:40:43.283678+00:00",
+  "status": "passed",
+  "timed_head": [
+    2,
+    0
+  ],
+  "tiny_cuda_capture": {
+    "native_max_abs_errors": {
+      "0:0": 7.450580596923828e-09,
+      "2:3": 7.450580596923828e-09
+    },
+    "passed": true
+  },
+  "tiny_cuda_polynomial": {
+    "feature_gram_taylor_identity": true,
+    "forward_backward_checks": [
+      {
+        "budget": 35,
+        "cpu_float64_vs_cuda_float32": "passed",
+        "mode": "dense"
+      },
+      {
+        "budget": 8,
+        "cpu_float64_vs_cuda_float32": "passed",
+        "mode": "fixed"
+      },
+      {
+        "budget": 8,
+        "cpu_float64_vs_cuda_float32": "passed",
+        "mode": "random"
+      },
+      {
+        "budget": 8,
+        "cpu_float64_vs_cuda_float32": "passed",
+        "mode": "dynamic"
+      }
+    ],
+    "passed": true
+  },
+  "tokens_sha256": "5865aa94ac195b7928af79958798923589a9a80a5f16f60d8cc241d780684d3b"
+}

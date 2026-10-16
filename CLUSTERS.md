@@ -62,21 +62,36 @@ in the worktree on NFS.
 Node CUDA toolkits differ: on 2026-09-24 `dogo` had CUDA 12.6 in `/usr/local/cuda`
 and `akita` CUDA 13.0. jaxlib assembles Triton custom-call PTX with that `ptxas`
 unless `CUDA_HOME` names another toolkit; `scaffolds/transformer/launchers/kennel.sbatch`
-points it at the locked environment's `nvidia/cuda_nvcc` (CUDA 12.9), since 12.6
-rejects Triton's PTX. Triton 3.7 picks its PTX version from its bundled assembler (CUDA
-13.1 for Blackwell, PTX 9.1), which the locked `ptxas` rejects on B300, so the launcher
-also sets `TRITON_PTXAS_PATH` and `TRITON_PTXAS_BLACKWELL_PATH` to the locked `ptxas`.
+points it at the toolkit inside the selected environment (`nvidia/cuda_nvcc`, CUDA 12.9,
+or `nvidia/cu13`, CUDA 13.2), since 12.6 rejects Triton's PTX. Triton 3.7 picks its PTX
+version from its bundled assembler (CUDA 13.1 for Blackwell, PTX 9.1), which CUDA 12.9's
+`ptxas` rejects, so the launcher also sets `TRITON_PTXAS_PATH` and
+`TRITON_PTXAS_BLACKWELL_PATH` to the environment's `ptxas`.
 
-The locked environment's cuBLAS 12.9 has an NVIDIA bug on Blackwell (cuBLAS 12.8–13.1):
-some kernels free tensor memory twice, which can silently corrupt data when a cuBLAS kernel
-runs concurrently with another kernel. On B300 allocations `kennel_runtime.sh` therefore
-adds `--xla_gpu_disable_async_collectives=ALLCOLLECTIVES` to `XLA_FLAGS`, so the gradient
-all-reduce runs on the compute stream; it cost no measurable throughput in a 200M replay
-(2.10 updates/s either way). The real fix is cuBLAS >= 13.2, which needs JAX's CUDA 13
-plugin (`jax-cuda13-plugin`, available at the locked JAX 0.10.0) and driver >= 580:
-`akita` qualifies (CUDA 13.0 toolkit); `dogo` had driver 560 (CUDA 12.6) on 2026-10-04,
-so H100 jobs would need the CUDA 12 environment or a driver upgrade. Remove the flag once
-B300 runs use cuBLAS >= 13.2.
+cuBLAS 12.8–13.1 has an NVIDIA bug on Blackwell: some kernels free tensor memory twice,
+which can silently corrupt data when a cuBLAS kernel runs concurrently with another
+kernel. B300 jobs therefore use a second environment from the same lock: `.venv-cuda13`
+(extra `cuda13`: JAX's CUDA 13 plugin, CUDA 13.2, cuBLAS 13.2.2.2, and the same cuDNN
+9.22.0.52 as the CUDA 12 environment). `kennel_runtime.sh` selects it on B300 and the
+CUDA 12 `.venv` on every other GPU, and runs record the choice as
+`TRANSFORMER_CUDA_ENVIRONMENT`; a run requeued between B300 and H100 changes environment
+with its hardware. CUDA 13 needs driver >= 580: `akita` had 580.126.20 on 2026-10-15,
+while `dogo` had 560 (CUDA 12.6) on 2026-10-04, so H100 stays on CUDA 12, where the bug
+does not apply. Sync both environments in every worktree that may run on B300:
+
+```bash
+uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
+  uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
+```
+
+On CUDA 12, B300 runs stopped on infinite gradient norms at finite losses, also with
+the gradient all-reduce on the compute stream (`--xla_gpu_disable_async_collectives=ALLCOLLECTIVES`,
+still set on B300 at no measurable cost) and on a single GPU; a checkpoint that failed
+twice on CUDA 12 replayed cleanly twice on CUDA 13. On B300 the cuDNN softmax rejects
+width 256 with `d_qk != d_v`, and FLA's Gated DeltaNet kernel crashes at width 128 in
+float32 in either environment. Evidence is in
+[`scaffolds/transformer/validation/README.md`](scaffolds/transformer/validation/README.md#b300-cuda-13-environment).
 
 The retained joint-sweep checks cover all 20 B300 and host-staged A6000
 configurations and 16 new H100 configurations. On `samoyed`, direct peer transfers

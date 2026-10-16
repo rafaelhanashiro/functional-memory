@@ -1,0 +1,42 @@
+{
+  "attempt": {
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "node": "dogo.csail.mit.edu",
+    "partition": "debug",
+    "slurm_job_id": "219055",
+    "slurm_restart_count": 0,
+    "source_commit": "ba69cf11248859a4903d9c5e7092d7fa9cc6a817",
+    "started_utc": "2026-10-15T05:54:06.932558+00:00"
+  },
+  "budget": 2048,
+  "heads": [
+    {
+      "head": 0,
+      "layer": 2
+    },
+    {
+      "head": 16,
+      "layer": 2
+    },
+    {
+      "head": 0,
+      "layer": 8
+    },
+    {
+      "head": 16,
+      "layer": 8
+    },
+    {
+      "head": 0,
+      "layer": 14
+    },
+    {
+      "head": 16,
+      "layer": 14
+    }
+  ],
+  "model_id": "meta-llama/Llama-3.2-1B",
+  "source_commit": "ba69cf11248859a4903d9c5e7092d7fa9cc6a817",
+  "variant": "dynamic"
+}

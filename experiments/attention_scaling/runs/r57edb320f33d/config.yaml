@@ -1,0 +1,96 @@
+schema_version: 1
+experiment_kind: frozen_pretrained_head_distillation
+condition: sparse_polynomial_heads/dynamic/2048
+seed: 20261015
+teacher:
+  model_id: meta-llama/Llama-3.2-1B
+  revision: 4e20de362430cd3b72f300e6b0f18e50e7166e08
+  dtype: float32
+  attention_implementation: eager
+  qk_preprocessing: preserve_pretrained_post_rope_scores
+  frozen: true
+model:
+  model_id: meta-llama/Llama-3.2-1B
+  initialization: pretrained
+  attention_mechanism: dot_product
+  qk_head_dim: 64
+  qk_norm: false
+  attention_degree: 3
+  attention_normalization: true
+  attention_coefficients: learned
+  attention_coefficient_sharing: per_head
+  attention_coefficient_conditioning: query
+  attention_coefficient_parameterization: positive_monomial_weights
+heads:
+- layer: 2
+  head: 0
+- layer: 2
+  head: 16
+- layer: 8
+  head: 0
+- layer: 8
+  head: 16
+- layer: 14
+  head: 0
+- layer: 14
+  head: 16
+data:
+  dataset_id: Salesforce/wikitext
+  dataset_config: wikitext-2-raw-v1
+  revision: b08601e04326c79dfdd32d625aee71d232d685c3
+  manifest_sha256: 0f4094d7fcad7b0388c4e199c9254cb9c896dc49ad069faf230b105449d85155
+  tokens_sha256: 5865aa94ac195b7928af79958798923589a9a80a5f16f60d8cc241d780684d3b
+  windows:
+    train: 200
+    validation: 32
+    test: 32
+    test_long: 8
+  sequence_length: 512
+  long_sequence_length: 2048
+  split_policy: official splits; document-disjoint; no cross-document windows
+features:
+  degree: 3
+  key_dim: 64
+  value_dim: 64
+  basis: symmetric Taylor monomials, exact multinomial multiplicities
+  feature_count: 47905
+  constant_always_active: true
+  key_writes: dense
+  normalization: causal kernel sum
+  log_weight_bounds:
+  - -12
+  - 12
+  fixed_support: top training-query-RMS times key-RMS times dense learned weight
+  dynamic_score: abs(query feature) times key-RMS times weight times learned relevance
+  dynamic_gradient: hard support forward; sigmoid straight-through gate backward
+fit:
+  variant: dynamic
+  budget: 2048
+  steps: 200
+  initial_score_temperature: 0.1
+  calibration_windows: 8
+  learning_rate: 0.003
+  query_batch_size: 8
+  evaluation_query_batch_size: 16
+  evaluation_every: 100
+  checkpoint_every: 25
+  validation_windows_during_fit: 8
+  validation_queries_per_window: 32
+  gradient_clip: 1.0
+  denominator_margin: 0.001
+  denominator_penalty: 10.0
+  denominator_validity: positive denominator greater than margin times absolute kernel
+    sum
+  training_denominator: max(raw denominator, margin times absolute kernel sum); violations
+    penalized and logged
+  evaluation_denominator: raw denominator; invalid queries yield undefined aggregate
+    error
+  objective: per-head relative output MSE plus explicit denominator penalty
+  warm_start_run_id: r79ad5ebadada
+  checkpoint_selection: lowest aggregate validation relative output MSE; invalid queries
+    disqualify
+monitoring:
+  entity: rafah-massachusetts-institute-of-technology
+  project: functional-memory
+  group: attention_scaling
+  mode: online

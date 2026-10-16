@@ -36,6 +36,7 @@ INDEX_COLUMNS = (
     "quadratic_mode", "weight_decay_policy", "seed", "training_steps", "prediction_tokens",
     "source_commit",
     "terminal_step", "terminal_validation_nll", "terminal_validation_perplexity",
+    "feature_selection", "active_features", "terminal_validation_relative_output_rms", "best_validation_relative_output_rms",
     "config", "record", "metrics",
 )
 
@@ -445,6 +446,16 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
     sharing = _first(record.get("coefficient_sharing"), metadata.get("attention_coefficient_sharing"), model.get("attention_coefficient_sharing"), model.get("quadratic_sharing"))
     budget = (optim.get("total_steps"), data.get("batch_size"), data.get("sequence_length"))
     prediction_tokens = budget[0] * budget[1] * (budget[2] - 1) if all(type(value) is int for value in budget) else None
+    fit = config.get("fit", {}) if config.get("experiment_kind") == "frozen_pretrained_head_distillation" else {}
+
+    def relative_output_rms(rows):
+        if not isinstance(rows, list) or not rows:
+            return None
+        values = [row.get("output_relative_rms") for row in rows]
+        if any(value is None for value in values) or any(row.get("invalid_fraction", 0) for row in rows):
+            return None
+        return (sum(value * value for value in values) / len(values)) ** 0.5
+
     return {
         "run_id": record["run_id"], "label": record.get("label", record.get("name")),
         "status": _first(record.get("status"), completion.get("status"), metadata.get("status")),
@@ -476,11 +487,14 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "quadratic_mode": model.get("quadratic_mode"),
         "weight_decay_policy": optim.get("weight_decay_policy"),
         "seed": _first(train.get("seed"), config.get("seed"), condition_seed, record.get("seed"), metadata.get("seed")),
-        "training_steps": optim.get("total_steps"), "prediction_tokens": prediction_tokens,
+        "training_steps": _first(optim.get("total_steps"), fit.get("steps")), "prediction_tokens": prediction_tokens,
         "source_commit": _first(record.get("source_commit"), metadata.get("source_commit"), train.get("source_commit")),
         "terminal_step": _first(terminal.get("step"), record.get("training_updates"), get("step")),
         "terminal_validation_nll": _first(record.get("terminal_validation_nll"), get("validation_nll")),
         "terminal_validation_perplexity": _first(record.get("terminal_validation_perplexity"), get("validation_perplexity")),
+        "feature_selection": fit.get("variant"), "active_features": fit.get("budget"),
+        "terminal_validation_relative_output_rms": relative_output_rms(completion.get("terminal_validation")),
+        "best_validation_relative_output_rms": relative_output_rms(completion.get("best_validation")),
         "config": f"runs/{record['run_id']}/config.yaml",
         "record": f"runs/{record['run_id']}/record.json",
         "metrics": f"runs/{record['run_id']}/metrics.jsonl" if metrics_path.exists() else "",

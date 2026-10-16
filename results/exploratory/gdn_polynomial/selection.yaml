@@ -1,5 +1,7 @@
-question: Does separating GDN's erase and write gates improve the canonical GDN model?
+question: Do independent erasure, polynomial memory, or alternative write activations
+  improve GDN?
 settings:
+  selected_comparison: independent_erase
   metric: terminal_validation_perplexity
   validation_best_reported_separately: true
   warmup_steps: 400

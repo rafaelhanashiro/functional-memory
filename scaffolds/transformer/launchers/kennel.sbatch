@@ -53,11 +53,16 @@ fi
 echo "run=$RUN job=$SLURM_JOB_ID restart=${SLURM_RESTART_COUNT:-0} launch_commit=$LAUNCH_COMMIT gpu_type=$GPU_TYPE"
 
 source scaffolds/transformer/launchers/kennel_runtime.sh
-PYTHON="$EXECUTION_ROOT/scaffolds/transformer/.venv/bin/python"
+PYTHON="$EXECUTION_ROOT/scaffolds/transformer/$TRANSFORMER_ENVIRONMENT_DIR/bin/python"
 if [[ ! -x "$PYTHON" ]]; then
-  echo "Missing the worktree environment; run uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink" >&2
+  if [[ "$TRANSFORMER_CUDA_ENVIRONMENT" == cuda13 ]]; then
+    echo "Missing the worktree's B300 environment; run UV_PROJECT_ENVIRONMENT=\$PWD/scaffolds/transformer/.venv-cuda13 uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink" >&2
+  else
+    echo "Missing the worktree environment; run uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink" >&2
+  fi
   exit 1
 fi
+echo "cuda_environment=$TRANSFORMER_CUDA_ENVIRONMENT python=$PYTHON"
 LOGS="$RUN_ROOT/.runtime"
 CACHE="$EXECUTION_ROOT/.cache/$EXPERIMENT"
 export SHARED_TRANSFORMER_SOURCE_COMMIT="$LAUNCH_COMMIT"
@@ -95,7 +100,7 @@ TRANSFORMER_JOB_TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/functional-memory-${S
 export TMPDIR="$TRANSFORMER_JOB_TMPDIR"
 # jaxlib assembles Triton custom-call PTX with the first ptxas among its CUDA roots,
 # which is the node's /usr/local/cuda unless CUDA_HOME names another; pin the locked toolkit.
-CUDA_HOME="$("$PYTHON" -c 'import importlib.util; print(next(iter(importlib.util.find_spec("nvidia.cuda_nvcc").submodule_search_locations)))')"
+CUDA_HOME="$(transformer_cuda_home "$PYTHON")"
 export CUDA_HOME
 # Triton assembles with its bundled ptxas (CUDA 13.1 for Blackwell) and emits PTX newer
 # than the locked toolkit's ptxas, which jaxlib uses for custom calls, can read. Point
