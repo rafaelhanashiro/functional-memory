@@ -800,7 +800,8 @@ The replays track the original losses within 1e-4 through update 12,630, then tr
 the failure: it does not follow from the model state. That is consistent with transient
 corruption but does not prove it. Keeping collectives synchronous costs no measurable
 throughput, so Kennel B300 launches set it (`launchers/kennel_runtime.sh`,
-[CLUSTERS.md](../../../CLUSTERS.md)) until B300 runs use cuBLAS >= 13.2. Retained logs
+[CLUSTERS.md](../../../CLUSTERS.md)); it did not prevent later failures, which cuBLAS
+13.2 does (next section). Retained logs
 (Kennel, `validation/logs/`): `replay-b300-208436.log`
 (`b722bc63a32d8de642e5677fdf566126bdba1083a4e7ef03e826fb83f9e75759`) and
 `replay-h100-208437.log`
@@ -811,6 +812,60 @@ primary checkout with a detached worktree at the run's commit:
 sbatch -w akita --output=scaffolds/transformer/validation/logs/replay-b300-%j.log \
   scaffolds/transformer/validation/replay_checkpoint.sbatch worktrees/b300_replay \
   experiments/attention_scaling/runs/<run> 12500 12900 <scratch> default sync default sync
+```
+
+## B300 CUDA 13 environment
+
+Keeping collectives on the compute stream did not remove the B300 failures: on
+2026-10-09 a four-B300 run with the flag set had MLP-only gradient norms of 1.7e13 and
+1.2e16, and on 2026-10-15 the single-GPU blocked-reference tanh run `r3ef6320d0629`
+(no collectives) stopped at update 649 with a finite loss (4.26) and an infinite
+gradient norm. Replays from its update-500 checkpoint on its source `bb81667`:
+
+| Job | GPU | Environment | Result |
+| --- | --- | --- | --- |
+| 219228 (`akita`) | 1×B300 | CUDA 12, cuBLAS 12.9.2.10 | failed at update 572 (finite loss 4.48, infinite gradient norm) |
+| 219229 (`dogo`) | 2×H100 | CUDA 12 | passed through update 660 |
+| 219246 (`akita`) | 1×B300 | CUDA 13.2, cuBLAS 13.2.2.2 | two replays, both passed through update 1,000 |
+
+The failure moves between replays on B300 with CUDA 12, does not occur on H100, and
+does not occur with cuBLAS 13.2, the first version JAX's runtime warning names as free of
+the Blackwell tensor-memory issue. B300 jobs therefore use the `cuda13` environment
+([CLUSTERS.md](../../../CLUSTERS.md)); job 219246 ran source `0695147`.
+
+The full GPU test suite on one B300 with the `cuda13` environment (job 219252, source
+`653b90f`, driver 580.126.20, one process per test file; record
+[`runs/b300-cuda13/tests.json`](runs/b300-cuda13/tests.json)) passed 477 tests in 18
+files. Two files had failures, neither from CUDA 13:
+
+- `test_softmax_backends.py`: the two width-256 cuDNN cases, which B300 rejects with
+  `d_qk != d_v` (the known limit above).
+- `test_gated_deltanet_kernel.py`: the float32 width-128 case crashes with
+  `CUDA_ERROR_LAUNCH_FAILED`; run alone in a fresh process it crashes in both the
+  `cuda13` and `cuda12` environments on the same B300, so it is a B300 failure of the
+  FLA kernel at that width. Widths 8–64 pass. A crash poisons the process's CUDA
+  context, so the file's later cases (bfloat16, width 256, independent erase) are
+  untested on B300 in either environment; GDN at width 128 or more is not qualified on
+  B300.
+
+An earlier single-process run of the same suite (job 219241) reported 411 failures, all
+`CUDA_ERROR_LAUNCH_FAILED` after that GDN crash; the per-file run replaced it. Retained
+logs (Kennel, `validation/logs/`): `b300-cuda12-replay-219228.log`
+(`a5366eccc5d3034e87900ed85bd5b7cc17ea9f7b17ebec4345eb913d6c0611c5`),
+`h100-cuda12-replay-219229.log`
+(`a1bb6da1e602db37a76e2fa44668b3e5f56244dab3861ff135329185edb819e7`),
+`b300-cuda13-replays-219246.log`
+(`359ed32d26eeae7b61e02ad007397c17b214071584c93ee6207f8264f7f462c3`), and
+`b300-cuda13-qualify-219252.log`
+(`f5f6d0416796aab0100e9cd20bca8602436549410ddd8b4cb5dc0754244751d3`), with the per-file
+JUnit reports in `b300-cuda13-gpu-219252/`.
+
+```bash
+sbatch -w akita --gres=gpu:b300:1 scaffolds/transformer/validation/qualify_b300_cuda13.sbatch \
+  "$(git rev-parse HEAD)" - 0 0 0 \
+  'scaffolds/transformer/tests/test_gated_deltanet_kernel.py::test_fused_output_and_all_gradients_match_the_recurrence[float32-0.005-128]'
+sbatch -w akita --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
+  scaffolds/transformer/validation/replay_checkpoint.sbatch "$PWD" <run> 500 1000 <scratch> default default
 ```
 
 ## Reproduction

@@ -451,6 +451,9 @@ package files with the uv cache, so an additional environment costs almost no di
 
 ```bash
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+# B300 (Blackwell) environment from the same lock: CUDA 13 with cuBLAS >= 13.2.
+UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
+  uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
 
 # Tiny synthetic CPU check; both outputs are disposable.
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m scaffolds.transformer.train \
