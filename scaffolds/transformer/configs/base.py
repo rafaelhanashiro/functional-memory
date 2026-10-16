@@ -80,6 +80,10 @@ class ModelConfig:
     attention_coefficient_conditioning: Literal["static", "query"] = "static"
     # Legacy identity is degree-one affine; tanh supports b + a*tanh(x W).
     attention_coefficient_activation: Literal["identity", "tanh"] = "identity"
+    # Tanh coefficients start at b = 1/r!, a = amplitude_initial, and W with independent
+    # N(0, projection_initial_std^2) entries (0 keeps W at zero). a = 0 with W = 0 never learns.
+    attention_coefficient_amplitude_initial: float = 1.0
+    attention_coefficient_projection_initial_std: float = 0.0
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
     # (even m, row-normalized only), so the kernel is nonnegative by construction;
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
@@ -216,6 +220,15 @@ class ModelConfig:
                                  "per_head polynomial attention with Taylor initialization")
             if self.attention_coefficient_activation == "identity" and self.attention_degree != 1:
                 raise ValueError("Query-conditioned identity coefficients require degree-one attention")
+        amplitude, spread = self.attention_coefficient_amplitude_initial, self.attention_coefficient_projection_initial_std
+        if (not all(isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+                    for value in (amplitude, spread)) or spread < 0):
+            raise ValueError("Tanh coefficient initialization needs a finite amplitude and a nonnegative spread")
+        if (amplitude, spread) != (1.0, 0.0):
+            if self.attention_coefficient_activation != "tanh":
+                raise ValueError("Coefficient amplitude and projection initialization apply to tanh coefficients only")
+            if amplitude == 0 and spread == 0:
+                raise ValueError("Tanh coefficients with a = 0 and W = 0 have zero gradients and never learn")
         if self.attention_coefficients == "learned":
             if self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed":
                 raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")

@@ -138,6 +138,9 @@ Use a separate worktree for a new sweep. Sync that worktree's own locked environ
 git worktree add -b codex/attention-sweep worktrees/attention-sweep main
 cd worktrees/attention-sweep
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+# Kennel B300 jobs use the CUDA 13 environment from the same lock (CLUSTERS.md).
+UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
+  uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
 ```
 
 Prepare a complete recipe with the desired settings and dataset paths for the home

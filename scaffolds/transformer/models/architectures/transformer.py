@@ -6,7 +6,7 @@ from flax import nnx
 from scaffolds.transformer.configs import ModelConfig
 from scaffolds.transformer.attention.multihead import attention_from_config
 from scaffolds.transformer.attention.parameters import (
-    attention_parameter_specs, initialize_attention_parameters, parameters_for_layer,
+    attention_parameter_specs, initialize_attention_parameters, mechanism_key, parameters_for_layer,
 )
 from scaffolds.transformer.models.components.normalization import RMSNorm
 from scaffolds.transformer.models.initialization import apply_initialization
@@ -86,9 +86,11 @@ class TransformerLM(nnx.Module):
         self.final_norm = RMSNorm(config.hidden_size, config.rms_norm_eps)
         self.lm_head = nnx.Linear(config.hidden_size, config.vocab_size, use_bias=False, rngs=rngs)
         self.attention_parameter_specs = attention_parameter_specs(config)
+        random_mechanism = any(spec.initial_std for spec in self.attention_parameter_specs)
         initialize_attention_parameters(
             self, self.attention_parameter_specs,
             num_layers=config.num_layers, num_heads=config.num_heads,
+            key=mechanism_key(rngs.params.key[...]) if random_mechanism else None,
         )
         if config.initialization != "flax_default":
             # One extra draw after construction, so Flax-default models keep their exact weights.

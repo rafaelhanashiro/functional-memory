@@ -251,6 +251,63 @@ def test_canonical_backbone_initial_function_and_parameter_count_match_static(de
     np.testing.assert_allclose(dynamic(tokens), static(tokens), rtol=2e-5, atol=2e-6)
 
 
+@pytest.mark.parametrize("degree", DEGREES)
+def test_zero_amplitude_with_random_projection_starts_static_and_learns_through_the_amplitude(degree):
+    spread = 0.002
+    config = _model(degree, attention_coefficient_amplitude_initial=0.0,
+                    attention_coefficient_projection_initial_std=spread)
+    static_config = replace(config, attention_coefficient_conditioning="static",
+                            attention_coefficient_activation="identity",
+                            attention_coefficient_amplitude_initial=1.0,
+                            attention_coefficient_projection_initial_std=0.0)
+    dynamic, again, static = build_model(config, 13), build_model(config, 13), build_model(static_config, 13)
+    dynamic_params = dict(nnx.to_flat_state(nnx.state(dynamic, nnx.Param)))
+    for path, parameter in dict(nnx.to_flat_state(nnx.state(static, nnx.Param))).items():
+        if path != ("polynomial_coefficients",):
+            np.testing.assert_array_equal(parameter[...], dynamic_params[path][...])
+    kernel = np.asarray(dynamic.query_polynomial_kernel[...])
+    np.testing.assert_array_equal(kernel, again.query_polynomial_kernel[...])  # a function of the seed
+    assert not np.array_equal(kernel, build_model(config, 14).query_polynomial_kernel[...])
+    assert 0.5 * spread < kernel.std() < 1.5 * spread and len(np.unique(kernel)) == kernel.size
+    np.testing.assert_array_equal(dynamic.query_polynomial_amplitude[...], 0)
+    tokens = jnp.arange(26).reshape(2, 13) % 16
+    np.testing.assert_allclose(dynamic(tokens), static(tokens), rtol=2e-5, atol=2e-6)
+    # a = 0 silences W's gradient; the random W gives the amplitude a nonzero one.
+    random = np.random.default_rng(5)
+    x = jnp.asarray(random.normal(size=(2, 7, 8)), jnp.float32)
+    cotangent = jnp.asarray(random.normal(size=(2, 7, 2, degree + 1)), jnp.float32)
+    operation = lambda w, a: project_coefficients(x, w, dynamic.query_polynomial_bias[0], amplitude=a,
+                                                  activation="tanh")
+    _, pullback = jax.vjp(operation, dynamic.query_polynomial_kernel[0], dynamic.query_polynomial_amplitude[0])
+    dw, da = pullback(cotangent)
+    np.testing.assert_array_equal(dw, 0)
+    assert np.all(np.abs(np.asarray(da)) > 0)
+    facts = acceptance.matches_softmax_backbone_initialization(Config(model=config))
+    assert facts["mechanism_parameters"]["query_polynomial_kernel"]["initial_std"] == spread
+    assert facts["mechanism_parameters"]["query_polynomial_amplitude"]["initial"] == [0.0] * (degree + 1)
+
+
+def test_new_initialization_fields_keep_legacy_recipes_and_identity_unchanged():
+    config = _config(2)
+    current, legacy = config_to_dict(config), config_to_dict(config)
+    for key in ("attention_coefficient_amplitude_initial", "attention_coefficient_projection_initial_std"):
+        del legacy["model"][key]
+    assert config_dicts_equal(current, legacy)
+    changed = _config(2)
+    changed.model = replace(changed.model, attention_coefficient_amplitude_initial=0.0,
+                            attention_coefficient_projection_initial_std=0.002)
+    assert not config_dicts_equal(current, config_to_dict(changed))
+    from scaffolds.transformer.training.diagnostics import attention_identity
+
+    default = attention_identity(config)
+    assert "attention_coefficient_amplitude_initial" not in default
+    assert "W initially zero, a initially 1, b_r initially 1/r!" in default["attention_formula"]
+    started = attention_identity(changed)
+    assert started["attention_coefficient_amplitude_initial"] == 0.0
+    assert started["attention_coefficient_projection_initial_std"] == 0.002
+    assert "W initially N(0, 0.002^2) per entry, a initially 0" in started["attention_formula"]
+
+
 def test_all_projection_parameters_keep_fp32_and_are_excluded_from_weight_decay():
     config = _config()
     state = create_state(config, jax.random.PRNGKey(0))
@@ -294,6 +351,11 @@ def test_legacy_identity_config_resumes_without_new_activation_field():
     {"attention_coefficients": "fixed"}, {"attention_coefficient_sharing": "global"},
     {"attention_coefficient_conditioning": "static"}, {"attention_coefficient_activation": "relu"},
     {"attention_coefficient_initialization": "linear"},
+    {"attention_coefficient_amplitude_initial": 0.0},
+    {"attention_coefficient_projection_initial_std": -0.1},
+    {"attention_coefficient_amplitude_initial": float("nan")},
+    {"attention_coefficient_activation": "identity", "attention_degree": 1,
+     "attention_coefficient_projection_initial_std": 0.01},
 ])
 def test_rejects_unsupported_tanh_coefficient_configurations(updates):
     with pytest.raises(ValueError):
