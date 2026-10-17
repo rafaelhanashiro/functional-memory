@@ -298,6 +298,38 @@ To update a figure, change its explicit run selection, run
 `python -m scaffolds.records refresh results/<analysis>` in the scaffold environment,
 and use that result collection's regeneration command.
 
+### Tanh gate initialization: wider projection draw and inner bias
+
+Eight single-GPU runs test, one change at a time, why the zero-amplitude tanh runs
+(`r75b81509b10b`, `r8c9b076f9635`, `rb306d49a5abe`, `rf1160aa95e46`) barely use their
+input dependence. All start at `a_r = 0` and `b_r = 1/r!`, use the Mosaic kernels
+(`attention_backend: mosaic`), one B300 or H100 GPU, and global microbatch 32
+(gradient accumulation eight; microbatch 64 does not fit one H100 on this path), and
+otherwise keep the zero-amplitude recipe.
+
+| Change | m = 1 | m = 2 | m = 3 | m = 4 |
+| --- | --- | --- | --- | --- |
+| `attention_coefficient_projection_initial_std: 0.03125`: `W ~ N(0, 1/hidden_size)`, pre-activations of order one | `r5be9a97f06e2` | `rec520e9303ac` | `r215d3d91dd02` | `rd4f66b1959d2` |
+| `attention_coefficient_tanh_bias: true`: learned `beta_r` inside the tanh from zero, `W ~ N(0, 0.002^2)` | `rbd4eb6ccc16f` | `r6bba734352f0` | `rde534cbb87a1` | `r59490b6e0818` |
+
+Launch commit `9ca974cd2fd0f59c09450f8a7f9a1dd5acd00c44` from `worktrees/tanh_gate_init` on
+Kennel. Degrees 1 and 4 run on `standard` (jobs 219940–219943, 24 h, `akita` excluded so
+they cannot preempt this project's `long` runs there); degrees 2 and 3 run on `long`
+(jobs 219944–219947) with the launcher's default time limit:
+
+```bash
+RUN=<run-id>
+sbatch --partition=standard --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,akita \
+  --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" 9ca974cd2fd0f59c09450f8a7f9a1dd5acd00c44 1 B300,H100
+sbatch --partition=long --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" 9ca974cd2fd0f59c09450f8a7f9a1dd5acd00c44 1 B300,H100
+```
+
 ## Independent GDN erase gate
 
 Run `rf7341031e3d5` asks whether GDN benefits from separate scalar erase and write
