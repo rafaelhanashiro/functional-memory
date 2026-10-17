@@ -362,6 +362,15 @@ Neither pass divides by a gate, so zero erasure with nonzero writing is supporte
 Training telemetry records both gates, their difference, raw attention output statistics,
 and separate erase/write/decay/output-gate parameter-group norms.
 
+`gdn_write_activation: tanh` changes the linear write to `beta_t = tanh(W_b x_t)`.
+It requires independent erasure, which remains `lambda_t = sigmoid(W_lambda x_t)`.
+The default `sigmoid` preserves historical recipes and outputs. Both choices use
+exactly the same reference-initialized projection weights and RNG draws; changing
+the activation changes the initial function. Signed writes range from -1 to 1 and
+do not change decay, Q/K normalization, or gated output RMSNorm. The activation is
+part of checkpoint compatibility, run identity, and the generated study index;
+tanh runs carry the `tanh_write` W&B tag.
+
 ### Gated linear attention
 
 `attention_mechanism: gla` replaces the attention module inside the same residual

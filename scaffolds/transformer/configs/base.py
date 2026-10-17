@@ -58,6 +58,8 @@ class ModelConfig:
     # Independent erasure learns a separate per-token/head sigmoid gate, initially
     # copied from beta; tied retains GDN's shared erase/write gate.
     gdn_erase_mode: Literal["tied", "independent"] = "tied"
+    # Signed writes retain a separate sigmoid erase gate. Historical recipes use sigmoid.
+    gdn_write_activation: Literal["sigmoid", "tanh"] = "sigmoid"
     gla_gate_rank: int = 16
     gla_gate_tau: float = 16.0
     gla_chunk_size: int = 64
@@ -191,6 +193,11 @@ class ModelConfig:
             raise ValueError("model.gdn_erase_mode must be tied or independent")
         if self.gdn_erase_mode != "tied" and self.attention_mechanism != "gated_deltanet":
             raise ValueError("model.gdn_erase_mode independent requires gated_deltanet")
+        if self.gdn_write_activation not in ("sigmoid", "tanh"):
+            raise ValueError("model.gdn_write_activation must be sigmoid or tanh")
+        if self.gdn_write_activation == "tanh":
+            if self.attention_mechanism != "gated_deltanet" or self.gdn_erase_mode != "independent":
+                raise ValueError("model.gdn_write_activation tanh requires gated_deltanet with independent erasure")
         for name in ("gla_gate_rank", "gla_chunk_size", "gla_inner_chunk_size"):
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
