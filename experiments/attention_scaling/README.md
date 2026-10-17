@@ -330,6 +330,40 @@ sbatch --partition=long --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$
   "experiments/attention_scaling/runs/$RUN/config.yaml" 629cab71a2a3d490f078488918b8861a7cfce874 1 B300,H100
 ```
 
+### Query-key tanh coefficients, degrees 1–4
+
+Four single-GPU runs test whether the writer's vote is what query-dependent coefficients
+lack: `attention_coefficient_conditioning: query_key` multiplies each key's degree-`r`
+term by `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` beside `c_r(x_t) = b_r + a_r tanh(w_r^T x_t)`,
+with no recurrence, gate, or decay. Both amplitudes start at zero and both projections are
+drawn from `N(0, 1/hidden_size)`, so training starts from the static Taylor kernel; the
+rest is the gate-initialization recipe above (Mosaic kernels, one B300 or H100, global
+microbatch 32, head RMSNorm, QK normalization, warmup 400).
+
+| m = 1 | m = 2 | m = 3 | m = 4 |
+| --- | --- | --- | --- |
+| `r4e9081eb9f1d` | `r0aab2b77017f` | `r4a7c601b4b1f` | `r4e3f4097a60e` |
+
+The kernels run once per order with the key factor folded into the values, so a step
+costs about 1.25× (m = 1) to 1.9× (m = 4) the query-only step. Launch commit
+`f13be89f1eacf37775e92f1ffc2507be17c96810` from `worktrees/tanh_query_key` on Kennel, `mastiff`
+excluded so every job lands on a B300 or an H100 SXM: degrees 1–3 on `standard` (24 h),
+degree 4 on `long`:
+
+```bash
+RUN=<run-id>
+sbatch --partition=standard --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff \
+  --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" f13be89f1eacf37775e92f1ffc2507be17c96810 1 B300,H100
+sbatch --partition=long --exclude=collie,samoyed,doodle,terrier,mastiff \
+  --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" f13be89f1eacf37775e92f1ffc2507be17c96810 1 B300,H100
+```
+
 ## Independent GDN erase gate
 
 Run `rf7341031e3d5` asks whether GDN benefits from separate scalar erase and write
