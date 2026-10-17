@@ -1,12 +1,223 @@
 {
+  "acceptance": {
+    "all_full_model_updates_finite": true,
+    "all_kernel_outputs_and_gradients_finite": true,
+    "cudnn_forward_backward_dispatch_verified": true,
+    "current_reports_same_gpu_uuid": true,
+    "full_model_trials": 6,
+    "full_model_updates": 210,
+    "kernel_fixtures_identical": true,
+    "timed_updates_per_full_model_trial": 30,
+    "warmup_updates_per_full_model_trial": 5
+  },
+  "artifacts": {
+    "cudnn-1": {
+      "path": "scaffolds/transformer/validation/runs/upstream-b300/cudnn-1.json",
+      "sha256": "4b98ac6cc16a9926450bb66dfd485671b7fd67250b20d60ef2ca5e8df818f953"
+    },
+    "cudnn-2": {
+      "path": "scaffolds/transformer/validation/runs/upstream-b300/cudnn-2.json",
+      "sha256": "1267641896e35f29f1296f85722c4d32cf8eafc56178fda277477f8efc77ac9e"
+    },
+    "fla-1": {
+      "path": "scaffolds/transformer/validation/runs/upstream-b300/fla-1.json",
+      "sha256": "10b7a49e48655c0945397656561a146b996ac3f48c57af05a1f615bd084d5da9"
+    },
+    "fla-2": {
+      "path": "scaffolds/transformer/validation/runs/upstream-b300/fla-2.json",
+      "sha256": "0e7ec1e4c645212d761ae6eb1bb37ba4d9e7c29a4020afd4e50c15e30735585d"
+    },
+    "gpu_tests": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/upstream-b300/220076/cudnn-tests.xml",
+      "sha256": "c91d680c179986e39a7b3d6053fc5b6d78be4bbeb5ce22ecf67e58330a3a845e"
+    },
+    "jax-kernels": {
+      "path": "scaffolds/transformer/validation/runs/upstream-b300/jax-kernels.json",
+      "sha256": "b038042467deac850e607a889b7c83dbeb5b14a8627786a13a2664e41e1ac983"
+    },
+    "mosaic-1": {
+      "path": "scaffolds/transformer/validation/runs/upstream-b300/mosaic-1.json",
+      "sha256": "4bbf1b5fa240f0f0be9fcc2c3595dbed581ac3b570b2857afd2de147c03d49a9"
+    },
+    "mosaic-2": {
+      "path": "scaffolds/transformer/validation/runs/upstream-b300/mosaic-2.json",
+      "sha256": "95cbfe1b569f291d4b6710da9f2d2fd1fd2824394f0f0ac4ee0a5b325a3ab8a9"
+    },
+    "torch-kernels": {
+      "path": "scaffolds/transformer/validation/runs/upstream-b300/torch-kernels.json",
+      "sha256": "48ae28a608f95612884a0c046ff45e92289e10715c38a2b737193c4736150312"
+    },
+    "training_log": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/upstream-b300/benchmark-220076.log",
+      "sha256": "4b571a07b9ab4b327e5431d8e2eae345364c0bcbf3f85d4bd02c58ba69d95a1e"
+    }
+  },
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--output=scaffolds/transformer/validation/logs/upstream-b300/benchmark-%j.log",
+    "scaffolds/transformer/launchers/benchmark_upstream.sbatch",
+    "e0538b971ef9a66338e703cac8274a59e73cbb6b"
+  ],
   "cpu_tests": {
     "passed": 2,
     "scope": "Packed NPY data integrity/next-token alignment and learning-rate schedule",
     "seconds": 0.78
   },
+  "finished_at_utc": "2026-10-17T16:51:22+00:00",
   "format": "upstream-attention-throughput",
+  "frozen_execution_check": "passed",
+  "frozen_execution_sha256": "9cacb20cfd5f16a51d94dca6052d8007f1f0705557d0f05e52eb52f8b5c62e6a",
+  "full_model_compute_summary": [
+    {
+      "complete_trials": 2,
+      "expected_trials": 2,
+      "gpu_uuid": "db556517-bdca-9832-804e-11a0366de63c",
+      "implementation": "jax_cudnn",
+      "mean_seconds": 0.9377055753022432,
+      "median_seconds": 0.9262579740025103,
+      "parameter_count": 199906464,
+      "sample_key": "compute_seconds",
+      "samples": 60,
+      "scope": "current_gpu",
+      "status": "complete",
+      "tokens_per_second": 559117.929773437,
+      "tokens_per_update": 524288,
+      "trials": [
+        {
+          "file": "cudnn-1.json",
+          "mean_seconds": 0.9354072445693116,
+          "median_seconds": 0.9260111954063177,
+          "samples": 30,
+          "tokens_per_second": 560491.703526839
+        },
+        {
+          "file": "cudnn-2.json",
+          "mean_seconds": 0.9400039060351749,
+          "median_seconds": 0.9284182256087661,
+          "samples": 30,
+          "tokens_per_second": 557750.8738356042
+        }
+      ]
+    },
+    {
+      "complete_trials": 2,
+      "expected_trials": 2,
+      "gpu_uuid": "db556517-bdca-9832-804e-11a0366de63c",
+      "implementation": "jax_mosaic_cubic",
+      "mean_seconds": 1.2499821672060838,
+      "median_seconds": 1.2460825005546212,
+      "parameter_count": 200573344,
+      "sample_key": "compute_seconds",
+      "samples": 60,
+      "scope": "current_gpu",
+      "status": "complete",
+      "tokens_per_second": 419436.3837780743,
+      "tokens_per_update": 524288,
+      "trials": [
+        {
+          "file": "mosaic-1.json",
+          "mean_seconds": 1.2703079486265778,
+          "median_seconds": 1.2587057021446526,
+          "samples": 30,
+          "tokens_per_second": 412725.11957974115
+        },
+        {
+          "file": "mosaic-2.json",
+          "mean_seconds": 1.2296563857855896,
+          "median_seconds": 1.2214319673366845,
+          "samples": 30,
+          "tokens_per_second": 426369.51758279087
+        }
+      ]
+    },
+    {
+      "complete_trials": 2,
+      "expected_trials": 2,
+      "gpu_uuid": "db556517-bdca-9832-804e-11a0366de63c",
+      "implementation": "upstream_fla_model",
+      "mean_seconds": 1.248275729548186,
+      "median_seconds": 1.2483610776253045,
+      "parameter_count": 210843584,
+      "sample_key": "wall_seconds",
+      "samples": 60,
+      "scope": "current_gpu",
+      "status": "complete",
+      "tokens_per_second": 420009.76834642637,
+      "tokens_per_update": 524288,
+      "trials": [
+        {
+          "file": "fla-1.json",
+          "mean_seconds": 1.2474718085179726,
+          "median_seconds": 1.2476442130282521,
+          "samples": 30,
+          "tokens_per_second": 420280.43954184995
+        },
+        {
+          "file": "fla-2.json",
+          "mean_seconds": 1.2490796505783994,
+          "median_seconds": 1.2496917117387056,
+          "samples": 30,
+          "tokens_per_second": 419739.44556475873
+        }
+      ]
+    },
+    {
+      "complete_trials": 2,
+      "expected_trials": 2,
+      "gpu_uuid": "6dca32fa-0314-7849-907a-031e3d449ddf",
+      "implementation": "historical_custom_gdn",
+      "mean_seconds": 4.237298876605928,
+      "median_seconds": 4.20724478457123,
+      "parameter_count": 211007424,
+      "sample_key": "compute_seconds",
+      "samples": 60,
+      "scope": "historical_different_gpu",
+      "status": "complete",
+      "tokens_per_second": 123731.65435522786,
+      "tokens_per_update": 524288,
+      "trials": [
+        {
+          "file": "gdn-1.json",
+          "mean_seconds": 4.253895554505289,
+          "median_seconds": 4.225306420121342,
+          "samples": 30,
+          "tokens_per_second": 123248.91226930292
+        },
+        {
+          "file": "gdn-2.json",
+          "mean_seconds": 4.220702198706567,
+          "median_seconds": 4.189459653105587,
+          "samples": 30,
+          "tokens_per_second": 124218.19292549658
+        }
+      ]
+    }
+  ],
+  "full_model_training_interval_summary": {
+    "cudnn": {
+      "mean_seconds": 0.9436153426455954,
+      "tokens_per_second": 555616.2307938574,
+      "updates": 60
+    },
+    "mosaic": {
+      "mean_seconds": 1.2552883865466962,
+      "tokens_per_second": 417663.38764777273,
+      "updates": 60
+    }
+  },
   "gpu_count": 1,
+  "gpu_node": "akita",
+  "gpu_tests": {
+    "errors": 0,
+    "failures": 0,
+    "seconds": 41.045,
+    "skipped": 0,
+    "status": "passed",
+    "tests": 2
+  },
   "gpu_type": "B300",
+  "gpu_uuid": "GPU-db556517-bdca-9832-804e-11a0366de63c",
   "historical_gdn_full_model_reference": {
     "job_id": "220032",
     "record": "scaffolds/transformer/validation/runs/gdn-mosaic-b300/record.json",
@@ -24,6 +235,239 @@
       "sha256": "fddf9129a28fb259597ff847ce99f2ed9f6560266411a4363c65ecc9d4b14438"
     }
   },
+  "job_elapsed_seconds": 1277,
+  "job_exit_code": "0:0",
+  "job_id": "220076",
+  "job_state": "COMPLETED",
+  "kernel_summary": {
+    "cuda_graph_unavailable": [],
+    "fixture_hashes_match": true,
+    "rows": [
+      {
+        "direction": "forward",
+        "implementation": "gdn_independent_tanh_jax_bridge",
+        "mean_seconds": 0.005536232143640518,
+        "median_seconds": 0.005527322646230459,
+        "samples": 60,
+        "timing": "synchronized_wall",
+        "tokens_per_second": 23675307.790436983
+      },
+      {
+        "direction": "forward_backward",
+        "implementation": "gdn_independent_tanh_jax_bridge",
+        "mean_seconds": 0.07795776884692411,
+        "median_seconds": 0.07794659351930022,
+        "samples": 60,
+        "timing": "synchronized_wall",
+        "tokens_per_second": 1681320.5654637148
+      },
+      {
+        "direction": "forward",
+        "implementation": "gdn_tied_sigmoid_jax_bridge",
+        "mean_seconds": 0.00553677884551386,
+        "median_seconds": 0.005537776276469231,
+        "samples": 60,
+        "timing": "synchronized_wall",
+        "tokens_per_second": 23672970.08913409
+      },
+      {
+        "direction": "forward_backward",
+        "implementation": "gdn_tied_sigmoid_jax_bridge",
+        "mean_seconds": 0.07971931893068056,
+        "median_seconds": 0.0796710280701518,
+        "samples": 60,
+        "timing": "synchronized_wall",
+        "tokens_per_second": 1644168.587465892
+      },
+      {
+        "direction": "forward",
+        "implementation": "query_polynomial_cubic_mosaic",
+        "mean_seconds": 0.003119965068375071,
+        "median_seconds": 0.0030899057164788246,
+        "samples": 60,
+        "timing": "synchronized_wall",
+        "tokens_per_second": 42010726.763766125
+      },
+      {
+        "direction": "forward_backward",
+        "implementation": "query_polynomial_cubic_mosaic",
+        "mean_seconds": 0.010290192533284425,
+        "median_seconds": 0.010278378613293171,
+        "samples": 60,
+        "timing": "synchronized_wall",
+        "tokens_per_second": 12737565.3639169
+      },
+      {
+        "direction": "forward",
+        "implementation": "softmax_cudnn",
+        "mean_seconds": 0.0015390217925111453,
+        "median_seconds": 0.0015136017464101315,
+        "samples": 60,
+        "timing": "synchronized_wall",
+        "tokens_per_second": 85165785.59042776
+      },
+      {
+        "direction": "forward_backward",
+        "implementation": "softmax_cudnn",
+        "mean_seconds": 0.0035504343919456004,
+        "median_seconds": 0.0035411776043474674,
+        "samples": 60,
+        "timing": "synchronized_wall",
+        "tokens_per_second": 36917172.81055683
+      },
+      {
+        "direction": "forward",
+        "implementation": "torch_cudnn",
+        "mean_seconds": 0.0006831925332546234,
+        "median_seconds": 0.0006828640103340149,
+        "samples": 60,
+        "timing": "cuda_events",
+        "tokens_per_second": 191852213.8636283
+      },
+      {
+        "direction": "forward",
+        "implementation": "torch_cudnn",
+        "mean_seconds": 0.0006201615999142329,
+        "median_seconds": 0.0006201759874820709,
+        "samples": 60,
+        "timing": "graph_cuda_events",
+        "tokens_per_second": 211351363.93179938
+      },
+      {
+        "direction": "forward",
+        "implementation": "torch_cudnn",
+        "mean_seconds": 0.0006418888767560323,
+        "median_seconds": 0.0006419271230697632,
+        "samples": 60,
+        "timing": "graph_wall",
+        "tokens_per_second": 204197338.11623216
+      },
+      {
+        "direction": "forward",
+        "implementation": "torch_cudnn",
+        "mean_seconds": 0.0007062639885892471,
+        "median_seconds": 0.0007055830210447311,
+        "samples": 60,
+        "timing": "synchronized_wall",
+        "tokens_per_second": 185584996.7118026
+      },
+      {
+        "direction": "forward_backward",
+        "implementation": "torch_cudnn",
+        "mean_seconds": 0.0027022202650705974,
+        "median_seconds": 0.002710800051689148,
+        "samples": 60,
+        "timing": "cuda_events",
+        "tokens_per_second": 48505298.28906292
+      },
+      {
+        "direction": "forward_backward",
+        "implementation": "torch_cudnn",
+        "mean_seconds": 0.002567632528146108,
+        "median_seconds": 0.0025662078857421875,
+        "samples": 60,
+        "timing": "graph_cuda_events",
+        "tokens_per_second": 51047803.2051717
+      },
+      {
+        "direction": "forward_backward",
+        "implementation": "torch_cudnn",
+        "mean_seconds": 0.0025897297852983075,
+        "median_seconds": 0.002588398288935423,
+        "samples": 60,
+        "timing": "graph_wall",
+        "tokens_per_second": 50612230.18095765
+      },
+      {
+        "direction": "forward_backward",
+        "implementation": "torch_cudnn",
+        "mean_seconds": 0.0027338228033234675,
+        "median_seconds": 0.0027432101778686047,
+        "samples": 60,
+        "timing": "synchronized_wall",
+        "tokens_per_second": 47944585.08454086
+      },
+      {
+        "direction": "forward",
+        "implementation": "upstream_fla",
+        "mean_seconds": 0.0016584250708421072,
+        "median_seconds": 0.0016570720076560974,
+        "samples": 60,
+        "timing": "cuda_events",
+        "tokens_per_second": 79034019.86888976
+      },
+      {
+        "direction": "forward",
+        "implementation": "upstream_fla",
+        "mean_seconds": 0.0014862677276134492,
+        "median_seconds": 0.0014859839677810668,
+        "samples": 60,
+        "timing": "graph_cuda_events",
+        "tokens_per_second": 88188687.38438316
+      },
+      {
+        "direction": "forward",
+        "implementation": "upstream_fla",
+        "mean_seconds": 0.0015081882787247498,
+        "median_seconds": 0.0015078028663992882,
+        "samples": 60,
+        "timing": "graph_wall",
+        "tokens_per_second": 86906921.2703523
+      },
+      {
+        "direction": "forward",
+        "implementation": "upstream_fla",
+        "mean_seconds": 0.0016843713199098905,
+        "median_seconds": 0.001683047041296959,
+        "samples": 60,
+        "timing": "synchronized_wall",
+        "tokens_per_second": 77816570.75888231
+      },
+      {
+        "direction": "forward_backward",
+        "implementation": "upstream_fla",
+        "mean_seconds": 0.0054578784068425494,
+        "median_seconds": 0.005444687843322754,
+        "samples": 60,
+        "timing": "cuda_events",
+        "tokens_per_second": 24015192.39338034
+      },
+      {
+        "direction": "forward_backward",
+        "implementation": "upstream_fla",
+        "mean_seconds": 0.005137237318356832,
+        "median_seconds": 0.0051380000114440915,
+        "samples": 60,
+        "timing": "graph_cuda_events",
+        "tokens_per_second": 25514102.595891748
+      },
+      {
+        "direction": "forward_backward",
+        "implementation": "upstream_fla",
+        "mean_seconds": 0.0051600921899080275,
+        "median_seconds": 0.005160496104508638,
+        "samples": 60,
+        "timing": "graph_wall",
+        "tokens_per_second": 25401096.564969745
+      },
+      {
+        "direction": "forward_backward",
+        "implementation": "upstream_fla",
+        "mean_seconds": 0.0054921196152766544,
+        "median_seconds": 0.005478966049849987,
+        "samples": 60,
+        "timing": "synchronized_wall",
+        "tokens_per_second": 23865467.10224874
+      }
+    ],
+    "shape": [
+      64,
+      2048,
+      16,
+      64
+    ],
+    "status": "complete"
+  },
   "limitations": [
     "Stock FLA is standard tied sigmoid GDN, while our scientific variant has independent erase and signed tanh writes.",
     "Our JAX GDN bridge uses FP32 chunk intermediates and TF32x3; direct FLA uses upstream native mixed precision.",
@@ -34,12 +478,18 @@
     "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
   },
   "native_fla_source_commit": "516143e31fce09925e6c39ac37148444bad176c4",
+  "partition": "debug",
+  "postrun_review": "Independent fixture, dispatch, timing, provenance and full-model configuration audit passed.",
   "prelaunch_review": "Two independent code reviews passed; JAX CLI/VJP/dispatch smoke checks and recipe loading passed.",
+  "regeneration_command": "python3 scaffolds/transformer/validation/summarize_upstream.py",
   "retained_checkpoints": [],
   "scopes": [
     "Actual JAX packed-data full training loop for Mosaic and upstream cuDNN attention",
     "Direct attention forward/backward calls: upstream CUDA Torch FLA and cuDNN; JAX tied/independent precision-repaired GDN, Mosaic, and cuDNN",
     "Unmodified upstream FLA full model plus upstream fused loss and fused Torch AdamW; resident real-data batch, compute-only scope"
   ],
-  "status": "prepared"
+  "source_commit": "e0538b971ef9a66338e703cac8274a59e73cbb6b",
+  "started_at_utc": "2026-10-17T16:30:05+00:00",
+  "status": "complete",
+  "submitted_at_utc": "2026-10-17T16:29:04.122166+00:00"
 }

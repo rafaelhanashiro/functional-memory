@@ -1110,6 +1110,15 @@ The comparison has three scopes:
   upstream model comparison, with framework, initialization and component
   differences; it is not a substitution into the JAX trainer.
 
+The full-model compute comparison excludes input loading and transfers for
+native FLA. JAX's `compute_seconds` includes numerical checks and may await
+an asynchronous input transfer; its ordinary training-interval timing is
+reported separately. Both include gradient accumulation, gradient clipping,
+the optimizer, and parameter-norm computation. Native FLA checks the returned
+loss and norms after timing. Native FLA retains an FP32 residual stream under
+autocast; this project's residual stream is BF16. The benchmark preserves
+these implementation choices.
+
 The separate `benchmarks/upstream_runtime/` project has its own committed
 lock and environment. It installs the official CUDA PyTorch wheel, leaving
 the production JAX environments unchanged. Its explicit CUDA 13.2/cuBLAS
@@ -1118,6 +1127,66 @@ and Triton 3.7.1 match the JAX comparison. No installed package is edited.
 The native FLA baseline retains its upstream mixed-precision choices,
 which differ from the project's FP32 repair. These timings do not establish
 equivalent numerical accuracy or training quality.
+
+Attention-only measurements from job `220076` (one B300 on `akita`, 2026-10-17):
+each entry pools two rounds of 30 calls, after five warmup calls per round.
+Values are synchronized wall time; compilation, autotuning and finite checks
+are excluded. cuDNN dispatch is verified by compiled custom-call targets in
+JAX and profiler events in PyTorch, with the PyTorch backend forced to cuDNN.
+
+| Implementation | Forward (ms) | Forward + backward (ms) |
+| --- | ---: | ---: |
+| Upstream cuDNN, PyTorch SDPA | 0.706 | 2.734 |
+| Upstream cuDNN, JAX | 1.539 | 3.550 |
+| Upstream FLA, standard tied sigmoid GDN | 1.684 | 5.492 |
+| Our Mosaic cubic query polynomial | 3.120 | 10.290 |
+| Our JAX GDN bridge, standard tied sigmoid gates | 5.537 | 79.719 |
+| Our JAX GDN bridge, independent tanh writes | 5.536 | 77.958 |
+
+Optional native CUDA graph replay reduces FLA forward-plus-backward to
+5.160 ms and PyTorch cuDNN to 2.590 ms. Normal upstream dispatch, shown in
+the table, is the primary comparison. PyTorch's forward-only call retains
+autograd context; forward-plus-backward is the stronger comparison across
+frameworks. The mechanisms differentiate five, six, four and three inputs
+for tied GDN, independent GDN, Mosaic and softmax, respectively.
+
+Stock FLA's forward-plus-backward is **14.52x faster** than our bridge with
+the same standard tied-gate mathematics. Independent signed gates have a
+similar cost in our bridge. The comparison therefore identifies a large
+implementation/precision gap; it does not attribute that gap to the signed
+gates. Precision, state layout, framework and dispatch differ, so these
+measurements alone cannot assign the gap to one of them. Mosaic takes
+**1.87x** stock FLA's time and **2.90x** JAX cuDNN's time at this shape
+(**3.76x** PyTorch cuDNN's time). These are training-kernel measurements at
+context 2048, not asymptotic complexity or language-model quality results.
+
+Full-model training compute, pooled over two fresh-process trials of 30
+measured updates after five warmup updates each:
+
+| Implementation | Parameters | Seconds/update | Tokens/s |
+| --- | ---: | ---: | ---: |
+| Shared model with upstream cuDNN softmax | 199,906,464 | 0.938 | 559,118 |
+| Unmodified upstream FLA GatedDeltaNet model | 210,843,584 | 1.248 | 420,010 |
+| Shared model with Mosaic cubic query polynomial | 200,573,344 | 1.250 | 419,436 |
+| Our independent-tanh GDN, prior job `220032` | 211,007,424 | 4.237 | 123,732 |
+
+The first three rows use the same physical B300 in job `220076`; the last
+is explicit historical context from `runs/gdn-mosaic-b300/gdn-{1,2}.json`
+on another B300. cuDNN is **1.33x** Mosaic's throughput. Stock FLA and Mosaic
+are effectively tied: their 0.14% difference is smaller than Mosaic's 3.25%
+repeat spread. cuDNN and FLA repeat spreads are 0.49% and 0.13%, respectively.
+The earlier several-fold Mosaic advantage over our GDN does not describe
+the stock FLA baseline. The upstream FLA full model is **3.39x** our historical
+GDN compute throughput, with the mathematical and runtime differences above.
+
+Including loading, transfers, checks and ordinary logging, the JAX training
+intervals average 0.944 s/update (555,616 tokens/s) for cuDNN and 1.255 s/update
+(417,663 tokens/s) for Mosaic. Native FLA's resident-batch timing has no matching
+input-pipeline interval. All 210 updates across the six new full-model trials
+have finite loss, gradient norm and parameter norm. cuDNN's output/gradient
+parity test and production-context finite check pass. Job `220076` completed in 21m17s with exit code
+zero; no checkpoints are retained. `runs/upstream-b300/record.json` pins the
+eight reports, recipes, locks, retained log and correctness-test summary.
 
 From a committed Kennel worktree, sync the two production environments as in
 `CLUSTERS.md`, then sync the independent CUDA Torch environment and submit:
@@ -1128,6 +1197,12 @@ mkdir -p scaffolds/transformer/validation/logs/upstream-b300
 sbatch --parsable \
   --output=scaffolds/transformer/validation/logs/upstream-b300/benchmark-%j.log \
   scaffolds/transformer/launchers/benchmark_upstream.sbatch "$(git rev-parse HEAD)"
+```
+
+Regenerate the pooled summaries and audit the explicitly named source files:
+
+```bash
+python3 scaffolds/transformer/validation/summarize_upstream.py
 ```
 
 ## Reproduction
