@@ -2,8 +2,8 @@
 
 Each CTA has two compute warpgroups and a producer warpgroup (warp 0 issues TMA, warp 1
 issues tcgen05 MMAs). Scores, polynomials, sums, and accumulators are FP32; FP32 weights
-and score gradients enter the MMA as three truncated BF16 components stored in tensor
-memory. The elementwise mathematics of each kernel family lives in ``common.py``
+and score gradients enter the MMA as BF16 operands at ``precision`` (``common.weight_parts``:
+one, or three components), stored in tensor memory. The elementwise mathematics of each kernel family lives in ``common.py``
 (``family`` and ``degree`` select it); per-query FP32 vectors arrive as ``vectors``
 [n, batch, heads, time]. ``forward`` returns the FP32 output and a per-row statistic
 [batch, heads, time]; ``dq`` returns dQ and, for families with per-query sums, those sums
@@ -19,7 +19,6 @@ import jax.experimental.pallas as pl
 import jax.experimental.pallas.mosaic_gpu as plgpu
 
 from scaffolds.transformer.attention.backends.mosaic import common
-from scaffolds.transformer.attention.backends.mosaic.common import truncate as _truncate
 
 L = plgpu.Layout.TCGEN05
 WGS = 2
@@ -31,16 +30,10 @@ def _transforms(cols, dtype):
     return (plgpu.TilingTransform((8, swizzle // jnp.dtype(dtype).itemsize)), plgpu.SwizzleTransform(swizzle))
 
 
-def _parts(x):
-    high = _truncate(x)
-    rest = x - high
-    middle = _truncate(rest)
-    return high, middle, rest - middle
-
-
-@partial(jax.jit, static_argnames=("family", "degree", "scale", "block_k", "stages"))
-def forward(q, k, v, vectors, *, family, degree, scale, block_k=64, stages=3):
+@partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_k", "stages"))
+def forward(q, k, v, vectors, *, family, degree, scale, precision, block_k=64, stages=3):
     BQ = 128
+    n_parts = common.part_count(precision)
     batch, time, heads, dq = q.shape
     dv = v.shape[-1]
     n_vec = common.vector_counts(family, degree)[0]
@@ -85,14 +78,14 @@ def forward(q, k, v, vectors, *, family, degree, scale, block_k=64, stages=3):
                 # A nonfinite score or weight makes the row statistic nonfinite, so the final
                 # per-row test detects it exactly.
                 statistic = statistic + common.forward_statistic(family, p).sum(axis=1)
-                parts = _parts(p)
+                parts = common.weight_parts(p, precision)
 
                 @pl.when(j > 0)
                 def _():
                     plgpu.barrier_wait(p_free.at[w])  # PV of tile j-1 has read the weights
 
                 for i, part in enumerate(parts):
-                    plgpu.async_store_tmem(p_tmem[w][i], part.astype(jnp.bfloat16))
+                    plgpu.async_store_tmem(p_tmem[w][i], part)
                 plgpu.commit_tmem()
                 plgpu.barrier_arrive(p_ready.at[w])
                 return statistic
@@ -172,7 +165,7 @@ def forward(q, k, v, vectors, *, family, degree, scale, block_k=64, stages=3):
                             @pl.when(j < tiles(w))
                             def _():
                                 plgpu.barrier_wait(p_ready.at[w])
-                                for i in range(3):
+                                for i in range(n_parts):
                                     plgpu.tcgen05_mma(o_tmem.at[:, pl.ds(w * dv, dv)], p_tmem[w][i], v_smem.at[slot],
                                                       accumulate=jnp.logical_or(j > 0, i > 0))
                                 plgpu.tcgen05_commit_arrive(p_free.at[w])
@@ -199,7 +192,8 @@ def forward(q, k, v, vectors, *, family, degree, scale, block_k=64, stages=3):
             plgpu.SMEM((WGS, BQ), jnp.float32),
             plgpu.TMEM((BQ, WGS * block_k), jnp.float32),
             plgpu.TMEM((BQ, WGS * dv), jnp.float32),
-            tuple(tuple(plgpu.TMEM((BQ, block_k), jnp.bfloat16, packed=True) for _ in range(3)) for _ in range(WGS)),
+            tuple(tuple(plgpu.TMEM((BQ, block_k), jnp.bfloat16, packed=True) for _ in range(n_parts))
+                  for _ in range(WGS)),
             plgpu.Barrier(num_arrivals=WGS * (1 + n_vec), num_barriers=1),
             plgpu.Barrier(num_arrivals=2, num_barriers=stages),
             plgpu.Barrier(num_arrivals=1, num_barriers=stages, orders_tensor_core=True),
@@ -214,10 +208,11 @@ def forward(q, k, v, vectors, *, family, degree, scale, block_k=64, stages=3):
     return out, statistic
 
 
-@partial(jax.jit, static_argnames=("family", "degree", "scale", "block_k", "stages"))
-def dq(q, k, v, do, vectors, *, family, degree, scale, block_k=64, stages=3):
+@partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_k", "stages"))
+def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, stages=3):
     """dQ [batch, time, heads, d_K] in q.dtype, and per-query sums [n, batch, heads, time] FP32 or None."""
     BQ = 128
+    n_parts = common.part_count(precision)
     batch, time, heads, dqk = q.shape
     dv = v.shape[-1]
     _, n_vec, n_sums = common.vector_counts(family, degree)
@@ -260,8 +255,8 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, block_k=64, stages=3):
                 else:
                     ds = common.score_gradient(family, degree, s, dp, vecs)
                 sums = tuple(a + x for a, x in zip(sums, common.row_sums(family, degree, s, dp)))
-                for i, part in enumerate(_parts(ds)):  # overwrite this tile's S/dP region
-                    plgpu.async_store_tmem(ds_tmem[i], part.astype(jnp.bfloat16))
+                for i, part in enumerate(common.weight_parts(ds, precision)):  # overwrite this tile's S/dP region
+                    plgpu.async_store_tmem(ds_tmem[i], part)
                 plgpu.commit_tmem()
                 plgpu.barrier_arrive(ds_ready.at[w])
                 return sums
@@ -340,7 +335,7 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, block_k=64, stages=3):
                             def _():
                                 plgpu.barrier_wait(ds_ready.at[w])
                                 _, ds_tmem = regions[w]
-                                for i in range(3):
+                                for i in range(n_parts):
                                     plgpu.tcgen05_mma(acc_tmem.at[:, pl.ds(w * dqk, dqk)], ds_tmem[i], k_smem.at[slot],
                                                       accumulate=jnp.logical_or(j > 0, i > 0))
 
@@ -374,7 +369,7 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, block_k=64, stages=3):
             plgpu.SMEM((WGS, max(n_sums, 1), BQ), jnp.float32),
             tuple(plgpu.RefUnion(
                 (plgpu.TMEM((BQ, block_k), jnp.float32), plgpu.TMEM((BQ, block_k), jnp.float32)),
-                tuple(plgpu.TMEM((BQ, block_k), jnp.bfloat16, packed=True) for _ in range(3))) for _ in range(WGS)),
+                tuple(plgpu.TMEM((BQ, block_k), jnp.bfloat16, packed=True) for _ in range(n_parts))) for _ in range(WGS)),
             plgpu.TMEM((BQ, WGS * dqk), jnp.float32),
             plgpu.Barrier(num_arrivals=WGS * (2 + n_vec), num_barriers=1),
             plgpu.Barrier(num_arrivals=2, num_barriers=stages),
@@ -388,8 +383,8 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, block_k=64, stages=3):
     return (outputs[0], outputs[1]) if n_sums else (outputs[0], None)
 
 
-@partial(jax.jit, static_argnames=("which", "family", "degree", "scale", "block_q", "stages"))
-def dkv(q, k, v, do, vectors, *, which, family, degree, scale, block_q=64, stages=3):
+@partial(jax.jit, static_argnames=("which", "family", "degree", "scale", "precision", "block_q", "stages"))
+def dkv(q, k, v, do, vectors, *, which, family, degree, scale, precision, block_q=64, stages=3):
     """dV or dK [batch, time, heads, width] in its input dtype.
 
     Transposed tiles: lanes are keys, so per-query vectors broadcast along columns. Each
@@ -402,6 +397,7 @@ def dkv(q, k, v, do, vectors, *, which, family, degree, scale, block_q=64, stage
     width = dv if which == "dv" else dqk
     per_wg = BK // block_q  # query tiles per warpgroup key range
     n_vec = common.vector_counts(family, degree)[1]
+    n_parts = common.part_count(precision)
     chunks = time // TMA_ELEMENTS
 
     def kernel(q_gmem, k_gmem, v_gmem, do_gmem, vec_gmem, out_gmem,
@@ -448,8 +444,8 @@ def dkv(q, k, v, do, vectors, *, which, family, degree, scale, block_q=64, stage
                     x = common.score_gradient(family, degree, s, dp, vecs)
                 if masked:
                     x = jnp.where(causal, x, 0.0)
-                for i, part in enumerate(_parts(x)):
-                    plgpu.async_store_tmem(parts_tmem[i], part.astype(jnp.bfloat16))
+                for i, part in enumerate(common.weight_parts(x, precision)):
+                    plgpu.async_store_tmem(parts_tmem[i], part)
                 plgpu.commit_tmem()
                 plgpu.barrier_arrive(ds_ready.at[w])
 
@@ -524,7 +520,7 @@ def dkv(q, k, v, do, vectors, *, which, family, degree, scale, block_q=64, stage
                                 plgpu.barrier_wait(ds_ready.at[w])
                                 _, parts_tmem = regions[w]
                                 rhs = do_smem.at[slot] if which == "dv" else q_smem.at[slot]
-                                for i in range(3):
+                                for i in range(n_parts):
                                     plgpu.tcgen05_mma(acc_tmem.at[:, pl.ds(w * width, width)], parts_tmem[i], rhs,
                                                       accumulate=jnp.logical_or(j > first(w), i > 0))
 
@@ -560,7 +556,7 @@ def dkv(q, k, v, do, vectors, *, which, family, degree, scale, block_q=64, stage
             plgpu.SMEM((stages, block_q, dv), jnp.bfloat16, transforms=t(dv)),
             plgpu.SMEM((n_vec, time), jnp.float32),
             tuple(plgpu.RefUnion(
-                s_region, tuple(plgpu.TMEM((BK, block_q), jnp.bfloat16, packed=True) for _ in range(3)))
+                s_region, tuple(plgpu.TMEM((BK, block_q), jnp.bfloat16, packed=True) for _ in range(n_parts)))
                 for _ in range(WGS)),
             plgpu.TMEM((BK, WGS * width), jnp.float32),
             plgpu.Barrier(num_arrivals=2 * WGS + n_vec * chunks, num_barriers=1),

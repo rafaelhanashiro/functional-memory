@@ -285,10 +285,13 @@ def attention_identity(config) -> dict:
             "diagnostic_query_block_size": QUERY_BLOCK_SIZE,
         })
     elif config.model.attention_backend == "mosaic":
+        from scaffolds.transformer.attention.backends.mosaic.api import default_precision
+
         # Tiles differ between the Hopper and Blackwell kernels; the GPU is recorded with the hardware.
         identity.update({
             "attention_implementation": ("pallas_mosaic_gpu_query_polynomial" if query_tanh
                                          else "pallas_mosaic_gpu"),
+            "attention_weight_precision": default_precision("query" if query_conditioned else "taylor", degree),
             "query_block_size": None,
             "key_block_size": None,
             "diagnostic_backend": "blocked",

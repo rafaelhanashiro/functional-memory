@@ -15,7 +15,7 @@ CUDA_HOME="$(transformer_cuda_home "$PYTHON")"
 export CUDA_HOME TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda
 GPU="$(nvidia-smi --query-gpu=name --format=csv,noheader | head -1 | tr -cs 'A-Za-z0-9' '-' | sed 's/-$//')"
-OUT=scaffolds/transformer/validation/runs/mosaic-step
+OUT="scaffolds/transformer/validation/runs/mosaic-step/$GPU-$SLURM_JOB_ID"
 SCRATCH="$(mktemp -d)"
 trap 'rm -rf -- "$SCRATCH"' EXIT
 mkdir -p "$OUT"
@@ -32,8 +32,22 @@ recipe["model"]["attention_backend"] = backend
 recipe["train"]["micro_batch_size"] = 16
 Path(out, f"{run}-{backend}.yaml").write_text(yaml.safe_dump(recipe))
 PY
+      label="$backend"
+      if [[ "$backend" == mosaic ]]; then
+        RUN_ID_FOR_LABEL="$run"
+        label="mosaic-"$("$PYTHON" - "$RUN_ID_FOR_LABEL" <<'PY'
+import sys
+from pathlib import Path
+import yaml
+from scaffolds.transformer.attention.backends.mosaic.api import default_precision
+model = yaml.safe_load(Path(f"experiments/attention_scaling/runs/{sys.argv[1]}/config.yaml").read_text())["model"]
+family = "query" if model.get("attention_coefficient_conditioning") == "query" else "taylor"
+print(default_precision(family, model["attention_degree"]))
+PY
+)""
+      fi
       "$PYTHON" -m scaffolds.transformer.benchmark "$SCRATCH/$run-$backend.yaml" \
-        --output "$OUT/$GPU-$run-$backend-$round.json" --warmup 5 --iterations 30
+        --output "$OUT/$run-$label-$round.json" --warmup 5 --iterations 30
     done
   done
 done
