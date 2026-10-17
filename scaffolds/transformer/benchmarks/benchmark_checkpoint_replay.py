@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 import hashlib
 import importlib.metadata
 import json
+import math
 import os
 from pathlib import Path
 import shutil
@@ -91,6 +92,7 @@ def benchmark(args):
               "timed_updates": args.iterations, "samples": [],
               "limitations": ["Single-GPU trainer omits the per-group telemetry used by data-parallel training.",
                               "Historical four-GPU measurements are not a simultaneous hardware-controlled comparison.",
+                              "Historical 1000-step windows include a periodic checkpoint; measured replay intervals do not.",
                               "Steady intervals exclude validation, checkpointing, compilation, and startup."]}
     write_report(args.output, report)
     started = time.perf_counter()
@@ -127,7 +129,9 @@ def benchmark(args):
             result = function(*positional, **keywords)
             jax.block_until_ready(result)
             finish = time.perf_counter()
-            sample = {"step": int(result[0].step), "loss": float(result[1]),
+            loss = float(result[1])
+            sample = {"step": int(result[0].step), "loss": loss if math.isfinite(loss) else None,
+                      "finite_loss": math.isfinite(loss),
                       "compute_seconds": finish - begin,
                       "interval_seconds": None if last_end is None else finish - last_end}
             last_end = finish
@@ -179,7 +183,15 @@ def main():
     args = parser.parse_args()
     if min(args.checkpoint, args.warmup, args.iterations) < 1:
         parser.error("Checkpoint, warmup, and iterations must be positive")
-    benchmark(args)
+    try:
+        benchmark(args)
+    except Exception as error:
+        if args.output.exists():
+            report = json.loads(args.output.read_text())
+            report.update(status="failed", error=f"{type(error).__name__}: {error}",
+                          finished_at_utc=datetime.now(UTC).isoformat())
+            write_report(args.output, report)
+        raise
 
 
 if __name__ == "__main__":
