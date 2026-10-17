@@ -16,13 +16,14 @@ GPU_TYPE="${2:?Expected H100 or B300}"
 RUN_ID="${3:?Expected an attention_scaling run ID}"
 BACKEND="${4:?Expected fused or mosaic}"
 STEPS="${5:-1000}"
+REPEAT="${6:-}"  # optional label for a repeated run of the same backend (run-to-run noise)
 python3 scaffolds/launch/frozen.py check --launch-commit "$LAUNCH_COMMIT" --experiment attention_scaling --scaffold transformer
 source scaffolds/transformer/launchers/kennel_runtime.sh
 PYTHON="$PWD/scaffolds/transformer/$TRANSFORMER_ENVIRONMENT_DIR/bin/python"
 CUDA_HOME="$(transformer_cuda_home "$PYTHON")"
 export CUDA_HOME TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda OMP_NUM_THREADS=8 PYTHONUNBUFFERED=1
-NAME="${GPU_TYPE,,}-$RUN_ID-$BACKEND"
+NAME="${GPU_TYPE,,}-$RUN_ID-$BACKEND${REPEAT:+-$REPEAT}"
 WORKDIR="$PWD/.cache/mosaic-pilot/$NAME"
 export JAX_COMPILATION_CACHE_DIR="$PWD/.cache/mosaic-pilot/jax"
 # A requeue resumes from the latest checkpoint (every 100 updates); a fresh start clears old output.
