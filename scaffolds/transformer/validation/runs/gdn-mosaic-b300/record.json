@@ -1,0 +1,41 @@
+{
+  "format": "single-gpu-gdn-mosaic-throughput",
+  "gpu_count": 1,
+  "gpu_type": "B300",
+  "home_cluster": "kennel",
+  "inputs": {
+    "gdn": {
+      "recipe_path": "scaffolds/transformer/validation/configs/gdn-mosaic-b300-gdn.yaml",
+      "recipe_sha256": "e37039dde97c55000f757aba630cd5a8cb379534b64da2472e1fdd4e46f6b7b2",
+      "template_run_id": "rf65d38ec0552"
+    },
+    "mosaic": {
+      "recipe_path": "scaffolds/transformer/validation/configs/gdn-mosaic-b300-mosaic.yaml",
+      "recipe_sha256": "1d19e1b167b7a4db8c7996e727ec5057c15e192aafc2d6496dd63b45f5b0f207",
+      "template_run_id": "r0bc57959ef6c"
+    }
+  },
+  "limitations": [
+    "Different attention architectures and parameter counts; common backbone and workload are matched.",
+    "Training at sequence length 2048 only; does not measure decoding or recurrent memory savings.",
+    "One fixed microbatch size, no batch-size optimization."
+  ],
+  "measurement_scope": "Fresh reference initialization; actual packed-data single-GPU training loop; steady intervals include data transfer, accumulation, optimizer, numerical checks and ordinary logging. Compilation, evaluation and checkpointing excluded.",
+  "planned_acceptance": "Repeat GDN signed-write and Mosaic query production-context output/gradient tests in the benchmark allocation; existing comprehensive qualifications cover these backends on B300.",
+  "qualification_references": [
+    {
+      "path": "scaffolds/transformer/validation/runs/gdn-tanh-b300/record.json",
+      "sha256": "d780123adab11f6f61c9396bfb5369dc35ed21328523436a17b3b378879c0ec6"
+    }
+  ],
+  "retained_checkpoints": [],
+  "status": "prepared",
+  "timed_updates_per_trial": 30,
+  "trial_order": [
+    "gdn-1",
+    "mosaic-1",
+    "mosaic-2",
+    "gdn-2"
+  ],
+  "warmup_updates": 5
+}

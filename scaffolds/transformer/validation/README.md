@@ -921,6 +921,40 @@ output are retained under `validation/logs/gdn-tanh-b300/` on Kennel and their
 hashes are recorded. The generic Git dirty flag in the timing report includes
 mutable validation records and generated indices; the frozen execution check passed.
 
+## GDN versus Mosaic on one B300
+
+This comparison times signed-write linear GDN (the recipe of `rf65d38ec0552`)
+against cubic query-conditioned tanh attention (the recipe of `r0bc57959ef6c`,
+with the Mosaic backend). Both use the shared 10-layer, width-1024 backbone,
+16 heads, d_K = d_V = 64, MLP width 3008, BF16, sequence length 2048, batch 256,
+microbatch 64, and four accumulation steps. Each keeps its mechanism's reference
+initialization and required normalization. GDN's additional projections,
+convolution and gates mean the parameter counts differ; this compares complete
+training implementations at matched backbone widths, not only kernel efficiency.
+
+`benchmarks/benchmark_training_throughput.py` starts each trial from reference
+initialization on the same packed FineWeb data and seed. Five warmup updates
+precede 30 synchronized update intervals. Intervals include loading, transfer,
+accumulation, optimizer updates, numerical checks and ordinary logging; they
+exclude compilation, validation and checkpointing. Two trials per mechanism
+run sequentially in one B300 allocation, in GDN/Mosaic/Mosaic/GDN order.
+The paused GDN training run is not resumed. These measurements do not assess
+model quality, decoding, or recurrent-state memory savings. Microbatch size is
+fixed, rather than tuned separately for each mechanism.
+
+Inputs are `validation/configs/gdn-mosaic-b300-{gdn,mosaic}.yaml`;
+reports and execution provenance are in `validation/runs/gdn-mosaic-b300/`.
+The launcher checks both the shared frozen execution set and these input
+recipes against the launch commit. From a committed Kennel worktree with both
+locked CUDA environments synced:
+
+```bash
+mkdir -p scaffolds/transformer/validation/logs/gdn-mosaic-b300
+sbatch --parsable \
+  --output=scaffolds/transformer/validation/logs/gdn-mosaic-b300/benchmark-%j.log \
+  scaffolds/transformer/launchers/benchmark_gdn_mosaic.sbatch "$(git rev-parse HEAD)"
+```
+
 ## Mosaic GPU polynomial attention kernels on H100 and B300
 
 `attention/backends/mosaic/` implements causal polynomial attention (forward, dQ, dK, dV) on
