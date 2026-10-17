@@ -36,11 +36,16 @@ def taylor_attention(
             q, k, v, attention_degree=attention_degree,
             return_diagnostics=return_diagnostics,
         )
-    if backend != "fused":
-        raise ValueError("Taylor attention requires backend='blocked' or 'fused'")
-    from scaffolds.transformer.attention.backends.fused_taylor import fused_polynomial_attention
+    if backend == "fused":
+        from scaffolds.transformer.attention.backends.fused_taylor import fused_polynomial_attention
 
-    output = fused_polynomial_attention(q, k, v, attention_degree=attention_degree)
+        output = fused_polynomial_attention(q, k, v, attention_degree=attention_degree)
+    elif backend == "mosaic":
+        from scaffolds.transformer.attention.backends.mosaic.api import taylor_attention as mosaic_taylor_attention
+
+        output = mosaic_taylor_attention(q, k, v, attention_degree=attention_degree)
+    else:
+        raise ValueError("Taylor attention requires backend='blocked', 'fused' or 'mosaic'")
     if not return_diagnostics:
         return output
     # Measure actual layer inputs while retaining the fused output downstream.

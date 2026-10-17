@@ -868,6 +868,91 @@ sbatch -w akita --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
   scaffolds/transformer/validation/replay_checkpoint.sbatch "$PWD" <run> 500 1000 <scratch> default default
 ```
 
+## Mosaic GPU polynomial attention kernels on H100 and B300
+
+`attention/backends/mosaic/` implements causal polynomial attention (forward, dQ, dK, dV) on
+Mosaic GPU: `hopper.py` (wgmma, FlashAttention-3 structure) and `blackwell.py` (tcgen05 with
+tensor memory, warp-specialized). `common.py` holds each family's elementwise mathematics, so
+both families share one set of pipelines. `api.py` exposes `taylor_attention` (normalized
+fixed Taylor, matching `fused_taylor`) and `query_polynomial_attention` (unnormalized, FP32
+coefficients per query and head, matching `fused_query_polynomial`). Both keep the Triton
+kernels' numerics and failure rules: FP32 scores, polynomials, sums, and accumulators; FP32
+weights and score gradients enter the tensor cores as three BF16 components; NaN rows for a
+nonfinite, nonpositive (even Taylor degree), or zero (odd degree) row sum, a nonfinite score
+or weight (query), or an overflowing output. They accept BF16 inputs, Q/K width 8, 16, 32,
+64, or 128, value width 64, degree >= 1 (query: 1-4), and time a multiple of 128 (H100) or
+256 (B300), and raise `ValueError` otherwise. Tensor cores contract in steps of one
+shared-memory swizzle row, so Q/K tiles use 32-, 64-, and 128-byte swizzles at widths 16,
+32, and 64 or more; width 8 is zero-padded to the 16-element minimum.
+
+`tests/test_mosaic_taylor.py` (42 cases), `tests/test_mosaic_query.py` (31 cases), and
+`tests/test_mosaic_repeatability.py` (3 cases) pass on one H100 (`dogo`, CUDA 12.9.1) and one
+B300 (`akita`, CUDA 13.2): every degree and width against independent NumPy FP64 outputs and
+VJPs (coefficient gradients per order) and against the Triton kernels, the production context,
+causality, nonfinite handling, rejected inputs, the model's dispatch, and bitwise-identical
+outputs and gradients across 20 repeats at production size.
+
+Forward + backward per layer at 16 x 2048 x 16 heads, value width 64
+(`benchmarks/benchmark_mosaic.py`), Triton time divided by Mosaic time:
+
+| | H100 | B300 |
+| --- | ---: | ---: |
+| Taylor, d_K 8-64, m 1-4 | 1.6-1.8x | 2.4-3.8x |
+| Taylor, d_K 8-64, m = 16 | 2.8-3.0x | 7.4-10.2x |
+| Taylor, d_K 128, m 1-16 | 3.4-4.0x | 3.8-4.4x |
+| Query, d_K 64, m 1-3 | 1.25-1.45x | 3.0-3.2x |
+
+At d_K = 64 and m = 2: Taylor 2.46 ms against 3.95 ms on H100 and 1.89 ms against 6.55 ms on
+B300; query 1.92 ms against 2.77 ms and 1.52 ms against 4.80 ms; cuDNN softmax 1.47 ms and
+0.71 ms.
+
+### Training pilots
+
+`pilot_mosaic.sbatch` trains a study recipe for 1,000 updates on one GPU (microbatch 16,
+validation every 100 updates) with a chosen backend, from the same initialization and data;
+summaries are in `runs/mosaic-pilot/`. Recipes: tanh query-conditioned m = 3, d_K = 64,
+head RMSNorm (`r0bc57959ef6c`), and normalized Taylor m = 2, d_K = 32 (`raf32fab4ba52`), both
+with 400 warmup updates. XLA's GPU reductions are not deterministic, so two fused runs
+already diverge; a repeated fused query run measures that spread.
+
+Validation NLL:
+
+| Recipe, GPU | Backend | 200 | 400 | 600 | 800 | 1,000 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Query m = 3, H100 | fused | 5.6465 | 4.6246 | 4.0609 | 3.6989 | 3.5157 |
+| | fused, repeat | 5.6463 | 4.5959 | 4.0545 | 3.7041 | 3.5132 |
+| | Mosaic | 5.6463 | 4.5862 | 4.0395 | 3.6854 | 3.5085 |
+| Taylor m = 2, H100 | fused | 5.4085 | 4.7960 | 4.4177 | 4.1762 | 4.0295 |
+| | Mosaic | 5.4168 | 4.7962 | 4.4217 | 4.1681 | 4.0133 |
+
+From step 200 on, the two fused query runs differ by up to 0.029 and Mosaic differs from them
+by up to 0.038 and 0.019; Taylor differences change sign, up to 0.031. Mosaic tracks the fused
+kernels within run-to-run variation. Against FP64 on the same inputs (query m = 1-3), both
+kernels' outputs and Q/K/V gradients are within 1.7e-3 (BF16 rounding) and coefficient
+gradients within 2e-7, with no systematic scale bias.
+
+One training microbatch (16 x 2048, `benchmark_mosaic_step.sbatch`, median of 30, two rounds
+agreeing within 0.5%; `runs/mosaic-step/`), both backends on the same GPU:
+
+| Recipe | H100 SXM fused | Mosaic | H100 PCIe fused | Mosaic |
+| --- | ---: | ---: | ---: | ---: |
+| Query m = 3, d_K = 64 | 120.7 ms | 114.7 ms | 186.6 ms | 176.6 ms |
+| Taylor m = 2, d_K = 32 | 108.0 ms | 95.9 ms | 164.5 ms | 147.3 ms |
+
+Attention is a small part of a 200M-parameter update at 2,048 tokens, so the kernels' 1.3-1.8x
+on H100 gives 5-11% per update. `mastiff` has H100 PCIe cards (114 SMs, HBM2e) and `dogo` H100
+SXM; on both, Mosaic is also faster per kernel (PCIe: query m = 3 3.10 ms against 3.87 ms,
+Taylor d_K = 32, m = 2 3.70 ms against 4.87 ms).
+
+From a committed worktree on Kennel (arguments: commit, GPU type, study run, backend,
+updates, and an optional label for a repeated run):
+
+```bash
+sbatch --partition=long --gres=gpu:h100:1 scaffolds/transformer/validation/pilot_mosaic.sbatch \
+  "$(git rev-parse HEAD)" H100 r0bc57959ef6c mosaic 1000
+sbatch --partition=long --gres=gpu:h100:1 scaffolds/transformer/validation/benchmark_mosaic_step.sbatch
+```
+
 ## Reproduction
 
 From a worktree with the scaffold environment synced

@@ -44,7 +44,7 @@ class ModelConfig:
     # Retained for recipe compatibility; this scaffold requires separate weights.
     tie_embeddings: bool = False
     remat: bool = False
-    attention_backend: Literal["auto", "blocked", "fused", "manual", "xla", "cudnn"] = "auto"
+    attention_backend: Literal["auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"] = "auto"
     attention_degree: int | None = None
     attention_normalization: bool = True
     # Unnormalized dot-product attention only: rescale each head's output
@@ -119,6 +119,24 @@ class ModelConfig:
     initialization: Literal["flax_default", "transformer_reference", "gla_reference",
                             "gated_deltanet_reference"] = "flax_default"
 
+    def mosaic_supported(self) -> bool:
+        """Whether a Mosaic GPU kernel implements this recipe's attention: normalized fixed
+        Taylor or tanh query-conditioned polynomial attention, at its widths and degrees."""
+        from scaffolds.transformer.attention.backends.mosaic.api import MAX_QUERY_DEGREE, VALUE_WIDTH, WIDTHS
+
+        degree = self.attention_degree
+        integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
+        taylor = (self.attention_normalization and integer_degree and degree >= 1
+                  and self.attention_coefficients == "fixed" and self.quadratic_mode == "fixed"
+                  and self.attention_fixed_coefficients is None and self.attention_fixed_square_factors is None
+                  and self.attention_coefficient_parameterization == "direct"
+                  and self.attention_coefficient_conditioning == "static")
+        query = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
+                 and self.attention_coefficient_activation == "tanh" and integer_degree
+                 and 1 <= degree <= MAX_QUERY_DEGREE)
+        return (self.attention_mechanism == "dot_product" and (taylor or query)
+                and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
+
     def __post_init__(self):
         if self.kind != "transformer":
             raise ValueError("The shared scaffold supports only kind=transformer")
@@ -139,8 +157,12 @@ class ModelConfig:
                      or (self.attention_mechanism == "gla" and self.gla_use_rope))
         if self.qk_head_dim % 2 and uses_rope:
             raise ValueError("model.qk_head_dim must be even for RoPE")
-        if self.attention_backend not in ("auto", "blocked", "fused", "manual", "xla", "cudnn"):
+        if self.attention_backend not in ("auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
+        if self.attention_backend == "mosaic" and not self.mosaic_supported():
+            raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention and tanh query-conditioned "
+                             "polynomial attention of degree 1-4, with qk_head_dim 8, 16, 32, 64, or 128 and "
+                             "value_head_dim 64")
         if not isinstance(self.attention_normalization, bool):
             raise ValueError("model.attention_normalization must be a boolean")
         if self.attention_output_scaling not in ("none", "inverse_position", "head_rms_norm"):
@@ -184,8 +206,8 @@ class ModelConfig:
         if not self.attention_normalization:
             if self.quadratic_mode != "fixed":
                 raise ValueError("Unnormalized attention requires the exponential or a fixed Taylor kernel")
-            if self.attention_backend not in ("auto", "blocked", "fused"):
-                raise ValueError("Unnormalized attention requires backend='auto', 'blocked' or 'fused'")
+            if self.attention_backend not in ("auto", "blocked", "fused", "mosaic"):
+                raise ValueError("Unnormalized attention requires backend='auto', 'blocked', 'fused' or 'mosaic'")
         if self.attention_backend in ("manual", "xla", "cudnn") and self.attention_degree is not None:
             raise ValueError(f"Backend {self.attention_backend!r} supports exact softmax only")
         if self.quadratic_mode not in ("fixed", "positive", "unrestricted"):
@@ -419,6 +441,8 @@ def validate_config(config: Config) -> None:
             and config.model.attention_backend in ("fused", "cudnn") and config.model.attention_degree is None
             and config.model.attention_normalization and train.dtype != "bfloat16"):
         raise ValueError("Fused exact-softmax attention uses cuDNN and requires train.dtype=bfloat16")
+    if config.model.attention_backend == "mosaic" and train.dtype != "bfloat16":
+        raise ValueError("Mosaic attention requires train.dtype=bfloat16")
     if config.model.attention_backend == "fused" and (
             config.model.attention_degree is not None or not config.model.attention_normalization):
         if max(config.model.qk_head_dim, config.model.value_head_dim) > 128:

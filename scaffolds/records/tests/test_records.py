@@ -518,3 +518,44 @@ def test_cli_qk_requirement_exempts_mechanisms_without_qk_normalization(tmp_path
     run = Path(capsys.readouterr().out.strip())
     assert yaml.safe_load((run / "config.yaml").read_text())["model"]["qk_norm"] is False
     validate_record(run)
+
+
+@pytest.mark.parametrize("model", [
+    {"attention_degree": 2, "attention_backend": "fused", "qk_head_dim": 64, "value_head_dim": 64},
+    {"attention_degree": 3, "attention_backend": "fused", "attention_normalization": False, "value_head_dim": 64,
+     "attention_coefficients": "learned", "attention_coefficient_sharing": "per_head",
+     "attention_coefficient_conditioning": "query", "attention_coefficient_activation": "tanh"},
+])
+def test_cli_requires_explicit_opt_out_for_triton_where_mosaic_applies(tmp_path, monkeypatch, capsys, model):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "legacy.yaml"
+    source.write_text(yaml.safe_dump({"model": model, "train": {}}))
+    study = tmp_path / "study"
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source)])
+    with pytest.raises(SystemExit) as failure:
+        main()
+    assert failure.value.code == 2
+    assert "--allow-triton-attention" in capsys.readouterr().err
+    assert not study.exists()
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source),
+                                    "--allow-triton-attention"])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_backend"] == "fused"
+
+
+@pytest.mark.parametrize("model", [
+    {"attention_degree": 2, "attention_backend": "fused", "attention_coefficients": "learned"},
+    {"attention_degree": 2, "attention_backend": "fused", "qk_head_dim": 48},
+    {"attention_degree": 2, "attention_backend": "mosaic", "qk_head_dim": 64, "value_head_dim": 64},
+])
+def test_cli_keeps_backends_without_a_mosaic_kernel_or_already_mosaic(tmp_path, monkeypatch, capsys, model):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    source.write_text(yaml.safe_dump({"model": model, "train": {"dtype": "bfloat16"}}))
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "study"), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_backend"] == model["attention_backend"]

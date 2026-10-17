@@ -253,8 +253,8 @@ acceptance regenerates the kernel exactly. Starting at `a_r = 0` with a random k
 keeps the Taylor start, while the amplitude's gradient `tanh(w_r^T x_t)` is nonzero;
 `a_r = 0` with a zero kernel would leave both gradients zero and is rejected.
 
-The tanh path uses a dedicated fused kernel that directly evaluates the
-query-dependent polynomial, with gradients for Q/K/V and every coefficient.
+The tanh path uses a dedicated fused kernel (or its Mosaic GPU counterpart,
+`attention_backend: mosaic`) that directly evaluates the query-dependent polynomial, with gradients for Q/K/V and every coefficient.
 The historical identity path retains its linear polynomial kernel plus FP32
 causal value sum. Both have an explicit blocked polynomial reference.
 Per-head output RMSNorm remains an independent option through
@@ -412,11 +412,25 @@ and distributed training continue through the shared runtime.
 ## Execution selection and resumption
 
 The shared configuration defaults to `attention_backend: auto`; ordinary recipes
-can omit it. CPU execution selects the blocked reference. Supported NVIDIA GPU
+can omit it. CPU execution selects the blocked reference. On H100 and B300, recipes with
+a Mosaic GPU kernel (below) select it. Other supported NVIDIA GPU
 polynomial, learned, and unnormalized exponential/Taylor shapes select the fused kernels; exact softmax selects an
 appropriate public JAX implementation. Unsupported shapes use the reference when
 automatic selection is requested. Explicit overrides are validated and never
 silently replaced.
+
+`attention_backend: mosaic` selects the Pallas Mosaic GPU kernels
+(`attention/backends/mosaic/`): Hopper `wgmma` kernels on H100 (sm90) and Blackwell
+`tcgen05`/tensor-memory kernels on B300 (sm10x), with the mathematics, FP32
+accumulation, bf16x3 weight products, and NaN failure rows of the fused Triton
+kernels. They cover normalized fixed Taylor attention (degree >= 1) and tanh
+query-conditioned polynomial attention (degree 1-4), with Q/K width 8, 16, 32, 64, or
+128, value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
+(H100) or 256 (B300). An explicit `mosaic` request raises for other recipes, GPUs, or
+shapes; `auto` then uses the fused kernels. Diagnostics come from the blocked reference,
+as for the fused kernels. They are the canonical kernels for these mechanisms, and
+`scaffolds.records create` rejects a fresh recipe for them that requests `fused` unless
+`--allow-triton-attention` is supplied.
 
 The requested and resolved implementations are recorded in run metadata. The
 resolved backend is stored in the run configuration and reused on resume, even
