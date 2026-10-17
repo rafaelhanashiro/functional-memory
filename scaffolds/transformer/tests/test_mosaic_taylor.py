@@ -1,8 +1,9 @@
 """GPU correctness gates for the Mosaic GPU Taylor attention kernels (H100 and B300).
 
 Use ``pytest -m gpu tests/test_mosaic_taylor.py`` inside an H100 or B300 allocation.
-Outputs and q/k/v VJPs are compared with the independent FP64 dense reference and with
-the Pallas-Triton kernel, using the BF16 tolerances of test_fused_attention.
+Outputs and q/k/v VJPs, at both weight precisions, are compared with the independent FP64
+dense reference and with the Pallas-Triton kernel, using the BF16 tolerances of
+test_fused_attention.
 """
 from functools import partial
 import math
@@ -14,6 +15,7 @@ import pytest
 
 from scaffolds.transformer.attention.backends.fused_taylor import fused_polynomial_attention
 from scaffolds.transformer.attention.backends.mosaic.api import WIDTHS, taylor_attention
+from scaffolds.transformer.attention.backends.mosaic.common import PRECISIONS
 from scaffolds.transformer.tests.test_fused_attention import _assert_result, _compiled_forward_and_vjp, _inputs
 
 DEGREES = (1, 2, 3, 4, 8, 16)
@@ -48,31 +50,37 @@ def _numpy_fp64_forward_and_vjp(operands, cotangent, degree):
     return out, (grad_q, grad_k, grad_v)
 
 
+@pytest.mark.parametrize("precision", PRECISIONS)
 @pytest.mark.parametrize("width", WIDTHS)
 @pytest.mark.parametrize("degree", DEGREES)
-def test_outputs_and_vjp_match_fp64_and_triton(degree, width):
+def test_outputs_and_vjp_match_fp64_and_triton(degree, width, precision):
     operands, cotangent = _inputs((1, 512, 2, width, 64), dtype=jnp.bfloat16, seed=94)
-    mosaic = _compiled_forward_and_vjp(partial(taylor_attention, attention_degree=degree))(operands, cotangent)
+    attend = partial(taylor_attention, attention_degree=degree, precision=precision)
+    mosaic = _compiled_forward_and_vjp(attend)(operands, cotangent)
     assert mosaic[0].dtype == jnp.bfloat16 and all(g.dtype == jnp.bfloat16 for g in mosaic[1])
+    label = f"degree={degree}, width={width}, {precision}"
     dense64 = _numpy_fp64_forward_and_vjp(operands, cotangent, degree)
-    _assert_result(mosaic, dense64, **TOLERANCES, label=f"Mosaic vs FP64, degree={degree}, width={width}")
+    _assert_result(mosaic, dense64, **TOLERANCES, label=f"Mosaic vs FP64, {label}")
     triton = _compiled_forward_and_vjp(partial(fused_polynomial_attention, attention_degree=degree))(operands, cotangent)
-    _assert_result(mosaic, triton, **TOLERANCES, label=f"Mosaic vs Triton, degree={degree}, width={width}")
+    _assert_result(mosaic, triton, **TOLERANCES, label=f"Mosaic vs Triton, {label}")
 
 
+@pytest.mark.parametrize("precision", PRECISIONS)
 @pytest.mark.parametrize("degree", (2, 3, 16))
-def test_production_context_matches_triton(degree):
+def test_production_context_matches_triton(degree, precision):
     operands, cotangent = _inputs((1, 2048, 4, 64, 64), dtype=jnp.bfloat16, seed=95)
-    mosaic = _compiled_forward_and_vjp(partial(taylor_attention, attention_degree=degree))(operands, cotangent)
+    attend = partial(taylor_attention, attention_degree=degree, precision=precision)
+    mosaic = _compiled_forward_and_vjp(attend)(operands, cotangent)
     triton = _compiled_forward_and_vjp(partial(fused_polynomial_attention, attention_degree=degree))(operands, cotangent)
-    _assert_result(mosaic, triton, **TOLERANCES, label=f"production context, degree={degree}")
+    _assert_result(mosaic, triton, **TOLERANCES, label=f"production context, degree={degree}, {precision}")
 
 
+@pytest.mark.parametrize("precision", PRECISIONS)
 @pytest.mark.parametrize("degree", (1, 2))
-def test_outputs_and_vjp_ignore_future_tokens(degree):
+def test_outputs_and_vjp_ignore_future_tokens(degree, precision):
     operands, cotangent = _inputs((1, 512, 2, 64, 64), dtype=jnp.bfloat16, seed=96)
     prefix = 300
-    attend = _compiled_forward_and_vjp(partial(taylor_attention, attention_degree=degree))
+    attend = _compiled_forward_and_vjp(partial(taylor_attention, attention_degree=degree, precision=precision))
     restricted = cotangent.at[:, prefix:].set(0)
     output, grads = attend(operands, restricted)
     q, k, v = operands
@@ -93,7 +101,7 @@ def test_rows_with_a_zero_signed_sum_are_nan():
     assert bool(jnp.isnan(output).all())
 
 
-@pytest.mark.parametrize("change", ["float32", "width", "value width", "time", "degree"])
+@pytest.mark.parametrize("change", ["float32", "width", "value width", "time", "degree", "precision"])
 def test_unsupported_inputs_raise(change):
     q = k = jnp.zeros((1, 512, 1, 64), jnp.bfloat16)
     v = jnp.zeros((1, 512, 1, 64), jnp.bfloat16)
@@ -106,10 +114,10 @@ def test_unsupported_inputs_raise(change):
         v = jnp.zeros((1, 512, 1, 128), jnp.bfloat16)
     elif change == "time":
         q = k = v = jnp.zeros((1, 200, 1, 64), jnp.bfloat16)
-    else:
+    elif change == "degree":
         degree = 0
     with pytest.raises(ValueError):
-        taylor_attention(q, k, v, attention_degree=degree)
+        taylor_attention(q, k, v, attention_degree=degree, precision="fp8" if change == "precision" else "bf16")
 
 
 def test_model_dispatch_uses_the_kernel_and_reports_diagnostics():
