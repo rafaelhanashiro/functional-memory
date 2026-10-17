@@ -1087,7 +1087,9 @@ first bitwise; a process silent for 120 s counts as hung. On H100 the forward an
 at both precisions (job 220106, 300,000 calls each) and dK/dV (job 220103, 100,000) finished
 with identical results, except one query dQ (BF16) process that hung within its first 1,000
 calls, for no cause found; twenty further 50,000-call processes of query and Taylor dQ (job
-220120) and a 100,000-call rerun finished, as did every training pilot below. Kernels synchronize each ring slot only after both compute
+220120) and a 100,000-call rerun finished, as did every training pilot below. On B300 (job
+220124) the forward, dQ, dK, and dV kernels of both families at both precisions each finished
+100,000 calls with identical results. Kernels synchronize each ring slot only after both compute
 warpgroups have released it; tiles past a warpgroup's causal diagonal are neither consumed
 nor freed by it.
 
