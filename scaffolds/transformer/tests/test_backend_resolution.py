@@ -227,6 +227,26 @@ def test_mosaic_resolution_checks_the_allocation(monkeypatch, dtype, platform, c
             resolve()
 
 
+@pytest.mark.parametrize("settings,dtype,capability,length,expected", [
+    (MOSAIC_TAYLOR, "bfloat16", 9, 2048, "mosaic"),
+    (MOSAIC_QUERY, "bfloat16", 10, 2048, "mosaic"),
+    (MOSAIC_TAYLOR, "float32", 9, 2048, "fused"),
+    (MOSAIC_TAYLOR, "bfloat16", 8, 2048, "fused"),
+    (MOSAIC_TAYLOR, "bfloat16", 10, 1920, "fused"),
+    (dict(MOSAIC_TAYLOR, attention_coefficients="learned"), "bfloat16", 9, 2048, "fused"),
+    (dict(MOSAIC_TAYLOR, qk_head_dim=48), "bfloat16", 9, 2048, "fused"),
+    (dict(MOSAIC_TAYLOR, attention_degree=None), "bfloat16", 9, 2048, "cudnn"),
+])
+def test_auto_prefers_mosaic_where_a_kernel_and_the_gpu_support_it(monkeypatch, settings, dtype, capability, length,
+                                                                    expected):
+    from scaffolds.transformer.attention.backends import selection
+
+    monkeypatch.setattr(selection, "_runtime_platform", lambda: "gpu")
+    monkeypatch.setattr(selection, "_cuda_compute_capability", lambda: capability)
+    model = ModelConfig(**dict(settings, attention_backend="auto"))
+    assert resolve_attention_backend(model, dtype=dtype, sequence_length=length) == expected
+
+
 def test_mosaic_requires_bfloat16_training():
     from scaffolds.transformer.configs import validate_config
 

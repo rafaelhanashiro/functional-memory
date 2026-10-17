@@ -119,8 +119,9 @@ class ModelConfig:
     initialization: Literal["flax_default", "transformer_reference", "gla_reference",
                             "gated_deltanet_reference"] = "flax_default"
 
-    def _validate_mosaic(self):
-        """Mosaic GPU kernels exist for normalized fixed Taylor and tanh query-conditioned attention."""
+    def mosaic_supported(self) -> bool:
+        """Whether a Mosaic GPU kernel implements this recipe's attention: normalized fixed
+        Taylor or tanh query-conditioned polynomial attention, at its widths and degrees."""
         from scaffolds.transformer.attention.backends.mosaic.api import MAX_QUERY_DEGREE, VALUE_WIDTH, WIDTHS
 
         degree = self.attention_degree
@@ -133,11 +134,8 @@ class ModelConfig:
         query = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
                  and self.attention_coefficient_activation == "tanh" and integer_degree
                  and 1 <= degree <= MAX_QUERY_DEGREE)
-        if self.attention_mechanism != "dot_product" or not (taylor or query):
-            raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention and tanh "
-                             f"query-conditioned polynomial attention of degree 1-{MAX_QUERY_DEGREE}")
-        if self.qk_head_dim not in WIDTHS or self.value_head_dim != VALUE_WIDTH:
-            raise ValueError(f"Backend 'mosaic' supports qk_head_dim in {WIDTHS} and value_head_dim {VALUE_WIDTH}")
+        return (self.attention_mechanism == "dot_product" and (taylor or query)
+                and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
 
     def __post_init__(self):
         if self.kind != "transformer":
@@ -161,8 +159,10 @@ class ModelConfig:
             raise ValueError("model.qk_head_dim must be even for RoPE")
         if self.attention_backend not in ("auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
-        if self.attention_backend == "mosaic":
-            self._validate_mosaic()
+        if self.attention_backend == "mosaic" and not self.mosaic_supported():
+            raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention and tanh query-conditioned "
+                             "polynomial attention of degree 1-4, with qk_head_dim 8, 16, 32, 64, or 128 and "
+                             "value_head_dim 64")
         if not isinstance(self.attention_normalization, bool):
             raise ValueError("model.attention_normalization must be a boolean")
         if self.attention_output_scaling not in ("none", "inverse_position", "head_rms_norm"):

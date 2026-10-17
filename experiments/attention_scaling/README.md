@@ -149,14 +149,16 @@ New runs use their mechanism's reference initialization, which `records create` 
 when the recipe leaves `model.initialization` unset.
 Untied embeddings, the scaffold's selective weight decay, and 400 warmup updates
 (`optim.warmup_steps`) are canonical. New unnormalized runs set
-`model.attention_output_scaling: head_rms_norm`. The following allocates a fresh execution from an
-existing QK-normalized Taylor recipe:
+`model.attention_output_scaling: head_rms_norm`. Normalized fixed Taylor and tanh
+query-conditioned runs use the Mosaic GPU kernels (`model.attention_backend: mosaic`). The
+following allocates a fresh execution from an existing QK-normalized Taylor recipe that
+predates them:
 
 ```bash
+sed 's/attention_backend: fused/attention_backend: mosaic/' \
+  experiments/attention_scaling/runs/r044b3356f215/config.yaml > /tmp/taylor-example.yaml
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records create \
-  --study experiments/attention_scaling \
-  --config experiments/attention_scaling/runs/r044b3356f215/config.yaml \
-  --label taylor-example
+  --study experiments/attention_scaling --config /tmp/taylor-example.yaml --label taylor-example
 ```
 
 The CLI resolves current defaults, assigns new output paths and tracking identity,

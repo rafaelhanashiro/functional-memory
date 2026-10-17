@@ -66,21 +66,24 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
             if not supports_gla:
                 raise ValueError("Fused GLA requires an Ampere-or-newer NVIDIA GPU")
         return request
-    if request == "mosaic":
+    if request == "mosaic" or (request == "auto" and gpu and model_config.mosaic_supported()):
         # Mosaic GPU kernels exist for Hopper (sm90) and Blackwell (sm10x); the recipe-level
-        # mechanism, width, and degree checks live in ModelConfig._validate_mosaic.
+        # mechanism, width, and degree checks live in ModelConfig.mosaic_supported. Automatic
+        # selection prefers them and otherwise falls back to the fused Triton kernels.
         if not gpu:
             raise ValueError("Mosaic attention requires a GPU")
-        if dtype != "bfloat16":
-            raise ValueError("Mosaic attention requires train.dtype=bfloat16")
-        capability = 9 if platform is not None else _cuda_compute_capability()
-        if capability not in (9, 10):
-            raise ValueError(f"Mosaic attention requires an H100 (sm90) or B300 (sm10x) GPU, got sm{capability}x")
         length = model_config.max_seq_len if sequence_length is None else sequence_length
+        capability = 9 if platform is not None else _cuda_compute_capability()
         multiple = 128 if capability == 9 else 256
-        if length % multiple:
-            raise ValueError(f"Mosaic attention on sm{capability}x requires sequence length divisible by {multiple}")
-        return request
+        problems = [message for failed, message in (
+            (dtype != "bfloat16", "Mosaic attention requires train.dtype=bfloat16"),
+            (capability not in (9, 10), f"Mosaic attention requires an H100 (sm90) or B300 (sm10x) GPU, got sm{capability}x"),
+            (length % multiple, f"Mosaic attention on sm{capability}x requires sequence length divisible by {multiple}"),
+        ) if failed]
+        if not problems:
+            return "mosaic"
+        if request == "mosaic":
+            raise ValueError(problems[0])
     polynomial = model_config.attention_degree is not None
     unnormalized = not model_config.attention_normalization
     custom_kernel = polynomial or unnormalized

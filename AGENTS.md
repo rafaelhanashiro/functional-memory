@@ -197,6 +197,12 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   `model.initialization` unset, so a copied legacy recipe does not inherit Flax
   defaults; fresh allocation of an explicitly requested Flax-default run requires
   `--allow-flax-default-init`. Historical recipes and resumptions keep their settings.
+- New normalized fixed Taylor and tanh query-conditioned attention experiments use the
+  Mosaic GPU kernels (`model.attention_backend: mosaic`; `auto` also resolves to them on
+  H100 and B300) unless the user explicitly requests the fused Triton kernels; do not
+  inherit `fused` when copying a legacy recipe. Fresh allocation of such a recipe with
+  `fused` requires `--allow-triton-attention`. Historical recipes and resumptions keep
+  their backend.
 - New unnormalized attention experiments use per-head RMSNorm output scaling
   (`model.attention_output_scaling: head_rms_norm`) unless the user explicitly requests
   otherwise; it improved every unnormalized kernel tested
