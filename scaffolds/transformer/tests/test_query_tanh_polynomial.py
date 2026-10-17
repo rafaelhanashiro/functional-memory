@@ -337,6 +337,21 @@ def test_mandatory_acceptance_checks_include_new_backend_and_canonical_initializ
         1 / math.factorial(r) for r in range(degree + 1)]
 
 
+@pytest.mark.parametrize("backend", ("mosaic", "fused"))
+def test_initialization_checks_build_their_softmax_control_on_the_blocked_reference(backend):
+    # An explicit kernel request stays in the recipe; the exact-softmax control must not inherit it.
+    config = Config(model=_model(2, qk_head_dim=8, value_head_dim=64, attention_backend=backend))
+    facts = acceptance.matches_softmax_backbone_initialization(config)
+    assert set(facts["mechanism_parameters"]) >= {"query_polynomial_kernel", "query_polynomial_amplitude"}
+    assert config.model.attention_backend == backend
+    taylor = Config(model=ModelConfig(
+        vocab_size=16, max_seq_len=13, num_layers=2, hidden_size=8, num_heads=2, num_kv_heads=2,
+        qk_head_dim=8, value_head_dim=64, intermediate_size=12, attention_degree=2,
+        attention_normalization=True, attention_backend=backend, initialization="transformer_reference",
+        qk_norm=True))
+    assert acceptance.matches_softmax_initialization(taylor)["softmax_counterpart_parameter_sha256"]
+
+
 def test_legacy_identity_config_resumes_without_new_activation_field():
     config = _config(1)
     config.model.attention_coefficient_activation = "identity"

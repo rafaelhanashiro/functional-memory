@@ -361,7 +361,10 @@ def matches_softmax_initialization(config) -> dict:
     from dataclasses import replace
 
     actual = initialization_facts(config)
-    control = replace(config, model=replace(config.model, attention_degree=None, attention_normalization=True,
+    # The control is built on the blocked reference: initialization does not depend on the
+    # backend, and an explicit kernel request (mosaic) need not support exact softmax.
+    control = replace(config, model=replace(config.model, attention_backend="blocked",
+                                           attention_degree=None, attention_normalization=True,
                                            attention_output_scaling="none",
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
                                            attention_coefficient_parameterization="direct",
@@ -407,7 +410,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
 
     specs = attention_parameter_specs(config.model)
     control = replace(config, model=replace(
-        config.model, attention_degree=None, attention_normalization=True, attention_output_scaling="none",
+        config.model, attention_backend="blocked",  # as in matches_softmax_initialization
+        attention_degree=None, attention_normalization=True, attention_output_scaling="none",
         quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
         attention_fixed_square_factors=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",
