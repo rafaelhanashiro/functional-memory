@@ -84,6 +84,9 @@ class ModelConfig:
     # N(0, projection_initial_std^2) entries (0 keeps W at zero). a = 0 with W = 0 never learns.
     attention_coefficient_amplitude_initial: float = 1.0
     attention_coefficient_projection_initial_std: float = 0.0
+    # Tanh coefficients may learn an offset inside the tanh, c_r = b_r + a_r tanh(w_r^T x_t + beta_r),
+    # starting at beta_r = 0, so a constant shift of the pre-activation need not come through w_r.
+    attention_coefficient_tanh_bias: bool = False
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
     # (even m, row-normalized only), so the kernel is nonnegative by construction;
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
@@ -251,6 +254,10 @@ class ModelConfig:
                 raise ValueError("Coefficient amplitude and projection initialization apply to tanh coefficients only")
             if amplitude == 0 and spread == 0:
                 raise ValueError("Tanh coefficients with a = 0 and W = 0 have zero gradients and never learn")
+        if not isinstance(self.attention_coefficient_tanh_bias, bool):
+            raise ValueError("model.attention_coefficient_tanh_bias must be a boolean")
+        if self.attention_coefficient_tanh_bias and self.attention_coefficient_activation != "tanh":
+            raise ValueError("A bias inside tanh applies to tanh coefficients only")
         if self.attention_coefficients == "learned":
             if self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed":
                 raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")

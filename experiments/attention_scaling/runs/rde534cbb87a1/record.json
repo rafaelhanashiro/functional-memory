@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rde534cbb87a1/config.yaml",
+    "sha256": "5552ee73f4162c82035a554a5b136b516c2b1737423aa084e31b7c3c8204fdd3"
+  },
+  "label": "200m-qk-m003-query-tanh-a0-w0p002-tanhbias-head-rms-reference-warmup400-seed0",
+  "name": "200m-qk-m003-query-tanh-a0-w0p002-tanhbias-head-rms-reference-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "rde534cbb87a1",
+  "status": "planned"
+}

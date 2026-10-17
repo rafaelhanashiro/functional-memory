@@ -356,10 +356,111 @@ def test_legacy_identity_config_resumes_without_new_activation_field():
     {"attention_coefficient_amplitude_initial": float("nan")},
     {"attention_coefficient_activation": "identity", "attention_degree": 1,
      "attention_coefficient_projection_initial_std": 0.01},
+    {"attention_coefficient_activation": "identity", "attention_degree": 1, "attention_coefficient_tanh_bias": True},
+    {"attention_coefficient_tanh_bias": 1},
 ])
 def test_rejects_unsupported_tanh_coefficient_configurations(updates):
     with pytest.raises(ValueError):
         _model(**updates)
+
+
+@pytest.mark.parametrize("degree", DEGREES)
+def test_bias_inside_tanh_shifts_the_preactivation_and_trains_through_the_amplitude(degree):
+    operands, _ = _inputs(degree)
+    _, _, _, x, kernel, bias, amplitude = operands
+    random = np.random.default_rng(11 + degree)
+    inner = jnp.asarray(random.normal(size=bias.shape) * 0.3, jnp.float32)
+    with jax.default_matmul_precision("highest"):
+        values = project_coefficients(x, kernel, bias, amplitude=amplitude, activation="tanh", tanh_bias=inner)
+        expected = bias + amplitude * jnp.tanh(jnp.einsum("btd,hdr->bthr", x, kernel) + inner)
+    np.testing.assert_allclose(values, expected, rtol=1e-5, atol=1e-6)
+    operation = lambda w, a, beta: project_coefficients(x, w, bias, amplitude=a, activation="tanh", tanh_bias=beta)
+    cotangent = jnp.asarray(random.normal(size=values.shape), jnp.float32)
+    _, pullback = jax.vjp(operation, kernel, amplitude, inner)
+    dw, da, dbeta = pullback(cotangent)
+    assert np.all(np.abs(np.asarray(dbeta)) > 0) and np.linalg.norm(dw) > 0
+    # a = 0 silences W and beta alike; the amplitude still learns.
+    _, pullback = jax.vjp(operation, kernel, jnp.zeros_like(amplitude), inner)
+    dw, da, dbeta = pullback(cotangent)
+    np.testing.assert_array_equal(dw, 0)
+    np.testing.assert_array_equal(dbeta, 0)
+    assert np.all(np.abs(np.asarray(da)) > 0)
+    with pytest.raises(ValueError):
+        project_coefficients(x, kernel, bias, amplitude=amplitude, activation="tanh", tanh_bias=inner[:, :1])
+    with pytest.raises(ValueError):
+        project_coefficients(x, kernel, bias, activation="identity", tanh_bias=inner)
+
+
+@pytest.mark.parametrize("degree", DEGREES)
+def test_inner_bias_starts_at_zero_keeps_the_static_start_and_counts_its_parameters(degree):
+    config = _model(degree, attention_coefficient_tanh_bias=True, attention_coefficient_amplitude_initial=0.0,
+                    attention_coefficient_projection_initial_std=0.002)
+    plain = replace(config, attention_coefficient_tanh_bias=False)
+    static_config = replace(plain, attention_coefficient_conditioning="static",
+                            attention_coefficient_activation="identity",
+                            attention_coefficient_amplitude_initial=1.0,
+                            attention_coefficient_projection_initial_std=0.0)
+    model, plain_model, static = build_model(config, 13), build_model(plain, 13), build_model(static_config, 13)
+    assert model.query_polynomial_tanh_bias.shape == (2, 2, degree + 1)
+    assert model.query_polynomial_tanh_bias.dtype == jnp.float32
+    np.testing.assert_array_equal(model.query_polynomial_tanh_bias[...], 0)
+    # The inner bias draws no random numbers: W is the same draw as without it.
+    np.testing.assert_array_equal(model.query_polynomial_kernel[...], plain_model.query_polynomial_kernel[...])
+    assert not hasattr(plain_model, "query_polynomial_tanh_bias")
+    assert model_parameter_count(config) - model_parameter_count(plain) == 2 * 2 * (degree + 1)
+    tokens = jnp.arange(26).reshape(2, 13) % 16
+    np.testing.assert_allclose(model(tokens), static(tokens), rtol=2e-5, atol=2e-6)
+    facts = acceptance.matches_softmax_backbone_initialization(Config(model=config))
+    assert facts["mechanism_parameters"]["query_polynomial_tanh_bias"] == {
+        "shape": [2, 2, degree + 1], "initial": [0.0] * (degree + 1), "weight_decay": False}
+    # The inner bias acts only through the amplitude.
+    model.query_polynomial_tanh_bias[...] = jnp.linspace(-1.0, 1.0, degree + 1)
+    np.testing.assert_allclose(model(tokens), static(tokens), rtol=2e-5, atol=2e-6)
+    model.query_polynomial_amplitude[...] = 0.25
+    plain_model.query_polynomial_amplitude[...] = 0.25
+    assert not np.allclose(model(tokens), plain_model(tokens), rtol=1e-3, atol=1e-4)
+
+
+def test_inner_bias_field_keeps_legacy_recipes_and_names_itself_in_the_identity():
+    config = _config(2)
+    current, legacy = config_to_dict(config), config_to_dict(config)
+    del legacy["model"]["attention_coefficient_tanh_bias"]
+    assert config_dicts_equal(current, legacy)
+    shifted = _config(2)
+    shifted.model = replace(shifted.model, attention_coefficient_tanh_bias=True)
+    assert not config_dicts_equal(current, config_to_dict(shifted))
+    from scaffolds.transformer.training.diagnostics import attention_identity
+
+    default, inner = attention_identity(config), attention_identity(shifted)
+    assert "attention_coefficient_tanh_bias" not in default
+    assert inner["attention_coefficient_tanh_bias"] is True
+    assert "c(x_t) = b + a*tanh(x_t W + beta) per layer/head" in inner["attention_formula"]
+    assert "beta initially 0" in inner["attention_formula"]
+    assert inner["attention_coefficient_count"] - default["attention_coefficient_count"] == 2 * 2 * 3
+
+
+def test_inner_bias_is_fp32_without_weight_decay_and_reported_by_diagnostics():
+    config = _config(2)
+    config.model = replace(config.model, attention_coefficient_tanh_bias=True)
+    state = create_state(config, jax.random.PRNGKey(0))
+    assert state.params["query_polynomial_tanh_bias"].dtype == jnp.float32
+    state.params["query_polynomial_tanh_bias"][...] += 0.125
+    after = state.apply_gradients(grads=jax.tree.map(jnp.zeros_like, state.params))
+    np.testing.assert_array_equal(state.params["query_polynomial_tanh_bias"][...],
+                                  after.params["query_polynomial_tanh_bias"][...])
+    state.params["query_polynomial_amplitude"][...] = 0.5
+    sample, provenance = fixed_diagnostic_sample(config)
+    report = attention_diagnostics(state, config, sample, provenance)
+    assert report["valid"], report["issues"]
+    assert report["attention_coefficient_count"] == 2 * 2 * (8 + 3) * 3
+    np.testing.assert_allclose(report["coefficients"]["tanh_bias"], np.full((2, 2, 3), 0.125), rtol=1e-6)
+    model = nnx.merge(state.graphdef, state.params)
+    x = model.layers_0.attention_norm(model.token_embedding(jnp.asarray(sample[:, :-1])))
+    expected = project_coefficients(x, model.query_polynomial_kernel[0], model.query_polynomial_bias[0],
+                                    amplitude=model.query_polynomial_amplitude[0], activation="tanh",
+                                    tanh_bias=model.query_polynomial_tanh_bias[0])
+    np.testing.assert_allclose(report["coefficients"]["effective_summary"]["mean"][0],
+                               jnp.mean(expected, axis=(0, 1)), rtol=1e-5, atol=1e-6)
 
 
 @pytest.mark.parametrize("degree", DEGREES)

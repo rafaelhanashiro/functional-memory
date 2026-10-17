@@ -252,6 +252,10 @@ entry from `N(0, std^2)`. The draw uses a mechanism stream derived from the seed
 acceptance regenerates the kernel exactly. Starting at `a_r = 0` with a random kernel
 keeps the Taylor start, while the amplitude's gradient `tanh(w_r^T x_t)` is nonzero;
 `a_r = 0` with a zero kernel would leave both gradients zero and is rejected.
+`attention_coefficient_tanh_bias: true` adds a learned offset inside the tanh,
+`c_r = b_r + a_r tanh(w_r^T x_t + beta_r)`, stored as `query_polynomial_tanh_bias`
+(`[layers, heads, m+1]`, FP32, no weight decay) and starting at zero, so a constant
+shift of the pre-activation need not be read from `x_t` through `w_r`.
 
 The tanh path uses a dedicated fused kernel (or its Mosaic GPU counterpart,
 `attention_backend: mosaic`) that directly evaluates the query-dependent polynomial, with gradients for Q/K/V and every coefficient.

@@ -36,7 +36,8 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                 hidden_size=config.hidden_size, degree=config.attention_degree,
                 activation=config.attention_coefficient_activation,
                 amplitude_initial=getattr(config, "attention_coefficient_amplitude_initial", 1.0),
-                projection_initial_std=getattr(config, "attention_coefficient_projection_initial_std", 0.0))
+                projection_initial_std=getattr(config, "attention_coefficient_projection_initial_std", 0.0),
+                tanh_bias=getattr(config, "attention_coefficient_tanh_bias", False))
         elif parameterization == "sum_of_squares":
             from scaffolds.transformer.attention.nonnegative_polynomial import parameter_specs
 

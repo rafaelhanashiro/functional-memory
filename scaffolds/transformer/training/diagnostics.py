@@ -213,7 +213,10 @@ def attention_identity(config) -> dict:
 
             per_polynomial = degree + 1 + denominator_degree(config.model) + (denominator_constant(config.model) == "learned")
         else:
-            per_polynomial = (degree + 1) * (config.model.hidden_size + 1 + int(query_tanh) if query_conditioned else 1)
+            per_polynomial = (degree + 1) * (
+                config.model.hidden_size + 1 + int(query_tanh)
+                + int(query_tanh and config.model.attention_coefficient_tanh_bias)
+                if query_conditioned else 1)
         identity.update({
             "attention_coefficients": "learned",
             "attention_coefficient_parameterization": config.model.attention_coefficient_parameterization,
@@ -234,8 +237,11 @@ def attention_identity(config) -> dict:
     if query_conditioned:
         amplitude = config.model.attention_coefficient_amplitude_initial
         spread = config.model.attention_coefficient_projection_initial_std
+        inner_bias = query_tanh and config.model.attention_coefficient_tanh_bias
         tanh_start = (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero") + (
-            f", a initially {amplitude:g}" if amplitude != 1.0 else ", a initially 1")
+            f", a initially {amplitude:g}" if amplitude != 1.0 else ", a initially 1") + (
+            ", beta initially 0" if inner_bias else "")
+        tanh_formula = "c(x_t) = b + a*tanh(x_t W + beta)" if inner_bias else "c(x_t) = b + a*tanh(x_t W)"
         identity.update(
             attention_kernel="query_polynomial_unnormalized",
             attention_coefficient_conditioning="query",
@@ -244,8 +250,9 @@ def attention_identity(config) -> dict:
             attention_coefficient_projection_dtype="float32",
             **({"attention_coefficient_amplitude_initial": amplitude,
                 "attention_coefficient_projection_initial_std": spread} if (amplitude, spread) != (1.0, 0.0) else {}),
+            **({"attention_coefficient_tanh_bias": True} if inner_bias else {}),
             attention_formula=(f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i, s_ti = Q_t K_i^T / sqrt(d_k); "
-                               + (f"c(x_t) = b + a*tanh(x_t W) per layer/head, {tanh_start}, b_r initially 1/r!; "
+                               + (f"{tanh_formula} per layer/head, {tanh_start}, b_r initially 1/r!; "
                                   if query_tanh else "c(x_t) = x_t W + b per layer/head, W initially zero, b initially (1,1); ")
                                +
                                "x_t is the activation after the block input RMSNorm"),
@@ -409,6 +416,8 @@ def query_coefficient_report(params, raw_layers) -> dict:
     kernel = np.asarray(jax.device_get(params["query_polynomial_kernel"][...]), dtype=np.float64)
     amplitude = (np.asarray(jax.device_get(params["query_polynomial_amplitude"][...]), dtype=np.float64)
                  if "query_polynomial_amplitude" in params else None)
+    inner_bias = (np.asarray(jax.device_get(params["query_polynomial_tanh_bias"][...]), dtype=np.float64)
+                  if "query_polynomial_tanh_bias" in params else None)
     summaries = {
         statistic: np.stack([layer[f"query_coefficient_{statistic}"] for layer in raw_layers])
         for statistic in ("mean", "std", "min", "max")
@@ -422,10 +431,13 @@ def query_coefficient_report(params, raw_layers) -> dict:
         "projection_kernel_l2": _serializable(np.linalg.norm(kernel, axis=-2)),
         "finite": bool(np.isfinite(bias).all() and np.isfinite(kernel).all()
                        and (amplitude is None or np.isfinite(amplitude).all())
+                       and (inner_bias is None or np.isfinite(inner_bias).all())
                        and all(np.isfinite(values).all() for values in summaries.values())),
     }
     if amplitude is not None:
         report.update(activation="tanh", modulation_amplitude=_serializable(amplitude))
+    if inner_bias is not None:
+        report["tanh_bias"] = _serializable(inner_bias)
     return report
 
 def qk_norm_scale_report(params, config) -> dict:

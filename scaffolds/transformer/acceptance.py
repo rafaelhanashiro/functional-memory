@@ -369,6 +369,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_activation="identity",
                                            attention_coefficient_amplitude_initial=1.0,
                                            attention_coefficient_projection_initial_std=0.0,
+                                           attention_coefficient_tanh_bias=False,
                                            attention_coefficient_initialization="taylor",
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
@@ -412,7 +413,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",
         attention_coefficient_conditioning="static",
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
-        attention_coefficient_projection_initial_std=0.0,
+        attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)

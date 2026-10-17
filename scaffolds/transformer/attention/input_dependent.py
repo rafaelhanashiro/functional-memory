@@ -13,8 +13,10 @@ import jax.numpy as jnp
 
 
 def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",
-                    amplitude_initial: float = 1.0, projection_initial_std: float = 0.0):
-    """b starts at 1/r!; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial."""
+                    amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
+                    tanh_bias: bool = False):
+    """b starts at 1/r!; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial
+    and its optional inner bias beta at zero."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     count = degree + 1
@@ -34,13 +36,20 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
             name="query_polynomial_amplitude", argument="query_polynomial_amplitude",
             initial=(float(amplitude_initial),) * count, sharing="per_head", weight_decay=False,
         ),)
+        if tanh_bias:
+            specs += (AttentionParameterSpec(
+                name="query_polynomial_tanh_bias", argument="query_polynomial_tanh_bias",
+                initial=(0.0,) * count, sharing="per_head", weight_decay=False,
+            ),)
     elif activation != "identity":
         raise ValueError(f"Unknown coefficient activation: {activation}")
+    elif tanh_bias:
+        raise ValueError("A bias inside tanh requires tanh coefficients")
     return specs
 
 
-def project_coefficients(x, kernel, bias, *, amplitude=None, activation="identity"):
-    """FP32 c=b+xW or c=b+a*tanh(xW); no bias inside tanh."""
+def project_coefficients(x, kernel, bias, *, amplitude=None, activation="identity", tanh_bias=None):
+    """FP32 c=b+xW or c=b+a*tanh(xW+beta); the inner bias beta is optional and otherwise absent."""
     if (x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1]
             or bias.shape != (kernel.shape[0], kernel.shape[-1])):
         raise ValueError("Query coefficient projection requires x [B,T,D], kernel [H,D,R], bias [H,R]")
@@ -51,9 +60,13 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, activation="identit
     if activation == "tanh":
         if amplitude is None or amplitude.shape != bias.shape:
             raise ValueError("Tanh coefficients require a model-owned amplitude with the bias shape")
+        if tanh_bias is not None:
+            if tanh_bias.shape != bias.shape:
+                raise ValueError("The bias inside tanh must have the outer bias shape [H,R]")
+            projected = projected + tanh_bias.astype(jnp.float32)
         projected = amplitude.astype(jnp.float32) * jnp.tanh(projected)
-    elif activation != "identity" or amplitude is not None:
-        raise ValueError("Identity coefficients cannot receive an amplitude; unknown activation otherwise")
+    elif activation != "identity" or amplitude is not None or tanh_bias is not None:
+        raise ValueError("Identity coefficients cannot receive an amplitude or inner bias; unknown activation otherwise")
     return projected + bias.astype(jnp.float32)
 
 

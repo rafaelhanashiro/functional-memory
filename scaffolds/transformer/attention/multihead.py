@@ -179,6 +179,7 @@ class MultiHeadAttention(nnx.Module):
         query_kernel = parameters.pop("query_polynomial_kernel", None)
         query_bias = parameters.pop("query_polynomial_bias", None)
         query_amplitude = parameters.pop("query_polynomial_amplitude", None)
+        query_tanh_bias = parameters.pop("query_polynomial_tanh_bias", None)
         if self.attention_coefficient_conditioning == "query":
             from scaffolds.transformer.attention.input_dependent import project_coefficients
 
@@ -186,8 +187,9 @@ class MultiHeadAttention(nnx.Module):
                 raise ValueError("Query-conditioned attention requires its model-owned kernel and bias")
             parameters["query_polynomial_coefficients"] = project_coefficients(
                 x, query_kernel, query_bias, amplitude=query_amplitude,
-                activation=self.attention_coefficient_activation)
-        elif query_kernel is not None or query_bias is not None or query_amplitude is not None:
+                activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias)
+        elif (query_kernel is not None or query_bias is not None or query_amplitude is not None
+              or query_tanh_bias is not None):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
         q, k, v = self.q_proj(x), self.k_proj(x), self.v_proj(x)
         if self.backend != "manual":
