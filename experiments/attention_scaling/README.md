@@ -323,12 +323,12 @@ CUDA 12 environment. `r8c9b076f9635` (job 219521, commit
 from their own worktrees. With `RUN` set to a run ID and `COMMIT` to its launch commit:
 
 ```bash
-sbatch --partition=standard --time=1-00:00:00 --nodelist=akita --gres=gpu:1 \
+sbatch --partition=standard --time=1-00:00:00 --nodelist=akita --gres=gpu:b300:1 \
   --cpus-per-task=16 --mem=128G --job-name="$RUN" \
   --output="experiments/attention_scaling/runs/$RUN/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
   "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" 1 B300
-sbatch --partition=long --nodelist=akita --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
+sbatch --partition=long --nodelist=akita --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
   --output="experiments/attention_scaling/runs/$RUN/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
   "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" 1 B300
