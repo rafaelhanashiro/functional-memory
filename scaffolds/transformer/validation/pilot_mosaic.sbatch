@@ -7,6 +7,8 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=03:00:00
+#SBATCH --requeue
+#SBATCH --open-mode=append
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?}"
 LAUNCH_COMMIT="${1:?Expected committed source}"
@@ -23,7 +25,9 @@ export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda OMP_NUM_THREADS=8 PYTHONUNBUFFERED=1
 NAME="${GPU_TYPE,,}-$RUN_ID-$BACKEND"
 WORKDIR="$PWD/.cache/mosaic-pilot/$NAME"
 export JAX_COMPILATION_CACHE_DIR="$PWD/.cache/mosaic-pilot/jax"
-rm -rf "$WORKDIR" && mkdir -p "$WORKDIR" scaffolds/transformer/validation/runs/mosaic-pilot
+# A requeue resumes from the latest checkpoint (every 100 updates); a fresh start clears old output.
+if [[ "${SLURM_RESTART_COUNT:-0}" == 0 ]]; then rm -rf "$WORKDIR"; fi
+mkdir -p "$WORKDIR" scaffolds/transformer/validation/runs/mosaic-pilot
 "$PYTHON" - "$RUN_ID" "$BACKEND" "$WORKDIR" "$STEPS" <<'PY'
 import sys
 from pathlib import Path
@@ -32,7 +36,7 @@ run_id, backend, workdir, steps = sys.argv[1:]
 recipe = yaml.safe_load(Path(f"experiments/attention_scaling/runs/{run_id}/config.yaml").read_text())
 recipe["model"]["attention_backend"] = backend
 recipe["train"].update(workdir=workdir, checkpoint_dir=f"{workdir}/checkpoints", micro_batch_size=16,
-                       eval_every=100, ckpt_every=int(steps), wandb_mode="disabled", wandb_run_name=None)
+                       eval_every=100, ckpt_every=100, wandb_mode="disabled", wandb_run_name=None)
 Path(workdir, "recipe.yaml").write_text(yaml.safe_dump(recipe, sort_keys=False))
 PY
 "$PYTHON" -m scaffolds.transformer.train "$WORKDIR/recipe.yaml" --no-resume --stop-after-step "$STEPS" \

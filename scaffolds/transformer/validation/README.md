@@ -885,10 +885,12 @@ or weight (query), or an overflowing output. They accept BF16 inputs, Q/K width 
 shared-memory swizzle row, so Q/K tiles use 32-, 64-, and 128-byte swizzles at widths 16,
 32, and 64 or more; width 8 is zero-padded to the 16-element minimum.
 
-`tests/test_mosaic_taylor.py` (41 cases) and `tests/test_mosaic_query.py` (30 cases) pass
-on one H100 (`dogo`, CUDA 12.9.1) and one B300 (`akita`, CUDA 13.2): every degree and width
-against independent NumPy FP64 outputs and VJPs (coefficient gradients per order) and against
-the Triton kernels, the production context, causality, nonfinite handling, and rejected inputs.
+`tests/test_mosaic_taylor.py` (42 cases), `tests/test_mosaic_query.py` (31 cases), and
+`tests/test_mosaic_repeatability.py` (3 cases) pass on one H100 (`dogo`, CUDA 12.9.1) and one
+B300 (`akita`, CUDA 13.2): every degree and width against independent NumPy FP64 outputs and
+VJPs (coefficient gradients per order) and against the Triton kernels, the production context,
+causality, nonfinite handling, rejected inputs, the model's dispatch, and bitwise-identical
+outputs and gradients across 20 repeats at production size.
 
 Forward + backward per layer at 16 x 2048 x 16 heads, value width 64
 (`benchmarks/benchmark_mosaic.py`), Triton time divided by Mosaic time:
