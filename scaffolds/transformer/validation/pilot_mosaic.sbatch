@@ -23,7 +23,11 @@ PYTHON="$PWD/scaffolds/transformer/$TRANSFORMER_ENVIRONMENT_DIR/bin/python"
 CUDA_HOME="$(transformer_cuda_home "$PYTHON")"
 export CUDA_HOME TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda OMP_NUM_THREADS=8 PYTHONUNBUFFERED=1
-NAME="${GPU_TYPE,,}-$RUN_ID-$BACKEND${REPEAT:+-$REPEAT}"
+LABEL="$BACKEND"
+if [[ "$BACKEND" == mosaic ]]; then
+  LABEL="mosaic-$("$PYTHON" -c 'from scaffolds.transformer.attention.backends.mosaic.api import PRECISION; print(PRECISION)')"
+fi
+NAME="${GPU_TYPE,,}-$RUN_ID-$LABEL${REPEAT:+-$REPEAT}"
 WORKDIR="$PWD/.cache/mosaic-pilot/$NAME"
 export JAX_COMPILATION_CACHE_DIR="$PWD/.cache/mosaic-pilot/jax"
 # A requeue resumes from the latest checkpoint (every 100 updates); a fresh start clears old output.

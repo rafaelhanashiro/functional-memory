@@ -15,7 +15,8 @@ CUDA_HOME="$(transformer_cuda_home "$PYTHON")"
 export CUDA_HOME TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda
 GPU="$(nvidia-smi --query-gpu=name --format=csv,noheader | head -1 | tr -cs 'A-Za-z0-9' '-' | sed 's/-$//')"
-OUT=scaffolds/transformer/validation/runs/mosaic-step
+OUT="scaffolds/transformer/validation/runs/mosaic-step/$GPU-$SLURM_JOB_ID"
+PRECISION="$("$PYTHON" -c 'from scaffolds.transformer.attention.backends.mosaic.api import PRECISION; print(PRECISION)')"
 SCRATCH="$(mktemp -d)"
 trap 'rm -rf -- "$SCRATCH"' EXIT
 mkdir -p "$OUT"
@@ -32,8 +33,10 @@ recipe["model"]["attention_backend"] = backend
 recipe["train"]["micro_batch_size"] = 16
 Path(out, f"{run}-{backend}.yaml").write_text(yaml.safe_dump(recipe))
 PY
+      label="$backend"
+      [[ "$backend" == mosaic ]] && label="mosaic-$PRECISION"
       "$PYTHON" -m scaffolds.transformer.benchmark "$SCRATCH/$run-$backend.yaml" \
-        --output "$OUT/$GPU-$run-$backend-$round.json" --warmup 5 --iterations 30
+        --output "$OUT/$run-$label-$round.json" --warmup 5 --iterations 30
     done
   done
 done

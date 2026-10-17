@@ -1,0 +1,32 @@
+{
+ "attention_backend": "mosaic",
+ "device_kinds": [
+  "NVIDIA H100 PCIe",
+  "NVIDIA H100 PCIe"
+ ],
+ "node": "mastiff",
+ "overrides": {
+  "eval_every": 100,
+  "gpu_count": 1,
+  "micro_batch_size": 16
+ },
+ "recipe": "experiments/attention_scaling/runs/r0bc57959ef6c/config.yaml",
+ "runtime_environment": {
+  "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+  "XLA_FLAGS": null,
+  "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+ },
+ "slurm_job_id": "219935",
+ "source_commit": "556b9a1191e5d4f7dd4b5b75fe1260c8389c0cd3",
+ "validation": [
+  {
+   "step": 100,
+   "tokens_per_second": 284480.79206229723,
+   "train_gradient_clipped_fraction": 0.88,
+   "train_gradient_norm_max": 13.484021186828613,
+   "train_gradient_norm_mean": 2.652493168711662,
+   "train_nll_sample_mean": 8.267186338251287,
+   "validation_nll": 6.782509416341782
+  }
+ ]
+}
