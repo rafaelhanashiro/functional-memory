@@ -1,0 +1,45 @@
+{
+  "cpu_tests": {
+    "passed": 2,
+    "scope": "Packed NPY data integrity/next-token alignment and learning-rate schedule",
+    "seconds": 0.78
+  },
+  "format": "upstream-attention-throughput",
+  "gpu_count": 1,
+  "gpu_type": "B300",
+  "historical_gdn_full_model_reference": {
+    "job_id": "220032",
+    "record": "scaffolds/transformer/validation/runs/gdn-mosaic-b300/record.json",
+    "role": "Prior signed-independent GDN full-model timing; contemporary JAX kernel timings separately isolate standard tied gates.",
+    "sha256": "78ef60164a6d2d17003354b802005ae52be5f95bb745519db8d0bcf038703e51"
+  },
+  "home_cluster": "kennel",
+  "inputs": {
+    "cudnn": {
+      "path": "scaffolds/transformer/validation/configs/upstream-b300-cudnn.yaml",
+      "sha256": "20693351654f3512408a6215679080cf84e4af55d41b5498a7164b446dedf46f"
+    },
+    "mosaic": {
+      "path": "scaffolds/transformer/validation/configs/upstream-b300-mosaic.yaml",
+      "sha256": "fddf9129a28fb259597ff847ce99f2ed9f6560266411a4363c65ecc9d4b14438"
+    }
+  },
+  "limitations": [
+    "Stock FLA is standard tied sigmoid GDN, while our scientific variant has independent erase and signed tanh writes.",
+    "Our JAX GDN bridge uses FP32 chunk intermediates and TF32x3; direct FLA uses upstream native mixed precision.",
+    "Full-model FLA uses a different framework, fused components and resident data; compare it as a complete upstream implementation, not a kernel-only substitution."
+  ],
+  "locks": {
+    "scaffolds/transformer/benchmarks/upstream_runtime/uv.lock": "a2b81202d36f82c3e88e730ad7c72caa17d800118097786bae5062882ca7fbb0",
+    "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+  },
+  "native_fla_source_commit": "516143e31fce09925e6c39ac37148444bad176c4",
+  "prelaunch_review": "Two independent code reviews passed; JAX CLI/VJP/dispatch smoke checks and recipe loading passed.",
+  "retained_checkpoints": [],
+  "scopes": [
+    "Actual JAX packed-data full training loop for Mosaic and upstream cuDNN attention",
+    "Direct attention forward/backward calls: upstream CUDA Torch FLA and cuDNN; JAX tied/independent precision-repaired GDN, Mosaic, and cuDNN",
+    "Unmodified upstream FLA full model plus upstream fused loss and fused Torch AdamW; resident real-data batch, compute-only scope"
+  ],
+  "status": "prepared"
+}

@@ -1078,6 +1078,58 @@ sbatch --partition=long --gres=gpu:h100:1 scaffolds/transformer/validation/pilot
 sbatch --partition=long --gres=gpu:h100:1 scaffolds/transformer/validation/benchmark_mosaic_step.sbatch
 ```
 
+## Upstream FLA and cuDNN baselines on one B300
+
+`validation/runs/upstream-b300/` compares the project's implementations with
+direct calls to upstream libraries. The earlier GDN timings measure this
+project's signed, independent-gate recurrence with FP32 chunk intermediates
+and TF32x3 products. They are not measurements of stock FLA's native BF16 path.
+The upstream comparison uses standard tied sigmoid GDN and the unmodified
+FLA commit `516143e31fce09925e6c39ac37148444bad176c4`, also pinned by our bridge.
+
+The comparison has three scopes:
+
+- Attention forward and forward-plus-backward at B=64, T=2048, H=16 and
+  K=V=64. CUDA PyTorch calls `fla.ops.gated_delta_rule.chunk_gated_delta_rule`
+  directly, and forces cuDNN through PyTorch SDPA. JAX calls cuDNN directly
+  and measures Mosaic plus the project's tied and independent GDN paths.
+  Both frameworks generate identical NumPy operands; GDN uses unit Q/K,
+  while dot-product attention scales Q outside timing to give order-one scores.
+  Inputs, warmup, compilation and finite checks are excluded. All input
+  gradients are included; the number of differentiable arguments depends
+  on the mechanism. Tanh coefficient generation is outside the Mosaic kernel.
+- Full-model cuDNN softmax and Mosaic use the same shared JAX trainer,
+  packed data, 10-layer width-1024 backbone, MLP width 3008, 16 heads,
+  K=V=64, batch 256, microbatch 64 and four accumulation steps. Each starts
+  from its reference initialization and retains the optimizer horizon.
+- The full upstream `GatedDeltaNetForCausalLM` uses matching dimensions,
+  standard gates, BF16 autocast with FP32 parameters, its fused normalization
+  and SwiGLU, upstream fused cross-entropy, and fused PyTorch AdamW. The
+  model and loss implementations are unmodified. A resident real FineWeb
+  batch excludes loading/transfer from this timing. This is a complete
+  upstream model comparison, with framework, initialization and component
+  differences; it is not a substitution into the JAX trainer.
+
+The separate `benchmarks/upstream_runtime/` project has its own committed
+lock and environment. It installs the official CUDA PyTorch wheel, leaving
+the production JAX environments unchanged. Its explicit CUDA 13.2/cuBLAS
+13.2.2.2 overrides apply Kennel's Blackwell correctness policy; cuDNN 9.22
+and Triton 3.7.1 match the JAX comparison. No installed package is edited.
+The native FLA baseline retains its upstream mixed-precision choices,
+which differ from the project's FP32 repair. These timings do not establish
+equivalent numerical accuracy or training quality.
+
+From a committed Kennel worktree, sync the two production environments as in
+`CLUSTERS.md`, then sync the independent CUDA Torch environment and submit:
+
+```bash
+uv sync --project scaffolds/transformer/benchmarks/upstream_runtime --locked --link-mode hardlink
+mkdir -p scaffolds/transformer/validation/logs/upstream-b300
+sbatch --parsable \
+  --output=scaffolds/transformer/validation/logs/upstream-b300/benchmark-%j.log \
+  scaffolds/transformer/launchers/benchmark_upstream.sbatch "$(git rev-parse HEAD)"
+```
+
 ## Reproduction
 
 From a worktree with the scaffold environment synced
