@@ -2,7 +2,8 @@
 
 FlashAttention-3 structure: two compute warpgroups (64 rows each) and one TMA warpgroup per
 CTA, visiting only causal tiles. Scores, polynomials, sums, and accumulators are FP32; FP32
-weights and score gradients enter wgmma from registers as three truncated BF16 components.
+weights and score gradients enter wgmma from registers as BF16 operands at ``precision``
+(``common.weight_parts``).
 The elementwise mathematics of each kernel family lives in ``common.py`` (``family`` and
 ``degree`` select it); per-query FP32 vectors arrive as ``vectors`` [n, batch, heads, time].
 ``forward`` returns the FP32 output and a per-row statistic [batch, heads, time]; ``dq``
@@ -19,7 +20,6 @@ import jax.experimental.pallas as pl
 import jax.experimental.pallas.mosaic_gpu as plgpu
 
 from scaffolds.transformer.attention.backends.mosaic import common
-from scaffolds.transformer.attention.backends.mosaic.common import bf16_parts as _parts
 
 L = plgpu.Layout.WGMMA
 B = 64  # rows per compute warpgroup
@@ -34,8 +34,8 @@ def _smem(shape):
     return plgpu.SMEM(shape, jnp.bfloat16, transforms=(plgpu.TilingTransform((8, swizzle // 2)), plgpu.SwizzleTransform(swizzle)))
 
 
-@partial(jax.jit, static_argnames=("family", "degree", "scale", "block_k", "stages"))
-def forward(q, k, v, vectors, *, family, degree, scale, block_k=64, stages=3):
+@partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_k", "stages"))
+def forward(q, k, v, vectors, *, family, degree, scale, precision, block_k=64, stages=3):
     BQ = B
     batch, time, heads, dq = q.shape
     dv = v.shape[-1]
@@ -86,7 +86,7 @@ def forward(q, k, v, vectors, *, family, degree, scale, block_k=64, stages=3):
                 else:
                     p = common.forward_weights(family, degree, s, vecs)
                 statistic = statistic + common.forward_statistic(family, p).sum(axis=1)
-                parts = _parts(p)
+                parts = common.weight_parts(p, precision)
                 plgpu.barrier_wait(v_bar.at[slot])
 
                 def pv(acc_ref):
@@ -161,8 +161,8 @@ def forward(q, k, v, vectors, *, family, degree, scale, block_k=64, stages=3):
     return f(q, k, v, vectors) if n_vec else f(q, k, v)
 
 
-@partial(jax.jit, static_argnames=("family", "degree", "scale", "block_k", "stages"))
-def dq(q, k, v, do, vectors, *, family, degree, scale, block_k=64, stages=2):
+@partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_k", "stages"))
+def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, stages=2):
     """dQ [batch, time, heads, d_K] in q.dtype, and per-query sums [n, batch, heads, time] FP32 or None."""
     batch, time, heads, dqk = q.shape
     dv = v.shape[-1]
@@ -220,7 +220,7 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, block_k=64, stages=2):
                 else:
                     ds = common.score_gradient(family, degree, s, dp, vecs)
                 sums = tuple(a + x for a, x in zip(sums, common.row_sums(family, degree, s, dp)))
-                parts = _parts(ds)
+                parts = common.weight_parts(ds, precision)
 
                 def acc_dq(acc_ref):
                     for part in parts:
@@ -293,8 +293,8 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, block_k=64, stages=2):
     return (outputs[0], outputs[1]) if n_sums else (outputs[0], None)
 
 
-@partial(jax.jit, static_argnames=("family", "degree", "scale", "block_q", "stages"))
-def dkv(q, k, v, do, vectors, *, family, degree, scale, block_q=64, stages=2):
+@partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_q", "stages"))
+def dkv(q, k, v, do, vectors, *, family, degree, scale, precision, block_q=64, stages=2):
     """(dK, dV) in the input dtypes. Lanes are keys; per-query vectors stream with each query tile."""
     batch, time, heads, dqk = q.shape
     dv = v.shape[-1]
@@ -347,7 +347,7 @@ def dkv(q, k, v, do, vectors, *, family, degree, scale, block_q=64, stages=2):
                     w = jnp.where(causal, common.value_weights(family, degree, s, vecs), 0.0)
                 else:
                     w = common.value_weights(family, degree, s, vecs)
-                w_parts = _parts(w)
+                w_parts = common.weight_parts(w, precision)
 
                 def dv_dp(refs):
                     dv_ref, dp_ref = refs
@@ -362,7 +362,7 @@ def dkv(q, k, v, do, vectors, *, family, degree, scale, block_q=64, stages=2):
                     ds = jnp.where(causal, common.score_gradient(family, degree, s, dp, vecs), 0.0)
                 else:
                     ds = common.score_gradient(family, degree, s, dp, vecs)
-                ds_parts = _parts(ds)
+                ds_parts = common.weight_parts(ds, precision)
 
                 def acc_dk(acc_ref):
                     for part in ds_parts:
