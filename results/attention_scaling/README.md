@@ -28,11 +28,20 @@ polynomial kernel; the paper's (`gated_deltanet_reference`) for Gated DeltaNet.
 
 ### Degree chart (d_K = 64)
 
-30 runs: 20 complete, 10 failed. Failures sit below the axis at their update.
+34 runs: 24 complete, 10 failed. Failures sit below the axis at their update.
 
 ![Terminal perplexity against polynomial degree](degree_chart.png)
 
 [PDF](degree_chart.pdf) · [Cell data and checksums](summary.csv) · [Provenance](manifest.json)
+
+### Output scaling (d_K = 64)
+
+Terminal validation perplexity of unnormalized attention by output scaling ([`output_scaling.yaml`](output_scaling.yaml)).
+
+| Kernel | No scaling | 1/t | Head RMSNorm |
+| --- | ---: | ---: | ---: |
+| exp | 15.663 | 13.933 | 13.411 |
+| Learned m = 4 | 14.742 | 13.816 | 13.639 |
 <!-- END GENERATED RESULTS -->
 
 ## Figure key
@@ -42,6 +51,9 @@ polynomial kernel; the paper's (`gated_deltanet_reference`) for Gated DeltaNet.
   failure at the shown update; NOT RUN = not trained.
 - **Degree chart:** families at `d_K = 64`; failures sit in the strip below the axis.
   Learned coefficients start from `1/r!` and are learned per layer and head.
+  "Head RMSNorm" applies a per-head RMSNorm with a learned gain to the unnormalized
+  attention output before the output projection (`attention_output_scaling`); the other
+  lines use no output scaling.
   "Nonnegative" writes the kernel as `q1^2 + q2^2`, so it exists only at even degrees.
   Fixed Hermite uses the standard-normal projection
   `p_m(s) = exp(1/2) sum_(r<=m) He_r(s)/r!` (normalized `m = 2` evaluated as
@@ -65,12 +77,12 @@ Normalized kernels (failures show the update):
 
 Unnormalized kernels:
 
-| m | Fixed Taylor | Fixed Hermite | Learned Taylor |
-| ---: | ---: | ---: | ---: |
-| 1 | 17.930 | 18.233 | 17.874 |
-| 2 | 18.099 | 15.624 | 15.461 |
-| 3 | 15.604 | 15.794 | **14.630** |
-| 4 | 15.862 | 15.238 | 14.742 |
+| m | Fixed Taylor | Fixed Hermite | Learned Taylor | Learned Taylor, head RMSNorm |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 17.930 | 18.233 | 17.874 | 17.554 |
+| 2 | 18.099 | 15.624 | 15.461 | 14.630 |
+| 3 | 15.604 | 15.794 | 14.630 | 13.988 |
+| 4 | 15.862 | 15.238 | 14.742 | **13.639** |
 
 - **Normalized kernels need a nonnegative kernel.** Signed kernels fail when a row sum
   crosses zero: every odd degree, the signed learned kernels, and Hermite `m = 4`
@@ -89,6 +101,15 @@ Unnormalized kernels:
   unnormalized exp (15.663).
 - **QK-norm improves softmax by 0.45** (13.731 vs 14.184), the only comparison of a
   kernel with and without QK-norm.
+- **Head RMSNorm improves unnormalized learned kernels at every degree,** by 0.32 at
+  `m = 1` to 1.10 at `m = 4`, and puts `m = 4` back ahead of `m = 3` (13.639 vs 13.988).
+  Learned `m = 4` with head RMSNorm beats softmax (13.731) and every normalized
+  polynomial; only Gated DeltaNet (13.594) is lower. Its `m = 1` does not spike.
+- **Output scaling** (table above): head RMSNorm beats `1/t`, which beats no scaling, for
+  both exp (13.411, 13.933, 15.663) and learned `m = 4` (13.639, 13.816, 14.742). For a
+  positive kernel, RMSNorm of the unnormalized output equals RMSNorm of the softmax
+  output up to `rms_norm_eps`, so exp with head RMSNorm is softmax with head RMSNorm,
+  0.32 below plain softmax.
 
 ## Other widths
 
@@ -110,7 +131,7 @@ Unnormalized kernels:
   has 10.9–11.0M (5–6%) more parameters than softmax at the same `d_K`.
 - Several runs resumed on another GPU type (B300, H100, H200) after preemption, and some
   trained on two GPUs with the same global batch; each run's record lists its attempts.
-- Unnormalized `m = 1` (fixed Taylor, fixed Hermite, and learned) trains with loss
+- Unnormalized `m = 1` without output scaling (fixed Taylor, fixed Hermite, and learned) trains with loss
   spikes of up to +7.3 nats between updates 3,100 and 6,100 and recovers within 100
   updates. No other plotted run spikes (training-loss jumps of more than 0.5 nats over
   the running median after update 1,000).

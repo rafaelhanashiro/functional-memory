@@ -83,11 +83,13 @@ def attention_identity(config) -> dict:
                                    "S_t=a_t S_{t-1}+b_t k_t (v_t-a_t S_{t-1}^T k_t)^T; ") +
                                   "o_t=S_t^T q_t/sqrt(d_k); "
                                   "q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); "
-                                  "b_t=sigmoid(W_b x)"),
+                                  f"b_t={model.gdn_write_activation}(W_b x)"),
             "attention_score_scale": "1/sqrt(d_k)",
             "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
             "gdn_conv_size": model.gdn_conv_size,
             "gdn_erase_mode": model.gdn_erase_mode,
+            "gdn_linear_write_activation": model.gdn_write_activation,
+            "gdn_write_initialization": f"{model.gdn_write_activation}_write_projection",
             "gdn_erase_initialization": "copy_write_projection" if independent else "shared_write_gate",
             "gdn_state_elements_per_layer": model.num_heads * model.qk_head_dim * model.value_head_dim,
             "gdn_initial_state": "zero_each_sequence",
@@ -279,6 +281,16 @@ def attention_identity(config) -> dict:
                                          "cudnn" if degree is None and normalized else "pallas_triton"),
             "query_block_size": block_q,
             "key_block_size": block_k,
+            "diagnostic_backend": "blocked",
+            "diagnostic_query_block_size": QUERY_BLOCK_SIZE,
+        })
+    elif config.model.attention_backend == "mosaic":
+        # Tiles differ between the Hopper and Blackwell kernels; the GPU is recorded with the hardware.
+        identity.update({
+            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial" if query_tanh
+                                         else "pallas_mosaic_gpu"),
+            "query_block_size": None,
+            "key_block_size": None,
             "diagnostic_backend": "blocked",
             "diagnostic_query_block_size": QUERY_BLOCK_SIZE,
         })

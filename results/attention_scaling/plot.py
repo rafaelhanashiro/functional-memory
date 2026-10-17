@@ -11,7 +11,7 @@ from collections import Counter
 from pathlib import Path
 
 from .chart import render_degree_chart
-from .collect import collect_rows
+from .collect import collect_rows, output_scaling_rows
 from .render import render_heatmap
 
 
@@ -67,7 +67,21 @@ def _counts(rows: list[dict]) -> tuple[Counter, int, int]:
     return Counter(row["status"] for row in rows), len(trained), sum(1 for row in trained if row.get("legacy"))
 
 
-def update_readme(path: Path, rows: list[dict], chart_rows: list[dict]) -> None:
+SCALING_KERNELS = (("exp", "exp"), ("learned_m4", "Learned m = 4"))
+SCALING_COLUMNS = (("none", "No scaling"), ("inverse_position", "1/t"), ("head_rms_norm", "Head RMSNorm"))
+
+
+def _scaling_table(scaling_rows: list[dict]) -> str:
+    values = {(row["kernel"], row["scaling"]): row["terminal_ppl"] for row in scaling_rows}
+    lines = ["| Kernel | " + " | ".join(name for _, name in SCALING_COLUMNS) + " |",
+             "| --- | " + " | ".join("---:" for _ in SCALING_COLUMNS) + " |"]
+    for kernel, name in SCALING_KERNELS:
+        lines.append(f"| {name} | " + " | ".join(f"{values[kernel, scaling]:.3f}" for scaling, _ in SCALING_COLUMNS)
+                     + " |")
+    return "\n".join(lines) + "\n"
+
+
+def update_readme(path: Path, rows: list[dict], chart_rows: list[dict], scaling_rows: list[dict]) -> None:
     begin, end = "<!-- BEGIN GENERATED RESULTS -->", "<!-- END GENERATED RESULTS -->"
     authored = path.read_text()
     if authored.count(begin) != 1 or authored.count(end) != 1:
@@ -89,7 +103,11 @@ def update_readme(path: Path, rows: list[dict], chart_rows: list[dict]) -> None:
         + (f", {chart_legacy} legacy (faded)" if chart_legacy else "")
         + ". Failures sit below the axis at their update.\n\n"
         "![Terminal perplexity against polynomial degree](degree_chart.png)\n\n"
-        "[PDF](degree_chart.pdf) · [Cell data and checksums](summary.csv) · [Provenance](manifest.json)\n"
+        "[PDF](degree_chart.pdf) · [Cell data and checksums](summary.csv) · [Provenance](manifest.json)\n\n"
+        "### Output scaling (d_K = 64)\n\n"
+        "Terminal validation perplexity of unnormalized attention by output scaling "
+        "([`output_scaling.yaml`](output_scaling.yaml)).\n\n"
+        + _scaling_table(scaling_rows)
     )
     path.write_text(prefix + begin + "\n" + block + end + suffix)
 
@@ -103,8 +121,11 @@ def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
     chart_config_path = chart_config_path or config_path.parent / "degree_chart.yaml"
     config = yaml.safe_load(config_path.read_text())
     chart_config = yaml.safe_load(chart_config_path.read_text())
+    scaling_config_path = config_path.parent / "output_scaling.yaml"
+    scaling_config = yaml.safe_load(scaling_config_path.read_text())
     rows = collect_rows(repo_root, config)
     chart_rows = collect_rows(repo_root, chart_config)
+    scaling_rows = output_scaling_rows(repo_root, scaling_config)
     figure_paths = {**render_heatmap(rows, config, output_dir),
                     **render_degree_chart(chart_rows, chart_config, output_dir)}
 
@@ -116,7 +137,7 @@ def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
         writer.writerows(csv_row(row, "degree_chart") for row in chart_rows)
 
     readme_path = output_dir / "README.md"
-    update_readme(readme_path, rows, chart_rows)
+    update_readme(readme_path, rows, chart_rows, scaling_rows)
 
     source_rows = [
         {"figure": figure, "panel": row["panel"], "column": row["column"], "d_k": row["d_k"],
@@ -127,12 +148,14 @@ def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
          "legacy": bool(row.get("legacy")), "legacy_reasons": row.get("legacy_reasons", [])}
         for figure, figure_rows in (("heatmap", rows), ("degree_chart", chart_rows))
         for row in figure_rows if row["status"] != "not_run"
-    ]
+    ] + [{"figure": "output_scaling", "kernel": row["kernel"], "scaling": row["scaling"], "experiment": EXPERIMENT,
+          "run": row["run"], "status": "complete", "artifacts": row["artifacts"]} for row in scaling_rows]
     status_counts = {}
     for figure, figure_rows in (("heatmap", rows), ("degree_chart", chart_rows)):
         counts = dict(sorted(Counter(row["status"] for row in figure_rows).items()))
         counts["legacy"] = sum(1 for row in figure_rows if row.get("legacy"))
         status_counts[figure] = counts
+    status_counts["output_scaling"] = {"complete": len(scaling_rows)}
     code = Path(__file__).resolve().parent
     lock = repo_root / "scaffolds" / "transformer" / "uv.lock"
     manifest = {
@@ -152,6 +175,7 @@ def build(repo_root: Path = REPO_ROOT, *, config_path: Path | None = None,
         "analysis": {
             "config": reference(repo_root, config_path),
             "chart_config": reference(repo_root, chart_config_path),
+            "output_scaling_config": reference(repo_root, scaling_config_path),
             "dependency_lock": reference(repo_root, lock),
             "code": {name: reference(repo_root, code / name)
                      for name in ("collect.py", "render.py", "chart.py", "plot.py")},

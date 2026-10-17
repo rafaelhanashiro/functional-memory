@@ -138,6 +138,9 @@ Use a separate worktree for a new sweep. Sync that worktree's own locked environ
 git worktree add -b codex/attention-sweep worktrees/attention-sweep main
 cd worktrees/attention-sweep
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+# Kennel B300 jobs use the CUDA 13 environment from the same lock (CLUSTERS.md).
+UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
+  uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
 ```
 
 Prepare a complete recipe with the desired settings and dataset paths for the home
@@ -145,14 +148,17 @@ cluster. New dot-product runs use `model.qk_norm: true`; GLA and degree zero do 
 New runs use their mechanism's reference initialization, which `records create` fills in
 when the recipe leaves `model.initialization` unset.
 Untied embeddings, the scaffold's selective weight decay, and 400 warmup updates
-(`optim.warmup_steps`) are canonical. The following allocates a fresh execution from an
-existing QK-normalized Taylor recipe:
+(`optim.warmup_steps`) are canonical. New unnormalized runs set
+`model.attention_output_scaling: head_rms_norm`. Normalized fixed Taylor and tanh
+query-conditioned runs use the Mosaic GPU kernels (`model.attention_backend: mosaic`). The
+following allocates a fresh execution from an existing QK-normalized Taylor recipe that
+predates them:
 
 ```bash
+sed 's/attention_backend: fused/attention_backend: mosaic/' \
+  experiments/attention_scaling/runs/r044b3356f215/config.yaml > /tmp/taylor-example.yaml
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records create \
-  --study experiments/attention_scaling \
-  --config experiments/attention_scaling/runs/r044b3356f215/config.yaml \
-  --label taylor-example
+  --study experiments/attention_scaling --config /tmp/taylor-example.yaml --label taylor-example
 ```
 
 The CLI resolves current defaults, assigns new output paths and tracking identity,
@@ -339,7 +345,7 @@ initialized from the write projection as a separate parameter. All original weig
 match tied GDN at initialization. It preserves the canonical GDN block and reference
 initialization, 400 warmup updates, standard training telemetry, and the 19,074-update
 FineWeb recipe. The preselected control is `rf640fc13f3a8`; comparison findings and
-current status belong in the [exploratory result](../../results/exploratory/gdn_independent_erase/README.md).
+current status belong in the [exploratory result](../../results/exploratory/gdn_polynomial/README.md).
 Its home cluster is Kennel. Production job `217974` completed all 19,074 updates
 on 2026-10-12 at 18:32 EDT, on `standard` at nice 0 with four H100 SXM GPUs on
 `dogo`. Terminal and validation-best checkpoint both correspond to update 19,074.

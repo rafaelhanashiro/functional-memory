@@ -49,10 +49,12 @@ TEST_STAGES = (
 )
 NO_TESTS_COLLECTED = 5
 RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHON_CLIENT_PREALLOCATE",
-                "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME")
+                "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME", "TRANSFORMER_CUDA_ENVIRONMENT")
 NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
+TANH_WRITE_GDN_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write.py"
+TANH_WRITE_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write_kernel.py"
 
 
 @dataclass(frozen=True)
@@ -83,6 +85,12 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if spec.select_tests is not None:
         paths.extend(spec.select_tests(config, resolved_backend, cpu))
     model = config["model"]
+    if (model.get("attention_mechanism") == "gated_deltanet"
+            and model.get("gdn_write_activation", "sigmoid") == "tanh"):
+        if cpu:
+            paths.append(TANH_WRITE_GDN_TESTS)
+        elif resolved_backend == "fused":
+            paths.append(TANH_WRITE_GDN_KERNEL_TESTS)
     if model.get("attention_coefficient_conditioning", "static") == "query":
         paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)
         if model.get("attention_coefficient_activation", "identity") == "tanh":
@@ -163,6 +171,9 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
                          (["unnormalized_fused_attention"] if fused and not learned and not fixed else []))
         if model.get("attention_output_scaling", "none") != "none" and cpu:
             tests.append("attention_output_scaling")
+        if resolved_backend == "mosaic" and not cpu:
+            query = model.get("attention_coefficient_conditioning", "static") == "query"
+            tests.extend(["mosaic_query" if query else "mosaic_taylor", "mosaic_repeatability"])
     if model.get("initialization", "flax_default") != "flax_default" and cpu:
         tests.append("initialization")
     return tuple(f"scaffolds/transformer/tests/test_{name}" + ("" if ".py::" in name else ".py") for name in tests)

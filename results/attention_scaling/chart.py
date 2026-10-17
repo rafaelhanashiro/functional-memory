@@ -30,7 +30,8 @@ COEFFICIENTS = {"taylor": ("Taylor", "#2a78d6", "o"), "hermite": ("Hermite", "#e
 # Kernel variants: line style, plus marker fill so that unconnected points carry it too.
 VARIANTS = {"normalized": ("Normalized", "-", "full"),
             "unnormalized": ("Unnormalized", (0, (5, 2.5)), "none"),
-            "nonnegative": ("Normalized, nonnegative coefficients", (0, (6, 2, 1, 2)), "bottom")}
+            "nonnegative": ("Normalized, nonnegative coefficients", (0, (6, 2, 1, 2)), "bottom"),
+            "unnormalized_head_rms_norm": ("Unnormalized, head RMSNorm", (0, (1.2, 1.8)), "top")}
 FAMILY_STYLE = {
     "normalized_fixed": ("taylor", "normalized"),
     "unnormalized_fixed": ("taylor", "unnormalized"),
@@ -38,6 +39,7 @@ FAMILY_STYLE = {
     "unnormalized_fixed_hermite": ("hermite", "unnormalized"),
     "normalized_learned_taylor": ("learned", "normalized"),
     "unnormalized_learned": ("learned", "unnormalized"),
+    "unnormalized_learned_head_rms_norm": ("learned", "unnormalized_head_rms_norm"),
     "normalized_nonnegative": ("learned", "nonnegative"),
 }
 LEGACY_ALPHA = 0.4

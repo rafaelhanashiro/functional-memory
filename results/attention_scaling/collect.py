@@ -17,6 +17,7 @@ from pathlib import Path
 # shown as legacy cells until rerun; a run on any initialization other than its
 # mechanism's reference (REFERENCE) is rejected, since results compare those runs only.
 CANONICAL_WEIGHT_DECAY_POLICY = "exclude_embeddings_norms_biases_v1"
+OUTPUT_SCALING = {"unnormalized_learned_head_rms_norm": "head_rms_norm"}
 _REFERENCE_KERNELS = {"softmax": "softmax", "softmax_no_qk_norm": "softmax",
                       "gated_deltanet": "gated_deltanet", "unnormalized_exp": "exp_unnormalized"}
 
@@ -65,6 +66,9 @@ def _identity(record: dict, *, source: str, width: int, degree: int | None, labe
 
 def _mechanism(cell: dict, model: dict, metadata: dict, label: str) -> None:
     panel, column = cell["panel"], cell["column"]
+    # Output scaling is part of the mechanism: only the head-RMSNorm family rescales.
+    _match(model.get("attention_output_scaling", "none"), OUTPUT_SCALING.get(panel, "none"),
+           f"{label} output scaling")
     if panel == "normalized_nonnegative":
         # The sum of squares q1^2 + q2^2, learned per head.
         _match(metadata.get("attention_kernel"), "learned_polynomial_sum_of_squares", f"{label} kernel")
@@ -73,6 +77,7 @@ def _mechanism(cell: dict, model: dict, metadata: dict, label: str) -> None:
     expected_kernel = {
         "unnormalized_fixed": "taylor_unnormalized",
         "unnormalized_learned": "learned_polynomial_unnormalized",
+        "unnormalized_learned_head_rms_norm": "learned_polynomial_unnormalized",
         "normalized_learned_taylor": "learned_polynomial",
         "unnormalized_fixed_hermite": "fixed_polynomial_unnormalized",
     }.get(panel)
@@ -95,7 +100,7 @@ def _mechanism(cell: dict, model: dict, metadata: dict, label: str) -> None:
         _optional_match(metadata, "attention_kernel", expected_kernel, f"{label} kernel")
     elif expected_kernel is not None:
         _match(metadata.get("attention_kernel"), expected_kernel, f"{label} kernel")
-    if panel in ("unnormalized_learned", "normalized_learned_taylor"):
+    if panel in ("unnormalized_learned", "unnormalized_learned_head_rms_norm", "normalized_learned_taylor"):
         _match(metadata.get("attention_coefficients"), "learned", f"{label} coefficients")
 
 
@@ -231,6 +236,40 @@ def _collect_referenced(repo_root: Path, cell: dict, run: dict, step: int, token
     result["terminal_nll"] = terminal_nll
     result["terminal_ppl"] = terminal_ppl
     return result
+
+
+SCALING_KERNELS = {"exp": "exp_unnormalized", "learned_m4": "learned_polynomial_unnormalized"}
+SCALINGS = ("none", "inverse_position", "head_rms_norm")
+
+
+def output_scaling_rows(repo_root: Path, config: dict) -> list[dict]:
+    """Terminal perplexity of each pinned (kernel, output scaling) run, checked against its recipe."""
+    repo_root = Path(repo_root)
+    study = Path(config["study"]).name
+    entries = config["runs"]
+    verify_pinned_runs(repo_root, [dict(entry, study=study) for entry in entries])
+    rows, seen = [], set()
+    for entry in entries:
+        kernel, scaling, name = entry["kernel"], entry["scaling"], entry["run_id"]
+        if kernel not in SCALING_KERNELS or scaling not in SCALINGS or (kernel, scaling) in seen:
+            raise ValueError(f"Unknown or repeated output-scaling coordinate: {(kernel, scaling)}")
+        seen.add((kernel, scaling))
+        label = f"{study}/{name}"
+        directory = repo_root / "experiments" / study / "runs" / name
+        _match(load_run(directory).get("status"), "complete", f"{label} status")
+        model = yaml.safe_load((directory / "config.yaml").read_text())["model"]
+        _match(model.get("qk_head_dim"), config["d_k"], f"{label} recipe d_K")
+        _match(model.get("attention_normalization"), False, f"{label} normalization")
+        _match(model.get("attention_output_scaling", "none"), scaling, f"{label} output scaling")
+        _match(_json(directory / "metadata.json").get("attention_kernel"), SCALING_KERNELS[kernel], f"{label} kernel")
+        if kernel == "learned_m4":
+            _match((model.get("attention_degree"), model.get("attention_coefficients")), (4, "learned"),
+                   f"{label} learned degree 4")
+        completion = _json(directory / "completion.json")
+        _, ppl = _terminal(completion, config["terminal_step"], config["training_tokens"], f"{label} completion")
+        rows.append({"kernel": kernel, "scaling": scaling, "run": name, "terminal_ppl": ppl,
+                     "artifacts": {"completion": _artifact(repo_root, study, name, "completion.json")}})
+    return rows
 
 
 def collect_rows(repo_root: Path, config: dict) -> list[dict]:

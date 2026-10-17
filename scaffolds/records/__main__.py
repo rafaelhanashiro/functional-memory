@@ -24,6 +24,10 @@ def main() -> None:
         "--allow-flax-default-init", action="store_true",
         help="explicitly opt a fresh experiment out of its mechanism's reference initialization",
     )
+    create.add_argument(
+        "--allow-triton-attention", action="store_true",
+        help="explicitly keep the fused Triton kernels for a fresh recipe that a Mosaic GPU kernel implements",
+    )
     index = commands.add_parser("index")
     index.add_argument("study", type=Path)
     validate = commands.add_parser(
@@ -45,7 +49,8 @@ def main() -> None:
             from scaffolds.transformer.configs import config_to_dict, load_config
             from scaffolds.transformer.models.initialization import REFERENCE
             unset = "initialization" not in recipe["model"]
-            recipe = config_to_dict(load_config(args.config))
+            config = load_config(args.config)
+            recipe = config_to_dict(config)
             model = recipe["model"]
             if unset:
                 # Fresh runs use their mechanism's reference initialization. The config
@@ -63,6 +68,13 @@ def main() -> None:
                     "new runs use their mechanism's reference initialization; this recipe sets "
                     "model.initialization: flax_default. Use --allow-flax-default-init only when "
                     "Flax-default initialization was explicitly requested."
+                )
+            if (model["attention_backend"] == "fused" and config.model.mosaic_supported()
+                    and not args.allow_triton_attention):
+                parser.error(
+                    "new runs of this mechanism use the Mosaic GPU kernels; this recipe sets "
+                    "model.attention_backend: fused. Use mosaic (or auto), or --allow-triton-attention "
+                    "only when the Triton kernels were explicitly requested."
                 )
             recipe["train"]["source_commit"] = "auto"
             study = args.study.parent if args.study.name == "sweep.yaml" else args.study

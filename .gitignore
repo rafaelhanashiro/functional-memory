@@ -2,6 +2,7 @@
 /worktrees/
 /.cache/
 .venv/
+.venv-cuda13/
 .pytest_cache/
 __pycache__/
 # Experiment and scaffold-validation artifacts stay on their home cluster.

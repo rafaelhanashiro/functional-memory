@@ -38,7 +38,8 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         return GatedDeltaNet(
             config.hidden_size, config.num_heads, config.qk_head_dim, config.value_head_dim,
             conv_size=config.gdn_conv_size, norm_eps=config.rms_norm_eps,
-            backend=config.attention_backend, erase_mode=config.gdn_erase_mode, rngs=rngs,
+            backend=config.attention_backend, erase_mode=config.gdn_erase_mode,
+            write_activation=config.gdn_write_activation, rngs=rngs,
         )
     return MultiHeadAttention(
         config.hidden_size, config.num_heads, config.num_kv_heads,
@@ -77,8 +78,8 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("qk_norm must be a boolean")
         if qk_norm and attention_degree == 0:
             raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
-        if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused")):
-            raise ValueError("Unnormalized attention requires a fixed exp/Taylor kernel and a blocked/fused backend")
+        if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused", "mosaic")):
+            raise ValueError("Unnormalized attention requires a fixed exp/Taylor kernel and a blocked, fused or mosaic backend")
         if attention_output_scaling not in OUTPUT_SCALINGS:
             raise ValueError(f"Unknown attention output scaling: {attention_output_scaling}")
         if attention_output_scaling == "inverse_position" and attention_normalization:
@@ -116,10 +117,10 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("This experiment requires full MHA (num_heads == num_kv_heads)")
         if qk_head_dim % 2:
             raise ValueError("qk_head_dim must be even for RoPE")
-        if backend not in ("blocked", "fused", "manual", "auto", "xla", "cudnn"):
+        if backend not in ("blocked", "fused", "mosaic", "manual", "auto", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {backend}")
-        if backend not in ("blocked", "fused") and attention_degree is not None:
-            raise ValueError("Taylor attention requires backend='blocked' or 'fused'")
+        if backend not in ("blocked", "fused", "mosaic") and attention_degree is not None:
+            raise ValueError("Taylor attention requires backend='blocked', 'fused' or 'mosaic'")
         if backend != "manual" and dropout != 0.0:
             raise ValueError("Blocked/fused attention requires dropout=0")
         if attention_coefficient_conditioning not in ("static", "query"):

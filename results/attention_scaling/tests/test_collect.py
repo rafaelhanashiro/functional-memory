@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from results.attention_scaling.collect import collect_rows
+from results.attention_scaling.collect import collect_rows, output_scaling_rows
 from scaffolds.records.selections import run_sources
 
 
@@ -243,7 +243,7 @@ def test_committed_comparison_sources() -> None:
 
     chart = yaml.safe_load((root / "results/attention_scaling/degree_chart.yaml").read_text())
     chart_rows = collect_rows(root, chart)
-    assert len(chart_rows) == 30
+    assert len(chart_rows) == 34
     chart_failures = {(row["panel"], row["column"]): row["failure_step"]
                       for row in chart_rows if row["status"] == "numerical_failure"}
     assert chart_failures == {("normalized_learned_taylor", "m1"): 73, ("normalized_learned_taylor", "m2"): 937,
@@ -264,6 +264,17 @@ def test_committed_comparison_sources() -> None:
         with pytest.raises(ValueError, match=message):
             collect_rows(root, _pin(root, swapped))
 
+    # Output scaling is part of the mechanism: the plain and head-RMSNorm learned lines cannot swap runs.
+    for panel, other in (("unnormalized_learned", "unnormalized_learned_head_rms_norm"),
+                         ("unnormalized_learned_head_rms_norm", "unnormalized_learned")):
+        swapped = json.loads(json.dumps(chart))
+        target = next(cell for cell in swapped["cells"] if cell["panel"] == panel and cell["column"] == "m2")
+        source = next(cell for cell in chart["cells"] if cell["panel"] == other and cell["column"] == "m2")
+        swapped["cells"] = [cell for cell in swapped["cells"] if cell["run"] != source["run"]]
+        target.update(experiment=source["experiment"], run=source["run"])
+        with pytest.raises(ValueError, match="output scaling"):
+            collect_rows(root, _pin(root, swapped))
+
     # A signed learned Taylor run cannot stand in for the nonnegative sum of squares.
     wrong_family = json.loads(json.dumps(chart))
     target = next(cell for cell in wrong_family["cells"]
@@ -279,3 +290,21 @@ def test_committed_comparison_sources() -> None:
     wrong_data["data_identity"]["eval_manifest_sha256"] = "0" * 64
     with pytest.raises(ValueError, match="data identity eval_manifest_sha256"):
         collect_rows(root, wrong_data)
+
+
+def test_committed_output_scaling_table() -> None:
+    root = Path(__file__).resolve().parents[3]
+    config = yaml.safe_load((root / "results/attention_scaling/output_scaling.yaml").read_text())
+    rows = {(row["kernel"], row["scaling"]): row["terminal_ppl"] for row in output_scaling_rows(root, config)}
+    assert set(rows) == {(kernel, scaling) for kernel in ("exp", "learned_m4")
+                         for scaling in ("none", "inverse_position", "head_rms_norm")}
+    assert rows["exp", "head_rms_norm"] == pytest.approx(13.41, abs=5e-3)
+    assert rows["learned_m4", "head_rms_norm"] == pytest.approx(13.639, abs=5e-4)
+    for kernel in ("exp", "learned_m4"):
+        assert rows[kernel, "head_rms_norm"] < rows[kernel, "inverse_position"] < rows[kernel, "none"]
+    # A recipe's output scaling must match its declared coordinate.
+    mislabeled = json.loads(json.dumps(config))
+    first, second = mislabeled["runs"][0], mislabeled["runs"][1]
+    first["scaling"], second["scaling"] = second["scaling"], first["scaling"]
+    with pytest.raises(ValueError, match="output scaling"):
+        output_scaling_rows(root, mislabeled)
