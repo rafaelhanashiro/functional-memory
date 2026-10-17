@@ -2,10 +2,11 @@
 
 Two operations, each with the mathematics and failure behavior of its Pallas-Triton
 counterpart. FP32 scores, polynomials, sums, and accumulators. FP32 weights and score
-gradients enter the tensor cores at ``precision``: ``"bf16"`` (default) rounds them once to
-BF16, as FlashAttention and cuDNN do for probabilities and score gradients, and the Taylor
-backward reads the BF16 output, as theirs does; ``"bf16x3"`` splits them into three BF16
-components whose sum is the FP32 value and keeps the FP32 output, as the Triton kernels do.
+gradients enter the tensor cores at ``precision``: ``"bf16"`` rounds them once to BF16, as
+FlashAttention and cuDNN do for probabilities and score gradients, and the Taylor backward
+reads the BF16 output, as theirs does; ``"bf16x3"`` splits them into three BF16 components
+whose sum is the FP32 value and keeps the FP32 output, as the Triton kernels do. Each setup
+defaults to ``default_precision``.
 
 - ``taylor_attention`` (``fused_taylor.fused_polynomial_attention``): normalized fixed
   Taylor T_m. A row whose sum is nonfinite, nonpositive (even degree) or zero (odd degree),
@@ -28,13 +29,20 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from scaffolds.transformer.attention.backends.mosaic.common import BF16, PRECISIONS, QUERY, TAYLOR
+from scaffolds.transformer.attention.backends.mosaic.common import BF16, BF16X3, PRECISIONS, QUERY, TAYLOR
 
 WIDTHS = (8, 16, 32, 64, 128)
 VALUE_WIDTH = 64
 MIN_WIDTH = 16  # BF16 tensor-core contraction step on Hopper and Blackwell
 MAX_QUERY_DEGREE = 4  # per-query coefficient vectors for a whole sequence share shared memory
-PRECISION = BF16
+
+
+def default_precision(family: str, degree: int) -> str:
+    """BF16 weight products, as standard attention kernels use, for every setup but normalized
+    odd-degree Taylor. Its signed weights are divided by a row sum that can cancel, which
+    amplifies BF16 rounding: with sharp scores its gradients err about twice as much as
+    cuDNN softmax's, so it keeps FP32-precision weights."""
+    return BF16X3 if family == TAYLOR and degree % 2 else BF16
 
 
 def _kernels():
@@ -127,12 +135,13 @@ def _taylor_bwd(degree, precision, residuals, do):
 _taylor.defvjp(_taylor_fwd, _taylor_bwd)
 
 
-def taylor_attention(q, k, v, *, attention_degree: int, precision: str = PRECISION):
+def taylor_attention(q, k, v, *, attention_degree: int, precision: str | None = None):
     """Normalized causal T_m(QK^T / sqrt(d_K)) V for [batch, time, heads, channels] arrays."""
     degree = attention_degree
     if isinstance(degree, bool) or not isinstance(degree, int) or degree < 1:
         raise ValueError(f"Mosaic Taylor attention requires an integer degree >= 1, got {degree!r}")
     _check_operands(q, k, v, "Mosaic Taylor attention")
+    precision = default_precision(TAYLOR, degree) if precision is None else precision
     _check_precision(precision)
     return _taylor(q, k, v, degree, precision)
 
@@ -177,9 +186,10 @@ def _query_bwd(precision, residuals, do):
 _query.defvjp(_query_fwd, _query_bwd)
 
 
-def query_polynomial_attention(q, k, v, coefficients, *, precision: str = PRECISION):
+def query_polynomial_attention(q, k, v, coefficients, *, precision: str | None = None):
     """Unnormalized causal p_(b,t,h)(QK^T / sqrt(d_K)) V with FP32 coefficients c[B, T, H, m+1]."""
     _check_operands(q, k, v, "Mosaic query-polynomial attention")
+    precision = default_precision(QUERY, coefficients.shape[-1] - 1) if precision is None else precision
     _check_precision(precision)
     if (coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3] or coefficients.dtype != jnp.float32
             or not 2 <= coefficients.shape[-1] <= MAX_QUERY_DEGREE + 1):

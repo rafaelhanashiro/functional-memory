@@ -254,3 +254,16 @@ def test_mosaic_requires_bfloat16_training():
     config.train.dtype = "float32"
     with pytest.raises(ValueError, match="bfloat16"):
         validate_config(config)
+
+
+@pytest.mark.parametrize("settings,precision", [
+    (MOSAIC_QUERY, "bf16"), (dict(MOSAIC_QUERY, attention_degree=1), "bf16"),
+    (MOSAIC_TAYLOR, "bf16"), (dict(MOSAIC_TAYLOR, attention_degree=16), "bf16"),
+    (dict(MOSAIC_TAYLOR, attention_degree=1), "bf16x3"), (dict(MOSAIC_TAYLOR, attention_degree=3), "bf16x3"),
+])
+def test_mosaic_weight_precision_is_chosen_per_setup_and_recorded(settings, precision):
+    config = Config(model=ModelConfig(**settings))
+    config.train.dtype = "bfloat16"
+    identity = attention_identity(config)
+    assert identity["attention_implementation"].startswith("pallas_mosaic_gpu")
+    assert identity["attention_weight_precision"] == precision

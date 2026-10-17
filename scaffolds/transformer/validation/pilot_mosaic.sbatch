@@ -25,7 +25,17 @@ export CUDA_HOME TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda OMP_NUM_THREADS=8 PYTHONUNBUFFERED=1
 LABEL="$BACKEND"
 if [[ "$BACKEND" == mosaic ]]; then
-  LABEL="mosaic-$("$PYTHON" -c 'from scaffolds.transformer.attention.backends.mosaic.api import PRECISION; print(PRECISION)')"
+  RUN_ID_FOR_LABEL="$RUN_ID"
+  LABEL="mosaic-"$("$PYTHON" - "$RUN_ID_FOR_LABEL" <<'PY'
+import sys
+from pathlib import Path
+import yaml
+from scaffolds.transformer.attention.backends.mosaic.api import default_precision
+model = yaml.safe_load(Path(f"experiments/attention_scaling/runs/{sys.argv[1]}/config.yaml").read_text())["model"]
+family = "query" if model.get("attention_coefficient_conditioning") == "query" else "taylor"
+print(default_precision(family, model["attention_degree"]))
+PY
+)""
 fi
 NAME="${GPU_TYPE,,}-$RUN_ID-$LABEL${REPEAT:+-$REPEAT}"
 WORKDIR="$PWD/.cache/mosaic-pilot/$NAME"
