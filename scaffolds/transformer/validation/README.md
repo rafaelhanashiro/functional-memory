@@ -923,6 +923,26 @@ mutable validation records and generated indices; the frozen execution check pas
 
 ## GDN versus Mosaic on one B300
 
+Job **220032** completed on one NVIDIA B300 SXM6 AC (`akita`, CUDA 13) in
+18 minutes 38 seconds. Pooling 60 measured updates per mechanism:
+
+| Mechanism | Parameters | Mean seconds/update | Tokens/second | Difference between repeat means |
+| --- | ---: | ---: | ---: | ---: |
+| Signed-write linear GDN, fused FLA Triton | 211,007,424 | 4.2410 | 123,624 | 0.789% |
+| Cubic query-conditioned tanh, Mosaic | 200,573,344 | 1.2039 | 435,500 | 0.059% |
+
+The Mosaic model has **3.523x higher training throughput** at this workload.
+This is an architecture comparison, not a speedup from replacing GDN's backend:
+Mosaic does not implement GDN. Compute-only means are 4.2373 and 1.2010 seconds,
+so loading and host overhead do not explain the difference. GDN agrees with the
+earlier checkpoint-replay measurement (124,077 tokens/second). Each mechanism's
+two trials use the same physical GPU, runtime, data cursor and dataset identity;
+the difference between repeat means is divided by their pooled mean above.
+All 140 training updates were finite, all four production-context output/gradient
+tests passed, and three CPU tests checked the timing harness and isolation.
+No benchmark checkpoints are retained. The successful log and GPU-test XML are
+retained on Kennel under `validation/logs/gdn-mosaic-b300/`, with hashes in the record.
+
 This comparison times signed-write linear GDN (the recipe of `rf65d38ec0552`)
 against cubic query-conditioned tanh attention (the recipe of `r0bc57959ef6c`,
 with the Mosaic backend). Both use the shared 10-layer, width-1024 backbone,
@@ -953,6 +973,24 @@ mkdir -p scaffolds/transformer/validation/logs/gdn-mosaic-b300
 sbatch --parsable \
   --output=scaffolds/transformer/validation/logs/gdn-mosaic-b300/benchmark-%j.log \
   scaffolds/transformer/launchers/benchmark_gdn_mosaic.sbatch "$(git rev-parse HEAD)"
+```
+
+Regenerate pooled timing summaries from the four explicit reports:
+
+```bash
+python3 - <<'PY'
+import json
+from pathlib import Path
+root = Path("scaffolds/transformer/validation/runs/gdn-mosaic-b300")
+rates = {}
+for name in ("gdn", "mosaic"):
+    reports = [json.loads((root / f"{name}-{trial}.json").read_text()) for trial in (1, 2)]
+    assert all(r["status"] == "complete" and r["all_finite"] for r in reports)
+    seconds = [s["interval_seconds"] for r in reports for s in r["samples"][r["warmup_updates"]:]]
+    rates[name] = reports[0]["tokens_per_update"] * len(seconds) / sum(seconds)
+    print(name, "seconds/update", sum(seconds) / len(seconds), "tokens/sec", rates[name])
+print("Mosaic / GDN throughput", rates["mosaic"] / rates["gdn"])
+PY
 ```
 
 ## Mosaic GPU polynomial attention kernels on H100 and B300
