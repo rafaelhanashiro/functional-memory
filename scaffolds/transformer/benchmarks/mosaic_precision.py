@@ -20,6 +20,7 @@ import numpy as np
 
 from scaffolds.transformer.attention.backends.mosaic.api import WIDTHS, query_polynomial_attention, taylor_attention
 from scaffolds.transformer.attention.backends.mosaic.common import PRECISIONS
+from scaffolds.transformer.attention.softmax import padded_dot_product_attention
 from scaffolds.transformer.tests.test_fused_attention import _compiled_forward_and_vjp, _inputs
 from scaffolds.transformer.tests.test_mosaic_query import _inputs as _query_inputs, _numpy_fp64 as _query_fp64
 from scaffolds.transformer.tests.test_mosaic_taylor import _numpy_fp64_forward_and_vjp as _taylor_fp64
@@ -72,7 +73,7 @@ def main():
 
     shapes = {"tile": lambda w: (1, 512, 2, w, 64), "production": lambda w: (1, 2048, 4, w, 64)}
     taylor_names = ("out", "dq", "dk", "dv")
-    softmax = partial(jax.nn.dot_product_attention, is_causal=True, implementation="cudnn")
+    softmax = partial(padded_dot_product_attention, backend="cudnn")  # the production softmax path
     for shape_name, widths in (("tile", WIDTHS), ("production", (64,))):
         for width in widths:
             for scores in ("normal", "sharp"):

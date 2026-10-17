@@ -17,6 +17,7 @@ from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial
 from scaffolds.transformer.attention.backends.fused_query_polynomial import fused_query_polynomial_attention
 from scaffolds.transformer.attention.backends.fused_taylor import fused_polynomial_attention
 from scaffolds.transformer.attention.backends.mosaic.common import BF16, BF16X3
+from scaffolds.transformer.attention.softmax import padded_dot_product_attention
 print(jax.devices()[0].device_kind, flush=True)
 def bench(f, *a, n=10):
     jax.block_until_ready(f(*a)); t = time.perf_counter()
@@ -32,8 +33,8 @@ def inputs(width):
 q, k, v, do = inputs(64)  # warm the GPU so the first measured cell is not slowed
 for fn in (fused_polynomial_attention, taylor_attention):
     bench(jax.jit(lambda q, k, v: fn(q, k, v, attention_degree=2)), q, k, v)
-def softmax(q, k, v):
-    return jax.nn.dot_product_attention(q, k, v, is_causal=True, implementation="cudnn")
+def softmax(q, k, v):  # the production softmax path
+    return padded_dot_product_attention(q, k, v, backend="cudnn")
 
 
 for width in (8, 16, 32, 64, 128):

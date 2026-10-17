@@ -40,6 +40,7 @@ def forward(q, k, v, vectors, *, family, degree, scale, precision, block_k=64, s
     batch, time, heads, dq = q.shape
     dv = v.shape[-1]
     max_steps = (BQ * WGS) // block_k  # tiles beyond a CTA's diagonal block are never needed
+    assert BQ // block_k * (WGS - 1) <= stages, "unfreed trailing tiles must never be reloaded"
     n_vec = common.vector_counts(family, degree)[0]
 
     def kernel(q_gmem, k_gmem, v_gmem, *refs):
@@ -101,13 +102,11 @@ def forward(q, k, v, vectors, *, family, degree, scale, precision, block_k=64, s
             statistic = plgpu.layout_cast(jnp.zeros((BQ,), jnp.float32), L.reduce(1))
             carry = lax.fori_loop(0, full_steps, partial(step, masked=False), (acc, statistic))
             acc, statistic = lax.fori_loop(full_steps, my_steps, partial(step, masked=True), carry)
-
-            def flush(j, _):  # keep the shared ring's consumed counts in step with the other warpgroup
-                slot = lax.rem(j, stages)
-                plgpu.barrier_arrive(k_free.at[slot])
-                plgpu.barrier_arrive(v_free.at[slot])
-
-            lax.fori_loop(my_steps, cta_steps, flush, None)
+            # Tiles past this warpgroup's diagonal are neither consumed nor freed here. Freeing a
+            # tile before it lands would let a ring slot complete a phase without the other
+            # warpgroup, so the loader could overwrite a tile that warpgroup still reads, or
+            # advance a barrier two phases past its parity wait (a deadlock). No load waits on
+            # these tiles' free phases: they are the CTA's last tiles and number at most stages.
             out, statistic = common.forward_finish(family, degree, acc, statistic)
             o_smem.at[wg][...] = out
             n_smem.at[wg][...] = statistic
@@ -167,6 +166,7 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, st
     batch, time, heads, dqk = q.shape
     dv = v.shape[-1]
     tiles_per_cta = B * WGS // block_k
+    assert B // block_k * (WGS - 1) <= stages, "unfreed trailing tiles must never be reloaded"
     _, n_vec, n_sums = common.vector_counts(family, degree)
 
     def kernel(q_gmem, k_gmem, v_gmem, do_gmem, vec_gmem, dq_gmem, *refs):
@@ -234,13 +234,7 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, st
             sums = tuple(plgpu.layout_cast(jnp.zeros((B,), jnp.float32), L.reduce(1)) for _ in range(n_sums))
             carry = lax.fori_loop(0, full_steps, partial(step, masked=False), (acc, sums))
             acc, sums = lax.fori_loop(full_steps, my_steps, partial(step, masked=True), carry)
-
-            def flush(j, _):
-                slot = lax.rem(j, stages)
-                plgpu.barrier_arrive(k_free.at[slot])
-                plgpu.barrier_arrive(v_free.at[slot])
-
-            lax.fori_loop(my_steps, cta_steps, flush, None)
+            # As in forward, tiles past this warpgroup's diagonal are neither consumed nor freed.
             q_smem.at[wg][...] = (acc * scale).astype(jnp.bfloat16)
             for i, total in enumerate(sums):
                 sums_smem.at[wg, i][...] = total
