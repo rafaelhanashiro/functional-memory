@@ -868,6 +868,59 @@ sbatch -w akita --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
   scaffolds/transformer/validation/replay_checkpoint.sbatch "$PWD" <run> 500 1000 <scratch> default default
 ```
 
+## Signed linear GDN on one B300
+
+The [benchmark record](runs/gdn-tanh-b300/record.json) and
+[timing samples](runs/gdn-tanh-b300/benchmark.json) cover a bounded replay of
+`rf65d38ec0552`, the degree-one, d_K=d_V=64 GDN with tanh writes and independent
+sigmoid erasure. Job `219939` completed on one B300 SXM6 AC using CUDA 13.2 and
+cuBLAS 13.2.2.2. All 10 signed-write GPU tests passed, including outputs and all
+six gradients against the FP64 matrix-state oracle, zero erasure, and length
+2,048. The corresponding CPU checks passed 83 tests; record/index tests passed 50.
+
+The replay restored a disposable copy of checkpoint 11,500 with its optimizer
+state and FineWeb data cursor. The model has 211,007,424 parameters; the original
+global batch of 256 sequences, global microbatch 64, four accumulation steps,
+2,048 prediction positions, and learning-rate horizon were preserved. The first
+five updates were warmup; the next 30 were timed. All 35 updates were finite.
+Source recipe, record, measurements, data identity, and checkpoint checksums were
+unchanged. The source run remains paused, and no replay checkpoint is retained.
+
+| Execution | Mean seconds/update | Tokens/second |
+| --- | ---: | ---: |
+| One B300, measured replay | 4.2255 | 124,077 |
+| Four H100 PCIe, historical windows ending at steps 9,000, 10,000, 11,000 | 1.1635 | 450,624 |
+
+One B300 delivers 27.5% of the earlier four-H100 aggregate throughput with this
+microbatch setting, or about 1.10 times the throughput per allocated GPU. This is
+a historical comparison, not a controlled kernel speedup: the single-GPU trainer
+omits distributed telemetry, and each H100 window includes a periodic checkpoint.
+B300 intervals include packed-data loading, transfer, numerical checks, ordinary
+logging, and optimizer updates, but exclude compilation, validation, and final
+checkpoint writing. B300 median update time was 4.1714 seconds (p10 4.1362, p90
+4.3917). First-update compilation and execution took 159 seconds. No microbatch
+tuning was performed. The measured rate projects about 8.9 hours for the remaining
+7,574 updates, excluding startup, evaluation, and checkpoint overhead.
+
+Reproduce from a worktree at the recorded launch commit, after syncing both locked
+environments as described in `CLUSTERS.md`. Supply the retained source run directory
+containing checkpoint 11,500 and a fresh output directory:
+
+```bash
+sbatch --output=scaffolds/transformer/validation/logs/gdn-tanh-b300/benchmark-%j.log \
+  scaffolds/transformer/launchers/benchmark_gdn_tanh.sbatch \
+  9e62cf7ce583ae0af776a319a2ebc4df3737f1ab "$SOURCE_RUN_DIRECTORY" "$OUTPUT_DIRECTORY"
+```
+
+The launcher verifies the frozen execution set, runs the signed-write GPU tests,
+then calls `benchmarks/benchmark_checkpoint_replay.py`. Its input translation
+removes the legacy explicit `gdn_polynomial_degree: 1` field for the current linear
+GDN implementation; other polynomial degrees are rejected. The worktree's own
+CUDA 13 environment supplies the dependencies. The successful log and GPU JUnit
+output are retained under `validation/logs/gdn-tanh-b300/` on Kennel and their
+hashes are recorded. The generic Git dirty flag in the timing report includes
+mutable validation records and generated indices; the frozen execution check passed.
+
 ## Mosaic GPU polynomial attention kernels on H100 and B300
 
 `attention/backends/mosaic/` implements causal polynomial attention (forward, dQ, dK, dV) on
