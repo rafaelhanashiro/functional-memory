@@ -76,8 +76,9 @@ class ModelConfig:
     # p(s) = q1(s)^2 + q2(s)^2. Evaluated without expanding near real roots.
     attention_fixed_square_factors: tuple[float, ...] | None = None
     attention_coefficient_sharing: Literal["global", "per_head"] = "global"
-    # Query coefficients use the incoming attention activation, per layer/head.
-    attention_coefficient_conditioning: Literal["static", "query"] = "static"
+    # Query coefficients use the incoming attention activation, per layer/head. "query_key" also
+    # multiplies each key's degree-r term by f_r(x_i) = 1 + a_r tanh(w_r^T x_i) from the key token.
+    attention_coefficient_conditioning: Literal["static", "query", "query_key"] = "static"
     # Legacy identity is degree-one affine; tanh supports b + a*tanh(x W).
     attention_coefficient_activation: Literal["identity", "tanh"] = "identity"
     # Tanh coefficients start at b = 1/r!, a = amplitude_initial, and W with independent
@@ -134,7 +135,7 @@ class ModelConfig:
                   and self.attention_fixed_coefficients is None and self.attention_fixed_square_factors is None
                   and self.attention_coefficient_parameterization == "direct"
                   and self.attention_coefficient_conditioning == "static")
-        query = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
+        query = (not self.attention_normalization and self.attention_coefficient_conditioning in ("query", "query_key")
                  and self.attention_coefficient_activation == "tanh" and integer_degree
                  and 1 <= degree <= MAX_QUERY_DEGREE)
         return (self.attention_mechanism == "dot_product" and (taylor or query)
@@ -229,13 +230,15 @@ class ModelConfig:
             raise ValueError(f"Unknown attention coefficients: {self.attention_coefficients}")
         if self.attention_coefficient_sharing not in ("global", "per_head"):
             raise ValueError(f"Unknown attention coefficient sharing: {self.attention_coefficient_sharing}")
-        if self.attention_coefficient_conditioning not in ("static", "query"):
+        if self.attention_coefficient_conditioning not in ("static", "query", "query_key"):
             raise ValueError(f"Unknown attention coefficient conditioning: {self.attention_coefficient_conditioning}")
         if self.attention_coefficient_activation not in ("identity", "tanh"):
             raise ValueError(f"Unknown attention coefficient activation: {self.attention_coefficient_activation}")
-        if self.attention_coefficient_activation != "identity" and self.attention_coefficient_conditioning != "query":
+        if self.attention_coefficient_activation != "identity" and self.attention_coefficient_conditioning == "static":
             raise ValueError("Nonlinear coefficient activation requires query-conditioned coefficients")
-        if self.attention_coefficient_conditioning == "query":
+        if self.attention_coefficient_conditioning == "query_key" and self.attention_coefficient_activation != "tanh":
+            raise ValueError("Query-key coefficients require the tanh activation")
+        if self.attention_coefficient_conditioning in ("query", "query_key"):
             if (self.attention_mechanism != "dot_product" or self.attention_coefficients != "learned"
                     or self.attention_coefficient_parameterization != "direct"
                     or self.attention_coefficient_sharing != "per_head"

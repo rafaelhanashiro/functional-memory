@@ -256,6 +256,15 @@ keeps the Taylor start, while the amplitude's gradient `tanh(w_r^T x_t)` is nonz
 `c_r = b_r + a_r tanh(w_r^T x_t + beta_r)`, stored as `query_polynomial_tanh_bias`
 (`[layers, heads, m+1]`, FP32, no weight decay) and starting at zero, so a constant
 shift of the pre-activation need not be read from `x_t` through `w_r`.
+`attention_coefficient_conditioning: query_key` (tanh only) multiplies each key's
+degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i` with
+`f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` from the key token's activation
+(`key_polynomial_kernel` `[layers, heads, hidden_size, m+1]`, `key_polynomial_amplitude`
+`[layers, heads, m+1]`; drawn and started like `W` and `a`, so the start is unchanged).
+The pair coefficient factorizes, so nothing pairwise is stored: the blocked reference
+scales each key column, and the fused and Mosaic query-coefficient kernels run once per
+order with the factor folded into degree-specific values, summing `m+1` FP32 partial
+outputs. Diagnostics report the key factors beside the query coefficients.
 
 The tanh path uses a dedicated fused kernel (or its Mosaic GPU counterpart,
 `attention_backend: mosaic`) that directly evaluates the query-dependent polynomial, with gradients for Q/K/V and every coefficient.

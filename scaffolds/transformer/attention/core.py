@@ -22,6 +22,7 @@ def attention_core(
     polynomial_coefficients: jax.Array | None = None,
     polynomial_square_factors: jax.Array | None = None,
     query_polynomial_coefficients: jax.Array | None = None,
+    key_polynomial_factors: jax.Array | None = None,
     attention_coefficient_activation: str = "identity",
     return_diagnostics: bool = False,
     dropout=None,
@@ -43,8 +44,12 @@ def attention_core(
     denominators = {name: array for name, array in denominators.items() if array is not None}
     if not isinstance(attention_normalization, bool):
         raise ValueError("attention_normalization must be a boolean")
+    if key_polynomial_factors is not None and query_polynomial_coefficients is None:
+        raise ValueError("Key factors require query coefficients")
     if query_polynomial_coefficients is not None:
-        from scaffolds.transformer.attention.input_dependent import query_linear_attention, query_polynomial_attention
+        from scaffolds.transformer.attention.input_dependent import (
+            query_key_polynomial_attention, query_linear_attention, query_polynomial_attention,
+        )
 
         if (attention_normalization or attention_degree is None or attention_degree < 1 or quadratic_mode != "fixed"
                 or coefficients is not None or polynomial_coefficients is not None
@@ -52,6 +57,11 @@ def attention_core(
             raise ValueError("Query coefficients define an unnormalized polynomial kernel alone")
         if query_polynomial_coefficients.shape[-1] != attention_degree + 1:
             raise ValueError("Query coefficient count must match attention degree")
+        if key_polynomial_factors is not None:
+            if attention_coefficient_activation != "tanh":
+                raise ValueError("Key factors require tanh query coefficients")
+            return query_key_polynomial_attention(q, k, v, query_polynomial_coefficients, key_polynomial_factors,
+                                                  backend=backend, return_diagnostics=return_diagnostics)
         if attention_coefficient_activation == "identity":
             if attention_degree != 1:
                 raise ValueError("Identity query coefficients require degree-one attention")
