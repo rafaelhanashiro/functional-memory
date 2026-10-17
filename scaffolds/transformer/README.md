@@ -431,8 +431,11 @@ silently replaced.
 `attention_backend: mosaic` selects the Pallas Mosaic GPU kernels
 (`attention/backends/mosaic/`): Hopper `wgmma` kernels on H100 (sm90) and Blackwell
 `tcgen05`/tensor-memory kernels on B300 (sm10x), with the mathematics, FP32
-accumulation, bf16x3 weight products, and NaN failure rows of the fused Triton
-kernels. They cover normalized fixed Taylor attention (degree >= 1) and tanh
+accumulation, and NaN failure rows of the fused Triton kernels. Weights and score
+gradients enter the tensor cores rounded once to BF16, as in FlashAttention and cuDNN,
+except for normalized odd-degree Taylor attention, whose cancelling row sums keep
+FP32-precision weights (`api.default_precision`; recorded as
+`attention_weight_precision`). They cover normalized fixed Taylor attention (degree >= 1) and tanh
 query-conditioned polynomial attention (degree 1-4), with Q/K width 8, 16, 32, 64, or
 128, value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
 (H100) or 256 (B300). An explicit `mosaic` request raises for other recipes, GPUs, or
