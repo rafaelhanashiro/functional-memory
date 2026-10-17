@@ -171,3 +171,86 @@ def test_loader_supports_family_default_factory(tmp_path):
     config = load_config(path, config_factory=FamilyConfig)
     assert config.model.qk_head_dim == 16
     assert config.model.attention_backend == "manual"
+
+
+MOSAIC_TAYLOR = dict(attention_backend="mosaic", attention_degree=2, qk_head_dim=64, value_head_dim=64)
+MOSAIC_QUERY = dict(MOSAIC_TAYLOR, attention_degree=3, attention_normalization=False, attention_coefficients="learned",
+                    attention_coefficient_sharing="per_head", attention_coefficient_conditioning="query",
+                    attention_coefficient_activation="tanh")
+
+
+@pytest.mark.parametrize("settings", [
+    MOSAIC_TAYLOR, dict(MOSAIC_TAYLOR, attention_degree=1), dict(MOSAIC_TAYLOR, attention_degree=16),
+    dict(MOSAIC_TAYLOR, qk_head_dim=8), dict(MOSAIC_TAYLOR, qk_head_dim=128),
+    MOSAIC_QUERY, dict(MOSAIC_QUERY, attention_degree=1), dict(MOSAIC_QUERY, attention_degree=4),
+])
+def test_mosaic_accepts_its_kernels(settings):
+    model = ModelConfig(**settings)
+    assert resolve_attention_backend(model, dtype="bfloat16", platform="gpu", sequence_length=2048) == "mosaic"
+
+
+@pytest.mark.parametrize("settings", [
+    dict(MOSAIC_TAYLOR, attention_degree=None),
+    dict(MOSAIC_TAYLOR, attention_coefficients="learned"),
+    dict(MOSAIC_TAYLOR, attention_fixed_coefficients=(0.5, 1.0, 0.5)),
+    dict(MOSAIC_TAYLOR, attention_normalization=False),
+    dict(MOSAIC_TAYLOR, attention_mechanism="gated_deltanet", attention_degree=None),
+    dict(MOSAIC_QUERY, attention_degree=5),
+    dict(MOSAIC_QUERY, attention_degree=1, attention_coefficient_activation="identity"),
+    dict(MOSAIC_TAYLOR, qk_head_dim=48),
+    dict(MOSAIC_TAYLOR, value_head_dim=128),
+])
+def test_mosaic_rejects_recipes_without_a_kernel(settings):
+    with pytest.raises(ValueError, match="mosaic"):
+        ModelConfig(**settings)
+
+
+@pytest.mark.parametrize("dtype,platform,capability,length,error", [
+    ("bfloat16", "cpu", 9, 2048, "requires a GPU"),
+    ("float32", "gpu", 9, 2048, "bfloat16"),
+    ("bfloat16", None, 8, 2048, "H100"),
+    ("bfloat16", None, 9, 1920, None),
+    ("bfloat16", None, 10, 1920, "divisible by 256"),
+    ("bfloat16", None, 9, 2000, "divisible by 128"),
+])
+def test_mosaic_resolution_checks_the_allocation(monkeypatch, dtype, platform, capability, length, error):
+    from scaffolds.transformer.attention.backends import selection
+
+    monkeypatch.setattr(selection, "_runtime_platform", lambda: "gpu")
+    monkeypatch.setattr(selection, "_cuda_compute_capability", lambda: capability)
+    model = ModelConfig(**MOSAIC_TAYLOR)
+    resolve = lambda: resolve_attention_backend(model, dtype=dtype, platform=platform, sequence_length=length)
+    if error is None:
+        assert resolve() == "mosaic"
+    else:
+        with pytest.raises(ValueError, match=error):
+            resolve()
+
+
+@pytest.mark.parametrize("settings,dtype,capability,length,expected", [
+    (MOSAIC_TAYLOR, "bfloat16", 9, 2048, "mosaic"),
+    (MOSAIC_QUERY, "bfloat16", 10, 2048, "mosaic"),
+    (MOSAIC_TAYLOR, "float32", 9, 2048, "fused"),
+    (MOSAIC_TAYLOR, "bfloat16", 8, 2048, "fused"),
+    (MOSAIC_TAYLOR, "bfloat16", 10, 1920, "fused"),
+    (dict(MOSAIC_TAYLOR, attention_coefficients="learned"), "bfloat16", 9, 2048, "fused"),
+    (dict(MOSAIC_TAYLOR, qk_head_dim=48), "bfloat16", 9, 2048, "fused"),
+    (dict(MOSAIC_TAYLOR, attention_degree=None), "bfloat16", 9, 2048, "cudnn"),
+])
+def test_auto_prefers_mosaic_where_a_kernel_and_the_gpu_support_it(monkeypatch, settings, dtype, capability, length,
+                                                                    expected):
+    from scaffolds.transformer.attention.backends import selection
+
+    monkeypatch.setattr(selection, "_runtime_platform", lambda: "gpu")
+    monkeypatch.setattr(selection, "_cuda_compute_capability", lambda: capability)
+    model = ModelConfig(**dict(settings, attention_backend="auto"))
+    assert resolve_attention_backend(model, dtype=dtype, sequence_length=length) == expected
+
+
+def test_mosaic_requires_bfloat16_training():
+    from scaffolds.transformer.configs import validate_config
+
+    config = Config(model=ModelConfig(**MOSAIC_TAYLOR))
+    config.train.dtype = "float32"
+    with pytest.raises(ValueError, match="bfloat16"):
+        validate_config(config)

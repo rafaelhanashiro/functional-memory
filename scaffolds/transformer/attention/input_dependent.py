@@ -73,10 +73,15 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
         if not return_diagnostics:
             return result
         output, diagnostics = result
-    elif backend == "fused":
-        from scaffolds.transformer.attention.backends.fused_query_polynomial import fused_query_polynomial_attention
+    elif backend in ("fused", "mosaic"):
+        if backend == "fused":
+            from scaffolds.transformer.attention.backends.fused_query_polynomial import (
+                fused_query_polynomial_attention as attend,
+            )
+        else:
+            from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial_attention as attend
 
-        output = fused_query_polynomial_attention(q, k, v, coefficients)
+        output = attend(q, k, v, coefficients)
         if not return_diagnostics:
             return output
         _, diagnostics = blocked_dot_product_attention(
@@ -84,7 +89,7 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
             query_polynomial_coefficients=coefficients, return_diagnostics=True,
         )
     else:
-        raise ValueError("Query-conditioned attention requires a blocked or fused backend")
+        raise ValueError("Query-conditioned polynomial attention requires a blocked, fused or mosaic backend")
     diagnostics.update(jax.lax.stop_gradient(coefficient_statistics(coefficients)))
     return output, diagnostics
 
