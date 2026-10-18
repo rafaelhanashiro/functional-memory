@@ -35,6 +35,10 @@ VARIANTS = {
                               "Tanh, original start, blocked reference"),
     "tanh_zero_amplitude": ("tanh, zero-amplitude start, blocked reference", "#1B9E77", "-",
                             "Tanh, zero-amplitude start, blocked reference"),
+    "tanh_zero_amplitude_wide": ("tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel", "#1B9E77", (0, (5, 2.5)),
+                                 "Tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel"),
+    "tanh_zero_amplitude_inner_bias": ("tanh, zero-amplitude start, bias inside tanh, Mosaic kernel", "#1B9E77", ":",
+                                       "Tanh, zero-amplitude start, bias inside tanh, Mosaic kernel"),
 }
 
 
@@ -49,8 +53,12 @@ def variant_of(model) -> tuple[str, str, str]:
     blocked = model["attention_backend"] == "blocked"
     if start == "original":
         return function, start, "tanh_original_blocked" if blocked else "tanh_original"
+    if model.get("attention_coefficient_tanh_bias", False):
+        return function, start, "tanh_zero_amplitude_inner_bias"
+    if model.get("attention_coefficient_projection_initial_std", 0.0) > 0.01:
+        return function, start, "tanh_zero_amplitude_wide"
     if not blocked:
-        raise ValueError("Zero-amplitude runs in this selection use the blocked reference")
+        raise ValueError("The small-draw zero-amplitude runs in this selection use the blocked reference")
     return function, start, "tanh_zero_amplitude"
 
 
@@ -158,9 +166,9 @@ def render(rows, curves):
     for ax in axes[::2]:
         ax.set_ylabel("Validation NLL (lower is better)")
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=3, frameon=False, bbox_to_anchor=(.5, -.01))
+    fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(.5, -.01))
     fig.suptitle("Input-dependent coefficients: matched degree, warmup 400, output RMSNorm", fontsize=12)
-    fig.tight_layout(rect=(0, .09, 1, .94))
+    fig.tight_layout(rect=(0, .13, 1, .94))
     fig.savefig(DIRECTORY / "learning_curves.png", dpi=180, metadata={"Software": "Matplotlib"})
     fig.savefig(DIRECTORY / "learning_curves.pdf", metadata={"CreationDate": None, "ModDate": None,
                                                             "Creator": "Matplotlib"})
