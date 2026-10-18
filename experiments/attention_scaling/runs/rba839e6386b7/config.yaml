@@ -27,7 +27,7 @@ model:
   dropout: 0.0
   tie_embeddings: false
   remat: false
-  attention_backend: mosaic
+  attention_backend: blocked
   attention_degree: 1
   attention_normalization: false
   attention_output_scaling: head_rms_norm
@@ -76,16 +76,16 @@ train:
   seed: 0
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/attention_scaling/runs/rffda327584b6
-  checkpoint_dir: experiments/attention_scaling/runs/rffda327584b6/checkpoints
-  micro_batch_size: 32
+  workdir: experiments/attention_scaling/runs/rba839e6386b7
+  checkpoint_dir: experiments/attention_scaling/runs/rba839e6386b7/checkpoints
+  micro_batch_size: 64
   log_every: 10
   eval_every: 1000
   eval_batches: 7
   ckpt_every: 500
   wandb_project: functional-memory
   wandb_entity: rafah-massachusetts-institute-of-technology
-  wandb_run_name: 200m-qk-m001-query-key-tanh-a0-w0p03125-head-rms-reference-warmup400-seed0-b300
+  wandb_run_name: 200m-qk-m001-query-key-tanh-a0-w0p03125-head-rms-reference-warmup400-seed0-blocked
   wandb_group: attention_scaling
   wandb_dir: null
   wandb_mode: online

@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rba839e6386b7/config.yaml",
+    "sha256": "f0b694500f85884beeddc614384fb552e42bb6c4d14de0f7cc119f3d128ac82b"
+  },
+  "label": "200m-qk-m001-query-key-tanh-a0-w0p03125-head-rms-reference-warmup400-seed0-blocked",
+  "name": "200m-qk-m001-query-key-tanh-a0-w0p03125-head-rms-reference-warmup400-seed0-blocked",
+  "record_schema_version": 1,
+  "run_id": "rba839e6386b7",
+  "status": "planned"
+}
