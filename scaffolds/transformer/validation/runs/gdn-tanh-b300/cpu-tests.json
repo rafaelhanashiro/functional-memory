@@ -1,0 +1,8 @@
+{
+  "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_gdn_tanh_write.py scaffolds/transformer/tests/test_gated_deltanet.py scaffolds/transformer/tests/test_acceptance.py -m \"not gpu\"",
+  "format": "gdn-tanh-write-cpu-qualification",
+  "scope": "Linear signed tanh writes, unchanged reference weights, independent sigmoid erasure, exact checkpoint resume, existing GDN and acceptance checks",
+  "seconds": 73.35,
+  "status": "passed",
+  "tests": 83
+}

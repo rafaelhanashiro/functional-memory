@@ -1,0 +1,92 @@
+{
+  "accumulation_steps": 4,
+  "artifacts": [
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/gdn-tanh-b300/benchmark.json",
+      "sha256": "39f7ff1533a5227c05df01e7eb34e938e6e73f128b7158aa376bbedf3df142d6",
+      "size_bytes": 27902
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/gdn-tanh-b300/cpu-tests.json",
+      "sha256": "90a257f9deb6415bb77b1f589bf36c1f82adc8283ee3742b406859d914bbc4ef",
+      "size_bytes": 517
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/gdn-tanh-b300/gpu-tests.json",
+      "sha256": "bb1a1413c6cbc3235ceb5aad01fc8e02dabe600b8fc444765536470d67047da2",
+      "size_bytes": 110
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-tanh-b300/219939/kernel-tests.xml",
+      "sha256": "85afbbd7f0bece3e0d3a4ec76b895570bcf287ed0387aa30141c4b825cb015eb",
+      "size_bytes": 1895
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-tanh-b300/benchmark-219939.log",
+      "sha256": "6824075d2da70b0335d18209a065afd2408b0fef7a26372ba7c8c9933b7a0927",
+      "size_bytes": 5075
+    }
+  ],
+  "baseline_steps": [
+    9000,
+    10000,
+    11000
+  ],
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--output=scaffolds/transformer/validation/logs/gdn-tanh-b300/benchmark-%j.log",
+    "scaffolds/transformer/launchers/benchmark_gdn_tanh.sbatch",
+    "9e62cf7ce583ae0af776a319a2ebc4df3737f1ab",
+    "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-tanh-write/experiments/attention_scaling/runs/rf65d38ec0552",
+    "scaffolds/transformer/validation/runs/gdn-tanh-b300"
+  ],
+  "cpu_tests": {
+    "passed": 83,
+    "records_tests_passed": 50,
+    "records_tests_seconds": 2.15,
+    "seconds": 73.35
+  },
+  "cuda_environment": "cuda13",
+  "format": "gdn-tanh-b300-throughput-qualification",
+  "frozen_execution_check": "passed",
+  "frozen_execution_sha256": "f7e6967451a58f3ee48015c66e079423ac42ae594937f622cac6e1a903189d69",
+  "global_batch_size": 256,
+  "gpu_count": 1,
+  "gpu_tests": {
+    "errors": 0,
+    "failures": 0,
+    "seconds": 271.746,
+    "skipped": 0,
+    "status": "passed",
+    "tests": 10
+  },
+  "gpu_type": "B300",
+  "home_cluster": "kennel",
+  "job_id": "219939",
+  "log_path": "scaffolds/transformer/validation/logs/gdn-tanh-b300/benchmark-219939.log",
+  "measured_throughput": {
+    "mean_seconds": 4.225505487186213,
+    "median_seconds": 4.171411351300776,
+    "p10_seconds": 4.136189681198448,
+    "p90_seconds": 4.391673547122627,
+    "tokens_per_second": 124076.98950809462,
+    "updates": 30
+  },
+  "micro_batch_size": 64,
+  "partition": "debug",
+  "retained_checkpoints": [],
+  "slurm_elapsed_seconds": 642,
+  "slurm_exit_code": "0:0",
+  "slurm_state": "COMPLETED",
+  "source_checkpoint_step": 11500,
+  "source_commit": "9e62cf7ce583ae0af776a319a2ebc4df3737f1ab",
+  "source_dirty_explanation": "The generic Git dirty flag includes mutable generated indices and validation records; the frozen execution set matched the launch commit.",
+  "source_files_unchanged": true,
+  "source_recipe_sha256": "16fda7abf903021f751a91a91e3a3960bc58eb2cbba3a662b51b4a47108a945b",
+  "source_run_id": "rf65d38ec0552",
+  "status": "complete",
+  "timed_updates": 30,
+  "updated_at_utc": "2026-10-17T04:39:56.229674+00:00",
+  "warmup_updates": 5
+}

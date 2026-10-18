@@ -1,8 +1,8 @@
 """GPU correctness gates for Mosaic GPU query-conditioned polynomial attention (H100 and B300).
 
 Use ``pytest -m gpu tests/test_mosaic_query.py`` inside an H100 or B300 allocation. Outputs
-and the q/k/v/coefficient VJPs are compared with an independent NumPy FP64 reference and with
-the Pallas-Triton kernel (``fused_query_polynomial``).
+and the q/k/v/coefficient VJPs, at both weight precisions, are compared with an independent
+NumPy FP64 reference and with the Pallas-Triton kernel (``fused_query_polynomial``).
 """
 from functools import partial
 import math
@@ -14,6 +14,7 @@ import pytest
 
 from scaffolds.transformer.attention.backends.fused_query_polynomial import fused_query_polynomial_attention
 from scaffolds.transformer.attention.backends.mosaic.api import WIDTHS, query_polynomial_attention
+from scaffolds.transformer.attention.backends.mosaic.common import PRECISIONS
 from scaffolds.transformer.tests.test_fused_attention import _assert_relative
 
 DEGREES = (1, 2, 3, 4)
@@ -74,29 +75,33 @@ def _assert_all(actual, expected, label):
                          name=f"{label} dc order {order}")
 
 
+@pytest.mark.parametrize("precision", PRECISIONS)
 @pytest.mark.parametrize("width", WIDTHS)
 @pytest.mark.parametrize("degree", DEGREES)
-def test_outputs_and_vjp_match_fp64_and_triton(degree, width):
+def test_outputs_and_vjp_match_fp64_and_triton(degree, width, precision):
     operands, cotangent = _inputs(degree, width)
-    mosaic = jax.jit(partial(_vjp, query_polynomial_attention))(operands, cotangent)
+    mosaic = jax.jit(partial(_vjp, partial(query_polynomial_attention, precision=precision)))(operands, cotangent)
     assert mosaic[0].dtype == jnp.bfloat16 and mosaic[1][3].dtype == jnp.float32
-    _assert_all(mosaic, _numpy_fp64(operands, cotangent), f"Mosaic vs FP64, degree={degree}, width={width}")
+    label = f"degree={degree}, width={width}, {precision}"
+    _assert_all(mosaic, _numpy_fp64(operands, cotangent), f"Mosaic vs FP64, {label}")
     triton = jax.jit(partial(_vjp, fused_query_polynomial_attention))(operands, cotangent)
-    _assert_all(mosaic, triton, f"Mosaic vs Triton, degree={degree}, width={width}")
+    _assert_all(mosaic, triton, f"Mosaic vs Triton, {label}")
 
 
+@pytest.mark.parametrize("precision", PRECISIONS)
 @pytest.mark.parametrize("degree", (1, 3))
-def test_production_context_matches_triton(degree):
+def test_production_context_matches_triton(degree, precision):
     operands, cotangent = _inputs(degree, 64, time=2048, heads=4)
-    mosaic = jax.jit(partial(_vjp, query_polynomial_attention))(operands, cotangent)
+    mosaic = jax.jit(partial(_vjp, partial(query_polynomial_attention, precision=precision)))(operands, cotangent)
     triton = jax.jit(partial(_vjp, fused_query_polynomial_attention))(operands, cotangent)
-    _assert_all(mosaic, triton, f"production context, degree={degree}")
+    _assert_all(mosaic, triton, f"production context, degree={degree}, {precision}")
 
 
-def test_outputs_and_vjp_ignore_future_tokens():
+@pytest.mark.parametrize("precision", PRECISIONS)
+def test_outputs_and_vjp_ignore_future_tokens(precision):
     operands, cotangent = _inputs(2, 64)
     prefix = 300
-    attend = jax.jit(partial(_vjp, query_polynomial_attention))
+    attend = jax.jit(partial(_vjp, partial(query_polynomial_attention, precision=precision)))
     restricted = cotangent.at[:, prefix:].set(0)
     output, grads = attend(operands, restricted)
     changed = tuple(x.at[:, prefix:].add(2 if index < 3 else 0.5) for index, x in enumerate(operands))
@@ -127,7 +132,7 @@ def test_nonfinite_weight_poisons_its_row_even_with_zero_values():
     assert np.isfinite(output[finite]).all()
 
 
-@pytest.mark.parametrize("change", ["coefficient dtype", "degree 5", "coefficient shape", "width", "time"])
+@pytest.mark.parametrize("change", ["coefficient dtype", "degree 5", "coefficient shape", "width", "time", "precision"])
 def test_unsupported_inputs_raise(change):
     (q, k, v, c), _ = _inputs(2, 64, time=512, heads=1)
     if change == "coefficient dtype":
@@ -138,10 +143,10 @@ def test_unsupported_inputs_raise(change):
         c = c[:, :-1]
     elif change == "width":
         q = k = jnp.zeros((1, 512, 1, 48), jnp.bfloat16)
-    else:
+    elif change == "time":
         q, k, v, c = q[:, :200], k[:, :200], v[:, :200], c[:, :200]
     with pytest.raises(ValueError):
-        query_polynomial_attention(q, k, v, c)
+        query_polynomial_attention(q, k, v, c, precision="fp8" if change == "precision" else "bf16")
 
 
 def test_model_dispatch_uses_the_kernel_and_reports_diagnostics():

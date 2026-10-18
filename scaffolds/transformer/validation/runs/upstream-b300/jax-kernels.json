@@ -1,0 +1,1847 @@
+{
+  "comparison": "Different attention mathematics; throughput comparison, not numerical equivalence.",
+  "configuration": {
+    "batch": 64,
+    "experiment": "attention_scaling",
+    "heads": 16,
+    "iterations": 30,
+    "length": 2048,
+    "output": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/validation/runs/upstream-b300/jax-kernels.json",
+    "rounds": 2,
+    "seed": 46,
+    "warmup": 5,
+    "width": 64
+  },
+  "created_at_utc": "2026-10-17T16:31:03.309671+00:00",
+  "exclusions": [
+    "input generation and host/device transfer",
+    "Q/K normalization and score scaling",
+    "gate and coefficient generation, including sigmoid/tanh",
+    "compilation and warmup",
+    "finite checks",
+    "projections, convolution, output normalization, and other model layers"
+  ],
+  "finished_at_utc": "2026-10-17T16:36:51.728445+00:00",
+  "format": "upstream-jax-attention-kernel-benchmark",
+  "gpu_memory_stats": {
+    "bytes_in_use": 1396703232,
+    "bytes_limit": 215571480576,
+    "bytes_reserved": 0,
+    "largest_alloc_size": 6459229440,
+    "largest_free_block_bytes": 0,
+    "num_allocs": 2880,
+    "peak_bytes_in_use": 10041165312,
+    "peak_bytes_reserved": 0,
+    "peak_pool_bytes": 15032385536,
+    "pool_bytes": 15032385536
+  },
+  "input_distribution": {
+    "common": "upstream_inputs.kernel_inputs; unit Q/K, Gaussian V/cotangent, sigmoid beta/erase, negative log decay",
+    "gdn": "unit Q/K; scale=1/sqrt(width); signed write is (2*FP32 beta-1) cast to BF16",
+    "mosaic_coefficients": [
+      1.0,
+      1.0,
+      0.5,
+      0.16666666666666666
+    ],
+    "mosaic_coefficients_description": "Per-query FP32 Taylor coefficients, supplied as differentiable inputs; tanh excluded",
+    "softmax_and_mosaic": "Q multiplied by width in FP32 before BF16 cast; scale=1/sqrt(width), giving order-one scores"
+  },
+  "input_dtypes": {
+    "beta": "bfloat16",
+    "do": "bfloat16",
+    "erase": "bfloat16",
+    "g": "float32",
+    "k": "bfloat16",
+    "q": "bfloat16",
+    "v": "bfloat16"
+  },
+  "input_sha256": {
+    "beta": "03c286e6069fd6dd1279c7e1fce93ac16d970d62b3776ef6d887a48525ca2faf",
+    "do": "74daf79b0ddf3d89a6984c63c8d8baf4f2cc67ba362cc4740cdb050614f7b98b",
+    "erase": "f2a6d7e670e6eaf7552f7697868bd61399dfce96f294155a57b9ae6ee152db5c",
+    "g": "3a49674e0c173496fbe40cfbb712857663fc73339c3c7a51ed4b664c6ca61121",
+    "k": "2a5a00bf983874a41b8027f4243f3cee9da9ad7e588af43186779ce58396ac76",
+    "q": "c4549296b97d3b69794b110c2a7cb360968e9c634f6bde732025213eb51aefe4",
+    "v": "f6cda894135f473a832c96025a8a0a865a9c5fd464bdf9c1a10d193529f75669"
+  },
+  "layout": "batch,time,heads,channels",
+  "memory": "Compiler buffer estimates and allocator statistics, not isolated per-kernel measured peaks.",
+  "provenance": {
+    "benchmark_source_sha256": "4130991240270fa6da5ff84ec2bc361604f6ce2e79000142463fd419eeb3779b",
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "device": {
+      "description": "cuda:0",
+      "driver_version": "580.126.20",
+      "id": 0,
+      "kind": "NVIDIA B300 SXM6 AC",
+      "name": "NVIDIA B300 SXM6 AC",
+      "pci_bus_id": "00000000:BC:00.0",
+      "physical_index": "0",
+      "platform": "gpu",
+      "process_index": 0,
+      "uuid": "GPU-db556517-bdca-9832-804e-11a0366de63c"
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "220076",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer="
+    },
+    "frozen_execution_scope": {
+      "experiment": "attention_scaling",
+      "scaffold": "transformer"
+    },
+    "frozen_execution_sha256": "9cacb20cfd5f16a51d94dca6052d8007f1f0705557d0f05e52eb52f8b5c62e6a",
+    "hostname": "akita.csail.mit.edu",
+    "package_versions": {
+      "flash-linear-attention": "0.6.0",
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda13-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cublas": "13.2.2.2",
+      "nvidia-cuda-nvcc": "13.2.86",
+      "nvidia-cuda-runtime": "13.2.86",
+      "nvidia-cudnn-cu13": "9.22.0.52",
+      "nvidia-nccl-cu13": "2.32.3",
+      "triton": "3.7.1"
+    },
+    "platform": "Linux-6.17.0-1014-nvidia-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "runtime_environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "CUDA_VISIBLE_DEVICES": "0",
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "TRANSFORMER_HOST_STAGING": "0",
+      "TRITON_PTXAS_BLACKWELL_PATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+      "TRITON_PTXAS_PATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer=",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "source_commit": "e0538b971ef9a66338e703cac8274a59e73cbb6b",
+    "source_dirty": true,
+    "source_sha256": {
+      "scaffolds/transformer/attention/__init__.py": "0a21df8dcefe750872141602b4c96aff999c403997438957926250c916cb2913",
+      "scaffolds/transformer/attention/backends/__init__.py": "fc73b96b509d55a0f8a4df7d0cf1cc1ec2c3888d89e7173e4bc5e463a60307e1",
+      "scaffolds/transformer/attention/backends/chunked_gla_triton.py": "41414d6211c843e4baf595d6f4e10da6711ac3cc0a6cc742b33166315b38c554",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/__init__.py": "ef92364015dd7b51126b31aa2b8d02bb351c576851c1a975b003cb7f398b5317",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "32a0ae7ea27451992c9db03e6540f84ef7f80c8c5a3d4848d6cf6a72f21db118",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "a8321522447331aafc08652587ba9cb7d0e817ff6cc92ebb91df08c800a3f541",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "17d23066f78dfb4505d115d82fdd01da84355cdd05afa83190dfac2938dae272",
+      "scaffolds/transformer/attention/backends/fla_independent_gated_delta_rule_kernels.py": "06bedf24690a1180660df5eb927a04719a0ff341410461d9e8dc3e051d4ee264",
+      "scaffolds/transformer/attention/backends/fused_learned_polynomial.py": "39fb6f0f882ed4cb0227dddff7480398eddc2210b3efb9f810b698b13d52903e",
+      "scaffolds/transformer/attention/backends/fused_normalized_polynomial.py": "5ddf0f0590e7a84586fce84a6231ff9d870c61f634b56b02aa804602513bd770",
+      "scaffolds/transformer/attention/backends/fused_quadratic.py": "0f0fca19c8af2d7d616c9e96d788c86c58d8a226db69e4f5cb36b1c39b246fef",
+      "scaffolds/transformer/attention/backends/fused_query_polynomial.py": "06b65fa98394728709beae046848a57427dac9e7b3ccee48371a5d8db22be80c",
+      "scaffolds/transformer/attention/backends/fused_taylor.py": "b0eccdbff0701b02be950f64ab5db5a1dcaff0c6fca8b68c01fd3277ef2d157a",
+      "scaffolds/transformer/attention/backends/fused_unnormalized.py": "97f01d04d630e256fe1a1506574030045526a510b0108e31a9bdc783c2d2b99d",
+      "scaffolds/transformer/attention/backends/mosaic/__init__.py": "895aaddb244c2f1e7967a80668ca7f97199446c0db8e08776a95cbbd0b4e3034",
+      "scaffolds/transformer/attention/backends/mosaic/api.py": "302e352dd4d03a4c23882535b56e86751ed1f49cd09b72e96ba839e3d67a3ce0",
+      "scaffolds/transformer/attention/backends/mosaic/blackwell.py": "1111ace417e8772cc096fa7fad5e34bf7c72a968d49ce8771aea3703f58b190c",
+      "scaffolds/transformer/attention/backends/mosaic/common.py": "93b2b42094e99752b8b9f261d8f47549addfac18ad176436a3bd01bdf9bad5eb",
+      "scaffolds/transformer/attention/backends/mosaic/hopper.py": "aa344a0ca8ec8dbd2fb914f8e54398c0a3cd9f2652527f0a5667495815394f0f",
+      "scaffolds/transformer/attention/backends/reference.py": "e0f29420fc94598e88cc91b7053fe9d098964a9838683595efd4f179bad5651c",
+      "scaffolds/transformer/attention/backends/selection.py": "6285144727b7ee9cff0eed43931cd0fb43493a0872904b93d88a338f9784e475",
+      "scaffolds/transformer/attention/core.py": "29bcbf883574490926c658bf8ec55b4fe026849fb02d984cbceae1951a5ee52d",
+      "scaffolds/transformer/attention/gated_deltanet.py": "d1b496cdca901e01b0e7f297f5ca7c4af2671a38b5a6c141c89bf804b1a6cb94",
+      "scaffolds/transformer/attention/gla.py": "15fcedae8355786adcf0c386d8d597065bdd5e412011c6eb12bfa7d1592fa72a",
+      "scaffolds/transformer/attention/input_dependent.py": "95548181e169c227c31276c22488c0b34c819b05f5dc4b6b82c390fafb56fc66",
+      "scaffolds/transformer/attention/learned_polynomial.py": "ffcc1cc0eef829864f13bfb4413e14f97c3c4390e879492947d07d73199b88dd",
+      "scaffolds/transformer/attention/learned_quadratic.py": "2dd52c7b2f839836f8b7ea799ab382d8974957160902cc30d6c710a00b9b4f40",
+      "scaffolds/transformer/attention/multihead.py": "812b4bcad7dad5c1bf3353d31c8303d4b5c5f94ebd971bee76f9a34d5a1122fd",
+      "scaffolds/transformer/attention/nonnegative_polynomial.py": "e9162adc1772395c4e677350d0a8938d12e523ea371cae3db037ec50d4e82df6",
+      "scaffolds/transformer/attention/output_scaling.py": "575d9ea927319a3d55039b621e7ff00028aca0d3b06085168edf9609f78bd708",
+      "scaffolds/transformer/attention/parameters.py": "d21a7af4d0ea3779a58cf83b5d75974f982121f3c8fa4a2fbd14f4118a127ac7",
+      "scaffolds/transformer/attention/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269",
+      "scaffolds/transformer/attention/qk_norm.py": "919e84929d39664444267a2e5446c8e715b007129a7211168d33c6f7afac4f65",
+      "scaffolds/transformer/attention/rational_polynomial.py": "83907937199331c5f1815369543a83a1372e8154343ae072c48a12a9d0b823f9",
+      "scaffolds/transformer/attention/softmax.py": "47470b42e8e212c91a5044d448f4c36b4d30b9d0b581d3153e6fb73f91f4b04d",
+      "scaffolds/transformer/attention/taylor.py": "550a930352ac08533bf345508a9382a039c1caa27fba2e1b67659dbe27f768a1",
+      "scaffolds/transformer/attention/unnormalized.py": "f028d0076443b1baa11820e20cc10fc121fcd8e380aa66f85bbb9aed2349f1ca",
+      "scaffolds/transformer/benchmarks/benchmark_attention.py": "e07681b2c193e6a2c5642d150bc9a8d39b3ffd87de9812ea281010b21f9ec400",
+      "scaffolds/transformer/benchmarks/benchmark_upstream_jax.py": "4130991240270fa6da5ff84ec2bc361604f6ce2e79000142463fd419eeb3779b",
+      "scaffolds/transformer/benchmarks/upstream_inputs.py": "4d53959bb725ea3d8a402d0ebcb10b10a3c0e4f953e823386642f7cf3207ea0f",
+      "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA B300 SXM6 AC"
+      }
+    ]
+  },
+  "results": {
+    "gdn_independent_tanh_jax_bridge": {
+      "differentiated_inputs": [
+        "q",
+        "k",
+        "v",
+        "g",
+        "beta",
+        "erase"
+      ],
+      "gradient_count": 6,
+      "operations": {
+        "forward": {
+          "compilation_seconds": 8.840170540846884,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 822083584,
+            "available": true,
+            "generated_code_size_in_bytes": 22280,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 268435456,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 2701132048
+          },
+          "dispatch": {
+            "cudnn_targets": [],
+            "custom_call_targets": [
+              "triton_kernel_call"
+            ],
+            "hlo_sha256": "8090cda1ad3a716292e859b1ea69c37eb37e547a4077f31d5ac7994898814e03",
+            "source": "compiled.as_text"
+          },
+          "rounds": [
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true
+                ],
+                "gradient_count": 0,
+                "output_and_gradient_dtypes": [
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ]
+                ]
+              },
+              "round": 1,
+              "samples_ms": [
+                5.501320585608482,
+                5.466475151479244,
+                5.491623654961586,
+                5.376406945288181,
+                5.55442925542593,
+                5.384405143558979,
+                5.4650623351335526,
+                5.44673390686512,
+                5.419747903943062,
+                5.567077547311783,
+                5.349305458366871,
+                5.586021579802036,
+                5.5270204320549965,
+                5.426988936960697,
+                5.528192035853863,
+                5.526195280253887,
+                5.465388298034668,
+                5.323424935340881,
+                5.321989767253399,
+                5.343463271856308,
+                5.667686462402344,
+                5.509650334715843,
+                5.444604903459549,
+                5.567879416048527,
+                5.439444445073605,
+                5.592569708824158,
+                5.469117313623428,
+                5.526424385607243,
+                5.770843476057053,
+                5.467846058309078
+              ],
+              "summary": {
+                "max_ms": 5.770843476057053,
+                "mean_ms": 5.484244630982478,
+                "median_ms": 5.468481685966253,
+                "min_ms": 5.321989767253399,
+                "p10_ms": 5.348721239715815,
+                "p90_ms": 5.586676392704248,
+                "timed_calls": 30,
+                "tokens_per_second": 23899736.21153348
+              },
+              "warmup_calls": 5
+            },
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true
+                ],
+                "gradient_count": 0,
+                "output_and_gradient_dtypes": [
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ]
+                ]
+              },
+              "round": 2,
+              "samples_ms": [
+                5.632470361888409,
+                5.465308204293251,
+                5.6904517114162445,
+                5.507941357791424,
+                5.568831227719784,
+                5.710703320801258,
+                5.527019500732422,
+                5.711754783987999,
+                5.5990759283304214,
+                5.660473369061947,
+                5.588924512267113,
+                5.65181951969862,
+                5.609232932329178,
+                5.629963241517544,
+                5.628228187561035,
+                5.692536011338234,
+                5.515373311936855,
+                5.640181712806225,
+                5.589804612100124,
+                5.629518069326878,
+                5.52691426128149,
+                5.56939747184515,
+                5.567603744566441,
+                5.609724670648575,
+                5.507195368409157,
+                5.546983331441879,
+                5.527624860405922,
+                5.486656911671162,
+                5.487145856022835,
+                5.567731335759163
+              ],
+              "summary": {
+                "max_ms": 5.711754783987999,
+                "mean_ms": 5.588219656298558,
+                "median_ms": 5.5893645621836185,
+                "min_ms": 5.465308204293251,
+                "p10_ms": 5.505190417170525,
+                "p90_ms": 5.6906601414084435,
+                "timed_calls": 30,
+                "tokens_per_second": 23455055.109057315
+              },
+              "warmup_calls": 5
+            }
+          ],
+          "summary": {
+            "max_ms": 5.770843476057053,
+            "mean_ms": 5.536232143640518,
+            "median_ms": 5.527322646230459,
+            "min_ms": 5.321989767253399,
+            "p10_ms": 5.4162136279046535,
+            "p90_ms": 5.661194678395987,
+            "timed_calls": 60,
+            "tokens_per_second": 23675307.790436983
+          }
+        },
+        "forward_backward": {
+          "compilation_seconds": 6.416249688714743,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 1090519040,
+            "available": true,
+            "generated_code_size_in_bytes": 44128,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 1090519096,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 6459229224
+          },
+          "dispatch": {
+            "cudnn_targets": [],
+            "custom_call_targets": [
+              "triton_kernel_call"
+            ],
+            "hlo_sha256": "7045f26c2799fc96ee6e7863f18042ce614c3dbfb12d86765200a61ac9256e21",
+            "source": "compiled.as_text"
+          },
+          "rounds": [
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "gradient_count": 6,
+                "output_and_gradient_dtypes": [
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "float32",
+                  "bfloat16",
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16
+                  ],
+                  [
+                    64,
+                    2048,
+                    16
+                  ],
+                  [
+                    64,
+                    2048,
+                    16
+                  ]
+                ]
+              },
+              "round": 1,
+              "samples_ms": [
+                78.11900321394205,
+                77.9644688591361,
+                78.19515932351351,
+                77.80417054891586,
+                77.72391382604837,
+                77.76384335011244,
+                77.89373770356178,
+                78.25082540512085,
+                77.80498452484608,
+                78.0512047931552,
+                77.96714175492525,
+                77.8857721015811,
+                78.00989039242268,
+                77.9491625726223,
+                77.72349007427692,
+                78.13660521060228,
+                78.15277576446533,
+                77.8826242312789,
+                77.99402624368668,
+                77.92437728494406,
+                77.94402446597815,
+                78.07187549769878,
+                77.88577303290367,
+                77.8868542984128,
+                78.11766490340233,
+                78.23069021105766,
+                77.98965182155371,
+                78.05113960057497,
+                78.29526998102665,
+                77.70056836307049
+              ],
+              "summary": {
+                "max_ms": 78.29526998102665,
+                "mean_ms": 77.97902297849457,
+                "median_ms": 77.96580530703068,
+                "min_ms": 77.70056836307049,
+                "p10_ms": 77.75985039770603,
+                "p90_ms": 78.19871241226792,
+                "timed_calls": 30,
+                "tokens_per_second": 1680862.3010850966
+              },
+              "warmup_calls": 5
+            },
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "gradient_count": 6,
+                "output_and_gradient_dtypes": [
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "float32",
+                  "bfloat16",
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16
+                  ],
+                  [
+                    64,
+                    2048,
+                    16
+                  ],
+                  [
+                    64,
+                    2048,
+                    16
+                  ]
+                ]
+              },
+              "round": 2,
+              "samples_ms": [
+                77.683474868536,
+                78.31222098320723,
+                78.25437933206558,
+                78.19314301013947,
+                78.03383469581604,
+                77.69802212715149,
+                78.091811388731,
+                77.91213411837816,
+                77.92485319077969,
+                77.88615208119154,
+                78.09088751673698,
+                77.88584288209677,
+                77.68015842884779,
+                77.8443031013012,
+                77.74403598159552,
+                77.78484001755714,
+                77.95110624283552,
+                77.84412894397974,
+                78.00926826894283,
+                78.03628034889698,
+                78.09133641421795,
+                77.8855923563242,
+                77.7817452326417,
+                77.82486639916897,
+                77.92891561985016,
+                78.0114596709609,
+                77.86513678729534,
+                78.01215164363384,
+                77.88186240941286,
+                77.95149739831686
+              ],
+              "summary": {
+                "max_ms": 78.31222098320723,
+                "mean_ms": 77.93651471535365,
+                "median_ms": 77.91849365457892,
+                "min_ms": 77.68015842884779,
+                "p10_ms": 77.73943459615111,
+                "p90_ms": 78.10194455087185,
+                "timed_calls": 30,
+                "tokens_per_second": 1681779.0797896502
+              },
+              "warmup_calls": 5
+            }
+          ],
+          "summary": {
+            "max_ms": 78.31222098320723,
+            "mean_ms": 77.95776884692411,
+            "median_ms": 77.94659351930022,
+            "min_ms": 77.68015842884779,
+            "p10_ms": 77.7420237660408,
+            "p90_ms": 78.19334464147687,
+            "timed_calls": 60,
+            "tokens_per_second": 1681320.5654637145
+          }
+        }
+      },
+      "precision": "BF16 public operands/output; GDN bridge promotes Q/K/V/gates/intermediates to FP32 and uses TF32x3"
+    },
+    "gdn_tied_sigmoid_jax_bridge": {
+      "differentiated_inputs": [
+        "q",
+        "k",
+        "v",
+        "g",
+        "beta"
+      ],
+      "gradient_count": 5,
+      "operations": {
+        "forward": {
+          "compilation_seconds": 89.16572357714176,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 817889280,
+            "available": true,
+            "generated_code_size_in_bytes": 22280,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 268435456,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 2692743440
+          },
+          "dispatch": {
+            "cudnn_targets": [],
+            "custom_call_targets": [
+              "triton_kernel_call"
+            ],
+            "hlo_sha256": "42c2f38ea33869042127128080ef872c20bb7fa1322557c9d18ebc96e82f3c29",
+            "source": "compiled.as_text"
+          },
+          "rounds": [
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true
+                ],
+                "gradient_count": 0,
+                "output_and_gradient_dtypes": [
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ]
+                ]
+              },
+              "round": 1,
+              "samples_ms": [
+                5.3894417360424995,
+                5.564413964748383,
+                5.484640598297119,
+                5.548023618757725,
+                5.487273447215557,
+                5.5467309430241585,
+                5.5069150403141975,
+                5.548516288399696,
+                5.465901456773281,
+                5.547524429857731,
+                5.590325221419334,
+                5.465419963002205,
+                5.477204918861389,
+                5.536380223929882,
+                5.425277166068554,
+                5.54804690182209,
+                5.4458146914839745,
+                5.670965649187565,
+                5.8584073558449745,
+                5.791129544377327,
+                5.568379536271095,
+                5.813250318169594,
+                5.630417726933956,
+                5.774240009486675,
+                5.589956417679787,
+                5.413589999079704,
+                5.373535677790642,
+                5.813585594296455,
+                5.8350469917058945,
+                5.650314502418041
+              ],
+              "summary": {
+                "max_ms": 5.8584073558449745,
+                "mean_ms": 5.578688997775316,
+                "median_ms": 5.5480352602899075,
+                "min_ms": 5.373535677790642,
+                "p10_ms": 5.424108449369669,
+                "p90_ms": 5.81328384578228,
+                "timed_calls": 30,
+                "tokens_per_second": 23495125.83552681
+              },
+              "warmup_calls": 5
+            },
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true
+                ],
+                "gradient_count": 0,
+                "output_and_gradient_dtypes": [
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ]
+                ]
+              },
+              "round": 2,
+              "samples_ms": [
+                5.328101105988026,
+                5.402887240052223,
+                5.424127914011478,
+                5.384355783462524,
+                5.405804142355919,
+                5.539172329008579,
+                5.494772456586361,
+                5.608594045042992,
+                5.5489614605903625,
+                5.48693910241127,
+                5.4442910477519035,
+                5.42581919580698,
+                5.342532880604267,
+                5.4259514436125755,
+                5.690735764801502,
+                5.610940977931023,
+                5.486249923706055,
+                5.424663424491882,
+                5.547745153307915,
+                5.5073825642466545,
+                5.650972947478294,
+                5.547981709241867,
+                5.567982792854309,
+                5.548939108848572,
+                5.610025487840176,
+                5.546478554606438,
+                5.466809496283531,
+                5.527901463210583,
+                5.363114178180695,
+                5.485827103257179
+              ],
+              "summary": {
+                "max_ms": 5.690735764801502,
+                "mean_ms": 5.494868693252404,
+                "median_ms": 5.4908557794988155,
+                "min_ms": 5.328101105988026,
+                "p10_ms": 5.382231622934341,
+                "p90_ms": 5.61011703684926,
+                "timed_calls": 30,
+                "tokens_per_second": 23853527.230041724
+              },
+              "warmup_calls": 5
+            }
+          ],
+          "summary": {
+            "max_ms": 5.8584073558449745,
+            "mean_ms": 5.536778845513861,
+            "median_ms": 5.537776276469231,
+            "min_ms": 5.328101105988026,
+            "p10_ms": 5.401542689651251,
+            "p90_ms": 5.6990861892700195,
+            "timed_calls": 60,
+            "tokens_per_second": 23672970.08913409
+          }
+        },
+        "forward_backward": {
+          "compilation_seconds": 57.92962148133665,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 1086324736,
+            "available": true,
+            "generated_code_size_in_bytes": 44128,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 1086324784,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 6442452000
+          },
+          "dispatch": {
+            "cudnn_targets": [],
+            "custom_call_targets": [
+              "triton_kernel_call"
+            ],
+            "hlo_sha256": "6839f623e9c2df1237c4ca8c4cdb2caca99f610b49512c5691664dca61f35815",
+            "source": "compiled.as_text"
+          },
+          "rounds": [
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "gradient_count": 5,
+                "output_and_gradient_dtypes": [
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "float32",
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16
+                  ],
+                  [
+                    64,
+                    2048,
+                    16
+                  ]
+                ]
+              },
+              "round": 1,
+              "samples_ms": [
+                79.7428609803319,
+                79.57772817462683,
+                79.66627553105354,
+                79.66843526810408,
+                79.50852531939745,
+                79.95357923209667,
+                79.67433333396912,
+                79.99149337410927,
+                79.67173215001822,
+                79.70514614135027,
+                79.58683650940657,
+                79.64779902249575,
+                79.6703239902854,
+                79.81536351144314,
+                79.91730887442827,
+                79.58608772605658,
+                79.63514234870672,
+                79.75912932306528,
+                79.73072398453951,
+                79.62617930024862,
+                79.6684930101037,
+                79.56661749631166,
+                79.56892810761929,
+                79.7709384933114,
+                79.7723913565278,
+                79.6078760176897,
+                79.76928632706404,
+                79.78998776525259,
+                79.58598900586367,
+                79.64841648936272
+              ],
+              "summary": {
+                "max_ms": 79.99149337410927,
+                "mean_ms": 79.69613093882799,
+                "median_ms": 79.66940850019455,
+                "min_ms": 79.50852531939745,
+                "p10_ms": 79.57684816792607,
+                "p90_ms": 79.82555804774165,
+                "timed_calls": 30,
+                "tokens_per_second": 1644646.9666213328
+              },
+              "warmup_calls": 5
+            },
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "gradient_count": 5,
+                "output_and_gradient_dtypes": [
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "float32",
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16
+                  ],
+                  [
+                    64,
+                    2048,
+                    16
+                  ]
+                ]
+              },
+              "round": 2,
+              "samples_ms": [
+                79.6408960595727,
+                79.65847011655569,
+                79.7530235722661,
+                79.99393250793219,
+                80.03848791122437,
+                79.58686910569668,
+                79.48317937552929,
+                79.79201059788465,
+                79.69059515744448,
+                79.77043278515339,
+                80.05895838141441,
+                79.50530108064413,
+                79.80968803167343,
+                79.92451824247837,
+                79.5568497851491,
+                79.60674539208412,
+                79.56495136022568,
+                79.525051638484,
+                79.69076931476593,
+                79.94400896131992,
+                79.80369031429291,
+                79.9581864848733,
+                79.99488618224859,
+                79.64647561311722,
+                79.52701114118099,
+                79.64585721492767,
+                79.68825101852417,
+                80.20548243075609,
+                79.55347560346127,
+                79.65715229511261
+              ],
+              "summary": {
+                "max_ms": 80.20548243075609,
+                "mean_ms": 79.74250692253311,
+                "median_ms": 79.68942308798432,
+                "min_ms": 79.48317937552929,
+                "p10_ms": 79.5268151909113,
+                "p90_ms": 79.99924635514617,
+                "timed_calls": 30,
+                "tokens_per_second": 1643690.4865222208
+              },
+              "warmup_calls": 5
+            }
+          ],
+          "summary": {
+            "max_ms": 80.20548243075609,
+            "mean_ms": 79.71931893068056,
+            "median_ms": 79.6710280701518,
+            "min_ms": 79.48317937552929,
+            "p10_ms": 79.55651236698031,
+            "p90_ms": 79.96151717379689,
+            "timed_calls": 60,
+            "tokens_per_second": 1644168.587465892
+          }
+        }
+      },
+      "precision": "BF16 public operands/output; GDN bridge promotes Q/K/V/gates/intermediates to FP32 and uses TF32x3"
+    },
+    "query_polynomial_cubic_mosaic": {
+      "differentiated_inputs": [
+        "q",
+        "k",
+        "v",
+        "coefficients"
+      ],
+      "gradient_count": 4,
+      "operations": {
+        "forward": {
+          "compilation_seconds": 4.263424604199827,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 838860800,
+            "available": true,
+            "generated_code_size_in_bytes": 14320,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 268435456,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 545259536
+          },
+          "dispatch": {
+            "cudnn_targets": [],
+            "custom_call_targets": [
+              "AllocateBuffer",
+              "mosaic_gpu_v2"
+            ],
+            "hlo_sha256": "b84717663d68e05c6bad780917414523829e32db07aa63c834dd8d865ec2a98b",
+            "source": "compiled.as_text"
+          },
+          "rounds": [
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true
+                ],
+                "gradient_count": 0,
+                "output_and_gradient_dtypes": [
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ]
+                ]
+              },
+              "round": 1,
+              "samples_ms": [
+                3.498631529510021,
+                3.2640229910612106,
+                3.36662121117115,
+                3.377907909452915,
+                3.2810261473059654,
+                3.307468257844448,
+                3.3597154542803764,
+                3.2418398186564445,
+                3.0404189601540565,
+                3.130723722279072,
+                3.2124370336532593,
+                3.0908603221178055,
+                3.1714029610157013,
+                3.131796605885029,
+                3.1314846128225327,
+                3.048592247068882,
+                3.049371764063835,
+                3.049609251320362,
+                3.110225312411785,
+                3.089817240834236,
+                3.0492302030324936,
+                3.151669166982174,
+                3.1117917969822884,
+                3.0696988105773926,
+                3.0892565846443176,
+                3.0904896557331085,
+                3.048427402973175,
+                3.04956641048193,
+                3.0906489118933678,
+                3.0900686979293823
+              ],
+              "summary": {
+                "max_ms": 3.498631529510021,
+                "mean_ms": 3.1598273664712906,
+                "median_ms": 3.1110085546970367,
+                "min_ms": 3.0404189601540565,
+                "p10_ms": 3.0491664074361324,
+                "p90_ms": 3.360406029969454,
+                "timed_calls": 30,
+                "tokens_per_second": 41480747.14169385
+              },
+              "warmup_calls": 5
+            },
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true
+                ],
+                "gradient_count": 0,
+                "output_and_gradient_dtypes": [
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ]
+                ]
+              },
+              "round": 2,
+              "samples_ms": [
+                3.237280994653702,
+                3.1327493488788605,
+                3.089655190706253,
+                3.133278340101242,
+                3.0699633061885834,
+                3.028293140232563,
+                3.1107403337955475,
+                3.089962527155876,
+                3.1310496851801872,
+                3.171672113239765,
+                3.131389617919922,
+                3.0489498749375343,
+                3.070029430091381,
+                3.0481433495879173,
+                3.069605678319931,
+                3.0088387429714203,
+                3.0487310141324997,
+                3.0077826231718063,
+                3.070265054702759,
+                3.0288156121969223,
+                3.0500823631882668,
+                3.0287662521004677,
+                3.0692508444190025,
+                3.048819489777088,
+                3.110066056251526,
+                3.070734441280365,
+                3.0896570533514023,
+                3.0285529792308807,
+                3.090108744800091,
+                3.089848905801773
+              ],
+              "summary": {
+                "max_ms": 3.237280994653702,
+                "mean_ms": 3.080102770278851,
+                "median_ms": 3.07014724239707,
+                "min_ms": 3.0077826231718063,
+                "p10_ms": 3.028526995331049,
+                "p90_ms": 3.1328022480010986,
+                "timed_calls": 30,
+                "tokens_per_second": 42554424.243491605
+              },
+              "warmup_calls": 5
+            }
+          ],
+          "summary": {
+            "max_ms": 3.498631529510021,
+            "mean_ms": 3.119965068375071,
+            "median_ms": 3.0899057164788246,
+            "min_ms": 3.0077826231718063,
+            "p10_ms": 3.039258625358343,
+            "p90_ms": 3.265723306685686,
+            "timed_calls": 60,
+            "tokens_per_second": 42010726.763766125
+          }
+        },
+        "forward_backward": {
+          "compilation_seconds": 7.447419452480972,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 1107296256,
+            "available": true,
+            "generated_code_size_in_bytes": 17704,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 1107296296,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 570425616
+          },
+          "dispatch": {
+            "cudnn_targets": [],
+            "custom_call_targets": [
+              "AllocateBuffer",
+              "mosaic_gpu_v2"
+            ],
+            "hlo_sha256": "060e891f5a2ccbd8bb629b472dd24526f0c3aab8eb28ca19d75c51acf126085e",
+            "source": "compiled.as_text"
+          },
+          "rounds": [
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true,
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "gradient_count": 4,
+                "output_and_gradient_dtypes": [
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "float32"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    4
+                  ]
+                ]
+              },
+              "round": 1,
+              "samples_ms": [
+                10.315735824406147,
+                10.361844673752785,
+                10.462339967489243,
+                10.035134851932526,
+                10.361102409660816,
+                10.277483612298965,
+                10.238911025226116,
+                10.131526738405228,
+                10.385005734860897,
+                10.235047899186611,
+                10.341593995690346,
+                10.217026807367802,
+                10.19766740500927,
+                10.238039307296276,
+                10.238274931907654,
+                10.197275318205357,
+                10.23788470774889,
+                10.257169604301453,
+                10.135775431990623,
+                10.197227820754051,
+                10.30003186315298,
+                10.340375825762749,
+                10.25818008929491,
+                10.238679125905037,
+                10.29916014522314,
+                10.429032146930695,
+                10.435566306114197,
+                10.300054214894772,
+                10.422835126519203,
+                10.2367103099823
+              ],
+              "summary": {
+                "max_ms": 10.462339967489243,
+                "mean_ms": 10.277423107375702,
+                "median_ms": 10.257674846798182,
+                "min_ms": 10.035134851932526,
+                "p10_ms": 10.191082581877708,
+                "p90_ms": 10.423454828560352,
+                "timed_calls": 30,
+                "tokens_per_second": 12753391.45139746
+              },
+              "warmup_calls": 5
+            },
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true,
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "gradient_count": 4,
+                "output_and_gradient_dtypes": [
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "float32"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    4
+                  ]
+                ]
+              },
+              "round": 2,
+              "samples_ms": [
+                10.408571921288967,
+                10.48295944929123,
+                10.320700705051422,
+                10.44302899390459,
+                10.437875986099243,
+                10.49540750682354,
+                10.574743151664734,
+                10.503625497221947,
+                10.278746485710144,
+                10.238111019134521,
+                10.389536619186401,
+                10.29109489172697,
+                10.280865244567394,
+                10.195703245699406,
+                10.13618241995573,
+                10.299766436219215,
+                10.279142297804356,
+                10.278315283358097,
+                10.259225033223629,
+                10.195629671216011,
+                10.259183123707771,
+                10.218190960586071,
+                10.299630463123322,
+                10.278441943228245,
+                10.216966271400452,
+                10.197729803621769,
+                10.15535369515419,
+                10.218130424618721,
+                10.360661894083023,
+                10.095338337123394
+              ],
+              "summary": {
+                "max_ms": 10.574743151664734,
+                "mean_ms": 10.30296195919315,
+                "median_ms": 10.27894439175725,
+                "min_ms": 10.095338337123394,
+                "p10_ms": 10.191602073609829,
+                "p90_ms": 10.48420425504446,
+                "timed_calls": 30,
+                "tokens_per_second": 12721778.505941855
+              },
+              "warmup_calls": 5
+            }
+          ],
+          "summary": {
+            "max_ms": 10.574743151664734,
+            "mean_ms": 10.290192533284426,
+            "median_ms": 10.278378613293171,
+            "min_ms": 10.035134851932526,
+            "p10_ms": 10.191602073609829,
+            "p90_ms": 10.438391286879778,
+            "timed_calls": 60,
+            "tokens_per_second": 12737565.3639169
+          }
+        }
+      },
+      "precision": "BF16 Q/K/V/output; FP32 polynomial coefficients, scores and accumulators with three-part BF16 products"
+    },
+    "softmax_cudnn": {
+      "differentiated_inputs": [
+        "q",
+        "k",
+        "v"
+      ],
+      "gradient_count": 3,
+      "operations": {
+        "forward": {
+          "compilation_seconds": 0.17721950076520443,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 805306368,
+            "available": true,
+            "generated_code_size_in_bytes": 0,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 268435456,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 256
+          },
+          "dispatch": {
+            "cudnn_targets": [
+              "__cudnn$fmhaSoftmax"
+            ],
+            "custom_call_targets": [
+              "__cudnn$fmhaSoftmax"
+            ],
+            "hlo_sha256": "f469f6e0cc6572b9ed5adcf46aae8698367fda8e5f4d85a12cbd589ee231bca6",
+            "source": "compiled.as_text"
+          },
+          "rounds": [
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true
+                ],
+                "gradient_count": 0,
+                "output_and_gradient_dtypes": [
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ]
+                ]
+              },
+              "round": 1,
+              "samples_ms": [
+                1.123056747019291,
+                1.489207148551941,
+                1.4417869970202446,
+                1.8507931381464005,
+                1.6765398904681206,
+                1.581195741891861,
+                1.7730025574564934,
+                1.7173178493976593,
+                1.7587440088391304,
+                1.4525866135954857,
+                1.4929510653018951,
+                1.473682001233101,
+                1.6155093908309937,
+                1.6014622524380684,
+                1.7100023105740547,
+                1.492869108915329,
+                1.6745049506425858,
+                1.6161557286977768,
+                1.5139337629079819,
+                1.6370909288525581,
+                1.5734899789094925,
+                1.6774646937847137,
+                1.759398728609085,
+                1.5125041827559471,
+                1.910441555082798,
+                1.608443446457386,
+                1.3687554746866226,
+                1.7791297286748886,
+                1.717444509267807,
+                1.5755407512187958
+              ],
+              "summary": {
+                "max_ms": 1.910441555082798,
+                "mean_ms": 1.6058335080742836,
+                "median_ms": 1.6119764186441898,
+                "min_ms": 1.123056747019291,
+                "p10_ms": 1.4515066519379616,
+                "p90_ms": 1.773615274578333,
+                "timed_calls": 30,
+                "tokens_per_second": 81622409.38488175
+              },
+              "warmup_calls": 5
+            },
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true
+                ],
+                "gradient_count": 0,
+                "output_and_gradient_dtypes": [
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ]
+                ]
+              },
+              "round": 2,
+              "samples_ms": [
+                1.5758303925395012,
+                1.552758738398552,
+                1.389247365295887,
+                1.451306976377964,
+                1.1684335768222809,
+                1.4910968020558357,
+                1.4321301132440567,
+                1.4097671955823898,
+                1.4725755900144577,
+                1.4119790866971016,
+                1.3499073684215546,
+                1.5745172277092934,
+                1.513269729912281,
+                1.5736240893602371,
+                1.4532264322042465,
+                1.4911573380231857,
+                1.3958681374788284,
+                1.629762351512909,
+                1.4532022178173065,
+                1.5526125207543373,
+                1.4737248420715332,
+                1.3684127479791641,
+                1.5340382233262062,
+                1.4115581288933754,
+                1.4901282265782356,
+                1.4932816848158836,
+                1.576135866343975,
+                1.4504753053188324,
+                1.534455455839634,
+                1.4918185770511627
+              ],
+              "summary": {
+                "max_ms": 1.629762351512909,
+                "mean_ms": 1.4722100769480069,
+                "median_ms": 1.4819265343248844,
+                "min_ms": 1.1684335768222809,
+                "p10_ms": 1.3871639035642147,
+                "p90_ms": 1.5746485441923141,
+                "timed_calls": 30,
+                "tokens_per_second": 89030772.2059078
+              },
+              "warmup_calls": 5
+            }
+          ],
+          "summary": {
+            "max_ms": 1.910441555082798,
+            "mean_ms": 1.5390217925111453,
+            "median_ms": 1.5136017464101315,
+            "min_ms": 1.123056747019291,
+            "p10_ms": 1.3952060602605343,
+            "p90_ms": 1.7215744592249393,
+            "timed_calls": 60,
+            "tokens_per_second": 85165785.59042776
+          }
+        },
+        "forward_backward": {
+          "compilation_seconds": 0.19753055460751057,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 1073741824,
+            "available": true,
+            "generated_code_size_in_bytes": 0,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 1073741856,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 553648640
+          },
+          "dispatch": {
+            "cudnn_targets": [
+              "__cudnn$fmhaSoftmax",
+              "__cudnn$fmhaSoftmaxBackward"
+            ],
+            "custom_call_targets": [
+              "__cudnn$fmhaSoftmax",
+              "__cudnn$fmhaSoftmaxBackward"
+            ],
+            "hlo_sha256": "225d25872167d67d5df8d7c37f20747c5d8b881c80c96e0e82859e717480bf52",
+            "source": "compiled.as_text"
+          },
+          "rounds": [
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "gradient_count": 3,
+                "output_and_gradient_dtypes": [
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ]
+                ]
+              },
+              "round": 1,
+              "samples_ms": [
+                3.53044830262661,
+                3.396272659301758,
+                3.356765955686569,
+                3.4790541976690292,
+                3.3369669690728188,
+                3.417457453906536,
+                3.417328931391239,
+                3.5623405128717422,
+                3.41777503490448,
+                3.5169096663594246,
+                3.643474541604519,
+                3.5412218421697617,
+                3.6018220707774162,
+                3.5827523097395897,
+                3.480099141597748,
+                3.665108233690262,
+                3.5808319225907326,
+                3.4990478307008743,
+                3.4808581694960594,
+                3.479698672890663,
+                3.4796567633748055,
+                3.704972565174103,
+                3.6223670467734337,
+                3.6244336515665054,
+                3.4788036718964577,
+                3.42621561139822,
+                3.5755308344960213,
+                3.4790970385074615,
+                3.520425409078598,
+                3.5005956888198853
+              ],
+              "summary": {
+                "max_ms": 3.704972565174103,
+                "mean_ms": 3.5132777566711106,
+                "median_ms": 3.49982175976038,
+                "min_ms": 3.3369669690728188,
+                "p10_ms": 3.415223304182291,
+                "p90_ms": 3.6263377405703068,
+                "timed_calls": 30,
+                "tokens_per_second": 37307611.03391749
+              },
+              "warmup_calls": 5
+            },
+            {
+              "checks": {
+                "all_finite": true,
+                "finite_by_output_and_gradient": [
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "gradient_count": 3,
+                "output_and_gradient_dtypes": [
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16",
+                  "bfloat16"
+                ],
+                "output_and_gradient_shapes": [
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ],
+                  [
+                    64,
+                    2048,
+                    16,
+                    64
+                  ]
+                ]
+              },
+              "round": 2,
+              "samples_ms": [
+                3.6339741200208664,
+                3.619028255343437,
+                3.626159392297268,
+                3.5212673246860504,
+                3.520210273563862,
+                3.5417452454566956,
+                3.581564873456955,
+                3.541133366525173,
+                3.622051328420639,
+                3.4989258274435997,
+                3.602287732064724,
+                3.62275168299675,
+                3.5411156713962555,
+                3.529733046889305,
+                3.5304194316267967,
+                3.684569150209427,
+                3.56097798794508,
+                3.6029722541570663,
+                3.4583136439323425,
+                3.6412961781024933,
+                3.60165536403656,
+                3.479400649666786,
+                3.7057260051369667,
+                3.5214191302657127,
+                3.60212754458189,
+                3.520655445754528,
+                3.8071544840931892,
+                3.7041474133729935,
+                3.5632606595754623,
+                3.641687333583832
+              ],
+              "summary": {
+                "max_ms": 3.8071544840931892,
+                "mean_ms": 3.5875910272200904,
+                "median_ms": 3.5916101187467575,
+                "min_ms": 3.4583136439323425,
+                "p10_ms": 3.5180818289518356,
+                "p90_ms": 3.6865269765257835,
+                "timed_calls": 30,
+                "tokens_per_second": 36534822.11476137
+              },
+              "warmup_calls": 5
+            }
+          ],
+          "summary": {
+            "max_ms": 3.8071544840931892,
+            "mean_ms": 3.5504343919456005,
+            "median_ms": 3.5411776043474674,
+            "min_ms": 3.3369669690728188,
+            "p10_ms": 3.425371553748846,
+            "p90_ms": 3.645637910813093,
+            "timed_calls": 60,
+            "tokens_per_second": 36917172.81055683
+          }
+        }
+      },
+      "precision": "Stock JAX/cuDNN BF16 causal flash attention"
+    }
+  },
+  "schema_version": 1,
+  "scope": "Attention forward or forward plus all input gradients; no scalar loss reduction.",
+  "shape": [
+    64,
+    2048,
+    16,
+    64
+  ],
+  "status": "complete",
+  "timing": "Compiled call plus host dispatch, synchronized after every call; each program compiles once."
+}

@@ -11,8 +11,23 @@ def truncate(x):
     return lax.bitcast_convert_type(bits & jnp.uint32(0xFFFF0000), jnp.float32)
 
 
-def bf16_parts(x):
-    """Three BF16 components whose FP32 sum reproduces x (as in the Triton kernels)."""
+# Precision of the FP32 weights and score gradients that enter the tensor cores.
+#   bf16:   one round-to-nearest BF16 value, as FlashAttention and cuDNN feed probabilities
+#           and score gradients to their matrix products.
+#   bf16x3: three truncated BF16 components whose FP32 sum reproduces the FP32 value, as the
+#           Pallas-Triton kernels do (three matrix products per weight product).
+BF16, BF16X3 = "bf16", "bf16x3"
+PRECISIONS = (BF16, BF16X3)
+
+
+def part_count(precision):
+    return {BF16: 1, BF16X3: 3}[precision]
+
+
+def weight_parts(x, precision):
+    """BF16 operands whose products with a BF16 tile sum to the weight product."""
+    if precision == BF16:
+        return [x.astype(jnp.bfloat16)]
     high = truncate(x)
     rest = x - high
     middle = truncate(rest)

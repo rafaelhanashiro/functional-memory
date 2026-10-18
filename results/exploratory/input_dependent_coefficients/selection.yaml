@@ -1,5 +1,6 @@
 question: Do query-dependent polynomial coefficients improve unnormalized attention
-  with per-head output RMSNorm?
+  with per-head output RMSNorm, and does the fused kernel or the original start explain
+  their deficit?
 settings:
   metric: terminal_validation_perplexity
   validation_best_reported_separately: true
@@ -195,3 +196,171 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/rc2b555b905dd/best_validation.json
       sha256: 7948dc90aa823797914188d21c7fcb1ed37020bac8508ee1b884d70b26013917
+- study: attention_scaling
+  run_id: r6fdf6d484fd2
+  role: blocked_original_m1
+  label: tanh query-dependent m=1, original start, blocked reference
+  control: r03bfa6fd7b2e
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r6fdf6d484fd2/config.yaml
+      sha256: 2d346ae461dd25aaad0ee995ed3f58f0ac7b3021a2bd444c06ae48ac5ac6860b
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r6fdf6d484fd2/metrics.jsonl
+      sha256: d26b7cecaee426cc64a30bf1b3f7466630b3ae0245baa2b5859d760f9029d2af
+    completion.json:
+      path: experiments/attention_scaling/runs/r6fdf6d484fd2/completion.json
+      sha256: e8f1642acb275ed43e41fc18bced9f2c62ce0a8e885ad37ba123610a0e8e0edc
+    metadata.json:
+      path: experiments/attention_scaling/runs/r6fdf6d484fd2/metadata.json
+      sha256: 5661e41d02f8f488cfde867f84983b20a97d55b7526f7c12682a425c36573888
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r6fdf6d484fd2/best_validation.json
+      sha256: 3142039c52c83021630fdfc7f33cc56c55a598a7e630a386eea4d778f3361e9b
+- study: attention_scaling
+  run_id: r75b81509b10b
+  role: blocked_zero_amplitude_m1
+  label: tanh query-dependent m=1, zero-amplitude start, blocked reference
+  control: r03bfa6fd7b2e
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r75b81509b10b/config.yaml
+      sha256: 96019f4fb64642f9b087d0c2e8d31ec2acead013c7c2aa1aa93ed9148ca8dc48
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r75b81509b10b/metrics.jsonl
+      sha256: 431519fc3bd3457fd186a4abb831d9750015db2e3958f468e1781782bad9102e
+    completion.json:
+      path: experiments/attention_scaling/runs/r75b81509b10b/completion.json
+      sha256: 53122ceda2a7613f3be7b677854d7ef024d7e96e5eb5771085229c49bdee5c94
+    metadata.json:
+      path: experiments/attention_scaling/runs/r75b81509b10b/metadata.json
+      sha256: e9d4a912e96c893d20dbbacab13421e8b4ee28145c6dff656c0e3072f785f7f5
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r75b81509b10b/best_validation.json
+      sha256: 9ede0df6ebb287ba45c7aa5cfc823a344ff8cc9153f00020afc8e0dcd654290a
+- study: attention_scaling
+  run_id: r722fc3dd263e
+  role: blocked_original_m2
+  label: tanh query-dependent m=2, original start, blocked reference
+  control: rfb43d69f60dc
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r722fc3dd263e/config.yaml
+      sha256: 8697751df0f41b38e9045867b585f0964736d1210836bcabd222b0282d9d205b
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r722fc3dd263e/metrics.jsonl
+      sha256: da816217adb280e27b066ab6bd11b4f7982ea545517b219d3b14e85ed74ca95d
+    completion.json:
+      path: experiments/attention_scaling/runs/r722fc3dd263e/completion.json
+      sha256: cbc05c6c3e0060dc51f5787b165682c2ee01566618f45db5c3a15b37c9a03407
+    metadata.json:
+      path: experiments/attention_scaling/runs/r722fc3dd263e/metadata.json
+      sha256: 0246e1499abe631d0bfbc71e4c6e75da7da358a472762d57afed49f0530125b4
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r722fc3dd263e/best_validation.json
+      sha256: 7630e44a8ea412f77b0a2d0262e745f58d6bae2a31997a787310bde1274e31fa
+- study: attention_scaling
+  run_id: r8c9b076f9635
+  role: blocked_zero_amplitude_m2
+  label: tanh query-dependent m=2, zero-amplitude start, blocked reference
+  control: rfb43d69f60dc
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r8c9b076f9635/config.yaml
+      sha256: 90ed8ffd7ff7d706625d2e9cc0d3e3467410721789d8ab5f215efe799b88be45
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r8c9b076f9635/metrics.jsonl
+      sha256: 32c048a65db3385a2a2c8b28c822bcfcbe2444b0149faeb41b4ddf1280c91605
+    completion.json:
+      path: experiments/attention_scaling/runs/r8c9b076f9635/completion.json
+      sha256: 56af8d2a806d65aa1c47bf8704920df267f0de82dcb0f370a18a4e4cc1660112
+    metadata.json:
+      path: experiments/attention_scaling/runs/r8c9b076f9635/metadata.json
+      sha256: 80c92715eae687b5df61c5c440001a9f5e91689c8719bdc0bd8b7aea2259fcf5
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r8c9b076f9635/best_validation.json
+      sha256: 0f7de69f26bb416fba457dd9c49a4b37fc3a45b856604219431a952cd464a313
+- study: attention_scaling
+  run_id: radd66df6371a
+  role: blocked_original_m3
+  label: tanh query-dependent m=3, original start, blocked reference
+  control: r5ae483d40d62
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/radd66df6371a/config.yaml
+      sha256: e92f1ae6b0c114916b993e4a95d18e0085e15a5a60b217cf9334de1781559f09
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/radd66df6371a/metrics.jsonl
+      sha256: de72b7a47346bb0f0716c0c5bce4a9c18a3a268ba658e717d7420ed67997ff03
+    completion.json:
+      path: experiments/attention_scaling/runs/radd66df6371a/completion.json
+      sha256: a5db1b4590493e352bff31252654a00894f15a6b836064413a07a379756f1ee6
+    metadata.json:
+      path: experiments/attention_scaling/runs/radd66df6371a/metadata.json
+      sha256: 4d825637c049e1a53c16436f1d86eab791e7143616876fa42b89a0a0adb9d38e
+    best_validation.json:
+      path: experiments/attention_scaling/runs/radd66df6371a/best_validation.json
+      sha256: 5f1f3ed68bd5ae30bf832f9367ab46647c650ff7ff4b1e1ab203338575f4534f
+- study: attention_scaling
+  run_id: rb306d49a5abe
+  role: blocked_zero_amplitude_m3
+  label: tanh query-dependent m=3, zero-amplitude start, blocked reference
+  control: r5ae483d40d62
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rb306d49a5abe/config.yaml
+      sha256: 9c3bd8bbfe67090e34171377a3751b0ad4b51264dbe346d2ff94d57b4b159ed0
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rb306d49a5abe/metrics.jsonl
+      sha256: 4dc7b5f5d3637aec40c9f85b6b4610d40fe28a011b6199b76590b984d9658084
+    completion.json:
+      path: experiments/attention_scaling/runs/rb306d49a5abe/completion.json
+      sha256: 303cdbc440e5a5a3e8d4ad8981dc7ea1ded788d6883ea230d25ba0ed6bc98210
+    metadata.json:
+      path: experiments/attention_scaling/runs/rb306d49a5abe/metadata.json
+      sha256: 176aa2870ecb99e9e1d4fe3fe39a84c3a2adf8aa23bc21465b892c29171833c8
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rb306d49a5abe/best_validation.json
+      sha256: 253cf1726149e30e703add4a9bf1fadbc50cb478a7634b41776ff9b804ee1ae7
+- study: attention_scaling
+  run_id: rc836509ca119
+  role: blocked_original_m4
+  label: tanh query-dependent m=4, original start, blocked reference
+  control: rc2b555b905dd
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rc836509ca119/config.yaml
+      sha256: 4ea00e08f93d260b4a1917f8e4557c4d1841553c32d33eb1829d757497787ac7
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rc836509ca119/metrics.jsonl
+      sha256: 783192a6db7471083a89fd27f63d38d54a07616bce53a61a720af15b4a759892
+    completion.json:
+      path: experiments/attention_scaling/runs/rc836509ca119/completion.json
+      sha256: 3f35939993ddce5ee0a0b75dd8af9c3b339496e5cf031c70f34c7b6b06716160
+    metadata.json:
+      path: experiments/attention_scaling/runs/rc836509ca119/metadata.json
+      sha256: 58d37f395576bbbf68cd2a4c066bcc19e120f906290e3f6dd1e247896e8d13f2
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rc836509ca119/best_validation.json
+      sha256: 0029001f25ab88115cb1062e8c29743f5af38374202400bfbad0fe5971e42c30
+- study: attention_scaling
+  run_id: rf1160aa95e46
+  role: blocked_zero_amplitude_m4
+  label: tanh query-dependent m=4, zero-amplitude start, blocked reference
+  control: rc2b555b905dd
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rf1160aa95e46/config.yaml
+      sha256: 5cab1139ae6caad4497ce3ca15d1c3f016b2aba053e143b90d8dccd08017fac1
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rf1160aa95e46/metrics.jsonl
+      sha256: 69b9cd95a8f191b7b02a7769883968aabc96d428b2fd9de601eb81f320540854
+    completion.json:
+      path: experiments/attention_scaling/runs/rf1160aa95e46/completion.json
+      sha256: 53df46e30634258b7b81ff39e547547e227f6cedc586627b922239bdc2717577
+    metadata.json:
+      path: experiments/attention_scaling/runs/rf1160aa95e46/metadata.json
+      sha256: 7414b08af24e0eddf1e2b81aeafb4d12baa3952436cd79ad23bfa654e58e814e
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rf1160aa95e46/best_validation.json
+      sha256: 7202c18209d43059bf0dab0d84d76643bc9557547384e951d9e7411cf0a8131d

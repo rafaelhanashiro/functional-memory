@@ -1,0 +1,588 @@
+{
+  "all_finite": true,
+  "arguments": {
+    "batch": 64,
+    "cuda_graph": false,
+    "global_batch": 256,
+    "heads": 16,
+    "hidden_size": 1024,
+    "intermediate_size": 3008,
+    "iterations": 30,
+    "key_dim": 64,
+    "layers": 10,
+    "learning_rate": 0.0003,
+    "length": 2048,
+    "lr_warmup_steps": 400,
+    "manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+    "min_learning_rate": 3e-05,
+    "mode": "model",
+    "output": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/validation/runs/upstream-b300/fla-2.json",
+    "rounds": 2,
+    "seed": 0,
+    "total_steps": 19074,
+    "value_dim": 64,
+    "vocab_size": 32000,
+    "warmup": 5
+  },
+  "created_at_utc": "2026-10-17T16:47:04.111350+00:00",
+  "data_identity": {
+    "manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+    "manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "num_sequences": 256,
+    "sequence_start": 0,
+    "shards": [
+      {
+        "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/shard-00000.npy",
+        "sequences_read": 256,
+        "sha256": "9023a011e820edab0c2c9e3f5e21b4cfb998b7e74ead812b545a394f31e112d2"
+      }
+    ],
+    "source": "packed",
+    "stored_sequence_length": 2049,
+    "timing_scope": "one resident global batch repeated; no loading or transfers inside timing",
+    "tokens_sha256": "0d32aeaa497bb6898b59d5ccc555c7e26a00c64bd16eab8fe0adaad193070b97"
+  },
+  "finished_at_utc": "2026-10-17T16:48:03.157659+00:00",
+  "format": "direct-upstream-torch-throughput",
+  "gpu_memory": {
+    "peak_allocated_bytes": 88656784896,
+    "peak_reserved_bytes": 92159344640
+  },
+  "limitations": [
+    "Upstream standard GDN ties sigmoid write and erase gates; it is not the signed independent-gate model.",
+    "Native upstream BF16 intermediates differ from the local JAX GDN's FP32/TF32x3 intermediates.",
+    "Device-resident compute timings exclude data loading, validation, and checkpointing.",
+    "CUDA event timing and synchronized wall timing include the operator's normal upstream dispatch."
+  ],
+  "model_configuration": {
+    "_name_or_path": "",
+    "allow_neg_eigval": false,
+    "architectures": null,
+    "attn": null,
+    "attn_mode": "chunk",
+    "attnres_block_size": null,
+    "bos_token_id": 1,
+    "chunk_size_feed_forward": 0,
+    "conv_size": 4,
+    "dtype": null,
+    "eos_token_id": 2,
+    "expand_v": 1.0,
+    "fuse_cross_entropy": true,
+    "fuse_linear_cross_entropy": false,
+    "fuse_norm": true,
+    "fuse_swiglu": true,
+    "head_dim": 64,
+    "hidden_act": "swish",
+    "hidden_ratio": 4,
+    "hidden_size": 1024,
+    "id2label": {
+      "0": "LABEL_0",
+      "1": "LABEL_1"
+    },
+    "initializer_range": 0.02,
+    "intermediate_size": 3008,
+    "is_encoder_decoder": false,
+    "label2id": {
+      "LABEL_0": 0,
+      "LABEL_1": 1
+    },
+    "max_position_embeddings": 2048,
+    "model_type": "gated_deltanet",
+    "norm_eps": 1e-06,
+    "num_heads": 16,
+    "num_hidden_layers": 10,
+    "num_v_heads": 16,
+    "output_attentions": false,
+    "output_hidden_states": false,
+    "pad_token_id": null,
+    "problem_type": null,
+    "return_dict": true,
+    "tie_word_embeddings": false,
+    "transformers_version": "5.18.0",
+    "use_cache": false,
+    "use_gate": true,
+    "use_l2warp": false,
+    "use_short_conv": true,
+    "vocab_size": 32000
+  },
+  "parameter_count": 210843584,
+  "provenance": {
+    "cudnn_version": 92200,
+    "dependency_lock_sha256": "a2b81202d36f82c3e88e730ad7c72caa17d800118097786bae5062882ca7fbb0",
+    "device": {
+      "compute_capability": [
+        10,
+        3
+      ],
+      "name": "NVIDIA B300 SXM6 AC",
+      "total_memory_bytes": 287428640768,
+      "uuid": "db556517-bdca-9832-804e-11a0366de63c"
+    },
+    "nvidia_smi": "0, GPU-db556517-bdca-9832-804e-11a0366de63c, NVIDIA B300 SXM6 AC, 580.126.20",
+    "packages": {
+      "flash-linear-attention": "0.6.0",
+      "numpy": "2.4.6",
+      "nvidia-cublas": "13.2.2.2",
+      "nvidia-cuda-nvcc": "13.2.86",
+      "nvidia-cuda-runtime": "13.2.86",
+      "nvidia-cudnn-cu13": "9.22.0.52",
+      "nvidia-nccl-cu13": "2.27.7",
+      "torch": "2.9.1+cu130",
+      "transformers": "5.18.0",
+      "triton": "3.7.1"
+    },
+    "runtime": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/nvidia/cu13",
+      "CUDA_VISIBLE_DEVICES": "0",
+      "FLA_USE_CUDA_GRAPH": null,
+      "FLA_USE_FAST_OPS": null,
+      "SLURMD_NODENAME": "akita",
+      "SLURM_JOB_ID": "220076",
+      "TRITON_PTXAS_BLACKWELL_PATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+      "TRITON_PTXAS_PATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas"
+    },
+    "source_commit": "e0538b971ef9a66338e703cac8274a59e73cbb6b",
+    "source_sha256": {
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/benchmark_upstream_torch.py": "c7270f3a896cc64e0050672d67f72829e9ad301bf398e779b167f44126ae6b5a",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/layers/gated_deltanet.py": "36bdd863012f022fcef591f147480f0bd2f14892d38e746bb1072b22c4ada9d9",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/models/gated_deltanet/__init__.py": "13a86e758c245727dc3e6977f734ac155a98ce5390056b133d7cb92538251bec",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/models/gated_deltanet/configuration_gated_deltanet.py": "b13cd777c807086ab96d218219a4bc4c7ddda9b910f8ea5fd6610739e986317f",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/models/gated_deltanet/modeling_gated_deltanet.py": "f1ea75f717e69139037e1f634536d83d46b0b80b758ceb90765fd77cc0d8f5af",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/modules/activations.py": "c2701c5fa0fdad0da5db853e5041493baceab5db0fea3e510d7ffea1cb4eef51",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/modules/conv/short_conv.py": "e2ee319f11b0421545ea5eaa233f12f91e6904ce3dba83cee04a4b25110e6afe",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/modules/fused_cross_entropy.py": "104bca24adf444ae31a2c19be6a9f94915a1a5542ba78d47e74d3720af82756f",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/modules/fused_norm_gate.py": "109de719d6f9b4e692e3fd504eda4a6e897156c8dc9ac464a6f94193fa94d677",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/modules/l2norm.py": "5160cc4ff716c9975c655b81fd0e1bae700501dff3b4d6b045680a93185a1e99",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/modules/layernorm.py": "ee6e67bf99eb5d6afc49d3ab6990b3b4f56a7f21a2d9d34fde2eb0ee21418395",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/modules/mlp.py": "a05ce896f867605c5864c636b536002cd86ae6715fcdf5125ed24ed1b2986422",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/common/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/common/chunk_delta_h.py": "92bfbdad0021ebcf04dd811657c4426be93a5840ec40645d4d69d4b5dce8cae0",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/common/chunk_h.py": "d2d787a9e014b6db6b89e752a4c3f777e237f8dd3d5634ccb507693d05101409",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/common/chunk_h_parallel.py": "d2dc3377f47c4f2573f99534922d9e08b01e1a3f11d3ad5517258e73128987be",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/common/chunk_h_split.py": "fd015bb33e9b562b535d4150f640f8ea27ef89b2393a58c373f1186578f13762",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/common/chunk_o.py": "22c759a0831d1f47d9cf0e57a2a56cc36019b4b17782967112cfb4b64e1dc0a4",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/common/chunk_scaled_dot_kkt.py": "6eb56225ffc072d652c393278dd56624cfaa46c5285c7c926cf49479791570b7",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/common/fused_chunk.py": "0640e0d6d57833b1e139c1103e88d8630caa249c0471e997e98f59d2e5922447",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/common/fused_recurrent.py": "25810f314b7f01f6a466eb98599e266814ad79ac4d55f67d8edd9a61c4f71a53",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/common/gate.py": "86f30f7afe7e87d2e02302d8978e7a63ae61917ee988a64dad71ce4d860deb81",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/common/intracard_cp.py": "e73d3a2ebf2bfd1a4c41d4fc409739d844bfabd8f108ac6f77729d1dafc26606",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/gated_delta_rule/__init__.py": "5edd21847af70840b26439812196a476e7e4ddbbef21afd5fe2066a64630a67c",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/gated_delta_rule/chunk.py": "a18ddbb3b326d160f6909e4ecf159117ea462817213f1e9b1197551329005243",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/gated_delta_rule/chunk_fwd.py": "b0bb4a4123a0d995dad59da2c3565ecaa37a36037b685169117eeb04e04e9efb",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/gated_delta_rule/fused_recurrent.py": "13b7c86656ddc0ece1eab56ebd8fd85a6ad7e1e45096fc4e17a6bba7fa688ed1",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/gated_delta_rule/gate.py": "e976315625d8af39c702d033eaa35f41b789463fa27b8660b5d2f0663e2d8bc2",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/gated_delta_rule/naive.py": "d1cf17992349fd3e94af999b22e3d3a81be4a2d1881ce5b70a3457257166e0cb",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/benchmarks/upstream_runtime/.venv/lib/python3.11/site-packages/fla/ops/gated_delta_rule/wy_fast.py": "c97c3969825829eb746e737a193cea2d9adaf92fa0ce90e0d40e4d38e2e1f49a"
+    },
+    "torch_cuda": "13.0",
+    "upstream": {
+      "url": "https://github.com/fla-org/flash-linear-attention.git",
+      "vcs_info": {
+        "commit_id": "516143e31fce09925e6c39ac37148444bad176c4",
+        "requested_revision": "516143e31fce09925e6c39ac37148444bad176c4",
+        "vcs": "git"
+      }
+    }
+  },
+  "samples": [
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.248565185546875,
+      "gradient_norm_pre_clip": 0.8204931616783142,
+      "learning_rate": 3.7499999999999997e-06,
+      "loss": 10.548593521118164,
+      "parameter_norm": 332.9698791503906,
+      "step": 6,
+      "wall_seconds": 1.2486252253875136
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.24974609375,
+      "gradient_norm_pre_clip": 0.8191285729408264,
+      "learning_rate": 4.5e-06,
+      "loss": 10.53272819519043,
+      "parameter_norm": 332.967529296875,
+      "step": 7,
+      "wall_seconds": 1.2498059021309018
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2503568115234376,
+      "gradient_norm_pre_clip": 0.8165652751922607,
+      "learning_rate": 5.25e-06,
+      "loss": 10.51357650756836,
+      "parameter_norm": 332.9648132324219,
+      "step": 8,
+      "wall_seconds": 1.2504238774999976
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2470633544921874,
+      "gradient_norm_pre_clip": 0.8133449554443359,
+      "learning_rate": 5.999999999999999e-06,
+      "loss": 10.491350173950195,
+      "parameter_norm": 332.9617919921875,
+      "step": 9,
+      "wall_seconds": 1.2471240386366844
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2498358154296876,
+      "gradient_norm_pre_clip": 0.8088658452033997,
+      "learning_rate": 6.749999999999999e-06,
+      "loss": 10.466012954711914,
+      "parameter_norm": 332.9584655761719,
+      "step": 10,
+      "wall_seconds": 1.2498972434550524
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2476295166015625,
+      "gradient_norm_pre_clip": 0.802782416343689,
+      "learning_rate": 7.499999999999999e-06,
+      "loss": 10.437538146972656,
+      "parameter_norm": 332.9549255371094,
+      "step": 11,
+      "wall_seconds": 1.2476873360574245
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.251556884765625,
+      "gradient_norm_pre_clip": 0.7949119806289673,
+      "learning_rate": 8.249999999999999e-06,
+      "loss": 10.405987739562988,
+      "parameter_norm": 332.9511413574219,
+      "step": 12,
+      "wall_seconds": 1.2516168085858226
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2463697509765626,
+      "gradient_norm_pre_clip": 0.7855460047721863,
+      "learning_rate": 9e-06,
+      "loss": 10.371475219726562,
+      "parameter_norm": 332.94720458984375,
+      "step": 13,
+      "wall_seconds": 1.246430884115398
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2510938720703124,
+      "gradient_norm_pre_clip": 0.774498701095581,
+      "learning_rate": 9.75e-06,
+      "loss": 10.333965301513672,
+      "parameter_norm": 332.9431457519531,
+      "step": 14,
+      "wall_seconds": 1.251155262812972
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2520067138671875,
+      "gradient_norm_pre_clip": 0.7635491490364075,
+      "learning_rate": 1.05e-05,
+      "loss": 10.293495178222656,
+      "parameter_norm": 332.93902587890625,
+      "step": 15,
+      "wall_seconds": 1.252068500034511
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.246805419921875,
+      "gradient_norm_pre_clip": 0.7516049146652222,
+      "learning_rate": 1.1249999999999999e-05,
+      "loss": 10.250284194946289,
+      "parameter_norm": 332.93487548828125,
+      "step": 16,
+      "wall_seconds": 1.2468665800988674
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2500638427734374,
+      "gradient_norm_pre_clip": 0.7406574487686157,
+      "learning_rate": 1.1999999999999999e-05,
+      "loss": 10.204206466674805,
+      "parameter_norm": 332.9308166503906,
+      "step": 17,
+      "wall_seconds": 1.2501240987330675
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.24756201171875,
+      "gradient_norm_pre_clip": 0.7298837304115295,
+      "learning_rate": 1.2749999999999998e-05,
+      "loss": 10.155414581298828,
+      "parameter_norm": 332.9268493652344,
+      "step": 18,
+      "wall_seconds": 1.2476221099495888
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.24780615234375,
+      "gradient_norm_pre_clip": 0.7213459610939026,
+      "learning_rate": 1.3499999999999998e-05,
+      "loss": 10.10406494140625,
+      "parameter_norm": 332.9230651855469,
+      "step": 19,
+      "wall_seconds": 1.2478684997186065
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.252034423828125,
+      "gradient_norm_pre_clip": 0.7141222953796387,
+      "learning_rate": 1.4249999999999999e-05,
+      "loss": 10.049935340881348,
+      "parameter_norm": 332.91949462890625,
+      "step": 20,
+      "wall_seconds": 1.2520962543785572
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2491722412109374,
+      "gradient_norm_pre_clip": 0.7079992890357971,
+      "learning_rate": 1.4999999999999999e-05,
+      "loss": 9.993334770202637,
+      "parameter_norm": 332.9162902832031,
+      "step": 21,
+      "wall_seconds": 1.2492351541295648
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2443284912109376,
+      "gradient_norm_pre_clip": 0.7042785882949829,
+      "learning_rate": 1.5749999999999997e-05,
+      "loss": 9.934173583984375,
+      "parameter_norm": 332.9134216308594,
+      "step": 22,
+      "wall_seconds": 1.24439069442451
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.25108984375,
+      "gradient_norm_pre_clip": 0.702854335308075,
+      "learning_rate": 1.6499999999999998e-05,
+      "loss": 9.872522354125977,
+      "parameter_norm": 332.9110107421875,
+      "step": 23,
+      "wall_seconds": 1.2511517023667693
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2459864501953124,
+      "gradient_norm_pre_clip": 0.7015508413314819,
+      "learning_rate": 1.725e-05,
+      "loss": 9.808357238769531,
+      "parameter_norm": 332.9090881347656,
+      "step": 24,
+      "wall_seconds": 1.2460493622347713
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.24951513671875,
+      "gradient_norm_pre_clip": 0.7024623155593872,
+      "learning_rate": 1.8e-05,
+      "loss": 9.741576194763184,
+      "parameter_norm": 332.90771484375,
+      "step": 25,
+      "wall_seconds": 1.2495775213465095
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.250625732421875,
+      "gradient_norm_pre_clip": 0.7054212093353271,
+      "learning_rate": 1.875e-05,
+      "loss": 9.672358512878418,
+      "parameter_norm": 332.9069519042969,
+      "step": 26,
+      "wall_seconds": 1.2507238490507007
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.247476318359375,
+      "gradient_norm_pre_clip": 0.7104095816612244,
+      "learning_rate": 1.95e-05,
+      "loss": 9.600638389587402,
+      "parameter_norm": 332.9068603515625,
+      "step": 27,
+      "wall_seconds": 1.24753681384027
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.247366455078125,
+      "gradient_norm_pre_clip": 0.7161930203437805,
+      "learning_rate": 2.0249999999999998e-05,
+      "loss": 9.526420593261719,
+      "parameter_norm": 332.907470703125,
+      "step": 28,
+      "wall_seconds": 1.2474346356466413
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.24987890625,
+      "gradient_norm_pre_clip": 0.7236768007278442,
+      "learning_rate": 2.1e-05,
+      "loss": 9.449687957763672,
+      "parameter_norm": 332.9088439941406,
+      "step": 29,
+      "wall_seconds": 1.2499432992190123
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.250541748046875,
+      "gradient_norm_pre_clip": 0.7351043820381165,
+      "learning_rate": 2.175e-05,
+      "loss": 9.370402336120605,
+      "parameter_norm": 332.9110412597656,
+      "step": 30,
+      "wall_seconds": 1.2506098011508584
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2473897705078125,
+      "gradient_norm_pre_clip": 0.7459938526153564,
+      "learning_rate": 2.2499999999999998e-05,
+      "loss": 9.288368225097656,
+      "parameter_norm": 332.9140625,
+      "step": 31,
+      "wall_seconds": 1.2474519768729806
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.25312548828125,
+      "gradient_norm_pre_clip": 0.7608548402786255,
+      "learning_rate": 2.325e-05,
+      "loss": 9.20356559753418,
+      "parameter_norm": 332.9179382324219,
+      "step": 32,
+      "wall_seconds": 1.2531880149617791
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.250638671875,
+      "gradient_norm_pre_clip": 0.7779601216316223,
+      "learning_rate": 2.3999999999999997e-05,
+      "loss": 9.115975379943848,
+      "parameter_norm": 332.9226989746094,
+      "step": 33,
+      "wall_seconds": 1.250700905919075
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.24476220703125,
+      "gradient_norm_pre_clip": 0.79908287525177,
+      "learning_rate": 2.475e-05,
+      "loss": 9.025477409362793,
+      "parameter_norm": 332.9283447265625,
+      "step": 34,
+      "wall_seconds": 1.2448272807523608
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.250094482421875,
+      "gradient_norm_pre_clip": 0.8226754665374756,
+      "learning_rate": 2.5499999999999996e-05,
+      "loss": 8.931709289550781,
+      "parameter_norm": 332.9349060058594,
+      "step": 35,
+      "wall_seconds": 1.2501558838412166
+    }
+  ],
+  "schema_version": 1,
+  "status": "complete",
+  "summary": {
+    "cuda_seconds": {
+      "mean": 1.249016259765625,
+      "median": 1.249630615234375,
+      "p10": 1.2463314208984375,
+      "p90": 1.2516018676757814
+    },
+    "tokens_per_second": 419739.44556475873,
+    "updates": 30,
+    "wall_seconds": {
+      "mean": 1.2490796505783994,
+      "median": 1.2496917117387056,
+      "p10": 1.2463927319273354,
+      "p90": 1.2516619777306914
+    }
+  },
+  "training_settings": {
+    "accumulation_steps": 4,
+    "autocast_dtype": "bfloat16",
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "checkpointing": false,
+    "data": "fixed GPU-resident global batch reused for every update",
+    "eps": 1e-08,
+    "global_batch": 256,
+    "gradient_clip_norm": 1.0,
+    "initialization": "unmodified upstream model initialization",
+    "learning_rate": 0.0003,
+    "learning_rate_horizon": 19074,
+    "loss": "upstream FusedCrossEntropyLoss(inplace_backward=True) applied to unmodified upstream model logits",
+    "micro_batch": 64,
+    "min_learning_rate": 3e-05,
+    "model_class": "fla.models.gated_deltanet.GatedDeltaNetForCausalLM",
+    "optimizer": "torch.optim.AdamW(fused=True)",
+    "parameter_dtype": "float32",
+    "prediction_positions": 2048,
+    "schedule": "linear warmup then cosine decay",
+    "target_alignment": "input=tokens[:,:-1], target=tokens[:,1:], exactly length next-token predictions",
+    "warmup_steps": 400,
+    "weight_decay": 0.1,
+    "weight_decay_exclusions": "vectors, biases, embedding weights, upstream _no_weight_decay parameters"
+  },
+  "wall_seconds": 51.75160273630172,
+  "warmup_samples": [
+    {
+      "all_finite": true,
+      "cuda_seconds": 2.91073681640625,
+      "gradient_norm_pre_clip": 0.8217703104019165,
+      "learning_rate": 0.0,
+      "loss": 10.580534934997559,
+      "parameter_norm": 332.9759216308594,
+      "step": 1,
+      "wall_seconds": 2.910847505554557
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.245894287109375,
+      "gradient_norm_pre_clip": 0.8217703104019165,
+      "learning_rate": 7.499999999999999e-07,
+      "loss": 10.580534934997559,
+      "parameter_norm": 332.9754943847656,
+      "step": 2,
+      "wall_seconds": 1.2459523314610124
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.2447431640625,
+      "gradient_norm_pre_clip": 0.8218170404434204,
+      "learning_rate": 1.4999999999999998e-06,
+      "loss": 10.57737922668457,
+      "parameter_norm": 332.9747009277344,
+      "step": 3,
+      "wall_seconds": 1.2448078179731965
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.249133544921875,
+      "gradient_norm_pre_clip": 0.8214513659477234,
+      "learning_rate": 2.25e-06,
+      "loss": 10.5709228515625,
+      "parameter_norm": 332.97344970703125,
+      "step": 4,
+      "wall_seconds": 1.2491951426491141
+    },
+    {
+      "all_finite": true,
+      "cuda_seconds": 1.247298095703125,
+      "gradient_norm_pre_clip": 0.8211582899093628,
+      "learning_rate": 2.9999999999999997e-06,
+      "loss": 10.561407089233398,
+      "parameter_norm": 332.97186279296875,
+      "step": 5,
+      "wall_seconds": 1.247361452318728
+    }
+  ]
+}

@@ -868,6 +868,131 @@ sbatch -w akita --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
   scaffolds/transformer/validation/replay_checkpoint.sbatch "$PWD" <run> 500 1000 <scratch> default default
 ```
 
+## Signed linear GDN on one B300
+
+The [benchmark record](runs/gdn-tanh-b300/record.json) and
+[timing samples](runs/gdn-tanh-b300/benchmark.json) cover a bounded replay of
+`rf65d38ec0552`, the degree-one, d_K=d_V=64 GDN with tanh writes and independent
+sigmoid erasure. Job `219939` completed on one B300 SXM6 AC using CUDA 13.2 and
+cuBLAS 13.2.2.2. All 10 signed-write GPU tests passed, including outputs and all
+six gradients against the FP64 matrix-state oracle, zero erasure, and length
+2,048. The corresponding CPU checks passed 83 tests; record/index tests passed 50.
+
+The replay restored a disposable copy of checkpoint 11,500 with its optimizer
+state and FineWeb data cursor. The model has 211,007,424 parameters; the original
+global batch of 256 sequences, global microbatch 64, four accumulation steps,
+2,048 prediction positions, and learning-rate horizon were preserved. The first
+five updates were warmup; the next 30 were timed. All 35 updates were finite.
+Source recipe, record, measurements, data identity, and checkpoint checksums were
+unchanged. The source run remains paused, and no replay checkpoint is retained.
+
+| Execution | Mean seconds/update | Tokens/second |
+| --- | ---: | ---: |
+| One B300, measured replay | 4.2255 | 124,077 |
+| Four H100 PCIe, historical windows ending at steps 9,000, 10,000, 11,000 | 1.1635 | 450,624 |
+
+One B300 delivers 27.5% of the earlier four-H100 aggregate throughput with this
+microbatch setting, or about 1.10 times the throughput per allocated GPU. This is
+a historical comparison, not a controlled kernel speedup: the single-GPU trainer
+omits distributed telemetry, and each H100 window includes a periodic checkpoint.
+B300 intervals include packed-data loading, transfer, numerical checks, ordinary
+logging, and optimizer updates, but exclude compilation, validation, and final
+checkpoint writing. B300 median update time was 4.1714 seconds (p10 4.1362, p90
+4.3917). First-update compilation and execution took 159 seconds. No microbatch
+tuning was performed. The measured rate projects about 8.9 hours for the remaining
+7,574 updates, excluding startup, evaluation, and checkpoint overhead.
+
+Reproduce from a worktree at the recorded launch commit, after syncing both locked
+environments as described in `CLUSTERS.md`. Supply the retained source run directory
+containing checkpoint 11,500 and a fresh output directory:
+
+```bash
+sbatch --output=scaffolds/transformer/validation/logs/gdn-tanh-b300/benchmark-%j.log \
+  scaffolds/transformer/launchers/benchmark_gdn_tanh.sbatch \
+  9e62cf7ce583ae0af776a319a2ebc4df3737f1ab "$SOURCE_RUN_DIRECTORY" "$OUTPUT_DIRECTORY"
+```
+
+The launcher verifies the frozen execution set, runs the signed-write GPU tests,
+then calls `benchmarks/benchmark_checkpoint_replay.py`. Its input translation
+removes the legacy explicit `gdn_polynomial_degree: 1` field for the current linear
+GDN implementation; other polynomial degrees are rejected. The worktree's own
+CUDA 13 environment supplies the dependencies. The successful log and GPU JUnit
+output are retained under `validation/logs/gdn-tanh-b300/` on Kennel and their
+hashes are recorded. The generic Git dirty flag in the timing report includes
+mutable validation records and generated indices; the frozen execution check passed.
+
+## GDN versus Mosaic on one B300
+
+Job **220032** completed on one NVIDIA B300 SXM6 AC (`akita`, CUDA 13) in
+18 minutes 38 seconds. Pooling 60 measured updates per mechanism:
+
+| Mechanism | Parameters | Mean seconds/update | Tokens/second | Difference between repeat means |
+| --- | ---: | ---: | ---: | ---: |
+| Signed-write linear GDN, fused FLA Triton | 211,007,424 | 4.2410 | 123,624 | 0.789% |
+| Cubic query-conditioned tanh, Mosaic | 200,573,344 | 1.2039 | 435,500 | 0.059% |
+
+The Mosaic model has **3.523x higher training throughput** at this workload.
+This is an architecture comparison, not a speedup from replacing GDN's backend:
+Mosaic does not implement GDN. Compute-only means are 4.2373 and 1.2010 seconds,
+so loading and host overhead do not explain the difference. GDN agrees with the
+earlier checkpoint-replay measurement (124,077 tokens/second). Each mechanism's
+two trials use the same physical GPU, runtime, data cursor and dataset identity;
+the difference between repeat means is divided by their pooled mean above.
+All 140 training updates were finite, all four production-context output/gradient
+tests passed, and three CPU tests checked the timing harness and isolation.
+No benchmark checkpoints are retained. The successful log and GPU-test XML are
+retained on Kennel under `validation/logs/gdn-mosaic-b300/`, with hashes in the record.
+
+This comparison times signed-write linear GDN (the recipe of `rf65d38ec0552`)
+against cubic query-conditioned tanh attention (the recipe of `r0bc57959ef6c`,
+with the Mosaic backend). Both use the shared 10-layer, width-1024 backbone,
+16 heads, d_K = d_V = 64, MLP width 3008, BF16, sequence length 2048, batch 256,
+microbatch 64, and four accumulation steps. Each keeps its mechanism's reference
+initialization and required normalization. GDN's additional projections,
+convolution and gates mean the parameter counts differ; this compares complete
+training implementations at matched backbone widths, not only kernel efficiency.
+
+`benchmarks/benchmark_training_throughput.py` starts each trial from reference
+initialization on the same packed FineWeb data and seed. Five warmup updates
+precede 30 synchronized update intervals. Intervals include loading, transfer,
+accumulation, optimizer updates, numerical checks and ordinary logging; they
+exclude compilation, validation and checkpointing. Two trials per mechanism
+run sequentially in one B300 allocation, in GDN/Mosaic/Mosaic/GDN order.
+The paused GDN training run is not resumed. These measurements do not assess
+model quality, decoding, or recurrent-state memory savings. Microbatch size is
+fixed, rather than tuned separately for each mechanism.
+
+Inputs are `validation/configs/gdn-mosaic-b300-{gdn,mosaic}.yaml`;
+reports and execution provenance are in `validation/runs/gdn-mosaic-b300/`.
+The launcher checks both the shared frozen execution set and these input
+recipes against the launch commit. From a committed Kennel worktree with both
+locked CUDA environments synced:
+
+```bash
+mkdir -p scaffolds/transformer/validation/logs/gdn-mosaic-b300
+sbatch --parsable \
+  --output=scaffolds/transformer/validation/logs/gdn-mosaic-b300/benchmark-%j.log \
+  scaffolds/transformer/launchers/benchmark_gdn_mosaic.sbatch "$(git rev-parse HEAD)"
+```
+
+Regenerate pooled timing summaries from the four explicit reports:
+
+```bash
+python3 - <<'PY'
+import json
+from pathlib import Path
+root = Path("scaffolds/transformer/validation/runs/gdn-mosaic-b300")
+rates = {}
+for name in ("gdn", "mosaic"):
+    reports = [json.loads((root / f"{name}-{trial}.json").read_text()) for trial in (1, 2)]
+    assert all(r["status"] == "complete" and r["all_finite"] for r in reports)
+    seconds = [s["interval_seconds"] for r in reports for s in r["samples"][r["warmup_updates"]:]]
+    rates[name] = reports[0]["tokens_per_update"] * len(seconds) / sum(seconds)
+    print(name, "seconds/update", sum(seconds) / len(seconds), "tokens/sec", rates[name])
+print("Mosaic / GDN throughput", rates["mosaic"] / rates["gdn"])
+PY
+```
+
 ## Mosaic GPU polynomial attention kernels on H100 and B300
 
 `attention/backends/mosaic/` implements causal polynomial attention (forward, dQ, dK, dV) on
@@ -875,9 +1000,8 @@ Mosaic GPU: `hopper.py` (wgmma, FlashAttention-3 structure) and `blackwell.py` (
 tensor memory, warp-specialized). `common.py` holds each family's elementwise mathematics, so
 both families share one set of pipelines. `api.py` exposes `taylor_attention` (normalized
 fixed Taylor, matching `fused_taylor`) and `query_polynomial_attention` (unnormalized, FP32
-coefficients per query and head, matching `fused_query_polynomial`). Both keep the Triton
-kernels' numerics and failure rules: FP32 scores, polynomials, sums, and accumulators; FP32
-weights and score gradients enter the tensor cores as three BF16 components; NaN rows for a
+coefficients per query and head, matching `fused_query_polynomial`). Scores, polynomials, row
+sums, and accumulators are FP32, with the Triton kernels' failure rules: NaN rows for a
 nonfinite, nonpositive (even Taylor degree), or zero (odd degree) row sum, a nonfinite score
 or weight (query), or an overflowing output. They accept BF16 inputs, Q/K width 8, 16, 32,
 64, or 128, value width 64, degree >= 1 (query: 1-4), and time a multiple of 128 (H100) or
@@ -885,35 +1009,98 @@ or weight (query), or an overflowing output. They accept BF16 inputs, Q/K width 
 shared-memory swizzle row, so Q/K tiles use 32-, 64-, and 128-byte swizzles at widths 16,
 32, and 64 or more; width 8 is zero-padded to the 16-element minimum.
 
-`tests/test_mosaic_taylor.py` (42 cases), `tests/test_mosaic_query.py` (31 cases), and
-`tests/test_mosaic_repeatability.py` (3 cases) pass on one H100 (`dogo`, CUDA 12.9.1) and one
-B300 (`akita`, CUDA 13.2): every degree and width against independent NumPy FP64 outputs and
-VJPs (coefficient gradients per order) and against the Triton kernels, the production context,
-causality, nonfinite handling, rejected inputs, the model's dispatch, and bitwise-identical
-outputs and gradients across 20 repeats at production size.
+Weights and score gradients enter the tensor cores at a weight precision chosen per setup
+(`api.default_precision`, recorded as `attention_weight_precision` in run metadata):
+
+| Setup | Weight precision |
+| --- | --- |
+| Tanh query-conditioned, m 1-4 | BF16: one rounding, as FlashAttention and cuDNN |
+| Normalized Taylor, even m | BF16 |
+| Normalized Taylor, odd m | FP32: three BF16 components whose sum is the FP32 value |
+
+With BF16 weights the Taylor backward also reads the BF16 output, as FlashAttention's does.
+Odd-degree normalized Taylor divides signed weights by a row sum that can cancel, which
+amplifies their rounding; it keeps FP32-precision weights (the accuracy table below).
+
+`tests/test_mosaic_taylor.py` (78 cases), `tests/test_mosaic_query.py` (55), and
+`tests/test_mosaic_repeatability.py` (6) cover both weight precisions and pass on one H100
+(`dogo`, CUDA 12.9.1) and one B300 (`akita`, CUDA 13.2): every degree and width against
+independent NumPy FP64 outputs and VJPs (coefficient gradients per order) and against the
+Triton kernels, the production context, causality, nonfinite handling, rejected inputs, the
+model's dispatch, and bitwise-identical results across 20 repeats at production size.
+
+### Accuracy
+
+Worst relative L2 error against NumPy FP64 over every Q/K width, degree, batch, and head
+(`benchmarks/mosaic_precision.py`; `runs/mosaic-precision/`), next to cuDNN softmax (the
+production softmax path) on the same inputs. Sharp inputs scale Q by 4, so scores reach
+about +-8 and odd Taylor degrees put large negative weight on many keys. Each entry is the
+worse of H100 and B300 (Mosaic's agree to the digits shown).
+
+| Setup | Weights | Output | Q/K/V gradients | Output, sharp | Gradients, sharp |
+| --- | --- | ---: | ---: | ---: | ---: |
+| cuDNN softmax | BF16 | 2.2e-3 | 2.8e-3 | 2.2e-3 | 4.1e-3 |
+| Query m 1-4 | BF16 | 2.5e-3 | 2.4e-3 | | |
+| | FP32 | 1.7e-3 | 1.7e-3 | | |
+| Taylor, even m | BF16 | 2.7e-3 | 3.3e-3 | 2.5e-3 | 3.4e-3 |
+| | FP32 | 1.6e-3 | 1.8e-3 | 1.7e-3 | 1.8e-3 |
+| Taylor, odd m | BF16 | 2.5e-3 | 2.9e-3 | 3.7e-3 | 8.1e-3 |
+| | FP32 | 1.6e-3 | 1.8e-3 | 2.0e-3 | 2.9e-3 |
+
+Query coefficient gradients are within 2.3e-7 at either precision.
+
+### Speed
 
 Forward + backward per layer at 16 x 2048 x 16 heads, value width 64
-(`benchmarks/benchmark_mosaic.py`), Triton time divided by Mosaic time:
+(`benchmarks/benchmark_mosaic.py`; `runs/mosaic-kernels/`), Triton time divided by Mosaic
+time:
 
-| | H100 | B300 |
-| --- | ---: | ---: |
-| Taylor, d_K 8-64, m 1-4 | 1.6-1.8x | 2.4-3.8x |
-| Taylor, d_K 8-64, m = 16 | 2.8-3.0x | 7.4-10.2x |
-| Taylor, d_K 128, m 1-16 | 3.4-4.0x | 3.8-4.4x |
-| Query, d_K 64, m 1-3 | 1.25-1.45x | 3.0-3.2x |
+| | H100, BF16 | H100, FP32 | B300, BF16 | B300, FP32 |
+| --- | ---: | ---: | ---: | ---: |
+| Taylor, d_K 8-64, m 1-4 | 1.9-2.2x | 1.4-1.6x | 3.1-4.7x | 2.3-3.6x |
+| Taylor, d_K 8-64, m = 16 | 3.3-3.5x | 2.6-2.7x | 9.0-12.5x | 7.2-10.1x |
+| Taylor, d_K 128, m 1-16 | 4.2-4.6x | 3.2-3.7x | 4.9-5.7x | 3.9-4.4x |
+| Query, d_K 64, m 1-3 | 2.0-2.1x | 1.3-1.5x | 4.2-4.3x | 3.0-3.1x |
 
-At d_K = 64 and m = 2: Taylor 2.46 ms against 3.95 ms on H100 and 1.89 ms against 6.55 ms on
-B300; query 1.92 ms against 2.77 ms and 1.52 ms against 4.80 ms; cuDNN softmax 1.47 ms and
-0.71 ms.
+At d_K = 64, query m = 3 takes 1.48 ms with BF16 weights on H100 (Triton 2.91 ms, cuDNN
+softmax 1.45 ms) and 1.38 ms on B300 (Triton 5.76 ms, cuDNN softmax 0.77 ms).
+
+One training microbatch (16 x 2048, `benchmark_mosaic_step.sbatch`; `runs/mosaic-step/`, one
+directory per job), median of 30 updates, two rounds within 1%, each job's fused and Mosaic
+runs on the same GPU:
+
+| Recipe | GPU | Fused | Mosaic, BF16 | Mosaic, FP32 (separate job, fused) |
+| --- | --- | ---: | ---: | ---: |
+| Query m = 3, d_K = 64 | H100 SXM | 120.7 ms | 103.0 ms | 115.0 ms (120.8 ms) |
+| | B300 | 108.5 ms | 59.5 ms | 67.4 ms (108.8 ms) |
+| Taylor m = 2, d_K = 32 | H100 SXM | 108.0 ms | 88.9 ms | 96.1 ms (107.9 ms) |
+| | B300 | 77.1 ms | 49.3 ms | 55.0 ms (77.2 ms) |
+
+`mastiff` has H100 PCIe cards (114 SMs, HBM2e), `dogo` H100 SXM; throughput is compared only
+within one GPU.
+
+### Stress
+
+`stress_mosaic.sbatch` calls each kernel in its own process at the production per-GPU shape
+with sharp scores, 100,000 times or more, and requires every 1,000th result to equal the
+first bitwise; a process silent for 120 s counts as hung. On H100 the forward and dQ kernels
+at both precisions (job 220106, 300,000 calls each) and dK/dV (job 220103, 100,000) finished
+with identical results, except one query dQ (BF16) process that hung within its first 1,000
+calls, for no cause found; twenty further 50,000-call processes of query and Taylor dQ (job
+220120) and a 100,000-call rerun finished, as did every training pilot below. On B300 (job
+220124) the forward, dQ, dK, and dV kernels of both families at both precisions each finished
+100,000 calls with identical results. Kernels synchronize each ring slot only after both compute
+warpgroups have released it; tiles past a warpgroup's causal diagonal are neither consumed
+nor freed by it.
 
 ### Training pilots
 
-`pilot_mosaic.sbatch` trains a study recipe for 1,000 updates on one GPU (microbatch 16,
-validation every 100 updates) with a chosen backend, from the same initialization and data;
-summaries are in `runs/mosaic-pilot/`. Recipes: tanh query-conditioned m = 3, d_K = 64,
-head RMSNorm (`r0bc57959ef6c`), and normalized Taylor m = 2, d_K = 32 (`raf32fab4ba52`), both
-with 400 warmup updates. XLA's GPU reductions are not deterministic, so two fused runs
-already diverge; a repeated fused query run measures that spread.
+`pilot_mosaic.sbatch` trains a study recipe for 1,000 updates (microbatch 16, validation
+every 100 updates) with a chosen backend, from the same initialization and data; summaries are
+in `runs/mosaic-pilot/`. Recipes: tanh query-conditioned m = 3, d_K = 64, head RMSNorm
+(`r0bc57959ef6c`), and normalized Taylor m = 2, d_K = 32 (`raf32fab4ba52`), both with 400
+warmup updates. XLA's GPU reductions are not deterministic, so two fused runs already
+diverge; a repeated fused query run measures that spread. H100 runs used SXM and PCIe cards.
 
 Validation NLL:
 
@@ -921,36 +1108,161 @@ Validation NLL:
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | Query m = 3, H100 | fused | 5.6465 | 4.6246 | 4.0609 | 3.6989 | 3.5157 |
 | | fused, repeat | 5.6463 | 4.5959 | 4.0545 | 3.7041 | 3.5132 |
-| | Mosaic | 5.6463 | 4.5862 | 4.0395 | 3.6854 | 3.5085 |
+| | Mosaic, FP32 weights | 5.6463 | 4.5862 | 4.0395 | 3.6854 | 3.5085 |
+| | Mosaic, BF16 weights | 5.6336 | 4.6112 | 4.0434 | 3.6922 | 3.5096 |
+| | Mosaic, BF16 weights, 2 GPUs | 5.6609 | 4.6044 | 4.0542 | 3.6928 | 3.5062 |
+| Query m = 3, B300 | fused | 5.6396 | 4.6164 | 4.0552 | 3.7141 | 3.5108 |
+| | Mosaic, FP32 weights | 5.6601 | 4.6079 | 4.0514 | 3.6950 | 3.5120 |
+| | Mosaic, BF16 weights | 5.6365 | 4.6179 | 4.0485 | 3.6903 | 3.5101 |
 | Taylor m = 2, H100 | fused | 5.4085 | 4.7960 | 4.4177 | 4.1762 | 4.0295 |
-| | Mosaic | 5.4168 | 4.7962 | 4.4217 | 4.1681 | 4.0133 |
+| | Mosaic, FP32 weights | 5.4168 | 4.7962 | 4.4217 | 4.1681 | 4.0133 |
+| | Mosaic, BF16 weights | 5.4061 | 4.8322 | 4.4402 | 4.1965 | 4.0154 |
+| Taylor m = 2, B300 | fused | 5.4061 | 4.7812 | 4.4166 | 4.1713 | 4.0150 |
+| | Mosaic, FP32 weights | 5.4121 | 4.7840 | 4.4128 | 4.1988 | 4.0108 |
+| | Mosaic, BF16 weights | 5.4078 | 4.7791 | 4.4386 | 4.1682 | 4.0223 |
 
-From step 200 on, the two fused query runs differ by up to 0.029 and Mosaic differs from them
-by up to 0.038 and 0.019; Taylor differences change sign, up to 0.031. Mosaic tracks the fused
-kernels within run-to-run variation. Against FP64 on the same inputs (query m = 1-3), both
-kernels' outputs and Q/K/V gradients are within 1.7e-3 (BF16 rounding) and coefficient
-gradients within 2e-7, with no systematic scale bias.
+From step 200 on, the two fused query runs differ by up to 0.029; every Mosaic run stays
+within 0.038 of the fused run, with differences that change sign and end between -0.016 and
++0.007 at step 1,000. Mosaic tracks the fused kernels within run-to-run variation at both
+precisions, on one GPU and two.
 
-One training microbatch (16 x 2048, `benchmark_mosaic_step.sbatch`, median of 30, two rounds
-agreeing within 0.5%; `runs/mosaic-step/`), both backends on the same GPU:
-
-| Recipe | H100 SXM fused | Mosaic | H100 PCIe fused | Mosaic |
-| --- | ---: | ---: | ---: | ---: |
-| Query m = 3, d_K = 64 | 120.7 ms | 114.7 ms | 186.6 ms | 176.6 ms |
-| Taylor m = 2, d_K = 32 | 108.0 ms | 95.9 ms | 164.5 ms | 147.3 ms |
-
-Attention is a small part of a 200M-parameter update at 2,048 tokens, so the kernels' 1.3-1.8x
-on H100 gives 5-11% per update. `mastiff` has H100 PCIe cards (114 SMs, HBM2e) and `dogo` H100
-SXM; on both, Mosaic is also faster per kernel (PCIe: query m = 3 3.10 ms against 3.87 ms,
-Taylor d_K = 32, m = 2 3.70 ms against 4.87 ms).
-
-From a committed worktree on Kennel (arguments: commit, GPU type, study run, backend,
+From a committed worktree on Kennel (pilot arguments: commit, GPU type, study run, backend,
 updates, and an optional label for a repeated run):
 
 ```bash
 sbatch --partition=long --gres=gpu:h100:1 scaffolds/transformer/validation/pilot_mosaic.sbatch \
   "$(git rev-parse HEAD)" H100 r0bc57959ef6c mosaic 1000
 sbatch --partition=long --gres=gpu:h100:1 scaffolds/transformer/validation/benchmark_mosaic_step.sbatch
+sbatch --partition=long --gres=gpu:h100:1 scaffolds/transformer/validation/stress_mosaic.sbatch
+python -m scaffolds.transformer.benchmarks.mosaic_precision --output errors.json  # in a GPU allocation
+python -m scaffolds.transformer.benchmarks.benchmark_mosaic                      # in a GPU allocation
+```
+
+## Upstream FLA and cuDNN baselines on one B300
+
+`validation/runs/upstream-b300/` compares the project's implementations with
+direct calls to upstream libraries. The earlier GDN timings measure this
+project's signed, independent-gate recurrence with FP32 chunk intermediates
+and TF32x3 products. They are not measurements of stock FLA's native BF16 path.
+The upstream comparison uses standard tied sigmoid GDN and the unmodified
+FLA commit `516143e31fce09925e6c39ac37148444bad176c4`, also pinned by our bridge.
+
+The comparison has three scopes:
+
+- Attention forward and forward-plus-backward at B=64, T=2048, H=16 and
+  K=V=64. CUDA PyTorch calls `fla.ops.gated_delta_rule.chunk_gated_delta_rule`
+  directly, and forces cuDNN through PyTorch SDPA. JAX calls cuDNN directly
+  and measures Mosaic plus the project's tied and independent GDN paths.
+  Both frameworks generate identical NumPy operands; GDN uses unit Q/K,
+  while dot-product attention scales Q outside timing to give order-one scores.
+  Inputs, warmup, compilation and finite checks are excluded. All input
+  gradients are included; the number of differentiable arguments depends
+  on the mechanism. Tanh coefficient generation is outside the Mosaic kernel.
+- Full-model cuDNN softmax and Mosaic use the same shared JAX trainer,
+  packed data, 10-layer width-1024 backbone, MLP width 3008, 16 heads,
+  K=V=64, batch 256, microbatch 64 and four accumulation steps. Each starts
+  from its reference initialization and retains the optimizer horizon.
+- The full upstream `GatedDeltaNetForCausalLM` uses matching dimensions,
+  standard gates, BF16 autocast with FP32 parameters, its fused normalization
+  and SwiGLU, upstream fused cross-entropy, and fused PyTorch AdamW. The
+  model and loss implementations are unmodified. A resident real FineWeb
+  batch excludes loading/transfer from this timing. This is a complete
+  upstream model comparison, with framework, initialization and component
+  differences; it is not a substitution into the JAX trainer.
+
+The full-model compute comparison excludes input loading and transfers for
+native FLA. JAX's `compute_seconds` includes numerical checks and may await
+an asynchronous input transfer; its ordinary training-interval timing is
+reported separately. Both include gradient accumulation, gradient clipping,
+the optimizer, and parameter-norm computation. Native FLA checks the returned
+loss and norms after timing. Native FLA retains an FP32 residual stream under
+autocast; this project's residual stream is BF16. The benchmark preserves
+these implementation choices.
+
+The separate `benchmarks/upstream_runtime/` project has its own committed
+lock and environment. It installs the official CUDA PyTorch wheel, leaving
+the production JAX environments unchanged. Its explicit CUDA 13.2/cuBLAS
+13.2.2.2 overrides apply Kennel's Blackwell correctness policy; cuDNN 9.22
+and Triton 3.7.1 match the JAX comparison. No installed package is edited.
+The native FLA baseline retains its upstream mixed-precision choices,
+which differ from the project's FP32 repair. These timings do not establish
+equivalent numerical accuracy or training quality.
+
+Attention-only measurements from job `220076` (one B300 on `akita`, 2026-10-17):
+each entry pools two rounds of 30 calls, after five warmup calls per round.
+Values are synchronized wall time; compilation, autotuning and finite checks
+are excluded. cuDNN dispatch is verified by compiled custom-call targets in
+JAX and profiler events in PyTorch, with the PyTorch backend forced to cuDNN.
+
+| Implementation | Forward (ms) | Forward + backward (ms) |
+| --- | ---: | ---: |
+| Upstream cuDNN, PyTorch SDPA | 0.706 | 2.734 |
+| Upstream cuDNN, JAX | 1.539 | 3.550 |
+| Upstream FLA, standard tied sigmoid GDN | 1.684 | 5.492 |
+| Our Mosaic cubic query polynomial | 3.120 | 10.290 |
+| Our JAX GDN bridge, standard tied sigmoid gates | 5.537 | 79.719 |
+| Our JAX GDN bridge, independent tanh writes | 5.536 | 77.958 |
+
+Optional native CUDA graph replay reduces FLA forward-plus-backward to
+5.160 ms and PyTorch cuDNN to 2.590 ms. Normal upstream dispatch, shown in
+the table, is the primary comparison. PyTorch's forward-only call retains
+autograd context; forward-plus-backward is the stronger comparison across
+frameworks. The mechanisms differentiate five, six, four and three inputs
+for tied GDN, independent GDN, Mosaic and softmax, respectively.
+
+Stock FLA's forward-plus-backward is **14.52x faster** than our bridge with
+the same standard tied-gate mathematics. Independent signed gates have a
+similar cost in our bridge. The comparison therefore identifies a large
+implementation/precision gap; it does not attribute that gap to the signed
+gates. Precision, state layout, framework and dispatch differ, so these
+measurements alone cannot assign the gap to one of them. Mosaic takes
+**1.87x** stock FLA's time and **2.90x** JAX cuDNN's time at this shape
+(**3.76x** PyTorch cuDNN's time). These are training-kernel measurements at
+context 2048, not asymptotic complexity or language-model quality results.
+
+Full-model training compute, pooled over two fresh-process trials of 30
+measured updates after five warmup updates each:
+
+| Implementation | Parameters | Seconds/update | Tokens/s |
+| --- | ---: | ---: | ---: |
+| Shared model with upstream cuDNN softmax | 199,906,464 | 0.938 | 559,118 |
+| Unmodified upstream FLA GatedDeltaNet model | 210,843,584 | 1.248 | 420,010 |
+| Shared model with Mosaic cubic query polynomial | 200,573,344 | 1.250 | 419,436 |
+| Our independent-tanh GDN, prior job `220032` | 211,007,424 | 4.237 | 123,732 |
+
+The first three rows use the same physical B300 in job `220076`; the last
+is explicit historical context from `runs/gdn-mosaic-b300/gdn-{1,2}.json`
+on another B300. cuDNN is **1.33x** Mosaic's throughput. Stock FLA and Mosaic
+are effectively tied: their 0.14% difference is smaller than Mosaic's 3.25%
+repeat spread. cuDNN and FLA repeat spreads are 0.49% and 0.13%, respectively.
+The earlier several-fold Mosaic advantage over our GDN does not describe
+the stock FLA baseline. The upstream FLA full model is **3.39x** our historical
+GDN compute throughput, with the mathematical and runtime differences above.
+
+Including loading, transfers, checks and ordinary logging, the JAX training
+intervals average 0.944 s/update (555,616 tokens/s) for cuDNN and 1.255 s/update
+(417,663 tokens/s) for Mosaic. Native FLA's resident-batch timing has no matching
+input-pipeline interval. All 210 updates across the six new full-model trials
+have finite loss, gradient norm and parameter norm. cuDNN's output/gradient
+parity test and production-context finite check pass. Job `220076` completed in 21m17s with exit code
+zero; no checkpoints are retained. `runs/upstream-b300/record.json` pins the
+eight reports, recipes, locks, retained log and correctness-test summary.
+
+From a committed Kennel worktree, sync the two production environments as in
+`CLUSTERS.md`, then sync the independent CUDA Torch environment and submit:
+
+```bash
+uv sync --project scaffolds/transformer/benchmarks/upstream_runtime --locked --link-mode hardlink
+mkdir -p scaffolds/transformer/validation/logs/upstream-b300
+sbatch --parsable \
+  --output=scaffolds/transformer/validation/logs/upstream-b300/benchmark-%j.log \
+  scaffolds/transformer/launchers/benchmark_upstream.sbatch "$(git rev-parse HEAD)"
+```
+
+Regenerate the pooled summaries and audit the explicitly named source files:
+
+```bash
+python3 scaffolds/transformer/validation/summarize_upstream.py
 ```
 
 ## Reproduction
