@@ -20,6 +20,13 @@ independent copy of the write projection, recovering ordinary GDN initially when
 the write activation retains its default sigmoid. With independent erasure,
 ``write_activation="tanh"`` gives signed writes ``beta_t = tanh(W_b x_t)``
 without changing the projection weights or sigmoid erasure.
+
+With ``polynomial_degree=m`` for m=2 or 3, memory is a polynomial function, transformed as
+``F_t(q) = alpha_t F_{t-1}((I-lambda_t k_t k_t^T)q)`` before adding
+``v_t sum_{r=0}^m beta_r <q,k_t>^r``. ``beta_1`` retains the configured
+linear write activation; independent tanh projections produce the other coefficients
+and start at zero, nesting the linear model. The final read has a single global
+``1/sqrt(d_K)`` scale, before the same gated output RMSNorm.
 """
 
 import math
@@ -98,13 +105,14 @@ class GatedDeltaNet(nnx.Module):
         *,
         erase_mode: str = "tied",
         write_activation: str = "sigmoid",
+        polynomial_degree: int = 1,
         rngs: nnx.Rngs,
     ):
         if min(hidden_size, num_heads, key_head_dim, value_head_dim, conv_size) <= 0:
             raise ValueError("Gated DeltaNet dimensions and conv_size must be positive")
         if backend not in ("blocked", "fused"):
             raise ValueError(f"Unsupported Gated DeltaNet backend: {backend}")
-        if backend == "fused" and key_head_dim > MAX_KEY_DIM:
+        if backend == "fused" and polynomial_degree == 1 and key_head_dim > MAX_KEY_DIM:
             raise ValueError(f"The fused Gated DeltaNet backend supports key_head_dim up to {MAX_KEY_DIM}")
         if erase_mode not in ("tied", "independent"):
             raise ValueError(f"Unsupported Gated DeltaNet erase mode: {erase_mode}")
@@ -112,6 +120,11 @@ class GatedDeltaNet(nnx.Module):
             raise ValueError(f"Unsupported Gated DeltaNet write activation: {write_activation}")
         if write_activation == "tanh" and erase_mode != "independent":
             raise ValueError("Gated DeltaNet tanh write activation requires independent erasure")
+        if type(polynomial_degree) is not int or polynomial_degree not in (1, 2, 3):
+            raise ValueError("Gated DeltaNet polynomial_degree must be 1, 2, or 3")
+        if polynomial_degree > 1 and erase_mode != "independent":
+            raise ValueError("Polynomial Gated DeltaNet requires independent erasure")
+        self.polynomial_degree = polynomial_degree
         self.num_heads, self.key_head_dim, self.value_head_dim = num_heads, key_head_dim, value_head_dim
         self.key_dim, self.value_dim = num_heads * key_head_dim, num_heads * value_head_dim
         self.norm_eps = norm_eps
@@ -145,6 +158,14 @@ class GatedDeltaNet(nnx.Module):
             # nnx.clone shares array storage. Donated training state requires
             # distinct buffers for these independently updated parameters.
             self.lambda_proj.kernel[...] = self.b_proj.kernel[...].copy()
+        if polynomial_degree > 1:
+            # Clone only the module structure; no random draw or change to the
+            # initialization of this layer or any subsequent layer. Each new
+            # zero-initialized weight needs its own donated training buffer.
+            for degree in (0, *range(2, polynomial_degree + 1)):
+                projection = nnx.clone(self.b_proj)
+                projection.kernel[...] = jnp.zeros_like(self.b_proj.kernel[...])
+                setattr(self, f"b{degree}_proj", projection)
 
     def __call__(
         self,
@@ -171,7 +192,27 @@ class GatedDeltaNet(nnx.Module):
         log_decay = -jnp.exp(self.A_log[...]) * jax.nn.softplus(
             self.a_proj(x).astype(jnp.float32) + self.dt_bias[...])
         scale = self.key_head_dim ** -0.5
-        if self.backend == "fused":
+        write_coefficients = None
+        if self.polynomial_degree > 1:
+            write_coefficients = jnp.stack(tuple(
+                beta if degree == 1 else jnp.tanh(
+                    getattr(self, f"b{degree}_proj")(x).astype(jnp.float32)).astype(self.dtype)
+                for degree in range(self.polynomial_degree + 1)
+            ), axis=-1)
+            if self.backend == "fused":
+                from scaffolds.transformer.attention.backends.polynomial_gdn import (
+                    polynomial_gated_delta_rule,
+                )
+
+                read = polynomial_gated_delta_rule(q, k, v, log_decay, write_coefficients, erase, scale)
+            else:
+                from scaffolds.transformer.attention.polynomial_gdn_reference import (
+                    polynomial_gated_delta_rule_reference,
+                )
+
+                read = polynomial_gated_delta_rule_reference(
+                    q, k, v, log_decay, write_coefficients, erase, scale).astype(self.dtype)
+        elif self.backend == "fused":
             if erase is None:
                 from scaffolds.transformer.attention.backends.fla_gated_delta_rule import fla_gated_delta_rule
 
@@ -191,6 +232,13 @@ class GatedDeltaNet(nnx.Module):
                 telemetry.record(f"{name}_mean", jnp.mean(value), "mean")
                 telemetry.record(f"{name}_min", jnp.min(value), "min")
                 telemetry.record(f"{name}_max", jnp.max(value), "max")
+            if write_coefficients is not None:
+                for degree in range(self.polynomial_degree + 1):
+                    value = write_coefficients[..., degree].astype(jnp.float32)
+                    telemetry.record(f"beta_degree_{degree}_mean", jnp.mean(value), "mean")
+                    telemetry.record(f"beta_degree_{degree}_min", jnp.min(value), "min")
+                    telemetry.record(f"beta_degree_{degree}_max", jnp.max(value), "max")
+                    telemetry.record(f"beta_degree_{degree}_rms", jnp.mean(jnp.square(value)), "rms")
             gap = (gates["lambda"].astype(jnp.float32) - beta.astype(jnp.float32))
             telemetry.record("lambda_minus_beta_rms", jnp.mean(jnp.square(gap)), "rms")
         gate = self.g_proj(x).astype(jnp.float32).reshape(batch, length, heads, self.value_head_dim)
@@ -211,6 +259,18 @@ class GatedDeltaNet(nnx.Module):
             "invalid_read_count": jnp.sum(~jnp.isfinite(read32), dtype=jnp.int32),
             "invalid_output_count": jnp.sum(~jnp.isfinite(output), dtype=jnp.int32),
         }
+        if write_coefficients is not None:
+            coefficients32 = write_coefficients.astype(jnp.float32)
+            diagnostics["invalid_coefficient_count"] = jnp.sum(
+                ~jnp.isfinite(coefficients32) | (jnp.abs(coefficients32) > 1), dtype=jnp.int32)
+            for degree in range(self.polynomial_degree + 1):
+                value = coefficients32[..., degree]
+                diagnostics.update({
+                    f"beta_degree_{degree}_mean": jnp.mean(value),
+                    f"beta_degree_{degree}_min": jnp.min(value),
+                    f"beta_degree_{degree}_max": jnp.max(value),
+                    f"beta_degree_{degree}_rms": jnp.sqrt(jnp.mean(jnp.square(value))),
+                })
         if self.write_activation == "tanh":
             beta32 = beta.astype(jnp.float32)
             diagnostics["invalid_write_count"] = jnp.sum(

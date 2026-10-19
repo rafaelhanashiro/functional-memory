@@ -61,7 +61,7 @@ def execution_provenance(torch):
     distribution = metadata.distribution("flash-linear-attention")
     direct_url = json.loads(distribution.read_text("direct_url.json") or "{}")
     from fla.modules import FusedCrossEntropyLoss, FusedRMSNormGated, GatedMLP, RMSNorm, ShortConvolution
-    files = [Path(__file__), fla_root / "layers/gated_deltanet.py"]
+    files = [Path(__file__), Path(__file__).with_name("upstream_inputs.py"), fla_root / "layers/gated_deltanet.py"]
     files.extend(Path(inspect.getfile(module)) for module in
                  (FusedCrossEntropyLoss, FusedRMSNormGated, GatedMLP, RMSNorm, ShortConvolution))
     files.extend((fla_root / "modules/activations.py", fla_root / "modules/l2norm.py"))
@@ -160,9 +160,8 @@ def kernel_benchmark(torch, args, report):
     from fla.ops.gated_delta_rule import chunk_gated_delta_rule
     from scaffolds.transformer.benchmarks.upstream_inputs import kernel_inputs
 
-    if args.key_dim != args.value_dim:
-        raise ValueError("The shared fixture requires equal key and value widths")
-    fixture = kernel_inputs(args.batch, args.length, args.heads, args.key_dim, args.seed)
+    fixture = kernel_inputs(args.batch, args.length, args.heads, args.key_dim, args.seed,
+                            value_width=args.value_dim)
     report["input_sha256"] = {name: array_digest(value) for name, value in fixture.items()}
     operands = {name: torch.from_numpy(value).to(device="cuda", dtype=torch.float32 if name == "g" else torch.bfloat16)
                 for name, value in fixture.items() if name in ("q", "k", "v", "g", "beta", "do")}
@@ -192,18 +191,19 @@ def kernel_benchmark(torch, args, report):
                 return output, *gradients
             return (output,)
 
-    # The forced context raises if unsupported; the profiler also proves actual dispatch.
-    with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU]) as profile:
-        proof = run_cudnn(True)
-        torch.cuda.synchronize()
-    check_tensors(torch, proof)
-    del proof
-    events = sorted(event.key for event in profile.key_averages() if "cudnn_attention" in event.key.lower())
-    if not any("backward" in event for event in events) or not any("cudnn_attention" in event for event in events):
-        raise RuntimeError(f"Could not verify cuDNN SDPA forward/backward dispatch: {events}")
-    report["cudnn_dispatch_proof"] = events
+    if "cudnn" in args.implementations:
+        # The forced context raises if unsupported; the profiler also proves actual dispatch.
+        with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU]) as profile:
+            proof = run_cudnn(True)
+            torch.cuda.synchronize()
+        check_tensors(torch, proof)
+        del proof
+        events = sorted(event.key for event in profile.key_averages() if "cudnn_attention" in event.key.lower())
+        if not any("backward" in event for event in events) or not any("cudnn_attention" in event for event in events):
+            raise RuntimeError(f"Could not verify cuDNN SDPA forward/backward dispatch: {events}")
+        report["cudnn_dispatch_proof"] = events
     report["kernel_settings"] = {"qkv_dtype": "bfloat16", "gate_dtype": "float32", "beta_dtype": "bfloat16",
-        "gdn": "upstream standard tied sigmoid write/erase, native BF16 intermediates",
+        "gdn": "upstream standard tied sigmoid write/erase, native BF16 intermediates; linear reference workload, not polynomial GDN",
         "gdn_entry_point": "fla.ops.gated_delta_rule.chunk_gated_delta_rule",
         "gdn_state_v_first": True, "gdn_chunk_size": 64,
         "gdn_qk_normalization": "unit-normalized shared fixture, outside timing",
@@ -214,12 +214,23 @@ def kernel_benchmark(torch, args, report):
         "backward_scope": "new forward plus all input gradients, excluding fixture preparation and finite checks"}
     report["trials"] = []
     torch.cuda.reset_peak_memory_stats()
-    functions = {"upstream_fla": run_fla, "torch_cudnn": run_cudnn}
+    functions = {}
+    if "fla" in args.implementations:
+        functions["upstream_fla"] = run_fla
+    if "cudnn" in args.implementations:
+        functions["torch_cudnn"] = run_cudnn
     for trial in range(args.rounds):
         names = list(functions) if trial % 2 == 0 else list(reversed(functions))
         for name in names:
             for backward in (False, True):
                 function = lambda: functions[name](backward)
+                # The first call includes lazy compilation/autotuning and is excluded from both warmup and timing.
+                started = time.perf_counter()
+                first = function()
+                torch.cuda.synchronize()
+                first_call_seconds = time.perf_counter() - started
+                check_tensors(torch, first)
+                del first
                 warmup = []
                 for _ in range(args.warmup):
                     sample, result = measured(torch, function)
@@ -234,6 +245,7 @@ def kernel_benchmark(torch, args, report):
                     del result
                 entry = {"round": trial, "implementation": name,
                          "direction": "forward_backward" if backward else "forward",
+                         "first_call_including_lazy_compilation_seconds": first_call_seconds,
                          "warmup_samples": warmup, "samples": samples, "finite_outputs_and_gradients": finite,
                          "summary": summarize(samples, tokens=args.batch * args.length)}
                 if args.cuda_graph:
@@ -385,6 +397,8 @@ def main():
     parser.add_argument("--iterations", type=int, default=30)
     parser.add_argument("--rounds", type=int, default=2, help="Alternating implementation order for kernel trials")
     parser.add_argument("--cuda-graph", action="store_true", help="Also time captured native kernel forward/backward replay")
+    parser.add_argument("--implementations", nargs="+", choices=("fla", "cudnn"), default=["fla", "cudnn"],
+                        help="Kernel implementations; use fla alone for unequal key/value widths")
     parser.add_argument("--batch", type=int, default=64, help="Kernel batch or model microbatch")
     parser.add_argument("--global-batch", type=int, default=256)
     parser.add_argument("--length", type=int, default=2048, help="Prediction positions")

@@ -256,6 +256,15 @@ keeps the Taylor start, while the amplitude's gradient `tanh(w_r^T x_t)` is nonz
 `c_r = b_r + a_r tanh(w_r^T x_t + beta_r)`, stored as `query_polynomial_tanh_bias`
 (`[layers, heads, m+1]`, FP32, no weight decay) and starting at zero, so a constant
 shift of the pre-activation need not be read from `x_t` through `w_r`.
+`attention_coefficient_conditioning: query_key` (tanh only) multiplies each key's
+degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i` with
+`f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` from the key token's activation
+(`key_polynomial_kernel` `[layers, heads, hidden_size, m+1]`, `key_polynomial_amplitude`
+`[layers, heads, m+1]`; drawn and started like `W` and `a`, so the start is unchanged).
+The pair coefficient factorizes, so nothing pairwise is stored: the blocked reference
+scales each key column, and the fused and Mosaic query-coefficient kernels run once per
+order with the factor folded into degree-specific values, summing `m+1` FP32 partial
+outputs. Diagnostics report the key factors beside the query coefficients.
 
 The tanh path uses a dedicated fused kernel (or its Mosaic GPU counterpart,
 `attention_backend: mosaic`) that directly evaluates the query-dependent polynomial, with gradients for Q/K/V and every coefficient.
@@ -375,6 +384,33 @@ do not change decay, Q/K normalization, or gated output RMSNorm. The activation 
 part of checkpoint compatibility, run identity, and the generated study index;
 tanh runs carry the `tanh_write` W&B tag.
 
+`gdn_polynomial_degree: 2` or `3` with independent erasure replaces the linear
+memory by a polynomial function:
+`F_t(q) = exp(g_t) F_{t-1}((I-lambda_t k_t k_t^T)q) + v_t sum_r beta_{t,r}(q^T k_t)^r`.
+The linear coefficient retains `gdn_write_activation`; separate tanh projections
+for degree zero and degrees two/three start at zero, preserving the linear
+initial function. Q/K normalization, the final `1/sqrt(d_K)` read scale, and
+gated output RMSNorm are unchanged. The blocked backend is an explicit tensor
+reference. The fused Triton backend supports key/value widths up to 64 and
+lengths divisible by 64; it transports queries through prior key chunks without
+materializing polynomial features. Its work and temporary backward histories
+grow quadratically with sequence length.
+
+The fused polynomial backend defaults to FP32/TF32x3 products with two warps on
+Blackwell and four on Hopper. Blackwell rejects higher warp counts because its
+four-warp backward path fails hardware qualification with the pinned compiler.
+Experimental runtime options `POLY_GDN_VALUE_PRECISION=bf16_read` (value-read
+products) or `bf16_values` (also score-adjoint products) retain FP32 transport,
+inverse geometry, and accumulation. `POLY_GDN_NUM_WARPS` accepts 1, 2, 4, or 8.
+`POLY_GDN_MIN_CTAS_PER_SM` accepts 0 (the default, no guidance), 1, or 2;
+positive values add PTX occupancy guidance to the polynomial kernels, allowing
+the assembler to make a different register-allocation choice.
+Explicit `precision`/`num_warps`/`min_ctas_per_sm` keyword arguments on
+`polynomial_gated_delta_rule` override these settings; environment changes take
+effect when tracing a fresh executable. Backend metadata records the resolved
+options. Qualification and throughput measurements belong in
+[validation](validation/README.md).
+
 ### Gated linear attention
 
 `attention_mechanism: gla` replaces the attention module inside the same residual
@@ -409,6 +445,14 @@ Blackwell), newer than the locked toolkit reads, so launchers also point
 with BF16 operands upcast inside the kernel, Triton 3.6 on B300 computed the FP32
 products at TF32-level precision. The fused kernel passes its GPU tests on H100 and B300.
 
+Standard GLA/GDN training leaves persistent bridge caching disabled; keep
+`EJKERNEL_TRITON_CACHE_COMPILES` and its legacy `EASYDEL_TRITON_CACHE_COMPILES`
+alias unset. Benchmark launchers that enable it use a cache directory per frozen
+source commit because the bridge's source key excludes called helper functions.
+Standard acceptance sets `EJKERNEL_TRITON_CACHE_DIR` itself, overriding an external
+directory setting; enabling persistence there requires a launcher/acceptance
+change that preserves this source isolation.
+
 The OFM mixed-precision behavior is retained: RoPE promotes Q/K to FP32 and the
 fused kernel returns reads in Q's dtype, while the reference module casts its
 completed read to the configured compute dtype before head normalization.
@@ -439,14 +483,17 @@ accumulation, and NaN failure rows of the fused Triton kernels. Weights and scor
 gradients enter the tensor cores rounded once to BF16, as in FlashAttention and cuDNN,
 except for normalized odd-degree Taylor attention, whose cancelling row sums keep
 FP32-precision weights (`api.default_precision`; recorded as
-`attention_weight_precision`). They cover normalized fixed Taylor attention (degree >= 1) and tanh
-query-conditioned polynomial attention (degree 1-4), with Q/K width 8, 16, 32, 64, or
+`attention_weight_precision`). They cover normalized fixed Taylor attention (degree >= 1),
+tanh query-conditioned polynomial attention (degree 1-4), and unnormalized polynomials with
+static fixed or learned coefficients (degree 1-4, on the query-coefficient kernel with every
+query's coefficients equal), with Q/K width 8, 16, 32, 64, or
 128, value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
 (H100) or 256 (B300). An explicit `mosaic` request raises for other recipes, GPUs, or
 shapes; `auto` then uses the fused kernels. Diagnostics come from the blocked reference,
 as for the fused kernels. They are the canonical kernels for these mechanisms, and
 `scaffolds.records create` rejects a fresh recipe for them that requests `fused` unless
-`--allow-triton-attention` is supplied.
+`--allow-triton-attention` is supplied. Acceptance runs the Mosaic GPU tests only at the
+run's weight precision (`--mosaic-precision`).
 
 The requested and resolved implementations are recorded in run metadata. The
 resolved backend is stored in the run configuration and reused on resume, even
@@ -602,7 +649,8 @@ Studies configure these shared modules with execution modules at their root
   records and `results/` remain editable while jobs run. Both launchers source
   `scaffolds/launch/watchdog.sh`: when `training.log` has not grown for
   `TRANSFORMER_STALL_MINUTES` (default 20), the job logs its GPUs' state, ends the
-  running step, and exits with code 124, which the finalizer records as a stall.
+  running step, and exits with code 124. The finalizer requeues the job, which resumes
+  from its latest checkpoint, for a run's first two stalls and records a third as a failure.
 - `launchers/orcd.sbatch` does the same on ORCD. Its allocations fit that cluster's
   per-user GPU caps; a job asks for 12 hours, accepts `mit_normal_gpu`'s 6-hour
   maximum, and requeues itself before its limit (see [CLUSTERS.md](../../CLUSTERS.md)).

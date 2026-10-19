@@ -79,6 +79,7 @@ import hashlib
 import inspect
 import os
 import pickle
+import re
 import shutil
 import tempfile
 import threading
@@ -617,6 +618,56 @@ class CompilationResult:
     llir: str | None
 
 
+def _validate_min_ctas_per_sm(value: int | None) -> None:
+    if value is not None and (type(value) is not int or value <= 0):
+        raise ValueError("min_ctas_per_sm must be a positive integer or None")
+
+
+def _set_ptx_min_ctas_per_sm(ptx: str, kernel_name: str, value: int | None) -> str:
+    """Annotate one CUDA entry's launch bounds without changing its instructions.
+
+    The PTX passed to JAX is assembled again by the runtime, so a Triton-only
+    assembler option would not survive that step. Encode the requested bound
+    directly in the named entry header. None preserves the exact input bytes.
+    """
+    _validate_min_ctas_per_sm(value)
+    if value is None:
+        return ptx
+    # Ignore comments and quoted metadata while retaining offsets into the
+    # original PTX. A comment mentioning an entry/directive is not a declaration.
+    masked = re.sub(
+        r'//[^\n]*|/\*.*?\*/|"(?:\\.|[^"\\])*"',
+        lambda match: "".join("\n" if character == "\n" else " " for character in match.group()),
+        ptx,
+        flags=re.DOTALL,
+    )
+    entries = list(re.finditer(r"(?<![\w.$])\.entry\s+" + re.escape(kernel_name) + r"(?=\s*\()", masked))
+    if len(entries) != 1:
+        raise ValueError(f"Expected exactly one PTX .entry for {kernel_name!r}; found {len(entries)}")
+    parameter_start = masked.index("(", entries[0].end())
+    depth = 1
+    parameter_end = parameter_start + 1
+    while parameter_end < len(masked) and depth:
+        depth += (masked[parameter_end] == "(") - (masked[parameter_end] == ")")
+        parameter_end += 1
+    body_start = masked.find("{", parameter_end)
+    if depth or body_start < 0:
+        raise ValueError(f"PTX .entry {kernel_name!r} has no complete header/body")
+    header = masked[parameter_end:body_start]
+    if ";" in header or re.search(r"\.entry\b", header):
+        raise ValueError(f"PTX .entry {kernel_name!r} has no complete header/body")
+    directives = list(re.finditer(r"(?<![\w.$])\.minnctapersm\b", header))
+    if directives:
+        if len(directives) != 1:
+            raise ValueError(f"Duplicate .minnctapersm directives for PTX .entry {kernel_name!r}")
+        bound = re.match(r"\s+(\d+)(?![\w.])", header[directives[0].end():])
+        if bound is None or int(bound.group(1)) != value:
+            raise ValueError(f"Conflicting .minnctapersm directive for PTX .entry {kernel_name!r}")
+        return ptx
+    separator = "" if body_start and ptx[body_start - 1] == "\n" else "\n"
+    return ptx[:body_start] + f"{separator}.minnctapersm {value}\n" + ptx[body_start:]
+
+
 def compile_ttir_inplace(
     ttir,
     backend: [cb.CUDABackend | hb.HIPBackend],  # type: ignore
@@ -838,6 +889,7 @@ def _make_triton_cache_key(
     num_ctas: int,
     enable_fp_fusion: bool,
     default_dot_input_precision: str | None = None,
+    min_ctas_per_sm: int | None = None,
 ) -> str:
     """Build a deterministic SHA-256 cache key for a Triton kernel compilation.
 
@@ -857,10 +909,12 @@ def _make_triton_cache_key(
         num_ctas: Number of cooperative thread arrays.
         enable_fp_fusion: Whether floating-point fusion is enabled.
         default_dot_input_precision: Resolved default precision for FP32 dots.
+        min_ctas_per_sm: Optional positive CUDA PTX minimum-CTAs-per-SM bound.
 
     Returns:
         A SHA-256 hex-digest string uniquely identifying this compilation.
     """
+    _validate_min_ctas_per_sm(min_ctas_per_sm)
     source_hash = _triton_kernel_source_hash(fn)
     payload = (
         triton.__version__,
@@ -879,6 +933,9 @@ def _make_triton_cache_key(
         enable_fp_fusion,
         default_dot_input_precision,
     )
+    if min_ctas_per_sm is not None:
+        # Preserve historical cache identities for callers that do not opt in.
+        payload += (("min_ctas_per_sm", min_ctas_per_sm),)
     return hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
 
 
@@ -1062,6 +1119,7 @@ def get_or_create_triton_kernel(
     compute_capability,
     enable_fp_fusion,
     default_dot_input_precision: str | None = None,
+    min_ctas_per_sm: int | None = None,
     metaparams,
     dump: bool,
 ) -> tuple[triton_kernel_call_lib.TritonKernel, Any]:  # type: ignore
@@ -1083,6 +1141,8 @@ def get_or_create_triton_kernel(
             "tf32x3" or "ieee"). None preserves Triton's ambient default.
             Explicit tl.dot input_precision arguments retain precedence. On
             Triton 3.7 this default also overrides deprecated allow_tf32 flags.
+        min_ctas_per_sm: Optional positive CUDA PTX minimum-CTAs-per-SM bound.
+            None preserves existing launch bounds.
         metaparams: Kernel metaparameters.
         dump: Whether to dump debug information.
 
@@ -1092,6 +1152,9 @@ def get_or_create_triton_kernel(
     Raises:
         ValueError: For unsupported configurations or compilation errors.
     """
+    _validate_min_ctas_per_sm(min_ctas_per_sm)
+    if min_ctas_per_sm is not None and platform != "cuda":
+        raise ValueError("min_ctas_per_sm is supported only for CUDA PTX kernels")
     default_dot_input_precision = _resolve_dot_input_precision(default_dot_input_precision)
     if num_warps is None:
         num_warps = 4
@@ -1168,6 +1231,7 @@ def get_or_create_triton_kernel(
         num_ctas=num_ctas,
         enable_fp_fusion=enable_fp_fusion,
         default_dot_input_precision=default_dot_input_precision,
+        min_ctas_per_sm=min_ctas_per_sm,
     )
     kernel = _lru_get(_COMPILED_KERNEL_CACHE, cache_key)
     if kernel is not None:
@@ -1242,6 +1306,9 @@ def get_or_create_triton_kernel(
         ttir = str(module)
 
         compilation_result = compile_ttir_inplace(module, backend, options, compute_capability, platform)
+        if min_ctas_per_sm is not None:
+            compilation_result.binary = _set_ptx_min_ctas_per_sm(
+                compilation_result.binary, compilation_result.name, min_ctas_per_sm)
 
         kernel_name = compilation_result.name
         try:
@@ -1299,6 +1366,7 @@ def triton_kernel_call_lowering(
     compute_capability,
     enable_fp_fusion,
     default_dot_input_precision: str | None = None,
+    min_ctas_per_sm: int | None = None,
     input_output_aliases,
     zeroed_outputs,
     debug,
@@ -1330,6 +1398,8 @@ def triton_kernel_call_lowering(
             "tf32x3" or "ieee"). None preserves Triton's ambient default.
             Explicit tl.dot input_precision arguments retain precedence. On
             Triton 3.7 this default also overrides deprecated allow_tf32 flags.
+        min_ctas_per_sm: Optional positive CUDA PTX minimum-CTAs-per-SM bound.
+            None preserves existing launch bounds.
         input_output_aliases: Input-output aliasing specifications.
         zeroed_outputs: Outputs to zero-initialize.
         debug: Whether to enable debug output.
@@ -1339,6 +1409,7 @@ def triton_kernel_call_lowering(
     Returns:
         Lowered kernel call rule result.
     """
+    _validate_min_ctas_per_sm(min_ctas_per_sm)
     default_dot_input_precision = _resolve_dot_input_precision(default_dot_input_precision)
     kernel_call_name = name
     args = list(ctx.avals_in)
@@ -1477,6 +1548,7 @@ def triton_kernel_call_lowering(
             compute_capability=compute_capability,
             enable_fp_fusion=enable_fp_fusion,
             default_dot_input_precision=default_dot_input_precision,
+            min_ctas_per_sm=min_ctas_per_sm,
             metaparams=dict(params["metaparams"]),
             dump=debug,
         )
@@ -1514,7 +1586,8 @@ def triton_kernel_call_lowering(
         )
         kernel_call = triton_kernel_call_lib.TritonAutotunedKernelCall(
             f"{kernel_call_name} ({fn.fn.__name__}) {named_scalar_args} "
-            f"dot_input_precision={default_dot_input_precision!r}",
+            f"dot_input_precision={default_dot_input_precision!r}"
+            + (f" min_ctas_per_sm={min_ctas_per_sm}" if min_ctas_per_sm is not None else ""),
             [(call, str(config)) for call, config in safe_zip(kernel_calls, configs)],
             input_output_aliases_with_sizes,
         )
@@ -1600,6 +1673,7 @@ def triton_call(
     compute_capability: int | None = None,
     enable_fp_fusion: bool = True,
     default_dot_input_precision: str | None = None,
+    min_ctas_per_sm: int | None = None,
     input_output_aliases: dict[int, int] | None = None,
     zeroed_outputs: Sequence[int] | Callable[[dict[str, Any]], Sequence[int]] = (),
     debug: bool = False,
@@ -1629,6 +1703,8 @@ def triton_call(
             "tf32x3" or "ieee"). None preserves Triton's ambient default.
             Explicit tl.dot input_precision arguments retain precedence. On
             Triton 3.7 this default also overrides deprecated allow_tf32 flags.
+        min_ctas_per_sm: Optional positive CUDA PTX minimum-CTAs-per-SM bound.
+            None preserves existing launch bounds.
         input_output_aliases: Mapping of input indices to output indices for aliasing.
         zeroed_outputs: Indices of outputs to zero-initialize or callable returning them.
         debug: Whether to enable debug output during compilation.
@@ -1644,6 +1720,7 @@ def triton_call(
             multiple accelerators are available and the call is not under
             ``jax.shard_map``.
     """
+    _validate_min_ctas_per_sm(min_ctas_per_sm)
     if not CAN_USE_TRITON:
         raise ValueError("`triton_call` is only available when `triton` is installed.")
     out_shape = tree_util.tree_map(lambda a: jax.ShapeDtypeStruct(a.shape, a.dtype), out_shape)
@@ -1686,6 +1763,7 @@ def triton_call(
         compute_capability=compute_capability,
         enable_fp_fusion=enable_fp_fusion,
         default_dot_input_precision=default_dot_input_precision,
+        min_ctas_per_sm=min_ctas_per_sm,
         input_output_aliases=tuple(input_output_aliases.items()),
         zeroed_outputs=zeroed_outputs,
         debug=debug,
