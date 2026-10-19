@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Triton polynomial-GDN profiling and precision experiments on one B300.
-# Usage: sbatch ... benchmark_poly_gdn_tuning.sbatch COMMIT [profile|confirm] [PRECISION] [WARPS]
+# Usage: sbatch ... benchmark_poly_gdn_tuning.sbatch COMMIT [profile|confirm|diagnose] [PRECISION] [WARPS]
 #SBATCH --job-name=poly-gdn-tuning
 #SBATCH --partition=debug
 #SBATCH --nodes=1
@@ -42,6 +42,13 @@ select_toolkit() {
 }
 nvidia-smi --query-gpu=name,uuid,driver_version,memory.total --format=csv
 case "$PHASE" in
+  diagnose)
+    select_toolkit "$JPY"
+    export CUDA_LAUNCH_BLOCKING=1
+    "$JPY" -m pytest -xvs \
+      'scaffolds/transformer/tests/test_polynomial_gdn_kernel.py::test_fused_outputs_and_all_input_gradients_match_tensor_recurrence[float32-0.0003-8-64-8]' \
+      --junitxml="$LOG_DIR/diagnostic-tests.xml"
+    ;;
   profile)
     select_toolkit "$JPY"
     "$JPY" -m pytest -q scaffolds/transformer/tests/test_polynomial_gdn_kernel.py \
