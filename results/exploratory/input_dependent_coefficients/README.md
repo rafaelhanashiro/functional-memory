@@ -1,12 +1,12 @@
 # Input-dependent polynomial coefficients
 
-Opened 2026-10-07. Updated 2026-10-18. Home cluster: **Kennel**.
+Opened 2026-10-07. Updated 2026-10-19. Home cluster: **Kennel**.
 
 Does letting the query token choose the polynomial coefficients improve unnormalized
 attention with per-head output RMSNorm? The first tanh runs lost to their static
 controls at every degree, so three checks followed: the same recipe on the plain-JAX
-blocked reference (no custom kernel), a start with zero tanh amplitude, and two
-changes to the gate's initialization from that start.
+blocked reference (no custom kernel), a start with zero tanh amplitude, two
+changes to the gate's initialization from that start, and an additional per-key factor.
 
 ## Runs
 
@@ -24,8 +24,9 @@ query token. Static controls learn a constant `c_r = b_r`. Every run starts at
 | Tanh, zero-amplitude start | `r75b81509b10b`, `r8c9b076f9635`, `rb306d49a5abe`, `rf1160aa95e46` | `a_r = 0`, `w_r ~ N(0, 0.002^2)` | blocked reference |
 | Tanh, zero-amplitude start, wide draw | `r5be9a97f06e2`, `rec520e9303ac`, `r215d3d91dd02`, `rd4f66b1959d2` | `a_r = 0`, `w_r ~ N(0, 1/1024)` | Mosaic kernel |
 | Tanh, zero-amplitude start, bias inside tanh | `rbd4eb6ccc16f`, `r6bba734352f0`, `rde534cbb87a1`, `r59490b6e0818` | `a_r = 0`, `w_r ~ N(0, 0.002^2)`, learned `beta_r` in `tanh(w_r^T x_t + beta_r)` from 0 | Mosaic kernel |
+| Tanh query-key | `rba839e6386b7`, `r0aab2b77017f`, `r4a7c601b4b1f`, `r4e3f4097a60e` | as the wide draw, times `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` with `a^k_r = 0` | blocked reference (m = 1), Mosaic kernel once per order |
 
-All 25 runs are complete at 19,074 updates (10.0B tokens) with the shared recipe:
+All 29 runs are complete at 19,074 updates (10.0B tokens) with the shared recipe:
 `transformer_reference` initialization, QK normalization, unnormalized attention,
 per-head output RMSNorm, `d_K = d_V = 64`, 10 layers, width 1024, 16 heads, seed 0,
 BF16, effective batch 256, global microbatch 64, learning rate 3e-4 to 3e-5 with 400
@@ -59,6 +60,15 @@ draw keeps `||w_r|| ~ 1.25` but pointed along the constant direction of `x_t`, a
 inner bias stays within ±0.1. The optimizer removes token dependence rather than
 being stuck near the start.
 
+**A per-key factor adds at most a few hundredths.** Multiplying each key's degree-`r`
+term by `f_r(x_i)` (rank-one query–key coefficients, no recurrence) ends at 17.56 / 14.52 /
+14.00 / 13.58 against 17.35–17.54 / 14.55–14.56 / 13.96–13.98 / 13.62–13.63 for the three
+query-only starts: 0.03–0.04 better at degrees two and four, level with static at degree
+one, and 0.02 worse at degree three. The key factors vary more across tokens than the query
+coefficients (1–10% against 0.3–1%) but much of their amplitude again acts as a per-head
+constant. At degree one the per-order kernel passes round each partial output to BF16, which
+corrupts the gradient after head RMSNorm, so that degree runs on the blocked reference.
+
 **The learned coefficients are essentially static.** From the zero-amplitude start,
 `b` stays near its Taylor values, the amplitudes stay small (median `|a_r|` 0.06–0.11)
 and the coefficients barely vary across tokens: their standard deviation across the
@@ -79,24 +89,28 @@ their ratios can act.
 | 1 | tanh, zero-amplitude start, blocked reference | 2.853468 | 17.347837 | -1.17% | 17.347837 | 19,074 |
 | 1 | tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel | 2.864399 | 17.538504 | -0.09% | 17.538504 | 19,074 |
 | 1 | tanh, zero-amplitude start, bias inside tanh, Mosaic kernel | 2.864280 | 17.536430 | -0.10% | 17.536430 | 19,074 |
+| 1 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d) | 2.865312 | 17.554538 | +0.01% | 17.554538 | 19,074 |
 | 2 | static | 2.683093 | 14.630271 |  | 14.630271 | 19,074 |
 | 2 | tanh, original start, fused kernel | 2.728845 | 15.315193 | +4.68% | 15.315193 | 19,074 |
 | 2 | tanh, original start, blocked reference | 2.726419 | 15.278076 | +4.43% | 15.278076 | 19,074 |
 | 2 | tanh, zero-amplitude start, blocked reference | 2.678077 | 14.557070 | -0.50% | 14.557070 | 19,074 |
 | 2 | tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel | 2.678387 | 14.561579 | -0.47% | 14.561579 | 19,074 |
 | 2 | tanh, zero-amplitude start, bias inside tanh, Mosaic kernel | 2.677429 | 14.547647 | -0.56% | 14.547647 | 19,074 |
+| 2 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d) | 2.675586 | 14.520851 | -0.75% | 14.520851 | 19,074 |
 | 3 | static | 2.638175 | 13.987648 |  | 13.987648 | 19,074 |
 | 3 | tanh, original start, fused kernel | 2.654816 | 14.222367 | +1.68% | 14.222367 | 19,074 |
 | 3 | tanh, original start, blocked reference | 2.659099 | 14.283418 | +2.11% | 14.283418 | 19,074 |
 | 3 | tanh, zero-amplitude start, blocked reference | 2.636361 | 13.962307 | -0.18% | 13.962307 | 19,074 |
 | 3 | tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel | 2.636479 | 13.963953 | -0.17% | 13.963953 | 19,074 |
 | 3 | tanh, zero-amplitude start, bias inside tanh, Mosaic kernel | 2.637757 | 13.981805 | -0.04% | 13.981805 | 19,074 |
+| 3 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d) | 2.638958 | 13.998613 | +0.08% | 13.998613 | 19,074 |
 | 4 | static | 2.612946 | 13.639175 |  | 13.639175 | 19,074 |
 | 4 | tanh, original start, fused kernel | 2.654150 | 14.212903 | +4.21% | 14.212903 | 19,074 |
 | 4 | tanh, original start, blocked reference | 2.649159 | 14.142133 | +3.69% | 14.142133 | 19,074 |
 | 4 | tanh, zero-amplitude start, blocked reference | 2.611894 | 13.624832 | -0.11% | 13.624832 | 19,074 |
 | 4 | tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel | 2.611755 | 13.622937 | -0.12% | 13.622937 | 19,074 |
 | 4 | tanh, zero-amplitude start, bias inside tanh, Mosaic kernel | 2.612069 | 13.627211 | -0.09% | 13.627211 | 19,074 |
+| 4 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d) | 2.608653 | 13.580743 | -0.43% | 13.580743 | 19,074 |
 
 <!-- END GENERATED RESULTS -->
 
@@ -113,11 +127,10 @@ runs conditions on the key (writer) as GDN's write gate does.
 ## Open decision
 
 Query-dependent coefficients do not beat static coefficients with this recipe, with or
-without a kernel, from any of three starts. A control with an additional per-key factor
-`f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` (rank-one query–key coefficients, no recurrence)
-is running and joins this topic when complete. The decision is whether key-side
-conditioning or a per-token temperature belongs in this topic, whether to promote the
-comparison as a negative result, or to discard the topic and its runs.
+without a kernel, from any of three starts, and a per-key factor changes the outcome by
+at most a few hundredths. Saturating projection draws (`3/sqrt(d)`, `10/sqrt(d)`) are
+running and join this topic when complete. The decision is whether to promote the
+comparison as a negative result or to discard the topic and its runs.
 
 ## Regeneration
 

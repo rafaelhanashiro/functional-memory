@@ -124,13 +124,15 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Taylor attention requires backend='blocked', 'fused' or 'mosaic'")
         if backend != "manual" and dropout != 0.0:
             raise ValueError("Blocked/fused attention requires dropout=0")
-        if attention_coefficient_conditioning not in ("static", "query"):
+        if attention_coefficient_conditioning not in ("static", "query", "query_key"):
             raise ValueError("Unknown attention coefficient conditioning")
         if attention_coefficient_activation not in ("identity", "tanh"):
             raise ValueError("Unknown attention coefficient activation")
-        if attention_coefficient_activation != "identity" and attention_coefficient_conditioning != "query":
+        if attention_coefficient_activation != "identity" and attention_coefficient_conditioning == "static":
             raise ValueError("Tanh coefficients require query conditioning")
-        if attention_coefficient_conditioning == "query" and (
+        if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":
+            raise ValueError("Query-key coefficients require the tanh activation")
+        if attention_coefficient_conditioning in ("query", "query_key") and (
                 attention_normalization or attention_degree is None or attention_degree < 1 or quadratic_mode != "fixed"
                 or attention_fixed_coefficients is not None or attention_fixed_square_factors is not None):
             raise ValueError("Query-conditioned coefficients require unnormalized polynomial attention")
@@ -182,16 +184,24 @@ class MultiHeadAttention(nnx.Module):
         query_bias = parameters.pop("query_polynomial_bias", None)
         query_amplitude = parameters.pop("query_polynomial_amplitude", None)
         query_tanh_bias = parameters.pop("query_polynomial_tanh_bias", None)
-        if self.attention_coefficient_conditioning == "query":
-            from scaffolds.transformer.attention.input_dependent import project_coefficients
+        key_kernel = parameters.pop("key_polynomial_kernel", None)
+        key_amplitude = parameters.pop("key_polynomial_amplitude", None)
+        if self.attention_coefficient_conditioning in ("query", "query_key"):
+            from scaffolds.transformer.attention.input_dependent import project_coefficients, project_key_factors
 
             if query_kernel is None or query_bias is None:
                 raise ValueError("Query-conditioned attention requires its model-owned kernel and bias")
             parameters["query_polynomial_coefficients"] = project_coefficients(
                 x, query_kernel, query_bias, amplitude=query_amplitude,
                 activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias)
-        elif (query_kernel is not None or query_bias is not None or query_amplitude is not None
-              or query_tanh_bias is not None):
+            if self.attention_coefficient_conditioning == "query_key":
+                if key_kernel is None or key_amplitude is None:
+                    raise ValueError("Query-key attention requires its model-owned key kernel and amplitude")
+                parameters["key_polynomial_factors"] = project_key_factors(x, key_kernel, key_amplitude)
+            elif key_kernel is not None or key_amplitude is not None:
+                raise ValueError("Query-conditioned attention cannot receive key factor parameters")
+        elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_tanh_bias,
+                                                 key_kernel, key_amplitude)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
         q, k, v = self.q_proj(x), self.k_proj(x), self.v_proj(x)
         if self.backend != "manual":

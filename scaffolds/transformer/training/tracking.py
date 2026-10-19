@@ -61,8 +61,8 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
         tags.append("tanh_write")
     if identity.get("qk_norm"):
         tags.append("qk_norm")
-    if identity.get("attention_coefficient_conditioning") == "query":
-        tags.append("query_conditioned_coefficients")
+    if identity.get("attention_coefficient_conditioning") in ("query", "query_key"):
+        tags.append(f"{identity['attention_coefficient_conditioning']}_conditioned_coefficients")
         tags.append(f"coefficient_{config.model.attention_coefficient_activation}")
     if identity.get("attention_output_scaling"):
         tags.append(f"output_{identity['attention_output_scaling']}")

@@ -53,6 +53,7 @@ RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHO
 NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
+QUERY_KEY_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_key_polynomial.py"
 TANH_WRITE_GDN_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write.py"
 TANH_WRITE_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write_kernel.py"
 POLYNOMIAL_GDN_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn.py"
@@ -107,10 +108,13 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                 paths.append(CUBIC_GDN_TESTS)
             elif resolved_backend == "fused":
                 paths.append(CUBIC_GDN_KERNEL_TESTS)
-    if model.get("attention_coefficient_conditioning", "static") == "query":
+    conditioning = model.get("attention_coefficient_conditioning", "static")
+    if conditioning in ("query", "query_key"):
         paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)
         if model.get("attention_coefficient_activation", "identity") == "tanh":
             paths.append(QUERY_TANH_POLYNOMIAL_TESTS)
+        if conditioning == "query_key":
+            paths.append(QUERY_KEY_POLYNOMIAL_TESTS)
     if (resolved_backend == "fused" and model.get("attention_mechanism", "dot_product") == "dot_product"
             and model.get("attention_normalization", True)
             and (model.get("attention_coefficients") == "learned"
@@ -188,7 +192,7 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
         if model.get("attention_output_scaling", "none") != "none" and cpu:
             tests.append("attention_output_scaling")
         if resolved_backend == "mosaic" and not cpu:
-            query = model.get("attention_coefficient_conditioning", "static") == "query"
+            query = model.get("attention_coefficient_conditioning", "static") in ("query", "query_key")
             tests.extend(["mosaic_query" if query else "mosaic_taylor", "mosaic_repeatability"])
     if model.get("initialization", "flax_default") != "flax_default" and cpu:
         tests.append("initialization")

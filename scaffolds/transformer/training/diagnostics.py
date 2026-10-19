@@ -143,7 +143,9 @@ def attention_identity(config) -> dict:
     mode = config.model.quadratic_mode
     normalized = config.model.attention_normalization
     learned_polynomial = has_learned_polynomial(config.model)
-    query_conditioned = config.model.attention_coefficient_conditioning == "query"
+    conditioning = config.model.attention_coefficient_conditioning
+    query_conditioned = conditioning in ("query", "query_key")
+    key_conditioned = conditioning == "query_key"
     query_tanh = query_conditioned and config.model.attention_coefficient_activation == "tanh"
     rational = has_rational_kernel(config.model)
     fixed_polynomial = has_fixed_polynomial(config.model)
@@ -259,6 +261,7 @@ def attention_identity(config) -> dict:
             per_polynomial = (degree + 1) * (
                 config.model.hidden_size + 1 + int(query_tanh)
                 + int(query_tanh and config.model.attention_coefficient_tanh_bias)
+                + (config.model.hidden_size + 1 if key_conditioned else 0)
                 if query_conditioned else 1)
         identity.update({
             "attention_coefficients": "learned",
@@ -286,19 +289,23 @@ def attention_identity(config) -> dict:
             ", beta initially 0" if inner_bias else "")
         tanh_formula = "c(x_t) = b + a*tanh(x_t W + beta)" if inner_bias else "c(x_t) = b + a*tanh(x_t W)"
         identity.update(
-            attention_kernel="query_polynomial_unnormalized",
-            attention_coefficient_conditioning="query",
+            attention_kernel="query_key_polynomial_unnormalized" if key_conditioned else "query_polynomial_unnormalized",
+            attention_coefficient_conditioning=conditioning,
             attention_coefficient_activation=config.model.attention_coefficient_activation,
             attention_coefficient_input="pre_attention_rmsnorm_activation",
             attention_coefficient_projection_dtype="float32",
             **({"attention_coefficient_amplitude_initial": amplitude,
                 "attention_coefficient_projection_initial_std": spread} if (amplitude, spread) != (1.0, 0.0) else {}),
             **({"attention_coefficient_tanh_bias": True} if inner_bias else {}),
-            attention_formula=(f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i, s_ti = Q_t K_i^T / sqrt(d_k); "
+            attention_formula=((f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) f_r(x_i) s_ti^r v_i" if key_conditioned
+                                else f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i")
+                               + ", s_ti = Q_t K_i^T / sqrt(d_k); "
                                + (f"{tanh_formula} per layer/head, {tanh_start}, b_r initially 1/r!; "
                                   if query_tanh else "c(x_t) = x_t W + b per layer/head, W initially zero, b initially (1,1); ")
-                               +
-                               "x_t is the activation after the block input RMSNorm"),
+                               + ("f(x_i) = 1 + a_k*tanh(x_i W_k) per layer/head, W_k drawn like W and a_k starting "
+                                  "like a; x_t and x_i are the key and query tokens' activations"
+                                  if key_conditioned else "x_t is the activation")
+                               + " after the block input RMSNorm"),
         )
     if mode != "fixed":
         identity.update({
@@ -324,7 +331,8 @@ def attention_identity(config) -> dict:
         block_q, block_k = ((None, None) if degree is None and normalized else
                            _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
         identity.update({
-            "attention_implementation": ("pallas_triton_query_polynomial" if query_tanh else
+            "attention_implementation": ("pallas_triton_query_polynomial_per_degree_values" if key_conditioned else
+                                         "pallas_triton_query_polynomial" if query_tanh else
                                          "pallas_triton_linear_plus_fp32_prefix_sum" if query_conditioned else
                                          "cudnn" if degree is None and normalized else "pallas_triton"),
             "query_block_size": block_q,
@@ -337,7 +345,8 @@ def attention_identity(config) -> dict:
 
         # Tiles differ between the Hopper and Blackwell kernels; the GPU is recorded with the hardware.
         identity.update({
-            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial" if query_tanh
+            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
+                                         else "pallas_mosaic_gpu_query_polynomial" if query_tanh
                                          else "pallas_mosaic_gpu"),
             "attention_weight_precision": default_precision("query" if query_conditioned else "taylor", degree),
             "query_block_size": None,
@@ -464,6 +473,8 @@ def query_coefficient_report(params, raw_layers) -> dict:
                  if "query_polynomial_amplitude" in params else None)
     inner_bias = (np.asarray(jax.device_get(params["query_polynomial_tanh_bias"][...]), dtype=np.float64)
                   if "query_polynomial_tanh_bias" in params else None)
+    key_amplitude = (np.asarray(jax.device_get(params["key_polynomial_amplitude"][...]), dtype=np.float64)
+                     if "key_polynomial_amplitude" in params else None)
     summaries = {
         statistic: np.stack([layer[f"query_coefficient_{statistic}"] for layer in raw_layers])
         for statistic in ("mean", "std", "min", "max")
@@ -484,6 +495,20 @@ def query_coefficient_report(params, raw_layers) -> dict:
         report.update(activation="tanh", modulation_amplitude=_serializable(amplitude))
     if inner_bias is not None:
         report["tanh_bias"] = _serializable(inner_bias)
+    if key_amplitude is not None:
+        key_kernel = np.asarray(jax.device_get(params["key_polynomial_kernel"][...]), dtype=np.float64)
+        key_summaries = {
+            statistic: np.stack([layer[f"key_factor_{statistic}"] for layer in raw_layers])
+            for statistic in ("mean", "std", "min", "max")
+        }
+        report["key_factors"] = {
+            "formula": "1 + a_k*tanh(x_i W_k)",
+            "effective_summary": {name: _serializable(values) for name, values in key_summaries.items()},
+            "amplitude": _serializable(key_amplitude),
+            "projection_kernel_l2": _serializable(np.linalg.norm(key_kernel, axis=-2)),
+        }
+        report["finite"] = bool(report["finite"] and np.isfinite(key_amplitude).all() and np.isfinite(key_kernel).all()
+                                and all(np.isfinite(values).all() for values in key_summaries.values()))
     return report
 
 def qk_norm_scale_report(params, config) -> dict:
@@ -563,7 +588,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     for index, raw in enumerate(raw_layers):
         layer = {"layer": index}
         for name, value in raw.items():
-            if name.startswith("query_coefficient_"):
+            if name.startswith(("query_coefficient_", "key_factor_")):
                 continue  # Per-head/order arrays are summarized in the coefficient report.
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
@@ -598,7 +623,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         coefficient_report = quadratic_coefficient_report(params, config)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite quadratic coefficients")
-    elif config.model.attention_coefficient_conditioning == "query":
+    elif config.model.attention_coefficient_conditioning in ("query", "query_key"):
         coefficient_report = query_coefficient_report(params, raw_layers)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
@@ -663,7 +688,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         report["kernel_values"] = "unshifted_fixed_polynomial"
     elif has_fixed_square_factors(config.model):
         report["kernel_values"] = "unshifted_fixed_sum_of_squares"
-    if config.model.attention_coefficient_conditioning == "query":
+    if config.model.attention_coefficient_conditioning in ("query", "query_key"):
         report["kernel_values"] = "unshifted_query_polynomial"
     if scale_report is not None:
         report["qk_norm_scale"] = scale_report

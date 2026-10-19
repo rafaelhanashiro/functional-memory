@@ -26,6 +26,7 @@ def blocked_dot_product_attention(
     polynomial_coefficients: jax.Array | None = None,
     polynomial_square_factors: jax.Array | None = None,
     query_polynomial_coefficients: jax.Array | None = None,
+    key_polynomial_factors: jax.Array | None = None,
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
     **denominators,
@@ -47,7 +48,8 @@ def blocked_dot_product_attention(
     Learned polynomial coefficients ([m+1] or [heads, m+1]) permit signed kernels;
     with normalization they divide by the signed row sum like odd Taylor kernels.
     Query coefficients [batch,time,heads,m+1] instead define one unnormalized
-    polynomial of degree m>=1 for each query and head.
+    polynomial of degree m>=1 for each query and head; key factors of the same shape
+    multiply each key's degree-r term, giving the pair coefficient c_r(t) f_r(i).
     Square factors ([m+1] or [heads, m+1], even m) give q1^2 + q2^2: nonnegative
     kernel values, exact zeros allowed, and only a positive row sum is valid.
     Denominator coefficients ([d] or [heads, d]) with learned polynomial coefficients
@@ -111,6 +113,10 @@ def blocked_dot_product_attention(
         raise ValueError("Polynomial coefficients must have shape (m+1,) or (heads, m+1)")
     if query_conditioned and query_polynomial_coefficients.shape != (batch, time, heads, attention_degree + 1):
         raise ValueError("Query coefficients must have shape [batch,time,heads,m+1]")
+    key_conditioned = key_polynomial_factors is not None
+    if key_conditioned and (not query_conditioned
+                            or key_polynomial_factors.shape != query_polynomial_coefficients.shape):
+        raise ValueError("Key factors require query coefficients of the same shape [batch,time,heads,m+1]")
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -123,6 +129,7 @@ def blocked_dot_product_attention(
     if query_conditioned:
         padded_coefficients = jnp.pad(query_polynomial_coefficients.astype(jnp.float32),
                                       ((0, 0), (0, pad), (0, 0), (0, 0)))
+        key_factors = key_polynomial_factors.astype(jnp.float32) if key_conditioned else None
     starts = jnp.arange(block_count, dtype=jnp.int32) * block_size
     key_positions = jnp.arange(time)
 
@@ -153,11 +160,17 @@ def blocked_dot_product_attention(
             safe_scores = jnp.where(causal, scores, 0.0)
             if query_conditioned:
                 query_coefficients = jax.lax.dynamic_slice_in_dim(padded_coefficients, start, block_size, axis=1)
-                kernel = jnp.broadcast_to(
-                    jnp.swapaxes(query_coefficients[..., -1], 1, 2)[..., None], safe_scores.shape)
-                for order in range(attention_degree - 1, -1, -1):
+
+                def pair_coefficient(order):
+                    # [b, h, q, 1] per query; a key factor [b, h, 1, k] scales each key's degree-r term.
                     coefficient = jnp.swapaxes(query_coefficients[..., order], 1, 2)[..., None]
-                    kernel = kernel * safe_scores + coefficient
+                    if key_conditioned:
+                        coefficient = coefficient * jnp.swapaxes(key_factors[..., order], 1, 2)[:, :, None, :]
+                    return coefficient
+
+                kernel = jnp.broadcast_to(pair_coefficient(attention_degree), safe_scores.shape)
+                for order in range(attention_degree - 1, -1, -1):
+                    kernel = kernel * safe_scores + pair_coefficient(order)
             else:
                 kernel = (_learned_polynomial(safe_scores, polynomial_coefficients) if polynomial_coefficients is not None
                       else square_sum_polynomial(safe_scores, polynomial_square_factors, attention_degree)

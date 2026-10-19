@@ -6,6 +6,7 @@ and RoPE, retain the ordinary dot-product path. Coefficient projection and basis
 combination use FP32; the final attention output has V's dtype.
 """
 
+from functools import partial
 import math
 
 import jax
@@ -14,9 +15,10 @@ import jax.numpy as jnp
 
 def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
-                    tanh_bias: bool = False):
+                    tanh_bias: bool = False, conditioning: str = "query"):
     """b starts at 1/r!; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial
-    and its optional inner bias beta at zero."""
+    and its optional inner bias beta at zero. "query_key" adds the key factor's W_k (same draw
+    rule, independent draws) and a_k (same start as a)."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     count = degree + 1
@@ -45,6 +47,22 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
         raise ValueError(f"Unknown coefficient activation: {activation}")
     elif tanh_bias:
         raise ValueError("A bias inside tanh requires tanh coefficients")
+    if conditioning == "query_key":
+        if activation != "tanh":
+            raise ValueError("Query-key coefficients require tanh coefficients")
+        specs += (
+            AttentionParameterSpec(
+                name="key_polynomial_kernel", argument="key_polynomial_kernel",
+                initial=(0.0,) * (hidden_size * count), initial_shape=(hidden_size, count),
+                sharing="per_head", weight_decay=False, initial_std=float(projection_initial_std),
+            ),
+            AttentionParameterSpec(
+                name="key_polynomial_amplitude", argument="key_polynomial_amplitude",
+                initial=(float(amplitude_initial),) * count, sharing="per_head", weight_decay=False,
+            ),
+        )
+    elif conditioning != "query":
+        raise ValueError(f"Unknown input-dependent coefficient conditioning: {conditioning}")
     return specs
 
 
@@ -68,6 +86,80 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, activation="identit
     elif activation != "identity" or amplitude is not None or tanh_bias is not None:
         raise ValueError("Identity coefficients cannot receive an amplitude or inner bias; unknown activation otherwise")
     return projected + bias.astype(jnp.float32)
+
+
+def project_key_factors(x, kernel, amplitude):
+    """FP32 per-key factors f = 1 + a*tanh(xW) with shape [B,T,H,R]; exactly one while a = 0."""
+    if (x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1]
+            or amplitude.shape != (kernel.shape[0], kernel.shape[-1])):
+        raise ValueError("Key factor projection requires x [B,T,D], kernel [H,D,R], amplitude [H,R]")
+    projected = jnp.einsum(
+        "btd,hdr->bthr", x.astype(jnp.float32), kernel.astype(jnp.float32),
+        precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32,
+    )
+    return 1.0 + amplitude.astype(jnp.float32) * jnp.tanh(projected)
+
+
+def query_key_polynomial_attention(q, k, v, coefficients, key_factors, *, backend="blocked",
+                                   return_diagnostics=False):
+    """sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i: per-query coefficients times per-key factors.
+
+    The blocked reference evaluates the pairwise coefficient directly. The fused and Mosaic
+    query-coefficient kernels run once per order r with the key factor folded into the
+    values, v_i^(r) = f_r(x_i) v_i, and the coefficient vector c_r(x_t) e_r; the m+1 partial
+    outputs are summed in FP32, so a nonfinite row in any pass poisons that row.
+    """
+    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+
+    if coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3] or coefficients.shape[-1] < 2:
+        raise ValueError("Query coefficients require [batch,time,heads,degree+1], degree >= 1")
+    if key_factors.shape != coefficients.shape:
+        raise ValueError("Key factors must match the query coefficient shape [batch,time,heads,degree+1]")
+    degree = coefficients.shape[-1] - 1
+    reference = partial(blocked_dot_product_attention, q, k, v, attention_degree=degree,
+                        attention_normalization=False, query_polynomial_coefficients=coefficients,
+                        key_polynomial_factors=key_factors)
+    if backend == "blocked":
+        result = reference(return_diagnostics=return_diagnostics)
+        if not return_diagnostics:
+            return result
+        output, diagnostics = result
+    elif backend in ("fused", "mosaic"):
+        if backend == "fused":
+            from scaffolds.transformer.attention.backends.fused_query_polynomial import (
+                fused_query_polynomial_attention as attend,
+            )
+        else:
+            from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial_attention as attend
+
+        coefficients32, factors32 = coefficients.astype(jnp.float32), key_factors.astype(jnp.float32)
+        total = None
+        for order in range(degree + 1):
+            selected = jnp.zeros_like(coefficients32).at[..., order].set(coefficients32[..., order])
+            values = (v.astype(jnp.float32) * factors32[..., order, None]).astype(v.dtype)
+            partial_output = attend(q, k, values, selected).astype(jnp.float32)
+            total = partial_output if total is None else total + partial_output
+        output = total.astype(v.dtype)
+        output = jnp.where(jnp.all(jnp.isfinite(output), axis=-1, keepdims=True), output, jnp.nan)
+        if not return_diagnostics:
+            return output
+        _, diagnostics = reference(return_diagnostics=True)
+    else:
+        raise ValueError("Query-key polynomial attention requires a blocked, fused or mosaic backend")
+    diagnostics.update(jax.lax.stop_gradient(coefficient_statistics(coefficients)))
+    diagnostics.update(jax.lax.stop_gradient(key_factor_statistics(key_factors)))
+    return output, diagnostics
+
+
+def key_factor_statistics(key_factors):
+    """Actual per-key factors on the diagnostic sample, per head and order."""
+    values = key_factors.astype(jnp.float32)
+    return {
+        "key_factor_mean": jnp.mean(values, axis=(0, 1)),
+        "key_factor_std": jnp.std(values, axis=(0, 1)),
+        "key_factor_min": jnp.min(values, axis=(0, 1)),
+        "key_factor_max": jnp.max(values, axis=(0, 1)),
+    }
 
 
 def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False):
