@@ -1000,7 +1000,10 @@ Mosaic GPU: `hopper.py` (wgmma, FlashAttention-3 structure) and `blackwell.py` (
 tensor memory, warp-specialized). `common.py` holds each family's elementwise mathematics, so
 both families share one set of pipelines. `api.py` exposes `taylor_attention` (normalized
 fixed Taylor, matching `fused_taylor`) and `query_polynomial_attention` (unnormalized, FP32
-coefficients per query and head, matching `fused_query_polynomial`). Scores, polynomials, row
+coefficients per query and head, matching `fused_query_polynomial`); unnormalized polynomials
+with static fixed or learned coefficients (degree 1-4, matching `fused_unnormalized` and
+`fused_learned_polynomial`) run on the query kernel with every query's coefficients equal,
+broadcasting their coefficient gradients back. Scores, polynomials, row
 sums, and accumulators are FP32, with the Triton kernels' failure rules: NaN rows for a
 nonfinite, nonpositive (even Taylor degree), or zero (odd degree) row sum, a nonfinite score
 or weight (query), or an overflowing output. They accept BF16 inputs, Q/K width 8, 16, 32,
@@ -1015,6 +1018,7 @@ Weights and score gradients enter the tensor cores at a weight precision chosen 
 | Setup | Weight precision |
 | --- | --- |
 | Tanh query-conditioned, m 1-4 | BF16: one rounding, as FlashAttention and cuDNN |
+| Unnormalized static coefficients, m 1-4 | BF16 |
 | Normalized Taylor, even m | BF16 |
 | Normalized Taylor, odd m | FP32: three BF16 components whose sum is the FP32 value |
 
@@ -1028,6 +1032,11 @@ amplifies their rounding; it keeps FP32-precision weights (the accuracy table be
 independent NumPy FP64 outputs and VJPs (coefficient gradients per order) and against the
 Triton kernels, the production context, causality, nonfinite handling, rejected inputs, the
 model's dispatch, and bitwise-identical results across 20 repeats at production size.
+`tests/test_mosaic_unnormalized.py` (28) checks fixed Taylor and shared or per-head learned
+static coefficients against FP64 and the Triton kernels, including the summed coefficient
+gradients; the BF16 cases of all four files (106) pass on H100 and B300. Acceptance passes a
+run's weight precision (`--mosaic-precision`), so its GPU tests skip the other precision's
+cases.
 
 ### Accuracy
 
@@ -1073,6 +1082,8 @@ runs on the same GPU:
 | --- | --- | ---: | ---: | ---: |
 | Query m = 3, d_K = 64 | H100 SXM | 120.7 ms | 103.0 ms | 115.0 ms (120.8 ms) |
 | | B300 | 108.5 ms | 59.5 ms | 67.4 ms (108.8 ms) |
+| Static m = 3, d_K = 64 | H100 SXM | 118.9 ms | 99.5 ms | |
+| | B300 | 108.6 ms | 58.8 ms | |
 | Taylor m = 2, d_K = 32 | H100 SXM | 108.0 ms | 88.9 ms | 96.1 ms (107.9 ms) |
 | | B300 | 77.1 ms | 49.3 ms | 55.0 ms (77.2 ms) |
 
@@ -1098,8 +1109,9 @@ nor freed by it.
 `pilot_mosaic.sbatch` trains a study recipe for 1,000 updates (microbatch 16, validation
 every 100 updates) with a chosen backend, from the same initialization and data; summaries are
 in `runs/mosaic-pilot/`. Recipes: tanh query-conditioned m = 3, d_K = 64, head RMSNorm
-(`r0bc57959ef6c`), and normalized Taylor m = 2, d_K = 32 (`raf32fab4ba52`), both with 400
-warmup updates. XLA's GPU reductions are not deterministic, so two fused runs already
+(`r0bc57959ef6c`), unnormalized static per-head learned coefficients m = 3, d_K = 64, head
+RMSNorm (`r5ae483d40d62`), and normalized Taylor m = 2, d_K = 32 (`raf32fab4ba52`), all with
+400 warmup updates. XLA's GPU reductions are not deterministic, so two fused runs already
 diverge; a repeated fused query run measures that spread. H100 runs used SXM and PCIe cards.
 
 Validation NLL:
@@ -1114,6 +1126,10 @@ Validation NLL:
 | Query m = 3, B300 | fused | 5.6396 | 4.6164 | 4.0552 | 3.7141 | 3.5108 |
 | | Mosaic, FP32 weights | 5.6601 | 4.6079 | 4.0514 | 3.6950 | 3.5120 |
 | | Mosaic, BF16 weights | 5.6365 | 4.6179 | 4.0485 | 3.6903 | 3.5101 |
+| Static m = 3, H100 | fused | 5.6991 | 4.7194 | 4.1582 | 3.8295 | 3.6210 |
+|  | Mosaic, BF16 weights | 5.7029 | 4.7121 | 4.1590 | 3.8328 | 3.6197 |
+| Static m = 3, B300 | fused | 5.6981 | 4.7252 | 4.1660 | 3.8374 | 3.6183 |
+|  | Mosaic, BF16 weights | 5.7124 | 4.7339 | 4.1733 | 3.8482 | 3.6330 |
 | Taylor m = 2, H100 | fused | 5.4085 | 4.7960 | 4.4177 | 4.1762 | 4.0295 |
 | | Mosaic, FP32 weights | 5.4168 | 4.7962 | 4.4217 | 4.1681 | 4.0133 |
 | | Mosaic, BF16 weights | 5.4061 | 4.8322 | 4.4402 | 4.1965 | 4.0154 |
@@ -1122,8 +1138,9 @@ Validation NLL:
 | | Mosaic, BF16 weights | 5.4078 | 4.7791 | 4.4386 | 4.1682 | 4.0223 |
 
 From step 200 on, the two fused query runs differ by up to 0.029; every Mosaic run stays
-within 0.038 of the fused run, with differences that change sign and end between -0.016 and
-+0.007 at step 1,000. Mosaic tracks the fused kernels within run-to-run variation at both
+within 0.038 of the fused run and ends between -0.016 and +0.015 at step 1,000. Differences
+change sign except for static m = 3 on B300 (+0.001 to +0.015), within the spread of two fused
+runs, which also keep one sign. Mosaic tracks the fused kernels within run-to-run variation at both
 precisions, on one GPU and two.
 
 From a committed worktree on Kennel (pilot arguments: commit, GPU type, study run, backend,
