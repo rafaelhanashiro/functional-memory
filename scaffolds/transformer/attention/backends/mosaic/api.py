@@ -34,7 +34,7 @@ from scaffolds.transformer.attention.backends.mosaic.common import BF16, BF16X3,
 WIDTHS = (8, 16, 32, 64, 128)
 VALUE_WIDTH = 64
 MIN_WIDTH = 16  # BF16 tensor-core contraction step on Hopper and Blackwell
-MAX_QUERY_DEGREE = 4  # per-query coefficient vectors for a whole sequence share shared memory
+MAX_QUERY_DEGREE = 8  # B300 dK/dV holds (m+1) FP32 coefficients for every query in shared memory
 
 
 def default_precision(family: str, degree: int) -> str:
