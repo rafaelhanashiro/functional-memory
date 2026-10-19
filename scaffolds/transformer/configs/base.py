@@ -151,6 +151,15 @@ class ModelConfig:
                 and getattr(self, "positional_encoding", "rope") == "rope"
                 and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
 
+    def path_fused_supported(self) -> bool:
+        """Whether FLA's fused PaTH kernels cover this recipe's widths and degree (any GPU, length)."""
+        from scaffolds.transformer.attention.backends.fla_path_attention import HEAD_DIMS, MAX_DEGREE
+
+        degree = self.attention_degree
+        return (self.positional_encoding == "path" and self.qk_head_dim in HEAD_DIMS
+                and self.value_head_dim == self.qk_head_dim
+                and (degree is None or (isinstance(degree, int) and 1 <= degree <= MAX_DEGREE)))
+
     def path_kernel(self) -> str | None:
         """The PaTH attention kernel this recipe uses, or None for RoPE recipes."""
         if self.positional_encoding != "path":
@@ -195,8 +204,12 @@ class ModelConfig:
             if self.attention_mechanism != "dot_product" or not (softmax or query_tanh):
                 raise ValueError("PaTH position encoding supports softmax and tanh query-conditioned "
                                  "unnormalized polynomial attention")
-            if self.attention_backend != "blocked":
-                raise ValueError("PaTH attention runs its chunked JAX implementation: set model.attention_backend: blocked")
+            if self.attention_backend not in ("auto", "blocked", "fused"):
+                raise ValueError("PaTH attention runs on model.attention_backend blocked (its chunked JAX "
+                                 "implementation), fused (FLA's Triton kernels), or auto")
+            if self.attention_backend == "fused" and not self.path_fused_supported():
+                raise ValueError("Fused PaTH needs equal qk_head_dim and value_head_dim in 16, 32, 64, 128 "
+                                 "and polynomial degree 1-4")
         if self.attention_backend == "mosaic" and not self.mosaic_supported():
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention and tanh query-conditioned "
                              "polynomial attention of degree 1-4, with qk_head_dim 8, 16, 32, 64, or 128 and "
@@ -486,10 +499,13 @@ def validate_config(config: Config) -> None:
         raise ValueError("Packed data requires train_manifest and eval_manifest")
     if train.dtype not in ("float32", "bfloat16"):
         raise ValueError("train.dtype must be float32 or bfloat16")
-    if (config.model.attention_mechanism == "dot_product"
+    if (config.model.attention_mechanism == "dot_product" and config.model.positional_encoding == "rope"
             and config.model.attention_backend in ("fused", "cudnn") and config.model.attention_degree is None
             and config.model.attention_normalization and train.dtype != "bfloat16"):
         raise ValueError("Fused exact-softmax attention uses cuDNN and requires train.dtype=bfloat16")
+    if (config.model.positional_encoding == "path" and config.model.attention_backend == "fused"
+            and train.dtype != "bfloat16"):
+        raise ValueError("Fused PaTH attention requires train.dtype=bfloat16")
     if config.model.attention_backend == "mosaic" and train.dtype != "bfloat16":
         raise ValueError("Mosaic attention requires train.dtype=bfloat16")
     if config.model.attention_backend == "fused" and (

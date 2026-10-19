@@ -282,7 +282,7 @@ def attention_identity(config) -> dict:
             attention_formula=identity.get("attention_formula", "causal_softmax(QK^T / sqrt(d_k)) V") + (
                 ", divided by the number of visible keys t" if scaling == "inverse_position"
                 else ", then per-head RMSNorm over value channels with a learned gain"))
-    if config.model.attention_backend == "fused":
+    if config.model.attention_backend == "fused" and config.model.positional_encoding != "path":
         if not normalized:
             from scaffolds.transformer.attention.backends.fused_unnormalized import _tile_sizes
         else:
@@ -320,6 +320,7 @@ def attention_identity(config) -> dict:
             "diagnostic_query_block_size": QUERY_BLOCK_SIZE,
         })
     if config.model.positional_encoding == "path":
+        from scaffolds.transformer.attention.backends.fla_path_attention import SPLIT
         from scaffolds.transformer.attention.path import CHUNK_SIZE
 
         model = config.model
@@ -333,6 +334,13 @@ def attention_identity(config) -> dict:
             "path_chunk_size": CHUNK_SIZE,
             "query_block_size": None,
             "diagnostic_backend": "jax_path_chunked_ut_transform",
+            **({"attention_implementation": ("fla_parallel_path_attention_triton" if model.path_kernel() == "softmax"
+                                             else "fla_parallel_path_query_polynomial_triton"),
+                # FLA sizes its tiles from the GPU's shared memory: 64-token UT-transform chunks and
+                # key blocks, 128-token query blocks, and 512-token splits on H100 and B300.
+                "path_chunk_size": None, "path_split_size": SPLIT, "key_block_size": None,
+                "attention_kernel_dot_precision": "tf32"}
+               if model.attention_backend == "fused" else {}),
             "attention_score_position_encoding": (
                 "PaTH: s_ts = q_t^T H_t ... H_(s+1) k_s / sqrt(d_k), H_t = I - beta_t w_t w_t^T; "
                 "w_t = L2norm(SiLU(causal_conv(x_t W_down W_up))) per head, beta_t = 2 sigmoid(x_t W_beta + b); no RoPE"),

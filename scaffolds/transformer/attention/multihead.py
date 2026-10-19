@@ -1,5 +1,6 @@
 """Shared Q/K/V projections, positional encoding, and output projection."""
 
+from functools import partial
 from typing import Literal
 import math
 
@@ -75,8 +76,8 @@ class MultiHeadAttention(nnx.Module):
     ):
         if positional_encoding not in ("rope", "path"):
             raise ValueError(f"Unknown positional encoding: {positional_encoding}")
-        if positional_encoding == "path" and backend != "blocked":
-            raise ValueError("PaTH attention runs its chunked JAX implementation (backend='blocked')")
+        if positional_encoding == "path" and backend not in ("auto", "blocked", "fused"):
+            raise ValueError("PaTH attention runs on backend 'blocked' (JAX) or 'fused' (FLA's Triton kernels)")
         self.positional_encoding = positional_encoding
         _validate_degree(attention_degree)
         if not isinstance(attention_normalization, bool):
@@ -285,8 +286,17 @@ class MultiHeadAttention(nnx.Module):
         chunk = CHUNK_SIZE if seq_len % CHUNK_SIZE == 0 else seq_len
         if seq_len % CHUNK_SIZE and seq_len > CHUNK_SIZE:
             raise ValueError(f"PaTH needs a sequence length divisible by {CHUNK_SIZE} (or at most {CHUNK_SIZE})")
-        y, diagnostics = path_attention(q, k, v, w, beta, kernel=kernel, coefficients=coefficients,
-                                        chunk_size=chunk, return_diagnostics=True)
+        reference = partial(path_attention, q, k, v, w, beta, kernel=kernel, coefficients=coefficients,
+                            chunk_size=chunk, return_diagnostics=True)
+        if self.backend == "fused":
+            # "auto" is resolved before tracing; an unresolved request runs the JAX reference.
+            from scaffolds.transformer.attention.backends.fla_path_attention import fused_path_attention
+
+            y = fused_path_attention(q, k, v, w, beta, kernel=kernel, coefficients=coefficients)
+            # Diagnostics come from the blocked reference, as for the other fused kernels.
+            diagnostics = reference()[1] if return_diagnostics else {}
+        else:
+            y, diagnostics = reference()
         if coefficients is not None:
             diagnostics.update(jax.lax.stop_gradient(coefficient_statistics(coefficients)))
         diagnostics.update(jax.lax.stop_gradient({

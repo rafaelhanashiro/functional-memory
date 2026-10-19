@@ -54,6 +54,8 @@ NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polyn
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
+PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
+TRITON_PORT_TESTS = "scaffolds/transformer/tests/test_triton_port.py"
 QUERY_KEY_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_key_polynomial.py"
 TANH_WRITE_GDN_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write.py"
 TANH_WRITE_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write_kernel.py"
@@ -89,6 +91,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     model = config["model"]
     if model.get("positional_encoding", "rope") == "path":
         paths.append(PATH_ATTENTION_TESTS)
+        if resolved_backend == "fused":
+            paths.extend((PATH_ATTENTION_FUSED_TESTS, *((TRITON_PORT_TESTS,) if cpu else ())))
     if (model.get("attention_mechanism") == "gated_deltanet"
             and model.get("gdn_write_activation", "sigmoid") == "tanh"):
         if cpu:
@@ -190,7 +194,8 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
     """Shared acceptance for a Transformer recipe across all attention families."""
     validate_config(config)
     runtime_env = {}
-    if config.model.attention_mechanism in ("gla", "gated_deltanet"):
+    if (config.model.attention_mechanism in ("gla", "gated_deltanet")
+            or (config.model.positional_encoding == "path" and config.model.attention_backend in ("auto", "fused"))):
         # The custom-call bridge executes outside XLA command buffers.
         flags = os.environ.get("XLA_FLAGS", "").split()
         flags = [flag for flag in flags if not flag.startswith("--xla_gpu_enable_command_buffer=")]
