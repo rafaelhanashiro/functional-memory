@@ -602,7 +602,8 @@ Studies configure these shared modules with execution modules at their root
   records and `results/` remain editable while jobs run. Both launchers source
   `scaffolds/launch/watchdog.sh`: when `training.log` has not grown for
   `TRANSFORMER_STALL_MINUTES` (default 20), the job logs its GPUs' state, ends the
-  running step, and exits with code 124, which the finalizer records as a stall.
+  running step, and exits with code 124. The finalizer requeues the job, which resumes
+  from its latest checkpoint, for a run's first two stalls and records a third as a failure.
 - `launchers/orcd.sbatch` does the same on ORCD. Its allocations fit that cluster's
   per-user GPU caps; a job asks for 12 hours, accepts `mit_normal_gpu`'s 6-hour
   maximum, and requeues itself before its limit (see [CLUSTERS.md](../../CLUSTERS.md)).
