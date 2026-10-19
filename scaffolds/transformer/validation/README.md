@@ -1271,8 +1271,9 @@ The [polynomial GDN record](runs/poly-gdn-tuning/record.json) pins the source,
 locked JAX and native PyTorch environments, recipes, test evidence, and explicitly
 selected reports. The completed initial profile is job `222298` on `akita`,
 source `0e9faad`; completed occupancy tuning is job `222316`, source `34f2c02`.
-Qualification of the occupancy setting and full-model confirmation are separate
-and remain pending.
+Qualification of the corrected kernels passed in job `222319`, source `dfff226`.
+Job `222322` completed production-microbatch and full-model confirmation from
+source `8fd821a` in 1h22m11s with exit code zero.
 
 This is the original-key-space polynomial GDN recurrence:
 `P_t = I - erase_t k_t k_t^T`,
@@ -1288,16 +1289,37 @@ original cubic recipes. The configurations in
 layers, hidden width 1,024, MLP width 3,008, 16 heads, value width 64, global
 batch 256, microbatch 64, and 2,048 prediction positions.
 
+The full-model comparison keeps FP32 parameters and Adam moments in both
+frameworks, with BF16 matrix products. Convolution width four, SiLU/SwiGLU,
+normalization epsilon `1e-6`, and optimizer hyperparameters match. BF16 conversion
+boundaries differ between native autocast and JAX's explicit compute dtypes.
+Native FLA also keeps its upstream initialization and fused normalization,
+convolution, SwiGLU, cross-entropy, and AdamW implementations; JAX uses the frozen
+GDN reference initialization and its shared XLA/Optax training path. Actual
+parameter counts accompany timings. This is a comparison of complete training
+implementations, with no numerical model-trajectory parity claim.
+
+Native full-model timing repeats one GPU-resident batch. Compare its synchronized
+wall compute time with JAX update compute, and report JAX completion intervals
+separately: those include loading, transfers, checks, and logging. JAX compute
+can also wait on an input transfer enqueued just before its timer starts. Both
+compute measurements include gradient clipping and parameter/gradient norms.
+Warmup and measured-update counts are explicit per report; slow JAX controls
+use shorter windows, so repeat spreads and sample counts matter when assessing
+small differences.
+
 The default `tf32x3` mode retains FP32 transport/inverse arithmetic and accurate
 tensor-core products. Opt-in `bf16_read` rounds the operands of value-reading
 products to BF16; `bf16_values` also rounds the score-adjoint product. Both retain
 FP32 accumulation and the original transport/inverse precision. The independent
-FP64 and tensor-recurrence suites passed **51 strict FP32/BF16 cases** in default
-precision and **26 BF16 cases in each of the two candidate modes**, all at two
-warps in job `222298`, with no failures or skips. They cover quadratic and cubic outputs and
-all six gradients, long context, signed writes, erasure/decay extremes,
-causality, and the linear limit. Eleven separate option/smoke cases also passed;
-they do not replace those strict tests.
+FP64 and tensor-recurrence suites passed **52 strict FP32/BF16 cases** in default
+precision and **26 BF16 cases in the selected `bf16_values` mode**, at two warps
+and CTA guidance one in job `222319`, with no failures or skips. They cover
+quadratic and cubic outputs and all six gradients, long context, signed writes,
+erasure/decay extremes, causality, the linear limit, and packed-history indexing
+across the signed 32-bit boundary. The initial profile separately passed 51
+strict cases and 26 BF16 cases in each candidate mode, plus eleven option/smoke
+cases; those smoke checks do not replace the strict tests.
 
 Fresh-process diagnostics found a CUDA launch failure in four-warp polynomial
 backward on Blackwell, while the standalone matrix product and VJP passed.
@@ -1362,23 +1384,82 @@ remain 0.260%/0.258%; changing CTA guidance alone in `tf32x3` produced identical
 benchmark outputs and gradients. Resource inspection confirms the requested PTX directives
 and reduced spilling, but does not measure runtime occupancy.
 
-Qualification with guidance enabled reruns all 51 default-precision cases, a
-packed-history indexing boundary check, and the selected mode's 26 BF16 cases.
-Final qualification remains pending. Confirmation job `222318` failed at
-`B=64, K=64` before full-model training: each packed FP32 history contains
-2,214,592,512 elements (8.25 GiB), exceeding signed 32-bit element indexing.
-The corrected source must pass the boundary test and compare full-batch outputs
-and all six gradients with four independently evaluated batch-16 slices before
-timing. Kernel speedups alone do not establish full-model throughput or
-training-quality equivalence; no full-model result is available yet.
+The production microbatch requires 64-bit packed-history offsets. At
+`B=64, K=64`, each FP32 history contains 2,214,592,512 elements (8.25 GiB), beyond
+signed 32-bit element indexing. The qualified source forms these offsets in
+64-bit integers; its boundary test exercises the actual store and both read
+helpers across that limit.
 
-From a committed Kennel worktree at `34f2c02`, sync the CUDA13 and native Torch
+Before candidate timing, confirmation compares the full batch with four
+independently evaluated batch-16 slices, preserving the explicit cotangent and
+concatenating output and all six gradients without rescaling. Two checks must
+pass: production BF16 results use the declared exact-backend limits of 0.003
+relative RMS and 0.01 normalized maximum error; the same production inputs and
+cotangent, promoted exactly to FP32, must pass `1e-5` for both metrics in every
+channel. Final BF16 rounding can expose otherwise tiny full/split differences:
+diagnostic `222321` found sparse, mostly one-ULP differences, while unchanged
+values evaluated in FP32 passed all seven strict checks (worst relative RMS
+`8.54e-7`, normalized maximum `6.68e-7`). The report retains both checks and
+verifies promotion preserves every input and cotangent value. Either failure
+blocks timing; the guard is enabled by `--reference-batch-size 16` and is outside
+all measured intervals.
+
+The completed B64 kernel matrix in job `222322` passes both split-reference
+gates and all eight variants' output/gradient checks. It uses the same
+`T=2048, H=16, V=64` fixture and two warps, with two rounds of five warmups and
+30 timed calls each. Pooled forward-plus-backward means are:
+
+| Key width | Precision | CTA guidance 0, ms | CTA guidance 1, ms |
+| --- | --- | ---: | ---: |
+| 16 | `tf32x3` | 250.704 | 213.762 |
+| 16 | `bf16_values` | 134.231 | 94.922 |
+| 64 | `tf32x3` | 3,093.777 | 561.691 |
+| 64 | `bf16_values` | 2,001.845 | 334.233 |
+
+The selected `bf16_values`/CTA1 setting is 2.64x faster at K16 and 9.26x faster
+at K64 than this job's default-precision/CTA0 control. Maximum relative RMS
+error remains 0.260% at both widths. The promoted FP32 batch-split check is
+identical at K16; at K64 its worst relative RMS and normalized maximum errors
+are `8.54e-7` and `6.68e-7`. Native FLA's matching B64 calls average 3.819 ms
+at K16 and 5.330 ms at K64 on the same physical GPU, with matching input hashes
+and 60 synchronized wall samples per width. The optimized cubic kernel remains
+24.85x and 62.71x slower than this linear-GDN reference. Kernel speedups alone
+do not establish full-model throughput or training-quality equivalence.
+
+The full-model table pools raw samples from two independent trials per setting,
+with execution order reversed in the second trial. Each uses global batch 256,
+with five warmup updates per trial except the slow K64 default control, which
+uses two. Compute excludes compilation and warmup; the JAX intervals separately
+include the input pipeline and ordinary checks/logging described above. The
+explicit paired selections and both timing clocks are in the generated
+[summary](runs/poly-gdn-tuning/summary.json), under `training_comparisons`.
+
+| Key width | Implementation | Compute, s/update | Compute tokens/s | JAX interval, s/update | Measured updates |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 16 | Cubic `tf32x3`, CTA0 | 11.051 | 47,444 | 11.057 | 20 |
+| 16 | Cubic `bf16_values`, CTA1 | 4.878 | 107,483 | 4.884 | 50 |
+| 16 | Native FLA linear GDN, resident batch | 1.034 | 506,842 | — | 60 |
+| 64 | Cubic `tf32x3`, CTA0 | 125.294 | 4,184 | 125.300 | 6 |
+| 64 | Cubic `bf16_values`, CTA1 | 14.953 | 35,062 | 14.959 | 16 |
+| 64 | Native FLA linear GDN, resident batch | 1.250 | 419,408 | — | 60 |
+
+Full-model compute is 2.27x faster at K16 and 8.38x faster at K64 than the
+default cubic control. Optimized cubic remains 4.72x and 11.96x slower than
+native FLA, respectively. K16 trial-mean spreads are 0.75% for default cubic,
+2.50% for optimized cubic, and 0.06% for native FLA; K64 spreads are below
+0.31% for all three. Cubic parameter counts are 195,708,864 / 211,498,944 for
+K16/K64, versus 195,053,504 / 210,843,584 for native FLA. All 266 updates across
+the twelve trials, including 212 timed updates, have finite loss, gradient norm,
+and parameter norm. No checkpoints are retained. These short throughput trials
+do not compare training quality.
+
+From a committed Kennel worktree at `8fd821a`, sync the CUDA13 and native Torch
 environments according to `CLUSTERS.md`. Each command requests one B300 and
 writes fresh job-specific reports. Run confirmation after inspecting tuning and
 qualification; `bf16_values 2 1` below names the candidate under evaluation:
 
 ```bash
-POLY_SOURCE=34f2c023bec5f6838f886766a8fd1f0a22ccd7f3
+POLY_SOURCE=8fd821a09f6d7ca5e8cd8f65778d391abbc35d4e
 mkdir -p scaffolds/transformer/validation/logs/poly-gdn-tuning
 sbatch --partition=debug,standard \
   --output=scaffolds/transformer/validation/logs/poly-gdn-tuning/profile-%j.log \
@@ -1404,7 +1485,9 @@ python3 scaffolds/transformer/validation/summarize_poly_gdn_tuning.py \
 ```
 
 The helper keeps incomplete/rejected variants visible, audits input identities and
-sample counts, and does not pool measurements across physical GPUs.
+sample counts, and does not pool measurements across physical GPUs. Its
+`training_comparisons` pool the explicitly named trial pairs from raw samples,
+retain each timing clock, and report per-trial counts and mean spread.
 
 ## Reproduction
 

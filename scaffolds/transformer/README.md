@@ -445,6 +445,14 @@ Blackwell), newer than the locked toolkit reads, so launchers also point
 with BF16 operands upcast inside the kernel, Triton 3.6 on B300 computed the FP32
 products at TF32-level precision. The fused kernel passes its GPU tests on H100 and B300.
 
+Standard GLA/GDN training leaves persistent bridge caching disabled; keep
+`EJKERNEL_TRITON_CACHE_COMPILES` and its legacy `EASYDEL_TRITON_CACHE_COMPILES`
+alias unset. Benchmark launchers that enable it use a cache directory per frozen
+source commit because the bridge's source key excludes called helper functions.
+Standard acceptance sets `EJKERNEL_TRITON_CACHE_DIR` itself, overriding an external
+directory setting; enabling persistence there requires a launcher/acceptance
+change that preserves this source isolation.
+
 The OFM mixed-precision behavior is retained: RoPE promotes Q/K to FP32 and the
 fused kernel returns reads in Q's dtype, while the reference module casts its
 completed read to the configured compute dtype before head normalization.
