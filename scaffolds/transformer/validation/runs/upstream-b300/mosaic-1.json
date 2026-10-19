@@ -1,0 +1,1129 @@
+{
+  "accumulation_steps": 4,
+  "all_finite": true,
+  "configuration": {
+    "data": {
+      "batch_size": 256,
+      "dataset_config": "sample-100BT",
+      "dataset_name": "HuggingFaceFW/fineweb-edu",
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sequence_length": 2049,
+      "shuffle_seed": 0,
+      "source": "packed",
+      "split": "train",
+      "synthetic_vocab_size": 32000,
+      "text_field": "text",
+      "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+      "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+    },
+    "model": {
+      "attention_backend": "mosaic",
+      "attention_coefficient_activation": "tanh",
+      "attention_coefficient_amplitude_initial": 1.0,
+      "attention_coefficient_conditioning": "query",
+      "attention_coefficient_initialization": "taylor",
+      "attention_coefficient_parameterization": "direct",
+      "attention_coefficient_projection_initial_std": 0.0,
+      "attention_coefficient_sharing": "per_head",
+      "attention_coefficients": "learned",
+      "attention_degree": 3,
+      "attention_denominator_constant": "fixed",
+      "attention_denominator_degree": null,
+      "attention_denominator_parameterization": "direct",
+      "attention_fixed_coefficients": null,
+      "attention_fixed_square_factors": null,
+      "attention_mechanism": "dot_product",
+      "attention_normalization": false,
+      "attention_output_scaling": "head_rms_norm",
+      "dropout": 0.0,
+      "gdn_conv_size": 4,
+      "gdn_erase_mode": "tied",
+      "gdn_write_activation": "sigmoid",
+      "gla_chunk_size": 64,
+      "gla_gate_rank": 16,
+      "gla_gate_tau": 16.0,
+      "gla_inner_chunk_size": 16,
+      "gla_use_rope": true,
+      "hidden_size": 1024,
+      "initialization": "transformer_reference",
+      "intermediate_size": 3008,
+      "kind": "transformer",
+      "max_seq_len": 2048,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "num_layers": 10,
+      "qk_head_dim": 64,
+      "qk_norm": true,
+      "qk_norm_eps": 1e-06,
+      "qk_norm_initial_scale": null,
+      "qk_norm_sharing": "per_head",
+      "quadratic_mode": "fixed",
+      "quadratic_sharing": "global",
+      "remat": false,
+      "rms_norm_eps": 1e-06,
+      "rope_theta": 10000.0,
+      "tie_embeddings": false,
+      "value_head_dim": 64,
+      "vocab_size": 32000
+    },
+    "optim": {
+      "beta1": 0.9,
+      "beta2": 0.95,
+      "coefficient_penalty": 0.0,
+      "coefficient_penalty_denominator": true,
+      "grad_clip_norm": 1.0,
+      "learning_rate": 0.0003,
+      "min_learning_rate": 3e-05,
+      "total_steps": 19074,
+      "warmup_steps": 400,
+      "weight_decay": 0.1,
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+    },
+    "train": {
+      "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/validation/logs/upstream-b300/220076/mosaic-1/checkpoints",
+      "ckpt_every": 500,
+      "dtype": "bfloat16",
+      "eval_batches": 7,
+      "eval_every": 1000,
+      "log_every": 10,
+      "micro_batch_size": 64,
+      "seed": 0,
+      "source_commit": "e0538b971ef9a66338e703cac8274a59e73cbb6b",
+      "wandb_dir": null,
+      "wandb_entity": "rafah-massachusetts-institute-of-technology",
+      "wandb_group": "attention_scaling",
+      "wandb_mode": "disabled",
+      "wandb_project": "functional-memory",
+      "wandb_run_name": "upstream-b300-mosaic",
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/validation/logs/upstream-b300/220076/mosaic-1"
+    }
+  },
+  "created_at_utc": "2026-10-17T16:41:28.594483+00:00",
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "data_identity_sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+  "finished_at_utc": "2026-10-17T16:43:28.081224+00:00",
+  "format": "fresh-training-throughput",
+  "gpu_memory_stats": {
+    "bytes_in_use": 0,
+    "bytes_limit": 215571480576,
+    "bytes_reserved": 0,
+    "largest_alloc_size": 84758597376,
+    "largest_free_block_bytes": 0,
+    "num_allocs": 204022,
+    "peak_bytes_in_use": 92732971520,
+    "peak_bytes_reserved": 0,
+    "peak_pool_bytes": 146030985216,
+    "pool_bytes": 146030985216
+  },
+  "input_recipe": {
+    "configuration": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "mosaic",
+        "attention_coefficient_activation": "tanh",
+        "attention_coefficient_amplitude_initial": 1.0,
+        "attention_coefficient_conditioning": "query",
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_projection_initial_std": 0.0,
+        "attention_coefficient_sharing": "per_head",
+        "attention_coefficients": "learned",
+        "attention_degree": 3,
+        "attention_denominator_constant": "fixed",
+        "attention_denominator_degree": null,
+        "attention_denominator_parameterization": "direct",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_mechanism": "dot_product",
+        "attention_normalization": false,
+        "attention_output_scaling": "head_rms_norm",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "tied",
+        "gdn_write_activation": "sigmoid",
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 1024,
+        "initialization": "transformer_reference",
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 64,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_head",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.0,
+        "coefficient_penalty_denominator": true,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 400,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": null,
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "auto",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "attention_scaling",
+        "wandb_mode": "disabled",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "upstream-b300-mosaic",
+        "workdir": "scaffolds/transformer/validation/logs/upstream-b300/mosaic"
+      }
+    },
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/validation/configs/upstream-b300-mosaic.yaml",
+    "sha256": "fddf9129a28fb259597ff847ce99f2ed9f6560266411a4363c65ecc9d4b14438"
+  },
+  "measurement_notes": [
+    "Fresh initialization and optimizer; the scientific recipe and learning-rate horizon are unchanged.",
+    "Steady completion intervals include data loading, transfer, update checks, and ordinary logging.",
+    "Warmup, initialization, evaluation, and checkpoint writes are outside steady measurements.",
+    "Single-GPU training omits the per-group telemetry used by data-parallel training."
+  ],
+  "outcome": {
+    "attention_backend": "mosaic",
+    "attention_backend_requested": "mosaic",
+    "attention_coefficient_activation": "tanh",
+    "attention_coefficient_conditioning": "query",
+    "attention_coefficient_count": 656640,
+    "attention_coefficient_initialization": "taylor",
+    "attention_coefficient_input": "pre_attention_rmsnorm_activation",
+    "attention_coefficient_parameterization": "direct",
+    "attention_coefficient_projection_dtype": "float32",
+    "attention_coefficient_sharing": "per_head",
+    "attention_coefficients": "learned",
+    "attention_degree": 3,
+    "attention_formula": "sum_(i<=t) sum_(r<=3) c_r(x_t) s_ti^r v_i, s_ti = Q_t K_i^T / sqrt(d_k); c(x_t) = b + a*tanh(x_t W) per layer/head, W initially zero, a initially 1, b_r initially 1/r!; x_t is the activation after the block input RMSNorm, then per-head RMSNorm over value channels with a learned gain",
+    "attention_implementation": "pallas_mosaic_gpu_query_polynomial",
+    "attention_kernel": "query_polynomial_unnormalized",
+    "attention_normalization": false,
+    "attention_output_normalization": "head_rms_norm",
+    "attention_output_scaling": "head_rms_norm",
+    "attention_score_formula": "exp(gamma) * <q, k> / (||q|| ||k||), gamma learned, |score| <= exp(gamma)",
+    "attention_score_scale": "1/sqrt(d_k)",
+    "attention_signed": true,
+    "best_checkpoint_after": null,
+    "coefficient_penalty": 0.0,
+    "data_parallel_devices": 1,
+    "data_start_sequence": 0,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 35,
+    "final_step": 35,
+    "key_block_size": null,
+    "latest_checkpoint_after": 35,
+    "latest_checkpoint_before": null,
+    "m0_qk_parameter_note": null,
+    "qk_norm": true,
+    "qk_norm_eps": 1e-06,
+    "qk_norm_initial_scale": 8.0,
+    "qk_norm_parameter_count": 160,
+    "qk_norm_sharing": "per_head",
+    "query_block_size": null,
+    "restored": false,
+    "restored_step": null,
+    "start_step": 0,
+    "timing": {
+      "checkpoint_seconds": [],
+      "evaluation_seconds": [],
+      "runtime_seconds": 119.27491503581405,
+      "train_step_seconds": [
+        31.899484178982675,
+        1.2628946518525481,
+        1.2525060633197427,
+        1.2598304003477097,
+        1.2576836431398988,
+        1.2731718150898814,
+        1.2680076025426388,
+        1.2567674927413464
+      ]
+    },
+    "training_tokens": 18350080
+  },
+  "parameter_count": 200573344,
+  "provenance": {
+    "benchmark_source_sha256": "e6b61e243345f74513d97872fd3ff1290c20419a2379c545e625123a12d58501",
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "device": {
+      "description": "cuda:0",
+      "driver_version": "580.126.20",
+      "id": 0,
+      "kind": "NVIDIA B300 SXM6 AC",
+      "name": "NVIDIA B300 SXM6 AC",
+      "pci_bus_id": "00000000:BC:00.0",
+      "physical_index": "0",
+      "platform": "gpu",
+      "process_index": 0,
+      "uuid": "GPU-db556517-bdca-9832-804e-11a0366de63c"
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "220076",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer="
+    },
+    "frozen_execution_scope": {
+      "experiment": "attention_scaling",
+      "scaffold": "transformer"
+    },
+    "frozen_execution_sha256": "9cacb20cfd5f16a51d94dca6052d8007f1f0705557d0f05e52eb52f8b5c62e6a",
+    "hostname": "akita.csail.mit.edu",
+    "package_versions": {
+      "flash-linear-attention": "0.6.0",
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda13-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cublas": "13.2.2.2",
+      "nvidia-cuda-nvcc": "13.2.86",
+      "nvidia-cuda-runtime": "13.2.86",
+      "nvidia-cudnn-cu13": "9.22.0.52",
+      "nvidia-nccl-cu13": "2.32.3",
+      "triton": "3.7.1"
+    },
+    "platform": "Linux-6.17.0-1014-nvidia-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "runtime_environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "CUDA_VISIBLE_DEVICES": "0",
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "TRANSFORMER_HOST_STAGING": "0",
+      "TRITON_PTXAS_BLACKWELL_PATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+      "TRITON_PTXAS_PATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer=",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "source_commit": "e0538b971ef9a66338e703cac8274a59e73cbb6b",
+    "source_dirty": true,
+    "source_sha256": {
+      "scaffolds/transformer/attention/__init__.py": "0a21df8dcefe750872141602b4c96aff999c403997438957926250c916cb2913",
+      "scaffolds/transformer/attention/backends/__init__.py": "fc73b96b509d55a0f8a4df7d0cf1cc1ec2c3888d89e7173e4bc5e463a60307e1",
+      "scaffolds/transformer/attention/backends/chunked_gla_triton.py": "41414d6211c843e4baf595d6f4e10da6711ac3cc0a6cc742b33166315b38c554",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/__init__.py": "ef92364015dd7b51126b31aa2b8d02bb351c576851c1a975b003cb7f398b5317",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "32a0ae7ea27451992c9db03e6540f84ef7f80c8c5a3d4848d6cf6a72f21db118",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "a8321522447331aafc08652587ba9cb7d0e817ff6cc92ebb91df08c800a3f541",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "17d23066f78dfb4505d115d82fdd01da84355cdd05afa83190dfac2938dae272",
+      "scaffolds/transformer/attention/backends/fla_independent_gated_delta_rule_kernels.py": "06bedf24690a1180660df5eb927a04719a0ff341410461d9e8dc3e051d4ee264",
+      "scaffolds/transformer/attention/backends/fused_learned_polynomial.py": "39fb6f0f882ed4cb0227dddff7480398eddc2210b3efb9f810b698b13d52903e",
+      "scaffolds/transformer/attention/backends/fused_normalized_polynomial.py": "5ddf0f0590e7a84586fce84a6231ff9d870c61f634b56b02aa804602513bd770",
+      "scaffolds/transformer/attention/backends/fused_quadratic.py": "0f0fca19c8af2d7d616c9e96d788c86c58d8a226db69e4f5cb36b1c39b246fef",
+      "scaffolds/transformer/attention/backends/fused_query_polynomial.py": "06b65fa98394728709beae046848a57427dac9e7b3ccee48371a5d8db22be80c",
+      "scaffolds/transformer/attention/backends/fused_taylor.py": "b0eccdbff0701b02be950f64ab5db5a1dcaff0c6fca8b68c01fd3277ef2d157a",
+      "scaffolds/transformer/attention/backends/fused_unnormalized.py": "97f01d04d630e256fe1a1506574030045526a510b0108e31a9bdc783c2d2b99d",
+      "scaffolds/transformer/attention/backends/mosaic/__init__.py": "895aaddb244c2f1e7967a80668ca7f97199446c0db8e08776a95cbbd0b4e3034",
+      "scaffolds/transformer/attention/backends/mosaic/api.py": "302e352dd4d03a4c23882535b56e86751ed1f49cd09b72e96ba839e3d67a3ce0",
+      "scaffolds/transformer/attention/backends/mosaic/blackwell.py": "1111ace417e8772cc096fa7fad5e34bf7c72a968d49ce8771aea3703f58b190c",
+      "scaffolds/transformer/attention/backends/mosaic/common.py": "93b2b42094e99752b8b9f261d8f47549addfac18ad176436a3bd01bdf9bad5eb",
+      "scaffolds/transformer/attention/backends/mosaic/hopper.py": "aa344a0ca8ec8dbd2fb914f8e54398c0a3cd9f2652527f0a5667495815394f0f",
+      "scaffolds/transformer/attention/backends/reference.py": "e0f29420fc94598e88cc91b7053fe9d098964a9838683595efd4f179bad5651c",
+      "scaffolds/transformer/attention/backends/selection.py": "6285144727b7ee9cff0eed43931cd0fb43493a0872904b93d88a338f9784e475",
+      "scaffolds/transformer/attention/core.py": "29bcbf883574490926c658bf8ec55b4fe026849fb02d984cbceae1951a5ee52d",
+      "scaffolds/transformer/attention/gated_deltanet.py": "d1b496cdca901e01b0e7f297f5ca7c4af2671a38b5a6c141c89bf804b1a6cb94",
+      "scaffolds/transformer/attention/gla.py": "15fcedae8355786adcf0c386d8d597065bdd5e412011c6eb12bfa7d1592fa72a",
+      "scaffolds/transformer/attention/input_dependent.py": "95548181e169c227c31276c22488c0b34c819b05f5dc4b6b82c390fafb56fc66",
+      "scaffolds/transformer/attention/learned_polynomial.py": "ffcc1cc0eef829864f13bfb4413e14f97c3c4390e879492947d07d73199b88dd",
+      "scaffolds/transformer/attention/learned_quadratic.py": "2dd52c7b2f839836f8b7ea799ab382d8974957160902cc30d6c710a00b9b4f40",
+      "scaffolds/transformer/attention/multihead.py": "812b4bcad7dad5c1bf3353d31c8303d4b5c5f94ebd971bee76f9a34d5a1122fd",
+      "scaffolds/transformer/attention/nonnegative_polynomial.py": "e9162adc1772395c4e677350d0a8938d12e523ea371cae3db037ec50d4e82df6",
+      "scaffolds/transformer/attention/output_scaling.py": "575d9ea927319a3d55039b621e7ff00028aca0d3b06085168edf9609f78bd708",
+      "scaffolds/transformer/attention/parameters.py": "d21a7af4d0ea3779a58cf83b5d75974f982121f3c8fa4a2fbd14f4118a127ac7",
+      "scaffolds/transformer/attention/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269",
+      "scaffolds/transformer/attention/qk_norm.py": "919e84929d39664444267a2e5446c8e715b007129a7211168d33c6f7afac4f65",
+      "scaffolds/transformer/attention/rational_polynomial.py": "83907937199331c5f1815369543a83a1372e8154343ae072c48a12a9d0b823f9",
+      "scaffolds/transformer/attention/softmax.py": "47470b42e8e212c91a5044d448f4c36b4d30b9d0b581d3153e6fb73f91f4b04d",
+      "scaffolds/transformer/attention/taylor.py": "550a930352ac08533bf345508a9382a039c1caa27fba2e1b67659dbe27f768a1",
+      "scaffolds/transformer/attention/unnormalized.py": "f028d0076443b1baa11820e20cc10fc121fcd8e380aa66f85bbb9aed2349f1ca",
+      "scaffolds/transformer/benchmarks/benchmark_attention.py": "e07681b2c193e6a2c5642d150bc9a8d39b3ffd87de9812ea281010b21f9ec400",
+      "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA B300 SXM6 AC"
+      }
+    ]
+  },
+  "resolved_backend": "mosaic",
+  "resolved_configuration": {
+    "data": {
+      "batch_size": 256,
+      "dataset_config": "sample-100BT",
+      "dataset_name": "HuggingFaceFW/fineweb-edu",
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sequence_length": 2049,
+      "shuffle_seed": 0,
+      "source": "packed",
+      "split": "train",
+      "synthetic_vocab_size": 32000,
+      "text_field": "text",
+      "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+      "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+    },
+    "model": {
+      "attention_backend": "mosaic",
+      "attention_coefficient_activation": "tanh",
+      "attention_coefficient_amplitude_initial": 1.0,
+      "attention_coefficient_conditioning": "query",
+      "attention_coefficient_initialization": "taylor",
+      "attention_coefficient_parameterization": "direct",
+      "attention_coefficient_projection_initial_std": 0.0,
+      "attention_coefficient_sharing": "per_head",
+      "attention_coefficients": "learned",
+      "attention_degree": 3,
+      "attention_denominator_constant": "fixed",
+      "attention_denominator_degree": null,
+      "attention_denominator_parameterization": "direct",
+      "attention_fixed_coefficients": null,
+      "attention_fixed_square_factors": null,
+      "attention_mechanism": "dot_product",
+      "attention_normalization": false,
+      "attention_output_scaling": "head_rms_norm",
+      "dropout": 0.0,
+      "gdn_conv_size": 4,
+      "gdn_erase_mode": "tied",
+      "gdn_write_activation": "sigmoid",
+      "gla_chunk_size": 64,
+      "gla_gate_rank": 16,
+      "gla_gate_tau": 16.0,
+      "gla_inner_chunk_size": 16,
+      "gla_use_rope": true,
+      "hidden_size": 1024,
+      "initialization": "transformer_reference",
+      "intermediate_size": 3008,
+      "kind": "transformer",
+      "max_seq_len": 2048,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "num_layers": 10,
+      "qk_head_dim": 64,
+      "qk_norm": true,
+      "qk_norm_eps": 1e-06,
+      "qk_norm_initial_scale": null,
+      "qk_norm_sharing": "per_head",
+      "quadratic_mode": "fixed",
+      "quadratic_sharing": "global",
+      "remat": false,
+      "rms_norm_eps": 1e-06,
+      "rope_theta": 10000.0,
+      "tie_embeddings": false,
+      "value_head_dim": 64,
+      "vocab_size": 32000
+    },
+    "optim": {
+      "beta1": 0.9,
+      "beta2": 0.95,
+      "coefficient_penalty": 0.0,
+      "coefficient_penalty_denominator": true,
+      "grad_clip_norm": 1.0,
+      "learning_rate": 0.0003,
+      "min_learning_rate": 3e-05,
+      "total_steps": 19074,
+      "warmup_steps": 400,
+      "weight_decay": 0.1,
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+    },
+    "train": {
+      "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/validation/logs/upstream-b300/220076/mosaic-1/checkpoints",
+      "ckpt_every": 500,
+      "dtype": "bfloat16",
+      "eval_batches": 7,
+      "eval_every": 1000,
+      "log_every": 10,
+      "micro_batch_size": 64,
+      "seed": 0,
+      "source_commit": "e0538b971ef9a66338e703cac8274a59e73cbb6b",
+      "wandb_dir": null,
+      "wandb_entity": "rafah-massachusetts-institute-of-technology",
+      "wandb_group": "attention_scaling",
+      "wandb_mode": "disabled",
+      "wandb_project": "functional-memory",
+      "wandb_run_name": "upstream-b300-mosaic",
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/validation/logs/upstream-b300/220076/mosaic-1"
+    }
+  },
+  "resolved_implementation": "pallas_mosaic_gpu_query_polynomial",
+  "runtime_audit": {
+    "attention_backend": "mosaic",
+    "attention_backend_requested": "mosaic",
+    "attention_coefficient_activation": "tanh",
+    "attention_coefficient_conditioning": "query",
+    "attention_coefficient_count": 656640,
+    "attention_coefficient_initialization": "taylor",
+    "attention_coefficient_input": "pre_attention_rmsnorm_activation",
+    "attention_coefficient_parameterization": "direct",
+    "attention_coefficient_projection_dtype": "float32",
+    "attention_coefficient_sharing": "per_head",
+    "attention_coefficients": "learned",
+    "attention_degree": 3,
+    "attention_formula": "sum_(i<=t) sum_(r<=3) c_r(x_t) s_ti^r v_i, s_ti = Q_t K_i^T / sqrt(d_k); c(x_t) = b + a*tanh(x_t W) per layer/head, W initially zero, a initially 1, b_r initially 1/r!; x_t is the activation after the block input RMSNorm, then per-head RMSNorm over value channels with a learned gain",
+    "attention_implementation": "pallas_mosaic_gpu_query_polynomial",
+    "attention_kernel": "query_polynomial_unnormalized",
+    "attention_normalization": false,
+    "attention_output_normalization": "head_rms_norm",
+    "attention_output_scaling": "head_rms_norm",
+    "attention_score_formula": "exp(gamma) * <q, k> / (||q|| ||k||), gamma learned, |score| <= exp(gamma)",
+    "attention_score_scale": "1/sqrt(d_k)",
+    "attention_signed": true,
+    "best_checkpoint_after": null,
+    "coefficient_penalty": 0.0,
+    "data_parallel_devices": 1,
+    "data_start_sequence": 0,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 35,
+    "final_step": 35,
+    "key_block_size": null,
+    "latest_checkpoint_after": 35,
+    "latest_checkpoint_before": null,
+    "m0_qk_parameter_note": null,
+    "qk_norm": true,
+    "qk_norm_eps": 1e-06,
+    "qk_norm_initial_scale": 8.0,
+    "qk_norm_parameter_count": 160,
+    "qk_norm_sharing": "per_head",
+    "query_block_size": null,
+    "restored": false,
+    "restored_step": null,
+    "start_step": 0,
+    "timing": {
+      "checkpoint_seconds": [],
+      "evaluation_seconds": [],
+      "runtime_seconds": 119.27491503581405,
+      "train_step_seconds": [
+        31.899484178982675,
+        1.2628946518525481,
+        1.2525060633197427,
+        1.2598304003477097,
+        1.2576836431398988,
+        1.2731718150898814,
+        1.2680076025426388,
+        1.2567674927413464
+      ]
+    },
+    "training_tokens": 18350080
+  },
+  "samples": [
+    {
+      "compute_seconds": 31.700558888725936,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": null,
+      "loss": 10.613492965698242,
+      "step": 1,
+      "update_numerics": [
+        10.613492965698242,
+        12.212366104125977,
+        312.55194091796875
+      ]
+    },
+    {
+      "compute_seconds": 1.2545521706342697,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.9577744444832206,
+      "loss": 10.611251831054688,
+      "step": 2,
+      "update_numerics": [
+        10.611251831054688,
+        12.52202033996582,
+        312.5518798828125
+      ]
+    },
+    {
+      "compute_seconds": 1.247247931547463,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2537327390164137,
+      "loss": 10.579458236694336,
+      "step": 3,
+      "update_numerics": [
+        10.579458236694336,
+        12.368255615234375,
+        312.5517883300781
+      ]
+    },
+    {
+      "compute_seconds": 1.2538087824359536,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.259934326633811,
+      "loss": 10.533309936523438,
+      "step": 4,
+      "update_numerics": [
+        10.533309936523438,
+        11.790313720703125,
+        312.5516662597656
+      ]
+    },
+    {
+      "compute_seconds": 1.2523945914581418,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2583665819838643,
+      "loss": 10.461315155029297,
+      "step": 5,
+      "update_numerics": [
+        10.461315155029297,
+        12.310616493225098,
+        312.55145263671875
+      ]
+    },
+    {
+      "compute_seconds": 1.2668155636638403,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2723927525803447,
+      "loss": 10.37677001953125,
+      "step": 6,
+      "update_numerics": [
+        10.37677001953125,
+        10.912345886230469,
+        312.5512390136719
+      ]
+    },
+    {
+      "compute_seconds": 1.2632123967632651,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.269505638629198,
+      "loss": 10.247570991516113,
+      "step": 7,
+      "update_numerics": [
+        10.247570991516113,
+        10.363369941711426,
+        312.55096435546875
+      ]
+    },
+    {
+      "compute_seconds": 1.2517814030870795,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.25721007399261,
+      "loss": 10.122197151184082,
+      "step": 8,
+      "update_numerics": [
+        10.122197151184082,
+        17.089033126831055,
+        312.5506591796875
+      ]
+    },
+    {
+      "compute_seconds": 1.2486519515514374,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2538162870332599,
+      "loss": 10.002761840820312,
+      "step": 9,
+      "update_numerics": [
+        10.002761840820312,
+        8.528312683105469,
+        312.5503234863281
+      ]
+    },
+    {
+      "compute_seconds": 1.3419452421367168,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.3469583000987768,
+      "loss": 9.883275985717773,
+      "step": 10,
+      "update_numerics": [
+        9.883275985717773,
+        7.671858310699463,
+        312.5499267578125
+      ]
+    },
+    {
+      "compute_seconds": 1.2449797904118896,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.257109124213457,
+      "loss": 9.742953300476074,
+      "step": 11,
+      "update_numerics": [
+        9.742953300476074,
+        6.89409065246582,
+        312.5495300292969
+      ]
+    },
+    {
+      "compute_seconds": 1.2471852106973529,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2525310507044196,
+      "loss": 9.634688377380371,
+      "step": 12,
+      "update_numerics": [
+        9.634688377380371,
+        8.36498737335205,
+        312.549072265625
+      ]
+    },
+    {
+      "compute_seconds": 1.2383145401254296,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2436782279983163,
+      "loss": 9.53278923034668,
+      "step": 13,
+      "update_numerics": [
+        9.53278923034668,
+        112.47117614746094,
+        312.5486755371094
+      ]
+    },
+    {
+      "compute_seconds": 1.2507680281996727,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2571704536676407,
+      "loss": 9.443733215332031,
+      "step": 14,
+      "update_numerics": [
+        9.443733215332031,
+        4.368332386016846,
+        312.54827880859375
+      ]
+    },
+    {
+      "compute_seconds": 1.230590402148664,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2358853844925761,
+      "loss": 9.401002883911133,
+      "step": 15,
+      "update_numerics": [
+        9.401002883911133,
+        3.7847824096679688,
+        312.5478515625
+      ]
+    },
+    {
+      "compute_seconds": 1.2442851075902581,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2500754557549953,
+      "loss": 9.284422874450684,
+      "step": 16,
+      "update_numerics": [
+        9.284422874450684,
+        3.211510181427002,
+        312.54742431640625
+      ]
+    },
+    {
+      "compute_seconds": 1.2404146939516068,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2459912644699216,
+      "loss": 9.250358581542969,
+      "step": 17,
+      "update_numerics": [
+        9.250358581542969,
+        2.7960572242736816,
+        312.54705810546875
+      ]
+    },
+    {
+      "compute_seconds": 1.2548277946189046,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2606414156034589,
+      "loss": 9.200512886047363,
+      "step": 18,
+      "update_numerics": [
+        9.200512886047363,
+        2.6081650257110596,
+        312.5467224121094
+      ]
+    },
+    {
+      "compute_seconds": 1.2718036454170942,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2765104016289115,
+      "loss": 9.128780364990234,
+      "step": 19,
+      "update_numerics": [
+        9.128780364990234,
+        2.4153006076812744,
+        312.5464172363281
+      ]
+    },
+    {
+      "compute_seconds": 1.3872437393292785,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.393116052262485,
+      "loss": 9.086385726928711,
+      "step": 20,
+      "update_numerics": [
+        9.086385726928711,
+        15.342351913452148,
+        312.5461730957031
+      ]
+    },
+    {
+      "compute_seconds": 1.2690845606848598,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.279674245044589,
+      "loss": 9.067123413085938,
+      "step": 21,
+      "update_numerics": [
+        9.067123413085938,
+        2.4114866256713867,
+        312.5459289550781
+      ]
+    },
+    {
+      "compute_seconds": 1.2728738579899073,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2787616979330778,
+      "loss": 9.051188468933105,
+      "step": 22,
+      "update_numerics": [
+        9.051188468933105,
+        2.478304624557495,
+        312.54571533203125
+      ]
+    },
+    {
+      "compute_seconds": 1.2570532811805606,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2628668816760182,
+      "loss": 8.992387771606445,
+      "step": 23,
+      "update_numerics": [
+        8.992387771606445,
+        1.9066863059997559,
+        312.5455627441406
+      ]
+    },
+    {
+      "compute_seconds": 1.2697895392775536,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2747785728424788,
+      "loss": 8.973188400268555,
+      "step": 24,
+      "update_numerics": [
+        8.973188400268555,
+        1.7844489812850952,
+        312.5454406738281
+      ]
+    },
+    {
+      "compute_seconds": 1.2746352385729551,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2806851770728827,
+      "loss": 8.975890159606934,
+      "step": 25,
+      "update_numerics": [
+        8.975890159606934,
+        2.099515438079834,
+        312.54541015625
+      ]
+    },
+    {
+      "compute_seconds": 1.2600292451679707,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2649542456492782,
+      "loss": 8.927943229675293,
+      "step": 26,
+      "update_numerics": [
+        8.927943229675293,
+        1.7317131757736206,
+        312.5453796386719
+      ]
+    },
+    {
+      "compute_seconds": 1.2711699828505516,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.276735377497971,
+      "loss": 8.90534782409668,
+      "step": 27,
+      "update_numerics": [
+        8.90534782409668,
+        1.72449791431427,
+        312.5453796386719
+      ]
+    },
+    {
+      "compute_seconds": 1.2558938339352608,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2614831058308482,
+      "loss": 8.89090633392334,
+      "step": 28,
+      "update_numerics": [
+        8.89090633392334,
+        1.751075267791748,
+        312.54547119140625
+      ]
+    },
+    {
+      "compute_seconds": 1.257842249237001,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.262985460460186,
+      "loss": 8.870979309082031,
+      "step": 29,
+      "update_numerics": [
+        8.870979309082031,
+        1.7350057363510132,
+        312.54559326171875
+      ]
+    },
+    {
+      "compute_seconds": 1.3561409851536155,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.3616468077525496,
+      "loss": 8.83484935760498,
+      "step": 30,
+      "update_numerics": [
+        8.83484935760498,
+        1.742266058921814,
+        312.54571533203125
+      ]
+    },
+    {
+      "compute_seconds": 1.2519062897190452,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2636382356286049,
+      "loss": 8.800312042236328,
+      "step": 31,
+      "update_numerics": [
+        8.800312042236328,
+        1.686071515083313,
+        312.5459899902344
+      ]
+    },
+    {
+      "compute_seconds": 1.2595691550523043,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.264813320711255,
+      "loss": 8.78917407989502,
+      "step": 32,
+      "update_numerics": [
+        8.78917407989502,
+        1.6268295049667358,
+        312.54632568359375
+      ]
+    },
+    {
+      "compute_seconds": 1.255173715762794,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2601677794009447,
+      "loss": 8.770946502685547,
+      "step": 33,
+      "update_numerics": [
+        8.770946502685547,
+        1.612196922302246,
+        312.5467529296875
+      ]
+    },
+    {
+      "compute_seconds": 1.2640545694157481,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.2692628353834152,
+      "loss": 8.732145309448242,
+      "step": 34,
+      "update_numerics": [
+        8.732145309448242,
+        1.6776789426803589,
+        312.54730224609375
+      ]
+    },
+    {
+      "compute_seconds": 1.3512024451047182,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.3565217684954405,
+      "loss": 8.70457649230957,
+      "step": 35,
+      "update_numerics": [
+        8.70457649230957,
+        1.5690491199493408,
+        312.5479431152344
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "scratch_removed": true,
+  "source_recipe_unchanged": true,
+  "status": "complete",
+  "steady_compute": {
+    "max_seconds": 1.3872437393292785,
+    "mean_seconds": 1.2703079486265778,
+    "median_seconds": 1.2587057021446526,
+    "min_seconds": 1.230590402148664,
+    "p10_seconds": 1.243898066226393,
+    "p90_seconds": 1.342870962433517,
+    "tokens_per_second": 412725.11957974115,
+    "updates": 30
+  },
+  "steady_training": {
+    "max_seconds": 1.393116052262485,
+    "mean_seconds": 1.276385579816997,
+    "median_seconds": 1.26422577816993,
+    "min_seconds": 1.2358853844925761,
+    "p10_seconds": 1.249667036626488,
+    "p90_seconds": 1.347914646938443,
+    "tokens_per_second": 410759.889715434,
+    "updates": 30
+  },
+  "timed_updates": 30,
+  "tokens_per_update": 524288,
+  "training_metadata": {
+    "attention_backend": "mosaic",
+    "attention_backend_requested": "mosaic",
+    "attention_coefficient_activation": "tanh",
+    "attention_coefficient_conditioning": "query",
+    "attention_coefficient_count": 656640,
+    "attention_coefficient_initialization": "taylor",
+    "attention_coefficient_input": "pre_attention_rmsnorm_activation",
+    "attention_coefficient_parameterization": "direct",
+    "attention_coefficient_projection_dtype": "float32",
+    "attention_coefficient_sharing": "per_head",
+    "attention_coefficients": "learned",
+    "attention_degree": 3,
+    "attention_formula": "sum_(i<=t) sum_(r<=3) c_r(x_t) s_ti^r v_i, s_ti = Q_t K_i^T / sqrt(d_k); c(x_t) = b + a*tanh(x_t W) per layer/head, W initially zero, a initially 1, b_r initially 1/r!; x_t is the activation after the block input RMSNorm, then per-head RMSNorm over value channels with a learned gain",
+    "attention_implementation": "pallas_mosaic_gpu_query_polynomial",
+    "attention_kernel": "query_polynomial_unnormalized",
+    "attention_normalization": false,
+    "attention_output_normalization": "head_rms_norm",
+    "attention_output_scaling": "head_rms_norm",
+    "attention_score_formula": "exp(gamma) * <q, k> / (||q|| ||k||), gamma learned, |score| <= exp(gamma)",
+    "attention_score_scale": "1/sqrt(d_k)",
+    "attention_signed": true,
+    "coefficient_penalty": 0.0,
+    "data_identity": {
+      "batch_size": 256,
+      "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "format": "ofm-packed-run-data",
+      "sequence_length": 2049,
+      "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+      "version": 2
+    },
+    "devices": [
+      "cuda:0"
+    ],
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "diagnostic_sample": {
+      "diagnostic_pass_contributes_to_validation_loss": false,
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "num_sequences": 1,
+      "prediction_tokens": 2048,
+      "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+      "selection": "first_heldout_sequence",
+      "sequence_index": 0,
+      "source": "packed"
+    },
+    "error": null,
+    "execution_runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA B300 SXM6 AC",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer=",
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "key_block_size": null,
+    "m0_qk_parameter_note": null,
+    "next_train_sequence": 8960,
+    "numerical_failure_path": null,
+    "parameter_count": 200573344,
+    "qk_head_dim": 64,
+    "qk_norm": true,
+    "qk_norm_eps": 1e-06,
+    "qk_norm_initial_scale": 8.0,
+    "qk_norm_parameter_count": 160,
+    "qk_norm_sharing": "per_head",
+    "query_block_size": null,
+    "rng_state": {
+      "completed_updates": 35,
+      "seed": 0
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA B300 SXM6 AC",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer=",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "220076",
+        "timestamp_utc": "2026-10-17T16:42:02.998976+00:00"
+      }
+    ],
+    "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+    "seed": 0,
+    "slurm_job_id": "220076",
+    "slurm_restart_count": 0,
+    "source_commit": "e0538b971ef9a66338e703cac8274a59e73cbb6b",
+    "status": "paused",
+    "step": 35,
+    "target_steps": 19074,
+    "target_tokens": 10000269312,
+    "training_tokens": 18350080,
+    "updated_utc": "2026-10-17T16:43:27.899621+00:00",
+    "value_head_dim": 64
+  },
+  "training_metadata_sha256": "0e436b1f524c2d58ec93af5e5f262908eb7f97eac25afc376992dd3578afebb5",
+  "wall_seconds": 119.47854947764426,
+  "warmup_updates": 5
+}

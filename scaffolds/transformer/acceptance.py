@@ -54,6 +54,8 @@ NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polyn
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
 QUERY_KEY_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_key_polynomial.py"
+TANH_WRITE_GDN_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write.py"
+TANH_WRITE_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write_kernel.py"
 
 
 @dataclass(frozen=True)
@@ -84,6 +86,12 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if spec.select_tests is not None:
         paths.extend(spec.select_tests(config, resolved_backend, cpu))
     model = config["model"]
+    if (model.get("attention_mechanism") == "gated_deltanet"
+            and model.get("gdn_write_activation", "sigmoid") == "tanh"):
+        if cpu:
+            paths.append(TANH_WRITE_GDN_TESTS)
+        elif resolved_backend == "fused":
+            paths.append(TANH_WRITE_GDN_KERNEL_TESTS)
     conditioning = model.get("attention_coefficient_conditioning", "static")
     if conditioning in ("query", "query_key"):
         paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)

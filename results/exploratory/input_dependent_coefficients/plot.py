@@ -19,13 +19,47 @@ from scaffolds.records.selections import verify_pinned_runs
 DIRECTORY = Path(__file__).resolve().parent
 ROOT = DIRECTORY.parents[2]
 FIELDS = (
-    "run_id", "role", "degree", "coefficient_function", "status", "terminal_step",
-    "training_tokens", "terminal_validation_nll", "terminal_validation_perplexity",
+    "run_id", "role", "degree", "coefficient_function", "start", "attention_backend", "variant", "status",
+    "terminal_step", "training_tokens", "terminal_validation_nll", "terminal_validation_perplexity",
     "best_validation_step", "best_validation_perplexity", "terminal_train_nll_sample_mean",
     "control_run_id", "perplexity_percent_above_control", "valid_diagnostics",
-    "diagnostic_count", "mean_coefficient_std", "saturated_mean_branch_fraction",
-    "mean_tanh_derivative_from_moments", "metrics_sha256", "completion_sha256",
+    "diagnostic_count", "mean_coefficient_std", "median_token_variation", "median_abs_amplitude",
+    "saturated_mean_branch_fraction", "mean_tanh_derivative_from_moments", "metrics_sha256", "completion_sha256",
 )
+# Variant key -> (table name, color, line style, legend label); the order is the table and legend order.
+VARIANTS = {
+    "static": ("static", "#276FBF", "-", "Static learned"),
+    "affine": ("affine", "#707070", ":", "Input-dependent affine"),
+    "tanh_original": ("tanh, original start, fused kernel", "#D65F00", "-", "Tanh, original start, fused kernel"),
+    "tanh_original_blocked": ("tanh, original start, blocked reference", "#D65F00", "--",
+                              "Tanh, original start, blocked reference"),
+    "tanh_zero_amplitude": ("tanh, zero-amplitude start, blocked reference", "#1B9E77", "-",
+                            "Tanh, zero-amplitude start, blocked reference"),
+    "tanh_zero_amplitude_wide": ("tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel", "#1B9E77", (0, (5, 2.5)),
+                                 "Tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel"),
+    "tanh_zero_amplitude_inner_bias": ("tanh, zero-amplitude start, bias inside tanh, Mosaic kernel", "#1B9E77", ":",
+                                       "Tanh, zero-amplitude start, bias inside tanh, Mosaic kernel"),
+}
+
+
+def variant_of(model) -> tuple[str, str, str]:
+    """(coefficient function, start, variant key) from a run's model configuration."""
+    function = (model.get("attention_coefficient_activation", "identity")
+                if model.get("attention_coefficient_conditioning", "static") == "query" else "static")
+    function = "affine" if function == "identity" else function
+    if function != "tanh":
+        return function, "", function
+    start = "zero_amplitude" if model.get("attention_coefficient_amplitude_initial", 1.0) == 0 else "original"
+    blocked = model["attention_backend"] == "blocked"
+    if start == "original":
+        return function, start, "tanh_original_blocked" if blocked else "tanh_original"
+    if model.get("attention_coefficient_tanh_bias", False):
+        return function, start, "tanh_zero_amplitude_inner_bias"
+    if model.get("attention_coefficient_projection_initial_std", 0.0) > 0.01:
+        return function, start, "tanh_zero_amplitude_wide"
+    if not blocked:
+        raise ValueError("The small-draw zero-amplitude runs in this selection use the blocked reference")
+    return function, start, "tanh_zero_amplitude"
 
 
 def load_runs():
@@ -51,13 +85,12 @@ def load_runs():
             raise ValueError(f"Selected run is incomplete: {entry['run_id']}")
         if json.loads((path / "record.json").read_text())["status"] != "complete":
             raise ValueError(f"Selected run is not recorded as complete: {entry['run_id']}")
-        function = (model.get("attention_coefficient_activation", "identity")
-                    if model.get("attention_coefficient_conditioning", "static") == "query" else "static")
-        function = "affine" if function == "identity" else function
+        function, start, variant = variant_of(model)
         diagnostics = [row["attention_diagnostics"] for row in validation]
         row = dict(
             run_id=entry["run_id"], role=entry["role"], degree=model["attention_degree"],
-            coefficient_function=function, status="complete", terminal_step=completion["final_step"],
+            coefficient_function=function, start=start, attention_backend=model["attention_backend"],
+            variant=variant, status="complete", terminal_step=completion["final_step"],
             training_tokens=completion["training_tokens"],
             terminal_validation_nll=completion["validation_nll"],
             terminal_validation_perplexity=completion["validation_perplexity"],
@@ -73,12 +106,18 @@ def load_runs():
         if function != "static":
             summary = coefficients["effective_summary"]
             row["mean_coefficient_std"] = float(np.mean(summary["std"]))
+            # Per layer/head/order, the coefficient's standard deviation across the pinned
+            # sequence's tokens relative to its mean; the median over all branches.
+            row["median_token_variation"] = float(np.median(
+                np.asarray(summary["std"]) / np.abs(np.asarray(summary["mean"]))))
         if function == "tanh":
             amplitude = np.asarray(coefficients["modulation_amplitude"])
             bias = np.asarray(coefficients["projection_bias"])
+            row["median_abs_amplitude"] = float(np.median(np.abs(amplitude)))
             mean = (np.asarray(summary["mean"]) - bias) / amplitude
             std = np.asarray(summary["std"]) / np.abs(amplitude)
-            # Each branch is one layer/head/order; these moments cover one pinned sequence.
+            # Each branch is one layer/head/order; these moments cover one pinned sequence and
+            # are not informative where the amplitude is near zero.
             row["saturated_mean_branch_fraction"] = float(np.mean(np.abs(mean) > .99))
             row["mean_tanh_derivative_from_moments"] = float(np.mean(np.clip(1 - mean**2 - std**2, 0, 1)))
         rows.append(row)
@@ -98,38 +137,38 @@ def render(rows, curves):
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10,
                          "axes.spines.top": False, "axes.spines.right": False,
                          "pdf.fonttype": 42, "svg.hashsalt": "input-dependent-coefficients"})
-    styles = {"static": ("#276FBF", "-", "Static learned"),
-              "tanh": ("#D65F00", "-", "Input-dependent tanh"),
-              "affine": ("#707070", ":", "Input-dependent affine")}
     fig, axes = plt.subplots(2, 2, figsize=(10, 7.2))
     axes = axes.ravel()
     for degree, ax in enumerate(axes, 1):
-        for function in ("static", "tanh", "affine"):
+        matched = {}
+        for variant, (_, color, linestyle, label) in VARIANTS.items():
             for row in rows:
-                if row["degree"] != degree or row["coefficient_function"] != function:
+                if row["degree"] != degree or row["variant"] != variant:
                     continue
+                matched[variant] = row
                 points = curves[row["run_id"]]
-                color, linestyle, label = styles[function]
                 ax.plot([p["training_tokens"] / 1e9 for p in points],
                         [p["validation_nll"] for p in points], color=color, linestyle=linestyle,
                         linewidth=1.8, label=label)
                 ax.plot(points[-1]["training_tokens"] / 1e9, points[-1]["validation_nll"],
                         "o", color=color, markersize=3)
-        matched = {row["coefficient_function"]: row for row in rows if row["degree"] == degree}
-        tanh, static = matched["tanh"], matched["static"]
         ax.set_title(f"Degree {degree}", fontweight="bold")
-        ax.text(.98, .96, f"Final PPL: {static['terminal_validation_perplexity']:.2f} static\n"
-                f"{tanh['terminal_validation_perplexity']:.2f} tanh (+{tanh['perplexity_percent_above_control']:.2f}%)",
-                transform=ax.transAxes, ha="right", va="top", fontsize=9)
+        final = [f"Final PPL: {matched['static']['terminal_validation_perplexity']:.2f} static"]
+        for variant, name in (("tanh_original", "original start"), ("tanh_zero_amplitude", "zero-amplitude start")):
+            if variant in matched:
+                row = matched[variant]
+                final.append(f"{row['terminal_validation_perplexity']:.2f} {name} "
+                             f"({row['perplexity_percent_above_control']:+.2f}%)")
+        ax.text(.98, .96, "\n".join(final), transform=ax.transAxes, ha="right", va="top", fontsize=9)
         ax.set_xlabel("Training tokens (billions)")
         ax.set_xlim(0, 10.25)
         ax.grid(alpha=.18)
     for ax in axes[::2]:
         ax.set_ylabel("Validation NLL (lower is better)")
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=3, frameon=False, bbox_to_anchor=(.5, -.01))
+    fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(.5, -.01))
     fig.suptitle("Input-dependent coefficients: matched degree, warmup 400, output RMSNorm", fontsize=12)
-    fig.tight_layout(rect=(0, .07, 1, .94))
+    fig.tight_layout(rect=(0, .13, 1, .94))
     fig.savefig(DIRECTORY / "learning_curves.png", dpi=180, metadata={"Software": "Matplotlib"})
     fig.savefig(DIRECTORY / "learning_curves.pdf", metadata={"CreationDate": None, "ModDate": None,
                                                             "Creator": "Matplotlib"})
@@ -142,11 +181,13 @@ def update_table(rows):
     begin, end = "<!-- BEGIN GENERATED RESULTS -->", "<!-- END GENERATED RESULTS -->"
     prefix, rest = text.split(begin)
     _, suffix = rest.split(end)
-    lines = ["| Degree | Coefficients | Terminal validation NLL | Terminal PPL | Best validation PPL | Best step |",
-             "| --- | --- | ---: | ---: | ---: | ---: |"]
-    for row in sorted(rows, key=lambda r: (r["degree"], {"static": 0, "affine": 1, "tanh": 2}[r["coefficient_function"]])):
-        lines.append(f"| {row['degree']} | {row['coefficient_function']} | {row['terminal_validation_nll']:.6f} | "
-                     f"{row['terminal_validation_perplexity']:.6f} | {row['best_validation_perplexity']:.6f} | "
+    lines = ["| Degree | Variant | Terminal validation NLL | Terminal PPL | vs static | Best validation PPL | Best step |",
+             "| --- | --- | ---: | ---: | ---: | ---: | ---: |"]
+    order = list(VARIANTS)
+    for row in sorted(rows, key=lambda r: (r["degree"], order.index(r["variant"]))):
+        relative = ("" if row["variant"] == "static" else f"{row['perplexity_percent_above_control']:+.2f}%")
+        lines.append(f"| {row['degree']} | {VARIANTS[row['variant']][0]} | {row['terminal_validation_nll']:.6f} | "
+                     f"{row['terminal_validation_perplexity']:.6f} | {relative} | {row['best_validation_perplexity']:.6f} | "
                      f"{row['best_validation_step']:,} |")
     path.write_text(prefix + begin + "\n\n" + "\n".join(lines) + "\n\n" + end + suffix)
 

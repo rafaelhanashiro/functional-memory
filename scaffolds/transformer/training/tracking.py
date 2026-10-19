@@ -54,6 +54,8 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
         tags.append(f"m{identity['attention_degree']}")
     if identity.get("gdn_erase_mode") is not None:
         tags.append(f"erase_{identity['gdn_erase_mode']}")
+    if identity.get("gdn_linear_write_activation") == "tanh":
+        tags.append("tanh_write")
     if identity.get("qk_norm"):
         tags.append("qk_norm")
     if identity.get("attention_coefficient_conditioning") in ("query", "query_key"):

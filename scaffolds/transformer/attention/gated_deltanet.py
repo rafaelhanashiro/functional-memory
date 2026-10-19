@@ -16,7 +16,10 @@ FP32 reference.
 With ``erase_mode="independent"``, erasure instead uses a separate sigmoid
 ``lambda_t = sigmoid(W_lambda x_t)``: the rank-one update is
 ``k_t (beta_t v_t - lambda_t a_t S_{t-1}^T k_t)^T``. Its projection starts as an
-independent copy of the write projection, recovering ordinary GDN initially.
+independent copy of the write projection, recovering ordinary GDN initially when
+the write activation retains its default sigmoid. With independent erasure,
+``write_activation="tanh"`` gives signed writes ``beta_t = tanh(W_b x_t)``
+without changing the projection weights or sigmoid erasure.
 """
 
 import math
@@ -94,6 +97,7 @@ class GatedDeltaNet(nnx.Module):
         backend: str = "blocked",
         *,
         erase_mode: str = "tied",
+        write_activation: str = "sigmoid",
         rngs: nnx.Rngs,
     ):
         if min(hidden_size, num_heads, key_head_dim, value_head_dim, conv_size) <= 0:
@@ -104,11 +108,16 @@ class GatedDeltaNet(nnx.Module):
             raise ValueError(f"The fused Gated DeltaNet backend supports key_head_dim up to {MAX_KEY_DIM}")
         if erase_mode not in ("tied", "independent"):
             raise ValueError(f"Unsupported Gated DeltaNet erase mode: {erase_mode}")
+        if write_activation not in ("sigmoid", "tanh"):
+            raise ValueError(f"Unsupported Gated DeltaNet write activation: {write_activation}")
+        if write_activation == "tanh" and erase_mode != "independent":
+            raise ValueError("Gated DeltaNet tanh write activation requires independent erasure")
         self.num_heads, self.key_head_dim, self.value_head_dim = num_heads, key_head_dim, value_head_dim
         self.key_dim, self.value_dim = num_heads * key_head_dim, num_heads * value_head_dim
         self.norm_eps = norm_eps
         self.backend = backend
         self.erase_mode = erase_mode
+        self.write_activation = write_activation
         self.dtype = jnp.float32
         self.q_proj = nnx.Linear(hidden_size, self.key_dim, use_bias=False, rngs=rngs)
         self.k_proj = nnx.Linear(hidden_size, self.key_dim, use_bias=False, rngs=rngs)
@@ -155,7 +164,8 @@ class GatedDeltaNet(nnx.Module):
         k = self.k_conv(self.k_proj(x).astype(self.dtype)).reshape(batch, length, heads, self.key_head_dim)
         v = self.v_conv(self.v_proj(x).astype(self.dtype)).reshape(batch, length, heads, self.value_head_dim)
         q, k = _l2_normalize(q), _l2_normalize(k)
-        beta = jax.nn.sigmoid(self.b_proj(x).astype(jnp.float32)).astype(self.dtype)
+        write_activation = jnp.tanh if self.write_activation == "tanh" else jax.nn.sigmoid
+        beta = write_activation(self.b_proj(x).astype(jnp.float32)).astype(self.dtype)
         erase = (jax.nn.sigmoid(self.lambda_proj(x).astype(jnp.float32)).astype(self.dtype)
                  if self.erase_mode == "independent" else None)
         log_decay = -jnp.exp(self.A_log[...]) * jax.nn.softplus(
@@ -201,6 +211,10 @@ class GatedDeltaNet(nnx.Module):
             "invalid_read_count": jnp.sum(~jnp.isfinite(read32), dtype=jnp.int32),
             "invalid_output_count": jnp.sum(~jnp.isfinite(output), dtype=jnp.int32),
         }
+        if self.write_activation == "tanh":
+            beta32 = beta.astype(jnp.float32)
+            diagnostics["invalid_write_count"] = jnp.sum(
+                ~jnp.isfinite(beta32) | (jnp.abs(beta32) > 1), dtype=jnp.int32)
         if erase is not None:
             erase32, beta32 = erase.astype(jnp.float32), beta.astype(jnp.float32)
             diagnostics.update({

@@ -1,0 +1,699 @@
+{
+  "accumulation_steps": 4,
+  "configuration": {
+    "data": {
+      "batch_size": 256,
+      "dataset_config": "sample-100BT",
+      "dataset_name": "HuggingFaceFW/fineweb-edu",
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sequence_length": 2049,
+      "shuffle_seed": 0,
+      "source": "packed",
+      "split": "train",
+      "synthetic_vocab_size": 32000,
+      "text_field": "text",
+      "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+      "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+    },
+    "model": {
+      "attention_backend": "fused",
+      "attention_coefficient_activation": "identity",
+      "attention_coefficient_amplitude_initial": 1.0,
+      "attention_coefficient_conditioning": "static",
+      "attention_coefficient_initialization": "taylor",
+      "attention_coefficient_parameterization": "direct",
+      "attention_coefficient_projection_initial_std": 0.0,
+      "attention_coefficient_sharing": "global",
+      "attention_coefficients": "fixed",
+      "attention_degree": null,
+      "attention_denominator_constant": "fixed",
+      "attention_denominator_degree": null,
+      "attention_denominator_parameterization": "direct",
+      "attention_fixed_coefficients": null,
+      "attention_fixed_square_factors": null,
+      "attention_mechanism": "gated_deltanet",
+      "attention_normalization": true,
+      "attention_output_scaling": "none",
+      "dropout": 0.0,
+      "gdn_conv_size": 4,
+      "gdn_erase_mode": "independent",
+      "gdn_write_activation": "tanh",
+      "gla_chunk_size": 64,
+      "gla_gate_rank": 16,
+      "gla_gate_tau": 16.0,
+      "gla_inner_chunk_size": 16,
+      "gla_use_rope": true,
+      "hidden_size": 1024,
+      "initialization": "gated_deltanet_reference",
+      "intermediate_size": 3008,
+      "kind": "transformer",
+      "max_seq_len": 2048,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "num_layers": 10,
+      "qk_head_dim": 64,
+      "qk_norm": false,
+      "qk_norm_eps": 1e-06,
+      "qk_norm_initial_scale": null,
+      "qk_norm_sharing": "per_head",
+      "quadratic_mode": "fixed",
+      "quadratic_sharing": "global",
+      "remat": false,
+      "rms_norm_eps": 1e-06,
+      "rope_theta": 10000.0,
+      "tie_embeddings": false,
+      "value_head_dim": 64,
+      "vocab_size": 32000
+    },
+    "optim": {
+      "beta1": 0.9,
+      "beta2": 0.95,
+      "coefficient_penalty": 0.0,
+      "coefficient_penalty_denominator": true,
+      "grad_clip_norm": 1.0,
+      "learning_rate": 0.0003,
+      "min_learning_rate": 3e-05,
+      "total_steps": 19074,
+      "warmup_steps": 400,
+      "weight_decay": 0.1,
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+    },
+    "train": {
+      "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-tanh-b300-benchmark/scaffolds/transformer/validation/logs/gdn-tanh-b300/219939/replay/checkpoints",
+      "ckpt_every": 500,
+      "dtype": "bfloat16",
+      "eval_batches": 7,
+      "eval_every": 1000,
+      "log_every": 10,
+      "micro_batch_size": 64,
+      "seed": 0,
+      "source_commit": "9e62cf7ce583ae0af776a319a2ebc4df3737f1ab",
+      "wandb_dir": null,
+      "wandb_entity": "rafah-massachusetts-institute-of-technology",
+      "wandb_group": "attention_scaling",
+      "wandb_mode": "disabled",
+      "wandb_project": "functional-memory",
+      "wandb_run_name": "200m-dk064-gdn-tanh-write-warmup400-seed0",
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-tanh-b300-benchmark/scaffolds/transformer/validation/logs/gdn-tanh-b300/219939/replay"
+    }
+  },
+  "created_at_utc": "2026-10-17T04:33:03.876327+00:00",
+  "finished_at_utc": "2026-10-17T04:38:48.655794+00:00",
+  "format": "checkpoint-replay-throughput",
+  "gpu_memory_stats": {
+    "bytes_in_use": 0,
+    "bytes_limit": 215571480576,
+    "bytes_reserved": 0,
+    "largest_alloc_size": 124551426816,
+    "largest_free_block_bytes": 0,
+    "num_allocs": 391606,
+    "peak_bytes_in_use": 132999549184,
+    "peak_bytes_reserved": 0,
+    "peak_pool_bytes": 171800788992,
+    "pool_bytes": 171800788992
+  },
+  "historical_baseline": [
+    {
+      "step": 9000,
+      "tokens_per_second": 450235.0238117372,
+      "training_interval_seconds": 1164.4762674421072,
+      "training_window_start_step": 8000
+    },
+    {
+      "step": 10000,
+      "tokens_per_second": 451724.5239802892,
+      "training_interval_seconds": 1160.636565356981,
+      "training_window_start_step": 9000
+    },
+    {
+      "step": 11000,
+      "tokens_per_second": 449917.0705920524,
+      "training_interval_seconds": 1165.2991946050897,
+      "training_window_start_step": 10000
+    }
+  ],
+  "home_cluster": "kennel",
+  "limitations": [
+    "Single-GPU trainer omits the per-group telemetry used by data-parallel training.",
+    "Historical four-GPU measurements are not a simultaneous hardware-controlled comparison.",
+    "Historical 1000-step windows include a periodic checkpoint; measured replay intervals do not.",
+    "Steady intervals exclude validation, checkpointing, compilation, and startup."
+  ],
+  "outcome": {
+    "attention_backend": "fused",
+    "attention_backend_requested": "fused",
+    "attention_formula": "S_t=a_t S_{t-1}+k_t (b_t v_t-lambda_t a_t S_{t-1}^T k_t)^T; lambda_t=sigmoid(W_lambda x); o_t=S_t^T q_t/sqrt(d_k); q,k L2-normalized after short conv+SiLU; a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); b_t=tanh(W_b x)",
+    "attention_implementation": "fla_chunk_independent_gated_delta_rule_triton",
+    "attention_kernel": "gated_deltanet",
+    "attention_mechanism": "gated_deltanet",
+    "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
+    "attention_score_scale": "1/sqrt(d_k)",
+    "best_checkpoint_after": null,
+    "data_parallel_devices": 1,
+    "data_start_sequence": 2944000,
+    "diagnostic_backend": "fused",
+    "end_step": 11535,
+    "final_step": 11535,
+    "gdn_chunk_size": 64,
+    "gdn_conv_size": 4,
+    "gdn_erase_initialization": "copy_write_projection",
+    "gdn_erase_mode": "independent",
+    "gdn_initial_state": "zero_each_sequence",
+    "gdn_kernel_source": "flash-linear-attention chunk_gated_delta_rule with local independent-gate WY kernels",
+    "gdn_linear_write_activation": "tanh",
+    "gdn_state_elements_per_layer": 65536,
+    "gdn_write_initialization": "tanh_write_projection",
+    "latest_checkpoint_after": 11535,
+    "latest_checkpoint_before": 11500,
+    "restored": true,
+    "restored_step": 11500,
+    "start_step": 11500,
+    "timing": {
+      "checkpoint_seconds": [],
+      "evaluation_seconds": [],
+      "runtime_seconds": 336.9867858905345,
+      "train_step_seconds": [
+        158.73255860898644,
+        4.151357347145677,
+        4.269358578138053,
+        4.203841520473361,
+        4.3373956475406885,
+        4.136870824731886,
+        4.154566206037998,
+        4.1520374566316605
+      ]
+    },
+    "training_tokens": 6047662080
+  },
+  "provenance": {
+    "device": {
+      "description": "cuda:0",
+      "id": 0,
+      "kind": "NVIDIA B300 SXM6 AC",
+      "platform": "gpu",
+      "process_index": 0
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "219939",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer="
+    },
+    "frozen_execution_sha256": "f7e6967451a58f3ee48015c66e079423ac42ae594937f622cac6e1a903189d69",
+    "hostname": "akita.csail.mit.edu",
+    "package_versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda13-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cublas": "13.2.2.2",
+      "nvidia-cuda-runtime": "13.2.86"
+    },
+    "platform": "Linux-6.17.0-1014-nvidia-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "runtime_environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-tanh-b300-benchmark/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "TRANSFORMER_HOST_STAGING": "0",
+      "TRITON_PTXAS_PATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-tanh-b300-benchmark/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer=",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "source_commit": "9e62cf7ce583ae0af776a319a2ebc4df3737f1ab",
+    "source_dirty": true,
+    "source_sha256": {
+      "scaffolds/transformer/attention/__init__.py": "0a21df8dcefe750872141602b4c96aff999c403997438957926250c916cb2913",
+      "scaffolds/transformer/attention/backends/__init__.py": "fc73b96b509d55a0f8a4df7d0cf1cc1ec2c3888d89e7173e4bc5e463a60307e1",
+      "scaffolds/transformer/attention/backends/chunked_gla_triton.py": "41414d6211c843e4baf595d6f4e10da6711ac3cc0a6cc742b33166315b38c554",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/__init__.py": "ef92364015dd7b51126b31aa2b8d02bb351c576851c1a975b003cb7f398b5317",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "32a0ae7ea27451992c9db03e6540f84ef7f80c8c5a3d4848d6cf6a72f21db118",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "a8321522447331aafc08652587ba9cb7d0e817ff6cc92ebb91df08c800a3f541",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "17d23066f78dfb4505d115d82fdd01da84355cdd05afa83190dfac2938dae272",
+      "scaffolds/transformer/attention/backends/fla_independent_gated_delta_rule_kernels.py": "06bedf24690a1180660df5eb927a04719a0ff341410461d9e8dc3e051d4ee264",
+      "scaffolds/transformer/attention/backends/fused_learned_polynomial.py": "39fb6f0f882ed4cb0227dddff7480398eddc2210b3efb9f810b698b13d52903e",
+      "scaffolds/transformer/attention/backends/fused_normalized_polynomial.py": "5ddf0f0590e7a84586fce84a6231ff9d870c61f634b56b02aa804602513bd770",
+      "scaffolds/transformer/attention/backends/fused_quadratic.py": "0f0fca19c8af2d7d616c9e96d788c86c58d8a226db69e4f5cb36b1c39b246fef",
+      "scaffolds/transformer/attention/backends/fused_query_polynomial.py": "06b65fa98394728709beae046848a57427dac9e7b3ccee48371a5d8db22be80c",
+      "scaffolds/transformer/attention/backends/fused_taylor.py": "b0eccdbff0701b02be950f64ab5db5a1dcaff0c6fca8b68c01fd3277ef2d157a",
+      "scaffolds/transformer/attention/backends/fused_unnormalized.py": "97f01d04d630e256fe1a1506574030045526a510b0108e31a9bdc783c2d2b99d",
+      "scaffolds/transformer/attention/backends/mosaic/__init__.py": "895aaddb244c2f1e7967a80668ca7f97199446c0db8e08776a95cbbd0b4e3034",
+      "scaffolds/transformer/attention/backends/mosaic/api.py": "302e352dd4d03a4c23882535b56e86751ed1f49cd09b72e96ba839e3d67a3ce0",
+      "scaffolds/transformer/attention/backends/mosaic/blackwell.py": "1111ace417e8772cc096fa7fad5e34bf7c72a968d49ce8771aea3703f58b190c",
+      "scaffolds/transformer/attention/backends/mosaic/common.py": "93b2b42094e99752b8b9f261d8f47549addfac18ad176436a3bd01bdf9bad5eb",
+      "scaffolds/transformer/attention/backends/mosaic/hopper.py": "aa344a0ca8ec8dbd2fb914f8e54398c0a3cd9f2652527f0a5667495815394f0f",
+      "scaffolds/transformer/attention/backends/reference.py": "e0f29420fc94598e88cc91b7053fe9d098964a9838683595efd4f179bad5651c",
+      "scaffolds/transformer/attention/backends/selection.py": "6285144727b7ee9cff0eed43931cd0fb43493a0872904b93d88a338f9784e475",
+      "scaffolds/transformer/attention/core.py": "29bcbf883574490926c658bf8ec55b4fe026849fb02d984cbceae1951a5ee52d",
+      "scaffolds/transformer/attention/gated_deltanet.py": "d1b496cdca901e01b0e7f297f5ca7c4af2671a38b5a6c141c89bf804b1a6cb94",
+      "scaffolds/transformer/attention/gla.py": "15fcedae8355786adcf0c386d8d597065bdd5e412011c6eb12bfa7d1592fa72a",
+      "scaffolds/transformer/attention/input_dependent.py": "95548181e169c227c31276c22488c0b34c819b05f5dc4b6b82c390fafb56fc66",
+      "scaffolds/transformer/attention/learned_polynomial.py": "ffcc1cc0eef829864f13bfb4413e14f97c3c4390e879492947d07d73199b88dd",
+      "scaffolds/transformer/attention/learned_quadratic.py": "2dd52c7b2f839836f8b7ea799ab382d8974957160902cc30d6c710a00b9b4f40",
+      "scaffolds/transformer/attention/multihead.py": "812b4bcad7dad5c1bf3353d31c8303d4b5c5f94ebd971bee76f9a34d5a1122fd",
+      "scaffolds/transformer/attention/nonnegative_polynomial.py": "e9162adc1772395c4e677350d0a8938d12e523ea371cae3db037ec50d4e82df6",
+      "scaffolds/transformer/attention/output_scaling.py": "575d9ea927319a3d55039b621e7ff00028aca0d3b06085168edf9609f78bd708",
+      "scaffolds/transformer/attention/parameters.py": "d21a7af4d0ea3779a58cf83b5d75974f982121f3c8fa4a2fbd14f4118a127ac7",
+      "scaffolds/transformer/attention/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269",
+      "scaffolds/transformer/attention/qk_norm.py": "919e84929d39664444267a2e5446c8e715b007129a7211168d33c6f7afac4f65",
+      "scaffolds/transformer/attention/rational_polynomial.py": "83907937199331c5f1815369543a83a1372e8154343ae072c48a12a9d0b823f9",
+      "scaffolds/transformer/attention/softmax.py": "47470b42e8e212c91a5044d448f4c36b4d30b9d0b581d3153e6fb73f91f4b04d",
+      "scaffolds/transformer/attention/taylor.py": "550a930352ac08533bf345508a9382a039c1caa27fba2e1b67659dbe27f768a1",
+      "scaffolds/transformer/attention/unnormalized.py": "f028d0076443b1baa11820e20cc10fc121fcd8e380aa66f85bbb9aed2349f1ca",
+      "scaffolds/transformer/benchmarks/benchmark_attention.py": "e07681b2c193e6a2c5642d150bc9a8d39b3ffd87de9812ea281010b21f9ec400",
+      "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA B300 SXM6 AC"
+      }
+    ]
+  },
+  "recipe_compatibility": "Removed explicit gdn_polynomial_degree: 1; linear GDN mathematics unchanged.",
+  "samples": [
+    {
+      "compute_seconds": 158.54957002401352,
+      "finite_loss": true,
+      "interval_seconds": null,
+      "loss": 2.7213058471679688,
+      "step": 11501
+    },
+    {
+      "compute_seconds": 4.146067148074508,
+      "finite_loss": true,
+      "interval_seconds": 4.551095620729029,
+      "loss": 2.643195152282715,
+      "step": 11502
+    },
+    {
+      "compute_seconds": 4.264394134283066,
+      "finite_loss": true,
+      "interval_seconds": 4.27077766135335,
+      "loss": 2.67008638381958,
+      "step": 11503
+    },
+    {
+      "compute_seconds": 4.197791543789208,
+      "finite_loss": true,
+      "interval_seconds": 4.202429633587599,
+      "loss": 2.7334165573120117,
+      "step": 11504
+    },
+    {
+      "compute_seconds": 4.333537094295025,
+      "finite_loss": true,
+      "interval_seconds": 4.339968062005937,
+      "loss": 2.6609721183776855,
+      "step": 11505
+    },
+    {
+      "compute_seconds": 4.133174412883818,
+      "finite_loss": true,
+      "interval_seconds": 4.137752370908856,
+      "loss": 2.7560250759124756,
+      "step": 11506
+    },
+    {
+      "compute_seconds": 4.150694550015032,
+      "finite_loss": true,
+      "interval_seconds": 4.155374087393284,
+      "loss": 2.725888729095459,
+      "step": 11507
+    },
+    {
+      "compute_seconds": 4.147995247505605,
+      "finite_loss": true,
+      "interval_seconds": 4.152899492532015,
+      "loss": 2.6705377101898193,
+      "step": 11508
+    },
+    {
+      "compute_seconds": 4.4229761669412255,
+      "finite_loss": true,
+      "interval_seconds": 4.427077431231737,
+      "loss": 2.701883316040039,
+      "step": 11509
+    },
+    {
+      "compute_seconds": 4.145758614875376,
+      "finite_loss": true,
+      "interval_seconds": 4.152045079506934,
+      "loss": 2.707381248474121,
+      "step": 11510
+    },
+    {
+      "compute_seconds": 4.163925049826503,
+      "finite_loss": true,
+      "interval_seconds": 4.175172104500234,
+      "loss": 2.722130060195923,
+      "step": 11511
+    },
+    {
+      "compute_seconds": 4.141208899207413,
+      "finite_loss": true,
+      "interval_seconds": 4.145278173498809,
+      "loss": 2.6950883865356445,
+      "step": 11512
+    },
+    {
+      "compute_seconds": 4.354097419418395,
+      "finite_loss": true,
+      "interval_seconds": 4.358907304704189,
+      "loss": 2.700610637664795,
+      "step": 11513
+    },
+    {
+      "compute_seconds": 4.11816656216979,
+      "finite_loss": true,
+      "interval_seconds": 4.122125473804772,
+      "loss": 2.694088935852051,
+      "step": 11514
+    },
+    {
+      "compute_seconds": 4.175250341184437,
+      "finite_loss": true,
+      "interval_seconds": 4.179161909967661,
+      "loss": 2.681272029876709,
+      "step": 11515
+    },
+    {
+      "compute_seconds": 4.217097019776702,
+      "finite_loss": true,
+      "interval_seconds": 4.221448021009564,
+      "loss": 2.684263229370117,
+      "step": 11516
+    },
+    {
+      "compute_seconds": 4.5617279056459665,
+      "finite_loss": true,
+      "interval_seconds": 4.565832667052746,
+      "loss": 2.791307210922241,
+      "step": 11517
+    },
+    {
+      "compute_seconds": 4.161900629289448,
+      "finite_loss": true,
+      "interval_seconds": 4.167650598101318,
+      "loss": 2.668612241744995,
+      "step": 11518
+    },
+    {
+      "compute_seconds": 4.256711512804031,
+      "finite_loss": true,
+      "interval_seconds": 4.2610484240576625,
+      "loss": 2.7375380992889404,
+      "step": 11519
+    },
+    {
+      "compute_seconds": 4.150952840223908,
+      "finite_loss": true,
+      "interval_seconds": 4.155747432261705,
+      "loss": 2.755486488342285,
+      "step": 11520
+    },
+    {
+      "compute_seconds": 4.35321675427258,
+      "finite_loss": true,
+      "interval_seconds": 4.362305457703769,
+      "loss": 2.6908185482025146,
+      "step": 11521
+    },
+    {
+      "compute_seconds": 4.292111793532968,
+      "finite_loss": true,
+      "interval_seconds": 4.296869358047843,
+      "loss": 2.7325336933135986,
+      "step": 11522
+    },
+    {
+      "compute_seconds": 4.176086052320898,
+      "finite_loss": true,
+      "interval_seconds": 4.181632289662957,
+      "loss": 2.716313600540161,
+      "step": 11523
+    },
+    {
+      "compute_seconds": 4.105336585082114,
+      "finite_loss": true,
+      "interval_seconds": 4.10958878416568,
+      "loss": 2.6485886573791504,
+      "step": 11524
+    },
+    {
+      "compute_seconds": 4.141182497143745,
+      "finite_loss": true,
+      "interval_seconds": 4.146198027767241,
+      "loss": 2.7329189777374268,
+      "step": 11525
+    },
+    {
+      "compute_seconds": 4.290378405712545,
+      "finite_loss": true,
+      "interval_seconds": 4.294318038038909,
+      "loss": 2.7033324241638184,
+      "step": 11526
+    },
+    {
+      "compute_seconds": 4.136769221164286,
+      "finite_loss": true,
+      "interval_seconds": 4.140306607820094,
+      "loss": 2.6965253353118896,
+      "step": 11527
+    },
+    {
+      "compute_seconds": 4.158446937799454,
+      "finite_loss": true,
+      "interval_seconds": 4.163283105939627,
+      "loss": 2.771268367767334,
+      "step": 11528
+    },
+    {
+      "compute_seconds": 4.383836679160595,
+      "finite_loss": true,
+      "interval_seconds": 4.387739782221615,
+      "loss": 2.700608730316162,
+      "step": 11529
+    },
+    {
+      "compute_seconds": 4.110145761631429,
+      "finite_loss": true,
+      "interval_seconds": 4.115059121511877,
+      "loss": 2.720043897628784,
+      "step": 11530
+    },
+    {
+      "compute_seconds": 4.169934418052435,
+      "finite_loss": true,
+      "interval_seconds": 4.178126153536141,
+      "loss": 2.9204461574554443,
+      "step": 11531
+    },
+    {
+      "compute_seconds": 4.18900213483721,
+      "finite_loss": true,
+      "interval_seconds": 4.1936698434874415,
+      "loss": 2.723205327987671,
+      "step": 11532
+    },
+    {
+      "compute_seconds": 4.507823836058378,
+      "finite_loss": true,
+      "interval_seconds": 4.512088222429156,
+      "loss": 2.703605890274048,
+      "step": 11533
+    },
+    {
+      "compute_seconds": 4.148653651587665,
+      "finite_loss": true,
+      "interval_seconds": 4.152426481246948,
+      "loss": 2.7187249660491943,
+      "step": 11534
+    },
+    {
+      "compute_seconds": 4.150259439833462,
+      "finite_loss": true,
+      "interval_seconds": 4.154032771475613,
+      "loss": 2.6823818683624268,
+      "step": 11535
+    }
+  ],
+  "schema_version": 1,
+  "source_files_unchanged": true,
+  "source_run": {
+    "checkpoint_step": 11500,
+    "input_sha256": {
+      "checkpoints/11500/_CHECKPOINT_METADATA": "7e0b1b00eb1c8e411d44fe079e6c400aa770734ea466b38ebecb5fb8ae68ab97",
+      "checkpoints/11500/default/_METADATA": "b7c4d8dcc72f7754c590478f49e385e53ef73b8cb3646e09747beaa85fd3b545",
+      "checkpoints/11500/default/_sharding": "60edb3c569014747c383e0bb60b56d095b29b2bfb0a0a430c2348c3c58646a0f",
+      "checkpoints/11500/default/array_metadatas/process_0": "64275d133a65b88efde1d4a572dfca91e2973fbed2887a8f44c389a42f4c6d35",
+      "checkpoints/11500/default/d/a8b525a74a8a2c91b40be26d61b811b8": "1c033b32b416ac2a5644209d6b6cd56ed7696af6829236cd83d8f4d48f19c787",
+      "checkpoints/11500/default/manifest.ocdbt": "ffd84ea54ca080ffb09e3581d40ae56f46730957410eebe1f50b3659b7c3df7f",
+      "checkpoints/11500/default/ocdbt.process_0/d/04404fbbb8524ff5a74889b29d352334": "c1cad57460ebf628eb4bd130e3b282e6d2d9225b16e89d3c11fd084b91300e91",
+      "checkpoints/11500/default/ocdbt.process_0/d/1662b071aafdb55a7decc8863123c124": "409ebbd6dd65c27e45ec0ad1e4642835c917e3f3dddf4546d07ce82ec3f8eb0b",
+      "checkpoints/11500/default/ocdbt.process_0/d/b600875c324fef60916190475264d5b2": "c64c98220a2b05b60a2e1c5f58b65eeeccc5ec87f687b96d40d4d0dcfad9a61f",
+      "checkpoints/11500/default/ocdbt.process_0/d/bec467cf11bcf0b1f8ecc3d582fd0103": "30220c93d4fda88bb19b43cf6a6ff4dce6d3bbbc9557f05e60270e2053bb233f",
+      "checkpoints/11500/default/ocdbt.process_0/d/de0a37b3b1471f21b611d06ce4e32cde": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+      "checkpoints/11500/default/ocdbt.process_0/d/fa6fe26d4e460406afbae09bfa960eb9": "3b5812fd1bf048e6b7cb5575cc94bcbeb59cbc647f9fb0910a20266b01abf2be",
+      "checkpoints/11500/default/ocdbt.process_0/manifest.ocdbt": "3ac668c0a07d67f41948acee91f9124ebe49833978847598c497209722328324",
+      "config.yaml": "16fda7abf903021f751a91a91e3a3960bc58eb2cbba3a662b51b4a47108a945b",
+      "data_identity.json": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "metrics.jsonl": "f532697e377b98133a9d43a83682d3402d6cb148cff40e5d6ee18bc41931a5ec",
+      "record.json": "73df0f67ac4d94d5d7c47bebb7fb37978cc0abce83e57ced4bd33147c881402a"
+    },
+    "recipe": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "fused",
+        "attention_coefficient_activation": "identity",
+        "attention_coefficient_conditioning": "static",
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_sharing": "global",
+        "attention_coefficients": "fixed",
+        "attention_degree": null,
+        "attention_denominator_constant": "fixed",
+        "attention_denominator_degree": null,
+        "attention_denominator_parameterization": "direct",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_mechanism": "gated_deltanet",
+        "attention_normalization": true,
+        "attention_output_scaling": "none",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "independent",
+        "gdn_polynomial_degree": 1,
+        "gdn_write_activation": "tanh",
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 1024,
+        "initialization": "gated_deltanet_reference",
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 64,
+        "qk_norm": false,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_head",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.0,
+        "coefficient_penalty_denominator": true,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 400,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "experiments/attention_scaling/runs/rf65d38ec0552/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "auto",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "attention_scaling",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "200m-dk064-gdn-tanh-write-warmup400-seed0",
+        "workdir": "experiments/attention_scaling/runs/rf65d38ec0552"
+      }
+    },
+    "run_id": "rf65d38ec0552",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA H100 PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 1,
+          "kind": "NVIDIA H100 PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 2,
+          "kind": "NVIDIA H100 PCIe",
+          "platform": "gpu"
+        },
+        {
+          "id": 3,
+          "kind": "NVIDIA H100 PCIe",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "source_commit": "16a04573c45f23fde3e2a1c81c891e0139410450"
+  },
+  "status": "complete",
+  "steady_compute": {
+    "mean_seconds": 4.220494044665247,
+    "median_seconds": 4.1629128395579755,
+    "p10_seconds": 4.1316736278124155,
+    "p90_seconds": 4.387750627938658,
+    "tokens_per_second": 124224.31934543446,
+    "updates": 30
+  },
+  "steady_training": {
+    "mean_seconds": 4.225505487186213,
+    "median_seconds": 4.171411351300776,
+    "p10_seconds": 4.136189681198448,
+    "p90_seconds": 4.391673547122627,
+    "tokens_per_second": 124076.98950809462,
+    "updates": 30
+  },
+  "timed_updates": 30,
+  "tokens_per_update": 524288,
+  "wall_seconds": 344.778018835932,
+  "warmup_updates": 5
+}

@@ -369,6 +369,45 @@ sbatch --partition=standard --time=24:00:00 --nodelist=akita --gres=gpu:1 --cpus
 
 Outcomes are in the [input-dependent coefficient topic](../../results/exploratory/input_dependent_coefficients/README.md).
 
+### Tanh starts on the blocked reference, degrees 1–4
+
+Eight single-B300 runs on the plain-JAX reference path (`attention_backend: blocked`, no
+fused kernel) check two things about the tanh coefficients: whether the fused kernel
+explains the original start's deficit, and whether a zero-amplitude start removes it.
+Both sets keep the degree-matched tanh recipe above (head RMSNorm, QK normalization,
+`transformer_reference`, 400 warmup updates, global microbatch 64) apart from the
+backend and the start.
+
+| Start | m = 1 | m = 2 | m = 3 | m = 4 |
+| --- | --- | --- | --- | --- |
+| Original, `a_r = 1`, `W = 0`: the kernel check against `r80300a4cd5fa`, `rbfe1750cc24c`, `r0bc57959ef6c`, `rfee72428a45e` | `r6fdf6d484fd2` | `r722fc3dd263e` | `radd66df6371a` | `rc836509ca119` |
+| Zero amplitude, `a_r = 0`, `W ~ N(0, 0.002^2)` (`attention_coefficient_amplitude_initial: 0`, `attention_coefficient_projection_initial_std: 0.002`) | `r75b81509b10b` | `r8c9b076f9635` | `rb306d49a5abe` | `rf1160aa95e46` |
+
+All run on one B300 on `akita` at nice 0: zero-amplitude starts on `standard` (24 h),
+original starts on `long`, where `standard` jobs preempt them and they resume from their
+checkpoints. Six use launch commit `bb81667a6f510e165dab39f92367233c41d4ed8b` from
+`worktrees/tanh_reference_check` (jobs 219218, 219220, 219221 and 219223–219225) on the
+CUDA 12 environment. `r8c9b076f9635` (job 219521, commit
+`67f535f85eca5776b63735f8de3440c9158bc88a`) and `r6fdf6d484fd2` (job 219555, commit
+`8851a838fdb95d02c9fb900d4eb0194c777318b7`) use the B300 CUDA 13 environment
+([validation record](../../scaffolds/transformer/validation/README.md#b300-cuda-13-environment))
+from their own worktrees. With `RUN` set to a run ID and `COMMIT` to its launch commit:
+
+```bash
+sbatch --partition=standard --time=1-00:00:00 --nodelist=akita --gres=gpu:b300:1 \
+  --cpus-per-task=16 --mem=128G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" 1 B300
+sbatch --partition=long --nodelist=akita --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" 1 B300
+```
+
+Outcomes and the comparison with the fused runs and the static controls live in the
+[input-dependent coefficient topic](../../results/exploratory/input_dependent_coefficients/README.md).
+
 ## Independent GDN erase gate
 
 Run `rf7341031e3d5` asks whether GDN benefits from separate scalar erase and write

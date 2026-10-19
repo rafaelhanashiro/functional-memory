@@ -1,0 +1,1081 @@
+{
+  "accumulation_steps": 4,
+  "all_finite": true,
+  "configuration": {
+    "data": {
+      "batch_size": 256,
+      "dataset_config": "sample-100BT",
+      "dataset_name": "HuggingFaceFW/fineweb-edu",
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sequence_length": 2049,
+      "shuffle_seed": 0,
+      "source": "packed",
+      "split": "train",
+      "synthetic_vocab_size": 32000,
+      "text_field": "text",
+      "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+      "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+    },
+    "model": {
+      "attention_backend": "cudnn",
+      "attention_coefficient_activation": "identity",
+      "attention_coefficient_amplitude_initial": 1.0,
+      "attention_coefficient_conditioning": "static",
+      "attention_coefficient_initialization": "taylor",
+      "attention_coefficient_parameterization": "direct",
+      "attention_coefficient_projection_initial_std": 0.0,
+      "attention_coefficient_sharing": "global",
+      "attention_coefficients": "fixed",
+      "attention_degree": null,
+      "attention_denominator_constant": "fixed",
+      "attention_denominator_degree": null,
+      "attention_denominator_parameterization": "direct",
+      "attention_fixed_coefficients": null,
+      "attention_fixed_square_factors": null,
+      "attention_mechanism": "dot_product",
+      "attention_normalization": true,
+      "attention_output_scaling": "none",
+      "dropout": 0.0,
+      "gdn_conv_size": 4,
+      "gdn_erase_mode": "tied",
+      "gdn_write_activation": "sigmoid",
+      "gla_chunk_size": 64,
+      "gla_gate_rank": 16,
+      "gla_gate_tau": 16.0,
+      "gla_inner_chunk_size": 16,
+      "gla_use_rope": true,
+      "hidden_size": 1024,
+      "initialization": "transformer_reference",
+      "intermediate_size": 3008,
+      "kind": "transformer",
+      "max_seq_len": 2048,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "num_layers": 10,
+      "qk_head_dim": 64,
+      "qk_norm": true,
+      "qk_norm_eps": 1e-06,
+      "qk_norm_initial_scale": null,
+      "qk_norm_sharing": "per_head",
+      "quadratic_mode": "fixed",
+      "quadratic_sharing": "global",
+      "remat": false,
+      "rms_norm_eps": 1e-06,
+      "rope_theta": 10000.0,
+      "tie_embeddings": false,
+      "value_head_dim": 64,
+      "vocab_size": 32000
+    },
+    "optim": {
+      "beta1": 0.9,
+      "beta2": 0.95,
+      "coefficient_penalty": 0.0,
+      "coefficient_penalty_denominator": true,
+      "grad_clip_norm": 1.0,
+      "learning_rate": 0.0003,
+      "min_learning_rate": 3e-05,
+      "total_steps": 19074,
+      "warmup_steps": 400,
+      "weight_decay": 0.1,
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+    },
+    "train": {
+      "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/validation/logs/upstream-b300/220076/cudnn-2/checkpoints",
+      "ckpt_every": 500,
+      "dtype": "bfloat16",
+      "eval_batches": 7,
+      "eval_every": 1000,
+      "log_every": 10,
+      "micro_batch_size": 64,
+      "seed": 0,
+      "source_commit": "e0538b971ef9a66338e703cac8274a59e73cbb6b",
+      "wandb_dir": null,
+      "wandb_entity": "rafah-massachusetts-institute-of-technology",
+      "wandb_group": "attention_scaling",
+      "wandb_mode": "disabled",
+      "wandb_project": "functional-memory",
+      "wandb_run_name": "upstream-b300-cudnn",
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/validation/logs/upstream-b300/220076/cudnn-2"
+    }
+  },
+  "created_at_utc": "2026-10-17T16:49:58.480338+00:00",
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "data_identity_sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+  "finished_at_utc": "2026-10-17T16:51:21.017727+00:00",
+  "format": "fresh-training-throughput",
+  "gpu_memory_stats": {
+    "bytes_in_use": 0,
+    "bytes_limit": 215571480576,
+    "bytes_reserved": 0,
+    "largest_alloc_size": 76202199040,
+    "largest_free_block_bytes": 0,
+    "num_allocs": 195418,
+    "peak_bytes_in_use": 84124371200,
+    "peak_bytes_reserved": 0,
+    "peak_pool_bytes": 146030985216,
+    "pool_bytes": 146030985216
+  },
+  "input_recipe": {
+    "configuration": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "cudnn",
+        "attention_coefficient_activation": "identity",
+        "attention_coefficient_amplitude_initial": 1.0,
+        "attention_coefficient_conditioning": "static",
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_projection_initial_std": 0.0,
+        "attention_coefficient_sharing": "global",
+        "attention_coefficients": "fixed",
+        "attention_degree": null,
+        "attention_denominator_constant": "fixed",
+        "attention_denominator_degree": null,
+        "attention_denominator_parameterization": "direct",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_mechanism": "dot_product",
+        "attention_normalization": true,
+        "attention_output_scaling": "none",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "tied",
+        "gdn_write_activation": "sigmoid",
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 1024,
+        "initialization": "transformer_reference",
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 64,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_head",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.0,
+        "coefficient_penalty_denominator": true,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 400,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": null,
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 64,
+        "seed": 0,
+        "source_commit": "auto",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "attention_scaling",
+        "wandb_mode": "disabled",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "upstream-b300-cudnn",
+        "workdir": "scaffolds/transformer/validation/logs/upstream-b300/cudnn"
+      }
+    },
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/validation/configs/upstream-b300-cudnn.yaml",
+    "sha256": "20693351654f3512408a6215679080cf84e4af55d41b5498a7164b446dedf46f"
+  },
+  "measurement_notes": [
+    "Fresh initialization and optimizer; the scientific recipe and learning-rate horizon are unchanged.",
+    "Steady completion intervals include data loading, transfer, update checks, and ordinary logging.",
+    "Warmup, initialization, evaluation, and checkpoint writes are outside steady measurements.",
+    "Single-GPU training omits the per-group telemetry used by data-parallel training."
+  ],
+  "outcome": {
+    "attention_backend": "cudnn",
+    "attention_backend_requested": "cudnn",
+    "attention_degree": null,
+    "attention_implementation": "cudnn",
+    "attention_kernel": "softmax",
+    "attention_normalization": true,
+    "attention_score_formula": "exp(gamma) * <q, k> / (||q|| ||k||), gamma learned, |score| <= exp(gamma)",
+    "best_checkpoint_after": null,
+    "data_parallel_devices": 1,
+    "data_start_sequence": 0,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 35,
+    "final_step": 35,
+    "latest_checkpoint_after": 35,
+    "latest_checkpoint_before": null,
+    "m0_qk_parameter_note": null,
+    "qk_norm": true,
+    "qk_norm_eps": 1e-06,
+    "qk_norm_initial_scale": 8.0,
+    "qk_norm_parameter_count": 160,
+    "qk_norm_sharing": "per_head",
+    "query_block_size": null,
+    "restored": false,
+    "restored_step": null,
+    "start_step": 0,
+    "timing": {
+      "checkpoint_seconds": [],
+      "evaluation_seconds": [],
+      "runtime_seconds": 82.36184283532202,
+      "train_step_seconds": [
+        8.765824688598514,
+        0.9313650531694293,
+        0.9544172864407301,
+        0.9336056662723422,
+        0.9464749153703451,
+        0.931467735208571,
+        0.9350205408409238,
+        0.9218427008017898
+      ]
+    },
+    "training_tokens": 18350080
+  },
+  "parameter_count": 199906464,
+  "provenance": {
+    "benchmark_source_sha256": "e6b61e243345f74513d97872fd3ff1290c20419a2379c545e625123a12d58501",
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "device": {
+      "description": "cuda:0",
+      "driver_version": "580.126.20",
+      "id": 0,
+      "kind": "NVIDIA B300 SXM6 AC",
+      "name": "NVIDIA B300 SXM6 AC",
+      "pci_bus_id": "00000000:BC:00.0",
+      "physical_index": "0",
+      "platform": "gpu",
+      "process_index": 0,
+      "uuid": "GPU-db556517-bdca-9832-804e-11a0366de63c"
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "220076",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer="
+    },
+    "frozen_execution_scope": {
+      "experiment": "attention_scaling",
+      "scaffold": "transformer"
+    },
+    "frozen_execution_sha256": "9cacb20cfd5f16a51d94dca6052d8007f1f0705557d0f05e52eb52f8b5c62e6a",
+    "hostname": "akita.csail.mit.edu",
+    "package_versions": {
+      "flash-linear-attention": "0.6.0",
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda13-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cublas": "13.2.2.2",
+      "nvidia-cuda-nvcc": "13.2.86",
+      "nvidia-cuda-runtime": "13.2.86",
+      "nvidia-cudnn-cu13": "9.22.0.52",
+      "nvidia-nccl-cu13": "2.32.3",
+      "triton": "3.7.1"
+    },
+    "platform": "Linux-6.17.0-1014-nvidia-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "runtime_environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "CUDA_VISIBLE_DEVICES": "0",
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "TRANSFORMER_HOST_STAGING": "0",
+      "TRITON_PTXAS_BLACKWELL_PATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+      "TRITON_PTXAS_PATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer=",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "source_commit": "e0538b971ef9a66338e703cac8274a59e73cbb6b",
+    "source_dirty": true,
+    "source_sha256": {
+      "scaffolds/transformer/attention/__init__.py": "0a21df8dcefe750872141602b4c96aff999c403997438957926250c916cb2913",
+      "scaffolds/transformer/attention/backends/__init__.py": "fc73b96b509d55a0f8a4df7d0cf1cc1ec2c3888d89e7173e4bc5e463a60307e1",
+      "scaffolds/transformer/attention/backends/chunked_gla_triton.py": "41414d6211c843e4baf595d6f4e10da6711ac3cc0a6cc742b33166315b38c554",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/__init__.py": "ef92364015dd7b51126b31aa2b8d02bb351c576851c1a975b003cb7f398b5317",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "32a0ae7ea27451992c9db03e6540f84ef7f80c8c5a3d4848d6cf6a72f21db118",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "a8321522447331aafc08652587ba9cb7d0e817ff6cc92ebb91df08c800a3f541",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "17d23066f78dfb4505d115d82fdd01da84355cdd05afa83190dfac2938dae272",
+      "scaffolds/transformer/attention/backends/fla_independent_gated_delta_rule_kernels.py": "06bedf24690a1180660df5eb927a04719a0ff341410461d9e8dc3e051d4ee264",
+      "scaffolds/transformer/attention/backends/fused_learned_polynomial.py": "39fb6f0f882ed4cb0227dddff7480398eddc2210b3efb9f810b698b13d52903e",
+      "scaffolds/transformer/attention/backends/fused_normalized_polynomial.py": "5ddf0f0590e7a84586fce84a6231ff9d870c61f634b56b02aa804602513bd770",
+      "scaffolds/transformer/attention/backends/fused_quadratic.py": "0f0fca19c8af2d7d616c9e96d788c86c58d8a226db69e4f5cb36b1c39b246fef",
+      "scaffolds/transformer/attention/backends/fused_query_polynomial.py": "06b65fa98394728709beae046848a57427dac9e7b3ccee48371a5d8db22be80c",
+      "scaffolds/transformer/attention/backends/fused_taylor.py": "b0eccdbff0701b02be950f64ab5db5a1dcaff0c6fca8b68c01fd3277ef2d157a",
+      "scaffolds/transformer/attention/backends/fused_unnormalized.py": "97f01d04d630e256fe1a1506574030045526a510b0108e31a9bdc783c2d2b99d",
+      "scaffolds/transformer/attention/backends/mosaic/__init__.py": "895aaddb244c2f1e7967a80668ca7f97199446c0db8e08776a95cbbd0b4e3034",
+      "scaffolds/transformer/attention/backends/mosaic/api.py": "302e352dd4d03a4c23882535b56e86751ed1f49cd09b72e96ba839e3d67a3ce0",
+      "scaffolds/transformer/attention/backends/mosaic/blackwell.py": "1111ace417e8772cc096fa7fad5e34bf7c72a968d49ce8771aea3703f58b190c",
+      "scaffolds/transformer/attention/backends/mosaic/common.py": "93b2b42094e99752b8b9f261d8f47549addfac18ad176436a3bd01bdf9bad5eb",
+      "scaffolds/transformer/attention/backends/mosaic/hopper.py": "aa344a0ca8ec8dbd2fb914f8e54398c0a3cd9f2652527f0a5667495815394f0f",
+      "scaffolds/transformer/attention/backends/reference.py": "e0f29420fc94598e88cc91b7053fe9d098964a9838683595efd4f179bad5651c",
+      "scaffolds/transformer/attention/backends/selection.py": "6285144727b7ee9cff0eed43931cd0fb43493a0872904b93d88a338f9784e475",
+      "scaffolds/transformer/attention/core.py": "29bcbf883574490926c658bf8ec55b4fe026849fb02d984cbceae1951a5ee52d",
+      "scaffolds/transformer/attention/gated_deltanet.py": "d1b496cdca901e01b0e7f297f5ca7c4af2671a38b5a6c141c89bf804b1a6cb94",
+      "scaffolds/transformer/attention/gla.py": "15fcedae8355786adcf0c386d8d597065bdd5e412011c6eb12bfa7d1592fa72a",
+      "scaffolds/transformer/attention/input_dependent.py": "95548181e169c227c31276c22488c0b34c819b05f5dc4b6b82c390fafb56fc66",
+      "scaffolds/transformer/attention/learned_polynomial.py": "ffcc1cc0eef829864f13bfb4413e14f97c3c4390e879492947d07d73199b88dd",
+      "scaffolds/transformer/attention/learned_quadratic.py": "2dd52c7b2f839836f8b7ea799ab382d8974957160902cc30d6c710a00b9b4f40",
+      "scaffolds/transformer/attention/multihead.py": "812b4bcad7dad5c1bf3353d31c8303d4b5c5f94ebd971bee76f9a34d5a1122fd",
+      "scaffolds/transformer/attention/nonnegative_polynomial.py": "e9162adc1772395c4e677350d0a8938d12e523ea371cae3db037ec50d4e82df6",
+      "scaffolds/transformer/attention/output_scaling.py": "575d9ea927319a3d55039b621e7ff00028aca0d3b06085168edf9609f78bd708",
+      "scaffolds/transformer/attention/parameters.py": "d21a7af4d0ea3779a58cf83b5d75974f982121f3c8fa4a2fbd14f4118a127ac7",
+      "scaffolds/transformer/attention/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269",
+      "scaffolds/transformer/attention/qk_norm.py": "919e84929d39664444267a2e5446c8e715b007129a7211168d33c6f7afac4f65",
+      "scaffolds/transformer/attention/rational_polynomial.py": "83907937199331c5f1815369543a83a1372e8154343ae072c48a12a9d0b823f9",
+      "scaffolds/transformer/attention/softmax.py": "47470b42e8e212c91a5044d448f4c36b4d30b9d0b581d3153e6fb73f91f4b04d",
+      "scaffolds/transformer/attention/taylor.py": "550a930352ac08533bf345508a9382a039c1caa27fba2e1b67659dbe27f768a1",
+      "scaffolds/transformer/attention/unnormalized.py": "f028d0076443b1baa11820e20cc10fc121fcd8e380aa66f85bbb9aed2349f1ca",
+      "scaffolds/transformer/benchmarks/benchmark_attention.py": "e07681b2c193e6a2c5642d150bc9a8d39b3ffd87de9812ea281010b21f9ec400",
+      "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA B300 SXM6 AC"
+      }
+    ]
+  },
+  "resolved_backend": "cudnn",
+  "resolved_configuration": {
+    "data": {
+      "batch_size": 256,
+      "dataset_config": "sample-100BT",
+      "dataset_name": "HuggingFaceFW/fineweb-edu",
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sequence_length": 2049,
+      "shuffle_seed": 0,
+      "source": "packed",
+      "split": "train",
+      "synthetic_vocab_size": 32000,
+      "text_field": "text",
+      "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+      "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+    },
+    "model": {
+      "attention_backend": "cudnn",
+      "attention_coefficient_activation": "identity",
+      "attention_coefficient_amplitude_initial": 1.0,
+      "attention_coefficient_conditioning": "static",
+      "attention_coefficient_initialization": "taylor",
+      "attention_coefficient_parameterization": "direct",
+      "attention_coefficient_projection_initial_std": 0.0,
+      "attention_coefficient_sharing": "global",
+      "attention_coefficients": "fixed",
+      "attention_degree": null,
+      "attention_denominator_constant": "fixed",
+      "attention_denominator_degree": null,
+      "attention_denominator_parameterization": "direct",
+      "attention_fixed_coefficients": null,
+      "attention_fixed_square_factors": null,
+      "attention_mechanism": "dot_product",
+      "attention_normalization": true,
+      "attention_output_scaling": "none",
+      "dropout": 0.0,
+      "gdn_conv_size": 4,
+      "gdn_erase_mode": "tied",
+      "gdn_write_activation": "sigmoid",
+      "gla_chunk_size": 64,
+      "gla_gate_rank": 16,
+      "gla_gate_tau": 16.0,
+      "gla_inner_chunk_size": 16,
+      "gla_use_rope": true,
+      "hidden_size": 1024,
+      "initialization": "transformer_reference",
+      "intermediate_size": 3008,
+      "kind": "transformer",
+      "max_seq_len": 2048,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "num_layers": 10,
+      "qk_head_dim": 64,
+      "qk_norm": true,
+      "qk_norm_eps": 1e-06,
+      "qk_norm_initial_scale": null,
+      "qk_norm_sharing": "per_head",
+      "quadratic_mode": "fixed",
+      "quadratic_sharing": "global",
+      "remat": false,
+      "rms_norm_eps": 1e-06,
+      "rope_theta": 10000.0,
+      "tie_embeddings": false,
+      "value_head_dim": 64,
+      "vocab_size": 32000
+    },
+    "optim": {
+      "beta1": 0.9,
+      "beta2": 0.95,
+      "coefficient_penalty": 0.0,
+      "coefficient_penalty_denominator": true,
+      "grad_clip_norm": 1.0,
+      "learning_rate": 0.0003,
+      "min_learning_rate": 3e-05,
+      "total_steps": 19074,
+      "warmup_steps": 400,
+      "weight_decay": 0.1,
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+    },
+    "train": {
+      "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/validation/logs/upstream-b300/220076/cudnn-2/checkpoints",
+      "ckpt_every": 500,
+      "dtype": "bfloat16",
+      "eval_batches": 7,
+      "eval_every": 1000,
+      "log_every": 10,
+      "micro_batch_size": 64,
+      "seed": 0,
+      "source_commit": "e0538b971ef9a66338e703cac8274a59e73cbb6b",
+      "wandb_dir": null,
+      "wandb_entity": "rafah-massachusetts-institute-of-technology",
+      "wandb_group": "attention_scaling",
+      "wandb_mode": "disabled",
+      "wandb_project": "functional-memory",
+      "wandb_run_name": "upstream-b300-cudnn",
+      "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/upstream-throughput/scaffolds/transformer/validation/logs/upstream-b300/220076/cudnn-2"
+    }
+  },
+  "resolved_implementation": "cudnn",
+  "runtime_audit": {
+    "attention_backend": "cudnn",
+    "attention_backend_requested": "cudnn",
+    "attention_degree": null,
+    "attention_implementation": "cudnn",
+    "attention_kernel": "softmax",
+    "attention_normalization": true,
+    "attention_score_formula": "exp(gamma) * <q, k> / (||q|| ||k||), gamma learned, |score| <= exp(gamma)",
+    "best_checkpoint_after": null,
+    "data_parallel_devices": 1,
+    "data_start_sequence": 0,
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "end_step": 35,
+    "final_step": 35,
+    "latest_checkpoint_after": 35,
+    "latest_checkpoint_before": null,
+    "m0_qk_parameter_note": null,
+    "qk_norm": true,
+    "qk_norm_eps": 1e-06,
+    "qk_norm_initial_scale": 8.0,
+    "qk_norm_parameter_count": 160,
+    "qk_norm_sharing": "per_head",
+    "query_block_size": null,
+    "restored": false,
+    "restored_step": null,
+    "start_step": 0,
+    "timing": {
+      "checkpoint_seconds": [],
+      "evaluation_seconds": [],
+      "runtime_seconds": 82.36184283532202,
+      "train_step_seconds": [
+        8.765824688598514,
+        0.9313650531694293,
+        0.9544172864407301,
+        0.9336056662723422,
+        0.9464749153703451,
+        0.931467735208571,
+        0.9350205408409238,
+        0.9218427008017898
+      ]
+    },
+    "training_tokens": 18350080
+  },
+  "samples": [
+    {
+      "compute_seconds": 8.563470353372395,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": null,
+      "loss": 10.59112548828125,
+      "step": 1,
+      "update_numerics": [
+        10.59112548828125,
+        7.811764717102051,
+        294.0140686035156
+      ]
+    },
+    {
+      "compute_seconds": 0.9253008030354977,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.6912442212924361,
+      "loss": 10.592705726623535,
+      "step": 2,
+      "update_numerics": [
+        10.592705726623535,
+        7.791254997253418,
+        294.01397705078125
+      ]
+    },
+    {
+      "compute_seconds": 0.9487036662176251,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9536190135404468,
+      "loss": 10.569040298461914,
+      "step": 3,
+      "update_numerics": [
+        10.569040298461914,
+        7.881333827972412,
+        294.0137634277344
+      ]
+    },
+    {
+      "compute_seconds": 0.9281317079439759,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9344398062676191,
+      "loss": 10.527947425842285,
+      "step": 4,
+      "update_numerics": [
+        10.527947425842285,
+        7.453470706939697,
+        294.0134582519531
+      ]
+    },
+    {
+      "compute_seconds": 0.9411233644932508,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9471528362482786,
+      "loss": 10.476935386657715,
+      "step": 5,
+      "update_numerics": [
+        10.476935386657715,
+        7.237146377563477,
+        294.0130920410156
+      ]
+    },
+    {
+      "compute_seconds": 0.9266594182699919,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9314405201002955,
+      "loss": 10.398653030395508,
+      "step": 6,
+      "update_numerics": [
+        10.398653030395508,
+        7.3631439208984375,
+        294.0126647949219
+      ]
+    },
+    {
+      "compute_seconds": 0.9301770329475403,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.935911986976862,
+      "loss": 10.29237174987793,
+      "step": 7,
+      "update_numerics": [
+        10.29237174987793,
+        7.46619987487793,
+        294.0120544433594
+      ]
+    },
+    {
+      "compute_seconds": 0.9166345559060574,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9215621398761868,
+      "loss": 10.185558319091797,
+      "step": 8,
+      "update_numerics": [
+        10.185558319091797,
+        7.733213424682617,
+        294.0114440917969
+      ]
+    },
+    {
+      "compute_seconds": 0.9244726449251175,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.93014554399997,
+      "loss": 10.05837631225586,
+      "step": 9,
+      "update_numerics": [
+        10.05837631225586,
+        7.719552040100098,
+        294.0107421875
+      ]
+    },
+    {
+      "compute_seconds": 0.9045999785885215,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.91066216211766,
+      "loss": 9.925748825073242,
+      "step": 10,
+      "update_numerics": [
+        9.925748825073242,
+        7.635056495666504,
+        294.00994873046875
+      ]
+    },
+    {
+      "compute_seconds": 0.9168606139719486,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9288141606375575,
+      "loss": 9.760990142822266,
+      "step": 11,
+      "update_numerics": [
+        9.760990142822266,
+        7.151633262634277,
+        294.0091247558594
+      ]
+    },
+    {
+      "compute_seconds": 0.9025921644642949,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9086275808513165,
+      "loss": 9.627131462097168,
+      "step": 12,
+      "update_numerics": [
+        9.627131462097168,
+        6.191864013671875,
+        294.0082702636719
+      ]
+    },
+    {
+      "compute_seconds": 1.0209892904385924,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.0259629990905523,
+      "loss": 9.502147674560547,
+      "step": 13,
+      "update_numerics": [
+        9.502147674560547,
+        5.071543216705322,
+        294.0074462890625
+      ]
+    },
+    {
+      "compute_seconds": 0.9246686603873968,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9305470017716289,
+      "loss": 9.384634971618652,
+      "step": 14,
+      "update_numerics": [
+        9.384634971618652,
+        4.259225845336914,
+        294.0066223144531
+      ]
+    },
+    {
+      "compute_seconds": 0.9578733807429671,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.963469305075705,
+      "loss": 9.331332206726074,
+      "step": 15,
+      "update_numerics": [
+        9.331332206726074,
+        3.609633684158325,
+        294.005859375
+      ]
+    },
+    {
+      "compute_seconds": 0.911256386898458,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9163083489984274,
+      "loss": 9.208937644958496,
+      "step": 16,
+      "update_numerics": [
+        9.208937644958496,
+        3.235978364944458,
+        294.00518798828125
+      ]
+    },
+    {
+      "compute_seconds": 0.9181651286780834,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9229606250301003,
+      "loss": 9.172904968261719,
+      "step": 17,
+      "update_numerics": [
+        9.172904968261719,
+        2.9542646408081055,
+        294.0046081542969
+      ]
+    },
+    {
+      "compute_seconds": 0.9153422964736819,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9216385614126921,
+      "loss": 9.126886367797852,
+      "step": 18,
+      "update_numerics": [
+        9.126886367797852,
+        2.783704996109009,
+        294.00408935546875
+      ]
+    },
+    {
+      "compute_seconds": 0.9122240394353867,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9174363613128662,
+      "loss": 9.047460556030273,
+      "step": 19,
+      "update_numerics": [
+        9.047460556030273,
+        2.526460647583008,
+        294.0036315917969
+      ]
+    },
+    {
+      "compute_seconds": 0.9357311641797423,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9412887832149863,
+      "loss": 8.99859619140625,
+      "step": 20,
+      "update_numerics": [
+        8.99859619140625,
+        2.425736427307129,
+        294.0032958984375
+      ]
+    },
+    {
+      "compute_seconds": 0.907470571808517,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9176748134195805,
+      "loss": 8.971527099609375,
+      "step": 21,
+      "update_numerics": [
+        8.971527099609375,
+        2.296354293823242,
+        294.0030212402344
+      ]
+    },
+    {
+      "compute_seconds": 0.9259615549817681,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9316195761784911,
+      "loss": 8.947508811950684,
+      "step": 22,
+      "update_numerics": [
+        8.947508811950684,
+        2.0018997192382812,
+        294.0028991699219
+      ]
+    },
+    {
+      "compute_seconds": 0.925023166462779,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9300661971792579,
+      "loss": 8.881094932556152,
+      "step": 23,
+      "update_numerics": [
+        8.881094932556152,
+        1.8932178020477295,
+        294.0027770996094
+      ]
+    },
+    {
+      "compute_seconds": 0.9822759162634611,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9879357600584626,
+      "loss": 8.851214408874512,
+      "step": 24,
+      "update_numerics": [
+        8.851214408874512,
+        1.9156432151794434,
+        294.0028076171875
+      ]
+    },
+    {
+      "compute_seconds": 0.9469595924019814,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9523164052516222,
+      "loss": 8.84518814086914,
+      "step": 25,
+      "update_numerics": [
+        8.84518814086914,
+        1.8016715049743652,
+        294.0028076171875
+      ]
+    },
+    {
+      "compute_seconds": 0.9379647355526686,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9431899040937424,
+      "loss": 8.785962104797363,
+      "step": 26,
+      "update_numerics": [
+        8.785962104797363,
+        1.9273320436477661,
+        294.00299072265625
+      ]
+    },
+    {
+      "compute_seconds": 0.920198542997241,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9253847533836961,
+      "loss": 8.755977630615234,
+      "step": 27,
+      "update_numerics": [
+        8.755977630615234,
+        1.9642040729522705,
+        294.003173828125
+      ]
+    },
+    {
+      "compute_seconds": 0.9769094549119473,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9819663669914007,
+      "loss": 8.720721244812012,
+      "step": 28,
+      "update_numerics": [
+        8.720721244812012,
+        1.8413833379745483,
+        294.00347900390625
+      ]
+    },
+    {
+      "compute_seconds": 0.947088080458343,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9517926890403032,
+      "loss": 8.688806533813477,
+      "step": 29,
+      "update_numerics": [
+        8.688806533813477,
+        1.7498935461044312,
+        294.00384521484375
+      ]
+    },
+    {
+      "compute_seconds": 0.9362577255815268,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9408989502117038,
+      "loss": 8.625517845153809,
+      "step": 30,
+      "update_numerics": [
+        8.625517845153809,
+        1.7737069129943848,
+        294.0043640136719
+      ]
+    },
+    {
+      "compute_seconds": 0.9536752849817276,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9622505130246282,
+      "loss": 8.564506530761719,
+      "step": 31,
+      "update_numerics": [
+        8.564506530761719,
+        1.6521421670913696,
+        294.00494384765625
+      ]
+    },
+    {
+      "compute_seconds": 1.0036517325788736,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.0079648243263364,
+      "loss": 8.549186706542969,
+      "step": 32,
+      "update_numerics": [
+        8.549186706542969,
+        1.7374944686889648,
+        294.0055847167969
+      ]
+    },
+    {
+      "compute_seconds": 0.9655176633968949,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9698370108380914,
+      "loss": 8.506123542785645,
+      "step": 33,
+      "update_numerics": [
+        8.506123542785645,
+        1.6626155376434326,
+        294.00634765625
+      ]
+    },
+    {
+      "compute_seconds": 0.9504739223048091,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 0.9549718834459782,
+      "loss": 8.462626457214355,
+      "step": 34,
+      "update_numerics": [
+        8.462626457214355,
+        1.6831918954849243,
+        294.0072021484375
+      ]
+    },
+    {
+      "compute_seconds": 1.0024424800649285,
+      "finite_loss_and_update_numerics": true,
+      "interval_seconds": 1.0073874201625586,
+      "loss": 8.407524108886719,
+      "step": 35,
+      "update_numerics": [
+        8.407524108886719,
+        1.5057750940322876,
+        294.0080871582031
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "scratch_removed": true,
+  "source_recipe_unchanged": true,
+  "status": "complete",
+  "steady_compute": {
+    "max_seconds": 1.0209892904385924,
+    "mean_seconds": 0.9400039060351749,
+    "median_seconds": 0.9284182256087661,
+    "min_seconds": 0.9025921644642949,
+    "p10_seconds": 0.910877805389464,
+    "p90_seconds": 0.9842925726436079,
+    "tokens_per_second": 557750.8738356042,
+    "updates": 30
+  },
+  "steady_training": {
+    "max_seconds": 1.0259629990905523,
+    "mean_seconds": 0.9457344382690887,
+    "median_seconds": 0.9337657815776765,
+    "min_seconds": 0.9086275808513165,
+    "p10_seconds": 0.9173235600814224,
+    "p90_seconds": 0.9898809260688722,
+    "tokens_per_second": 554371.2682807316,
+    "updates": 30
+  },
+  "timed_updates": 30,
+  "tokens_per_update": 524288,
+  "training_metadata": {
+    "attention_backend": "cudnn",
+    "attention_backend_requested": "cudnn",
+    "attention_degree": null,
+    "attention_implementation": "cudnn",
+    "attention_kernel": "softmax",
+    "attention_normalization": true,
+    "attention_score_formula": "exp(gamma) * <q, k> / (||q|| ||k||), gamma learned, |score| <= exp(gamma)",
+    "data_identity": {
+      "batch_size": 256,
+      "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "format": "ofm-packed-run-data",
+      "sequence_length": 2049,
+      "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+      "version": 2
+    },
+    "devices": [
+      "cuda:0"
+    ],
+    "diagnostic_backend": "blocked",
+    "diagnostic_query_block_size": 128,
+    "diagnostic_sample": {
+      "diagnostic_pass_contributes_to_validation_loss": false,
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "num_sequences": 1,
+      "prediction_tokens": 2048,
+      "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+      "selection": "first_heldout_sequence",
+      "sequence_index": 0,
+      "source": "packed"
+    },
+    "error": null,
+    "execution_runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA B300 SXM6 AC",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer=",
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "m0_qk_parameter_note": null,
+    "next_train_sequence": 8960,
+    "numerical_failure_path": null,
+    "parameter_count": 199906464,
+    "qk_head_dim": 64,
+    "qk_norm": true,
+    "qk_norm_eps": 1e-06,
+    "qk_norm_initial_scale": 8.0,
+    "qk_norm_parameter_count": 160,
+    "qk_norm_sharing": "per_head",
+    "query_block_size": null,
+    "rng_state": {
+      "completed_updates": 35,
+      "seed": 0
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA B300 SXM6 AC",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer=",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "220076",
+        "timestamp_utc": "2026-10-17T16:50:31.143960+00:00"
+      }
+    ],
+    "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+    "seed": 0,
+    "slurm_job_id": "220076",
+    "slurm_restart_count": 0,
+    "source_commit": "e0538b971ef9a66338e703cac8274a59e73cbb6b",
+    "status": "paused",
+    "step": 35,
+    "target_steps": 19074,
+    "target_tokens": 10000269312,
+    "training_tokens": 18350080,
+    "updated_utc": "2026-10-17T16:51:20.857405+00:00",
+    "value_head_dim": 64
+  },
+  "training_metadata_sha256": "433abacc5246adbbdf29ca961ea58cd113914b4f8773e26f1d4be41f1cffdc21",
+  "wall_seconds": 82.5353687601164,
+  "warmup_updates": 5
+}

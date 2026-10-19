@@ -5,9 +5,11 @@
 # A job whose log stops growing (no progress bar, test output, or message) for the stall
 # limit has stalled: when one GPU fails, for example by running out of memory, its
 # data-parallel peer can wait in a collective until the time limit. The watchdog then
-# logs the GPUs' state, ends the running step, and exits with STALLED_EXIT_CODE, which
-# scaffolds.launch.finalize records as a stall. The limit, TRANSFORMER_STALL_MINUTES,
-# must exceed the longest silent step, such as the first update's compilation.
+# logs the GPUs' state, ends the running step, and exits with STALLED_EXIT_CODE.
+# scaffolds.launch.finalize then requeues the job, which resumes from its latest checkpoint,
+# for a run's first STALL_REQUEUES stalls, and records a further stall as a failure. The
+# limit, TRANSFORMER_STALL_MINUTES, must exceed the longest silent step, such as the first
+# update's compilation.
 STALLED_EXIT_CODE=124
 STALL_SECONDS=$(( ${TRANSFORMER_STALL_MINUTES:-20} * 60 ))
 STALL_POLL_SECONDS=60
