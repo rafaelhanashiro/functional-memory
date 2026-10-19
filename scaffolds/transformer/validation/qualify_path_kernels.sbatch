@@ -82,7 +82,7 @@ value = {
     **({"suites": suites} if suites else {}),
 }
 assert len(devices) == 1 and gpu in devices[0].upper(), devices
-Path(directory, f"{step}.json").write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
+Path(directory, f"{step}-job.json").write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
 print(json.dumps(value), flush=True)
 raise SystemExit(0 if passed else 1)
 PY
