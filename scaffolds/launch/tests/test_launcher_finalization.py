@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from scaffolds.launch.finalize import STALLED_EXIT_CODE, finalize_attempt
+from scaffolds.launch.finalize import STALL_REQUEUES, STALLED_EXIT_CODE, finalize_attempt, main as finalize_main
 from scaffolds.records import create_run, load_run, update_record
 
 
@@ -184,11 +184,53 @@ def test_the_watchdog_leaves_a_step_that_keeps_logging(tmp_path):
     assert result.stdout == "worker finished\n" and result.stderr == ""
 
 
-def test_a_stalled_job_is_recorded_as_a_stall(tmp_path, monkeypatch):
+def test_a_stalled_run_is_requeued_until_its_stall_limit_then_fails(tmp_path, monkeypatch):
+    run = create_run(tmp_path / "study", {"seed": 0})
+    monkeypatch.setenv("SLURM_JOB_ID", "123")
+    attempts = []
+    for stall in range(STALL_REQUEUES + 1):
+        # A requeued job keeps its ID; each restart appends an attempt.
+        attempts = [*load_run(run).get("attempts", []), {"slurm_job_id": "123", "slurm_restart_count": str(stall)}]
+        update_record(run, {"status": "running", "attempts": attempts})
+        requeue = finalize_attempt(run, STALLED_EXIT_CODE)
+        record = load_run(run)
+        assert record["attempts"][-1]["exit_code"] == STALLED_EXIT_CODE
+        if stall < STALL_REQUEUES:
+            assert requeue and record["status"] == "submitted" and "error" not in record
+    assert not requeue
+    assert record["status"] == "failed" and record["error"].startswith("Stalled:")
+    assert len(record["attempts"]) == STALL_REQUEUES + 1
+
+
+def test_an_ordinary_failure_is_never_requeued(tmp_path, monkeypatch):
+    run = create_run(tmp_path / "study", {"seed": 0})
+    monkeypatch.setenv("SLURM_JOB_ID", "123")
+    update_record(run, {"status": "running", "attempts": [{"slurm_job_id": "123"}]})
+    assert not finalize_attempt(run, 1)
+    assert load_run(run)["status"] == "failed"
+
+
+@pytest.mark.parametrize("refused", [False, True])
+def test_the_finalizer_requeues_a_stalled_job_through_slurm(tmp_path, monkeypatch, refused):
+    scontrol = tmp_path / "scontrol"
+    scontrol.write_text('#!/bin/bash\nprintf "%s\\n" "$@" > "$SCONTROL_ARGS"\n'
+                        + ('echo "Requested operation not permitted" >&2\nexit 1\n' if refused else ""))
+    scontrol.chmod(0o755)
+    args_path = tmp_path / "args"
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setenv("SCONTROL_ARGS", str(args_path))
+    monkeypatch.setenv("SLURM_JOB_ID", "123")
     run = create_run(tmp_path / "study", {"seed": 0})
     update_record(run, {"status": "running", "attempts": [{"slurm_job_id": "123"}]})
-    monkeypatch.setenv("SLURM_JOB_ID", "123")
-    finalize_attempt(run, STALLED_EXIT_CODE)
+    argv = ["--run", str(run), "--exit-code", str(STALLED_EXIT_CODE)]
+    if refused:
+        with pytest.raises(SystemExit):
+            finalize_main(argv)
+    else:
+        finalize_main(argv)
+    assert args_path.read_text().splitlines() == ["requeue", "123"]
     record = load_run(run)
-    assert record["status"] == "failed" and record["error"].startswith("Stalled:")
-    assert record["attempts"][-1]["exit_code"] == STALLED_EXIT_CODE
+    if refused:
+        assert record["status"] == "failed" and "not permitted" in record["error"]
+    else:
+        assert record["status"] == "submitted"
