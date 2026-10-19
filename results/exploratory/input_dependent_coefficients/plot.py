@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 from pathlib import Path
 
 import matplotlib
@@ -39,6 +40,10 @@ VARIANTS = {
                                  "Tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel"),
     "tanh_zero_amplitude_inner_bias": ("tanh, zero-amplitude start, bias inside tanh, Mosaic kernel", "#1B9E77", ":",
                                        "Tanh, zero-amplitude start, bias inside tanh, Mosaic kernel"),
+    "tanh_zero_amplitude_saturating_3": ("tanh, zero-amplitude start, W ~ N(0, 9/d), Mosaic kernel", "#80CDC1", "-",
+                                         "Tanh, zero-amplitude start, W ~ N(0, 9/d), Mosaic kernel"),
+    "tanh_zero_amplitude_saturating_10": ("tanh, zero-amplitude start, W ~ N(0, 100/d), Mosaic kernel", "#80CDC1", "--",
+                                          "Tanh, zero-amplitude start, W ~ N(0, 100/d), Mosaic kernel"),
     "tanh_query_key": ("tanh query-key, zero-amplitude start, W ~ N(0, 1/d)", "#7B3294", "-",
                        "Tanh query-key, zero-amplitude start, W ~ N(0, 1/d)"),
 }
@@ -59,7 +64,12 @@ def variant_of(model) -> tuple[str, str, str]:
         return function, start, "tanh_original_blocked" if blocked else "tanh_original"
     if model.get("attention_coefficient_tanh_bias", False):
         return function, start, "tanh_zero_amplitude_inner_bias"
-    if model.get("attention_coefficient_projection_initial_std", 0.0) > 0.01:
+    spread = model.get("attention_coefficient_projection_initial_std", 0.0) * math.sqrt(model["hidden_size"])
+    if spread > 5:
+        return function, start, "tanh_zero_amplitude_saturating_10"
+    if spread > 2:
+        return function, start, "tanh_zero_amplitude_saturating_3"
+    if spread > 0.5:
         return function, start, "tanh_zero_amplitude_wide"
     if not blocked:
         raise ValueError("The small-draw zero-amplitude runs in this selection use the blocked reference")
