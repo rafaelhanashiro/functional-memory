@@ -30,7 +30,9 @@ export XLA_FLAGS="${XLA_FLAGS:-} --xla_gpu_enable_command_buffer="
 POLY_JOB_TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/poly-gdn-${SLURM_JOB_ID}.XXXXXX")"
 export TMPDIR="$POLY_JOB_TMPDIR" XDG_CACHE_HOME="$POLY_JOB_TMPDIR/xdg"
 export JAX_COMPILATION_CACHE_DIR="$PWD/.cache/poly-gdn-tuning/jax"
-export EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/poly-gdn-tuning/bridge"
+export EJKERNEL_TRITON_CACHE_COMPILES=1
+# The bridge key does not include helper-function source; isolate by frozen commit.
+export EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/poly-gdn-tuning/bridge/$LAUNCH_COMMIT"
 export TRITON_CACHE_DIR="$PWD/.cache/poly-gdn-tuning/triton"
 trap 'rm -rf -- "$POLY_JOB_TMPDIR"' EXIT
 OUT="$PWD/scaffolds/transformer/validation/runs/poly-gdn-tuning/$SLURM_JOB_ID"
@@ -45,9 +47,15 @@ case "$PHASE" in
   diagnose)
     select_toolkit "$JPY"
     export CUDA_LAUNCH_BLOCKING=1
-    "$JPY" -m pytest -xvs \
-      'scaffolds/transformer/tests/test_polynomial_gdn_kernel.py::test_fused_outputs_and_all_input_gradients_match_tensor_recurrence[float32-0.0003-8-64-8]' \
-      --junitxml="$LOG_DIR/diagnostic-tests.xml"
+    set +e
+    for trial in matmul:4 forward:4 gradient:4 forward:2 gradient:2; do
+      test_case=${trial%:*}
+      warps=${trial#*:}
+      "$JPY" -m scaffolds.transformer.benchmarks.diagnose_poly_gdn \
+        --case "$test_case" --warps "$warps" > "$LOG_DIR/$test_case-w$warps.log" 2>&1
+      echo "${test_case}_w${warps}_exit=$?"
+    done
+    set -e
     ;;
   profile)
     select_toolkit "$JPY"
