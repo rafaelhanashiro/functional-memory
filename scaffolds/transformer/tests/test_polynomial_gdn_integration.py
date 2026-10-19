@@ -195,13 +195,22 @@ def test_polynomial_backend_selection_checks_width_and_acceptance_covers_degree(
     assert (acceptance.CUBIC_GDN_KERNEL_TESTS in gpu) == (degree == 3)
 
 
-def test_polynomial_runtime_identity_records_precision_without_changing_recipe(monkeypatch):
+def test_polynomial_runtime_identity_records_options_without_changing_recipe(monkeypatch):
+    from scaffolds.transformer.attention.backends import polynomial_gdn
+
+    monkeypatch.setattr(polynomial_gdn, "_default_num_warps", lambda: 4)
     config = Config(model=polynomial_model(3, attention_backend="fused"))
     recipe = config_to_dict(config)
     monkeypatch.setenv("POLY_GDN_VALUE_PRECISION", "bf16_read")
     monkeypatch.setenv("POLY_GDN_NUM_WARPS", "8")
+    monkeypatch.setenv("POLY_GDN_MIN_CTAS_PER_SM", "1")
     identity = attention_identity(config)
     assert identity["gdn_value_precision"] == "bf16_read"
     assert identity["gdn_num_warps"] == 8
+    assert identity["gdn_min_ctas_per_sm"] == 1
     assert identity["gdn_transport_dot_precision"] == "tf32x3"
+    monkeypatch.setenv("POLY_GDN_MIN_CTAS_PER_SM", "0")
+    assert attention_identity(config)["gdn_min_ctas_per_sm"] == 0
+    monkeypatch.delenv("POLY_GDN_MIN_CTAS_PER_SM")
+    assert attention_identity(config)["gdn_min_ctas_per_sm"] == 0
     assert config_to_dict(config) == recipe

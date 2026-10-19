@@ -393,7 +393,10 @@ four-warp backward path fails hardware qualification with the pinned compiler.
 Experimental runtime options `POLY_GDN_VALUE_PRECISION=bf16_read` (value-read
 products) or `bf16_values` (also score-adjoint products) retain FP32 transport,
 inverse geometry, and accumulation. `POLY_GDN_NUM_WARPS` accepts 1, 2, 4, or 8.
-Explicit `precision`/`num_warps` keyword arguments on
+`POLY_GDN_MIN_CTAS_PER_SM` accepts 0 (the default, no guidance), 1, or 2;
+positive values add PTX occupancy guidance to the polynomial kernels, allowing
+the assembler to make a different register-allocation choice.
+Explicit `precision`/`num_warps`/`min_ctas_per_sm` keyword arguments on
 `polynomial_gated_delta_rule` override these settings; environment changes take
 effect when tracing a fresh executable. Backend metadata records the resolved
 options. Qualification and throughput measurements belong in

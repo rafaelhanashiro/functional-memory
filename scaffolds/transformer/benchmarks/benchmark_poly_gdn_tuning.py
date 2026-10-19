@@ -6,7 +6,8 @@ Native FLA uses the same shared input fixture in benchmark_upstream_torch, but
 is a linear, tied-gate reference workload, not the same mathematical operator.
 Stage timings are isolated calls with resident intermediates; their sum is not
 an end-to-end timing. Accuracy is checked against tf32x3 at --reference-warps
-(default two, the qualified Blackwell setting) on the exact same cast operands.
+(default two, the qualified Blackwell setting) and --reference-min-ctas
+(default zero, no occupancy hint) on the exact same cast operands.
 Independent small FP64 tests remain separate qualification.
 """
 from __future__ import annotations
@@ -16,6 +17,7 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from functools import partial
 import hashlib
+from itertools import product
 import json
 import math
 import os
@@ -109,6 +111,15 @@ def finite_result(result):
         [jnp.all(jnp.isfinite(value)) for value in jax.tree.leaves(result)]))
 
 
+def runtime_ptxas_flags():
+    """Match pinned JAX's literal-space split and optional device-debug flag."""
+    flags = [flag for flag in os.environ.get("JAX_TRITON_PTXAS_EXTRA_FLAGS", "").split(" ") if flag]
+    if (os.environ.get("JAX_TRITON_PTXAS_DEVICE_DEBUG") in ("1", "true")
+            and "--device-debug" not in flags and "-g" not in flags):
+        flags.append("--device-debug")
+    return flags
+
+
 @contextmanager
 def record_resources(report, context, save, enabled):
     """Inspect the actual PTX passed to JAX, including bridge cache hits.
@@ -137,9 +148,12 @@ def record_resources(report, context, save, enabled):
         if identity in seen:
             return kernel
         seen.add(identity)
+        extra_flags = os.environ.get("JAX_TRITON_PTXAS_EXTRA_FLAGS", "")
         resource = {**context, "kernel": args[0], "num_warps": args[1],
                     "shared_bytes": args[index - 1], "ptx_sha256": digest,
-                    "min_ctas_directive": re.findall(r"\.minnctapersm\s+(\d+)", ptx)}
+                    "min_ctas_directive": re.findall(r"\.minnctapersm\s+(\d+)", ptx),
+                    "runtime_ptxas_extra_flags": extra_flags,
+                    "runtime_ptxas_device_debug": os.environ.get("JAX_TRITON_PTXAS_DEVICE_DEBUG")}
         assembler = os.environ.get("TRITON_PTXAS_BLACKWELL_PATH") or os.environ.get("TRITON_PTXAS_PATH")
         if assembler:
             try:
@@ -150,6 +164,8 @@ def record_resources(report, context, save, enabled):
                     command = [assembler, "-v", str(source), "-o", str(Path(directory) / "kernel.cubin")]
                     if target:
                         command += ["--gpu-name", target.group(1)]
+                    command += runtime_ptxas_flags()
+                    resource["inspection_ptxas_command"] = command
                     result = subprocess.run(command, capture_output=True, text=True, timeout=60)
                     resource.update(ptxas_returncode=result.returncode, ptxas_report=result.stderr.strip())
                     for field, expression in (("registers", r"Used (\d+) registers"),
@@ -240,7 +256,7 @@ class Runner:
         return result
 
 
-def stage_profile(runner, entry, operands, cotangent, precision, warps, scale):
+def stage_profile(runner, entry, operands, cotangent, precision, warps, min_ctas, scale):
     """Use exactly the production stage calls, including separated geometry passes."""
     from scaffolds.transformer.attention.backends import polynomial_gdn as backend
     from scaffolds.transformer.attention.backends import polynomial_gdn_kernels as kernels
@@ -249,7 +265,7 @@ def stage_profile(runner, entry, operands, cotangent, precision, warps, scale):
     # The public backend promotes the model's BF16 gates before these stages.
     beta, erase = beta.astype(jnp.float32), erase.astype(jnp.float32)
     stages = entry.setdefault("stages", {})
-    options = dict(precision=precision, num_warps=warps)
+    options = dict(precision=precision, num_warps=warps, min_ctas_per_sm=min_ctas)
 
     def measure(name, function, arguments):
         executable, result = runner.compile(name, function, arguments, stages)
@@ -326,14 +342,17 @@ def benchmark(args):
     source = _execution_provenance(devices[0], args.experiment)
     for path in (Path(__file__), Path(upstream_inputs.__file__)):
         source["source_sha256"][str(path.relative_to(root))] = hashlib.sha256(path.read_bytes()).hexdigest()
-    source["runtime_environment"].update({name: os.environ.get(name) for name in ("POLY_GDN_VALUE_PRECISION", "POLY_GDN_NUM_WARPS")})
+    source["runtime_environment"].update({name: os.environ.get(name) for name in (
+        "POLY_GDN_VALUE_PRECISION", "POLY_GDN_NUM_WARPS", "POLY_GDN_MIN_CTAS_PER_SM",
+        "JAX_TRITON_PTXAS_EXTRA_FLAGS", "JAX_TRITON_PTXAS_DEVICE_DEBUG")})
     source["benchmark_source_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     report = {"format": "polynomial-gdn-kernel-tuning", "schema_version": 1, "status": "running",
               "created_at_utc": datetime.now(UTC).isoformat(), "provenance": source,
               "configuration": vars(args) | {"output": str(args.output)}, "shapes": {}, "compiled_resources": [],
               "comparison": "Cubic polynomial GDN and native FLA linear tied GDN are different mathematics.",
               "timing": "Resident compiled call plus host dispatch; synchronize every call; compile/transfer/checks excluded.",
-              "accuracy_reference": {"precision": "tf32x3", "num_warps": args.reference_warps, "same_cast_inputs": True},
+              "accuracy_reference": {"precision": "tf32x3", "num_warps": args.reference_warps,
+                                     "min_ctas_per_sm": args.reference_min_ctas, "same_cast_inputs": True},
               "accuracy_scope": "Production-size parity to exact backend; independent FP64 oracle tests required separately.",
               "memory": "Compiler estimates and device allocator statistics, not measured isolated kernel peaks."}
     runner = Runner(args, report)
@@ -389,40 +408,42 @@ def benchmark_shape(runner, entry, batch, width, backend):
     jax.block_until_ready((operands, cotangent))
     scale = width ** -.5
     entry["scale"] = scale
-    forward = partial(backend.polynomial_gated_delta_rule, scale=scale, precision="tf32x3", num_warps=args.reference_warps)
+    forward = partial(backend.polynomial_gated_delta_rule, scale=scale, precision="tf32x3",
+                      num_warps=args.reference_warps, min_ctas_per_sm=args.reference_min_ctas)
     reference_operations = entry.setdefault("reference", {})
     executable, reference = runner.compile("forward_backward", partial(value_and_vjp, forward),
                                             (*operands, cotangent), reference_operations)
     del executable
     compiled = {}
-    for precision in args.precisions:
-        for warps in args.warps:
-            variant = f"{precision}_w{warps}"
-            runner.active(variant=variant)
-            case = {"status": "compiling", "precision": precision, "num_warps": warps, "operations": {}}
-            entry["variants"][variant] = case
-            functions = {}
-            try:
-                forward = partial(backend.polynomial_gated_delta_rule, scale=scale, precision=precision, num_warps=warps)
-                for operation, function, values in (
-                    ("forward", forward, operands),
-                    ("forward_backward", partial(value_and_vjp, forward), (*operands, cotangent))):
-                    executable, actual = runner.compile(operation, function, values, case["operations"])
-                    exact = precision == "tf32x3"
-                    checks = compare_result(actual, reference if operation == "forward_backward" else reference[0],
-                        backward=operation == "forward_backward",
-                        rms_limit=args.exact_relative_rms if exact else args.max_relative_rms,
-                        max_limit=args.exact_relative_max if exact else args.max_relative_max)
-                    case["operations"][operation]["accuracy"] = checks
-                    functions[operation] = (executable, values)
-                    del actual
-                case["accuracy_passed"] = all(item["accuracy"]["passed"] for item in case["operations"].values())
-                case["status"] = "ready"
-                compiled[variant] = functions
-            except Exception as error:
-                case.update(status="failed", error=f"{type(error).__name__}: {error}")
-                print(json.dumps({"variant": variant, "error": case["error"]}), flush=True)
-            runner.save()
+    for precision, warps, min_ctas in product(args.precisions, args.warps, args.min_ctas):
+        variant = f"{precision}_w{warps}_cta{min_ctas}"
+        runner.active(variant=variant)
+        case = {"status": "compiling", "precision": precision, "num_warps": warps,
+                "min_ctas_per_sm": min_ctas, "operations": {}}
+        entry["variants"][variant] = case
+        functions = {}
+        try:
+            forward = partial(backend.polynomial_gated_delta_rule, scale=scale, precision=precision,
+                              num_warps=warps, min_ctas_per_sm=min_ctas)
+            for operation, function, values in (
+                ("forward", forward, operands),
+                ("forward_backward", partial(value_and_vjp, forward), (*operands, cotangent))):
+                executable, actual = runner.compile(operation, function, values, case["operations"])
+                exact = precision == "tf32x3"
+                checks = compare_result(actual, reference if operation == "forward_backward" else reference[0],
+                    backward=operation == "forward_backward",
+                    rms_limit=args.exact_relative_rms if exact else args.max_relative_rms,
+                    max_limit=args.exact_relative_max if exact else args.max_relative_max)
+                case["operations"][operation]["accuracy"] = checks
+                functions[operation] = (executable, values)
+                del actual
+            case["accuracy_passed"] = all(item["accuracy"]["passed"] for item in case["operations"].values())
+            case["status"] = "ready"
+            compiled[variant] = functions
+        except Exception as error:
+            case.update(status="failed", error=f"{type(error).__name__}: {error}")
+            print(json.dumps({"variant": variant, "error": case["error"]}), flush=True)
+        runner.save()
     for round_index in range(args.rounds):
         variants = list(compiled) if round_index % 2 == 0 else list(reversed(compiled))
         for variant in variants:
@@ -446,7 +467,8 @@ def benchmark_shape(runner, entry, batch, width, backend):
                 continue
             runner.active(variant=variant)
             try:
-                stage_profile(runner, case, operands, cotangent, case["precision"], case["num_warps"], scale)
+                stage_profile(runner, case, operands, cotangent, case["precision"], case["num_warps"],
+                              case["min_ctas_per_sm"], scale)
                 case["stage_status"] = "complete"
             except Exception as error:
                 case.update(stage_status="failed", stage_error=f"{type(error).__name__}: {error}")
@@ -469,12 +491,16 @@ def main():
                         help="Sweep launch choices; unsupported hardware settings are rejected before launch")
     parser.add_argument("--reference-warps", type=int, choices=(1, 2, 4, 8), default=2,
                         help="Exact tf32x3 parity reference; two warps is the qualified Blackwell setting")
+    parser.add_argument("--min-ctas", type=int, nargs="+", choices=(0, 1, 2), default=[0],
+                        help="Minimum CTAs per SM occupancy hints; zero disables the hint")
+    parser.add_argument("--reference-min-ctas", type=int, choices=(0, 1, 2), default=0,
+                        help="Exact parity reference occupancy hint; zero disables the hint")
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--iterations", type=int, default=20)
     parser.add_argument("--rounds", type=int, default=2)
     parser.add_argument("--seed", type=int, default=46)
     parser.add_argument("--profile-stages", action="store_true")
-    parser.add_argument("--profile-variants", nargs="+", help="Optional precision_wN names to profile")
+    parser.add_argument("--profile-variants", nargs="+", help="Optional precision_wN_ctaN names to profile")
     parser.add_argument("--resources", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--max-relative-rms", type=float, default=.01)
     parser.add_argument("--max-relative-max", type=float, default=.05)
@@ -484,7 +510,7 @@ def main():
     args = parser.parse_args()
     # Confirmation may name the same baseline and selected setting. Preserve
     # requested order while compiling and recording every unique case once.
-    for name in ("batches", "key_dims", "precisions", "warps"):
+    for name in ("batches", "key_dims", "precisions", "warps", "min_ctas"):
         setattr(args, name, list(dict.fromkeys(getattr(args, name))))
     if min(*args.batches, *args.key_dims, args.value_dim, args.length, args.heads,
            args.warmup, args.iterations, args.rounds) < 1:

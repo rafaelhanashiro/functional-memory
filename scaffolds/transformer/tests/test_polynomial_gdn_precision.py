@@ -10,6 +10,7 @@ import pytest
 from scaffolds.transformer.attention.backends import polynomial_gdn as backend
 from scaffolds.transformer.attention.backends.polynomial_gdn import (
     polynomial_gated_delta_rule,
+    resolve_polynomial_gdn_min_ctas,
     resolve_polynomial_gdn_options,
 )
 
@@ -37,6 +38,66 @@ def test_invalid_runtime_options_are_rejected(monkeypatch, name, value):
         resolve_polynomial_gdn_options()
     # An explicitly pinned benchmark remains independent of ambient settings.
     assert resolve_polynomial_gdn_options("tf32x3", 4) == ("tf32x3", 4)
+
+
+def test_minimum_cta_default_and_explicit_disable(monkeypatch):
+    monkeypatch.delenv("POLY_GDN_MIN_CTAS_PER_SM", raising=False)
+    assert resolve_polynomial_gdn_min_ctas() == 0
+    monkeypatch.setenv("POLY_GDN_MIN_CTAS_PER_SM", "1")
+    assert resolve_polynomial_gdn_min_ctas() == 1
+    assert resolve_polynomial_gdn_min_ctas(0) == 0
+    assert resolve_polynomial_gdn_min_ctas(2) == 2
+    monkeypatch.setenv("POLY_GDN_MIN_CTAS_PER_SM", "0")
+    assert resolve_polynomial_gdn_min_ctas() == 0
+
+
+@pytest.mark.parametrize("value", ["bad", "-1", "3", "1.0"])
+def test_invalid_minimum_cta_environment_is_rejected(monkeypatch, value):
+    monkeypatch.setenv("POLY_GDN_MIN_CTAS_PER_SM", value)
+    with pytest.raises(ValueError, match="MIN_CTAS_PER_SM|min_ctas_per_sm"):
+        resolve_polynomial_gdn_min_ctas()
+    assert resolve_polynomial_gdn_min_ctas(0) == 0
+
+
+@pytest.mark.parametrize("value", [-1, 3, 1.0, True, "1"])
+def test_invalid_explicit_minimum_cta_is_rejected_before_arrays(monkeypatch, value):
+    monkeypatch.setattr(backend, "_default_num_warps", lambda: 4)
+    with pytest.raises(ValueError, match="min_ctas_per_sm"):
+        polynomial_gated_delta_rule(*([None] * 7), min_ctas_per_sm=value)
+    with pytest.raises(ValueError, match="min_ctas_per_sm"):
+        backend._polynomial_call(None, out=None, q=None, v=None, name="guard",
+                                 min_ctas_per_sm=value)
+
+
+@pytest.mark.parametrize("requested,expected", [(0, None), (1, 1), (2, 2), (None, 1)])
+def test_minimum_cta_reaches_forward_and_all_backward_kernels(monkeypatch, requested, expected):
+    """Trace the public custom VJP with a fake GPU bridge on the CPU."""
+    from scaffolds.transformer.attention.backends import ejkernel_bridge
+
+    monkeypatch.setattr(backend, "_default_num_warps", lambda: 4)
+    monkeypatch.setenv("POLY_GDN_MIN_CTAS_PER_SM", "1")
+    calls = []
+
+    def fake_triton_call(*args, **kwargs):
+        calls.append((kwargs["name"], kwargs["min_ctas_per_sm"]))
+        return [jnp.zeros(shape.shape, shape.dtype) for shape in kwargs["out_shape"]]
+
+    monkeypatch.setattr(ejkernel_bridge, "triton_call", fake_triton_call)
+    monkeypatch.setattr(backend, "_inverse_forward", lambda k, erase:
+                        jnp.zeros((*k.shape[:3], backend.CHUNK_SIZE), jnp.float32))
+    q = jnp.ones((1, 64, 1, 16), jnp.float32)
+    gate = jnp.zeros(q.shape[:3], jnp.float32)
+    beta = jnp.zeros((*q.shape[:3], 4), jnp.float32)
+
+    def objective(*inputs):
+        output = polynomial_gated_delta_rule(*inputs, .25, precision="tf32x3", num_warps=4,
+                                            min_ctas_per_sm=requested)
+        return jnp.sum(output)
+
+    jax.jit(jax.value_and_grad(objective, argnums=tuple(range(6))))(q, q, q, gate, beta, gate)
+    assert calls == [("polynomial_gdn::" + name, expected) for name in (
+        "forward", "recompute_queries", "backward_queries", "backward_key_values",
+        "backward_key_geometry_diagonal", "backward_key_geometry_cross")]
 
 
 @pytest.mark.parametrize("platform,capability,expected", [

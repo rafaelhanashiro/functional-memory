@@ -53,11 +53,14 @@ def test_accuracy_metrics_detect_nonfinite_and_keep_valid_json():
 
 def test_one_compile_failure_preserves_other_variants_and_all_gradient_checks(tmp_path):
     args = SimpleNamespace(output=tmp_path / "report.json", length=2, heads=1, degree=3, seed=46,
-        value_dim=3, precisions=["tf32x3", "bf16_read"], warps=[2, 4, 8], reference_warps=2, warmup=1, iterations=2,
+        value_dim=3, precisions=["tf32x3", "bf16_read"], warps=[2, 4, 8], reference_warps=2,
+        min_ctas=[0, 1], reference_min_ctas=0, warmup=1, iterations=2,
         rounds=2, exact_relative_rms=.003, exact_relative_max=.01,
         max_relative_rms=.01, max_relative_max=.05, profile_stages=False)
+    calls = []
 
-    def forward(q, k, v, g, beta, erase, *, scale, precision, num_warps):
+    def forward(q, k, v, g, beta, erase, *, scale, precision, num_warps, min_ctas_per_sm):
+        calls.append((precision, num_warps, min_ctas_per_sm))
         if num_warps in (4, 8):
             raise ValueError("synthetic launch failure")
         multiplier = jnp.sum(q.astype(jnp.float32) * k, axis=-1) + g + jnp.sum(beta, axis=-1) + erase
@@ -67,13 +70,47 @@ def test_one_compile_failure_preserves_other_variants_and_all_gradient_checks(tm
     report = {"shapes": {"test": entry}}
     runner = benchmark.Runner(args, report)
     benchmark.benchmark_shape(runner, entry, 1, 2, SimpleNamespace(polynomial_gated_delta_rule=forward))
+    assert calls[0] == ("tf32x3", 2, 0)
+    assert len(entry["variants"]) == 12
     for precision in args.precisions:
-        assert entry["variants"][f"{precision}_w4"]["status"] == "failed"
-        assert entry["variants"][f"{precision}_w8"]["status"] == "failed"
-        passed = entry["variants"][f"{precision}_w2"]
-        assert passed["status"] == "complete"
-        measured = passed["operations"]["forward_backward"]
-        assert measured["summary"]["samples"] == 4
-        assert set(measured["accuracy"]["channels"]) == {"output", "q", "k", "v", "g", "beta", "erase"}
+        for min_ctas in args.min_ctas:
+            assert (precision, 2, min_ctas) in calls
+            assert entry["variants"][f"{precision}_w4_cta{min_ctas}"]["status"] == "failed"
+            assert entry["variants"][f"{precision}_w8_cta{min_ctas}"]["status"] == "failed"
+            passed = entry["variants"][f"{precision}_w2_cta{min_ctas}"]
+            assert passed["min_ctas_per_sm"] == min_ctas
+            assert passed["status"] == "complete"
+            measured = passed["operations"]["forward_backward"]
+            assert measured["summary"]["samples"] == 4
+            assert set(measured["accuracy"]["channels"]) == {"output", "q", "k", "v", "g", "beta", "erase"}
     saved = json.loads(args.output.read_text())
-    assert saved["shapes"]["test"]["variants"]["bf16_read_w2"]["status"] == "complete"
+    assert saved["shapes"]["test"]["variants"]["bf16_read_w2_cta1"]["status"] == "complete"
+
+
+def test_resource_inspection_uses_jax_ptxas_flag_tokenization(monkeypatch):
+    monkeypatch.setenv("JAX_TRITON_PTXAS_EXTRA_FLAGS", "  --regAllocOptLevel=2  -O3\t--keep ")
+    monkeypatch.setenv("JAX_TRITON_PTXAS_DEVICE_DEBUG", "true")
+    assert benchmark.runtime_ptxas_flags() == ["--regAllocOptLevel=2", "-O3\t--keep", "--device-debug"]
+    monkeypatch.setenv("JAX_TRITON_PTXAS_EXTRA_FLAGS", "-g")
+    assert benchmark.runtime_ptxas_flags() == ["-g"]
+    monkeypatch.delenv("JAX_TRITON_PTXAS_EXTRA_FLAGS")
+    monkeypatch.setenv("JAX_TRITON_PTXAS_DEVICE_DEBUG", "0")
+    assert benchmark.runtime_ptxas_flags() == []
+
+
+def test_cli_deduplicates_occupancy_sweep_and_keeps_reference_zero(monkeypatch, tmp_path):
+    import sys
+    captured = {}
+
+    def capture(args):
+        captured.update(vars(args))
+        return {"status": "complete"}
+
+    monkeypatch.setattr(benchmark, "benchmark", capture)
+    monkeypatch.setattr(sys, "argv", ["benchmark", "--output", str(tmp_path / "report.json"),
+        "--min-ctas", "1", "0", "1", "--warps", "2", "2", "--precisions", "tf32x3", "tf32x3"])
+    benchmark.main()
+    assert captured["min_ctas"] == [1, 0]
+    assert captured["warps"] == [2]
+    assert captured["precisions"] == ["tf32x3"]
+    assert captured["reference_min_ctas"] == 0

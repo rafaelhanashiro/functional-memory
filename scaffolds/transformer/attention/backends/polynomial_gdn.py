@@ -60,6 +60,24 @@ def resolve_polynomial_gdn_options(precision=None, num_warps=None):
     return precision, num_warps
 
 
+def resolve_polynomial_gdn_min_ctas(min_ctas_per_sm=None):
+    """Resolve experimental launch guidance; zero leaves PTX unchanged.
+
+    An omitted value reads ``POLY_GDN_MIN_CTAS_PER_SM`` (default zero).
+    Explicit zero disables guidance even when the environment enables it.
+    The resolved integer is static through the forward and backward passes.
+    """
+    if min_ctas_per_sm is None:
+        raw = os.environ.get("POLY_GDN_MIN_CTAS_PER_SM", "0")
+        try:
+            min_ctas_per_sm = int(raw)
+        except ValueError as error:
+            raise ValueError(f"Invalid POLY_GDN_MIN_CTAS_PER_SM: {raw!r}") from error
+    if type(min_ctas_per_sm) is not int or min_ctas_per_sm not in (0, 1, 2):
+        raise ValueError("Polynomial GDN min_ctas_per_sm must be one of 0, 1, 2")
+    return min_ctas_per_sm
+
+
 def _chunk_view(x):
     batch, time, heads, width = x.shape
     return x.reshape(batch, time // CHUNK_SIZE, CHUNK_SIZE, heads, width).transpose(0, 3, 1, 2, 4)
@@ -119,46 +137,52 @@ def _metadata(q, v):
 
 
 def _polynomial_call(kernel, *args, out, q, v, name,
-                     precision="tf32x3", num_warps=None, **extra):
+                     precision="tf32x3", num_warps=None, min_ctas_per_sm=None, **extra):
     precision, num_warps = resolve_polynomial_gdn_options(precision, num_warps)
+    min_ctas_per_sm = resolve_polynomial_gdn_min_ctas(min_ctas_per_sm)
     from scaffolds.transformer.attention.backends.ejkernel_bridge import triton_call
 
     return triton_call(*args, kernel=kernel, out_shape=out,
                        grid=(q.shape[1] // CHUNK_SIZE, q.shape[0] * q.shape[2]),
                        name=f"polynomial_gdn::{name}", default_dot_input_precision="tf32x3",
                        num_warps=num_warps, num_stages=1,
+                       min_ctas_per_sm=min_ctas_per_sm or None,
                        VALUE_PRECISION=precision, **_metadata(q, v), **extra)
 
 
 def _forward(q, k, v, prefix, beta, erase, inverse, transformed, scale,
-             precision="tf32x3", num_warps=None):
+             precision="tf32x3", num_warps=None, min_ctas_per_sm=None):
     from scaffolds.transformer.attention.backends.polynomial_gdn_kernels import forward
 
     output, _ = _polynomial_call(
         forward, q, k, v, prefix, beta, erase, inverse, transformed, float(scale),
         out=[_shape(v.shape, v.dtype), _shape((), jnp.float32)], q=q, v=v, name="forward",
         SAVE_HISTORY=False, COMPUTE_OUTPUT=True, NBETA=beta.shape[-1],
-        precision=precision, num_warps=num_warps)
+        precision=precision, num_warps=num_warps, min_ctas_per_sm=min_ctas_per_sm)
     return output
 
 
-@partial(jax.custom_vjp, nondiff_argnums=(8, 9, 10))
-def _attention(q, k, v, prefix, beta, erase, inverse, transformed, scale, precision, num_warps):
-    return _forward(q, k, v, prefix, beta, erase, inverse, transformed, scale, precision, num_warps)
+@partial(jax.custom_vjp, nondiff_argnums=(8, 9, 10, 11))
+def _attention(q, k, v, prefix, beta, erase, inverse, transformed, scale, precision, num_warps,
+               min_ctas_per_sm):
+    return _forward(q, k, v, prefix, beta, erase, inverse, transformed, scale,
+                    precision, num_warps, min_ctas_per_sm)
 
 
-def _attention_fwd(q, k, v, prefix, beta, erase, inverse, transformed, scale, precision, num_warps):
-    return _forward(q, k, v, prefix, beta, erase, inverse, transformed, scale, precision, num_warps), (
+def _attention_fwd(q, k, v, prefix, beta, erase, inverse, transformed, scale, precision, num_warps,
+                   min_ctas_per_sm):
+    return _forward(q, k, v, prefix, beta, erase, inverse, transformed, scale,
+                    precision, num_warps, min_ctas_per_sm), (
         q, k, v, prefix, beta, erase, inverse, transformed)
 
 
-def _attention_bwd(scale, precision, num_warps, residuals, dout):
+def _attention_bwd(scale, precision, num_warps, min_ctas_per_sm, residuals, dout):
     from scaffolds.transformer.attention.backends.polynomial_gdn_kernels import (
         forward, backward_queries, backward_keys,
     )
 
     q, k, v, prefix, beta, erase, inverse, transformed = residuals
-    options = dict(precision=precision, num_warps=num_warps)
+    options = dict(precision=precision, num_warps=num_warps, min_ctas_per_sm=min_ctas_per_sm)
     batch, length, heads, key_dim = q.shape
     chunks = length // CHUNK_SIZE
     history_shape = _shape((batch, heads, chunks * (chunks + 1) // 2, CHUNK_SIZE, key_dim), jnp.float32)
@@ -198,7 +222,8 @@ def _attention_bwd(scale, precision, num_warps, residuals, dout):
 _attention.defvjp(_attention_fwd, _attention_bwd)
 
 
-def polynomial_gated_delta_rule(q, k, v, g, beta, erase, scale, *, precision=None, num_warps=None):
+def polynomial_gated_delta_rule(q, k, v, g, beta, erase, scale, *, precision=None, num_warps=None,
+                                min_ctas_per_sm=None):
     """Degree-two/three GDN read: q/k[B,T,H,K], v[B,T,H,V], beta[B,T,H,m+1].
 
     g and erase have shape [B,T,H]. Inputs q/k/v may be BF16 or FP32;
@@ -207,8 +232,12 @@ def polynomial_gated_delta_rule(q, k, v, g, beta, erase, scale, *, precision=Non
 
     The default is FP32/TF32x3 with two warps on Blackwell and four elsewhere.
     Optional settings resolve through :func:`resolve_polynomial_gdn_options`.
+    Minimum-CTA guidance defaults to disabled; see
+    :func:`resolve_polynomial_gdn_min_ctas`. It affects only the polynomial
+    kernels, leaving the inverse preparation and its differentiation unchanged.
     """
     precision, num_warps = resolve_polynomial_gdn_options(precision, num_warps)
+    min_ctas_per_sm = resolve_polynomial_gdn_min_ctas(min_ctas_per_sm)
     if q.ndim != 4 or k.shape != q.shape or v.shape[:3] != q.shape[:3]:
         raise ValueError("Polynomial GDN expects matching q/k/v[B,T,H,D] dimensions")
     if (beta.ndim != 4 or beta.shape[:3] != q.shape[:3] or beta.shape[-1] not in (3, 4)
@@ -228,4 +257,4 @@ def polynomial_gated_delta_rule(q, k, v, g, beta, erase, scale, *, precision=Non
         transformed = _token_view(jnp.swapaxes(_chunk_view(inverse), -1, -2) @ _chunk_view(k32))
     prefix = jnp.cumsum(g.astype(jnp.float32), axis=1)
     return _attention(q, k32, v, prefix, beta32, erase32, inverse, transformed,
-                      float(scale), precision, num_warps)
+                      float(scale), precision, num_warps, min_ctas_per_sm)
