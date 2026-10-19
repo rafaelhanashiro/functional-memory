@@ -266,6 +266,30 @@ Per-head output RMSNorm remains an independent option through
 actual input-dependent coefficient means, standard deviations, minima, and
 maxima on the fixed diagnostic sample, separately from projection parameters.
 
+### PaTH position encoding
+
+`positional_encoding: path` replaces RoPE with PaTH (Yang et al., arXiv:2505.16381):
+the score between query `t` and key `s <= t` is
+`q_t^T H_t H_(t-1) ... H_(s+1) k_s / sqrt(d_K)` with `H_t = I - beta_t w_t w_t^T`.
+As in the authors' flash-linear-attention layer, `w_t` comes from a rank-`path_w_rank`
+(32) projection shared by a layer's heads, a width-`path_conv_size` (3) causal depthwise
+convolution with SiLU, and L2 normalization per head, and
+`beta_t = 2 sigmoid(x_t W_beta + b_beta)` lies in (0, 2). The arrays `path_w_down`
+(`[layers, hidden, rank]`), `path_w_up`, `path_w_conv`, `path_beta_kernel`, and
+`path_beta_bias` (`[layers, heads, ...]`) are drawn from the mechanism stream
+(projections N(0, 0.02^2), the convolution with PyTorch's default variance, a zero bias),
+so the backbone keeps the softmax control's weights; all but the bias take weight decay.
+
+`attention/path.py` implements the authors' chunked algorithm in JAX: a UT transform per
+128-token chunk, then a sweep over chunk distance that scores each query chunk against
+the key chunk behind it and moves the queries through that chunk's Householder product.
+Automatic differentiation of a rematerialized forward pass gives the derivative. It
+supports softmax (normalized, with a running maximum) and tanh query-conditioned
+unnormalized polynomials, requires `attention_backend: blocked`, and is tested against
+the definition and the authors' PyTorch reference. At T = 2048, d_K = 64 it is about
+20x slower per layer than the Mosaic query-polynomial kernel (43 ms against 2 ms forward
+and backward on a B300 at batch 32); the authors' fused Triton kernel is softmax-only.
+
 ### Unnormalized output scaling
 
 `attention_output_scaling` rescales each head's unnormalized output

@@ -89,6 +89,13 @@ class ModelConfig:
     # Tanh coefficients may learn an offset inside the tanh, c_r = b_r + a_r tanh(w_r^T x_t + beta_r),
     # starting at beta_r = 0, so a constant shift of the pre-activation need not come through w_r.
     attention_coefficient_tanh_bias: bool = False
+    # Dot-product position encoding: "rope" rotates queries and keys; "path" replaces it with
+    # PaTH (arXiv:2505.16381), scores transported through token Householder products
+    # I - beta_t w_t w_t^T. w_t comes from a rank-path_w_rank projection, a width-path_conv_size
+    # causal SiLU convolution, and L2 normalization per head; beta_t = 2 sigmoid(x_t W + b).
+    positional_encoding: Literal["rope", "path"] = "rope"
+    path_w_rank: int = 32
+    path_conv_size: int = 3
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
     # (even m, row-normalized only), so the kernel is nonnegative by construction;
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
@@ -140,7 +147,16 @@ class ModelConfig:
                  and self.attention_coefficient_activation == "tanh" and integer_degree
                  and 1 <= degree <= MAX_QUERY_DEGREE)
         return (self.attention_mechanism == "dot_product" and (taylor or query)
+                and getattr(self, "positional_encoding", "rope") == "rope"
                 and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
+
+    def path_kernel(self) -> str | None:
+        """The PaTH attention kernel this recipe uses, or None for RoPE recipes."""
+        if self.positional_encoding != "path":
+            return None
+        if self.attention_normalization and self.attention_degree is None:
+            return "softmax"
+        return "query_polynomial"
 
     def __post_init__(self):
         if self.kind != "transformer":
@@ -164,6 +180,22 @@ class ModelConfig:
             raise ValueError("model.qk_head_dim must be even for RoPE")
         if self.attention_backend not in ("auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
+        if self.positional_encoding not in ("rope", "path"):
+            raise ValueError(f"Unknown positional encoding: {self.positional_encoding}")
+        for name in ("path_w_rank", "path_conv_size"):
+            value = getattr(self, name)
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+                raise ValueError(f"model.{name} must be a positive integer")
+        if self.positional_encoding == "path":
+            softmax = (self.attention_normalization and self.attention_degree is None
+                       and self.attention_coefficients == "fixed" and self.quadratic_mode == "fixed")
+            query_tanh = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
+                          and self.attention_coefficient_activation == "tanh")
+            if self.attention_mechanism != "dot_product" or not (softmax or query_tanh):
+                raise ValueError("PaTH position encoding supports softmax and tanh query-conditioned "
+                                 "unnormalized polynomial attention")
+            if self.attention_backend != "blocked":
+                raise ValueError("PaTH attention runs its chunked JAX implementation: set model.attention_backend: blocked")
         if self.attention_backend == "mosaic" and not self.mosaic_supported():
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention and tanh query-conditioned "
                              "polynomial attention of degree 1-4, with qk_head_dim 8, 16, 32, 64, or 128 and "

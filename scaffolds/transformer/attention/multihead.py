@@ -53,6 +53,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
+        positional_encoding=config.positional_encoding,
         rngs=rngs,
     )
 
@@ -69,8 +70,14 @@ class MultiHeadAttention(nnx.Module):
         attention_output_scaling: str = "none", rms_norm_eps: float = 1e-6,
         attention_coefficient_conditioning: str = "static",
         attention_coefficient_activation: str = "identity",
+        positional_encoding: str = "rope",
         rngs: nnx.Rngs,
     ):
+        if positional_encoding not in ("rope", "path"):
+            raise ValueError(f"Unknown positional encoding: {positional_encoding}")
+        if positional_encoding == "path" and backend != "blocked":
+            raise ValueError("PaTH attention runs its chunked JAX implementation (backend='blocked')")
+        self.positional_encoding = positional_encoding
         _validate_degree(attention_degree)
         if not isinstance(attention_normalization, bool):
             raise ValueError("attention_normalization must be a boolean")
@@ -192,6 +199,12 @@ class MultiHeadAttention(nnx.Module):
         elif (query_kernel is not None or query_bias is not None or query_amplitude is not None
               or query_tanh_bias is not None):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
+        from scaffolds.transformer.attention.path import PATH_ARGUMENTS
+
+        path_parameters = {name: parameters.pop(name, None) for name in PATH_ARGUMENTS}
+        if (self.positional_encoding == "path") != all(value is not None for value in path_parameters.values()):
+            if self.positional_encoding == "path" or any(value is not None for value in path_parameters.values()):
+                raise ValueError("PaTH position encoding requires exactly its model-owned gate parameters")
         q, k, v = self.q_proj(x), self.k_proj(x), self.v_proj(x)
         if self.backend != "manual":
             q, k, v = (operand.astype(self.dtype) for operand in (q, k, v))
@@ -201,6 +214,9 @@ class MultiHeadAttention(nnx.Module):
         if self.qk_norm:
             # Cosine scores: the mechanisms' q'.k'/sqrt(d_K) becomes exp(gamma) cos(q, k).
             q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)
+        if self.positional_encoding == "path":
+            return self._path_attention(x, q.astype(self.dtype), k.astype(self.dtype), v, parameters,
+                                        path_parameters, output_norm_scale, return_diagnostics)
         positions = jnp.arange(seq_len)
         q = apply_rope(q, positions, self.rope_theta)
         k = apply_rope(k, positions, self.rope_theta)
@@ -229,6 +245,43 @@ class MultiHeadAttention(nnx.Module):
             deterministic=deterministic, rngs=rngs, weights_dtype=x.dtype,
         )
         y, diagnostics = result if return_diagnostics else (result, None)
+        telemetry.record_attention_output(
+            y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None)
+        y = scale_attention_output(y, self.attention_output_scaling,
+                                   output_norm_scale=output_norm_scale, eps=self.rms_norm_eps)
+        output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))
+        return (output, diagnostics) if return_diagnostics else output
+
+    def _path_attention(self, x, q, k, v, parameters, path_parameters, output_norm_scale, return_diagnostics):
+        """PaTH-transported scores replace RoPE; the kernel and output path are unchanged."""
+        from scaffolds.transformer.attention.input_dependent import coefficient_statistics
+        from scaffolds.transformer.attention.path import CHUNK_SIZE, path_attention, path_gates
+
+        batch, seq_len = x.shape[:2]
+        if self.num_kv_heads != self.num_heads:
+            raise ValueError("PaTH attention requires one key head per query head")
+        w, beta = path_gates(x, *(path_parameters[name] for name in (
+            "path_w_down", "path_w_up", "path_w_conv", "path_beta_kernel", "path_beta_bias")), num_heads=self.num_heads)
+        coefficients = parameters.pop("query_polynomial_coefficients", None)
+        if parameters:
+            raise ValueError(f"PaTH attention does not accept {sorted(parameters)}")
+        if self.attention_normalization and self.attention_degree is None and coefficients is None:
+            kernel = "softmax"
+        elif (not self.attention_normalization and coefficients is not None
+              and self.attention_coefficient_activation == "tanh"):
+            kernel = "query_polynomial"
+        else:
+            raise ValueError("PaTH supports softmax and tanh query-conditioned polynomial attention")
+        chunk = CHUNK_SIZE if seq_len % CHUNK_SIZE == 0 else seq_len
+        if seq_len % CHUNK_SIZE and seq_len > CHUNK_SIZE:
+            raise ValueError(f"PaTH needs a sequence length divisible by {CHUNK_SIZE} (or at most {CHUNK_SIZE})")
+        y, diagnostics = path_attention(q, k, v, w, beta, kernel=kernel, coefficients=coefficients,
+                                        chunk_size=chunk, return_diagnostics=True)
+        if coefficients is not None:
+            diagnostics.update(jax.lax.stop_gradient(coefficient_statistics(coefficients)))
+        diagnostics.update(jax.lax.stop_gradient({
+            "path_beta_mean": jnp.mean(beta), "path_beta_min": jnp.min(beta), "path_beta_max": jnp.max(beta),
+        }))
         telemetry.record_attention_output(
             y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None)
         y = scale_attention_output(y, self.attention_output_scaling,

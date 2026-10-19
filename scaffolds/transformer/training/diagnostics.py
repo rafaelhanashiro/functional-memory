@@ -310,6 +310,24 @@ def attention_identity(config) -> dict:
             "diagnostic_backend": "blocked",
             "diagnostic_query_block_size": QUERY_BLOCK_SIZE,
         })
+    if config.model.positional_encoding == "path":
+        from scaffolds.transformer.attention.path import CHUNK_SIZE
+
+        model = config.model
+        identity.update({
+            "positional_encoding": "path",
+            "path_w_rank": model.path_w_rank,
+            "path_conv_size": model.path_conv_size,
+            "path_parameter_count": model.num_layers * (model.hidden_size * model.path_w_rank + model.num_heads * (
+                (model.path_w_rank + model.path_conv_size) * model.qk_head_dim + model.hidden_size + 1)),
+            "attention_implementation": "jax_path_chunked_ut_transform",
+            "path_chunk_size": CHUNK_SIZE,
+            "query_block_size": None,
+            "diagnostic_backend": "jax_path_chunked_ut_transform",
+            "attention_score_position_encoding": (
+                "PaTH: s_ts = q_t^T H_t ... H_(s+1) k_s / sqrt(d_k), H_t = I - beta_t w_t w_t^T; "
+                "w_t = L2norm(SiLU(causal_conv(x_t W_down W_up))) per head, beta_t = 2 sigmoid(x_t W_beta + b); no RoPE"),
+        })
     return identity
 
 
