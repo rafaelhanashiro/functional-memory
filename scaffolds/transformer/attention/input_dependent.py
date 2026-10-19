@@ -104,10 +104,11 @@ def query_key_polynomial_attention(q, k, v, coefficients, key_factors, *, backen
                                    return_diagnostics=False):
     """sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i: per-query coefficients times per-key factors.
 
-    The blocked reference evaluates the pairwise coefficient directly. The fused and Mosaic
-    query-coefficient kernels run once per order r with the key factor folded into the
-    values, v_i^(r) = f_r(x_i) v_i, and the coefficient vector c_r(x_t) e_r; the m+1 partial
-    outputs are summed in FP32, so a nonfinite row in any pass poisons that row.
+    The blocked reference evaluates the pairwise coefficient directly, and the fused Triton
+    kernel forms it inside each tile in one pass. The Mosaic query-coefficient kernel runs once
+    per order with the key factor folded into the values, v_i^(r) = f_r(x_i) v_i, and the
+    coefficient vector c_r(x_t) e_r; its m+1 partial outputs are rounded to V's dtype before
+    they are summed, which at degree one corrupts the gradient after head RMSNorm.
     """
     from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 
@@ -124,13 +125,18 @@ def query_key_polynomial_attention(q, k, v, coefficients, key_factors, *, backen
         if not return_diagnostics:
             return result
         output, diagnostics = result
-    elif backend in ("fused", "mosaic"):
-        if backend == "fused":
-            from scaffolds.transformer.attention.backends.fused_query_polynomial import (
-                fused_query_polynomial_attention as attend,
-            )
-        else:
-            from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial_attention as attend
+    elif backend == "fused":
+        from scaffolds.transformer.attention.backends.fused_query_key_polynomial import (
+            fused_query_key_polynomial_attention,
+        )
+
+        output = fused_query_key_polynomial_attention(q, k, v, coefficients.astype(jnp.float32),
+                                                      key_factors.astype(jnp.float32))
+        if not return_diagnostics:
+            return output
+        _, diagnostics = reference(return_diagnostics=True)
+    elif backend == "mosaic":
+        from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial_attention as attend
 
         coefficients32, factors32 = coefficients.astype(jnp.float32), key_factors.astype(jnp.float32)
         total = None

@@ -331,7 +331,7 @@ def attention_identity(config) -> dict:
         block_q, block_k = ((None, None) if degree is None and normalized else
                            _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
         identity.update({
-            "attention_implementation": ("pallas_triton_query_polynomial_per_degree_values" if key_conditioned else
+            "attention_implementation": ("pallas_triton_query_key_polynomial" if key_conditioned else
                                          "pallas_triton_query_polynomial" if query_tanh else
                                          "pallas_triton_linear_plus_fp32_prefix_sum" if query_conditioned else
                                          "cudnn" if degree is None and normalized else "pallas_triton"),
