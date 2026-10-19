@@ -32,7 +32,7 @@ from pathlib import Path
 import yaml
 from scaffolds.transformer.attention.backends.mosaic.api import default_precision
 model = yaml.safe_load(Path(f"experiments/attention_scaling/runs/{sys.argv[1]}/config.yaml").read_text())["model"]
-family = "query" if model.get("attention_coefficient_conditioning") == "query" else "taylor"
+family = "taylor" if model.get("attention_normalization", True) else "query"
 print(default_precision(family, model["attention_degree"]))
 PY
 )""

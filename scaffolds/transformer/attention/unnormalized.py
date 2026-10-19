@@ -62,9 +62,21 @@ def unnormalized_attention(q, k, v, *, attention_degree=None, backend="blocked",
             q, k, v, attention_degree=attention_degree, attention_normalization=False,
             return_diagnostics=return_diagnostics, **learned,
         )
-    if backend != "fused":
-        raise ValueError("Unnormalized attention requires backend='blocked' or 'fused'")
-    if polynomial_coefficients is None:
+    if backend not in ("fused", "mosaic"):
+        raise ValueError("Unnormalized attention requires backend='blocked', 'fused' or 'mosaic'")
+    if backend == "mosaic":
+        from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial_attention
+
+        # The query-coefficient kernel with every query's coefficients equal; broadcasting sums
+        # the per-query coefficient gradients back to the shared or per-head coefficients.
+        if attention_degree is None:
+            raise ValueError("Mosaic unnormalized attention requires a polynomial degree")
+        coefficients = (jnp.asarray(initial_coefficients(attention_degree), jnp.float32)
+                        if polynomial_coefficients is None else polynomial_coefficients.astype(jnp.float32))
+        coefficients = jnp.broadcast_to(coefficients, (q.shape[2], attention_degree + 1))
+        output = query_polynomial_attention(
+            q, k, v, jnp.broadcast_to(coefficients[None, None], (*q.shape[:3], attention_degree + 1)))
+    elif polynomial_coefficients is None:
         from scaffolds.transformer.attention.backends.fused_unnormalized import fused_unnormalized_attention
 
         output = fused_unnormalized_attention(q, k, v, attention_degree=attention_degree)

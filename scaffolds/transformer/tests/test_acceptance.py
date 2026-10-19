@@ -276,3 +276,22 @@ def test_workers_reinvoke_the_adapter_module_when_it_runs_as_main(monkeypatch):
     monkeypatch.setitem(sys.modules, "__main__", main)
     assert preflight.entry_module(preflight.AcceptanceSpec("__main__", ())) == main.__spec__.name
     assert preflight.entry_module(preflight.AcceptanceSpec("named.module", ())) == "named.module"
+
+
+def test_unnormalized_static_mosaic_runs_require_their_kernel_tests():
+    config = {"model": {"attention_degree": 3, "attention_normalization": False, "attention_coefficients": "learned",
+                        "attention_coefficient_conditioning": "static"}}
+    paths = preflight.attention_test_paths(config, "mosaic", cpu=False)
+    assert paths[-2:] == ("scaffolds/transformer/tests/test_mosaic_unnormalized.py",
+                          "scaffolds/transformer/tests/test_mosaic_repeatability.py")
+
+
+@pytest.mark.parametrize("model,backend,expected", [
+    ({"attention_degree": 3, "attention_normalization": False}, "mosaic", ("--mosaic-precision", "bf16")),
+    ({"attention_degree": 2}, "mosaic", ("--mosaic-precision", "bf16")),
+    ({"attention_degree": 3}, "mosaic", ("--mosaic-precision", "bf16x3")),
+    ({"attention_degree": 3}, "fused", ()),
+    ({"attention_degree": None}, "cudnn", ()),
+])
+def test_mosaic_gpu_tests_cover_only_the_precision_in_use(model, backend, expected):
+    assert preflight.mosaic_test_options({"model": model}, backend) == expected
