@@ -80,7 +80,8 @@ def _history(ptr, bh, qc, kc, T: tl.constexpr, K: tl.constexpr,
     pairs = chunks * (chunks + 1) // 2
     pair = qc * (qc + 1) // 2 + kc
     rows, cols = tl.arange(0, BT), tl.arange(0, BK)
-    offsets = ((bh * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
+    # Packed histories can exceed 2**31 elements at production batch sizes.
+    offsets = ((bh.to(tl.int64) * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
     return tl.load(ptr + offsets, mask=cols[None, :] < K, other=0).to(tl.float32)
 
 
@@ -91,7 +92,7 @@ def _store_history(ptr, value, bh, qc, kc, T: tl.constexpr, K: tl.constexpr,
     pairs = chunks * (chunks + 1) // 2
     pair = qc * (qc + 1) // 2 + kc
     rows, cols = tl.arange(0, BT), tl.arange(0, BK)
-    offsets = ((bh * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
+    offsets = ((bh.to(tl.int64) * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
     tl.store(ptr + offsets, value, mask=cols[None, :] < K)
 
 
@@ -104,7 +105,7 @@ def _history_rows(ptr, bh, qb, kc, T: tl.constexpr, K: tl.constexpr,
     pair = qc * (qc + 1) // 2 + kc
     rows = (qb % (BT // BQ)) * BQ + tl.arange(0, BQ)
     cols = tl.arange(0, BK)
-    offsets = ((bh * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
+    offsets = ((bh.to(tl.int64) * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
     return tl.load(ptr + offsets, mask=cols[None, :] < K, other=0).to(tl.float32)
 
 

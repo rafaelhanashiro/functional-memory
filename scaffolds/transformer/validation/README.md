@@ -1265,6 +1265,147 @@ Regenerate the pooled summaries and audit the explicitly named source files:
 python3 scaffolds/transformer/validation/summarize_upstream.py
 ```
 
+## Polynomial GDN Triton tuning on one B300
+
+The [polynomial GDN record](runs/poly-gdn-tuning/record.json) pins the source,
+locked JAX and native PyTorch environments, recipes, test evidence, and explicitly
+selected reports. The completed initial profile is job `222298` on `akita`,
+source `0e9faad`; completed occupancy tuning is job `222316`, source `34f2c02`.
+Qualification of the occupancy setting and full-model confirmation are separate
+and remain pending.
+
+This is the original-key-space polynomial GDN recurrence:
+`P_t = I - erase_t k_t k_t^T`,
+`F_t(q) = exp(g_t) F_(t-1)(P_t q) + v_t sum_r beta_(t,r) (q^T k_t)^r`,
+with read `scale * F_t(q_t)`. The Triton implementation evaluates transported
+scores without materializing the expanded polynomial state. Its training
+backward still uses packed triangular workspaces and visits earlier chunks;
+avoiding the expanded state does not give it FLA's linear-GDN training cost.
+The full-model recipes preserve degree three, independently gated erasure,
+sigmoid linear writes, and tanh constant/quadratic/cubic writes, matching the
+original cubic recipes. The configurations in
+`configs/poly-gdn-tuning-dk{16,64}.yaml` use reference initialization, ten
+layers, hidden width 1,024, MLP width 3,008, 16 heads, value width 64, global
+batch 256, microbatch 64, and 2,048 prediction positions.
+
+The default `tf32x3` mode retains FP32 transport/inverse arithmetic and accurate
+tensor-core products. Opt-in `bf16_read` rounds the operands of value-reading
+products to BF16; `bf16_values` also rounds the score-adjoint product. Both retain
+FP32 accumulation and the original transport/inverse precision. The independent
+FP64 and tensor-recurrence suites passed **51 strict FP32/BF16 cases** in default
+precision and **26 BF16 cases in each of the two candidate modes**, all at two
+warps in job `222298`, with no failures or skips. They cover quadratic and cubic outputs and
+all six gradients, long context, signed writes, erasure/decay extremes,
+causality, and the linear limit. Eleven separate option/smoke cases also passed;
+they do not replace those strict tests.
+
+Fresh-process diagnostics found a CUDA launch failure in four-warp polynomial
+backward on Blackwell, while the standalone matrix product and VJP passed.
+Two-warp forward and all six gradients completed, followed by the strict tests
+above. Blackwell therefore defaults to two warps and rejects four/eight before
+launch; one warp remains an explicit benchmark option. This qualification is
+specific to the recorded B300 runtime and does not qualify another GPU/runtime.
+
+Kernel measurements use resident BF16 operands at `B=16, T=2048, H=16, V=64`,
+with `K=16/64`, an explicit output cotangent, and synchronized calls returning
+the forward output and all six gradients. The synthetic fixture has unit Q/K,
+Gaussian V/cotangent, negative log decay, sigmoid erasure, and independent signed
+`tanh(0.2 * normal)` coefficients for all four degrees. Log decay remains FP32.
+Each variant has two rounds, each with five warmups and 20 timed
+calls; native FLA has 30 timed calls per round. The table reports pooled mean
+milliseconds for two warps, with minimum-CTA guidance disabled:
+
+| Key width | Cubic `tf32x3` | Cubic `bf16_read` | Cubic `bf16_values` | Native FLA GDN |
+| --- | ---: | ---: | ---: | ---: |
+| 16 | 65.729 | 62.985 | 36.600 | 1.678 |
+| 64 | 786.436 | 852.813 | 462.775 | 1.990 |
+
+FLA is the unmodified upstream PyTorch implementation pinned at `516143e`,
+using its native tuned kernels. Its input fixture hashes match the polynomial
+benchmark, but its operator is linear GDN with tied write/erase gates. It is a
+performance reference, not a mathematical parity target. The table uses ordinary
+synchronized wall timing for both implementations; FLA's separately recorded
+CUDA-graph results are not substituted into this comparison.
+
+All 12 initial polynomial variants passed the same-input output/gradient checks
+against the two-warp `tf32x3` reference. For two-warp `bf16_values`, the worst
+relative RMS difference was 0.260% at K16 and 0.258% at K64; the independent
+qualification above provides the separate correctness evidence. One warp was
+slower at K16 but reduced K64 `bf16_values` to 414.328 ms. Thus precision and warp
+choices interact with width; this profile does not establish one optimal setting.
+At K64, isolated default-precision cross-chunk and query backward calls took
+433.205 and 169.575 ms. PTX assembly also reports substantial register spilling.
+Stage calls use resident intermediates, so their sum is not an end-to-end time;
+assembler resource figures are not measured occupancy.
+
+The occupancy tuning matrix holds two warps fixed and crosses `tf32x3`/`bf16_values`
+with `POLY_GDN_MIN_CTAS_PER_SM=0/1`. Zero leaves PTX unchanged; one adds the
+explicit `.minnctapersm 1` register-allocation guidance to the polynomial kernels.
+It does not alter the recurrence. The generic bridge validates this CUDA-only
+option and separates its compilation and autotuning caches, preserving existing
+default cache identities. Job `222316` completed with exit code zero; all eight
+variants passed the same-input accuracy checks. Its mean forward-plus-backward
+times, with the same shape and sampling protocol as above, are:
+
+| Key width | Precision | CTA guidance 0, ms | CTA guidance 1, ms |
+| --- | --- | ---: | ---: |
+| 16 | `tf32x3` | 65.259 | 54.763 |
+| 16 | `bf16_values` | 36.102 | 24.933 |
+| 64 | `tf32x3` | 786.394 | 147.111 |
+| 64 | `bf16_values` | 461.823 | 88.183 |
+
+Combining value precision and CTA guidance reduces time by 2.62x at K16 and
+8.92x at K64 against the same job's default-precision/CTA0 control. Native FLA
+measured 1.356 and 1.919 ms on that job's same physical GPU, leaving substantial
+gaps despite the improvement. The BF16 candidates' maximum relative RMS errors
+remain 0.260%/0.258%; changing CTA guidance alone in `tf32x3` produced identical
+benchmark outputs and gradients. Resource inspection confirms the requested PTX directives
+and reduced spilling, but does not measure runtime occupancy.
+
+Qualification with guidance enabled reruns all 51 default-precision cases, a
+packed-history indexing boundary check, and the selected mode's 26 BF16 cases.
+Final qualification remains pending. Confirmation job `222318` failed at
+`B=64, K=64` before full-model training: each packed FP32 history contains
+2,214,592,512 elements (8.25 GiB), exceeding signed 32-bit element indexing.
+The corrected source must pass the boundary test and compare full-batch outputs
+and all six gradients with four independently evaluated batch-16 slices before
+timing. Kernel speedups alone do not establish full-model throughput or
+training-quality equivalence; no full-model result is available yet.
+
+From a committed Kennel worktree at `34f2c02`, sync the CUDA13 and native Torch
+environments according to `CLUSTERS.md`. Each command requests one B300 and
+writes fresh job-specific reports. Run confirmation after inspecting tuning and
+qualification; `bf16_values 2 1` below names the candidate under evaluation:
+
+```bash
+POLY_SOURCE=34f2c023bec5f6838f886766a8fd1f0a22ccd7f3
+mkdir -p scaffolds/transformer/validation/logs/poly-gdn-tuning
+sbatch --partition=debug,standard \
+  --output=scaffolds/transformer/validation/logs/poly-gdn-tuning/profile-%j.log \
+  scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch "$POLY_SOURCE" profile
+sbatch --partition=debug,standard \
+  --output=scaffolds/transformer/validation/logs/poly-gdn-tuning/tune-%j.log \
+  scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch "$POLY_SOURCE" tune
+sbatch --partition=debug,standard \
+  --output=scaffolds/transformer/validation/logs/poly-gdn-tuning/qualify-%j.log \
+  scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch "$POLY_SOURCE" qualify bf16_values 2 1
+sbatch --partition=debug,standard \
+  --output=scaffolds/transformer/validation/logs/poly-gdn-tuning/confirm-%j.log \
+  scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch "$POLY_SOURCE" confirm bf16_values 2 1
+```
+
+Regenerate the summary from the record's explicit report selection and hashes:
+
+```bash
+python3 scaffolds/transformer/validation/summarize_poly_gdn_tuning.py \
+  --selection scaffolds/transformer/validation/runs/poly-gdn-tuning/record.json \
+  --output scaffolds/transformer/validation/runs/poly-gdn-tuning/summary.json \
+  --csv scaffolds/transformer/validation/runs/poly-gdn-tuning/summary.csv
+```
+
+The helper keeps incomplete/rejected variants visible, audits input identities and
+sample counts, and does not pool measurements across physical GPUs.
+
 ## Reproduction
 
 From a worktree with the scaffold environment synced

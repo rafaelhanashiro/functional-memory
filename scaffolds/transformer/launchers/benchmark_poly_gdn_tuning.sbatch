@@ -115,7 +115,8 @@ case "$PHASE" in
     export POLY_GDN_NUM_WARPS=${4:?Expected selected warp count}
     export POLY_GDN_MIN_CTAS_PER_SM=${5:?Expected selected minimum CTA guidance}
     select_toolkit "$JPY"
-    "$JPY" -m pytest -q scaffolds/transformer/tests/test_polynomial_gdn_kernel.py \
+    "$JPY" -m pytest -q scaffolds/transformer/tests/test_polynomial_gdn_history_indexing.py \
+      scaffolds/transformer/tests/test_polynomial_gdn_kernel.py \
       scaffolds/transformer/tests/test_cubic_gdn_kernel.py \
       --maxfail=1 --junitxml="$LOG_DIR/exact-tests.xml"
     POLY_GDN_VALUE_PRECISION="$PRECISION" "$JPY" -m pytest -q \
@@ -131,7 +132,7 @@ case "$PHASE" in
     "$JPY" -m scaffolds.transformer.benchmarks.benchmark_poly_gdn_tuning \
       --output "$OUT/poly-kernels.json" --batches 64 --key-dims 16 64 --value-dim 64 \
       --precisions tf32x3 "$PRECISION" --warps 2 "$WARPS" --reference-warps 2 \
-      --min-ctas 0 "$MIN_CTAS" --reference-min-ctas 0 \
+      --min-ctas 0 "$MIN_CTAS" --reference-min-ctas 0 --reference-batch-size 16 \
       --warmup 5 --iterations 30 --rounds 2
     select_toolkit "$TPY"
     for width in 16 64; do

@@ -54,7 +54,7 @@ def test_accuracy_metrics_detect_nonfinite_and_keep_valid_json():
 def test_one_compile_failure_preserves_other_variants_and_all_gradient_checks(tmp_path):
     args = SimpleNamespace(output=tmp_path / "report.json", length=2, heads=1, degree=3, seed=46,
         value_dim=3, precisions=["tf32x3", "bf16_read"], warps=[2, 4, 8], reference_warps=2,
-        min_ctas=[0, 1], reference_min_ctas=0, warmup=1, iterations=2,
+        min_ctas=[0, 1], reference_min_ctas=0, reference_batch_size=0, warmup=1, iterations=2,
         rounds=2, exact_relative_rms=.003, exact_relative_max=.01,
         max_relative_rms=.01, max_relative_max=.05, profile_stages=False)
     calls = []
@@ -114,3 +114,30 @@ def test_cli_deduplicates_occupancy_sweep_and_keeps_reference_zero(monkeypatch, 
     assert captured["warps"] == [2]
     assert captured["precisions"] == ["tf32x3"]
     assert captured["reference_min_ctas"] == 0
+
+
+def test_split_reference_preserves_batch_slices_and_all_six_vjps(tmp_path):
+    args = SimpleNamespace(output=tmp_path / "split.json", reference_batch_size=2)
+    runner = benchmark.Runner(args, {})
+    operands = tuple(jnp.arange(15, dtype=jnp.float32).reshape(5, 3) / 100 + index + 1
+                     for index in range(6))
+    cotangent = jnp.arange(15, dtype=jnp.float32).reshape(5, 3) / 10 + .5
+
+    def forward(*values):
+        return sum((index + 1) * value ** 2 for index, value in enumerate(values))
+
+    reference = benchmark.value_and_vjp(forward, *operands, cotangent)
+    entry = {}
+    benchmark.check_batch_split_reference(runner, entry, forward, operands, cotangent, reference)
+    checks = entry["batch_split_reference"]
+    assert checks["status"] == "complete" and checks["chunk_sizes"] == [2, 2, 1]
+    assert set(checks["accuracy"]["channels"]) == {"output", "q", "k", "v", "g", "beta", "erase"}
+    assert all(value["relative_max"] <= 1e-5 for value in checks["accuracy"]["channels"].values())
+    assert "effective_batch" not in runner.context
+
+    # A corruption confined to the final chunk must fail, even if all other
+    # chunks and all gradients are correct.
+    damaged = (reference[0].at[-1, -1].add(1), reference[1])
+    import pytest
+    with pytest.raises(FloatingPointError, match="batch-split reference"):
+        benchmark.check_batch_split_reference(runner, {}, forward, operands, cotangent, damaged)

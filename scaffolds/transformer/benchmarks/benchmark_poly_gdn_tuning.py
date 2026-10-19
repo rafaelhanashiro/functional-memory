@@ -333,6 +333,62 @@ def stage_profile(runner, entry, operands, cotangent, precision, warps, min_ctas
                             "and the final gradient additions/reverse cumulative sum.")
 
 
+def check_batch_split_reference(runner, entry, forward, operands, cotangent, reference):
+    """Check global batch offsets against independent small-batch calls.
+
+    Each chunk uses the original operands and explicit output cotangent. Its
+    output and all six VJPs are copied to host before releasing device arrays;
+    concatenation does not rescale gradients or retain chunk GPU histories.
+    """
+    size = runner.args.reference_batch_size
+    if not size:
+        return
+    check = {"status": "running", "requested_batch_size": size, "chunk_sizes": [],
+             "compilations": {}, "chunk_call_seconds": [],
+             "scope": "Concatenate exact-reference output and all six VJPs from unchanged batch slices; no gradient rescaling."}
+    entry["batch_split_reference"] = check
+    executables, host_parts = {}, []
+    function = partial(value_and_vjp, forward)
+    try:
+        for start in range(0, operands[0].shape[0], size):
+            stop = min(start + size, operands[0].shape[0])
+            actual_size = stop - start
+            runner.active(variant="reference", effective_batch=actual_size)
+            arguments = tuple(value[start:stop] for value in (*operands, cotangent))
+            name = f"batch_split_reference_b{actual_size}"
+            if actual_size not in executables:
+                executable, result = runner.compile(name, function, arguments, check["compilations"])
+                executables[actual_size] = executable
+                seconds = check["compilations"][name]["first_call_seconds"]
+            else:
+                runner.active(operation=name, phase="checking_split_reference")
+                started = time.perf_counter()
+                result = jax.block_until_ready(executables[actual_size](*arguments))
+                seconds = time.perf_counter() - started
+            host_parts.append(jax.device_get(result))
+            check["chunk_sizes"].append(actual_size)
+            check["chunk_call_seconds"].append(seconds)
+            del result, arguments
+            runner.save()
+        # Host concatenation keeps only one chunk's device histories live at a
+        # time. The final transfer/check is outside every throughput interval.
+        expected = jax.tree.map(lambda *parts: jnp.asarray(np.concatenate(parts, axis=0)), *host_parts)
+        check["accuracy"] = compare_result(reference, expected, backward=True, rms_limit=1e-5, max_limit=1e-5)
+        check["status"] = "complete" if check["accuracy"]["passed"] else "failed"
+        del expected
+        runner.save()
+        if not check["accuracy"]["passed"]:
+            raise FloatingPointError("Full-batch reference differs from the concatenated batch-split reference")
+    except Exception as error:
+        check.update(status="failed", error=f"{type(error).__name__}: {error}")
+        raise
+    finally:
+        executables.clear()
+        host_parts.clear()
+        runner.context.pop("effective_batch", None)
+        runner.save()
+
+
 def benchmark(args):
     devices = jax.local_devices()
     if len(devices) != 1 or devices[0].platform != "gpu":
@@ -414,6 +470,7 @@ def benchmark_shape(runner, entry, batch, width, backend):
     executable, reference = runner.compile("forward_backward", partial(value_and_vjp, forward),
                                             (*operands, cotangent), reference_operations)
     del executable
+    check_batch_split_reference(runner, entry, forward, operands, cotangent, reference)
     compiled = {}
     for precision, warps, min_ctas in product(args.precisions, args.warps, args.min_ctas):
         variant = f"{precision}_w{warps}_cta{min_ctas}"
@@ -495,6 +552,8 @@ def main():
                         help="Minimum CTAs per SM occupancy hints; zero disables the hint")
     parser.add_argument("--reference-min-ctas", type=int, choices=(0, 1, 2), default=0,
                         help="Exact parity reference occupancy hint; zero disables the hint")
+    parser.add_argument("--reference-batch-size", type=int, default=0,
+                        help="Optional batch-split exact-reference check before variant timing; zero disables")
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--iterations", type=int, default=20)
     parser.add_argument("--rounds", type=int, default=2)
@@ -515,6 +574,8 @@ def main():
     if min(*args.batches, *args.key_dims, args.value_dim, args.length, args.heads,
            args.warmup, args.iterations, args.rounds) < 1:
         parser.error("Dimensions and timing counts must be positive")
+    if args.reference_batch_size < 0:
+        parser.error("Reference batch size must be zero or positive")
     if args.length % 64 or max(*args.key_dims, args.value_dim) > 64:
         parser.error("The backend requires T divisible by64 and K,V<=64")
     if min(args.max_relative_rms, args.max_relative_max, args.exact_relative_rms, args.exact_relative_max) <= 0:
