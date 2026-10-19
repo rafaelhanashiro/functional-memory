@@ -347,8 +347,10 @@ def attention_identity(config) -> dict:
         identity.update({
             "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
                                          else "pallas_mosaic_gpu_query_polynomial" if query_tanh
-                                         else "pallas_mosaic_gpu"),
-            "attention_weight_precision": default_precision("query" if query_conditioned else "taylor", degree),
+                                         else "pallas_mosaic_gpu_query_polynomial_equal_coefficients"
+                                         if not normalized else "pallas_mosaic_gpu"),
+            # Unnormalized kernels share the query-coefficient family; only normalized ones divide by a row sum.
+            "attention_weight_precision": default_precision("taylor" if normalized else "query", degree),
             "query_block_size": None,
             "key_block_size": None,
             "diagnostic_backend": "blocked",

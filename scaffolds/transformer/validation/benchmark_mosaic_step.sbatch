@@ -1,6 +1,7 @@
 #!/bin/bash
 # Time one training microbatch (16 x 2048, synthetic tokens) with the fused and Mosaic
-# attention backends on the same GPU, twice each, for a query tanh and a Taylor recipe.
+# attention backends on the same GPU, twice each, for study recipes (RUNS; default a query
+# tanh and a Taylor recipe).
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
@@ -20,7 +21,7 @@ SCRATCH="$(mktemp -d)"
 trap 'rm -rf -- "$SCRATCH"' EXIT
 mkdir -p "$OUT"
 for round in 1 2; do
-  for run in r0bc57959ef6c raf32fab4ba52; do
+  for run in ${RUNS:-r0bc57959ef6c raf32fab4ba52}; do
     for backend in fused mosaic; do
       "$PYTHON" - "$run" "$backend" "$SCRATCH" <<'PY'
 import sys
@@ -41,7 +42,7 @@ from pathlib import Path
 import yaml
 from scaffolds.transformer.attention.backends.mosaic.api import default_precision
 model = yaml.safe_load(Path(f"experiments/attention_scaling/runs/{sys.argv[1]}/config.yaml").read_text())["model"]
-family = "query" if model.get("attention_coefficient_conditioning") == "query" else "taylor"
+family = "taylor" if model.get("attention_normalization", True) else "query"
 print(default_precision(family, model["attention_degree"]))
 PY
 )""
