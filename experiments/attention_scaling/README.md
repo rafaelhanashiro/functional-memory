@@ -408,6 +408,34 @@ sbatch --partition=long --nodelist=akita --gres=gpu:b300:1 --cpus-per-task=16 --
 Outcomes and the comparison with the fused runs and the static controls live in the
 [input-dependent coefficient topic](../../results/exploratory/input_dependent_coefficients/README.md).
 
+### PaTH position encoding, softmax and tanh m = 2, 4
+
+Three single-B300 runs replace RoPE with PaTH (`positional_encoding: path`, see the
+[scaffold](../../scaffolds/transformer/README.md#path-position-encoding)): scores
+transported through token Householder products, with the authors' gate design. The
+query-conditioned runs keep the zero-amplitude, `N(0, 1/hidden_size)`-draw tanh recipe
+(`r5be9a97f06e2` with its degree changed; head RMSNorm); the control keeps the canonical
+softmax recipe (`rdf00da0866a8`). All use QK normalization, 400 warmup updates, global
+microbatch 32, and the chunked JAX PaTH implementation (`attention_backend: blocked`),
+which needs about 4.6 s per update on one B300, so each run takes about a day on `long`.
+
+| Kernel | Run | RoPE counterpart |
+| --- | --- | --- |
+| Softmax | `rf1ece7e314b3` | `rdf00da0866a8` |
+| Tanh query-conditioned, m = 2 | `rb901a10c4777` | `rec520e9303ac` |
+| Tanh query-conditioned, m = 4 | `r4de2b1429c8a` | `rd4f66b1959d2` |
+
+The launch command, from `worktrees/path_attention` on Kennel with the launch commit
+recorded in each run's `record.json`:
+
+```bash
+RUN=<run-id>
+sbatch --partition=long --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 B300
+```
+
 ## Independent GDN erase gate
 
 Run `rf7341031e3d5` asks whether GDN benefits from separate scalar erase and write
