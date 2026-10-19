@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/raa043e978a3d/config.yaml",
+    "sha256": "fcd06a4000cc61743493ca2dac9af12dbbfaac36439a046dba9eff439c1eda52"
+  },
+  "label": "200m-qk-m008-unnormalized-head-rmsnorm-transformer-init-warmup400-seed0",
+  "name": "200m-qk-m008-unnormalized-head-rmsnorm-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "raa043e978a3d",
+  "status": "planned"
+}
