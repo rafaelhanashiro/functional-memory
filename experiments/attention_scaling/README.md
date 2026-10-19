@@ -342,27 +342,32 @@ microbatch 32, head RMSNorm, QK normalization, warmup 400).
 
 | m = 1 | m = 2 | m = 3 | m = 4 |
 | --- | --- | --- | --- |
-| `r4e9081eb9f1d` | `r0aab2b77017f` | `r4a7c601b4b1f` | `r4e3f4097a60e` |
+| `rba839e6386b7` (blocked reference) | `r0aab2b77017f` | `r4a7c601b4b1f` | `r4e3f4097a60e` |
 
-The kernels run once per order with the key factor folded into the values, so a step
-costs about 1.25× (m = 1) to 1.9× (m = 4) the query-only step. Launch commit
-`f13be89f1eacf37775e92f1ffc2507be17c96810` from `worktrees/tanh_query_key` on Kennel, `mastiff`
-excluded so every job lands on a B300 or an H100 SXM: degrees 1–3 on `standard` (24 h),
-degree 4 on `long`:
+Degrees 2–4 run the Mosaic query kernel once per order with the key factor folded into the
+values, so a step costs about 1.6× (m = 2) to 1.9× (m = 4) the query-only step. Each pass
+rounds its output to BF16 before the passes are summed; at degree one that rounding reaches
+the head RMSNorm and corrupts the gradient (the step-one gradient norm differs from the
+blocked reference on H100 and B300 alike), so degree one runs on the blocked reference at
+global microbatch 64, like the zero-amplitude reference runs. At degrees 2 and 4 the
+step-one gradients of the blocked, per-degree, and single-pass paths agree to four digits.
+
+Degrees 2–4 use launch commit `f13be89f1eacf37775e92f1ffc2507be17c96810` from
+`worktrees/tanh_query_key` on Kennel, `mastiff` excluded: degrees 2 and 3 ran on `akita`
+(`standard`), and degree 4 started on `long` on `dogo`, stalled at update 858 (the launcher
+ended it after 20 minutes without log output), and resumed from its update-500 checkpoint on
+`akita` under `standard`. Degree one uses launch commit
+`624ef89621febc0f203cf7dc6463586598d3ec3c` from `worktrees/tanh_query_key_m1` on `akita`
+(`standard`). With `RUN` and `COMMIT` set:
 
 ```bash
-RUN=<run-id>
-sbatch --partition=standard --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff \
-  --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
-  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+sbatch --partition=standard --time=24:00:00 --nodelist=akita --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --job-name="$RUN" --output="experiments/attention_scaling/runs/$RUN/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
-  "experiments/attention_scaling/runs/$RUN/config.yaml" f13be89f1eacf37775e92f1ffc2507be17c96810 1 B300,H100
-sbatch --partition=long --exclude=collie,samoyed,doodle,terrier,mastiff \
-  --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
-  --output="experiments/attention_scaling/runs/$RUN/training.log" \
-  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
-  "experiments/attention_scaling/runs/$RUN/config.yaml" f13be89f1eacf37775e92f1ffc2507be17c96810 1 B300,H100
+  "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" 1 B300
 ```
+
+Outcomes are in the [input-dependent coefficient topic](../../results/exploratory/input_dependent_coefficients/README.md).
 
 ## Independent GDN erase gate
 
