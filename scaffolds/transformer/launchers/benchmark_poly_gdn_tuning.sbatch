@@ -25,7 +25,7 @@ TPY="$PWD/scaffolds/transformer/benchmarks/upstream_runtime/.venv/bin/python"
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda PYTHONUNBUFFERED=1 WANDB_MODE=disabled
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-8}"
 export TRANSFORMER_HOST_STAGING=0 SHARED_TRANSFORMER_SOURCE_COMMIT="$LAUNCH_COMMIT"
-export POLY_GDN_VALUE_PRECISION=tf32x3 POLY_GDN_NUM_WARPS=4
+export POLY_GDN_VALUE_PRECISION=tf32x3 POLY_GDN_NUM_WARPS=2
 export XLA_FLAGS="${XLA_FLAGS:-} --xla_gpu_enable_command_buffer="
 POLY_JOB_TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/poly-gdn-${SLURM_JOB_ID}.XXXXXX")"
 export TMPDIR="$POLY_JOB_TMPDIR" XDG_CACHE_HOME="$POLY_JOB_TMPDIR/xdg"
@@ -86,7 +86,7 @@ case "$PHASE" in
     set +e
     "$JPY" -m scaffolds.transformer.benchmarks.benchmark_poly_gdn_tuning \
       --output "$OUT/poly-kernels.json" --batches 16 --key-dims 16 64 --value-dim 64 \
-      --precisions tf32x3 bf16_read bf16_values --warps 4 8 \
+      --precisions tf32x3 bf16_read bf16_values --warps 1 2 --reference-warps 2 \
       --warmup 5 --iterations 20 --rounds 2 --profile-stages
     KERNEL_EXIT=$?
     set -e
@@ -98,7 +98,7 @@ case "$PHASE" in
     select_toolkit "$JPY"
     "$JPY" -m scaffolds.transformer.benchmarks.benchmark_poly_gdn_tuning \
       --output "$OUT/poly-kernels.json" --batches 64 --key-dims 16 64 --value-dim 64 \
-      --precisions tf32x3 "$PRECISION" --warps 4 "$WARPS" \
+      --precisions tf32x3 "$PRECISION" --warps 2 "$WARPS" --reference-warps 2 \
       --warmup 5 --iterations 30 --rounds 2
     select_toolkit "$TPY"
     for width in 16 64; do
@@ -107,17 +107,20 @@ case "$PHASE" in
         --batch 64 --key-dim "$width" --value-dim 64 --warmup 5 --iterations 30 --rounds 2
     done
     select_toolkit "$JPY"
-    for width in 16 64; do
-      for setting in exact candidate; do
+    for trial in 1 2; do
+      if [[ "$trial" == 1 ]]; then settings=(exact candidate); else settings=(candidate exact); fi
+      for width in 16 64; do
+      for setting in "${settings[@]}"; do
         if [[ "$setting" == exact ]]; then
-          export POLY_GDN_VALUE_PRECISION=tf32x3 POLY_GDN_NUM_WARPS=4
+          export POLY_GDN_VALUE_PRECISION=tf32x3 POLY_GDN_NUM_WARPS=2
         else
           export POLY_GDN_VALUE_PRECISION="$PRECISION" POLY_GDN_NUM_WARPS="$WARPS"
         fi
         "$JPY" -m scaffolds.transformer.benchmarks.benchmark_training_throughput \
           --config "scaffolds/transformer/validation/configs/poly-gdn-tuning-dk${width}.yaml" \
-          --warmup 5 --iterations 30 --scratch "$LOG_DIR/k${width}-$setting" \
-          --output "$OUT/training-k${width}-$setting.json"
+          --warmup 5 --iterations 30 --scratch "$LOG_DIR/k${width}-$setting-$trial" \
+          --output "$OUT/training-k${width}-$setting-$trial.json"
+      done
       done
     done
     ;;

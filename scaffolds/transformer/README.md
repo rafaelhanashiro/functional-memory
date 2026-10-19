@@ -387,7 +387,9 @@ lengths divisible by 64; it transports queries through prior key chunks without
 materializing polynomial features. Its work and temporary backward histories
 grow quadratically with sequence length.
 
-The fused polynomial backend defaults to FP32/TF32x3 products with four warps.
+The fused polynomial backend defaults to FP32/TF32x3 products with two warps on
+Blackwell and four on Hopper. Blackwell rejects higher warp counts because its
+four-warp backward path fails hardware qualification with the pinned compiler.
 Experimental runtime options `POLY_GDN_VALUE_PRECISION=bf16_read` (value-read
 products) or `bf16_values` (also score-adjoint products) retain FP32 transport,
 inverse geometry, and accumulation. `POLY_GDN_NUM_WARPS` accepts 1, 2, 4, or 8.

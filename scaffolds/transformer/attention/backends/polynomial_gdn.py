@@ -21,6 +21,16 @@ from scaffolds.transformer.attention.backends.fla_gated_delta_rule import (
 )
 
 
+def _default_num_warps():
+    """Avoid the unqualified Blackwell tensor-memory path in recurrent dots."""
+    device = jax.local_devices()[0]
+    if device.platform not in ("gpu", "cuda"):
+        return 4
+    capability = getattr(device, "compute_capability", "")
+    capability = capability() if callable(capability) else capability
+    return 2 if str(capability).split(".")[0] in ("10", "12") else 4
+
+
 def resolve_polynomial_gdn_options(precision=None, num_warps=None):
     """Resolve static runtime options; explicit arguments override the environment.
 
@@ -28,19 +38,25 @@ def resolve_polynomial_gdn_options(precision=None, num_warps=None):
     additionally rounds the score-adjoint product. Both retain FP32 accumulation
     and all transport/inverse geometry. They are experimental precision modes.
     Options are resolved when the public operation is traced, not on each token.
+    Blackwell defaults to two warps and rejects four/eight: four-warps backward
+    failed device qualification, while two warps avoids its tensor-memory path.
     """
     if precision is None:
         precision = os.environ.get("POLY_GDN_VALUE_PRECISION", "tf32x3")
     if precision not in ("tf32x3", "bf16_read", "bf16_values"):
         raise ValueError(f"Unsupported polynomial GDN precision: {precision!r}")
+    default_warps = _default_num_warps()
     if num_warps is None:
-        raw_warps = os.environ.get("POLY_GDN_NUM_WARPS", "4")
+        raw_warps = os.environ.get("POLY_GDN_NUM_WARPS", str(default_warps))
         try:
             num_warps = int(raw_warps)
         except ValueError as error:
             raise ValueError(f"Invalid POLY_GDN_NUM_WARPS: {raw_warps!r}") from error
     if type(num_warps) is not int or num_warps not in (1, 2, 4, 8):
         raise ValueError("Polynomial GDN num_warps must be one of 1, 2, 4, 8")
+    if default_warps == 2 and num_warps > 2:
+        raise ValueError("Polynomial GDN on Blackwell requires num_warps=1 or 2; "
+                         "four/eight-warps backward is not qualified")
     return precision, num_warps
 
 
@@ -103,7 +119,8 @@ def _metadata(q, v):
 
 
 def _polynomial_call(kernel, *args, out, q, v, name,
-                     precision="tf32x3", num_warps=4, **extra):
+                     precision="tf32x3", num_warps=None, **extra):
+    precision, num_warps = resolve_polynomial_gdn_options(precision, num_warps)
     from scaffolds.transformer.attention.backends.ejkernel_bridge import triton_call
 
     return triton_call(*args, kernel=kernel, out_shape=out,
@@ -114,7 +131,7 @@ def _polynomial_call(kernel, *args, out, q, v, name,
 
 
 def _forward(q, k, v, prefix, beta, erase, inverse, transformed, scale,
-             precision="tf32x3", num_warps=4):
+             precision="tf32x3", num_warps=None):
     from scaffolds.transformer.attention.backends.polynomial_gdn_kernels import forward
 
     output, _ = _polynomial_call(
@@ -188,8 +205,8 @@ def polynomial_gated_delta_rule(q, k, v, g, beta, erase, scale, *, precision=Non
     g, beta, and erase use FP32 arithmetic. q/k normalization belongs to the
     model. This GPU backend supports lengths divisible by 64 and widths <=64.
 
-    The default is exact-path FP32/TF32x3 with four warps. Optional precision and
-    launch settings resolve through :func:`resolve_polynomial_gdn_options`.
+    The default is FP32/TF32x3 with two warps on Blackwell and four elsewhere.
+    Optional settings resolve through :func:`resolve_polynomial_gdn_options`.
     """
     precision, num_warps = resolve_polynomial_gdn_options(precision, num_warps)
     if q.ndim != 4 or k.shape != q.shape or v.shape[:3] != q.shape[:3]:

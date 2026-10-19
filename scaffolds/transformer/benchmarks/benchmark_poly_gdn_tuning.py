@@ -5,8 +5,9 @@ returns the output and all six input gradients with an explicit cotangent.
 Native FLA uses the same shared input fixture in benchmark_upstream_torch, but
 is a linear, tied-gate reference workload, not the same mathematical operator.
 Stage timings are isolated calls with resident intermediates; their sum is not
-an end-to-end timing. Accuracy is checked against tf32x3/four warps on the exact
-same cast operands. Independent small FP64 tests remain separate qualification.
+an end-to-end timing. Accuracy is checked against tf32x3 at --reference-warps
+(default two, the qualified Blackwell setting) on the exact same cast operands.
+Independent small FP64 tests remain separate qualification.
 """
 from __future__ import annotations
 
@@ -332,7 +333,7 @@ def benchmark(args):
               "configuration": vars(args) | {"output": str(args.output)}, "shapes": {}, "compiled_resources": [],
               "comparison": "Cubic polynomial GDN and native FLA linear tied GDN are different mathematics.",
               "timing": "Resident compiled call plus host dispatch; synchronize every call; compile/transfer/checks excluded.",
-              "accuracy_reference": {"precision": "tf32x3", "num_warps": 4, "same_cast_inputs": True},
+              "accuracy_reference": {"precision": "tf32x3", "num_warps": args.reference_warps, "same_cast_inputs": True},
               "accuracy_scope": "Production-size parity to exact backend; independent FP64 oracle tests required separately.",
               "memory": "Compiler estimates and device allocator statistics, not measured isolated kernel peaks."}
     runner = Runner(args, report)
@@ -388,7 +389,7 @@ def benchmark_shape(runner, entry, batch, width, backend):
     jax.block_until_ready((operands, cotangent))
     scale = width ** -.5
     entry["scale"] = scale
-    forward = partial(backend.polynomial_gated_delta_rule, scale=scale, precision="tf32x3", num_warps=4)
+    forward = partial(backend.polynomial_gated_delta_rule, scale=scale, precision="tf32x3", num_warps=args.reference_warps)
     reference_operations = entry.setdefault("reference", {})
     executable, reference = runner.compile("forward_backward", partial(value_and_vjp, forward),
                                             (*operands, cotangent), reference_operations)
@@ -464,7 +465,10 @@ def main():
     parser.add_argument("--heads", type=int, default=16)
     parser.add_argument("--degree", type=int, choices=(2, 3), default=3)
     parser.add_argument("--precisions", nargs="+", choices=PRECISIONS, default=list(PRECISIONS))
-    parser.add_argument("--warps", type=int, nargs="+", choices=(1, 2, 4, 8), default=[4, 8])
+    parser.add_argument("--warps", type=int, nargs="+", choices=(1, 2, 4, 8), default=[1, 2],
+                        help="Sweep launch choices; unsupported hardware settings are rejected before launch")
+    parser.add_argument("--reference-warps", type=int, choices=(1, 2, 4, 8), default=2,
+                        help="Exact tf32x3 parity reference; two warps is the qualified Blackwell setting")
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--iterations", type=int, default=20)
     parser.add_argument("--rounds", type=int, default=2)
@@ -478,6 +482,10 @@ def main():
     parser.add_argument("--exact-relative-max", type=float, default=.01)
     parser.add_argument("--experiment", default="attention_scaling")
     args = parser.parse_args()
+    # Confirmation may name the same baseline and selected setting. Preserve
+    # requested order while compiling and recording every unique case once.
+    for name in ("batches", "key_dims", "precisions", "warps"):
+        setattr(args, name, list(dict.fromkeys(getattr(args, name))))
     if min(*args.batches, *args.key_dims, args.value_dim, args.length, args.heads,
            args.warmup, args.iterations, args.rounds) < 1:
         parser.error("Dimensions and timing counts must be positive")
