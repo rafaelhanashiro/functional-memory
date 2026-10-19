@@ -60,6 +60,8 @@ class ModelConfig:
     gdn_erase_mode: Literal["tied", "independent"] = "tied"
     # Signed writes retain a separate sigmoid erase gate. Historical recipes use sigmoid.
     gdn_write_activation: Literal["sigmoid", "tanh"] = "sigmoid"
+    # Degrees two and three compose polynomial memory with the original-key-space erase map.
+    gdn_polynomial_degree: Literal[1, 2, 3] = 1
     gla_gate_rank: int = 16
     gla_gate_tau: float = 16.0
     gla_chunk_size: int = 64
@@ -201,6 +203,11 @@ class ModelConfig:
         if self.gdn_write_activation == "tanh":
             if self.attention_mechanism != "gated_deltanet" or self.gdn_erase_mode != "independent":
                 raise ValueError("model.gdn_write_activation tanh requires gated_deltanet with independent erasure")
+        if type(self.gdn_polynomial_degree) is not int or self.gdn_polynomial_degree not in (1, 2, 3):
+            raise ValueError("model.gdn_polynomial_degree must be 1, 2, or 3")
+        if self.gdn_polynomial_degree > 1:
+            if self.attention_mechanism != "gated_deltanet" or self.gdn_erase_mode != "independent":
+                raise ValueError("model.gdn_polynomial_degree > 1 requires gated_deltanet with independent erasure")
         for name in ("gla_gate_rank", "gla_chunk_size", "gla_inner_chunk_size"):
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:

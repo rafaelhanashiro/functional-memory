@@ -375,6 +375,28 @@ do not change decay, Q/K normalization, or gated output RMSNorm. The activation 
 part of checkpoint compatibility, run identity, and the generated study index;
 tanh runs carry the `tanh_write` W&B tag.
 
+`gdn_polynomial_degree: 2` or `3` with independent erasure replaces the linear
+memory by a polynomial function:
+`F_t(q) = exp(g_t) F_{t-1}((I-lambda_t k_t k_t^T)q) + v_t sum_r beta_{t,r}(q^T k_t)^r`.
+The linear coefficient retains `gdn_write_activation`; separate tanh projections
+for degree zero and degrees two/three start at zero, preserving the linear
+initial function. Q/K normalization, the final `1/sqrt(d_K)` read scale, and
+gated output RMSNorm are unchanged. The blocked backend is an explicit tensor
+reference. The fused Triton backend supports key/value widths up to 64 and
+lengths divisible by 64; it transports queries through prior key chunks without
+materializing polynomial features. Its work and temporary backward histories
+grow quadratically with sequence length.
+
+The fused polynomial backend defaults to FP32/TF32x3 products with four warps.
+Experimental runtime options `POLY_GDN_VALUE_PRECISION=bf16_read` (value-read
+products) or `bf16_values` (also score-adjoint products) retain FP32 transport,
+inverse geometry, and accumulation. `POLY_GDN_NUM_WARPS` accepts 1, 2, 4, or 8.
+Explicit `precision`/`num_warps` keyword arguments on
+`polynomial_gated_delta_rule` override these settings; environment changes take
+effect when tracing a fresh executable. Backend metadata records the resolved
+options. Qualification and throughput measurements belong in
+[validation](validation/README.md).
+
 ### Gated linear attention
 
 `attention_mechanism: gla` replaces the attention module inside the same residual
