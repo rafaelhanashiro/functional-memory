@@ -312,12 +312,10 @@ def _requires_gpu(backend):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("degree", KERNEL_DEGREES)
-@pytest.mark.parametrize("backend", ("fused", "mosaic"))
+@pytest.mark.parametrize(("degree", "backend"), [(degree, "fused") for degree in KERNEL_DEGREES]
+                         + [(degree, "mosaic") for degree in DEGREES])  # Mosaic covers degrees 1-4
 def test_gpu_fused_kernels_match_the_blocked_reference_in_production_context(degree, backend):
     _requires_gpu(backend)
-    if backend == "mosaic" and degree > 4:
-        pytest.skip("The Mosaic query kernel covers degrees 1-4")
     operands, cotangent = _inputs(degree, time=2048, dtype=jnp.bfloat16, qk_dim=64, value_dim=64, batch=1, heads=4)
     actual = jax.jit(partial(_vjp, partial(query_key_polynomial_attention, backend=backend)))(operands, cotangent)
     with jax.default_matmul_precision("highest"):
