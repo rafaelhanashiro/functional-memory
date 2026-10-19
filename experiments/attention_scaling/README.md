@@ -342,27 +342,71 @@ microbatch 32, head RMSNorm, QK normalization, warmup 400).
 
 | m = 1 | m = 2 | m = 3 | m = 4 |
 | --- | --- | --- | --- |
-| `r4e9081eb9f1d` | `r0aab2b77017f` | `r4a7c601b4b1f` | `r4e3f4097a60e` |
+| `rba839e6386b7` (blocked reference) | `r0aab2b77017f` | `r4a7c601b4b1f` | `r4e3f4097a60e` |
 
-The kernels run once per order with the key factor folded into the values, so a step
-costs about 1.25× (m = 1) to 1.9× (m = 4) the query-only step. Launch commit
-`f13be89f1eacf37775e92f1ffc2507be17c96810` from `worktrees/tanh_query_key` on Kennel, `mastiff`
-excluded so every job lands on a B300 or an H100 SXM: degrees 1–3 on `standard` (24 h),
-degree 4 on `long`:
+Degrees 2–4 run the Mosaic query kernel once per order with the key factor folded into the
+values, so a step costs about 1.6× (m = 2) to 1.9× (m = 4) the query-only step. Each pass
+rounds its output to BF16 before the passes are summed; at degree one that rounding reaches
+the head RMSNorm and corrupts the gradient (the step-one gradient norm differs from the
+blocked reference on H100 and B300 alike), so degree one runs on the blocked reference at
+global microbatch 64, like the zero-amplitude reference runs. At degrees 2 and 4 the
+step-one gradients of the blocked, per-degree, and single-pass paths agree to four digits.
+
+Degrees 2–4 use launch commit `f13be89f1eacf37775e92f1ffc2507be17c96810` from
+`worktrees/tanh_query_key` on Kennel, `mastiff` excluded: degrees 2 and 3 ran on `akita`
+(`standard`), and degree 4 started on `long` on `dogo`, stalled at update 858 (the launcher
+ended it after 20 minutes without log output), and resumed from its update-500 checkpoint on
+`akita` under `standard`. Degree one uses launch commit
+`624ef89621febc0f203cf7dc6463586598d3ec3c` from `worktrees/tanh_query_key_m1` on `akita`
+(`standard`). With `RUN` and `COMMIT` set:
 
 ```bash
-RUN=<run-id>
-sbatch --partition=standard --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,mastiff \
-  --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
-  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+sbatch --partition=standard --time=24:00:00 --nodelist=akita --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --job-name="$RUN" --output="experiments/attention_scaling/runs/$RUN/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
-  "experiments/attention_scaling/runs/$RUN/config.yaml" f13be89f1eacf37775e92f1ffc2507be17c96810 1 B300,H100
-sbatch --partition=long --exclude=collie,samoyed,doodle,terrier,mastiff \
-  --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
-  --output="experiments/attention_scaling/runs/$RUN/training.log" \
-  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
-  "experiments/attention_scaling/runs/$RUN/config.yaml" f13be89f1eacf37775e92f1ffc2507be17c96810 1 B300,H100
+  "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" 1 B300
 ```
+
+Outcomes are in the [input-dependent coefficient topic](../../results/exploratory/input_dependent_coefficients/README.md).
+
+### Tanh starts on the blocked reference, degrees 1–4
+
+Eight single-B300 runs on the plain-JAX reference path (`attention_backend: blocked`, no
+fused kernel) check two things about the tanh coefficients: whether the fused kernel
+explains the original start's deficit, and whether a zero-amplitude start removes it.
+Both sets keep the degree-matched tanh recipe above (head RMSNorm, QK normalization,
+`transformer_reference`, 400 warmup updates, global microbatch 64) apart from the
+backend and the start.
+
+| Start | m = 1 | m = 2 | m = 3 | m = 4 |
+| --- | --- | --- | --- | --- |
+| Original, `a_r = 1`, `W = 0`: the kernel check against `r80300a4cd5fa`, `rbfe1750cc24c`, `r0bc57959ef6c`, `rfee72428a45e` | `r6fdf6d484fd2` | `r722fc3dd263e` | `radd66df6371a` | `rc836509ca119` |
+| Zero amplitude, `a_r = 0`, `W ~ N(0, 0.002^2)` (`attention_coefficient_amplitude_initial: 0`, `attention_coefficient_projection_initial_std: 0.002`) | `r75b81509b10b` | `r8c9b076f9635` | `rb306d49a5abe` | `rf1160aa95e46` |
+
+All run on one B300 on `akita` at nice 0: zero-amplitude starts on `standard` (24 h),
+original starts on `long`, where `standard` jobs preempt them and they resume from their
+checkpoints. Six use launch commit `bb81667a6f510e165dab39f92367233c41d4ed8b` from
+`worktrees/tanh_reference_check` (jobs 219218, 219220, 219221 and 219223–219225) on the
+CUDA 12 environment. `r8c9b076f9635` (job 219521, commit
+`67f535f85eca5776b63735f8de3440c9158bc88a`) and `r6fdf6d484fd2` (job 219555, commit
+`8851a838fdb95d02c9fb900d4eb0194c777318b7`) use the B300 CUDA 13 environment
+([validation record](../../scaffolds/transformer/validation/README.md#b300-cuda-13-environment))
+from their own worktrees. With `RUN` set to a run ID and `COMMIT` to its launch commit:
+
+```bash
+sbatch --partition=standard --time=1-00:00:00 --nodelist=akita --gres=gpu:b300:1 \
+  --cpus-per-task=16 --mem=128G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" 1 B300
+sbatch --partition=long --nodelist=akita --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" 1 B300
+```
+
+Outcomes and the comparison with the fused runs and the static controls live in the
+[input-dependent coefficient topic](../../results/exploratory/input_dependent_coefficients/README.md).
 
 ## Independent GDN erase gate
 

@@ -28,12 +28,11 @@ model:
   tie_embeddings: false
   remat: false
   attention_backend: mosaic
-  attention_degree: 1
+  attention_degree: 3
   attention_normalization: false
   attention_output_scaling: head_rms_norm
   attention_mechanism: dot_product
   gdn_conv_size: 4
-  gdn_erase_mode: tied
   gla_gate_rank: 16
   gla_gate_tau: 16.0
   gla_chunk_size: 64
@@ -45,11 +44,8 @@ model:
   attention_fixed_coefficients: null
   attention_fixed_square_factors: null
   attention_coefficient_sharing: per_head
-  attention_coefficient_conditioning: query_key
+  attention_coefficient_conditioning: query
   attention_coefficient_activation: tanh
-  attention_coefficient_amplitude_initial: 0.0
-  attention_coefficient_projection_initial_std: 0.03125
-  attention_coefficient_tanh_bias: false
   attention_coefficient_parameterization: direct
   attention_coefficient_initialization: taylor
   attention_denominator_degree: null
@@ -76,16 +72,16 @@ train:
   seed: 0
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/attention_scaling/runs/r4e9081eb9f1d
-  checkpoint_dir: experiments/attention_scaling/runs/r4e9081eb9f1d/checkpoints
-  micro_batch_size: 32
+  workdir: scaffolds/transformer/validation/logs/gdn-mosaic-b300/mosaic
+  checkpoint_dir: null
+  micro_batch_size: 64
   log_every: 10
   eval_every: 1000
   eval_batches: 7
   ckpt_every: 500
   wandb_project: functional-memory
   wandb_entity: rafah-massachusetts-institute-of-technology
-  wandb_run_name: 200m-qk-m001-query-key-tanh-a0-w0p03125-head-rms-reference-warmup400-seed0
+  wandb_run_name: gdn-mosaic-b300-mosaic
   wandb_group: attention_scaling
   wandb_dir: null
-  wandb_mode: online
+  wandb_mode: disabled

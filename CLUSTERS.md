@@ -188,10 +188,12 @@ Both Transformer launchers end a job whose `training.log` has not grown for 20 m
 (set `TRANSFORMER_STALL_MINUTES` when submitting to change it), well above normal
 silences such as the first update's compilation (at most 3.5 minutes, for Gated
 DeltaNet). A GPU that fails, for example by running out of memory, can otherwise leave
-its data-parallel peer waiting in a collective until the time limit. The job logs
-`nvidia-smi` state, exits with code 124, and its record reads `failed` with a stall
-error; it does not requeue. Resubmit the run, excluding the node if its GPUs were at
-fault, to resume from its latest checkpoint.
+its data-parallel peer waiting in a collective until the time limit, and a rare kernel
+deadlock can freeze a GPU. The job logs `nvidia-smi` state, exits with code 124, and
+requeues; the run resumes from its latest checkpoint and its record lists the stalled
+attempt. A run's third stall is recorded as `failed` with a stall error and not requeued,
+since repeated stalls point to a fault a requeue may meet again: resubmit it, excluding
+the node if its GPUs were at fault.
 
 To move an experiment, transfer required artifacts separately (for example with
 `rsync`), verify checksums, recreate the environment, and update provenance before

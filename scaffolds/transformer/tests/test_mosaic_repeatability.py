@@ -14,6 +14,7 @@ import numpy as np
 import pytest
 
 from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial_attention, taylor_attention
+from scaffolds.transformer.attention.backends.mosaic.common import PRECISIONS
 
 REPEATS = 20
 pytestmark = pytest.mark.gpu
@@ -44,13 +45,15 @@ def _repeat(function, operands, cotangent):
             assert np.array_equal(got, want, equal_nan=True), f"attempt {attempt}: leaf {index} differs"
 
 
+@pytest.mark.parametrize("precision", PRECISIONS)
 @pytest.mark.parametrize("degree", (2, 3))
-def test_taylor_is_bitwise_repeatable(degree):
+def test_taylor_is_bitwise_repeatable(degree, precision):
     operands, cotangent = _operands()
-    _repeat(partial(taylor_attention, attention_degree=degree), operands, cotangent)
+    _repeat(partial(taylor_attention, attention_degree=degree, precision=precision), operands, cotangent)
 
 
-def test_query_polynomial_is_bitwise_repeatable():
+@pytest.mark.parametrize("precision", PRECISIONS)
+def test_query_polynomial_is_bitwise_repeatable(precision):
     operands, cotangent = _operands()
     coefficients = jnp.tile(jnp.array([1.0, 1.0, 0.5], jnp.float32), (*operands[0].shape[:3], 1))
-    _repeat(query_polynomial_attention, (*operands, coefficients), cotangent)
+    _repeat(partial(query_polynomial_attention, precision=precision), (*operands, coefficients), cotangent)

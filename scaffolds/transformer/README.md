@@ -375,6 +375,15 @@ Neither pass divides by a gate, so zero erasure with nonzero writing is supporte
 Training telemetry records both gates, their difference, raw attention output statistics,
 and separate erase/write/decay/output-gate parameter-group norms.
 
+`gdn_write_activation: tanh` changes the linear write to `beta_t = tanh(W_b x_t)`.
+It requires independent erasure, which remains `lambda_t = sigmoid(W_lambda x_t)`.
+The default `sigmoid` preserves historical recipes and outputs. Both choices use
+exactly the same reference-initialized projection weights and RNG draws; changing
+the activation changes the initial function. Signed writes range from -1 to 1 and
+do not change decay, Q/K normalization, or gated output RMSNorm. The activation is
+part of checkpoint compatibility, run identity, and the generated study index;
+tanh runs carry the `tanh_write` W&B tag.
+
 ### Gated linear attention
 
 `attention_mechanism: gla` replaces the attention module inside the same residual
@@ -435,8 +444,11 @@ silently replaced.
 `attention_backend: mosaic` selects the Pallas Mosaic GPU kernels
 (`attention/backends/mosaic/`): Hopper `wgmma` kernels on H100 (sm90) and Blackwell
 `tcgen05`/tensor-memory kernels on B300 (sm10x), with the mathematics, FP32
-accumulation, bf16x3 weight products, and NaN failure rows of the fused Triton
-kernels. They cover normalized fixed Taylor attention (degree >= 1) and tanh
+accumulation, and NaN failure rows of the fused Triton kernels. Weights and score
+gradients enter the tensor cores rounded once to BF16, as in FlashAttention and cuDNN,
+except for normalized odd-degree Taylor attention, whose cancelling row sums keep
+FP32-precision weights (`api.default_precision`; recorded as
+`attention_weight_precision`). They cover normalized fixed Taylor attention (degree >= 1) and tanh
 query-conditioned polynomial attention (degree 1-4), with Q/K width 8, 16, 32, 64, or
 128, value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
 (H100) or 256 (B300). An explicit `mosaic` request raises for other recipes, GPUs, or
@@ -599,7 +611,8 @@ Studies configure these shared modules with execution modules at their root
   records and `results/` remain editable while jobs run. Both launchers source
   `scaffolds/launch/watchdog.sh`: when `training.log` has not grown for
   `TRANSFORMER_STALL_MINUTES` (default 20), the job logs its GPUs' state, ends the
-  running step, and exits with code 124, which the finalizer records as a stall.
+  running step, and exits with code 124. The finalizer requeues the job, which resumes
+  from its latest checkpoint, for a run's first two stalls and records a third as a failure.
 - `launchers/orcd.sbatch` does the same on ORCD. Its allocations fit that cluster's
   per-user GPU caps; a job asks for 12 hours, accepts `mit_normal_gpu`'s 6-hour
   maximum, and requeues itself before its limit (see [CLUSTERS.md](../../CLUSTERS.md)).

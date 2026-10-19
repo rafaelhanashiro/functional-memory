@@ -1,0 +1,30 @@
+gpu=NVIDIA-H100-80GB-HBM3 commit=97ededde22000428e2049f91ed63d31eb63dbe5e dirty=7
+NVIDIA H100 80GB HBM3
+d_K=8   cuDNN softmax | fwd  0.447 fwd+bwd  1.578
+d_K=8   m=1  | Triton fwd  1.112 fwd+bwd  3.526 | Mosaic bf16x3 fwd  0.635 fwd+bwd  2.285 | Mosaic bf16 fwd  0.454 fwd+bwd  1.728
+d_K=8   m=2  | Triton fwd  1.025 fwd+bwd  3.578 | Mosaic bf16x3 fwd  0.673 fwd+bwd  2.428 | Mosaic bf16 fwd  0.469 fwd+bwd  1.826
+d_K=8   m=4  | Triton fwd  1.132 fwd+bwd  4.091 | Mosaic bf16x3 fwd  0.715 fwd+bwd  2.607 | Mosaic bf16 fwd  0.481 fwd+bwd  1.921
+d_K=8   m=16 | Triton fwd  1.881 fwd+bwd  9.248 | Mosaic bf16x3 fwd  0.942 fwd+bwd  3.506 | Mosaic bf16 fwd  0.699 fwd+bwd  2.743
+d_K=16  cuDNN softmax | fwd  0.441 fwd+bwd  1.572
+d_K=16  m=1  | Triton fwd  1.100 fwd+bwd  3.515 | Mosaic bf16x3 fwd  0.614 fwd+bwd  2.249 | Mosaic bf16 fwd  0.429 fwd+bwd  1.693
+d_K=16  m=2  | Triton fwd  1.029 fwd+bwd  3.586 | Mosaic bf16x3 fwd  0.648 fwd+bwd  2.401 | Mosaic bf16 fwd  0.442 fwd+bwd  1.786
+d_K=16  m=4  | Triton fwd  1.139 fwd+bwd  4.143 | Mosaic bf16x3 fwd  0.695 fwd+bwd  2.572 | Mosaic bf16 fwd  0.462 fwd+bwd  1.892
+d_K=16  m=16 | Triton fwd  1.899 fwd+bwd  9.208 | Mosaic bf16x3 fwd  0.926 fwd+bwd  3.473 | Mosaic bf16 fwd  0.676 fwd+bwd  2.724
+d_K=32  cuDNN softmax | fwd  0.441 fwd+bwd  1.580
+d_K=32  m=1  | Triton fwd  1.139 fwd+bwd  3.628 | Mosaic bf16x3 fwd  0.625 fwd+bwd  2.338 | Mosaic bf16 fwd  0.475 fwd+bwd  1.803
+d_K=32  m=2  | Triton fwd  1.048 fwd+bwd  3.666 | Mosaic bf16x3 fwd  0.664 fwd+bwd  2.496 | Mosaic bf16 fwd  0.472 fwd+bwd  1.899
+d_K=32  m=4  | Triton fwd  1.151 fwd+bwd  4.280 | Mosaic bf16x3 fwd  0.702 fwd+bwd  2.666 | Mosaic bf16 fwd  0.485 fwd+bwd  2.006
+d_K=32  m=16 | Triton fwd  1.968 fwd+bwd  9.562 | Mosaic bf16x3 fwd  0.936 fwd+bwd  3.550 | Mosaic bf16 fwd  0.694 fwd+bwd  2.751
+d_K=64  cuDNN softmax | fwd  0.358 fwd+bwd  1.452
+d_K=64  m=1  | Triton fwd  1.182 fwd+bwd  3.874 | Mosaic bf16x3 fwd  0.663 fwd+bwd  2.629 | Mosaic bf16 fwd  0.530 fwd+bwd  2.014
+d_K=64  m=2  | Triton fwd  1.036 fwd+bwd  3.928 | Mosaic bf16x3 fwd  0.705 fwd+bwd  2.775 | Mosaic bf16 fwd  0.537 fwd+bwd  2.103
+d_K=64  m=4  | Triton fwd  1.141 fwd+bwd  4.503 | Mosaic bf16x3 fwd  0.741 fwd+bwd  2.940 | Mosaic bf16 fwd  0.544 fwd+bwd  2.216
+d_K=64  m=16 | Triton fwd  1.850 fwd+bwd  9.767 | Mosaic bf16x3 fwd  0.966 fwd+bwd  3.798 | Mosaic bf16 fwd  0.730 fwd+bwd  2.936
+d_K=128 cuDNN softmax | fwd  0.616 fwd+bwd  2.362
+d_K=128 m=1  | Triton fwd  2.753 fwd+bwd 11.866 | Mosaic bf16x3 fwd  0.761 fwd+bwd  3.223 | Mosaic bf16 fwd  0.731 fwd+bwd  2.592
+d_K=128 m=2  | Triton fwd  2.360 fwd+bwd 11.456 | Mosaic bf16x3 fwd  0.787 fwd+bwd  3.583 | Mosaic bf16 fwd  0.731 fwd+bwd  2.674
+d_K=128 m=4  | Triton fwd  2.404 fwd+bwd 11.811 | Mosaic bf16x3 fwd  0.818 fwd+bwd  3.626 | Mosaic bf16 fwd  0.733 fwd+bwd  2.771
+d_K=128 m=16 | Triton fwd  2.872 fwd+bwd 14.169 | Mosaic bf16x3 fwd  1.035 fwd+bwd  4.462 | Mosaic bf16 fwd  0.810 fwd+bwd  3.338
+query m=1  | Triton fwd  0.977 fwd+bwd  2.494 | Mosaic bf16x3 fwd  0.761 fwd+bwd  1.723 | Mosaic bf16 fwd  0.591 fwd+bwd  1.251
+query m=2  | Triton fwd  1.020 fwd+bwd  2.741 | Mosaic bf16x3 fwd  0.789 fwd+bwd  1.900 | Mosaic bf16 fwd  0.599 fwd+bwd  1.338
+query m=3  | Triton fwd  1.063 fwd+bwd  2.907 | Mosaic bf16x3 fwd  0.801 fwd+bwd  2.316 | Mosaic bf16 fwd  0.613 fwd+bwd  1.479

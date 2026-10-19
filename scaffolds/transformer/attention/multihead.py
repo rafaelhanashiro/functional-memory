@@ -38,7 +38,8 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         return GatedDeltaNet(
             config.hidden_size, config.num_heads, config.qk_head_dim, config.value_head_dim,
             conv_size=config.gdn_conv_size, norm_eps=config.rms_norm_eps,
-            backend=config.attention_backend, erase_mode=config.gdn_erase_mode, rngs=rngs,
+            backend=config.attention_backend, erase_mode=config.gdn_erase_mode,
+            write_activation=config.gdn_write_activation, rngs=rngs,
         )
     return MultiHeadAttention(
         config.hidden_size, config.num_heads, config.num_kv_heads,

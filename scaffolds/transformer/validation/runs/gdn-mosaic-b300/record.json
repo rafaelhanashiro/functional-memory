@@ -1,0 +1,154 @@
+{
+  "all_scratch_removed": true,
+  "all_trials_finite": true,
+  "artifacts": [
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/gdn-mosaic-b300/gdn-1.json",
+      "sha256": "c834bedd0de4d580afa682dfcd308909267a2d9e8e5871f68b1b5da5b0b4e1f8",
+      "size_bytes": 40341
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/gdn-mosaic-b300/mosaic-1.json",
+      "sha256": "ea804cb257c22e7eebf67856ee00e5e5e916165d1b9ef289868fa98895226d34",
+      "size_bytes": 42164
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/gdn-mosaic-b300/mosaic-2.json",
+      "sha256": "704371e271a082d8738012239c617161876af41c222fba3379c3fea78a12ade4",
+      "size_bytes": 42154
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/gdn-mosaic-b300/gdn-2.json",
+      "sha256": "15c5d26ec05dc7cbc10a66a7a98bda58440d2b786babc2625d3cf0c10cbb3314",
+      "size_bytes": 40369
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-mosaic-b300/benchmark-220032.log",
+      "sha256": "50acef9c820830cae4e3d3099decb679616175a62d4905e88f0a49b5082cf115",
+      "size_bytes": 16677
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/gdn-mosaic-b300/220032/kernel-tests.xml",
+      "sha256": "0b12350324d544ce127018a8055e46e4e84c0df610a557143a0485fc312a7606",
+      "size_bytes": 776
+    }
+  ],
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--output=scaffolds/transformer/validation/logs/gdn-mosaic-b300/benchmark-%j.log",
+    "scaffolds/transformer/launchers/benchmark_gdn_mosaic.sbatch",
+    "64d915c1151af158c3ea238bab99416dbcc3b307"
+  ],
+  "cpu_tests": {
+    "passed": 3,
+    "seconds": 1.45
+  },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "format": "single-gpu-gdn-mosaic-throughput",
+  "frozen_execution_check": "passed",
+  "frozen_execution_sha256": "7fbc5fe377225b15892688053a114cb5aec890a872853bc68a4780ca3ce9caa8",
+  "gpu_count": 1,
+  "gpu_name": "NVIDIA B300 SXM6 AC",
+  "gpu_node": "akita",
+  "gpu_tests": {
+    "errors": 0,
+    "failures": 0,
+    "seconds": 218.748,
+    "skipped": 0,
+    "status": "passed",
+    "tests": 4
+  },
+  "gpu_type": "B300",
+  "gpu_uuid": "GPU-6dca32fa-0314-7849-907a-031e3d449ddf",
+  "home_cluster": "kennel",
+  "independent_review": "passed",
+  "inputs": {
+    "gdn": {
+      "recipe_path": "scaffolds/transformer/validation/configs/gdn-mosaic-b300-gdn.yaml",
+      "recipe_sha256": "e37039dde97c55000f757aba630cd5a8cb379534b64da2472e1fdd4e46f6b7b2",
+      "template_recipe_sha256": "16fda7abf903021f751a91a91e3a3960bc58eb2cbba3a662b51b4a47108a945b",
+      "template_run_id": "rf65d38ec0552",
+      "template_training_source_commit": "16a04573c45f23fde3e2a1c81c891e0139410450"
+    },
+    "mosaic": {
+      "recipe_path": "scaffolds/transformer/validation/configs/gdn-mosaic-b300-mosaic.yaml",
+      "recipe_sha256": "1d19e1b167b7a4db8c7996e727ec5057c15e192aafc2d6496dd63b45f5b0f207",
+      "template_recipe_sha256": "77bb08b24613197ce8c03ff7a52a08781dca38119f444b766ac842bd822df4aa",
+      "template_run_id": "r0bc57959ef6c",
+      "template_training_source_commit": "254cab946e637cd6cd5c004b6976351b1dee3651"
+    }
+  },
+  "job_id": "220032",
+  "limitations": [
+    "Different attention architectures and parameter counts; common backbone and workload are matched.",
+    "Training at sequence length 2048 only; does not measure decoding or recurrent memory savings.",
+    "One fixed microbatch size, no batch-size optimization."
+  ],
+  "measurement_scope": "Fresh reference initialization; actual packed-data single-GPU training loop; steady intervals include data transfer, accumulation, optimizer, numerical checks and ordinary logging. Compilation, evaluation and checkpointing excluded.",
+  "mosaic_to_gdn_throughput_ratio": 3.5227816404926817,
+  "partition": "debug",
+  "qualification_references": [
+    {
+      "path": "scaffolds/transformer/validation/runs/gdn-tanh-b300/record.json",
+      "sha256": "d780123adab11f6f61c9396bfb5369dc35ed21328523436a17b3b378879c0ec6"
+    }
+  ],
+  "retained_checkpoints": [],
+  "slurm_elapsed_seconds": 1118,
+  "slurm_exit_code": "0:0",
+  "slurm_state": "COMPLETED",
+  "source_commit": "64d915c1151af158c3ea238bab99416dbcc3b307",
+  "source_dirty_explanation": "Mutable validation records and benchmark outputs changed; the frozen execution set and input recipes matched the launch commit.",
+  "source_recipes_unchanged": true,
+  "status": "complete",
+  "submitted_at_utc": "2026-10-17T14:59:00.738238+00:00",
+  "summary": {
+    "gdn": {
+      "compute_mean_seconds": 4.237298876605928,
+      "max_peak_gpu_bytes_in_use": 133056993280,
+      "mean_seconds": 4.240989857244616,
+      "median_seconds": 4.210819894447923,
+      "parameter_count": 211007424,
+      "repeat_mean_spread_percent": 0.789372832704264,
+      "resolved_implementation": "fla_chunk_independent_gated_delta_rule_triton",
+      "tokens_per_second": 123623.96932036795,
+      "trial_tokens_per_second": [
+        123137.96051683494,
+        124113.82974719454
+      ],
+      "updates": 60
+    },
+    "mosaic": {
+      "compute_mean_seconds": 1.2009742569488784,
+      "max_peak_gpu_bytes_in_use": 92651986176,
+      "mean_seconds": 1.2038753150341412,
+      "median_seconds": 1.1980671165511012,
+      "parameter_count": 200573344,
+      "repeat_mean_spread_percent": 0.05886456363663011,
+      "resolved_implementation": "pallas_mosaic_gpu_query_polynomial",
+      "tokens_per_second": 435500.24944662274,
+      "trial_tokens_per_second": [
+        435628.4648440764,
+        435372.1095003963
+      ],
+      "updates": 60
+    }
+  },
+  "timed_updates_per_trial": 30,
+  "trial_order": [
+    "gdn-1",
+    "mosaic-1",
+    "mosaic-2",
+    "gdn-2"
+  ],
+  "updated_at_utc": "2026-10-17T15:19:46.964191+00:00",
+  "warmup_updates": 5
+}
