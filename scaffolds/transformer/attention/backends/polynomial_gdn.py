@@ -106,15 +106,10 @@ def _polynomial_call(kernel, *args, out, q, v, name,
                      precision="tf32x3", num_warps=4, **extra):
     from scaffolds.transformer.attention.backends.ejkernel_bridge import triton_call
 
-    # PTXAS otherwise favors 32 registers on Ampere and spills heavily, despite
-    # these kernels' shared-memory allocations already limiting occupancy.
-    capability = jax.local_devices()[0].compute_capability
-    capability = capability() if callable(capability) else capability
-    min_ctas_per_sm = 1 if int(str(capability).split(".")[0]) == 8 else None
     return triton_call(*args, kernel=kernel, out_shape=out,
                        grid=(q.shape[1] // CHUNK_SIZE, q.shape[0] * q.shape[2]),
                        name=f"polynomial_gdn::{name}", default_dot_input_precision="tf32x3",
-                       num_warps=num_warps, num_stages=1, min_ctas_per_sm=min_ctas_per_sm,
+                       num_warps=num_warps, num_stages=1,
                        VALUE_PRECISION=precision, **_metadata(q, v), **extra)
 
 
