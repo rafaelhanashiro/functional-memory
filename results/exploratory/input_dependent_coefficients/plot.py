@@ -39,14 +39,18 @@ VARIANTS = {
                                  "Tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel"),
     "tanh_zero_amplitude_inner_bias": ("tanh, zero-amplitude start, bias inside tanh, Mosaic kernel", "#1B9E77", ":",
                                        "Tanh, zero-amplitude start, bias inside tanh, Mosaic kernel"),
+    "tanh_query_key": ("tanh query-key, zero-amplitude start, W ~ N(0, 1/d)", "#7B3294", "-",
+                       "Tanh query-key, zero-amplitude start, W ~ N(0, 1/d)"),
 }
 
 
 def variant_of(model) -> tuple[str, str, str]:
     """(coefficient function, start, variant key) from a run's model configuration."""
     function = (model.get("attention_coefficient_activation", "identity")
-                if model.get("attention_coefficient_conditioning", "static") == "query" else "static")
+                if model.get("attention_coefficient_conditioning", "static") in ("query", "query_key") else "static")
     function = "affine" if function == "identity" else function
+    if model.get("attention_coefficient_conditioning") == "query_key":
+        return "tanh", "zero_amplitude", "tanh_query_key"
     if function != "tanh":
         return function, "", function
     start = "zero_amplitude" if model.get("attention_coefficient_amplitude_initial", 1.0) == 0 else "original"
