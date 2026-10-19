@@ -333,20 +333,12 @@ def stage_profile(runner, entry, operands, cotangent, precision, warps, min_ctas
                             "and the final gradient additions/reverse cumulative sum.")
 
 
-def check_batch_split_reference(runner, entry, forward, operands, cotangent, reference):
-    """Check global batch offsets against independent small-batch calls.
-
-    Each chunk uses the original operands and explicit output cotangent. Its
-    output and all six VJPs are copied to host before releasing device arrays;
-    concatenation does not rescale gradients or retain chunk GPU histories.
-    """
+def _batch_split_accuracy(runner, check, forward, operands, cotangent, reference, *,
+                          prefix, rms_limit, max_limit):
+    """Compare one dtype's full call with unchanged slices, releasing chunk histories."""
     size = runner.args.reference_batch_size
-    if not size:
-        return
-    check = {"status": "running", "requested_batch_size": size, "chunk_sizes": [],
-             "compilations": {}, "chunk_call_seconds": [],
-             "scope": "Concatenate exact-reference output and all six VJPs from unchanged batch slices; no gradient rescaling."}
-    entry["batch_split_reference"] = check
+    check.update(requested_batch_size=size, chunk_sizes=[], chunk_call_seconds=[])
+    check.setdefault("compilations", {})
     executables, host_parts = {}, []
     function = partial(value_and_vjp, forward)
     try:
@@ -355,7 +347,7 @@ def check_batch_split_reference(runner, entry, forward, operands, cotangent, ref
             actual_size = stop - start
             runner.active(variant="reference", effective_batch=actual_size)
             arguments = tuple(value[start:stop] for value in (*operands, cotangent))
-            name = f"batch_split_reference_b{actual_size}"
+            name = f"{prefix}_b{actual_size}"
             if actual_size not in executables:
                 executable, result = runner.compile(name, function, arguments, check["compilations"])
                 executables[actual_size] = executable
@@ -370,21 +362,72 @@ def check_batch_split_reference(runner, entry, forward, operands, cotangent, ref
             check["chunk_call_seconds"].append(seconds)
             del result, arguments
             runner.save()
-        # Host concatenation keeps only one chunk's device histories live at a
-        # time. The final transfer/check is outside every throughput interval.
+        # Transfer/checks are outside every throughput interval. No batch mean
+        # or gradient rescaling is applied to the explicit-cotangent VJPs.
         expected = jax.tree.map(lambda *parts: jnp.asarray(np.concatenate(parts, axis=0)), *host_parts)
-        check["accuracy"] = compare_result(reference, expected, backward=True, rms_limit=1e-5, max_limit=1e-5)
-        check["status"] = "complete" if check["accuracy"]["passed"] else "failed"
+        check["accuracy"] = compare_result(reference, expected, backward=True,
+                                            rms_limit=rms_limit, max_limit=max_limit)
         del expected
         runner.save()
         if not check["accuracy"]["passed"]:
-            raise FloatingPointError("Full-batch reference differs from the concatenated batch-split reference")
-    except Exception as error:
-        check.update(status="failed", error=f"{type(error).__name__}: {error}")
-        raise
+            raise FloatingPointError(f"Full-batch reference differs from the concatenated batch-split reference ({prefix})")
     finally:
         executables.clear()
         host_parts.clear()
+        runner.context.pop("effective_batch", None)
+
+
+def check_batch_split_reference(runner, entry, forward, operands, cotangent, reference):
+    """Check global batch offsets in production dtype and strictly in FP32.
+
+    The FP32 check promotes the already-quantized production inputs and the
+    explicit cotangent without changing their values. Both checks cover the
+    output and all six VJPs and must pass before any variant is timed.
+    """
+    if not runner.args.reference_batch_size:
+        return
+    check = {"status": "running", "passed": False,
+             "policy": "production_dtype_and_promoted_fp32",
+             "scope": "Concatenate exact-reference output and all six VJPs from unchanged batch slices; no gradient rescaling."}
+    entry["batch_split_reference"] = check
+    promoted = None
+    try:
+        _batch_split_accuracy(runner, check, forward, operands, cotangent, reference,
+            prefix="batch_split_reference", rms_limit=runner.args.exact_relative_rms,
+            max_limit=runner.args.exact_relative_max)
+        promoted = {"status": "running", "compilations": {},
+                    "scope": "Same already-quantized production operands and cotangent promoted to FP32; unchanged reference backend settings."}
+        check["promoted_fp32"] = promoted
+        source_arguments = (*operands, cotangent)
+        arguments = tuple(value.astype(jnp.float32) for value in source_arguments)
+        # Compare in the promoted dtype, rather than casting back and hiding a
+        # changed FP32 value that happens to round to the original BF16 value.
+        preserved = jax.device_get([jnp.all(original == value) for original, value in
+                                    zip(source_arguments, arguments, strict=True)])
+        promoted["promotion_channels"] = {
+            name: {"source_dtype": str(original.dtype), "target_dtype": str(value.dtype),
+                   "values_preserved_exactly": bool(same)}
+            for name, original, value, same in zip((*INPUT_NAMES, "cotangent"),
+                source_arguments, arguments, preserved, strict=True)}
+        promoted["promotion_preserves_values_exactly"] = all(bool(same) for same in preserved)
+        runner.save()
+        if not promoted["promotion_preserves_values_exactly"]:
+            raise FloatingPointError("FP32 promotion changed production input or cotangent values")
+        runner.active(variant="reference", effective_batch=operands[0].shape[0])
+        executable, promoted_reference = runner.compile("batch_split_promoted_fp32_full",
+            partial(value_and_vjp, forward), arguments, promoted["compilations"])
+        del executable
+        _batch_split_accuracy(runner, promoted, forward, arguments[:-1], arguments[-1], promoted_reference,
+            prefix="batch_split_promoted_fp32", rms_limit=1e-5, max_limit=1e-5)
+        del promoted_reference, arguments
+        promoted["status"] = "complete"
+        check.update(status="complete", passed=True)
+    except Exception as error:
+        check.update(status="failed", error=f"{type(error).__name__}: {error}")
+        if promoted is not None:
+            promoted.update(status="failed", error=check["error"])
+        raise
+    finally:
         runner.context.pop("effective_batch", None)
         runner.save()
 
@@ -553,7 +596,7 @@ def main():
     parser.add_argument("--reference-min-ctas", type=int, choices=(0, 1, 2), default=0,
                         help="Exact parity reference occupancy hint; zero disables the hint")
     parser.add_argument("--reference-batch-size", type=int, default=0,
-                        help="Optional batch-split exact-reference check before variant timing; zero disables")
+                        help="Check production-dtype and same-quantized FP32 batch-split parity before timing; zero disables")
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--iterations", type=int, default=20)
     parser.add_argument("--rounds", type=int, default=2)

@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import jax.numpy as jnp
 import numpy as np
+import pytest
 
 from scaffolds.transformer.benchmarks import benchmark_poly_gdn_tuning as benchmark
 from scaffolds.transformer.benchmarks.upstream_inputs import kernel_inputs, polynomial_coefficients
@@ -116,28 +117,116 @@ def test_cli_deduplicates_occupancy_sweep_and_keeps_reference_zero(monkeypatch, 
     assert captured["reference_min_ctas"] == 0
 
 
-def test_split_reference_preserves_batch_slices_and_all_six_vjps(tmp_path):
-    args = SimpleNamespace(output=tmp_path / "split.json", reference_batch_size=2)
+def test_split_reference_preserves_batch_slices_and_all_six_vjps(tmp_path, monkeypatch):
+    args = SimpleNamespace(output=tmp_path / "split.json", reference_batch_size=2,
+                           exact_relative_rms=.003, exact_relative_max=.01)
     runner = benchmark.Runner(args, {})
-    operands = tuple(jnp.arange(15, dtype=jnp.float32).reshape(5, 3) / 100 + index + 1
-                     for index in range(6))
-    cotangent = jnp.arange(15, dtype=jnp.float32).reshape(5, 3) / 10 + .5
+    operands = tuple((jnp.arange(15, dtype=jnp.float32).reshape(5, 3) / 100 + index + 1).astype(
+                     jnp.float32 if index == 3 else jnp.bfloat16) for index in range(6))
+    cotangent = (jnp.arange(15, dtype=jnp.float32).reshape(5, 3) / 10 + .5).astype(jnp.bfloat16)
 
     def forward(*values):
-        return sum((index + 1) * value ** 2 for index, value in enumerate(values))
+        return sum((index + 1) * value.astype(jnp.float32) ** 2
+                   for index, value in enumerate(values)).astype(values[0].dtype)
 
+    observed = {}
+    original_compile = runner.compile
+
+    def capture(name, function, arguments, destination):
+        observed[name] = tuple(np.asarray(value) for value in arguments)
+        return original_compile(name, function, arguments, destination)
+
+    monkeypatch.setattr(runner, "compile", capture)
     reference = benchmark.value_and_vjp(forward, *operands, cotangent)
     entry = {}
     benchmark.check_batch_split_reference(runner, entry, forward, operands, cotangent, reference)
     checks = entry["batch_split_reference"]
-    assert checks["status"] == "complete" and checks["chunk_sizes"] == [2, 2, 1]
-    assert set(checks["accuracy"]["channels"]) == {"output", "q", "k", "v", "g", "beta", "erase"}
-    assert all(value["relative_max"] <= 1e-5 for value in checks["accuracy"]["channels"].values())
+    assert checks["status"] == "complete" and checks["passed"]
+    assert checks["policy"] == "production_dtype_and_promoted_fp32"
+    assert checks["accuracy"]["limits"] == {"relative_rms": .003, "relative_max": .01}
+    promoted = checks["promoted_fp32"]
+    assert promoted["status"] == "complete" and promoted["promotion_preserves_values_exactly"]
+    assert promoted["accuracy"]["limits"] == {"relative_rms": 1e-5, "relative_max": 1e-5}
+    assert set(promoted["promotion_channels"]) == {*benchmark.INPUT_NAMES, "cotangent"}
+    for scope in (checks, promoted):
+        assert scope["chunk_sizes"] == [2, 2, 1]
+        assert set(scope["accuracy"]["channels"]) == {"output", *benchmark.INPUT_NAMES}
+        assert all(value["relative_max"] <= 1e-5 for value in scope["accuracy"]["channels"].values())
+    for index, name in enumerate((*benchmark.INPUT_NAMES, "cotangent")):
+        original = (*operands, cotangent)[index]
+        channel = promoted["promotion_channels"][name]
+        assert channel == {"source_dtype": str(original.dtype), "target_dtype": "float32",
+                           "values_preserved_exactly": True}
+        promoted_input = observed["batch_split_promoted_fp32_full"][index]
+        np.testing.assert_array_equal(promoted_input, np.asarray(original, dtype=np.float32))
+        np.testing.assert_array_equal(observed["batch_split_promoted_fp32_b2"][index], promoted_input[:2])
+        np.testing.assert_array_equal(observed["batch_split_promoted_fp32_b1"][index], promoted_input[4:])
     assert "effective_batch" not in runner.context
 
-    # A corruption confined to the final chunk must fail, even if all other
-    # chunks and all gradients are correct.
-    damaged = (reference[0].at[-1, -1].add(1), reference[1])
-    import pytest
+    # A corruption confined to the final chunk must fail even under the
+    # production-dtype limits, before the additional FP32 check is attempted.
+    damaged = (reference[0].at[-1, -1].add(100), reference[1])
+    failed = {}
     with pytest.raises(FloatingPointError, match="batch-split reference"):
-        benchmark.check_batch_split_reference(runner, {}, forward, operands, cotangent, damaged)
+        benchmark.check_batch_split_reference(runner, failed, forward, operands, cotangent, damaged)
+    assert failed["batch_split_reference"]["status"] == "failed"
+    assert not failed["batch_split_reference"]["passed"]
+    assert "promoted_fp32" not in failed["batch_split_reference"]
+
+
+@pytest.mark.parametrize("channel", ("output", *benchmark.INPUT_NAMES))
+def test_promoted_fp32_failure_in_any_channel_blocks_candidate_timing(tmp_path, monkeypatch, channel):
+    args = SimpleNamespace(output=tmp_path / "rejected.json", length=2, heads=1, degree=3, seed=46,
+        value_dim=3, reference_warps=2, reference_min_ctas=0, reference_batch_size=2,
+        precisions=["tf32x3"], warps=[2], min_ctas=[0], exact_relative_rms=.003, exact_relative_max=.01)
+
+    def forward(q, k, v, g, beta, erase, **options):
+        multiplier = jnp.sum(q.astype(jnp.float32) * k, axis=-1) + g + jnp.sum(beta, axis=-1) + erase
+        return (v * multiplier[..., None]).astype(v.dtype)
+
+    entry = {"variants": {}}
+    runner = benchmark.Runner(args, {"shapes": {"test": entry}})
+    original_compile = runner.compile
+    calls = []
+
+    def corrupt_full_fp32(name, function, arguments, destination):
+        calls.append(name)
+        executable, result = original_compile(name, function, arguments, destination)
+        if name == "batch_split_promoted_fp32_full":
+            values = [result[0], *result[1]]
+            index = ("output", *benchmark.INPUT_NAMES).index(channel)
+            value = values[index]
+            # A small error at the batch boundary passes the BF16 limits but
+            # must fail the mandatory strict FP32 gate, for every VJP channel.
+            values[index] = value.at[-1].add(jnp.max(jnp.abs(value)) * .001)
+            result = values[0], tuple(values[1:])
+        return executable, result
+
+    def forbidden_timing(*args, **kwargs):
+        pytest.fail("A rejected split-reference check reached candidate timing")
+
+    monkeypatch.setattr(runner, "compile", corrupt_full_fp32)
+    monkeypatch.setattr(runner, "measure", forbidden_timing)
+    with pytest.raises(FloatingPointError, match="batch_split_promoted_fp32"):
+        benchmark.benchmark_shape(runner, entry, 3, 2, SimpleNamespace(polynomial_gated_delta_rule=forward))
+    check = entry["batch_split_reference"]
+    assert check["accuracy"]["passed"] and check["accuracy"]["all_finite"]
+    assert check["status"] == "failed" and not check["passed"]
+    promoted = check["promoted_fp32"]
+    assert promoted["promotion_preserves_values_exactly"]
+    assert promoted["status"] == "failed" and not promoted["accuracy"]["passed"]
+    assert promoted["accuracy"]["all_finite"]
+    assert not promoted["accuracy"]["channels"][channel]["passed"]
+    assert set(promoted["accuracy"]["channels"]) == {"output", *benchmark.INPUT_NAMES}
+    assert entry["variants"] == {} and calls.count("forward_backward") == 1
+    assert "effective_batch" not in runner.context
+    saved = json.loads(args.output.read_text())["shapes"]["test"]["batch_split_reference"]
+    assert saved["status"] == "failed" and saved["promoted_fp32"]["status"] == "failed"
+
+
+def test_disabled_batch_split_check_does_no_extra_work(tmp_path, monkeypatch):
+    runner = benchmark.Runner(SimpleNamespace(output=tmp_path / "unused.json", reference_batch_size=0), {})
+    monkeypatch.setattr(runner, "compile", lambda *args: pytest.fail("Disabled check compiled a call"))
+    entry = {}
+    benchmark.check_batch_split_reference(runner, entry, None, None, None, None)
+    assert entry == {} and not runner.args.output.exists()
