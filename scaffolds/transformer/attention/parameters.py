@@ -29,7 +29,8 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
     """Ask the configured mechanism, then the score option, which trainable arrays they need."""
     if getattr(config, "attention_coefficients", "fixed") == "learned":
         parameterization = getattr(config, "attention_coefficient_parameterization", "direct")
-        if getattr(config, "attention_coefficient_conditioning", "static") == "query":
+        conditioning = getattr(config, "attention_coefficient_conditioning", "static")
+        if conditioning in ("query", "query_key"):
             from scaffolds.transformer.attention.input_dependent import parameter_specs
 
             specs = parameter_specs(
@@ -37,7 +38,8 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                 activation=config.attention_coefficient_activation,
                 amplitude_initial=getattr(config, "attention_coefficient_amplitude_initial", 1.0),
                 projection_initial_std=getattr(config, "attention_coefficient_projection_initial_std", 0.0),
-                tanh_bias=getattr(config, "attention_coefficient_tanh_bias", False))
+                tanh_bias=getattr(config, "attention_coefficient_tanh_bias", False),
+                conditioning=conditioning)
         elif parameterization == "sum_of_squares":
             from scaffolds.transformer.attention.nonnegative_polynomial import parameter_specs
 
