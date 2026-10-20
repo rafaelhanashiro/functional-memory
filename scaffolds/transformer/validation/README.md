@@ -1001,24 +1001,27 @@ tensor memory, warp-specialized). `common.py` holds each family's elementwise ma
 both families share one set of pipelines. `api.py` exposes `taylor_attention` (normalized
 fixed Taylor, matching `fused_taylor`) and `query_polynomial_attention` (unnormalized, FP32
 coefficients per query and head, matching `fused_query_polynomial`); unnormalized polynomials
-with static fixed or learned coefficients (degree 1-4, matching `fused_unnormalized` and
+with static fixed or learned coefficients (degree 1-8, matching `fused_unnormalized` and
 `fused_learned_polynomial`) run on the query kernel with every query's coefficients equal,
 broadcasting their coefficient gradients back. Scores, polynomials, row
 sums, and accumulators are FP32, with the Triton kernels' failure rules: NaN rows for a
 nonfinite, nonpositive (even Taylor degree), or zero (odd degree) row sum, a nonfinite score
 or weight (query), or an overflowing output. They accept BF16 inputs, Q/K width 8, 16, 32,
-64, or 128, value width 64, degree >= 1 (query: 1-4), and time a multiple of 128 (H100) or
+64, or 128, value width 64, degree >= 1 (query and static: 1-8), and time a multiple of 128 (H100) or
 256 (B300), and raise `ValueError` otherwise. Tensor cores contract in steps of one
 shared-memory swizzle row, so Q/K tiles use 32-, 64-, and 128-byte swizzles at widths 16,
-32, and 64 or more; width 8 is zero-padded to the 16-element minimum.
+32, and 64 or more; width 8 is zero-padded to the 16-element minimum. On B300 the dK/dV kernel keeps every
+query's coefficients in shared memory and runs a three-stage Q/dO ring unless that exceeds
+the 227 KB per block (degree 8 at d_K = 128 and 2,048 tokens), then two; dQ stages its output
+in each warpgroup's Q buffer.
 
 Weights and score gradients enter the tensor cores at a weight precision chosen per setup
 (`api.default_precision`, recorded as `attention_weight_precision` in run metadata):
 
 | Setup | Weight precision |
 | --- | --- |
-| Tanh query-conditioned, m 1-4 | BF16: one rounding, as FlashAttention and cuDNN |
-| Unnormalized static coefficients, m 1-4 | BF16 |
+| Tanh query-conditioned, m 1-8 | BF16: one rounding, as FlashAttention and cuDNN |
+| Unnormalized static coefficients, m 1-8 | BF16 |
 | Normalized Taylor, even m | BF16 |
 | Normalized Taylor, odd m | FP32: three BF16 components whose sum is the FP32 value |
 
@@ -1026,15 +1029,16 @@ With BF16 weights the Taylor backward also reads the BF16 output, as FlashAttent
 Odd-degree normalized Taylor divides signed weights by a row sum that can cancel, which
 amplifies their rounding; it keeps FP32-precision weights (the accuracy table below).
 
-`tests/test_mosaic_taylor.py` (78 cases), `tests/test_mosaic_query.py` (55), and
+`tests/test_mosaic_taylor.py` (78 cases), `tests/test_mosaic_query.py` (69), and
 `tests/test_mosaic_repeatability.py` (6) cover both weight precisions and pass on one H100
 (`dogo`, CUDA 12.9.1) and one B300 (`akita`, CUDA 13.2): every degree and width against
 independent NumPy FP64 outputs and VJPs (coefficient gradients per order) and against the
 Triton kernels, the production context, causality, nonfinite handling, rejected inputs, the
 model's dispatch, and bitwise-identical results across 20 repeats at production size.
-`tests/test_mosaic_unnormalized.py` (28) checks fixed Taylor and shared or per-head learned
+`tests/test_mosaic_unnormalized.py` (36) checks fixed Taylor and shared or per-head learned
 static coefficients against FP64 and the Triton kernels, including the summed coefficient
-gradients; the BF16 cases of all four files (106) pass on H100 and B300. Acceptance passes a
+gradients; all cases pass on H100 and B300, including degree 8 at the production context with
+d_K = 128. Acceptance passes a
 run's weight precision (`--mosaic-precision`), so its GPU tests skip the other precision's
 cases.
 
@@ -1056,7 +1060,10 @@ worse of H100 and B300 (Mosaic's agree to the digits shown).
 | Taylor, odd m | BF16 | 2.5e-3 | 2.9e-3 | 3.7e-3 | 8.1e-3 |
 | | FP32 | 1.6e-3 | 1.8e-3 | 2.0e-3 | 2.9e-3 |
 
-Query coefficient gradients are within 2.3e-7 at either precision.
+Query coefficient gradients are within 2.3e-7 at either precision. At degree 8 on B300
+(`precision_mosaic_degree8.py`; `runs/mosaic-precision/degree8-*.txt`), BF16 query errors are
+2.3-2.5e-3 with positive or signed coefficients, as at degree 3, and coefficient gradients
+are within 6e-7.
 
 ### Speed
 
@@ -1067,12 +1074,16 @@ time:
 | | H100, BF16 | H100, FP32 | B300, BF16 | B300, FP32 |
 | --- | ---: | ---: | ---: | ---: |
 | Taylor, d_K 8-64, m 1-4 | 1.9-2.2x | 1.4-1.6x | 3.1-4.7x | 2.3-3.6x |
-| Taylor, d_K 8-64, m = 16 | 3.3-3.5x | 2.6-2.7x | 9.0-12.5x | 7.2-10.1x |
-| Taylor, d_K 128, m 1-16 | 4.2-4.6x | 3.2-3.7x | 4.9-5.7x | 3.9-4.4x |
-| Query, d_K 64, m 1-3 | 2.0-2.1x | 1.3-1.5x | 4.2-4.3x | 3.0-3.1x |
+| Taylor, d_K 8-64, m = 16 | 3.3-3.4x | 2.5-2.7x | 9.1-12.4x | 7.2-10.1x |
+| Taylor, d_K 128, m 1-16 | 4.3-4.6x | 3.2-3.7x | 4.9-5.8x | 3.9-4.4x |
+| Query, d_K 64, m 1-4 | 2.0x | 1.2-1.4x | 4.2-4.4x | 3.0-3.2x |
+| Query, d_K 64, m = 8 | 2.4x | 0.9x | 4.1x | 3.2x |
+| Static, d_K 64, m = 3 and 8 | 2.0-2.1x | | 4.0-4.5x | |
 
-At d_K = 64, query m = 3 takes 1.48 ms with BF16 weights on H100 (Triton 2.91 ms, cuDNN
-softmax 1.45 ms) and 1.38 ms on B300 (Triton 5.76 ms, cuDNN softmax 0.77 ms).
+At d_K = 64, query m = 3 takes 1.47 ms with BF16 weights on H100 (Triton 2.91 ms, cuDNN
+softmax 1.45 ms) and 1.33 ms on B300 (Triton 5.74 ms, cuDNN softmax 0.77 ms); query m = 8
+takes 2.44 ms (Triton 5.85 ms) and 2.63 ms (Triton 10.65 ms). FP32-precision weights at m = 8
+spill registers on H100 (no setup uses them there).
 
 One training microbatch (16 x 2048, `benchmark_mosaic_step.sbatch`; `runs/mosaic-step/`, one
 directory per job), median of 30 updates, two rounds within 1%, each job's fused and Mosaic
@@ -1083,6 +1094,10 @@ runs on the same GPU:
 | Query m = 3, d_K = 64 | H100 SXM | 120.7 ms | 103.0 ms | 115.0 ms (120.8 ms) |
 | | B300 | 108.5 ms | 59.5 ms | 67.4 ms (108.8 ms) |
 | Static m = 3, d_K = 64 | H100 SXM | 118.9 ms | 99.5 ms | |
+| Static m = 8, d_K = 64 | H100 SXM | 141.3 ms | 110.5 ms | |
+| | B300 | 156.4 ms | 68.7 ms | |
+| Query m = 8, d_K = 64 | H100 SXM | 159.8 ms | 120.4 ms | |
+| | B300 | 167.0 ms | 76.6 ms | |
 | | B300 | 108.6 ms | 58.8 ms | |
 | Taylor m = 2, d_K = 32 | H100 SXM | 108.0 ms | 88.9 ms | 96.1 ms (107.9 ms) |
 | | B300 | 77.1 ms | 49.3 ms | 55.0 ms (77.2 ms) |
@@ -1100,7 +1115,10 @@ with identical results, except one query dQ (BF16) process that hung within its 
 calls, for no cause found; twenty further 50,000-call processes of query and Taylor dQ (job
 220120) and a 100,000-call rerun finished, as did every training pilot below. On B300 (job
 220124) the forward, dQ, dK, and dV kernels of both families at both precisions each finished
-100,000 calls with identical results. Kernels synchronize each ring slot only after both compute
+100,000 calls with identical results. At degree 8 (`STRESS_DEGREE=8`) every B300 kernel (job
+223204) and every H100 kernel with BF16 weights and every query kernel with FP32 weights (job
+223203) finished 100,000 calls; H100 Taylor dQ and dK/dV with FP32 weights at degree 8 take
+15-30 ms per call (register spills) and finished 2,000 calls each (job 223271). Kernels synchronize each ring slot only after both compute
 warpgroups have released it; tiles past a warpgroup's causal diagonal are neither consumed
 nor freed by it.
 
@@ -1110,8 +1128,9 @@ nor freed by it.
 every 100 updates) with a chosen backend, from the same initialization and data; summaries are
 in `runs/mosaic-pilot/`. Recipes: tanh query-conditioned m = 3, d_K = 64, head RMSNorm
 (`r0bc57959ef6c`), unnormalized static per-head learned coefficients m = 3, d_K = 64, head
-RMSNorm (`r5ae483d40d62`), and normalized Taylor m = 2, d_K = 32 (`raf32fab4ba52`), all with
-400 warmup updates. XLA's GPU reductions are not deterministic, so two fused runs already
+RMSNorm (`r5ae483d40d62`), normalized Taylor m = 2, d_K = 32 (`raf32fab4ba52`), and the
+degree-8 static and tanh query recipes (`raa043e978a3d`, `rccf19c31669d`), all with 400 warmup
+updates. XLA's GPU reductions are not deterministic, so two fused runs already
 diverge; a repeated fused query run measures that spread. H100 runs used SXM and PCIe cards.
 
 Validation NLL:
@@ -1130,6 +1149,12 @@ Validation NLL:
 |  | Mosaic, BF16 weights | 5.7029 | 4.7121 | 4.1590 | 3.8328 | 3.6197 |
 | Static m = 3, B300 | fused | 5.6981 | 4.7252 | 4.1660 | 3.8374 | 3.6183 |
 |  | Mosaic, BF16 weights | 5.7124 | 4.7339 | 4.1733 | 3.8482 | 3.6330 |
+| Static m = 8, H100 | fused | 5.5341 | 4.5186 | 3.8805 | 3.6233 | 3.4569 |
+|  | fused, repeat | 5.5369 | 4.5281 | 3.8924 | 3.6054 | 3.5116 |
+|  | Mosaic, BF16 weights | 5.5441 | 4.5436 | 3.8896 | 3.6656 | 3.5029 |
+| Query m = 8, B300 | fused | 5.5295 | 4.5161 | 3.9700 | 3.6891 | 3.5152 |
+|  | fused, repeat | 5.5524 | 4.5313 | 3.9256 | 3.6979 | 3.5782 |
+|  | Mosaic, BF16 weights | 5.5353 | 4.5061 | 3.9204 | 3.6512 | 3.5057 |
 | Taylor m = 2, H100 | fused | 5.4085 | 4.7960 | 4.4177 | 4.1762 | 4.0295 |
 | | Mosaic, FP32 weights | 5.4168 | 4.7962 | 4.4217 | 4.1681 | 4.0133 |
 | | Mosaic, BF16 weights | 5.4061 | 4.8322 | 4.4402 | 4.1965 | 4.0154 |
@@ -1140,7 +1165,8 @@ Validation NLL:
 From step 200 on, the two fused query runs differ by up to 0.029; every Mosaic run stays
 within 0.038 of the fused run and ends between -0.016 and +0.015 at step 1,000. Differences
 change sign except for static m = 3 on B300 (+0.001 to +0.015), within the spread of two fused
-runs, which also keep one sign. Mosaic tracks the fused kernels within run-to-run variation at both
+runs, which also keep one sign. Degree 8 trains less reproducibly: two fused runs end 0.055
+(static, H100) and 0.063 (query, B300) apart, and Mosaic stays within 0.050 of the first. Mosaic tracks the fused kernels within run-to-run variation at both
 precisions, on one GPU and two.
 
 From a committed worktree on Kennel (pilot arguments: commit, GPU type, study run, backend,
