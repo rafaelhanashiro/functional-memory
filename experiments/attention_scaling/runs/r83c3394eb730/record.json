@@ -1,66 +1,5 @@
 {
-  "acceptance": {
-    "sha256": "a8bdd79a4422d0fd7430b4a26ad36835b5c6b51a9216dd470b89769729c689f3",
-    "summary": {
-      "checks": [
-        "cpu-tests",
-        "cpu-distributed-tests",
-        "gpu-tests",
-        "initialization",
-        "pilot",
-        "resume"
-      ],
-      "completed_utc": "2026-10-14T07:33:05.701642+00:00",
-      "hardware": {
-        "attention_backend": "fused",
-        "device_kinds": [
-          "NVIDIA A100 80GB PCIe",
-          "NVIDIA A100 80GB PCIe",
-          "NVIDIA A100 80GB PCIe",
-          "NVIDIA A100 80GB PCIe",
-          "NVIDIA A100 80GB PCIe",
-          "NVIDIA A100 80GB PCIe",
-          "NVIDIA A100 80GB PCIe",
-          "NVIDIA A100 80GB PCIe"
-        ],
-        "devices": [
-          "cuda:0",
-          "cuda:1",
-          "cuda:2",
-          "cuda:3",
-          "cuda:4",
-          "cuda:5",
-          "cuda:6",
-          "cuda:7"
-        ],
-        "versions": {
-          "flax": "0.12.7",
-          "jax": "0.10.0",
-          "optax": "0.2.8",
-          "orbax-checkpoint": "0.11.40"
-        }
-      },
-      "identity": "adbbb51223ad5cab2962c88f6080698a3954d697a5bbd43327456b10daf78ca4",
-      "qualification": {
-        "allocation": "JobId=218895 JobName=cubic-qualification UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20083 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:09:33 TimeLimit=01:00:00 TimeMin=N/A SubmitTime=2026-10-14T03:23:09 EligibleTime=2026-10-14T03:23:09 AccrueTime=2026-10-14T03:23:09 StartTime=2026-10-14T03:23:33 EndTime=2026-10-14T04:23:33 Deadline=N/A PreemptEligibleTime=2026-10-14T03:23:33 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-14T03:23:33 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:1412848 ReqNodeList=samoyed ExcNodeList=akita,collie,dogo,doodle,mastiff,terrier NodeList=samoyed BatchHost=samoyed NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=8 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=8 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/validation/qualify_gdn_runtime.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/validation/logs/gdn-cubic-runtime-218895.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/scaffolds/transformer/validation/logs/gdn-cubic-runtime-218895.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:a100:8 TresPerTask=cpu:32",
-        "launcher": {
-          "path": "scaffolds/transformer/validation/qualify_gdn_runtime.sbatch",
-          "sha256": "9387e74be3aa20250676775aa161287a132b13637dbba07c0add1aec016360ed"
-        },
-        "slurm_job_id": "218895"
-      },
-      "runtime_budget": {
-        "maximum_projected_hours": 70.0,
-        "production_allocation_hours": 72.0,
-        "projected_hours": 48.61237609261233,
-        "within_budget": true
-      },
-      "slurm_job_id": "218895",
-      "slurm_restart_count": "0",
-      "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
-      "status": "passed"
-    }
-  },
+  "acceptance": null,
   "artifacts": [
     {
       "path": "experiments/attention_scaling/runs/r83c3394eb730/best_validation.json",
@@ -457,46 +396,61 @@
   },
   "name": "200m-dk064-gdn-cubic-geometry-warmup400-seed0",
   "numerical_failure_path": null,
-  "pause": {
-    "checkpoint_file_count": 16,
-    "checkpoint_metadata_committed": true,
-    "checkpoint_size_bytes": 2328811925,
-    "last_logged_step": 7260,
-    "paused_utc": "2026-10-15T01:46:53+00:00",
-    "reason": "user_requested",
-    "resume_checkpoint_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/checkpoints/7000",
-    "resume_checkpoint_step": 7000,
-    "slurm_job_id": "218896",
-    "slurm_reason": "job_requeued_in_held_state",
-    "slurm_state": "PENDING"
-  },
+  "pause": null,
   "record_schema_version": 1,
   "run_id": "r83c3394eb730",
   "seed": 0,
   "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
-  "status": "paused",
+  "status": "queued",
   "step": 7000,
   "submission": {
     "acceptance_before_training": true,
-    "dependency": "afterok:218895",
-    "gpu_count": 8,
-    "gpu_types": [
-      "A100"
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--nice=0",
+      "--partition=long",
+      "--nodelist=akita",
+      "--gres=gpu:b300:4",
+      "--exclude=collie,dogo,mastiff,doodle,samoyed,terrier",
+      "--time=3-00:00:00",
+      "--cpus-per-task=32",
+      "--mem=256G",
+      "--export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,TRANSFORMER_HOST_STAGING=0,POLY_GDN_VALUE_PRECISION=bf16_values,POLY_GDN_NUM_WARPS=2,POLY_GDN_MIN_CTAS_PER_SM=1,TRANSFORMER_RESUME_SOURCE_COMMIT=6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
+      "--job-name=r83c3394eb730",
+      "--output=experiments/attention_scaling/runs/r83c3394eb730/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.attention_scaling.acceptance",
+      "experiments/attention_scaling/runs/r83c3394eb730/config.yaml",
+      "9cfcf530d1eeb3f339cd70db8708b27a37b072ca",
+      "4",
+      "B300"
     ],
+    "dependency": null,
+    "gpu_count": 4,
+    "gpu_types": [
+      "B300"
+    ],
+    "launch_commit": "9cfcf530d1eeb3f339cd70db8708b27a37b072ca",
     "nice": 0,
-    "node": "samoyed",
+    "node": "akita",
     "partition": "long",
-    "qualification_job_id": "218895",
+    "qualification_job_id": null,
     "runtime_environment": {
-      "NCCL_P2P_DISABLE": "1",
-      "TRANSFORMER_HOST_STAGING": "1",
+      "NCCL_P2P_DISABLE": null,
+      "POLY_GDN_MIN_CTAS_PER_SM": "1",
+      "POLY_GDN_NUM_WARPS": "2",
+      "POLY_GDN_VALUE_PRECISION": "bf16_values",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "TRANSFORMER_HOST_STAGING": "0",
+      "TRANSFORMER_RESUME_SOURCE_COMMIT": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
       "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
     },
-    "slurm_job_id": "218896",
+    "slurm_job_id": "223168",
     "time_limit_hours": 72
   },
   "training_tokens": 3670016000,
-  "updated_utc": "2026-10-15T01:52:04.147168+00:00",
+  "updated_utc": "2026-10-20T05:58:07.176329+00:00",
   "wandb_run": {
     "path": "experiments/attention_scaling/runs/r83c3394eb730/wandb_run.json",
     "sha256": "57c861a099bf4b9c30d4cef9c49e4ec20ea0edd4712293ea5b080c44d4f6b485",

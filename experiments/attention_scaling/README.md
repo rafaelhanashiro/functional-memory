@@ -359,8 +359,9 @@ Methods and explicit comparisons remain in
 [the exploratory topic](../../results/exploratory/gdn_polynomial/README.md).
 
 Home cluster: Kennel. Develop and execute in `worktrees/gdn-cubic`, with its own
-locked CUDA 13 environment. The run resumes checkpoint 7,000 using four B300 GPUs
-on `long`, at nice 0. Its immutable recipe, run ID, and W&B identity are retained.
+locked CUDA 13 environment. Job `223168` is queued to resume checkpoint 7,000
+using four B300 GPUs on `long`, at nice 0. Its immutable recipe, run ID, and W&B
+identity are retained.
 Global microbatch 64 and effective batch 256 are unchanged; local microbatch is 16.
 The optimized runtime uses `bf16_values`, two warps, and one-CTA register-allocation
 guidance. Transport geometry and accumulation remain FP32. These settings are
@@ -379,7 +380,7 @@ From the experiment worktree, after committing the frozen inputs:
 ```bash
 UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
   uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
-LAUNCH_COMMIT=$(git rev-parse HEAD)
+LAUNCH_COMMIT=9cfcf530d1eeb3f339cd70db8708b27a37b072ca
 env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable \
   --nice=0 --partition=long --nodelist=akita --gres=gpu:b300:4 \
   --exclude=collie,dogo,mastiff,doodle,samoyed,terrier \

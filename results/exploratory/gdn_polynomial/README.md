@@ -94,7 +94,7 @@ documents the arithmetic checks. The monitoring mirror is
 | Role | Run ID | Memory function | Status |
 | --- | --- | --- | --- |
 | Primary | `rd40af7956426` | Constant, linear, and quadratic | Running; update 10,000 recorded |
-| Cubic | `r83c3394eb730` | Constant through cubic | Preparing optimized B300 resumption from update 7,000 |
+| Cubic | `r83c3394eb730` | Constant through cubic | Queued as job 223168; optimized B300 resumption from update 7,000 |
 | Control | `rf7341031e3d5` | Linear, independent erase gate | Complete |
 
 The explicitly selected control uses the repaired arithmetic, canonical GDN
@@ -201,7 +201,7 @@ passed correctness, pilot validation, and exact checkpoint resumption. The pilot
 projects 48.61 hours within the requested 72-hour production allocation.
 This qualifies startup; long-run stability and performance remain open.
 
-Cubic is being prepared for resumption on four B300 GPUs with the optimized
+Cubic is queued as job `223168` for resumption on four B300 GPUs with the optimized
 `bf16_values` runtime, two warps, and one-CTA register-allocation guidance.
 The latest durable checkpoint is update 7,000, with validation perplexity
 15.637199 and valid attention diagnostics. It remains an incomplete run with no
