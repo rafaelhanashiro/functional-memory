@@ -377,6 +377,77 @@ def test_acceptance_uses_the_launch_commit_even_after_analysis_commits(tmp_path,
     assert preflight.identity(spec, tmp_path / "config.yaml", 4, "B300")["source_commit"] == "b" * 40
 
 
+@pytest.mark.parametrize("environment,cli,expected", [
+    (None, (), 48), ("96", (), 96), (None, ("--allocation-hours", "72"), 72),
+    ("96", ("--allocation-hours", "72"), 72),
+    ("invalid", ("--allocation-hours", "72"), 72),
+])
+def test_allocation_budget_cli_overrides_environment_and_reaches_identity(
+        tmp_path, monkeypatch, environment, cli, expected):
+    if environment is None:
+        monkeypatch.delenv("TRANSFORMER_ACCEPTANCE_ALLOCATION_HOURS", raising=False)
+    else:
+        monkeypatch.setenv("TRANSFORMER_ACCEPTANCE_ALLOCATION_HOURS", environment)
+    monkeypatch.setenv("SLURM_JOB_ID", "test")
+    observed = []
+    monkeypatch.setattr(preflight, "identity", lambda spec, *args:
+                        observed.append(("identity", spec.allocation_hours)) or {})
+    monkeypatch.setattr(preflight, "_run", lambda spec, *args:
+                        observed.append(("run", spec.allocation_hours)))
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    preflight.main(spec, [str(tmp_path / "config.yaml"), "--directory", str(tmp_path), *cli])
+    assert observed == [("identity", expected), ("run", expected)]
+    assert spec.allocation_hours == 48
+
+
+@pytest.mark.parametrize("value", ("0", "2", "-1", "bad", "1.5"))
+@pytest.mark.parametrize("via_environment", (False, True))
+def test_allocation_budget_rejects_invalid_hours(monkeypatch, value, via_environment):
+    monkeypatch.delenv("TRANSFORMER_ACCEPTANCE_ALLOCATION_HOURS", raising=False)
+    args = ["--runtime-env"]
+    if via_environment:
+        monkeypatch.setenv("TRANSFORMER_ACCEPTANCE_ALLOCATION_HOURS", value)
+    else:
+        args += ["--allocation-hours", value]
+    with pytest.raises(SystemExit) as error:
+        preflight.main(preflight.AcceptanceSpec(entry_module="unused", cpu_tests=()), args)
+    assert error.value.code == 2
+
+
+def test_allocation_budget_change_invalidates_passed_acceptance_without_changing_recipe(tmp_path, monkeypatch):
+    from dataclasses import replace
+    from scaffolds.transformer.configs import Config
+
+    config = Config()
+    config.train.source_commit = "auto"
+    monkeypatch.setattr(preflight, "load_config", lambda path: config)
+    monkeypatch.setattr(preflight, "sha256", lambda path: "fixture-sha256")
+    monkeypatch.setenv("SHARED_TRANSFORMER_SOURCE_COMMIT", "a" * 40)
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    original = preflight.identity(spec, tmp_path / "config.yaml", 1, "B300")
+    preflight.record(tmp_path / "pilot.json", original)
+    changed = preflight.identity(replace(spec, allocation_hours=96), tmp_path / "config.yaml", 1, "B300")
+    assert original["allocation_hours"] == 48 and changed["allocation_hours"] == 96
+    assert changed["config"] == original["config"]
+    assert changed["runtime"] == original["runtime"]
+    assert not preflight.passed(tmp_path / "pilot.json", changed)
+
+
+def test_worker_receives_resolved_allocation_budget(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    observed = []
+    output = tmp_path / "hardware.json"
+    output.write_text("{}")
+    monkeypatch.setenv("TRANSFORMER_ACCEPTANCE_ALLOCATION_HOURS", "48")
+    monkeypatch.setattr(preflight.subprocess, "run", lambda command, **kwargs: observed.append(command))
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), allocation_hours=96)
+    args = SimpleNamespace(config=tmp_path / "config.yaml", directory=tmp_path, gpu_count=1, gpu_type="B300")
+    assert preflight._run_worker(spec, args, "hardware", output, stop=20) == {}
+    command, = observed
+    assert command[command.index("--allocation-hours") + 1] == "96"
+
+
 def test_workers_reinvoke_the_adapter_module_when_it_runs_as_main(monkeypatch):
     import sys
     from types import ModuleType, SimpleNamespace

@@ -642,6 +642,16 @@ provenance. BF16 production acceptance retains the strict accurate-backend
 oracle suite and additionally requires the selected-precision GPU cases, followed
 by the ordinary full-model pilot and fresh-process resume.
 
+Acceptance's timing projection uses a 48-hour allocation budget by default and
+reserves two hours for overhead. For another allocation length, pass
+`--allocation-hours HOURS` to the acceptance module or set
+`TRANSFORMER_ACCEPTANCE_ALLOCATION_HOURS` in the launch environment; the CLI takes
+precedence. Use an integer greater than two that matches the Slurm time request.
+The resolved budget is included in acceptance identity and forwarded to its
+worker processes. The projection still covers the full training horizon,
+including on checkpoint resumptions, so it is conservative for an unfinished run.
+This runtime setting does not change the scientific recipe or training schedule.
+
 ```bash
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest \
   -c scaffolds/transformer/pyproject.toml scaffolds/transformer/tests \

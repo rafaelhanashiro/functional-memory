@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 import hashlib
 import json
@@ -274,6 +274,7 @@ def identity(spec: AcceptanceSpec, config_path: Path, gpu_count: int, gpu_type: 
         "data_manifests": {split: {"path": path, "sha256": sha256(path)} for split, path in
                            (("train", config.data.train_manifest), ("eval", config.data.eval_manifest))},
         "gpu_count": gpu_count, "gpu_type": gpu_type.upper(),
+        "allocation_hours": spec.allocation_hours,
         "runtime": runtime_identity(),
     }
     return _sealed(payload)
@@ -483,7 +484,8 @@ def entry_module(spec: AcceptanceSpec) -> str:
 def _run_worker(spec, args, name, output, *, stop, cpu=False) -> dict:
     command = [sys.executable, "-m", entry_module(spec), str(args.config), "--directory", str(args.directory),
                "--gpu-count", str(args.gpu_count), "--gpu-type", args.gpu_type, "--worker", name,
-               "--output", str(output), "--stop-after-step", str(stop)]
+               "--output", str(output), "--stop-after-step", str(stop),
+               "--allocation-hours", str(spec.allocation_hours)]
     subprocess.run(command, cwd=ROOT, env=dict(os.environ, JAX_PLATFORMS="cpu" if cpu else "cuda"), check=True)
     return json.loads(Path(output).read_text())
 
@@ -646,6 +648,10 @@ def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
     parser.add_argument("--directory", type=Path)
     parser.add_argument("--gpu-count", type=int, default=4)
     parser.add_argument("--gpu-type", default="H100")
+    parser.add_argument("--allocation-hours", type=int,
+                        default=os.environ.get("TRANSFORMER_ACCEPTANCE_ALLOCATION_HOURS"),
+                        help="Allocation budget for the full-recipe timing projection, with two hours reserved; "
+                             "defaults to TRANSFORMER_ACCEPTANCE_ALLOCATION_HOURS or the adapter's budget (48h).")
     parser.add_argument("--worker", choices=("hardware", "initialization", "pilot"))
     parser.add_argument("--output", type=Path)
     parser.add_argument("--stop-after-step", type=int)
@@ -657,6 +663,10 @@ def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
         if args.config is None:
             parser.error("config is required to select attention acceptance checks and runtime settings")
         spec = spec(load_config(args.config))
+    if args.allocation_hours is not None:
+        spec = replace(spec, allocation_hours=args.allocation_hours)
+    if spec.allocation_hours <= 2:
+        parser.error("--allocation-hours must exceed the two-hour acceptance reserve")
     if args.stop_after_step is None:
         args.stop_after_step = spec.pilot_steps
     if args.runtime_env:
