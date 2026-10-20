@@ -24,13 +24,116 @@ def test_polynomial_gdn_cannot_omit_its_correctness_checks(cpu, backend, degree)
     spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
     paths = preflight.test_paths(spec, config, resolved_backend=backend, cpu=cpu)
     expected = ((preflight.POLYNOMIAL_GDN_TESTS, preflight.POLYNOMIAL_GDN_INTEGRATION_TESTS) if cpu
-                else (preflight.POLYNOMIAL_GDN_KERNEL_TESTS,) if backend == "fused" else ())
+                else (preflight.POLYNOMIAL_GDN_KERNEL_TESTS, preflight.POLYNOMIAL_GDN_PRECISION_TESTS,
+                      preflight.POLYNOMIAL_GDN_HISTORY_TESTS) if backend == "fused" else ())
+    if cpu and backend == "fused":
+        expected += (preflight.POLYNOMIAL_GDN_PRECISION_TESTS,)
     if degree == 3:
         expected += ((preflight.CUBIC_GDN_TESTS,) if cpu
                      else (preflight.CUBIC_GDN_KERNEL_TESTS,) if backend == "fused" else ())
     assert paths == expected
     config["model"]["gdn_polynomial_degree"] = 1
     assert preflight.test_paths(spec, config, resolved_backend=backend, cpu=cpu) == ()
+
+
+@pytest.mark.parametrize("degree", (2, 3))
+@pytest.mark.parametrize("precision", ("tf32x3", "bf16_read", "bf16_values"))
+def test_polynomial_acceptance_preserves_strict_and_production_precision_checks(
+        tmp_path, monkeypatch, degree, precision):
+    import json
+    from pathlib import Path
+    from types import SimpleNamespace
+    from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
+
+    monkeypatch.setenv("POLY_GDN_VALUE_PRECISION", precision)
+    monkeypatch.setenv("POLY_GDN_NUM_WARPS", "2")
+    monkeypatch.setenv("POLY_GDN_MIN_CTAS_PER_SM", "1")
+    config = Config(model=ModelConfig(attention_mechanism="gated_deltanet",
+                                      gdn_erase_mode="independent", gdn_polynomial_degree=degree))
+    config.train.dtype = "bfloat16"
+    experiment = {"identity": "test", "source_commit": "a" * 40, "config": config_to_dict(config)}
+    args = SimpleNamespace(directory=tmp_path, config=tmp_path / "recipe.yaml", gpu_count=1, gpu_type="B300")
+    calls = []
+
+    def worker(spec, args, name, output, **unused):
+        if name == "hardware":
+            return {"attention_backend": "fused", "device_kinds": ["NVIDIA B300 SXM6 AC"]}
+        raise RuntimeError("stop after testing")
+
+    def run(command, **options):
+        if options["env"]["JAX_PLATFORMS"] == "cuda":
+            calls.append((command, options["env"]))
+        junit = Path(next(value.split("=", 1)[1] for value in command if value.startswith("--junitxml=")))
+        junit.write_text('<testsuite><testcase name="case"/></testsuite>')
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(preflight, "_run_worker", worker)
+    monkeypatch.setattr(preflight.subprocess, "run", run)
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(),
+                                    select_tests=preflight.attention_test_paths)
+    with pytest.raises(RuntimeError, match="stop after testing"):
+        preflight._run(spec, args, experiment)
+    assert len(calls) == (1 if precision == "tf32x3" else 2)
+    strict_command, strict_env = calls[0]
+    assert strict_env["POLY_GDN_VALUE_PRECISION"] == "tf32x3"
+    assert "-k" not in strict_command
+    for command, env in calls:
+        assert preflight.POLYNOMIAL_GDN_KERNEL_TESTS in command
+        assert preflight.POLYNOMIAL_GDN_PRECISION_TESTS in command
+        assert preflight.POLYNOMIAL_GDN_HISTORY_TESTS in command
+        assert (preflight.CUBIC_GDN_KERNEL_TESTS in command) == (degree == 3)
+        assert not any(value.endswith("test_gated_deltanet_kernel.py") for value in command)
+        assert env["POLY_GDN_NUM_WARPS"] == "2"
+        assert env["POLY_GDN_MIN_CTAS_PER_SM"] == "1"
+    if precision != "tf32x3":
+        command, env = calls[1]
+        assert env["POLY_GDN_VALUE_PRECISION"] == precision
+        assert command[command.index("-k") + 1] == "bfloat16 or bf16 or history_helpers"
+        report = json.loads((tmp_path / "gpu-polynomial-runtime-tests.json").read_text())
+        assert report["test_runtime"]["POLY_GDN_VALUE_PRECISION"] == precision
+    # Only the strict test subprocess uses the override; production keeps the request.
+    assert preflight.os.environ["POLY_GDN_VALUE_PRECISION"] == precision
+    linear = config_to_dict(config)
+    linear["model"]["gdn_polynomial_degree"] = 1
+    assert any(path.endswith("test_gated_deltanet_kernel.py") for path in
+               preflight.attention_test_paths(linear, "fused", False))
+    assert preflight.qualification_stages(linear, "fused") == preflight.TEST_STAGES
+
+
+def test_failed_polynomial_runtime_qualification_blocks_pilot_and_reuse(tmp_path, monkeypatch):
+    import json
+    from pathlib import Path
+    from types import SimpleNamespace
+    from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
+
+    monkeypatch.setenv("POLY_GDN_VALUE_PRECISION", "bf16_values")
+    config = config_to_dict(Config(model=ModelConfig(
+        attention_mechanism="gated_deltanet", gdn_erase_mode="independent", gdn_polynomial_degree=3)))
+    experiment = {"identity": "test", "source_commit": "a" * 40, "config": config}
+    args = SimpleNamespace(directory=tmp_path, config=tmp_path / "recipe.yaml", gpu_count=1, gpu_type="B300")
+    hardware = {"attention_backend": "fused", "device_kinds": ["NVIDIA B300 SXM6 AC"]}
+    sealed = preflight.on_devices(experiment, hardware["device_kinds"])
+    # An otherwise complete acceptance is insufficient without the runtime stage.
+    for name in (*preflight.CHECKS, "success"):
+        preflight.record(tmp_path / f"{name}.json", sealed)
+    calls = []
+
+    def worker(spec, args, name, output, **unused):
+        assert name == "hardware", "Production must remain blocked by failed runtime tests"
+        return hardware
+
+    def run(command, **options):
+        calls.append(command)
+        junit = Path(next(value.split("=", 1)[1] for value in command if value.startswith("--junitxml=")))
+        assert junit.stem == "gpu-polynomial-runtime-tests"
+        return SimpleNamespace(returncode=1)
+
+    monkeypatch.setattr(preflight, "_run_worker", worker)
+    monkeypatch.setattr(preflight.subprocess, "run", run)
+    with pytest.raises(RuntimeError, match="gpu-polynomial-runtime-tests failed"):
+        preflight._run(preflight.AcceptanceSpec(entry_module="unused", cpu_tests=()), args, experiment)
+    assert len(calls) == 1
+    assert json.loads((tmp_path / "failure.json").read_text())["stage"] == "gpu-polynomial-runtime-tests"
 
 
 @pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares", "fixed", "fixed_square"))
@@ -235,6 +338,9 @@ def test_resume_audit_requires_identical_state_batch_and_rng():
     ("TRANSFORMER_HOST_STAGING", "1"), ("NCCL_P2P_DISABLE", "1"),
     ("XLA_PYTHON_CLIENT_MEM_FRACTION", ".90"), ("XLA_PYTHON_CLIENT_PREALLOCATE", "false"),
     ("XLA_PYTHON_CLIENT_ALLOCATOR", "platform"), ("XLA_FLAGS", "--test-runtime-change"), ("CUDA_HOME", "/other/cuda"),
+    ("TRANSFORMER_CUDA_ENVIRONMENT", "cuda13"), ("POLY_GDN_VALUE_PRECISION", "bf16_values"),
+    ("POLY_GDN_NUM_WARPS", "2"), ("POLY_GDN_MIN_CTAS_PER_SM", "1"),
+    ("TRANSFORMER_RESUME_SOURCE_COMMIT", "b" * 40),
 ])
 def test_passed_acceptance_requires_the_same_runtime(tmp_path, monkeypatch, setting, value):
     from scaffolds.transformer.configs import Config

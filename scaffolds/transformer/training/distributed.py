@@ -421,6 +421,8 @@ def runtime_provenance() -> dict:
                      "kind": device.device_kind} for device in jax.local_devices()],
         "environment": {key: os.environ.get(key) for key in (
             HOST_STAGING_ENV, "NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION",
-            "XLA_PYTHON_CLIENT_PREALLOCATE", "XLA_FLAGS",
+            "XLA_PYTHON_CLIENT_PREALLOCATE", "XLA_FLAGS", "CUDA_HOME", "TRANSFORMER_CUDA_ENVIRONMENT",
+            "POLY_GDN_VALUE_PRECISION", "POLY_GDN_NUM_WARPS", "POLY_GDN_MIN_CTAS_PER_SM",
+            "TRANSFORMER_RESUME_SOURCE_COMMIT",
         )},
     }

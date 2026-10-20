@@ -165,3 +165,28 @@ def test_runtime_provenance_records_execution_changes_separately(tmp_path, monke
     assert not hasattr(config.train, "host_staging")
     assert "scaffold_ofm_source_commit" in record
     assert "ofm_source_commit" not in record
+
+
+@pytest.mark.parametrize("setting,before,after", [
+    ("POLY_GDN_VALUE_PRECISION", "tf32x3", "bf16_values"),
+    ("POLY_GDN_NUM_WARPS", "4", "2"),
+    ("POLY_GDN_MIN_CTAS_PER_SM", "0", "1"),
+    ("TRANSFORMER_CUDA_ENVIRONMENT", "cuda12", "cuda13"),
+    ("TRANSFORMER_RESUME_SOURCE_COMMIT", "a" * 40, "b" * 40),
+])
+def test_kernel_runtime_changes_append_provenance_without_changing_recipe(tmp_path, monkeypatch, setting, before, after):
+    import json
+    from scaffolds.transformer.configs import config_to_dict
+
+    config = tiny_config(tmp_path)
+    config.train.workdir.mkdir(parents=True, exist_ok=True)
+    recipe = config_to_dict(config)
+    monkeypatch.setenv(setting, before)
+    loop._write_status(config, status="running")
+    monkeypatch.setenv(setting, after)
+    loop._write_status(config, status="running")
+    loop._write_status(config, status="running")
+    record = json.loads((config.train.workdir / "metadata.json").read_text())
+    assert [entry["runtime"]["environment"][setting] for entry in record["runtime_history"]] == [before, after]
+    assert record["execution_runtime"]["environment"][setting] == after
+    assert config_to_dict(config) == recipe

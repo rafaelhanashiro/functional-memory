@@ -128,6 +128,15 @@ def attention_identity(config) -> dict:
                 "gdn_kernel_source": f"local transported-score {'quadratic' if degree == 2 else 'cubic'} GDN kernels",
                 "gdn_chunk_size": 64 if model.attention_backend == "fused" else None,
             })
+            if model.attention_backend == "fused":
+                from scaffolds.transformer.attention.backends.polynomial_gdn import (
+                    resolve_polynomial_gdn_min_ctas, resolve_polynomial_gdn_options,
+                )
+
+                precision, num_warps = resolve_polynomial_gdn_options()
+                identity.update(gdn_value_precision=precision, gdn_num_warps=num_warps,
+                                gdn_min_ctas_per_sm=resolve_polynomial_gdn_min_ctas(),
+                                gdn_transport_dot_precision="tf32x3")
         return identity
     degree = config.model.attention_degree
     mode = config.model.quadratic_mode

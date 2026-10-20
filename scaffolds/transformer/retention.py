@@ -15,12 +15,13 @@ import shutil
 
 from scaffolds.transformer.configs import load_config
 from scaffolds.transformer.training.checkpointing import checkpoint_directory
+from scaffolds.transformer.training.diagnostics import attention_identity
 from scaffolds.transformer.training.metrics import write_json_atomic
 from scaffolds.records import capture_artifacts, update_record
 
 # Completion fields that must agree with the recipe when the completion records them.
 IDENTITY_KEYS = ("attention_degree", "attention_mechanism", "quadratic_mode", "quadratic_sharing", "qk_head_dim",
-                 "qk_norm", "qk_norm_sharing")
+                 "qk_norm", "qk_norm_sharing", "gdn_polynomial_degree")
 
 
 def finalize_run(config) -> dict:
@@ -29,7 +30,9 @@ def finalize_run(config) -> dict:
     completion = json.loads(completion_path.read_text())
     best = json.loads((workdir / "best_validation.json").read_text())
     tokens = config.optim.total_steps * config.data.batch_size * (config.data.sequence_length - 1)
-    model = vars(config.model)
+    # Completion reports the mechanism's resolved identity: polynomial GDN's
+    # attention_degree comes from gdn_polynomial_degree, not the dot-product field.
+    model = {**vars(config.model), **attention_identity(config)}
     if (completion["source_commit"] != config.train.source_commit
             or completion["final_step"] != config.optim.total_steps
             or completion["training_tokens"] != tokens

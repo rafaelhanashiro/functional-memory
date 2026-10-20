@@ -44,6 +44,9 @@ def main(argv=None, *, config_factory=Config,
                         help="Optional checkpoint override; defaults to the run's checkpoints/ directory.")
     parser.add_argument("--stop-after-step", type=int, help="Stop with a resume checkpoint; retain the full learning-rate schedule.")
     parser.add_argument("--no-resume", action="store_true")
+    parser.add_argument("--resume-source-commit", default=os.environ.get("TRANSFORMER_RESUME_SOURCE_COMMIT"),
+                        help="Explicitly permit resuming from this prior full source commit; "
+                             "all scientific settings and checkpoint state must match.")
     parser.add_argument("--wandb-mode", choices=("disabled", "offline", "online"))
     parser.add_argument("--result-json", type=Path, help="Write the training result, including synchronized pilot timings.")
     args = parser.parse_args(argv)
@@ -74,6 +77,7 @@ def main(argv=None, *, config_factory=Config,
         config,
         resume=should_resume(no_resume=args.no_resume, slurm_restart_count=os.environ.get("SLURM_RESTART_COUNT")),
         stop_after_step=args.stop_after_step,
+        resume_source_commit=args.resume_source_commit,
     )
     if args.result_json is not None:
         write_json_atomic(args.result_json, result)

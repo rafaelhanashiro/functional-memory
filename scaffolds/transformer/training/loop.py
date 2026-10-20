@@ -188,10 +188,22 @@ def _serializable_config(config: Config) -> dict:
     return config_to_dict(config)
 
 
-def ensure_run_config(config: Config, *, resume: bool) -> None:
+def ensure_run_config(config: Config, *, resume: bool,
+                      resume_source_commit: str | None = None) -> bool:
+    """Validate the recipe; return whether an explicitly authorized source changed.
+
+    The immutable recipe and every scientific setting must still match. A source
+    transition updates the resolved runtime config only after checkpoint restore.
+    """
     recipe_path = config.train.workdir / "config.yaml"
     path = config.train.workdir / "config.json"
     existing = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+    if resume_source_commit is not None:
+        if (not isinstance(resume_source_commit, str) or len(resume_source_commit) != 40
+                or any(c not in "0123456789abcdef" for c in resume_source_commit)):
+            raise ValueError("resume_source_commit must be the full prior source commit")
+        if not resume or existing is None:
+            raise ValueError("A source transition requires an initialized run and resume=True")
     canonical = None
     if existing is not None and not resume:
         raise ValueError(f"Run workdir is already initialized; use resume or a new workdir: {path}")
@@ -248,12 +260,26 @@ def ensure_run_config(config: Config, *, resume: bool) -> None:
     if existing is not None:
         # Legacy fixed-kernel runs predate these fields. Compare their defaults
         # semantically without rewriting their persisted configuration bytes.
-        if not config_dicts_equal(existing, current):
+        previous_source = existing.get("train", {}).get("source_commit")
+        source_changed = previous_source != config.train.source_commit
+        comparison = existing
+        if source_changed and resume_source_commit is not None:
+            if previous_source != resume_source_commit:
+                raise ValueError("The initialized run's source does not match resume_source_commit")
+            source = config.train.source_commit
+            if (not isinstance(source, str) or len(source) != 40
+                    or any(c not in "0123456789abcdef" for c in source)):
+                raise ValueError("A source transition requires a concrete current source commit")
+            if (config.train.workdir / "completion.json").exists():
+                raise ValueError("A completed run cannot change execution source")
+            comparison = {**existing, "train": {**existing["train"], "source_commit": source}}
+        if not config_dicts_equal(comparison, current):
             raise ValueError(
                 f"Training configuration does not match the initialized run: {path}"
             )
-        return
+        return source_changed
     write_json_atomic(path, current)
+    return False
 
 
 def resolve_workdir(config: Config) -> None:
@@ -546,7 +572,7 @@ def _perplexity(config, state, step, nll, sample, provenance, *, diagnostics=Non
 
 
 def run_training(config: Config, *, resume: bool = True, stop_after_step: int | None = None,
-                 audit_checkpoint: bool = False) -> dict:
+                 audit_checkpoint: bool = False, resume_source_commit: str | None = None) -> dict:
     """Train with an exact packed-data cursor and transactional local validation metrics."""
     validate_config(config)
     resolve_workdir(config)
@@ -558,7 +584,7 @@ def run_training(config: Config, *, resume: bool = True, stop_after_step: int | 
     if config.train.eval_every < 1 or config.train.eval_batches < 1:
         raise ValueError("Training requires validation, including at the terminal step")
     config.train.workdir.mkdir(parents=True, exist_ok=True)
-    ensure_run_config(config, resume=resume)
+    source_changed = ensure_run_config(config, resume=resume, resume_source_commit=resume_source_commit)
     for path in cleanup_stale_checkpoint_temps(config):
         print(f"removed_stale_checkpoint_tmp={path}", flush=True)
     manager = make_checkpoint_manager(config)
@@ -566,9 +592,11 @@ def run_training(config: Config, *, resume: bool = True, stop_after_step: int | 
         # Check before the run can overwrite progress metadata or reuse existing
         # metric event IDs. A rejected resume leaves the scientific record intact.
         validate_resume_progress(config, manager.latest_step())
+        if source_changed and manager.latest_step() is None:
+            raise ValueError("A source transition requires a retained resumable checkpoint")
         try:
             return _run_training(config, manager, layout, devices, resume=resume, end_step=end_step,
-                                 audit_checkpoint=audit_checkpoint)
+                                 audit_checkpoint=audit_checkpoint, update_resolved_config=source_changed)
         except BaseException as error:
             _write_status(config, status="failed", error=f"{type(error).__name__}: {error}")
             raise
@@ -581,7 +609,8 @@ def _update_audit(step, batches, rng):
     return {"step": step, "batch_sha256": state_sha256(batches), "rng_sha256": state_sha256(rng)}
 
 
-def _run_training(config, manager, layout, devices, *, resume, end_step, audit_checkpoint=False):
+def _run_training(config, manager, layout, devices, *, resume, end_step, audit_checkpoint=False,
+                  update_resolved_config=False):
     runtime_start = time.perf_counter()
     timing = {"train_step_seconds": [], "evaluation_seconds": [], "checkpoint_seconds": []}
     check_all_gradients = requires_update_checks(config.model)
@@ -639,6 +668,13 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         raise ValueError("Checkpoint state step differs from checkpoint directory")
     if start_sequence != start_step * config.data.batch_size:
         raise ValueError("Checkpoint step and data cursor disagree")
+    if update_resolved_config:
+        # Restore includes parameters, optimizer moments and update count. Only
+        # after it and the data cursor have passed may runtime provenance advance.
+        if restored_step is None:
+            raise ValueError("A source transition requires a restored checkpoint")
+        write_json_atomic(config.train.workdir / "config.json", _serializable_config(config))
+        print(f"resumed_source_commit={config.train.source_commit} checkpoint_step={restored_step}", flush=True)
     audit = {"start_state_sha256": state_sha256(state)} if audit_checkpoint else None
     parameter_count = param_count(state)
     tokens_per_step = config.data.batch_size * (config.data.sequence_length - 1)

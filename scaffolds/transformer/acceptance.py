@@ -49,13 +49,17 @@ TEST_STAGES = (
 )
 NO_TESTS_COLLECTED = 5
 RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHON_CLIENT_PREALLOCATE",
-                "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME")
+                "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME", "TRANSFORMER_CUDA_ENVIRONMENT",
+                "POLY_GDN_VALUE_PRECISION", "POLY_GDN_NUM_WARPS", "POLY_GDN_MIN_CTAS_PER_SM",
+                "TRANSFORMER_RESUME_SOURCE_COMMIT")
 NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
 POLYNOMIAL_GDN_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn.py"
 POLYNOMIAL_GDN_INTEGRATION_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn_integration.py"
 POLYNOMIAL_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn_kernel.py"
+POLYNOMIAL_GDN_PRECISION_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn_precision.py"
+POLYNOMIAL_GDN_HISTORY_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn_history_indexing.py"
 CUBIC_GDN_TESTS = "scaffolds/transformer/tests/test_cubic_gdn.py"
 CUBIC_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_cubic_gdn_kernel.py"
 
@@ -92,8 +96,11 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             and model.get("gdn_polynomial_degree", 1) in (2, 3)):
         if cpu:
             paths.extend((POLYNOMIAL_GDN_TESTS, POLYNOMIAL_GDN_INTEGRATION_TESTS))
+            if resolved_backend == "fused":
+                paths.append(POLYNOMIAL_GDN_PRECISION_TESTS)
         elif resolved_backend == "fused":
-            paths.append(POLYNOMIAL_GDN_KERNEL_TESTS)
+            paths.extend((POLYNOMIAL_GDN_KERNEL_TESTS, POLYNOMIAL_GDN_PRECISION_TESTS,
+                          POLYNOMIAL_GDN_HISTORY_TESTS))
         if model.get("gdn_polynomial_degree") == 3:
             if cpu:
                 paths.append(CUBIC_GDN_TESTS)
@@ -120,7 +127,10 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
     if model.get("attention_mechanism", "dot_product") == "gla":
         tests = ["gla", "gla_bridge", "gla_integration"] if cpu else (["gla_kernel"] if fused else [])
     elif model.get("attention_mechanism", "dot_product") == "gated_deltanet":
-        tests = ["gated_deltanet"] if cpu else (["gated_deltanet_kernel"] if fused else [])
+        polynomial = model.get("gdn_polynomial_degree", 1) in (2, 3)
+        # Polynomial kernels have their own oracle and linear-limit checks.
+        # Native FLA's full width sweep qualifies a different implementation.
+        tests = ["gated_deltanet"] if cpu else (["gated_deltanet_kernel"] if fused and not polynomial else [])
         if cpu and fused:
             tests.append("triton_bridge_precision")
     else:
@@ -184,6 +194,22 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
     return tuple(f"scaffolds/transformer/tests/test_{name}" + ("" if ".py::" in name else ".py") for name in tests)
 
 
+def polynomial_runtime_qualification(config: dict, resolved_backend: str) -> bool:
+    model = config["model"]
+    return (resolved_backend == "fused" and model.get("attention_mechanism") == "gated_deltanet"
+            and model.get("gdn_polynomial_degree", 1) in (2, 3))
+
+
+def qualification_stages(config: dict, resolved_backend: str):
+    """Keep strict oracle checks and qualify opt-in value precision separately."""
+    stages = TEST_STAGES
+    if (polynomial_runtime_qualification(config, resolved_backend)
+            and os.environ.get("POLY_GDN_VALUE_PRECISION", "tf32x3") != "tf32x3"):
+        stages += (("gpu-polynomial-runtime-tests",
+                    ("-m", "gpu", "-k", "bfloat16 or bf16 or history_helpers"), False),)
+    return stages
+
+
 def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
     """Shared acceptance for a Transformer recipe across all attention families."""
     validate_config(config)
@@ -192,13 +218,15 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
         # The custom-call bridge executes outside XLA command buffers.
         flags = os.environ.get("XLA_FLAGS", "").split()
         flags = [flag for flag in flags if not flag.startswith("--xla_gpu_enable_command_buffer=")]
+        source = os.environ.get("SHARED_TRANSFORMER_SOURCE_COMMIT")
+        cache = ".cache/transformer/triton" + (f"/{source}" if source else "")
         runtime_env = {"XLA_FLAGS": " ".join([*flags, "--xla_gpu_enable_command_buffer="]),
-                       "EJKERNEL_TRITON_CACHE_DIR": ".cache/transformer/triton"}
+                       "EJKERNEL_TRITON_CACHE_DIR": cache}
     request = config.model.attention_backend
     return AcceptanceSpec(
         entry_module=entry_module,
         cpu_tests=tuple(f"scaffolds/transformer/tests/test_{name}.py" for name in (
-            "model", "training", "telemetry", "checkpoint_audit", "parameter_policy")),
+            "model", "training", "telemetry", "checkpoint_audit", "parameter_policy", "source_resume")),
         check_config=validate_config,
         required_backend=None if request == "auto" else request,
         check_initialization=(None if config.model.attention_mechanism in ("gla", "gated_deltanet")
@@ -501,17 +529,23 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     hardware = _run_worker(spec, args, "hardware", directory / "hardware.json", stop=spec.pilot_steps)
     experiment = on_devices(experiment, hardware["device_kinds"])
+    stages = qualification_stages(experiment["config"], hardware["attention_backend"])
+    checks = (*[name for name, _, _ in stages], "initialization", "pilot", "resume")
     write_json(directory / "identity.json", experiment)
-    if passed(directory / "success.json", experiment) and all(passed(directory / f"{name}.json", experiment) for name in CHECKS):
+    if passed(directory / "success.json", experiment) and all(passed(directory / f"{name}.json", experiment) for name in checks):
         print(f"matching_acceptance_passed={directory / 'success.json'}", flush=True)
         return
     stage = "cpu-tests"
     try:
-        for stage, selection, cpu in TEST_STAGES:
+        for stage, selection, cpu in stages:
             path = directory / f"{stage}.json"
             if passed(path, experiment):
                 continue
             paths = test_paths(spec, experiment["config"], resolved_backend=hardware["attention_backend"], cpu=cpu)
+            if stage == "gpu-polynomial-runtime-tests":
+                paths = tuple(path for path in paths if path in (
+                    POLYNOMIAL_GDN_KERNEL_TESTS, CUBIC_GDN_KERNEL_TESTS,
+                    POLYNOMIAL_GDN_PRECISION_TESTS, POLYNOMIAL_GDN_HISTORY_TESTS))
             if not paths:
                 record(path, experiment, tests_passed=0, note="no tests declared")
                 continue
@@ -524,6 +558,11 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
                 print(f"acceptance_reused={stage} from={origin['acceptance_directory']}", flush=True)
                 continue
             env = dict(os.environ, JAX_PLATFORMS="cpu" if cpu else "cuda")
+            if (stage == "gpu-tests"
+                    and polynomial_runtime_qualification(experiment["config"], hardware["attention_backend"])):
+                # FP32 oracle tolerances measure the accurate backend. The extra
+                # stage above checks the production BF16 mode at its own tolerances.
+                env["POLY_GDN_VALUE_PRECISION"] = "tf32x3"
             if stage == "cpu-distributed-tests":
                 env["XLA_FLAGS"] = f"{env.get('XLA_FLAGS', '')} --xla_force_host_platform_device_count=2".strip()
             if not cpu:
@@ -536,7 +575,8 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
                 continue
             if result.returncode != 0:
                 raise RuntimeError(f"Acceptance {stage} failed with pytest exit code {result.returncode}")
-            record(path, experiment, tests_passed=require_passing_tests(junit))
+            record(path, experiment, tests_passed=require_passing_tests(junit),
+                   test_runtime={key: env.get(key) for key in RUNTIME_KEYS})
             if cache:
                 share_tests(cache, key, junit, directory)
         stage = "initialization"
@@ -587,9 +627,9 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
                 validate_resume_audit(json.loads((directory / "pilot.json").read_text())["outcome"], outcome)
             record(path, experiment, outcome=outcome)
         reused = {name: json.loads((directory / f"{name}.json").read_text()).get("reused_from")
-                  for name, _, _ in TEST_STAGES}
+                  for name, _, _ in stages}
         reused = {name: origin for name, origin in reused.items() if origin}
-        record(directory / "success.json", experiment, checks=list(CHECKS), hardware=hardware,
+        record(directory / "success.json", experiment, checks=list(checks), hardware=hardware,
                **({"reused_tests": reused} if reused else {}))
         shutil.rmtree(directory / "pilot")  # The disposable pilot checkpoint is no longer needed.
         print(f"acceptance_success={directory / 'success.json'}", flush=True)

@@ -359,41 +359,36 @@ Methods and explicit comparisons remain in
 [the exploratory topic](../../results/exploratory/gdn_polynomial/README.md).
 
 Home cluster: Kennel. Develop and execute in `worktrees/gdn-cubic`, with its own
-locked CUDA environment. Standalone qualification checks CPU and GPU correctness,
-initialization, 20 full-recipe updates with validation, and exact checkpoint resume.
-It enforces a 70-hour budget within the planned 72-hour production allocation.
-Production depends on successful qualification and reuses only acceptance matching
-its frozen source, recipe, environment, and actual GPU model/count.
-The job requests eight A100 GPUs on `samoyed`, nice 0 on `long`, while the protected
-quadratic run occupies the four-GPU allowance on `standard`. Global microbatch 64
-and effective batch 256 are unchanged; the local microbatch is eight sequences.
-Host staging and disabled NCCL peer transfers are required by Kennel's A100
-transport policy. The frozen scientific recipe is unchanged by these runtime choices.
+locked CUDA 13 environment. The run resumes checkpoint 7,000 using four B300 GPUs
+on `long`, at nice 0. Its immutable recipe, run ID, and W&B identity are retained.
+Global microbatch 64 and effective batch 256 are unchanged; local microbatch is 16.
+The optimized runtime uses `bf16_values`, two warps, and one-CTA register-allocation
+guidance. Transport geometry and accumulation remain FP32. These settings are
+execution provenance, separate from the scientific recipe.
+
+Acceptance in the production allocation checks the accurate backend against the
+strict output/gradient oracles, the selected BF16 backend at its declared
+tolerances, initialization, 20 full-recipe updates with validation, and exact
+fresh-process checkpoint resume. Production starts only after these checks pass.
+The source-change opt-in names the prior executed commit; all scientific settings
+must still match, and the trainer updates resolved source provenance only after
+restoring the full checkpoint and validating its step and data cursor.
 
 From the experiment worktree, after committing the frozen inputs:
 
 ```bash
-LAUNCH_COMMIT=6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4
-QUALIFICATION_JOB=$(env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable \
-  --nice=0 --partition=long --nodelist=samoyed --gres=gpu:a100:8 \
-  --exclude=collie,dogo,mastiff,doodle,terrier,akita \
-  --time=01:00:00 --cpus-per-task=32 --mem=256G --requeue --open-mode=append \
-  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,TRANSFORMER_HOST_STAGING=1,NCCL_P2P_DISABLE=1 \
-  --job-name=cubic-qualification \
-  --output=scaffolds/transformer/validation/logs/gdn-cubic-runtime-%j.log \
-  scaffolds/transformer/validation/qualify_gdn_runtime.sbatch \
-  experiments/attention_scaling/runs/r83c3394eb730/config.yaml \
-  "$LAUNCH_COMMIT" A100 72 8)
+UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
+  uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
+LAUNCH_COMMIT=$(git rev-parse HEAD)
 env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable \
-  --nice=0 --partition=long --nodelist=samoyed --gres=gpu:a100:8 \
-  --exclude=collie,dogo,mastiff,doodle,terrier,akita \
+  --nice=0 --partition=long --nodelist=akita --gres=gpu:b300:4 \
+  --exclude=collie,dogo,mastiff,doodle,samoyed,terrier \
   --time=3-00:00:00 --cpus-per-task=32 --mem=256G \
-  --dependency="afterok:$QUALIFICATION_JOB" \
-  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,TRANSFORMER_HOST_STAGING=1,NCCL_P2P_DISABLE=1 \
+  --export=ALL,XLA_PYTHON_CLIENT_PREALLOCATE=false,TRANSFORMER_HOST_STAGING=0,POLY_GDN_VALUE_PRECISION=bf16_values,POLY_GDN_NUM_WARPS=2,POLY_GDN_MIN_CTAS_PER_SM=1,TRANSFORMER_RESUME_SOURCE_COMMIT=6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4 \
   --job-name=r83c3394eb730 \
   --output=experiments/attention_scaling/runs/r83c3394eb730/training.log \
   scaffolds/transformer/launchers/kennel.sbatch \
   experiments.attention_scaling.acceptance \
   experiments/attention_scaling/runs/r83c3394eb730/config.yaml \
-  "$LAUNCH_COMMIT" 8 A100
+  "$LAUNCH_COMMIT" 4 B300
 ```

@@ -13,6 +13,22 @@ import triton.language as tl
 
 
 @triton.jit
+def _read_dot(left, right, VALUE_PRECISION: tl.constexpr):
+    if VALUE_PRECISION == "tf32x3":
+        return tl.dot(left, right, input_precision="tf32x3")
+    else:
+        return tl.dot(left.to(tl.bfloat16), right.to(tl.bfloat16), out_dtype=tl.float32)
+
+
+@triton.jit
+def _score_adjoint_dot(left, right, VALUE_PRECISION: tl.constexpr):
+    if VALUE_PRECISION == "bf16_values":
+        return tl.dot(left.to(tl.bfloat16), right.to(tl.bfloat16), out_dtype=tl.float32)
+    else:
+        return tl.dot(left, right, input_precision="tf32x3")
+
+
+@triton.jit
 def _matrix(ptr, b, h, chunk, T: tl.constexpr, H: tl.constexpr,
             D: tl.constexpr, BD: tl.constexpr, BT: tl.constexpr):
     rows = chunk * BT + tl.arange(0, BT)
@@ -64,7 +80,8 @@ def _history(ptr, bh, qc, kc, T: tl.constexpr, K: tl.constexpr,
     pairs = chunks * (chunks + 1) // 2
     pair = qc * (qc + 1) // 2 + kc
     rows, cols = tl.arange(0, BT), tl.arange(0, BK)
-    offsets = ((bh * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
+    # Packed histories can exceed 2**31 elements at production batch sizes.
+    offsets = ((bh.to(tl.int64) * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
     return tl.load(ptr + offsets, mask=cols[None, :] < K, other=0).to(tl.float32)
 
 
@@ -75,7 +92,7 @@ def _store_history(ptr, value, bh, qc, kc, T: tl.constexpr, K: tl.constexpr,
     pairs = chunks * (chunks + 1) // 2
     pair = qc * (qc + 1) // 2 + kc
     rows, cols = tl.arange(0, BT), tl.arange(0, BK)
-    offsets = ((bh * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
+    offsets = ((bh.to(tl.int64) * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
     tl.store(ptr + offsets, value, mask=cols[None, :] < K)
 
 
@@ -88,7 +105,7 @@ def _history_rows(ptr, bh, qb, kc, T: tl.constexpr, K: tl.constexpr,
     pair = qc * (qc + 1) // 2 + kc
     rows = (qb % (BT // BQ)) * BQ + tl.arange(0, BQ)
     cols = tl.arange(0, BK)
-    offsets = ((bh * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
+    offsets = ((bh.to(tl.int64) * pairs + pair) * BT + rows[:, None]) * K + cols[None, :]
     return tl.load(ptr + offsets, mask=cols[None, :] < K, other=0).to(tl.float32)
 
 
@@ -102,7 +119,8 @@ def _causal(qc, kc, BT: tl.constexpr):
 def forward(q, k, v, prefix, beta, erase, inverse, transformed, scale, output, history,
             T: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
             BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr,
-            SAVE_HISTORY: tl.constexpr, COMPUTE_OUTPUT: tl.constexpr, NBETA: tl.constexpr = 3):
+            SAVE_HISTORY: tl.constexpr, COMPUTE_OUTPUT: tl.constexpr, NBETA: tl.constexpr = 3,
+            VALUE_PRECISION: tl.constexpr = "tf32x3"):
     qc, bh = tl.program_id(0), tl.program_id(1)
     b, h = bh // H, bh % H
     query = _matrix(q, b, h, qc, T, H, K, BK, BT)
@@ -130,7 +148,7 @@ def forward(q, k, v, prefix, beta, erase, inverse, transformed, scale, output, h
             beta0, beta1, beta2, beta3 = _coefficients(beta, b, h, kc, T, H, BT, NBETA)
             polynomial = _polynomial(effective, beta0, beta1, beta2, beta3, NBETA)
             weights = tl.where(causal, decay * polynomial, 0.0)
-            read += tl.dot(weights, value, input_precision="tf32x3")
+            read += _read_dot(weights, value, VALUE_PRECISION)
         query -= tl.dot(effective * erasure[None, :], key, input_precision="tf32x3")
     if COMPUTE_OUTPUT:
         rows, cols = qc * BT + tl.arange(0, BT), tl.arange(0, BV)
@@ -142,7 +160,8 @@ def forward(q, k, v, prefix, beta, erase, inverse, transformed, scale, output, h
 def backward_queries(k, v, prefix, beta, erase, inverse, transformed, dout, history, scale,
                      dq, dquery_prefix, adjoint_history,
                      T: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
-                     BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr, NBETA: tl.constexpr = 3):
+                     BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr, NBETA: tl.constexpr = 3,
+                     VALUE_PRECISION: tl.constexpr = "tf32x3"):
     qc, bh = tl.program_id(0), tl.program_id(1)
     b, h = bh // H, bh % H
     do = _matrix(dout, b, h, qc, T, H, V, BV, BT) * scale
@@ -167,7 +186,7 @@ def backward_queries(k, v, prefix, beta, erase, inverse, transformed, dout, hist
         decay = tl.exp(tl.where(causal, query_decay[:, None] - key_decay[None, :], 0.0))
         beta0, beta1, beta2, beta3 = _coefficients(beta, b, h, kc, T, H, BT, NBETA)
         polynomial = _polynomial(effective, beta0, beta1, beta2, beta3, NBETA)
-        dweight = tl.dot(do, tl.trans(value), input_precision="tf32x3")
+        dweight = _score_adjoint_dot(do, tl.trans(value), VALUE_PRECISION)
         grad_prefix += tl.sum(tl.where(causal, dweight * decay * polynomial, 0.0), 1)
         derivative = _derivative(effective, beta1, beta2, beta3, NBETA)
         deffective = tl.where(causal, dweight * decay * derivative, 0.0)
@@ -191,7 +210,8 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
                   dk, dv, dbeta, derase, dinverse, dtransformed, dkey_prefix,
                   T: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
                   BT: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr,
-                  GROUP: tl.constexpr, BQ: tl.constexpr, MODE: tl.constexpr, NBETA: tl.constexpr = 3):
+                  GROUP: tl.constexpr, BQ: tl.constexpr, MODE: tl.constexpr, NBETA: tl.constexpr = 3,
+                  VALUE_PRECISION: tl.constexpr = "tf32x3"):
     # GROUP=0 keeps the full adjoint for benchmarking; 1/2 split its value and
     # geometry outputs. Reducing simultaneous accumulators avoids register spills
     # and shared-memory pressure without changing the differentiated equations.
@@ -238,7 +258,7 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
             effective = tl.dot(query, tl.trans(r), input_precision="tf32x3")
         query_decay = _gates(prefix, b, h, qb, T, H, BQ)
         decay = tl.exp(tl.where(causal, query_decay[:, None] - key_decay[None, :], 0.0))
-        dweight = tl.dot(do, tl.trans(value), input_precision="tf32x3")
+        dweight = _score_adjoint_dot(do, tl.trans(value), VALUE_PRECISION)
         dpolynomial = tl.where(causal, dweight * decay, 0.0)
         if VALUES:
             polynomial = _polynomial(effective, beta0, beta1, beta2, beta3, NBETA)
@@ -249,7 +269,7 @@ def backward_keys(k, v, prefix, beta, erase, inverse, transformed, dout, history
             grad_beta2 += tl.sum(dpolynomial * effective * effective, 0)
             if NBETA == 4:
                 grad_beta3 += tl.sum(dpolynomial * effective * effective * effective, 0)
-            grad_value += tl.dot(tl.trans(weights), do, input_precision="tf32x3")
+            grad_value += _read_dot(tl.trans(weights), do, VALUE_PRECISION)
         if GEOMETRY:
             derivative = _derivative(effective, beta1, beta2, beta3, NBETA)
             deffective = dpolynomial * derivative

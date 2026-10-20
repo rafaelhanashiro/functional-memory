@@ -627,6 +627,21 @@ scaffold's hardware qualification live in [`validation/`](validation/README.md).
 
 ## Tests
 
+An explicitly authorized source update can resume an unfinished run with
+`train --resume-source-commit <prior-full-commit>` (or the launcher environment
+`TRANSFORMER_RESUME_SOURCE_COMMIT`). This permits only execution-source provenance
+to change: the immutable recipe and every scientific setting must still match.
+The trainer requires a retained checkpoint and updates `config.json` only after
+restoring the parameters, optimizer state, step, and data cursor. Requeues using
+the same updated source retain the opt-in harmlessly.
+
+Polynomial GDN runtime options are `POLY_GDN_VALUE_PRECISION` (`tf32x3`,
+`bf16_read`, or `bf16_values`), `POLY_GDN_NUM_WARPS`, and
+`POLY_GDN_MIN_CTAS_PER_SM`. They are captured in acceptance identity and runtime
+provenance. BF16 production acceptance retains the strict accurate-backend
+oracle suite and additionally requires the selected-precision GPU cases, followed
+by the ordinary full-model pilot and fresh-process resume.
+
 ```bash
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest \
   -c scaffolds/transformer/pyproject.toml scaffolds/transformer/tests \
