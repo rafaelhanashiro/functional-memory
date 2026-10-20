@@ -20,7 +20,7 @@ defaults to ``default_precision``.
 Supported: BF16 Q/K/V of shape [batch, time, heads, channels], Q/K width 8, 16, 32, 64, or
 128 (width 8 is zero-padded to the tensor cores' minimum of 16, which leaves every score
 unchanged; narrower tiles use narrower shared-memory swizzles), value width 64, degree
->= 1 (query coefficients: degree <= 4), and time a multiple of 128 (H100) or 256 (B300).
+>= 1 (query coefficients: degree <= 8), and time a multiple of 128 (H100) or 256 (B300).
 Anything else, and any GPU other than compute capability 9.0 or 10.x, raises ValueError.
 """
 import math

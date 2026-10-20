@@ -176,7 +176,7 @@ class ModelConfig:
         if self.attention_backend == "mosaic" and not self.mosaic_supported():
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
                              "query-conditioned or static-coefficient unnormalized polynomial attention of "
-                             "degree 1-4, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64")
+                             "degree 1-8, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64")
         if not isinstance(self.attention_normalization, bool):
             raise ValueError("model.attention_normalization must be a boolean")
         if self.attention_output_scaling not in ("none", "inverse_position", "head_rms_norm"):
