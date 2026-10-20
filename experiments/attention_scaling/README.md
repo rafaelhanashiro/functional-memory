@@ -149,8 +149,9 @@ New runs use their mechanism's reference initialization, which `records create` 
 when the recipe leaves `model.initialization` unset.
 Untied embeddings, the scaffold's selective weight decay, and 400 warmup updates
 (`optim.warmup_steps`) are canonical. New unnormalized runs set
-`model.attention_output_scaling: head_rms_norm`. Normalized fixed Taylor and tanh
-query-conditioned runs use the Mosaic GPU kernels (`model.attention_backend: mosaic`). The
+`model.attention_output_scaling: head_rms_norm`. Normalized fixed Taylor runs, and tanh
+query-conditioned and static-coefficient unnormalized runs of degree up to 4, use the Mosaic
+GPU kernels (`model.attention_backend: mosaic`). The
 following allocates a fresh execution from an existing QK-normalized Taylor recipe that
 predates them:
 
@@ -328,6 +329,33 @@ sbatch --partition=long --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$
   --output="experiments/attention_scaling/runs/$RUN/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
   "experiments/attention_scaling/runs/$RUN/config.yaml" 629cab71a2a3d490f078488918b8861a7cfce874 1 B300,H100
+```
+
+### Tanh with saturating projection draws, degrees 2 and 4
+
+Four single-GPU runs ask whether a gate that starts saturated keeps more input
+dependence. They follow the zero-amplitude `N(0, 1/hidden_size)` runs above
+(`r5be9a97f06e2` …) apart from the projection's draw: with `x_t` after RMSNorm the
+pre-activation `w_r^T x_t` starts with standard deviation about 3 or 10, so the tanh is
+mostly or fully saturated and `w_r` receives little gradient once `a_r` grows. The
+start is still the static Taylor kernel (`a_r = 0`).
+
+| `attention_coefficient_projection_initial_std` | m = 2 | m = 4 |
+| --- | --- | --- |
+| 0.09375 (`3/sqrt(d)`) | `rac317a500871` | `r4cee946a1a4b` |
+| 0.3125 (`10/sqrt(d)`) | `r49ac1e58fba3` | `r362b2df6edbd` |
+
+Launch commit `eec53e3e1539eca7d20207daea659003711d82d4` from `worktrees/tanh_large_draw`
+on Kennel, one H100 each (degree 4 on `standard` on `dogo`, 24 h; degree 2 on `long` on
+`mastiff`):
+
+```bash
+RUN=<run-id>; PARTITION=<standard|long>
+sbatch --partition="$PARTITION" --time=1-00:00:00 --exclude=collie,samoyed,doodle,terrier \
+  --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" eec53e3e1539eca7d20207daea659003711d82d4 1 B300,H100
 ```
 
 ### Query-key tanh coefficients, degrees 1–4

@@ -24,9 +24,10 @@ query token. Static controls learn a constant `c_r = b_r`. Every run starts at
 | Tanh, zero-amplitude start | `r75b81509b10b`, `r8c9b076f9635`, `rb306d49a5abe`, `rf1160aa95e46` | `a_r = 0`, `w_r ~ N(0, 0.002^2)` | blocked reference |
 | Tanh, zero-amplitude start, wide draw | `r5be9a97f06e2`, `rec520e9303ac`, `r215d3d91dd02`, `rd4f66b1959d2` | `a_r = 0`, `w_r ~ N(0, 1/1024)` | Mosaic kernel |
 | Tanh, zero-amplitude start, bias inside tanh | `rbd4eb6ccc16f`, `r6bba734352f0`, `rde534cbb87a1`, `r59490b6e0818` | `a_r = 0`, `w_r ~ N(0, 0.002^2)`, learned `beta_r` in `tanh(w_r^T x_t + beta_r)` from 0 | Mosaic kernel |
+| Tanh, zero-amplitude start, saturating draws | `rac317a500871`, `r4cee946a1a4b` (m = 2, 4; `3/sqrt(d)`); `r49ac1e58fba3`, `r362b2df6edbd` (`10/sqrt(d)`) | `a_r = 0`, `w_r ~ N(0, 9/d)` or `N(0, 100/d)` | Mosaic kernel |
 | Tanh query-key | `rba839e6386b7`, `r0aab2b77017f`, `r4a7c601b4b1f`, `r4e3f4097a60e` | as the wide draw, times `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` with `a^k_r = 0` | blocked reference (m = 1), Mosaic kernel once per order |
 
-All 29 runs are complete at 19,074 updates (10.0B tokens) with the shared recipe:
+All 33 runs are complete at 19,074 updates (10.0B tokens) with the shared recipe:
 `transformer_reference` initialization, QK normalization, unnormalized attention,
 per-head output RMSNorm, `d_K = d_V = 64`, 10 layers, width 1024, 16 heads, seed 0,
 BF16, effective batch 256, global microbatch 64, learning rate 3e-4 to 3e-5 with 400
@@ -58,7 +59,11 @@ the small draw's 0.2 lead at degree one does not repeat, so it was run-to-run va
 Both variants learn the same `b`, `|a_r|` and token variation as the small draw; the wide
 draw keeps `||w_r|| ~ 1.25` but pointed along the constant direction of `x_t`, and the
 inner bias stays within ±0.1. The optimizer removes token dependence rather than
-being stuck near the start.
+being stuck near the start. Saturating draws (`w_r^T x_t` of standard deviation 3 or 10 at
+the start, so the tanh begins as a near-binary gate whose input weights get little
+gradient) end at 14.58 / 13.63 (`3/sqrt(d)`) and 14.59 / 13.65 (`10/sqrt(d)`) at degrees two
+and four, no better than the 1/d draw, with smaller amplitudes and less token variation the
+larger the draw (at degree four the median `c_0` variation falls from 14% to 8% and 3%).
 
 **A per-key factor adds at most a few hundredths.** Multiplying each key's degree-`r`
 term by `f_r(x_i)` (rank-one query–key coefficients, no recurrence) ends at 17.56 / 14.52 /
@@ -96,6 +101,8 @@ their ratios can act.
 | 2 | tanh, zero-amplitude start, blocked reference | 2.678077 | 14.557070 | -0.50% | 14.557070 | 19,074 |
 | 2 | tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel | 2.678387 | 14.561579 | -0.47% | 14.561579 | 19,074 |
 | 2 | tanh, zero-amplitude start, bias inside tanh, Mosaic kernel | 2.677429 | 14.547647 | -0.56% | 14.547647 | 19,074 |
+| 2 | tanh, zero-amplitude start, W ~ N(0, 9/d), Mosaic kernel | 2.679921 | 14.583944 | -0.32% | 14.583944 | 19,074 |
+| 2 | tanh, zero-amplitude start, W ~ N(0, 100/d), Mosaic kernel | 2.680354 | 14.590263 | -0.27% | 14.590263 | 19,074 |
 | 2 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d) | 2.675586 | 14.520851 | -0.75% | 14.520851 | 19,074 |
 | 3 | static | 2.638175 | 13.987648 |  | 13.987648 | 19,074 |
 | 3 | tanh, original start, fused kernel | 2.654816 | 14.222367 | +1.68% | 14.222367 | 19,074 |
@@ -110,6 +117,8 @@ their ratios can act.
 | 4 | tanh, zero-amplitude start, blocked reference | 2.611894 | 13.624832 | -0.11% | 13.624832 | 19,074 |
 | 4 | tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel | 2.611755 | 13.622937 | -0.12% | 13.622937 | 19,074 |
 | 4 | tanh, zero-amplitude start, bias inside tanh, Mosaic kernel | 2.612069 | 13.627211 | -0.09% | 13.627211 | 19,074 |
+| 4 | tanh, zero-amplitude start, W ~ N(0, 9/d), Mosaic kernel | 2.612470 | 13.632688 | -0.05% | 13.632688 | 19,074 |
+| 4 | tanh, zero-amplitude start, W ~ N(0, 100/d), Mosaic kernel | 2.613763 | 13.650314 | +0.08% | 13.650314 | 19,074 |
 | 4 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d) | 2.608653 | 13.580743 | -0.43% | 13.580743 | 19,074 |
 
 <!-- END GENERATED RESULTS -->
@@ -128,9 +137,9 @@ runs conditions on the key (writer) as GDN's write gate does.
 
 Query-dependent coefficients do not beat static coefficients with this recipe, with or
 without a kernel, from any of three starts, and a per-key factor changes the outcome by
-at most a few hundredths. Saturating projection draws (`3/sqrt(d)`, `10/sqrt(d)`) are
-running and join this topic when complete. The decision is whether to promote the
-comparison as a negative result or to discard the topic and its runs.
+at most a few hundredths. Degree-8 query-only, query–key and static runs are running and
+join this topic when complete. The decision is whether to promote the comparison as a
+negative result or to discard the topic and its runs.
 
 ## Regeneration
 
