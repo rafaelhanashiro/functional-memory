@@ -43,8 +43,9 @@ canonical default. For the usual rerun, change the input recipe to
 plain-score recipe unchanged. GLA and degree-zero attention are exempt because they
 do not use QK normalization. Historical records and resumptions are unaffected.
 
-Likewise, a recipe that a Mosaic GPU kernel implements (normalized fixed Taylor or tanh
-query-conditioned attention) is rejected with `model.attention_backend: fused` unless
+Likewise, a recipe that a Mosaic GPU kernel implements (normalized fixed Taylor, or tanh
+query-conditioned or static-coefficient unnormalized polynomial attention of degree 1-4) is
+rejected with `model.attention_backend: fused` unless
 `--allow-triton-attention` is supplied; set `mosaic` (or `auto`) before allocating.
 
 Commit prepared recipes and study membership before production launch. A study’s

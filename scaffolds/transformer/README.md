@@ -486,14 +486,17 @@ accumulation, and NaN failure rows of the fused Triton kernels. Weights and scor
 gradients enter the tensor cores rounded once to BF16, as in FlashAttention and cuDNN,
 except for normalized odd-degree Taylor attention, whose cancelling row sums keep
 FP32-precision weights (`api.default_precision`; recorded as
-`attention_weight_precision`). They cover normalized fixed Taylor attention (degree >= 1) and tanh
-query-conditioned polynomial attention (degree 1-4), with Q/K width 8, 16, 32, 64, or
+`attention_weight_precision`). They cover normalized fixed Taylor attention (degree >= 1),
+tanh query-conditioned polynomial attention (degree 1-4), and unnormalized polynomials with
+static fixed or learned coefficients (degree 1-4, on the query-coefficient kernel with every
+query's coefficients equal), with Q/K width 8, 16, 32, 64, or
 128, value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
 (H100) or 256 (B300). An explicit `mosaic` request raises for other recipes, GPUs, or
 shapes; `auto` then uses the fused kernels. Diagnostics come from the blocked reference,
 as for the fused kernels. They are the canonical kernels for these mechanisms, and
 `scaffolds.records create` rejects a fresh recipe for them that requests `fused` unless
-`--allow-triton-attention` is supplied.
+`--allow-triton-attention` is supplied. Acceptance runs the Mosaic GPU tests only at the
+run's weight precision (`--mosaic-precision`).
 
 The requested and resolved implementations are recorded in run metadata. The
 resolved backend is stored in the run configuration and reused on resume, even

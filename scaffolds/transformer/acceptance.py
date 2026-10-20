@@ -193,10 +193,22 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
             tests.append("attention_output_scaling")
         if resolved_backend == "mosaic" and not cpu:
             query = model.get("attention_coefficient_conditioning", "static") in ("query", "query_key")
-            tests.extend(["mosaic_query" if query else "mosaic_taylor", "mosaic_repeatability"])
+            kernel = "mosaic_query" if query else "mosaic_taylor" if normalized else "mosaic_unnormalized"
+            tests.extend([kernel, "mosaic_repeatability"])
     if model.get("initialization", "flax_default") != "flax_default" and cpu:
         tests.append("initialization")
     return tuple(f"scaffolds/transformer/tests/test_{name}" + ("" if ".py::" in name else ".py") for name in tests)
+
+
+def mosaic_test_options(config: dict, resolved_backend: str) -> tuple[str, ...]:
+    """GPU tests of a Mosaic run cover only the weight precision the run uses."""
+    model = config["model"]
+    if resolved_backend != "mosaic" or model.get("attention_degree") is None:
+        return ()
+    from scaffolds.transformer.attention.backends.mosaic.api import default_precision
+
+    family = "taylor" if model.get("attention_normalization", True) else "query"
+    return ("--mosaic-precision", default_precision(family, model["attention_degree"]))
 
 
 def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
@@ -539,6 +551,8 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             if passed(path, experiment):
                 continue
             paths = test_paths(spec, experiment["config"], resolved_backend=hardware["attention_backend"], cpu=cpu)
+            if not cpu:
+                selection = (*selection, *mosaic_test_options(experiment["config"], hardware["attention_backend"]))
             if not paths:
                 record(path, experiment, tests_passed=0, note="no tests declared")
                 continue
