@@ -1,0 +1,67 @@
+{
+  "cases": [
+    {
+      "bitwise_equal_outputs_and_gradients": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "dtype": "bfloat16",
+      "identical_launches": true,
+      "independent": false,
+      "launches": 10
+    },
+    {
+      "bitwise_equal_outputs_and_gradients": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "dtype": "bfloat16",
+      "identical_launches": true,
+      "independent": true,
+      "launches": 10
+    },
+    {
+      "bitwise_equal_outputs_and_gradients": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "dtype": "float32",
+      "identical_launches": true,
+      "independent": false,
+      "launches": 10
+    },
+    {
+      "bitwise_equal_outputs_and_gradients": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "dtype": "float32",
+      "identical_launches": true,
+      "independent": true,
+      "launches": 10
+    }
+  ],
+  "created_utc": "2026-10-19T19:49:30.686297+00:00",
+  "device_kind": "NVIDIA H100 80GB HBM3",
+  "passed": true,
+  "reference_commit": "7fb44dc",
+  "source_commit": "e39f466d2931f777d130c3f31049223066ff9b18"
+}

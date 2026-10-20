@@ -1,0 +1,44 @@
+{
+  "completed_utc": "2026-10-19T19:52:38.115078+00:00",
+  "cuda_environment": "cuda12",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "device_kinds": [
+    "NVIDIA H100 80GB HBM3"
+  ],
+  "exit_code": 0,
+  "gpu_type": "H100",
+  "home_cluster": "kennel",
+  "node": "dogo",
+  "runtime_environment": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/path_kernels/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "slurm_job_id": "222686",
+  "source_commit": "e39f466",
+  "status": "passed",
+  "step": "tests",
+  "suites": {
+    "gdn-tests": {
+      "cases": 48,
+      "failed": 0,
+      "junit": {
+        "path": "scaffolds/transformer/validation/logs/path-kernels/222686/gdn-tests.xml",
+        "sha256": "4f2680478a32e95181a45514e346535b8768034075703b797d3958267a438c1f"
+      },
+      "seconds": 1578.1,
+      "skipped": 0
+    },
+    "path-tests": {
+      "cases": 35,
+      "failed": 0,
+      "junit": {
+        "path": "scaffolds/transformer/validation/logs/path-kernels/222686/path-tests.xml",
+        "sha256": "8cce8d252e346556a0708c82f35232a2110eb6bfaaad8bff49d94e09c335f566"
+      },
+      "seconds": 660.3,
+      "skipped": 0
+    }
+  }
+}
