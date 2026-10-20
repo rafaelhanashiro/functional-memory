@@ -716,3 +716,67 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/r362b2df6edbd/best_validation.json
       sha256: fe00aff4310ff526bbe4dbd931d2e6b8f5e27c35e63b7e4601ed25b542fa0269
+- study: attention_scaling
+  run_id: raa043e978a3d
+  role: static_reference_m8
+  label: input-independent learned m=8, head RMSNorm, warmup 400
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/raa043e978a3d/config.yaml
+      sha256: fcd06a4000cc61743493ca2dac9af12dbbfaac36439a046dba9eff439c1eda52
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/raa043e978a3d/metrics.jsonl
+      sha256: 80e4428f82b17cc4d579460ed9274c99cb3dc4479c48e6b7104e98865a53cc54
+    completion.json:
+      path: experiments/attention_scaling/runs/raa043e978a3d/completion.json
+      sha256: 764f133052d643964912af3c576f62d3432b873635a4aa2432c1d148f904b80c
+    metadata.json:
+      path: experiments/attention_scaling/runs/raa043e978a3d/metadata.json
+      sha256: 588aa8d7b961ddd9dae87c01ba28b1aa60798824cad549f4ce82d652b6fab5d5
+    best_validation.json:
+      path: experiments/attention_scaling/runs/raa043e978a3d/best_validation.json
+      sha256: 2abb9296b35bd1af92d651207616df7b117b317e824555d0b8c49f5fd5a7074b
+- study: attention_scaling
+  run_id: rccf19c31669d
+  role: wide_draw_m8
+  label: tanh query-dependent m=8, zero-amplitude start, W ~ N(0, 1/hidden_size),
+    Triton kernel
+  control: raa043e978a3d
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rccf19c31669d/config.yaml
+      sha256: 24cdc4349a33ed4cbb6e5a539d16fc125dddbf8517badda0384e73302a168a9d
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rccf19c31669d/metrics.jsonl
+      sha256: 9a067bf4434af74c1131c3f39521cb24e952bedf7483b23b55d7b3612eccd4e3
+    completion.json:
+      path: experiments/attention_scaling/runs/rccf19c31669d/completion.json
+      sha256: 8c780aedf377daada016c61abb7d68ea59e022757ef42ed751a309fea037baac
+    metadata.json:
+      path: experiments/attention_scaling/runs/rccf19c31669d/metadata.json
+      sha256: f373fa1b2c9944065ff10d1337eb2ee8999054830207ef6a620fa8defdc4cbaa
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rccf19c31669d/best_validation.json
+      sha256: 6f0a41dd1aac2c514e1b91b494b417cfb5dd35d541c133b5e7de78ca6eb9ab5c
+- study: attention_scaling
+  run_id: r66db587096c4
+  role: query_key_m8
+  label: tanh query-key m=8, zero-amplitude start, W ~ N(0, 1/hidden_size), one-pass
+    Triton kernel
+  control: raa043e978a3d
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r66db587096c4/config.yaml
+      sha256: db27c6764648cab0889e5639264e5e122a0a6c19a6ef8718cb44439dfbe610ce
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r66db587096c4/metrics.jsonl
+      sha256: c1d52038be8aaf9b2ad38650e166b52561c68b8facb5dc0a4cf0071b6367fce6
+    completion.json:
+      path: experiments/attention_scaling/runs/r66db587096c4/completion.json
+      sha256: 45f88374aeddfeac3c0c5a88815c51a83ca8e839e2866f25214da7638283d817
+    metadata.json:
+      path: experiments/attention_scaling/runs/r66db587096c4/metadata.json
+      sha256: 2696f4d8f6744d849208eed88c0b6140a37c034ca3359288382ca0881d06032a
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r66db587096c4/best_validation.json
+      sha256: dcf1d24db7d9c78774ea2f3d081f2b5daea6af157382136fbe0672a70fccc023
