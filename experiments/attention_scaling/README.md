@@ -415,18 +415,22 @@ Three single-B300 runs replace RoPE with PaTH (`positional_encoding: path`, see 
 transported through token Householder products, with the authors' gate design. The
 query-conditioned runs keep the zero-amplitude, `N(0, 1/hidden_size)`-draw tanh recipe
 (`r5be9a97f06e2` with its degree changed; head RMSNorm); the control keeps the canonical
-softmax recipe (`rdf00da0866a8`). All use QK normalization, 400 warmup updates, global
-microbatch 32, and the chunked JAX PaTH implementation (`attention_backend: blocked`),
-which needs about 4.6 s per update on one B300, so each run takes about a day on `long`.
+softmax recipe (`rdf00da0866a8`). All use QK normalization, 400 warmup updates, and global
+microbatch 32. Softmax trains throughout on the chunked JAX PaTH implementation
+(`attention_backend: blocked`, about 6.0 s per update on one B300). The m = 2 and m = 4
+runs trained on it up to updates 7,500 and 6,500 and continue on FLA's fused kernels
+(`fused`, the polynomial fork); each record's `attention_backend_segments` gives the
+updates per implementation.
 
-| Kernel | Run | RoPE counterpart |
-| --- | --- | --- |
-| Softmax | `rf1ece7e314b3` | `rdf00da0866a8` |
-| Tanh query-conditioned, m = 2 | `rb901a10c4777` | `rec520e9303ac` |
-| Tanh query-conditioned, m = 4 | `r4de2b1429c8a` | `rd4f66b1959d2` |
+| Kernel | Run | RoPE counterpart | Updates on `blocked` / `fused` |
+| --- | --- | --- | --- |
+| Softmax | `rf1ece7e314b3` | `rdf00da0866a8` | all / none |
+| Tanh query-conditioned, m = 2 | `rb901a10c4777` | `rec520e9303ac` | 1-7,500 / 7,501-19,074 |
+| Tanh query-conditioned, m = 4 | `r4de2b1429c8a` | `rd4f66b1959d2` | 1-6,500 / 6,501-19,074 |
 
-The launch command, from `worktrees/path_attention` on Kennel with the launch commit
-recorded in each run's `record.json`:
+The launch command, from the run's worktree on Kennel (`worktrees/path_attention` for
+softmax, `worktrees/path_kernels` for m = 2 and m = 4) with the launch commit recorded in
+each run's `record.json`:
 
 ```bash
 RUN=<run-id>

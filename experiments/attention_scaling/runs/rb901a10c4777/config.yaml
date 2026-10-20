@@ -27,7 +27,7 @@ model:
   dropout: 0.0
   tie_embeddings: false
   remat: false
-  attention_backend: blocked
+  attention_backend: fused
   attention_degree: 2
   attention_normalization: false
   attention_output_scaling: head_rms_norm

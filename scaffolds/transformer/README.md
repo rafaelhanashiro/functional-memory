@@ -314,11 +314,13 @@ FP32 tiles one of FLA's kernels exceeds the shared memory), a prediction length 
 by 128, equal Q/K and value widths of 16, 32, 64, or 128, and degree 1-4; `auto` selects
 it there and the JAX implementation elsewhere. A row with a nonfinite output becomes NaN,
 as in `path.py`; a softmax score of -inf gets zero weight, as in FlashAttention. FLA
-rounds several intermediates to BF16 (dw and dbeta are stored in BF16), so its BF16 errors
-against FP32 are about twice the JAX implementation's, and its backward accumulates dk,
-dv, dw, and the split products' gradient with FP32 atomic additions, so dk, dv, dw, and
-dbeta are not bitwise repeatable; outputs, dq, and the coefficient gradients are. Accuracy, speed, and training pilots are in
-[validation](validation/README.md#fused-path-attention-kernels).
+rounds several intermediates to BF16 (dw and dbeta are stored in BF16): against FP32 its
+errors in the output and the q, k, v gradients are 1.5-3 times the JAX implementation's,
+and in dw, dbeta, and the coefficient gradients about 8 times (all below 1e-2 at the
+production shape). Its backward accumulates dk, dv, dw, and the split products'
+gradient with FP32 atomic additions, so dk, dv, dw, and dbeta are not bitwise repeatable;
+outputs, dq, and the coefficient gradients are. Accuracy, speed, and training pilots are
+in [validation](validation/README.md#fused-path-attention-kernels).
 
 ### Unnormalized output scaling
 
