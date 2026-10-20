@@ -262,9 +262,12 @@ degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r 
 (`key_polynomial_kernel` `[layers, heads, hidden_size, m+1]`, `key_polynomial_amplitude`
 `[layers, heads, m+1]`; drawn and started like `W` and `a`, so the start is unchanged).
 The pair coefficient factorizes, so nothing pairwise is stored: the blocked reference
-scales each key column, and the fused and Mosaic query-coefficient kernels run once per
-order with the factor folded into degree-specific values, summing `m+1` FP32 partial
-outputs. Diagnostics report the key factors beside the query coefficients.
+scales each key column, the fused Triton kernel (`backends/fused_query_key_polynomial.py`)
+forms `c_r(x_t) f_r(x_i)` inside each tile in one pass (its key-side backward also
+accumulates the key-factor gradient), and the Mosaic query kernel runs once per order with
+the factor folded into degree-specific values. The per-order path rounds each partial
+output to V's dtype before summing, which at degree one corrupts the gradient after head
+RMSNorm. Diagnostics report the key factors beside the query coefficients.
 
 The tanh path uses a dedicated fused kernel (or its Mosaic GPU counterpart,
 `attention_backend: mosaic`) that directly evaluates the query-dependent polynomial, with gradients for Q/K/V and every coefficient.

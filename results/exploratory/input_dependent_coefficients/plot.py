@@ -36,8 +36,8 @@ VARIANTS = {
                               "Tanh, original start, blocked reference"),
     "tanh_zero_amplitude": ("tanh, zero-amplitude start, blocked reference", "#1B9E77", "-",
                             "Tanh, zero-amplitude start, blocked reference"),
-    "tanh_zero_amplitude_wide": ("tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel", "#1B9E77", (0, (5, 2.5)),
-                                 "Tanh, zero-amplitude start, W ~ N(0, 1/d), Mosaic kernel"),
+    "tanh_zero_amplitude_wide": ("tanh, zero-amplitude start, W ~ N(0, 1/d), fused kernel", "#1B9E77", (0, (5, 2.5)),
+                                 "Tanh, zero-amplitude start, W ~ N(0, 1/d), fused kernel"),
     "tanh_zero_amplitude_inner_bias": ("tanh, zero-amplitude start, bias inside tanh, Mosaic kernel", "#1B9E77", ":",
                                        "Tanh, zero-amplitude start, bias inside tanh, Mosaic kernel"),
     "tanh_zero_amplitude_saturating_3": ("tanh, zero-amplitude start, W ~ N(0, 9/d), Mosaic kernel", "#80CDC1", "-",
@@ -151,9 +151,13 @@ def render(rows, curves):
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10,
                          "axes.spines.top": False, "axes.spines.right": False,
                          "pdf.fonttype": 42, "svg.hashsalt": "input-dependent-coefficients"})
-    fig, axes = plt.subplots(2, 2, figsize=(10, 7.2))
+    degrees = sorted({row["degree"] for row in rows})
+    columns = 3 if len(degrees) > 4 else 2
+    fig, axes = plt.subplots(2, columns, figsize=(5 * columns, 7.2))
     axes = axes.ravel()
-    for degree, ax in enumerate(axes, 1):
+    for ax in axes[len(degrees):]:
+        ax.axis("off")
+    for degree, ax in zip(degrees, axes):
         matched = {}
         for variant, (_, color, linestyle, label) in VARIANTS.items():
             for row in rows:
@@ -168,7 +172,9 @@ def render(rows, curves):
                         "o", color=color, markersize=3)
         ax.set_title(f"Degree {degree}", fontweight="bold")
         final = [f"Final PPL: {matched['static']['terminal_validation_perplexity']:.2f} static"]
-        for variant, name in (("tanh_original", "original start"), ("tanh_zero_amplitude", "zero-amplitude start")):
+        zero = "tanh_zero_amplitude" if "tanh_zero_amplitude" in matched else "tanh_zero_amplitude_wide"
+        for variant, name in (("tanh_original", "original start"), (zero, "zero-amplitude start"),
+                              ("tanh_query_key", "query-key")):
             if variant in matched:
                 row = matched[variant]
                 final.append(f"{row['terminal_validation_perplexity']:.2f} {name} "
@@ -177,9 +183,14 @@ def render(rows, curves):
         ax.set_xlabel("Training tokens (billions)")
         ax.set_xlim(0, 10.25)
         ax.grid(alpha=.18)
-    for ax in axes[::2]:
+    for ax in axes[::columns]:
         ax.set_ylabel("Validation NLL (lower is better)")
-    handles, labels = axes[0].get_legend_handles_labels()
+    seen = {}
+    for ax in axes[:len(degrees)]:
+        for handle, label in zip(*ax.get_legend_handles_labels()):
+            seen.setdefault(label, handle)
+    order = [VARIANTS[key][3] for key in VARIANTS if VARIANTS[key][3] in seen]
+    handles, labels = [seen[label] for label in order], order
     fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(.5, -.01))
     fig.suptitle("Input-dependent coefficients: matched degree, warmup 400, output RMSNorm", fontsize=12)
     fig.tight_layout(rect=(0, .13, 1, .94))

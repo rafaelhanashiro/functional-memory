@@ -436,6 +436,30 @@ sbatch --partition=long --nodelist=akita --gres=gpu:b300:1 --cpus-per-task=16 --
 Outcomes and the comparison with the fused runs and the static controls live in the
 [input-dependent coefficient topic](../../results/exploratory/input_dependent_coefficients/README.md).
 
+### Tanh coefficients at degree 8
+
+Three runs extend the zero-amplitude tanh comparison to m = 8, where the
+static polynomial has more freedom: query-only (`rccf19c31669d`), query–key
+(`r66db587096c4`), and the static learned control (`raa043e978a3d`, no static unnormalized
+m = 8 run existed). They keep the 1/d-draw recipes (`r5be9a97f06e2`, `r4e3f4097a60e`) and
+the static m = 4 recipe (`rc2b555b905dd`) apart from degree, at global microbatch 64. The
+Mosaic query kernel covers degrees 1–4, so query-only and static use the Triton fused
+kernels; their step-one gradients agree with the blocked reference within 2%. Query–key uses
+the one-pass Triton kernel (`backends/fused_query_key_polynomial.py`), which forms the pair
+coefficients inside each tile; its step-one gradients agree with the blocked reference within
+1.4%, and it takes 99 ms per layer forward and backward on an H100 PCIe at batch 32 against
+182 ms for the blocked reference, so the query–key run `r66db587096c4` uses four GPUs on `long`.
+Query-only runs on `standard`, the control on `long`:
+
+```bash
+RUN=<run-id>; PARTITION=<standard|long>; GPUS=<2|4>; COMMIT=<launch commit in the run's record.json>
+sbatch --partition="$PARTITION" --time=1-00:00:00 --exclude=collie,samoyed,doodle,terrier \
+  --gres=gpu:$GPUS --cpus-per-task=32 --mem=256G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" "$GPUS" B300,H100
+```
+
 ## Independent GDN erase gate
 
 Run `rf7341031e3d5` asks whether GDN benefits from separate scalar erase and write
