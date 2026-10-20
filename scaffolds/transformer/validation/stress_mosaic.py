@@ -4,9 +4,9 @@ stalled counter, and each printed result must equal the first call's bitwise (a 
 overwrites a buffer early would change it). Kernels: forward, dq, and dkv (Hopper) or dk and
 dv (Blackwell).
 
-    python stress_mosaic.py FAMILY KERNEL PRECISION CALLS [EVERY]
+    STRESS_DEGREE=m python stress_mosaic.py FAMILY KERNEL PRECISION CALLS [EVERY]  # m: 3 (query), 2 (Taylor)
 """
-import math, sys, time
+import math, os, sys, time
 import jax, jax.numpy as jnp, numpy as np
 from scaffolds.transformer.attention.backends.mosaic.api import _kernels, _scale
 from scaffolds.transformer.attention.backends.mosaic.common import TAYLOR, QUERY
@@ -20,9 +20,10 @@ q, k = (jax.random.normal(key, shape, jnp.float32) for key in keys[:2])
 q = (q / jnp.linalg.norm(q, axis=-1, keepdims=True) * 4 * math.sqrt(64)).astype(jnp.bfloat16)
 k = (k / jnp.linalg.norm(k, axis=-1, keepdims=True)).astype(jnp.bfloat16)
 v, do = (jax.random.normal(key, shape, jnp.bfloat16) for key in keys[2:4])
-degree = 3 if family == QUERY else 2
+degree = int(os.environ.get("STRESS_DEGREE", 3 if family == QUERY else 2))
 if family == QUERY:
-    c = jnp.tile(jnp.array([1, 1, 0.5, 1 / 6], jnp.float32), (16, 16, 2048, 1)).transpose(3, 0, 1, 2)
+    taylor = [1 / math.factorial(r) for r in range(degree + 1)]
+    c = jnp.tile(jnp.array(taylor, jnp.float32), (16, 16, 2048, 1)).transpose(3, 0, 1, 2)
     fwd_vec = bwd_vec = c
 else:
     fwd_vec = None

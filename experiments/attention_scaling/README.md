@@ -150,7 +150,7 @@ when the recipe leaves `model.initialization` unset.
 Untied embeddings, the scaffold's selective weight decay, and 400 warmup updates
 (`optim.warmup_steps`) are canonical. New unnormalized runs set
 `model.attention_output_scaling: head_rms_norm`. Normalized fixed Taylor runs, and tanh
-query-conditioned and static-coefficient unnormalized runs of degree up to 4, use the Mosaic
+query-conditioned and static-coefficient unnormalized runs of degree up to 8, use the Mosaic
 GPU kernels (`model.attention_backend: mosaic`). The
 following allocates a fresh execution from an existing QK-normalized Taylor recipe that
 predates them:

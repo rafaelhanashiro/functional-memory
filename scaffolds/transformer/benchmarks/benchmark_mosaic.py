@@ -55,7 +55,7 @@ for width in (8, 16, 32, 64, 128):
                 row += f" | {name} {type(e).__name__}: {str(e)[:80]}"
         print(row, flush=True)
 q, k, v, do = inputs(64)
-for degree in (1, 2, 3):
+for degree in (1, 2, 3, 4, 8):
     c = jnp.tile(jnp.array([1 / math.factorial(r) for r in range(degree + 1)], jnp.float32), (16, 2048, 16, 1))
     row = f"query m={degree:<2}"
     for name, fn in (("Triton", fused_query_polynomial_attention),
@@ -63,4 +63,17 @@ for degree in (1, 2, 3):
                      ("Mosaic bf16", partial(query_polynomial_attention, precision=BF16))):
         g = jax.jit(jax.grad(lambda q, k, v, c: jnp.sum(fn(q, k, v, c).astype(jnp.float32) * do), argnums=(0, 1, 2, 3)))
         row += f" | {name} fwd {bench(jax.jit(fn), q, k, v, c):6.3f} fwd+bwd {bench(g, q, k, v, c):6.3f}"
+    print(row, flush=True)
+
+from scaffolds.transformer.attention.unnormalized import unnormalized_attention
+
+for degree in (3, 8):  # static per-head learned coefficients (the query kernel with equal coefficients)
+    c = jnp.tile(jnp.array([1 / math.factorial(r) for r in range(degree + 1)], jnp.float32), (16, 1))
+    row = f"static m={degree:<2}"
+    for name, backend in (("Triton", "fused"), ("Mosaic bf16", "mosaic")):
+        fn = partial(unnormalized_attention, attention_degree=degree, backend=backend)
+        f = jax.jit(lambda q, k, v, c: fn(q, k, v, polynomial_coefficients=c))
+        g = jax.jit(jax.grad(lambda q, k, v, c: jnp.sum(fn(q, k, v, polynomial_coefficients=c).astype(jnp.float32) * do),
+                             argnums=(0, 1, 2, 3)))
+        row += f" | {name} fwd {bench(f, q, k, v, c):6.3f} fwd+bwd {bench(g, q, k, v, c):6.3f}"
     print(row, flush=True)

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Time one training microbatch (16 x 2048, synthetic tokens) with the fused and Mosaic
 # attention backends on the same GPU, twice each, for study recipes (RUNS; default a query
-# tanh and a Taylor recipe).
+# tanh and a Taylor recipe) read from RECIPES (default this checkout's attention_scaling runs).
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
@@ -24,11 +24,12 @@ for round in 1 2; do
   for run in ${RUNS:-r0bc57959ef6c raf32fab4ba52}; do
     for backend in fused mosaic; do
       "$PYTHON" - "$run" "$backend" "$SCRATCH" <<'PY'
+import os
 import sys
 from pathlib import Path
 import yaml
 run, backend, out = sys.argv[1:]
-recipe = yaml.safe_load(Path(f"experiments/attention_scaling/runs/{run}/config.yaml").read_text())
+recipe = yaml.safe_load(Path(os.environ.get("RECIPES", "experiments/attention_scaling/runs"), run, "config.yaml").read_text())
 recipe["model"]["attention_backend"] = backend
 recipe["train"]["micro_batch_size"] = 16
 Path(out, f"{run}-{backend}.yaml").write_text(yaml.safe_dump(recipe))
@@ -37,11 +38,12 @@ PY
       if [[ "$backend" == mosaic ]]; then
         RUN_ID_FOR_LABEL="$run"
         label="mosaic-"$("$PYTHON" - "$RUN_ID_FOR_LABEL" <<'PY'
+import os
 import sys
 from pathlib import Path
 import yaml
 from scaffolds.transformer.attention.backends.mosaic.api import default_precision
-model = yaml.safe_load(Path(f"experiments/attention_scaling/runs/{sys.argv[1]}/config.yaml").read_text())["model"]
+model = yaml.safe_load(Path(os.environ.get("RECIPES", "experiments/attention_scaling/runs"), sys.argv[1], "config.yaml").read_text())["model"]
 family = "taylor" if model.get("attention_normalization", True) else "query"
 print(default_precision(family, model["attention_degree"]))
 PY

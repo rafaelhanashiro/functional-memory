@@ -17,7 +17,7 @@ from scaffolds.transformer.attention.backends.mosaic.api import WIDTHS, query_po
 from scaffolds.transformer.attention.backends.mosaic.common import PRECISIONS
 from scaffolds.transformer.tests.test_fused_attention import _assert_relative
 
-DEGREES = (1, 2, 3, 4)
+DEGREES = (1, 2, 3, 4, 8)
 QKV_TOLERANCES = (0.006, 0.025, 0.025, 0.015)  # output, dq, dk, dv: the BF16 bounds of test_fused_attention
 COEFFICIENT_TOLERANCE = 0.01
 pytestmark = pytest.mark.gpu
@@ -98,6 +98,16 @@ def test_production_context_matches_triton(degree, precision):
 
 
 @pytest.mark.parametrize("precision", PRECISIONS)
+@pytest.mark.parametrize("width", (64, 128))
+def test_degree_eight_fits_the_production_context(width, precision):
+    # B300's dK/dV keeps every query's m+1 coefficients in shared memory: the largest case.
+    operands, cotangent = _inputs(8, width, time=2048, heads=4)
+    mosaic = jax.jit(partial(_vjp, partial(query_polynomial_attention, precision=precision)))(operands, cotangent)
+    triton = jax.jit(partial(_vjp, fused_query_polynomial_attention))(operands, cotangent)
+    _assert_all(mosaic, triton, f"production context, degree=8, width={width}, {precision}")
+
+
+@pytest.mark.parametrize("precision", PRECISIONS)
 def test_outputs_and_vjp_ignore_future_tokens(precision):
     operands, cotangent = _inputs(2, 64)
     prefix = 300
@@ -132,13 +142,13 @@ def test_nonfinite_weight_poisons_its_row_even_with_zero_values():
     assert np.isfinite(output[finite]).all()
 
 
-@pytest.mark.parametrize("change", ["coefficient dtype", "degree 5", "coefficient shape", "width", "time", "precision"])
+@pytest.mark.parametrize("change", ["coefficient dtype", "degree 9", "coefficient shape", "width", "time", "precision"])
 def test_unsupported_inputs_raise(change):
     (q, k, v, c), _ = _inputs(2, 64, time=512, heads=1)
     if change == "coefficient dtype":
         c = c.astype(jnp.bfloat16)
-    elif change == "degree 5":
-        c = jnp.zeros((*c.shape[:3], 6), jnp.float32)
+    elif change == "degree 9":
+        c = jnp.zeros((*c.shape[:3], 10), jnp.float32)
     elif change == "coefficient shape":
         c = c[:, :-1]
     elif change == "width":

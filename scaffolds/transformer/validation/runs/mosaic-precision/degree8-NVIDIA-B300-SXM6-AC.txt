@@ -1,0 +1,18 @@
+gpu=NVIDIA-B300-SXM6-AC commit=fcc413fc02bc061a7f28b08e1357ec193d62b99a
+NVIDIA B300 SXM6 AC
+m=3 positive T=512 bf16   out 2.4e-03  dq 2.3e-03  dk 2.4e-03  dv 2.3e-03  dc 1.6e-07
+m=3 positive T=512 bf16x3 out 1.7e-03  dq 1.7e-03  dk 1.7e-03  dv 1.7e-03  dc 1.6e-07
+m=3 positive T=2048 bf16   out 2.4e-03  dq 2.4e-03  dk 2.4e-03  dv 2.4e-03  dc 1.8e-07
+m=3 positive T=2048 bf16x3 out 1.7e-03  dq 1.7e-03  dk 1.7e-03  dv 1.7e-03  dc 1.8e-07
+m=3 signed T=512 bf16   out 2.5e-03  dq 2.3e-03  dk 2.4e-03  dv 2.4e-03  dc 1.6e-07
+m=3 signed T=512 bf16x3 out 1.7e-03  dq 1.6e-03  dk 1.7e-03  dv 1.7e-03  dc 1.6e-07
+m=3 signed T=2048 bf16   out 2.4e-03  dq 2.4e-03  dk 2.4e-03  dv 2.4e-03  dc 1.8e-07
+m=3 signed T=2048 bf16x3 out 1.7e-03  dq 1.7e-03  dk 1.7e-03  dv 1.7e-03  dc 1.8e-07
+m=8 positive T=512 bf16   out 2.3e-03  dq 2.4e-03  dk 2.4e-03  dv 2.4e-03  dc 5.3e-07
+m=8 positive T=512 bf16x3 out 1.7e-03  dq 1.7e-03  dk 1.7e-03  dv 1.7e-03  dc 5.3e-07
+m=8 positive T=2048 bf16   out 2.4e-03  dq 2.3e-03  dk 2.4e-03  dv 2.4e-03  dc 6.0e-07
+m=8 positive T=2048 bf16x3 out 1.7e-03  dq 1.7e-03  dk 1.7e-03  dv 1.7e-03  dc 6.0e-07
+m=8 signed T=512 bf16   out 2.3e-03  dq 2.4e-03  dk 2.3e-03  dv 2.4e-03  dc 5.3e-07
+m=8 signed T=512 bf16x3 out 1.7e-03  dq 1.6e-03  dk 1.7e-03  dv 1.7e-03  dc 5.3e-07
+m=8 signed T=2048 bf16   out 2.4e-03  dq 2.3e-03  dk 2.3e-03  dv 2.5e-03  dc 6.0e-07
+m=8 signed T=2048 bf16x3 out 1.7e-03  dq 1.7e-03  dk 1.7e-03  dv 1.7e-03  dc 6.0e-07

@@ -1,0 +1,112 @@
+{
+ "attention_backend": "mosaic",
+ "device_kinds": [
+  "NVIDIA H100 PCIe"
+ ],
+ "node": "mastiff",
+ "overrides": {
+  "eval_every": 100,
+  "gpu_count": 1,
+  "micro_batch_size": 16
+ },
+ "recipe": "experiments/attention_scaling/runs/raa043e978a3d/config.yaml",
+ "runtime_environment": {
+  "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+  "XLA_FLAGS": null,
+  "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+ },
+ "slurm_job_id": "223201",
+ "source_commit": "e974f18944e6dfc7893010a57c0429855ccf5bf9",
+ "validation": [
+  {
+   "step": 100,
+   "tokens_per_second": 132140.64858668376,
+   "train_gradient_clipped_fraction": 0.88,
+   "train_gradient_norm_max": 43.98632049560547,
+   "train_gradient_norm_mean": 2.9799325996637345,
+   "train_nll_sample_mean": 8.238298372788863,
+   "validation_nll": 6.715877873556955
+  },
+  {
+   "step": 200,
+   "tokens_per_second": 146938.90959676655,
+   "train_gradient_clipped_fraction": 0.99,
+   "train_gradient_norm_max": 4.9772210121154785,
+   "train_gradient_norm_mean": 1.9886776882410049,
+   "train_nll_sample_mean": 5.982438707351685,
+   "validation_nll": 5.54410531265395
+  },
+  {
+   "step": 300,
+   "tokens_per_second": 144955.9786557444,
+   "train_gradient_clipped_fraction": 1.0,
+   "train_gradient_norm_max": 5.028967380523682,
+   "train_gradient_norm_mean": 2.7967820382118225,
+   "train_nll_sample_mean": 5.18429217338562,
+   "validation_nll": 4.949856242963246
+  },
+  {
+   "step": 400,
+   "tokens_per_second": 145314.54449918875,
+   "train_gradient_clipped_fraction": 1.0,
+   "train_gradient_norm_max": 3.9292471408843994,
+   "train_gradient_norm_mean": 2.6038041472435,
+   "train_nll_sample_mean": 4.662688112258911,
+   "validation_nll": 4.5435996651649475
+  },
+  {
+   "step": 500,
+   "tokens_per_second": 144864.3528429415,
+   "train_gradient_clipped_fraction": 1.0,
+   "train_gradient_norm_max": 3.956827163696289,
+   "train_gradient_norm_mean": 2.372893226146698,
+   "train_nll_sample_mean": 4.278389883041382,
+   "validation_nll": 4.1353248464209695
+  },
+  {
+   "step": 600,
+   "tokens_per_second": 145485.73457931558,
+   "train_gradient_clipped_fraction": 1.0,
+   "train_gradient_norm_max": 5.34166955947876,
+   "train_gradient_norm_mean": 2.637304493188858,
+   "train_nll_sample_mean": 3.9963599681854247,
+   "validation_nll": 3.8895916576896394
+  },
+  {
+   "step": 700,
+   "tokens_per_second": 144621.52980983257,
+   "train_gradient_clipped_fraction": 1.0,
+   "train_gradient_norm_max": 8.56096076965332,
+   "train_gradient_norm_mean": 3.5939758110046385,
+   "train_nll_sample_mean": 3.822198176383972,
+   "validation_nll": 3.7428651430777142
+  },
+  {
+   "step": 800,
+   "tokens_per_second": 144351.84663282215,
+   "train_gradient_clipped_fraction": 1.0,
+   "train_gradient_norm_max": 12.940576553344727,
+   "train_gradient_norm_mean": 4.0274546694755555,
+   "train_nll_sample_mean": 3.681529474258423,
+   "validation_nll": 3.665569944041116
+  },
+  {
+   "step": 900,
+   "tokens_per_second": 144424.0964801291,
+   "train_gradient_clipped_fraction": 1.0,
+   "train_gradient_norm_max": 11.85441780090332,
+   "train_gradient_norm_mean": 3.834178729057312,
+   "train_nll_sample_mean": 3.5604470491409304,
+   "validation_nll": 3.5452942635331834
+  },
+  {
+   "step": 1000,
+   "tokens_per_second": 144537.53546967224,
+   "train_gradient_clipped_fraction": 1.0,
+   "train_gradient_norm_max": 17.200429916381836,
+   "train_gradient_norm_mean": 3.9127843403816223,
+   "train_nll_sample_mean": 3.5203811883926392,
+   "validation_nll": 3.5028943717479706
+  }
+ ]
+}
