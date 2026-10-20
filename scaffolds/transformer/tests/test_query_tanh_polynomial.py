@@ -9,6 +9,7 @@ from flax import nnx
 import jax
 import jax.numpy as jnp
 import numpy as np
+import optax
 import pytest
 
 from scaffolds.transformer import acceptance
@@ -373,6 +374,9 @@ def test_legacy_identity_config_resumes_without_new_activation_field():
      "attention_coefficient_projection_initial_std": 0.01},
     {"attention_coefficient_activation": "identity", "attention_degree": 1, "attention_coefficient_tanh_bias": True},
     {"attention_coefficient_tanh_bias": 1},
+    {"attention_coefficient_amplitude_scale": "linear"},
+    {"attention_coefficient_activation": "identity", "attention_degree": 1,
+     "attention_coefficient_amplitude_scale": "factorial"},
 ])
 def test_rejects_unsupported_tanh_coefficient_configurations(updates):
     with pytest.raises(ValueError):
@@ -476,6 +480,97 @@ def test_inner_bias_is_fp32_without_weight_decay_and_reported_by_diagnostics():
                                     tanh_bias=model.query_polynomial_tanh_bias[0])
     np.testing.assert_allclose(report["coefficients"]["effective_summary"]["mean"][0],
                                jnp.mean(expected, axis=(0, 1)), rtol=1e-5, atol=1e-6)
+
+
+@pytest.mark.parametrize("degree", (*DEGREES, 8))
+def test_factorial_amplitude_scale_gives_order_r_an_adam_learning_rate_of_lr_over_r_factorial(degree):
+    operands, _ = _inputs(degree)
+    _, _, _, x, kernel, bias, amplitude = operands
+    factorials = jnp.asarray([math.factorial(r) for r in range(degree + 1)], jnp.float32)
+    scaled = lambda a: project_coefficients(x, kernel, bias, amplitude=a, activation="tanh",
+                                            amplitude_scale="factorial")
+    plain = lambda a: project_coefficients(x, kernel, bias, amplitude=a, activation="tanh")
+    with jax.default_matmul_precision("highest"):
+        np.testing.assert_allclose(scaled(amplitude), plain(amplitude / factorials), rtol=1e-6, atol=1e-7)
+        expected = bias + amplitude / factorials * jnp.tanh(jnp.einsum("btd,hdr->bthr", x, kernel))
+    np.testing.assert_allclose(scaled(amplitude), expected, rtol=1e-5, atol=1e-6)
+    # Adam on a_r with step lr moves the effective amplitude a_r/r! exactly as Adam with
+    # step lr/r! moves an unscaled amplitude: the gradient's 1/r! cancels in m/sqrt(v).
+    target = jnp.asarray(np.random.default_rng(3).normal(size=expected.shape), jnp.float32)
+    loss = lambda function: lambda a: jnp.mean((function(a) - target) ** 2)
+    lr, adam = 1e-2, optax.scale_by_adam(eps=0.0)
+    scaled_amplitude, plain_amplitude = amplitude, amplitude / factorials
+    scaled_state, plain_state = adam.init(scaled_amplitude), adam.init(plain_amplitude)
+    for _ in range(3):
+        step, scaled_state = adam.update(jax.grad(loss(scaled))(scaled_amplitude), scaled_state)
+        scaled_amplitude = scaled_amplitude - lr * step
+        step, plain_state = adam.update(jax.grad(loss(plain))(plain_amplitude), plain_state)
+        plain_amplitude = plain_amplitude - lr / factorials * step
+    np.testing.assert_allclose(scaled_amplitude / factorials, plain_amplitude, rtol=1e-5, atol=1e-7)
+    assert np.all(np.asarray(scaled_amplitude != amplitude))
+    with pytest.raises(ValueError):
+        project_coefficients(x, kernel, bias, amplitude=amplitude, activation="tanh", amplitude_scale="linear")
+    with pytest.raises(ValueError):
+        project_coefficients(x, kernel, bias, activation="identity", amplitude_scale="factorial")
+
+
+@pytest.mark.parametrize("degree", (2, 8))
+def test_factorial_amplitude_scale_keeps_the_static_start_parameters_and_reports_itself(degree):
+    config = _model(degree, attention_coefficient_amplitude_scale="factorial",
+                    attention_coefficient_amplitude_initial=0.0, attention_coefficient_projection_initial_std=0.002)
+    plain = replace(config, attention_coefficient_amplitude_scale="none")
+    static_config = replace(plain, attention_coefficient_conditioning="static",
+                            attention_coefficient_activation="identity",
+                            attention_coefficient_amplitude_initial=1.0,
+                            attention_coefficient_projection_initial_std=0.0)
+    model, plain_model, static = build_model(config, 13), build_model(plain, 13), build_model(static_config, 13)
+    assert model_parameter_count(config) == model_parameter_count(plain)
+    np.testing.assert_array_equal(model.query_polynomial_kernel[...], plain_model.query_polynomial_kernel[...])
+    tokens = jnp.arange(26).reshape(2, 13) % 16
+    np.testing.assert_allclose(model(tokens), static(tokens), rtol=2e-5, atol=2e-6)
+    factorials = jnp.asarray([math.factorial(r) for r in range(degree + 1)], jnp.float32)
+    model.query_polynomial_amplitude[...] = 0.25
+    plain_model.query_polynomial_amplitude[...] = 0.25 / factorials
+    np.testing.assert_allclose(model(tokens), plain_model(tokens), rtol=2e-5, atol=2e-6)
+    facts = acceptance.matches_softmax_backbone_initialization(Config(model=config))
+    assert facts["mechanism_parameters"]["query_polynomial_amplitude"]["initial"] == [0.0] * (degree + 1)
+    # Legacy recipes omit the field; the identity names it only when set.
+    current = config_to_dict(Config(model=plain))
+    legacy = config_to_dict(Config(model=plain))
+    del legacy["model"]["attention_coefficient_amplitude_scale"]
+    assert config_dicts_equal(current, legacy)
+    assert not config_dicts_equal(current, config_to_dict(Config(model=config)))
+    from scaffolds.transformer.training.diagnostics import attention_identity
+
+    default, ordered = attention_identity(Config(model=plain)), attention_identity(Config(model=config))
+    assert "attention_coefficient_amplitude_scale" not in default
+    assert ordered["attention_coefficient_amplitude_scale"] == "factorial"
+    assert "c(x_t) = b + (a/r!)*tanh(x_t W) per layer/head" in ordered["attention_formula"]
+    assert ordered["attention_coefficient_count"] == default["attention_coefficient_count"]
+
+
+def test_diagnostics_report_raw_and_effective_amplitudes_under_factorial_scale():
+    config = _config(3)
+    config.model = replace(config.model, attention_coefficient_amplitude_scale="factorial")
+    state = create_state(config, jax.random.PRNGKey(0))
+    state.params["query_polynomial_kernel"][...] = jnp.asarray(
+        np.random.default_rng(2).normal(size=state.params["query_polynomial_kernel"].shape) * 0.2, jnp.float32)
+    state.params["query_polynomial_amplitude"][...] = 0.5
+    sample, provenance = fixed_diagnostic_sample(config)
+    report = attention_diagnostics(state, config, sample, provenance)
+    assert report["valid"], report["issues"]
+    coefficients = report["coefficients"]
+    np.testing.assert_allclose(coefficients["modulation_amplitude"], np.full((2, 2, 4), 0.5))
+    assert coefficients["modulation_amplitude_scale"] == "1/r!"
+    np.testing.assert_allclose(coefficients["effective_modulation_amplitude"],
+                               np.broadcast_to(0.5 / np.asarray([1, 1, 2, 6]), (2, 2, 4)), rtol=1e-12)
+    model = nnx.merge(state.graphdef, state.params)
+    x = model.layers_0.attention_norm(model.token_embedding(jnp.asarray(sample[:, :-1])))
+    expected = project_coefficients(x, model.query_polynomial_kernel[0], model.query_polynomial_bias[0],
+                                    amplitude=model.query_polynomial_amplitude[0], activation="tanh",
+                                    amplitude_scale="factorial")
+    np.testing.assert_allclose(coefficients["effective_summary"]["std"][0], jnp.std(expected, axis=(0, 1)),
+                               rtol=1e-4, atol=1e-7)
 
 
 @pytest.mark.parametrize("degree", DEGREES)

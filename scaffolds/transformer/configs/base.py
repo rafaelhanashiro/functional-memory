@@ -92,6 +92,9 @@ class ModelConfig:
     # Tanh coefficients may learn an offset inside the tanh, c_r = b_r + a_r tanh(w_r^T x_t + beta_r),
     # starting at beta_r = 0, so a constant shift of the pre-activation need not come through w_r.
     attention_coefficient_tanh_bias: bool = False
+    # "factorial" divides the tanh amplitude of order r by r!, c_r = b_r + (a_r/r!) tanh(w_r^T x_t),
+    # so under Adam's unit-scale steps order r's modulation moves at lr/r!, matching b_r = 1/r!.
+    attention_coefficient_amplitude_scale: Literal["none", "factorial"] = "none"
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
     # (even m, row-normalized only), so the kernel is nonnegative by construction;
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
@@ -281,6 +284,10 @@ class ModelConfig:
             raise ValueError("model.attention_coefficient_tanh_bias must be a boolean")
         if self.attention_coefficient_tanh_bias and self.attention_coefficient_activation != "tanh":
             raise ValueError("A bias inside tanh applies to tanh coefficients only")
+        if self.attention_coefficient_amplitude_scale not in ("none", "factorial"):
+            raise ValueError(f"Unknown attention coefficient amplitude scale: {self.attention_coefficient_amplitude_scale}")
+        if self.attention_coefficient_amplitude_scale != "none" and self.attention_coefficient_activation != "tanh":
+            raise ValueError("An amplitude scale applies to tanh coefficients only")
         if self.attention_coefficients == "learned":
             if self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed":
                 raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")

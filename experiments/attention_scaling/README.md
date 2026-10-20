@@ -442,9 +442,8 @@ Three runs extend the zero-amplitude tanh comparison to m = 8, where the
 static polynomial has more freedom: query-only (`rccf19c31669d`), query–key
 (`r66db587096c4`), and the static learned control (`raa043e978a3d`, no static unnormalized
 m = 8 run existed). They keep the 1/d-draw recipes (`r5be9a97f06e2`, `r4e3f4097a60e`) and
-the static m = 4 recipe (`rc2b555b905dd`) apart from degree, at global microbatch 64. The
-Mosaic query kernel covers degrees 1–4, so query-only and static use the Triton fused
-kernels; their step-one gradients agree with the blocked reference within 2%. Query–key uses
+the static m = 4 recipe (`rc2b555b905dd`) apart from degree, at global microbatch 64.
+Query-only and static use the Triton fused kernels; their step-one gradients agree with the blocked reference within 2%. Query–key uses
 the one-pass Triton kernel (`backends/fused_query_key_polynomial.py`), which forms the pair
 coefficients inside each tile; its step-one gradients agree with the blocked reference within
 1.4%, and it takes 99 ms per layer forward and backward on an H100 PCIe at batch 32 against
@@ -459,6 +458,12 @@ sbatch --partition="$PARTITION" --time=1-00:00:00 --exclude=collie,samoyed,doodl
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
   "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" "$GPUS" B300,H100
 ```
+
+`ra39c41604704` asks whether the query-only deficit at m = 8 comes from Adam moving every
+order's amplitude at the same rate. It repeats `rccf19c31669d` with
+`model.attention_coefficient_amplitude_scale: factorial`, `c_r = b_r + (a_r/r!) tanh(w_r^T x_t)`,
+so order r's modulation moves at lr/r!, and with the Mosaic query kernel, which now covers
+degree 8. It runs on one GPU on `standard` (global microbatch 32) with the command above.
 
 ## Independent GDN erase gate
 

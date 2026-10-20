@@ -287,7 +287,9 @@ def attention_identity(config) -> dict:
         tanh_start = (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero") + (
             f", a initially {amplitude:g}" if amplitude != 1.0 else ", a initially 1") + (
             ", beta initially 0" if inner_bias else "")
-        tanh_formula = "c(x_t) = b + a*tanh(x_t W + beta)" if inner_bias else "c(x_t) = b + a*tanh(x_t W)"
+        amplitude_scale = config.model.attention_coefficient_amplitude_scale if query_tanh else "none"
+        tanh_formula = ("c(x_t) = b + (a/r!)*tanh(x_t W" if amplitude_scale == "factorial" else "c(x_t) = b + a*tanh(x_t W") + (
+            " + beta)" if inner_bias else ")")
         identity.update(
             attention_kernel="query_key_polynomial_unnormalized" if key_conditioned else "query_polynomial_unnormalized",
             attention_coefficient_conditioning=conditioning,
@@ -297,6 +299,7 @@ def attention_identity(config) -> dict:
             **({"attention_coefficient_amplitude_initial": amplitude,
                 "attention_coefficient_projection_initial_std": spread} if (amplitude, spread) != (1.0, 0.0) else {}),
             **({"attention_coefficient_tanh_bias": True} if inner_bias else {}),
+            **({"attention_coefficient_amplitude_scale": amplitude_scale} if amplitude_scale != "none" else {}),
             attention_formula=((f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) f_r(x_i) s_ti^r v_i" if key_conditioned
                                 else f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i")
                                + ", s_ti = Q_t K_i^T / sqrt(d_k); "
@@ -463,7 +466,7 @@ def polynomial_coefficient_report(params, config) -> dict:
 
 
 
-def query_coefficient_report(params, raw_layers) -> dict:
+def query_coefficient_report(params, raw_layers, *, amplitude_scale="none") -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
@@ -495,6 +498,10 @@ def query_coefficient_report(params, raw_layers) -> dict:
     }
     if amplitude is not None:
         report.update(activation="tanh", modulation_amplitude=_serializable(amplitude))
+        if amplitude_scale == "factorial":
+            factorials = np.asarray([math.factorial(r) for r in range(amplitude.shape[-1])], dtype=np.float64)
+            report.update(modulation_amplitude_scale="1/r!",
+                          effective_modulation_amplitude=_serializable(amplitude / factorials))
     if inner_bias is not None:
         report["tanh_bias"] = _serializable(inner_bias)
     if key_amplitude is not None:
@@ -626,7 +633,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         if not coefficient_report["finite"]:
             issues.append("Nonfinite quadratic coefficients")
     elif config.model.attention_coefficient_conditioning in ("query", "query_key"):
-        coefficient_report = query_coefficient_report(params, raw_layers)
+        coefficient_report = query_coefficient_report(
+            params, raw_layers, amplitude_scale=config.model.attention_coefficient_amplitude_scale)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
     elif has_learned_polynomial(config.model):
