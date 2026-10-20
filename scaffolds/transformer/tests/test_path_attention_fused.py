@@ -226,6 +226,13 @@ def test_configuration_backend_resolution_identity_and_acceptance():
                                          platform="cpu", sequence_length=2048) == "blocked"
         assert resolve_attention_backend(replace(fused, attention_backend="auto"), dtype="bfloat16",
                                          platform="gpu", sequence_length=2000) == "blocked"
+        wide = replace(fused, attention_backend="auto", qk_head_dim=128, value_head_dim=128)
+        for capability, expected_backend in ((9, "fused"), (10, "blocked")):
+            with pytest.MonkeyPatch.context() as patch:
+                patch.setattr("scaffolds.transformer.attention.backends.selection._runtime_platform", lambda: "gpu")
+                patch.setattr("scaffolds.transformer.attention.backends.selection._cuda_compute_capability",
+                              lambda capability=capability: capability)
+                assert resolve_attention_backend(wide, dtype="bfloat16", sequence_length=2048) == expected_backend
         with pytest.raises(ValueError, match="sm90"):
             resolve_attention_backend(fused, dtype="bfloat16", platform="gpu", sequence_length=2000)
         identity = attention_identity(_config(fused))
@@ -302,6 +309,11 @@ def test_gpu_other_head_widths_match_the_jax_implementation(dim):
     for degree in (0, 2):
         operands, cotangent = _inputs(batch=1, time=1024, heads=2, dim=dim, degree=degree, seed=dim, norm=4.0,
                                       dtype=jnp.bfloat16)
+        if dim == 128 and triton_port.device().blackwell:
+            # FLA's dq kernel fails to launch at width 128 on Blackwell; the operation refuses it.
+            with pytest.raises(ValueError, match="widths"):
+                _compiled(_kernel(degree), operands, cotangent)
+            continue
         expected = jax.jit(lambda *x: _reference(_kernel(degree), x, cotangent))(*operands)
         actual = _compiled(_kernel(degree), operands, cotangent)
         for name, got, want in zip(NAMES, actual, expected):

@@ -8,8 +8,8 @@ semantics; outputs FLA updates in place are aliased outputs here
 ``o_t = sum_s p_t(s_ts) v_s`` uses the same launches with FLA's six softmax-dependent
 kernels replaced by ``fla_path_polynomial_kernels``. The forget gate is not used.
 
-Inputs follow ``path.path_attention``: ``q, k, v`` [B, T, H, D] (BF16, D in 16, 32, 64, 128,
-value width equal to D), unit ``w`` [B, T, H, D] and ``beta`` [B, T, H] in FP32,
+Inputs follow ``path.path_attention``: ``q, k, v`` [B, T, H, D] (BF16, D in 16, 32, 64, 128 on
+Hopper and up to 64 on Blackwell, value width equal to D), unit ``w`` [B, T, H, D] and ``beta`` [B, T, H] in FP32,
 and FP32 polynomial coefficients [B, T, H, m+1] (m 1-4). T must be a multiple of 128. As in
 ``path_attention``, a row whose output has a nonfinite element becomes NaN; nonfinite
 scores or polynomial values reach the output, while a -inf softmax score gives a zero
@@ -30,6 +30,9 @@ from scaffolds.transformer.attention.backends import triton_port
 from scaffolds.transformer.attention.backends.triton_port import empty, update, zeros
 
 HEAD_DIMS = (16, 32, 64, 128)
+# FLA's parallel_path_bwd_dq kernel (and the fork's) fails to launch at width 128 on
+# Blackwell (B300: CUDA_ERROR_LAUNCH_FAILED); every width runs on Hopper.
+BLACKWELL_HEAD_DIMS = (16, 32, 64)
 SEQUENCE_MULTIPLE = 128
 SPLIT = 512  # FLA's S: the large chunk whose Householder product the backward caches
 MAX_DEGREE = 4
@@ -49,6 +52,11 @@ class Plan:
     dq_stages: int
     cumprod_bwd_stages: int
     intra_bwd_stages: int
+
+
+def head_dims(device: triton_port.Device) -> tuple[int, ...]:
+    """Head widths the fused kernels support on this device."""
+    return BLACKWELL_HEAD_DIMS if device.blackwell else HEAD_DIMS
 
 
 def plan(device: triton_port.Device, key_dim: int) -> Plan:
@@ -328,8 +336,10 @@ def validate(q, k, v, w, beta, *, kernel, coefficients=None):
         raise ValueError("PaTH requires q, k, w [B, T, H, D] and v [B, T, H, V]")
     if beta.shape != q.shape[:3]:
         raise ValueError("PaTH beta must have shape [B, T, H]")
-    if q.shape[-1] not in HEAD_DIMS or v.shape[-1] != q.shape[-1]:
-        raise ValueError(f"Fused PaTH needs equal query/key and value widths in {HEAD_DIMS}")
+    on_gpu = triton_port.interpreting() or jax.default_backend() == "gpu"
+    widths = head_dims(triton_port.device()) if on_gpu else HEAD_DIMS
+    if q.shape[-1] not in widths or v.shape[-1] != q.shape[-1]:
+        raise ValueError(f"Fused PaTH needs equal query/key and value widths in {widths} on this GPU")
     if q.shape[1] % SEQUENCE_MULTIPLE:
         raise ValueError(f"Fused PaTH needs a sequence length divisible by {SEQUENCE_MULTIPLE}")
     if (kernel == "query_polynomial") != (coefficients is not None):

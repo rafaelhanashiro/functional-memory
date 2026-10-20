@@ -1,6 +1,16 @@
 {
   "acceptance": {
+    "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
+    "failed_utc": "2026-10-20T20:01:43.050998+00:00",
+    "failure": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/path_kernels/experiments/attention_scaling/runs/r4de2b1429c8a/.runtime/acceptance/B300-1/failure.json",
+      "sha256": "34f086a35400bef2c7f1b56664fc2db355d159319598b334ef67dd4516768bc5"
+    },
+    "identity": "150d86eb8bc8a1e88ac823da3e5e09fcfe4ad65f4e48ce33de6861b8998cff0c",
     "sha256": "671eaeb1bf53dd660227c174cf3cd77fc7debdfd9a71a1acb10f8f95a12c2316",
+    "slurm_job_id": "223173",
+    "stage": "gpu-tests",
+    "status": "failed",
     "summary": {
       "checks": [
         "cpu-tests",
@@ -64,8 +74,8 @@
     },
     {
       "path": "experiments/attention_scaling/runs/r4de2b1429c8a/config.json",
-      "sha256": "b534b1fb9e5124d4112acd5cccea9ba4752fb293a013cef0e8a213eadb167e9c",
-      "size_bytes": 3526
+      "sha256": "1eff697dbe953cc29a9dd55de239520a7a04ac0eb0e1d414179943afc1160a01",
+      "size_bytes": 3522
     },
     {
       "path": "experiments/attention_scaling/runs/r4de2b1429c8a/data_identity.json",
@@ -89,8 +99,8 @@
     },
     {
       "path": "experiments/attention_scaling/runs/r4de2b1429c8a/training.log",
-      "sha256": "8facb2a9d5395bfb331f4a2b1b2c0816bd28c3da6fccf6af2fd61650f6c09fce",
-      "size_bytes": 534592
+      "sha256": "5bfb0e480beac1f0bed8ee1a7d2735c25a58033b89785f83c0bfc9742af84a96",
+      "size_bytes": 703628
     }
   ],
   "attempts": [
@@ -189,6 +199,22 @@
       "slurm_partition": "long",
       "slurm_restart_count": "5",
       "started_utc": "2026-10-19T19:10:55.020876+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/path_kernels/experiments/attention_scaling/runs/r4de2b1429c8a/.runtime/acceptance/B300-1",
+      "allocation": "JobId=223173 JobName=r4de2b1429c8a UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20051 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:26 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-20T02:02:13 EligibleTime=2026-10-20T14:04:18 AccrueTime=2026-10-20T14:04:18 StartTime=2026-10-20T15:31:42 EndTime=2026-10-22T15:31:42 Deadline=N/A PreemptEligibleTime=2026-10-20T15:31:42 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-20T15:31:42 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:63535 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/path_kernels/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/path_kernels StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/path_kernels/experiments/attention_scaling/runs/r4de2b1429c8a/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/path_kernels/experiments/attention_scaling/runs/r4de2b1429c8a/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:b300:1 TresPerTask=cpu:16",
+      "config_path": "experiments/attention_scaling/runs/r4de2b1429c8a/config.yaml",
+      "config_sha256": "caea845983d6d94bde22f233a2be7dab1cd796fc4e6efaceb2a1070f342e7a97",
+      "exit_code": 1,
+      "finished_utc": "2026-10-20T20:01:43.534924+00:00",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "358b402e3cb34bc31e96169d04c2477c30b8a2af",
+      "slurm_job_id": "223173",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-20T19:32:08.820996+00:00"
     }
   ],
   "attention_backend_segments": [
@@ -224,12 +250,12 @@
     "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
     "version": 2
   },
-  "error": null,
+  "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
   "execution": {
     "attention_backend": "blocked",
     "raw_config": {
       "path": "config.json",
-      "sha256": "b534b1fb9e5124d4112acd5cccea9ba4752fb293a013cef0e8a213eadb167e9c"
+      "sha256": "1eff697dbe953cc29a9dd55de239520a7a04ac0eb0e1d414179943afc1160a01"
     },
     "raw_metadata": {
       "path": "metadata.json",
@@ -380,15 +406,15 @@
       }
     ]
   },
-  "frozen_execution_sha256": "2cd6efc5fb83de074b32c9e3552e97b612543f2ca940191c0190afc42be8a877",
+  "frozen_execution_sha256": "6fa51e5affdfd194f043a5da1b844cbcf3b7a6b7005084ed004bebe9b6d27ec1",
   "home_cluster": "kennel",
   "label": "200m-qk-m004-query-tanh-a0-w0p03125-head-rms-path-reference-warmup400-seed0",
   "log": {
     "path": "experiments/attention_scaling/runs/r4de2b1429c8a/training.log",
-    "sha256": "8facb2a9d5395bfb331f4a2b1b2c0816bd28c3da6fccf6af2fd61650f6c09fce",
-    "size_bytes": 534592
+    "sha256": "5bfb0e480beac1f0bed8ee1a7d2735c25a58033b89785f83c0bfc9742af84a96",
+    "size_bytes": 703628
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/path_attention/experiments/attention_scaling/runs/r4de2b1429c8a/training.log",
+  "log_path": "experiments/attention_scaling/runs/r4de2b1429c8a/training.log",
   "metadata": {
     "path": "experiments/attention_scaling/runs/r4de2b1429c8a/metadata.json",
     "sha256": "978a5159b8d71edfd10e09e1475cb2fc337261cd90762c4c2cb93f363364e661",
@@ -404,8 +430,8 @@
   "record_schema_version": 1,
   "run_id": "r4de2b1429c8a",
   "seed": 0,
-  "source_commit": "7fb44dc6f3a778ac645e4896082f1286d975114a",
-  "status": "running",
+  "source_commit": "358b402e3cb34bc31e96169d04c2477c30b8a2af",
+  "status": "acceptance_failed",
   "step": 6000,
   "training_tokens": 3145728000,
   "updated_utc": "2026-10-19T19:11:45.457004+00:00",

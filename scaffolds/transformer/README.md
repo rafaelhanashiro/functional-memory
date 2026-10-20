@@ -311,7 +311,8 @@ derivative becomes `dS_ts = p_t'(s_ts) dP_ts / sqrt(d_K)`, and the kernels that 
 (query, key) block also return `dc_r(t) = sum_s s_ts^r dP_ts`. Transport, Householder, and
 UT-transform arithmetic are FLA's. It needs an sm90+ GPU, `train.dtype: bfloat16` (with
 FP32 tiles one of FLA's kernels exceeds the shared memory), a prediction length divisible
-by 128, equal Q/K and value widths of 16, 32, 64, or 128, and degree 1-4; `auto` selects
+by 128, equal Q/K and value widths of 16, 32, 64, or 128 (up to 64 on B300, where FLA's dq
+kernel fails to launch at width 128), and degree 1-4; `auto` selects
 it there and the JAX implementation elsewhere. A row with a nonfinite output becomes NaN,
 as in `path.py`; a softmax score of -inf gets zero weight, as in FlashAttention. FLA
 rounds several intermediates to BF16 (dw and dbeta are stored in BF16): against FP32 its

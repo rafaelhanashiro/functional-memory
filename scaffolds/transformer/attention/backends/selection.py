@@ -39,20 +39,25 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
     actual_platform = _runtime_platform() if platform is None else platform
     gpu = actual_platform in ("gpu", "cuda")
     if getattr(model_config, "positional_encoding", "rope") == "path":
-        from scaffolds.transformer.attention.backends.fla_path_attention import SEQUENCE_MULTIPLE
+        from scaffolds.transformer.attention.backends.fla_path_attention import (
+            BLACKWELL_HEAD_DIMS, SEQUENCE_MULTIPLE,
+        )
 
         if request not in ("auto", "blocked", "fused"):
             raise ValueError("PaTH attention requires backend='auto', 'blocked' or 'fused'")
         length = model_config.max_seq_len if sequence_length is None else sequence_length
         capability = (9 if platform is not None else _cuda_compute_capability()) if gpu else None
         # FLA's PaTH kernels are qualified here on Hopper (H100) and Blackwell (B300).
+        # FLA's dq kernel fails to launch at width 128 on Blackwell.
+        fits_device = capability == 9 or model_config.qk_head_dim in BLACKWELL_HEAD_DIMS
         supports = (capability is not None and capability >= 9 and length % SEQUENCE_MULTIPLE == 0
-                    and dtype == "bfloat16" and model_config.path_fused_supported())
+                    and dtype == "bfloat16" and model_config.path_fused_supported() and fits_device)
         if request == "auto":
             return "fused" if supports else "blocked"
         if request == "fused" and not supports:
             raise ValueError(f"Fused PaTH requires an sm90+ GPU, sequence length divisible by {SEQUENCE_MULTIPLE}, "
-                             "train.dtype=bfloat16, and equal Q/K and value widths in 16, 32, 64, 128")
+                             "train.dtype=bfloat16, and equal Q/K and value widths in 16, 32, 64, 128 "
+                             "(up to 64 on Blackwell)")
         return request
     if model_config.attention_mechanism == "gated_deltanet":
         if request not in ("auto", "blocked", "fused"):
