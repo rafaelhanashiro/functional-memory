@@ -1000,21 +1000,28 @@ Mosaic GPU: `hopper.py` (wgmma, FlashAttention-3 structure) and `blackwell.py` (
 tensor memory, warp-specialized). `common.py` holds each family's elementwise mathematics, so
 both families share one set of pipelines. `api.py` exposes `taylor_attention` (normalized
 fixed Taylor, matching `fused_taylor`) and `query_polynomial_attention` (unnormalized, FP32
-coefficients per query and head, matching `fused_query_polynomial`). Scores, polynomials, row
+coefficients per query and head, matching `fused_query_polynomial`); unnormalized polynomials
+with static fixed or learned coefficients (degree 1-8, matching `fused_unnormalized` and
+`fused_learned_polynomial`) run on the query kernel with every query's coefficients equal,
+broadcasting their coefficient gradients back. Scores, polynomials, row
 sums, and accumulators are FP32, with the Triton kernels' failure rules: NaN rows for a
 nonfinite, nonpositive (even Taylor degree), or zero (odd degree) row sum, a nonfinite score
 or weight (query), or an overflowing output. They accept BF16 inputs, Q/K width 8, 16, 32,
-64, or 128, value width 64, degree >= 1 (query: 1-4), and time a multiple of 128 (H100) or
+64, or 128, value width 64, degree >= 1 (query and static: 1-8), and time a multiple of 128 (H100) or
 256 (B300), and raise `ValueError` otherwise. Tensor cores contract in steps of one
 shared-memory swizzle row, so Q/K tiles use 32-, 64-, and 128-byte swizzles at widths 16,
-32, and 64 or more; width 8 is zero-padded to the 16-element minimum.
+32, and 64 or more; width 8 is zero-padded to the 16-element minimum. On B300 the dK/dV kernel keeps every
+query's coefficients in shared memory and runs a three-stage Q/dO ring unless that exceeds
+the 227 KB per block (degree 8 at d_K = 128 and 2,048 tokens), then two; dQ stages its output
+in each warpgroup's Q buffer.
 
 Weights and score gradients enter the tensor cores at a weight precision chosen per setup
 (`api.default_precision`, recorded as `attention_weight_precision` in run metadata):
 
 | Setup | Weight precision |
 | --- | --- |
-| Tanh query-conditioned, m 1-4 | BF16: one rounding, as FlashAttention and cuDNN |
+| Tanh query-conditioned, m 1-8 | BF16: one rounding, as FlashAttention and cuDNN |
+| Unnormalized static coefficients, m 1-8 | BF16 |
 | Normalized Taylor, even m | BF16 |
 | Normalized Taylor, odd m | FP32: three BF16 components whose sum is the FP32 value |
 
@@ -1022,12 +1029,18 @@ With BF16 weights the Taylor backward also reads the BF16 output, as FlashAttent
 Odd-degree normalized Taylor divides signed weights by a row sum that can cancel, which
 amplifies their rounding; it keeps FP32-precision weights (the accuracy table below).
 
-`tests/test_mosaic_taylor.py` (78 cases), `tests/test_mosaic_query.py` (55), and
+`tests/test_mosaic_taylor.py` (78 cases), `tests/test_mosaic_query.py` (69), and
 `tests/test_mosaic_repeatability.py` (6) cover both weight precisions and pass on one H100
 (`dogo`, CUDA 12.9.1) and one B300 (`akita`, CUDA 13.2): every degree and width against
 independent NumPy FP64 outputs and VJPs (coefficient gradients per order) and against the
 Triton kernels, the production context, causality, nonfinite handling, rejected inputs, the
 model's dispatch, and bitwise-identical results across 20 repeats at production size.
+`tests/test_mosaic_unnormalized.py` (36) checks fixed Taylor and shared or per-head learned
+static coefficients against FP64 and the Triton kernels, including the summed coefficient
+gradients; all cases pass on H100 and B300, including degree 8 at the production context with
+d_K = 128. Acceptance passes a
+run's weight precision (`--mosaic-precision`), so its GPU tests skip the other precision's
+cases.
 
 ### Accuracy
 
@@ -1047,7 +1060,10 @@ worse of H100 and B300 (Mosaic's agree to the digits shown).
 | Taylor, odd m | BF16 | 2.5e-3 | 2.9e-3 | 3.7e-3 | 8.1e-3 |
 | | FP32 | 1.6e-3 | 1.8e-3 | 2.0e-3 | 2.9e-3 |
 
-Query coefficient gradients are within 2.3e-7 at either precision.
+Query coefficient gradients are within 2.3e-7 at either precision. At degree 8 on B300
+(`precision_mosaic_degree8.py`; `runs/mosaic-precision/degree8-*.txt`), BF16 query errors are
+2.3-2.5e-3 with positive or signed coefficients, as at degree 3, and coefficient gradients
+are within 6e-7.
 
 ### Speed
 
@@ -1058,12 +1074,16 @@ time:
 | | H100, BF16 | H100, FP32 | B300, BF16 | B300, FP32 |
 | --- | ---: | ---: | ---: | ---: |
 | Taylor, d_K 8-64, m 1-4 | 1.9-2.2x | 1.4-1.6x | 3.1-4.7x | 2.3-3.6x |
-| Taylor, d_K 8-64, m = 16 | 3.3-3.5x | 2.6-2.7x | 9.0-12.5x | 7.2-10.1x |
-| Taylor, d_K 128, m 1-16 | 4.2-4.6x | 3.2-3.7x | 4.9-5.7x | 3.9-4.4x |
-| Query, d_K 64, m 1-3 | 2.0-2.1x | 1.3-1.5x | 4.2-4.3x | 3.0-3.1x |
+| Taylor, d_K 8-64, m = 16 | 3.3-3.4x | 2.5-2.7x | 9.1-12.4x | 7.2-10.1x |
+| Taylor, d_K 128, m 1-16 | 4.3-4.6x | 3.2-3.7x | 4.9-5.8x | 3.9-4.4x |
+| Query, d_K 64, m 1-4 | 2.0x | 1.2-1.4x | 4.2-4.4x | 3.0-3.2x |
+| Query, d_K 64, m = 8 | 2.4x | 0.9x | 4.1x | 3.2x |
+| Static, d_K 64, m = 3 and 8 | 2.0-2.1x | | 4.0-4.5x | |
 
-At d_K = 64, query m = 3 takes 1.48 ms with BF16 weights on H100 (Triton 2.91 ms, cuDNN
-softmax 1.45 ms) and 1.38 ms on B300 (Triton 5.76 ms, cuDNN softmax 0.77 ms).
+At d_K = 64, query m = 3 takes 1.47 ms with BF16 weights on H100 (Triton 2.91 ms, cuDNN
+softmax 1.45 ms) and 1.33 ms on B300 (Triton 5.74 ms, cuDNN softmax 0.77 ms); query m = 8
+takes 2.44 ms (Triton 5.85 ms) and 2.63 ms (Triton 10.65 ms). FP32-precision weights at m = 8
+spill registers on H100 (no setup uses them there).
 
 One training microbatch (16 x 2048, `benchmark_mosaic_step.sbatch`; `runs/mosaic-step/`, one
 directory per job), median of 30 updates, two rounds within 1%, each job's fused and Mosaic
@@ -1073,6 +1093,12 @@ runs on the same GPU:
 | --- | --- | ---: | ---: | ---: |
 | Query m = 3, d_K = 64 | H100 SXM | 120.7 ms | 103.0 ms | 115.0 ms (120.8 ms) |
 | | B300 | 108.5 ms | 59.5 ms | 67.4 ms (108.8 ms) |
+| Static m = 3, d_K = 64 | H100 SXM | 118.9 ms | 99.5 ms | |
+| Static m = 8, d_K = 64 | H100 SXM | 141.3 ms | 110.5 ms | |
+| | B300 | 156.4 ms | 68.7 ms | |
+| Query m = 8, d_K = 64 | H100 SXM | 159.8 ms | 120.4 ms | |
+| | B300 | 167.0 ms | 76.6 ms | |
+| | B300 | 108.6 ms | 58.8 ms | |
 | Taylor m = 2, d_K = 32 | H100 SXM | 108.0 ms | 88.9 ms | 96.1 ms (107.9 ms) |
 | | B300 | 77.1 ms | 49.3 ms | 55.0 ms (77.2 ms) |
 
@@ -1089,7 +1115,10 @@ with identical results, except one query dQ (BF16) process that hung within its 
 calls, for no cause found; twenty further 50,000-call processes of query and Taylor dQ (job
 220120) and a 100,000-call rerun finished, as did every training pilot below. On B300 (job
 220124) the forward, dQ, dK, and dV kernels of both families at both precisions each finished
-100,000 calls with identical results. Kernels synchronize each ring slot only after both compute
+100,000 calls with identical results. At degree 8 (`STRESS_DEGREE=8`) every B300 kernel (job
+223204) and every H100 kernel with BF16 weights and every query kernel with FP32 weights (job
+223203) finished 100,000 calls; H100 Taylor dQ and dK/dV with FP32 weights at degree 8 take
+15-30 ms per call (register spills) and finished 2,000 calls each (job 223271). Kernels synchronize each ring slot only after both compute
 warpgroups have released it; tiles past a warpgroup's causal diagonal are neither consumed
 nor freed by it.
 
@@ -1098,8 +1127,10 @@ nor freed by it.
 `pilot_mosaic.sbatch` trains a study recipe for 1,000 updates (microbatch 16, validation
 every 100 updates) with a chosen backend, from the same initialization and data; summaries are
 in `runs/mosaic-pilot/`. Recipes: tanh query-conditioned m = 3, d_K = 64, head RMSNorm
-(`r0bc57959ef6c`), and normalized Taylor m = 2, d_K = 32 (`raf32fab4ba52`), both with 400
-warmup updates. XLA's GPU reductions are not deterministic, so two fused runs already
+(`r0bc57959ef6c`), unnormalized static per-head learned coefficients m = 3, d_K = 64, head
+RMSNorm (`r5ae483d40d62`), normalized Taylor m = 2, d_K = 32 (`raf32fab4ba52`), and the
+degree-8 static and tanh query recipes (`raa043e978a3d`, `rccf19c31669d`), all with 400 warmup
+updates. XLA's GPU reductions are not deterministic, so two fused runs already
 diverge; a repeated fused query run measures that spread. H100 runs used SXM and PCIe cards.
 
 Validation NLL:
@@ -1114,6 +1145,16 @@ Validation NLL:
 | Query m = 3, B300 | fused | 5.6396 | 4.6164 | 4.0552 | 3.7141 | 3.5108 |
 | | Mosaic, FP32 weights | 5.6601 | 4.6079 | 4.0514 | 3.6950 | 3.5120 |
 | | Mosaic, BF16 weights | 5.6365 | 4.6179 | 4.0485 | 3.6903 | 3.5101 |
+| Static m = 3, H100 | fused | 5.6991 | 4.7194 | 4.1582 | 3.8295 | 3.6210 |
+|  | Mosaic, BF16 weights | 5.7029 | 4.7121 | 4.1590 | 3.8328 | 3.6197 |
+| Static m = 3, B300 | fused | 5.6981 | 4.7252 | 4.1660 | 3.8374 | 3.6183 |
+|  | Mosaic, BF16 weights | 5.7124 | 4.7339 | 4.1733 | 3.8482 | 3.6330 |
+| Static m = 8, H100 | fused | 5.5341 | 4.5186 | 3.8805 | 3.6233 | 3.4569 |
+|  | fused, repeat | 5.5369 | 4.5281 | 3.8924 | 3.6054 | 3.5116 |
+|  | Mosaic, BF16 weights | 5.5441 | 4.5436 | 3.8896 | 3.6656 | 3.5029 |
+| Query m = 8, B300 | fused | 5.5295 | 4.5161 | 3.9700 | 3.6891 | 3.5152 |
+|  | fused, repeat | 5.5524 | 4.5313 | 3.9256 | 3.6979 | 3.5782 |
+|  | Mosaic, BF16 weights | 5.5353 | 4.5061 | 3.9204 | 3.6512 | 3.5057 |
 | Taylor m = 2, H100 | fused | 5.4085 | 4.7960 | 4.4177 | 4.1762 | 4.0295 |
 | | Mosaic, FP32 weights | 5.4168 | 4.7962 | 4.4217 | 4.1681 | 4.0133 |
 | | Mosaic, BF16 weights | 5.4061 | 4.8322 | 4.4402 | 4.1965 | 4.0154 |
@@ -1122,8 +1163,10 @@ Validation NLL:
 | | Mosaic, BF16 weights | 5.4078 | 4.7791 | 4.4386 | 4.1682 | 4.0223 |
 
 From step 200 on, the two fused query runs differ by up to 0.029; every Mosaic run stays
-within 0.038 of the fused run, with differences that change sign and end between -0.016 and
-+0.007 at step 1,000. Mosaic tracks the fused kernels within run-to-run variation at both
+within 0.038 of the fused run and ends between -0.016 and +0.015 at step 1,000. Differences
+change sign except for static m = 3 on B300 (+0.001 to +0.015), within the spread of two fused
+runs, which also keep one sign. Degree 8 trains less reproducibly: two fused runs end 0.055
+(static, H100) and 0.063 (query, B300) apart, and Mosaic stays within 0.050 of the first. Mosaic tracks the fused kernels within run-to-run variation at both
 precisions, on one GPU and two.
 
 From a committed worktree on Kennel (pilot arguments: commit, GPU type, study run, backend,
@@ -1264,6 +1307,230 @@ Regenerate the pooled summaries and audit the explicitly named source files:
 ```bash
 python3 scaffolds/transformer/validation/summarize_upstream.py
 ```
+
+## Polynomial GDN Triton tuning on one B300
+
+The [polynomial GDN record](runs/poly-gdn-tuning/record.json) pins the source,
+locked JAX and native PyTorch environments, recipes, test evidence, and explicitly
+selected reports. The completed initial profile is job `222298` on `akita`,
+source `0e9faad`; completed occupancy tuning is job `222316`, source `34f2c02`.
+Qualification of the corrected kernels passed in job `222319`, source `dfff226`.
+Job `222322` completed production-microbatch and full-model confirmation from
+source `8fd821a` in 1h22m11s with exit code zero.
+
+This is the original-key-space polynomial GDN recurrence:
+`P_t = I - erase_t k_t k_t^T`,
+`F_t(q) = exp(g_t) F_(t-1)(P_t q) + v_t sum_r beta_(t,r) (q^T k_t)^r`,
+with read `scale * F_t(q_t)`. The Triton implementation evaluates transported
+scores without materializing the expanded polynomial state. Its training
+backward still uses packed triangular workspaces and visits earlier chunks;
+avoiding the expanded state does not give it FLA's linear-GDN training cost.
+The full-model recipes preserve degree three, independently gated erasure,
+sigmoid linear writes, and tanh constant/quadratic/cubic writes, matching the
+original cubic recipes. The configurations in
+`configs/poly-gdn-tuning-dk{16,64}.yaml` use reference initialization, ten
+layers, hidden width 1,024, MLP width 3,008, 16 heads, value width 64, global
+batch 256, microbatch 64, and 2,048 prediction positions.
+
+The full-model comparison keeps FP32 parameters and Adam moments in both
+frameworks, with BF16 matrix products. Convolution width four, SiLU/SwiGLU,
+normalization epsilon `1e-6`, and optimizer hyperparameters match. BF16 conversion
+boundaries differ between native autocast and JAX's explicit compute dtypes.
+Native FLA also keeps its upstream initialization and fused normalization,
+convolution, SwiGLU, cross-entropy, and AdamW implementations; JAX uses the frozen
+GDN reference initialization and its shared XLA/Optax training path. Actual
+parameter counts accompany timings. This is a comparison of complete training
+implementations, with no numerical model-trajectory parity claim.
+
+Native full-model timing repeats one GPU-resident batch. Compare its synchronized
+wall compute time with JAX update compute, and report JAX completion intervals
+separately: those include loading, transfers, checks, and logging. JAX compute
+can also wait on an input transfer enqueued just before its timer starts. Both
+compute measurements include gradient clipping and parameter/gradient norms.
+Warmup and measured-update counts are explicit per report; slow JAX controls
+use shorter windows, so repeat spreads and sample counts matter when assessing
+small differences.
+
+The default `tf32x3` mode retains FP32 transport/inverse arithmetic and accurate
+tensor-core products. Opt-in `bf16_read` rounds the operands of value-reading
+products to BF16; `bf16_values` also rounds the score-adjoint product. Both retain
+FP32 accumulation and the original transport/inverse precision. The independent
+FP64 and tensor-recurrence suites passed **52 strict FP32/BF16 cases** in default
+precision and **26 BF16 cases in the selected `bf16_values` mode**, at two warps
+and CTA guidance one in job `222319`, with no failures or skips. They cover
+quadratic and cubic outputs and all six gradients, long context, signed writes,
+erasure/decay extremes, causality, the linear limit, and packed-history indexing
+across the signed 32-bit boundary. The initial profile separately passed 51
+strict cases and 26 BF16 cases in each candidate mode, plus eleven option/smoke
+cases; those smoke checks do not replace the strict tests.
+
+Fresh-process diagnostics found a CUDA launch failure in four-warp polynomial
+backward on Blackwell, while the standalone matrix product and VJP passed.
+Two-warp forward and all six gradients completed, followed by the strict tests
+above. Blackwell therefore defaults to two warps and rejects four/eight before
+launch; one warp remains an explicit benchmark option. This qualification is
+specific to the recorded B300 runtime and does not qualify another GPU/runtime.
+
+Kernel measurements use resident BF16 operands at `B=16, T=2048, H=16, V=64`,
+with `K=16/64`, an explicit output cotangent, and synchronized calls returning
+the forward output and all six gradients. The synthetic fixture has unit Q/K,
+Gaussian V/cotangent, negative log decay, sigmoid erasure, and independent signed
+`tanh(0.2 * normal)` coefficients for all four degrees. Log decay remains FP32.
+Each variant has two rounds, each with five warmups and 20 timed
+calls; native FLA has 30 timed calls per round. The table reports pooled mean
+milliseconds for two warps, with minimum-CTA guidance disabled:
+
+| Key width | Cubic `tf32x3` | Cubic `bf16_read` | Cubic `bf16_values` | Native FLA GDN |
+| --- | ---: | ---: | ---: | ---: |
+| 16 | 65.729 | 62.985 | 36.600 | 1.678 |
+| 64 | 786.436 | 852.813 | 462.775 | 1.990 |
+
+FLA is the unmodified upstream PyTorch implementation pinned at `516143e`,
+using its native tuned kernels. Its input fixture hashes match the polynomial
+benchmark, but its operator is linear GDN with tied write/erase gates. It is a
+performance reference, not a mathematical parity target. The table uses ordinary
+synchronized wall timing for both implementations; FLA's separately recorded
+CUDA-graph results are not substituted into this comparison.
+
+All 12 initial polynomial variants passed the same-input output/gradient checks
+against the two-warp `tf32x3` reference. For two-warp `bf16_values`, the worst
+relative RMS difference was 0.260% at K16 and 0.258% at K64; the independent
+qualification above provides the separate correctness evidence. One warp was
+slower at K16 but reduced K64 `bf16_values` to 414.328 ms. Thus precision and warp
+choices interact with width; this profile does not establish one optimal setting.
+At K64, isolated default-precision cross-chunk and query backward calls took
+433.205 and 169.575 ms. PTX assembly also reports substantial register spilling.
+Stage calls use resident intermediates, so their sum is not an end-to-end time;
+assembler resource figures are not measured occupancy.
+
+The occupancy tuning matrix holds two warps fixed and crosses `tf32x3`/`bf16_values`
+with `POLY_GDN_MIN_CTAS_PER_SM=0/1`. Zero leaves PTX unchanged; one adds the
+explicit `.minnctapersm 1` register-allocation guidance to the polynomial kernels.
+It does not alter the recurrence. The generic bridge validates this CUDA-only
+option and separates its compilation and autotuning caches, preserving existing
+default cache identities. Job `222316` completed with exit code zero; all eight
+variants passed the same-input accuracy checks. Its mean forward-plus-backward
+times, with the same shape and sampling protocol as above, are:
+
+| Key width | Precision | CTA guidance 0, ms | CTA guidance 1, ms |
+| --- | --- | ---: | ---: |
+| 16 | `tf32x3` | 65.259 | 54.763 |
+| 16 | `bf16_values` | 36.102 | 24.933 |
+| 64 | `tf32x3` | 786.394 | 147.111 |
+| 64 | `bf16_values` | 461.823 | 88.183 |
+
+Combining value precision and CTA guidance reduces time by 2.62x at K16 and
+8.92x at K64 against the same job's default-precision/CTA0 control. Native FLA
+measured 1.356 and 1.919 ms on that job's same physical GPU, leaving substantial
+gaps despite the improvement. The BF16 candidates' maximum relative RMS errors
+remain 0.260%/0.258%; changing CTA guidance alone in `tf32x3` produced identical
+benchmark outputs and gradients. Resource inspection confirms the requested PTX directives
+and reduced spilling, but does not measure runtime occupancy.
+
+The production microbatch requires 64-bit packed-history offsets. At
+`B=64, K=64`, each FP32 history contains 2,214,592,512 elements (8.25 GiB), beyond
+signed 32-bit element indexing. The qualified source forms these offsets in
+64-bit integers; its boundary test exercises the actual store and both read
+helpers across that limit.
+
+Before candidate timing, confirmation compares the full batch with four
+independently evaluated batch-16 slices, preserving the explicit cotangent and
+concatenating output and all six gradients without rescaling. Two checks must
+pass: production BF16 results use the declared exact-backend limits of 0.003
+relative RMS and 0.01 normalized maximum error; the same production inputs and
+cotangent, promoted exactly to FP32, must pass `1e-5` for both metrics in every
+channel. Final BF16 rounding can expose otherwise tiny full/split differences:
+diagnostic `222321` found sparse, mostly one-ULP differences, while unchanged
+values evaluated in FP32 passed all seven strict checks (worst relative RMS
+`8.54e-7`, normalized maximum `6.68e-7`). The report retains both checks and
+verifies promotion preserves every input and cotangent value. Either failure
+blocks timing; the guard is enabled by `--reference-batch-size 16` and is outside
+all measured intervals.
+
+The completed B64 kernel matrix in job `222322` passes both split-reference
+gates and all eight variants' output/gradient checks. It uses the same
+`T=2048, H=16, V=64` fixture and two warps, with two rounds of five warmups and
+30 timed calls each. Pooled forward-plus-backward means are:
+
+| Key width | Precision | CTA guidance 0, ms | CTA guidance 1, ms |
+| --- | --- | ---: | ---: |
+| 16 | `tf32x3` | 250.704 | 213.762 |
+| 16 | `bf16_values` | 134.231 | 94.922 |
+| 64 | `tf32x3` | 3,093.777 | 561.691 |
+| 64 | `bf16_values` | 2,001.845 | 334.233 |
+
+The selected `bf16_values`/CTA1 setting is 2.64x faster at K16 and 9.26x faster
+at K64 than this job's default-precision/CTA0 control. Maximum relative RMS
+error remains 0.260% at both widths. The promoted FP32 batch-split check is
+identical at K16; at K64 its worst relative RMS and normalized maximum errors
+are `8.54e-7` and `6.68e-7`. Native FLA's matching B64 calls average 3.819 ms
+at K16 and 5.330 ms at K64 on the same physical GPU, with matching input hashes
+and 60 synchronized wall samples per width. The optimized cubic kernel remains
+24.85x and 62.71x slower than this linear-GDN reference. Kernel speedups alone
+do not establish full-model throughput or training-quality equivalence.
+
+The full-model table pools raw samples from two independent trials per setting,
+with execution order reversed in the second trial. Each uses global batch 256,
+with five warmup updates per trial except the slow K64 default control, which
+uses two. Compute excludes compilation and warmup; the JAX intervals separately
+include the input pipeline and ordinary checks/logging described above. The
+explicit paired selections and both timing clocks are in the generated
+[summary](runs/poly-gdn-tuning/summary.json), under `training_comparisons`.
+
+| Key width | Implementation | Compute, s/update | Compute tokens/s | JAX interval, s/update | Measured updates |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 16 | Cubic `tf32x3`, CTA0 | 11.051 | 47,444 | 11.057 | 20 |
+| 16 | Cubic `bf16_values`, CTA1 | 4.878 | 107,483 | 4.884 | 50 |
+| 16 | Native FLA linear GDN, resident batch | 1.034 | 506,842 | — | 60 |
+| 64 | Cubic `tf32x3`, CTA0 | 125.294 | 4,184 | 125.300 | 6 |
+| 64 | Cubic `bf16_values`, CTA1 | 14.953 | 35,062 | 14.959 | 16 |
+| 64 | Native FLA linear GDN, resident batch | 1.250 | 419,408 | — | 60 |
+
+Full-model compute is 2.27x faster at K16 and 8.38x faster at K64 than the
+default cubic control. Optimized cubic remains 4.72x and 11.96x slower than
+native FLA, respectively. K16 trial-mean spreads are 0.75% for default cubic,
+2.50% for optimized cubic, and 0.06% for native FLA; K64 spreads are below
+0.31% for all three. Cubic parameter counts are 195,708,864 / 211,498,944 for
+K16/K64, versus 195,053,504 / 210,843,584 for native FLA. All 266 updates across
+the twelve trials, including 212 timed updates, have finite loss, gradient norm,
+and parameter norm. No checkpoints are retained. These short throughput trials
+do not compare training quality.
+
+From a committed Kennel worktree at `8fd821a`, sync the CUDA13 and native Torch
+environments according to `CLUSTERS.md`. Each command requests one B300 and
+writes fresh job-specific reports. Run confirmation after inspecting tuning and
+qualification; `bf16_values 2 1` below names the candidate under evaluation:
+
+```bash
+POLY_SOURCE=8fd821a09f6d7ca5e8cd8f65778d391abbc35d4e
+mkdir -p scaffolds/transformer/validation/logs/poly-gdn-tuning
+sbatch --partition=debug,standard \
+  --output=scaffolds/transformer/validation/logs/poly-gdn-tuning/profile-%j.log \
+  scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch "$POLY_SOURCE" profile
+sbatch --partition=debug,standard \
+  --output=scaffolds/transformer/validation/logs/poly-gdn-tuning/tune-%j.log \
+  scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch "$POLY_SOURCE" tune
+sbatch --partition=debug,standard \
+  --output=scaffolds/transformer/validation/logs/poly-gdn-tuning/qualify-%j.log \
+  scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch "$POLY_SOURCE" qualify bf16_values 2 1
+sbatch --partition=debug,standard \
+  --output=scaffolds/transformer/validation/logs/poly-gdn-tuning/confirm-%j.log \
+  scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch "$POLY_SOURCE" confirm bf16_values 2 1
+```
+
+Regenerate the summary from the record's explicit report selection and hashes:
+
+```bash
+python3 scaffolds/transformer/validation/summarize_poly_gdn_tuning.py \
+  --selection scaffolds/transformer/validation/runs/poly-gdn-tuning/record.json \
+  --output scaffolds/transformer/validation/runs/poly-gdn-tuning/summary.json \
+  --csv scaffolds/transformer/validation/runs/poly-gdn-tuning/summary.csv
+```
+
+The helper keeps incomplete/rejected variants visible, audits input identities and
+sample counts, and does not pool measurements across physical GPUs. Its
+`training_comparisons` pool the explicitly named trial pairs from raw samples,
+retain each timing clock, and report per-trial counts and mean spread.
 
 ## Reproduction
 

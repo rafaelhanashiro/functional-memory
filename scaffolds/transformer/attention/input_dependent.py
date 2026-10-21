@@ -66,8 +66,12 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
     return specs
 
 
-def project_coefficients(x, kernel, bias, *, amplitude=None, activation="identity", tanh_bias=None):
-    """FP32 c=b+xW or c=b+a*tanh(xW+beta); the inner bias beta is optional and otherwise absent."""
+def project_coefficients(x, kernel, bias, *, amplitude=None, activation="identity", tanh_bias=None,
+                         amplitude_scale="none"):
+    """FP32 c=b+xW or c=b+a*tanh(xW+beta); the inner bias beta is optional and otherwise absent.
+
+    amplitude_scale="factorial" uses the effective amplitude a_r/r! for order r.
+    """
     if (x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1]
             or bias.shape != (kernel.shape[0], kernel.shape[-1])):
         raise ValueError("Query coefficient projection requires x [B,T,D], kernel [H,D,R], bias [H,R]")
@@ -82,9 +86,16 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, activation="identit
             if tanh_bias.shape != bias.shape:
                 raise ValueError("The bias inside tanh must have the outer bias shape [H,R]")
             projected = projected + tanh_bias.astype(jnp.float32)
-        projected = amplitude.astype(jnp.float32) * jnp.tanh(projected)
-    elif activation != "identity" or amplitude is not None or tanh_bias is not None:
-        raise ValueError("Identity coefficients cannot receive an amplitude or inner bias; unknown activation otherwise")
+        amplitude = amplitude.astype(jnp.float32)
+        if amplitude_scale == "factorial":
+            amplitude = amplitude / jnp.asarray([math.factorial(r) for r in range(bias.shape[-1])], jnp.float32)
+        elif amplitude_scale != "none":
+            raise ValueError(f"Unknown amplitude scale: {amplitude_scale}")
+        projected = amplitude * jnp.tanh(projected)
+    elif (activation != "identity" or amplitude is not None or tanh_bias is not None
+          or amplitude_scale != "none"):
+        raise ValueError("Identity coefficients cannot receive an amplitude, its scale, or an inner bias; "
+                         "unknown activation otherwise")
     return projected + bias.astype(jnp.float32)
 
 
@@ -104,10 +115,11 @@ def query_key_polynomial_attention(q, k, v, coefficients, key_factors, *, backen
                                    return_diagnostics=False):
     """sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i: per-query coefficients times per-key factors.
 
-    The blocked reference evaluates the pairwise coefficient directly. The fused and Mosaic
-    query-coefficient kernels run once per order r with the key factor folded into the
-    values, v_i^(r) = f_r(x_i) v_i, and the coefficient vector c_r(x_t) e_r; the m+1 partial
-    outputs are summed in FP32, so a nonfinite row in any pass poisons that row.
+    The blocked reference evaluates the pairwise coefficient directly, and the fused Triton
+    kernel forms it inside each tile in one pass. The Mosaic query-coefficient kernel runs once
+    per order with the key factor folded into the values, v_i^(r) = f_r(x_i) v_i, and the
+    coefficient vector c_r(x_t) e_r; its m+1 partial outputs are rounded to V's dtype before
+    they are summed, which at degree one corrupts the gradient after head RMSNorm.
     """
     from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 
@@ -124,13 +136,18 @@ def query_key_polynomial_attention(q, k, v, coefficients, key_factors, *, backen
         if not return_diagnostics:
             return result
         output, diagnostics = result
-    elif backend in ("fused", "mosaic"):
-        if backend == "fused":
-            from scaffolds.transformer.attention.backends.fused_query_polynomial import (
-                fused_query_polynomial_attention as attend,
-            )
-        else:
-            from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial_attention as attend
+    elif backend == "fused":
+        from scaffolds.transformer.attention.backends.fused_query_key_polynomial import (
+            fused_query_key_polynomial_attention,
+        )
+
+        output = fused_query_key_polynomial_attention(q, k, v, coefficients.astype(jnp.float32),
+                                                      key_factors.astype(jnp.float32))
+        if not return_diagnostics:
+            return output
+        _, diagnostics = reference(return_diagnostics=True)
+    elif backend == "mosaic":
+        from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial_attention as attend
 
         coefficients32, factors32 = coefficients.astype(jnp.float32), key_factors.astype(jnp.float32)
         total = None

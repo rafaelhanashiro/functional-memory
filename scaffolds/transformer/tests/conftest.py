@@ -18,3 +18,21 @@ if not os.environ.get("SLURM_JOB_ID") and hasattr(os, "sched_getaffinity"):
 @pytest.fixture(autouse=True)
 def _outside_a_launch(monkeypatch):
     monkeypatch.delenv("SHARED_TRANSFORMER_SOURCE_COMMIT", raising=False)
+
+
+def pytest_addoption(parser):
+    parser.addoption("--mosaic-precision", choices=("bf16", "bf16x3"),
+                     help="Run Mosaic kernel tests only at this weight precision (acceptance passes the run's).")
+
+
+def pytest_collection_modifyitems(config, items):
+    precision = config.getoption("--mosaic-precision")
+    if precision is None:
+        return
+    keep, drop = [], []
+    for item in items:
+        params = getattr(getattr(item, "callspec", None), "params", {})
+        (drop if params.get("precision", precision) != precision else keep).append(item)
+    if drop:
+        config.hook.pytest_deselected(items=drop)
+        items[:] = keep

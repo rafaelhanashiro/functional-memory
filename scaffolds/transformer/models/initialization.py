@@ -82,7 +82,7 @@ def apply_initialization(model: nnx.Module, scheme: str, key: jax.Array, *, num_
                 independent_gdn.append(node)
         if isinstance(node, (nnx.Linear, nnx.Embed)):
             path = tuple(str(part) for part in path)
-            if scheme == "gated_deltanet_reference" and path[-1] == "lambda_proj":
+            if scheme == "gated_deltanet_reference" and path[-1] in ("lambda_proj", "b0_proj", "b2_proj", "b3_proj"):
                 # Do not consume an initialization index: adding a gate must keep
                 # all of the original GDN model's weights bit-identical.
                 continue
@@ -95,3 +95,8 @@ def apply_initialization(model: nnx.Module, scheme: str, key: jax.Array, *, num_
     for attention in independent_gdn:
         # Match the values without aliasing a buffer donated by the train step.
         attention.lambda_proj.kernel[...] = attention.b_proj.kernel[...].copy()
+        if attention.polynomial_degree > 1:
+            # Zero tangent gates nest the linear model while retaining nonzero
+            # derivatives through tanh. Allocate each projection independently.
+            for degree in (0, *range(2, attention.polynomial_degree + 1)):
+                getattr(attention, f"b{degree}_proj").kernel[...] = jnp.zeros_like(attention.b_proj.kernel[...])

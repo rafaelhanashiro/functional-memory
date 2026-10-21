@@ -14,6 +14,8 @@ cd "${SLURM_SUBMIT_DIR:?}"
 LAUNCH_COMMIT="${1:?Expected committed source}"
 GPU_TYPE="${2:?Expected H100 or B300}"
 RUN_ID="${3:?Expected an attention_scaling run ID}"
+# RECIPE (optional) reads the run's recipe from another checkout, e.g. a run not yet merged.
+RECIPE="${RECIPE:-experiments/attention_scaling/runs/$RUN_ID/config.yaml}"
 BACKEND="${4:?Expected fused or mosaic}"
 STEPS="${5:-1000}"
 REPEAT="${6:-}"  # optional label for a repeated run of the same backend (run-to-run noise)
@@ -25,14 +27,14 @@ export CUDA_HOME TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda OMP_NUM_THREADS=8 PYTHONUNBUFFERED=1
 LABEL="$BACKEND"
 if [[ "$BACKEND" == mosaic ]]; then
-  RUN_ID_FOR_LABEL="$RUN_ID"
+  RUN_ID_FOR_LABEL="$RECIPE"
   LABEL="mosaic-"$("$PYTHON" - "$RUN_ID_FOR_LABEL" <<'PY'
 import sys
 from pathlib import Path
 import yaml
 from scaffolds.transformer.attention.backends.mosaic.api import default_precision
-model = yaml.safe_load(Path(f"experiments/attention_scaling/runs/{sys.argv[1]}/config.yaml").read_text())["model"]
-family = "query" if model.get("attention_coefficient_conditioning") == "query" else "taylor"
+model = yaml.safe_load(Path(sys.argv[1]).read_text())["model"]
+family = "taylor" if model.get("attention_normalization", True) else "query"
 print(default_precision(family, model["attention_degree"]))
 PY
 )""
@@ -43,12 +45,12 @@ export JAX_COMPILATION_CACHE_DIR="$PWD/.cache/mosaic-pilot/jax"
 # A requeue resumes from the latest checkpoint (every 100 updates); a fresh start clears old output.
 if [[ "${SLURM_RESTART_COUNT:-0}" == 0 ]]; then rm -rf "$WORKDIR"; fi
 mkdir -p "$WORKDIR" scaffolds/transformer/validation/runs/mosaic-pilot
-"$PYTHON" - "$RUN_ID" "$BACKEND" "$WORKDIR" "$STEPS" <<'PY'
+"$PYTHON" - "$RECIPE" "$BACKEND" "$WORKDIR" "$STEPS" <<'PY'
 import sys
 from pathlib import Path
 import yaml
-run_id, backend, workdir, steps = sys.argv[1:]
-recipe = yaml.safe_load(Path(f"experiments/attention_scaling/runs/{run_id}/config.yaml").read_text())
+recipe_path, backend, workdir, steps = sys.argv[1:]
+recipe = yaml.safe_load(Path(recipe_path).read_text())
 recipe["model"]["attention_backend"] = backend
 recipe["train"].update(workdir=workdir, checkpoint_dir=f"{workdir}/checkpoints", micro_batch_size=16,
                        eval_every=100, ckpt_every=100, wandb_mode="disabled", wandb_run_name=None)

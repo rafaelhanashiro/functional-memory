@@ -57,6 +57,11 @@ PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 QUERY_KEY_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_key_polynomial.py"
 TANH_WRITE_GDN_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write.py"
 TANH_WRITE_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write_kernel.py"
+POLYNOMIAL_GDN_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn.py"
+POLYNOMIAL_GDN_INTEGRATION_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn_integration.py"
+POLYNOMIAL_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn_kernel.py"
+CUBIC_GDN_TESTS = "scaffolds/transformer/tests/test_cubic_gdn.py"
+CUBIC_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_cubic_gdn_kernel.py"
 
 
 @dataclass(frozen=True)
@@ -95,6 +100,17 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(TANH_WRITE_GDN_TESTS)
         elif resolved_backend == "fused":
             paths.append(TANH_WRITE_GDN_KERNEL_TESTS)
+    if (model.get("attention_mechanism") == "gated_deltanet"
+            and model.get("gdn_polynomial_degree", 1) in (2, 3)):
+        if cpu:
+            paths.extend((POLYNOMIAL_GDN_TESTS, POLYNOMIAL_GDN_INTEGRATION_TESTS))
+        elif resolved_backend == "fused":
+            paths.append(POLYNOMIAL_GDN_KERNEL_TESTS)
+        if model.get("gdn_polynomial_degree") == 3:
+            if cpu:
+                paths.append(CUBIC_GDN_TESTS)
+            elif resolved_backend == "fused":
+                paths.append(CUBIC_GDN_KERNEL_TESTS)
     conditioning = model.get("attention_coefficient_conditioning", "static")
     if conditioning in ("query", "query_key"):
         paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)
@@ -180,10 +196,22 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
             tests.append("attention_output_scaling")
         if resolved_backend == "mosaic" and not cpu:
             query = model.get("attention_coefficient_conditioning", "static") in ("query", "query_key")
-            tests.extend(["mosaic_query" if query else "mosaic_taylor", "mosaic_repeatability"])
+            kernel = "mosaic_query" if query else "mosaic_taylor" if normalized else "mosaic_unnormalized"
+            tests.extend([kernel, "mosaic_repeatability"])
     if model.get("initialization", "flax_default") != "flax_default" and cpu:
         tests.append("initialization")
     return tuple(f"scaffolds/transformer/tests/test_{name}" + ("" if ".py::" in name else ".py") for name in tests)
+
+
+def mosaic_test_options(config: dict, resolved_backend: str) -> tuple[str, ...]:
+    """GPU tests of a Mosaic run cover only the weight precision the run uses."""
+    model = config["model"]
+    if resolved_backend != "mosaic" or model.get("attention_degree") is None:
+        return ()
+    from scaffolds.transformer.attention.backends.mosaic.api import default_precision
+
+    family = "taylor" if model.get("attention_normalization", True) else "query"
+    return ("--mosaic-precision", default_precision(family, model["attention_degree"]))
 
 
 def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
@@ -389,6 +417,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
                                            positional_encoding="rope",
+                                           attention_coefficient_amplitude_scale="none",
                                            attention_coefficient_initialization="taylor",
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
@@ -435,6 +464,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
         positional_encoding="rope",
+        attention_coefficient_amplitude_scale="none",
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
@@ -528,6 +558,8 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             if passed(path, experiment):
                 continue
             paths = test_paths(spec, experiment["config"], resolved_backend=hardware["attention_backend"], cpu=cpu)
+            if not cpu:
+                selection = (*selection, *mosaic_test_options(experiment["config"], hardware["attention_backend"]))
             if not paths:
                 record(path, experiment, tests_passed=0, note="no tests declared")
                 continue
