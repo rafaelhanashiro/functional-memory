@@ -107,7 +107,7 @@ and its kernels.
 Query-conditioned degree-one runs predict a signed constant and linear coefficient
 from the current attention input, per layer and head
 (`model.attention_coefficient_conditioning: query`). The
-[exploratory comparison](../../results/exploratory/input_dependent_coefficients/README.md)
+[input-dependent coefficient comparison](../../results/input_dependent_coefficients/README.md)
 uses input-independent learned coefficients as its matched control.
 
 ## Cluster and artifacts
@@ -149,8 +149,9 @@ New runs use their mechanism's reference initialization, which `records create` 
 when the recipe leaves `model.initialization` unset.
 Untied embeddings, the scaffold's selective weight decay, and 400 warmup updates
 (`optim.warmup_steps`) are canonical. New unnormalized runs set
-`model.attention_output_scaling: head_rms_norm`. Normalized fixed Taylor and tanh
-query-conditioned runs use the Mosaic GPU kernels (`model.attention_backend: mosaic`). The
+`model.attention_output_scaling: head_rms_norm`. Normalized fixed Taylor runs, and tanh
+query-conditioned and static-coefficient unnormalized runs of degree up to 8, use the Mosaic
+GPU kernels (`model.attention_backend: mosaic`). The
 following allocates a fresh execution from an existing QK-normalized Taylor recipe that
 predates them:
 
@@ -198,8 +199,8 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records index \
 
 The pair is `r9cf9589b9855` (query-dependent) and `r03bfa6fd7b2e`
 (input-independent learned control). Both use output RMSNorm and 400 warmup steps.
-Both completed all 19,074 updates; their findings remain in the linked exploratory
-comparison. Their executed source is `1e78579354087d3d3f62fdda865d90913068e960`.
+Both completed all 19,074 updates; their findings are in the linked input-dependent
+coefficient comparison. Their executed source is `1e78579354087d3d3f62fdda865d90913068e960`.
 The launch commands, from the experiment worktree on Kennel after committing all
 inputs and code, were:
 
@@ -292,7 +293,7 @@ commit. The four-GPU recipe with `model.remat: false` automatically enables
 activation and parameter-group statistics, W&B samples at the logging cadence,
 and validation-window summaries and gradient-spike diagnostics in `metrics.jsonl`.
 Question, input selections, outcomes, and the open scientific decision live in the
-[comparison README](../../results/exploratory/input_dependent_coefficients/README.md).
+[comparison README](../../results/input_dependent_coefficients/README.md).
 
 To update a figure, change its explicit run selection, run
 `python -m scaffolds.records refresh results/<analysis>` in the scaffold environment,
@@ -328,6 +329,33 @@ sbatch --partition=long --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$
   --output="experiments/attention_scaling/runs/$RUN/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
   "experiments/attention_scaling/runs/$RUN/config.yaml" 629cab71a2a3d490f078488918b8861a7cfce874 1 B300,H100
+```
+
+### Tanh with saturating projection draws, degrees 2 and 4
+
+Four single-GPU runs ask whether a gate that starts saturated keeps more input
+dependence. They follow the zero-amplitude `N(0, 1/hidden_size)` runs above
+(`r5be9a97f06e2` …) apart from the projection's draw: with `x_t` after RMSNorm the
+pre-activation `w_r^T x_t` starts with standard deviation about 3 or 10, so the tanh is
+mostly or fully saturated and `w_r` receives little gradient once `a_r` grows. The
+start is still the static Taylor kernel (`a_r = 0`).
+
+| `attention_coefficient_projection_initial_std` | m = 2 | m = 4 |
+| --- | --- | --- |
+| 0.09375 (`3/sqrt(d)`) | `rac317a500871` | `r4cee946a1a4b` |
+| 0.3125 (`10/sqrt(d)`) | `r49ac1e58fba3` | `r362b2df6edbd` |
+
+Launch commit `eec53e3e1539eca7d20207daea659003711d82d4` from `worktrees/tanh_large_draw`
+on Kennel, one H100 each (degree 4 on `standard` on `dogo`, 24 h; degree 2 on `long` on
+`mastiff`):
+
+```bash
+RUN=<run-id>; PARTITION=<standard|long>
+sbatch --partition="$PARTITION" --time=1-00:00:00 --exclude=collie,samoyed,doodle,terrier \
+  --gres=gpu:1 --cpus-per-task=16 --mem=128G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" eec53e3e1539eca7d20207daea659003711d82d4 1 B300,H100
 ```
 
 ### Query-key tanh coefficients, degrees 1–4
@@ -367,7 +395,7 @@ sbatch --partition=standard --time=24:00:00 --nodelist=akita --gres=gpu:1 --cpus
   "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" 1 B300
 ```
 
-Outcomes are in the [input-dependent coefficient topic](../../results/exploratory/input_dependent_coefficients/README.md).
+Outcomes are in the [input-dependent coefficient comparison](../../results/input_dependent_coefficients/README.md).
 
 ### Tanh starts on the blocked reference, degrees 1–4
 
@@ -406,7 +434,36 @@ sbatch --partition=long --nodelist=akita --gres=gpu:b300:1 --cpus-per-task=16 --
 ```
 
 Outcomes and the comparison with the fused runs and the static controls live in the
-[input-dependent coefficient topic](../../results/exploratory/input_dependent_coefficients/README.md).
+[input-dependent coefficient comparison](../../results/input_dependent_coefficients/README.md).
+
+### Tanh coefficients at degree 8
+
+Three runs extend the zero-amplitude tanh comparison to m = 8, where the
+static polynomial has more freedom: query-only (`rccf19c31669d`), query–key
+(`r66db587096c4`), and the static learned control (`raa043e978a3d`, no static unnormalized
+m = 8 run existed). They keep the 1/d-draw recipes (`r5be9a97f06e2`, `r4e3f4097a60e`) and
+the static m = 4 recipe (`rc2b555b905dd`) apart from degree, at global microbatch 64.
+Query-only and static use the Triton fused kernels; their step-one gradients agree with the blocked reference within 2%. Query–key uses
+the one-pass Triton kernel (`backends/fused_query_key_polynomial.py`), which forms the pair
+coefficients inside each tile; its step-one gradients agree with the blocked reference within
+1.4%, and it takes 99 ms per layer forward and backward on an H100 PCIe at batch 32 against
+182 ms for the blocked reference, so the query–key run `r66db587096c4` uses four GPUs on `long`.
+Query-only runs on `standard`, the control on `long`:
+
+```bash
+RUN=<run-id>; PARTITION=<standard|long>; GPUS=<2|4>; COMMIT=<launch commit in the run's record.json>
+sbatch --partition="$PARTITION" --time=1-00:00:00 --exclude=collie,samoyed,doodle,terrier \
+  --gres=gpu:$GPUS --cpus-per-task=32 --mem=256G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" "$GPUS" B300,H100
+```
+
+`ra39c41604704` asks whether the query-only deficit at m = 8 comes from Adam moving every
+order's amplitude at the same rate. It repeats `rccf19c31669d` with
+`model.attention_coefficient_amplitude_scale: factorial`, `c_r = b_r + (a_r/r!) tanh(w_r^T x_t)`,
+so order r's modulation moves at lr/r!, and with the Mosaic query kernel, which now covers
+degree 8. It runs on one GPU on `standard` (global microbatch 32) with the command above.
 
 ### PaTH position encoding, softmax and tanh m = 2, 4
 
@@ -448,7 +505,7 @@ initialized from the write projection as a separate parameter. All original weig
 match tied GDN at initialization. It preserves the canonical GDN block and reference
 initialization, 400 warmup updates, standard training telemetry, and the 19,074-update
 FineWeb recipe. The preselected control is `rf640fc13f3a8`; comparison findings and
-current status belong in the [exploratory result](../../results/exploratory/gdn_polynomial/README.md).
+current status belong in the [polynomial GDN comparison](../../results/gdn_polynomial/README.md).
 Its home cluster is Kennel. Production job `217974` completed all 19,074 updates
 on 2026-10-12 at 18:32 EDT, on `standard` at nice 0 with four H100 SXM GPUs on
 `dogo`. Terminal and validation-best checkpoint both correspond to update 19,074.
@@ -465,7 +522,7 @@ The [qualification record](../../scaffolds/transformer/validation/runs/gdn-indep
 pins the acceptance evidence. The canonical 400-update warmup and gated output
 RMSNorm were active throughout training. Completed findings, diagnostic summaries,
 and the limitations of the historical-control comparison are recorded only in the
-linked exploratory result.
+linked polynomial GDN comparison.
 Source `d3d93bc6ccaa8a76fc4b29124c80988ae1593405`
 retains FP32 chunk intermediates and TF32x3 products for tied and independent gates.
 The independently optimized erase and write projections have separate device
@@ -499,3 +556,26 @@ env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable --nice=0 --partition=sta
 Production verifies acceptance with the same source, recipe, hardware, and runtime
 settings before training; matching passed stages are reused. Hardware qualification
 and kernel benchmarks are documented in the linked scaffold validation record.
+
+## Polynomial Gated DeltaNet
+
+These runs add polynomial memory (`model.gdn_polynomial_degree`), narrower keys, or a tanh
+linear write (`model.gdn_write_activation: tanh`) to independent-erase GDN; the
+[polynomial GDN comparison](../../results/gdn_polynomial/README.md) defines the model and
+holds the findings. Home cluster: Kennel. Each run executes from its own worktree, and
+its record's `submission` holds the exact launch command, source commit, and working
+directory.
+
+| Run | Variant | d_K | Worktree | Status |
+| --- | --- | ---: | --- | --- |
+| `rd40af7956426` | quadratic | 64 | `worktrees/gdn-quadratic` | complete |
+| `r83c3394eb730` | cubic | 64 | `worktrees/gdn-cubic` | training |
+| `ra79e66bd9121` | cubic | 16 | `worktrees/gdn-small-width` | complete |
+| `ra98612db06d4` | cubic | 8 | `worktrees/gdn-small-width` | complete |
+| `rae2329afb5bd`, `r5c9701488368` | independent erase, `m = 1` | 16, 8 | `worktrees/gdn-small-width` | held |
+| `rf885f946fc9b`, `r2fb020d67c0d` | quadratic | 16, 8 | `worktrees/gdn-small-width` | held |
+| `r1d67ac6f0223`, `r4f60c2ce2f1f` | quartic | 16, 8 | `worktrees/gdn-quartic` | held |
+| `rf65d38ec0552` | tanh linear write | 64 | `worktrees/gdn-tanh-write` | complete |
+
+The records here are copies of the worktree records; a worktree's own record stays
+authoritative until its branch merges.

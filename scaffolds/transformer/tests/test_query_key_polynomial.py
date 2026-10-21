@@ -17,7 +17,8 @@ from scaffolds.transformer.attention.input_dependent import (
 )
 from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
 from scaffolds.transformer.models import build_model, model_parameter_count
-from scaffolds.transformer.tests.test_query_tanh_polynomial import _assert_close, _interpret
+from scaffolds.transformer.attention.backends import fused_query_key_polynomial as fused_pair
+from scaffolds.transformer.tests.test_query_tanh_polynomial import _assert_close, _interpret as _interpret_query
 from scaffolds.transformer.training import loop
 from scaffolds.transformer.training.checkpointing import make_checkpoint_manager, restore_latest_checkpoint
 from scaffolds.transformer.training.diagnostics import attention_diagnostics, attention_identity, fixed_diagnostic_sample
@@ -26,6 +27,24 @@ from scaffolds.transformer.training.tracking import attention_metrics
 
 
 DEGREES = (1, 2, 3, 4)
+KERNEL_DEGREES = (1, 2, 3, 4, 8)
+
+
+def _interpret(monkeypatch):
+    """Run both Triton kernels in the Pallas CPU interpreter with FP32 products."""
+    _interpret_query(monkeypatch)
+    monkeypatch.setattr(fused_pair, "_dot", lambda a, b: jnp.matmul(
+        a.astype(jnp.float32), b.astype(jnp.float32), precision=jax.lax.Precision.HIGHEST))
+
+    def load(ref, rows, width, time):
+        columns = jnp.arange(ref.shape[-1])
+        return fused_pair.plt.load(ref.at[rows[:, None], columns[None, :]],
+                                   mask=(rows[:, None] < time) & (columns[None, :] < width), other=0)
+
+    monkeypatch.setattr(fused_pair, "_load", load)
+    entry = fused_pair.fused_query_key_polynomial_attention
+    monkeypatch.setattr(fused_pair, "fused_query_key_polynomial_attention",
+                        lambda q, k, v, c, f: entry(q, k, v, c, f, interpret=True))
 KEY_PARAMETERS = ("key_polynomial_kernel", "key_polynomial_amplitude")
 
 
@@ -91,7 +110,7 @@ def _compare(actual, expected, tolerance=1e-4):
                                   f"gradient {index}, head {head}, order {order}")
 
 
-@pytest.mark.parametrize("degree", DEGREES)
+@pytest.mark.parametrize("degree", KERNEL_DEGREES)
 @pytest.mark.parametrize("backend", ("blocked", "fused"))
 def test_forward_and_all_gradients_match_independent_fp64(monkeypatch, degree, backend):
     if backend == "fused":
@@ -113,6 +132,14 @@ def test_unit_key_factors_recover_query_only_attention(monkeypatch, degree, back
         actual = query_key_polynomial_attention(q, k, v, coefficients, jnp.ones_like(coefficients), backend=backend)
         expected = query_polynomial_attention(q, k, v, coefficients, backend=backend)
     np.testing.assert_allclose(actual, expected, rtol=1e-5, atol=1e-5)
+
+
+def test_one_pass_kernel_crosses_query_and_key_tile_boundaries(monkeypatch):
+    _interpret(monkeypatch)
+    operands, cotangent = _inputs(3, time=67, batch=1, heads=2, qk_dim=17, value_dim=9)
+    with jax.default_matmul_precision("highest"):
+        actual = _vjp(partial(query_key_polynomial_attention, backend="fused"), operands, cotangent)
+    _compare(actual, _oracle(operands, cotangent))
 
 
 @pytest.mark.parametrize("backend", ("blocked", "fused"))
@@ -285,9 +312,9 @@ def _requires_gpu(backend):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("degree", DEGREES)
-@pytest.mark.parametrize("backend", ("fused", "mosaic"))
-def test_gpu_per_degree_passes_match_the_blocked_reference_in_production_context(degree, backend):
+@pytest.mark.parametrize(("degree", "backend"), [(degree, "fused") for degree in KERNEL_DEGREES]
+                         + [(degree, "mosaic") for degree in DEGREES])  # Mosaic covers degrees 1-4
+def test_gpu_fused_kernels_match_the_blocked_reference_in_production_context(degree, backend):
     _requires_gpu(backend)
     operands, cotangent = _inputs(degree, time=2048, dtype=jnp.bfloat16, qk_dim=64, value_dim=64, batch=1, heads=4)
     actual = jax.jit(partial(_vjp, partial(query_key_polynomial_attention, backend=backend)))(operands, cotangent)

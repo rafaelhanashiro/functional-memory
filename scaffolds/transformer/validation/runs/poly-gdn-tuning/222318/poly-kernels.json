@@ -1,0 +1,3268 @@
+{
+  "accuracy_reference": {
+    "min_ctas_per_sm": 0,
+    "num_warps": 2,
+    "precision": "tf32x3",
+    "same_cast_inputs": true
+  },
+  "accuracy_scope": "Production-size parity to exact backend; independent FP64 oracle tests required separately.",
+  "comparison": "Cubic polynomial GDN and native FLA linear tied GDN are different mathematics.",
+  "compiled_resources": [
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-1kw_6qp5/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-1kw_6qp5/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "kkt_solve",
+      "min_ctas_directive": [],
+      "num_warps": 1,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "83f28e537aa34be65ce5efd1974698b2a93c3d93f36c44d74d1e2ea8fa655273",
+      "ptxas_report": "ptxas info    : 11 bytes gmem\nptxas info    : Compiling entry function 'kkt_solve' for 'sm_103a'\nptxas info    : Function properties for kkt_solve\n    48 bytes stack frame, 48 bytes spill stores, 48 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 48 bytes cumulative stack size\nptxas info    : Compile time = 366.213 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 3072,
+      "spill_load_bytes": 48,
+      "spill_store_bytes": 48,
+      "stack_frame_bytes": 48,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-uym4ii6t/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-uym4ii6t/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "kkt_solve",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "21414d5c535824c428dd8d2889506f5fa9b45816d0c572aa99046e077e262590",
+      "ptxas_report": "ptxas info    : 11 bytes gmem\nptxas info    : Compiling entry function 'kkt_solve' for 'sm_103a'\nptxas info    : Function properties for kkt_solve\n    16 bytes stack frame, 48 bytes spill stores, 16 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 16 bytes cumulative stack size\nptxas info    : Compile time = 391.480 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 3072,
+      "spill_load_bytes": 16,
+      "spill_store_bytes": 48,
+      "stack_frame_bytes": 16,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-0zuufk3p/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-0zuufk3p/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "kkt_solve",
+      "min_ctas_directive": [],
+      "num_warps": 4,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "0df86e787f2d0156ed1f0a36e051614f8d12c2c622da028ae3a7cf55c5f674c3",
+      "ptxas_report": "ptxas info    : 11 bytes gmem\nptxas info    : Compiling entry function 'kkt_solve' for 'sm_103a'\nptxas info    : Function properties for kkt_solve\n    16 bytes stack frame, 12 bytes spill stores, 12 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 16 bytes cumulative stack size\nptxas info    : Compile time = 348.770 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 4096,
+      "spill_load_bytes": 12,
+      "spill_store_bytes": 12,
+      "stack_frame_bytes": 16,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-lvgx4b8z/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-lvgx4b8z/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "kkt_solve",
+      "min_ctas_directive": [],
+      "num_warps": 1,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "04e2c6fa04ead731a1f88131190737bb93ebd180b27052674a2e06e3902ee4af",
+      "ptxas_report": "ptxas info    : 11 bytes gmem\nptxas info    : Compiling entry function 'kkt_solve' for 'sm_103a'\nptxas info    : Function properties for kkt_solve\n    672 bytes stack frame, 952 bytes spill stores, 728 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 672 bytes cumulative stack size\nptxas info    : Compile time = 524.807 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 6144,
+      "spill_load_bytes": 728,
+      "spill_store_bytes": 952,
+      "stack_frame_bytes": 672,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-nbu7gyyv/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-nbu7gyyv/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "kkt_solve",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "533810de4181b0ede2dd094750e081416eb1f78b687dd6ad8084b389d9ac1c3b",
+      "ptxas_report": "ptxas info    : 11 bytes gmem\nptxas info    : Compiling entry function 'kkt_solve' for 'sm_103a'\nptxas info    : Function properties for kkt_solve\n    528 bytes stack frame, 716 bytes spill stores, 620 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 528 bytes cumulative stack size\nptxas info    : Compile time = 499.427 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 6144,
+      "spill_load_bytes": 620,
+      "spill_store_bytes": 716,
+      "stack_frame_bytes": 528,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-8mq1xp3i/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-8mq1xp3i/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "kkt_solve",
+      "min_ctas_directive": [],
+      "num_warps": 4,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "09fbddcbf214ee119fcda6fc660e4622596fcb1bb2fd2fe71621cd4349e7a640",
+      "ptxas_report": "ptxas info    : 11 bytes gmem\nptxas info    : Compiling entry function 'kkt_solve' for 'sm_103a'\nptxas info    : Function properties for kkt_solve\n    544 bytes stack frame, 728 bytes spill stores, 572 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 544 bytes cumulative stack size\nptxas info    : Compile time = 491.679 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 6144,
+      "spill_load_bytes": 572,
+      "spill_store_bytes": 728,
+      "stack_frame_bytes": 544,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-m6e30w01/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-m6e30w01/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "forward",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "bcb28897a3a9915979db0bd486441f33e177e6dfb307024301943d46fc62f8a7",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_103a'\nptxas info    : Function properties for forward\n    2456 bytes stack frame, 3720 bytes spill stores, 3948 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2456 bytes cumulative stack size\nptxas info    : Compile time = 1171.532 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 16384,
+      "spill_load_bytes": 3948,
+      "spill_store_bytes": 3720,
+      "stack_frame_bytes": 2456,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-54d9axqg/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-54d9axqg/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "forward",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "deef08bcffa8bbd97f6a4259c9a394c7c31ee6edf1070c901c6a1e298ebe85c3",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_103a'\nptxas info    : Function properties for forward\n    928 bytes stack frame, 912 bytes spill stores, 916 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 928 bytes cumulative stack size\nptxas info    : Compile time = 496.635 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 16384,
+      "spill_load_bytes": 916,
+      "spill_store_bytes": 912,
+      "stack_frame_bytes": 928,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-c_1tbg2j/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-c_1tbg2j/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_queries",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "865fc25d1226528336936e11a44bfa4cdc315e4d8bb748b607e421d483ae36a5",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_queries' for 'sm_103a'\nptxas info    : Function properties for backward_queries\n    2736 bytes stack frame, 5076 bytes spill stores, 5140 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2736 bytes cumulative stack size\nptxas info    : Compile time = 2073.983 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 49152,
+      "spill_load_bytes": 5140,
+      "spill_store_bytes": 5076,
+      "stack_frame_bytes": 2736,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-7zhjt58i/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-7zhjt58i/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "ac7640746f75b5a816f66397ea645bef4ab4ece54137ce9223ca33ef7aa0e53c",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    2784 bytes stack frame, 4896 bytes spill stores, 4364 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2784 bytes cumulative stack size\nptxas info    : Compile time = 1848.805 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 98304,
+      "spill_load_bytes": 4364,
+      "spill_store_bytes": 4896,
+      "stack_frame_bytes": 2784,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-mqg98wie/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-mqg98wie/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "2824158b56a76c832262eecb41ca250499f37033b0e658378f5a29ca3d4ef990",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    12360 bytes stack frame, 51328 bytes spill stores, 65852 bytes spill loads\nptxas info    : Used 32 registers, used 1 barriers, 12360 bytes cumulative stack size\nptxas info    : Compile time = 3534.610 ms",
+      "ptxas_returncode": 0,
+      "registers": 32,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 106496,
+      "spill_load_bytes": 65852,
+      "spill_store_bytes": 51328,
+      "stack_frame_bytes": 12360,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-6dlqatb1/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-6dlqatb1/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "a164a57e4ea56278ce2da2f73a6bfad67cbe356929e4e66ee55c783689729fe0",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    2280 bytes stack frame, 2976 bytes spill stores, 3116 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2280 bytes cumulative stack size\nptxas info    : Compile time = 1073.104 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 81920,
+      "spill_load_bytes": 3116,
+      "spill_store_bytes": 2976,
+      "stack_frame_bytes": 2280,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-mbpac1ed/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-mbpac1ed/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "forward",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 2,
+      "operation": "forward",
+      "phase": "compiling",
+      "ptx_sha256": "999ed89af289e42166a89e1eb01060dab8ab3e82c3e3aac9202c781f9ba2086a",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_103a'\nptxas info    : Function properties for forward\n    2456 bytes stack frame, 3720 bytes spill stores, 3948 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2456 bytes cumulative stack size\nptxas info    : Compile time = 1010.544 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 16384,
+      "spill_load_bytes": 3948,
+      "spill_store_bytes": 3720,
+      "stack_frame_bytes": 2456,
+      "variant": "tf32x3_w2_cta1"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-_u0d2otc/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-_u0d2otc/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "forward",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "a9a5425c57e76f11ff50f9cbd82b6caa20e41f18e0447052426d785a932953a7",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_103a'\nptxas info    : Function properties for forward\n    928 bytes stack frame, 912 bytes spill stores, 916 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 928 bytes cumulative stack size\nptxas info    : Compile time = 452.272 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 16384,
+      "spill_load_bytes": 916,
+      "spill_store_bytes": 912,
+      "stack_frame_bytes": 928,
+      "variant": "tf32x3_w2_cta1"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-b8bvdf3v/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-b8bvdf3v/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_queries",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "727b69ccfabc2232355f65080804f0432ce3ebddc90043dc40cdbef2bab94f90",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_queries' for 'sm_103a'\nptxas info    : Function properties for backward_queries\n    2680 bytes stack frame, 4972 bytes spill stores, 5248 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2680 bytes cumulative stack size\nptxas info    : Compile time = 1729.146 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 49152,
+      "spill_load_bytes": 5248,
+      "spill_store_bytes": 4972,
+      "stack_frame_bytes": 2680,
+      "variant": "tf32x3_w2_cta1"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-nh35v6f2/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-nh35v6f2/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "b9642b4f379dde46c9419bba23c5a75f543be0e4dadcd66d5d4fd55462b5d1fb",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    2960 bytes stack frame, 5000 bytes spill stores, 4496 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2960 bytes cumulative stack size\nptxas info    : Compile time = 1600.487 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 98304,
+      "spill_load_bytes": 4496,
+      "spill_store_bytes": 5000,
+      "stack_frame_bytes": 2960,
+      "variant": "tf32x3_w2_cta1"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-n9rv4spe/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-n9rv4spe/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "72232467f10314a69c7542d282954b5cd8d9b985e22ab7cd6907dc7c9b28f57d",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    4192 bytes stack frame, 7136 bytes spill stores, 9004 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 4192 bytes cumulative stack size\nptxas info    : Compile time = 2323.258 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 106496,
+      "spill_load_bytes": 9004,
+      "spill_store_bytes": 7136,
+      "stack_frame_bytes": 4192,
+      "variant": "tf32x3_w2_cta1"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-qbkocb5v/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-qbkocb5v/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "2a3224306ff3b893ddd8858dd0e9b87337615fcace5c101ab7b783b813dbb61c",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    2264 bytes stack frame, 2956 bytes spill stores, 3096 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2264 bytes cumulative stack size\nptxas info    : Compile time = 922.063 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 81920,
+      "spill_load_bytes": 3096,
+      "spill_store_bytes": 2956,
+      "stack_frame_bytes": 2264,
+      "variant": "tf32x3_w2_cta1"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-c896k4g_/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-c896k4g_/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "forward",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward",
+      "phase": "compiling",
+      "ptx_sha256": "a5004c9ba1ff80eab775c8e05dec782709b4a2373b44112a9eba693b9ec3ae33",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_103a'\nptxas info    : Function properties for forward\n    1776 bytes stack frame, 2040 bytes spill stores, 1836 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 1776 bytes cumulative stack size\nptxas info    : Compile time = 826.605 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 16384,
+      "spill_load_bytes": 1836,
+      "spill_store_bytes": 2040,
+      "stack_frame_bytes": 1776,
+      "variant": "bf16_values_w2_cta0"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-tsezucmt/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-tsezucmt/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "forward",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "deef08bcffa8bbd97f6a4259c9a394c7c31ee6edf1070c901c6a1e298ebe85c3",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_103a'\nptxas info    : Function properties for forward\n    928 bytes stack frame, 912 bytes spill stores, 916 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 928 bytes cumulative stack size\nptxas info    : Compile time = 528.851 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 16384,
+      "spill_load_bytes": 916,
+      "spill_store_bytes": 912,
+      "stack_frame_bytes": 928,
+      "variant": "bf16_values_w2_cta0"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-rxi0grd9/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-rxi0grd9/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_queries",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "0b004cffc791e972c4c296bf7647478ce9e32a95bc12663dc740037685602b8c",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_queries' for 'sm_103a'\nptxas info    : Function properties for backward_queries\n    2040 bytes stack frame, 3084 bytes spill stores, 3252 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2040 bytes cumulative stack size\nptxas info    : Compile time = 1542.873 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 24576,
+      "spill_load_bytes": 3252,
+      "spill_store_bytes": 3084,
+      "stack_frame_bytes": 2040,
+      "variant": "bf16_values_w2_cta0"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-d0_90812/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-d0_90812/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "a2aa1af25e07681a414c2e6f20fa3ff3fcd8c2d46fe535f99dfcc8c405c693cd",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    2728 bytes stack frame, 4160 bytes spill stores, 3664 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2728 bytes cumulative stack size\nptxas info    : Compile time = 1031.350 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 24576,
+      "spill_load_bytes": 3664,
+      "spill_store_bytes": 4160,
+      "stack_frame_bytes": 2728,
+      "variant": "bf16_values_w2_cta0"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-ebzsu5ws/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-ebzsu5ws/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "0c1ac190a70f87513af12d85fcc6386fc2ee345b449b1d205f15ee118493bc32",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    13520 bytes stack frame, 44544 bytes spill stores, 58416 bytes spill loads\nptxas info    : Used 32 registers, used 1 barriers, 13520 bytes cumulative stack size\nptxas info    : Compile time = 2767.589 ms",
+      "ptxas_returncode": 0,
+      "registers": 32,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 81920,
+      "spill_load_bytes": 58416,
+      "spill_store_bytes": 44544,
+      "stack_frame_bytes": 13520,
+      "variant": "bf16_values_w2_cta0"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-w12wvkp8/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-w12wvkp8/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "048b67804e2587fbc670e7d24d38406a90d0f82dbfd7d51f6d8223bc16f479a3",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    1520 bytes stack frame, 1768 bytes spill stores, 1628 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 1520 bytes cumulative stack size\nptxas info    : Compile time = 600.595 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 57344,
+      "spill_load_bytes": 1628,
+      "spill_store_bytes": 1768,
+      "stack_frame_bytes": 1520,
+      "variant": "bf16_values_w2_cta0"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-u3ocln8w/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-u3ocln8w/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "forward",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 2,
+      "operation": "forward",
+      "phase": "compiling",
+      "ptx_sha256": "0c5daf17df0f835528bb67abfc7ebb78b6c2744f074a6c89316a45eb4fb134d9",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_103a'\nptxas info    : Function properties for forward\n    1680 bytes stack frame, 1920 bytes spill stores, 1784 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 1680 bytes cumulative stack size\nptxas info    : Compile time = 718.674 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 16384,
+      "spill_load_bytes": 1784,
+      "spill_store_bytes": 1920,
+      "stack_frame_bytes": 1680,
+      "variant": "bf16_values_w2_cta1"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-yp8hn75v/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-yp8hn75v/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "forward",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "a9a5425c57e76f11ff50f9cbd82b6caa20e41f18e0447052426d785a932953a7",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_103a'\nptxas info    : Function properties for forward\n    928 bytes stack frame, 912 bytes spill stores, 916 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 928 bytes cumulative stack size\nptxas info    : Compile time = 431.609 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 16384,
+      "spill_load_bytes": 916,
+      "spill_store_bytes": 912,
+      "stack_frame_bytes": 928,
+      "variant": "bf16_values_w2_cta1"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-0m3ddvtw/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-0m3ddvtw/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_queries",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "3c6c4a7f6cf1d3d1241a17987fac1c2f37d6ba80ad5520c3d62d82045583db45",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_queries' for 'sm_103a'\nptxas info    : Function properties for backward_queries\n    2120 bytes stack frame, 3152 bytes spill stores, 3348 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2120 bytes cumulative stack size\nptxas info    : Compile time = 1250.443 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 24576,
+      "spill_load_bytes": 3348,
+      "spill_store_bytes": 3152,
+      "stack_frame_bytes": 2120,
+      "variant": "bf16_values_w2_cta1"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-v2_h37c3/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-v2_h37c3/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "b3fd9272f6e48c1889c358d70a5f41d940e4e7bd6011fce2d7e9aae4ba8763ad",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    2760 bytes stack frame, 4096 bytes spill stores, 3568 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2760 bytes cumulative stack size\nptxas info    : Compile time = 839.495 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 24576,
+      "spill_load_bytes": 3568,
+      "spill_store_bytes": 4096,
+      "stack_frame_bytes": 2760,
+      "variant": "bf16_values_w2_cta1"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-b3ayv3vs/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-b3ayv3vs/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "d57d96b8ccc6f0865eae6c83e4ad07e2686fd1f7a149bddc1bb4af64e26eb1c4",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    3944 bytes stack frame, 6260 bytes spill stores, 7824 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 3944 bytes cumulative stack size\nptxas info    : Compile time = 1753.440 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 81920,
+      "spill_load_bytes": 7824,
+      "spill_store_bytes": 6260,
+      "stack_frame_bytes": 3944,
+      "variant": "bf16_values_w2_cta1"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-sk_p95ct/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-sk_p95ct/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [
+        "1"
+      ],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "52170be13d623e5dca05213ca6971fa7d10f20896b44b2be042070b33c5e82b6",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    1520 bytes stack frame, 1768 bytes spill stores, 1628 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 1520 bytes cumulative stack size\nptxas info    : Compile time = 533.607 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k16_v64",
+      "shared_bytes": 57344,
+      "spill_load_bytes": 1628,
+      "spill_store_bytes": 1768,
+      "stack_frame_bytes": 1520,
+      "variant": "bf16_values_w2_cta1"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-koew0n5l/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-koew0n5l/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "kkt_solve",
+      "min_ctas_directive": [],
+      "num_warps": 1,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "deee437248b1f0f3e89f88ce0130c25335407334e4249c4da75ae8daec3b5be5",
+      "ptxas_report": "ptxas info    : 11 bytes gmem\nptxas info    : Compiling entry function 'kkt_solve' for 'sm_103a'\nptxas info    : Function properties for kkt_solve\n    184 bytes stack frame, 240 bytes spill stores, 260 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 184 bytes cumulative stack size\nptxas info    : Compile time = 380.203 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "round": 2,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k64_v64",
+      "shared_bytes": 7168,
+      "spill_load_bytes": 260,
+      "spill_store_bytes": 240,
+      "stack_frame_bytes": 184,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-50dolbsw/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-50dolbsw/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "kkt_solve",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "883344d2d45a2803b6e8bba6cb2c4cd301272942322428e79c1985e977afe6f5",
+      "ptxas_report": "ptxas info    : 11 bytes gmem\nptxas info    : Compiling entry function 'kkt_solve' for 'sm_103a'\nptxas info    : Function properties for kkt_solve\n    144 bytes stack frame, 184 bytes spill stores, 200 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 144 bytes cumulative stack size\nptxas info    : Compile time = 356.708 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "round": 2,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k64_v64",
+      "shared_bytes": 7168,
+      "spill_load_bytes": 200,
+      "spill_store_bytes": 184,
+      "stack_frame_bytes": 144,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-s6jy38z3/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-s6jy38z3/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "kkt_solve",
+      "min_ctas_directive": [],
+      "num_warps": 4,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "a92d6c91e8d98567a0287793605c8959a57d219d1d19d942044d00d0fd1023d7",
+      "ptxas_report": "ptxas info    : 11 bytes gmem\nptxas info    : Compiling entry function 'kkt_solve' for 'sm_103a'\nptxas info    : Function properties for kkt_solve\n    136 bytes stack frame, 132 bytes spill stores, 164 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 136 bytes cumulative stack size\nptxas info    : Compile time = 354.009 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "round": 2,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k64_v64",
+      "shared_bytes": 8192,
+      "spill_load_bytes": 164,
+      "spill_store_bytes": 132,
+      "stack_frame_bytes": 136,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-1j1mg80k/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-1j1mg80k/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "kkt_solve",
+      "min_ctas_directive": [],
+      "num_warps": 1,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "0fbfc0c58ce51e24222a6dd39b5b9e48eba5fc92e6c95ab41eb508cf92810b27",
+      "ptxas_report": "ptxas info    : 11 bytes gmem\nptxas info    : Compiling entry function 'kkt_solve' for 'sm_103a'\nptxas info    : Function properties for kkt_solve\n    672 bytes stack frame, 952 bytes spill stores, 728 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 672 bytes cumulative stack size\nptxas info    : Compile time = 529.002 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "round": 2,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k64_v64",
+      "shared_bytes": 6144,
+      "spill_load_bytes": 728,
+      "spill_store_bytes": 952,
+      "stack_frame_bytes": 672,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-vt51esyq/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-vt51esyq/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "kkt_solve",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "dd7765bf9952f81dcf923417a3a9617738325ca25b3d5c79b5776e44dded54ff",
+      "ptxas_report": "ptxas info    : 11 bytes gmem\nptxas info    : Compiling entry function 'kkt_solve' for 'sm_103a'\nptxas info    : Function properties for kkt_solve\n    528 bytes stack frame, 716 bytes spill stores, 620 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 528 bytes cumulative stack size\nptxas info    : Compile time = 505.014 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "round": 2,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k64_v64",
+      "shared_bytes": 6144,
+      "spill_load_bytes": 620,
+      "spill_store_bytes": 716,
+      "stack_frame_bytes": 528,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-6ui83y4o/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-6ui83y4o/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "kkt_solve",
+      "min_ctas_directive": [],
+      "num_warps": 4,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "d12eb9baf82887490300379179324b74121537d626d6396e932d2a2c1767a70d",
+      "ptxas_report": "ptxas info    : 11 bytes gmem\nptxas info    : Compiling entry function 'kkt_solve' for 'sm_103a'\nptxas info    : Function properties for kkt_solve\n    536 bytes stack frame, 720 bytes spill stores, 556 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 536 bytes cumulative stack size\nptxas info    : Compile time = 492.832 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "round": 2,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k64_v64",
+      "shared_bytes": 6144,
+      "spill_load_bytes": 556,
+      "spill_store_bytes": 720,
+      "stack_frame_bytes": 536,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-2s95ogn1/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-2s95ogn1/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "forward",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "df52e015a84fc198c28cdb6d584146574f3c0955e187b8bf4f89ac51e9db9f87",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_103a'\nptxas info    : Function properties for forward\n    14096 bytes stack frame, 54088 bytes spill stores, 71196 bytes spill loads\nptxas info    : Used 32 registers, used 1 barriers, 14096 bytes cumulative stack size\nptxas info    : Compile time = 3018.352 ms",
+      "ptxas_returncode": 0,
+      "registers": 32,
+      "round": 2,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k64_v64",
+      "shared_bytes": 16384,
+      "spill_load_bytes": 71196,
+      "spill_store_bytes": 54088,
+      "stack_frame_bytes": 14096,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-ssv1ejfw/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-ssv1ejfw/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "forward",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "3c6a09169e9fd542aca867e41793731fb9ae83847e86f9e48d64bf591b9b8a23",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'forward' for 'sm_103a'\nptxas info    : Function properties for forward\n    2312 bytes stack frame, 3480 bytes spill stores, 4468 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 2312 bytes cumulative stack size\nptxas info    : Compile time = 1596.945 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "round": 2,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k64_v64",
+      "shared_bytes": 16384,
+      "spill_load_bytes": 4468,
+      "spill_store_bytes": 3480,
+      "stack_frame_bytes": 2312,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-jthmhpkq/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-jthmhpkq/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_queries",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "d9acb72d4df3100d4e4b2e3a0de5fb1d853592d62c2e750b7784cca83eabed81",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_queries' for 'sm_103a'\nptxas info    : Function properties for backward_queries\n    15648 bytes stack frame, 83570 bytes spill stores, 112744 bytes spill loads\nptxas info    : Used 32 registers, used 1 barriers, 15648 bytes cumulative stack size\nptxas info    : Compile time = 5530.877 ms",
+      "ptxas_returncode": 0,
+      "registers": 32,
+      "round": 2,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k64_v64",
+      "shared_bytes": 49152,
+      "spill_load_bytes": 112744,
+      "spill_store_bytes": 83570,
+      "stack_frame_bytes": 15648,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-gki3xhz9/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-gki3xhz9/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "fdaaa83a07a3be212eae9f5b6b1aeaa6285db34428be2b9caf0355bae9211c1d",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    3704 bytes stack frame, 6528 bytes spill stores, 7184 bytes spill loads\nptxas info    : Used 255 registers, used 1 barriers, 3704 bytes cumulative stack size\nptxas info    : Compile time = 2921.012 ms",
+      "ptxas_returncode": 0,
+      "registers": 255,
+      "round": 2,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k64_v64",
+      "shared_bytes": 98304,
+      "spill_load_bytes": 7184,
+      "spill_store_bytes": 6528,
+      "stack_frame_bytes": 3704,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-ucmy2gwh/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-ucmy2gwh/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "42fed44daa5cfddb3b626f6fe0d812f33b2c89abd5bd543d2a5cf958cd7e4874",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    19336 bytes stack frame, 90784 bytes spill stores, 112840 bytes spill loads\nptxas info    : Used 32 registers, used 1 barriers, 19336 bytes cumulative stack size\nptxas info    : Compile time = 6936.983 ms",
+      "ptxas_returncode": 0,
+      "registers": 32,
+      "round": 2,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k64_v64",
+      "shared_bytes": 131072,
+      "spill_load_bytes": 112840,
+      "spill_store_bytes": 90784,
+      "stack_frame_bytes": 19336,
+      "variant": "reference"
+    },
+    {
+      "inspection_ptxas_command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+        "-v",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-kb35ekm0/kernel.ptx",
+        "-o",
+        "/tmp/poly-gdn-222318.07bY63/poly-gdn-resource-kb35ekm0/kernel.cubin",
+        "--gpu-name",
+        "sm_103a"
+      ],
+      "kernel": "backward_keys",
+      "min_ctas_directive": [],
+      "num_warps": 2,
+      "operation": "forward_backward",
+      "phase": "compiling",
+      "ptx_sha256": "1cc10f00b653b4bf7dbfa4425b54b9c9b94a2a6616379b31cf4b521f3599e730",
+      "ptxas_report": "ptxas info    : 0 bytes gmem\nptxas info    : Compiling entry function 'backward_keys' for 'sm_103a'\nptxas info    : Function properties for backward_keys\n    17656 bytes stack frame, 64766 bytes spill stores, 75952 bytes spill loads\nptxas info    : Used 32 registers, used 1 barriers, 17656 bytes cumulative stack size\nptxas info    : Compile time = 3805.131 ms",
+      "ptxas_returncode": 0,
+      "registers": 32,
+      "round": 2,
+      "runtime_ptxas_device_debug": null,
+      "runtime_ptxas_extra_flags": "",
+      "shape": "b64_t2048_h16_k64_v64",
+      "shared_bytes": 131072,
+      "spill_load_bytes": 75952,
+      "spill_store_bytes": 64766,
+      "stack_frame_bytes": 17656,
+      "variant": "reference"
+    }
+  ],
+  "configuration": {
+    "batches": [
+      64
+    ],
+    "degree": 3,
+    "exact_relative_max": 0.01,
+    "exact_relative_rms": 0.003,
+    "experiment": "attention_scaling",
+    "heads": 16,
+    "iterations": 30,
+    "key_dims": [
+      16,
+      64
+    ],
+    "length": 2048,
+    "max_relative_max": 0.05,
+    "max_relative_rms": 0.01,
+    "min_ctas": [
+      0,
+      1
+    ],
+    "output": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/validation/runs/poly-gdn-tuning/222318/poly-kernels.json",
+    "precisions": [
+      "tf32x3",
+      "bf16_values"
+    ],
+    "profile_stages": false,
+    "profile_variants": null,
+    "reference_min_ctas": 0,
+    "reference_warps": 2,
+    "resources": true,
+    "rounds": 2,
+    "seed": 46,
+    "value_dim": 64,
+    "warmup": 5,
+    "warps": [
+      2
+    ]
+  },
+  "created_at_utc": "2026-10-19T06:47:14.612071+00:00",
+  "finished_at_utc": "2026-10-19T06:50:38.723109+00:00",
+  "format": "polynomial-gdn-kernel-tuning",
+  "memory": "Compiler estimates and device allocator statistics, not measured isolated kernel peaks.",
+  "provenance": {
+    "benchmark_source_sha256": "16a06f92c2f36d1b7f70bacfe5c3fb8d2fa238fe4ed270702806260d2e8f7727",
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "device": {
+      "description": "cuda:0",
+      "driver_version": "580.126.20",
+      "id": 0,
+      "kind": "NVIDIA B300 SXM6 AC",
+      "name": "NVIDIA B300 SXM6 AC",
+      "pci_bus_id": "00000000:1A:00.0",
+      "physical_index": "0",
+      "platform": "gpu",
+      "process_index": 0,
+      "uuid": "GPU-6dca32fa-0314-7849-907a-031e3d449ddf"
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "222318",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer="
+    },
+    "frozen_execution_scope": {
+      "experiment": "attention_scaling",
+      "scaffold": "transformer"
+    },
+    "frozen_execution_sha256": "26444fb498ab6e2a044835619230ea91d53f10d6cef3cd1ea536d432e274c11d",
+    "hostname": "akita.csail.mit.edu",
+    "package_versions": {
+      "flash-linear-attention": "0.6.0",
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda13-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cublas": "13.2.2.2",
+      "nvidia-cuda-nvcc": "13.2.86",
+      "nvidia-cuda-runtime": "13.2.86",
+      "nvidia-cudnn-cu13": "9.22.0.52",
+      "nvidia-nccl-cu13": "2.32.3",
+      "triton": "3.7.1"
+    },
+    "platform": "Linux-6.17.0-1014-nvidia-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "runtime_environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_TRITON_PTXAS_DEVICE_DEBUG": null,
+      "JAX_TRITON_PTXAS_EXTRA_FLAGS": "",
+      "NCCL_P2P_DISABLE": null,
+      "POLY_GDN_MIN_CTAS_PER_SM": "0",
+      "POLY_GDN_NUM_WARPS": "2",
+      "POLY_GDN_VALUE_PRECISION": "tf32x3",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "TRANSFORMER_HOST_STAGING": "0",
+      "TRITON_PTXAS_BLACKWELL_PATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+      "TRITON_PTXAS_PATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-gdn-tuning/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES --xla_gpu_enable_command_buffer=",
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "source_commit": "34f2c023bec5f6838f886766a8fd1f0a22ccd7f3",
+    "source_dirty": true,
+    "source_sha256": {
+      "scaffolds/transformer/attention/__init__.py": "0a21df8dcefe750872141602b4c96aff999c403997438957926250c916cb2913",
+      "scaffolds/transformer/attention/backends/__init__.py": "fc73b96b509d55a0f8a4df7d0cf1cc1ec2c3888d89e7173e4bc5e463a60307e1",
+      "scaffolds/transformer/attention/backends/chunked_gla_triton.py": "41414d6211c843e4baf595d6f4e10da6711ac3cc0a6cc742b33166315b38c554",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/__init__.py": "ef92364015dd7b51126b31aa2b8d02bb351c576851c1a975b003cb7f398b5317",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "c8fc64909df8487d5b02f1d4af8a41af6b075faf0be34803b51f09a0f7471289",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "a8321522447331aafc08652587ba9cb7d0e817ff6cc92ebb91df08c800a3f541",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "17d23066f78dfb4505d115d82fdd01da84355cdd05afa83190dfac2938dae272",
+      "scaffolds/transformer/attention/backends/fla_independent_gated_delta_rule_kernels.py": "06bedf24690a1180660df5eb927a04719a0ff341410461d9e8dc3e051d4ee264",
+      "scaffolds/transformer/attention/backends/fused_learned_polynomial.py": "39fb6f0f882ed4cb0227dddff7480398eddc2210b3efb9f810b698b13d52903e",
+      "scaffolds/transformer/attention/backends/fused_normalized_polynomial.py": "5ddf0f0590e7a84586fce84a6231ff9d870c61f634b56b02aa804602513bd770",
+      "scaffolds/transformer/attention/backends/fused_quadratic.py": "0f0fca19c8af2d7d616c9e96d788c86c58d8a226db69e4f5cb36b1c39b246fef",
+      "scaffolds/transformer/attention/backends/fused_query_polynomial.py": "06b65fa98394728709beae046848a57427dac9e7b3ccee48371a5d8db22be80c",
+      "scaffolds/transformer/attention/backends/fused_taylor.py": "b0eccdbff0701b02be950f64ab5db5a1dcaff0c6fca8b68c01fd3277ef2d157a",
+      "scaffolds/transformer/attention/backends/fused_unnormalized.py": "97f01d04d630e256fe1a1506574030045526a510b0108e31a9bdc783c2d2b99d",
+      "scaffolds/transformer/attention/backends/mosaic/__init__.py": "895aaddb244c2f1e7967a80668ca7f97199446c0db8e08776a95cbbd0b4e3034",
+      "scaffolds/transformer/attention/backends/mosaic/api.py": "91161801d4aaecc7ea06b2b2201a08ec0f7cbecbe198540aea200085433daa17",
+      "scaffolds/transformer/attention/backends/mosaic/blackwell.py": "2724f4c967738b2af3d6d0f0d02c46dd4187af359c8015e8f987d8a808b05ec8",
+      "scaffolds/transformer/attention/backends/mosaic/common.py": "5f681f7f564bf1fd8305e1c33218d3e6e665f8405e2fd26a582957381d22233e",
+      "scaffolds/transformer/attention/backends/mosaic/hopper.py": "aac192218b95592665b3f74da417027e425eb993460a3ef8f3d98f86d90b45a9",
+      "scaffolds/transformer/attention/backends/polynomial_gdn.py": "443248e13f7b5bbea675f33c78e29f969043f76d36dad8f65420c41a495e1ac2",
+      "scaffolds/transformer/attention/backends/polynomial_gdn_kernels.py": "b39f86fe71d1ce30db5d0ff87d35976e459869703a9fe6b9714cf4f7585e5ba3",
+      "scaffolds/transformer/attention/backends/reference.py": "e0f29420fc94598e88cc91b7053fe9d098964a9838683595efd4f179bad5651c",
+      "scaffolds/transformer/attention/backends/selection.py": "10971b14a3e59a8cc5a0e08f03d90e9c33ab55438e19c2218c86bef2f0707208",
+      "scaffolds/transformer/attention/core.py": "29bcbf883574490926c658bf8ec55b4fe026849fb02d984cbceae1951a5ee52d",
+      "scaffolds/transformer/attention/gated_deltanet.py": "cd8f10f8fdcf602daf372905d8e690f8f43a77a575ac2a99b8415a734e446a6e",
+      "scaffolds/transformer/attention/gla.py": "15fcedae8355786adcf0c386d8d597065bdd5e412011c6eb12bfa7d1592fa72a",
+      "scaffolds/transformer/attention/input_dependent.py": "e23ee15981b34ad4ace12eb440b0e2f0883da79f86c0d3e1fb2ca50b7c79b9ae",
+      "scaffolds/transformer/attention/learned_polynomial.py": "ffcc1cc0eef829864f13bfb4413e14f97c3c4390e879492947d07d73199b88dd",
+      "scaffolds/transformer/attention/learned_quadratic.py": "2dd52c7b2f839836f8b7ea799ab382d8974957160902cc30d6c710a00b9b4f40",
+      "scaffolds/transformer/attention/multihead.py": "489e71cf965d27a4de309cc7385bd6f6e925bb377975bd16cb81058667200132",
+      "scaffolds/transformer/attention/nonnegative_polynomial.py": "e9162adc1772395c4e677350d0a8938d12e523ea371cae3db037ec50d4e82df6",
+      "scaffolds/transformer/attention/output_scaling.py": "575d9ea927319a3d55039b621e7ff00028aca0d3b06085168edf9609f78bd708",
+      "scaffolds/transformer/attention/parameters.py": "0b89b2311a28a1aae9bdf53d1ab9253d724f35408931918dab4a169bbcefc1e1",
+      "scaffolds/transformer/attention/polynomial_gdn_reference.py": "ea10043a9e9077bc870f594c71aeb0d5d098788a8e50c1b93df25a92ba8df25b",
+      "scaffolds/transformer/attention/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269",
+      "scaffolds/transformer/attention/qk_norm.py": "919e84929d39664444267a2e5446c8e715b007129a7211168d33c6f7afac4f65",
+      "scaffolds/transformer/attention/rational_polynomial.py": "83907937199331c5f1815369543a83a1372e8154343ae072c48a12a9d0b823f9",
+      "scaffolds/transformer/attention/softmax.py": "47470b42e8e212c91a5044d448f4c36b4d30b9d0b581d3153e6fb73f91f4b04d",
+      "scaffolds/transformer/attention/taylor.py": "550a930352ac08533bf345508a9382a039c1caa27fba2e1b67659dbe27f768a1",
+      "scaffolds/transformer/attention/unnormalized.py": "f028d0076443b1baa11820e20cc10fc121fcd8e380aa66f85bbb9aed2349f1ca",
+      "scaffolds/transformer/benchmarks/benchmark_attention.py": "e07681b2c193e6a2c5642d150bc9a8d39b3ffd87de9812ea281010b21f9ec400",
+      "scaffolds/transformer/benchmarks/benchmark_poly_gdn_tuning.py": "16a06f92c2f36d1b7f70bacfe5c3fb8d2fa238fe4ed270702806260d2e8f7727",
+      "scaffolds/transformer/benchmarks/upstream_inputs.py": "792d719b1bee8d781f7a55e2923e7c8759e31678fa8a121bf1838e0811ef086e",
+      "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA B300 SXM6 AC"
+      }
+    ]
+  },
+  "schema_version": 1,
+  "shapes": {
+    "b64_t2048_h16_k16_v64": {
+      "cotangent_dtype": "bfloat16",
+      "gpu_memory_stats": {
+        "bytes_in_use": 0,
+        "bytes_limit": 215571480576,
+        "bytes_reserved": 0,
+        "largest_alloc_size": 8380223232,
+        "largest_free_block_bytes": 0,
+        "num_allocs": 4073,
+        "peak_bytes_in_use": 11240738816,
+        "peak_bytes_reserved": 0,
+        "peak_pool_bytes": 12884901888,
+        "pool_bytes": 12884901888
+      },
+      "input_distribution": "Shared unit Q/K, Gaussian V/dO, negative log decay, sigmoid erase; independent tanh(.2*N(0,1)) coefficients.",
+      "input_dtypes": {
+        "beta": "bfloat16",
+        "erase": "bfloat16",
+        "g": "float32",
+        "k": "bfloat16",
+        "q": "bfloat16",
+        "v": "bfloat16"
+      },
+      "input_sha256": {
+        "beta": "4378c2648341289a3bcb7bd1d90a14d7d9066e73c0662c541781dbc340fb813b",
+        "do": "d5c4cf3f3ddc4cd97098915b7852b5150bddd2c090ba35a2bd42f71e11c639e9",
+        "erase": "eb9f3952eb8157d3dbaa02a762cadca987c40614705642b65ce834fa3745b655",
+        "g": "6697d031bfeea5fb766bf6da63b7b44832a03669e509afd7eee4e3cfbbc592b7",
+        "k": "7a45175325fc72027449af5c271e5de2be90a628fda7267e069cf7714c2d29e8",
+        "q": "e48d501cd0fa2459e14e0ff6fb970ec666d32a9a13ef30f0ee1d40b717b71d28",
+        "v": "762e29b380b251d3b778569beb77bbced8c3c9595640e07c84b9b0bea09b95eb"
+      },
+      "polynomial_coefficients_sha256": "5c3272c6c7ced2dc0ccdd4ea308ceac519cb229d7139ed973cc320e72c3d2eed",
+      "reference": {
+        "forward_backward": {
+          "compilation_seconds": 23.559317293576896,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 700448768,
+            "available": true,
+            "generated_code_size_in_bytes": 111536,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 700448824,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 8380223032
+          },
+          "custom_call_targets": [
+            "__cublas$lt$matmul",
+            "triton_kernel_call"
+          ],
+          "first_call_finite": true,
+          "first_call_seconds": 14.587891612201929,
+          "hlo_sha256": "61117f1029679f8d16d68bd362ebf1a46ac4acc693552ca39e43d21b6b71f6d0",
+          "rounds": [],
+          "status": "compiled"
+        }
+      },
+      "scale": 0.25,
+      "shape": {
+        "batch": 64,
+        "degree": 3,
+        "heads": 16,
+        "key_dim": 16,
+        "length": 2048,
+        "value_dim": 64
+      },
+      "status": "complete",
+      "variants": {
+        "bf16_values_w2_cta0": {
+          "accuracy_passed": true,
+          "min_ctas_per_sm": 0,
+          "num_warps": 2,
+          "operations": {
+            "forward": {
+              "accuracy": {
+                "all_finite": true,
+                "channels": {
+                  "output": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0078125,
+                    "passed": true,
+                    "reference_max": 1.40625,
+                    "reference_rms": 0.13351845741271973,
+                    "relative_max": 0.0055555556900799274,
+                    "relative_rms": 0.0026017925702035427,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      64
+                    ]
+                  }
+                },
+                "limits": {
+                  "relative_max": 0.05,
+                  "relative_rms": 0.01
+                },
+                "passed": true
+              },
+              "compilation_seconds": 1.1122690057381988,
+              "compiled_memory": {
+                "alias_size_in_bytes": 0,
+                "argument_size_in_bytes": 432013312,
+                "available": true,
+                "generated_code_size_in_bytes": 38120,
+                "host_alias_size_in_bytes": 0,
+                "host_argument_size_in_bytes": 0,
+                "host_output_size_in_bytes": 0,
+                "host_temp_size_in_bytes": 0,
+                "is_measured_allocator_peak": false,
+                "output_size_in_bytes": 268435456,
+                "source": "compiled.memory_analysis",
+                "temp_size_in_bytes": 1384120848
+              },
+              "custom_call_targets": [
+                "__cublas$lt$matmul",
+                "triton_kernel_call"
+              ],
+              "first_call_finite": true,
+              "first_call_seconds": 0.903109960258007,
+              "hlo_sha256": "7dae7fbe2c0bd6dec2c77d2c99872ae1ba180130eee6eb313a8d7b7989915a57",
+              "rounds": [
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 1,
+                  "samples_seconds": [
+                    0.01393850240856409,
+                    0.013918159529566765,
+                    0.013825789093971252,
+                    0.014050397090613842,
+                    0.01408637035638094,
+                    0.013804708607494831,
+                    0.013827064074575901,
+                    0.014022852294147015,
+                    0.013802818953990936,
+                    0.013949546962976456,
+                    0.01406786497682333,
+                    0.01380182895809412,
+                    0.013889992609620094,
+                    0.01363894622772932,
+                    0.013942629098892212,
+                    0.013760948553681374,
+                    0.013806500472128391,
+                    0.013716188259422779,
+                    0.014061341062188148,
+                    0.01407102681696415,
+                    0.013964801095426083,
+                    0.014006772078573704,
+                    0.014017326757311821,
+                    0.013935600407421589,
+                    0.013978592120110989,
+                    0.013839393854141235,
+                    0.013944908045232296,
+                    0.013898058794438839,
+                    0.01376374065876007,
+                    0.013782910071313381
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.013903852676351865,
+                    "median_seconds": 0.013926879968494177,
+                    "minimum_seconds": 0.01363894622772932,
+                    "p10_seconds": 0.0137634614482522,
+                    "p90_seconds": 0.014061993453651667,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.014297972433269024,
+                    0.014016776345670223,
+                    0.013953978195786476,
+                    0.013838057406246662,
+                    0.013885227963328362
+                  ]
+                },
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 2,
+                  "samples_seconds": [
+                    0.013769559562206268,
+                    0.014193015173077583,
+                    0.013809523545205593,
+                    0.013729294762015343,
+                    0.013673506677150726,
+                    0.013842685148119926,
+                    0.013822135515511036,
+                    0.013740506023168564,
+                    0.013721033930778503,
+                    0.013638542033731937,
+                    0.013683202676475048,
+                    0.013595528900623322,
+                    0.014135485514998436,
+                    0.013861022889614105,
+                    0.0138831352815032,
+                    0.013726641424000263,
+                    0.013716540299355984,
+                    0.013744973577558994,
+                    0.013719316571950912,
+                    0.013626858592033386,
+                    0.013848843984305859,
+                    0.01370734628289938,
+                    0.013758981600403786,
+                    0.013886303640902042,
+                    0.013721884228289127,
+                    0.013761349022388458,
+                    0.013781275600194931,
+                    0.01371870655566454,
+                    0.013654104433953762,
+                    0.01376473531126976
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.013774534625311693,
+                    "median_seconds": 0.013742739800363779,
+                    "minimum_seconds": 0.013595528900623322,
+                    "p10_seconds": 0.01365254819393158,
+                    "p90_seconds": 0.013883452117443084,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.013768414966762066,
+                    0.013915961608290672,
+                    0.013904191553592682,
+                    0.013728102669119835,
+                    0.013843792490661144
+                  ]
+                }
+              ],
+              "status": "complete",
+              "summary": {
+                "mean_seconds": 0.013839193650831779,
+                "median_seconds": 0.013808012008666992,
+                "minimum_seconds": 0.013595528900623322,
+                "p10_seconds": 0.013682233076542616,
+                "p90_seconds": 0.014051491487771272,
+                "samples": 60
+              }
+            },
+            "forward_backward": {
+              "accuracy": {
+                "all_finite": true,
+                "channels": {
+                  "beta": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.03125,
+                    "passed": true,
+                    "reference_max": 48.75,
+                    "reference_rms": 2.773952007293701,
+                    "relative_max": 0.0006410256610251963,
+                    "relative_rms": 1.0389408998889849e-05,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      4
+                    ]
+                  },
+                  "erase": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.001953125,
+                    "passed": true,
+                    "reference_max": 2.3125,
+                    "reference_rms": 0.14390677213668823,
+                    "relative_max": 0.000844594556838274,
+                    "relative_rms": 2.207490979344584e-05,
+                    "shape": [
+                      64,
+                      2048,
+                      16
+                    ]
+                  },
+                  "g": {
+                    "dtype": "float32",
+                    "finite": true,
+                    "max_abs": 3.814697265625e-05,
+                    "passed": true,
+                    "reference_max": 38.74444580078125,
+                    "reference_rms": 3.4298744201660156,
+                    "relative_max": 9.845790600593318e-07,
+                    "relative_rms": 1.294992557632213e-06,
+                    "shape": [
+                      64,
+                      2048,
+                      16
+                    ]
+                  },
+                  "k": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0078125,
+                    "passed": true,
+                    "reference_max": 5.75,
+                    "reference_rms": 0.27231812477111816,
+                    "relative_max": 0.0013586956774815917,
+                    "relative_rms": 1.56805690494366e-05,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      16
+                    ]
+                  },
+                  "output": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0078125,
+                    "passed": true,
+                    "reference_max": 1.40625,
+                    "reference_rms": 0.13351845741271973,
+                    "relative_max": 0.0055555556900799274,
+                    "relative_rms": 0.0026017925702035427,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      64
+                    ]
+                  },
+                  "q": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0078125,
+                    "passed": true,
+                    "reference_max": 6.375,
+                    "reference_rms": 0.24730344116687775,
+                    "relative_max": 0.0012254902394488454,
+                    "relative_rms": 1.3849935385223944e-05,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      16
+                    ]
+                  },
+                  "v": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.015625,
+                    "passed": true,
+                    "reference_max": 2.921875,
+                    "reference_rms": 0.13356687128543854,
+                    "relative_max": 0.005347593687474728,
+                    "relative_rms": 0.002578051295131445,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      64
+                    ]
+                  }
+                },
+                "limits": {
+                  "relative_max": 0.05,
+                  "relative_rms": 0.01
+                },
+                "passed": true
+              },
+              "compilation_seconds": 7.795971475541592,
+              "compiled_memory": {
+                "alias_size_in_bytes": 0,
+                "argument_size_in_bytes": 700448768,
+                "available": true,
+                "generated_code_size_in_bytes": 111536,
+                "host_alias_size_in_bytes": 0,
+                "host_argument_size_in_bytes": 0,
+                "host_output_size_in_bytes": 0,
+                "host_temp_size_in_bytes": 0,
+                "is_measured_allocator_peak": false,
+                "output_size_in_bytes": 700448824,
+                "source": "compiled.memory_analysis",
+                "temp_size_in_bytes": 8380223032
+              },
+              "custom_call_targets": [
+                "__cublas$lt$matmul",
+                "triton_kernel_call"
+              ],
+              "first_call_finite": true,
+              "first_call_seconds": 6.438098483718932,
+              "hlo_sha256": "a5401207e7315c312836a9399d1a1368f3da98974a37bb54f3b217a4080d9d70",
+              "rounds": [
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 1,
+                  "samples_seconds": [
+                    0.13728338293731213,
+                    0.13740659598261118,
+                    0.1369866356253624,
+                    0.13707396667450666,
+                    0.13740292098373175,
+                    0.13715347088873386,
+                    0.13709446880966425,
+                    0.1372027462348342,
+                    0.13716970942914486,
+                    0.13687384501099586,
+                    0.13724710419774055,
+                    0.13723319582641125,
+                    0.13704306073486805,
+                    0.1370855299755931,
+                    0.13711575511842966,
+                    0.13724177051335573,
+                    0.13718242198228836,
+                    0.13751415070146322,
+                    0.13697513937950134,
+                    0.13735245261341333,
+                    0.1370351081714034,
+                    0.13734849821776152,
+                    0.13724656216800213,
+                    0.1371640395373106,
+                    0.13682151585817337,
+                    0.13725230749696493,
+                    0.13698163721710443,
+                    0.13716765586286783,
+                    0.1372796595096588,
+                    0.13716343976557255
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.1371699582474927,
+                    "median_seconds": 0.13716868264600635,
+                    "minimum_seconds": 0.13682151585817337,
+                    "p10_seconds": 0.13698098743334414,
+                    "p90_seconds": 0.13735749945044518,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.13756740931421518,
+                    0.13729384168982506,
+                    0.13723205868154764,
+                    0.13721539452672005,
+                    0.13721061497926712
+                  ]
+                },
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 2,
+                  "samples_seconds": [
+                    0.13713512104004622,
+                    0.13699815329164267,
+                    0.13717409037053585,
+                    0.1369582638144493,
+                    0.13730050157755613,
+                    0.13767030835151672,
+                    0.13717413041740656,
+                    0.13694680389016867,
+                    0.1369184236973524,
+                    0.13749668933451176,
+                    0.13733681663870811,
+                    0.13688336126506329,
+                    0.13716626819223166,
+                    0.13734411913901567,
+                    0.1369107635691762,
+                    0.137074438855052,
+                    0.1366480542346835,
+                    0.13696603011339903,
+                    0.1370857823640108,
+                    0.13713007606565952,
+                    0.13715026527643204,
+                    0.1372626293450594,
+                    0.13702262844890356,
+                    0.1373044466599822,
+                    0.13719363324344158,
+                    0.1370726702734828,
+                    0.13715120032429695,
+                    0.13673633430153131,
+                    0.13679311331361532,
+                    0.1368830855935812
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.13709627343341707,
+                    "median_seconds": 0.13710792921483517,
+                    "minimum_seconds": 0.1366480542346835,
+                    "p10_seconds": 0.13687408836558462,
+                    "p90_seconds": 0.13733754688873887,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.1369776949286461,
+                    0.13719578087329865,
+                    0.13739519752562046,
+                    0.13747237622737885,
+                    0.13714371155947447
+                  ]
+                }
+              ],
+              "status": "complete",
+              "summary": {
+                "mean_seconds": 0.1371331158404549,
+                "median_seconds": 0.1371523356065154,
+                "minimum_seconds": 0.1366480542346835,
+                "p10_seconds": 0.13688333369791508,
+                "p90_seconds": 0.1373488936573267,
+                "samples": 60
+              }
+            }
+          },
+          "precision": "bf16_values",
+          "status": "complete"
+        },
+        "bf16_values_w2_cta1": {
+          "accuracy_passed": true,
+          "min_ctas_per_sm": 1,
+          "num_warps": 2,
+          "operations": {
+            "forward": {
+              "accuracy": {
+                "all_finite": true,
+                "channels": {
+                  "output": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0078125,
+                    "passed": true,
+                    "reference_max": 1.40625,
+                    "reference_rms": 0.13351845741271973,
+                    "relative_max": 0.0055555556900799274,
+                    "relative_rms": 0.0026017925702035427,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      64
+                    ]
+                  }
+                },
+                "limits": {
+                  "relative_max": 0.05,
+                  "relative_rms": 0.01
+                },
+                "passed": true
+              },
+              "compilation_seconds": 1.0085870418697596,
+              "compiled_memory": {
+                "alias_size_in_bytes": 0,
+                "argument_size_in_bytes": 432013312,
+                "available": true,
+                "generated_code_size_in_bytes": 38120,
+                "host_alias_size_in_bytes": 0,
+                "host_argument_size_in_bytes": 0,
+                "host_output_size_in_bytes": 0,
+                "host_temp_size_in_bytes": 0,
+                "is_measured_allocator_peak": false,
+                "output_size_in_bytes": 268435456,
+                "source": "compiled.memory_analysis",
+                "temp_size_in_bytes": 1384120848
+              },
+              "custom_call_targets": [
+                "__cublas$lt$matmul",
+                "triton_kernel_call"
+              ],
+              "first_call_finite": true,
+              "first_call_seconds": 0.8101496817544103,
+              "hlo_sha256": "53e1fe5baa5aed6aa56ae0684ec54fcb194da6382c9caea51110cdfd7d69878d",
+              "rounds": [
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 1,
+                  "samples_seconds": [
+                    0.014022762887179852,
+                    0.01390734314918518,
+                    0.01393168792128563,
+                    0.01423514261841774,
+                    0.013989308848977089,
+                    0.01403890736401081,
+                    0.013845989480614662,
+                    0.013907025568187237,
+                    0.013886074535548687,
+                    0.014019355177879333,
+                    0.013939326629042625,
+                    0.014002031646668911,
+                    0.013783395290374756,
+                    0.01388335507363081,
+                    0.013761023990809917,
+                    0.013883046805858612,
+                    0.013721109367907047,
+                    0.013783813454210758,
+                    0.013765965588390827,
+                    0.013806982897222042,
+                    0.013830489479005337,
+                    0.013787990435957909,
+                    0.013840224593877792,
+                    0.013966258615255356,
+                    0.013781756162643433,
+                    0.013810225762426853,
+                    0.01389944925904274,
+                    0.014056495390832424,
+                    0.013917854055762291,
+                    0.013922236859798431
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.01389755429700017,
+                    "median_seconds": 0.013892761897295713,
+                    "minimum_seconds": 0.013721109367907047,
+                    "p10_seconds": 0.013780177105218172,
+                    "p90_seconds": 0.014024377334862947,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.014240932650864124,
+                    0.013821172527968884,
+                    0.013679351657629013,
+                    0.013761397451162338,
+                    0.01390310749411583
+                  ]
+                },
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 2,
+                  "samples_seconds": [
+                    0.013739361427724361,
+                    0.013641377910971642,
+                    0.0138248847797513,
+                    0.013927760533988476,
+                    0.013790647499263287,
+                    0.013882491737604141,
+                    0.013899700716137886,
+                    0.013731279410421848,
+                    0.013633877970278263,
+                    0.013760439120233059,
+                    0.01389998011291027,
+                    0.013704896904528141,
+                    0.013760989531874657,
+                    0.013663624413311481,
+                    0.013697451911866665,
+                    0.014149527065455914,
+                    0.013912484981119633,
+                    0.013819454237818718,
+                    0.01373935118317604,
+                    0.013669594191014767,
+                    0.013837295584380627,
+                    0.013716153800487518,
+                    0.013679323717951775,
+                    0.013718930073082447,
+                    0.013691396452486515,
+                    0.013812278397381306,
+                    0.013823146931827068,
+                    0.013774719089269638,
+                    0.013913244009017944,
+                    0.01415251288563013
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.013798939219365517,
+                    "median_seconds": 0.013767854310572147,
+                    "minimum_seconds": 0.013633877970278263,
+                    "p10_seconds": 0.013668997213244438,
+                    "p90_seconds": 0.013914695661514997,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.014261513948440552,
+                    0.013740088790655136,
+                    0.013782492838799953,
+                    0.013659298419952393,
+                    0.013743599876761436
+                  ]
+                }
+              ],
+              "status": "complete",
+              "summary": {
+                "mean_seconds": 0.013848246758182843,
+                "median_seconds": 0.013827687129378319,
+                "minimum_seconds": 0.013633877970278263,
+                "p10_seconds": 0.01369684636592865,
+                "p90_seconds": 0.014019695948809386,
+                "samples": 60
+              }
+            },
+            "forward_backward": {
+              "accuracy": {
+                "all_finite": true,
+                "channels": {
+                  "beta": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.03125,
+                    "passed": true,
+                    "reference_max": 48.75,
+                    "reference_rms": 2.773952007293701,
+                    "relative_max": 0.0006410256610251963,
+                    "relative_rms": 1.0389408998889849e-05,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      4
+                    ]
+                  },
+                  "erase": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.001953125,
+                    "passed": true,
+                    "reference_max": 2.3125,
+                    "reference_rms": 0.14390677213668823,
+                    "relative_max": 0.000844594556838274,
+                    "relative_rms": 2.207490979344584e-05,
+                    "shape": [
+                      64,
+                      2048,
+                      16
+                    ]
+                  },
+                  "g": {
+                    "dtype": "float32",
+                    "finite": true,
+                    "max_abs": 3.814697265625e-05,
+                    "passed": true,
+                    "reference_max": 38.74444580078125,
+                    "reference_rms": 3.4298744201660156,
+                    "relative_max": 9.845790600593318e-07,
+                    "relative_rms": 1.294992557632213e-06,
+                    "shape": [
+                      64,
+                      2048,
+                      16
+                    ]
+                  },
+                  "k": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0078125,
+                    "passed": true,
+                    "reference_max": 5.75,
+                    "reference_rms": 0.27231812477111816,
+                    "relative_max": 0.0013586956774815917,
+                    "relative_rms": 1.56805690494366e-05,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      16
+                    ]
+                  },
+                  "output": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0078125,
+                    "passed": true,
+                    "reference_max": 1.40625,
+                    "reference_rms": 0.13351845741271973,
+                    "relative_max": 0.0055555556900799274,
+                    "relative_rms": 0.0026017925702035427,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      64
+                    ]
+                  },
+                  "q": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0078125,
+                    "passed": true,
+                    "reference_max": 6.375,
+                    "reference_rms": 0.24730344116687775,
+                    "relative_max": 0.0012254902394488454,
+                    "relative_rms": 1.3849935385223944e-05,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      16
+                    ]
+                  },
+                  "v": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.015625,
+                    "passed": true,
+                    "reference_max": 2.921875,
+                    "reference_rms": 0.13356687128543854,
+                    "relative_max": 0.005347593687474728,
+                    "relative_rms": 0.002578051295131445,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      64
+                    ]
+                  }
+                },
+                "limits": {
+                  "relative_max": 0.05,
+                  "relative_rms": 0.01
+                },
+                "passed": true
+              },
+              "compilation_seconds": 5.885108076035976,
+              "compiled_memory": {
+                "alias_size_in_bytes": 0,
+                "argument_size_in_bytes": 700448768,
+                "available": true,
+                "generated_code_size_in_bytes": 111536,
+                "host_alias_size_in_bytes": 0,
+                "host_argument_size_in_bytes": 0,
+                "host_output_size_in_bytes": 0,
+                "host_temp_size_in_bytes": 0,
+                "is_measured_allocator_peak": false,
+                "output_size_in_bytes": 700448824,
+                "source": "compiled.memory_analysis",
+                "temp_size_in_bytes": 8380223032
+              },
+              "custom_call_targets": [
+                "__cublas$lt$matmul",
+                "triton_kernel_call"
+              ],
+              "first_call_finite": true,
+              "first_call_seconds": 4.832348618656397,
+              "hlo_sha256": "c5281a65ac8ee52a42f87c316e0d98c5455b5abf0a3fb7899cd13d2c27525099",
+              "rounds": [
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 1,
+                  "samples_seconds": [
+                    0.09271755535155535,
+                    0.09306535217911005,
+                    0.09342649579048157,
+                    0.09297098591923714,
+                    0.09296794328838587,
+                    0.09331470169126987,
+                    0.09314490761607885,
+                    0.09310302045196295,
+                    0.09306229650974274,
+                    0.09347396437078714,
+                    0.09307372849434614,
+                    0.0930474828928709,
+                    0.09231435880064964,
+                    0.09304618462920189,
+                    0.09331540390849113,
+                    0.09318412002176046,
+                    0.09299584291875362,
+                    0.09341985359787941,
+                    0.09374824445694685,
+                    0.09306550957262516,
+                    0.09297944232821465,
+                    0.09347711503505707,
+                    0.09330070577561855,
+                    0.093367088586092,
+                    0.09324013069272041,
+                    0.09299721010029316,
+                    0.09313949756324291,
+                    0.0936379674822092,
+                    0.09343011304736137,
+                    0.09341129381209612
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.09318128389616807,
+                    "median_seconds": 0.09314220258966088,
+                    "minimum_seconds": 0.09231435880064964,
+                    "p10_seconds": 0.09297068165615201,
+                    "p90_seconds": 0.09347427943721413,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.09297560062259436,
+                    0.09317228849977255,
+                    0.0933121619746089,
+                    0.0935385012999177,
+                    0.09349164087325335
+                  ]
+                },
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 2,
+                  "samples_seconds": [
+                    0.0930364727973938,
+                    0.09271386079490185,
+                    0.09321428555995226,
+                    0.0930405929684639,
+                    0.09296062029898167,
+                    0.09266258869320154,
+                    0.09310800209641457,
+                    0.09342587366700172,
+                    0.09287181124091148,
+                    0.0930960513651371,
+                    0.09379969257861376,
+                    0.09305322077125311,
+                    0.09320895001292229,
+                    0.09277101792395115,
+                    0.09301585238426924,
+                    0.09309251047670841,
+                    0.09287110064178705,
+                    0.09312569722533226,
+                    0.09268532507121563,
+                    0.09317374788224697,
+                    0.09302610997110605,
+                    0.09300272818654776,
+                    0.09283297695219517,
+                    0.09300257358700037,
+                    0.09299559239298105,
+                    0.09326560609042645,
+                    0.092842654325068,
+                    0.09320501796901226,
+                    0.09270372055470943,
+                    0.09302330110222101
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.09302758518606424,
+                    "median_seconds": 0.09302470553666353,
+                    "minimum_seconds": 0.09266258869320154,
+                    "p10_seconds": 0.09271284677088261,
+                    "p90_seconds": 0.09321941761299968,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.0928549524396658,
+                    0.09291218128055334,
+                    0.09270133171230555,
+                    0.09320346638560295,
+                    0.09284031204879284
+                  ]
+                }
+              ],
+              "status": "complete",
+              "summary": {
+                "mean_seconds": 0.09310443454111615,
+                "median_seconds": 0.0930654308758676,
+                "minimum_seconds": 0.09231435880064964,
+                "p10_seconds": 0.09276567166671157,
+                "p90_seconds": 0.09342685751616955,
+                "samples": 60
+              }
+            }
+          },
+          "precision": "bf16_values",
+          "status": "complete"
+        },
+        "tf32x3_w2_cta0": {
+          "accuracy_passed": true,
+          "min_ctas_per_sm": 0,
+          "num_warps": 2,
+          "operations": {
+            "forward": {
+              "accuracy": {
+                "all_finite": true,
+                "channels": {
+                  "output": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 1.40625,
+                    "reference_rms": 0.13351845741271973,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      64
+                    ]
+                  }
+                },
+                "limits": {
+                  "relative_max": 0.01,
+                  "relative_rms": 0.003
+                },
+                "passed": true
+              },
+              "compilation_seconds": 0.4842604650184512,
+              "compiled_memory": {
+                "alias_size_in_bytes": 0,
+                "argument_size_in_bytes": 432013312,
+                "available": true,
+                "generated_code_size_in_bytes": 38120,
+                "host_alias_size_in_bytes": 0,
+                "host_argument_size_in_bytes": 0,
+                "host_output_size_in_bytes": 0,
+                "host_temp_size_in_bytes": 0,
+                "is_measured_allocator_peak": false,
+                "output_size_in_bytes": 268435456,
+                "source": "compiled.memory_analysis",
+                "temp_size_in_bytes": 1384120848
+              },
+              "custom_call_targets": [
+                "__cublas$lt$matmul",
+                "triton_kernel_call"
+              ],
+              "first_call_finite": true,
+              "first_call_seconds": 0.03352973237633705,
+              "hlo_sha256": "b7f10714b4e8aeb7035410de189f80f58bcd0c32ab9ff8ac8217aca0108657d4",
+              "rounds": [
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 1,
+                  "samples_seconds": [
+                    0.032617066986858845,
+                    0.03263531066477299,
+                    0.03243010491132736,
+                    0.03248348459601402,
+                    0.03236519172787666,
+                    0.032525244168937206,
+                    0.03254058584570885,
+                    0.03250429034233093,
+                    0.03234019689261913,
+                    0.032602342776954174,
+                    0.032620650716125965,
+                    0.03215266950428486,
+                    0.03239477891474962,
+                    0.03238009009510279,
+                    0.03239842597395182,
+                    0.03221107833087444,
+                    0.03246224485337734,
+                    0.0325583815574646,
+                    0.03236606251448393,
+                    0.03270966652780771,
+                    0.032285116612911224,
+                    0.03265360277146101,
+                    0.032739030197262764,
+                    0.032510336488485336,
+                    0.03271220065653324,
+                    0.032548563554883,
+                    0.032623847015202045,
+                    0.032654483802616596,
+                    0.03242850583046675,
+                    0.03254488855600357
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.03249994811291496,
+                    "median_seconds": 0.03251779032871127,
+                    "minimum_seconds": 0.03215266950428486,
+                    "p10_seconds": 0.03233468886464834,
+                    "p90_seconds": 0.03266000207513571,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.033118498511612415,
+                    0.03258461505174637,
+                    0.03226336371153593,
+                    0.032484239898622036,
+                    0.03256191872060299
+                  ]
+                },
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 2,
+                  "samples_seconds": [
+                    0.03242601454257965,
+                    0.03227531164884567,
+                    0.032400269992649555,
+                    0.03229458164423704,
+                    0.03235817700624466,
+                    0.03240343928337097,
+                    0.0322630200535059,
+                    0.03241104166954756,
+                    0.03238377068191767,
+                    0.03242598567157984,
+                    0.03273510653525591,
+                    0.032310664653778076,
+                    0.032334910705685616,
+                    0.0326232248917222,
+                    0.032814749516546726,
+                    0.03239263780415058,
+                    0.032704081386327744,
+                    0.032540036365389824,
+                    0.032224105671048164,
+                    0.03226503264158964,
+                    0.03250095807015896,
+                    0.03219456970691681,
+                    0.03235901426523924,
+                    0.03233974426984787,
+                    0.03237089328467846,
+                    0.03230584040284157,
+                    0.03243046626448631,
+                    0.032471529208123684,
+                    0.032305159606039524,
+                    0.03226472530514002
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.03240430209164818,
+                    "median_seconds": 0.03237733198329806,
+                    "minimum_seconds": 0.03219456970691681,
+                    "p10_seconds": 0.032264554779976605,
+                    "p90_seconds": 0.032631310541182755,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.03246947657316923,
+                    0.032432847656309605,
+                    0.032386419363319874,
+                    0.03254474047571421,
+                    0.032423192635178566
+                  ]
+                }
+              ],
+              "status": "complete",
+              "summary": {
+                "mean_seconds": 0.03245212510228157,
+                "median_seconds": 0.032426000107079744,
+                "minimum_seconds": 0.03215266950428486,
+                "p10_seconds": 0.03226500190794468,
+                "p90_seconds": 0.03265944356098771,
+                "samples": 60
+              }
+            },
+            "forward_backward": {
+              "accuracy": {
+                "all_finite": true,
+                "channels": {
+                  "beta": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 48.75,
+                    "reference_rms": 2.773952007293701,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      4
+                    ]
+                  },
+                  "erase": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 2.3125,
+                    "reference_rms": 0.14390677213668823,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16
+                    ]
+                  },
+                  "g": {
+                    "dtype": "float32",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 38.74444580078125,
+                    "reference_rms": 3.4298744201660156,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16
+                    ]
+                  },
+                  "k": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 5.75,
+                    "reference_rms": 0.27231812477111816,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      16
+                    ]
+                  },
+                  "output": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 1.40625,
+                    "reference_rms": 0.13351845741271973,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      64
+                    ]
+                  },
+                  "q": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 6.375,
+                    "reference_rms": 0.24730344116687775,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      16
+                    ]
+                  },
+                  "v": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 2.921875,
+                    "reference_rms": 0.13356687128543854,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      64
+                    ]
+                  }
+                },
+                "limits": {
+                  "relative_max": 0.01,
+                  "relative_rms": 0.003
+                },
+                "passed": true
+              },
+              "compilation_seconds": 0.2312124716117978,
+              "compiled_memory": {
+                "alias_size_in_bytes": 0,
+                "argument_size_in_bytes": 700448768,
+                "available": true,
+                "generated_code_size_in_bytes": 111536,
+                "host_alias_size_in_bytes": 0,
+                "host_argument_size_in_bytes": 0,
+                "host_output_size_in_bytes": 0,
+                "host_temp_size_in_bytes": 0,
+                "is_measured_allocator_peak": false,
+                "output_size_in_bytes": 700448824,
+                "source": "compiled.memory_analysis",
+                "temp_size_in_bytes": 8380223032
+              },
+              "custom_call_targets": [
+                "__cublas$lt$matmul",
+                "triton_kernel_call"
+              ],
+              "first_call_finite": true,
+              "first_call_seconds": 0.25254873279482126,
+              "hlo_sha256": "61117f1029679f8d16d68bd362ebf1a46ac4acc693552ca39e43d21b6b71f6d0",
+              "rounds": [
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 1,
+                  "samples_seconds": [
+                    0.25077161099761724,
+                    0.2517992267385125,
+                    0.2517121806740761,
+                    0.2514110133051872,
+                    0.2511728387326002,
+                    0.25176091212779284,
+                    0.2512728050351143,
+                    0.2514906655997038,
+                    0.2519200788810849,
+                    0.25164149422198534,
+                    0.2509512510150671,
+                    0.25036394223570824,
+                    0.2510972563177347,
+                    0.25074088014662266,
+                    0.25106164440512657,
+                    0.2510434268042445,
+                    0.25089714489877224,
+                    0.2510376600548625,
+                    0.251743839122355,
+                    0.25108838826417923,
+                    0.25084024108946323,
+                    0.2520701661705971,
+                    0.251780329272151,
+                    0.2512994483113289,
+                    0.25169362779706717,
+                    0.251427442766726,
+                    0.25137433782219887,
+                    0.25155938416719437,
+                    0.25093601271510124,
+                    0.2509117154404521
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.2512956988376876,
+                    "median_seconds": 0.2512861266732216,
+                    "minimum_seconds": 0.25036394223570824,
+                    "p10_seconds": 0.2508333780802786,
+                    "p90_seconds": 0.25178221901878717,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.2522848304361105,
+                    0.25149290822446346,
+                    0.25062341894954443,
+                    0.25171003118157387,
+                    0.25102834589779377
+                  ]
+                },
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 2,
+                  "samples_seconds": [
+                    0.2512433398514986,
+                    0.2513914555311203,
+                    0.2508005015552044,
+                    0.2511644447222352,
+                    0.2510200999677181,
+                    0.251009258441627,
+                    0.25152433663606644,
+                    0.2509673237800598,
+                    0.251460375264287,
+                    0.2514273691922426,
+                    0.2511212667450309,
+                    0.2516740933060646,
+                    0.2516047330573201,
+                    0.25130055379122496,
+                    0.2515446087345481,
+                    0.25075007043778896,
+                    0.2513211276382208,
+                    0.25147239957004786,
+                    0.25214983243495226,
+                    0.25127894058823586,
+                    0.2516615353524685,
+                    0.25088267773389816,
+                    0.2510960288345814,
+                    0.2509977137669921,
+                    0.2507452601566911,
+                    0.2510138051584363,
+                    0.2512158639729023,
+                    0.25173464603722095,
+                    0.25069370213896036,
+                    0.2514895545318723
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.2512585639643172,
+                    "median_seconds": 0.25126114021986723,
+                    "minimum_seconds": 0.25069370213896036,
+                    "p10_seconds": 0.25079545844346285,
+                    "p90_seconds": 0.2516627911478281,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.25121843721717596,
+                    0.2513470146805048,
+                    0.2510736798867583,
+                    0.2519533522427082,
+                    0.25112614035606384
+                  ]
+                }
+              ],
+              "status": "complete",
+              "summary": {
+                "mean_seconds": 0.2512771314010024,
+                "median_seconds": 0.25127587281167507,
+                "minimum_seconds": 0.25036394223570824,
+                "p10_seconds": 0.25079761249944565,
+                "p90_seconds": 0.25174554642289876,
+                "samples": 60
+              }
+            }
+          },
+          "precision": "tf32x3",
+          "status": "complete"
+        },
+        "tf32x3_w2_cta1": {
+          "accuracy_passed": true,
+          "min_ctas_per_sm": 1,
+          "num_warps": 2,
+          "operations": {
+            "forward": {
+              "accuracy": {
+                "all_finite": true,
+                "channels": {
+                  "output": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 1.40625,
+                    "reference_rms": 0.13351845741271973,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      64
+                    ]
+                  }
+                },
+                "limits": {
+                  "relative_max": 0.01,
+                  "relative_rms": 0.003
+                },
+                "passed": true
+              },
+              "compilation_seconds": 1.3254820695146918,
+              "compiled_memory": {
+                "alias_size_in_bytes": 0,
+                "argument_size_in_bytes": 432013312,
+                "available": true,
+                "generated_code_size_in_bytes": 38120,
+                "host_alias_size_in_bytes": 0,
+                "host_argument_size_in_bytes": 0,
+                "host_output_size_in_bytes": 0,
+                "host_temp_size_in_bytes": 0,
+                "is_measured_allocator_peak": false,
+                "output_size_in_bytes": 268435456,
+                "source": "compiled.memory_analysis",
+                "temp_size_in_bytes": 1384120848
+              },
+              "custom_call_targets": [
+                "__cublas$lt$matmul",
+                "triton_kernel_call"
+              ],
+              "first_call_finite": true,
+              "first_call_seconds": 1.1425461834296584,
+              "hlo_sha256": "349f33cbd32db2f8f09a530daed370c192e9e1dfb433d2442b8c074bec567e19",
+              "rounds": [
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 1,
+                  "samples_seconds": [
+                    0.03243117220699787,
+                    0.0324568897485733,
+                    0.03259235806763172,
+                    0.032576083205640316,
+                    0.03233220707625151,
+                    0.03254762198776007,
+                    0.03243916109204292,
+                    0.03257912863045931,
+                    0.03258127346634865,
+                    0.032314774580299854,
+                    0.03237875644117594,
+                    0.03266626689583063,
+                    0.03249898087233305,
+                    0.03259854018688202,
+                    0.032397073693573475,
+                    0.03272723685950041,
+                    0.03259156737476587,
+                    0.03268966916948557,
+                    0.03263884875923395,
+                    0.03270722460001707,
+                    0.03258039057254791,
+                    0.03227618895471096,
+                    0.03236284572631121,
+                    0.032533022575080395,
+                    0.032557033002376556,
+                    0.03259958978742361,
+                    0.032484945841133595,
+                    0.032621704041957855,
+                    0.032583387568593025,
+                    0.03250323701649904
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.032528239333381254,
+                    "median_seconds": 0.032566558104008436,
+                    "minimum_seconds": 0.03227618895471096,
+                    "p10_seconds": 0.03235978186130524,
+                    "p90_seconds": 0.03266860712319612,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.03317482303828001,
+                    0.032557143829762936,
+                    0.032708222046494484,
+                    0.03259686008095741,
+                    0.03228583373129368
+                  ]
+                },
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 2,
+                  "samples_seconds": [
+                    0.03216989990323782,
+                    0.03232156112790108,
+                    0.03235595487058163,
+                    0.03229773882776499,
+                    0.03238727431744337,
+                    0.03233530558645725,
+                    0.03210909105837345,
+                    0.03231404908001423,
+                    0.032311188988387585,
+                    0.032360960729420185,
+                    0.032207791693508625,
+                    0.032152929343283176,
+                    0.03220870718359947,
+                    0.03221667557954788,
+                    0.03217252716422081,
+                    0.03202915284782648,
+                    0.03199164383113384,
+                    0.032055847346782684,
+                    0.03235097974538803,
+                    0.03232144471257925,
+                    0.032374175265431404,
+                    0.03249839134514332,
+                    0.03237932361662388,
+                    0.03233821503818035,
+                    0.032402677461504936,
+                    0.032319819554686546,
+                    0.032364726066589355,
+                    0.03217813465744257,
+                    0.03239856008440256,
+                    0.03248028643429279
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.03228016778205832,
+                    "median_seconds": 0.0323206321336329,
+                    "minimum_seconds": 0.03199164383113384,
+                    "p10_seconds": 0.032103766687214375,
+                    "p90_seconds": 0.0323989718221128,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.032152334228158,
+                    0.03238543029874563,
+                    0.03223408944904804,
+                    0.03244165889918804,
+                    0.0323731554672122
+                  ]
+                }
+              ],
+              "status": "complete",
+              "summary": {
+                "mean_seconds": 0.032404203557719786,
+                "median_seconds": 0.032383298967033625,
+                "minimum_seconds": 0.03199164383113384,
+                "p10_seconds": 0.03217226443812251,
+                "p90_seconds": 0.032601801212877035,
+                "samples": 60
+              }
+            },
+            "forward_backward": {
+              "accuracy": {
+                "all_finite": true,
+                "channels": {
+                  "beta": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 48.75,
+                    "reference_rms": 2.773952007293701,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      4
+                    ]
+                  },
+                  "erase": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 2.3125,
+                    "reference_rms": 0.14390677213668823,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16
+                    ]
+                  },
+                  "g": {
+                    "dtype": "float32",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 38.74444580078125,
+                    "reference_rms": 3.4298744201660156,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16
+                    ]
+                  },
+                  "k": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 5.75,
+                    "reference_rms": 0.27231812477111816,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      16
+                    ]
+                  },
+                  "output": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 1.40625,
+                    "reference_rms": 0.13351845741271973,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      64
+                    ]
+                  },
+                  "q": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 6.375,
+                    "reference_rms": 0.24730344116687775,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      16
+                    ]
+                  },
+                  "v": {
+                    "dtype": "bfloat16",
+                    "finite": true,
+                    "max_abs": 0.0,
+                    "passed": true,
+                    "reference_max": 2.921875,
+                    "reference_rms": 0.13356687128543854,
+                    "relative_max": 0.0,
+                    "relative_rms": 0.0,
+                    "shape": [
+                      64,
+                      2048,
+                      16,
+                      64
+                    ]
+                  }
+                },
+                "limits": {
+                  "relative_max": 0.01,
+                  "relative_rms": 0.003
+                },
+                "passed": true
+              },
+              "compilation_seconds": 8.224439774639904,
+              "compiled_memory": {
+                "alias_size_in_bytes": 0,
+                "argument_size_in_bytes": 700448768,
+                "available": true,
+                "generated_code_size_in_bytes": 111536,
+                "host_alias_size_in_bytes": 0,
+                "host_argument_size_in_bytes": 0,
+                "host_output_size_in_bytes": 0,
+                "host_temp_size_in_bytes": 0,
+                "is_measured_allocator_peak": false,
+                "output_size_in_bytes": 700448824,
+                "source": "compiled.memory_analysis",
+                "temp_size_in_bytes": 8380223032
+              },
+              "custom_call_targets": [
+                "__cublas$lt$matmul",
+                "triton_kernel_call"
+              ],
+              "first_call_finite": true,
+              "first_call_seconds": 7.836959914304316,
+              "hlo_sha256": "e5cc017a8c14123ebc3abcafa5c6429436bd4c9484b2ed4c1089dddc105bd2f1",
+              "rounds": [
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 1,
+                  "samples_seconds": [
+                    0.20886335521936417,
+                    0.20897305477410555,
+                    0.20905822701752186,
+                    0.2089300323277712,
+                    0.20904095098376274,
+                    0.20956308208405972,
+                    0.20863928273320198,
+                    0.20804208237677813,
+                    0.20889910031110048,
+                    0.20843759458512068,
+                    0.2085925480350852,
+                    0.20857500936836004,
+                    0.2088298900052905,
+                    0.20860672742128372,
+                    0.20798540208488703,
+                    0.20824663899838924,
+                    0.20818372443318367,
+                    0.2085698414593935,
+                    0.20911596529185772,
+                    0.2079255422577262,
+                    0.2085156887769699,
+                    0.2084992751479149,
+                    0.20865241717547178,
+                    0.20901975315064192,
+                    0.20912416279315948,
+                    0.20842569135129452,
+                    0.20863902755081654,
+                    0.208989130333066,
+                    0.20901749935001135,
+                    0.20869791600853205
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.20868862044687073,
+                    "median_seconds": 0.20864584995433688,
+                    "minimum_seconds": 0.2079255422577262,
+                    "p10_seconds": 0.20816956022754313,
+                    "p90_seconds": 0.20906400084495544,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.20951716136187315,
+                    0.2087613306939602,
+                    0.20845475792884827,
+                    0.20834884885698557,
+                    0.20839411672204733
+                  ]
+                },
+                {
+                  "all_finite": true,
+                  "finite_check_scope": "All returned arrays of the last measured call; identical resident inputs every call.",
+                  "round": 2,
+                  "samples_seconds": [
+                    0.20835495181381702,
+                    0.20860040839761496,
+                    0.20908546075224876,
+                    0.20800610072910786,
+                    0.20872580725699663,
+                    0.20829768758267164,
+                    0.20982708595693111,
+                    0.20920303370803595,
+                    0.20942358952015638,
+                    0.20873507764190435,
+                    0.2089692112058401,
+                    0.20877217408269644,
+                    0.20895148254930973,
+                    0.20861756056547165,
+                    0.20863679610192776,
+                    0.20898472610861063,
+                    0.2087787687778473,
+                    0.20888620801270008,
+                    0.2087581567466259,
+                    0.20870391558855772,
+                    0.20913481805473566,
+                    0.20919115748256445,
+                    0.2080920021981001,
+                    0.20899546705186367,
+                    0.20904385577887297,
+                    0.20918879006057978,
+                    0.20867345202714205,
+                    0.20856599882245064,
+                    0.20919862482696772,
+                    0.2091827727854252
+                  ],
+                  "summary": {
+                    "mean_seconds": 0.20885283807292582,
+                    "median_seconds": 0.20883248839527369,
+                    "minimum_seconds": 0.20800610072910786,
+                    "p10_seconds": 0.2083492253907025,
+                    "p90_seconds": 0.20919906571507454,
+                    "samples": 30
+                  },
+                  "warmup_seconds": [
+                    0.20828252844512463,
+                    0.20873343851417303,
+                    0.20907817967236042,
+                    0.20846886653453112,
+                    0.20881515461951494
+                  ]
+                }
+              ],
+              "status": "complete",
+              "summary": {
+                "mean_seconds": 0.20877072925989826,
+                "median_seconds": 0.20876516541466117,
+                "minimum_seconds": 0.2079255422577262,
+                "p10_seconds": 0.20824034754186868,
+                "p90_seconds": 0.20918902680277823,
+                "samples": 60
+              }
+            }
+          },
+          "precision": "tf32x3",
+          "status": "complete"
+        }
+      }
+    },
+    "b64_t2048_h16_k64_v64": {
+      "cotangent_dtype": "bfloat16",
+      "error": "JaxRuntimeError: INTERNAL: CustomCall failed: jaxlib/gpu/triton_kernels.cc:434: operation cuStreamIsCapturing(stream, &capture_status) failed: CUDA_ERROR_ILLEGAL_ADDRESS",
+      "gpu_memory_stats": {
+        "bytes_in_use": 23655879424,
+        "bytes_limit": 215571480576,
+        "bytes_reserved": 0,
+        "largest_alloc_size": 23655879168,
+        "largest_free_block_bytes": 0,
+        "num_allocs": 4214,
+        "peak_bytes_in_use": 25870471936,
+        "peak_bytes_reserved": 0,
+        "peak_pool_bytes": 47244640256,
+        "pool_bytes": 47244640256
+      },
+      "input_distribution": "Shared unit Q/K, Gaussian V/dO, negative log decay, sigmoid erase; independent tanh(.2*N(0,1)) coefficients.",
+      "input_dtypes": {
+        "beta": "bfloat16",
+        "erase": "bfloat16",
+        "g": "float32",
+        "k": "bfloat16",
+        "q": "bfloat16",
+        "v": "bfloat16"
+      },
+      "input_sha256": {
+        "beta": "03c286e6069fd6dd1279c7e1fce93ac16d970d62b3776ef6d887a48525ca2faf",
+        "do": "74daf79b0ddf3d89a6984c63c8d8baf4f2cc67ba362cc4740cdb050614f7b98b",
+        "erase": "f2a6d7e670e6eaf7552f7697868bd61399dfce96f294155a57b9ae6ee152db5c",
+        "g": "3a49674e0c173496fbe40cfbb712857663fc73339c3c7a51ed4b664c6ca61121",
+        "k": "2a5a00bf983874a41b8027f4243f3cee9da9ad7e588af43186779ce58396ac76",
+        "q": "c4549296b97d3b69794b110c2a7cb360968e9c634f6bde732025213eb51aefe4",
+        "v": "f6cda894135f473a832c96025a8a0a865a9c5fd464bdf9c1a10d193529f75669"
+      },
+      "polynomial_coefficients_sha256": "5c3272c6c7ced2dc0ccdd4ea308ceac519cb229d7139ed973cc320e72c3d2eed",
+      "reference": {
+        "forward_backward": {
+          "compilation_seconds": 31.23922260850668,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 1103101952,
+            "available": true,
+            "generated_code_size_in_bytes": 106160,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 1103102008,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 23655878968
+          },
+          "custom_call_targets": [
+            "__cublas$lt$matmul",
+            "triton_kernel_call"
+          ],
+          "hlo_sha256": "a6cd99fa47175fc8245410375b7085be1f28a483edad133caaaada2c838bc90f",
+          "rounds": [],
+          "status": "compiled"
+        }
+      },
+      "scale": 0.125,
+      "shape": {
+        "batch": 64,
+        "degree": 3,
+        "heads": 16,
+        "key_dim": 64,
+        "length": 2048,
+        "value_dim": 64
+      },
+      "status": "failed",
+      "variants": {}
+    }
+  },
+  "status": "completed_with_failures",
+  "timing": "Resident compiled call plus host dispatch; synchronize every call; compile/transfer/checks excluded.",
+  "total_wall_seconds": 204.09787165839225
+}

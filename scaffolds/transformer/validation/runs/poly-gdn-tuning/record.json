@@ -1,0 +1,749 @@
+{
+  "artifacts": {
+    "batch_split_confirmation_log": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/confirm-222320.log",
+      "sha256": "06dfe53a2fd814a48b180612bf6d9e15c67ca58cb13d4a4f00ddfd430dc82397"
+    },
+    "batch_split_quantization_diagnostic_log": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/split-diagnostic-222321.log",
+      "sha256": "fc31019e12d5335cf398885f290b0570c46137f57e21d3fde83ee3df62ccbbbc"
+    },
+    "bf16_read_stress_tests": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/222298/bf16_read-stress-tests.xml",
+      "sha256": "008da037ab3abbbb72fa0a24329406f90a0db6144cc9fd7e1e893f7fb8b4f65d"
+    },
+    "bf16_values_stress_tests": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/222298/bf16_values-stress-tests.xml",
+      "sha256": "f915484dde709238cc42e144242b1a86533d3888ce170f97032592c8956e176c"
+    },
+    "confirmation_log": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/confirm-222322.log",
+      "sha256": "d3c31ba1cc63012a77a7d6653d2abc8772eacb3d895704f170553672485841f1"
+    },
+    "corrected_bf16_values_cta1_gpu_tests": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/222319/selected-stress-tests.xml",
+      "sha256": "46f62d6d8273b089b8b0880690141e00705b4989ca91d885c7e95c912157cf10"
+    },
+    "corrected_exact_cta1_gpu_tests": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/222319/exact-tests.xml",
+      "sha256": "6da05e658058a2e0585c6243f7451d087c7664bee3e121a73f5405cf44f69d53"
+    },
+    "corrected_qualification_log": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/qualify-222319.log",
+      "sha256": "ccd0c923ce5496c64bc0876e5bc1adaec922cc538ca32f78466e9f6d02227c8c"
+    },
+    "exact_gpu_tests": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/222298/exact-tests.xml",
+      "sha256": "ad43f1f80bbaf90dbd27d535dec37f79338284adccc433ee310edb8d13de30c2"
+    },
+    "failed_confirmation_log": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/confirm-222318.log",
+      "sha256": "6756a31c011cedd44c88585ce7bb95824c620db24780c1bc5a2cef756b5a9c75"
+    },
+    "history_index_ptx_proof": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/history-int64-offline/address-proof.json",
+      "sha256": "76e484b722b4c25aab11dd37b8ea8ff565c98fa716dbd4b35db5848b88ca82d0"
+    },
+    "launch_diagnostic_forward-w2": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/222296/forward-w2.log",
+      "sha256": "1c022d5faedcb38460d2f7cbced2a3e0fed4a3552ca679b7001b22098b4594ea"
+    },
+    "launch_diagnostic_forward-w4": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/222296/forward-w4.log",
+      "sha256": "f9a97088f559558f9df7bbfc430aa678d977a4e778794f1e599e0a46485b9fe9"
+    },
+    "launch_diagnostic_gradient-w2": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/222296/gradient-w2.log",
+      "sha256": "98016040d768be4385e0c75bc3e8d73b409a095c51bf22ea30113b41edb971cc"
+    },
+    "launch_diagnostic_gradient-w4": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/222296/gradient-w4.log",
+      "sha256": "4cdf49dcd89b63f1ec4453be3d1cbc216c55da063e8b96a23ceb576fab64de28"
+    },
+    "launch_diagnostic_matmul-w4": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/222296/matmul-w4.log",
+      "sha256": "9ad8e1a10118ba2dbb15a8a446dabf644df2c41502fdd71630adcc289ffb2d5f"
+    },
+    "offline_compiler_resource_evidence": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/offline-artifacts.json",
+      "sha256": "d10ffd02789321bb6103291f243ed98c18f4d36f7df3cdec444178867908d350"
+    },
+    "precision_options_and_smoke": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/222298/precision-tests.xml",
+      "sha256": "aa102322527c42f86b432fe2a4e065dc5d3cab37db550c0196da4064060634dd"
+    },
+    "profile_log": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/benchmark-222298.log",
+      "sha256": "39eee69c95be30627cab53dd26734cce14ce0342f617ac74d710f5e24b8370ef"
+    },
+    "tuning_log": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/poly-gdn-tuning/tune-222316.log",
+      "sha256": "2758d9a0cc44d1525da0e2a45df482b2d8a553dd081c12a1076c1be600b8bc5e"
+    }
+  },
+  "batch_split_quantization_diagnostic": {
+    "all_finite": true,
+    "finding": "Full-batch and split FP32 results for the same quantized values pass relative RMS and normalized maximum limits1e-5 on output and all six gradients. Production BF16 differences are sparse, mostly one ULP; multiple-ULP cases occur near zero with absolute error at most5.96e-8. The BF16-only1e-5 rejection is explained by final rounding.",
+    "fp32_strict_passed": true,
+    "job_id": "222321",
+    "path": "222321/batch-split-diagnostic.json",
+    "promotion_preserves_values_exactly": true,
+    "scope": "Same BF16-quantized fixture with BF16 versus FP32 interface; compare full B64 with concatenated B16 outputs and all six VJPs.",
+    "source_commit": "d98491d8e7eebd9e3efa5c882cf5bbf22b852cf6",
+    "status": "complete"
+  },
+  "batch_split_quantization_rejection": {
+    "all_reference_outputs_and_gradients_finite": true,
+    "batch_split_reference_size": 16,
+    "error": "FloatingPointError: Full-batch reference differs from the concatenated batch-split reference",
+    "failed_shape": {
+      "batch": 64,
+      "degree": 3,
+      "heads": 16,
+      "key_dim": 64,
+      "length": 2048,
+      "value_dim": 64
+    },
+    "failure_stage": "B64K64 exact-reference batch-split numerical check before candidate timing.",
+    "job_id": "222320",
+    "scope": "B64 kernel parity to concatenated B16 exact-reference output and all six VJPs; native kernel and bounded full-model confirmation.",
+    "status": "failed",
+    "unexecuted": {
+      "full_model_trials": 12,
+      "native_kernel_reports": 2
+    }
+  },
+  "blackwell_launch_diagnostic": {
+    "gpu_count": 1,
+    "gpu_node": "akita",
+    "gpu_uuid": "GPU-93df811c-4961-fd3c-049e-dfc1d6edcea7",
+    "job_elapsed_seconds": 117,
+    "job_id": "222296",
+    "job_state": "COMPLETED",
+    "policy": "Blackwell defaults to two warps and rejects four/eight before launch; full independent oracle qualification recorded separately.",
+    "polynomial_backward_four_warps": "CUDA launch failure",
+    "polynomial_backward_two_warps": "all six gradients finite",
+    "polynomial_forward_four_warps": "finite",
+    "polynomial_forward_two_warps": "finite",
+    "scope": "Isolated fresh processes with synchronization; small FP32 K=V=8,T=64 quadratic fixture. Not a numerical accuracy or throughput benchmark.",
+    "source_commit": "c36fe99ad3bd3b0d58f061282f03197636569e32",
+    "standalone_matrix_product_and_vjp": "passed"
+  },
+  "cpu_validation_invocations": [
+    {
+      "passed": 135,
+      "scope": "Polynomial/cubic mathematics, model integration, legacy GDN/tanh, acceptance, backend width/selection, runtime provenance"
+    },
+    {
+      "passed": 6,
+      "scope": "Benchmark fixture, accuracy, selection, and failure isolation"
+    },
+    {
+      "gpu_deselected": 2,
+      "passed": 34,
+      "scope": "Hardware launch policy, runtime precision options, and model integration; overlaps initial integration suite",
+      "seconds": 44.28
+    },
+    {
+      "passed": 31,
+      "scope": "Bridge launch bounds, unchanged default PTX/cache identities, CUDA-only validation, directive parsing and cache separation"
+    },
+    {
+      "gpu_deselected": 2,
+      "passed": 23,
+      "scope": "Polynomial runtime options and custom-VJP propagation including explicit disabled CTA override"
+    },
+    {
+      "passed": 8,
+      "scope": "Benchmark fixtures, accuracy, variant failure isolation and CTA axis"
+    },
+    {
+      "passed": 1,
+      "scope": "Resolved minimum CTA runtime metadata and unchanged scientific recipe; focused integration test"
+    },
+    {
+      "gpu_deselected": 10,
+      "passed": 99,
+      "scope": "Post-merge acceptance, query/key, and polynomial integration; overlapping invocation, not additional unique coverage.",
+      "seconds": 118.85
+    },
+    {
+      "passed": 56,
+      "scope": "Bridge and model integration; overlapping invocation, not additional unique coverage.",
+      "seconds": 57.63
+    },
+    {
+      "gpu_skipped": 3,
+      "passed": 23,
+      "scope": "History-indexing test collection and runtime options; GPU cases skipped on CPU; overlaps runtime-option coverage.",
+      "seconds": 1.95
+    },
+    {
+      "passed": 9,
+      "scope": "Benchmark fixtures, batch-split output and six-gradient correctness, failure isolation, and native benchmark CPU checks; overlaps earlier benchmark invocations.",
+      "seconds": 5.28
+    },
+    {
+      "passed": 15,
+      "scope": "Dual batch-reference benchmark checks and per-channel corruption guards; overlaps prior nine-test invocation.",
+      "seconds": 25.6
+    }
+  ],
+  "format": "polynomial-gdn-triton-tuning",
+  "gpu_qualification": {
+    "bf16_read": {
+      "errors": 0,
+      "failures": 0,
+      "job_id": "222298",
+      "num_warps": 2,
+      "precision": "bf16_read",
+      "scope": "BF16 quadratic and cubic independent-reference and stress cases; 25 other cases deselected.",
+      "seconds": 591.75,
+      "skipped": 0,
+      "tests": 26
+    },
+    "bf16_values": {
+      "errors": 0,
+      "failures": 0,
+      "job_id": "222298",
+      "num_warps": 2,
+      "precision": "bf16_values",
+      "scope": "BF16 quadratic and cubic independent-reference and stress cases; 25 other cases deselected.",
+      "seconds": 530.342,
+      "skipped": 0,
+      "tests": 26
+    },
+    "corrected_bf16_values_cta1": {
+      "errors": 0,
+      "failures": 0,
+      "job_id": "222319",
+      "min_ctas_per_sm": 1,
+      "num_warps": 2,
+      "precision": "bf16_values",
+      "scope": "Selected BF16 quadratic and cubic independent-reference and stress cases; 25 other cases deselected.",
+      "seconds": 718.546,
+      "skipped": 0,
+      "source_commit": "dfff226de7289a74a1a89fda8e3ceb0d4a8c1294",
+      "tests": 26
+    },
+    "corrected_exact_cta1": {
+      "errors": 0,
+      "failures": 0,
+      "job_id": "222319",
+      "min_ctas_per_sm": 1,
+      "num_warps": 2,
+      "precision": "tf32x3",
+      "scope": "51 quadratic/cubic independent-reference cases plus actual GPU history-helper roundtrip beyond the signed32 element boundary.",
+      "seconds": 1506.885,
+      "skipped": 0,
+      "source_commit": "dfff226de7289a74a1a89fda8e3ceb0d4a8c1294",
+      "tests": 52
+    },
+    "exact": {
+      "errors": 0,
+      "failures": 0,
+      "job_id": "222298",
+      "num_warps": 2,
+      "precision": "tf32x3",
+      "seconds": 1129.58,
+      "skipped": 0,
+      "tests": 51
+    },
+    "precision_options_and_smoke": {
+      "errors": 0,
+      "failures": 0,
+      "job_id": "222298",
+      "scope": "Option guards and both degrees across three precision modes and one/two warps; separate strict stress qualification follows.",
+      "seconds": 216.311,
+      "skipped": 0,
+      "tests": 11
+    }
+  },
+  "history_index_diagnostic": {
+    "completed_shapes": [
+      {
+        "all_output_and_six_gradient_checks_passed": true,
+        "batch": 64,
+        "key_dim": 16,
+        "variants": 4
+      }
+    ],
+    "error": "JaxRuntimeError: INTERNAL: CustomCall failed: jaxlib/gpu/triton_kernels.cc:434: operation cuStreamIsCapturing(stream, &capture_status) failed: CUDA_ERROR_ILLEGAL_ADDRESS",
+    "failed_shape": {
+      "batch": 64,
+      "degree": 3,
+      "heads": 16,
+      "key_dim": 64,
+      "length": 2048,
+      "value_dim": 64
+    },
+    "failure_stage": "First exact-reference forward/backward invocation before candidate compilation and timing.",
+    "history_index_diagnostic": {
+      "bytes_per_history": 8858370048,
+      "elements_per_history": 2214592512,
+      "finding": "Captured production PTX sign-extends overflowing signed32 element offsets. Corrected offline boundary helpers use wide64 address arithmetic; corrected GPU history roundtrip passed in job 222319 and both production batch-split checks passed in job 222322.",
+      "signed_int32_max": 2147483647
+    },
+    "job_id": "222318",
+    "scope": "B64,T2048,H16,V64; K16/64; tf32x3/bf16_values; two warps; CTA0/1.",
+    "status": "failed",
+    "unexecuted": {
+      "full_model_trials": 12,
+      "native_kernel_reports": 2
+    }
+  },
+  "home_cluster": "kennel",
+  "initial_profile": {
+    "all_variants_passed_accuracy": true,
+    "audit_issues": [],
+    "audited_report_count": 3,
+    "scope": "B16,T2048,H16,V64; K16/64; three precisions and one/two warps. CTA guidance disabled.",
+    "variant_count": 12
+  },
+  "inputs": {
+    "dk16": {
+      "path": "scaffolds/transformer/validation/configs/poly-gdn-tuning-dk16.yaml",
+      "sha256": "51138531e3b46680e385efc98fc1743aa6914e87a69d0ab74a29f3feeb906efd"
+    },
+    "dk64": {
+      "path": "scaffolds/transformer/validation/configs/poly-gdn-tuning-dk64.yaml",
+      "sha256": "623a3e97041183eb2a57940968cdd5366955aa952b3f2c7d3711c7a78a1cb9b9"
+    }
+  },
+  "jobs": [
+    {
+      "command": [
+        "sbatch",
+        "--partition=debug,standard",
+        "--output=scaffolds/transformer/validation/logs/poly-gdn-tuning/benchmark-%j.log",
+        "scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch",
+        "0e9faade050fd48b468e0577815f739062911d3e",
+        "profile"
+      ],
+      "exit_code": "0:0",
+      "gpu_count": 1,
+      "gpu_node": "akita",
+      "gpu_uuid": "GPU-6dca32fa-0314-7849-907a-031e3d449ddf",
+      "job_elapsed_seconds": 4078,
+      "job_id": "222298",
+      "job_state": "COMPLETED",
+      "role": "profile",
+      "source_commit": "0e9faade050fd48b468e0577815f739062911d3e"
+    },
+    {
+      "command": [
+        "sbatch",
+        "--parsable",
+        "--partition=debug,standard",
+        "--output=scaffolds/transformer/validation/logs/poly-gdn-tuning/tune-%j.log",
+        "scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch",
+        "34f2c023bec5f6838f886766a8fd1f0a22ccd7f3",
+        "tune"
+      ],
+      "exit_code": "0:0",
+      "gpu_count": 1,
+      "gpu_node": "akita",
+      "gpu_uuid": "GPU-6dca32fa-0314-7849-907a-031e3d449ddf",
+      "job_elapsed_seconds": 675,
+      "job_id": "222316",
+      "job_state": "COMPLETED",
+      "role": "tune",
+      "source_commit": "34f2c023bec5f6838f886766a8fd1f0a22ccd7f3"
+    },
+    {
+      "command": [
+        "sbatch",
+        "--parsable",
+        "--partition=debug,standard",
+        "--dependency=afterok:222316",
+        "--output=scaffolds/transformer/validation/logs/poly-gdn-tuning/confirm-%j.log",
+        "scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch",
+        "34f2c023bec5f6838f886766a8fd1f0a22ccd7f3",
+        "confirm",
+        "bf16_values",
+        "2",
+        "1"
+      ],
+      "exit_code": "1:0",
+      "gpu_count": 1,
+      "gpu_node": "akita",
+      "gpu_uuid": "GPU-6dca32fa-0314-7849-907a-031e3d449ddf",
+      "job_elapsed_seconds": 211,
+      "job_id": "222318",
+      "job_state": "FAILED",
+      "role": "confirm",
+      "source_commit": "34f2c023bec5f6838f886766a8fd1f0a22ccd7f3"
+    },
+    {
+      "exit_code": "0:0",
+      "gpu_count": 1,
+      "gpu_node": "akita",
+      "gpu_uuid": "GPU-c5b148b2-d31d-e338-1f29-12c62adbc1fa",
+      "job_elapsed_seconds": 2239,
+      "job_id": "222319",
+      "job_state": "COMPLETED",
+      "launcher": "scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch",
+      "launcher_arguments": [
+        "dfff226de7289a74a1a89fda8e3ceb0d4a8c1294",
+        "qualify",
+        "bf16_values",
+        "2",
+        "1"
+      ],
+      "partition": "debug",
+      "role": "qualify",
+      "source_commit": "dfff226de7289a74a1a89fda8e3ceb0d4a8c1294"
+    },
+    {
+      "exit_code": "1:0",
+      "gpu_count": 1,
+      "gpu_node": "akita",
+      "gpu_uuid": "GPU-6dca32fa-0314-7849-907a-031e3d449ddf",
+      "job_elapsed_seconds": 289,
+      "job_id": "222320",
+      "job_state": "FAILED",
+      "launcher": "scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch",
+      "launcher_arguments": [
+        "dfff226de7289a74a1a89fda8e3ceb0d4a8c1294",
+        "confirm",
+        "bf16_values",
+        "2",
+        "1"
+      ],
+      "partition": "debug",
+      "role": "confirm",
+      "source_commit": "dfff226de7289a74a1a89fda8e3ceb0d4a8c1294"
+    },
+    {
+      "exit_code": "0:0",
+      "frozen_source_commit": "dfff226de7289a74a1a89fda8e3ceb0d4a8c1294",
+      "gpu_count": 1,
+      "gpu_node": "akita",
+      "gpu_uuid": "GPU-6dca32fa-0314-7849-907a-031e3d449ddf",
+      "job_elapsed_seconds": 133,
+      "job_id": "222321",
+      "job_state": "COMPLETED",
+      "launcher": "scaffolds/transformer/validation/diagnose_poly_gdn_batch_split.sbatch",
+      "role": "batch_split_quantization_diagnostic",
+      "source_commit": "d98491d8e7eebd9e3efa5c882cf5bbf22b852cf6"
+    },
+    {
+      "exit_code": "0:0",
+      "gpu_count": 1,
+      "gpu_node": "akita",
+      "gpu_uuid": "GPU-6dca32fa-0314-7849-907a-031e3d449ddf",
+      "job_elapsed_seconds": 4931,
+      "job_id": "222322",
+      "job_state": "COMPLETED",
+      "launcher": "scaffolds/transformer/launchers/benchmark_poly_gdn_tuning.sbatch",
+      "launcher_arguments": [
+        "8fd821a09f6d7ca5e8cd8f65778d391abbc35d4e",
+        "confirm",
+        "bf16_values",
+        "2",
+        "1"
+      ],
+      "role": "confirm_dual_batch_reference",
+      "source_commit": "8fd821a09f6d7ca5e8cd8f65778d391abbc35d4e"
+    }
+  ],
+  "locks": {
+    "scaffolds/transformer/benchmarks/upstream_runtime/uv.lock": "a2b81202d36f82c3e88e730ad7c72caa17d800118097786bae5062882ca7fbb0",
+    "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+  },
+  "native_fla_source_commit": "516143e31fce09925e6c39ac37148444bad176c4",
+  "occupancy_tuning": {
+    "all_variants_passed_accuracy": true,
+    "audit_issues": [],
+    "exact_launch_guidance_comparison": "Bitwise-identical tested outputs and all six gradients versus no-guidance reference at both widths.",
+    "polynomial_ptx_directives_checked": 48,
+    "scope": "B16,T2048,H16,V64; K16/64; tf32x3/bf16_values; two warps; minimum CTA guidance0/1. PTXAS extra flags explicitly empty.",
+    "variant_count": 8
+  },
+  "production_batch_confirmation": {
+    "all_eight_variants_passed": true,
+    "all_full_model_updates_finite": true,
+    "batch_split_reference_size": 16,
+    "both_widths_dual_reference_passed": true,
+    "completed_kernel_samples_per_operation": 60,
+    "full_model_timed_updates": 212,
+    "full_model_trials": 12,
+    "full_model_validated_updates": 266,
+    "job_id": "222322",
+    "kernel_matrix_status": "complete",
+    "required_batch_split_policy": "production_dtype_and_promoted_fp32",
+    "retained_checkpoints": 0,
+    "scope": "B64 kernel dual-reference checks, fresh native kernel trials, two reversed-order fresh full-model trials per width and implementation.",
+    "source_commit": "8fd821a09f6d7ca5e8cd8f65778d391abbc35d4e",
+    "status": "complete"
+  },
+  "regeneration_command": "python3 scaffolds/transformer/validation/summarize_poly_gdn_tuning.py --selection scaffolds/transformer/validation/runs/poly-gdn-tuning/record.json --output scaffolds/transformer/validation/runs/poly-gdn-tuning/summary.json --csv scaffolds/transformer/validation/runs/poly-gdn-tuning/summary.csv",
+  "reports": [
+    {
+      "job_id": "222298",
+      "kind": "polynomial",
+      "path": "222298/poly-kernels.json",
+      "role": "profile",
+      "sha256": "0f809cf39516465a5ed3f80d085f0c472ae0d467a1f13bee44404294ab9e76ec"
+    },
+    {
+      "job_id": "222298",
+      "kind": "native_fla",
+      "path": "222298/fla-k16-b16.json",
+      "role": "profile_k16",
+      "sha256": "7002bb27c726b1c47215ed2d0e7415686e46c588e7d9b4fd9547f8c6822367b4"
+    },
+    {
+      "job_id": "222298",
+      "kind": "native_fla",
+      "path": "222298/fla-k64-b16.json",
+      "role": "profile_k64",
+      "sha256": "700ae827e624affed92a3143b91f4d1a87dcfe466daf4846f8b6f043a36c0089"
+    },
+    {
+      "job_id": "222316",
+      "kind": "polynomial",
+      "path": "222316/poly-kernels.json",
+      "role": "occupancy_tuning",
+      "sha256": "38c8e1980e29507be790dcbb8d699d233d9e302b61c9c3bd1ea66f40a883b464"
+    },
+    {
+      "job_id": "222316",
+      "kind": "native_fla",
+      "path": "222316/fla-k16-b16.json",
+      "role": "occupancy_tuning_k16",
+      "sha256": "806505ad8f80c2182ee489387a1d426956c2bf6d012ad0bef4c31e15ccd3d495"
+    },
+    {
+      "job_id": "222316",
+      "kind": "native_fla",
+      "path": "222316/fla-k64-b16.json",
+      "role": "occupancy_tuning_k64",
+      "sha256": "15513bfb964fb6b00ead9ea55a63dcdfe21f057bbaa1cf5652c47ad4d8c36718"
+    },
+    {
+      "diagnostic": true,
+      "expected_failed_shapes": [
+        "b64_t2048_h16_k64_v64"
+      ],
+      "expected_status": "completed_with_failures",
+      "job_id": "222318",
+      "kind": "polynomial",
+      "path": "222318/poly-kernels.json",
+      "role": "diagnostic_history_index_overflow",
+      "sha256": "2a1bdd3c3a989e88233cf370b4315faa1bdb9bceb4acc0baf4c3eb5fc4a1f99f"
+    },
+    {
+      "diagnostic": true,
+      "expected_failed_shapes": [
+        "b64_t2048_h16_k64_v64"
+      ],
+      "expected_status": "completed_with_failures",
+      "job_id": "222320",
+      "kind": "polynomial",
+      "path": "222320/poly-kernels.json",
+      "role": "diagnostic_bf16_split_tolerance",
+      "sha256": "78e936b42119f9c0afa1adf07a73b00aa334832620114da903b950f6174e5cc6"
+    },
+    {
+      "job_id": "222321",
+      "kind": "batch_split_diagnostic",
+      "path": "222321/batch-split-diagnostic.json",
+      "role": "quantization_diagnostic",
+      "sha256": "d8bbe206e34df885978e27dfbc294f7754d1cdba7fb9d97189d26cc458b0c32a"
+    },
+    {
+      "job_id": "222322",
+      "kind": "polynomial",
+      "path": "222322/poly-kernels.json",
+      "required_batch_split_policy": "production_dtype_and_promoted_fp32",
+      "role": "production_batch_confirmation",
+      "sha256": "77387a98d3cf626a7097c72fb7e3ddf8766fd4c89e3a208da85a6b7bb2c01835"
+    },
+    {
+      "job_id": "222322",
+      "kind": "native_fla",
+      "path": "222322/fla-k16-b64.json",
+      "role": "production_batch_confirmation_k16",
+      "sha256": "971553534bdb6789c99671d25f5c5600ad1c5b1795494f0f8b0a6dede594dbe0"
+    },
+    {
+      "job_id": "222322",
+      "kind": "native_fla",
+      "path": "222322/fla-k64-b64.json",
+      "role": "production_batch_confirmation_k64",
+      "sha256": "d94df556f593f25e025a6a1bb8ab8eb3d07d2fc04fd89968af6b88b755478aa4"
+    },
+    {
+      "job_id": "222322",
+      "kind": "training",
+      "path": "222322/training-k16-exact-1.json",
+      "role": "k16_exact_trial1",
+      "sha256": "3f2c21a9c2dd13a0ac02089e58b32ee952ebdb227475685628d62124398c11e1"
+    },
+    {
+      "job_id": "222322",
+      "kind": "training",
+      "path": "222322/training-k16-candidate-1.json",
+      "role": "k16_candidate_trial1",
+      "sha256": "d1818d8835edb0e1585d4b225135a96e9d5a3fcddb59529e9957c3236655a8f7"
+    },
+    {
+      "job_id": "222322",
+      "kind": "native_model",
+      "path": "222322/training-k16-native-1.json",
+      "role": "k16_native_trial1",
+      "sha256": "1ae927a4fdbdae1656b4e7683767f9d6fef1f2a5df6385b294ed2ee48ced309d"
+    },
+    {
+      "job_id": "222322",
+      "kind": "training",
+      "path": "222322/training-k64-exact-1.json",
+      "role": "k64_exact_trial1",
+      "sha256": "78314c2a503817474441c2053b8a86db796dfe3b1efbdeb2dd22c80a93d1d530"
+    },
+    {
+      "job_id": "222322",
+      "kind": "training",
+      "path": "222322/training-k64-candidate-1.json",
+      "role": "k64_candidate_trial1",
+      "sha256": "3eef02c41d0219662c4dcd8091a1159613894ab5859cf1604425eee1c1d4e598"
+    },
+    {
+      "job_id": "222322",
+      "kind": "native_model",
+      "path": "222322/training-k64-native-1.json",
+      "role": "k64_native_trial1",
+      "sha256": "198fb91bb836b1a5408a45b3bb72953fcb48dc225b3804756ec6feabd13270ad"
+    },
+    {
+      "job_id": "222322",
+      "kind": "training",
+      "path": "222322/training-k16-exact-2.json",
+      "role": "k16_exact_trial2",
+      "sha256": "030c80bbacccf56e159266b6ca46d639e4fa8ab0c7bdd59f31f04a69fa4cd1eb"
+    },
+    {
+      "job_id": "222322",
+      "kind": "training",
+      "path": "222322/training-k16-candidate-2.json",
+      "role": "k16_candidate_trial2",
+      "sha256": "9dd6d434b608f56561963c16b4fc06d055276b1e31191a8cf3389b50e52e71bf"
+    },
+    {
+      "job_id": "222322",
+      "kind": "native_model",
+      "path": "222322/training-k16-native-2.json",
+      "role": "k16_native_trial2",
+      "sha256": "4950a47ada486ed93fea8dc51980567bdae9f146cba59a17c1a39ed57b4cd06b"
+    },
+    {
+      "job_id": "222322",
+      "kind": "training",
+      "path": "222322/training-k64-exact-2.json",
+      "role": "k64_exact_trial2",
+      "sha256": "c9289faf3344def5428a3f63d1d8c64c87728b0ff5bcd961c2fcd21d994b4564"
+    },
+    {
+      "job_id": "222322",
+      "kind": "training",
+      "path": "222322/training-k64-candidate-2.json",
+      "role": "k64_candidate_trial2",
+      "sha256": "c0930568c5282df7b55030415edda50c7eb4ba7db64d5e43b29ba13b678df523"
+    },
+    {
+      "job_id": "222322",
+      "kind": "native_model",
+      "path": "222322/training-k64-native-2.json",
+      "role": "k64_native_trial2",
+      "sha256": "824d45cb487b6efdde56ea4c7d2f560bd9d35311a44d6c4cf6386f4889826af5"
+    }
+  ],
+  "retained_checkpoints": [],
+  "schema_version": 1,
+  "scientific_recipe_scope": "Both dK16/dK64 model, optimizer, and data settings match original cubic recipes: sigmoid linear write; tanh constant, quadratic, and cubic writes. Fresh bounded execution changes output locations and disables W&B.",
+  "scope": "Degree-three original-key-space polynomial GDN, selective value precision and one/two-warp Triton tuning; unmodified native FLA linear GDN reference.",
+  "selected_candidate": {
+    "min_ctas_per_sm": 1,
+    "num_warps": 2,
+    "precision": "bf16_values",
+    "selection_basis": "B16 and B64K16 checks pass; corrected B64K64 exact reference passes the promoted-FP32 split diagnostic. A new confirmation must pass both production-BF16 exact tolerances and strict promoted-FP32 split checks before full-model timing.",
+    "status": "kernel_qualified_and_full_model_benchmarked"
+  },
+  "status": "complete",
+  "training_comparisons": [
+    {
+      "job_id": "222322",
+      "name": "k16_exact",
+      "report_roles": [
+        "k16_exact_trial1",
+        "k16_exact_trial2"
+      ],
+      "timings": [
+        "compute_seconds",
+        "interval_seconds"
+      ]
+    },
+    {
+      "job_id": "222322",
+      "name": "k16_candidate",
+      "report_roles": [
+        "k16_candidate_trial1",
+        "k16_candidate_trial2"
+      ],
+      "timings": [
+        "compute_seconds",
+        "interval_seconds"
+      ]
+    },
+    {
+      "job_id": "222322",
+      "name": "k16_native",
+      "report_roles": [
+        "k16_native_trial1",
+        "k16_native_trial2"
+      ],
+      "timings": [
+        "resident_compute_seconds",
+        "cuda_events"
+      ]
+    },
+    {
+      "job_id": "222322",
+      "name": "k64_exact",
+      "report_roles": [
+        "k64_exact_trial1",
+        "k64_exact_trial2"
+      ],
+      "timings": [
+        "compute_seconds",
+        "interval_seconds"
+      ]
+    },
+    {
+      "job_id": "222322",
+      "name": "k64_candidate",
+      "report_roles": [
+        "k64_candidate_trial1",
+        "k64_candidate_trial2"
+      ],
+      "timings": [
+        "compute_seconds",
+        "interval_seconds"
+      ]
+    },
+    {
+      "job_id": "222322",
+      "name": "k64_native",
+      "report_roles": [
+        "k64_native_trial1",
+        "k64_native_trial2"
+      ],
+      "timings": [
+        "resident_compute_seconds",
+        "cuda_events"
+      ]
+    }
+  ],
+  "training_window_rule": "For each JAX setting, estimated_update_seconds=40*measured_B64_kernel_forward_backward_seconds+1. Warmup=2 when estimate>20 seconds else5; measured_updates=max(3,min(30,floor(120/estimate))). This chooses a bounded window only; reported throughput uses actual model updates. Native FLA uses5 warmup and30 measured updates. Two fresh processes per setting with fully reversed round order."
+}

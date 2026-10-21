@@ -1,0 +1,70 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/rae2329afb5bd/config.yaml",
+    "sha256": "3716913451111ac3b22f98bc0aa67c9f12284db9e3ba7e9290c158beecc1c27e"
+  },
+  "error": null,
+  "frozen_execution_sha256": "6d9ee1ecfa19d803e99eaeac09a45897b5ed06118c9f2dbc19935acd9008e296",
+  "home_cluster": "kennel",
+  "label": "200m-dk016-gdn-independent-erase-warmup400-seed0",
+  "name": "200m-dk016-gdn-independent-erase-warmup400-seed0",
+  "pause": {
+    "paused_utc": "2026-10-15T21:16:36.032888+00:00",
+    "production_started": false,
+    "reason": "user_requested",
+    "resume_checkpoint_path": null,
+    "resume_checkpoint_step": null,
+    "slurm_job_id": "219039",
+    "slurm_reason": "JobHeldUser",
+    "slurm_restart_count": 0,
+    "slurm_state": "PENDING"
+  },
+  "record_schema_version": 1,
+  "run_id": "rae2329afb5bd",
+  "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
+  "status": "paused",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--nice=3000",
+      "--exclude=akita,collie,dogo,doodle,samoyed,terrier",
+      "--gres=gpu:4",
+      "--cpus-per-task=32",
+      "--mem=256G",
+      "--time=24:00:00",
+      "--job-name=rae2329afb5bd",
+      "--output=experiments/attention_scaling/runs/rae2329afb5bd/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.attention_scaling.acceptance",
+      "experiments/attention_scaling/runs/rae2329afb5bd/config.yaml",
+      "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
+      "4",
+      "H100,B300"
+    ],
+    "command_kind": "equivalent_current_request",
+    "dependency": null,
+    "excluded_nodes": [
+      "akita",
+      "collie",
+      "dogo",
+      "doodle",
+      "samoyed",
+      "terrier"
+    ],
+    "gpu_count": 4,
+    "gpu_type": "H100",
+    "gpu_types": [
+      "H100"
+    ],
+    "nice": 3000,
+    "node": null,
+    "partition": "standard",
+    "slurm_job_id": "219039",
+    "submitted_utc": "2026-10-15T03:25:09.983636+00:00",
+    "time_limit_hours": 24,
+    "updated_utc": "2026-10-15T15:40:13.513240+00:00"
+  },
+  "updated_utc": "2026-10-15T21:16:36.032888+00:00"
+}

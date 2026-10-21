@@ -75,6 +75,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("gdn_conv_size", 4)
         value["model"].setdefault("gdn_erase_mode", "tied")
         value["model"].setdefault("gdn_write_activation", "sigmoid")
+        value["model"].setdefault("gdn_polynomial_degree", 1)
         value["model"].setdefault("attention_mechanism", "dot_product")
         for key, default in (("gla_gate_rank", 16), ("gla_gate_tau", 16.0),
                              ("gla_chunk_size", 64), ("gla_inner_chunk_size", 16),
@@ -106,6 +107,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("positional_encoding", "rope")
         value["model"].setdefault("path_w_rank", 32)
         value["model"].setdefault("path_conv_size", 3)
+        value["model"].setdefault("attention_coefficient_amplitude_scale", "none")
         value.setdefault("optim", {}).setdefault("coefficient_penalty", 0.0)
         for key, default in (("qk_norm", False), ("qk_norm_sharing", "per_head"),
                              ("qk_norm_initial_scale", None), ("qk_norm_eps", 1e-6)):

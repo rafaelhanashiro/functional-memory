@@ -177,12 +177,19 @@ MOSAIC_TAYLOR = dict(attention_backend="mosaic", attention_degree=2, qk_head_dim
 MOSAIC_QUERY = dict(MOSAIC_TAYLOR, attention_degree=3, attention_normalization=False, attention_coefficients="learned",
                     attention_coefficient_sharing="per_head", attention_coefficient_conditioning="query",
                     attention_coefficient_activation="tanh")
+MOSAIC_STATIC = dict(MOSAIC_TAYLOR, attention_degree=3, attention_normalization=False, attention_coefficients="learned",
+                     attention_coefficient_sharing="per_head")
 
 
 @pytest.mark.parametrize("settings", [
     MOSAIC_TAYLOR, dict(MOSAIC_TAYLOR, attention_degree=1), dict(MOSAIC_TAYLOR, attention_degree=16),
     dict(MOSAIC_TAYLOR, qk_head_dim=8), dict(MOSAIC_TAYLOR, qk_head_dim=128),
     MOSAIC_QUERY, dict(MOSAIC_QUERY, attention_degree=1), dict(MOSAIC_QUERY, attention_degree=4),
+    MOSAIC_STATIC, dict(MOSAIC_STATIC, attention_coefficient_sharing="global"),
+    dict(MOSAIC_STATIC, attention_degree=1), dict(MOSAIC_STATIC, attention_degree=8),
+    dict(MOSAIC_QUERY, attention_degree=8),
+    dict(MOSAIC_TAYLOR, attention_normalization=False), dict(MOSAIC_TAYLOR, attention_normalization=False, attention_degree=4),
+    dict(MOSAIC_TAYLOR, attention_normalization=False, attention_fixed_coefficients=(0.5, 1.0, 0.5)),
 ])
 def test_mosaic_accepts_its_kernels(settings):
     model = ModelConfig(**settings)
@@ -193,9 +200,11 @@ def test_mosaic_accepts_its_kernels(settings):
     dict(MOSAIC_TAYLOR, attention_degree=None),
     dict(MOSAIC_TAYLOR, attention_coefficients="learned"),
     dict(MOSAIC_TAYLOR, attention_fixed_coefficients=(0.5, 1.0, 0.5)),
-    dict(MOSAIC_TAYLOR, attention_normalization=False),
+    dict(MOSAIC_TAYLOR, attention_normalization=False, attention_degree=None),
+    dict(MOSAIC_TAYLOR, attention_normalization=False, attention_degree=0),
+    dict(MOSAIC_STATIC, attention_degree=9),
     dict(MOSAIC_TAYLOR, attention_mechanism="gated_deltanet", attention_degree=None),
-    dict(MOSAIC_QUERY, attention_degree=5),
+    dict(MOSAIC_QUERY, attention_degree=9),
     dict(MOSAIC_QUERY, attention_degree=1, attention_coefficient_activation="identity"),
     dict(MOSAIC_TAYLOR, qk_head_dim=48),
     dict(MOSAIC_TAYLOR, value_head_dim=128),
@@ -230,6 +239,10 @@ def test_mosaic_resolution_checks_the_allocation(monkeypatch, dtype, platform, c
 @pytest.mark.parametrize("settings,dtype,capability,length,expected", [
     (MOSAIC_TAYLOR, "bfloat16", 9, 2048, "mosaic"),
     (MOSAIC_QUERY, "bfloat16", 10, 2048, "mosaic"),
+    (MOSAIC_STATIC, "bfloat16", 10, 2048, "mosaic"),
+    (dict(MOSAIC_TAYLOR, attention_normalization=False), "bfloat16", 9, 2048, "mosaic"),
+    (dict(MOSAIC_STATIC, attention_degree=8), "bfloat16", 9, 2048, "mosaic"),
+    (dict(MOSAIC_STATIC, attention_degree=16), "bfloat16", 9, 2048, "fused"),
     (MOSAIC_TAYLOR, "float32", 9, 2048, "fused"),
     (MOSAIC_TAYLOR, "bfloat16", 8, 2048, "fused"),
     (MOSAIC_TAYLOR, "bfloat16", 10, 1920, "fused"),
@@ -260,6 +273,7 @@ def test_mosaic_requires_bfloat16_training():
     (MOSAIC_QUERY, "bf16"), (dict(MOSAIC_QUERY, attention_degree=1), "bf16"),
     (MOSAIC_TAYLOR, "bf16"), (dict(MOSAIC_TAYLOR, attention_degree=16), "bf16"),
     (dict(MOSAIC_TAYLOR, attention_degree=1), "bf16x3"), (dict(MOSAIC_TAYLOR, attention_degree=3), "bf16x3"),
+    (MOSAIC_STATIC, "bf16"), (dict(MOSAIC_TAYLOR, attention_normalization=False, attention_degree=1), "bf16"),
 ])
 def test_mosaic_weight_precision_is_chosen_per_setup_and_recorded(settings, precision):
     config = Config(model=ModelConfig(**settings))

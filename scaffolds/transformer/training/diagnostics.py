@@ -70,7 +70,9 @@ def attention_identity(config) -> dict:
     if config.model.attention_mechanism == "gated_deltanet":
         model = config.model
         independent = model.gdn_erase_mode == "independent"
-        return {
+        degree = model.gdn_polynomial_degree
+        polynomial = degree > 1
+        identity = {
             "attention_mechanism": "gated_deltanet",
             "attention_kernel": "gated_deltanet",
             "attention_backend": model.attention_backend,
@@ -88,8 +90,13 @@ def attention_identity(config) -> dict:
             "attention_output_normalization": "per_head_rmsnorm_times_silu_output_gate",
             "gdn_conv_size": model.gdn_conv_size,
             "gdn_erase_mode": model.gdn_erase_mode,
+            "gdn_polynomial_degree": model.gdn_polynomial_degree,
             "gdn_linear_write_activation": model.gdn_write_activation,
-            "gdn_write_initialization": f"{model.gdn_write_activation}_write_projection",
+            "gdn_write_initialization": {
+                1: f"{model.gdn_write_activation}_write_projection",
+                2: "zero_constant_and_quadratic_projections",
+                3: "zero_constant_quadratic_and_cubic_projections",
+            }[degree],
             "gdn_erase_initialization": "copy_write_projection" if independent else "shared_write_gate",
             "gdn_state_elements_per_layer": model.num_heads * model.qk_head_dim * model.value_head_dim,
             "gdn_initial_state": "zero_each_sequence",
@@ -98,6 +105,40 @@ def attention_identity(config) -> dict:
             "gdn_chunk_size": 64 if model.attention_backend == "fused" else None,
             "diagnostic_backend": model.attention_backend,
         }
+        if polynomial:
+            write_formulas = ", ".join(
+                f"beta_1={model.gdn_write_activation}(W_b x)" if r == 1 else f"beta_{r}=tanh(W_{r} x)"
+                for r in range(degree + 1))
+            identity.update({
+                "attention_degree": degree,
+                "attention_implementation": ("transported_score_polynomial_gated_delta_rule_triton"
+                                             if model.attention_backend == "fused" else "tensor_recurrence_reference"),
+                "attention_formula": (
+                    f"F_t(q)=a_t F_{{t-1}}(P_t q)+v_t sum_{{r=0}}^{degree} beta_{{t,r}}<q,k_t>^r; "
+                    "P_t=I-lambda_t k_t k_t^T in original key space; "
+                    f"{write_formulas}; "
+                    "lambda_t=sigmoid(W_lambda x); o_t=F_t(q_t)/sqrt(d_k); "
+                    "q,k L2-normalized after short conv+SiLU; "
+                    "a_t=exp(-exp(A_log) softplus(W_a x+dt_bias)); one decay shared by all degrees"
+                ),
+                "attention_score_scale": "1 (global 1/sqrt(d_k) applied to polynomial read)",
+                "gdn_write_activation": [model.gdn_write_activation if r == 1 else "tanh" for r in range(degree + 1)],
+                "gdn_query_transport_space": "original_key_space",
+                "gdn_state_elements_per_layer": (model.num_heads * model.value_head_dim
+                                                  * sum(model.qk_head_dim ** r for r in range(degree + 1))),
+                "gdn_kernel_source": f"local transported-score {'quadratic' if degree == 2 else 'cubic'} GDN kernels",
+                "gdn_chunk_size": 64 if model.attention_backend == "fused" else None,
+            })
+            if model.attention_backend == "fused":
+                from scaffolds.transformer.attention.backends.polynomial_gdn import (
+                    resolve_polynomial_gdn_min_ctas, resolve_polynomial_gdn_options,
+                )
+
+                precision, num_warps = resolve_polynomial_gdn_options()
+                identity.update(gdn_value_precision=precision, gdn_num_warps=num_warps,
+                                gdn_min_ctas_per_sm=resolve_polynomial_gdn_min_ctas(),
+                                gdn_transport_dot_precision="tf32x3")
+        return identity
     degree = config.model.attention_degree
     mode = config.model.quadratic_mode
     normalized = config.model.attention_normalization
@@ -246,7 +287,9 @@ def attention_identity(config) -> dict:
         tanh_start = (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero") + (
             f", a initially {amplitude:g}" if amplitude != 1.0 else ", a initially 1") + (
             ", beta initially 0" if inner_bias else "")
-        tanh_formula = "c(x_t) = b + a*tanh(x_t W + beta)" if inner_bias else "c(x_t) = b + a*tanh(x_t W)"
+        amplitude_scale = config.model.attention_coefficient_amplitude_scale if query_tanh else "none"
+        tanh_formula = ("c(x_t) = b + (a/r!)*tanh(x_t W" if amplitude_scale == "factorial" else "c(x_t) = b + a*tanh(x_t W") + (
+            " + beta)" if inner_bias else ")")
         identity.update(
             attention_kernel="query_key_polynomial_unnormalized" if key_conditioned else "query_polynomial_unnormalized",
             attention_coefficient_conditioning=conditioning,
@@ -256,6 +299,7 @@ def attention_identity(config) -> dict:
             **({"attention_coefficient_amplitude_initial": amplitude,
                 "attention_coefficient_projection_initial_std": spread} if (amplitude, spread) != (1.0, 0.0) else {}),
             **({"attention_coefficient_tanh_bias": True} if inner_bias else {}),
+            **({"attention_coefficient_amplitude_scale": amplitude_scale} if amplitude_scale != "none" else {}),
             attention_formula=((f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) f_r(x_i) s_ti^r v_i" if key_conditioned
                                 else f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i")
                                + ", s_ti = Q_t K_i^T / sqrt(d_k); "
@@ -290,7 +334,7 @@ def attention_identity(config) -> dict:
         block_q, block_k = ((None, None) if degree is None and normalized else
                            _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
         identity.update({
-            "attention_implementation": ("pallas_triton_query_polynomial_per_degree_values" if key_conditioned else
+            "attention_implementation": ("pallas_triton_query_key_polynomial" if key_conditioned else
                                          "pallas_triton_query_polynomial" if query_tanh else
                                          "pallas_triton_linear_plus_fp32_prefix_sum" if query_conditioned else
                                          "cudnn" if degree is None and normalized else "pallas_triton"),
@@ -306,8 +350,10 @@ def attention_identity(config) -> dict:
         identity.update({
             "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
                                          else "pallas_mosaic_gpu_query_polynomial" if query_tanh
-                                         else "pallas_mosaic_gpu"),
-            "attention_weight_precision": default_precision("query" if query_conditioned else "taylor", degree),
+                                         else "pallas_mosaic_gpu_query_polynomial_equal_coefficients"
+                                         if not normalized else "pallas_mosaic_gpu"),
+            # Unnormalized kernels share the query-coefficient family; only normalized ones divide by a row sum.
+            "attention_weight_precision": default_precision("taylor" if normalized else "query", degree),
             "query_block_size": None,
             "key_block_size": None,
             "diagnostic_backend": "blocked",
@@ -446,7 +492,7 @@ def polynomial_coefficient_report(params, config) -> dict:
 
 
 
-def query_coefficient_report(params, raw_layers) -> dict:
+def query_coefficient_report(params, raw_layers, *, amplitude_scale="none") -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
@@ -478,6 +524,10 @@ def query_coefficient_report(params, raw_layers) -> dict:
     }
     if amplitude is not None:
         report.update(activation="tanh", modulation_amplitude=_serializable(amplitude))
+        if amplitude_scale == "factorial":
+            factorials = np.asarray([math.factorial(r) for r in range(amplitude.shape[-1])], dtype=np.float64)
+            report.update(modulation_amplitude_scale="1/r!",
+                          effective_modulation_amplitude=_serializable(amplitude / factorials))
     if inner_bias is not None:
         report["tanh_bias"] = _serializable(inner_bias)
     if key_amplitude is not None:
@@ -609,7 +659,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         if not coefficient_report["finite"]:
             issues.append("Nonfinite quadratic coefficients")
     elif config.model.attention_coefficient_conditioning in ("query", "query_key"):
-        coefficient_report = query_coefficient_report(params, raw_layers)
+        coefficient_report = query_coefficient_report(
+            params, raw_layers, amplitude_scale=config.model.attention_coefficient_amplitude_scale)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
     elif has_learned_polynomial(config.model):
@@ -655,7 +706,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         **attention_identity(config),
         "sample": provenance,
         "kernel_values": ("vector_gated_recurrence" if config.model.attention_mechanism == "gla" else
-                          "gated_delta_rule_recurrence" if config.model.attention_mechanism == "gated_deltanet" else
+                          ("polynomial_gated_delta_rule_recurrence" if config.model.gdn_polynomial_degree > 1
+                           else "gated_delta_rule_recurrence") if config.model.attention_mechanism == "gated_deltanet" else
                           ("unshifted_exp" if config.model.attention_degree is None else
                            "unshifted_learned_polynomial" if has_learned_polynomial(config.model) else "unshifted_taylor")
                           if not config.model.attention_normalization else

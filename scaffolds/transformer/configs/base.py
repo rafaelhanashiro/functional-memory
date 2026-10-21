@@ -60,6 +60,8 @@ class ModelConfig:
     gdn_erase_mode: Literal["tied", "independent"] = "tied"
     # Signed writes retain a separate sigmoid erase gate. Historical recipes use sigmoid.
     gdn_write_activation: Literal["sigmoid", "tanh"] = "sigmoid"
+    # Degrees two and three compose polynomial memory with the original-key-space erase map.
+    gdn_polynomial_degree: Literal[1, 2, 3] = 1
     gla_gate_rank: int = 16
     gla_gate_tau: float = 16.0
     gla_chunk_size: int = 64
@@ -97,6 +99,9 @@ class ModelConfig:
     positional_encoding: Literal["rope", "path"] = "rope"
     path_w_rank: int = 32
     path_conv_size: int = 3
+    # "factorial" divides the tanh amplitude of order r by r!, c_r = b_r + (a_r/r!) tanh(w_r^T x_t),
+    # so under Adam's unit-scale steps order r's modulation moves at lr/r!, matching b_r = 1/r!.
+    attention_coefficient_amplitude_scale: Literal["none", "factorial"] = "none"
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
     # (even m, row-normalized only), so the kernel is nonnegative by construction;
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
@@ -134,7 +139,8 @@ class ModelConfig:
 
     def mosaic_supported(self) -> bool:
         """Whether a Mosaic GPU kernel implements this recipe's attention: normalized fixed
-        Taylor or tanh query-conditioned polynomial attention, at its widths and degrees."""
+        Taylor, tanh query-conditioned polynomial attention, or an unnormalized polynomial with
+        static (fixed or learned) coefficients, at its widths and degrees."""
         from scaffolds.transformer.attention.backends.mosaic.api import MAX_QUERY_DEGREE, VALUE_WIDTH, WIDTHS
 
         degree = self.attention_degree
@@ -147,7 +153,12 @@ class ModelConfig:
         query = (not self.attention_normalization and self.attention_coefficient_conditioning in ("query", "query_key")
                  and self.attention_coefficient_activation == "tanh" and integer_degree
                  and 1 <= degree <= MAX_QUERY_DEGREE)
-        return (self.attention_mechanism == "dot_product" and (taylor or query)
+        # Static coefficients run on the query-coefficient kernel with every query's coefficients equal.
+        static = (not self.attention_normalization and self.attention_coefficient_conditioning == "static"
+                  and self.quadratic_mode == "fixed" and self.attention_coefficient_parameterization == "direct"
+                  and self.attention_fixed_square_factors is None and integer_degree
+                  and 1 <= degree <= MAX_QUERY_DEGREE)
+        return (self.attention_mechanism == "dot_product" and (taylor or query or static)
                 and getattr(self, "positional_encoding", "rope") == "rope"
                 and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
 
@@ -211,9 +222,9 @@ class ModelConfig:
                 raise ValueError("Fused PaTH needs equal qk_head_dim and value_head_dim in 16, 32, 64, 128 "
                                  "and polynomial degree 1-4")
         if self.attention_backend == "mosaic" and not self.mosaic_supported():
-            raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention and tanh query-conditioned "
-                             "polynomial attention of degree 1-4, with qk_head_dim 8, 16, 32, 64, or 128 and "
-                             "value_head_dim 64")
+            raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
+                             "query-conditioned or static-coefficient unnormalized polynomial attention of "
+                             "degree 1-8, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64")
         if not isinstance(self.attention_normalization, bool):
             raise ValueError("model.attention_normalization must be a boolean")
         if self.attention_output_scaling not in ("none", "inverse_position", "head_rms_norm"):
@@ -247,6 +258,11 @@ class ModelConfig:
         if self.gdn_write_activation == "tanh":
             if self.attention_mechanism != "gated_deltanet" or self.gdn_erase_mode != "independent":
                 raise ValueError("model.gdn_write_activation tanh requires gated_deltanet with independent erasure")
+        if type(self.gdn_polynomial_degree) is not int or self.gdn_polynomial_degree not in (1, 2, 3):
+            raise ValueError("model.gdn_polynomial_degree must be 1, 2, or 3")
+        if self.gdn_polynomial_degree > 1:
+            if self.attention_mechanism != "gated_deltanet" or self.gdn_erase_mode != "independent":
+                raise ValueError("model.gdn_polynomial_degree > 1 requires gated_deltanet with independent erasure")
         for name in ("gla_gate_rank", "gla_chunk_size", "gla_inner_chunk_size"):
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
@@ -313,6 +329,10 @@ class ModelConfig:
             raise ValueError("model.attention_coefficient_tanh_bias must be a boolean")
         if self.attention_coefficient_tanh_bias and self.attention_coefficient_activation != "tanh":
             raise ValueError("A bias inside tanh applies to tanh coefficients only")
+        if self.attention_coefficient_amplitude_scale not in ("none", "factorial"):
+            raise ValueError(f"Unknown attention coefficient amplitude scale: {self.attention_coefficient_amplitude_scale}")
+        if self.attention_coefficient_amplitude_scale != "none" and self.attention_coefficient_activation != "tanh":
+            raise ValueError("An amplitude scale applies to tanh coefficients only")
         if self.attention_coefficients == "learned":
             if self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed":
                 raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")

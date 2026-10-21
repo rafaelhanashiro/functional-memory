@@ -64,10 +64,14 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
             raise ValueError("Gated DeltaNet requires backend='auto', 'blocked' or 'fused'")
         length = model_config.max_seq_len if sequence_length is None else sequence_length
         capability = (9 if platform is not None else _cuda_compute_capability()) if gpu else None
+        polynomial = model_config.gdn_polynomial_degree > 1
+        fits_width = not polynomial or max(model_config.qk_head_dim, model_config.value_head_dim) <= 64
         # FLA's kernels are qualified here on Hopper (H100) and Blackwell (B300).
         supports = capability is not None and capability >= 9
         if request == "auto":
-            return "fused" if length % 64 == 0 and supports else "blocked"
+            return "fused" if length % 64 == 0 and supports and fits_width else "blocked"
+        if request == "fused" and not fits_width:
+            raise ValueError("Fused polynomial GDN requires key and value head dimensions at most 64")
         if request == "fused" and (length % 64 or not supports):
             raise ValueError("Fused Gated DeltaNet requires sequence length divisible by 64 and an sm90+ GPU")
         return request

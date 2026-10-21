@@ -23,6 +23,7 @@ from scaffolds.transformer.attention.backends.mosaic import common
 L = plgpu.Layout.TCGEN05
 WGS = 2
 TMA_ELEMENTS = 256  # TMA moves at most 256 elements per dimension
+SMEM_BYTES = 232448 - 2048  # per-block shared memory, less a margin for barriers and alignment
 
 
 def _transforms(cols, dtype):
@@ -222,7 +223,7 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, st
             sums_gmem, *scratch = refs
         else:
             scratch = refs
-        (q_smem, do_smem, k_smem, v_smem, vec_smem, out_smem, sums_smem, regions, acc_tmem,
+        (q_smem, do_smem, k_smem, v_smem, vec_smem, sums_smem, regions, acc_tmem,
          in_bar, kv_bar, kv_free, s_ready, ds_ready, done) = scratch
         wg = lax.axis_index("wg")
         b, h = lax.axis_index("b"), lax.axis_index("h")
@@ -268,11 +269,12 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, st
             plgpu.barrier_wait(done.at[w])
             acc = plgpu.async_load_tmem(acc_tmem.at[:, pl.ds(w * dqk, dqk)], layout=L)
             plgpu.wait_load_tmem()
-            out_smem.at[w][...] = (acc * scale).astype(out_smem.dtype)
+            # Every MMA reading this warpgroup's Q has completed, so its Q buffer stages dQ.
+            q_smem.at[w][...] = (acc * scale).astype(q_smem.dtype)
             for i, total in enumerate(sums):
                 sums_smem.at[w, i][...] = total
             plgpu.commit_smem()
-            plgpu.copy_smem_to_gmem(out_smem.at[w], dq_gmem.at[b, pl.ds(q0, BQ), h])
+            plgpu.copy_smem_to_gmem(q_smem.at[w], dq_gmem.at[b, pl.ds(q0, BQ), h])
             for i in range(n_sums):
                 plgpu.copy_smem_to_gmem(sums_smem.at[w, i], sums_gmem.at[i, b, h, pl.ds(q0, BQ)])
             plgpu.wait_smem_to_gmem(0)
@@ -365,7 +367,6 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, st
             plgpu.SMEM((stages, block_k, dqk), jnp.bfloat16, transforms=t(dqk)),
             plgpu.SMEM((stages, block_k, dv), jnp.bfloat16, transforms=t(dv)),
             plgpu.SMEM((WGS, n_vec, BQ), jnp.float32),
-            plgpu.SMEM((WGS, BQ, dqk), q.dtype),
             plgpu.SMEM((WGS, max(n_sums, 1), BQ), jnp.float32),
             tuple(plgpu.RefUnion(
                 (plgpu.TMEM((BQ, block_k), jnp.float32), plgpu.TMEM((BQ, block_k), jnp.float32)),
@@ -384,7 +385,7 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, st
 
 
 @partial(jax.jit, static_argnames=("which", "family", "degree", "scale", "precision", "block_q", "stages"))
-def dkv(q, k, v, do, vectors, *, which, family, degree, scale, precision, block_q=64, stages=3):
+def dkv(q, k, v, do, vectors, *, which, family, degree, scale, precision, block_q=64, stages=None):
     """dV or dK [batch, time, heads, width] in its input dtype.
 
     Transposed tiles: lanes are keys, so per-query vectors broadcast along columns. Each
@@ -399,6 +400,9 @@ def dkv(q, k, v, do, vectors, *, which, family, degree, scale, precision, block_
     n_vec = common.vector_counts(family, degree)[1]
     n_parts = common.part_count(precision)
     chunks = time // TMA_ELEMENTS
+    if stages is None:  # every query's vectors share the block with K/V and the Q/dO ring
+        fixed = 2 * (WGS * BK * (dqk + dv) + n_vec * time * 2)
+        stages = 3 if fixed + 3 * 2 * block_q * (dqk + dv) <= SMEM_BYTES else 2
 
     def kernel(q_gmem, k_gmem, v_gmem, do_gmem, vec_gmem, out_gmem,
                k_smem, v_smem, q_smem, do_smem, vec_smem, regions, acc_tmem,

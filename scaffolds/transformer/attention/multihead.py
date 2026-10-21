@@ -40,7 +40,8 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
             config.hidden_size, config.num_heads, config.qk_head_dim, config.value_head_dim,
             conv_size=config.gdn_conv_size, norm_eps=config.rms_norm_eps,
             backend=config.attention_backend, erase_mode=config.gdn_erase_mode,
-            write_activation=config.gdn_write_activation, rngs=rngs,
+            write_activation=config.gdn_write_activation,
+            polynomial_degree=config.gdn_polynomial_degree, rngs=rngs,
         )
     return MultiHeadAttention(
         config.hidden_size, config.num_heads, config.num_kv_heads,
@@ -51,6 +52,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_fixed_coefficients=config.attention_fixed_coefficients,
         attention_coefficient_conditioning=config.attention_coefficient_conditioning,
         attention_coefficient_activation=config.attention_coefficient_activation,
+        attention_coefficient_amplitude_scale=config.attention_coefficient_amplitude_scale,
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
@@ -72,6 +74,7 @@ class MultiHeadAttention(nnx.Module):
         attention_coefficient_conditioning: str = "static",
         attention_coefficient_activation: str = "identity",
         positional_encoding: str = "rope",
+        attention_coefficient_amplitude_scale: str = "none",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path"):
@@ -147,7 +150,12 @@ class MultiHeadAttention(nnx.Module):
                 and attention_degree != 1):
             raise ValueError("Identity query coefficients require degree-one attention")
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
+        if attention_coefficient_amplitude_scale not in ("none", "factorial"):
+            raise ValueError(f"Unknown attention coefficient amplitude scale: {attention_coefficient_amplitude_scale}")
+        if attention_coefficient_amplitude_scale != "none" and attention_coefficient_activation != "tanh":
+            raise ValueError("An amplitude scale applies to tanh coefficients only")
         self.attention_coefficient_activation = attention_coefficient_activation
+        self.attention_coefficient_amplitude_scale = attention_coefficient_amplitude_scale
         self.hidden_size = hidden_size
         self.num_heads = num_heads
         self.num_kv_heads = num_kv_heads
@@ -200,7 +208,8 @@ class MultiHeadAttention(nnx.Module):
                 raise ValueError("Query-conditioned attention requires its model-owned kernel and bias")
             parameters["query_polynomial_coefficients"] = project_coefficients(
                 x, query_kernel, query_bias, amplitude=query_amplitude,
-                activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias)
+                activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
+                amplitude_scale=self.attention_coefficient_amplitude_scale)
             if self.attention_coefficient_conditioning == "query_key":
                 if key_kernel is None or key_amplitude is None:
                     raise ValueError("Query-key attention requires its model-owned key kernel and amplitude")
