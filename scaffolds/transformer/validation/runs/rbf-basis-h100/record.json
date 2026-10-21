@@ -1,0 +1,79 @@
+{
+  "basis_counts": [
+    3,
+    5,
+    9,
+    20
+  ],
+  "checks": [
+    "output and Q/K/V gradients against analytic float64 oracle",
+    "causality"
+  ],
+  "dtypes": [
+    "float32",
+    "bfloat16"
+  ],
+  "format": "shared-transformer-rbf-gpu-tests",
+  "hardware": [
+    {
+      "completed_utc": "2026-10-21T14:52:17.574310+00:00",
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "device_kinds": [
+        "NVIDIA H100 80GB HBM3"
+      ],
+      "report": {
+        "path": "scaffolds/transformer/validation/runs/rbf-basis-h100/h100-sxm.xml",
+        "sha256": "4c8540e7f8403dd10e57948eb14d9950b47333d8c3318d6b59fd8ac35d57f6ec"
+      },
+      "runtime": {
+        "CUDA_HOME": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_FLAGS": null,
+        "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "slurm_job_id": "223562",
+      "source_commit": "3b8dd3ebb30593d441eb535c8b3140b2dfc3f1dd",
+      "tests_passed": 16
+    },
+    {
+      "completed_utc": "2026-10-21T14:53:05.243017+00:00",
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "device_kinds": [
+        "NVIDIA H100 PCIe"
+      ],
+      "report": {
+        "path": "scaffolds/transformer/validation/runs/rbf-basis-h100/h100-pcie.xml",
+        "sha256": "b75eed226a8b87917957b3e1afb5717e65e8ef463f63a9eefa2246555d51653f"
+      },
+      "runtime": {
+        "CUDA_HOME": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_FLAGS": null,
+        "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "slurm_job_id": "223563",
+      "source_commit": "3b8dd3ebb30593d441eb535c8b3140b2dfc3f1dd",
+      "tests_passed": 16
+    }
+  ],
+  "home_cluster": "kennel",
+  "normalization": [
+    false,
+    true
+  ],
+  "relative_tolerance": {
+    "bfloat16": 0.04,
+    "float32": 0.001
+  },
+  "status": "passed",
+  "tests": "scaffolds/transformer/tests/test_basis_gpu.py",
+  "tests_sha256": "4d630f74ec0683e1d379f8ff6f7c17e78ef004ffcf7efbaa03447ff12e90e797"
+}

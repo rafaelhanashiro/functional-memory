@@ -66,6 +66,23 @@ The qualification launcher clears inherited `LD_LIBRARY_PATH` so the locked
 wheel libraries are selected, and rejects loaded cuBLAS below 13.2 on B300.
 No dataset is opened and no language-model run record is changed.
 
+### RBF kernels on H100
+
+On 2026-10-21, all 16 scalar RBF GPU cases passed on H100 80GB HBM3
+(job `223562`) and H100 PCIe (job `223563`), source
+`3b8dd3ebb30593d441eb535c8b3140b2dfc3f1dd`, with the locked CUDA 12 environment.
+The [H100 qualification record](runs/rbf-basis-h100/record.json) includes the
+JUnit reports, dependency lock, runtime settings, and source hashes.
+The tests restore fixed coefficients and cover counts 3, 5, 9, and 20 in
+FP32/BF16, for both normalized and unnormalized causal attention. Outputs and
+all Q/K/V gradients are compared to analytic NumPy float64 formulas, with
+relative tolerances `1e-3` and `4e-2`; changing a future value must preserve
+past outputs exactly. These are operator checks; per-head RMSNorm and full
+training behavior are checked separately by the model tests and run acceptance.
+
+Regenerate in a matching locked H100 allocation with the launcher's CUDA
+settings: `python -m pytest -q -m gpu scaffolds/transformer/tests/test_basis_gpu.py`.
+
 ### Query-dependent tanh polynomial coefficients
 
 The direct fused query-polynomial kernel passed all 12 H100 CUDA cases on
