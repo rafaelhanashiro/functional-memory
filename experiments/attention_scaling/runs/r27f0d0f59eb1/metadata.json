@@ -1,0 +1,186 @@
+{
+  "attention_backend": "blocked",
+  "attention_backend_requested": "blocked",
+  "attention_basis": {
+    "basis": [
+      {
+        "center": -6.0,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": -4.5,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": -3.0,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": -1.5,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": 0.0,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": 1.5,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": 3.0,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": 4.5,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": 6.0,
+        "kind": "rbf",
+        "width": 1.0
+      }
+    ],
+    "check_order": 256,
+    "coefficients": [
+      0.7842980450462962,
+      -0.1523710791787486,
+      0.06293250466768532,
+      0.057376729248309444,
+      0.38759739950223415,
+      1.574309886972801,
+      7.516279945564808,
+      30.74141419377182,
+      176.47302400187155
+    ],
+    "diagnostics": {
+      "check_condition_number": 12.422514763841642,
+      "condition_number": 12.422514763841649,
+      "l2_error": 0.026884360282285136,
+      "negative_mass_estimate": 0.0,
+      "quadrature_converged": true,
+      "rank": 9,
+      "relative_l2_error": 0.009890203436898776,
+      "relative_quadrature_change": 7.659704595254442e-16,
+      "relative_target_norm_error": 3.3306690738754696e-16
+    },
+    "mean": 0.0,
+    "quadrature_order": 128,
+    "rcond": 1e-12,
+    "std": 1.0,
+    "target": "exp",
+    "version": 1
+  },
+  "attention_coefficient_sharing": "global",
+  "attention_coefficients": "fixed",
+  "attention_degree": null,
+  "attention_formula": "sum_j c_j b_j(s), s = QK^T / sqrt(d_k), causal weighted values, then per-head RMSNorm over value channels with a learned gain",
+  "attention_implementation": "blocked",
+  "attention_kernel": "fixed_basis_unnormalized",
+  "attention_normalization": false,
+  "attention_output_normalization": "head_rms_norm",
+  "attention_output_scaling": "head_rms_norm",
+  "attention_score_formula": "exp(gamma) * <q, k> / (||q|| ||k||), gamma learned, |score| <= exp(gamma)",
+  "attention_score_scale": "1/sqrt(d_k)",
+  "attention_signed": true,
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0"
+  ],
+  "diagnostic_sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "error": null,
+  "execution_runtime": {
+    "batch_transfer": "host_to_shard",
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 PCIe",
+        "platform": "gpu"
+      }
+    ],
+    "environment": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_FLAGS": null,
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct"
+  },
+  "m0_qk_parameter_note": null,
+  "next_train_sequence": 0,
+  "numerical_failure_path": null,
+  "parameter_count": 199916704,
+  "qk_head_dim": 64,
+  "qk_norm": true,
+  "qk_norm_eps": 1e-06,
+  "qk_norm_initial_scale": 8.0,
+  "qk_norm_parameter_count": 160,
+  "qk_norm_sharing": "per_head",
+  "query_block_size": 128,
+  "rng_state": {
+    "completed_updates": 0,
+    "seed": 0
+  },
+  "runtime_history": [
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H100 PCIe",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_FLAGS": null,
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "223564",
+      "timestamp_utc": "2026-10-21T15:16:05.665205+00:00"
+    }
+  ],
+  "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "seed": 0,
+  "slurm_job_id": "223564",
+  "slurm_restart_count": 0,
+  "source_commit": "3b8dd3ebb30593d441eb535c8b3140b2dfc3f1dd",
+  "status": "running",
+  "step": 0,
+  "target_steps": 19074,
+  "target_tokens": 10000269312,
+  "training_tokens": 0,
+  "updated_utc": "2026-10-21T15:16:05.714008+00:00",
+  "value_head_dim": 64
+}
