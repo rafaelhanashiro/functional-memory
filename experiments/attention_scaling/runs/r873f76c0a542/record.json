@@ -1,15 +1,57 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/attention_scaling/runs/r873f76c0a542/training.log",
+      "sha256": "79330d0e4bcd7bbd8ab54b38d707dc6d29992d630ddc2be9f0fac6b43e080986",
+      "size_bytes": 646
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/experiments/attention_scaling/runs/r873f76c0a542/.runtime/acceptance/H100-1",
+      "allocation": "JobId=223558 JobName=rbf-20 UserId=lucastor(26364) GroupId=lucastor(26364) MCS_label=N/A Priority=20129 Nice=0 Account=lucastor QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:04 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-21T10:36:55 EligibleTime=2026-10-21T10:36:55 AccrueTime=2026-10-21T10:36:55 StartTime=2026-10-21T10:39:14 EndTime=2026-10-22T10:39:14 Deadline=N/A PreemptEligibleTime=2026-10-21T12:39:14 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-21T10:39:14 Scheduler=Main Partition=standard AllocNode:Sid=kennel:3998176 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=8 NumTasks=1 CPUs/Task=8 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=8,mem=64G,node=1,billing=8,gres/gpu=1 AllocTRES=cpu=8,mem=64G,node=1,billing=8,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=8 MinMemoryNode=64G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep StdErr=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/experiments/attention_scaling/runs/r873f76c0a542/training.log StdIn=/dev/null StdOut=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/experiments/attention_scaling/runs/r873f76c0a542/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:8",
+      "config_path": "experiments/attention_scaling/runs/r873f76c0a542/config.yaml",
+      "config_sha256": "85ce6f99c81562fb34161fefc8d7ba343d051d71626f1e446ccdca8f05e5e169",
+      "exit_code": 0,
+      "finished_utc": "2026-10-21T14:44:36.637609+00:00",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "b1d022d589fd082fba574373b302a054949ee7e8",
+      "slurm_job_id": "223558",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-21T14:39:18.563785+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/experiments/attention_scaling/runs/r873f76c0a542/.runtime/acceptance/H100-1",
+      "allocation": "JobId=223565 JobName=rbf-20 UserId=lucastor(26364) GroupId=lucastor(26364) MCS_label=N/A Priority=20129 Nice=0 Account=lucastor QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:03 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-21T10:45:23 EligibleTime=2026-10-21T10:45:23 AccrueTime=2026-10-21T10:45:23 StartTime=2026-10-21T10:47:45 EndTime=2026-10-22T10:47:45 Deadline=N/A PreemptEligibleTime=2026-10-21T12:47:45 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-21T10:47:45 Scheduler=Main Partition=standard AllocNode:Sid=kennel:4176562 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=8 NumTasks=1 CPUs/Task=8 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=8,mem=64G,node=1,billing=8,gres/gpu=1 AllocTRES=cpu=8,mem=64G,node=1,billing=8,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=8 MinMemoryNode=64G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep StdErr=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/experiments/attention_scaling/runs/r873f76c0a542/training.log StdIn=/dev/null StdOut=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/experiments/attention_scaling/runs/r873f76c0a542/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:8",
+      "config_path": "experiments/attention_scaling/runs/r873f76c0a542/config.yaml",
+      "config_sha256": "85ce6f99c81562fb34161fefc8d7ba343d051d71626f1e446ccdca8f05e5e169",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "3b8dd3ebb30593d441eb535c8b3140b2dfc3f1dd",
+      "slurm_job_id": "223565",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-21T14:47:48.517150+00:00"
+    }
+  ],
   "attention_kernel": "fixed_basis",
   "config": {
     "path": "experiments/attention_scaling/runs/r873f76c0a542/config.yaml",
     "sha256": "85ce6f99c81562fb34161fefc8d7ba343d051d71626f1e446ccdca8f05e5e169"
   },
+  "frozen_execution_sha256": "aa6f6537cd56d15c782785142d61f505efd87161f959e8171227fc5c35c31f56",
   "home_cluster": "kennel",
   "label": "200m-rbf-n20-unnormalized-headrms-qknorm-dk64-seed0",
+  "log_path": "experiments/attention_scaling/runs/r873f76c0a542/training.log",
   "name": "200m-rbf-n20-unnormalized-headrms-qknorm-dk64-seed0",
   "record_schema_version": 1,
   "run_id": "r873f76c0a542",
-  "status": "submitted",
+  "source_commit": "3b8dd3ebb30593d441eb535c8b3140b2dfc3f1dd",
+  "status": "acceptance",
   "submission": {
     "accepted_gpu_types": [
       "B300",
@@ -18,8 +60,8 @@
     "allocation_hours": 24,
     "gpu_count": 1,
     "partition": "standard",
-    "slurm_job_id": "223558",
-    "source_commit": "b1d022d589fd082fba574373b302a054949ee7e8",
-    "submitted_utc": "2026-10-21T14:36:55.413432+00:00"
+    "slurm_job_id": "223565",
+    "source_commit": "3b8dd3ebb30593d441eb535c8b3140b2dfc3f1dd",
+    "submitted_utc": "2026-10-21T14:45:23.843956+00:00"
   }
 }
