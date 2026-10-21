@@ -1,0 +1,138 @@
+question: Does replacing RoPE with PaTH improve softmax and query-conditioned tanh
+  polynomial attention?
+study: experiments/attention_scaling
+metric: validation perplexity at update 19,074 (each run's validation best)
+runs:
+- run_id: rf1ece7e314b3
+  label: PaTH softmax
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rf1ece7e314b3/config.yaml
+      sha256: 6f859d5f7d493ee131588a6046b5c7210daf8191df2d8bec2070b1545167c7be
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rf1ece7e314b3/metrics.jsonl
+      sha256: 301cf029c3e48ceb9f2a9e42b839158d660a2a38857050e53eb2d8859d2fc9de
+    completion.json:
+      path: experiments/attention_scaling/runs/rf1ece7e314b3/completion.json
+      sha256: ccaf5a9cd6c5da290533ecbfcae69e4afecc6b8638db7db9c648b90217810e78
+    metadata.json:
+      path: experiments/attention_scaling/runs/rf1ece7e314b3/metadata.json
+      sha256: 07d5c70f7e8f97d2a98ec5a6e21926c374e8c0cdbcf13979b611427ef73e74cd
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rf1ece7e314b3/best_validation.json
+      sha256: ae987ab27c456795f8ad961f2af1f3e16e377fa9c33dd9b68ecf4c2b7e73e5ae
+- run_id: rb901a10c4777
+  label: PaTH tanh query-conditioned, m = 2
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rb901a10c4777/config.yaml
+      sha256: 0295f12f678b504c7ea1319b96a64e518ab0fdd5732284804d9a57e4ba22941a
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rb901a10c4777/metrics.jsonl
+      sha256: 1ff3b357d01c801d7687e17e685be9cb02a412eef99378c6202acf4beffae8f7
+    completion.json:
+      path: experiments/attention_scaling/runs/rb901a10c4777/completion.json
+      sha256: 05ffa4072732efd7dd48244cb5edc1cfd64943207830bce27294db6054c64076
+    metadata.json:
+      path: experiments/attention_scaling/runs/rb901a10c4777/metadata.json
+      sha256: 56171366d082c01393a3239b9ffdac87b1d696317e7e05f0135975e63fde6c82
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rb901a10c4777/best_validation.json
+      sha256: c1f4391faeff119ce55d8af90fb3c06357b64d7e7acea5f2cf39a9302accc63c
+- run_id: r4de2b1429c8a
+  label: PaTH tanh query-conditioned, m = 4
+  role: primary
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r4de2b1429c8a/config.yaml
+      sha256: caea845983d6d94bde22f233a2be7dab1cd796fc4e6efaceb2a1070f342e7a97
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r4de2b1429c8a/metrics.jsonl
+      sha256: 620d2c1f17e6efd2135f7cfdbc71edb0182b46b899c13b37515c4c750baedcee
+    completion.json:
+      path: experiments/attention_scaling/runs/r4de2b1429c8a/completion.json
+      sha256: a030a6d9d52a7aff33e59d8f85f670670ab6b56cb4bc7b214c93c990a1f564db
+    metadata.json:
+      path: experiments/attention_scaling/runs/r4de2b1429c8a/metadata.json
+      sha256: ac6f46a7d0033e489b5d2fbc351be3002f1cda6652c136ba13e412530f0c7356
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r4de2b1429c8a/best_validation.json
+      sha256: 3738255f15255f936e8651f6fd933f8ec84aa2ce3f2a99f5a63b3b8ffc7f4511
+- run_id: rdf00da0866a8
+  label: RoPE softmax
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/config.yaml
+      sha256: 7c8b77a7df1efa6a315b3a8b89949d65433cc346157a54f9d52a4392e35ce185
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/metrics.jsonl
+      sha256: 09921898d01e171d68018fa91436de46486eca56f1282ecc54e5b23f530d211f
+    completion.json:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/completion.json
+      sha256: 737901beec2f30725b76393c691f710763754de9de3c4667a31954ddcf75da4f
+    metadata.json:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/metadata.json
+      sha256: 754b2bc56d5b7842548da561bf2e694013f080e9c5d24a2f8657e5979a780801
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/best_validation.json
+      sha256: dff398331d0901d6a929cc3136220a805525c45c0aff1af36f4fdac4f19b17ae
+- run_id: rec520e9303ac
+  label: RoPE tanh query-conditioned, m = 2
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rec520e9303ac/config.yaml
+      sha256: 720ab5cb4934c6608815ac47653d007fba9394396c7698c805dcd5441a9a6b21
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rec520e9303ac/metrics.jsonl
+      sha256: 14b284737b035fd33578974dca7ac8d10ececda00ff806c2ded5347e80079bd1
+    completion.json:
+      path: experiments/attention_scaling/runs/rec520e9303ac/completion.json
+      sha256: 611fbd28324df61d44983ff56cc9b6a9add4f285a26ea3e3979055dda39874d2
+    metadata.json:
+      path: experiments/attention_scaling/runs/rec520e9303ac/metadata.json
+      sha256: a5fa15b4dd793752bcdf2ba35f7981cd1e263cd18a6c5a182950eede68af48b5
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rec520e9303ac/best_validation.json
+      sha256: 90510488f2f6346f6d75223867aafd10f92d7ca2d0d6afadb760087418068d5d
+- run_id: rd4f66b1959d2
+  label: RoPE tanh query-conditioned, m = 4
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rd4f66b1959d2/config.yaml
+      sha256: 67b9c4cf592da9a6c2249eca3cc3c58b04e5c3f77d4467e1d25e5ae9f5537eb6
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rd4f66b1959d2/metrics.jsonl
+      sha256: 01005a86b8ab9c02c775b37802df9d397498a434f5103bce9b0085a0c2b91b24
+    completion.json:
+      path: experiments/attention_scaling/runs/rd4f66b1959d2/completion.json
+      sha256: e29bda6f981d667db4a884b5886d23fe5f024354c5b04653274ce4f5e46a73e6
+    metadata.json:
+      path: experiments/attention_scaling/runs/rd4f66b1959d2/metadata.json
+      sha256: 2248e0a91b1480b82e553994318172de764c71c69ecbc32f4bf69f61ac5282b0
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rd4f66b1959d2/best_validation.json
+      sha256: d6fa2e4d5c58ba5da3e8491ca6824e2326d918166fed511430dd4d2dd8c0ef6b
+- run_id: r8ad66f3912c2
+  label: RoPE exp with head RMSNorm
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r8ad66f3912c2/config.yaml
+      sha256: 4a95643603768f20a11b5e85246109bd3265d546470c2bc549bd33a01d3b434d
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r8ad66f3912c2/metrics.jsonl
+      sha256: 6b5958a9ca2956b7b900e262483860bd47069ff400f01ef3d65ccfe5938ec1e6
+    completion.json:
+      path: experiments/attention_scaling/runs/r8ad66f3912c2/completion.json
+      sha256: 61addc05dd1388c14bcc6b76300cdeb1e9da2e09dad9ced074e639b5cc4f424d
+    metadata.json:
+      path: experiments/attention_scaling/runs/r8ad66f3912c2/metadata.json
+      sha256: 6e1e4e20fd3dff6fa20b315483a7aeeff3f94fa26a570bcec4866e1047ec5c54
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r8ad66f3912c2/best_validation.json
+      sha256: 5507cea2a7070a5434f3621136717b828ea85e0868bc62d2709952b850ba1fb7
