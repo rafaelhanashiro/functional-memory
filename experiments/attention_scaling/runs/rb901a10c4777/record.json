@@ -1,16 +1,6 @@
 {
   "acceptance": {
-    "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
-    "failed_utc": "2026-10-20T20:01:26.175777+00:00",
-    "failure": {
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/path_kernels/experiments/attention_scaling/runs/rb901a10c4777/.runtime/acceptance/B300-1/failure.json",
-      "sha256": "42acc3ac20b966dd6758ffac797a94e48ae8558218cc763fc2e390cef5807803"
-    },
-    "identity": "c99612fc5b68e834581d803d4b23dea060a646b81c552e2cc6ac0d6e9b3e0a65",
     "sha256": "8c8a8c8f2b0773616dae73bac65d45c0a467a1180b0a640261b475fb902591a8",
-    "slurm_job_id": "223172",
-    "stage": "gpu-tests",
-    "status": "failed",
     "summary": {
       "checks": [
         "cpu-tests",

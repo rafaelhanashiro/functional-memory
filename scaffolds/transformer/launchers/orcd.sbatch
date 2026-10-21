@@ -148,6 +148,8 @@ from pathlib import Path
 from scaffolds.records import update_record
 root, path = map(Path, sys.argv[1:])
 summary = json.loads(path.read_text())
+# Replace, not merge into, an earlier attempt's failed acceptance.
+update_record(root, {"acceptance": None})
 update_record(root, {"acceptance": {"summary": summary, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}})
 PY
 run_step "$PYTHON" -m scaffolds.transformer.train "$CONFIG" --wandb-mode "$WANDB_MODE_SETTING"
