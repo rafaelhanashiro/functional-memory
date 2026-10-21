@@ -63,6 +63,77 @@ metrics and execution records stay in each run. At completion retain only each
 validation-best checkpoint and move retained artifacts into Kennel's primary
 checkout before integration, following the repository lifecycle.
 
+## Fixed RBF basis counts
+
+This sweep trains normalized scalar RBF attention with **3, 5, 9, or 20** basis
+functions. Its home cluster is **Kennel**, and its open comparison is tracked in
+[the RBF exploratory topic](../../results/exploratory/rbf_basis/README.md).
+The configurations are allocated below; no production training has started.
+
+| RBF count | Run ID | Status |
+| --- | --- | --- |
+| 3 | `rd3733c250ced` | planned |
+| 5 | `r1b60d90c83e5` | planned |
+| 9 | `r467aea7027c0` | planned |
+| 20 | `r5bbad3217224` | planned |
+
+For every count, centers are evenly spaced on `[-6, 6]`, widths are one, and
+`rbf(c, 1)(s) = exp(-0.5 * (s-c)**2)`. The first three center grids are nested;
+the 20-function grid is a separate uniform grid on the same interval.
+Coefficients are fitted once to `exp(s)` under `N(0, 1)` with 128 quadrature
+nodes and checked with 256 nodes, then frozen in `model.attention_basis`.
+The fitted coefficients, centers, and widths are shared across all layers and
+heads. The Transformer parameters and per-layer/head QK scale train normally.
+All fits pass the quadrature convergence diagnostic and a float32 evaluation
+check; signed kernels retain the scaffold's explicit denominator-failure behavior.
+The chosen Gaussian is a fitting measure, not an enforced score distribution.
+
+The shared recipe is `scaffolds/transformer/configs/base.yaml`: ten layers,
+hidden width 1,024, 16 heads, `d_K = d_V = 64`, 2,048 prediction tokens per
+sequence, global batch 256, seed 0, and 19,074 updates (10,000,269,312 tokens),
+with 400 warmup updates. These runs explicitly use `transformer_reference`
+initialization, QK normalization, normalized attention, and the blocked backend.
+Layer rematerialization and one sequence per device per microbatch limit the
+blocked backend's activation memory while preserving the global optimization
+batch. Throughput and GPU correctness remain to be qualified.
+
+The full frozen configurations are authoritative. To reconstruct a fit for a
+count `n`, use:
+
+```python
+import numpy as np
+from scaffolds.transformer.attention.basis import fit_exp, rbf
+fit = fit_exp([rbf(float(c), 1.0) for c in np.linspace(-6, 6, n)],
+              mean=0.0, std=1.0, quadrature_order=128, check_order=256)
+```
+
+Use the dedicated `worktrees/rbf-sweep` checkout on `codex/rbf-sweep`. Sync
+its B300 environment from the lock as described in [CLUSTERS.md](../../CLUSTERS.md).
+The recipes currently refer to the study's recorded FineWeb manifests under
+`/data/cl/u/rafah/home/datasets/fineweb_12b/`. Those files are not readable by
+`lucastor`; restore access before launching. If dataset locations or the recipe
+must change, allocate fresh executions with the resolved inputs.
+
+After data access and a review of the existing baseline configurations, submit
+from that worktree. Qualify the 20-function configuration first before submitting
+the other counts; the launcher gates production on correctness, a full-recipe
+pilot and timing estimate, and exact checkpoint resumption:
+
+```bash
+RUN=r5bbad3217224
+sbatch --partition=long --time=2-00:00:00 --gres=gpu:b300:1 \
+  --cpus-per-task=8 --mem=64G --job-name="$RUN" \
+  --output="experiments/attention_scaling/runs/$RUN/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.attention_scaling.acceptance \
+  "experiments/attention_scaling/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 B300
+```
+
+Use each of the other IDs in the table for the same command once qualification
+and timing support the remaining runs. Keep the frozen execution set unchanged
+while any job may run or requeue. Baselines are existing executions to be
+identified explicitly; this sweep allocates only the four RBF runs.
+
 ## Runs and comparisons
 
 Each `runs/<run_id>/` holds one complete recipe and execution. Settings are fields
