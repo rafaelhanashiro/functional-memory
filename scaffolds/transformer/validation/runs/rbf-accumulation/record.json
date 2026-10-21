@@ -59,8 +59,8 @@
       64
     ],
     "production_microbatch_recommendation": null,
-    "scheduler_reason": "QOSMaxGRESPerUser",
-    "status": "pending",
+    "slurm_node": "dogo",
+    "status": "running",
     "submission": {
       "command": [
         "sbatch",
@@ -83,5 +83,5 @@
   "home_cluster": "kennel",
   "schema_version": 1,
   "source_commit": "b3c8e372552a8c737bce2f9563b5e7ab05086040",
-  "status": "cpu_passed_gpu_pending"
+  "status": "cpu_passed_gpu_running"
 }
