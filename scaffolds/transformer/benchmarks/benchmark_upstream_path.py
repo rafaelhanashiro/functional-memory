@@ -86,7 +86,7 @@ def main():
         print(f"FLA parallel_path_attn {mode}: {report[mode]['median_ms']:.3f} ms", flush=True)
     parity = operands(batch=2, length=2048, heads=4, width=64, seed=1)
     output, gradients = run(torch, parallel_path_attn, tensors(torch, parity), True)
-    results = {f"fla_{name}": value.float().cpu().numpy() for name, value in
+    results = {f"fla_{name}": value.detach().float().cpu().numpy() for name, value in
                zip(("output", "dq", "dk", "dv", "dw", "dbeta"), (output, *gradients))}
     args.parity.parent.mkdir(parents=True, exist_ok=True)
     np.savez(args.parity, **parity, **results)

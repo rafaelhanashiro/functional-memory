@@ -33,12 +33,26 @@ mkdir -p "$DIRECTORY" "$LOGS"
 nvidia-smi --query-gpu=name,driver_version,pci.bus_id --format=csv,noheader
 status=0
 if [[ "$STEP" == tests ]]; then
+  DESELECT=()
+  if [[ "$GPU_TYPE" == B300 ]]; then
+    # FLA's GDN kernel crashes at width 128 on B300 and poisons the process (CLUSTERS.md);
+    # GDN at width 128 or more is not qualified there.
+    GDN=scaffolds/transformer/tests/test_gated_deltanet_kernel.py
+    for precision in float32-0.005 bfloat16-0.02; do
+      for width in 128 256; do
+        DESELECT+=(--deselect "$GDN::test_fused_output_and_all_gradients_match_the_recurrence[$precision-$width]"
+                   --deselect "$GDN::test_independent_fused_output_and_all_gradients_match_recurrence[$precision-$width-256]")
+      done
+    done
+  fi
   for suite in path:test_path_attention_fused.py gdn:"test_gated_deltanet_kernel.py test_gdn_tanh_write_kernel.py"; do
     name="${suite%%:*}"
     files=()
     for file in ${suite#*:}; do files+=("scaffolds/transformer/tests/$file"); done
+    extra=()
+    if [[ "$name" == gdn ]]; then extra=("${DESELECT[@]}"); fi
     "$PYTHON" -m pytest -c scaffolds/transformer/pyproject.toml -q --import-mode=importlib -m gpu "${files[@]}" \
-      --junitxml="$LOGS/$name-tests.xml" || status=$?
+      "${extra[@]}" --junitxml="$LOGS/$name-tests.xml" || status=$?
   done
   "$PYTHON" -m scaffolds.transformer.validation.compare_gdn_port --commit "$GDN_REFERENCE_COMMIT" \
     --output "$DIRECTORY/gdn-port.json" || status=$?
