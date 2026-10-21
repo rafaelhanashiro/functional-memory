@@ -479,6 +479,19 @@ Mosaic runs query–key once per order and rounds each order's output to BF16 be
 which corrupted gradients at m = 1. They launch in that order with the command above,
 `PARTITION=standard` and `GPUS=1`.
 
+### Factorially scaled coefficients
+
+Learned coefficients raise gradient clipping from 7% of updates (exp with head RMSNorm) to
+26% (static m = 8) and 57% (static m = 12): each coefficient's gradient carries `s^r`.
+Five runs divide the stored input-independent coefficient by `r!`
+(`model.attention_coefficient_scale: factorial`), each from the query-only recipe
+`rccf19c31669d` apart from the listed settings, on the Mosaic kernels at global microbatch 32
+on one GPU: static m = 12 (`r6c2b0b793143`), query-only m = 12 with both the bias and the
+amplitude scaled (`r5b013b1a762b`), static m = 8 (`rc9d269a084ce`), query-only m = 8 with both
+scaled (`r50be104c2a9e`), and fixed unnormalized Taylor with head RMSNorm at m = 12
+(`ra2e7161fdf4a`) and m = 8 (`r4836c6eba58f`), the start of the scaled runs with nothing learned. They launch with the
+command above, `PARTITION=standard,long` and `GPUS=1`, ahead of the query–key runs.
+
 ### PaTH position encoding, softmax and tanh m = 2, 4
 
 Three single-B300 runs replace RoPE with PaTH (`positional_encoding: path`, see the

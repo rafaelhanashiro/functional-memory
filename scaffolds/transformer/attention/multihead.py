@@ -53,6 +53,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_coefficient_conditioning=config.attention_coefficient_conditioning,
         attention_coefficient_activation=config.attention_coefficient_activation,
         attention_coefficient_amplitude_scale=config.attention_coefficient_amplitude_scale,
+        attention_coefficient_scale=config.attention_coefficient_scale,
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
@@ -75,6 +76,7 @@ class MultiHeadAttention(nnx.Module):
         attention_coefficient_activation: str = "identity",
         positional_encoding: str = "rope",
         attention_coefficient_amplitude_scale: str = "none",
+        attention_coefficient_scale: str = "none",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path"):
@@ -156,6 +158,9 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("An amplitude scale applies to tanh coefficients only")
         self.attention_coefficient_activation = attention_coefficient_activation
         self.attention_coefficient_amplitude_scale = attention_coefficient_amplitude_scale
+        if attention_coefficient_scale not in ("none", "factorial"):
+            raise ValueError(f"Unknown attention coefficient scale: {attention_coefficient_scale}")
+        self.attention_coefficient_scale = attention_coefficient_scale
         self.hidden_size = hidden_size
         self.num_heads = num_heads
         self.num_kv_heads = num_kv_heads
@@ -201,6 +206,15 @@ class MultiHeadAttention(nnx.Module):
         query_tanh_bias = parameters.pop("query_polynomial_tanh_bias", None)
         key_kernel = parameters.pop("key_polynomial_kernel", None)
         key_amplitude = parameters.pop("key_polynomial_amplitude", None)
+        if self.attention_coefficient_scale == "factorial":
+            from scaffolds.transformer.attention.parameters import factorial_scale
+
+            if (query_bias is None) == ("polynomial_coefficients" not in parameters):
+                raise ValueError("A coefficient scale needs exactly one learned coefficient array")
+            if query_bias is not None:
+                query_bias = factorial_scale(query_bias)
+            else:
+                parameters["polynomial_coefficients"] = factorial_scale(parameters["polynomial_coefficients"])
         if self.attention_coefficient_conditioning in ("query", "query_key"):
             from scaffolds.transformer.attention.input_dependent import project_coefficients, project_key_factors
 

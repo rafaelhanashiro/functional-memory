@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r50be104c2a9e/config.yaml",
+    "sha256": "e3ada186e7a55567059c13cade5aa035f43af5f24b8ebf7411cdaf781ba54ec6"
+  },
+  "label": "200m-qk-m008-query-tanh-a0-w0p03125-factorial-coefficients-and-amplitude-head-rms-reference-warmup400-seed0",
+  "name": "200m-qk-m008-query-tanh-a0-w0p03125-factorial-coefficients-and-amplitude-head-rms-reference-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r50be104c2a9e",
+  "status": "planned"
+}

@@ -1,6 +1,7 @@
 """Model-level attention parameter ownership, independent of layer execution."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+import math
 from typing import Literal
 import zlib
 
@@ -23,6 +24,16 @@ class AttentionParameterSpec:
     # Independent N(0, initial_std^2) noise added to every stored entry, drawn from the
     # mechanism stream so the backbone's initialization is unchanged.
     initial_std: float = 0.0
+
+
+# The input-independent coefficient arrays that ``attention_coefficient_scale`` stores scaled.
+SCALED_COEFFICIENTS = ("polynomial_coefficients", "query_polynomial_bias")
+
+
+def factorial_scale(values: jax.Array) -> jax.Array:
+    """Divide order r (the last axis) by r!: the coefficients a stored c~_r represents."""
+    factorials = jnp.asarray([math.factorial(order) for order in range(values.shape[-1])], jnp.float32)
+    return values.astype(jnp.float32) / factorials
 
 
 def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
@@ -60,6 +71,11 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
 
                 specs = parameter_specs(degree=config.attention_degree, sharing=config.attention_coefficient_sharing,
                                         initialization=initialization)
+        if getattr(config, "attention_coefficient_scale", "none") == "factorial":
+            # Store r! times each starting coefficient, so the represented start is unchanged.
+            specs = tuple(replace(spec, initial=tuple(value * math.factorial(order)
+                                                      for order, value in enumerate(spec.initial)))
+                          if spec.name in SCALED_COEFFICIENTS else spec for spec in specs)
     elif config.quadratic_mode == "fixed":
         specs = ()
     else:

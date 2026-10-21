@@ -102,6 +102,10 @@ class ModelConfig:
     # "factorial" divides the tanh amplitude of order r by r!, c_r = b_r + (a_r/r!) tanh(w_r^T x_t),
     # so under Adam's unit-scale steps order r's modulation moves at lr/r!, matching b_r = 1/r!.
     attention_coefficient_amplitude_scale: Literal["none", "factorial"] = "none"
+    # "factorial" stores order r's input-independent coefficient (static c_r, or the query
+    # bias b_r) as r! times its value, c_r = c~_r / r!, so under Adam it moves at lr/r!
+    # and its gradient carries s^r / r! rather than s^r. It starts at the same values.
+    attention_coefficient_scale: Literal["none", "factorial"] = "none"
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
     # (even m, row-normalized only), so the kernel is nonnegative by construction;
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
@@ -333,6 +337,15 @@ class ModelConfig:
             raise ValueError(f"Unknown attention coefficient amplitude scale: {self.attention_coefficient_amplitude_scale}")
         if self.attention_coefficient_amplitude_scale != "none" and self.attention_coefficient_activation != "tanh":
             raise ValueError("An amplitude scale applies to tanh coefficients only")
+        if self.attention_coefficient_scale not in ("none", "factorial"):
+            raise ValueError(f"Unknown attention coefficient scale: {self.attention_coefficient_scale}")
+        if self.attention_coefficient_scale != "none" and (
+                self.attention_coefficients != "learned" or self.attention_normalization
+                or self.attention_coefficient_parameterization != "direct"
+                or (self.attention_coefficient_conditioning != "static"
+                    and self.attention_coefficient_activation != "tanh")):
+            raise ValueError("A coefficient scale applies to learned direct unnormalized coefficients, "
+                             "static or tanh query-conditioned")
         if self.attention_coefficients == "learned":
             if self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed":
                 raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")

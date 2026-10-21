@@ -261,6 +261,12 @@ effective amplitude `a_r/r!`, `c_r = b_r + (a_r/r!) tanh(w_r^T x_t)`, with no ne
 parameters. Because Adam's step is invariant to the gradient's scale, order `r`'s
 modulation then moves at `lr/r!`, in proportion to its Taylor bias. Diagnostics report
 the stored `a_r` and the effective amplitude.
+`attention_coefficient_scale: factorial` does the same for the input-independent part of
+learned direct unnormalized coefficients, static `c_r` or the tanh query bias `b_r`: the
+stored `c~_r` starts at `r!` times the Taylor value (so at 1) and attention uses
+`c~_r / r!`. Order `r` then moves at `lr/r!`, its gradient carries `s^r / r!` instead of
+`s^r`, and the coefficient penalty is rejected. Diagnostics report stored and represented
+values (`effective` coefficients, `effective_projection_bias`).
 `attention_coefficient_conditioning: query_key` (tanh only) multiplies each key's
 degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i` with
 `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` from the key token's activation

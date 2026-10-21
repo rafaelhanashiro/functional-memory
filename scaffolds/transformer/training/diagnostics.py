@@ -247,6 +247,12 @@ def attention_identity(config) -> dict:
         )
     if hasattr(config, "_attention_backend_resume_request"):
         identity["attention_backend_resume_requested"] = config._attention_backend_resume_request
+    if getattr(config.model, "attention_coefficient_scale", "none") != "none":
+        identity.update(
+            attention_coefficient_scale=config.model.attention_coefficient_scale,
+            attention_coefficient_scale_formula=(
+                "stored c~_r (static coefficients or query bias b) start at r! times the represented "
+                "value; attention uses c_r = c~_r / r!"))
     if is_signed_kernel(config.model):
         identity["attention_signed"] = True
     if learned_polynomial:
@@ -473,6 +479,8 @@ def polynomial_coefficient_report(params, config) -> dict:
         raw = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
         raw_names = [f"c{order}" for order in range(raw.shape[-1])]
         effective = raw
+        if getattr(config.model, "attention_coefficient_scale", "none") == "factorial":
+            effective = raw / np.asarray([math.factorial(order) for order in range(raw.shape[-1])], np.float64)
     if has_rational_kernel(config.model):
         from scaffolds.transformer.attention.rational_polynomial import denominator_constant, denominator_degree
 
@@ -492,7 +500,7 @@ def polynomial_coefficient_report(params, config) -> dict:
 
 
 
-def query_coefficient_report(params, raw_layers, *, amplitude_scale="none") -> dict:
+def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coefficient_scale="none") -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
@@ -528,6 +536,9 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none") -> d
             factorials = np.asarray([math.factorial(r) for r in range(amplitude.shape[-1])], dtype=np.float64)
             report.update(modulation_amplitude_scale="1/r!",
                           effective_modulation_amplitude=_serializable(amplitude / factorials))
+    if coefficient_scale == "factorial":
+        factorials = np.asarray([math.factorial(r) for r in range(bias.shape[-1])], dtype=np.float64)
+        report.update(projection_bias_scale="1/r!", effective_projection_bias=_serializable(bias / factorials))
     if inner_bias is not None:
         report["tanh_bias"] = _serializable(inner_bias)
     if key_amplitude is not None:
@@ -660,7 +671,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
             issues.append("Nonfinite quadratic coefficients")
     elif config.model.attention_coefficient_conditioning in ("query", "query_key"):
         coefficient_report = query_coefficient_report(
-            params, raw_layers, amplitude_scale=config.model.attention_coefficient_amplitude_scale)
+            params, raw_layers, amplitude_scale=config.model.attention_coefficient_amplitude_scale,
+            coefficient_scale=config.model.attention_coefficient_scale)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
     elif has_learned_polynomial(config.model):

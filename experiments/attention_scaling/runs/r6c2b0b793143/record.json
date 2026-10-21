@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r6c2b0b793143/config.yaml",
+    "sha256": "e1768ff9a4cba64059601fb1342f3e67e94fbbe63e8860fce31b16e7ac51f7f5"
+  },
+  "label": "200m-qk-m012-unnormalized-head-rmsnorm-factorial-coefficients-transformer-init-warmup400-seed0",
+  "name": "200m-qk-m012-unnormalized-head-rmsnorm-factorial-coefficients-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r6c2b0b793143",
+  "status": "planned"
+}

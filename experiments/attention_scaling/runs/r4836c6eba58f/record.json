@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r4836c6eba58f/config.yaml",
+    "sha256": "be81db358fc36f5a272744a3d256b64d31564f994ef4be03ab2b9eb6f812f5d2"
+  },
+  "label": "200m-qk-m008-taylor-unnormalized-head-rmsnorm-transformer-init-warmup400-seed0",
+  "name": "200m-qk-m008-taylor-unnormalized-head-rmsnorm-transformer-init-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r4836c6eba58f",
+  "status": "planned"
+}
