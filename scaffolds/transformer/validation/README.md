@@ -1547,7 +1547,7 @@ the JAX implementation `attention/path.py` (`blocked`). Records: `runs/path-kern
 | GPU | Job, source | Fused PaTH GPU tests | GDN GPU tests | CPU |
 | --- | --- | ---: | ---: | --- |
 | H100 SXM (`dogo`, `.venv`) | 222686, `e39f466` | 35 passed | 48 passed | full suite passed |
-| B300 (`akita`, `.venv-cuda13`) | 223341 acceptance, `43a372a` | 35 passed (of 89 selected) | pending (223342) | acceptance CPU stages passed |
+| B300 (`akita`, `.venv-cuda13`) | 223582, `6db92b3` | 35 passed | 40 passed (widths 128 and 256 deselected) | full suite passed (`6db92b3`) |
 
 The GPU tests compare outputs and every gradient (dq, dk, dv, dw, dbeta, dc) with the
 FP32-HIGHEST JAX implementation in BF16 at the production context (T = 2048, width 64) for
@@ -1557,7 +1557,9 @@ production batch, and the model's dispatch. FLA's `parallel_path_bwd_dq` kernel,
 and in the fork, fails to launch (`CUDA_ERROR_LAUNCH_FAILED`) at width 128 on B300, so the
 fused path rejects width 128 on Blackwell and `auto` resolves it to `blocked`. CPU tests
 run the same launches in Triton's interpreter in FP32 against the JAX implementation,
-including FLA's A100- and Ada-class tile branches.
+including FLA's A100- and Ada-class tile branches. FLA's GDN kernel crashes at width 128 in
+FP32 on B300 and poisons the process ([CLUSTERS.md](../../../CLUSTERS.md)), so GDN cases at
+widths 128 and 256 are not run there.
 
 ### Accuracy
 
@@ -1571,9 +1573,10 @@ scores `8 cos(q, k)` (H100, job 223344):
 | m = 1-4 | fused | 2.5-2.7e-3 | 5.4-5.7e-3 | 2.6-2.9e-3 | 8.2-8.7e-3 | 1.2-3.6e-3 |
 | | JAX | 1.7e-3 | 1.8e-3 | 1.7e-3 | 1.0-1.1e-3 | 1.7-4.0e-4 |
 
-FLA rounds intermediates to BF16 and stores dw and dbeta in BF16. Outputs, dq, and dc
-repeat bitwise over 10 runs at the production batch; dk, dv, dw, and dbeta, summed with
-FP32 atomics, vary by up to 2e-5, 7e-6, and 1e-3 (relative L2).
+B300 (job 223581) matches these to two digits. FLA rounds intermediates to BF16 and
+stores dw and dbeta in BF16. Outputs, dq, and dc repeat bitwise over 10 runs at the
+production batch on both GPUs; dk, dv, dw, and dbeta, summed with FP32 atomics, vary by up
+to 4e-5, 2e-5, and 1e-3 (relative L2).
 
 ### Speed
 
@@ -1584,6 +1587,22 @@ Forward and backward per layer, B = 32, T = 2048, 16 heads, width 64, H100 SXM (
 | Softmax | 17.8 ms | 119.3 ms | 6.7x | 3.1 ms (cuDNN) |
 | m = 2 | 14.4 ms | 114.5 ms | 7.9x | 4.0 ms (Mosaic) |
 | m = 4 | 15.9 ms | 112.2 ms | 7.1x | 4.7 ms (Mosaic) |
+
+B300 (job 223581):
+
+| Kernel | Fused | JAX | Speedup | RoPE-free reference |
+| --- | ---: | ---: | ---: | ---: |
+| Softmax | 13.7 ms | 65.2 ms | 4.7x | 2.3 ms (cuDNN) |
+| m = 2 | 13.7 ms | 61.3 ms | 4.5x | 3.6 ms (Mosaic) |
+| m = 4 | 15.0 ms | 60.0 ms | 4.0x | 4.6 ms (Mosaic) |
+
+FLA's own `parallel_path_attn` in PyTorch (`benchmark_upstream_path.py`, CUDA 13, torch
+2.9.1, Triton 3.7.1, same B300 job) takes 3.60 ms forward and 13.34 ms forward and backward
+for softmax, against the bridge's 4.20 ms and 13.74 ms. On the same inputs (B = 2, 4 heads)
+the two agree to relative L2 2e-4 (output), 3e-4 to 1.2e-3 (dq, dk, dv), and 3.5e-3 (dw,
+dbeta), below either's error against FP32, but not bitwise: dk, dv, dw, and dbeta use
+atomics, and the outputs differ by up to 1e-3 on values up to 4 (cause not isolated; each
+runtime autotunes the UT-transform kernels independently).
 
 A full update of the 200M recipe on one GPU: 3.0-3.1 s fused and 11.9 s JAX on H100 SXM
 (pilots, microbatch 16); 2.16-2.32 s fused and 5.9-6.2 s JAX on B300 (the m = 2 and m = 4
@@ -1608,7 +1627,8 @@ The fused runs differ from the JAX run by -0.015 to +0.019, and from each other 
 `compare_gdn_port.py` lowers the GDN forward and backward (tied and independent gates,
 BF16 and FP32) with the bridge before (`7fb44dc`) and after the move onto `triton_port`:
 all 10 Triton custom calls per case are identical, including their compiled kernels, and
-outputs and gradients are bitwise equal (`runs/path-kernels/h100/gdn-port.json`).
+outputs and gradients are bitwise equal on H100 and B300
+(`runs/path-kernels/<gpu>/gdn-port.json`).
 
 ### Reproduction
 
@@ -1622,6 +1642,9 @@ argument is `tests` (fused PaTH and GDN GPU tests and the GDN launch comparison)
 sbatch --partition=debug --nodelist=dogo --gres=gpu:h100:1 \
   --output=scaffolds/transformer/validation/logs/path-kernels/%j.log \
   scaffolds/transformer/validation/qualify_path_kernels.sbatch "$(git rev-parse HEAD)" H100 tests
+sbatch --partition=long --nodelist=akita --gres=gpu:b300:1 \
+  --output=scaffolds/transformer/validation/logs/path-kernels/%j.log \
+  scaffolds/transformer/validation/qualify_path_kernels.sbatch "$(git rev-parse HEAD)" B300 benchmark
 sbatch --partition=long --nodelist=dogo --gres=gpu:h100:1 \
   --output=scaffolds/transformer/validation/logs/path-pilot/%j.log \
   scaffolds/transformer/validation/pilot_path.sbatch "$(git rev-parse HEAD)" H100 rb901a10c4777 fused 1000 "" 16

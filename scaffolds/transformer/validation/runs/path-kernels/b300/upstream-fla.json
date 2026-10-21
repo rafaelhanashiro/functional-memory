@@ -1,0 +1,39 @@
+{
+  "created_utc": "2026-10-21T16:16:52.900852+00:00",
+  "device": "NVIDIA B300 SXM6 AC",
+  "forward": {
+    "median_ms": 3.5967519506812096,
+    "p10_ms": 3.581864107400179,
+    "p90_ms": 3.60792875289917
+  },
+  "forward_backward": {
+    "median_ms": 13.339720200747252,
+    "p10_ms": 13.326220121234655,
+    "p90_ms": 13.362621888518333
+  },
+  "node": "akita",
+  "packages": {
+    "flash-linear-attention": "0.6.0",
+    "torch": "2.9.1+cu130",
+    "triton": "3.7.1"
+  },
+  "shape": {
+    "batch": 32,
+    "heads": 16,
+    "length": 2048,
+    "width": 64
+  },
+  "slurm_job_id": "223581",
+  "timing": {
+    "iterations": 20,
+    "warmup": 3
+  },
+  "upstream": {
+    "url": "https://github.com/fla-org/flash-linear-attention.git",
+    "vcs_info": {
+      "commit_id": "516143e31fce09925e6c39ac37148444bad176c4",
+      "requested_revision": "516143e31fce09925e6c39ac37148444bad176c4",
+      "vcs": "git"
+    }
+  }
+}
