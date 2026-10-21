@@ -612,6 +612,20 @@ it cannot disable these checks.
 
 ## Environment and training API
 
+`train.micro_batch_size` is the global microbatch, divided evenly across GPUs.
+Each optimizer update consumes `data.batch_size / train.micro_batch_size`
+microbatches. Single-GPU accumulation uses a compiled `lax.scan`; it averages
+the FP32 gradients before clipping and applies the optimizer once per global
+batch, preserving the supplied RNG for each microbatch.
+
+To measure a microbatch size on one allocated GPU, run
+`python -m scaffolds.transformer.benchmarks.benchmark_accumulation --config RECIPE
+--micro-batch-size 8 --output REPORT.json`. Use a fresh process per size;
+`--implementation python` supplies the former Python-loop baseline.
+The report includes synchronized complete-update timings and allocator peaks
+using resident synthetic tokens. Data loading, evaluation and checkpoint costs
+are excluded, so these timings alone are not an end-to-end training estimate.
+
 Each worktree syncs its own environment from this scaffold's lock; hardlinks share
 package files with the uv cache, so an additional environment costs almost no disk:
 
