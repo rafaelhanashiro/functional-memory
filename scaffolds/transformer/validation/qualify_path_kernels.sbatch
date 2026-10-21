@@ -36,8 +36,9 @@ if [[ "$STEP" == tests ]]; then
   DESELECT=()
   if [[ "$GPU_TYPE" == B300 ]]; then
     # FLA's GDN kernel crashes at width 128 on B300 and poisons the process (CLUSTERS.md);
-    # GDN at width 128 or more is not qualified there.
-    GDN=scaffolds/transformer/tests/test_gated_deltanet_kernel.py
+    # GDN at width 128 or more is not qualified there. Node IDs are relative to the
+    # pytest rootdir, scaffolds/transformer.
+    GDN=tests/test_gated_deltanet_kernel.py
     for precision in float32-0.005 bfloat16-0.02; do
       for width in 128 256; do
         DESELECT+=(--deselect "$GDN::test_fused_output_and_all_gradients_match_the_recurrence[$precision-$width]"
