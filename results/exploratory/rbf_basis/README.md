@@ -26,7 +26,9 @@ been selected, and no new baseline training is allocated.
 ## Findings and open decision
 
 No language-model measurements are available yet. The runs are planned;
-readable FineWeb data and GPU qualification are outstanding. The initial
+readable FineWeb data and full-recipe GPU acceptance are outstanding. B300
+operator checks and timings are recorded in the scaffold validation record
+linked from the study; they are not language-model results. The initial
 comparison will report validation NLL against training tokens, throughput,
 numerical failures, and the observed score ranges relative to the fitting
 measure. Failed and incomplete coordinates will remain visible.

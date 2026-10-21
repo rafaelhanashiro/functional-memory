@@ -1,0 +1,240 @@
+{
+  "cases": [
+    {
+      "basis_count": 3,
+      "benchmark": {
+        "batch": 1,
+        "compile_and_first_seconds": 0.8451144266873598,
+        "dtype": "bfloat16",
+        "forward_backward_seconds": [
+          0.002926434390246868,
+          0.0029795998707413673,
+          0.0030190637335181236,
+          0.0030393097549676895,
+          0.0029772697016596794
+        ],
+        "heads": 16,
+        "length": 2048,
+        "median_seconds": 0.0029795998707413673,
+        "qk_head_dim": 64,
+        "scope": "one attention layer, forward plus Q/K/V backward; excludes model and optimizer",
+        "value_head_dim": 64
+      },
+      "checks": [
+        {
+          "causality": "passed",
+          "dtype": "float32",
+          "heads": 2,
+          "length": 17,
+          "relative_errors": {
+            "dk": 0.0008972226452078695,
+            "dq": 0.0008151758098685024,
+            "dv": 0.0002855232641165725,
+            "output": 0.00030673083271292776
+          },
+          "relative_tolerance": 0.001
+        },
+        {
+          "causality": "passed",
+          "dtype": "bfloat16",
+          "heads": 2,
+          "length": 17,
+          "relative_errors": {
+            "dk": 0.0016894855000270457,
+            "dq": 0.0016222703202519913,
+            "dv": 0.0016304750887468364,
+            "output": 0.0013943357452390575
+          },
+          "relative_tolerance": 0.04
+        }
+      ],
+      "config": "experiments/attention_scaling/runs/rd3733c250ced/config.yaml",
+      "config_sha256": "2a51b805b8eb5203c667c6cedd4fd50b8717cbeae44f0e2ee5781268abe3460b",
+      "normalization": true
+    },
+    {
+      "basis_count": 5,
+      "benchmark": {
+        "batch": 1,
+        "compile_and_first_seconds": 0.8310126103460789,
+        "dtype": "bfloat16",
+        "forward_backward_seconds": [
+          0.003239477053284645,
+          0.0031057083979249,
+          0.0032307924702763557,
+          0.0030905716121196747,
+          0.0031597139313817024
+        ],
+        "heads": 16,
+        "length": 2048,
+        "median_seconds": 0.0031597139313817024,
+        "qk_head_dim": 64,
+        "scope": "one attention layer, forward plus Q/K/V backward; excludes model and optimizer",
+        "value_head_dim": 64
+      },
+      "checks": [
+        {
+          "causality": "passed",
+          "dtype": "float32",
+          "heads": 2,
+          "length": 17,
+          "relative_errors": {
+            "dk": 0.0004923139186257648,
+            "dq": 0.0004887417077161865,
+            "dv": 0.00031062804983874616,
+            "output": 0.00034069489868742846
+          },
+          "relative_tolerance": 0.001
+        },
+        {
+          "causality": "passed",
+          "dtype": "bfloat16",
+          "heads": 2,
+          "length": 17,
+          "relative_errors": {
+            "dk": 0.0017180003989343956,
+            "dq": 0.0016130087105772264,
+            "dv": 0.0016069892698086182,
+            "output": 0.001430521634216832
+          },
+          "relative_tolerance": 0.04
+        }
+      ],
+      "config": "experiments/attention_scaling/runs/r1b60d90c83e5/config.yaml",
+      "config_sha256": "c44ef0600d03c06ecf4caabf20838528ddc02fca0c4724aa529acbd4ddb0eab7",
+      "normalization": true
+    },
+    {
+      "basis_count": 9,
+      "benchmark": {
+        "batch": 1,
+        "compile_and_first_seconds": 0.8685541991144419,
+        "dtype": "bfloat16",
+        "forward_backward_seconds": [
+          0.003552014008164406,
+          0.00353208277374506,
+          0.0034885499626398087,
+          0.003486787900328636,
+          0.0034849317744374275
+        ],
+        "heads": 16,
+        "length": 2048,
+        "median_seconds": 0.0034885499626398087,
+        "qk_head_dim": 64,
+        "scope": "one attention layer, forward plus Q/K/V backward; excludes model and optimizer",
+        "value_head_dim": 64
+      },
+      "checks": [
+        {
+          "causality": "passed",
+          "dtype": "float32",
+          "heads": 2,
+          "length": 17,
+          "relative_errors": {
+            "dk": 0.000521038581767559,
+            "dq": 0.0005085054053569217,
+            "dv": 0.0003002053193716445,
+            "output": 0.00032746239733829886
+          },
+          "relative_tolerance": 0.001
+        },
+        {
+          "causality": "passed",
+          "dtype": "bfloat16",
+          "heads": 2,
+          "length": 17,
+          "relative_errors": {
+            "dk": 0.0016915683606057706,
+            "dq": 0.0016746770512300947,
+            "dv": 0.0017512758865018485,
+            "output": 0.0014495944660624913
+          },
+          "relative_tolerance": 0.04
+        }
+      ],
+      "config": "experiments/attention_scaling/runs/r467aea7027c0/config.yaml",
+      "config_sha256": "c298a2ae1d8baa9b2875fae769c497548d00669c5ccd8cad2a84cd204ab54180",
+      "normalization": true
+    },
+    {
+      "basis_count": 20,
+      "benchmark": {
+        "batch": 1,
+        "compile_and_first_seconds": 0.98368273768574,
+        "dtype": "bfloat16",
+        "forward_backward_seconds": [
+          0.004498235881328583,
+          0.004536637105047703,
+          0.004447587765753269,
+          0.0043884338811039925,
+          0.004491284489631653
+        ],
+        "heads": 16,
+        "length": 2048,
+        "median_seconds": 0.004491284489631653,
+        "qk_head_dim": 64,
+        "scope": "one attention layer, forward plus Q/K/V backward; excludes model and optimizer",
+        "value_head_dim": 64
+      },
+      "checks": [
+        {
+          "causality": "passed",
+          "dtype": "float32",
+          "heads": 2,
+          "length": 17,
+          "relative_errors": {
+            "dk": 0.0005305686558498948,
+            "dq": 0.0005382972975318286,
+            "dv": 0.0003404219409510368,
+            "output": 0.0003695247947249066
+          },
+          "relative_tolerance": 0.001
+        },
+        {
+          "causality": "passed",
+          "dtype": "bfloat16",
+          "heads": 2,
+          "length": 17,
+          "relative_errors": {
+            "dk": 0.001666674671272606,
+            "dq": 0.0016050363001288452,
+            "dv": 0.0017235359146665094,
+            "output": 0.0014430286608505924
+          },
+          "relative_tolerance": 0.04
+        }
+      ],
+      "config": "experiments/attention_scaling/runs/r5bbad3217224/config.yaml",
+      "config_sha256": "9894428a97f7179be585c2b46e593455a16b27f6ed63b22f3f2cb1b5b9356dda",
+      "normalization": true
+    }
+  ],
+  "cublas_runtime_version": 130202,
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "device_kind": "NVIDIA B300 SXM6 AC",
+  "finished_utc": "2026-10-21T12:37:32.000055+00:00",
+  "format": "shared-transformer-rbf-qualification",
+  "home_cluster": "kennel",
+  "jax_version": "0.10.0",
+  "log": {
+    "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-basis-223516.log",
+    "sha256": "c03eb4e831c2dc6fef664b95c2b384a5c3751b8b5cf645948c31834800d9d0e4",
+    "size_bytes": 4037
+  },
+  "module_sha256": "1d5327d539fd67de425f8632aaf4ca84d2a9137af8622347d6d5b6a7bbee384d",
+  "platform": "gpu",
+  "runtime": {
+    "CUDA_HOME": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+    "LD_LIBRARY_PATH": null,
+    "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+    "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "slurm_job_id": "223516",
+  "slurm_node": "akita",
+  "source_commit": "6d37d6098c37dce8c2fd10a393ee7216b7a78e2e",
+  "started_utc": "2026-10-21T12:37:14.034523+00:00",
+  "status": "passed",
+  "version": 1
+}

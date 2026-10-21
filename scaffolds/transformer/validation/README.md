@@ -11,6 +11,56 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Fixed scalar RBF bases
+
+On 2026-10-21, Slurm job `223516` on one B300 (`akita`) passed all eight
+RBF accuracy cases (counts 3, 5, 9, 20; FP32 and BF16), using source
+`6d37d6098c37dce8c2fd10a393ee7216b7a78e2e` and the locked CUDA 13 environment with
+loaded cuBLAS 13.2.2. The [qualification record](runs/rbf-basis-b300/record.json)
+pins the exact frozen configurations, source, dependency lock, runtime, successful
+log, errors, and timings. The log is retained under the primary checkout at
+`/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/`.
+
+The checks use synthetic inputs and compare causal attention outputs and all
+Q/K/V derivatives against independent NumPy FP64 analytic formulas, including
+non-divisible sequence lengths and future-value masking. The largest relative
+error across outputs and gradients was 0.000897 for FP32 and
+0.00175 for BF16 (thresholds `1e-3` and `4e-2`, respectively).
+These are sampled operator checks, not end-to-end model accuracy measurements.
+
+BF16 forward plus Q/K/V backward timing uses one sequence of 2,048 tokens,
+16 heads and `d_K = d_V = 64`, with five synchronized measurements after warmup:
+
+| RBF count | Median attention forward + backward (ms) |
+| --- | --- |
+| 3 | 2.980 |
+| 5 | 3.160 |
+| 9 | 3.489 |
+| 20 | 4.491 |
+
+The timings cover one attention operator and exclude projections, the rest of
+the model, optimizer, and data loading. Outputs and gradients at this shape were
+finite. Full-recipe training acceptance, data integrity, and checkpoint resumption
+on the GPU remain prerequisites for production; the tiny CPU training/resume check
+does not establish those GPU properties.
+
+Submit from a worktree with its own locked GPU environment and committed source:
+
+```bash
+sbatch --job-name=rbf-qualification \
+  --output='scaffolds/transformer/validation/logs/rbf-basis-%j.log' \
+  scaffolds/transformer/validation/qualify_basis.sbatch "$(git rev-parse HEAD)" \
+  scaffolds/transformer/validation/runs/rbf-basis-b300/record.json \
+  experiments/attention_scaling/runs/rd3733c250ced/config.yaml \
+  experiments/attention_scaling/runs/r1b60d90c83e5/config.yaml \
+  experiments/attention_scaling/runs/r467aea7027c0/config.yaml \
+  experiments/attention_scaling/runs/r5bbad3217224/config.yaml
+```
+
+The qualification launcher clears inherited `LD_LIBRARY_PATH` so the locked
+wheel libraries are selected, and rejects loaded cuBLAS below 13.2 on B300.
+No dataset is opened and no language-model run record is changed.
+
 ### Query-dependent tanh polynomial coefficients
 
 The direct fused query-polynomial kernel passed all 12 H100 CUDA cases on

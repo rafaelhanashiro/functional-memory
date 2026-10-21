@@ -95,7 +95,9 @@ with 400 warmup updates. These runs explicitly use `transformer_reference`
 initialization, QK normalization, normalized attention, and the blocked backend.
 Layer rematerialization and one sequence per device per microbatch limit the
 blocked backend's activation memory while preserving the global optimization
-batch. Throughput and GPU correctness remain to be qualified.
+batch. [B300 operator checks and timings](../../scaffolds/transformer/validation/README.md#fixed-scalar-rbf-bases)
+passed for all four counts. Full-model GPU acceptance and throughput remain to be
+measured with the real dataset.
 
 The full frozen configurations are authoritative. To reconstruct a fit for a
 count `n`, use:
@@ -117,8 +119,8 @@ The recipes currently refer to the study's recorded FineWeb manifests under
 must change, allocate fresh executions with the resolved inputs.
 
 After data access and a review of the existing baseline configurations, submit
-from that worktree. Qualify the 20-function configuration first before submitting
-the other counts; the launcher gates production on correctness, a full-recipe
+from that worktree. Run full-recipe acceptance for the 20-function configuration
+first before submitting the other counts; the launcher gates production on correctness, a full-recipe
 pilot and timing estimate, and exact checkpoint resumption:
 
 ```bash
