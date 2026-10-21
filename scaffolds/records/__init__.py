@@ -96,9 +96,23 @@ def _locked(directory: Path):
         os.close(descriptor)
 
 
+def _new_file_mode() -> int:
+    """The mode an ordinary new file gets under this process's umask."""
+    try:
+        for line in Path("/proc/self/status").read_text().splitlines():
+            if line.startswith("Umask:"):
+                return 0o666 & ~int(line.split()[1], 8)
+    except OSError:
+        pass
+    return 0o644
+
+
 def _atomic_write(path: Path, content: str) -> None:
     descriptor, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
+        # mkstemp creates the file private (0600); give it ordinary new-file permissions so
+        # rewritten records stay readable wherever the umask shares the tree.
+        os.fchmod(descriptor, _new_file_mode())
         with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as stream:
             stream.write(content)
             stream.flush()
