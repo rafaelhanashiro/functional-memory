@@ -15,6 +15,8 @@ shift 2
 cd "${SLURM_SUBMIT_DIR:?Submit from the experiment worktree}"
 python3 scaffolds/launch/frozen.py check --launch-commit "$SOURCE" --experiment attention_scaling --scaffold transformer
 git diff --exit-code "$SOURCE" -- scaffolds/transformer/validation/qualify_basis.py scaffolds/transformer/validation/qualify_basis.sbatch
+# Use the locked wheel libraries; inherited system paths can override their RPATHs.
+unset LD_LIBRARY_PATH
 source scaffolds/transformer/launchers/kennel_runtime.sh
 PYTHON="$PWD/scaffolds/transformer/$TRANSFORMER_ENVIRONMENT_DIR/bin/python"
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda PYTHONUNBUFFERED=1 TRANSFORMER_CLUSTER=kennel

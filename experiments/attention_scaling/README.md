@@ -109,6 +109,8 @@ fit = fit_exp([rbf(float(c), 1.0) for c in np.linspace(-6, 6, n)],
 
 Use the dedicated `worktrees/rbf-sweep` checkout on `codex/rbf-sweep`. Sync
 its B300 environment from the lock as described in [CLUSTERS.md](../../CLUSTERS.md).
+Submit without inherited `LD_LIBRARY_PATH` so system CUDA libraries do not override
+the locked environment's libraries.
 The recipes currently refer to the study's recorded FineWeb manifests under
 `/data/cl/u/rafah/home/datasets/fineweb_12b/`. Those files are not readable by
 `lucastor`; restore access before launching. If dataset locations or the recipe
@@ -121,7 +123,7 @@ pilot and timing estimate, and exact checkpoint resumption:
 
 ```bash
 RUN=r5bbad3217224
-sbatch --partition=long --time=2-00:00:00 --gres=gpu:b300:1 \
+env -u LD_LIBRARY_PATH sbatch --partition=long --time=2-00:00:00 --gres=gpu:b300:1 \
   --cpus-per-task=8 --mem=64G --job-name="$RUN" \
   --output="experiments/attention_scaling/runs/$RUN/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch \

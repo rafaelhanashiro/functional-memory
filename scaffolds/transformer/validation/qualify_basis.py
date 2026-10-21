@@ -153,11 +153,18 @@ def main():
         'slurm_job_id': os.environ.get('SLURM_JOB_ID'), 'slurm_node': os.environ.get('SLURMD_NODENAME'),
         'device_kind': device.device_kind, 'platform': device.platform, 'jax_version': jax.__version__,
         'runtime': {key: os.environ.get(key) for key in ('TRANSFORMER_CUDA_ENVIRONMENT',
-                    'XLA_FLAGS', 'XLA_PYTHON_CLIENT_PREALLOCATE', 'XLA_PYTHON_CLIENT_MEM_FRACTION', 'CUDA_HOME')},
+                    'XLA_FLAGS', 'XLA_PYTHON_CLIENT_PREALLOCATE', 'XLA_PYTHON_CLIENT_MEM_FRACTION',
+                    'CUDA_HOME', 'LD_LIBRARY_PATH')},
         'cases': [],
     }
     write_record(args.output, record)
     try:
+        if device.platform == 'gpu' and os.environ.get('TRANSFORMER_CUDA_ENVIRONMENT') == 'cuda13':
+            from jax_plugins.xla_cuda13 import cuda_versions
+            record['cublas_runtime_version'] = cuda_versions.cublas_get_version()
+            if 'B300' in device.device_kind and record['cublas_runtime_version'] < 130200:
+                raise RuntimeError('B300 qualification requires loaded cuBLAS >= 13.2')
+            write_record(args.output, record)
         for path in args.configs:
             config = load_config(path)
             spec = config.model.attention_basis
