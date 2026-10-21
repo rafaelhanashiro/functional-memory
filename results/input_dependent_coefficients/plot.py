@@ -1,4 +1,7 @@
-"""Regenerate the explicitly selected input-dependent coefficient comparison."""
+"""Regenerate the explicitly selected input-dependent coefficient comparison.
+
+    PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m results.input_dependent_coefficients.plot
+"""
 
 from __future__ import annotations
 
@@ -18,7 +21,7 @@ from scaffolds.records.selections import verify_pinned_runs
 
 
 DIRECTORY = Path(__file__).resolve().parent
-ROOT = DIRECTORY.parents[2]
+ROOT = DIRECTORY.parents[1]
 FIELDS = (
     "run_id", "role", "degree", "coefficient_function", "start", "attention_backend", "variant", "status",
     "terminal_step", "training_tokens", "terminal_validation_nll", "terminal_validation_perplexity",
@@ -81,8 +84,8 @@ def variant_of(model) -> tuple[str, str, str]:
     return function, start, "tanh_zero_amplitude"
 
 
-def load_runs():
-    selection = yaml.safe_load((DIRECTORY / "selection.yaml").read_text())
+def load_runs(selection: dict | None = None):
+    selection = selection or yaml.safe_load((DIRECTORY / "selection.yaml").read_text())
     verify_pinned_runs(ROOT, selection["runs"])
     rows, curves = [], {}
     for entry in selection["runs"]:
@@ -154,10 +157,14 @@ def load_runs():
     return rows, curves
 
 
-def render(rows, curves):
-    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10,
+def render(rows, curves, output=DIRECTORY):
+    with plt.rc_context({"font.family": "DejaVu Sans", "font.size": 10,
                          "axes.spines.top": False, "axes.spines.right": False,
-                         "pdf.fonttype": 42, "svg.hashsalt": "input-dependent-coefficients"})
+                         "pdf.fonttype": 42, "svg.hashsalt": "input-dependent-coefficients"}):
+        _render(rows, curves, output)
+
+
+def _render(rows, curves, output):
     degrees = sorted({row["degree"] for row in rows})
     columns = 3 if len(degrees) > 4 else 2
     fig, axes = plt.subplots(2, columns, figsize=(5 * columns, 7.8))
@@ -201,14 +208,14 @@ def render(rows, curves):
     fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(.5, -.01))
     fig.suptitle("Input-dependent coefficients: matched degree, warmup 400, output RMSNorm", fontsize=12)
     fig.tight_layout(rect=(0, .16, 1, .94))
-    fig.savefig(DIRECTORY / "learning_curves.png", dpi=180, metadata={"Software": "Matplotlib"})
-    fig.savefig(DIRECTORY / "learning_curves.pdf", metadata={"CreationDate": None, "ModDate": None,
+    fig.savefig(output / "learning_curves.png", dpi=180, metadata={"Software": "Matplotlib"})
+    fig.savefig(output / "learning_curves.pdf", metadata={"CreationDate": None, "ModDate": None,
                                                             "Creator": "Matplotlib"})
     plt.close(fig)
 
 
-def update_table(rows):
-    path = DIRECTORY / "README.md"
+def update_table(rows, output=DIRECTORY):
+    path = output / "README.md"
     text = path.read_text()
     begin, end = "<!-- BEGIN GENERATED RESULTS -->", "<!-- END GENERATED RESULTS -->"
     prefix, rest = text.split(begin)
@@ -224,14 +231,14 @@ def update_table(rows):
     path.write_text(prefix + begin + "\n\n" + "\n".join(lines) + "\n\n" + end + suffix)
 
 
-def main():
+def main(output=DIRECTORY):
     rows, curves = load_runs()
-    with (DIRECTORY / "summary.csv").open("w", newline="") as handle:
+    with (output / "summary.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(handle, FIELDS, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
-    render(rows, curves)
-    update_table(rows)
+    render(rows, curves, output)
+    update_table(rows, output)
 
 
 if __name__ == "__main__":

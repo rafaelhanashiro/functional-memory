@@ -1,6 +1,7 @@
 # Input-dependent polynomial coefficients
 
-Opened 2026-10-07. Updated 2026-10-19. Home cluster: **Kennel**.
+Home cluster: **Kennel**. No training happens here; the table and figure are built
+from the runs named in [`selection.yaml`](selection.yaml).
 
 Does letting the query token choose the polynomial coefficients improve unnormalized
 attention with per-head output RMSNorm? The first tanh runs lost to their static
@@ -37,7 +38,7 @@ runs used four GPUs; the blocked-reference runs one B300 each; the Mosaic-kernel
 one B300 or H100 each with global microbatch 32 instead of 64. [selection.yaml](selection.yaml)
 names the roles and controls and pins each run's scientific inputs; recipes, records
 and launch commands are in the
-[study README](../../../experiments/attention_scaling/README.md#tanh-coefficients-degrees-14).
+[study README](../../experiments/attention_scaling/README.md#tanh-coefficients-degrees-14).
 
 ## Findings
 
@@ -153,23 +154,25 @@ their ratios can act.
 Limitations: one seed, one bounded nonlinear parameterization and one shared optimizer
 recipe; the affine and original-start comparisons mix hardware and attention
 implementations, while the zero-amplitude runs differ from their controls in the
-attention path. Query-side coefficients reshape only the query's kernel; none of these
-runs conditions on the key (writer) as GDN's write gate does.
+attention path. Query-only coefficients reshape only the query's kernel, and the
+query–key runs add a per-key factor without a recurrence. Coefficients set by the
+writing token inside a recurrence are compared in
+[polynomial Gated DeltaNet](../gdn_polynomial/README.md).
 
-## Open decision
+## Conclusion and open questions
 
 Query-dependent coefficients do not beat static coefficients with this recipe, with or
-without a kernel, from any of three starts, and a per-key factor changes the outcome by
-at most a few hundredths, and at degree 8 query-dependent coefficients are worse than
+without a kernel, from any of three starts; a per-key factor changes the outcome by at
+most a few hundredths; and at degree 8 query-dependent coefficients are worse than
 static. Order scaling (`c_r = b_r + a_r tanh(.)/r!`) removes most of the degree-8 deficit
-but only ties static. Open: whether order-scaled query–key or degree 12 changes this, and
-then whether to promote the comparison as a negative result or discard the topic and its runs.
+but only ties static. Still open: whether order-scaled query–key coefficients or degree
+12 change this.
 
 ## Regeneration
 
 ```bash
-scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh results/exploratory/input_dependent_coefficients
-scaffolds/transformer/.venv/bin/python -m results.exploratory.input_dependent_coefficients.plot
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh results/input_dependent_coefficients
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m results.input_dependent_coefficients.plot
 ```
 
 The plot verifies the pinned inputs, then writes the figure, `summary.csv`

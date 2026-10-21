@@ -8,6 +8,8 @@ a result collection can combine runs from several studies.
 | Study | Results | Run data and reproduction |
 | --- | --- | --- |
 | Attention scaling: softmax, Taylor, Hermite, learned polynomials, and Gated DeltaNet | [Heatmaps and degree curves](results/attention_scaling/README.md) | [All attention runs](experiments/attention_scaling/README.md) |
+| Input-dependent (tanh) polynomial coefficients | [Matched-degree comparison](results/input_dependent_coefficients/README.md) | [All attention runs](experiments/attention_scaling/README.md#input-dependent-coefficient-comparison) |
+| Polynomial Gated DeltaNet: independent erase, polynomial memory, key width | [Heatmap and validation gap](results/gdn_polynomial/README.md) | [All attention runs](experiments/attention_scaling/README.md#polynomial-gated-deltanet) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 
 Exploratory results awaiting a decision (promote or discard) are in
@@ -20,7 +22,9 @@ home cluster, training budget, status, and outcome. Each result collection selec
 its inputs explicitly, so the same run can participate in several comparisons.
 
 The maintained attention results are the combined heatmap and degree plot in
-`results/attention_scaling/`. The complete run inventory, learning-curve data,
+`results/attention_scaling/`, the input-dependent coefficient comparison in
+`results/input_dependent_coefficients/`, and the polynomial GDN comparison in
+`results/gdn_polynomial/`. The complete run inventory, learning-curve data,
 coefficient diagnostics, and execution metadata remain under
 `experiments/attention_scaling/`; result directories organize the comparisons we
 want to present, rather than individual sweeps.

@@ -1,0 +1,404 @@
+question: Do independent erasure and polynomial memory improve Gated DeltaNet across
+  key width?
+study: experiments/attention_scaling
+metric: terminal validation perplexity
+terminal_step: 19074
+training_tokens: 10000269312
+data_identity:
+  train_manifest_sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
+  eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+d_k:
+- 8
+- 16
+- 64
+degrees:
+- 1
+- 2
+- 3
+- 4
+runs:
+- run_id: r668a588ddc0b
+  role: reference
+  label: softmax
+  mechanism: softmax
+  d_k: 8
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r668a588ddc0b/config.yaml
+      sha256: 285b2dffb3be60a1a949f0fa63122b1e13763d00031e54bd099727c9fa0d3121
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r668a588ddc0b/metrics.jsonl
+      sha256: ef6d4d94b6a628c73bba4aeb816a1e24def614d1c91a17ff01e9f70c092c83a9
+    completion.json:
+      path: experiments/attention_scaling/runs/r668a588ddc0b/completion.json
+      sha256: a66e0d159e3cad416ca915ca6e17e735628e6bb68d61bf3434451f6cb807efb4
+    metadata.json:
+      path: experiments/attention_scaling/runs/r668a588ddc0b/metadata.json
+      sha256: 0534c88e480f1814ef6aa709e0dada66bacb081b4b3a8207ecf5ebe4cded0efa
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r668a588ddc0b/best_validation.json
+      sha256: cc03a7ba79afadba09c0041c9ccf8c62aad812d043eb99e3ae6f69562feb4f0e
+- run_id: rfe3e43bfcabf
+  role: reference
+  label: softmax
+  mechanism: softmax
+  d_k: 16
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rfe3e43bfcabf/config.yaml
+      sha256: 724a91f3a2b8d638081bdad3a7f61783de36dc0b43bc7539352d0180ec4852ad
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rfe3e43bfcabf/metrics.jsonl
+      sha256: cea9aff1156d129419c270edfea90abf19f57ae0f83286b2eb019998f3d24f74
+    completion.json:
+      path: experiments/attention_scaling/runs/rfe3e43bfcabf/completion.json
+      sha256: a8098b8f31e325810c66377a6912dda27acf69a7b31d4ef8b88485b1ad566d06
+    metadata.json:
+      path: experiments/attention_scaling/runs/rfe3e43bfcabf/metadata.json
+      sha256: 03b90b9b261824855953a87ee18fad7976fae7a02f5eca8084c0236400cd239a
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rfe3e43bfcabf/best_validation.json
+      sha256: d19d0bdcc2e8ea1602093cd26cf79a19672682af5e79e0f24c7b0bba84f81736
+- run_id: rdf00da0866a8
+  role: reference
+  label: softmax
+  mechanism: softmax
+  d_k: 64
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/config.yaml
+      sha256: 7c8b77a7df1efa6a315b3a8b89949d65433cc346157a54f9d52a4392e35ce185
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/metrics.jsonl
+      sha256: 09921898d01e171d68018fa91436de46486eca56f1282ecc54e5b23f530d211f
+    completion.json:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/completion.json
+      sha256: 737901beec2f30725b76393c691f710763754de9de3c4667a31954ddcf75da4f
+    metadata.json:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/metadata.json
+      sha256: 754b2bc56d5b7842548da561bf2e694013f080e9c5d24a2f8657e5979a780801
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rdf00da0866a8/best_validation.json
+      sha256: dff398331d0901d6a929cc3136220a805525c45c0aff1af36f4fdac4f19b17ae
+- run_id: r353d59c575aa
+  role: reference
+  label: Gated DeltaNet, tied erase
+  mechanism: gated_deltanet
+  d_k: 8
+  erase: tied
+  write: sigmoid
+  degree: 1
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r353d59c575aa/config.yaml
+      sha256: 706a361af2404d00c3835423e65d5cf141e7afa3a2e476f953172ea074185cf0
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r353d59c575aa/metrics.jsonl
+      sha256: 1aa95484bfe3bc965a86e456acf98bfcebfea61513f4b37720db759508beeb44
+    completion.json:
+      path: experiments/attention_scaling/runs/r353d59c575aa/completion.json
+      sha256: 24c38301e680b5913ec72bbc387b3320723d3d298d112c37c20a0f9bd044e028
+    metadata.json:
+      path: experiments/attention_scaling/runs/r353d59c575aa/metadata.json
+      sha256: 5ba7f9ba33d32c3ba1e4ff9852691bdc093d0c8760a1492fdfc7d1087e24f28a
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r353d59c575aa/best_validation.json
+      sha256: 9a9a514038dc0e6ed9e602e96d554653348584093b07135fb3f853a9a3b9787a
+- run_id: rd4b7fe3f1b11
+  role: reference
+  label: Gated DeltaNet, tied erase
+  mechanism: gated_deltanet
+  d_k: 16
+  erase: tied
+  write: sigmoid
+  degree: 1
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rd4b7fe3f1b11/config.yaml
+      sha256: 59ad249b418569e0b7c88b8677a23e42f981c1397312797861cc64e05cd61522
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rd4b7fe3f1b11/metrics.jsonl
+      sha256: 184b84a415cb614723d97f40bcd0c486618f00770226cff90dff42a24e1ca501
+    completion.json:
+      path: experiments/attention_scaling/runs/rd4b7fe3f1b11/completion.json
+      sha256: 7ae1485fdd4461fdaaeeb0d680ec7665c08292f49045ad51128601efbe0684d4
+    metadata.json:
+      path: experiments/attention_scaling/runs/rd4b7fe3f1b11/metadata.json
+      sha256: 6450a8b8ada0b3e6d7b05c5e384587f800fcca7853d6bd0ce7d38c911792367b
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rd4b7fe3f1b11/best_validation.json
+      sha256: b69a13d7bd67d1454449b6b9615297f1e0b8b05463b1f05b51c7c5855d37b99f
+- run_id: rdf74e4289926
+  role: reference
+  label: Gated DeltaNet, tied erase
+  mechanism: gated_deltanet
+  d_k: 64
+  erase: tied
+  write: sigmoid
+  degree: 1
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rdf74e4289926/config.yaml
+      sha256: 693aefd056f9c5c5752d896e83706e0e27f4b3527621934f94109ce02549a86a
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rdf74e4289926/metrics.jsonl
+      sha256: f0fc79bd0f0c56fb85578ae8f2f620e3211fa8b4be721ee74f6d957227c8fdd1
+    completion.json:
+      path: experiments/attention_scaling/runs/rdf74e4289926/completion.json
+      sha256: eb031b2b50a05d702ebfedb4a17cb425a9c06d1bf28fabf89868b8f951bfeb06
+    metadata.json:
+      path: experiments/attention_scaling/runs/rdf74e4289926/metadata.json
+      sha256: 0e2c2f62c7c015c751bfdab78ad74a24edec5c3dc368b94b6762df268a171ebd
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rdf74e4289926/best_validation.json
+      sha256: 95539c78231c13a9562fa0f12ed502f2cdd406b69dc4b06489a3ea0f496bfcf0
+- run_id: rf640fc13f3a8
+  role: replicate
+  label: Gated DeltaNet, tied erase, replicate
+  mechanism: gated_deltanet
+  d_k: 64
+  erase: tied
+  write: sigmoid
+  degree: 1
+  control: rdf74e4289926
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rf640fc13f3a8/config.yaml
+      sha256: 02571345b370d587b1103f2c49d2468ce44bcd3a3c1b40898af41870a1142380
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rf640fc13f3a8/metrics.jsonl
+      sha256: 047fa5b4360446893f59544c19cf1b0d33c19dd9662db625f681f7f9863c23b8
+    completion.json:
+      path: experiments/attention_scaling/runs/rf640fc13f3a8/completion.json
+      sha256: 35ea0623fa6404c600715ec580accd382f2c2ce35fd3a67c00265d11fb429691
+    metadata.json:
+      path: experiments/attention_scaling/runs/rf640fc13f3a8/metadata.json
+      sha256: cb05e5ed1e17a246faa279bed3ea64ce53b8847f67454cb745b602341b704a3d
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rf640fc13f3a8/best_validation.json
+      sha256: 394c85a1d35861e18ee2b8cc51b0a98bb5524964bd7b1109107ad2b4e06b8899
+- run_id: r5c9701488368
+  role: primary
+  label: independent erase, m=1
+  mechanism: gated_deltanet
+  d_k: 8
+  erase: independent
+  write: sigmoid
+  degree: 1
+  control: r353d59c575aa
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r5c9701488368/config.yaml
+      sha256: 688fa4def3bf42b74236cbcc16b9ebfc7673983a7626f1a7fe4a7cbcb4d6b9d4
+- run_id: rae2329afb5bd
+  role: primary
+  label: independent erase, m=1
+  mechanism: gated_deltanet
+  d_k: 16
+  erase: independent
+  write: sigmoid
+  degree: 1
+  control: rd4b7fe3f1b11
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rae2329afb5bd/config.yaml
+      sha256: 3716913451111ac3b22f98bc0aa67c9f12284db9e3ba7e9290c158beecc1c27e
+- run_id: rf7341031e3d5
+  role: primary
+  label: independent erase, m=1
+  mechanism: gated_deltanet
+  d_k: 64
+  erase: independent
+  write: sigmoid
+  degree: 1
+  control: rdf74e4289926
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rf7341031e3d5/config.yaml
+      sha256: 36431636fd83a6c1a23ea04446a1eefeb5130f97bf45c9f65f9792da4719d252
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rf7341031e3d5/metrics.jsonl
+      sha256: 9a0467cb31457902d8846a209e7cf9bec17fdcc5a473bdeea70b63c321d2170f
+    completion.json:
+      path: experiments/attention_scaling/runs/rf7341031e3d5/completion.json
+      sha256: ee6efac92de2f08e60f47d72dfdc3fbd418f52d99a69feb6669fe5cb7d94ef7a
+    metadata.json:
+      path: experiments/attention_scaling/runs/rf7341031e3d5/metadata.json
+      sha256: 95797a663b6072276162e95862c018e6f8a787cf68754af74eb0cf2255d8709a
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rf7341031e3d5/best_validation.json
+      sha256: 4e8fdc16a2e23bd3cdf5d7622f85ee1587fc342fd9dd238fb39dfdb2f7a0e132
+- run_id: r2fb020d67c0d
+  role: primary
+  label: polynomial, m=2
+  mechanism: gated_deltanet
+  d_k: 8
+  erase: independent
+  write: sigmoid
+  degree: 2
+  control: r5c9701488368
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r2fb020d67c0d/config.yaml
+      sha256: 9869d0758025413079d45b2dab16d6675842acbf5770c246aec5eb7b451c6910
+- run_id: rf885f946fc9b
+  role: primary
+  label: polynomial, m=2
+  mechanism: gated_deltanet
+  d_k: 16
+  erase: independent
+  write: sigmoid
+  degree: 2
+  control: rae2329afb5bd
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rf885f946fc9b/config.yaml
+      sha256: 5c05492da7d07d57aaeb6cba8fbaa63396e07aeb7f0066a2b378fd3a0fc7a6a1
+- run_id: rd40af7956426
+  role: primary
+  label: polynomial, m=2
+  mechanism: gated_deltanet
+  d_k: 64
+  erase: independent
+  write: sigmoid
+  degree: 2
+  control: rf7341031e3d5
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rd40af7956426/config.yaml
+      sha256: 3b271001661b3130e71be9ede46e171599c483ab183d596959a730d564a6f9f5
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rd40af7956426/metrics.jsonl
+      sha256: c0ff5a0a75a7cd815483de07fbbed59d53bf980b023bffcef7611ff30dae56b8
+    completion.json:
+      path: experiments/attention_scaling/runs/rd40af7956426/completion.json
+      sha256: 6da402792526cab6b91047bd8a94f4c0e75ad142fa7468f82d0954878be33b70
+    metadata.json:
+      path: experiments/attention_scaling/runs/rd40af7956426/metadata.json
+      sha256: aedd3ac496d7c3f027a4203f28a0cf69fea3427b707ffc59007973fbe795a29e
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rd40af7956426/best_validation.json
+      sha256: dd4650bb3a943bb1138582a6f95a967b1fd4de9a040148ad93bdf6faa999b3cd
+- run_id: ra98612db06d4
+  role: primary
+  label: polynomial, m=3
+  mechanism: gated_deltanet
+  d_k: 8
+  erase: independent
+  write: sigmoid
+  degree: 3
+  control: r5c9701488368
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/ra98612db06d4/config.yaml
+      sha256: 6419b13cd393f67ed44ea7aad16e63b8f1b38762a6893693ffbd66d74700d217
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/ra98612db06d4/metrics.jsonl
+      sha256: 1987f55380fabc45dbc1ba8231c35f8021cd48474b0b9b2963f475a693fd64f6
+    completion.json:
+      path: experiments/attention_scaling/runs/ra98612db06d4/completion.json
+      sha256: 5e84a3dfc6d3a0db7d3075eeffeed5b38737f1419122c4a90cac09f8bfc625d9
+    metadata.json:
+      path: experiments/attention_scaling/runs/ra98612db06d4/metadata.json
+      sha256: a033e6a32bb169df6616627f6d062031f2e477c6561a0c862029f200cf91c5f1
+    best_validation.json:
+      path: experiments/attention_scaling/runs/ra98612db06d4/best_validation.json
+      sha256: 193e4d4973f966eeae4f0332f2ae87e87d2b6fef3aacd26d4827abfa3089e7f2
+- run_id: ra79e66bd9121
+  role: primary
+  label: polynomial, m=3
+  mechanism: gated_deltanet
+  d_k: 16
+  erase: independent
+  write: sigmoid
+  degree: 3
+  control: rae2329afb5bd
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/ra79e66bd9121/config.yaml
+      sha256: d38aae25114b959dbd881657894c412c0f2f09b4239b56c6d7268c568d1a104a
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/ra79e66bd9121/metrics.jsonl
+      sha256: b3614d99b952bd778822019ff668c2264ba40ffaf442e4b3602e3edd424071c9
+    completion.json:
+      path: experiments/attention_scaling/runs/ra79e66bd9121/completion.json
+      sha256: 692a52ecfda506fbd2681787983bb350d1294b93c82bd94d74e1f1908ea94569
+    metadata.json:
+      path: experiments/attention_scaling/runs/ra79e66bd9121/metadata.json
+      sha256: d87afcb70e43d44c06c14fe72478951deaf807e6522917bdfe9d945a1af753ca
+    best_validation.json:
+      path: experiments/attention_scaling/runs/ra79e66bd9121/best_validation.json
+      sha256: f009f32629431a3e7410a509a7dce15ae1ae910371170359d7ada30967e2d936
+- run_id: r83c3394eb730
+  role: primary
+  label: polynomial, m=3
+  mechanism: gated_deltanet
+  d_k: 64
+  erase: independent
+  write: sigmoid
+  degree: 3
+  control: rf7341031e3d5
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r83c3394eb730/config.yaml
+      sha256: 11f43dfe6b2430f53f4d584bffef9aed9e8ec94296bc7c26d16b67dd207de0ab
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/r83c3394eb730/metrics.jsonl
+      sha256: ceef6ba5d0a06231bc6aa4a426a616b329de2265a468f368809bc458992ad078
+    metadata.json:
+      path: experiments/attention_scaling/runs/r83c3394eb730/metadata.json
+      sha256: d346f2d529fa872cc366764ce50f5fcedfabdfdf4c1bb776b5673feb460281e1
+    best_validation.json:
+      path: experiments/attention_scaling/runs/r83c3394eb730/best_validation.json
+      sha256: bd5a2c35ed07fab2217a52db7435d2ac5ace5b848fdb07d6b893d818f0ec2264
+- run_id: r4f60c2ce2f1f
+  role: primary
+  label: polynomial, m=4
+  mechanism: gated_deltanet
+  d_k: 8
+  erase: independent
+  write: sigmoid
+  degree: 4
+  control: r5c9701488368
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r4f60c2ce2f1f/config.yaml
+      sha256: 91879ac1bad557cb7360d290d2a6df7f058f62c96e01738a5075d66ac6a3882e
+- run_id: r1d67ac6f0223
+  role: primary
+  label: polynomial, m=4
+  mechanism: gated_deltanet
+  d_k: 16
+  erase: independent
+  write: sigmoid
+  degree: 4
+  control: rae2329afb5bd
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r1d67ac6f0223/config.yaml
+      sha256: debafe0b58e41c631f384817c7ff1158e96cb2f51f86fa1690b96b976849c0c6
+- run_id: rf65d38ec0552
+  role: variant
+  label: independent erase, tanh write, m=1
+  mechanism: gated_deltanet
+  d_k: 64
+  erase: independent
+  write: tanh
+  degree: 1
+  control: rf7341031e3d5
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rf65d38ec0552/config.yaml
+      sha256: 16fda7abf903021f751a91a91e3a3960bc58eb2cbba3a662b51b4a47108a945b
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rf65d38ec0552/metrics.jsonl
+      sha256: df65b25f33a69d4b1bdd344246397663303278810fedcf7b7f26e7a405296d9d
+    completion.json:
+      path: experiments/attention_scaling/runs/rf65d38ec0552/completion.json
+      sha256: f57ac2c1d41cef04b4b75a12e9266f9976a00f46e9bd7e3c9fe08f0df0a207eb
+    metadata.json:
+      path: experiments/attention_scaling/runs/rf65d38ec0552/metadata.json
+      sha256: b56b6e489c97a40b603036e490aa2c7c8974c913bae6e6d1c9c7843d11be335d
+    best_validation.json:
+      path: experiments/attention_scaling/runs/rf65d38ec0552/best_validation.json
+      sha256: 4563a8fa163b2363e95466bf55962eb0b8698a34b9e14aa33ae01119e08e541a

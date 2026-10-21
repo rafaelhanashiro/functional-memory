@@ -107,7 +107,7 @@ and its kernels.
 Query-conditioned degree-one runs predict a signed constant and linear coefficient
 from the current attention input, per layer and head
 (`model.attention_coefficient_conditioning: query`). The
-[exploratory comparison](../../results/exploratory/input_dependent_coefficients/README.md)
+[input-dependent coefficient comparison](../../results/input_dependent_coefficients/README.md)
 uses input-independent learned coefficients as its matched control.
 
 ## Cluster and artifacts
@@ -199,8 +199,8 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records index \
 
 The pair is `r9cf9589b9855` (query-dependent) and `r03bfa6fd7b2e`
 (input-independent learned control). Both use output RMSNorm and 400 warmup steps.
-Both completed all 19,074 updates; their findings remain in the linked exploratory
-comparison. Their executed source is `1e78579354087d3d3f62fdda865d90913068e960`.
+Both completed all 19,074 updates; their findings are in the linked input-dependent
+coefficient comparison. Their executed source is `1e78579354087d3d3f62fdda865d90913068e960`.
 The launch commands, from the experiment worktree on Kennel after committing all
 inputs and code, were:
 
@@ -293,7 +293,7 @@ commit. The four-GPU recipe with `model.remat: false` automatically enables
 activation and parameter-group statistics, W&B samples at the logging cadence,
 and validation-window summaries and gradient-spike diagnostics in `metrics.jsonl`.
 Question, input selections, outcomes, and the open scientific decision live in the
-[comparison README](../../results/exploratory/input_dependent_coefficients/README.md).
+[comparison README](../../results/input_dependent_coefficients/README.md).
 
 To update a figure, change its explicit run selection, run
 `python -m scaffolds.records refresh results/<analysis>` in the scaffold environment,
@@ -395,7 +395,7 @@ sbatch --partition=standard --time=24:00:00 --nodelist=akita --gres=gpu:1 --cpus
   "experiments/attention_scaling/runs/$RUN/config.yaml" "$COMMIT" 1 B300
 ```
 
-Outcomes are in the [input-dependent coefficient topic](../../results/exploratory/input_dependent_coefficients/README.md).
+Outcomes are in the [input-dependent coefficient comparison](../../results/input_dependent_coefficients/README.md).
 
 ### Tanh starts on the blocked reference, degrees 1–4
 
@@ -434,7 +434,7 @@ sbatch --partition=long --nodelist=akita --gres=gpu:b300:1 --cpus-per-task=16 --
 ```
 
 Outcomes and the comparison with the fused runs and the static controls live in the
-[input-dependent coefficient topic](../../results/exploratory/input_dependent_coefficients/README.md).
+[input-dependent coefficient comparison](../../results/input_dependent_coefficients/README.md).
 
 ### Tanh coefficients at degree 8
 
@@ -473,7 +473,7 @@ initialized from the write projection as a separate parameter. All original weig
 match tied GDN at initialization. It preserves the canonical GDN block and reference
 initialization, 400 warmup updates, standard training telemetry, and the 19,074-update
 FineWeb recipe. The preselected control is `rf640fc13f3a8`; comparison findings and
-current status belong in the [exploratory result](../../results/exploratory/gdn_polynomial/README.md).
+current status belong in the [polynomial GDN comparison](../../results/gdn_polynomial/README.md).
 Its home cluster is Kennel. Production job `217974` completed all 19,074 updates
 on 2026-10-12 at 18:32 EDT, on `standard` at nice 0 with four H100 SXM GPUs on
 `dogo`. Terminal and validation-best checkpoint both correspond to update 19,074.
@@ -490,7 +490,7 @@ The [qualification record](../../scaffolds/transformer/validation/runs/gdn-indep
 pins the acceptance evidence. The canonical 400-update warmup and gated output
 RMSNorm were active throughout training. Completed findings, diagnostic summaries,
 and the limitations of the historical-control comparison are recorded only in the
-linked exploratory result.
+linked polynomial GDN comparison.
 Source `d3d93bc6ccaa8a76fc4b29124c80988ae1593405`
 retains FP32 chunk intermediates and TF32x3 products for tied and independent gates.
 The independently optimized erase and write projections have separate device
@@ -524,3 +524,26 @@ env -u XLA_PYTHON_CLIENT_MEM_FRACTION sbatch --parsable --nice=0 --partition=sta
 Production verifies acceptance with the same source, recipe, hardware, and runtime
 settings before training; matching passed stages are reused. Hardware qualification
 and kernel benchmarks are documented in the linked scaffold validation record.
+
+## Polynomial Gated DeltaNet
+
+These runs add polynomial memory (`model.gdn_polynomial_degree`), narrower keys, or a tanh
+linear write (`model.gdn_write_activation: tanh`) to independent-erase GDN; the
+[polynomial GDN comparison](../../results/gdn_polynomial/README.md) defines the model and
+holds the findings. Home cluster: Kennel. Each run executes from its own worktree, and
+its record's `submission` holds the exact launch command, source commit, and working
+directory.
+
+| Run | Variant | d_K | Worktree | Status |
+| --- | --- | ---: | --- | --- |
+| `rd40af7956426` | quadratic | 64 | `worktrees/gdn-quadratic` | complete |
+| `r83c3394eb730` | cubic | 64 | `worktrees/gdn-cubic` | training |
+| `ra79e66bd9121` | cubic | 16 | `worktrees/gdn-small-width` | complete |
+| `ra98612db06d4` | cubic | 8 | `worktrees/gdn-small-width` | complete |
+| `rae2329afb5bd`, `r5c9701488368` | independent erase, `m = 1` | 16, 8 | `worktrees/gdn-small-width` | held |
+| `rf885f946fc9b`, `r2fb020d67c0d` | quadratic | 16, 8 | `worktrees/gdn-small-width` | held |
+| `r1d67ac6f0223`, `r4f60c2ce2f1f` | quartic | 16, 8 | `worktrees/gdn-quartic` | held |
+| `rf65d38ec0552` | tanh linear write | 64 | `worktrees/gdn-tanh-write` | complete |
+
+The records here are copies of the worktree records; a worktree's own record stays
+authoritative until its branch merges.
