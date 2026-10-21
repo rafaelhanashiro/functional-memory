@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r0c9b8b75ec17/config.yaml",
+    "sha256": "af725b44f857e51edbcb79bf70183d9d4e5a10efbc76e9c49478e3134abcfd51"
+  },
+  "label": "200m-qk-m012-query-tanh-a0-w0p03125-factorial-amplitude-head-rms-reference-warmup400-seed0",
+  "name": "200m-qk-m012-query-tanh-a0-w0p03125-factorial-amplitude-head-rms-reference-warmup400-seed0",
+  "record_schema_version": 1,
+  "run_id": "r0c9b8b75ec17",
+  "status": "planned"
+}

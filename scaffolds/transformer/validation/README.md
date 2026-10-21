@@ -1007,13 +1007,14 @@ broadcasting their coefficient gradients back. Scores, polynomials, row
 sums, and accumulators are FP32, with the Triton kernels' failure rules: NaN rows for a
 nonfinite, nonpositive (even Taylor degree), or zero (odd degree) row sum, a nonfinite score
 or weight (query), or an overflowing output. They accept BF16 inputs, Q/K width 8, 16, 32,
-64, or 128, value width 64, degree >= 1 (query and static: 1-8), and time a multiple of 128 (H100) or
+64, or 128, value width 64, degree >= 1 (query and static: 1-12, where B300's dK/dV fits), and time a multiple of 128 (H100) or
 256 (B300), and raise `ValueError` otherwise. Tensor cores contract in steps of one
 shared-memory swizzle row, so Q/K tiles use 32-, 64-, and 128-byte swizzles at widths 16,
 32, and 64 or more; width 8 is zero-padded to the 16-element minimum. On B300 the dK/dV kernel keeps every
 query's coefficients in shared memory and runs a three-stage Q/dO ring unless that exceeds
-the 227 KB per block (degree 8 at d_K = 128 and 2,048 tokens), then two; dQ stages its output
-in each warpgroup's Q buffer.
+the 227 KB per block (degree 8 at d_K = 128 and 2,048 tokens), then two
+(`common.blackwell_dkv_stages`, which also bounds the supported degree: 12 at d_K = 64, 9 at
+d_K = 128); dQ stages its output in each warpgroup's Q buffer.
 
 Weights and score gradients enter the tensor cores at a weight precision chosen per setup
 (`api.default_precision`, recorded as `attention_weight_precision` in run metadata):

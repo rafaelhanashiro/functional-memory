@@ -198,7 +198,8 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   defaults; fresh allocation of an explicitly requested Flax-default run requires
   `--allow-flax-default-init`. Historical recipes and resumptions keep their settings.
 - New normalized fixed Taylor, tanh query-conditioned, and static-coefficient (fixed or
-  learned) unnormalized polynomial attention experiments of degree up to 8 use the
+  learned) unnormalized polynomial attention experiments that the Mosaic GPU kernels
+  support (degree up to 12 at `d_K <= 64` and 9 at `d_K = 128`, with 2,048 tokens) use the
   Mosaic GPU kernels (`model.attention_backend: mosaic`; `auto` also resolves to them on
   H100 and B300) unless the user explicitly requests the fused Triton kernels; do not
   inherit `fused` when copying a legacy recipe. Fresh allocation of such a recipe with
