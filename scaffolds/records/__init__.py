@@ -384,6 +384,8 @@ def _attention_family(model: Mapping[str, Any], record: Mapping[str, Any], kerne
     mechanism = model.get("attention_mechanism")
     if mechanism is not None and mechanism != "dot_product":
         return mechanism
+    if model.get("attention_basis") is not None:
+        return "basis"
     families = {
         "gla": "gla", "softmax": "softmax", "exp_unnormalized": "exponential",
         "taylor": "taylor", "taylor_unnormalized": "taylor",

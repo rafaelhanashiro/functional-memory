@@ -174,6 +174,9 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
                 tests.append("fixed_square_factors_fused" if square else "fixed_polynomial_fused")
             if model.get("qk_norm") and (cpu or fused):
                 tests.append("fixed_polynomial_qk_norm")
+        elif model.get("attention_basis") is not None:
+            if cpu:
+                tests.extend(["basis_projection", "basis_attention"])
         elif normalized:
             if degree is None:
                 if cpu:
@@ -407,6 +410,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_degree=None, attention_normalization=True,
                                            attention_output_scaling="none",
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
+                                           attention_basis=None,
                                            attention_coefficient_parameterization="direct",
                                            attention_coefficient_conditioning="static",
                                            attention_coefficient_activation="identity",
@@ -453,7 +457,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         config.model, attention_backend="blocked",  # as in matches_softmax_initialization
         attention_degree=None, attention_normalization=True, attention_output_scaling="none",
         quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
-        attention_fixed_square_factors=None,
+        attention_fixed_square_factors=None, attention_basis=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",
         attention_coefficient_conditioning="static",
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,

@@ -29,6 +29,7 @@ def blocked_dot_product_attention(
     key_polynomial_factors: jax.Array | None = None,
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
+    score_kernel=None,
     **denominators,
 ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array]]:
     """Attend to the full causal prefix using bounded, recomputed score blocks.
@@ -60,9 +61,17 @@ def blocked_dot_product_attention(
     factors, with the constant fixed at 1 or learned. Its ``kernel_*`` diagnostics describe
     the numerator, ``denominator_*`` the denominator values, and the cancellation
     ratio is sum_j |p_b(s_j)| / |sum_j p_b(s_j)|.
+    A ``score_kernel`` callable instead evaluates a fixed scalar function on
+    unshifted scores. It excludes polynomial options, may be signed, and uses
+    the same zero/nonfinite-sum failure rules as signed polynomial kernels.
     Diagnostics exclude padded queries and masked future entries.
     """
     _validate_degree(attention_degree)
+    if score_kernel is not None and (
+            not callable(score_kernel) or attention_degree is not None or quadratic_mode != "fixed"
+            or coefficients is not None or polynomial_coefficients is not None or polynomial_square_factors is not None
+            or query_polynomial_coefficients is not None or key_polynomial_factors is not None or denominators):
+        raise ValueError("A callable scalar score kernel cannot be combined with polynomial options")
     if not isinstance(attention_normalization, bool):
         raise ValueError("attention_normalization must be a boolean")
     if not attention_normalization and quadratic_mode != "fixed":
@@ -94,7 +103,7 @@ def blocked_dot_product_attention(
         if polynomial_coefficients is None or not attention_normalization:
             raise ValueError("Denominator coefficients require learned numerator coefficients and row normalization")
         denominator_factor_arrays = denominator_factors(selected[0], selected[1], selected[2])
-    signed = query_conditioned or polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (
+    signed = score_kernel is not None or query_conditioned or polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (
         not nonnegative and quadratic_mode == "fixed"
         and attention_degree is not None and attention_degree % 2 == 1
     )
@@ -144,7 +153,13 @@ def blocked_dot_product_attention(
             "bqhd,bkhd->bhqk", query, k,
             preferred_element_type=jnp.float32,
         ) * (1.0 / math.sqrt(qk_dim))
-        if not attention_normalization and attention_degree is None:
+        if score_kernel is not None:
+            # Arbitrary projections may be signed. Use unshifted scores and the
+            # same exact signed-sum failure semantics as learned polynomials.
+            kernel = jnp.asarray(score_kernel(jnp.where(causal, scores, 0.0)), dtype=jnp.float32)
+            kernel = jnp.broadcast_to(kernel, scores.shape)
+            invalid_kernel = ~jnp.isfinite(kernel)
+        elif not attention_normalization and attention_degree is None:
             # A row shift changes the unnormalized operator. Underflow to zero
             # is allowed; a nonfinite causal exponential poisons the output.
             kernel = jnp.exp(jnp.where(causal, scores, 0.0))

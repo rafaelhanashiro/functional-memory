@@ -314,6 +314,16 @@ def attention_identity(config) -> dict:
             "quadratic_parameter_count": (2 if config.model.quadratic_sharing == "global" else
                                           2 * config.model.num_layers * config.model.num_heads),
         })
+    if config.model.attention_basis is not None:
+        identity.update(
+            attention_kernel="fixed_basis" if normalized else "fixed_basis_unnormalized",
+            attention_formula="sum_j c_j b_j(s), s = QK^T / sqrt(d_k), causal weighted values"
+                              + (" divided by the causal kernel sum" if normalized else ""),
+            attention_score_scale="1/sqrt(d_k)",
+            attention_output_normalization="signed_row_sum" if normalized else False,
+            attention_basis=config.model.attention_basis,
+            attention_coefficients="fixed", attention_coefficient_sharing="global",
+        )
     if config.model.qk_norm:
         identity.update(qk_norm_identity(config.model))
     scaling = config.model.attention_output_scaling
@@ -692,6 +702,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         report["kernel_values"] = "unshifted_fixed_sum_of_squares"
     if config.model.attention_coefficient_conditioning in ("query", "query_key"):
         report["kernel_values"] = "unshifted_query_polynomial"
+    if config.model.attention_basis is not None:
+        report["kernel_values"] = "unshifted_fixed_basis"
     if scale_report is not None:
         report["qk_norm_scale"] = scale_report
     return report

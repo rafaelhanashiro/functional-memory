@@ -36,6 +36,10 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
         raise ValueError(f"Unknown attention backend: {request}")
     if dtype not in ("float32", "bfloat16"):
         raise ValueError("Attention requires float32 or bfloat16 computation")
+    if model_config.attention_basis is not None:
+        if request not in ("auto", "blocked"):
+            raise ValueError("Scalar-basis attention requires the blocked backend")
+        return "blocked"
     actual_platform = _runtime_platform() if platform is None else platform
     gpu = actual_platform in ("gpu", "cuda")
     if model_config.attention_mechanism == "gated_deltanet":

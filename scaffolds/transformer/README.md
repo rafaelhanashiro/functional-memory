@@ -178,6 +178,92 @@ broadcast differentiation. `attention_backend: auto` selects fused execution on
 supported NVIDIA GPUs and the blocked reference otherwise. The blocked reference
 provides diagnostics while the fused output continues through subsequent layers.
 
+### Projecting exp onto a scalar function basis
+
+`attention/basis.py` fits a fixed approximation `k(s) = sum_j c_j b_j(s)` to
+`exp(s)` under `s ~ N(mean, std²)`. The basis can contain monomials, Gaussian
+RBFs, sines, cosines, mixtures of these, or vectorized Python callables. This
+changes the scalar function applied to query–key scores; it does not construct
+expanded query/key features or linearize attention.
+
+```python
+import jax.numpy as jnp
+from scaffolds.transformer.attention.basis import fit_exp, monomial, rbf, sine, cosine
+
+# Named functions support both interactive evaluation and saved run recipes.
+fit = fit_exp([monomial(0), rbf(-2, 1.5), rbf(0, 1.5), rbf(2, 1.5)],
+              mean=0.0, std=1.0)
+print(fit.coefficients, fit.diagnostics)
+values = fit(jnp.linspace(-4, 4, 101))
+
+# Callables provide the same fitting API; use JAX operations if the result
+# will be differentiated or compiled. Scalar constant returns are supported.
+interactive = fit_exp([lambda s: 1.0, lambda s: jnp.sin(s), lambda s: jnp.cos(s)])
+```
+
+For an interactive attention calculation, pass the fitted callable as
+`attention_core(q, k, v, backend="blocked", score_kernel=interactive,
+attention_normalization=True)` from `attention/core.py`, using post-RoPE Q/K/V
+arrays with shape `[batch, time, heads, channels]`. Automatic differentiation
+passes through the fixed function to Q and K.
+
+`rbf(center, width)` means `exp(-0.5 * ((s-center)/width)**2)`; `sine(frequency,
+phase=0)` and `cosine(frequency, phase=0)` use radians. `monomial(power)` includes
+the constant at power zero. A named specification is a dictionary such as
+`{"kind": "rbf", "center": 0.0, "width": 1.5}`. Unknown kinds and parameters are
+rejected; specifications never execute strings as Python code.
+
+Fitting runs once on the CPU in float64. Gauss–Hermite quadrature discretizes
+the Gaussian expectation, and a column-scaled SVD least-squares solve finds the
+projection in the original basis. The functions need not be orthogonal. A zero
+function or numerical linear dependence raises an error instead of silently
+discarding terms. The default fit uses 64 quadrature nodes; a separate 128-node
+fit checks the change in the fitted function. `quadrature_order` and `check_order`
+are configurable, with `basis size <= quadrature_order < check_order <= 256`.
+
+Diagnostics include estimated absolute and relative L2 error, scaled-design
+condition numbers, relative change under the higher quadrature order, and an
+estimate of the Gaussian mass where the approximation is negative. The
+`quadrature_converged` flag requires both relative function change and relative
+error in the known exponential L2 norm to be at most `1e-7`.
+These are numerical checks, not error bounds for arbitrary functions: narrow
+RBFs or rapid oscillations may need more quadrature nodes. Increasing the basis
+span and resolving its integrals are separate requirements.
+
+Freeze the named basis, coefficients, Gaussian measure, fitting settings and
+diagnostics into the input recipe before allocating a training run:
+
+```python
+from scaffolds.transformer.configs import Config, ModelConfig, save_config
+
+config = Config(model=ModelConfig(
+    attention_basis=fit.to_config(),
+    attention_backend="blocked",  # auto also resolves to blocked on CPU or GPU
+    attention_normalization=True,
+    qk_norm=True,
+    initialization="transformer_reference",
+))
+save_config(config, "basis-recipe.yaml")
+```
+
+Fill in the study's data and training recipe before allocating with
+`scaffolds.records create`. Saved fits are restored without refitting, and resume
+checks include the entire specification. Anonymous callables cannot be serialized;
+use named functions for recorded training. The fitted coefficients are fixed and
+shared across layers and heads and add no trainable parameters. They exclude the
+existing polynomial degree, polynomial coefficient, and query-conditioning options.
+
+Normalized execution computes `sum_(i<=t) k(s_ti) v_i / sum_(i<=t) k(s_ti)`;
+unnormalized execution omits the denominator and supports the existing output
+scaling options (use head RMSNorm for new unnormalized runs). Scores are unshifted.
+The fit need not be positive: signed weights and negative nonzero sums are valid;
+zero or nonfinite denominators produce explicit numerical failures, without
+clipping or epsilon. Projection minimizes scalar-kernel L2 error, not normalized
+attention-output error. Only the blocked JAX path implements arbitrary bases;
+explicit fused, Mosaic, XLA-softmax or cuDNN requests are rejected. CPU tests cover
+analytic projections, forward/backward attention and training/resume; production
+GPU use requires the usual hardware qualification.
+
 ### QK-norm (cosine scores)
 
 QK-norm is required for new dot-product experiments unless the user explicitly

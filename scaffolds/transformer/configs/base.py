@@ -47,6 +47,9 @@ class ModelConfig:
     attention_backend: Literal["auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"] = "auto"
     attention_degree: int | None = None
     attention_normalization: bool = True
+    # Frozen scalar-basis projection from attention.basis.fit_exp(...).to_config().
+    # Coefficients are fitted before launch; evaluation currently uses blocked JAX.
+    attention_basis: dict | None = None
     # Unnormalized dot-product attention only: rescale each head's output
     # o_t = sum_(j<=t) k(s_tj) v_j before the output projection. "inverse_position"
     # divides by the number of visible keys t; "head_rms_norm" applies an RMSNorm over
@@ -133,6 +136,8 @@ class ModelConfig:
         static (fixed or learned) coefficients, at its widths and degrees."""
         from scaffolds.transformer.attention.backends.mosaic.api import MAX_QUERY_DEGREE, VALUE_WIDTH, WIDTHS
 
+        if self.attention_basis is not None:
+            return False
         degree = self.attention_degree
         integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
         taylor = (self.attention_normalization and integer_degree and degree >= 1
@@ -152,6 +157,18 @@ class ModelConfig:
                 and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
 
     def __post_init__(self):
+        if self.attention_basis is not None:
+            from scaffolds.transformer.attention.basis import projection_from_config
+
+            projection_from_config(self.attention_basis)
+            if (self.attention_mechanism != "dot_product" or self.attention_degree is not None
+                    or self.quadratic_mode != "fixed" or self.attention_coefficients != "fixed"
+                    or self.attention_fixed_coefficients is not None or self.attention_fixed_square_factors is not None
+                    or self.attention_coefficient_conditioning != "static"
+                    or self.attention_coefficient_parameterization != "direct"):
+                raise ValueError("attention_basis requires fixed scalar dot-product attention without polynomial options")
+            if self.attention_backend not in ("auto", "blocked"):
+                raise ValueError("attention_basis supports only auto or blocked execution")
         if self.kind != "transformer":
             raise ValueError("The shared scaffold supports only kind=transformer")
         if self.tie_embeddings is not False:

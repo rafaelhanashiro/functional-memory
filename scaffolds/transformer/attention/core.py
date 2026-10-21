@@ -29,6 +29,7 @@ def attention_core(
     deterministic: bool = True,
     rngs=None,
     weights_dtype=None,
+    score_kernel=None,
     **denominators,
 ):
     """Apply the mechanism selected by the existing flat model configuration.
@@ -44,6 +45,18 @@ def attention_core(
     denominators = {name: array for name, array in denominators.items() if array is not None}
     if not isinstance(attention_normalization, bool):
         raise ValueError("attention_normalization must be a boolean")
+    if score_kernel is not None:
+        from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+
+        if backend != "blocked":
+            raise ValueError("A custom scalar score kernel requires the blocked backend")
+        return blocked_dot_product_attention(
+            q, k, v, score_kernel=score_kernel, attention_normalization=attention_normalization,
+            attention_degree=attention_degree, quadratic_mode=quadratic_mode, coefficients=coefficients,
+            polynomial_coefficients=polynomial_coefficients, polynomial_square_factors=polynomial_square_factors,
+            query_polynomial_coefficients=query_polynomial_coefficients, key_polynomial_factors=key_polynomial_factors,
+            return_diagnostics=return_diagnostics, **denominators,
+        )
     if key_polynomial_factors is not None and query_polynomial_coefficients is None:
         raise ValueError("Key factors require query coefficients")
     if query_polynomial_coefficients is not None:

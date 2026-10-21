@@ -42,6 +42,9 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
             write_activation=config.gdn_write_activation,
             polynomial_degree=config.gdn_polynomial_degree, rngs=rngs,
         )
+    from scaffolds.transformer.attention.basis import projection_from_config
+
+    score_kernel = None if config.attention_basis is None else projection_from_config(config.attention_basis)
     return MultiHeadAttention(
         config.hidden_size, config.num_heads, config.num_kv_heads,
         config.qk_head_dim, config.value_head_dim, rope_theta=config.rope_theta,
@@ -54,6 +57,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
+        score_kernel=score_kernel,
         rngs=rngs,
     )
 
@@ -70,9 +74,16 @@ class MultiHeadAttention(nnx.Module):
         attention_output_scaling: str = "none", rms_norm_eps: float = 1e-6,
         attention_coefficient_conditioning: str = "static",
         attention_coefficient_activation: str = "identity",
+        score_kernel=None,
         rngs: nnx.Rngs,
     ):
         _validate_degree(attention_degree)
+        if score_kernel is not None and (
+                not callable(score_kernel) or backend != "blocked" or attention_degree is not None
+                or quadratic_mode != "fixed" or attention_fixed_coefficients is not None
+                or attention_fixed_square_factors is not None or attention_coefficient_conditioning != "static"):
+            raise ValueError("A scalar score kernel requires blocked attention without polynomial options")
+        self.score_kernel = score_kernel
         if not isinstance(attention_normalization, bool):
             raise ValueError("attention_normalization must be a boolean")
         if not isinstance(qk_norm, bool):
@@ -238,6 +249,7 @@ class MultiHeadAttention(nnx.Module):
             quadratic_mode=self.quadratic_mode, **parameters,
             return_diagnostics=return_diagnostics, dropout=self.dropout,
             deterministic=deterministic, rngs=rngs, weights_dtype=x.dtype,
+            score_kernel=self.score_kernel,
         )
         y, diagnostics = result if return_diagnostics else (result, None)
         telemetry.record_attention_output(
