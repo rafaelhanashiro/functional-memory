@@ -1,0 +1,67 @@
+{
+  "cases": [
+    {
+      "bitwise_equal_outputs_and_gradients": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "dtype": "bfloat16",
+      "identical_launches": true,
+      "independent": false,
+      "launches": 10
+    },
+    {
+      "bitwise_equal_outputs_and_gradients": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "dtype": "bfloat16",
+      "identical_launches": true,
+      "independent": true,
+      "launches": 10
+    },
+    {
+      "bitwise_equal_outputs_and_gradients": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "dtype": "float32",
+      "identical_launches": true,
+      "independent": false,
+      "launches": 10
+    },
+    {
+      "bitwise_equal_outputs_and_gradients": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "dtype": "float32",
+      "identical_launches": true,
+      "independent": true,
+      "launches": 10
+    }
+  ],
+  "created_utc": "2026-10-21T16:50:53.133718+00:00",
+  "device_kind": "NVIDIA B300 SXM6 AC",
+  "passed": true,
+  "reference_commit": "7fb44dc",
+  "source_commit": "6db92b3239d138928e0b601c754d0bd423818d77"
+}

@@ -17,7 +17,7 @@ class AttentionParameterSpec:
     name: str
     argument: str
     initial: tuple[float, ...]
-    sharing: Literal["global", "per_head"]
+    sharing: Literal["global", "per_head", "per_layer"]
     weight_decay: bool = False
     initial_shape: tuple[int, ...] | None = None
     # Independent N(0, initial_std^2) noise added to every stored entry, drawn from the
@@ -70,6 +70,11 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         from scaffolds.transformer.attention.qk_norm import initial_scale, parameter_specs as qk_norm_specs
 
         specs += qk_norm_specs(initial_scale=initial_scale(config), sharing=config.qk_norm_sharing)
+    if getattr(config, "positional_encoding", "rope") == "path":
+        from scaffolds.transformer.attention.path import parameter_specs as path_specs
+
+        specs += path_specs(hidden_size=config.hidden_size, qk_head_dim=config.qk_head_dim,
+                            rank=config.path_w_rank, conv_size=config.path_conv_size)
     if getattr(config, "attention_output_scaling", "none") == "head_rms_norm":
         from scaffolds.transformer.attention.output_scaling import parameter_specs as output_specs
 
@@ -87,12 +92,13 @@ def initial_attention_parameter_values(specs, *, num_layers: int, num_heads: int
     """Each declared array's starting value; random entries come from ``key`` by parameter name."""
     values = {}
     for spec in specs:
-        if spec.sharing not in ("global", "per_head"):
+        if spec.sharing not in ("global", "per_head", "per_layer"):
             raise ValueError(f"Unknown attention parameter sharing: {spec.sharing}")
         initial = jnp.asarray(spec.initial, dtype=jnp.float32)
         if spec.initial_shape is not None:
             initial = initial.reshape(spec.initial_shape)
-        shape = initial.shape if spec.sharing == "global" else (num_layers, num_heads, *initial.shape)
+        shape = (initial.shape if spec.sharing == "global" else (num_layers, *initial.shape)
+                 if spec.sharing == "per_layer" else (num_layers, num_heads, *initial.shape))
         value = jnp.broadcast_to(initial, shape)
         if spec.initial_std:
             if key is None:
@@ -118,10 +124,8 @@ def initialize_attention_parameters(owner, specs, *, num_layers: int, num_heads:
 
 def attention_parameter_count(config) -> int:
     """Count declared trainable values without allocating any device arrays."""
-    return sum(
-        len(spec.initial) * (1 if spec.sharing == "global" else config.num_layers * config.num_heads)
-        for spec in attention_parameter_specs(config)
-    )
+    multiplier = {"global": 1, "per_layer": config.num_layers, "per_head": config.num_layers * config.num_heads}
+    return sum(len(spec.initial) * multiplier[spec.sharing] for spec in attention_parameter_specs(config))
 
 
 def parameters_for_layer(owner, specs, layer_index: int) -> dict:

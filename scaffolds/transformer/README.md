@@ -283,6 +283,54 @@ Per-head output RMSNorm remains an independent option through
 actual input-dependent coefficient means, standard deviations, minima, and
 maxima on the fixed diagnostic sample, separately from projection parameters.
 
+### PaTH position encoding
+
+`positional_encoding: path` replaces RoPE with PaTH (Yang et al., arXiv:2505.16381):
+the score between query `t` and key `s <= t` is
+`q_t^T H_t H_(t-1) ... H_(s+1) k_s / sqrt(d_K)` with `H_t = I - beta_t w_t w_t^T`.
+As in the authors' flash-linear-attention layer, `w_t` comes from a rank-`path_w_rank`
+(32) projection shared by a layer's heads, a width-`path_conv_size` (3) causal depthwise
+convolution with SiLU, and L2 normalization per head, and
+`beta_t = 2 sigmoid(x_t W_beta + b_beta)` lies in (0, 2). The arrays `path_w_down`
+(`[layers, hidden, rank]`), `path_w_up`, `path_w_conv`, `path_beta_kernel`, and
+`path_beta_bias` (`[layers, heads, ...]`) are drawn from the mechanism stream
+(projections N(0, 0.02^2), the convolution with PyTorch's default variance, a zero bias),
+so the backbone keeps the softmax control's weights; all but the bias take weight decay.
+
+`attention_backend: blocked` runs `attention/path.py`, the authors' chunked algorithm in
+JAX: a UT transform per 128-token chunk, then a sweep over chunk distance that scores each
+query chunk against the key chunk behind it and moves the queries through that chunk's
+Householder product. Automatic differentiation of a rematerialized forward pass gives the
+derivative. It supports softmax (normalized, with a running maximum) and tanh
+query-conditioned unnormalized polynomials, is tested against the definition and the
+authors' PyTorch reference, and is the reference for the fused kernels and their
+diagnostics.
+
+`attention_backend: fused` runs FLA's fused Triton kernels
+(`attention/backends/fla_path_attention.py`, through `triton_port`, below). Softmax
+launches the eleven kernels of FLA's `parallel_path_attn` unchanged and in FLA's order,
+with its tiles (64-token UT-transform chunks and key blocks, 128-token query blocks, and
+512-token splits on H100 and B300), warps, stages, autotune menus, TF32 products, FP16
+copies of `w`, and buffers; outputs FLA updates in place are aliased outputs. The tanh
+query polynomial uses the same launches with FLA's six softmax-dependent kernels replaced
+by a fork (`fla_path_polynomial_kernels.py`): `o_t = sum_s p_t(s_ts) v_s` without
+normalization, so no running maximum, normalizer, or `delta`; the backward's softmax
+derivative becomes `dS_ts = p_t'(s_ts) dP_ts / sqrt(d_K)`, and the kernels that visit a
+(query, key) block also return `dc_r(t) = sum_s s_ts^r dP_ts`. Transport, Householder, and
+UT-transform arithmetic are FLA's. It needs an sm90+ GPU, `train.dtype: bfloat16` (with
+FP32 tiles one of FLA's kernels exceeds the shared memory), a prediction length divisible
+by 128, equal Q/K and value widths of 16, 32, 64, or 128 (up to 64 on B300, where FLA's dq
+kernel fails to launch at width 128), and degree 1-4; `auto` selects
+it there and the JAX implementation elsewhere. A row with a nonfinite output becomes NaN,
+as in `path.py`; a softmax score of -inf gets zero weight, as in FlashAttention. FLA
+rounds several intermediates to BF16 (dw and dbeta are stored in BF16): against FP32 its
+errors in the output and the q, k, v gradients are 1.5-3 times the JAX implementation's,
+and in dw, dbeta, and the coefficient gradients about 8 times (all below 1e-2 at the
+production shape). Its backward accumulates dk, dv, dw, and the split products'
+gradient with FP32 atomic additions, so dk, dv, dw, and dbeta are not bitwise repeatable;
+outputs, dq, and the coefficient gradients are. Accuracy, speed, and training pilots are
+in [validation](validation/README.md#fused-path-attention-kernels).
+
 ### Unnormalized output scaling
 
 `attention_output_scaling` rescales each head's unnormalized output
@@ -354,7 +402,7 @@ and the output projection. There is no positional encoding and no QK-norm.
 `blocked` is a token-by-token FP32 reference. `fused`
 (`attention/backends/fla_gated_delta_rule.py`) launches FLA's own chunked Triton kernels,
 imported unmodified from the pinned `flash-linear-attention` in the CUDA extra, through
-the vendored bridge: thin wrappers reorder arguments into the bridge's convention, the
+`triton_port` (below): thin wrappers reorder arguments into the bridge's convention, the
 forward and backward follow FLA's launch sequence under `jax.custom_vjp`, and the two
 chunk-local cumulative sums run in JAX. FLA reads the GPU through torch, which the
 environment installs CPU-only to satisfy imports, so the glue applies FLA's GPU choices
@@ -418,6 +466,54 @@ Explicit `precision`/`num_warps`/`min_ctas_per_sm` keyword arguments on
 effect when tracing a fresh executable. Backend metadata records the resolved
 options. Qualification and throughput measurements belong in
 [validation](validation/README.md).
+
+### Triton kernels written for PyTorch
+
+`attention/backends/triton_port.py` brings Triton kernels written for PyTorch (FLA's)
+into JAX without changing them. It replaces their torch host code: `device()` reads the
+compute capability from JAX and the opt-in shared memory from the CUDA driver (the
+scaffold's CPU-only torch cannot), `Device.has_shared_memory` and `Device.tile` reproduce
+FLA's `check_shared_mem` tiers and the tile sizes derived from them, `per_architecture`
+selects per-family autotune menus (FLA's reduced Blackwell menus), `autotune` hands a menu
+to jaxlib's autotuner, `jit_function` exposes an upstream kernel body, and `chunk_indices`
+and `chunk_offsets` build FLA's variable-length chunk tables. `launch(kernel, *inputs,
+outputs=..., grid=..., name=..., dot_precision=..., num_warps=..., num_stages=...,
+**constexprs)` declares one launch, with outputs `empty(shape, dtype)`, `zeros(shape,
+dtype)` (upstream `torch.zeros`, e.g. for atomic sums), or `update(array)` (an array the
+kernel modifies in place, aliased to its output). It lowers to the vendored ejkernel
+`triton_call` on a GPU; inside `triton_port.interpreter()` the same launches run in
+Triton's interpreter on the CPU through `jax.pure_callback`, with tiles chosen for an
+emulated device, so a port's orchestration and gradients can be tested without a GPU
+(FP32 or FP16 operands: the interpreter cannot compute in BF16). Only Triton kernels are
+in scope; CUDA/C++ extensions and calls into PyTorch are not.
+
+Each ported kernel follows one convention:
+
+1. **Wrappers** (`<name>_kernels.py`): `@triton.jit` functions in the bridge's argument
+   order (inputs, arrays updated in place, outputs, constexprs) that call the upstream
+   body from `jit_function` with its heuristic flags fixed. A kernel whose mathematics
+   changes is copied into its own module with the upstream license header and a
+   docstring listing every change; unchanged kernels are never copied.
+2. **Operation** (`<name>.py`): a `jax.custom_vjp` whose forward and backward follow the
+   upstream autograd function's launch sequence, dtype casts, and buffer semantics, with
+   tiles, warps, stages, and menus taken from `triton_port.device()` through the
+   upstream branches, and an explicit dot precision.
+3. **Reference oracle**: a pure-JAX implementation of the same contract, which is the
+   recipe's `blocked` backend and computes its diagnostics.
+4. **Tests**: CPU tests in `interpreter()` comparing outputs and every gradient with the
+   oracle (including the upstream tile branches), and GPU tests (`-m gpu`, no skips) in
+   BF16 at the production shape against the FP32-HIGHEST oracle, at tile-boundary
+   lengths, for causality, nonfinite inputs, repeatability, and the model's dispatch.
+   `acceptance.py` adds both for recipes that resolve to the kernel.
+5. **Qualification**: the GPU tests pass on one H100 (`dogo`, `.venv`) and one B300
+   (`akita`, `.venv-cuda13`); results, benchmarks, and limitations are recorded in a
+   `validation/` section with JSON under `validation/runs/`. Launches run outside XLA
+   command buffers (`--xla_gpu_enable_command_buffer=`, set by acceptance's runtime
+   environment) with the locked toolkit's `ptxas`.
+
+FLA's Gated DeltaNet and PaTH attention follow it; FLA's GDN launches are unchanged by
+the move onto `triton_port` (compared launch for launch and bitwise in
+[validation](validation/README.md#fused-path-attention-kernels)).
 
 ### Gated linear attention
 

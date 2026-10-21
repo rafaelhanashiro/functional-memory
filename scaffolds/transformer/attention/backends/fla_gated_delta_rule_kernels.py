@@ -20,13 +20,7 @@ from scaffolds.transformer.attention.backends.fla_independent_gated_delta_rule_k
     recompute_w_u_independent,
     wy_bwd_independent,
 )
-
-
-def _base(kernel):
-    """FLA kernels are Heuristics(Autotuner(JITFunction)); the wrappers call the JIT function."""
-    while not isinstance(kernel, triton.JITFunction):
-        kernel = kernel.fn
-    return kernel
+from scaffolds.transformer.attention.backends.triton_port import jit_function
 
 
 # FLA picks this from torch's view of the device at import. The inverse must use
@@ -34,14 +28,14 @@ def _base(kernel):
 # loses information before the inverse-adjoint cancellations.
 _fla_chunk_fwd.SOLVE_TRIL_DOT_PRECISION = tl.constexpr("tf32x3")
 
-FLA_KKT_SOLVE = _base(_fla_chunk_fwd.chunk_gated_delta_rule_fwd_kkt_solve_kernel)
-FLA_RECOMPUTE_W_U = _base(_fla_wy_fast.recompute_w_u_fwd_kernel)
-FLA_FWD_H = _base(_fla_delta_h.chunk_gated_delta_rule_fwd_kernel_h_blockdim64)
-FLA_FWD_O = _base(_fla_chunk_o.chunk_fwd_kernel_o)
-FLA_BWD_DV_LOCAL = _base(_fla_chunk_o.chunk_bwd_kernel_dv_local)
-FLA_BWD_DHU = _base(_fla_delta_h.chunk_gated_delta_rule_bwd_kernel_dhu_blockdim64)
-FLA_BWD_DQKWG = _base(_fla_chunk_o.chunk_bwd_kernel_dqkwg)
-FLA_WY_BWD = _base(_fla_wy_fast.prepare_wy_repr_bwd_kernel)
+FLA_KKT_SOLVE = jit_function(_fla_chunk_fwd.chunk_gated_delta_rule_fwd_kkt_solve_kernel)
+FLA_RECOMPUTE_W_U = jit_function(_fla_wy_fast.recompute_w_u_fwd_kernel)
+FLA_FWD_H = jit_function(_fla_delta_h.chunk_gated_delta_rule_fwd_kernel_h_blockdim64)
+FLA_FWD_O = jit_function(_fla_chunk_o.chunk_fwd_kernel_o)
+FLA_BWD_DV_LOCAL = jit_function(_fla_chunk_o.chunk_bwd_kernel_dv_local)
+FLA_BWD_DHU = jit_function(_fla_delta_h.chunk_gated_delta_rule_bwd_kernel_dhu_blockdim64)
+FLA_BWD_DQKWG = jit_function(_fla_chunk_o.chunk_bwd_kernel_dqkwg)
+FLA_WY_BWD = jit_function(_fla_wy_fast.prepare_wy_repr_bwd_kernel)
 
 
 @triton.jit

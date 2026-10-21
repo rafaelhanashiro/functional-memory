@@ -2,7 +2,9 @@ from concurrent.futures import ThreadPoolExecutor
 import csv
 import hashlib
 import json
+import os
 from pathlib import Path
+import stat
 from types import SimpleNamespace
 
 import pytest
@@ -559,3 +561,17 @@ def test_cli_keeps_backends_without_a_mosaic_kernel_or_already_mosaic(tmp_path, 
     main()
     run = Path(capsys.readouterr().out.strip())
     assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_backend"] == model["attention_backend"]
+
+
+@pytest.mark.parametrize("umask,mode", [(0o022, 0o644), (0o002, 0o664), (0o077, 0o600)])
+def test_records_written_atomically_follow_the_process_umask(tmp_path, umask, mode):
+    previous = os.umask(umask)
+    try:
+        study = tmp_path / "study"
+        run = create_run(study, recipe())
+        update_record(run, {"status": "running"})
+        regenerate_index(study)
+    finally:
+        os.umask(previous)
+    for path in (run / "config.yaml", run / "record.json", study / "sweep.yaml", study / "runs.csv"):
+        assert stat.S_IMODE(path.stat().st_mode) == mode, path.name

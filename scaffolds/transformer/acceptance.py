@@ -53,6 +53,9 @@ RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHO
 NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
+PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
+PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
+TRITON_PORT_TESTS = "scaffolds/transformer/tests/test_triton_port.py"
 QUERY_KEY_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_key_polynomial.py"
 TANH_WRITE_GDN_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write.py"
 TANH_WRITE_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write_kernel.py"
@@ -91,6 +94,10 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if spec.select_tests is not None:
         paths.extend(spec.select_tests(config, resolved_backend, cpu))
     model = config["model"]
+    if model.get("positional_encoding", "rope") == "path":
+        paths.append(PATH_ATTENTION_TESTS)
+        if resolved_backend == "fused":
+            paths.extend((PATH_ATTENTION_FUSED_TESTS, *((TRITON_PORT_TESTS,) if cpu else ())))
     if (model.get("attention_mechanism") == "gated_deltanet"
             and model.get("gdn_write_activation", "sigmoid") == "tanh"):
         if cpu:
@@ -215,7 +222,8 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
     """Shared acceptance for a Transformer recipe across all attention families."""
     validate_config(config)
     runtime_env = {}
-    if config.model.attention_mechanism in ("gla", "gated_deltanet"):
+    if (config.model.attention_mechanism in ("gla", "gated_deltanet")
+            or (config.model.positional_encoding == "path" and config.model.attention_backend in ("auto", "fused"))):
         # The custom-call bridge executes outside XLA command buffers.
         flags = os.environ.get("XLA_FLAGS", "").split()
         flags = [flag for flag in flags if not flag.startswith("--xla_gpu_enable_command_buffer=")]
@@ -413,6 +421,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_amplitude_initial=1.0,
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
+                                           positional_encoding="rope",
                                            attention_coefficient_amplitude_scale="none",
                                            attention_coefficient_initialization="taylor",
                                            attention_denominator_degree=None,
@@ -459,6 +468,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_conditioning="static",
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
+        positional_encoding="rope",
         attention_coefficient_amplitude_scale="none",
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False))
