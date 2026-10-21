@@ -9,5 +9,17 @@
   "name": "200m-rbf-n05-unnormalized-headrms-qknorm-dk64-seed0",
   "record_schema_version": 1,
   "run_id": "r1b486c356e1a",
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "accepted_gpu_types": [
+      "B300",
+      "H100"
+    ],
+    "allocation_hours": 24,
+    "gpu_count": 1,
+    "partition": "standard",
+    "slurm_job_id": "223556",
+    "source_commit": "b1d022d589fd082fba574373b302a054949ee7e8",
+    "submitted_utc": "2026-10-21T14:36:55.380732+00:00"
+  }
 }
