@@ -4,6 +4,33 @@ import pytest
 from scaffolds.transformer import acceptance as preflight
 
 
+def test_long_training_requires_requeue_and_checkpoint_progress():
+    from dataclasses import replace
+    config = {"optim": {"total_steps": 19074}, "train": {"ckpt_every": 500, "eval_batches": 7}}
+    timing = {"runtime_seconds": 300, "train_step_seconds": [100, 12, 13],
+              "evaluation_seconds": [2], "checkpoint_seconds": [15]}
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), allocation_hours=24)
+    with pytest.raises(RuntimeError, match="beyond a 24h allocation"):
+        preflight.validate_allocation_timing(spec, config, timing, 80 * 3600)
+    requeue = replace(spec, allow_requeue=True)
+    result = preflight.validate_allocation_timing(requeue, config, timing, 80 * 3600)
+    assert result["estimated_allocations"] == 4
+    assert result["allow_requeue"] is True
+    config["train"]["ckpt_every"] = 10000
+    with pytest.raises(RuntimeError, match="before durable checkpoint progress"):
+        preflight.validate_allocation_timing(requeue, config, timing, 80 * 3600)
+    config["train"]["ckpt_every"] = 0
+    with pytest.raises(RuntimeError, match="periodic checkpoints"):
+        preflight.validate_allocation_timing(requeue, config, timing, 80 * 3600)
+
+
+@pytest.mark.parametrize("projected", (float("nan"), float("inf"), 0, -1))
+def test_allocation_timing_rejects_invalid_estimates(projected):
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), allow_requeue=True)
+    with pytest.raises(RuntimeError, match="Invalid allocation budget"):
+        preflight.validate_allocation_timing(spec, {}, {}, projected)
+
+
 def test_acceptance_rejects_skipped_or_empty_test_reports(tmp_path):
     report = tmp_path / "report.xml"
     report.write_text('<testsuite><testcase name="a"/><testcase name="b"><skipped/></testcase></testsuite>')

@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 import hashlib
 import json
@@ -80,7 +80,9 @@ class AcceptanceSpec:
     runtime_env: dict[str, str] = field(default_factory=dict)
     """Environment the launcher exports for this experiment (for example XLA flags)."""
     pilot_steps: int = 20
-    allocation_hours: int = 48
+    allocation_hours: float = 48
+    allow_requeue: bool = False
+    """Launcher guarantees checkpoint resumption across allocation time limits."""
     select_tests: Callable | None = None
     """Optional recipe/backend selector called as ``(config, resolved_backend, cpu)``."""
 
@@ -177,6 +179,8 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
         elif model.get("attention_basis") is not None:
             if cpu:
                 tests.extend(["basis_projection", "basis_attention"])
+            else:
+                tests.append("basis_gpu")
         elif normalized:
             if degree is None:
                 if cpu:
@@ -277,6 +281,7 @@ def identity(spec: AcceptanceSpec, config_path: Path, gpu_count: int, gpu_type: 
                            (("train", config.data.train_manifest), ("eval", config.data.eval_manifest))},
         "gpu_count": gpu_count, "gpu_type": gpu_type.upper(),
         "runtime": runtime_identity(),
+        "timing_policy": {"allocation_hours": spec.allocation_hours, "allow_requeue": spec.allow_requeue},
     }
     return _sealed(payload)
 
@@ -499,6 +504,9 @@ def _run_worker(spec, args, name, output, *, stop, cpu=False) -> dict:
     command = [sys.executable, "-m", entry_module(spec), str(args.config), "--directory", str(args.directory),
                "--gpu-count", str(args.gpu_count), "--gpu-type", args.gpu_type, "--worker", name,
                "--output", str(output), "--stop-after-step", str(stop)]
+    command.extend(["--allocation-hours", str(spec.allocation_hours)])
+    if spec.allow_requeue:
+        command.append("--allow-requeue")
     subprocess.run(command, cwd=ROOT, env=dict(os.environ, JAX_PLATFORMS="cpu" if cpu else "cuda"), check=True)
     return json.loads(Path(output).read_text())
 
@@ -616,9 +624,10 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             projected = (timing["runtime_seconds"] + max(steady) * total
                          + max(timing["evaluation_seconds"]) * config["train"]["eval_batches"] * evaluations
                          + max(timing["checkpoint_seconds"]) * checkpoints)
-            if projected > (spec.allocation_hours - 2) * 3600:
-                raise RuntimeError(f"Pilot projects beyond a {spec.allocation_hours}h allocation: {projected / 3600:.2f} hours")
-            record(path, experiment, outcome=outcome, validation=validation, projected_hours=projected / 3600)
+            allocation = validate_allocation_timing(spec, config, timing, projected)
+            record(path, experiment, outcome=outcome, validation=validation,
+                   projected_hours=projected / 3600, **allocation)
+            print(f"projected_training_hours={projected / 3600:.2f} allocation={allocation}", flush=True)
         stage = "resume"
         path = directory / f"{stage}.json"
         if not passed(path, experiment):
@@ -645,6 +654,28 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
         raise
 
 
+def validate_allocation_timing(spec, config, timing, projected):
+    """Require either a complete run or safe checkpoint progress in each allocation."""
+    budget = (spec.allocation_hours - 2) * 3600
+    if budget <= 0 or not math.isfinite(projected) or projected <= 0:
+        raise RuntimeError("Invalid allocation budget or projected runtime")
+    if spec.allow_requeue:
+        # The first checkpoint must fit even with compilation, validation, and I/O.
+        interval = config["train"]["ckpt_every"]
+        if interval <= 0:
+            raise RuntimeError("Requeue requires periodic checkpoints")
+        checkpoint_window = (timing["runtime_seconds"]
+                             + max(timing["train_step_seconds"][1:]) * min(interval, config["optim"]["total_steps"])
+                             + max(timing["evaluation_seconds"]) * config["train"]["eval_batches"]
+                             + max(timing["checkpoint_seconds"]))
+        if checkpoint_window > budget:
+            raise RuntimeError("Pilot projects beyond one allocation before durable checkpoint progress")
+    elif projected > budget:
+        raise RuntimeError(f"Pilot projects beyond a {spec.allocation_hours}h allocation: {projected / 3600:.2f} hours")
+    return {"allocation_hours": spec.allocation_hours, "allow_requeue": spec.allow_requeue,
+            "estimated_allocations": math.ceil(projected / budget)}
+
+
 def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("config", nargs="?", type=Path)
@@ -657,11 +688,21 @@ def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
     parser.add_argument("--runtime-env", action="store_true", help="Print shell exports for the launcher and exit")
     parser.add_argument("--test-cache", type=Path,
                         help="Directory sharing passed test stages between runs with the same test identity")
+    parser.add_argument("--allocation-hours", type=float,
+                        help="Allocation duration for the pilot timing check (reserves two hours)")
+    parser.add_argument("--allow-requeue", action="store_true",
+                        help="Launcher requeues at time limits; require checkpoint progress per allocation")
     args = parser.parse_args(argv)
     if not isinstance(spec, AcceptanceSpec):
         if args.config is None:
             parser.error("config is required to select attention acceptance checks and runtime settings")
         spec = spec(load_config(args.config))
+    if args.allocation_hours is not None:
+        if not math.isfinite(args.allocation_hours) or args.allocation_hours <= 2:
+            parser.error("--allocation-hours must be finite and greater than two")
+        spec = replace(spec, allocation_hours=args.allocation_hours)
+    if args.allow_requeue:
+        spec = replace(spec, allow_requeue=True)
     if args.stop_after_step is None:
         args.stop_after_step = spec.pilot_steps
     if args.runtime_env:

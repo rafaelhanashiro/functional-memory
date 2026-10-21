@@ -94,8 +94,9 @@ def test_orcd_launcher_time_limit_fits_both_partitions():
     assert hours("time-min") <= 6 < hours("time") <= 48
 
 
-def test_orcd_launcher_requeues_its_worker_before_the_time_limit(tmp_path):
-    launcher = (ROOT / "scaffolds/transformer/launchers/orcd.sbatch").read_text()
+@pytest.mark.parametrize("name", ("orcd", "kennel"))
+def test_launcher_requeues_its_worker_before_the_time_limit(tmp_path, name):
+    launcher = (ROOT / f"scaffolds/transformer/launchers/{name}.sbatch").read_text()
     assert re.search(r"^#SBATCH --signal=B:USR1@\d+$", launcher, re.M)
     assert re.search(r"^#SBATCH --requeue$", launcher, re.M)
     requeue = re.search(r"^requeue_before_limit\(\) \{\n.*?^trap requeue_before_limit USR1$", launcher, re.M | re.S)

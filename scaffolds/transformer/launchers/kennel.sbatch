@@ -15,6 +15,7 @@
 #SBATCH --gres=gpu:4
 #SBATCH --exclude=collie,samoyed,doodle,terrier
 #SBATCH --time=2-00:00:00
+#SBATCH --signal=B:USR1@600
 #SBATCH --requeue
 #SBATCH --open-mode=append
 set -euo pipefail
@@ -86,6 +87,11 @@ finish_record() {
   exit "$result"
 }
 trap finish_record EXIT
+requeue_before_limit() {
+  echo "Requeueing job $SLURM_JOB_ID before its time limit; it resumes from the latest checkpoint"
+  scontrol requeue "$SLURM_JOB_ID"
+}
+trap requeue_before_limit USR1
 start_watchdog "$RUN_ROOT/training.log"
 export JAX_PLATFORMS=cuda
 export TRANSFORMER_HOST_STAGING="${TRANSFORMER_HOST_STAGING:-0}"
@@ -144,7 +150,8 @@ PY
 # Acceptance and production share the allocation; matching passed stages are reused on a requeue
 # to the same GPU model, and passed test stages are shared with the worktree's other runs.
 run_step "$PYTHON" -m "$ADAPTER" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
-  --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --test-cache "$CACHE/acceptance-tests"
+  --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --test-cache "$CACHE/acceptance-tests" \
+  --allocation-hours "${TRANSFORMER_ALLOCATION_HOURS:-48}" --allow-requeue
 "$PYTHON" - "$RUN_ROOT" "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT/success.json" <<'PY'
 import hashlib, json, sys
 from pathlib import Path

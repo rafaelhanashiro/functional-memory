@@ -14,7 +14,7 @@ for these synthetic checks. The authoritative record is
 ### Fixed scalar RBF bases
 
 On 2026-10-21, Slurm job `223516` on one B300 (`akita`) passed all eight
-RBF accuracy cases (counts 3, 5, 9, 20; FP32 and BF16), using source
+normalized RBF accuracy cases (counts 3, 5, 9, 20; FP32 and BF16), using source
 `6d37d6098c37dce8c2fd10a393ee7216b7a78e2e` and the locked CUDA 13 environment with
 loaded cuBLAS 13.2.2. The [qualification record](runs/rbf-basis-b300/record.json)
 pins the exact frozen configurations, source, dependency lock, runtime, successful
@@ -44,9 +44,14 @@ finite. Full-recipe training acceptance, data integrity, and checkpoint resumpti
 on the GPU remain prerequisites for production; the tiny CPU training/resume check
 does not establish those GPU properties.
 
-Submit from a worktree with its own locked GPU environment and committed source:
+Reproduce these normalized operator measurements from their pinned source in a
+separate worktree with its own locked GPU environment:
 
 ```bash
+git worktree add --detach worktrees/rbf-normalized-validation 6d37d6098c37dce8c2fd10a393ee7216b7a78e2e
+cd worktrees/rbf-normalized-validation
+UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
+  uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
 sbatch --job-name=rbf-qualification \
   --output='scaffolds/transformer/validation/logs/rbf-basis-%j.log' \
   scaffolds/transformer/validation/qualify_basis.sbatch "$(git rev-parse HEAD)" \

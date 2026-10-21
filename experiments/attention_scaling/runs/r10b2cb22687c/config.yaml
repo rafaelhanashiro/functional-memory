@@ -29,7 +29,7 @@ model:
   remat: true
   attention_backend: blocked
   attention_degree: null
-  attention_normalization: true
+  attention_normalization: false
   attention_basis:
     version: 1
     target: exp
@@ -38,55 +38,31 @@ model:
       center: -6.0
       width: 1.0
     - kind: rbf
-      center: -4.5
-      width: 1.0
-    - kind: rbf
-      center: -3.0
-      width: 1.0
-    - kind: rbf
-      center: -1.5
-      width: 1.0
-    - kind: rbf
       center: 0.0
-      width: 1.0
-    - kind: rbf
-      center: 1.5
-      width: 1.0
-    - kind: rbf
-      center: 3.0
-      width: 1.0
-    - kind: rbf
-      center: 4.5
       width: 1.0
     - kind: rbf
       center: 6.0
       width: 1.0
     coefficients:
-    - 0.7842980450462962
-    - -0.1523710791787486
-    - 0.06293250466768532
-    - 0.057376729248309444
-    - 0.38759739950223415
-    - 1.574309886972801
-    - 7.516279945564808
-    - 30.74141419377182
-    - 176.47302400187155
+    - 0.0038884559389006693
+    - 1.568715063994447
+    - 632.8648352636275
     mean: 0.0
     std: 1.0
     quadrature_order: 128
     check_order: 256
     rcond: 1.0e-12
     diagnostics:
-      rank: 9
-      condition_number: 12.422514763841649
-      check_condition_number: 12.422514763841642
-      l2_error: 0.026884360282285136
-      relative_l2_error: 0.009890203436898776
-      relative_quadrature_change: 7.659704595254442e-16
+      rank: 3
+      condition_number: 1.0035116507535606
+      check_condition_number: 1.0035116507535604
+      l2_error: 2.130832720750893
+      relative_l2_error: 0.7838895505396626
+      relative_quadrature_change: 7.890159843077905e-17
       relative_target_norm_error: 3.3306690738754696e-16
       quadrature_converged: true
       negative_mass_estimate: 0.0
-  attention_output_scaling: none
+  attention_output_scaling: head_rms_norm
   attention_mechanism: dot_product
   gdn_conv_size: 4
   gdn_erase_mode: tied
@@ -134,8 +110,8 @@ train:
   seed: 0
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/attention_scaling/runs/r467aea7027c0
-  checkpoint_dir: experiments/attention_scaling/runs/r467aea7027c0/checkpoints
+  workdir: experiments/attention_scaling/runs/r10b2cb22687c
+  checkpoint_dir: experiments/attention_scaling/runs/r10b2cb22687c/checkpoints
   micro_batch_size: 1
   log_every: 10
   eval_every: 1000
@@ -143,7 +119,7 @@ train:
   ckpt_every: 500
   wandb_project: functional-memory
   wandb_entity: rafah-massachusetts-institute-of-technology
-  wandb_run_name: 200m-rbf-n09-normalized-qknorm-dk64-seed0
+  wandb_run_name: 200m-rbf-n03-unnormalized-headrms-qknorm-dk64-seed0
   wandb_group: attention_scaling
   wandb_dir: null
   wandb_mode: online

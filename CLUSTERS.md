@@ -39,6 +39,12 @@ accept either B300 or H100 by requesting `--gres=gpu:N` and excluding the
 A100/A6000 nodes; A6000 training is markedly slower in this project's tests. General priority is `debug > standard > long > sweep`.
 Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
 60 seconds (the supplied PDFs say 120); `sweep` has no grace period.
+The Transformer Kennel launcher requeues ten minutes before the time limit and
+resumes the latest checkpoint. For `standard`, submit with
+`TRANSFORMER_ALLOCATION_HOURS=24` and `--time=24:00:00`; acceptance checks that
+durable checkpoint progress fits each allocation and records the total projected
+training time across allocations. Clear inherited `LD_LIBRARY_PATH` at submission
+so system CUDA libraries cannot override the locked environment's wheels.
 
 ### Kennel transfer policy
 

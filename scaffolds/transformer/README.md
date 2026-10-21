@@ -740,6 +740,14 @@ Studies configure these shared modules with execution modules at their root
   `TRANSFORMER_STALL_MINUTES` (default 20), the job logs its GPUs' state, ends the
   running step, and exits with code 124. The finalizer requeues the job, which resumes
   from its latest checkpoint, for a run's first two stalls and records a third as a failure.
+  Kennel also requeues ten minutes before its allocation expires. Set
+  `TRANSFORMER_ALLOCATION_HOURS` to the requested duration (default 48; use 24
+  for standard). Acceptance records the full-run estimate and allows multiple
+  allocations only if compilation, evaluation, and a checkpoint interval fit
+  inside one allocation with two hours reserved. The CLI exposes this policy as
+  `--allocation-hours HOURS --allow-requeue`; without the latter, the full run
+  must fit one allocation. Requeues can repeat up to one checkpoint interval,
+  and queue waits are additional to the estimate.
 - `launchers/orcd.sbatch` does the same on ORCD. Its allocations fit that cluster's
   per-user GPU caps; a job asks for 12 hours, accepts `mit_normal_gpu`'s 6-hour
   maximum, and requeues itself before its limit (see [CLUSTERS.md](../../CLUSTERS.md)).

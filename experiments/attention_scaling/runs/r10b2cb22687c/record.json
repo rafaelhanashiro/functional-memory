@@ -1,0 +1,13 @@
+{
+  "attention_kernel": "fixed_basis",
+  "config": {
+    "path": "experiments/attention_scaling/runs/r10b2cb22687c/config.yaml",
+    "sha256": "5498c0ee64a39bd39a55dfe9b8318bfefd880876143c9f8a6495f101bf23c001"
+  },
+  "home_cluster": "kennel",
+  "label": "200m-rbf-n03-unnormalized-headrms-qknorm-dk64-seed0",
+  "name": "200m-rbf-n03-unnormalized-headrms-qknorm-dk64-seed0",
+  "record_schema_version": 1,
+  "run_id": "r10b2cb22687c",
+  "status": "planned"
+}
