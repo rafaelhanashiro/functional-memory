@@ -11,6 +11,40 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Single-GPU gradient accumulation
+
+The compiled single-GPU accumulator is checked against the previous Python
+loop for complete parameter/optimizer states, supplied dropout RNGs, clipping,
+and coefficient penalties. The regression selection also exercises numerical
+failure recording and exact checkpoint resumption, including scalar-basis
+attention. Evidence and the current GPU benchmark status are in
+[the accumulation record](runs/rbf-accumulation/record.json).
+
+The GPU benchmark compares Python and compiled accumulation at microbatch 1,
+then compiled microbatches 2, 4, 8, 16, 32, and 64, for the fixed 3- and 20-RBF
+recipes. All cases retain global batch 256, rematerialization, unnormalized
+attention, QK normalization, per-head RMSNorm and the original model/optimizer.
+Each case starts a fresh process and records synchronized complete-update
+timings and allocator peaks. Synthetic tokens are resident before timing;
+compilation, data loading, evaluation and checkpoints are excluded. Failed or
+out-of-memory configurations remain visible. No production microbatch or
+speedup is established until these measurements complete.
+
+From the worktree with its locked environment, reproduce with:
+
+```bash
+mkdir -p scaffolds/transformer/validation/logs
+sbatch --partition=standard --job-name=rbf-microbatch-bench \
+  --output='scaffolds/transformer/validation/logs/rbf-accumulation-%j.log' \
+  --export="ALL,SHARED_TRANSFORMER_SOURCE_COMMIT=$(git rev-parse HEAD)" \
+  scaffolds/transformer/validation/benchmark_accumulation.sbatch
+```
+
+This requests one H100. Reports are written beneath
+`validation/runs/rbf-accumulation/<job_id>/`; `exit-status.txt` preserves
+subprocess exits, including timeouts, alongside each case's report and log.
+`RUNS` and `MICROBATCHES` can restrict the cases through Slurm's environment.
+
 ### Fixed scalar RBF bases
 
 On 2026-10-21, Slurm job `223516` on one B300 (`akita`) passed all eight

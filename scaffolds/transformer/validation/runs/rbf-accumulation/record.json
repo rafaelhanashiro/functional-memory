@@ -1,0 +1,87 @@
+{
+  "cpu": {
+    "checks": [
+      "compiled/Python complete-state parity over multiple optimizer updates",
+      "dropout RNGs, gradient averaging and clipping",
+      "coefficient penalties with and without the denominator",
+      "numerical-failure detection and retained diagnostics",
+      "exact checkpoint resumption, including basis attention, GLA and Gated DeltaNet",
+      "benchmark isolation, input-recipe preservation and timing sample accounting"
+    ],
+    "commands": [
+      "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_compiled_accumulation.py scaffolds/transformer/tests/test_training.py scaffolds/transformer/tests/test_update_numerics.py scaffolds/transformer/tests/test_odd_training.py scaffolds/transformer/tests/test_unnormalized_training.py scaffolds/transformer/tests/test_basis_attention.py scaffolds/transformer/tests/test_learned_polynomial_rational.py",
+      "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_gated_deltanet.py::test_training_reports_diagnostics_and_resumes_exactly scaffolds/transformer/tests/test_gla_integration.py::test_gla_packed_training_and_fresh_resume_match_uninterrupted"
+    ],
+    "reports": [
+      {
+        "errors": 0,
+        "failures": 0,
+        "path": "scaffolds/transformer/validation/runs/rbf-accumulation/cpu.xml",
+        "sha256": "6645e08cea54283a09e65c84d093c7be5077a240d839944b30f9e77e6c6eeede",
+        "skipped": 10,
+        "tests": 192
+      },
+      {
+        "errors": 0,
+        "failures": 0,
+        "path": "scaffolds/transformer/validation/runs/rbf-accumulation/recurrent-training.xml",
+        "sha256": "c5c09702598ab7ea10c966525743a94f25f9eac18d1f3fed4671d72bff7e41fb",
+        "skipped": 0,
+        "tests": 3
+      }
+    ],
+    "status": "passed"
+  },
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "format": "shared-transformer-accumulation",
+  "gpu_benchmark": {
+    "global_batch_size": 256,
+    "inputs": [
+      {
+        "config": "experiments/attention_scaling/runs/r10b2cb22687c/config.yaml",
+        "run_id": "r10b2cb22687c",
+        "sha256": "5498c0ee64a39bd39a55dfe9b8318bfefd880876143c9f8a6495f101bf23c001"
+      },
+      {
+        "config": "experiments/attention_scaling/runs/r873f76c0a542/config.yaml",
+        "run_id": "r873f76c0a542",
+        "sha256": "85ce6f99c81562fb34161fefc8d7ba343d051d71626f1e446ccdca8f05e5e169"
+      }
+    ],
+    "launcher_sha256": "3171d11b66c06bbbbfe5e67d12367274d02845083d2d259519d62dc1e2bd5770",
+    "microbatch_sizes": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
+    "production_microbatch_recommendation": null,
+    "scheduler_reason": "QOSMaxGRESPerUser",
+    "status": "pending",
+    "submission": {
+      "command": [
+        "sbatch",
+        "--parsable",
+        "--partition=standard",
+        "--job-name=rbf-microbatch-bench",
+        "--output=scaffolds/transformer/validation/logs/rbf-accumulation-%j.log",
+        "--export=ALL,SHARED_TRANSFORMER_SOURCE_COMMIT=b3c8e372552a8c737bce2f9563b5e7ab05086040",
+        "scaffolds/transformer/validation/benchmark_accumulation.sbatch"
+      ],
+      "gpu_type": "H100",
+      "gpus": 1,
+      "job_id": "223579",
+      "partition": "standard",
+      "source_commit": "b3c8e372552a8c737bce2f9563b5e7ab05086040"
+    },
+    "timed_updates": 3,
+    "warmup_updates": 2
+  },
+  "home_cluster": "kennel",
+  "schema_version": 1,
+  "source_commit": "b3c8e372552a8c737bce2f9563b5e7ab05086040",
+  "status": "cpu_passed_gpu_pending"
+}
