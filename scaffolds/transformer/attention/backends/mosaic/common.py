@@ -20,6 +20,20 @@ BF16, BF16X3 = "bf16", "bf16x3"
 PRECISIONS = (BF16, BF16X3)
 
 
+# B300 per-block shared memory, less a margin for barriers and alignment.
+BLACKWELL_SMEM_BYTES = 232448 - 2048
+
+
+def blackwell_dkv_stages(width, value_width, vector_count, time, *, block_q=64, block_k=128, warpgroups=2):
+    """Q/dO ring depth (3, else 2) of Blackwell's dK/dV kernel, which keeps every query's FP32
+    vectors in shared memory beside its BF16 K/V block; None when even two stages do not fit."""
+    fixed = 2 * (warpgroups * block_k * (width + value_width) + vector_count * time * 2)
+    for stages in (3, 2):
+        if fixed + stages * 2 * block_q * (width + value_width) <= BLACKWELL_SMEM_BYTES:
+            return stages
+    return None
+
+
 def part_count(precision):
     return {BF16: 1, BF16X3: 3}[precision]
 

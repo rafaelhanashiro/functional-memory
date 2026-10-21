@@ -134,7 +134,7 @@ class ModelConfig:
         """Whether a Mosaic GPU kernel implements this recipe's attention: normalized fixed
         Taylor, tanh query-conditioned polynomial attention, or an unnormalized polynomial with
         static (fixed or learned) coefficients, at its widths and degrees."""
-        from scaffolds.transformer.attention.backends.mosaic.api import MAX_QUERY_DEGREE, VALUE_WIDTH, WIDTHS
+        from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
 
         degree = self.attention_degree
         integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
@@ -145,12 +145,12 @@ class ModelConfig:
                   and self.attention_coefficient_conditioning == "static")
         query = (not self.attention_normalization and self.attention_coefficient_conditioning in ("query", "query_key")
                  and self.attention_coefficient_activation == "tanh" and integer_degree
-                 and 1 <= degree <= MAX_QUERY_DEGREE)
+                 and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len))
         # Static coefficients run on the query-coefficient kernel with every query's coefficients equal.
         static = (not self.attention_normalization and self.attention_coefficient_conditioning == "static"
                   and self.quadratic_mode == "fixed" and self.attention_coefficient_parameterization == "direct"
                   and self.attention_fixed_square_factors is None and integer_degree
-                  and 1 <= degree <= MAX_QUERY_DEGREE)
+                  and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len))
         return (self.attention_mechanism == "dot_product" and (taylor or query or static)
                 and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
 

@@ -27,7 +27,7 @@ from scaffolds.transformer.training.tracking import attention_metrics
 
 
 DEGREES = (1, 2, 3, 4)
-KERNEL_DEGREES = (1, 2, 3, 4, 8)
+KERNEL_DEGREES = (1, 2, 3, 4, 8, 12)
 
 
 def _interpret(monkeypatch):
