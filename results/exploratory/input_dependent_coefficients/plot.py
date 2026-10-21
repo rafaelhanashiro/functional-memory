@@ -44,6 +44,9 @@ VARIANTS = {
                                          "Tanh, zero-amplitude start, W ~ N(0, 9/d), Mosaic kernel"),
     "tanh_zero_amplitude_saturating_10": ("tanh, zero-amplitude start, W ~ N(0, 100/d), Mosaic kernel", "#80CDC1", "--",
                                           "Tanh, zero-amplitude start, W ~ N(0, 100/d), Mosaic kernel"),
+    "tanh_zero_amplitude_order_scaled": ("tanh, zero-amplitude start, W ~ N(0, 1/d), amplitude a_r/r!, Mosaic kernel",
+                                         "#E7298A", "-",
+                                         "Tanh, zero-amplitude start, W ~ N(0, 1/d), amplitude a_r/r!, Mosaic kernel"),
     "tanh_query_key": ("tanh query-key, zero-amplitude start, W ~ N(0, 1/d)", "#7B3294", "-",
                        "Tanh query-key, zero-amplitude start, W ~ N(0, 1/d)"),
 }
@@ -64,6 +67,8 @@ def variant_of(model) -> tuple[str, str, str]:
         return function, start, "tanh_original_blocked" if blocked else "tanh_original"
     if model.get("attention_coefficient_tanh_bias", False):
         return function, start, "tanh_zero_amplitude_inner_bias"
+    if model.get("attention_coefficient_amplitude_scale", "none") == "factorial":
+        return function, start, "tanh_zero_amplitude_order_scaled"
     spread = model.get("attention_coefficient_projection_initial_std", 0.0) * math.sqrt(model["hidden_size"])
     if spread > 5:
         return function, start, "tanh_zero_amplitude_saturating_10"
@@ -125,7 +130,9 @@ def load_runs():
             row["median_token_variation"] = float(np.median(
                 np.asarray(summary["std"]) / np.abs(np.asarray(summary["mean"]))))
         if function == "tanh":
-            amplitude = np.asarray(coefficients["modulation_amplitude"])
+            # The amplitude that multiplies tanh: a_r, or a_r/r! with order scaling.
+            amplitude = np.asarray(coefficients.get("effective_modulation_amplitude",
+                                                    coefficients["modulation_amplitude"]))
             bias = np.asarray(coefficients["projection_bias"])
             row["median_abs_amplitude"] = float(np.median(np.abs(amplitude)))
             mean = (np.asarray(summary["mean"]) - bias) / amplitude
@@ -153,7 +160,7 @@ def render(rows, curves):
                          "pdf.fonttype": 42, "svg.hashsalt": "input-dependent-coefficients"})
     degrees = sorted({row["degree"] for row in rows})
     columns = 3 if len(degrees) > 4 else 2
-    fig, axes = plt.subplots(2, columns, figsize=(5 * columns, 7.2))
+    fig, axes = plt.subplots(2, columns, figsize=(5 * columns, 7.8))
     axes = axes.ravel()
     for ax in axes[len(degrees):]:
         ax.axis("off")
@@ -174,7 +181,7 @@ def render(rows, curves):
         final = [f"Final PPL: {matched['static']['terminal_validation_perplexity']:.2f} static"]
         zero = "tanh_zero_amplitude" if "tanh_zero_amplitude" in matched else "tanh_zero_amplitude_wide"
         for variant, name in (("tanh_original", "original start"), (zero, "zero-amplitude start"),
-                              ("tanh_query_key", "query-key")):
+                              ("tanh_zero_amplitude_order_scaled", "a_r/r!"), ("tanh_query_key", "query-key")):
             if variant in matched:
                 row = matched[variant]
                 final.append(f"{row['terminal_validation_perplexity']:.2f} {name} "
@@ -193,7 +200,7 @@ def render(rows, curves):
     handles, labels = [seen[label] for label in order], order
     fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(.5, -.01))
     fig.suptitle("Input-dependent coefficients: matched degree, warmup 400, output RMSNorm", fontsize=12)
-    fig.tight_layout(rect=(0, .13, 1, .94))
+    fig.tight_layout(rect=(0, .16, 1, .94))
     fig.savefig(DIRECTORY / "learning_curves.png", dpi=180, metadata={"Software": "Matplotlib"})
     fig.savefig(DIRECTORY / "learning_curves.pdf", metadata={"CreationDate": None, "ModDate": None,
                                                             "Creator": "Matplotlib"})

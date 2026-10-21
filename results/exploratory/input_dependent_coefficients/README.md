@@ -25,9 +25,10 @@ query token. Static controls learn a constant `c_r = b_r`. Every run starts at
 | Tanh, zero-amplitude start, wide draw | `r5be9a97f06e2`, `rec520e9303ac`, `r215d3d91dd02`, `rd4f66b1959d2`; m = 8: `rccf19c31669d` | `a_r = 0`, `w_r ~ N(0, 1/1024)` | Mosaic kernel (m = 8: Triton) |
 | Tanh, zero-amplitude start, bias inside tanh | `rbd4eb6ccc16f`, `r6bba734352f0`, `rde534cbb87a1`, `r59490b6e0818` | `a_r = 0`, `w_r ~ N(0, 0.002^2)`, learned `beta_r` in `tanh(w_r^T x_t + beta_r)` from 0 | Mosaic kernel |
 | Tanh, zero-amplitude start, saturating draws | `rac317a500871`, `r4cee946a1a4b` (m = 2, 4; `3/sqrt(d)`); `r49ac1e58fba3`, `r362b2df6edbd` (`10/sqrt(d)`) | `a_r = 0`, `w_r ~ N(0, 9/d)` or `N(0, 100/d)` | Mosaic kernel |
+| Tanh, zero-amplitude start, amplitude `a_r/r!` | m = 8: `ra39c41604704` | as the wide draw, with `c_r = b_r + (a_r/r!) tanh(w_r^T x_t)` | Mosaic kernel |
 | Tanh query-key | `rba839e6386b7`, `r0aab2b77017f`, `r4a7c601b4b1f`, `r4e3f4097a60e`; m = 8: `r66db587096c4` (one-pass Triton kernel) | as the wide draw, times `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` with `a^k_r = 0` | blocked reference (m = 1), Mosaic kernel once per order |
 
-All 36 runs are complete at 19,074 updates (10.0B tokens) with the shared recipe:
+All 37 runs are complete at 19,074 updates (10.0B tokens) with the shared recipe:
 `transformer_reference` initialization, QK normalization, unnormalized attention,
 per-head output RMSNorm, `d_K = d_V = 64`, 10 layers, width 1024, 16 heads, seed 0,
 BF16, effective batch 256, global microbatch 64, learning rate 3e-4 to 3e-5 with 400
@@ -83,6 +84,15 @@ about the learning rate per update, which is large relative to the small high-or
 coefficients (`1/r!` at the start); query-only m = 8 also clips its gradient more often
 throughout (52% against 30% of updates in the sixth thousand), which slows the whole model.
 
+**Order scaling removes most of the degree-8 deficit but does not beat static.** Dividing the
+amplitude by `r!` (`attention_coefficient_amplitude_scale: factorial`), so that under Adam
+order `r`'s modulation moves at `lr/r!`, ends at 13.48 (+0.11% against static's 13.46;
+unscaled query-only +0.76%). Orders 5–8 stay static (median effective amplitude 0.1–6% of
+`b_r`, token variation at most 4%), while orders 0–4 vary 17–39% across tokens, more than
+unscaled query-only at orders 0–1. It clips 34% of logged updates against 26% for static
+and 42% for unscaled query-only. Its high-order static parts move as far from Taylor as
+static's (`b_8` about 300× `1/8!`).
+
 **The learned coefficients are essentially static.** From the zero-amplitude start,
 `b` stays near its Taylor values, the amplitudes stay small (median `|a_r|` 0.06–0.11)
 and the coefficients barely vary across tokens: their standard deviation across the
@@ -131,6 +141,7 @@ their ratios can act.
 | 4 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d) | 2.608653 | 13.580743 | -0.43% | 13.580743 | 19,074 |
 | 8 | static | 2.599805 | 13.461116 |  | 13.461116 | 19,074 |
 | 8 | tanh, zero-amplitude start, W ~ N(0, 1/d), fused kernel | 2.607381 | 13.563477 | +0.76% | 13.563477 | 19,074 |
+| 8 | tanh, zero-amplitude start, W ~ N(0, 1/d), amplitude a_r/r!, Mosaic kernel | 2.600935 | 13.476329 | +0.11% | 13.476329 | 19,074 |
 | 8 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d) | 2.601888 | 13.489182 | +0.21% | 13.489182 | 19,074 |
 
 <!-- END GENERATED RESULTS -->
@@ -150,9 +161,9 @@ runs conditions on the key (writer) as GDN's write gate does.
 Query-dependent coefficients do not beat static coefficients with this recipe, with or
 without a kernel, from any of three starts, and a per-key factor changes the outcome by
 at most a few hundredths, and at degree 8 query-dependent coefficients are worse than
-static. Open: whether an order-scaled parameterization (`c_r = b_r + a_r tanh(.)/r!` or
-`c_r = b_r (1 + a_r tanh(.))`) removes the degree-8 deficit, and then whether to promote
-the comparison as a negative result or discard the topic and its runs.
+static. Order scaling (`c_r = b_r + a_r tanh(.)/r!`) removes most of the degree-8 deficit
+but only ties static. Open: whether order-scaled query–key or degree 12 changes this, and
+then whether to promote the comparison as a negative result or discard the topic and its runs.
 
 ## Regeneration
 
