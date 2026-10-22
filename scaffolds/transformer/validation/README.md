@@ -26,7 +26,10 @@ All 64 FP32 interpreter cases passed, with maximum relative output/gradient
 error `2.975e-5`. CUDA export passed for all 64 qualification cases and 59
 training-shape variants, including the complete custom VJP and private descriptor
 scratch allocation. These checks do not establish GPU execution correctness or
-performance. H100 execution and profiling are pending in standard job `223786`.
+performance. On source `543096f`, standard job `223787` passed 67 GPU checks
+on H100, with two intentional skips for signed normalization. The hardware
+suite includes BF16/FP32 outputs and all gradients, causality, extreme scores,
+tiny/zero values and exact RMSNorm epsilon. Timing and profiling are in progress.
 Compact reports, hashes and current allocation status are in
 [the scalar-attention record](runs/scalar-triton/record.json).
 
@@ -61,11 +64,11 @@ env -u LD_LIBRARY_PATH SHARED_TRANSFORMER_SOURCE_COMMIT="$(git rev-parse HEAD)" 
   PHASE=all sbatch --partition=standard --job-name=scalar-h100 \
   --output=scaffolds/transformer/validation/logs/scalar-%j.log \
   --export=ALL scaffolds/transformer/validation/scalar_triton.sbatch
-python3 -m scaffolds.transformer.validation.summarize_scalar --jobs 223786
+python3 -m scaffolds.transformer.validation.summarize_scalar --jobs 223787
 ```
 
 Use the newly allocated job ID for a fresh run; the final command selects
-job `223786` explicitly when regenerating this record.
+job `223787` explicitly when regenerating this record.
 
 ### Single-GPU gradient accumulation
 

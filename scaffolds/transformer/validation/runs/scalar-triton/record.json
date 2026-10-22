@@ -53,19 +53,32 @@
   "gpu": {
     "allocations": [
       {
-        "elapsed": "00:00:00",
+        "elapsed": "00:03:43",
         "exit_code": "0:0",
-        "job_id": "223786",
-        "nodes": "None assigned",
-        "state": "PENDING"
+        "job_id": "223787",
+        "nodes": "dogo",
+        "state": "RUNNING"
       }
     ],
     "jobs": [
-      223786
+      223787
     ],
     "kernel_comparisons": [],
     "optimizer_updates": [],
-    "qualification": [],
+    "qualification": [
+      {
+        "errors": 0,
+        "failures": 0,
+        "job_id": 223787,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/scalar-triton/223787/tests.xml",
+          "sha256": "66311ba967ae9e3658141055fd104281e1ce3dd0a8371c758753011474ce8504",
+          "size_bytes": 9649
+        },
+        "skipped": 2,
+        "tests": 69
+      }
+    ],
     "status": "in_progress"
   },
   "home_cluster": "Kennel",
