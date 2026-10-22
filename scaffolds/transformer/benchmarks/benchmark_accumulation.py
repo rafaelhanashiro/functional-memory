@@ -54,6 +54,8 @@ def benchmark(args):
     original = config_to_dict(config)
     if min(args.micro_batch_size, args.warmup, args.iterations) < 1:
         raise ValueError("Microbatch, warmup, and iterations must be positive")
+    if getattr(args, "backend", None):
+        config.model.attention_backend = args.backend
     config.train.micro_batch_size = args.micro_batch_size
     validate_config(config)
     if config.data.batch_size % args.micro_batch_size:
@@ -73,7 +75,7 @@ def benchmark(args):
         "accumulation_steps": accumulation_steps, "samples": [],
         "measurement_notes": [
             "Resident synthetic tokens; model, optimizer, and global batch match the input recipe.",
-            "Only microbatch size and accumulation implementation are varied.",
+            "Microbatch size, accumulation implementation and optional attention backend are execution variants.",
             "Every sample synchronizes the complete optimizer state, loss, and numerical checks.",
             "Compilation, data loading, evaluation, logging and checkpoints are excluded from steady timing.",
             "Allocator peak includes initialization and warmup in this fresh process."],
@@ -114,6 +116,13 @@ def benchmark(args):
         report["steady_compute"] = summarize(
             [sample["seconds"] for sample in report["samples"] if not sample["warmup"]],
             report["tokens_per_update"])
+        if getattr(args, "trace_dir", None):
+            with jax.profiler.trace(str(args.trace_dir), create_perfetto_trace=True):
+                for index in range(3):
+                    with jax.profiler.StepTraceAnnotation("train", step_num=int(state.step) + 1):
+                        state, loss, numerics = function(state, batches, rngs[-1], **kwargs)
+                        jax.block_until_ready((state, loss, numerics))
+            report["profile"] = str(args.trace_dir)
         report["status"] = "complete"
     except Exception as error:
         report["status"] = "failed"
@@ -132,6 +141,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--micro-batch-size", type=int, required=True)
     parser.add_argument("--implementation", choices=("python", "compiled"), default="compiled")
+    parser.add_argument("--backend", choices=("blocked", "triton_scalar"))
+    parser.add_argument("--trace-dir", type=Path)
     parser.add_argument("--warmup", type=int, default=2)
     parser.add_argument("--iterations", type=int, default=3)
     benchmark(parser.parse_args())

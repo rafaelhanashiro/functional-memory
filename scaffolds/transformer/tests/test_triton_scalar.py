@@ -1,0 +1,143 @@
+"""Independent FP64 output/VJP qualification of the scalar Triton engine."""
+from pathlib import Path
+import math
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+import pytest
+
+from scaffolds.transformer.attention.basis import ExpProjection, sine, cosine, projection_from_config
+from scaffolds.transformer.attention.backends.triton_scalar import (
+    basis_kernel, exponential_kernel, polynomial_kernel, scalar_attention,
+)
+from scaffolds.transformer.configs import load_config
+
+
+RUNS = {3: "r10b2cb22687c", 5: "r1b486c356e1a", 9: "r27f0d0f59eb1", 20: "r873f76c0a542"}
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def kernel_and_oracle(name):
+    if name.startswith("rbf"):
+        cfg = load_config(ROOT / "experiments/attention_scaling/runs" / RUNS[int(name[3:])] / "config.yaml")
+        fit = projection_from_config(cfg.model.attention_basis)
+    elif name == "sine":
+        fit = ExpProjection((sine(.7, .2), cosine(.3)), (1., -.2), 0., 1., 16, 32, 1e-12, {})
+    else:
+        fit = None
+    if fit is not None:
+        kernel = basis_kernel(fit)
+        def evaluate(s):
+            w, dw = np.zeros_like(s), np.zeros_like(s)
+            for function, c in zip(fit.basis, fit.coefficients, strict=True):
+                p = dict(function.parameters)
+                if function.kind == "rbf":
+                    z = (s - p["center"]) / p["width"]
+                    b = np.exp(-.5 * z*z)
+                    db = -z / p["width"] * b
+                elif function.kind == "sin":
+                    b = np.sin(p["frequency"] * s + p["phase"])
+                    db = p["frequency"] * np.cos(p["frequency"] * s + p["phase"])
+                else:
+                    b = np.cos(p["frequency"] * s + p["phase"])
+                    db = -p["frequency"] * np.sin(p["frequency"] * s + p["phase"])
+                w += c*b
+                dw += c*db
+            return w, dw
+        return kernel, evaluate
+    if name == "exp":
+        return exponential_kernel(), lambda s: (np.exp(s), np.exp(s))
+    return polynomial_kernel((1., 1., .5)), lambda s: (1+s+.5*s*s, 1+s)
+
+
+def oracle(q, k, v, gain, go, evaluate, mode, eps):
+    q, k, v, gain, go = (np.asarray(x, np.float64) for x in (q, k, v, gain, go))
+    scale = q.shape[-1] ** -.5
+    s = np.einsum("bihd,bjhd->bhij", q, k) * scale
+    w, dw = evaluate(s)
+    mask = np.tril(np.ones(s.shape[-2:], bool))
+    w, dw = np.where(mask, w, 0.), np.where(mask, dw, 0.)
+    z = w.sum(-1, keepdims=True) if mode == "sum" else 1.
+    a = w/z
+    raw = np.einsum("bhij,bjhd->bihd", a, v)
+    if mode == "rms":
+        r = 1/np.sqrt(np.mean(raw*raw, -1, keepdims=True) + eps)
+        n = raw*r
+        y = n*gain
+        t = go*gain
+        g = (t-n*np.mean(t*n, -1, keepdims=True))*r
+        dg = np.sum(go*n, axis=(0, 1))
+    else:
+        y, g, dg = raw, go, np.zeros_like(gain)
+    dp = np.einsum("bihd,bjhd->bhij", g, v)
+    if mode == "sum":
+        dp = (dp - np.einsum("bihd,bihd->bhi", g, y)[..., None])/z
+    ds = dw*dp
+    dq = scale*np.einsum("bhij,bjhd->bihd", ds, k)
+    dk = scale*np.einsum("bhij,bihd->bjhd", ds, q)
+    dv = np.einsum("bhij,bihd->bjhd", a, g)
+    return y, dq, dk, dv, dg
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("name", ("rbf3", "rbf5", "rbf9", "rbf20", "sine", "poly", "exp"))
+@pytest.mark.parametrize("mode", ("none", "rms", "sum"))
+@pytest.mark.parametrize("dtype", (jnp.bfloat16, jnp.float32))
+def test_scalar_output_and_all_gradients(name, mode, dtype):
+    if jax.default_backend() != "gpu":
+        pytest.skip("requires H100")
+    if name == "sine" and mode == "sum":
+        pytest.skip("signed near-zero sums are tested separately")
+    kernel, evaluate = kernel_and_oracle(name)
+    rng = np.random.default_rng(31)
+    shape = (1, 137, 2, 32)  # non-divisible length, multiple query/key tiles
+    q, k, v, go = [jnp.asarray(rng.normal(size=shape), dtype) for _ in range(4)]
+    gain = jnp.asarray(rng.uniform(.6, 1.4, size=shape[-2:]), jnp.float32)
+    def operation(q, k, v, gain):
+        return scalar_attention(q, k, v, kernel=kernel, attention_normalization=mode == "sum",
+                                output_norm_scale=gain if mode == "rms" else None)
+    def joint(q, k, v, gain, go):
+        y, pullback = jax.vjp(operation, q, k, v, gain)
+        return (y, *pullback(go))
+    actual = jax.block_until_ready(jax.jit(joint)(q, k, v, gain, go))
+    expected = oracle(q, k, v, gain, go, evaluate, mode, 1e-6)
+    for label, observed, reference in zip(("output", "dq", "dk", "dv", "dgain"), actual, expected, strict=True):
+        observed = np.asarray(observed, np.float64)
+        error = np.linalg.norm(observed-reference)/max(np.linalg.norm(reference), 1e-12)
+        assert np.isfinite(observed).all(), (name, mode, label)
+        assert error < (4e-2 if dtype == jnp.bfloat16 else 1e-3), (name, mode, dtype, label, error)
+    altered = jax.jit(operation)(q, k, v.at[:, -1].add(9.), gain)
+    np.testing.assert_array_equal(np.asarray(altered[:, :-1]), np.asarray(actual[0][:, :-1]))
+
+
+@pytest.mark.gpu
+def test_extreme_exp_and_zero_sine_with_exact_epsilon():
+    if jax.default_backend() != "gpu":
+        pytest.skip("requires H100")
+    shape = (1, 128, 1, 32)
+    q = jnp.full(shape, math.sqrt(100/math.sqrt(32)), jnp.float32)
+    k = q
+    v = jnp.asarray(np.random.default_rng(5).normal(size=shape), jnp.float32)
+    gain = jnp.ones((1, 32), jnp.float32)
+    kernel, evaluate = kernel_and_oracle("exp")
+    f = jax.jit(lambda q, k, v: scalar_attention(q, k, v, kernel=kernel, output_norm_scale=gain))
+    y = f(q, k, v)
+    expected = oracle(q, k, v, gain, jnp.ones_like(v), evaluate, "rms", 1e-6)[0]
+    np.testing.assert_allclose(np.asarray(y), expected, rtol=1e-3, atol=1e-3)
+    fit = ExpProjection((sine(1.),), (1.,), 0., 1., 16, 32, 1e-12, {})
+    zero_fn = lambda q: scalar_attention(q, k, v, kernel=basis_kernel(fit), output_norm_scale=gain, eps=.1)
+    y, pullback = jax.vjp(jax.jit(zero_fn), jnp.zeros_like(q))
+    np.testing.assert_array_equal(np.asarray(y), np.zeros(shape))
+    assert np.isfinite(np.asarray(pullback(jnp.ones_like(y))[0])).all()
+
+
+def test_model_backend_is_explicit_and_reference_remains_default():
+    from scaffolds.transformer.attention.backends.selection import resolve_attention_backend
+    cfg = load_config(ROOT / "experiments/attention_scaling/runs" / RUNS[3] / "config.yaml")
+    assert resolve_attention_backend(cfg.model, platform="gpu") == "blocked"
+    cfg.model.attention_backend = "triton_scalar"
+    cfg.model.__post_init__()
+    assert resolve_attention_backend(cfg.model, platform="gpu") == "triton_scalar"
+    with pytest.raises(ValueError, match="H100"):
+        resolve_attention_backend(cfg.model, platform="cpu")

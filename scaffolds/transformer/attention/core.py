@@ -48,6 +48,16 @@ def attention_core(
     if score_kernel is not None:
         from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 
+        if backend == "triton_scalar":
+            from scaffolds.transformer.attention.backends.triton_scalar import basis_kernel, scalar_attention
+            output = scalar_attention(q, k, v, kernel=basis_kernel(score_kernel),
+                                      attention_normalization=attention_normalization)
+            if not return_diagnostics:
+                return output
+            _, diagnostics = blocked_dot_product_attention(
+                q, k, v, score_kernel=score_kernel, attention_normalization=attention_normalization,
+                return_diagnostics=True)
+            return output, diagnostics
         if backend != "blocked":
             raise ValueError("A custom scalar score kernel requires the blocked backend")
         return blocked_dot_product_attention(

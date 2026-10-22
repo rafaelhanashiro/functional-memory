@@ -32,11 +32,19 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
     Explicit choices never fall back when they are unsupported.
     """
     request = model_config.attention_backend
-    if request not in ("auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"):
+    if request not in ("auto", "blocked", "fused", "mosaic", "triton_scalar", "manual", "xla", "cudnn"):
         raise ValueError(f"Unknown attention backend: {request}")
     if dtype not in ("float32", "bfloat16"):
         raise ValueError("Attention requires float32 or bfloat16 computation")
     if model_config.attention_basis is not None:
+        if request == "triton_scalar":
+            actual = _runtime_platform() if platform is None else platform
+            capability = 9 if platform is not None else (_cuda_compute_capability() if actual in ("gpu", "cuda") else None)
+            if actual not in ("gpu", "cuda") or capability != 9:
+                raise ValueError("Scalar Triton attention currently requires H100/sm90")
+            if model_config.qk_head_dim not in (16, 32, 64, 128) or model_config.value_head_dim not in (16, 32, 64, 128):
+                raise ValueError("Scalar Triton head widths must be 16/32/64/128")
+            return request
         if request not in ("auto", "blocked"):
             raise ValueError("Scalar-basis attention requires the blocked backend")
         return "blocked"

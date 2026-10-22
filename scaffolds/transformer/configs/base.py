@@ -44,11 +44,11 @@ class ModelConfig:
     # Retained for recipe compatibility; this scaffold requires separate weights.
     tie_embeddings: bool = False
     remat: bool = False
-    attention_backend: Literal["auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"] = "auto"
+    attention_backend: Literal["auto", "blocked", "fused", "mosaic", "triton_scalar", "manual", "xla", "cudnn"] = "auto"
     attention_degree: int | None = None
     attention_normalization: bool = True
     # Frozen scalar-basis projection from attention.basis.fit_exp(...).to_config().
-    # Coefficients are fitted before launch; evaluation currently uses blocked JAX.
+    # Coefficients are fitted before launch; evaluation uses blocked JAX or opt-in native Triton.
     attention_basis: dict | None = None
     # Unnormalized dot-product attention only: rescale each head's output
     # o_t = sum_(j<=t) k(s_tj) v_j before the output projection. "inverse_position"
@@ -167,8 +167,10 @@ class ModelConfig:
                     or self.attention_coefficient_conditioning != "static"
                     or self.attention_coefficient_parameterization != "direct"):
                 raise ValueError("attention_basis requires fixed scalar dot-product attention without polynomial options")
-            if self.attention_backend not in ("auto", "blocked"):
-                raise ValueError("attention_basis supports only auto or blocked execution")
+            if self.attention_backend not in ("auto", "blocked", "triton_scalar"):
+                raise ValueError("attention_basis supports auto, blocked or triton_scalar execution")
+        if self.attention_backend == "triton_scalar" and self.attention_basis is None:
+            raise ValueError("Model triton_scalar dispatch currently requires attention_basis")
         if self.kind != "transformer":
             raise ValueError("The shared scaffold supports only kind=transformer")
         if self.tie_embeddings is not False:
@@ -188,7 +190,7 @@ class ModelConfig:
                      or (self.attention_mechanism == "gla" and self.gla_use_rope))
         if self.qk_head_dim % 2 and uses_rope:
             raise ValueError("model.qk_head_dim must be even for RoPE")
-        if self.attention_backend not in ("auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"):
+        if self.attention_backend not in ("auto", "blocked", "fused", "mosaic", "triton_scalar", "manual", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
         if self.attention_backend == "mosaic" and not self.mosaic_supported():
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
@@ -247,7 +249,7 @@ class ModelConfig:
         if not self.attention_normalization:
             if self.quadratic_mode != "fixed":
                 raise ValueError("Unnormalized attention requires the exponential or a fixed Taylor kernel")
-            if self.attention_backend not in ("auto", "blocked", "fused", "mosaic"):
+            if self.attention_backend not in ("auto", "blocked", "fused", "mosaic", "triton_scalar"):
                 raise ValueError("Unnormalized attention requires backend='auto', 'blocked', 'fused' or 'mosaic'")
         if self.attention_backend in ("manual", "xla", "cudnn") and self.attention_degree is not None:
             raise ValueError(f"Backend {self.attention_backend!r} supports exact softmax only")

@@ -79,7 +79,7 @@ class MultiHeadAttention(nnx.Module):
     ):
         _validate_degree(attention_degree)
         if score_kernel is not None and (
-                not callable(score_kernel) or backend != "blocked" or attention_degree is not None
+                not callable(score_kernel) or backend not in ("blocked", "triton_scalar") or attention_degree is not None
                 or quadratic_mode != "fixed" or attention_fixed_coefficients is not None
                 or attention_fixed_square_factors is not None or attention_coefficient_conditioning != "static"):
             raise ValueError("A scalar score kernel requires blocked attention without polynomial options")
@@ -90,7 +90,7 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("qk_norm must be a boolean")
         if qk_norm and attention_degree == 0:
             raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
-        if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused", "mosaic")):
+        if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused", "mosaic", "triton_scalar")):
             raise ValueError("Unnormalized attention requires a fixed exp/Taylor kernel and a blocked, fused or mosaic backend")
         if attention_output_scaling not in OUTPUT_SCALINGS:
             raise ValueError(f"Unknown attention output scaling: {attention_output_scaling}")
@@ -131,7 +131,7 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("qk_head_dim must be even for RoPE")
         if backend not in ("blocked", "fused", "mosaic", "manual", "auto", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {backend}")
-        if backend not in ("blocked", "fused", "mosaic") and attention_degree is not None:
+        if backend not in ("blocked", "fused", "mosaic", "triton_scalar") and attention_degree is not None:
             raise ValueError("Taylor attention requires backend='blocked', 'fused' or 'mosaic'")
         if backend != "manual" and dropout != 0.0:
             raise ValueError("Blocked/fused attention requires dropout=0")
@@ -242,6 +242,21 @@ class MultiHeadAttention(nnx.Module):
                                                 *DENOMINATOR_KINDS)):
                 raise ValueError("Fixed square factors cannot be combined with supplied attention coefficients")
             parameters["polynomial_square_factors"] = jnp.asarray(self.attention_fixed_square_factors, dtype=jnp.float32)
+        if (self.backend == "triton_scalar" and self.score_kernel is not None
+                and not self.attention_normalization and self.attention_output_scaling == "head_rms_norm"):
+            from scaffolds.transformer.attention.backends.triton_scalar import basis_kernel, scalar_attention
+            y = scalar_attention(q, k, v, kernel=basis_kernel(self.score_kernel),
+                                 output_norm_scale=output_norm_scale, eps=self.rms_norm_eps)
+            diagnostics = None
+            if return_diagnostics or telemetry.active():
+                # Diagnostics inspect the raw mathematical operation separately;
+                # never label the RMS-normalized tensor as the raw attention output.
+                raw = attention_core(q, k, v, backend="blocked", score_kernel=self.score_kernel,
+                                     attention_normalization=False, return_diagnostics=return_diagnostics)
+                raw, diagnostics = raw if return_diagnostics else (raw, None)
+                telemetry.record_attention_output(raw, head_rms_norm_eps=self.rms_norm_eps)
+            output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))
+            return (output, diagnostics) if return_diagnostics else output
         result = attention_core(
             q, k, v, backend=self.backend, attention_degree=self.attention_degree,
             attention_normalization=self.attention_normalization,
