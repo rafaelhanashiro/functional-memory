@@ -21,12 +21,12 @@ unnormalized and fused RMSNorm outputs; causal masking and a ragged length.
 The GPU suite also checks extreme exponential scores, an exactly zero output
 with non-negligible RMSNorm epsilon, negative signed sums and zero-sum failures.
 
-On source `c073bd3`, 58 CPU model/bridge/accumulation checks passed.
+On source `eb966c6`, 59 CPU model/bridge/accumulation checks passed.
 All 64 FP32 interpreter cases passed, with maximum relative output/gradient
 error `2.975e-5`. CUDA export passed for all 64 qualification cases and 59
 training-shape variants, including the complete custom VJP and private descriptor
 scratch allocation. These checks do not establish GPU execution correctness or
-performance. H100 execution and profiling are pending in standard job `223737`.
+performance. H100 execution and profiling are pending in standard job `223786`.
 Compact reports, hashes and current allocation status are in
 [the scalar-attention record](runs/scalar-triton/record.json).
 
@@ -48,6 +48,9 @@ Reproduce from the committed worktree and its locked CUDA environment:
 TRITON_INTERPRET=1 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
   -m scaffolds.transformer.validation.interpret_scalar \
   --output scaffolds/transformer/validation/runs/scalar-triton/interpreter.json
+export CUDA_HOME="$PWD/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc"
+export TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
+export EJKERNEL_TRITON_CACHE_COMPILES=1 EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/scalar-triton"
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
   -m scaffolds.transformer.validation.compile_scalar \
   --output scaffolds/transformer/validation/runs/scalar-triton/cuda-export.json
@@ -58,11 +61,11 @@ env -u LD_LIBRARY_PATH SHARED_TRANSFORMER_SOURCE_COMMIT="$(git rev-parse HEAD)" 
   PHASE=all sbatch --partition=standard --job-name=scalar-h100 \
   --output=scaffolds/transformer/validation/logs/scalar-%j.log \
   --export=ALL scaffolds/transformer/validation/scalar_triton.sbatch
-python3 -m scaffolds.transformer.validation.summarize_scalar --jobs 223737
+python3 -m scaffolds.transformer.validation.summarize_scalar --jobs 223786
 ```
 
 Use the newly allocated job ID for a fresh run; the final command selects
-job `223737` explicitly when regenerating this record.
+job `223786` explicitly when regenerating this record.
 
 ### Single-GPU gradient accumulation
 
