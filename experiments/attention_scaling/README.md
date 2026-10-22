@@ -465,19 +465,13 @@ order's amplitude at the same rate. It repeats `rccf19c31669d` with
 so order r's modulation moves at lr/r!, and with the Mosaic query kernel, which now covers
 degree 8. It runs on one GPU on `standard` (global microbatch 32) with the command above.
 
-### Degree 12 and order-scaled query–key
+### Degree 12
 
-Four runs extend this to m = 12 and add order scaling to query–key, each from the
-query-only recipe `rccf19c31669d` apart from the listed settings, at global microbatch 32 on
-one GPU: static learned coefficients at m = 12 (`r3012d19137cd`), query-only with
-`attention_coefficient_amplitude_scale: factorial` at m = 12 (`r0c9b8b75ec17`), and
-query–key with the same scaling at m = 8 (`r7eb08c9a60b7`) and m = 12 (`raf8b1ba3c29b`).
-The scaling applies to the query amplitude; the key factor `f_r = 1 + a^k_r tanh(·)` is
-already relative to `c_r`. Static and query-only use the Mosaic kernels, which cover degree
-12 at `d_K = 64`. Query–key uses the one-pass Triton kernel (`--allow-triton-attention`):
-Mosaic runs query–key once per order and rounds each order's output to BF16 before the sum,
-which corrupted gradients at m = 1. They launch in that order with the command above,
-`PARTITION=standard` and `GPUS=1`.
+Two runs extend this to m = 12, each from the query-only recipe `rccf19c31669d` apart from
+the listed settings, at global microbatch 32 on one B300: static learned coefficients
+(`r3012d19137cd`) and query-only with `attention_coefficient_amplitude_scale: factorial`
+(`r0c9b8b75ec17`). Both use the Mosaic kernels, which cover degree 12 at `d_K = 64`, and
+launched with the command above, `PARTITION=standard` and `GPUS=1`.
 
 ### Factorially scaled coefficients
 
