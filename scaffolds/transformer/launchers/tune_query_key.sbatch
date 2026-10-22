@@ -23,3 +23,6 @@ export PATH="$CUDA_HOME/bin:$PATH"
 printf 'job=%s source=%s environment=%s\n' "$SLURM_JOB_ID" "$LAUNCH_COMMIT" "$TRANSFORMER_CUDA_ENVIRONMENT"
 nvidia-smi --query-gpu=name,uuid,temperature.gpu,clocks.current.sm,power.limit --format=csv
 "$PYTHON" -u -m scaffolds.transformer.benchmarks.tune_query_key "$@"
+if [[ "${QUERY_KEY_QUALIFY:-0}" == 1 ]]; then
+  "$PYTHON" -m pytest -q scaffolds/transformer/tests/test_query_key_tiling.py
+fi

@@ -38,6 +38,8 @@ INPUT_NAMES = ("q", "k", "v", "coefficients", "factors")
 TOLERANCES = {"forward": 0.006, "backward_forward": 0.006,
               "gradient_q": 0.025, "gradient_k": 0.025, "gradient_v": 0.015,
               "gradient_coefficients": 0.025, "gradient_factors": 0.025}
+ORIGINAL_CONFIG = (kernel._tile_sizes, getattr(kernel, "_backward_tile_sizes", None),
+                   kernel.NUM_WARPS, kernel.NUM_STAGES)
 
 
 def candidate_argument(value):
@@ -54,6 +56,8 @@ def candidate_argument(value):
 
 
 def candidate_config(candidate):
+    if candidate is None:
+        return {"id": "production", "uses_kernel_defaults": True}
     q, k, warps, stages = candidate
     return {"id": f"q{q}_k{k}_w{warps}_s{stages}", "block_q": q, "block_k": k,
             "num_warps": warps, "num_stages": stages}
@@ -63,8 +67,15 @@ def set_candidate(candidate):
     # Globals are captured during tracing, including through custom_vjp.
     jax.clear_caches()
     gc.collect()
+    if candidate is None:
+        kernel._tile_sizes, backward, kernel.NUM_WARPS, kernel.NUM_STAGES = ORIGINAL_CONFIG
+        if backward is not None:
+            kernel._backward_tile_sizes = backward
+        return
     q, k, warps, stages = candidate
     kernel._tile_sizes = lambda dq, dv: (q, k)
+    if ORIGINAL_CONFIG[1] is not None:
+        kernel._backward_tile_sizes = lambda dq, dv, **kwargs: (q, k)
     kernel.NUM_WARPS, kernel.NUM_STAGES = warps, stages
 
 
@@ -213,6 +224,8 @@ def benchmark(args):
         raise ValueError(f"Requested GPU {args.device_index}; only {len(devices)} visible")
     device = devices[args.device_index]
     requested = [BASELINE] + [c for c in args.candidates if c != BASELINE]
+    if args.include_production:
+        requested.append(None)
     report = {"format": "query-key-polynomial-tile-tuning", "schema_version": 1, "status": "running",
               "created_at_utc": datetime.now(UTC).isoformat(), "provenance": provenance(device),
               "configuration": {"shape": [args.batch_size, args.sequence_length, args.num_heads, args.head_dim],
@@ -231,7 +244,6 @@ def benchmark(args):
               "results": []}
     source = Path(__file__).resolve()
     report["provenance"]["source_sha256"][str(source.relative_to(source.parents[3]))] = hashlib.sha256(source.read_bytes()).hexdigest()
-    original = kernel._tile_sizes, kernel.NUM_WARPS, kernel.NUM_STAGES
     started = time.monotonic()
     write_report(args.output, report)
     budget_exhausted = False
@@ -293,8 +305,7 @@ def benchmark(args):
         write_report(args.output, report)
         raise
     finally:
-        jax.clear_caches()
-        kernel._tile_sizes, kernel.NUM_WARPS, kernel.NUM_STAGES = original
+        set_candidate(None)
 
 
 def main():
@@ -302,6 +313,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--degrees", type=int, nargs="+", default=[8, 12])
     parser.add_argument("--candidates", type=candidate_argument, nargs="+", default=list(DEFAULT_CANDIDATES))
+    parser.add_argument("--include-production", action="store_true",
+                        help="Also benchmark the current production defaults, without geometry overrides")
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--sequence-length", type=int, default=2048)
     parser.add_argument("--num-heads", type=int, default=16)
