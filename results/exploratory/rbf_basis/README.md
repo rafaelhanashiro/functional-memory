@@ -14,10 +14,10 @@ owns the full method, frozen recipes, and launch commands.
 
 | RBF count | Run ID | Status |
 | --- | --- | --- |
-| 3 | `re530e0627233` | queued: job `223903` |
-| 5 | `r1b62a76f9b55` | queued: job `223902` |
-| 9 | `r46c3479f9681` | queued: job `223901` |
-| 20 | `rc28d7b48dc72` | acceptance: job `223900` |
+| 3 | `re530e0627233` | submitted: job `223903` |
+| 5 | `r1b62a76f9b55` | acceptance: job `223902` |
+| 9 | `r46c3479f9681` | running: job `223901` |
+| 20 | `rc28d7b48dc72` | running: job `223900` |
 
 Each run is an independent seed-zero execution of the shared 200M-scale,
 10B-token recipe. Gaussian L2 fit diagnostics are stored in each frozen
@@ -26,9 +26,11 @@ been selected, and no new baseline training is allocated.
 
 ## Findings and open decision
 
-No language-model measurements are available yet. The runs use one H100 each in Kennel's standard queue, with unnormalized attention, per-head output
+Production has started for the accepted configurations; completed language-model results are not available yet. The runs use one H100 each in Kennel's standard queue, with unnormalized attention, per-head output
 RMSNorm, QK normalization, the native Triton backend, and microbatch 16.
-Data access and online W&B project access are verified. Production is gated on
+Data access is verified. The recipes request online W&B logging, but creation
+in the configured project is denied for account `ltorroba`; training retains
+its local logs and canonical measurements. Production is gated on
 GPU kernel checks, a full-recipe pilot, and checkpoint resumption. The initial
 comparison will report validation NLL against training tokens, throughput,
 numerical failures, and the observed score ranges relative to the fitting
