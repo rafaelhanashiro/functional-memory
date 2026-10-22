@@ -159,6 +159,23 @@ def _columns(array):
     return tuple(array[..., order] for order in range(array.shape[-1]))
 
 
+def _backward_tile_sizes(dq, dv, *, degree, time, dtype, interpret):
+    """Qualified smaller backward tiles; other shapes/devices retain the original geometry.
+
+    At the production H100 context, m=8/12's per-degree gradient accumulators
+    make 64x64 backward tiles substantially slower than 32x32. Forward keeps
+    its existing tiles. Precision and reductions are otherwise unchanged.
+    """
+    if (not interpret and dtype == jnp.bfloat16 and dq == dv == 64
+            and time == 2048 and degree in (8, 12)):
+        devices = jax.local_devices()
+        if devices and all(getattr(device, "compute_capability", None) == "9.0"
+                           and getattr(device, "device_kind", "").startswith("NVIDIA H100")
+                           for device in devices):
+            return 32, 32
+    return _tile_sizes(dq, dv)
+
+
 def _forward(q, k, v, coefficients, factors, interpret):
     batch, time, heads, dq = q.shape
     dv, degree = v.shape[-1], coefficients.shape[-1] - 1
@@ -196,7 +213,7 @@ def _attention_bwd(interpret, residuals, do):
     batch, time, heads, dq = q.shape
     dv, degree = v.shape[-1], coefficients.shape[-1] - 1
     count = degree + 1
-    block_q, block_k = _tile_sizes(dq, dv)
+    block_q, block_k = _backward_tile_sizes(dq, dv, degree=degree, time=time, dtype=q.dtype, interpret=interpret)
     compiler = plt.CompilerParams(num_warps=NUM_WARPS, num_stages=NUM_STAGES)
     coefficient_columns, factor_columns = _columns(coefficients), _columns(factors)
     grad_q, *grad_coefficients = pl.pallas_call(

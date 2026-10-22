@@ -11,6 +11,51 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Query-key polynomial backward tiles
+
+The one-pass fused query-key polynomial kernel uses 32-by-32 backward tiles for
+H100 BF16 inputs with context 2048, Q/K and value width 64, and degree 8 or 12.
+Forward keeps its original 64-by-64 tiles; other devices and shapes retain the
+original geometry. No polynomial, precision, or coefficient-scaling rule changes.
+
+On one H100 80GB HBM3 on Kennel (`dogo`), the production-shaped benchmark
+`[batch=32, time=2048, heads=16, width=64]` measured:
+
+| Degree | Original forward + backward | Tuned forward + backward | Speedup |
+| --- | ---: | ---: | ---: |
+| 8 | 76.414 ms | 28.356 ms | 2.695x |
+| 12 | 168.779 ms | 42.819 ms | 3.942x |
+
+The [production comparison](runs/query-key-tuning/production.json), source
+`618f442`, job `223789`, compares the actual mixed forward/backward geometry with
+the original geometry. The [tile sweep](runs/query-key-tuning/tuning.json), source
+`c53c02c`, job `223788`, measures seven shared forward/backward geometries per degree.
+Inputs have QK-normalized scores with scale 8, synthetic full-factorial query
+coefficients and varying key factors. Each timing includes a real forward output
+and all five input gradients, uses resident arrays and a runtime cotangent, and
+reports the median of ten synchronized calls after three warmups. Compilation and
+parity checks are excluded. All candidates pass the recorded numerical gates,
+including each coefficient/factor degree and head. Timings cover attention alone,
+not projections, output RMSNorm, optimizer updates, or complete training steps.
+They do not establish B300 performance or parity on retained trained checkpoints.
+
+The [qualification record](runs/query-key-tuning/qualification.json) records all
+22 passing checks in job `223789`: 12 selector/fallback checks and 10 H100 checks
+covering independent FP64 comparisons, signed coefficients, output RMSNorm and
+all input/gain gradients, context-2048 parity with the blocked and original
+implementations, causality, and nonfinite masking. The forward output remains
+byte-identical to the original kernel in the production-context comparisons.
+
+Repeat within an H100 allocation, choosing a fresh validation output directory:
+
+```bash
+RUN_DIR=scaffolds/transformer/validation/runs/query-key-tuning-repeat
+python -m scaffolds.transformer.benchmarks.tune_query_key \
+  --degrees 8 12 --candidates 64x64x4x2 --include-production \
+  --output "$RUN_DIR/production.json"
+python -m pytest -q scaffolds/transformer/tests/test_query_key_tiling.py
+```
+
 ### Query-dependent tanh polynomial coefficients
 
 The direct fused query-polynomial kernel passed all 12 H100 CUDA cases on

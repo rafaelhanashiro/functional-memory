@@ -1,8 +1,7 @@
 # PaTH position encoding
 
-Opened 2026-10-19. Open decision: promote into
-[`results/attention_scaling/`](../../attention_scaling/README.md) (PaTH as a position
-encoding beside RoPE), extend it to more kernels and seeds, or discard.
+Opened 2026-10-19. Stays exploratory; it will not be promoted into the canonical results.
+Open decision: extend it to more kernels and seeds, or discard.
 
 Does replacing RoPE with PaTH (scores transported through token Householder products,
 `S_ts = q_t^T H_t ... H_(s+1) k_s / sqrt(d_K)`, `H_t = I - beta_t w_t w_t^T`, the
