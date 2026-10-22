@@ -83,15 +83,18 @@ def oracle(q, k, v, gain, go, evaluate, mode, eps):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("name", ("rbf3", "rbf5", "rbf9", "rbf20", "sine", "poly", "exp",
-                                 "rbf3_recurrence", "rbf5_recurrence", "rbf9_recurrence", "rbf20_recurrence"))
-@pytest.mark.parametrize("mode", ("none", "rms", "sum"))
+@pytest.mark.parametrize("name,mode", [
+    (name, mode)
+    for name in ("rbf3", "rbf5", "rbf9", "rbf20", "sine", "poly", "exp",
+                 "rbf3_recurrence", "rbf5_recurrence", "rbf9_recurrence", "rbf20_recurrence")
+    for mode in ("none", "rms", "sum")
+    # Signed normalization has explicit negative/zero-sum checks below.
+    if (name, mode) != ("sine", "sum")
+])
 @pytest.mark.parametrize("dtype", (jnp.bfloat16, jnp.float32))
 def test_scalar_output_and_all_gradients(name, mode, dtype):
     if jax.default_backend() != "gpu":
         pytest.skip("requires H100")
-    if name == "sine" and mode == "sum":
-        pytest.skip("signed normalization has separate tests")
     kernel, evaluate = kernel_and_oracle(name)
     rng = np.random.default_rng(31)
     shape = (1, 137, 2, 32)  # non-divisible length, multiple query/key tiles

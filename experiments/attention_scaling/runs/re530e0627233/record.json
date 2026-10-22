@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/re530e0627233/config.yaml",
+    "sha256": "0b445b79d821ed2f162e4633f101ae9865c28ad10a0c956c0d53078e07b7319b"
+  },
+  "home_cluster": "kennel",
+  "label": "200m-rbf-n03-unnormalized-headrms-qknorm-dk64-triton-seed0",
+  "name": "200m-rbf-n03-unnormalized-headrms-qknorm-dk64-triton-seed0",
+  "record_schema_version": 1,
+  "run_id": "re530e0627233",
+  "status": "planned"
+}

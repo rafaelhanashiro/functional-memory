@@ -72,10 +72,10 @@ is tracked in [the RBF exploratory topic](../../results/exploratory/rbf_basis/RE
 
 | RBF count | Run ID | Status |
 | --- | --- | --- |
-| 3 | `r10b2cb22687c` | submitted: job `223562` |
-| 5 | `r1b486c356e1a` | submitted: job `223563` |
-| 9 | `r27f0d0f59eb1` | submitted: job `223564` |
-| 20 | `r873f76c0a542` | submitted: job `223565` |
+| 3 | `re530e0627233` | planned |
+| 5 | `r1b62a76f9b55` | planned |
+| 9 | `r46c3479f9681` | planned |
+| 20 | `rc28d7b48dc72` | planned |
 
 For every count, centers are evenly spaced on `[-6, 6]`, widths are one, and
 `rbf(c, 1)(s) = exp(-0.5 * (s-c)**2)`. The first three center grids are nested;
@@ -91,9 +91,10 @@ The shared recipe is `scaffolds/transformer/configs/base.yaml`: ten layers,
 hidden width 1,024, 16 heads, `d_K = d_V = 64`, 2,048 prediction tokens per
 sequence, global batch 256, seed 0, and 19,074 updates (10,000,269,312 tokens),
 with 400 warmup updates. These runs explicitly use `transformer_reference`
-initialization and the blocked backend. Each run uses **one GPU**, layer
-rematerialization, and a microbatch of one sequence, accumulated to the global
-optimization batch. Checkpoints are saved every 500 updates. Baselines are
+initialization and the native `triton_scalar` backend. Each run uses **one H100**,
+layer rematerialization, and a microbatch of 16 sequences, accumulated to the
+global optimization batch. The selected backend fuses head RMSNorm and uses
+the regular-RBF recurrence for the 5-, 9-, and 20-function fits. Checkpoints are saved every 500 updates. Baselines are
 existing executions to be identified explicitly; this sweep allocates only RBF runs.
 
 The full frozen configurations are authoritative. To reconstruct a fit for a
@@ -106,31 +107,41 @@ fit = fit_exp([rbf(float(c), 1.0) for c in np.linspace(-6, 6, n)],
               mean=0.0, std=1.0, quadrature_order=128, check_order=256)
 ```
 
-Use `worktrees/rbf-sweep` on `codex/rbf-sweep`. Sync both CUDA environments
-from its lock as described in [CLUSTERS.md](../../CLUSTERS.md). The FineWeb
-train/evaluation manifests under `/data/cl/u/rafah/home/datasets/fineweb_12b/`
-are readable and match the study's recorded hashes; every referenced shard is
-readable. The launcher validates dataset identity again inside each job.
+Use `worktrees/rbf-triton-training` on `codex/rbf-triton-training`. Sync its
+locked H100 environment with `uv sync --project scaffolds/transformer --locked
+--extra cuda --link-mode hardlink`. The FineWeb train/evaluation manifests under
+`/data/cl/u/rafah/home/datasets/fineweb_12b/` match the study's recorded hashes;
+all 91 referenced shards are readable. The launcher validates dataset identity
+inside each job. The [scaffold qualification](../../scaffolds/transformer/validation/README.md#native-triton-scalar-attention)
+records operator correctness, profiles and complete optimizer-update benchmarks.
 
-Submit each run to **standard**, requesting one GPU and excluding the A100/A6000
-nodes so either an H100 or B300 can be allocated. Clear inherited
+Submit each run to **standard**, requesting one H100. Clear inherited
 `LD_LIBRARY_PATH` so system CUDA libraries do not override the locked wheels.
-The launcher gates training on CPU and GPU correctness, initialization, a
-full-recipe 20-update pilot, and exact fresh-process checkpoint resumption.
-Pilot timing estimates total training time; runs can span multiple 24-hour
-allocations. The job requeues ten minutes before each time limit and resumes
-its latest checkpoint. Queue waits and repeated work since that checkpoint
-add to the pilot's estimate.
+The launcher gates production on CPU and GPU checks (including native Triton),
+initialization, a full-recipe 20-update real-data pilot, and exact fresh-process
+checkpoint resumption. Pilot timing estimates total training time; runs can span
+multiple 24-hour allocations. The job requeues ten minutes before each limit
+and resumes its latest checkpoint. Queue waits and repeated work since that
+checkpoint add to the estimate.
+
+All four frozen recipes use online W&B tracking in
+`rafah-massachusetts-institute-of-technology/functional-memory`, grouped under
+`attention_scaling`, with one identity retained across checkpoint resumptions.
+Training metrics are logged every ten updates, validation every 1,000 updates,
+and checkpoints every 500 updates. Acceptance pilots disable W&B; production
+starts its own tracking identity. Canonical measurements remain in each run.
 
 ```bash
-for RUN in r10b2cb22687c r1b486c356e1a r27f0d0f59eb1 r873f76c0a542; do
-  env -u LD_LIBRARY_PATH TRANSFORMER_ALLOCATION_HOURS=24 \
-    sbatch --partition=standard --time=24:00:00 --gres=gpu:1 \
-    --exclude=collie,samoyed,doodle,terrier --cpus-per-task=8 --mem=64G \
-    --job-name="$RUN" --output="experiments/attention_scaling/runs/$RUN/training.log" \
+export EJKERNEL_TRITON_CACHE_COMPILES=1
+export EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/transformer/triton"
+for RUN in rc28d7b48dc72 r46c3479f9681 r1b62a76f9b55 re530e0627233; do
+  env -u LD_LIBRARY_PATH TRANSFORMER_ALLOCATION_HOURS=24 TRANSFORMER_WANDB_MODE=online \
+    sbatch --partition=standard --time=24:00:00 --gres=gpu:h100:1 \
+    --cpus-per-task=8 --mem=128G --job-name="$RUN" \
+    --output="experiments/attention_scaling/runs/$RUN/training.log" \
     scaffolds/transformer/launchers/kennel.sbatch \
     experiments.attention_scaling.acceptance \
-    "experiments/attention_scaling/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+    "experiments/attention_scaling/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 H100
 done
 ```
 

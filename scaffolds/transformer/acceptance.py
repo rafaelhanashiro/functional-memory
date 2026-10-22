@@ -92,6 +92,10 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     paths = list(spec.cpu_tests if cpu else spec.gpu_tests)
     if spec.select_tests is not None:
         paths.extend(spec.select_tests(config, resolved_backend, cpu))
+    if resolved_backend == "triton_scalar":
+        paths.append("scaffolds/transformer/tests/test_triton_scalar.py")
+        if cpu:
+            paths.append("scaffolds/transformer/tests/test_triton_bridge_precision.py")
     model = config["model"]
     if (model.get("attention_mechanism") == "gated_deltanet"
             and model.get("gdn_write_activation", "sigmoid") == "tanh"):
