@@ -457,3 +457,20 @@ def test_descriptor_scratch_is_a_private_xla_result(monkeypatch):
     assert calls[0][-1] == (0, 256)
     assert lowered[0][-1].shape == (384 * 3 * 5,)
     assert lowered[0][-1].dtype == jnp.uint8
+
+
+def test_assembler_versions_do_not_share_cached_ptx(compile_harness, monkeypatch):
+    captured, _ = compile_harness
+    version = ['cuda12.8-sm90']
+    monkeypatch.setattr(bridge.cb.CUDABackend, 'hash', lambda self: version[0])
+    old = _compile(None)
+    version[0] = 'cuda12.9-sm90'
+    new = _compile(None)
+    assert new is not old
+    assert len(captured) == 2
+    version[0] = 'cuda12.8-sm90'
+    assert _compile(None) is old
+    bridge._COMPILED_KERNEL_CACHE.clear()
+    version[0] = 'cuda12.9-sm90'
+    _compile(None)
+    assert len(captured) == 2

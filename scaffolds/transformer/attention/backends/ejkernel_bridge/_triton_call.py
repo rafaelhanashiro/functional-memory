@@ -877,6 +877,7 @@ def _make_triton_cache_key(
     enable_fp_fusion: bool,
     default_dot_input_precision: str | None = None,
     min_ctas_per_sm: int | None = None,
+    backend_hash: str | None = None,
 ) -> str:
     """Build a deterministic SHA-256 cache key for a Triton kernel compilation.
 
@@ -926,6 +927,8 @@ def _make_triton_cache_key(
     if min_ctas_per_sm is not None:
         # Preserve historical cache identities for callers that do not opt in.
         payload += (("min_ctas_per_sm", min_ctas_per_sm),)
+    if backend_hash is not None:
+        payload += (("backend_hash", backend_hash),)
     return hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
 
 
@@ -1226,6 +1229,7 @@ def get_or_create_triton_kernel(
         enable_fp_fusion=enable_fp_fusion,
         default_dot_input_precision=default_dot_input_precision,
         min_ctas_per_sm=min_ctas_per_sm,
+        backend_hash=backend.hash(),
     )
     memory_entry = _lru_get(_COMPILED_KERNEL_CACHE, cache_key)
     kernel = None
