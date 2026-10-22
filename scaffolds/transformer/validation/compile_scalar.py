@@ -9,7 +9,7 @@ import jax
 import jax.numpy as jnp
 from jax import export
 
-from scaffolds.launch.frozen import frozen_hash
+from scaffolds.launch.frozen import frozen_hash, changes
 from scaffolds.transformer.attention.backends.ejkernel_bridge import _triton_call as bridge
 from scaffolds.transformer.attention.backends.triton_scalar import _attention, Tuning
 from scaffolds.transformer.tests.test_triton_scalar import kernel_and_oracle
@@ -24,7 +24,10 @@ def main():
     bridge._get_cuda_compute_capability = lambda device: 90
     root = Path(__file__).resolve().parents[3]
     source = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    if changes(root, source, "attention_scaling", "transformer"):
+        raise ValueError("CUDA export requires committed, unchanged scaffold source")
     report = {"source_commit": source,
+              "driver_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               "frozen_execution_sha256": frozen_hash(root, source, "attention_scaling", "transformer"),
               "status": "running", "target": "sm90", "scope": __doc__, "cases": []}
     shape = (16, 2048, 16, 64) if args.training else (1, 137, 2, 32)

@@ -5,6 +5,7 @@ tensor-core rounding, the JAX custom call, or the device memory model.
 Run with TRITON_INTERPRET=1 JAX_PLATFORMS=cpu before importing Triton.
 """
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,7 @@ import numpy as np
 import torch
 
 from scaffolds.transformer.attention.backends import triton_scalar_kernels as kernels
+from scaffolds.launch.frozen import frozen_hash, changes
 from scaffolds.transformer.tests.test_triton_scalar import kernel_and_oracle, oracle
 
 
@@ -56,6 +58,11 @@ def main():
     torch.set_num_threads(2)
     report = {"source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
               "scope": __doc__, "status": "running", "cases": []}
+    root = Path(__file__).resolve().parents[3]
+    if changes(root, report["source_commit"], "attention_scaling", "transformer"):
+        raise ValueError("Interpreter validation requires committed, unchanged scaffold source")
+    report["frozen_execution_sha256"] = frozen_hash(root, report["source_commit"], "attention_scaling", "transformer")
+    report["driver_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     for name in ("rbf3", "rbf5", "rbf9", "rbf20", "sine", "poly", "exp",
                  "rbf3_recurrence", "rbf5_recurrence", "rbf9_recurrence", "rbf20_recurrence"):
         for mode in (0, 1, 2):

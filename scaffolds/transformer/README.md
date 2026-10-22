@@ -294,7 +294,9 @@ by default; `streaming=False` measures its cost independently. Streaming keeps
 RMSNorm uses `eps * exp(-2*log_scale)`, so retaining epsilon does not change the
 mathematics. Exponential evaluation shifts scores; other callbacks must produce
 finite values on valid scores. Streaming controls magnitude, not cancellation.
-Normalized signed weights still require a nonzero signed sum.
+Normalized exponential uses the positive weight mass without the unit prior,
+preserving softmax stability for entirely negative rows as well. Normalized
+signed weights still require a nonzero signed sum.
 
 Supported operands have BF16 or FP32 dtype and head widths 16, 32, 64 or 128.
 BF16 execution rounds weights and backward adjoints for tensor-core products;

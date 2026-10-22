@@ -130,6 +130,15 @@ def test_extreme_exp_and_zero_sine_with_exact_epsilon():
     expected = oracle(q, k, v, gain, jnp.ones_like(v), evaluate, "rms", 1e-6)
     for observed, reference in zip(actual, expected, strict=True):
         np.testing.assert_allclose(np.asarray(observed), reference, rtol=2e-3, atol=2e-3)
+    normalized = jax.jit(lambda q, k, v, g: scalar_attention(
+        q, k, v, kernel=kernel, attention_normalization=True))
+    y, pullback = jax.vjp(normalized, q, -10*k, v, gain)
+    actual = (y, *pullback(jnp.ones_like(v)))
+    # A fixed global shift leaves normalized exp and its derivative unchanged.
+    shifted = lambda s: (np.exp(s+1000), np.exp(s+1000))
+    expected = oracle(q, -10*k, v, gain, jnp.ones_like(v), shifted, "sum", 1e-6)
+    for observed, reference in zip(actual, expected, strict=True):
+        np.testing.assert_allclose(np.asarray(observed), reference, rtol=2e-3, atol=2e-3)
     fit = ExpProjection((sine(1.),), (1.,), 0., 1., 16, 32, 1e-12, {})
     zero_fn = lambda q: scalar_attention(q, k, v, kernel=basis_kernel(fit), output_norm_scale=gain, eps=.1)
     y, pullback = jax.vjp(jax.jit(zero_fn), jnp.zeros_like(q))

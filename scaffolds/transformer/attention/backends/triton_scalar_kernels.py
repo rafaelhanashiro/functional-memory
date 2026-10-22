@@ -171,7 +171,12 @@ def forward(Q, K, V, Gain, O, N, Stats, T: tl.constexpr, H: tl.constexpr,
     qi = tile * BM + tl.arange(0, BM)
     acc = tl.zeros((BM, DV), tl.float32)
     rowsum = tl.zeros((BM,), tl.float32)
-    log_scale = tl.zeros((BM,), tl.float32)  # a starts at 1, then adds absolute weight mass.
+    if STREAM and EXP and MODE == 1:
+        # Normalized exp must also shift entirely negative rows. A unit prior
+        # mass would make exp(-1000) underflow before normalization.
+        log_scale = tl.full((BM,), -float("inf"), tl.float32)
+    else:
+        log_scale = tl.zeros((BM,), tl.float32)  # a starts at 1, then adds absolute weight mass.
     invalid = tl.full((BM,), False, tl.int1)
     acc, rowsum, log_scale, invalid = forward_inner(
         acc, rowsum, log_scale, invalid, q, kd, vd, qi, 0, tile * BM,

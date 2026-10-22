@@ -6,7 +6,8 @@ The JAX custom VJP differentiates Q/K/V and the optional per-head RMSNorm gain;
 function parameters are fixed. No arbitrary Python callable is executed on GPU.
 
 Streaming accumulation keeps Y = exp(log_scale) * accumulator with a positive
-scale 1 + sum(abs(f)). Fused RMSNorm uses epsilon * exp(-2*log_scale), including
+scale 1 + sum(abs(f)) (normalized exp uses sum(exp) without the unit prior).
+Fused RMSNorm uses epsilon * exp(-2*log_scale), including
 in its analytic backward. Signed weights and zero outputs are supported.
 The exponential uses score shifting before evaluation; other callbacks must
 return finite values on valid scores. This does not repair cancellation error.
