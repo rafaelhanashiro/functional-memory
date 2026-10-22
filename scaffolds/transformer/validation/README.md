@@ -11,6 +11,59 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Native Triton scalar attention
+
+The scalar-attention engine is checked against an independent NumPy FP64
+forward and analytic backward, including Q/K/V and per-head RMSNorm gain.
+The selection covers frozen 3/5/9/20-RBF fits, their two-exponential recurrence
+callbacks, mixed sine/cosine, polynomial and exponential functions; normalized,
+unnormalized and fused RMSNorm outputs; causal masking and a ragged length.
+The GPU suite also checks extreme exponential scores, an exactly zero output
+with non-negligible RMSNorm epsilon, negative signed sums and zero-sum failures.
+
+On source `c073bd3`, 58 CPU model/bridge/accumulation checks passed.
+All 64 FP32 interpreter cases passed, with maximum relative output/gradient
+error `2.975e-5`. CUDA export passed for all 64 qualification cases and 59
+training-shape variants, including the complete custom VJP and private descriptor
+scratch allocation. These checks do not establish GPU execution correctness or
+performance. H100 execution and profiling are pending in standard job `223737`.
+Compact reports, hashes and current allocation status are in
+[the scalar-attention record](runs/scalar-triton/record.json).
+
+The GPU comparison uses one H100, BF16, sequence length 2048, 16 heads,
+key/value width 64, and microbatches 1/4/16/32. It measures forward and
+forward plus backward against the existing blocked JAX path, with Pallas/Triton,
+Mosaic and cuDNN controls wherever they implement the same scalar function and
+normalization. Separate RMSNorm, fused RMSNorm, streaming, higher precision,
+uniform-RBF recurrence and selected tile sizes are measured explicitly.
+Two warmups and five timed full optimizer updates also compare blocked and
+native Triton for the 3- and 20-RBF recipes at global batch 256 and microbatch 16.
+Synthetic inputs are resident; compilation, data loading, evaluation and
+checkpointing are excluded. Profiler traces use additional warmed calls outside
+the timing samples and remain local; failed cases remain in the compact reports.
+
+Reproduce from the committed worktree and its locked CUDA environment:
+
+```bash
+TRITON_INTERPRET=1 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
+  -m scaffolds.transformer.validation.interpret_scalar \
+  --output scaffolds/transformer/validation/runs/scalar-triton/interpreter.json
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
+  -m scaffolds.transformer.validation.compile_scalar \
+  --output scaffolds/transformer/validation/runs/scalar-triton/cuda-export.json
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
+  -m scaffolds.transformer.validation.compile_scalar --training \
+  --output scaffolds/transformer/validation/runs/scalar-triton/training-cuda-export.json
+env -u LD_LIBRARY_PATH SHARED_TRANSFORMER_SOURCE_COMMIT="$(git rev-parse HEAD)" \
+  PHASE=all sbatch --partition=standard --job-name=scalar-h100 \
+  --output=scaffolds/transformer/validation/logs/scalar-%j.log \
+  --export=ALL scaffolds/transformer/validation/scalar_triton.sbatch
+python3 -m scaffolds.transformer.validation.summarize_scalar --jobs 223737
+```
+
+Use the newly allocated job ID for a fresh run; the final command selects
+job `223737` explicitly when regenerating this record.
+
 ### Single-GPU gradient accumulation
 
 The compiled single-GPU accumulator is checked against the previous Python

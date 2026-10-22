@@ -1,0 +1,841 @@
+{
+  "cases": [
+    {
+      "dtype": "float32",
+      "function": "rbf3",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 5.141171702446313e-07,
+        "dq": 5.108835357063858e-07,
+        "dv": 4.960799295608682e-07,
+        "output": 5.082644879208972e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf3",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 5.141171702446313e-07,
+        "dq": 5.108835357063858e-07,
+        "dv": 4.960799295608682e-07,
+        "output": 5.907640665292828e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf3",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 4.796389953203787e-07,
+        "dq": 4.67359169107555e-07,
+        "dv": 2.3231973754585863e-07,
+        "output": 2.3579691688997634e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf3",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 5.396243563572324e-07,
+        "dq": 5.377638947456426e-07,
+        "dv": 2.698777310794253e-07,
+        "output": 2.4032191131312084e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf3",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 2.4279066464542343e-07,
+        "dk": 6.88704811730546e-07,
+        "dq": 6.530613830605448e-07,
+        "dv": 2.619290254464207e-07,
+        "output": 2.4142408364164576e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf3",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 2.88770021478636e-07,
+        "dk": 6.972826080309887e-07,
+        "dq": 6.790907556005855e-07,
+        "dv": 2.9113318566619454e-07,
+        "output": 2.499715257363723e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf5",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 3.642010774930267e-07,
+        "dq": 3.3861711257702934e-07,
+        "dv": 2.6941030905796277e-07,
+        "output": 2.826455649420182e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf5",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 3.642010774930267e-07,
+        "dq": 3.3861711257702934e-07,
+        "dv": 2.6941030905796277e-07,
+        "output": 3.2474952429118495e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf5",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.58197250423508e-07,
+        "dq": 2.6607852862485903e-07,
+        "dv": 2.0120208140204785e-07,
+        "output": 1.8773574471179512e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf5",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 3.2877547949944156e-07,
+        "dq": 3.2786874850495085e-07,
+        "dv": 2.507592715314589e-07,
+        "output": 1.939664359618837e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf5",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 2.2896981810776082e-07,
+        "dk": 3.11627658463893e-07,
+        "dq": 3.04769356834772e-07,
+        "dv": 2.3936308807710475e-07,
+        "output": 2.112459052765511e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf5",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 3.01067958873214e-07,
+        "dk": 3.5309022457253356e-07,
+        "dq": 3.475921599960095e-07,
+        "dv": 2.740616691204818e-07,
+        "output": 2.212943652135721e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf9",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.7449166464899783e-07,
+        "dq": 2.668331394983637e-07,
+        "dv": 2.5072897764577915e-07,
+        "output": 2.67071813334434e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf9",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.7449166464899783e-07,
+        "dq": 2.668331394983637e-07,
+        "dv": 2.5072897764577915e-07,
+        "output": 3.6445223095218134e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf9",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.5824044469054307e-07,
+        "dq": 2.490697308061407e-07,
+        "dv": 1.9328600710284806e-07,
+        "output": 1.8808382355111166e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf9",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.9677389458805487e-07,
+        "dq": 2.941555409453611e-07,
+        "dv": 2.420240996918647e-07,
+        "output": 1.8756384438854747e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf9",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 2.789661595310269e-07,
+        "dk": 2.941967612001763e-07,
+        "dq": 2.914942534690491e-07,
+        "dv": 2.3460000610659094e-07,
+        "output": 2.098081797799822e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf9",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 2.4539822909221705e-07,
+        "dk": 3.3342342976172516e-07,
+        "dq": 3.284644815812084e-07,
+        "dv": 2.837622689086427e-07,
+        "output": 2.222949623657382e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf20",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 1.907432326499721e-05,
+        "dq": 1.8679136708178325e-05,
+        "dv": 1.5236151845386411e-05,
+        "output": 1.5093812749615934e-05
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf20",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 1.907432326499721e-05,
+        "dq": 1.8679136708178325e-05,
+        "dv": 1.5236151845386411e-05,
+        "output": 1.5095103326438468e-05
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf20",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.8607075411672555e-05,
+        "dq": 2.9722064046664786e-05,
+        "dv": 1.796791096225886e-05,
+        "output": 1.8399336786849498e-05
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf20",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.8636363699719347e-05,
+        "dq": 2.974817552121186e-05,
+        "dv": 1.7972418522138326e-05,
+        "output": 1.8399044282702384e-05
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf20",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 1.5543435787010133e-05,
+        "dk": 2.592512382038589e-05,
+        "dq": 2.716352448189943e-05,
+        "dv": 1.911522344046906e-05,
+        "output": 1.8441338759166696e-05
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf20",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 1.5545964552519285e-05,
+        "dk": 2.5926372949506956e-05,
+        "dq": 2.7160055893728933e-05,
+        "dv": 1.9119618819793718e-05,
+        "output": 1.8439521646267886e-05
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "sine",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 1.7722932079702894e-07,
+        "dq": 1.7497247485728068e-07,
+        "dv": 1.4383335443304157e-07,
+        "output": 1.663286786155234e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "sine",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 1.7722932079702894e-07,
+        "dq": 1.7497247485728068e-07,
+        "dv": 1.4383335443304157e-07,
+        "output": 2.311870773252179e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "sine",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 2.522539814761293e-07,
+        "dk": 2.2343566683836015e-07,
+        "dq": 2.1939265245081774e-07,
+        "dv": 1.8954514655160855e-07,
+        "output": 1.6780864018877133e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "sine",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 3.3287302922015616e-07,
+        "dk": 2.419363881613701e-07,
+        "dq": 2.3689025996547395e-07,
+        "dv": 2.1136386256095992e-07,
+        "output": 1.7546408386489364e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "poly",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 1.775495961551139e-07,
+        "dq": 1.7242572452699194e-07,
+        "dv": 1.4924616795400607e-07,
+        "output": 1.7353353891153603e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "poly",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 1.775495961551139e-07,
+        "dq": 1.7242572452699194e-07,
+        "dv": 1.4924616795400607e-07,
+        "output": 2.7749017340123233e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "poly",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.1426191235160225e-07,
+        "dq": 1.9809282056726568e-07,
+        "dv": 1.6362492793720012e-07,
+        "output": 1.3012538424554662e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "poly",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.5558160098998474e-07,
+        "dq": 2.442963680082996e-07,
+        "dv": 2.1586899041266342e-07,
+        "output": 1.3938563689485537e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "poly",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 3.35213067681049e-07,
+        "dk": 2.2877119843344318e-07,
+        "dq": 2.2716023818500006e-07,
+        "dv": 1.8725257147195693e-07,
+        "output": 1.6663582726509438e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "poly",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 3.0873916119877595e-07,
+        "dk": 2.682553445578747e-07,
+        "dq": 2.725980578024095e-07,
+        "dv": 2.238926319325056e-07,
+        "output": 1.809543787135383e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "exp",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.604831593906207e-07,
+        "dq": 2.5632510997772157e-07,
+        "dv": 2.40557010772634e-07,
+        "output": 2.560864059536637e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "exp",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.604831593906207e-07,
+        "dq": 2.5632510997772157e-07,
+        "dv": 2.40557010772634e-07,
+        "output": 3.317300189071195e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "exp",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.3659392711307986e-07,
+        "dq": 2.3539213494170207e-07,
+        "dv": 1.912680363499612e-07,
+        "output": 1.7303427751875716e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "exp",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 2.6990411768075663e-07,
+        "dq": 2.635722184082211e-07,
+        "dv": 2.2899532330433192e-07,
+        "output": 1.7694569211781386e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "exp",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 2.8706330445304494e-07,
+        "dk": 2.787338524305238e-07,
+        "dq": 2.7723790299880577e-07,
+        "dv": 2.3151918082704163e-07,
+        "output": 2.0501299274529387e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "exp",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 2.798039127324095e-07,
+        "dk": 3.303986522598148e-07,
+        "dq": 3.257030304903706e-07,
+        "dv": 2.7563591124282485e-07,
+        "output": 2.1349499589176142e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf3_recurrence",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 5.346423722397454e-07,
+        "dq": 5.332974878447062e-07,
+        "dv": 8.093632955386997e-07,
+        "output": 7.863981241553094e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf3_recurrence",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 5.346423722397454e-07,
+        "dq": 5.332974878447062e-07,
+        "dv": 8.093632955386997e-07,
+        "output": 8.399560053063145e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf3_recurrence",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 6.75160430817334e-07,
+        "dq": 6.780340904549979e-07,
+        "dv": 8.389137588516069e-07,
+        "output": 8.542885527140941e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf3_recurrence",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 7.048908313218926e-07,
+        "dq": 7.10911356967868e-07,
+        "dv": 8.498656131471124e-07,
+        "output": 8.513323093212721e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf3_recurrence",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 9.426928683438522e-07,
+        "dk": 1.0484873089517947e-06,
+        "dq": 1.002938133705209e-06,
+        "dv": 1.0648557861349712e-06,
+        "output": 1.0176319482417647e-06
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf3_recurrence",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 9.557181213918802e-07,
+        "dk": 1.0253825400432003e-06,
+        "dq": 9.824217956030676e-07,
+        "dv": 1.0673050582670905e-06,
+        "output": 1.0169558212352243e-06
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf5_recurrence",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 4.864107877729254e-07,
+        "dq": 4.6919427857064106e-07,
+        "dv": 5.354406191365866e-07,
+        "output": 5.392891942565654e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf5_recurrence",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 4.864107877729254e-07,
+        "dq": 4.6919427857064106e-07,
+        "dv": 5.354406191365866e-07,
+        "output": 5.902865310861633e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf5_recurrence",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 4.89562232473148e-07,
+        "dq": 4.936123243141035e-07,
+        "dv": 5.613668370205142e-07,
+        "output": 5.574242228325993e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf5_recurrence",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 5.05460279363082e-07,
+        "dq": 5.108017476269716e-07,
+        "dv": 5.77532090472011e-07,
+        "output": 5.554298164905246e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf5_recurrence",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 6.466015436755511e-07,
+        "dk": 6.025323876283605e-07,
+        "dq": 6.120196390431104e-07,
+        "dv": 6.179215194255546e-07,
+        "output": 5.882568362543917e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf5_recurrence",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 6.896276998236349e-07,
+        "dk": 6.237806965004941e-07,
+        "dq": 6.192014624119905e-07,
+        "dv": 6.303891789903572e-07,
+        "output": 5.911037665908535e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf9_recurrence",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 4.977882394095957e-07,
+        "dq": 4.865589029395135e-07,
+        "dv": 5.312609187929724e-07,
+        "output": 5.271924628074577e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf9_recurrence",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 4.977882394095957e-07,
+        "dq": 4.865589029395135e-07,
+        "dv": 5.312609187929724e-07,
+        "output": 5.843590138459317e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf9_recurrence",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 5.824149352564858e-07,
+        "dq": 5.923384949818666e-07,
+        "dv": 5.482992529452224e-07,
+        "output": 5.375722836879258e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf9_recurrence",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 5.935778206381958e-07,
+        "dq": 6.084223297161177e-07,
+        "dv": 5.715448227606234e-07,
+        "output": 5.395451829401834e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf9_recurrence",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 6.408836369151373e-07,
+        "dk": 6.565981237973222e-07,
+        "dq": 6.822417755863946e-07,
+        "dv": 6.128146919036277e-07,
+        "output": 5.806751079000261e-07
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf9_recurrence",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 6.660939000262902e-07,
+        "dk": 6.723685669742294e-07,
+        "dq": 6.99583098921307e-07,
+        "dv": 6.235836006559821e-07,
+        "output": 5.849970542749277e-07
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf20_recurrence",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 7.750826718188658e-06,
+        "dq": 7.549749984026855e-06,
+        "dv": 7.179232795779687e-06,
+        "output": 7.210654204303513e-06
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf20_recurrence",
+      "mode": 0,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 7.750826718188658e-06,
+        "dq": 7.549749984026855e-06,
+        "dv": 7.179232795779687e-06,
+        "output": 7.19852968701166e-06
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf20_recurrence",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 1.1192596923203257e-05,
+        "dq": 1.1657542663590029e-05,
+        "dv": 9.610110040882286e-06,
+        "output": 9.642264705866584e-06
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf20_recurrence",
+      "mode": 1,
+      "relative_l2_errors": {
+        "dgain": 0.0,
+        "dk": 1.1190455945746364e-05,
+        "dq": 1.1643339347406576e-05,
+        "dv": 9.608912917692644e-06,
+        "output": 9.640106446190967e-06
+      },
+      "streaming": true
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf20_recurrence",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 9.92559776712843e-06,
+        "dk": 1.0867619983514027e-05,
+        "dq": 1.1455764584114162e-05,
+        "dv": 9.181070088048655e-06,
+        "output": 9.121283591423317e-06
+      },
+      "streaming": false
+    },
+    {
+      "dtype": "float32",
+      "function": "rbf20_recurrence",
+      "mode": 2,
+      "relative_l2_errors": {
+        "dgain": 9.897614139608104e-06,
+        "dk": 1.0864238522710553e-05,
+        "dq": 1.1458849583141915e-05,
+        "dv": 9.176171140538952e-06,
+        "output": 9.119500282742454e-06
+      },
+      "streaming": true
+    }
+  ],
+  "driver_sha256": "2a64ea581102c218368872747d03c0310a3c4f0bfd21391195db3a4e432c6e26",
+  "frozen_execution_sha256": "ee297d15f58ac41ff1adb61c329ce305ca8196555cf5abceb4b42a5cb48ca562",
+  "scope": "Run scalar kernel algebra through Triton's CPU interpreter and FP64 oracle.\n\nThis complements GPU qualification; it does not exercise GPU code generation,\ntensor-core rounding, the JAX custom call, or the device memory model.\nRun with TRITON_INTERPRET=1 JAX_PLATFORMS=cpu before importing Triton.\n",
+  "source_commit": "c073bd378bfc1fd8a5db25e20cbdc6890d92500d",
+  "status": "passed"
+}

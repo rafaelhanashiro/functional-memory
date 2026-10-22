@@ -1,0 +1,73 @@
+{
+  "cpu": {
+    "cuda_export": {
+      "cases": 64,
+      "frozen_execution_sha256": "ee297d15f58ac41ff1adb61c329ce305ca8196555cf5abceb4b42a5cb48ca562",
+      "report": {
+        "path": "scaffolds/transformer/validation/runs/scalar-triton/cuda-export.json",
+        "sha256": "76838214192b7dcc057aed3f679d3b4e1ff4858a7af2168658523fb5c0ee976b",
+        "size_bytes": 14789
+      },
+      "source_commit": "c073bd378bfc1fd8a5db25e20cbdc6890d92500d",
+      "status": "passed"
+    },
+    "frozen_execution_sha256": "ee297d15f58ac41ff1adb61c329ce305ca8196555cf5abceb4b42a5cb48ca562",
+    "interpreter": {
+      "cases": 64,
+      "frozen_execution_sha256": "ee297d15f58ac41ff1adb61c329ce305ca8196555cf5abceb4b42a5cb48ca562",
+      "max_relative_l2_error": 2.974817552121186e-05,
+      "report": {
+        "path": "scaffolds/transformer/validation/runs/scalar-triton/interpreter.json",
+        "sha256": "f42671934397a7477f07c4a8766b4ef8829e69ee90e7f7b694c86caac53095e8",
+        "size_bytes": 21750
+      },
+      "source_commit": "c073bd378bfc1fd8a5db25e20cbdc6890d92500d",
+      "status": "passed"
+    },
+    "source_commit": "c073bd378bfc1fd8a5db25e20cbdc6890d92500d",
+    "training_cuda_export": {
+      "cases": 59,
+      "frozen_execution_sha256": "ee297d15f58ac41ff1adb61c329ce305ca8196555cf5abceb4b42a5cb48ca562",
+      "report": {
+        "path": "scaffolds/transformer/validation/runs/scalar-triton/training-cuda-export.json",
+        "sha256": "e319aa35209a7c5c8540d26f524e37a4620d07f13f2f24eed1f2903a62531132",
+        "size_bytes": 13679
+      },
+      "source_commit": "c073bd378bfc1fd8a5db25e20cbdc6890d92500d",
+      "status": "passed"
+    },
+    "unit_tests": {
+      "errors": 0,
+      "failures": 0,
+      "report": {
+        "path": "scaffolds/transformer/validation/runs/scalar-triton/cpu.xml",
+        "sha256": "6fba00fc03d28580e25013d96f793a8fe44b62a709415accc9f824fcd8377fd4",
+        "size_bytes": 8609
+      },
+      "skipped": 0,
+      "tests": 58
+    }
+  },
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "format": "scalar-triton-qualification",
+  "gpu": {
+    "allocations": [
+      {
+        "elapsed": "00:00:00",
+        "exit_code": "0:0",
+        "job_id": "223737",
+        "nodes": "None assigned",
+        "state": "PENDING"
+      }
+    ],
+    "jobs": [
+      223737
+    ],
+    "kernel_comparisons": [],
+    "optimizer_updates": [],
+    "qualification": [],
+    "status": "in_progress"
+  },
+  "home_cluster": "Kennel",
+  "version": 1
+}
