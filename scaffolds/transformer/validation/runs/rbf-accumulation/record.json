@@ -35,7 +35,366 @@
   "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
   "format": "shared-transformer-accumulation",
   "gpu_benchmark": {
+    "allocation_log": {
+      "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/rbf-accumulation-223579.log",
+      "sha256": "bac8a600ec6c277ee479a6be4adadf7043a245250d2e39bd9d0cbd756ee10142",
+      "size_bytes": 68
+    },
+    "case_counts": {
+      "complete": 15,
+      "failed_out_of_memory": 1
+    },
+    "cases": [
+      {
+        "basis_count": 3,
+        "case_id": "r10b2cb22687c-compiled-mb1",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r10b2cb22687c-compiled-mb1.log",
+          "sha256": "36395cde4b24f9b00d1c00a08f41d0cdc053b8b44a342e3dac56e7cd08fc8b43",
+          "size_bytes": 191
+        },
+        "median_update_seconds": 9.525349095929414,
+        "microbatch_size": 1,
+        "peak_allocator_bytes": 5285179648,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r10b2cb22687c-compiled-mb1.json",
+          "sha256": "fdb734c1278558b02678dec3e2a77d385236a30d24b811a1aa12409eb5701f85",
+          "size_bytes": 21192
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 3,
+        "case_id": "r10b2cb22687c-compiled-mb16",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r10b2cb22687c-compiled-mb16.log",
+          "sha256": "2fe0f57e22cbf7b07e2ed2d284a48135f3352e725473fed81c8158f0d2125343",
+          "size_bytes": 191
+        },
+        "median_update_seconds": 8.892206104006618,
+        "microbatch_size": 16,
+        "peak_allocator_bytes": 14918472448,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r10b2cb22687c-compiled-mb16.json",
+          "sha256": "a3ec7aeeec8120a745e3dce55895d80e6393e1ebcc1512467a2568571dca4ecb",
+          "size_bytes": 21207
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 3,
+        "case_id": "r10b2cb22687c-compiled-mb2",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r10b2cb22687c-compiled-mb2.log",
+          "sha256": "edd1568481dfd569cf960cbcb7aea6cc701cc3f3fb2a9b0f5801d488f7257d20",
+          "size_bytes": 191
+        },
+        "median_update_seconds": 8.949615085031837,
+        "microbatch_size": 2,
+        "peak_allocator_bytes": 5813667840,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r10b2cb22687c-compiled-mb2.json",
+          "sha256": "161bd5f55dc623b9caaaf0a1e4e2e8764284fc2228835be34ea658525118b51c",
+          "size_bytes": 21203
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 3,
+        "case_id": "r10b2cb22687c-compiled-mb32",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r10b2cb22687c-compiled-mb32.log",
+          "sha256": "924b0753927539a5d2df06f187bc700c7870980f8f21484df19514f0d7261831",
+          "size_bytes": 191
+        },
+        "median_update_seconds": 8.735947948880494,
+        "microbatch_size": 32,
+        "peak_allocator_bytes": 25122165760,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r10b2cb22687c-compiled-mb32.json",
+          "sha256": "acf1daf32ff757648c97de5d74acbdd4cf5df08ad187f164d502b64550cae368",
+          "size_bytes": 21205
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 3,
+        "case_id": "r10b2cb22687c-compiled-mb4",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r10b2cb22687c-compiled-mb4.log",
+          "sha256": "9a15a31da1147889d95f447bda9b3bdfe4058082aef753be877f816606b6be45",
+          "size_bytes": 191
+        },
+        "median_update_seconds": 8.641543762059882,
+        "microbatch_size": 4,
+        "peak_allocator_bytes": 7451558912,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r10b2cb22687c-compiled-mb4.json",
+          "sha256": "f71cced94822a1314afc24b6b6afee1af2b95fced1d568ac4f011955a845a998",
+          "size_bytes": 21201
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 3,
+        "case_id": "r10b2cb22687c-compiled-mb64",
+        "exit_code": 1,
+        "failure": "out_of_memory",
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r10b2cb22687c-compiled-mb64.log",
+          "sha256": "0966ff7ae4da1e5873964e33d7203bd32f5dfe873a5319ef709f911f48736d53",
+          "size_bytes": 1568
+        },
+        "microbatch_size": 64,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r10b2cb22687c-compiled-mb64.json",
+          "sha256": "6098475242731f37a8b720d1c482fa8dca43c1f448e649bed93fb7bb16a7ab98",
+          "size_bytes": 19750
+        },
+        "status": "failed"
+      },
+      {
+        "basis_count": 3,
+        "case_id": "r10b2cb22687c-compiled-mb8",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r10b2cb22687c-compiled-mb8.log",
+          "sha256": "b88d0766eb9b0b7bd6542231e3c423a13f205ad8134f5d29303eaca4767c9422",
+          "size_bytes": 191
+        },
+        "median_update_seconds": 9.226629818091169,
+        "microbatch_size": 8,
+        "peak_allocator_bytes": 9963951104,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r10b2cb22687c-compiled-mb8.json",
+          "sha256": "7567641fc4cd7d3daba7415c9ebb1d8762e19c3e8b78b6d25fb16487a9c5a2d7",
+          "size_bytes": 21204
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 3,
+        "case_id": "r10b2cb22687c-python-mb1",
+        "exit_code": 0,
+        "implementation": "python",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r10b2cb22687c-python-mb1.log",
+          "sha256": "9cd970ce64ce14de2158a32d80b9931368176db227455c0f9faf3bbfb8f7e3da",
+          "size_bytes": 195
+        },
+        "median_update_seconds": 13.625924616120756,
+        "microbatch_size": 1,
+        "peak_allocator_bytes": 10406665728,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r10b2cb22687c-python-mb1.json",
+          "sha256": "ace8ea9e7732ce9571695e0a3c817b77fcb70cad6d3cebfa87bef62e6bea5f9f",
+          "size_bytes": 21210
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 20,
+        "case_id": "r873f76c0a542-compiled-mb1",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r873f76c0a542-compiled-mb1.log",
+          "sha256": "167caa33507bf11f35e2c5e9e83e757a4d20743b0bc94ce08a41f98d1e2a3558",
+          "size_bytes": 195
+        },
+        "median_update_seconds": 15.850588579894975,
+        "microbatch_size": 1,
+        "peak_allocator_bytes": 5285178880,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r873f76c0a542-compiled-mb1.json",
+          "sha256": "870667cb4555502707d6f2ec7d3c31492fecf48aafe3419860ae29868892ac95",
+          "size_bytes": 26539
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 20,
+        "case_id": "r873f76c0a542-compiled-mb16",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r873f76c0a542-compiled-mb16.log",
+          "sha256": "226ce9bb5aaba22bb826325205edd37b733634c95e425492766b106d9cfc0deb",
+          "size_bytes": 195
+        },
+        "median_update_seconds": 13.731777305016294,
+        "microbatch_size": 16,
+        "peak_allocator_bytes": 14918475008,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r873f76c0a542-compiled-mb16.json",
+          "sha256": "3085b61e117eb0f86f0153ef4991bd1eafb22df3006c24ac276031604f1f8c92",
+          "size_bytes": 26548
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 20,
+        "case_id": "r873f76c0a542-compiled-mb2",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r873f76c0a542-compiled-mb2.log",
+          "sha256": "22106f8d63f3a8aea638dae8996dfa03c37307b6dde9c7b9073d84038370d73f",
+          "size_bytes": 195
+        },
+        "median_update_seconds": 15.42566470708698,
+        "microbatch_size": 2,
+        "peak_allocator_bytes": 5813670400,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r873f76c0a542-compiled-mb2.json",
+          "sha256": "30c06dd45581082de94f7b5a11e9e3be9886493df036d8c6e10113617ea359bc",
+          "size_bytes": 26545
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 20,
+        "case_id": "r873f76c0a542-compiled-mb32",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r873f76c0a542-compiled-mb32.log",
+          "sha256": "cf5ce26b70d775253ea21c943769273ef7dc0d4268eeca2c25945218a2600c4b",
+          "size_bytes": 195
+        },
+        "median_update_seconds": 13.617753699189052,
+        "microbatch_size": 32,
+        "peak_allocator_bytes": 25122168320,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r873f76c0a542-compiled-mb32.json",
+          "sha256": "934af867b0181e2ccf4311e567d9b0c5429e0274cccc0c2361acbabbbe670e08",
+          "size_bytes": 26550
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 20,
+        "case_id": "r873f76c0a542-compiled-mb4",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r873f76c0a542-compiled-mb4.log",
+          "sha256": "0058c9be3290aaf283f8e4ef85e78d4a26d18ac81e5de97a8a07cf76e4d85381",
+          "size_bytes": 195
+        },
+        "median_update_seconds": 14.799196050968021,
+        "microbatch_size": 4,
+        "peak_allocator_bytes": 7500320256,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r873f76c0a542-compiled-mb4.json",
+          "sha256": "9094ba6d048efc299b810b5e875230a2f5e71c53e01cc950d9193a6c17c71cf0",
+          "size_bytes": 26547
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 20,
+        "case_id": "r873f76c0a542-compiled-mb64",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r873f76c0a542-compiled-mb64.log",
+          "sha256": "22f86e1c5a3fc56daf268812243e88baaeda5ea3ce658eefcdc986c439ce2f7c",
+          "size_bytes": 195
+        },
+        "median_update_seconds": 13.558762748958543,
+        "microbatch_size": 64,
+        "peak_allocator_bytes": 45254824704,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r873f76c0a542-compiled-mb64.json",
+          "sha256": "df5bffbce08bd33f6a965bf6c4a86d4e8196d558b28148767c51a087b27e8446",
+          "size_bytes": 26553
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 20,
+        "case_id": "r873f76c0a542-compiled-mb8",
+        "exit_code": 0,
+        "implementation": "compiled",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r873f76c0a542-compiled-mb8.log",
+          "sha256": "275dac15a80929dfc1b31a656ab1f7dfe1f31c986a343e9fb80d17089b50ea82",
+          "size_bytes": 195
+        },
+        "median_update_seconds": 14.057285898830742,
+        "microbatch_size": 8,
+        "peak_allocator_bytes": 9963969792,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r873f76c0a542-compiled-mb8.json",
+          "sha256": "3383f964f65f6244efed6b97ae7efacf7eac480cc5015777b0f9ae02261813a5",
+          "size_bytes": 26548
+        },
+        "status": "complete"
+      },
+      {
+        "basis_count": 20,
+        "case_id": "r873f76c0a542-python-mb1",
+        "exit_code": 0,
+        "implementation": "python",
+        "log": {
+          "path": "/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/rbf-accumulation-223579/r873f76c0a542-python-mb1.log",
+          "sha256": "37356cd1ed38d8c97fbfc3b0f72819770e058d5bae515634ea730c1019d06151",
+          "size_bytes": 195
+        },
+        "median_update_seconds": 20.76748256222345,
+        "microbatch_size": 1,
+        "peak_allocator_bytes": 10406665728,
+        "report": {
+          "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/r873f76c0a542-python-mb1.json",
+          "sha256": "d5bce37e8c167208b38b03cb8c49ad4e8f430ff276e909988f73b486a57837eb",
+          "size_bytes": 26543
+        },
+        "status": "complete"
+      }
+    ],
+    "comparisons": [
+      {
+        "baseline_case": "r10b2cb22687c-python-mb1",
+        "basis_count": 3,
+        "candidate_case": "r10b2cb22687c-compiled-mb32",
+        "projected_compute_hours_for_19074_updates": 46.28596421581848,
+        "speedup": 1.5597534115192284,
+        "update_time_reduction_fraction": 0.3588730163276376
+      },
+      {
+        "baseline_case": "r873f76c0a542-python-mb1",
+        "basis_count": 20,
+        "candidate_case": "r873f76c0a542-compiled-mb32",
+        "projected_compute_hours_for_19074_updates": 72.15139834953666,
+        "speedup": 1.5250299734426955,
+        "update_time_reduction_fraction": 0.3442751831673583
+      }
+    ],
+    "elapsed_seconds": 1750,
+    "exit_status": {
+      "path": "scaffolds/transformer/validation/runs/rbf-accumulation/223579/exit-status.txt",
+      "sha256": "daa20f0b646e429c05d6245c1ae7d35c987f884ef30c5b393d88c31108f1d88b",
+      "size_bytes": 466
+    },
+    "finished_utc": "2026-10-21T17:36:12+00:00",
+    "frozen_execution_sha256": "e304ef692aaf3aabedea95633e5744a886e4fce523b755fd8b27c816353ae1a2",
     "global_batch_size": 256,
+    "gpu_model": "NVIDIA H100 80GB HBM3",
+    "gpu_uuid": "GPU-b60c4237-5e93-346e-685d-66f5dfc746f2",
+    "initial_parameter_sha256": "2dd6810b8b7b1923283a4281bcf274a9c09ff3f2cb2a36006a88b7f2e0b52b54",
     "inputs": [
       {
         "config": "experiments/attention_scaling/runs/r10b2cb22687c/config.yaml",
@@ -49,6 +408,7 @@
       }
     ],
     "launcher_sha256": "3171d11b66c06bbbbfe5e67d12367274d02845083d2d259519d62dc1e2bd5770",
+    "microbatch_candidate_for_real_data_qualification": 32,
     "microbatch_sizes": [
       1,
       2,
@@ -59,8 +419,16 @@
       64
     ],
     "production_microbatch_recommendation": null,
+    "production_qualification": "not_run",
+    "scheduler_exit_code": "0:0",
+    "scheduler_state": "COMPLETED",
     "slurm_node": "dogo",
-    "status": "running",
+    "source_commits": [
+      "d501a83d7bf47e82bf68736936bbb523fcfa4f59",
+      "fc9898c5e0772d4b899cb9a2e8c2e3c881f5e250"
+    ],
+    "started_utc": "2026-10-21T17:07:02+00:00",
+    "status": "complete_with_failed_case",
     "submission": {
       "command": [
         "sbatch",
@@ -83,5 +451,5 @@
   "home_cluster": "kennel",
   "schema_version": 1,
   "source_commit": "b3c8e372552a8c737bce2f9563b5e7ab05086040",
-  "status": "cpu_passed_gpu_running"
+  "status": "cpu_passed_gpu_benchmark_complete"
 }

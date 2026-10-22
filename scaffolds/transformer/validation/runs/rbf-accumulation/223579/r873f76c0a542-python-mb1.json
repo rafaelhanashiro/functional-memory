@@ -1,0 +1,701 @@
+{
+  "accumulation_steps": 256,
+  "configuration": {
+    "data": {
+      "batch_size": 256,
+      "dataset_config": "sample-100BT",
+      "dataset_name": "HuggingFaceFW/fineweb-edu",
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sequence_length": 2049,
+      "shuffle_seed": 0,
+      "source": "packed",
+      "split": "train",
+      "synthetic_vocab_size": 32000,
+      "text_field": "text",
+      "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+      "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+    },
+    "model": {
+      "attention_backend": "blocked",
+      "attention_basis": {
+        "basis": [
+          {
+            "center": -6.0,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": -5.368421052631579,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": -4.7368421052631575,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": -4.105263157894737,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": -3.473684210526316,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": -2.8421052631578947,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": -2.210526315789474,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": -1.578947368421053,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": -0.9473684210526319,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": -0.3157894736842106,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": 0.3157894736842106,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": 0.947368421052631,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": 1.5789473684210522,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": 2.2105263157894726,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": 2.842105263157894,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": 3.473684210526315,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": 4.105263157894736,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": 4.7368421052631575,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": 5.368421052631579,
+            "kind": "rbf",
+            "width": 1.0
+          },
+          {
+            "center": 6.0,
+            "kind": "rbf",
+            "width": 1.0
+          }
+        ],
+        "check_order": 256,
+        "coefficients": [
+          -74.74475072727894,
+          179.88680628933096,
+          -260.7306403593473,
+          302.49568692478897,
+          -314.9063755603312,
+          312.5870638613478,
+          -306.80418087187644,
+          304.8888346187574,
+          -311.22098178268914,
+          329.8137995839666,
+          -363.83776424992607,
+          419.90930789273443,
+          -502.4878860855093,
+          625.5809248785472,
+          -788.6226831409843,
+          1011.026828235822,
+          -1236.6295459656237,
+          1448.4336311832224,
+          -1360.1420060895953,
+          989.4471959252
+        ],
+        "diagnostics": {
+          "check_condition_number": 559608.6727699088,
+          "condition_number": 559608.6727695175,
+          "l2_error": 0.005183375750472515,
+          "negative_mass_estimate": 3.7991483328381145e-05,
+          "quadrature_converged": true,
+          "rank": 20,
+          "relative_l2_error": 0.0019068573744654344,
+          "relative_quadrature_change": 1.137990971066179e-13,
+          "relative_target_norm_error": 3.3306690738754696e-16
+        },
+        "mean": 0.0,
+        "quadrature_order": 128,
+        "rcond": 1e-12,
+        "std": 1.0,
+        "target": "exp",
+        "version": 1
+      },
+      "attention_coefficient_activation": "identity",
+      "attention_coefficient_amplitude_initial": 1.0,
+      "attention_coefficient_conditioning": "static",
+      "attention_coefficient_initialization": "taylor",
+      "attention_coefficient_parameterization": "direct",
+      "attention_coefficient_projection_initial_std": 0.0,
+      "attention_coefficient_sharing": "global",
+      "attention_coefficient_tanh_bias": false,
+      "attention_coefficients": "fixed",
+      "attention_degree": null,
+      "attention_denominator_constant": "fixed",
+      "attention_denominator_degree": null,
+      "attention_denominator_parameterization": "direct",
+      "attention_fixed_coefficients": null,
+      "attention_fixed_square_factors": null,
+      "attention_mechanism": "dot_product",
+      "attention_normalization": false,
+      "attention_output_scaling": "head_rms_norm",
+      "dropout": 0.0,
+      "gdn_conv_size": 4,
+      "gdn_erase_mode": "tied",
+      "gdn_polynomial_degree": 1,
+      "gdn_write_activation": "sigmoid",
+      "gla_chunk_size": 64,
+      "gla_gate_rank": 16,
+      "gla_gate_tau": 16.0,
+      "gla_inner_chunk_size": 16,
+      "gla_use_rope": true,
+      "hidden_size": 1024,
+      "initialization": "transformer_reference",
+      "intermediate_size": 3008,
+      "kind": "transformer",
+      "max_seq_len": 2048,
+      "num_heads": 16,
+      "num_kv_heads": 16,
+      "num_layers": 10,
+      "qk_head_dim": 64,
+      "qk_norm": true,
+      "qk_norm_eps": 1e-06,
+      "qk_norm_initial_scale": null,
+      "qk_norm_sharing": "per_head",
+      "quadratic_mode": "fixed",
+      "quadratic_sharing": "global",
+      "remat": true,
+      "rms_norm_eps": 1e-06,
+      "rope_theta": 10000.0,
+      "tie_embeddings": false,
+      "value_head_dim": 64,
+      "vocab_size": 32000
+    },
+    "optim": {
+      "beta1": 0.9,
+      "beta2": 0.95,
+      "coefficient_penalty": 0.0,
+      "coefficient_penalty_denominator": true,
+      "grad_clip_norm": 1.0,
+      "learning_rate": 0.0003,
+      "min_learning_rate": 3e-05,
+      "total_steps": 19074,
+      "warmup_steps": 400,
+      "weight_decay": 0.1,
+      "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+    },
+    "train": {
+      "checkpoint_dir": "experiments/attention_scaling/runs/r873f76c0a542/checkpoints",
+      "ckpt_every": 500,
+      "dtype": "bfloat16",
+      "eval_batches": 7,
+      "eval_every": 1000,
+      "log_every": 10,
+      "micro_batch_size": 1,
+      "seed": 0,
+      "source_commit": "auto",
+      "wandb_dir": null,
+      "wandb_entity": "rafah-massachusetts-institute-of-technology",
+      "wandb_group": "attention_scaling",
+      "wandb_mode": "online",
+      "wandb_project": "functional-memory",
+      "wandb_run_name": "200m-rbf-n20-unnormalized-headrms-qknorm-dk64-seed0",
+      "workdir": "experiments/attention_scaling/runs/r873f76c0a542"
+    }
+  },
+  "created_at_utc": "2026-10-21T17:20:41.202825+00:00",
+  "finished_at_utc": "2026-10-21T17:22:58.472439+00:00",
+  "format": "single-gpu-accumulation",
+  "gpu_memory_stats": {
+    "bytes_in_use": 2518857472,
+    "bytes_limit": 63787352064,
+    "bytes_reserved": 0,
+    "largest_alloc_size": 347236608,
+    "largest_free_block_bytes": 0,
+    "num_allocs": 636483,
+    "peak_bytes_in_use": 10406665728,
+    "peak_bytes_reserved": 0,
+    "peak_pool_bytes": 17181966336,
+    "pool_bytes": 17181966336
+  },
+  "implementation": "python",
+  "initial_parameter_sha256": "2dd6810b8b7b1923283a4281bcf274a9c09ff3f2cb2a36006a88b7f2e0b52b54",
+  "input_recipe": {
+    "configuration": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "blocked",
+        "attention_basis": {
+          "basis": [
+            {
+              "center": -6.0,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": -5.368421052631579,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": -4.7368421052631575,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": -4.105263157894737,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": -3.473684210526316,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": -2.8421052631578947,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": -2.210526315789474,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": -1.578947368421053,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": -0.9473684210526319,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": -0.3157894736842106,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": 0.3157894736842106,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": 0.947368421052631,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": 1.5789473684210522,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": 2.2105263157894726,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": 2.842105263157894,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": 3.473684210526315,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": 4.105263157894736,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": 4.7368421052631575,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": 5.368421052631579,
+              "kind": "rbf",
+              "width": 1.0
+            },
+            {
+              "center": 6.0,
+              "kind": "rbf",
+              "width": 1.0
+            }
+          ],
+          "check_order": 256,
+          "coefficients": [
+            -74.74475072727894,
+            179.88680628933096,
+            -260.7306403593473,
+            302.49568692478897,
+            -314.9063755603312,
+            312.5870638613478,
+            -306.80418087187644,
+            304.8888346187574,
+            -311.22098178268914,
+            329.8137995839666,
+            -363.83776424992607,
+            419.90930789273443,
+            -502.4878860855093,
+            625.5809248785472,
+            -788.6226831409843,
+            1011.026828235822,
+            -1236.6295459656237,
+            1448.4336311832224,
+            -1360.1420060895953,
+            989.4471959252
+          ],
+          "diagnostics": {
+            "check_condition_number": 559608.6727699088,
+            "condition_number": 559608.6727695175,
+            "l2_error": 0.005183375750472515,
+            "negative_mass_estimate": 3.7991483328381145e-05,
+            "quadrature_converged": true,
+            "rank": 20,
+            "relative_l2_error": 0.0019068573744654344,
+            "relative_quadrature_change": 1.137990971066179e-13,
+            "relative_target_norm_error": 3.3306690738754696e-16
+          },
+          "mean": 0.0,
+          "quadrature_order": 128,
+          "rcond": 1e-12,
+          "std": 1.0,
+          "target": "exp",
+          "version": 1
+        },
+        "attention_coefficient_activation": "identity",
+        "attention_coefficient_amplitude_initial": 1.0,
+        "attention_coefficient_conditioning": "static",
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_projection_initial_std": 0.0,
+        "attention_coefficient_sharing": "global",
+        "attention_coefficient_tanh_bias": false,
+        "attention_coefficients": "fixed",
+        "attention_degree": null,
+        "attention_denominator_constant": "fixed",
+        "attention_denominator_degree": null,
+        "attention_denominator_parameterization": "direct",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_mechanism": "dot_product",
+        "attention_normalization": false,
+        "attention_output_scaling": "head_rms_norm",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "tied",
+        "gdn_polynomial_degree": 1,
+        "gdn_write_activation": "sigmoid",
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 1024,
+        "initialization": "transformer_reference",
+        "intermediate_size": 3008,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 16,
+        "num_kv_heads": 16,
+        "num_layers": 10,
+        "qk_head_dim": 64,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_head",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": true,
+        "rms_norm_eps": 1e-06,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.0,
+        "coefficient_penalty_denominator": true,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.0003,
+        "min_learning_rate": 3e-05,
+        "total_steps": 19074,
+        "warmup_steps": 400,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "experiments/attention_scaling/runs/r873f76c0a542/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 7,
+        "eval_every": 1000,
+        "log_every": 10,
+        "micro_batch_size": 1,
+        "seed": 0,
+        "source_commit": "auto",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "attention_scaling",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "200m-rbf-n20-unnormalized-headrms-qknorm-dk64-seed0",
+        "workdir": "experiments/attention_scaling/runs/r873f76c0a542"
+      }
+    },
+    "path": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/experiments/attention_scaling/runs/r873f76c0a542/config.yaml",
+    "sha256": "85ce6f99c81562fb34161fefc8d7ba343d051d71626f1e446ccdca8f05e5e169"
+  },
+  "measurement_notes": [
+    "Resident synthetic tokens; model, optimizer, and global batch match the input recipe.",
+    "Only microbatch size and accumulation implementation are varied.",
+    "Every sample synchronizes the complete optimizer state, loss, and numerical checks.",
+    "Compilation, data loading, evaluation, logging and checkpoints are excluded from steady timing.",
+    "Allocator peak includes initialization and warmup in this fresh process."
+  ],
+  "parameter_count": 199916704,
+  "provenance": {
+    "benchmark_source_sha256": "a294c1678db0e298581e6b682d73183fb858b711d04247e9125835c18daf194a",
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "device": {
+      "description": "cuda:0",
+      "driver_version": "560.35.05",
+      "id": 0,
+      "kind": "NVIDIA H100 80GB HBM3",
+      "name": "NVIDIA H100 80GB HBM3",
+      "pci_bus_id": "00000000:C3:00.0",
+      "physical_index": "0",
+      "platform": "gpu",
+      "process_index": 0,
+      "uuid": "GPU-b60c4237-5e93-346e-685d-66f5dfc746f2"
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": null,
+      "SLURM_JOB_ID": "223579",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": null
+    },
+    "frozen_execution_scope": {
+      "experiment": "attention_scaling",
+      "scaffold": "transformer"
+    },
+    "frozen_execution_sha256": "e304ef692aaf3aabedea95633e5744a886e4fce523b755fd8b27c816353ae1a2",
+    "hostname": "dogo.csail.mit.edu",
+    "package_versions": {
+      "flash-linear-attention": "0.6.0",
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda12-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cudnn-cu12": "9.22.0.52",
+      "triton": "3.7.1"
+    },
+    "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.39",
+    "python": "3.11.14",
+    "runtime_environment": {
+      "CUDA_HOME": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_TRITON_PTXAS_DEVICE_DEBUG": null,
+      "JAX_TRITON_PTXAS_EXTRA_FLAGS": null,
+      "NCCL_P2P_DISABLE": null,
+      "POLY_GDN_MIN_CTAS_PER_SM": null,
+      "POLY_GDN_NUM_WARPS": null,
+      "POLY_GDN_VALUE_PRECISION": null,
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+      "TRANSFORMER_HOST_STAGING": "0",
+      "TRITON_PTXAS_BLACKWELL_PATH": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc/bin/ptxas",
+      "TRITON_PTXAS_PATH": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc/bin/ptxas",
+      "XLA_FLAGS": null,
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "source_commit": "d501a83d7bf47e82bf68736936bbb523fcfa4f59",
+    "source_dirty": true,
+    "source_sha256": {
+      "scaffolds/transformer/attention/__init__.py": "0a21df8dcefe750872141602b4c96aff999c403997438957926250c916cb2913",
+      "scaffolds/transformer/attention/backends/__init__.py": "fc73b96b509d55a0f8a4df7d0cf1cc1ec2c3888d89e7173e4bc5e463a60307e1",
+      "scaffolds/transformer/attention/backends/chunked_gla_triton.py": "41414d6211c843e4baf595d6f4e10da6711ac3cc0a6cc742b33166315b38c554",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/__init__.py": "ef92364015dd7b51126b31aa2b8d02bb351c576851c1a975b003cb7f398b5317",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "c8fc64909df8487d5b02f1d4af8a41af6b075faf0be34803b51f09a0f7471289",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "a8321522447331aafc08652587ba9cb7d0e817ff6cc92ebb91df08c800a3f541",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "17d23066f78dfb4505d115d82fdd01da84355cdd05afa83190dfac2938dae272",
+      "scaffolds/transformer/attention/backends/fla_independent_gated_delta_rule_kernels.py": "06bedf24690a1180660df5eb927a04719a0ff341410461d9e8dc3e051d4ee264",
+      "scaffolds/transformer/attention/backends/fused_learned_polynomial.py": "39fb6f0f882ed4cb0227dddff7480398eddc2210b3efb9f810b698b13d52903e",
+      "scaffolds/transformer/attention/backends/fused_normalized_polynomial.py": "5ddf0f0590e7a84586fce84a6231ff9d870c61f634b56b02aa804602513bd770",
+      "scaffolds/transformer/attention/backends/fused_quadratic.py": "0f0fca19c8af2d7d616c9e96d788c86c58d8a226db69e4f5cb36b1c39b246fef",
+      "scaffolds/transformer/attention/backends/fused_query_key_polynomial.py": "e9c83c11e22fd94658a92fc291a9881e5d337d11fd03738ddeb8a6b863c5b2f2",
+      "scaffolds/transformer/attention/backends/fused_query_polynomial.py": "06b65fa98394728709beae046848a57427dac9e7b3ccee48371a5d8db22be80c",
+      "scaffolds/transformer/attention/backends/fused_taylor.py": "b0eccdbff0701b02be950f64ab5db5a1dcaff0c6fca8b68c01fd3277ef2d157a",
+      "scaffolds/transformer/attention/backends/fused_unnormalized.py": "97f01d04d630e256fe1a1506574030045526a510b0108e31a9bdc783c2d2b99d",
+      "scaffolds/transformer/attention/backends/mosaic/__init__.py": "895aaddb244c2f1e7967a80668ca7f97199446c0db8e08776a95cbbd0b4e3034",
+      "scaffolds/transformer/attention/backends/mosaic/api.py": "9642ec94aa1ef4548491b61b01f214e17c000b5e7b576df4472b30cb1292194f",
+      "scaffolds/transformer/attention/backends/mosaic/blackwell.py": "e4c4394dbe4c07ccb04c370243163591e4bef87e26c44e1e3c38b348662be0ac",
+      "scaffolds/transformer/attention/backends/mosaic/common.py": "5f681f7f564bf1fd8305e1c33218d3e6e665f8405e2fd26a582957381d22233e",
+      "scaffolds/transformer/attention/backends/mosaic/hopper.py": "aac192218b95592665b3f74da417027e425eb993460a3ef8f3d98f86d90b45a9",
+      "scaffolds/transformer/attention/backends/polynomial_gdn.py": "443248e13f7b5bbea675f33c78e29f969043f76d36dad8f65420c41a495e1ac2",
+      "scaffolds/transformer/attention/backends/polynomial_gdn_kernels.py": "98f2edab325a3ab75bb79f932f5ad85ca9313b246db99bdefbcb82e64cb4588b",
+      "scaffolds/transformer/attention/backends/reference.py": "b6f1a74e30a094f251d9d6c81c0206e21610ea8589a8c81c723587c95566d757",
+      "scaffolds/transformer/attention/backends/selection.py": "803ef78be400eca6f4a06153c2147f46bb34593503f0dc63b7ce35e7a428f023",
+      "scaffolds/transformer/attention/basis.py": "03758a8b54e93ce4c8bd90e6f0a0e2faf6a0d5861886384b3f297521acccaffd",
+      "scaffolds/transformer/attention/core.py": "f25522a19de21ea341403fb1aa1a5bad4fce7a1ff44a668a51c04d0f50239243",
+      "scaffolds/transformer/attention/gated_deltanet.py": "cd8f10f8fdcf602daf372905d8e690f8f43a77a575ac2a99b8415a734e446a6e",
+      "scaffolds/transformer/attention/gla.py": "15fcedae8355786adcf0c386d8d597065bdd5e412011c6eb12bfa7d1592fa72a",
+      "scaffolds/transformer/attention/input_dependent.py": "64c2b7db0b955f58c5effc5132c47fe8c6a9b9465bb33cdaa4b44129cdcf761f",
+      "scaffolds/transformer/attention/learned_polynomial.py": "ffcc1cc0eef829864f13bfb4413e14f97c3c4390e879492947d07d73199b88dd",
+      "scaffolds/transformer/attention/learned_quadratic.py": "2dd52c7b2f839836f8b7ea799ab382d8974957160902cc30d6c710a00b9b4f40",
+      "scaffolds/transformer/attention/multihead.py": "523a9f5b7d5e9bab08d70c9e4bac8b36fca8e260eae99055bd75ea7d1c459588",
+      "scaffolds/transformer/attention/nonnegative_polynomial.py": "e9162adc1772395c4e677350d0a8938d12e523ea371cae3db037ec50d4e82df6",
+      "scaffolds/transformer/attention/output_scaling.py": "575d9ea927319a3d55039b621e7ff00028aca0d3b06085168edf9609f78bd708",
+      "scaffolds/transformer/attention/parameters.py": "25ff16d10333670c51f0f3ae67ee9d44ccd9bc1de342da0b5cf86ccf706311b0",
+      "scaffolds/transformer/attention/polynomial_gdn_reference.py": "ea10043a9e9077bc870f594c71aeb0d5d098788a8e50c1b93df25a92ba8df25b",
+      "scaffolds/transformer/attention/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269",
+      "scaffolds/transformer/attention/qk_norm.py": "919e84929d39664444267a2e5446c8e715b007129a7211168d33c6f7afac4f65",
+      "scaffolds/transformer/attention/rational_polynomial.py": "83907937199331c5f1815369543a83a1372e8154343ae072c48a12a9d0b823f9",
+      "scaffolds/transformer/attention/softmax.py": "47470b42e8e212c91a5044d448f4c36b4d30b9d0b581d3153e6fb73f91f4b04d",
+      "scaffolds/transformer/attention/taylor.py": "550a930352ac08533bf345508a9382a039c1caa27fba2e1b67659dbe27f768a1",
+      "scaffolds/transformer/attention/unnormalized.py": "327957b89995b8edb6eb70c3b994b0bf3c1de750813d87979378f2a0bc153155",
+      "scaffolds/transformer/benchmarks/benchmark_attention.py": "e07681b2c193e6a2c5642d150bc9a8d39b3ffd87de9812ea281010b21f9ec400",
+      "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ]
+  },
+  "samples": [
+    {
+      "loss": 10.57795238494873,
+      "seconds": 44.8353735669516,
+      "step": 1,
+      "update_numerics": [
+        10.57795238494873,
+        0.4326150417327881,
+        310.9409484863281
+      ],
+      "warmup": true
+    },
+    {
+      "loss": 10.57795238494873,
+      "seconds": 20.671400177991018,
+      "step": 2,
+      "update_numerics": [
+        10.57795238494873,
+        0.4326150417327881,
+        310.9407958984375
+      ],
+      "warmup": true
+    },
+    {
+      "loss": 10.576218605041504,
+      "seconds": 20.76748256222345,
+      "step": 3,
+      "update_numerics": [
+        10.576218605041504,
+        0.4325500726699829,
+        310.9405822753906
+      ],
+      "warmup": false
+    },
+    {
+      "loss": 10.572712898254395,
+      "seconds": 20.644575203070417,
+      "step": 4,
+      "update_numerics": [
+        10.572712898254395,
+        0.4323500096797943,
+        310.94024658203125
+      ],
+      "warmup": false
+    },
+    {
+      "loss": 10.567493438720703,
+      "seconds": 20.85981406783685,
+      "step": 5,
+      "update_numerics": [
+        10.567493438720703,
+        0.43183013796806335,
+        310.9397888183594
+      ],
+      "warmup": false
+    }
+  ],
+  "schema_version": 1,
+  "status": "complete",
+  "steady_compute": {
+    "max_seconds": 20.85981406783685,
+    "mean_seconds": 20.757290611043572,
+    "median_seconds": 20.76748256222345,
+    "min_seconds": 20.644575203070417,
+    "p10_seconds": 20.669156674901025,
+    "p90_seconds": 20.841347766714172,
+    "tokens_per_second": 25258.017042024803,
+    "updates": 3
+  },
+  "tokens_per_update": 524288
+}

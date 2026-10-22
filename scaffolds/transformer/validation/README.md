@@ -27,8 +27,64 @@ attention, QK normalization, per-head RMSNorm and the original model/optimizer.
 Each case starts a fresh process and records synchronized complete-update
 timings and allocator peaks. Synthetic tokens are resident before timing;
 compilation, data loading, evaluation and checkpoints are excluded. Failed or
-out-of-memory configurations remain visible. No production microbatch or
-speedup is established until these measurements complete.
+out-of-memory configurations remain visible.
+
+Job `223579` completed in 29 minutes 10 seconds on one H100 80GB HBM3 on
+`dogo`, with identical initial parameter hashes and frozen execution hashes
+across all 16 cases. Fifteen cases completed with finite losses and update
+diagnostics. The 3-RBF microbatch-64 case failed with an out-of-memory error;
+the matching 20-RBF case completed. The reason for that difference is not
+established by this benchmark, so microbatch 64 is not a shared recommendation.
+
+Median seconds per global-batch update, from three timed updates after two
+warmups:
+
+| Accumulation | Microbatch | 3 RBFs | 20 RBFs |
+| --- | ---: | ---: | ---: |
+| Python | 1 | 13.626 | 20.767 |
+| Compiled | 1 | 9.525 | 15.851 |
+| Compiled | 2 | 8.950 | 15.426 |
+| Compiled | 4 | 8.642 | 14.799 |
+| Compiled | 8 | 9.227 | 14.057 |
+| Compiled | 16 | 8.892 | 13.732 |
+| Compiled | 32 | 8.736 | 13.618 |
+| Compiled | 64 | out of memory | 13.559 |
+
+Compiled accumulation at microbatch 32 is 1.56x and 1.53x faster than the
+Python/microbatch-1 baseline (35.9% and 34.4% less update time). Its measured
+allocator peak was 23.40 GiB for both basis counts. It is a candidate for
+real-data qualification, not a production-qualified recipe: the 5- and 9-RBF
+models and a full training/evaluation/checkpoint-resume cycle at this microbatch
+have not been tested. Microbatch 4 was slightly faster for 3 RBFs and used
+6.94 GiB; microbatch 64 improved 20-RBF timing by only 0.4% over 32 while using
+42.15 GiB. These short measurements do not establish a universal optimum.
+
+At microbatch 32, 19,074 updates project to 46.3 and 72.2 hours of compute
+for 3 and 20 RBFs. These are not complete-run estimates: data loading,
+evaluation, checkpointing, queue waits and initialization are excluded.
+The cancelled scientific runs remain cancelled; this benchmark produces no
+validation-quality measurements. The record pins every case report and its
+retained log, including the failed case.
+
+Regenerate the retained timing table from those explicit cases:
+
+```bash
+python3 - <<'PY'
+import json
+from pathlib import Path
+r = json.loads(Path("scaffolds/transformer/validation/runs/rbf-accumulation/record.json").read_text())
+cases = {(c["implementation"], c["microbatch_size"], c["basis_count"]): c
+         for c in r["gpu_benchmark"]["cases"]}
+print("| Accumulation | Microbatch | 3 RBFs | 20 RBFs |")
+print("| --- | ---: | ---: | ---: |")
+for implementation, sizes in (("python", [1]), ("compiled", [1, 2, 4, 8, 16, 32, 64])):
+    for size in sizes:
+        cells = [f'{cases[implementation, size, n]["median_update_seconds"]:.3f}'
+                 if cases[implementation, size, n]["status"] == "complete" else "out of memory"
+                 for n in (3, 20)]
+        print(f"| {implementation.title()} | {size} | {' | '.join(cells)} |")
+PY
+```
 
 From the worktree with its locked environment, reproduce with:
 
