@@ -17,7 +17,11 @@ def artifact(path):
 
 def suite_record(path):
     suite = ET.parse(path).getroot().find('testsuite')
-    return {'report': artifact(path), **{k: int(suite.get(k)) for k in ('tests', 'errors', 'failures', 'skipped')}}
+    result = {'report': artifact(path), **{k: int(suite.get(k)) for k in ('tests', 'errors', 'failures', 'skipped')}}
+    log = path.with_suffix('.log')
+    if log.exists():
+        result['log'] = artifact(log)
+    return result
 
 
 def main():
@@ -27,7 +31,8 @@ def main():
     record = {'format': 'scalar-triton-qualification', 'version': 1, 'home_cluster': 'Kennel',
               'cpu': {'unit_tests': suite_record(RECORDS/'cpu.xml')},
               'gpu': {'jobs': args.jobs, 'allocations': [], 'qualification': [],
-                      'kernel_comparisons': [], 'optimizer_updates': []}}
+                      'kernel_comparisons': [], 'optimizer_updates': [],
+                      'tuning_comparisons': [], 'profiles': []}}
     for label, filename in [('interpreter', 'interpreter.json'), ('cuda_export', 'cuda-export.json'),
                             ('training_cuda_export', 'training-cuda-export.json')]:
         path = RECORDS / filename
@@ -46,8 +51,15 @@ def main():
     for line in accounting.splitlines():
         fields = line.split('|')
         if fields[0] in {str(j) for j in args.jobs}:
-            record['gpu']['allocations'].append(dict(zip(
-                ('job_id', 'state', 'elapsed', 'exit_code', 'nodes'), fields[:5], strict=True)))
+            allocation = dict(zip(
+                ('job_id', 'state', 'elapsed', 'exit_code', 'nodes'), fields[:5], strict=True))
+            log = ROOT / f'scaffolds/transformer/validation/logs/scalar-{fields[0]}.log'
+            if log.exists():
+                allocation['log'] = artifact(log)
+                for message in log.read_text().splitlines():
+                    if message.startswith('frozen_set_unchanged_since='):
+                        allocation['launch_source_commit'] = message.split('=', 1)[1]
+            record['gpu']['allocations'].append(allocation)
     seen = set()
     for job in args.jobs:
         directory = RECORDS / str(job)
@@ -62,6 +74,8 @@ def main():
                     raise ValueError(f'Duplicate comparison: {coordinate}; select explicit nonoverlapping jobs')
                 seen.add(coordinate)
                 comparison = {k: result[k] for k in ('function', 'mode', 'shape', 'dtype', 'status')}
+                comparison['source_commit'] = result['provenance']['source_commit']
+                comparison['frozen_execution_sha256'] = result['provenance']['frozen_execution_sha256']
                 comparison['report'] = artifact(path)
                 comparison['implementations'] = []
                 for c in result['cases']:
@@ -79,10 +93,22 @@ def main():
                         'basis_count': len(cfg['model']['attention_basis']['basis']),
                         'backend': cfg['model']['attention_backend'],
                         'microbatch': cfg['train']['micro_batch_size'], 'global_batch': cfg['data']['batch_size']}
-                for key in ('error', 'steady_compute', 'initial_parameter_sha256', 'gpu_memory_stats'):
+                item['source_commit'] = result['provenance']['source_commit']
+                item['frozen_execution_sha256'] = result['provenance']['frozen_execution_sha256']
+                for key in ('error', 'steady_compute', 'initial_parameter_sha256', 'gpu_memory_stats', 'scalar_execution'):
                     if key in result:
                         item[key] = result[key]
                 record['gpu']['optimizer_updates'].append(item)
+            elif result.get('format') == 'scalar-attention-tuning':
+                record['gpu']['tuning_comparisons'].append({
+                    'report': artifact(path), **{k: result[k] for k in ('function', 'callback', 'shape', 'status')},
+                    'cases': result['cases']})
+            elif result.get('format') in ('polynomial-attention-perfetto-summary', 'scalar-attention-profile'):
+                record['gpu']['profiles'].append({'report': artifact(path), 'traces': [
+                    {'trace': t['trace'], 'trace_sha256': t['trace_sha256'], 'step_count': t['step_count'],
+                     'devices': [{'device': d['device'], 'mean_per_update': d['mean_per_update']}
+                                 for d in t['devices']]}
+                    for t in result['traces']]})
     live = any(x['state'] in ('PENDING', 'RUNNING', 'COMPLETING') for x in record['gpu']['allocations'])
     record['gpu']['status'] = 'in_progress' if live else 'finished'
     (RECORDS/'record.json').write_text(json.dumps(record, indent=2, sort_keys=True)+'\n')
