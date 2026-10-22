@@ -44,42 +44,45 @@ def polynomial(s, coefficients: tl.constexpr, WITH_GRAD: tl.constexpr):
 
 
 @tr.jit
+def basis_term(s, kind: tl.constexpr, coefficient: tl.constexpr,
+               p0: tl.constexpr, p1: tl.constexpr, WITH_GRAD: tl.constexpr):
+    db = tl.full(s.shape, 0.0, tl.float32)
+    if kind == 0:  # RBF
+        z = (s - p0) / p1
+        b = tl.exp(-0.5 * z * z)
+        if WITH_GRAD:
+            db = -z / p1 * b
+    elif kind == 1:  # Sine
+        z = p0 * s + p1
+        b = tl.sin(z)
+        if WITH_GRAD:
+            db = p0 * tl.cos(z)
+    elif kind == 2:  # Cosine
+        z = p0 * s + p1
+        b = tl.cos(z)
+        if WITH_GRAD:
+            db = -p0 * tl.sin(z)
+    else:
+        b = tl.full(s.shape, 1.0, tl.float32)
+        for j in tl.static_range(p0):
+            b = b * s
+        if WITH_GRAD:
+            if p0 > 0:
+                db = tl.full(s.shape, p0, tl.float32)
+                for j in tl.static_range(p0 - 1):
+                    db = db * s
+    return coefficient * b, coefficient * db
+
+
+@tr.jit
 def basis_sum(s, terms: tl.constexpr, WITH_GRAD: tl.constexpr):
     value = tl.full(s.shape, 0.0, tl.float32)
     derivative = tl.full(s.shape, 0.0, tl.float32)
-    for i in tl.static_range(len(terms)):
-        kind: tl.constexpr = terms[i][0]
-        coefficient: tl.constexpr = terms[i][1]
-        p: tl.constexpr = terms[i][2]
-        if kind == "rbf":
-            z = (s - p[0]) / p[1]
-            b = tl.exp(-0.5 * z * z)
-            if WITH_GRAD:
-                db = -z / p[1] * b
-        elif kind == "sin":
-            z = p[0] * s + p[1]
-            b = tl.sin(z)
-            if WITH_GRAD:
-                db = p[0] * tl.cos(z)
-        elif kind == "cos":
-            z = p[0] * s + p[1]
-            b = tl.cos(z)
-            if WITH_GRAD:
-                db = -p[0] * tl.sin(z)
-        else:
-            b = tl.full(s.shape, 1.0, tl.float32)
-            for j in tl.static_range(p[0]):
-                b = b * s
-            if WITH_GRAD:
-                db = tl.full(s.shape, 0.0, tl.float32)
-                if p[0] > 0:
-                    db = tl.full(s.shape, p[0], tl.float32)
-                    for j in tl.static_range(p[0] - 1):
-                        db = db * s
-        # Keep the fitted sum's rounding separate from each basis evaluation.
-        value = value + coefficient * b
+    for i in tl.static_range(len(terms) // 4):
+        b, db = basis_term(s, terms[4*i], terms[4*i+1], terms[4*i+2], terms[4*i+3], WITH_GRAD)
+        value = value + b
         if WITH_GRAD:
-            derivative = derivative + coefficient * db
+            derivative = derivative + db
     return value, derivative
 
 

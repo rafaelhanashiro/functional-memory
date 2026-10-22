@@ -231,20 +231,19 @@ def test_occupancy_hint_isolates_memory_disk_caches_and_reaches_runtime_ptx(comp
     assert len(captured) == 3  # each annotated binary reloads from its own entry
 
 
-def test_disabled_occupancy_hint_preserves_existing_cache_identity(monkeypatch):
-    # Pin a cache key produced before the occupancy option existed. The default
-    # must keep existing disk entries usable, even after a caller passes None.
+def test_disabled_occupancy_hint_preserves_cache_identity(monkeypatch):
+    # Pin the scratch-aware cache schema. Passing None must match omission.
     monkeypatch.setattr(bridge.triton, "__version__", "3.7.0")
     monkeypatch.setattr(bridge.jax, "__version__", "0.9.2")
-    monkeypatch.setattr(bridge, "_triton_kernel_source_hash", lambda fn: "frozen-source-hash")
-    kernel = SimpleNamespace(__module__="test_module", fn=SimpleNamespace(__name__="test_kernel"))
+    kernel = SimpleNamespace(__module__="test_module", fn=SimpleNamespace(__name__="test_kernel"),
+                             cache_key="frozen-source-hash")
     arguments = dict(
         fn=kernel, platform="cuda", compute_capability=80,
         signature=(("x", "*fp32"),), specialization=(), constants=(),
         num_warps=4, num_stages=3, num_ctas=1, enable_fp_fusion=True,
         default_dot_input_precision="tf32x3",
     )
-    expected = "f74ec23bba197218a02e10cdc88ec465e449f1d15f790127368ba77530551d05"
+    expected = "2d0964117e8e4e5d52d2e3f32e3fcc524bf8d6ca832b73933bba535a5c0af4fd"
     assert bridge._make_triton_cache_key(**arguments) == expected
     assert bridge._make_triton_cache_key(**arguments, min_ctas_per_sm=None) == expected
     assert bridge._make_triton_cache_key(**arguments, min_ctas_per_sm=1) != expected
@@ -397,3 +396,64 @@ def test_occupancy_hint_rejects_rocm_before_backend_initialization():
             num_warps=4, num_stages=3, num_ctas=1, compute_capability=80,
             enable_fp_fusion=True, min_ctas_per_sm=1, metaparams={}, dump=False,
         )
+
+
+def test_descriptor_scratch_survives_both_caches(compile_harness, monkeypatch):
+    captured, _ = compile_harness
+    original = bridge.compile_ttir_inplace
+    def with_scratch(*args):
+        result = original(*args)
+        result.global_scratch_size = 384
+        result.global_scratch_align = 128
+        return result
+    monkeypatch.setattr(bridge, "compile_ttir_inplace", with_scratch)
+    def compile():
+        return bridge.get_or_create_triton_kernel(
+            bridge.get_cuda_backend, "cuda", _dot_kernel, ["*fp32"] * 4, (), 0,
+            num_warps=4, num_stages=3, num_ctas=1, compute_capability=90,
+            enable_fp_fusion=True, metaparams={}, dump=False)
+    first, attrs = compile()
+    assert attrs["global_scratch"] == (384, 128)
+    assert compile()[0] is first
+    bridge._COMPILED_KERNEL_CACHE.clear()
+    assert compile()[1]["global_scratch"] == (384, 128)
+    assert len(captured) == 1
+
+
+def test_descriptor_scratch_is_a_private_xla_result(monkeypatch):
+    from dataclasses import dataclass, replace
+    calls, lowered = [], []
+    @dataclass
+    class Context:
+        avals_in: tuple
+        avals_out: tuple
+        module_context: object
+        def replace(self, **kwargs):
+            return replace(self, **kwargs)
+    def compile_mock(*args, **kwargs):
+        return object(), {(i,): [] for i in range(4)} | {"global_scratch": (384, 128)}
+    def kernel_call(kernel, gx, gy, gz, params):
+        calls.append(params)
+        return SimpleNamespace(to_proto=lambda *args: b"test proto")
+    def ffi(*args, **kwargs):
+        def lower(ctx, *args):
+            lowered.append(ctx.avals_out)
+            return [object() for _ in ctx.avals_out]
+        return lower
+    monkeypatch.setattr(bridge, "get_or_create_triton_kernel", compile_mock)
+    monkeypatch.setattr(bridge.triton_kernel_call_lib, "create_array_parameter", lambda *args: args, raising=False)
+    monkeypatch.setattr(bridge.triton_kernel_call_lib, "TritonKernelCall", kernel_call, raising=False)
+    monkeypatch.setattr(bridge.jax.ffi, "ffi_lowering", ffi)
+    aval = bridge.core.ShapedArray((16, 16), jnp.float32)
+    ctx = Context((aval, aval), (aval, aval), SimpleNamespace(platforms=["cuda"]))
+    result = bridge.triton_kernel_call_lowering(
+        bridge.get_cuda_backend, ctx, fn=_dot_kernel, scalar_args=(), name="dot",
+        custom_call_target_name="triton_kernel_call", out_shapes=ctx.avals_out,
+        grid=(3, 5), num_warps=4, num_stages=3, num_ctas=1, device=0,
+        compute_capability=90, enable_fp_fusion=True, input_output_aliases=(),
+        zeroed_outputs=(), debug=False, serialized_metadata=b"")
+    assert len(result) == 2
+    assert len(calls[0]) == 5
+    assert calls[0][-1] == (0, 256)
+    assert lowered[0][-1].shape == (384 * 3 * 5,)
+    assert lowered[0][-1].dtype == jnp.uint8

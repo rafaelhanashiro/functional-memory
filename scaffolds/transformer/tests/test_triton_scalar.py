@@ -121,15 +121,29 @@ def test_extreme_exp_and_zero_sine_with_exact_epsilon():
     v = jnp.asarray(np.random.default_rng(5).normal(size=shape), jnp.float32)
     gain = jnp.ones((1, 32), jnp.float32)
     kernel, evaluate = kernel_and_oracle("exp")
-    f = jax.jit(lambda q, k, v: scalar_attention(q, k, v, kernel=kernel, output_norm_scale=gain))
-    y = f(q, k, v)
-    expected = oracle(q, k, v, gain, jnp.ones_like(v), evaluate, "rms", 1e-6)[0]
-    np.testing.assert_allclose(np.asarray(y), expected, rtol=1e-3, atol=1e-3)
+    f = jax.jit(lambda q, k, v, g: scalar_attention(q, k, v, kernel=kernel, output_norm_scale=g))
+    y, pullback = jax.vjp(f, q, k, v, gain)
+    actual = (y, *pullback(jnp.ones_like(v)))
+    expected = oracle(q, k, v, gain, jnp.ones_like(v), evaluate, "rms", 1e-6)
+    for observed, reference in zip(actual, expected, strict=True):
+        np.testing.assert_allclose(np.asarray(observed), reference, rtol=2e-3, atol=2e-3)
     fit = ExpProjection((sine(1.),), (1.,), 0., 1., 16, 32, 1e-12, {})
     zero_fn = lambda q: scalar_attention(q, k, v, kernel=basis_kernel(fit), output_norm_scale=gain, eps=.1)
     y, pullback = jax.vjp(jax.jit(zero_fn), jnp.zeros_like(q))
     np.testing.assert_array_equal(np.asarray(y), np.zeros(shape))
     assert np.isfinite(np.asarray(pullback(jnp.ones_like(y))[0])).all()
+
+
+@pytest.mark.gpu
+def test_zero_signed_normalizer_is_explicit_failure():
+    if jax.default_backend() != "gpu":
+        pytest.skip("requires H100")
+    shape = (1, 17, 1, 32)
+    x = jnp.zeros(shape, jnp.float32)
+    fit = ExpProjection((sine(1.),), (1.,), 0., 1., 16, 32, 1e-12, {})
+    y = jax.jit(lambda q: scalar_attention(q, x, jnp.ones_like(x), kernel=basis_kernel(fit),
+                                         attention_normalization=True))(x)
+    assert np.isnan(np.asarray(y)).all()
 
 
 def test_model_backend_is_explicit_and_reference_remains_default():

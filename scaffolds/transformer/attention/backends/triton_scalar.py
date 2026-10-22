@@ -53,7 +53,10 @@ def basis_kernel(projection):
         parameters = ((p["center"], p["width"]) if function.kind == "rbf" else
                       (p["power"],) if function.kind == "monomial" else
                       (p["frequency"], p["phase"]))
-        terms.append((function.kind, float(coefficient), parameters))
+        kind = {"rbf": 0, "sin": 1, "cos": 2, "monomial": 3}[function.kind]
+        # Flat constexpr tuples also work with Triton's nested JIT calls.
+        terms.extend((kind, float(coefficient), parameters[0],
+                      parameters[1] if len(parameters) == 2 else 0))
     if not terms:
         raise ValueError("A scalar basis must be nonempty")
     return ScalarKernel("basis", basis_sum, tuple(terms))

@@ -259,10 +259,46 @@ scaling options (use head RMSNorm for new unnormalized runs). Scores are unshift
 The fit need not be positive: signed weights and negative nonzero sums are valid;
 zero or nonfinite denominators produce explicit numerical failures, without
 clipping or epsilon. Projection minimizes scalar-kernel L2 error, not normalized
-attention-output error. Only the blocked JAX path implements arbitrary bases;
-explicit fused, Mosaic, XLA-softmax or cuDNN requests are rejected. CPU tests cover
+attention-output error. The blocked JAX path implements arbitrary bases;
+`attention_backend: triton_scalar` also supports frozen named bases on H100.
+Explicit fused, Mosaic, XLA-softmax or cuDNN requests are rejected. CPU tests cover
 analytic projections, forward/backward attention and training/resume; production
 GPU use requires the usual hardware qualification.
+
+### Native Triton scalar attention
+
+`attention/backends/triton_scalar.py` exposes `scalar_attention(q, k, v,
+kernel=...)` for causal BTHD operands. `ScalarKernel` contains an inlined
+`@triton.jit` callback `(scores, parameters, WITH_GRAD) -> (value, derivative)`
+and immutable compile-time parameters. `exponential_kernel`,
+`polynomial_kernel`, and `basis_kernel` provide exponential, fixed polynomial,
+and frozen named-basis callbacks. Function parameters are fixed; the custom
+backward differentiates Q, K, V and the optional per-head RMSNorm gain.
+
+The tiled implementation is adapted from Triton's official fused-attention
+tutorial, pinned in the kernel source. Forward uses tensor descriptors; dQ and
+dK/dV recompute scalar values and derivatives without retaining the attention
+matrix. The bridge supplies descriptor scratch as a private XLA result, whose
+lifetime also covers CUDA graph execution.
+
+The modes are unnormalized attention, normalized attention
+(`attention_normalization=True`), and unnormalized attention fused with per-head
+RMSNorm (`output_norm_scale=gain`). The last two enable streaming accumulation
+by default; `streaming=False` measures its cost independently. Streaming keeps
+`Y = exp(log_scale) * accumulator`, with positive scale `1 + sum(abs(weights))`.
+RMSNorm uses `eps * exp(-2*log_scale)`, so retaining epsilon does not change the
+mathematics. Exponential evaluation shifts scores; other callbacks must produce
+finite values on valid scores. Streaming controls magnitude, not cancellation.
+Normalized signed weights still require a nonzero signed sum.
+
+Supported operands have BF16 or FP32 dtype and head widths 16, 32, 64 or 128.
+BF16 execution rounds weights and backward adjoints for tensor-core products;
+`precision="tf32x3"` retains FP32 operands for those products. The model's explicit
+`triton_scalar` backend currently requires a frozen basis and fuses RMSNorm when
+requested. `auto` remains blocked for basis attention. Diagnostic collection
+uses an additional blocked calculation, so it is not part of the fused fast path.
+Correctness and benchmark evidence belongs in the
+[validation record](validation/README.md).
 
 ### QK-norm (cosine scores)
 

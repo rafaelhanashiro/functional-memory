@@ -53,7 +53,7 @@ if [[ "${PHASE:-all}" == bench || "${PHASE:-all}" == all ]]; then
     printf '%s %s\n' "$kernel-sum-b16" "$status" >> "$OUT/exit-status.txt"
   done
 fi
-if [[ "${PHASE:-all}" == train ]]; then
+if [[ "${PHASE:-all}" == train || "${PHASE:-all}" == all ]]; then
   for run in ${RUNS:-r10b2cb22687c r873f76c0a542}; do
     for backend in blocked triton_scalar; do
       status=0

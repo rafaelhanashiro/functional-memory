@@ -137,8 +137,10 @@ def benchmark(args):
             start = time.perf_counter()
             actual = jax.block_until_ready(backward(*inputs))
             entry["compile_and_first_seconds"] = time.perf_counter() - start
-            if reference is None:
+            if label == "blocked":
                 reference = actual
+            if reference is None:
+                raise RuntimeError("Blocked reference failed; comparison is unavailable")
             errors = []
             for a, b in zip(actual, reference, strict=True):
                 if not bool(jnp.all(jnp.isfinite(a))):
