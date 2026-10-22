@@ -73,6 +73,9 @@ or `nvidia/cu13`, CUDA 13.2), since 12.6 rejects Triton's PTX. Triton 3.7 picks 
 version from its bundled assembler (CUDA 13.1 for Blackwell, PTX 9.1), which CUDA 12.9's
 `ptxas` rejects, so the launcher also sets `TRITON_PTXAS_PATH` and
 `TRITON_PTXAS_BLACKWELL_PATH` to the environment's `ptxas`.
+JAX 0.10's Triton custom-call runtime searches `PATH` before its CUDA roots:
+the launcher must also prepend `$CUDA_HOME/bin` to `PATH`. Setting `CUDA_HOME`
+alone can still select the node's older assembler.
 
 cuBLAS 12.8–13.1 has an NVIDIA bug on Blackwell: some kernels free tensor memory twice,
 which can silently corrupt data when a cuBLAS kernel runs concurrently with another

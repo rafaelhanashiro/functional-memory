@@ -104,10 +104,10 @@ export JAX_COMPILATION_CACHE_DIR="$CACHE/jax" XDG_CACHE_HOME="$CACHE/xdg"
 # unlink/read operations can stall an otherwise idle GPU process; keep these local.
 TRANSFORMER_JOB_TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/functional-memory-${SLURM_JOB_ID}.XXXXXX")"
 export TMPDIR="$TRANSFORMER_JOB_TMPDIR"
-# jaxlib assembles Triton custom-call PTX with the first ptxas among its CUDA roots,
-# which is the node's /usr/local/cuda unless CUDA_HOME names another; pin the locked toolkit.
+# JAX's custom-call runtime searches PATH before CUDA roots. Pin both searches
+# to the locked toolkit; CUDA_HOME alone leaves the node's older ptxas on PATH.
 CUDA_HOME="$(transformer_cuda_home "$PYTHON")"
-export CUDA_HOME
+export CUDA_HOME PATH="$CUDA_HOME/bin:$PATH"
 # Triton assembles with its bundled ptxas (CUDA 13.1 for Blackwell) and emits PTX newer
 # than the locked toolkit's ptxas, which jaxlib uses for custom calls, can read. Point
 # Triton's assemblers at the locked toolkit so both agree on the PTX version.
