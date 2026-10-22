@@ -834,8 +834,8 @@
     }
   ],
   "driver_sha256": "2a64ea581102c218368872747d03c0310a3c4f0bfd21391195db3a4e432c6e26",
-  "frozen_execution_sha256": "98f53d3d871a08b3e01cda60791303e43e5e6137e4d18833d528470a9e3cd85e",
+  "frozen_execution_sha256": "8a4e0aed75a915e2cd32653cbca98d8bc9dd1bc885c1a64f9a19b81faf819e7b",
   "scope": "Run scalar kernel algebra through Triton's CPU interpreter and FP64 oracle.\n\nThis complements GPU qualification; it does not exercise GPU code generation,\ntensor-core rounding, the JAX custom call, or the device memory model.\nRun with TRITON_INTERPRET=1 JAX_PLATFORMS=cpu before importing Triton.\n",
-  "source_commit": "eb966c6170b40cd7a621ac64a6aba2ff73f3b930",
+  "source_commit": "ea9cd8dc7b9b26f8942ffeffa3639ba0b6eee315",
   "status": "passed"
 }

@@ -1,0 +1,16 @@
+rbf3-b1 0
+rbf5-b1 0
+rbf9-b1 0
+rbf20-b1 0
+rbf3-b4 0
+rbf5-b4 0
+rbf9-b4 0
+rbf20-b4 0
+rbf3-b16 0
+rbf5-b16 0
+rbf9-b16 0
+rbf20-b16 0
+rbf3-b32 0
+rbf5-b32 0
+rbf9-b32 0
+rbf20-b32 0

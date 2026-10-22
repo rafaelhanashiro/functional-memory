@@ -29,10 +29,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--jobs', type=int, nargs='+', required=True)
     args = parser.parse_args()
-    record = {'format': 'scalar-triton-qualification', 'version': 1, 'home_cluster': 'Kennel',
+    record = {'format': 'scalar-triton-qualification', 'version': 2, 'home_cluster': 'Kennel',
               'cpu': {'unit_tests': suite_record(RECORDS/'cpu.xml')},
               'gpu': {'jobs': args.jobs, 'allocations': [], 'qualification': [],
-                      'kernel_comparisons': [], 'optimizer_updates': [],
+                      'kernel_comparisons': [], 'selected_kernel_comparisons': [], 'optimizer_updates': [],
                       'tuning_comparisons': [], 'profiles': []}}
     for label, filename in [('interpreter', 'interpreter.json'), ('cuda_export', 'cuda-export.json'),
                             ('training_cuda_export', 'training-cuda-export.json')]:
@@ -60,6 +60,11 @@ def main():
                 for message in log.read_text().splitlines():
                     if message.startswith('frozen_set_unchanged_since='):
                         allocation['launch_source_commit'] = message.split('=', 1)[1]
+            directory = RECORDS / fields[0]
+            for key, filename in (('allocation', 'allocation.txt'), ('gpus', 'gpus.csv'),
+                                  ('process_exits', 'exit-status.txt')):
+                if (directory / filename).exists():
+                    allocation[key] = artifact(directory / filename)
             record['gpu']['allocations'].append(allocation)
     seen = set()
     for job in args.jobs:
@@ -74,15 +79,22 @@ def main():
             record['gpu']['qualification'].append({'job_id': job, **suite_record(tests)})
         for path in sorted(directory.glob('*.json')):
             result = json.loads(path.read_text())
-            if result.get('format') == 'scalar-attention-comparison':
-                coordinate = (result['function'], result['mode'], tuple(result['shape']))
+            evidence = {'job_id': job, 'report': artifact(path)}
+            if path.with_suffix('.log').exists():
+                evidence['log'] = artifact(path.with_suffix('.log'))
+            if path.stem in exit_codes:
+                evidence['process_exit_code'] = exit_codes[path.stem]
+            if result.get('format') in ('scalar-attention-comparison', 'scalar-model-kernel-comparison'):
+                coordinate = (result['format'], result['function'], result['mode'], tuple(result['shape']))
                 if coordinate in seen:
                     raise ValueError(f'Duplicate comparison: {coordinate}; select explicit nonoverlapping jobs')
                 seen.add(coordinate)
                 comparison = {k: result[k] for k in ('function', 'mode', 'shape', 'dtype', 'status')}
                 comparison['source_commit'] = result['provenance']['source_commit']
                 comparison['frozen_execution_sha256'] = result['provenance']['frozen_execution_sha256']
-                comparison['report'] = artifact(path)
+                comparison.update(evidence)
+                if 'scalar_execution' in result:
+                    comparison['scalar_execution'] = result['scalar_execution']
                 comparison['implementations'] = []
                 for c in result['cases']:
                     item = {k: c[k] for k in ('implementation', 'status', 'error') if k in c}
@@ -92,10 +104,12 @@ def main():
                     if 'relative_l2_errors_vs_blocked' in c:
                         item['max_relative_l2_error_vs_blocked'] = max(c['relative_l2_errors_vs_blocked'].values())
                     comparison['implementations'].append(item)
-                record['gpu']['kernel_comparisons'].append(comparison)
+                collection = ('selected_kernel_comparisons' if result['format'] == 'scalar-model-kernel-comparison'
+                              else 'kernel_comparisons')
+                record['gpu'][collection].append(comparison)
             elif result.get('format') == 'single-gpu-accumulation':
                 cfg = result['configuration']
-                item = {'report': artifact(path), 'status': result['status'],
+                item = {**evidence, 'status': result['status'],
                         'basis_count': len(cfg['model']['attention_basis']['basis']),
                         'backend': cfg['model']['attention_backend'],
                         'microbatch': cfg['train']['micro_batch_size'], 'global_batch': cfg['data']['batch_size']}
@@ -123,10 +137,12 @@ def main():
                 record['gpu']['optimizer_updates'].append(item)
             elif result.get('format') == 'scalar-attention-tuning':
                 record['gpu']['tuning_comparisons'].append({
-                    'report': artifact(path), **{k: result[k] for k in ('function', 'callback', 'shape', 'status')},
+                    **evidence, **{k: result[k] for k in ('function', 'callback', 'shape', 'status')},
+                    'source_commit': result['provenance']['source_commit'],
+                    'frozen_execution_sha256': result['provenance']['frozen_execution_sha256'],
                     'cases': result['cases']})
             elif result.get('format') in ('polynomial-attention-perfetto-summary', 'scalar-attention-profile'):
-                record['gpu']['profiles'].append({'report': artifact(path), 'traces': [
+                record['gpu']['profiles'].append({**evidence, 'traces': [
                     {'trace': t['trace'], 'trace_sha256': t['trace_sha256'], 'step_count': t['step_count'],
                      'devices': [{'device': d['device'], 'mean_per_update': d['mean_per_update']}
                                  for d in t['devices']]}
@@ -134,7 +150,7 @@ def main():
     live = any(x['state'] in ('PENDING', 'RUNNING', 'COMPLETING') for x in record['gpu']['allocations'])
     record['gpu']['status'] = 'in_progress' if live else 'finished'
     (RECORDS/'record.json').write_text(json.dumps(record, indent=2, sort_keys=True)+'\n')
-    for comparison in record['gpu']['kernel_comparisons']:
+    for comparison in record['gpu']['kernel_comparisons'] + record['gpu']['selected_kernel_comparisons']:
         print(comparison['function'], comparison['mode'], comparison['shape'])
         for c in comparison['implementations']:
             print(' ', c['implementation'], c['status'], c.get('forward_backward_median_ms', c.get('error')))

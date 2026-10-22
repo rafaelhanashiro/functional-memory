@@ -13,62 +13,186 @@ for these synthetic checks. The authoritative record is
 
 ### Native Triton scalar attention
 
-The scalar-attention engine is checked against an independent NumPy FP64
-forward and analytic backward, including Q/K/V and per-head RMSNorm gain.
-The selection covers frozen 3/5/9/20-RBF fits, their two-exponential recurrence
-callbacks, mixed sine/cosine, polynomial and exponential functions; normalized,
-unnormalized and fused RMSNorm outputs; causal masking and a ragged length.
-The GPU suite also checks extreme exponential scores, an exactly zero output
-with non-negligible RMSNorm epsilon, negative signed sums and zero-sum failures.
+On one H100 80GB HBM3, the selected native Triton backend reduces complete
+199,916,704-parameter optimizer-update time from **8.900 to 2.565 seconds for
+3 RBFs (3.47x)** and **13.752 to 4.546 seconds for 20 RBFs (3.02x)**. These are
+compute measurements with resident synthetic tokens, not training-quality or
+complete-run estimates. The frozen fitted functions and model initialization
+are identical across backends.
 
-On source `eb966c6`, 59 CPU model/bridge/accumulation checks passed.
-All 64 FP32 interpreter cases passed, with maximum relative output/gradient
-error `2.975e-5`. CUDA export passed for all 64 qualification cases and 59
-training-shape variants, including the complete custom VJP and private descriptor
-scratch allocation. These checks do not establish GPU execution correctness or
-performance. On source `543096f`, standard job `223787` passed 67 GPU checks
-on H100, with two intentional skips for signed normalization. The hardware
-suite includes BF16/FP32 outputs and all gradients, causality, extreme scores,
-tiny/zero values and exact RMSNorm epsilon. Timing and profiling are in progress.
-Compact reports, hashes and current allocation status are in
-[the scalar-attention record](runs/scalar-triton/record.json).
+The engine uses the official Triton fused-attention tutorial's tiled structure
+with an inlined `(value, derivative)` callback for exponential, polynomial,
+RBF, sine and cosine functions. It supports normalized and unnormalized
+attention and fused per-head RMSNorm. Streaming preserves a positive scale
+separately from the accumulated output; RMSNorm includes the corresponding
+`eps / scale**2`, preserving the requested epsilon. The model uses direct
+3-RBF evaluation and the two-exponential recurrence for eligible equally
+spaced, equal-width fits with at least five terms. This recurrence evaluates
+the same fixed sum; it does not refit or remove basis functions. API details
+and limitations are in [the scaffold README](../README.md#native-triton-scalar-attention).
 
-The GPU comparison uses one H100, BF16, sequence length 2048, 16 heads,
-key/value width 64, and microbatches 1/4/16/32. It measures forward and
-forward plus backward against the existing blocked JAX path, with Pallas/Triton,
-Mosaic and cuDNN controls wherever they implement the same scalar function and
-normalization. Separate RMSNorm, fused RMSNorm, streaming, higher precision,
-uniform-RBF recurrence and selected tile sizes are measured explicitly.
-Two warmups and five timed full optimizer updates also compare blocked and
-native Triton for the 3- and 20-RBF recipes at global batch 256 and microbatch 16.
-Synthetic inputs are resident; compilation, data loading, evaluation and
-checkpointing are excluded. Profiler traces use additional warmed calls outside
-the timing samples and remain local; failed cases remain in the compact reports.
+The selected tiles are 64×32 for forward and dQ and 32×64 for dK/dV.
+The four-candidate measurement below supports a common default: this geometry
+was fastest for 3 RBFs and within 6% of the fastest 20-RBF candidate. The larger
+tutorial-style tiles and direct 20-RBF evaluation were expensive: the initial
+20-RBF model took 21.430 seconds per update. The selected callback and tiles
+reduce that to 4.546 seconds. Backend selection remains explicit through
+`model.attention_backend: triton_scalar`; existing automatic routing is unchanged.
+
+All comparisons used the same physical H100 on `dogo`, UUID
+`GPU-6ba0d532-b7aa-afda-fee3-8412d43350bb`, driver 560.35.05, JAX 0.10.0,
+Triton 3.7.1 and the locked CUDA 12 environment. The operator grid uses BF16,
+sequence length 2048, 16 heads, key/value width 64, and microbatches 1/4/16/32.
+It measures synchronized forward and forward-plus-backward calls, including
+the RMSNorm gain gradient. The original comparison includes separate and fused
+RMSNorm, streaming, TF32x3 products, recurrence callbacks, and tile controls.
+The final RBF grid measures the exact callback, streaming and tile choices
+used by the model. Pallas/Triton, Mosaic and cuDNN are included only where
+those existing paths implement the same scalar function and normalization;
+blocked JAX is the existing RBF baseline.
+
+Full updates retain global batch 256, microbatch 16, QK normalization,
+rematerialization and the original model/optimizer. There are two warmups and
+five timed updates per case. All four final executions completed with finite
+losses and update diagnostics and matching initial-parameter hashes. Native
+profiles use three additional warmed updates outside the timing samples.
+Compilation, data loading, evaluation and checkpointing are excluded. Peak
+memory is the JAX allocator's recorded peak, not total device memory.
+
+<!-- BEGIN SCALAR TABLES -->
+Full optimizer updates: job `223799`, seconds per global batch.
+
+| RBFs | Blocked | Selected Triton | Speedup | Peak allocator GiB, blocked / Triton |
+| ---: | ---: | ---: | ---: | ---: |
+| 3 | 8.900 | 2.565 | 3.47x | 13.89 / 11.21 |
+| 20 | 13.752 | 4.546 | 3.02x | 13.89 / 11.21 |
+
+Selected RBF kernels: job `223803`. Each cell is blocked → selected Triton,
+forward plus backward in milliseconds, at `(B, 2048, 16, 64)`.
+
+| RBFs | B=1 | B=4 | B=16 | B=32 |
+| ---: | ---: | ---: | ---: | ---: |
+| 3 | 2.503 → 0.785 | 9.151 → 1.880 | 35.400 → 6.448 | 69.221 → 12.048 |
+| 5 | 3.021 → 0.812 | 12.296 → 2.006 | 43.795 → 6.809 | 85.866 → 12.793 |
+| 9 | 3.322 → 0.985 | 13.857 → 2.552 | 49.872 → 8.414 | 97.959 → 15.985 |
+| 20 | 4.364 → 1.640 | 16.087 → 4.597 | 59.065 → 15.807 | 115.605 → 30.476 |
+
+Tile comparison: job `223790`, microbatch 16, forward plus backward in milliseconds.
+The 3-RBF callback is direct; the 20-RBF callback uses the recurrence.
+
+| Tiles: forward; dQ; dK/dV | 3 RBFs | 20 RBFs |
+| --- | ---: | ---: |
+| 128×64; 128×32; 32×128 | 8.409 | 32.739 |
+| 64×32; 64×32; 32×64 (selected) | 6.419 | 15.722 |
+| 64×64; 64×64; 64×64 | 6.532 | 24.099 |
+| 64×32; 32×32; 32×32 | 7.151 | 14.882 |
+
+Other scalar functions: job `223787`, microbatch 16, forward plus backward
+in milliseconds. These native-Triton controls use the initial 128×64 forward,
+128×32 dQ, and 32×128 dK/dV tiles; they do not measure the selected smaller tiles.
+
+| Function / output | Blocked | Native Triton | Pallas | Mosaic | cuDNN |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| sine / head RMSNorm | 40.931 | 13.991 | — | — | — |
+| poly3 / head RMSNorm | 31.211 | 4.342 | 3.913 | 2.364 | — |
+| poly8 / head RMSNorm | 29.205 | 6.203 | 6.514 | 3.621 | — |
+| exp / head RMSNorm | 29.226 | 3.939 | 3.869 | — | — |
+| poly3 / normalized | 37.904 | 4.283 | 4.839 | 3.150 | — |
+| poly8 / normalized | 37.318 | 6.200 | 6.256 | 2.652 | — |
+| exp / normalized | 42.191 | 3.948 | — | — | 1.640 |
+<!-- END SCALAR TABLES -->
+
+The operator profile shows 394 GPU kernels per blocked 20-RBF forward/backward
+call versus six for the native path. The final full-model profiles attribute
+1.256 seconds/update (49.0% of GPU kernel duration) to native attention for
+3 RBFs, and 3.252 seconds/update (71.4%) for 20 RBFs. The smaller 3-RBF forward
+uses 112 registers/thread rather than the initial 255. For 20 RBFs, forward
+and dK/dV still use 255 registers/thread, with 12.5% theoretical occupancy;
+register pressure remains an optimization opportunity. These occupancy values
+are profiler metadata, not measured SM utilization; summed kernel durations
+can include overlap. The compact [3-RBF](runs/scalar-triton/223799/profile-r10b2cb22687c-triton_scalar.json)
+and [20-RBF](runs/scalar-triton/223799/profile-r873f76c0a542-triton_scalar.json)
+profile summaries pin the retained local traces.
+
+The initial blocked full-model executions produced all timing samples but
+crashed when starting the profiler (exit 139). Their raw reports and logs are
+retained, and the collector marks them `process_failed`, keeping recovered
+samples separate. The table selects clean final blocked executions with full
+tracing disabled. Blocked operator traces and native full-model traces succeeded.
+
+Qualification on frozen source `ea9cd8d` passed **60 CPU checks, 64 FP32
+interpreter cases, 64 CUDA qualification exports, 59 training-shape exports,
+and 67 H100 execution checks**. Two signed-normalization cases are intentionally
+skipped in the GPU suite. The independent NumPy FP64 forward and analytic
+backward cover Q/K/V and RMSNorm gain, BF16/FP32, causal/ragged lengths,
+frozen 3/5/9/20-RBF fits and recurrence, mixed sine/cosine, polynomials and
+exponential, normalized and unnormalized outputs, extreme positive/negative
+scores, tiny/zero values, exact epsilon, negative signed sums and zero-sum
+failures. Maximum interpreter relative L2 error was `2.975e-5`.
+
+The initial 35 operator coordinates contain 211 successful implementation
+comparisons; maximum relative output/gradient L2 difference from BF16 blocked
+JAX was 0.65%. The final selected-kernel grid contains 16 coordinates and 32
+successful comparisons. The tile comparison contains ten successful cases.
+These sampled checks and short optimizer runs do not establish long-training
+quality or a full data/evaluation/checkpoint-resume cycle.
+
+The [scalar-attention record](runs/scalar-triton/record.json) pins reports,
+source/frozen hashes, hardware, allocations and retained logs. Explicit jobs:
+`223787` for the initial broad comparison, `223790` for tile selection,
+`223799` for final GPU qualification and model updates, and `223803` for the
+final selected RBF grid. The final model and grid share the same frozen
+execution hash; validation-only driver/report changes are outside that set.
+No scientific training run was resumed.
 
 Reproduce from the committed worktree and its locked CUDA environment:
 
 ```bash
+uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+export CUDA_HOME="$PWD/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc"
+export PATH="$CUDA_HOME/bin:$PATH"
+export TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
+export EJKERNEL_TRITON_CACHE_COMPILES=1 EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/scalar-triton"
 TRITON_INTERPRET=1 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
   -m scaffolds.transformer.validation.interpret_scalar \
   --output scaffolds/transformer/validation/runs/scalar-triton/interpreter.json
-export CUDA_HOME="$PWD/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc"
-export TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
-export EJKERNEL_TRITON_CACHE_COMPILES=1 EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/scalar-triton"
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
   -m scaffolds.transformer.validation.compile_scalar \
   --output scaffolds/transformer/validation/runs/scalar-triton/cuda-export.json
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
   -m scaffolds.transformer.validation.compile_scalar --training \
   --output scaffolds/transformer/validation/runs/scalar-triton/training-cuda-export.json
-env -u LD_LIBRARY_PATH SHARED_TRANSFORMER_SOURCE_COMMIT="$(git rev-parse HEAD)" \
-  PHASE=all sbatch --partition=standard --job-name=scalar-h100 \
-  --output=scaffolds/transformer/validation/logs/scalar-%j.log \
+export SHARED_TRANSFORMER_SOURCE_COMMIT="$(git rev-parse HEAD)"
+env -u LD_LIBRARY_PATH PHASE=qualified_train sbatch --partition=standard \
+  --job-name=scalar-h100 --output=scaffolds/transformer/validation/logs/scalar-%j.log \
   --export=ALL scaffolds/transformer/validation/scalar_triton.sbatch
-python3 -m scaffolds.transformer.validation.summarize_scalar --jobs 223787
+env -u LD_LIBRARY_PATH sbatch --partition=standard --job-name=scalar-grid \
+  --output=scaffolds/transformer/validation/logs/scalar-%j.log \
+  --export=ALL scaffolds/transformer/validation/scalar_model_grid.sbatch
+env -u LD_LIBRARY_PATH sbatch --partition=standard --job-name=scalar-tune \
+  --output=scaffolds/transformer/validation/logs/scalar-%j.log \
+  --export=ALL scaffolds/transformer/validation/tune_scalar.sbatch
 ```
 
-Use the newly allocated job ID for a fresh run; the final command selects
-job `223787` explicitly when regenerating this record.
+Use fresh job IDs for new executions. `PHASE=bench` runs the broader operator
+comparison. The initial broad comparison used source `543096f`; the selected
+model uses `ea9cd8d`. To reproduce those exact versions, use separate Git
+worktrees with their own locked environments. Regenerate this record and its
+tables from the explicitly selected retained jobs:
+
+```bash
+python3 -m scaffolds.transformer.validation.summarize_scalar \
+  --jobs 223787 223790 223799 223803
+python3 -m scaffolds.transformer.validation.scalar_tables \
+  --initial-job 223787 --tuning-job 223790 --training-job 223799 --grid-job 223803 \
+  --write-readme
+python3 -m scaffolds.transformer.validation.profile_scalar \
+  scaffolds/transformer/validation/runs/scalar-triton/223799/profiles/r10b2cb22687c-triton_scalar \
+  --output scaffolds/transformer/validation/runs/scalar-triton/223799/profile-r10b2cb22687c-triton_scalar.json
+python3 -m scaffolds.transformer.validation.profile_scalar \
+  scaffolds/transformer/validation/runs/scalar-triton/223799/profiles/r873f76c0a542-triton_scalar \
+  --output scaffolds/transformer/validation/runs/scalar-triton/223799/profile-r873f76c0a542-triton_scalar.json
+```
 
 ### Single-GPU gradient accumulation
 

@@ -3,7 +3,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf3",
-      "mlir_sha256": "1e1e8df45ba2dc8849db7158ba10c7c1f74c5d08a008cd482dd2f7b93cdc6192",
+      "mlir_sha256": "8ade30d22392e2028acaf40a16ed0054282cdd8f27afe59f2e71097bfb3ff0af",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -11,7 +11,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf3",
-      "mlir_sha256": "2db49590c618614837222a5cd11c24f8a37ccdea9302a28f84642fe6c26562ee",
+      "mlir_sha256": "90b38fb3e1e4cef877222eb7b6500a6c6cb34d88ef385b53a368aec696d38779",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -19,7 +19,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf3",
-      "mlir_sha256": "85393504f25f3ed5a7914aea011c6df881bd5c5d93b852d4e3a4247c20d055ca",
+      "mlir_sha256": "e0925130af68a59a3c9b42b30947b51793a0cbbc3918b8d5bf4e3ccfeafab5cd",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -27,7 +27,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf5",
-      "mlir_sha256": "ef91a6f65ab7eb30a55107dfe60a03c4bf57136ede45790afca5e852d2f056cd",
+      "mlir_sha256": "d2be321c2e317aff40dd51bec5c86828b355f009fe574434c73f85a093ef9c28",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -35,7 +35,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf5",
-      "mlir_sha256": "6c04720b2a0a521c93759651a6fad61785632de657dd4695b21c9bd8132f3549",
+      "mlir_sha256": "3020d8c5693fc106a684366727a39c221cdcf00ebdeb7e8fe50769708346af3e",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -43,7 +43,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf5",
-      "mlir_sha256": "7f73662fdbc67627e98b0ab9093c9cde8adcef2e0452452ace755b715c5da9b3",
+      "mlir_sha256": "5d0a1988b1e71eb04984ef2b4cd538bfdd906c1a6f468b3910706c1be5fcc98b",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -51,7 +51,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf9",
-      "mlir_sha256": "a8382bb06820f3a3387a3884c74afdcee401eabafa7d49438e312147ade7104d",
+      "mlir_sha256": "0dacbd984bfc5cb027c45e2a8d8427d50e737fb289636c6da00beb1fd51c4b9c",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -59,7 +59,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf9",
-      "mlir_sha256": "585bbab0f93ca0148b0d0a06c0370c3e8fe7b8b9660d46559c0fc68eda254676",
+      "mlir_sha256": "a54e8f82590e2defd79c2535007796cdf8302e3c619a7535e5b8f5c25efae38f",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -67,7 +67,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf9",
-      "mlir_sha256": "b7446e7de92482a2806bdab4064c68378f856246a15764007e8b6f92c5334a0d",
+      "mlir_sha256": "32991f5ae246783fa24137b1e51b36d9a515030c10fcd319b9f2e4b8124eadac",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -75,7 +75,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf20",
-      "mlir_sha256": "6ed81d98ee25e4cb40f2bd6e06174a418276c4133c3960843d763bc1e995bddd",
+      "mlir_sha256": "a281b93005f1568f11f2bbd4ce724b14578e80b1f0d96cdb57f9914b076365ca",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -83,7 +83,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf20",
-      "mlir_sha256": "0b0836dcf3198c62426e4527625738c8be43e7f8f3e6e5b8f8bf23207f6263cf",
+      "mlir_sha256": "84e3735ce64d1155db9371dda491140dbfef1777af2d87a5fb01a246ef84c29b",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -91,7 +91,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf20",
-      "mlir_sha256": "0f67a1b691737fafc232c8c8b8c9c5136c7c92d1ee2e6202dfcf7a6ecad0af36",
+      "mlir_sha256": "b36d6c1c35c63e5fbccba5460f2f3cb2a6aed216f30c16a75b697892349dfd0a",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -99,7 +99,7 @@
     {
       "dtype": "bfloat16",
       "function": "sine",
-      "mlir_sha256": "17660cb76833f55d0d4159be6c303379255c51a87662a24cedae1c5fe9eb567c",
+      "mlir_sha256": "7ddc40d31311897d71e8f2f9b7e166ffcd3f3b7dea2627a57b4c31a8694e1d8d",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -107,7 +107,7 @@
     {
       "dtype": "bfloat16",
       "function": "sine",
-      "mlir_sha256": "872cc8ed157901027e8056f30681f55c43a099c2e9aeb5a5147e3595aaec1e8e",
+      "mlir_sha256": "fb1cc40978d6362d418a1510b1e19426a6cee4c00545d75e1c01731011230ce0",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -115,7 +115,7 @@
     {
       "dtype": "bfloat16",
       "function": "poly",
-      "mlir_sha256": "90e19261dc9c34e14766403e48139419bee20c91dcdd7d841aecb993b25803a9",
+      "mlir_sha256": "49d8177e33eee9808f3e79b33ce76eeb129362dc3ded4e49ce1dca9054a8c9c0",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -123,7 +123,7 @@
     {
       "dtype": "bfloat16",
       "function": "poly",
-      "mlir_sha256": "9a0e9f11d3dde7dab2b0f23e229a85b7d5bb0ac68585662d5ac41c87d4d66f71",
+      "mlir_sha256": "3c511e8b3122d5bd93b881c86b15d42e980c446d26508d87dbd6376ccd528f70",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -131,7 +131,7 @@
     {
       "dtype": "bfloat16",
       "function": "poly",
-      "mlir_sha256": "41e75d3a5e9bcc28a053097d40754fce96284e662e4686ea66921b461f9019c6",
+      "mlir_sha256": "b6ab20ffbc191a8dae34378cd11e06d17a3c599dfaeef85cdcac95113a58cdfc",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -139,7 +139,7 @@
     {
       "dtype": "bfloat16",
       "function": "exp",
-      "mlir_sha256": "304cfb9f5363d23bf79c16b26f58c0eb2a148c2bcea385ec575c18872387d97b",
+      "mlir_sha256": "26f48a3cad6692281feb41669b2e8222e3eacfaf007dc50251fc1e00fade7a7f",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -147,7 +147,7 @@
     {
       "dtype": "bfloat16",
       "function": "exp",
-      "mlir_sha256": "69438df2e915b314d98e09c416ae3ab66d488cfd0e21ea39e0d981c87fe6677b",
+      "mlir_sha256": "49320c44177bcdf405e91a28752f8b2f173520cecb87e9e111553ad613fabbe2",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -155,7 +155,7 @@
     {
       "dtype": "bfloat16",
       "function": "exp",
-      "mlir_sha256": "05133b690fbd18426091b72940f4d3deff4451594187acf0e021d758474c2606",
+      "mlir_sha256": "86623c960afd5e5977eb199eec46d68e3cfbf0ed701e7c000e36b2491de6d034",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -163,7 +163,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf3_recurrence",
-      "mlir_sha256": "904ab59cd05310bcd154a11465a89e1293bd11c0960fbfaf527637b966372e7d",
+      "mlir_sha256": "cbc0b2f5fed16c9a9578bc8f317e72e0ae36bcf0f0c614aa9e59cf9d841b5d8d",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -171,7 +171,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf3_recurrence",
-      "mlir_sha256": "81d7e31d3ab0a188ce4f1b18777d67517e8d7b5bef44278007d4107cf7ebd9d3",
+      "mlir_sha256": "a91ee459f5139c7da5fec053b8bcdc6a89531fbf6730e5840e7d2c5ffacdd312",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -179,7 +179,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf3_recurrence",
-      "mlir_sha256": "3417988f280177406bbd06fc57c8933fe831a4fad2b888f6fa01f5c81d39bc3b",
+      "mlir_sha256": "207966a9105b2123024db4e7b5f4e69c248d4177401f1b77121ba7b8efcfb089",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -187,7 +187,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf5_recurrence",
-      "mlir_sha256": "84d34189eece971c8a2e08933c9040784f145d1abd8e48cb6cc33d3602be4ba2",
+      "mlir_sha256": "ccd16b3e4fa5573a3340c1fced4a48abbe98bb1c97eea85255b91e135934583b",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -195,7 +195,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf5_recurrence",
-      "mlir_sha256": "ecf04e732775b0e52b4e8fa51db93827904f7c9b763bbb735748745f71d63df5",
+      "mlir_sha256": "8a53345f5628740bfce0e6be45474e8f94152d5dbfcf1f4ee3fb7a383f73c0b6",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -203,7 +203,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf5_recurrence",
-      "mlir_sha256": "be9f67689b13b4a0fd813c6c3a27af3fe1c9d05d243322a04218cd2ca236a48b",
+      "mlir_sha256": "23fddcacf12e68eca9b7d186e7f5f39a1244a8cf06189c4fc63e895227fc8036",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -211,7 +211,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf9_recurrence",
-      "mlir_sha256": "794d377cfe80e427c106080bee62fecb8d95db8887256af17061f563f4baa950",
+      "mlir_sha256": "46a3d2211caf7184a786b8f348a52de80c944d8912083b0863b15c01704ff8b9",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -219,7 +219,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf9_recurrence",
-      "mlir_sha256": "df4a68278adae84fe4c78e4b646823d5cf5b80e5e9329c6433192f151960d2a0",
+      "mlir_sha256": "0d68b770590ff5aaa9d480575b4103a497f632e70912f05b3312a7aafc8f9594",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -227,7 +227,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf9_recurrence",
-      "mlir_sha256": "e78e566d49636561474e67122b3d40557c2e951344bf3d4b9b62436603f34c20",
+      "mlir_sha256": "a4a4011504b6ad208c0a774223fe2fead8923a487c61f8c93e6cb0f1bd823fb2",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -235,7 +235,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf20_recurrence",
-      "mlir_sha256": "21c4dd30627ea2adde58cc18d1f78e52b661fe2c40c19782d8510ab672e4dba0",
+      "mlir_sha256": "8d92368dea39edcd365dfa54b6a2ba908d5d1871979e14ec80c4785715dc1ba2",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -243,7 +243,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf20_recurrence",
-      "mlir_sha256": "f25b1eddd9401e0657be6114f98185857ee2780650422b4f057f24d1b27dd8c8",
+      "mlir_sha256": "201edf5d8f82fbd799ab55cf49b7bec8e89f7e7b6893a653591c18f6bb02a38f",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -251,7 +251,7 @@
     {
       "dtype": "bfloat16",
       "function": "rbf20_recurrence",
-      "mlir_sha256": "53de2b71b9f3fc52f956f6bcb5e8c589720df278f3733089cdad07d5fc41c733",
+      "mlir_sha256": "b372987fa142833b13f9778d12de10ee1864a3b7e8af3321e5892203beff6062",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -259,7 +259,7 @@
     {
       "dtype": "float32",
       "function": "rbf3",
-      "mlir_sha256": "127e5744fa3480062cd71f678e6b8dcf18d0144426515226524119977c8cef36",
+      "mlir_sha256": "c6e43806badd1c5a5f1cec7d14159ad84c340fb6a32d143430f2ab18cd85a600",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -267,7 +267,7 @@
     {
       "dtype": "float32",
       "function": "rbf3",
-      "mlir_sha256": "378c573a92dd0ea1f7a24db28beb2758577312b5c9b78d6ae97c2463804e07ad",
+      "mlir_sha256": "c12db2a2fe21c2e5221898e5d1e7d8401de3a97e11b48f70eb0fb91548ce6cc3",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -275,7 +275,7 @@
     {
       "dtype": "float32",
       "function": "rbf3",
-      "mlir_sha256": "c9263381281261995281fff6648318fc56741f186e886af83b22da70c0d410c3",
+      "mlir_sha256": "c34ec232aef372ba6e6074e122252d877f6a79103482b21c904a426da7f5e74f",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -283,7 +283,7 @@
     {
       "dtype": "float32",
       "function": "rbf5",
-      "mlir_sha256": "75f6cf8403c47d13fea09a88c88d495b0765a56a151192be493e4b46bebba556",
+      "mlir_sha256": "2a52c13d56af06f4194591fecfc50d8db3ca083fb2eb0d6f30f9cf2def3c5653",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -291,7 +291,7 @@
     {
       "dtype": "float32",
       "function": "rbf5",
-      "mlir_sha256": "fd246d0db1daa987dcc73be3f8e0dfa7a5fcc65bb0334ad9c05ba837bd55e849",
+      "mlir_sha256": "1077b34e364d37574b59e5343a9ee1e3a8ae12d7da9a85d8262c93d8634709f3",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -299,7 +299,7 @@
     {
       "dtype": "float32",
       "function": "rbf5",
-      "mlir_sha256": "be52d4be27190ea1bec7d5fe5cde742b779229588c72a5e20cb0648db475d194",
+      "mlir_sha256": "b59fce6d75c44e0adf03b7d1e35d3bd7bfcbbff2889790071bc39f777a4f2e59",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -307,7 +307,7 @@
     {
       "dtype": "float32",
       "function": "rbf9",
-      "mlir_sha256": "7de0b6e2f9bae1a410c7f22e858deb7a1a0a8ff6014a57753ba74bef63a74923",
+      "mlir_sha256": "d8968876e813b5a9cfbc37fa4e106d546253bcd511a9b89ecdb1a8e41725aed0",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -315,7 +315,7 @@
     {
       "dtype": "float32",
       "function": "rbf9",
-      "mlir_sha256": "15e60fe2795b233ccccff5c4e7391593d2ac750f975dd008f0afbbd84d0b3d45",
+      "mlir_sha256": "4d7b1585c2df35f8d3eea63b8d70e9a338034ee6de4cef597dadda10af9b597d",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -323,7 +323,7 @@
     {
       "dtype": "float32",
       "function": "rbf9",
-      "mlir_sha256": "917588ce3460dcfa1548f3c51e3250677086abbf3d6f61e1c8c8af248ab62580",
+      "mlir_sha256": "a723dd1990057e02753979cc50e627d53cd5f5182a01e4144896f4aa2faee130",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -331,7 +331,7 @@
     {
       "dtype": "float32",
       "function": "rbf20",
-      "mlir_sha256": "d762d149d217c4ecb4de31c796fe6be6f3fa40139ca7f7c1d5cc7cb4e0af8a2e",
+      "mlir_sha256": "ae384783f8de3a07e310eae71e1e2143edeb40c66b2ee673a06a30788edd96be",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -339,7 +339,7 @@
     {
       "dtype": "float32",
       "function": "rbf20",
-      "mlir_sha256": "d20c7894c9f3c74b90edf9e649d141a57742a664eadd2fd33a38e030bcbc33de",
+      "mlir_sha256": "c581bbf5bfc66fca8b4cd5cbc6164753da0032b349e3b2c6151b8193d1c1f1eb",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -347,7 +347,7 @@
     {
       "dtype": "float32",
       "function": "rbf20",
-      "mlir_sha256": "bd64f4f0ef8b71c762d853d8e6cd9a737282ab68d15c2cc41eecb68b901479bb",
+      "mlir_sha256": "ef35c552a10e9fe6a16265b6be01fae3940ad998a72570bbe75fc072c69f1d77",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -355,7 +355,7 @@
     {
       "dtype": "float32",
       "function": "sine",
-      "mlir_sha256": "1cd2981faee1b9d90648e19df5fb5659859f867f602e6784247ededbdcfa25de",
+      "mlir_sha256": "e762aef35d517df8f643d0399c03c5550781a5beb7c7321067527812080ddb7f",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -363,7 +363,7 @@
     {
       "dtype": "float32",
       "function": "sine",
-      "mlir_sha256": "e02de3f9bc4103b1639f17b87663d958306a19b14e958af1511733228b22489a",
+      "mlir_sha256": "6b2d3b7eea453ffbd8e0139091f5981f1e92e9945c67c804e599bddc2cac4a42",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -371,7 +371,7 @@
     {
       "dtype": "float32",
       "function": "poly",
-      "mlir_sha256": "22b4d9b9c5f5e97e3dadc290138554b7d29cb9939cfdfdf537cc1009d1eab66d",
+      "mlir_sha256": "7869cff5ba1b3810fde05872818a0c7b112444d582817e1b809870d9a8380333",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -379,7 +379,7 @@
     {
       "dtype": "float32",
       "function": "poly",
-      "mlir_sha256": "68e7c132b87eb953f410a204ccea24936a2cd1382a32bfa8c9041e338abae788",
+      "mlir_sha256": "f8ecf0b05be21891e543b1cc0d5f1e1a8a9c3994b0d4e3a4178fd47a5371ba98",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -387,7 +387,7 @@
     {
       "dtype": "float32",
       "function": "poly",
-      "mlir_sha256": "f42696d942f65bd333b5d5d656e8b43728c1eb693e74e90eb3a56f3ff86b2f17",
+      "mlir_sha256": "a5ec1f5ab6a9d4e420f6231947ca46773bc5b5c473beaa495b4ba6cb4d909e91",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -395,7 +395,7 @@
     {
       "dtype": "float32",
       "function": "exp",
-      "mlir_sha256": "3f5ae94dfb6d9c64aaedc1b720a2d173cffd0845c2ebcc33b0bcb85fb6466ce4",
+      "mlir_sha256": "b402195b7a7bb8fb0183dec9d17b3b2417c45ded136323ae57c387b78784acdc",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -403,7 +403,7 @@
     {
       "dtype": "float32",
       "function": "exp",
-      "mlir_sha256": "950491868ae638aff879ff6d077d252311ab5a1f4631dc7b290f3a370206daa7",
+      "mlir_sha256": "267d12538fa8e20d737b80e73c85f5ba928957bf868e39f64c584ea560b00405",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -411,7 +411,7 @@
     {
       "dtype": "float32",
       "function": "exp",
-      "mlir_sha256": "9bdcb152c3b4193e3ae67a0c71a84701b38e5ce1325e557e26d37acb7f8e8689",
+      "mlir_sha256": "5b57f8fc5d2090ed39953327c91eff5134ac05ace8d7450220755aaacdfeeadc",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -419,7 +419,7 @@
     {
       "dtype": "float32",
       "function": "rbf3_recurrence",
-      "mlir_sha256": "a390526ee6912769fdce96d595358124e148ef47452fac8458b2dafce8f63274",
+      "mlir_sha256": "a7b379a315055297817a7de7afb455bd7cf2274fc687589a511a66470c388b49",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -427,7 +427,7 @@
     {
       "dtype": "float32",
       "function": "rbf3_recurrence",
-      "mlir_sha256": "31eb02a9ec83d353eee2f9c8a9e5cf2db5a955cb7313b1ae4f0c1699af4c7a02",
+      "mlir_sha256": "df3a0d59b419f34e0133c6d44cbc568d7800f88ac9ab9f38ea3f87a5cfff1b74",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -435,7 +435,7 @@
     {
       "dtype": "float32",
       "function": "rbf3_recurrence",
-      "mlir_sha256": "3eb4f48f9b9ec63f72ead7603ba1243e7d1b023dfecd62498764d62a8247daa4",
+      "mlir_sha256": "27cab473e8108060ad47f9ad1fa2ae601b789d99059587043d01d07913041855",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -443,7 +443,7 @@
     {
       "dtype": "float32",
       "function": "rbf5_recurrence",
-      "mlir_sha256": "5c5327ab8f4176fc1ba0c9f4ecfd04ef943b65542666cf7677725e95d1fea092",
+      "mlir_sha256": "66ef7ff6f005a3dbf32ec149792e32c558e35051686511d8ffc5ea825f8ac286",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -451,7 +451,7 @@
     {
       "dtype": "float32",
       "function": "rbf5_recurrence",
-      "mlir_sha256": "e1a9455ba031eb5e3074f608fa28fa594e824b98052320ea0ec8fe556497ad02",
+      "mlir_sha256": "e1cd1895d0a51e506ab55080c7ab481ebf4db75e0622527a86cf7edf81635971",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -459,7 +459,7 @@
     {
       "dtype": "float32",
       "function": "rbf5_recurrence",
-      "mlir_sha256": "1a46764e3a014d6da5d1baab6f3b5c84bfe7d51eb8133cdf53b0b40bcb87f83f",
+      "mlir_sha256": "fc822489af1bcd8ca81bf1aa43ce5a97776b277f2425ed1a2310150275e34cef",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -467,7 +467,7 @@
     {
       "dtype": "float32",
       "function": "rbf9_recurrence",
-      "mlir_sha256": "9d4d0a9aded024914616428153f92094088936bbd6aa252543279c3e675e621e",
+      "mlir_sha256": "9a3fe1734fb2b7289bfe8793896f99128f16c80afef4e3b24f9f982ad300cadc",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -475,7 +475,7 @@
     {
       "dtype": "float32",
       "function": "rbf9_recurrence",
-      "mlir_sha256": "1c39ce3fa00812243c360ef60919e75f3e55e752ed45718ad296e51ee094ceee",
+      "mlir_sha256": "efbf841be25abaef5905b2cc4f4bdd6d64438b983588c74ad0245ef3b24249ce",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -483,7 +483,7 @@
     {
       "dtype": "float32",
       "function": "rbf9_recurrence",
-      "mlir_sha256": "8407fb0b3197ba90816da7b6ec82a78858c9a87a54b7d82e4b26a50dd356be98",
+      "mlir_sha256": "9bc271ce8bf24f7f0039c3ff4cd64b7e3abce8e19cd4986fd2b46f46e1453e13",
       "mode": 2,
       "precise": false,
       "streaming": true
@@ -491,7 +491,7 @@
     {
       "dtype": "float32",
       "function": "rbf20_recurrence",
-      "mlir_sha256": "c5fbbec7a2d77169a25a82adb9405234e5b8b93586a9816491b29b712b9f866d",
+      "mlir_sha256": "1a98d0c5e5b4c6bb00c17887d77005db26c9a001268b6d417b0fda406a46e78f",
       "mode": 0,
       "precise": false,
       "streaming": false
@@ -499,7 +499,7 @@
     {
       "dtype": "float32",
       "function": "rbf20_recurrence",
-      "mlir_sha256": "f83df7b87987646e6ebdbc0481488c6b058d1600750d46ef6159dd7f96ccdf5f",
+      "mlir_sha256": "62d38a6d1ad58de7c1092b6e883f62610bd3c8f556d58ca87a7c948c2ee08298",
       "mode": 1,
       "precise": false,
       "streaming": true
@@ -507,14 +507,14 @@
     {
       "dtype": "float32",
       "function": "rbf20_recurrence",
-      "mlir_sha256": "d0f63532d74ff94b90fd204911a3498f38be045792f840e88cf428ac20e0d9b5",
+      "mlir_sha256": "0c37b23c8af8416d0694ba3cd1b32918b10fa857fc26bfe454af9873668df8ef",
       "mode": 2,
       "precise": false,
       "streaming": true
     }
   ],
-  "driver_sha256": "4c59ae690f9ec83409521d4cfadf56ed1e0004a85fd7e2f9dc4e6a8f7a5c0e6c",
-  "frozen_execution_sha256": "98f53d3d871a08b3e01cda60791303e43e5e6137e4d18833d528470a9e3cd85e",
+  "driver_sha256": "b5da047f83758b7eee92008e94fc2569c3c9fb21e43ed4b8ebf2b865f3f0a3e0",
+  "frozen_execution_sha256": "8a4e0aed75a915e2cd32653cbca98d8bc9dd1bc885c1a64f9a19b81faf819e7b",
   "scope": "Export the complete scalar VJP to CUDA MLIR on a CPU host, without execution.",
   "shape": [
     1,
@@ -522,7 +522,17 @@
     2,
     32
   ],
-  "source_commit": "eb966c6170b40cd7a621ac64a6aba2ff73f3b930",
+  "source_commit": "ea9cd8dc7b9b26f8942ffeffa3639ba0b6eee315",
   "status": "passed",
-  "target": "sm90"
+  "target": "sm90",
+  "tuning": {
+    "backward_k": 32,
+    "backward_q": 64,
+    "forward_k": 32,
+    "forward_q": 64,
+    "forward_warps": 4,
+    "kv_k": 64,
+    "kv_q": 32,
+    "stages": 3
+  }
 }
