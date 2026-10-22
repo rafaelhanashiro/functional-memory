@@ -291,6 +291,8 @@ The modes are unnormalized attention, normalized attention
 RMSNorm (`output_norm_scale=gain`). The last two enable streaming accumulation
 by default; `streaming=False` measures its cost independently. Streaming keeps
 `Y = exp(log_scale) * accumulator`, with positive scale `1 + sum(abs(weights))`.
+The RMSNorm epilogue rebases this to `max(1, max(abs(Y)))`, avoiding overflow
+or underflow when squaring the accumulator, including for tiny or zero values.
 RMSNorm uses `eps * exp(-2*log_scale)`, so retaining epsilon does not change the
 mathematics. Exponential evaluation shifts scores; other callbacks must produce
 finite values on valid scores. Streaming controls magnitude, not cancellation.

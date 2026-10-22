@@ -186,10 +186,14 @@ def forward(Q, K, V, Gain, O, N, Stats, T: tl.constexpr, H: tl.constexpr,
         T, SCALE, BM, BN, PRECISE, FN, PARAMS, EXP, MODE, STREAM, True)
     channels = tl.arange(0, DV)
     if MODE == 2:
-        # Also avoid overflow when squaring the final scaled output.
-        extra = tl.maximum(1.0, tl.max(tl.abs(acc), 1))
-        acc = acc / extra[:, None]
-        log_scale += tl.log(extra)
+        # Rebase the weight-mass scale to max(1, ||Y||_infinity). This also
+        # protects tiny/zero V: squaring a tiny mass-scaled accumulator could
+        # underflow even when the physical output is large and finite.
+        magnitude = tl.max(tl.abs(acc), 1)
+        physical_log = log_scale + tl.log(magnitude)
+        direction = acc / tl.where(magnitude > 0.0, magnitude, 1.0)[:, None]
+        acc = direction * tl.exp(tl.minimum(physical_log, 0.0))[:, None]
+        log_scale = tl.maximum(physical_log, 0.0)
         r = tl.rsqrt(tl.sum(acc * acc, 1) / DV + EPS * tl.exp(-2.0 * log_scale))
         n = acc * r[:, None]
         gain = tl.load(Gain + head * DV + channels)

@@ -130,6 +130,14 @@ def test_extreme_exp_and_zero_sine_with_exact_epsilon():
     expected = oracle(q, k, v, gain, jnp.ones_like(v), evaluate, "rms", 1e-6)
     for observed, reference in zip(actual, expected, strict=True):
         np.testing.assert_allclose(np.asarray(observed), reference, rtol=2e-3, atol=2e-3)
+    tiny_v = v * 1e-30
+    y, pullback = jax.vjp(f, q, k, tiny_v, gain)
+    actual = (y, *pullback(jnp.ones_like(v)))
+    expected = oracle(q, k, tiny_v, gain, jnp.ones_like(v), evaluate, "rms", 1e-6)
+    for observed, reference in zip(actual, expected, strict=True):
+        np.testing.assert_allclose(np.asarray(observed), reference, rtol=2e-3, atol=2e-3)
+    zero = f(q, k, jnp.zeros_like(v), gain)
+    np.testing.assert_array_equal(zero, np.zeros(shape))
     normalized = jax.jit(lambda q, k, v, g: scalar_attention(
         q, k, v, kernel=kernel, attention_normalization=True))
     y, pullback = jax.vjp(normalized, q, -10*k, v, gain)
