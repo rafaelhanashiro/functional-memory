@@ -33,6 +33,9 @@ if [[ "${PHASE:-all}" == bench || "${PHASE:-all}" == all ]]; then
     for kernel in ${KERNELS:-rbf3 rbf5 rbf9 rbf20 sine poly3 poly8 exp}; do
       extra=()
       if [[ "$batch" == 16 ]]; then extra+=(--precise); fi
+      if [[ "$batch" == 16 && ( "$kernel" == rbf3 || "$kernel" == rbf20 ) ]]; then
+        extra+=(--tune)
+      fi
       if [[ "$batch" == 16 && ( "$kernel" == rbf20 || "$kernel" == poly3 ) ]]; then
         extra+=(--profile "$OUT/profiles/$kernel")
       fi

@@ -155,3 +155,40 @@ def test_model_backend_is_explicit_and_reference_remains_default():
     assert resolve_attention_backend(cfg.model, platform="gpu") == "triton_scalar"
     with pytest.raises(ValueError, match="H100"):
         resolve_attention_backend(cfg.model, platform="cpu")
+
+
+def test_model_connects_gain_to_fused_operation_and_projects_once(monkeypatch):
+    from flax import nnx
+    from scaffolds.transformer.attention.multihead import MultiHeadAttention
+    from scaffolds.transformer.attention.backends import triton_scalar
+    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+    from scaffolds.transformer.attention.output_scaling import scale_attention_output
+    cfg = load_config(ROOT / "experiments/attention_scaling/runs" / RUNS[3] / "config.yaml")
+    fit = projection_from_config(cfg.model.attention_basis)
+    calls = []
+    def fused(q, k, v, *, kernel, output_norm_scale, eps):
+        calls.append(kernel)
+        raw = blocked_dot_product_attention(q, k, v, score_kernel=fit, attention_normalization=False)
+        return scale_attention_output(raw, "head_rms_norm", output_norm_scale=output_norm_scale, eps=eps)
+    monkeypatch.setattr(triton_scalar, "scalar_attention", fused)
+    options = dict(hidden_size=64, num_heads=2, num_kv_heads=2, qk_head_dim=32, value_head_dim=32,
+                   score_kernel=fit, attention_normalization=False, attention_output_scaling="head_rms_norm")
+    native = MultiHeadAttention(**options, backend="triton_scalar", rngs=nnx.Rngs(9))
+    reference = MultiHeadAttention(**options, backend="blocked", rngs=nnx.Rngs(9))
+    x = jnp.asarray(np.random.default_rng(13).normal(size=(1, 7, 64)), jnp.float32)
+    parameters = {"output_norm_scale": jnp.arange(64, dtype=jnp.float32).reshape(2, 32)/64 + .5}
+    actual, diagnostics = native(x, attention_parameters=parameters, return_diagnostics=True)
+    expected = reference(x, attention_parameters=parameters)
+    np.testing.assert_allclose(actual, expected, rtol=1e-6, atol=1e-6)
+    assert len(calls) == 1
+    assert diagnostics is not None
+    with pytest.raises(ValueError, match="polynomial"):
+        native(x, attention_parameters=parameters, coefficients=jnp.ones((2,)))
+
+
+def test_native_scalar_dispatch_rejects_conflicting_mathematics():
+    from scaffolds.transformer.attention.core import attention_core
+    x = jnp.ones((1, 1, 1, 32))
+    with pytest.raises(ValueError, match="polynomial options"):
+        attention_core(x, x, x, backend="triton_scalar", score_kernel=lambda s: s,
+                       attention_degree=2)

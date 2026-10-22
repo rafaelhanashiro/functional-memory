@@ -15,7 +15,7 @@ from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
 from scaffolds.transformer.training import telemetry
 
-AttentionBackend = Literal["blocked", "fused", "manual", "auto", "xla", "cudnn"]
+AttentionBackend = Literal["blocked", "fused", "mosaic", "triton_scalar", "manual", "auto", "xla", "cudnn"]
 
 
 def attention_from_config(config, *, rngs: nnx.Rngs):
@@ -129,7 +129,7 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("This experiment requires full MHA (num_heads == num_kv_heads)")
         if qk_head_dim % 2:
             raise ValueError("qk_head_dim must be even for RoPE")
-        if backend not in ("blocked", "fused", "mosaic", "manual", "auto", "xla", "cudnn"):
+        if backend not in ("blocked", "fused", "mosaic", "triton_scalar", "manual", "auto", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {backend}")
         if backend not in ("blocked", "fused", "mosaic", "triton_scalar") and attention_degree is not None:
             raise ValueError("Taylor attention requires backend='blocked', 'fused' or 'mosaic'")
@@ -244,6 +244,8 @@ class MultiHeadAttention(nnx.Module):
             parameters["polynomial_square_factors"] = jnp.asarray(self.attention_fixed_square_factors, dtype=jnp.float32)
         if (self.backend == "triton_scalar" and self.score_kernel is not None
                 and not self.attention_normalization and self.attention_output_scaling == "head_rms_norm"):
+            if parameters:
+                raise ValueError("A fixed scalar score kernel cannot receive polynomial parameters")
             from scaffolds.transformer.attention.backends.triton_scalar import basis_kernel, scalar_attention
             y = scalar_attention(q, k, v, kernel=basis_kernel(self.score_kernel),
                                  output_norm_scale=output_norm_scale, eps=self.rms_norm_eps)

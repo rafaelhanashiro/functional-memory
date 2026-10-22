@@ -48,6 +48,10 @@ def attention_core(
     if score_kernel is not None:
         from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 
+        if (not callable(score_kernel) or attention_degree is not None or quadratic_mode != "fixed"
+                or coefficients is not None or polynomial_coefficients is not None or polynomial_square_factors is not None
+                or query_polynomial_coefficients is not None or key_polynomial_factors is not None or denominators):
+            raise ValueError("A callable scalar score kernel cannot be combined with polynomial options")
         if backend == "triton_scalar":
             from scaffolds.transformer.attention.backends.triton_scalar import basis_kernel, scalar_attention
             output = scalar_attention(q, k, v, kernel=basis_kernel(score_kernel),
