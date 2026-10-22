@@ -274,6 +274,11 @@ and immutable compile-time parameters. `exponential_kernel`,
 `polynomial_kernel`, and `basis_kernel` provide exponential, fixed polynomial,
 and frozen named-basis callbacks. Function parameters are fixed; the custom
 backward differentiates Q, K, V and the optional per-head RMSNorm gain.
+`uniform_rbf_kernel` is an explicit alternative for equally spaced Gaussian
+centers with a common width: two exponentials initialize a product recurrence
+for the unchanged fitted sum and derivative. It starts at the endpoint nearer
+each score and rejects spans wider than 24 standard deviations. The generic
+`basis_kernel` evaluates each basis function independently.
 
 The tiled implementation is adapted from Triton's official fused-attention
 tutorial, pinned in the kernel source. Forward uses tensor descriptors; dQ and

@@ -9,7 +9,7 @@ import pytest
 
 from scaffolds.transformer.attention.basis import ExpProjection, sine, cosine, projection_from_config
 from scaffolds.transformer.attention.backends.triton_scalar import (
-    basis_kernel, exponential_kernel, polynomial_kernel, scalar_attention,
+    basis_kernel, exponential_kernel, polynomial_kernel, scalar_attention, uniform_rbf_kernel,
 )
 from scaffolds.transformer.configs import load_config
 
@@ -19,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def kernel_and_oracle(name):
+    recurrence = name.endswith("_recurrence")
+    name = name.removesuffix("_recurrence")
     if name.startswith("rbf"):
         cfg = load_config(ROOT / "experiments/attention_scaling/runs" / RUNS[int(name[3:])] / "config.yaml")
         fit = projection_from_config(cfg.model.attention_basis)
@@ -27,7 +29,7 @@ def kernel_and_oracle(name):
     else:
         fit = None
     if fit is not None:
-        kernel = basis_kernel(fit)
+        kernel = uniform_rbf_kernel(fit) if recurrence else basis_kernel(fit)
         def evaluate(s):
             w, dw = np.zeros_like(s), np.zeros_like(s)
             for function, c in zip(fit.basis, fit.coefficients, strict=True):
@@ -81,14 +83,15 @@ def oracle(q, k, v, gain, go, evaluate, mode, eps):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("name", ("rbf3", "rbf5", "rbf9", "rbf20", "sine", "poly", "exp"))
+@pytest.mark.parametrize("name", ("rbf3", "rbf5", "rbf9", "rbf20", "sine", "poly", "exp",
+                                 "rbf3_recurrence", "rbf5_recurrence", "rbf9_recurrence", "rbf20_recurrence"))
 @pytest.mark.parametrize("mode", ("none", "rms", "sum"))
 @pytest.mark.parametrize("dtype", (jnp.bfloat16, jnp.float32))
 def test_scalar_output_and_all_gradients(name, mode, dtype):
     if jax.default_backend() != "gpu":
         pytest.skip("requires H100")
     if name == "sine" and mode == "sum":
-        pytest.skip("signed near-zero sums are tested separately")
+        pytest.skip("signed normalization has separate tests")
     kernel, evaluate = kernel_and_oracle(name)
     rng = np.random.default_rng(31)
     shape = (1, 137, 2, 32)  # non-divisible length, multiple query/key tiles
@@ -192,3 +195,24 @@ def test_native_scalar_dispatch_rejects_conflicting_mathematics():
     with pytest.raises(ValueError, match="polynomial options"):
         attention_core(x, x, x, backend="triton_scalar", score_kernel=lambda s: s,
                        attention_degree=2)
+
+
+@pytest.mark.gpu
+def test_negative_signed_normalizer_and_value_gradient():
+    if jax.default_backend() != "gpu":
+        pytest.skip("requires H100")
+    shape = (1, 17, 1, 32)
+    x = jnp.ones(shape, jnp.float32)
+    v = jnp.asarray(np.random.default_rng(42).normal(size=shape), jnp.float32)
+    fit = ExpProjection((cosine(0.),), (-1.,), 0., 1., 16, 32, 1e-12, {})
+    f = jax.jit(lambda q, k, v: scalar_attention(q, k, v, kernel=basis_kernel(fit),
+                                                attention_normalization=True))
+    y, vjp = jax.vjp(f, x, x, v)
+    dq, dk, dv = vjp(jnp.ones_like(y))
+    positions = np.arange(1, 18)
+    expected = np.cumsum(np.asarray(v), axis=1)/positions[None, :, None, None]
+    np.testing.assert_allclose(y, expected, rtol=1e-5, atol=1e-5)
+    np.testing.assert_array_equal(dq, np.zeros(shape))
+    np.testing.assert_array_equal(dk, np.zeros(shape))
+    expected_dv = np.broadcast_to(np.cumsum((1/positions)[::-1])[::-1][None, :, None, None], shape)
+    np.testing.assert_allclose(dv, expected_dv, rtol=1e-5, atol=1e-5)

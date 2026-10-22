@@ -313,3 +313,30 @@ def backward_kv(Q, K, V, Adj, Delta, Stats, DK, DVOut,
         dk += dot(ds, qt.T, PRECISE) * SCALE
     tl.store(DK + kidx, dk, ki[:, None] < T)
     tl.store(DVOut + vidx, dv, ki[:, None] < T)
+
+
+@tr.jit
+def uniform_rbf(s, parameters: tl.constexpr, WITH_GRAD: tl.constexpr):
+    center: tl.constexpr = parameters[0]
+    step: tl.constexpr = parameters[1]
+    inverse_variance: tl.constexpr = parameters[2]
+    decay: tl.constexpr = parameters[3]
+    count: tl.constexpr = len(parameters) - 4
+    right = s > center + (count - 1) * step * 0.5
+    delta = s - tl.where(right, center + (count - 1) * step, center)
+    direction = tl.where(right, -step, step)
+    b = tl.exp(-0.5 * delta * delta * inverse_variance)
+    ratio = tl.exp((direction * delta - 0.5 * step * step) * inverse_variance)
+    value = tl.full(s.shape, 0.0, tl.float32)
+    derivative = tl.full(s.shape, 0.0, tl.float32)
+    slope = -delta * inverse_variance
+    for i in tl.static_range(count):
+        coefficient = tl.where(right, parameters[4 + count - 1 - i], parameters[4 + i])
+        term = coefficient * b
+        value += term
+        if WITH_GRAD:
+            derivative += term * slope
+            slope += direction * inverse_variance
+        b *= ratio
+        ratio *= decay
+    return value, derivative

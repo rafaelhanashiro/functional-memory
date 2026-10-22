@@ -82,7 +82,7 @@ class MultiHeadAttention(nnx.Module):
                 not callable(score_kernel) or backend not in ("blocked", "triton_scalar") or attention_degree is not None
                 or quadratic_mode != "fixed" or attention_fixed_coefficients is not None
                 or attention_fixed_square_factors is not None or attention_coefficient_conditioning != "static"):
-            raise ValueError("A scalar score kernel requires blocked attention without polynomial options")
+            raise ValueError("A scalar score kernel requires blocked or triton_scalar attention without polynomial options")
         self.score_kernel = score_kernel
         if not isinstance(attention_normalization, bool):
             raise ValueError("attention_normalization must be a boolean")

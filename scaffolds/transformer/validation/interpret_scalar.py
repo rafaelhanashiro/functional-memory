@@ -56,7 +56,8 @@ def main():
     torch.set_num_threads(2)
     report = {"source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
               "scope": __doc__, "status": "running", "cases": []}
-    for name in ("rbf3", "rbf5", "rbf9", "rbf20", "sine", "poly", "exp"):
+    for name in ("rbf3", "rbf5", "rbf9", "rbf20", "sine", "poly", "exp",
+                 "rbf3_recurrence", "rbf5_recurrence", "rbf9_recurrence", "rbf20_recurrence"):
         for mode in (0, 1, 2):
             if name == "sine" and mode == 1:
                 continue

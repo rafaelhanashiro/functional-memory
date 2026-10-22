@@ -63,7 +63,7 @@ def attention_core(
                 return_diagnostics=True)
             return output, diagnostics
         if backend != "blocked":
-            raise ValueError("A custom scalar score kernel requires the blocked backend")
+            raise ValueError("A custom scalar score kernel requires blocked or triton_scalar execution")
         return blocked_dot_product_attention(
             q, k, v, score_kernel=score_kernel, attention_normalization=attention_normalization,
             attention_degree=attention_degree, quadratic_mode=quadratic_mode, coefficients=coefficients,

@@ -863,26 +863,6 @@ def _get_triton_cache_dir() -> Path:
     return TRITON_CACHE_DIR
 
 
-def _triton_kernel_source_hash(fn: triton.JITFunction) -> str:
-    """Compute a SHA-256 hash of a Triton JIT function's source code.
-
-    Falls back to hashing the bytecode, constants, and names if the source
-    text is unavailable (e.g. for dynamically generated functions).
-
-    Args:
-        fn: A Triton ``JITFunction`` whose source will be hashed.
-
-    Returns:
-        Hex-digest string of the SHA-256 hash.
-    """
-    try:
-        source = inspect.getsource(fn.fn)
-    except (OSError, TypeError):
-        code = fn.fn.__code__
-        source = repr((code.co_code, code.co_consts, code.co_names))
-    return hashlib.sha256(source.encode("utf-8")).hexdigest()
-
-
 def _make_triton_cache_key(
     *,
     fn: triton.JITFunction,

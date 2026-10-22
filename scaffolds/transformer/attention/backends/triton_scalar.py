@@ -172,3 +172,22 @@ def scalar_attention(q, k, v, *, kernel: ScalarKernel, attention_normalization=F
         streaming = mode != 0
     gain = output_norm_scale if output_norm_scale is not None else jnp.ones(v.shape[-2:], jnp.float32)
     return _attention(q, k, v, gain, kernel, mode, bool(streaming), precision == "tf32x3", eps, tuning)
+
+
+def uniform_rbf_kernel(projection):
+    """Two-exponential recurrence for equally spaced, equal-width Gaussian RBFs."""
+    from .triton_scalar_kernels import uniform_rbf
+    from ..basis import BasisFunction
+    if len(projection.basis) < 2 or any(not isinstance(f, BasisFunction) or f.kind != "rbf" for f in projection.basis):
+        raise ValueError("Recurrence requires at least two named Gaussian RBFs")
+    p = [dict(f.parameters) for f in projection.basis]
+    centers = [x['center'] for x in p]
+    width = p[0]['width']
+    step = centers[1] - centers[0]
+    if step <= 0 or any(x['width'] != width for x in p) or any(
+            abs(c - (centers[0] + i*step)) > 1e-12 for i, c in enumerate(centers)):
+        raise ValueError("Recurrence requires equally spaced centers and equal widths")
+    if (centers[-1] - centers[0]) / (2 * width) > 12:
+        raise ValueError("Gaussian span is too wide for the endpoint recurrence")
+    return ScalarKernel('rbf_recurrence', uniform_rbf,
+        (centers[0], step, width**-2, math.exp(-(step/width)**2), *projection.coefficients))

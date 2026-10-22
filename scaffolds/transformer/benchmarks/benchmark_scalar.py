@@ -17,7 +17,7 @@ import numpy as np
 from scaffolds.transformer.attention.basis import ExpProjection, sine, projection_from_config
 from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 from scaffolds.transformer.attention.backends.triton_scalar import (
-    Tuning, basis_kernel, exponential_kernel, polynomial_kernel, scalar_attention,
+    Tuning, basis_kernel, exponential_kernel, polynomial_kernel, scalar_attention, uniform_rbf_kernel,
 )
 from scaffolds.transformer.attention.output_scaling import scale_attention_output
 from scaffolds.transformer.benchmarks.benchmark_attention import write_report
@@ -63,6 +63,14 @@ def operations(name, mode, precise=False, tune=False):
         result["triton_precise"] = lambda q, k, v, g: scalar_attention(
             q, k, v, kernel=kernel, attention_normalization=normalized,
             output_norm_scale=g if mode == "rms" else None, precision="tf32x3")
+    if name.startswith("rbf"):
+        recurrence = uniform_rbf_kernel(reference_args["score_kernel"])
+        result["triton_recurrence"] = lambda q, k, v, g: scalar_attention(
+            q, k, v, kernel=recurrence, attention_normalization=normalized,
+            output_norm_scale=g if mode == "rms" else None, streaming=False)
+        result["triton_recurrence_streamed"] = lambda q, k, v, g: scalar_attention(
+            q, k, v, kernel=recurrence, attention_normalization=normalized,
+            output_norm_scale=g if mode == "rms" else None, streaming=True)
     if name.startswith("poly") or name == "exp":
         degree = reference_args["attention_degree"]
         if normalized:
@@ -157,7 +165,7 @@ def benchmark(args):
             print(args.kernel, args.mode, args.batch, label,
                   entry["forward"]["median_ms"], entry["forward_backward"]["median_ms"],
                   "max_error", max(errors), flush=True)
-            if args.profile and label in ("blocked", "triton_fused", "triton_streamed", "mosaic"):
+            if args.profile and label in ("blocked", "triton_fused", "triton_streamed", "triton_recurrence", "mosaic"):
                 trace = args.profile / label
                 with jax.profiler.trace(str(trace), create_perfetto_trace=True):
                     for step in range(3):

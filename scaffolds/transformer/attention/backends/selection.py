@@ -46,7 +46,7 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
                 raise ValueError("Scalar Triton head widths must be 16/32/64/128")
             return request
         if request not in ("auto", "blocked"):
-            raise ValueError("Scalar-basis attention requires the blocked backend")
+            raise ValueError("Scalar-basis attention requires blocked or triton_scalar execution")
         return "blocked"
     actual_platform = _runtime_platform() if platform is None else platform
     gpu = actual_platform in ("gpu", "cuda")
