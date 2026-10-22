@@ -1,0 +1,82 @@
+{
+  "artifacts": [
+    {
+      "path": "scaffolds/transformer/validation/runs/query-key-tuning/tuning.json",
+      "sha256": "16b64c62f32c9c85f31d63ba79b1d2525b987b954dd8e256ee8e7f758350bef2",
+      "size_bytes": 256193
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/query-key-tuning/production.json",
+      "sha256": "03525443cf22b87ca35f4957457baf8c16e852448b0b348593cd5797243d8799",
+      "size_bytes": 100280
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/query-key-tuning/qualification.log",
+      "sha256": "571407d57d8f52545d240acbc5df3cf0df1cf3067a309443390c20d474053a7e",
+      "size_bytes": 3114
+    },
+    {
+      "path": "scaffolds/transformer/tests/test_query_key_tiling.py",
+      "sha256": "1e2c68b9fdbf67f0d88a52f7620bfd837d1a9d956bcbb3f214cb5e164b673353",
+      "size_bytes": 9259
+    },
+    {
+      "path": "scaffolds/transformer/uv.lock",
+      "sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "size_bytes": 211541
+    }
+  ],
+  "command": "python -m pytest -q scaffolds/transformer/tests/test_query_key_tiling.py",
+  "completed_utc": "2026-10-22T04:31:11.962056+00:00",
+  "coverage": [
+    "independent FP64 forward and all input/gain gradients through head RMSNorm",
+    "signed coefficients",
+    "context-2048 blocked and original kernel comparison",
+    "causal gradients",
+    "nonfinite forward masking",
+    "other shapes/devices and interpreter fallback"
+  ],
+  "device_count": 1,
+  "device_kind": "NVIDIA H100 80GB HBM3",
+  "device_uuid": "GPU-e0678418-885b-a0f9-3ccf-966e69b8e7af",
+  "exit_code": 0,
+  "format": "query-key-polynomial-kernel-qualification",
+  "gpu_tests": 10,
+  "home_cluster": "kennel",
+  "limitations": [
+    "synthetic inputs, not retained trained checkpoints",
+    "attention-kernel timings, not complete training-step timings",
+    "H100 qualification only"
+  ],
+  "node": "dogo",
+  "qualified_selector": {
+    "backward_tile": [
+      32,
+      32
+    ],
+    "degree": [
+      8,
+      12
+    ],
+    "device_family": "H100",
+    "dtype": "bfloat16",
+    "forward_tile": [
+      64,
+      64
+    ],
+    "qk_width": 64,
+    "time": 2048,
+    "value_width": 64
+  },
+  "runtime_environment": {
+    "JAX_PLATFORMS": "cuda",
+    "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "schema_version": 1,
+  "selector_tests": 12,
+  "slurm_job_id": "223789",
+  "source_commit": "618f442adb701b222f8b78fa9d9ab592c4301d84",
+  "status": "passed",
+  "tests_passed": 22
+}
