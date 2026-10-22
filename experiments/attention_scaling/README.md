@@ -72,10 +72,10 @@ is tracked in [the RBF exploratory topic](../../results/exploratory/rbf_basis/RE
 
 | RBF count | Run ID | Status |
 | --- | --- | --- |
-| 3 | `re530e0627233` | planned |
-| 5 | `r1b62a76f9b55` | planned |
-| 9 | `r46c3479f9681` | planned |
-| 20 | `rc28d7b48dc72` | planned |
+| 3 | `re530e0627233` | queued: job `223903` |
+| 5 | `r1b62a76f9b55` | queued: job `223902` |
+| 9 | `r46c3479f9681` | queued: job `223901` |
+| 20 | `rc28d7b48dc72` | acceptance: job `223900` |
 
 For every count, centers are evenly spaced on `[-6, 6]`, widths are one, and
 `rbf(c, 1)(s) = exp(-0.5 * (s-c)**2)`. The first three center grids are nested;

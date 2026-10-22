@@ -3,10 +3,24 @@
     "path": "experiments/attention_scaling/runs/re530e0627233/config.yaml",
     "sha256": "0b445b79d821ed2f162e4633f101ae9865c28ad10a0c956c0d53078e07b7319b"
   },
+  "frozen_execution_sha256": "bcb176b195305efe919fc7d6898d4baff2b7947d34d4d88678235054826dee7b",
   "home_cluster": "kennel",
   "label": "200m-rbf-n03-unnormalized-headrms-qknorm-dk64-triton-seed0",
+  "log_path": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-triton-training/experiments/attention_scaling/runs/re530e0627233/training.log",
   "name": "200m-rbf-n03-unnormalized-headrms-qknorm-dk64-triton-seed0",
   "record_schema_version": 1,
   "run_id": "re530e0627233",
-  "status": "planned"
+  "source_commit": "71b846df9aa5217a90ee949dc072d00f2ab503f3",
+  "status": "submitted",
+  "submission": {
+    "accepted_gpu_types": [
+      "H100"
+    ],
+    "allocation_hours": 24,
+    "gpu_count": 1,
+    "partition": "standard",
+    "slurm_job_id": "223903",
+    "source_commit": "71b846df9aa5217a90ee949dc072d00f2ab503f3",
+    "submitted_utc": "2026-10-22T16:27:22.217900+00:00"
+  }
 }

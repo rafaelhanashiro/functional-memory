@@ -1,12 +1,42 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-triton-training/experiments/attention_scaling/runs/rc28d7b48dc72/.runtime/acceptance/H100-1",
+      "allocation": "JobId=223900 JobName=rbf-20-triton UserId=lucastor(26364) GroupId=lucastor(26364) MCS_label=N/A Priority=20161 Nice=0 Account=lucastor QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:23 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-22T12:27:22 EligibleTime=2026-10-22T12:27:25 AccrueTime=2026-10-22T12:27:25 StartTime=2026-10-22T12:27:26 EndTime=2026-10-23T12:27:26 Deadline=N/A PreemptEligibleTime=2026-10-22T14:27:26 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-22T12:27:26 Scheduler=Main Partition=standard AllocNode:Sid=kennel:3855600 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=8 NumTasks=1 CPUs/Task=8 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=8,mem=128G,node=1,billing=8,gres/gpu=1 AllocTRES=cpu=8,mem=128G,node=1,billing=8,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=8 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-triton-training/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-triton-training StdErr=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-triton-training/experiments/attention_scaling/runs/rc28d7b48dc72/training.log StdIn=/dev/null StdOut=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-triton-training/experiments/attention_scaling/runs/rc28d7b48dc72/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:h100:1 TresPerTask=cpu:8",
+      "config_path": "experiments/attention_scaling/runs/rc28d7b48dc72/config.yaml",
+      "config_sha256": "5686bd9a871df2256283890165407f06477ea748b4ecc1cca31850611c110d63",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "71b846df9aa5217a90ee949dc072d00f2ab503f3",
+      "slurm_job_id": "223900",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-22T16:27:49.381649+00:00"
+    }
+  ],
   "config": {
     "path": "experiments/attention_scaling/runs/rc28d7b48dc72/config.yaml",
     "sha256": "5686bd9a871df2256283890165407f06477ea748b4ecc1cca31850611c110d63"
   },
+  "frozen_execution_sha256": "bcb176b195305efe919fc7d6898d4baff2b7947d34d4d88678235054826dee7b",
   "home_cluster": "kennel",
   "label": "200m-rbf-n20-unnormalized-headrms-qknorm-dk64-triton-seed0",
+  "log_path": "experiments/attention_scaling/runs/rc28d7b48dc72/training.log",
   "name": "200m-rbf-n20-unnormalized-headrms-qknorm-dk64-triton-seed0",
   "record_schema_version": 1,
   "run_id": "rc28d7b48dc72",
-  "status": "planned"
+  "source_commit": "71b846df9aa5217a90ee949dc072d00f2ab503f3",
+  "status": "acceptance",
+  "submission": {
+    "accepted_gpu_types": [
+      "H100"
+    ],
+    "allocation_hours": 24,
+    "gpu_count": 1,
+    "partition": "standard",
+    "slurm_job_id": "223900",
+    "source_commit": "71b846df9aa5217a90ee949dc072d00f2ab503f3",
+    "submitted_utc": "2026-10-22T16:27:22.169536+00:00"
+  }
 }
