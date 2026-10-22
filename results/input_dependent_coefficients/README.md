@@ -18,7 +18,7 @@ query token. Static controls learn a constant `c_r = b_r`. Every run starts at
 
 | Role | Runs (m = 1, 2, 3, 4) | Start | Attention path |
 | --- | --- | --- | --- |
-| Static reference | `r03bfa6fd7b2e`, `rfb43d69f60dc`, `r5ae483d40d62`, `rc2b555b905dd`; m = 8: `raa043e978a3d` | – | fused kernel |
+| Static reference | `r03bfa6fd7b2e`, `rfb43d69f60dc`, `r5ae483d40d62`, `rc2b555b905dd`; m = 8: `raa043e978a3d`; m = 12: `r3012d19137cd` (Mosaic kernel) | – | fused kernel |
 | Affine reference (m = 1) | `r9cf9589b9855` | `c = b + W x_t`, `W = 0` | fused kernel |
 | Tanh, original start | `r80300a4cd5fa`, `rbfe1750cc24c`, `r0bc57959ef6c`, `rfee72428a45e` | `a_r = 1`, `w_r = 0` | fused kernel |
 | Tanh, original start | `r6fdf6d484fd2`, `r722fc3dd263e`, `radd66df6371a`, `rc836509ca119` | `a_r = 1`, `w_r = 0` | blocked reference |
@@ -26,10 +26,13 @@ query token. Static controls learn a constant `c_r = b_r`. Every run starts at
 | Tanh, zero-amplitude start, wide draw | `r5be9a97f06e2`, `rec520e9303ac`, `r215d3d91dd02`, `rd4f66b1959d2`; m = 8: `rccf19c31669d` | `a_r = 0`, `w_r ~ N(0, 1/1024)` | Mosaic kernel (m = 8: Triton) |
 | Tanh, zero-amplitude start, bias inside tanh | `rbd4eb6ccc16f`, `r6bba734352f0`, `rde534cbb87a1`, `r59490b6e0818` | `a_r = 0`, `w_r ~ N(0, 0.002^2)`, learned `beta_r` in `tanh(w_r^T x_t + beta_r)` from 0 | Mosaic kernel |
 | Tanh, zero-amplitude start, saturating draws | `rac317a500871`, `r4cee946a1a4b` (m = 2, 4; `3/sqrt(d)`); `r49ac1e58fba3`, `r362b2df6edbd` (`10/sqrt(d)`) | `a_r = 0`, `w_r ~ N(0, 9/d)` or `N(0, 100/d)` | Mosaic kernel |
-| Tanh, zero-amplitude start, amplitude `a_r/r!` | m = 8: `ra39c41604704` | as the wide draw, with `c_r = b_r + (a_r/r!) tanh(w_r^T x_t)` | Mosaic kernel |
+| Tanh, zero-amplitude start, amplitude `a_r/r!` | m = 8: `ra39c41604704`; m = 12: `r0c9b8b75ec17` | as the wide draw, with `c_r = b_r + (a_r/r!) tanh(w_r^T x_t)` | Mosaic kernel |
+| Tanh, zero-amplitude start, `b_r` and `a_r` divided by `r!` | m = 8: `r50be104c2a9e`; m = 12: `r5b013b1a762b` | as the wide draw, with `c_r = (b~_r + a~_r tanh(w_r^T x_t))/r!`, `b~_r` from 1 | Mosaic kernel |
+| Static learned, `c_r = c~_r/r!` | m = 8: `rc9d269a084ce`; m = 12: `r6c2b0b793143` | stored `c~_r` from 1 (the Taylor start) | Mosaic kernel |
+| Fixed Taylor, nothing learned | m = 8: `r4836c6eba58f`; m = 12: `ra2e7161fdf4a` | `c_r = 1/r!` | Mosaic kernel |
 | Tanh query-key | `rba839e6386b7`, `r0aab2b77017f`, `r4a7c601b4b1f`, `r4e3f4097a60e`; m = 8: `r66db587096c4` (one-pass Triton kernel) | as the wide draw, times `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` with `a^k_r = 0` | blocked reference (m = 1), Mosaic kernel once per order |
 
-All 37 runs are complete at 19,074 updates (10.0B tokens) with the shared recipe:
+All 45 runs are complete at 19,074 updates (10.0B tokens) with the shared recipe:
 `transformer_reference` initialization, QK normalization, unnormalized attention,
 per-head output RMSNorm, `d_K = d_V = 64`, 10 layers, width 1024, 16 heads, seed 0,
 BF16, effective batch 256, global microbatch 64, learning rate 3e-4 to 3e-5 with 400
@@ -94,6 +97,20 @@ unscaled query-only at orders 0–1. It clips 34% of logged updates against 26% 
 and 42% for unscaled query-only. Its high-order static parts move as far from Taylor as
 static's (`b_8` about 300× `1/8!`).
 
+**Scaling the static part too removes the high-degree deficit.** Each learned
+coefficient's gradient carries `s^r`, so learned coefficients raise gradient clipping from
+7% of updates (exp with head RMSNorm) to 26% (static m = 8) and 57% (static m = 12), and
+static m = 12 ends at 13.86 and query-only with `a_r/r!` at 14.08. Storing the
+input-independent part as `c~_r = r! c_r` (`attention_coefficient_scale: factorial`), so
+its gradient carries `s^r/r!`, removes clipping after the first updates in every scaled run
+and brings every learned variant to exp with head RMSNorm (13.41): static 13.41 / 13.40 and
+query-only with `b_r` and `a_r` scaled 13.40 / 13.39 at m = 8 / 12. Fixed Taylor, the
+scaled runs' start, ends at 13.42 / 13.41, so learned static coefficients add at most 0.01
+over it and query-dependent ones another 0.01, within run-to-run variation. Scaled static
+coefficients settle near Taylor with a lower constant term (about `0.8/r!`) and heavier top
+orders (1.2–1.6×); scaled query-only coefficients share that mean and vary 13–25% across
+tokens at the constant and top orders.
+
 **The learned coefficients are essentially static.** From the zero-amplitude start,
 `b` stays near its Taylor values, the amplitudes stay small (median `|a_r|` 0.06–0.11)
 and the coefficients barely vary across tokens: their standard deviation across the
@@ -141,9 +158,17 @@ their ratios can act.
 | 4 | tanh, zero-amplitude start, W ~ N(0, 100/d), Mosaic kernel | 2.613763 | 13.650314 | +0.08% | 13.650314 | 19,074 |
 | 4 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d) | 2.608653 | 13.580743 | -0.43% | 13.580743 | 19,074 |
 | 8 | static | 2.599805 | 13.461116 |  | 13.461116 | 19,074 |
+| 8 | static, c_r = c~_r/r! | 2.596356 | 13.414765 | -0.34% | 13.414765 | 19,074 |
+| 8 | fixed Taylor | 2.597023 | 13.423721 | -0.28% | 13.423721 | 19,074 |
 | 8 | tanh, zero-amplitude start, W ~ N(0, 1/d), fused kernel | 2.607381 | 13.563477 | +0.76% | 13.563477 | 19,074 |
 | 8 | tanh, zero-amplitude start, W ~ N(0, 1/d), amplitude a_r/r!, Mosaic kernel | 2.600935 | 13.476329 | +0.11% | 13.476329 | 19,074 |
+| 8 | tanh, zero-amplitude start, W ~ N(0, 1/d), b_r and a_r divided by r!, Mosaic kernel | 2.595216 | 13.399484 | -0.46% | 13.399484 | 19,074 |
 | 8 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d) | 2.601888 | 13.489182 | +0.21% | 13.489182 | 19,074 |
+| 12 | static | 2.629312 | 13.864233 |  | 13.864233 | 19,074 |
+| 12 | static, c_r = c~_r/r! | 2.595142 | 13.398488 | -3.36% | 13.398488 | 19,074 |
+| 12 | fixed Taylor | 2.595674 | 13.405613 | -3.31% | 13.405613 | 19,074 |
+| 12 | tanh, zero-amplitude start, W ~ N(0, 1/d), amplitude a_r/r!, Mosaic kernel | 2.645080 | 14.084577 | +1.59% | 14.084577 | 19,074 |
+| 12 | tanh, zero-amplitude start, W ~ N(0, 1/d), b_r and a_r divided by r!, Mosaic kernel | 2.594410 | 13.388686 | -3.43% | 13.388686 | 19,074 |
 
 <!-- END GENERATED RESULTS -->
 
@@ -165,8 +190,9 @@ Query-dependent coefficients do not beat static coefficients with this recipe, w
 without a kernel, from any of three starts; a per-key factor changes the outcome by at
 most a few hundredths; and at degree 8 query-dependent coefficients are worse than
 static. Order scaling (`c_r = b_r + a_r tanh(.)/r!`) removes most of the degree-8 deficit
-but only ties static. Still open: whether order-scaled query–key coefficients or degree
-12 change this.
+but only ties static; scaling `b_r` too removes the remaining deficit and the degree-12 loss,
+and then every learned variant, query-dependent or not, ends within 0.02 of exp and of fixed
+Taylor. Still open: whether order-scaled query–key coefficients (running) change this.
 
 ## Regeneration
 
