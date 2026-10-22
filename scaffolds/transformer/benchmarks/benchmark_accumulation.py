@@ -8,6 +8,7 @@ The Python implementation reproduces the pre-scan accumulator for comparison.
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 import time
@@ -72,6 +73,7 @@ def benchmark(args):
         "input_recipe": {"path": str(args.config.resolve()), "sha256": digest(args.config),
                          "configuration": original},
         "configuration": config_to_dict(config), "implementation": args.implementation,
+        "warmup_updates": args.warmup, "timed_updates": args.iterations,
         "accumulation_steps": accumulation_steps, "samples": [],
         "measurement_notes": [
             "Resident synthetic tokens; model, optimizer, and global batch match the input recipe.",
@@ -80,6 +82,13 @@ def benchmark(args):
             "Compilation, data loading, evaluation, logging and checkpoints are excluded from steady timing.",
             "Allocator peak includes initialization and warmup in this fresh process."],
     }
+    if config.model.attention_backend == "triton_scalar":
+        from scaffolds.transformer.attention.basis import projection_from_config
+        from scaffolds.transformer.attention.backends.triton_scalar import basis_kernel, Tuning
+        kernel = basis_kernel(projection_from_config(config.model.attention_basis), implementation="auto")
+        fused_rms = not config.model.attention_normalization and config.model.attention_output_scaling == "head_rms_norm"
+        report['scalar_execution'] = {'callback': kernel.name, 'tuning': asdict(Tuning()),
+            'fused_head_rms_norm': fused_rms, 'streaming': config.model.attention_normalization or fused_rms}
     write_report(args.output, report)
     try:
         state = create_state(config, jax.random.PRNGKey(config.train.seed))
@@ -116,12 +125,19 @@ def benchmark(args):
         report["steady_compute"] = summarize(
             [sample["seconds"] for sample in report["samples"] if not sample["warmup"]],
             report["tokens_per_update"])
+        report["status"] = "timed"
+        write_report(args.output, report)
         if getattr(args, "trace_dir", None):
+            report['profile_samples'] = []
             with jax.profiler.trace(str(args.trace_dir), create_perfetto_trace=True):
                 for index in range(3):
                     with jax.profiler.StepTraceAnnotation("train", step_num=int(state.step) + 1):
                         state, loss, numerics = function(state, batches, rngs[-1], **kwargs)
                         jax.block_until_ready((state, loss, numerics))
+                        if not np.isfinite(float(loss)) or not np.all(np.isfinite(np.asarray(numerics))):
+                            raise FloatingPointError("Nonfinite update during profiling")
+                        report['profile_samples'].append({'step': int(state.step), 'loss': float(loss),
+                                                         'update_numerics': np.asarray(numerics).tolist()})
             report["profile"] = str(args.trace_dir)
         report["status"] = "complete"
     except Exception as error:

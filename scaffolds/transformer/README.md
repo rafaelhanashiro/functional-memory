@@ -278,7 +278,10 @@ backward differentiates Q, K, V and the optional per-head RMSNorm gain.
 centers with a common width: two exponentials initialize a product recurrence
 for the unchanged fitted sum and derivative. It starts at the endpoint nearer
 each score and rejects spans wider than 24 standard deviations. The generic
-`basis_kernel` evaluates each basis function independently.
+`basis_kernel` evaluates each basis function independently by default.
+`implementation="auto"` selects the recurrence for eligible bases with at least
+five terms, and otherwise keeps direct evaluation; `implementation="recurrence"`
+requires an eligible basis. Neither choice refits or changes the coefficients.
 
 The tiled implementation is adapted from Triton's official fused-attention
 tutorial, pinned in the kernel source. Forward uses tensor descriptors; dQ and
@@ -303,8 +306,10 @@ signed weights still require a nonzero signed sum.
 Supported operands have BF16 or FP32 dtype and head widths 16, 32, 64 or 128.
 BF16 execution rounds weights and backward adjoints for tensor-core products;
 `precision="tf32x3"` retains FP32 operands for those products. The model's explicit
-`triton_scalar` backend currently requires a frozen basis and fuses RMSNorm when
-requested. `auto` remains blocked for basis attention. Diagnostic collection
+`triton_scalar` backend currently requires a frozen basis, uses the callback's
+`implementation="auto"` selection, and fuses RMSNorm when requested. Its default
+tiles are 64×32 for forward and dQ, and 32×64 for dK/dV; `tuning=Tuning(...)`
+overrides them for direct API calls. Backend `auto` remains blocked for basis attention. Diagnostic collection
 uses an additional blocked calculation, so it is not part of the fused fast path.
 Correctness and benchmark evidence belongs in the
 [validation record](validation/README.md).

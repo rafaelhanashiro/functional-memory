@@ -42,8 +42,18 @@ def polynomial_kernel(coefficients):
     return ScalarKernel("polynomial", polynomial, values)
 
 
-def basis_kernel(projection):
-    """Lower an existing frozen named-basis projection without refitting it."""
+def basis_kernel(projection, *, implementation="direct"):
+    """Lower a frozen projection; auto uses the regular-RBF recurrence at >=5 terms."""
+    if implementation not in ("direct", "auto", "recurrence"):
+        raise ValueError("Unknown scalar basis implementation")
+    if implementation == "recurrence":
+        return uniform_rbf_kernel(projection)
+    if implementation == "auto" and len(projection.basis) >= 5:
+        try:
+            return uniform_rbf_kernel(projection)
+        except ValueError:
+            # Mixed bases, irregular centers and wide spans retain direct evaluation.
+            pass
     from .triton_scalar_kernels import basis_sum
     from ..basis import BasisFunction
     terms = []
@@ -65,14 +75,14 @@ def basis_kernel(projection):
 
 @dataclass(frozen=True)
 class Tuning:
-    forward_q: int = 128
-    forward_k: int = 64
+    forward_q: int = 64
+    forward_k: int = 32
     forward_warps: int = 4
     stages: int = 3
-    backward_q: int = 128
+    backward_q: int = 64
     backward_k: int = 32
     kv_q: int = 32
-    kv_k: int = 128
+    kv_k: int = 64
 
 
 def _call(fn, *args, shapes, grid, name, **meta):

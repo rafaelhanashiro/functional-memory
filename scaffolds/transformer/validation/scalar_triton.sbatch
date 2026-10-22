@@ -26,7 +26,7 @@ OUT="scaffolds/transformer/validation/runs/scalar-triton/$SLURM_JOB_ID"
 mkdir -p "$OUT"
 nvidia-smi --query-gpu=index,uuid,name,driver_version --format=csv > "$OUT/gpus.csv"
 scontrol show job "$SLURM_JOB_ID" > "$OUT/allocation.txt"
-if [[ "${PHASE:-all}" == tests || "${PHASE:-all}" == all ]]; then
+if [[ "${PHASE:-all}" == tests || "${PHASE:-all}" == all || "${PHASE:-all}" == qualified_train ]]; then
   "$PYTHON" -m pytest -x -q -m gpu scaffolds/transformer/tests/test_triton_scalar.py \
     --junitxml="$OUT/tests.xml" > "$OUT/tests.log" 2>&1
 fi
@@ -58,16 +58,22 @@ if [[ "${PHASE:-all}" == bench || "${PHASE:-all}" == all ]]; then
     printf '%s %s\n' "$kernel-sum-b16" "$status" >> "$OUT/exit-status.txt"
   done
 fi
-if [[ "${PHASE:-all}" == train || "${PHASE:-all}" == all ]]; then
+if [[ "${PHASE:-all}" == train || "${PHASE:-all}" == all || "${PHASE:-all}" == qualified_train ]]; then
   for run in ${RUNS:-r10b2cb22687c r873f76c0a542}; do
     for backend in blocked triton_scalar; do
       status=0
+      profile=()
+      # The large blocked-model trace can crash after its timing samples on this
+      # runtime. Its attention-only trace works; full native traces also work.
+      if [[ "$backend" == triton_scalar || "${PROFILE_BLOCKED:-0}" == 1 ]]; then
+        profile+=(--trace-dir "$OUT/profiles/$run-$backend")
+      fi
       timeout --signal=TERM --kill-after=30 1500 "$PYTHON" \
         -m scaffolds.transformer.benchmarks.benchmark_accumulation \
         --config "experiments/attention_scaling/runs/$run/config.yaml" \
         --micro-batch-size "${MICROBATCH:-16}" --backend "$backend" \
         --warmup 2 --iterations 5 --output "$OUT/$run-$backend.json" \
-        --trace-dir "$OUT/profiles/$run-$backend" > "$OUT/$run-$backend.log" 2>&1 || status=$?
+        "${profile[@]}" > "$OUT/$run-$backend.log" 2>&1 || status=$?
       printf '%s %s\n' "$run-$backend" "$status" >> "$OUT/exit-status.txt"
     done
   done

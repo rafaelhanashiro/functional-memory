@@ -145,20 +145,21 @@ def benchmark(args):
             start = time.perf_counter()
             actual = jax.block_until_ready(backward(*inputs))
             entry["compile_and_first_seconds"] = time.perf_counter() - start
-            if label == "blocked":
-                reference = actual
-            if reference is None:
+            comparison = actual if label == "blocked" else reference
+            if comparison is None:
                 raise RuntimeError("Blocked reference failed; comparison is unavailable")
             errors = []
-            for a, b in zip(actual, reference, strict=True):
+            for a, b in zip(actual, comparison, strict=True):
                 if not bool(jnp.all(jnp.isfinite(a))):
                     raise FloatingPointError("Nonfinite output or gradient")
                 errors.append(float(jnp.linalg.norm(a.astype(jnp.float32)-b.astype(jnp.float32)) /
                                     jnp.maximum(jnp.linalg.norm(b.astype(jnp.float32)), 1e-12)))
             entry["relative_l2_errors_vs_blocked"] = dict(zip(("output", "dq", "dk", "dv", "dgain"), errors))
             # Also independently qualified on small inputs by test_triton_scalar.
-            if max(errors) > .05:
+            if not all(math.isfinite(error) for error in errors) or max(errors) > .05:
                 raise AssertionError(f"Production-shape error exceeds .05: {errors}")
+            if label == "blocked":
+                reference = actual
             entry["forward"] = measurements(forward, inputs, args.iterations)
             entry["forward_backward"] = measurements(backward, inputs, args.iterations)
             entry["status"] = "complete"

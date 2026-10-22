@@ -13,7 +13,7 @@ from scaffolds.transformer.attention.backends.triton_scalar import (
 
 
 TUNINGS = {
-    'original': Tuning(),
+    'original': Tuning(forward_q=128, forward_k=64, backward_q=128, kv_k=128),
     'small': Tuning(forward_q=64, forward_k=32, backward_q=64, kv_k=64),
     'square': Tuning(forward_q=64, forward_k=64, backward_q=64, backward_k=64,
                      kv_q=64, kv_k=64),

@@ -54,7 +54,7 @@ def attention_core(
             raise ValueError("A callable scalar score kernel cannot be combined with polynomial options")
         if backend == "triton_scalar":
             from scaffolds.transformer.attention.backends.triton_scalar import basis_kernel, scalar_attention
-            output = scalar_attention(q, k, v, kernel=basis_kernel(score_kernel),
+            output = scalar_attention(q, k, v, kernel=basis_kernel(score_kernel, implementation="auto"),
                                       attention_normalization=attention_normalization)
             if not return_diagnostics:
                 return output

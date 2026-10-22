@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import statistics
 from pathlib import Path
 import subprocess
 import xml.etree.ElementTree as ET
@@ -63,6 +64,11 @@ def main():
     seen = set()
     for job in args.jobs:
         directory = RECORDS / str(job)
+        exit_codes = {}
+        exit_path = directory / 'exit-status.txt'
+        if exit_path.exists():
+            exit_codes = {name: int(code) for name, code in
+                          (line.rsplit(' ', 1) for line in exit_path.read_text().splitlines())}
         tests = directory / 'tests.xml'
         if tests.exists():
             record['gpu']['qualification'].append({'job_id': job, **suite_record(tests)})
@@ -98,6 +104,22 @@ def main():
                 for key in ('error', 'steady_compute', 'initial_parameter_sha256', 'gpu_memory_stats', 'scalar_execution'):
                     if key in result:
                         item[key] = result[key]
+                if path.stem in exit_codes:
+                    item['process_exit_code'] = exit_codes[path.stem]
+                    if exit_codes[path.stem] and item['status'] != 'failed':
+                        item['status'] = 'process_failed'
+                        item['raw_report_status'] = result['status']
+                        # A process-level profiler crash cannot run Python's finally block.
+                        # Preserve its failure while exposing already saved timing samples.
+                        samples = [s['seconds'] for s in result.get('samples', []) if not s['warmup']]
+                        if samples:
+                            deciles = statistics.quantiles(samples, n=10, method='inclusive') if len(samples) > 1 else samples*9
+                            tokens = cfg['data']['batch_size']*(cfg['data']['sequence_length']-1)
+                            item['recovered_steady_compute'] = {
+                                'updates': len(samples), 'mean_seconds': statistics.mean(samples),
+                                'median_seconds': statistics.median(samples), 'p10_seconds': deciles[0],
+                                'p90_seconds': deciles[-1], 'min_seconds': min(samples), 'max_seconds': max(samples),
+                                'tokens_per_second': tokens*len(samples)/sum(samples)}
                 record['gpu']['optimizer_updates'].append(item)
             elif result.get('format') == 'scalar-attention-tuning':
                 record['gpu']['tuning_comparisons'].append({
@@ -117,7 +139,8 @@ def main():
         for c in comparison['implementations']:
             print(' ', c['implementation'], c['status'], c.get('forward_backward_median_ms', c.get('error')))
     for item in record['gpu']['optimizer_updates']:
-        print('update',item['basis_count'],item['backend'],item['status'],item.get('steady_compute'))
+        print('update',item['basis_count'],item['backend'],item['status'],
+              item.get('steady_compute', item.get('recovered_steady_compute')))
 
 
 if __name__ == '__main__':

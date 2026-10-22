@@ -247,7 +247,7 @@ class MultiHeadAttention(nnx.Module):
             if parameters:
                 raise ValueError("A fixed scalar score kernel cannot receive polynomial parameters")
             from scaffolds.transformer.attention.backends.triton_scalar import basis_kernel, scalar_attention
-            y = scalar_attention(q, k, v, kernel=basis_kernel(self.score_kernel),
+            y = scalar_attention(q, k, v, kernel=basis_kernel(self.score_kernel, implementation="auto"),
                                  output_norm_scale=output_norm_scale, eps=self.rms_norm_eps)
             diagnostics = None
             if return_diagnostics or telemetry.active():

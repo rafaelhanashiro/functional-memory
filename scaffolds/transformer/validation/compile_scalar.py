@@ -1,5 +1,6 @@
 """Export the complete scalar VJP to CUDA MLIR on a CPU host, without execution."""
 import argparse
+from dataclasses import asdict
 import hashlib
 import json
 from pathlib import Path
@@ -38,7 +39,9 @@ def main():
     variants = ((0, False, False), (1, True, False), (2, False, False), (2, True, False), (2, True, True)) if args.training else (
         (0, False, False), (1, True, False), (2, True, False))
     report["shape"] = shape
-    scratch_size = 384 * ((shape[1] + 127) // 128) * shape[0] * shape[2]
+    report['tuning'] = asdict(Tuning())
+    block_q = Tuning().forward_q
+    scratch_size = 384 * ((shape[1] + block_q - 1) // block_q) * shape[0] * shape[2]
     for dtype in dtype_choices:
         for name in names:
             if args.training:

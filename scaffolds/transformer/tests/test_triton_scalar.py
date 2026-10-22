@@ -214,6 +214,23 @@ def test_native_scalar_dispatch_rejects_conflicting_mathematics():
                        attention_degree=2)
 
 
+def test_model_basis_selection_preserves_fits_and_mixed_functions():
+    for count in (3, 20):
+        cfg = load_config(ROOT / "experiments/attention_scaling/runs" / RUNS[count] / "config.yaml")
+        fit = projection_from_config(cfg.model.attention_basis)
+        selected = basis_kernel(fit, implementation="auto")
+        expected = basis_kernel(fit) if count == 3 else uniform_rbf_kernel(fit)
+        assert selected == expected
+        assert basis_kernel(fit).name == "basis"
+    mixed = ExpProjection((sine(.7), cosine(.3), sine(.5), cosine(.1), sine(.2)),
+                          (1., -.2, .3, .4, .5), 0., 1., 16, 32, 1e-12, {})
+    assert basis_kernel(mixed, implementation="auto") == basis_kernel(mixed)
+    with pytest.raises(ValueError, match="Gaussian"):
+        basis_kernel(mixed, implementation="recurrence")
+    with pytest.raises(ValueError, match="implementation"):
+        basis_kernel(mixed, implementation="unknown")
+
+
 @pytest.mark.gpu
 def test_negative_signed_normalizer_and_value_gradient():
     if jax.default_backend() != "gpu":
