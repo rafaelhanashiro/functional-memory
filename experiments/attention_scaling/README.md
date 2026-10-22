@@ -73,7 +73,7 @@ is tracked in [the RBF exploratory topic](../../results/exploratory/rbf_basis/RE
 | RBF count | Run ID | Status |
 | --- | --- | --- |
 | 3 | `re530e0627233` | submitted: job `223903` |
-| 5 | `r1b62a76f9b55` | acceptance: job `223902` |
+| 5 | `r1b62a76f9b55` | running: job `223902` |
 | 9 | `r46c3479f9681` | running: job `223901` |
 | 20 | `rc28d7b48dc72` | running: job `223900` |
 
@@ -124,7 +124,7 @@ multiple 24-hour allocations. The job requeues ten minutes before each limit
 and resumes its latest checkpoint. Queue waits and repeated work since that
 checkpoint add to the estimate.
 
-All four frozen recipes use online W&B tracking in
+All four frozen recipes request online W&B tracking in
 `rafah-massachusetts-institute-of-technology/functional-memory`, grouped under
 `attention_scaling`, with one identity retained across checkpoint resumptions.
 Training metrics are logged every ten updates, validation every 1,000 updates,

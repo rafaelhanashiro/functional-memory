@@ -15,7 +15,7 @@ owns the full method, frozen recipes, and launch commands.
 | RBF count | Run ID | Status |
 | --- | --- | --- |
 | 3 | `re530e0627233` | submitted: job `223903` |
-| 5 | `r1b62a76f9b55` | acceptance: job `223902` |
+| 5 | `r1b62a76f9b55` | running: job `223902` |
 | 9 | `r46c3479f9681` | running: job `223901` |
 | 20 | `rc28d7b48dc72` | running: job `223900` |
 
