@@ -32,8 +32,10 @@ training measurements. The 3-basis run retains a resumable checkpoint at step
 500; the other three stopped before their first production checkpoint. All four
 passed kernel checks, a full-recipe pilot, and checkpoint resumption on one H100
 before production. The recipes use unnormalized attention, per-head output
-RMSNorm, and QK normalization. Throughput optimization is pending the shared
-scaffold's accumulation benchmark, separately from this scientific comparison.
+RMSNorm, and QK normalization. The shared scaffold's accumulation benchmark is
+complete; its runtime measurements and limits are recorded in
+[PR #3](https://github.com/rafaelhanashiro/functional-memory/pull/3), separately
+from this scientific comparison. Training with a tuned recipe remains pending.
 The exploratory question remains open, and these incomplete coordinates remain
 visible.
 
