@@ -41,7 +41,7 @@ def _stored(conditioning):
     return "polynomial_coefficients" if conditioning == "static" else "query_polynomial_bias"
 
 
-@pytest.mark.parametrize("conditioning", ["static", "query"])
+@pytest.mark.parametrize("conditioning", ["static", "query", "query_key"])
 @pytest.mark.parametrize("degree", [2, 8, 12])
 def test_stored_coefficients_start_at_one_and_represent_the_unscaled_model(conditioning, degree):
     plain = _model(degree, conditioning)
@@ -55,9 +55,11 @@ def test_stored_coefficients_start_at_one_and_represent_the_unscaled_model(condi
                          / _factorials(degree), jnp.float32)
     getattr(plain_model, _stored(conditioning))[...] = values
     getattr(scaled_model, _stored(conditioning))[...] = values * _factorials(degree)
-    if conditioning == "query":
+    if conditioning != "static":
         for model in (plain_model, scaled_model):
             model.query_polynomial_amplitude[...] = 0.1
+            if conditioning == "query_key":
+                model.key_polynomial_amplitude[...] = 0.2
     np.testing.assert_allclose(scaled_model(TOKENS), plain_model(TOKENS), rtol=2e-4, atol=2e-5)
 
 

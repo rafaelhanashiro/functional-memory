@@ -492,6 +492,12 @@ scaled (`r50be104c2a9e`), and fixed unnormalized Taylor with head RMSNorm at m =
 (`ra2e7161fdf4a`) and m = 8 (`r4836c6eba58f`), the start of the scaled runs with nothing learned. They launch with the
 command above, `PARTITION=standard,long` and `GPUS=1`, ahead of the query–key runs.
 
+Query–key with both scales (`attention_coefficient_scale` and
+`attention_coefficient_amplitude_scale: factorial`; the key factor is already relative to
+`c_r`) runs at m = 8 (`r0b7141a987dc`) and m = 12 (`r95c5dea57a89`) on the one-pass Triton
+kernel with its H100 backward tiles (`--allow-triton-attention`), one H100 each on
+`standard`; B300 keeps the slower original geometry.
+
 ### PaTH position encoding, softmax and tanh m = 2, 4
 
 Three single-B300 runs replace RoPE with PaTH (`positional_encoding: path`, see the
