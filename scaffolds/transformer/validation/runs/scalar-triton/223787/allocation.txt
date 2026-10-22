@@ -29,5 +29,3 @@ JobId=223787 JobName=scalar-h100
    MemPerTres=gpu:32000
    TresPerNode=gres/gpu:h100:1
    TresPerTask=cpu:8
-   
-

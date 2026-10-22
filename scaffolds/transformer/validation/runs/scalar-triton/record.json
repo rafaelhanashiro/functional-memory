@@ -55,8 +55,8 @@
       {
         "allocation": {
           "path": "scaffolds/transformer/validation/runs/scalar-triton/223787/allocation.txt",
-          "sha256": "7c4cf80c65e8bc42eeb80d94553a928b28397ccd3fa5deeeb374f893d984e040",
-          "size_bytes": 1749
+          "sha256": "e2a079b5128b93971956b5d5e7b6de85e6a2c862169f34c946f400bc06e5d047",
+          "size_bytes": 1744
         },
         "elapsed": "01:12:50",
         "exit_code": "0:0",
