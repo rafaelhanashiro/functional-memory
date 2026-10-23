@@ -1,14 +1,57 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-chinchilla/experiments/attention_scaling/runs/r8f7f83e9b6ee/.runtime/acceptance/H100-1",
+      "allocation": "JobId=224472 JobName=rbf-20-chinchilla UserId=lucastor(26364) GroupId=lucastor(26364) MCS_label=N/A Priority=20141 Nice=0 Account=lucastor QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:07 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-23T17:00:07 EligibleTime=2026-10-23T17:00:07 AccrueTime=2026-10-23T17:00:07 StartTime=2026-10-23T17:00:07 EndTime=2026-10-24T17:00:07 Deadline=N/A PreemptEligibleTime=2026-10-23T19:00:07 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-23T17:00:07 Scheduler=Main Partition=standard AllocNode:Sid=kennel:3106286 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=8 NumTasks=1 CPUs/Task=8 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=8,mem=128G,node=1,billing=8,gres/gpu=1 AllocTRES=cpu=8,mem=128G,node=1,billing=8,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=8 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-chinchilla/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-chinchilla StdErr=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-chinchilla/experiments/attention_scaling/runs/r8f7f83e9b6ee/training.log StdIn=/dev/null StdOut=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-chinchilla/experiments/attention_scaling/runs/r8f7f83e9b6ee/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:h100:1 TresPerTask=cpu:8",
+      "config_path": "experiments/attention_scaling/runs/r8f7f83e9b6ee/config.yaml",
+      "config_sha256": "dadb90beb5e7e975ff2b8eaeb87a09c151c08f5ed8cef1e286cafc730f0a9b2d",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "4e6919c8dabf6510317e9c64d2f3219e15b27810",
+      "slurm_job_id": "224472",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-23T21:00:14.141605+00:00"
+    }
+  ],
   "config": {
     "path": "experiments/attention_scaling/runs/r8f7f83e9b6ee/config.yaml",
     "sha256": "dadb90beb5e7e975ff2b8eaeb87a09c151c08f5ed8cef1e286cafc730f0a9b2d"
   },
+  "frozen_execution_sha256": "6e0c9657c8550fd01d9ff42964caf36b03f4c5d81d68e23d8e12e411f4302142",
   "home_cluster": "kennel",
   "label": "200m-rbf-n20-unnormalized-headrms-qknorm-dk64-triton-chinchilla1x-seed0",
+  "log_path": "experiments/attention_scaling/runs/r8f7f83e9b6ee/training.log",
   "name": "200m-rbf-n20-unnormalized-headrms-qknorm-dk64-triton-chinchilla1x-seed0",
   "record_schema_version": 1,
   "run_id": "r8f7f83e9b6ee",
-  "status": "planned",
+  "source_commit": "4e6919c8dabf6510317e9c64d2f3219e15b27810",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--time=24:00:00",
+      "--gres=gpu:h100:1",
+      "--cpus-per-task=8",
+      "--mem=128G",
+      "--job-name=rbf-20-chinchilla",
+      "--output=experiments/attention_scaling/runs/r8f7f83e9b6ee/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.attention_scaling.acceptance",
+      "experiments/attention_scaling/runs/r8f7f83e9b6ee/config.yaml",
+      "4e6919c8dabf6510317e9c64d2f3219e15b27810",
+      "1",
+      "H100"
+    ],
+    "gpu_count": 1,
+    "gpu_type": "H100",
+    "partition": "standard",
+    "slurm_job_id": "224472",
+    "submitted_utc": "2026-10-23T21:00:07.722929+00:00"
+  },
   "training_budget": {
     "actual_training_tokens": 3998744576,
     "convention": "chinchilla_20_tokens_per_total_trainable_parameter",

@@ -36,10 +36,10 @@ schedule is not a completed 1× training run.
 
 | RBF count | Run ID | Status |
 | --- | --- | --- |
-| 3 | `r4614f6fff21f` | planned |
-| 5 | `r0fbe4040cc36` | planned |
-| 9 | `r6e1b71e49350` | planned |
-| 20 | `r8f7f83e9b6ee` | planned |
+| 3 | `r4614f6fff21f` | submitted: job `224475` |
+| 5 | `r0fbe4040cc36` | submitted: job `224474` |
+| 9 | `r6e1b71e49350` | submitted: job `224473` |
+| 20 | `r8f7f83e9b6ee` | acceptance checks: job `224472` |
 
 ## Findings and open decision
 

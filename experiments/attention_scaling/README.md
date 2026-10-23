@@ -163,10 +163,10 @@ All other model, data, and optimizer settings match the RBF recipe above.
 
 | RBF count | Run ID | Status |
 | --- | --- | --- |
-| 3 | `r4614f6fff21f` | planned |
-| 5 | `r0fbe4040cc36` | planned |
-| 9 | `r6e1b71e49350` | planned |
-| 20 | `r8f7f83e9b6ee` | planned |
+| 3 | `r4614f6fff21f` | submitted: job `224475` |
+| 5 | `r0fbe4040cc36` | submitted: job `224474` |
+| 9 | `r6e1b71e49350` | submitted: job `224473` |
+| 20 | `r8f7f83e9b6ee` | acceptance checks: job `224472` |
 
 Home cluster is **Kennel**, worktree `worktrees/rbf-chinchilla`, branch
 `codex/rbf-chinchilla`. Each run uses one H100 in `standard`, with CPU/GPU
@@ -179,7 +179,7 @@ allocated by this cohort.
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
 export EJKERNEL_TRITON_CACHE_COMPILES=1
 export EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/transformer/triton"
-LAUNCH_COMMIT="$(git rev-parse HEAD)"  # commit all four recipes before submission
+LAUNCH_COMMIT=4e6919c8dabf6510317e9c64d2f3219e15b27810
 for RUN in r8f7f83e9b6ee r6e1b71e49350 r0fbe4040cc36 r4614f6fff21f; do
   env -u LD_LIBRARY_PATH TRANSFORMER_ALLOCATION_HOURS=24 TRANSFORMER_WANDB_MODE=online \
     sbatch --partition=standard --time=24:00:00 --gres=gpu:h100:1 \
