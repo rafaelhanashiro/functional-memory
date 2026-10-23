@@ -42,6 +42,11 @@
       "size_bytes": 448
     },
     {
+      "path": "experiments/attention_scaling/runs/rec7a01f3282c/last_query_polynomials.json",
+      "sha256": "1c34e1e2dcc3b2842080f5fff5f19bea6cdffe0f058cf10066a91fe0a26edff8",
+      "size_bytes": 334584
+    },
+    {
       "path": "experiments/attention_scaling/runs/rec7a01f3282c/metadata.json",
       "sha256": "aa658ebd64ae865b40eb6d27b99303f468b76a14b311481a1f15c04715039812",
       "size_bytes": 1818
@@ -62,9 +67,14 @@
       "size_bytes": 231
     },
     {
-      "path": "experiments/attention_scaling/runs/rec7a01f3282c/training.log",
-      "sha256": "baa3eda1dc2f41fa9385b43b47238eeee053f11516c771a6098fddbdfc0df58a",
-      "size_bytes": 23082
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rec7a01f3282c/training.log",
+      "sha256": "0a9e1a4896ee6b8d1aa2d7929d79cc26d0928670c5aa5cfa4ba4a8723580192d",
+      "size_bytes": 18771
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rec7a01f3282c/last_query_polynomials.npz",
+      "sha256": "5530cb50dbb4b82af0d86250125e152d9fa4aa0b84d8c89365753cd6a922c8be",
+      "size_bytes": 2416107
     }
   ],
   "attempts": [
@@ -138,11 +148,11 @@
   "home_cluster": "kennel",
   "label": "200m-m008-query-coefficient-oracle-sequences1-seed0",
   "log": {
-    "path": "experiments/attention_scaling/runs/rec7a01f3282c/training.log",
-    "sha256": "baa3eda1dc2f41fa9385b43b47238eeee053f11516c771a6098fddbdfc0df58a",
-    "size_bytes": 23082
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rec7a01f3282c/training.log",
+    "sha256": "0a9e1a4896ee6b8d1aa2d7929d79cc26d0928670c5aa5cfa4ba4a8723580192d",
+    "size_bytes": 18771
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle/experiments/attention_scaling/runs/rec7a01f3282c/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rec7a01f3282c/training.log",
   "metadata": {
     "path": "experiments/attention_scaling/runs/rec7a01f3282c/metadata.json",
     "sha256": "aa658ebd64ae865b40eb6d27b99303f468b76a14b311481a1f15c04715039812",
@@ -259,7 +269,7 @@
     ],
     "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
     "kind": "directory",
-    "path": "experiments/attention_scaling/runs/rec7a01f3282c/checkpoints/2387",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rec7a01f3282c/checkpoints/2387",
     "sha256": "0474f6eb8f60bfc5dc1fb315bb968c60bd9e0a86f5c8f3f778faf8ae5e20fbcd",
     "size_bytes": 11130806
   },

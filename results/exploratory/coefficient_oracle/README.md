@@ -50,11 +50,77 @@ The single-sequence run completed 2,500 updates on a B300. Initial fitting NLL w
 reduced at update 2,000, followed by 500 confirmation updates. This nearly memorizes
 the sequence while keeping every pretrained parameter fixed.
 
-The 256-sequence run is running on one H100. Its initial fitting NLL is 2.662276;
-terminal results are pending. Each run's `metrics.jsonl` holds its measurements.
+The 256-sequence run completed 2,500 updates on one H100. Initial fitting NLL was
+2.662276; terminal NLL was 0.003071 (perplexity 1.003076). The best fitting NLL was
+0.003062 at update 2,484, whose coefficients are retained. It also reduced the
+learning rate at update 2,000 and completed 500 confirmation updates. Each run's
+`metrics.jsonl` holds its measurements.
 The open decision is whether the observed fitting improvement warrants a new
 coefficient generator or further optimization work. A gain demonstrates attainable
 capacity on these inputs; a plateau alone cannot establish a capacity ceiling.
+
+## Last-query polynomial shapes
+
+The single-sequence checkpoint at update 2,387 supplies the effective coefficients
+for the last trained query, input position 2,048 (zero-based index 2,047), which
+predicts the final target token. Each layer and head has its own degree-eight
+function `p(s) = sum_r c_r s^r`; the stored coefficients already include their
+factorial scaling. The argument is the dot product divided by `sqrt(64)` after
+QK normalization and RoPE, using the operands passed to the attention kernel.
+
+The [raw curves](last_query_polynomials.png) and
+[shape comparison](last_query_polynomial_shapes.png) show all 16 heads in layer 10.
+The corresponding [raw PDF](last_query_polynomials.pdf) and
+[shape PDF](last_query_polynomial_shapes.pdf) cover all ten layers, one page per
+layer. Blue is the fitted polynomial, orange is the pretrained polynomial on the
+original sequence, and dashed gray is `exp(s)`. Every panel uses the fitted query's
+observed score range, with score-quantile ticks; there is no extrapolation.
+
+In the final layer, nine heads assign negative weights to at least one observed
+key, and nine fitted functions are nonmonotone on the observed score interval.
+Heads 1, 3, 10, and 13 visibly give positive weight to both strongly negative and
+strongly positive scores, with smaller weights in between. Other heads remain
+much closer to the exponential shape. Negative weights were already possible
+before fitting: 13 pretrained head functions are negative on at least one of the
+fitted query's scores. The median cosine similarity of kernel values to `exp(s)`
+on those same scores changes from 0.9946 before fitting to 0.9042 afterward.
+
+The shape comparison divides each curve by its own positive RMS on the same
+fitted-score samples, preserving signs. This removes overall magnitude from the
+visual comparison because per-head output RMSNorm largely cancels positive
+scaling (up to its epsilon). Raw values remain available separately. Earlier
+coefficient changes also change later-layer Q/K activations despite frozen
+weights, so the original and fitted score distributions are measured separately.
+The exponential is a function reference, not a separately fitted control; these
+figures describe one fitted query and do not establish general superiority over
+exponential attention.
+
+The compact measurement `last_query_polynomials.json` lives with the single-sequence
+run and is hash-pinned in the selection. It contains all plotted coefficients,
+score quantiles, scaling factors, and checkpoint/input identities. Full score
+samples remain in that run's ignored `last_query_polynomials.npz`; figures do not
+require that archive or a checkpoint. The instrumented forward reproduces the
+selected fitting NLL (0.004538551 versus recorded 0.004538547).
+
+Regenerate the figures and per-head summary from committed measurements on CPU:
+
+```bash
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python results/exploratory/coefficient_oracle/plot_last_query.py \
+  --selection results/exploratory/coefficient_oracle/selection.yaml
+```
+
+To re-extract the measurements on Kennel, use a one-GPU allocation and the GPU's
+locked environment from [CLUSTERS.md](../../../CLUSTERS.md):
+
+```bash
+PYTHONPATH=. python results/exploratory/coefficient_oracle/extract_last_query.py \
+  --run experiments/attention_scaling/runs/rec7a01f3282c --overwrite
+```
+
+After intentionally replacing that measurement, update its SHA256 in
+`settings.last_query_analysis.measurement_sha256`, refresh the selection, and
+regenerate the figures. Both PNGs, both PDFs, and the summary CSV reproduce
+byte-identically from the pinned measurement and plotting code.
 
 The [selection](selection.yaml) pins the two executions. The
 [study instructions](../../../experiments/attention_scaling/README.md#fixed-input-coefficient-oracle)

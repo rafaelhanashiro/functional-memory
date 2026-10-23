@@ -19,16 +19,18 @@ example, layer, head, query and order. All pretrained parameters stay frozen. Th
 documents the question, fixed-input selection, convergence rule and interpretation.
 These runs enter no canonical comparison.
 
-The worktree is `worktrees/coefficient-oracle`, branch `codex/coefficient-oracle`.
-Its CUDA 12 and CUDA 13 environments are synced from its own lock as described in
-[CLUSTERS.md](../../CLUSTERS.md). Recipes were allocated with:
+Both fits are complete. Their compact measurements and provenance live with their
+run IDs; retained checkpoints and logs remain on Kennel. Fresh executions use new
+run IDs in an isolated worktree, with its CUDA 12 and CUDA 13 environments synced
+from its own lock as described in [CLUSTERS.md](../../CLUSTERS.md).
+The allocation command for this pair was:
 
 ```bash
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.attention_scaling.launch_coefficient_oracle prepare \
   --parent /data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r50be104c2a9e
 ```
 
-After committing the frozen inputs, submit both jobs from that worktree:
+After committing the frozen inputs, the two executions were submitted with:
 
 ```bash
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.attention_scaling.launch_coefficient_oracle submit \
