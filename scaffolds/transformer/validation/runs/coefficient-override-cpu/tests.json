@@ -94,16 +94,46 @@
   ],
   "gpu_qualification": {
     "acceptance_artifacts": [
-      "experiments/attention_scaling/runs/rec7a01f3282c/oracle_acceptance.json",
-      "experiments/attention_scaling/runs/rfc37cfdf49d0/oracle_acceptance.json"
+      {
+        "batch_size": 1,
+        "completed_utc": "2026-10-23T05:27:56.931041+00:00",
+        "gpu_type": "NVIDIA B300 SXM6 AC",
+        "job_id": "224100",
+        "node": "akita",
+        "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/gpu-b300.json",
+        "sha256": "6b5ea8ff153102f5fcae0f2673e5df96ff906eed7a520ea33b185b3dfe830ed6",
+        "source_acceptance_path": "experiments/attention_scaling/runs/rec7a01f3282c/oracle_acceptance.json",
+        "source_commit": "2e77d06b3f9e7830c1fbccccec7dcf95ce9ab9b8",
+        "source_run_id": "rec7a01f3282c",
+        "status": "passed"
+      },
+      {
+        "batch_size": 8,
+        "completed_utc": "2026-10-23T05:27:43.357595+00:00",
+        "gpu_type": "NVIDIA H100 80GB HBM3",
+        "job_id": "224101",
+        "node": "dogo",
+        "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/gpu-h100.json",
+        "sha256": "3f449ae1f3e466c6a4f31757bb9de3e8d0176521186caaaa49ffd7360274d6d1",
+        "source_acceptance_path": "experiments/attention_scaling/runs/rfc37cfdf49d0/oracle_acceptance.json",
+        "source_commit": "2e77d06b3f9e7830c1fbccccec7dcf95ce9ab9b8",
+        "source_run_id": "rfc37cfdf49d0",
+        "status": "passed"
+      }
     ],
-    "required_checks": [
-      "parent checkpoint replay parity",
-      "finite coefficient gradients and decreasing fitting loss",
-      "checkpoint round-trip and exact next update",
-      "frozen pretrained parameter identity"
+    "checks": [
+      "exact internal coefficient-capture replay",
+      "independent external forward produces finite repeatable logits and NLL",
+      "external evaluation and training-forward per-example NLL within absolute 0.002 of capturing forward",
+      "finite nonzero coefficient gradients and lower loss measured through the same compiled training forward",
+      "coefficient checkpoint round-trip and array-exact resumed next update",
+      "pretrained parameter identity recorded"
     ],
-    "status": "pending"
+    "cross_compilation_nll_atol": 0.002,
+    "cross_compilation_nll_rtol": 0.0,
+    "scope": "Production-shaped coefficient fitting qualification using the retained parent checkpoint; scientific fitting outcomes remain under their runs.",
+    "source_commit": "2e77d06b3f9e7830c1fbccccec7dcf95ce9ab9b8",
+    "status": "passed"
   },
   "home_cluster": "kennel",
   "source_commit": null,

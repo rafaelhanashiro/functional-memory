@@ -1,4 +1,108 @@
 {
+  "acceptance": {
+    "checkpoint_resume_exact": true,
+    "completed_utc": "2026-10-23T05:27:43.357595+00:00",
+    "cross_compilation_nll_atol": 0.002,
+    "cross_compilation_nll_rtol": 0.0,
+    "device": "NVIDIA H100 80GB HBM3",
+    "external_evaluation_max_nll_error": 0.00074005126953125,
+    "external_evaluation_nll": 2.614255905151367,
+    "external_forward_repeated_exactly": true,
+    "frozen_parameter_sha256": "3d9481dbe10853c39aa2ef1da4e640424775ba187e8459b3f1d26cbfe4c3dfe3",
+    "gradient_norm_max": 0.03600258380174637,
+    "gradient_norm_min": 0.02645847760140896,
+    "independent_graph_diagnostics": {
+      "all_logits_finite": true,
+      "external_nll": [
+        2.531898021697998,
+        2.775045156478882,
+        2.770657539367676,
+        2.5374186038970947,
+        2.5769846439361572,
+        2.3456621170043945,
+        2.6182565689086914,
+        2.758124828338623
+      ],
+      "logit_max_absolute_error": 0.25,
+      "logit_relative_rms_error": 0.004337679129093885,
+      "original_nll": [
+        2.532381296157837,
+        2.77522611618042,
+        2.7701807022094727,
+        2.536858081817627,
+        2.577528953552246,
+        2.3455820083618164,
+        2.6183526515960693,
+        2.7585806846618652
+      ],
+      "repeated_external_logit_max_absolute_error": 0.0
+    },
+    "max_logit_replay_error": 0.0,
+    "one_update_nll": 2.498356342315674,
+    "parent_nll": 2.614105463027954,
+    "separate_training_forward_nll": 2.6145758628845215,
+    "status": "passed",
+    "training_forward_max_nll_error": 0.0015976428985595703
+  },
+  "artifacts": [
+    {
+      "path": "experiments/attention_scaling/runs/rfc37cfdf49d0/oracle_acceptance.json",
+      "sha256": "e8c366184cf99becf3cefa883de22cd0876c8156da96d766bacfcc95c1fd724e",
+      "size_bytes": 1469
+    },
+    {
+      "path": "experiments/attention_scaling/runs/rfc37cfdf49d0/training.log",
+      "sha256": "f7bbd141f4965f3a68bc8084666534aa18ae8f19633c11891f3c2ca868af234b",
+      "size_bytes": 6649
+    }
+  ],
+  "attempts": [
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "exit_code": 1,
+      "finished_utc": "2026-10-23T05:21:40.684549+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 80GB HBM3",
+      "node": "dogo.csail.mit.edu",
+      "phase": "qualification",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle/scaffolds/transformer/.venv/bin/python",
+      "slurm_job_id": "224098",
+      "slurm_partition": "debug",
+      "slurm_restart_count": 0,
+      "source_commit": "d5823fd24227d385e65752f59a2f28f64c6ba569",
+      "started_utc": "2026-10-23T05:21:04.551595+00:00"
+    },
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "exit_code": 0,
+      "finished_utc": "2026-10-23T05:26:47.867723+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 80GB HBM3",
+      "node": "dogo.csail.mit.edu",
+      "phase": "qualification",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle/scaffolds/transformer/.venv/bin/python",
+      "slurm_job_id": "224101",
+      "slurm_partition": "debug",
+      "slurm_restart_count": 0,
+      "source_commit": "2e77d06b3f9e7830c1fbccccec7dcf95ce9ab9b8",
+      "started_utc": "2026-10-23T05:25:58.326370+00:00",
+      "status": "passed"
+    },
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 80GB HBM3",
+      "node": "dogo.csail.mit.edu",
+      "phase": "training",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle/scaffolds/transformer/.venv/bin/python",
+      "resume_step": 0,
+      "slurm_job_id": "224104",
+      "slurm_partition": "standard",
+      "slurm_restart_count": 0,
+      "source_commit": "2e77d06b3f9e7830c1fbccccec7dcf95ce9ab9b8",
+      "started_utc": "2026-10-23T05:27:23.313151+00:00"
+    }
+  ],
   "checkpoint_retention": "best fitting coefficients, required to reproduce the fitted oracle",
   "coefficient_parameterization": "free_per_example_query_coefficients",
   "coefficient_sharing": "per_example_layer_head_query",
@@ -6,9 +110,50 @@
     "path": "experiments/attention_scaling/runs/rfc37cfdf49d0/config.yaml",
     "sha256": "ef4d191fc6ca7668e4cf840ee18630be50fafe9d4d2621b9c0ed2239b2a7f5d7"
   },
+  "error": "Job process exited with code 1; see training.log",
+  "frozen_execution_sha256": "cddc6b418bd708487fe1f66983fc682f879373d6d345ceba72f77c110796af43",
   "home_cluster": "kennel",
   "label": "200m-m008-query-coefficient-oracle-sequences256-seed0",
+  "log": {
+    "path": "experiments/attention_scaling/runs/rfc37cfdf49d0/training.log",
+    "sha256": "f7bbd141f4965f3a68bc8084666534aa18ae8f19633c11891f3c2ca868af234b",
+    "size_bytes": 6649
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle/experiments/attention_scaling/runs/rfc37cfdf49d0/training.log",
   "name": "200m-m008-query-coefficient-oracle-sequences256-seed0",
+  "oracle_outcome": {
+    "best_nll": 2.662276268005371,
+    "best_step": 0
+  },
+  "oracle_runtime": {
+    "coefficient_layout": "example,layer,query,head,order",
+    "coefficient_storage": "effective_monomial_coefficients",
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "device_count": 1,
+    "device_kind": "NVIDIA H100 80GB HBM3",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": null,
+      "NCCL_P2P_DISABLE": null,
+      "XLA_FLAGS": null
+    },
+    "microbatch_size": 8,
+    "node": "dogo.csail.mit.edu",
+    "optimizer_coordinates": "factorial(order)*monomial_coefficient",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle/scaffolds/transformer/.venv/bin/python",
+    "resolved_attention_backend": "mosaic",
+    "slurm_job_id": "224104",
+    "slurm_partition": "standard",
+    "source_commit": "2e77d06b3f9e7830c1fbccccec7dcf95ce9ab9b8",
+    "trainable_parameter_count": 754974720,
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
   "parent_run_id": "r50be104c2a9e",
   "record_schema_version": 1,
   "run_id": "rfc37cfdf49d0",
@@ -95,5 +240,36 @@
     "step": 19074,
     "validation_nll": 2.595216210399355
   },
-  "status": "planned"
+  "source_commit": "2e77d06b3f9e7830c1fbccccec7dcf95ce9ab9b8",
+  "started_utc": "2026-10-23T05:27:44.334129+00:00",
+  "status": "running",
+  "step": 0,
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--nice=0",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--exclude=collie,samoyed,doodle,terrier,mastiff",
+      "--cpus-per-task=8",
+      "--mem=96G",
+      "--time=12:00:00",
+      "--job-name=coef-oracle-rfc37cfdf49d0",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle/experiments/attention_scaling/runs/rfc37cfdf49d0/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle/experiments/attention_scaling/runs/rfc37cfdf49d0/training.log",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle/experiments/attention_scaling/coefficient_oracle.sbatch",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle",
+      "2e77d06b3f9e7830c1fbccccec7dcf95ce9ab9b8",
+      "rfc37cfdf49d0"
+    ],
+    "partition": "standard,long",
+    "qualify_only": false,
+    "slurm_job_id": "224104",
+    "submitted_utc": "2026-10-23T05:27:19.554145+00:00"
+  },
+  "wandb": {
+    "id": "rfc37cfdf49d0",
+    "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/rfc37cfdf49d0"
+  }
 }

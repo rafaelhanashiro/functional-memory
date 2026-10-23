@@ -40,7 +40,18 @@ checkpoint is read in place and never changed.
 
 ## Findings and open decision
 
-The runs are prepared; measurements will be recorded in each run's `metrics.jsonl`.
+Both runs passed GPU qualification on Kennel. Qualification checked captured-coefficient replay, finite
+gradients, a loss-reducing update, repeated forwards, and exact checkpoint
+continuation. The software checks are recorded in the
+[scaffold validation](../../../scaffolds/transformer/validation/README.md#direct-query-coefficient-capture-and-override).
+The single-sequence run completed 2,500 updates on a B300. Initial fitting NLL was
+2.532260; terminal NLL was 0.004548 (perplexity 1.004558). The best fitting NLL was
+0.004539 at update 2,387, whose coefficients are retained. The learning rate was
+reduced at update 2,000, followed by 500 confirmation updates. This nearly memorizes
+the sequence while keeping every pretrained parameter fixed.
+
+The 256-sequence run is running on one H100. Its initial fitting NLL is 2.662276;
+terminal results are pending. Each run's `metrics.jsonl` holds its measurements.
 The open decision is whether the observed fitting improvement warrants a new
 coefficient generator or further optimization work. A gain demonstrates attainable
 capacity on these inputs; a plateau alone cannot establish a capacity ceiling.

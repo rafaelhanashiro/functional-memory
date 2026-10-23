@@ -39,9 +39,10 @@ capturing forward by at most `0.0003443` nats/token on
 [B300, batch 1](runs/coefficient-override-cpu/external-replay-b300.json) and
 `0.0007401` on [H100, batch 8](runs/coefficient-override-cpu/external-replay-h100.json).
 These checks used source `d5823fd`, jobs `224097` and `224098`, and failed the
-initial `1e-5` NLL comparison. They establish the observed discrepancy, not its
-cause; external replay repeatability and logit diagnostics are needed to qualify
-the independently compiled fitting path.
+initial `1e-5` NLL comparison. Independently compiled BF16 forwards use an absolute
+per-example tolerance of `0.002` nats/token (`rtol=0`); internal capture/replay
+retains the tighter check. These measurements establish the discrepancy without
+identifying its compiler-level cause.
 
 Exact commands, pass counts, source file hashes, and the dependency-lock hash are
 in the record. Repeat the new checks from the repository root:
@@ -52,11 +53,21 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
   experiments/attention_scaling/tests/test_coefficient_oracle.py
 ```
 
-Full GPU fitting qualification is pending. The production allocations must pass their
-checkpoint replay, coefficient-gradient, frozen-parameter, and checkpoint-resume
-gates before fitting; the resulting evidence belongs in each run's
-`oracle_acceptance.json`, at the paths listed in the validation record. No GPU
-throughput or scientific fitting outcomes are recorded here.
+GPU fitting qualification passed on [B300, batch 1](runs/coefficient-override-cpu/gpu-b300.json)
+and [H100, batch 8](runs/coefficient-override-cpu/gpu-h100.json), jobs `224100` on
+`akita` and `224101` on `dogo`, source `2e77d06`. Internal replay was exact. Repeated
+independent forwards produced identical logits, and independent-graph logit
+relative RMS errors were below `0.005` on both GPUs. Every example's evaluation
+and training-forward NLL difference was below `0.002`. Both devices passed finite
+gradient and improving-update checks, coefficient checkpoint round trips, and
+array-exact next updates after restoration. Improvement and plateau measurements
+use the same compiled training forward, so cross-graph offsets are not counted
+as fitting gains.
+
+The validation record pins these immutable qualification copies, their source run
+IDs, jobs, hardware, source commit, and checksums. Each production allocation
+repeats its own checks in the run's `oracle_acceptance.json`. Scientific fitting
+outcomes remain under the runs; this record contains software qualification only.
 
 ### Query-key polynomial backward tiles
 
