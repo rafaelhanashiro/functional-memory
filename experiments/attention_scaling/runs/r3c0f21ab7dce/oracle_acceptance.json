@@ -1,0 +1,31 @@
+{
+  "checkpoint_resume_exact": true,
+  "completed_utc": "2026-10-23T22:15:32.935004+00:00",
+  "cross_compilation_nll_atol": 0.002,
+  "cross_compilation_nll_rtol": 0.0,
+  "device": "NVIDIA B300 SXM6 AC",
+  "external_evaluation_max_nll_error": 0.0,
+  "external_evaluation_nll": 2.591906785964966,
+  "external_forward_repeated_exactly": true,
+  "frozen_parameter_sha256": "87464a6d4fee2d8a263912b895c33a35baa95893dffb72f7685293490eb4a2fe",
+  "gradient_norm_max": 0.01196074578911066,
+  "gradient_norm_min": 0.01196074578911066,
+  "independent_graph_diagnostics": {
+    "all_logits_finite": true,
+    "external_nll": [
+      2.591906785964966
+    ],
+    "logit_max_absolute_error": 0.0,
+    "logit_relative_rms_error": 0.0,
+    "original_nll": [
+      2.591906785964966
+    ],
+    "repeated_external_logit_max_absolute_error": 0.0
+  },
+  "max_logit_replay_error": 0.0,
+  "one_update_nll": 2.5392675399780273,
+  "parent_nll": 2.591906785964966,
+  "separate_training_forward_nll": 2.591015100479126,
+  "status": "passed",
+  "training_forward_max_nll_error": 0.0008916854858398438
+}

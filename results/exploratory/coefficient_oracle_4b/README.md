@@ -35,11 +35,28 @@ before fitting starts.
 
 ## Findings and open decision
 
-The run is submitted on Kennel; fitting results are not yet available. The open decision is
-whether free query coefficients reveal useful additional fitting capacity in this
-4B learned-static checkpoint. A large gain does not establish that a shared causal
+The run completed 2,500 updates on one B300 (Slurm job `224586`), with total
+allocation time 2 minutes 25 seconds including GPU qualification. The learning
+rate decreased at update 2,000 and 500 confirmation updates established a plateau.
+All pretrained parameters retained their original checksum.
+
+| Measurement | Update | Fitting NLL | Fitting PPL |
+| --- | ---: | ---: | ---: |
+| Initial | 0 | 2.591015100 | 13.34330953 |
+| Best retained | 1,710 | 0.004305246 | 1.00431453 |
+| Terminal | 2,500 | 0.004370327 | 1.00437989 |
+
+Free query coefficients nearly memorize this sequence from the learned-static
+checkpoint. The open decision is whether this capacity motivates a more expressive
+shared coefficient generator for the 4B setup. This gain does not establish that a shared causal
 coefficient generator can realize it, or explain the small held-out gap between
 learned-static and fixed Taylor pretraining.
+
+GPU qualification reproduced the original standalone forward exactly when the
+captured coefficients were replayed. The separately compiled fitting forward
+starts 0.00089169 nats/token lower because of BF16 compilation rounding, within
+the recorded 0.002 tolerance. Both sides of the fitting improvement above use the
+same compiled training forward; this offset is not counted as improvement.
 
 [selection.yaml](selection.yaml) names the single run. Measurements and retained
 coefficients live only under its run directory. Update the selection after new

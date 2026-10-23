@@ -24,8 +24,12 @@ activation. Checks cover JIT replay, independent query/example updates, gradient
 through frozen later layers, an improving coefficient update, and unchanged
 pretrained parameters. Run `JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python
 -m pytest -q scaffolds/transformer/tests/test_coefficient_override.py` to repeat.
-GPU replay and checkpoint qualification are required in the fitting allocation
-before production; its `oracle_acceptance.json` retains those measurements.
+[B300 qualification](runs/static-coefficient-override/gpu-b300.json) passed for the
+15-layer, 14-head source: exact capture/external replay and repeatability, finite
+improving coefficient updates, and exact checkpoint continuation. The separate
+fitting graph differed from the original by 0.00089169 nats/token, within the
+recorded BF16 bound of 0.002. The run's `oracle_acceptance.json` retains the full
+qualification measurements; fitting outcomes remain with the scientific run.
 
 ### Direct query-coefficient capture and override
 

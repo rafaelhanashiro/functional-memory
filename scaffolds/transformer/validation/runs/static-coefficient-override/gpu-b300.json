@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "source_commit": "f19feb30f74d1d7a739032d8791a3939c126ab51",
+  "source_run": "experiments/attention_scaling/runs/r3c0f21ab7dce",
+  "source_artifact": "oracle_acceptance.json",
+  "source_artifact_sha256": "8904ca3dfb1d216a737a0ba26576dec1d791a4fc149d27e54247af26226b6392",
+  "slurm_job_id": "224586",
+  "device": "NVIDIA B300 SXM6 AC",
+  "capture_max_logit_error": 0.0,
+  "external_replay_max_logit_error": 0.0,
+  "training_forward_max_nll_error": 0.0008916854858398438,
+  "cross_compilation_nll_atol": 0.002,
+  "checkpoint_resume_exact": true,
+  "external_forward_repeated_exactly": true,
+  "frozen_parameter_sha256": "87464a6d4fee2d8a263912b895c33a35baa95893dffb72f7685293490eb4a2fe"
+}
