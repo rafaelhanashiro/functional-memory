@@ -57,6 +57,9 @@ VARIANTS = {
         "Tanh, zero-amplitude start, W ~ N(0, 1/d), b_r and a_r divided by r!, Mosaic kernel"),
     "tanh_query_key": ("tanh query-key, zero-amplitude start, W ~ N(0, 1/d)", "#7B3294", "-",
                        "Tanh query-key, zero-amplitude start, W ~ N(0, 1/d)"),
+    "tanh_query_key_fully_scaled": ("tanh query-key, zero-amplitude start, W ~ N(0, 1/d), b_r and a_r divided by r!",
+                                    "#7B3294", "--",
+                                    "Tanh query-key, zero-amplitude start, W ~ N(0, 1/d), b_r and a_r divided by r!"),
 }
 
 
@@ -69,6 +72,8 @@ def variant_of(model) -> tuple[str, str, str]:
                 if model.get("attention_coefficient_conditioning", "static") in ("query", "query_key") else "static")
     function = "affine" if function == "identity" else function
     if model.get("attention_coefficient_conditioning") == "query_key":
+        if scaled and model.get("attention_coefficient_amplitude_scale", "none") == "factorial":
+            return "tanh", "zero_amplitude", "tanh_query_key_fully_scaled"
         return "tanh", "zero_amplitude", "tanh_query_key"
     if function == "static" and scaled:
         return function, "", "static_scaled"
@@ -203,7 +208,8 @@ def _render(rows, curves, output):
         for variant, name in (("tanh_original", "original start"), (zero, "zero-amplitude start"),
                               ("tanh_zero_amplitude_order_scaled", "a_r/r!"),
                               ("tanh_zero_amplitude_fully_scaled", "b_r, a_r/r!"), ("static_scaled", "scaled static"),
-                              ("taylor_fixed", "fixed Taylor"), ("tanh_query_key", "query-key")):
+                              ("taylor_fixed", "fixed Taylor"), ("tanh_query_key", "query-key"),
+                              ("tanh_query_key_fully_scaled", "query-key, b_r, a_r/r!")):
             if variant in matched:
                 row = matched[variant]
                 final.append(f"{row['terminal_validation_perplexity']:.2f} {name} "
