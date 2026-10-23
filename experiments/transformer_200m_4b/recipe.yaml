@@ -1,4 +1,3 @@
-# The learning rate is a sweep candidate until results/lr_selection.yaml records selection.
 data:
   source: packed
   dataset_name: HuggingFaceFW/fineweb-edu
@@ -24,7 +23,7 @@ model:
   value_head_dim: 64
   intermediate_size: 2304
   rope_theta: 10000.0
-  rms_norm_eps: 1.0e-6
+  rms_norm_eps: 1.0e-06
   rms_norm_fp32: true
   dropout: 0.0
   tie_embeddings: false
@@ -37,11 +36,11 @@ model:
   qk_norm_type: rms_norm
   qk_norm_sharing: per_layer
   qk_norm_initial_scale: null
-  qk_norm_eps: 1.0e-6
+  qk_norm_eps: 1.0e-06
   initialization: transformer_truncated_reference
 optim:
-  learning_rate: 1.0e-3
-  min_learning_rate: 1.0e-4
+  learning_rate: 0.001
+  min_learning_rate: 0.0001
   weight_decay: 0.1
   weight_decay_policy: exclude_embeddings_norms_biases_v1
   coefficient_penalty: 0.0

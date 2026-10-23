@@ -1,7 +1,7 @@
 study: transformer_200m_4b
 pilot_steps: 1500
 selection_rule: lowest_step_1500_validation_nll_lower_peak_on_exact_tie
-canonical_learning_rate: null
+canonical_learning_rate: 0.001
 runs:
 - study: transformer_200m_4b
   run_id: r7de4554cb320
@@ -11,6 +11,15 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r7de4554cb320/config.yaml
       sha256: a7ad945763810b87b66552937448633f83c7521ae6a128e5732219e0cbc8c4dc
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r7de4554cb320/metrics.jsonl
+      sha256: acc85a0bc5ffad7056622a13ad3e6bee8c3df6f623518addba677140cdba68fd
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r7de4554cb320/metadata.json
+      sha256: ec4757031983d6ba4f3a5fdeb92ccbf44d60905db1cf8715c8aded82e0679f11
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r7de4554cb320/best_validation.json
+      sha256: 11d3325efc6b6bf821f077d5d50701fc9a24894d3d27b3d067f5b52efb78246e
 - study: transformer_200m_4b
   run_id: ra2b851b0dd7e
   label: softmax-lr-0.001
@@ -19,6 +28,15 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/ra2b851b0dd7e/config.yaml
       sha256: bd7fe2d8aa1a5707a207d659b4d1be3cb1dd5b7edc69f308d8374cf6bd6f7c02
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/ra2b851b0dd7e/metrics.jsonl
+      sha256: fc650c7ab3853cfecf24fe7c2336d76a63dae4babea9b322686c94fc295495ce
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/ra2b851b0dd7e/metadata.json
+      sha256: 126524fc169a4311a0f81b7a31edafd4a364b45af8da49469eb880e449356c06
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/ra2b851b0dd7e/best_validation.json
+      sha256: da6c77e233a4ac3effdb9f26ef478c911da4b67f417a221a0c88069a42acc405
 - study: transformer_200m_4b
   run_id: r8ae39cc59cb1
   label: softmax-lr-0.002
@@ -27,3 +45,14 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r8ae39cc59cb1/config.yaml
       sha256: d25b09f652d98939cbaac4d3724e05cbfefd71f293cb552158dab7b494a64dc6
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r8ae39cc59cb1/metrics.jsonl
+      sha256: d1bbdd2f42ee7357293c3d669018747b5388449091e53592244ec4169088f89d
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r8ae39cc59cb1/metadata.json
+      sha256: 194dbd8311f55117bb9c96cb38c9328ee7826fd008d9339518ad64f13687bdca
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r8ae39cc59cb1/best_validation.json
+      sha256: 38b0ab1ace5d4e2213d8f7db0cd19f30dd8d35f3e071db09f4abae6725974303
+canonical_min_learning_rate: 0.0001
+selected_run_id: ra2b851b0dd7e

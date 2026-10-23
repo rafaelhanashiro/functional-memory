@@ -1,0 +1,13 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r83139ea7389c/config.yaml",
+    "sha256": "9bcd49b8acb9b34aed37c21e51fe201d7b3e1859b1c7ffe0ddefc6881587726d"
+  },
+  "home_cluster": "kennel",
+  "label": "exp",
+  "name": "exp",
+  "phase": "comparison",
+  "record_schema_version": 1,
+  "run_id": "r83139ea7389c",
+  "status": "planned"
+}
