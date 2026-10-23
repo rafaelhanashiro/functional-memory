@@ -5,9 +5,35 @@
   },
   "home_cluster": "kennel",
   "label": "softmax-lr-0.001",
+  "lr_selection_job_id": "224109",
   "name": "softmax-lr-0.001",
   "phase": "lr_pilot",
   "record_schema_version": 1,
   "run_id": "ra2b851b0dd7e",
-  "status": "planned"
+  "status": "pending",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=sweep",
+      "--gres=gpu:2",
+      "--cpus-per-task=16",
+      "--mem=192G",
+      "--time=2-00:00:00",
+      "--job-name=ra2b851b0dd7e",
+      "--output=experiments/transformer_200m_4b/runs/ra2b851b0dd7e/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/ra2b851b0dd7e/config.yaml",
+      "d995b112416815ee7dbf66d271154be4b3a5f0f7",
+      "2",
+      "B300,H100",
+      "1500"
+    ],
+    "gpu_count": 2,
+    "launch_commit": "d995b112416815ee7dbf66d271154be4b3a5f0f7",
+    "partition": "sweep",
+    "slurm_job_id": "224107",
+    "stop_after_step": 1500
+  }
 }
