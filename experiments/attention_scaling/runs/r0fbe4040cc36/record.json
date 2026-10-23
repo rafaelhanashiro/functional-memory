@@ -1,0 +1,23 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r0fbe4040cc36/config.yaml",
+    "sha256": "05d747c0aa415188e972f894e238283e43a1d14dd44cea6829f6f56cbca28e9a"
+  },
+  "home_cluster": "kennel",
+  "label": "200m-rbf-n05-unnormalized-headrms-qknorm-dk64-triton-chinchilla1x-seed0",
+  "name": "200m-rbf-n05-unnormalized-headrms-qknorm-dk64-triton-chinchilla1x-seed0",
+  "record_schema_version": 1,
+  "run_id": "r0fbe4040cc36",
+  "status": "planned",
+  "training_budget": {
+    "actual_training_tokens": 3998744576,
+    "convention": "chinchilla_20_tokens_per_total_trainable_parameter",
+    "parameter_count": 199916704,
+    "parameter_count_includes_embeddings": true,
+    "reference": "https://arxiv.org/abs/2203.15556",
+    "target_tokens": 3998334080,
+    "tokens_per_step": 524288,
+    "total_steps": 7627,
+    "warmup_steps": 160
+  }
+}

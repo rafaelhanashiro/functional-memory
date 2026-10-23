@@ -147,6 +147,50 @@ done
 
 Keep the frozen execution set unchanged while any job can run or requeue.
 
+### 1× Chinchilla RBF budget
+
+The seed-zero 1× Chinchilla cohort uses the same four RBF fits and 199,916,704
+trainable parameters, including the untied input/output embeddings. The budget
+convention is **20 training tokens per total trainable parameter**
+([Chinchilla](https://arxiv.org/abs/2203.15556)). Rounding up to a whole global
+batch gives **7,627 updates × 524,288 tokens = 3,998,744,576 tokens**. The fixed
+RBF coefficients add no trainable parameters. These are fresh executions from
+reference initialization, with cosine decay ending at update 7,627; they do not
+resume the 10B-token schedules. Warmup is proportionally shortened from 400 to
+160 updates, retaining the same peak/minimum learning rates. Validation runs
+every 400 updates and at the terminal step; checkpoint cadence is 500 updates.
+All other model, data, and optimizer settings match the RBF recipe above.
+
+| RBF count | Run ID | Status |
+| --- | --- | --- |
+| 3 | `r4614f6fff21f` | planned |
+| 5 | `r0fbe4040cc36` | planned |
+| 9 | `r6e1b71e49350` | planned |
+| 20 | `r8f7f83e9b6ee` | planned |
+
+Home cluster is **Kennel**, worktree `worktrees/rbf-chinchilla`, branch
+`codex/rbf-chinchilla`. Each run uses one H100 in `standard`, with CPU/GPU
+checks, a full-recipe pilot, and exact checkpoint resume before production.
+The recipes request the configured private W&B project; local measurements
+remain authoritative if the service denies access. No baseline training is
+allocated by this cohort.
+
+```bash
+uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+export EJKERNEL_TRITON_CACHE_COMPILES=1
+export EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/transformer/triton"
+LAUNCH_COMMIT="$(git rev-parse HEAD)"  # commit all four recipes before submission
+for RUN in r8f7f83e9b6ee r6e1b71e49350 r0fbe4040cc36 r4614f6fff21f; do
+  env -u LD_LIBRARY_PATH TRANSFORMER_ALLOCATION_HOURS=24 TRANSFORMER_WANDB_MODE=online \
+    sbatch --partition=standard --time=24:00:00 --gres=gpu:h100:1 \
+    --cpus-per-task=8 --mem=128G --job-name="$RUN" \
+    --output="experiments/attention_scaling/runs/$RUN/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.attention_scaling.acceptance \
+    "experiments/attention_scaling/runs/$RUN/config.yaml" "$LAUNCH_COMMIT" 1 H100
+done
+```
+
 ## Runs and comparisons
 
 Each `runs/<run_id>/` holds one complete recipe and execution. Settings are fields

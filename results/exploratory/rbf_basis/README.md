@@ -24,6 +24,23 @@ Each run is an independent seed-zero execution of the shared 200M-scale,
 configuration; they are not language-model results. No baseline runs have
 been selected, and no new baseline training is allocated.
 
+### 1× Chinchilla cohort
+
+Four fresh seed-zero runs use the same RBF fits with 3,998,744,576 training
+tokens (20 per total trainable parameter, rounded to a full batch), a matching
+7,627-update cosine schedule, and 160-update warmup. Model, data, initialization,
+and remaining optimizer settings are unchanged. They have no measured quality
+outcomes yet. Their learning curves and terminal results must remain distinct
+from the 10B-token cohort; an intermediate point on a longer learning-rate
+schedule is not a completed 1× training run.
+
+| RBF count | Run ID | Status |
+| --- | --- | --- |
+| 3 | `r4614f6fff21f` | planned |
+| 5 | `r0fbe4040cc36` | planned |
+| 9 | `r6e1b71e49350` | planned |
+| 20 | `r8f7f83e9b6ee` | planned |
+
 ## Findings and open decision
 
 The 3-, 5-, and 9-RBF runs completed 10,000,269,312 tokens. Their terminal validation perplexities are 13.9501, 13.6150, and 13.6213; each terminal checkpoint is also validation best. The 20-RBF run is still training, with validation perplexity 13.6394 at 9,437,184,000 tokens. These are seed-zero observations without a selected matched baseline. Median throughput over the last five validation intervals is 192,383, 184,216, 166,527, and 112,053 tokens/s, respectively. Training intervals include checkpoint work and exclude validation. The runs use one H100 each in Kennel's standard queue, with unnormalized attention, per-head output
