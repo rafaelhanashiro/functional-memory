@@ -30,18 +30,17 @@ launch, including for any pilot resumption. Checkpoint interval is 500 updates.
 
 ## LR selection and requested comparison
 
-Three normalized-softmax pilots test peaks 0.0005, 0.001, and 0.002, with respective
-floors 0.00005, 0.0001, and 0.0002. Each stops at update 1,500 while retaining the
-full 7,570-update schedule and resumable state. Their combined budget is
-2,359,296,000 prediction tokens. The canonical LR is **pending** until
-`results/lr_selection.yaml` contains a non-null `canonical_learning_rate`.
-The placeholder in `recipe.yaml` is not a selection result.
+**The canonical peak LR is 0.001 and the minimum LR is 0.0001.** New runs in this
+setup inherit both from `recipe.yaml`; change them only for an explicitly requested
+LR experiment. The winning softmax pilot is `ra2b851b0dd7e`, selected by the lowest
+held-out NLL at step 1,500 on the full 7,570-step schedule. This is an early screening
+choice, not an established full-budget optimum.
 
-The selection rule is the lowest finite held-out NLL at step 1,500, breaking an
-exact tie toward the lower peak. Numerical failures remain visible and are
-ineligible; incomplete pilots and operational failures stop automatic selection.
-This is an early screening decision, not evidence of the best LR after 4B tokens.
-The selected LR and its 10% floor apply unchanged to these nine full-budget runs:
+The discarded pilots at peaks 0.0005 and 0.002 (each with a 10% floor) reached
+step-1,500 validation PPL 22.0744 and 22.0731, versus 21.8184 at the selected 0.001;
+all used seed 42 and the same recipe. Their outcomes are retained only in this note.
+
+The canonical LR and its 10% floor apply to these nine full-budget variants:
 
 | Variant | Degrees | Backend |
 | --- | --- | --- |
@@ -69,13 +68,18 @@ evidence. Retained artifacts belong under this study in the primary checkout on
 Kennel. Develop/execute in the study's own worktree. Sync both locked environments
 as specified in the repository's `CLUSTERS.md`; B300 uses CUDA 13 / cuBLAS >= 13.2.
 
-From the study worktree root:
+Allocate new runs from the canonical recipe in a fresh experiment worktree:
 
 ```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.pipeline prepare-pilots
-# Review and commit all scaffold/execution changes and the allocated recipes.
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.pipeline submit-pilots
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m scaffolds.records create \
+  --study experiments/transformer_200m_4b \
+  --config experiments/transformer_200m_4b/recipe.yaml --label my-new-run
 ```
+
+Set the requested attention variant before launch, preserving the inherited LR and
+floor. Commit the complete run recipe before using the shared launcher. Rerunning
+an LR candidate uses this same recipe with an explicit peak/floor override and a
+fresh run ID; an ordinary new run does not rerun LR selection.
 
 Each job requests two H100/B300 GPUs on the low-priority `sweep` partition, with
 microbatch 16 and gradient accumulation to the fixed global batch. The shared
@@ -85,13 +89,9 @@ checkpoint resumption. New checks cover actual 14-head, 2,048-token attention
 forward/backward against the blocked reference, including learned gains and every
 coefficient order. Acceptance failure prevents production.
 
-The submitted CPU coordinator depends on all three pilot jobs exiting. Only then
-does it select the LR, update the future recipe, allocate all nine comparison runs,
-commit their frozen execution inputs, and submit two lanes (at most four new GPUs
-concurrently). It never rewrites a launched run's configuration. Pilot checkpoint
-resumption remains tied to the pilot's original source commit. Existing jobs in
-other worktrees are untouched. An operational failure requires diagnosis before
-rerunning `pipeline advance --submit`; it never silently chooses a partial pilot.
+The nine comparison recipes are frozen with the selected LR. They execute in two
+lanes, with at most four GPUs allocated to this comparison at once. Each run retains
+its own frozen configuration and source commit; resumed jobs preserve those inputs.
 After all nine comparison jobs exit, a dependent CPU report job refreshes the
 explicit selections and regenerates the figures and summary, including failures
 and incomplete outcomes.

@@ -4,13 +4,12 @@ This is the result collection for the [isolated recipe](../README.md). It refere
 only explicit run IDs from this study; raw measurements and checkpoints remain
 under `../runs/`. Old 10B-token results are not included in these comparisons.
 
-`lr_selection.yaml` selects the three softmax pilots and records the rule and,
-once measured, the canonical peak/floor LR. `learning_rates.png` and `.pdf` show
-their held-out NLL curves. No LR has been selected while the canonical value is
-null. The 1,500-step comparison is an early screen on the full 7,570-step cosine
-schedule, not a full-budget LR optimum.
+`lr_selection.yaml` pins the retained winning softmax pilot and records the canonical
+peak LR 0.001 and floor 0.0001. The short LR-screening summary is in the
+[study README](../README.md#lr-selection-and-requested-comparison). Only the winning
+pilot remains in `summary.csv`; the screening curves are not retained.
 
-After LR selection, `selection.yaml` explicitly lists the nine attention variants.
+`selection.yaml` explicitly lists the nine attention variants.
 `summary.csv` distinguishes latest measurements from terminal measurements.
 Numerical failures retain their stopping step separately from the last valid
 validation step; validation-best measurements are never substituted for terminal ones.

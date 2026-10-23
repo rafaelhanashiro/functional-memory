@@ -72,9 +72,11 @@ def regenerate():
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10, "pdf.compression": 9})
     lr = yaml.safe_load((DIRECTORY / "lr_selection.yaml").read_text())
     pilots = collect(lr)
-    if any(row["validation"] for row in pilots):
+    measured_pilots = [row for row in pilots
+                       if any(v["step"] <= lr["pilot_steps"] for v in row["validation"])]
+    if len(measured_pilots) >= 2:
         fig, ax = plt.subplots(figsize=(7, 4), layout="constrained")
-        for row in pilots:
+        for row in measured_pilots:
             measurements = [v for v in row["validation"] if v["step"] <= lr["pilot_steps"]]
             ax.plot([v["step"] for v in measurements], [v["validation_nll"] for v in measurements],
                     label=f"peak {row['peak_lr']:g} ({row['status']})")
@@ -83,6 +85,9 @@ def regenerate():
         ax.legend()
         ax.grid(alpha=.2)
         save(fig, "learning_rates")
+    else:
+        for suffix in ("png", "pdf"):
+            (DIRECTORY / f"learning_rates.{suffix}").unlink(missing_ok=True)
     selection = DIRECTORY / "selection.yaml"
     comparison = collect(yaml.safe_load(selection.read_text())) if selection.exists() else []
     columns = ("run_id", "label", "status", "peak_lr", "failure_step", "latest_step", "latest_validation_nll",

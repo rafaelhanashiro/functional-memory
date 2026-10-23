@@ -95,13 +95,15 @@ def test_outcome_contradictions_are_rejected_even_when_pins_are_current(tmp_path
 
 def test_regeneration_is_byte_identical_and_keeps_missing_and_failed_rows_visible(tmp_path, monkeypatch):
     pilot = make_run(tmp_path, "pilot", "paused", [validation(100, 4.0), validation(1500, 3.0)])
+    second_pilot = make_run(tmp_path, "second-pilot", "paused", [validation(100, 4.1), validation(1500, 3.1)],
+                            changes={"optim": {"learning_rate": .0005, "min_learning_rate": .00005}})
     done = make_run(tmp_path, "completed", "complete", [validation(7570, 2.9)])
     failed = make_run(tmp_path, "numerical", "numerical_failure", [validation(1000, 3.4)], failure_step=1131)
     pending = make_run(tmp_path, "pending")
     operational = make_run(tmp_path, "operational", "failed")
     directory = tmp_path / "experiments" / STUDY / "results"
     directory.mkdir()
-    (directory / "lr_selection.yaml").write_text(yaml.safe_dump({"pilot_steps": 1500, **selection(tmp_path, [pilot])}))
+    (directory / "lr_selection.yaml").write_text(yaml.safe_dump({"pilot_steps": 1500, **selection(tmp_path, [pilot, second_pilot])}))
     (directory / "selection.yaml").write_text(yaml.safe_dump(selection(tmp_path, [done, failed, pending, operational])))
     monkeypatch.setattr(plot, "DIRECTORY", directory)
     original_save, captured = plot.save, {}
@@ -122,7 +124,7 @@ def test_regeneration_is_byte_identical_and_keeps_missing_and_failed_rows_visibl
     assert captured["labels"] == ["completed", "numerical", "pending", "operational"]
     assert captured["statuses"] == ["complete", "numerical_failure", "pending", "failed"]
     rows = {row["label"]: row for row in csv.DictReader((directory / "summary.csv").read_text().splitlines())}
-    assert set(rows) == {"pilot", "completed", "numerical", "pending", "operational"}
+    assert set(rows) == {"pilot", "second-pilot", "completed", "numerical", "pending", "operational"}
     assert rows["numerical"]["failure_step"] == "1131"
     assert rows["numerical"]["latest_step"] == "1000"
     assert rows["numerical"]["terminal_validation_nll"] == ""
@@ -139,3 +141,28 @@ def test_comparison_with_no_measurements_still_renders_its_coordinates(tmp_path,
     plot.regenerate()
     assert (directory / "attention_comparison.png").exists()
     assert "pending" in (directory / "summary.csv").read_text()
+
+
+@pytest.mark.parametrize("selected_count", [0, 1, 2])
+def test_fewer_than_two_measured_pilots_remove_stale_lr_figures(tmp_path, monkeypatch, selected_count):
+    winner = make_run(tmp_path, "winner", "paused", [validation(1500, 3.0)])
+    pending = make_run(tmp_path, "pending-pilot")
+    runs = [winner, pending][:selected_count]
+    directory = tmp_path / "experiments" / STUDY / "results"
+    directory.mkdir()
+    (directory / "lr_selection.yaml").write_text(
+        yaml.safe_dump({"pilot_steps": 1500, **selection(tmp_path, runs)}))
+    for suffix in ("png", "pdf"):
+        (directory / f"learning_rates.{suffix}").write_bytes(b"obsolete LR sweep")
+    monkeypatch.setattr(plot, "DIRECTORY", directory)
+
+    plot.regenerate()
+    assert not (directory / "learning_rates.png").exists()
+    assert not (directory / "learning_rates.pdf").exists()
+    rows = list(csv.DictReader((directory / "summary.csv").read_text().splitlines()))
+    assert [row["label"] for row in rows] == ["winner", "pending-pilot"][:selected_count]
+    if selected_count:
+        assert rows[0]["latest_validation_nll"] == "3.0"
+    before = (directory / "summary.csv").read_bytes()
+    plot.regenerate()
+    assert (directory / "summary.csv").read_bytes() == before
