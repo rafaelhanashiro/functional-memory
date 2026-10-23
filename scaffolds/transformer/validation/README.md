@@ -34,6 +34,15 @@ difference to `0.28125`. The runner therefore stores the effective FP32 coeffici
 directly and applies factorial scaling to optimizer gradients and updates. This
 diagnostic performed no coefficient fitting.
 
+With exact coefficient storage, separately compiled evaluation differed from the
+capturing forward by at most `0.0003443` nats/token on
+[B300, batch 1](runs/coefficient-override-cpu/external-replay-b300.json) and
+`0.0007401` on [H100, batch 8](runs/coefficient-override-cpu/external-replay-h100.json).
+These checks used source `d5823fd`, jobs `224097` and `224098`, and failed the
+initial `1e-5` NLL comparison. They establish the observed discrepancy, not its
+cause; external replay repeatability and logit diagnostics are needed to qualify
+the independently compiled fitting path.
+
 Exact commands, pass counts, source file hashes, and the dependency-lock hash are
 in the record. Repeat the new checks from the repository root:
 

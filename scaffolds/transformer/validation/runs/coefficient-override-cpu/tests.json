@@ -70,6 +70,28 @@
   "data": "synthetic test fixtures",
   "date": "2026-10-23",
   "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "external_replay_diagnostics": [
+    {
+      "batch_size": 1,
+      "gpu_type": "B300",
+      "job_id": "224097",
+      "node": "akita",
+      "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/external-replay-b300.json",
+      "scope": "Initial forward replay software diagnostic; no fitting updates.",
+      "sha256": "76cc8af798451d9ae30e7cfdcd7e85fb5f1a73aaea6d3b5aa8a4d8959c1aa0f0",
+      "source_commit": "d5823fd24227d385e65752f59a2f28f64c6ba569"
+    },
+    {
+      "batch_size": 8,
+      "gpu_type": "H100",
+      "job_id": "224098",
+      "node": "dogo",
+      "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/external-replay-h100.json",
+      "scope": "Initial forward replay software diagnostic; no fitting updates.",
+      "sha256": "a0ac315a2a6ad14cc3bb8d987cca7d6bfe3458c25fdeae0ccb4fd03fb96f96aa",
+      "source_commit": "d5823fd24227d385e65752f59a2f28f64c6ba569"
+    }
+  ],
   "gpu_qualification": {
     "acceptance_artifacts": [
       "experiments/attention_scaling/runs/rec7a01f3282c/oracle_acceptance.json",
