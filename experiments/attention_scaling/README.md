@@ -72,9 +72,9 @@ is tracked in [the RBF exploratory topic](../../results/exploratory/rbf_basis/RE
 
 | RBF count | Run ID | Status |
 | --- | --- | --- |
-| 3 | `re530e0627233` | submitted: job `223903` |
-| 5 | `r1b62a76f9b55` | running: job `223902` |
-| 9 | `r46c3479f9681` | running: job `223901` |
+| 3 | `re530e0627233` | complete: 10B tokens |
+| 5 | `r1b62a76f9b55` | complete: 10B tokens |
+| 9 | `r46c3479f9681` | complete: 10B tokens |
 | 20 | `rc28d7b48dc72` | running: job `223900` |
 
 For every count, centers are evenly spaced on `[-6, 6]`, widths are one, and

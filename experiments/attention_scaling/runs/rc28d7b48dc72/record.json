@@ -47,6 +47,20 @@
       "slurm_partition": "standard",
       "slurm_restart_count": "0",
       "started_utc": "2026-10-22T16:27:49.381649+00:00"
+    },
+    {
+      "acceptance_directory": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-triton-training/experiments/attention_scaling/runs/rc28d7b48dc72/.runtime/acceptance/H100-1",
+      "allocation": "JobId=223900 JobName=rbf-20-triton UserId=lucastor(26364) GroupId=lucastor(26364) MCS_label=N/A Priority=20163 Nice=0 Account=lucastor QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=1 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:24 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-23T12:17:19 EligibleTime=2026-10-23T12:19:20 AccrueTime=2026-10-23T12:19:20 StartTime=2026-10-23T16:29:40 EndTime=2026-10-24T16:29:40 Deadline=N/A PreemptEligibleTime=2026-10-23T18:29:40 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-23T16:29:40 Scheduler=Backfill Partition=standard AllocNode:Sid=kennel:3855600 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=8 NumTasks=1 CPUs/Task=8 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=8,mem=128G,node=1,billing=8,gres/gpu=1 AllocTRES=cpu=8,mem=128G,node=1,billing=8,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=8 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-triton-training/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-triton-training StdErr=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-triton-training/experiments/attention_scaling/runs/rc28d7b48dc72/training.log StdIn=/dev/null StdOut=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-triton-training/experiments/attention_scaling/runs/rc28d7b48dc72/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:h100:1 TresPerTask=cpu:8",
+      "config_path": "experiments/attention_scaling/runs/rc28d7b48dc72/config.yaml",
+      "config_sha256": "5686bd9a871df2256283890165407f06477ea748b4ecc1cca31850611c110d63",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "71b846df9aa5217a90ee949dc072d00f2ab503f3",
+      "slurm_job_id": "223900",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "1",
+      "started_utc": "2026-10-23T20:30:04.251296+00:00"
     }
   ],
   "config": {
@@ -70,7 +84,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "3e0eba3cfad96ba934968291cdc77ee737fb1db9a70d7241597bd3f4183dcc11"
+      "sha256": "5a8a6baf5a568de93d8aac69f88980665a16b69ab6f1fbc1b9e39164ab5ca9fd"
     },
     "resolved_config": {
       "data": {
@@ -370,7 +384,7 @@
   "seed": 0,
   "source_commit": "71b846df9aa5217a90ee949dc072d00f2ab503f3",
   "status": "running",
-  "step": 0,
+  "step": 18000,
   "submission": {
     "accepted_gpu_types": [
       "H100"
@@ -389,6 +403,6 @@
     "project": "functional-memory",
     "status": "permission_denied"
   },
-  "training_tokens": 0,
-  "updated_utc": "2026-10-22T16:43:27.733358+00:00"
+  "training_tokens": 9437184000,
+  "updated_utc": "2026-10-23T20:40:42.103593+00:00"
 }
