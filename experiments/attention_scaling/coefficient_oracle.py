@@ -132,6 +132,34 @@ def make_functions(graph, degree: int, oracle: dict):
     return capture, jax.jit(jax.vmap(tx.init)), step, jax.jit(losses)
 
 
+def replay_diagnostics(graph, params, tokens, degree: int):
+    """Separate override semantics from FP32 factorial coordinate roundoff."""
+    factorial = jnp.asarray([math.factorial(order) for order in range(degree + 1)], jnp.float32)
+
+    @jax.jit
+    def compare(frozen, inputs):
+        model = nnx.merge(graph, frozen)
+        original, coefficients = model(inputs[:, :-1], deterministic=True, return_coefficients=True)
+        replay_raw = model(inputs[:, :-1], deterministic=True, query_coefficients=coefficients)
+        rounded = (coefficients * factorial) / factorial
+        replay_factorial = model(inputs[:, :-1], deterministic=True, query_coefficients=rounded)
+        reference = original.astype(jnp.float32)
+        reference_rms = jnp.sqrt(jnp.mean(jnp.square(reference)))
+        result = {"parent_logit_rms": reference_rms,
+                  "coefficient_max_absolute_roundtrip_error": jnp.max(jnp.abs(rounded - coefficients)),
+                  "coefficient_relative_roundtrip_l2_error": jnp.linalg.norm(rounded - coefficients) /
+                      jnp.maximum(jnp.linalg.norm(coefficients), 1e-30)}
+        for name, logits in (("original", original), ("raw_replay", replay_raw), ("factorial_replay", replay_factorial)):
+            difference = logits.astype(jnp.float32) - reference
+            result[name + "_nll"] = optax.softmax_cross_entropy_with_integer_labels(
+                logits.astype(jnp.float32), inputs[:, 1:]).mean(axis=1)
+            result[name + "_logit_max_absolute_error"] = jnp.max(jnp.abs(difference))
+            result[name + "_logit_relative_rms_error"] = jnp.sqrt(jnp.mean(jnp.square(difference))) / reference_rms
+        return result
+
+    return {name: np.asarray(value).tolist() for name, value in jax.device_get(compare(params, tokens)).items()}
+
+
 def plateau_action(history: list[float], step: int, reduced_at: int | None, oracle: dict):
     """Return reduce/stop/continue from best-so-far loss at evaluated steps."""
     window = int(oracle["plateau_window"])
@@ -314,7 +342,17 @@ def main(argv=None):
         table, losses, replay_losses, error = capture(params, tokens)
         losses, replay_losses, error = jax.device_get((losses, replay_losses, error))
         if not np.allclose(losses, replay_losses, rtol=1e-5, atol=1e-5) or float(error) > 0.05:
-            raise RuntimeError("Captured coefficients do not reproduce parent logits/loss")
+            failure = {"status": "failed", "phase": "initial_coefficient_replay", "microbatch_index": index,
+                       "original_nll": losses.tolist(), "replay_nll": replay_losses.tolist(),
+                       "nll_max_absolute_error": float(np.max(np.abs(losses - replay_losses))),
+                       "logit_max_absolute_error": float(error), "time_utc": _utc(),
+                       "tolerances": {"nll_rtol": 1e-5, "nll_atol": 1e-5, "logit_max_absolute_error": 0.05}}
+            print("Capture replay failed: " + json.dumps(failure), flush=True)
+            print("Diagnosing raw coefficient replay versus factorial coordinate roundtrip", flush=True)
+            failure["diagnostics"] = replay_diagnostics(graph, params, tokens, config.model.attention_degree)
+            _write_json(run / "oracle_acceptance_failure.json", failure)
+            print(json.dumps(failure), flush=True)
+            raise RuntimeError("Captured coefficients do not reproduce parent logits/loss; see oracle_acceptance_failure.json")
         tables.append(table)
         optimizers.append(initialize_optimizer(table))
         parent_losses.extend(replay_losses.tolist())
