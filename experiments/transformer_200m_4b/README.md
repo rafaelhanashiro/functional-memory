@@ -89,9 +89,10 @@ checkpoint resumption. New checks cover actual 14-head, 2,048-token attention
 forward/backward against the blocked reference, including learned gains and every
 coefficient order. Acceptance failure prevents production.
 
-The nine comparison recipes are frozen with the selected LR. They execute in two
-lanes, with at most four GPUs allocated to this comparison at once. Each run retains
-its own frozen configuration and source commit; resumed jobs preserve those inputs.
+The nine comparison recipes are frozen with the selected LR. Independent training
+runs have no inter-run scheduling dependencies; Slurm schedules them according to
+available resources and cluster policy. Each run retains its own frozen configuration
+and source commit; resumed jobs preserve those inputs.
 After all nine comparison jobs exit, a dependent CPU report job refreshes the
 explicit selections and regenerates the figures and summary, including failures
 and incomplete outcomes.

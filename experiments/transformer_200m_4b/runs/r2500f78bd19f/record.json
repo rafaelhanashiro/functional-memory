@@ -8,6 +8,33 @@
   "name": "query-m12",
   "phase": "comparison",
   "record_schema_version": 1,
+  "report_job_id": "224149",
   "run_id": "r2500f78bd19f",
-  "status": "planned"
+  "status": "pending",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=sweep",
+      "--gres=gpu:2",
+      "--cpus-per-task=16",
+      "--mem=192G",
+      "--time=2-00:00:00",
+      "--job-name=r2500f78bd19f",
+      "--output=experiments/transformer_200m_4b/runs/r2500f78bd19f/training.log",
+      "--dependency=afterany:224145",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/r2500f78bd19f/config.yaml",
+      "36b074480751897c8b8f9754cbc13c22594024be",
+      "2",
+      "B300,H100"
+    ],
+    "current_dependency": null,
+    "gpu_count": 2,
+    "launch_commit": "36b074480751897c8b8f9754cbc13c22594024be",
+    "partition": "sweep",
+    "slurm_job_id": "224147",
+    "stop_after_step": null
+  }
 }
