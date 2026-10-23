@@ -1,4 +1,4 @@
 run_id,label,status,peak_lr,failure_step,latest_step,latest_validation_nll,latest_validation_perplexity,terminal_validation_nll,terminal_validation_perplexity
 ra2b851b0dd7e,softmax-lr-0.001,paused,0.001,,1500,3.0827526301145554,21.81837773697275,,
-r833fbb6eedcb,query_key-m8,planned,0.001,,,,,,
-rfd48f7bbe9f4,query_key-m12,planned,0.001,,,,,,
+r833fbb6eedcb,query_key-m8,pending,0.001,,,,,,
+rfd48f7bbe9f4,query_key-m12,pending,0.001,,,,,,
