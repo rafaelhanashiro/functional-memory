@@ -1,6 +1,7 @@
 from dataclasses import replace
 
 import jax
+import jax.numpy as jnp
 from flax import nnx
 
 from scaffolds.transformer.configs import ModelConfig
@@ -54,19 +55,24 @@ class Block(nnx.Module):
         return_diagnostics: bool = False,
         coefficients: jax.Array | None = None,
         attention_parameters: dict[str, jax.Array] | None = None,
+        query_coefficients: jax.Array | None = None,
+        return_coefficients: bool = False,
     ):
+        extra = {}
+        if query_coefficients is not None or return_coefficients:
+            extra = {"query_coefficients": query_coefficients, "return_coefficients": return_coefficients}
         with jax.named_scope("attention"):
             h = self.attention_norm(x)
             result = self.attention(h, deterministic=deterministic, rngs=rngs,
                                     return_diagnostics=return_diagnostics, coefficients=coefficients,
-                                    attention_parameters=attention_parameters)
-        h, diagnostics = result if return_diagnostics else (result, None)
+                                    attention_parameters=attention_parameters, **extra)
+        h, auxiliary = result if return_diagnostics or return_coefficients else (result, None)
         x = x + h
         with jax.named_scope("mlp"):
             h = self.ffn_norm(x)
             h = self.feed_forward(h)
         output = x + h
-        return (output, diagnostics) if return_diagnostics else output
+        return (output, auxiliary) if return_diagnostics or return_coefficients else output
 
 
 class TransformerLM(nnx.Module):
@@ -103,8 +109,27 @@ class TransformerLM(nnx.Module):
         deterministic: bool = True,
         rngs: nnx.Rngs | jax.Array | None = None,
         return_diagnostics: bool = False,
+        query_coefficients: jax.Array | None = None,
+        return_coefficients: bool = False,
     ):
+        """Optionally replace or return effective coefficients [L, B, T, H, m+1].
+
+        Overrides bypass only the query coefficient generator; all other operations
+        remain differentiable. Capture returns coefficients from this same forward
+        pass, after bias and amplitude scaling. No scaling is applied to overrides.
+        """
         cfg = self.config
+        if return_coefficients and return_diagnostics:
+            raise ValueError("return_coefficients and return_diagnostics are mutually exclusive")
+        if query_coefficients is not None or return_coefficients:
+            if cfg.attention_coefficient_conditioning != "query":
+                raise ValueError("Coefficient override and capture require query-only conditioning")
+            if cfg.remat:
+                raise ValueError("Coefficient override and capture require model.remat == False")
+            if query_coefficients is not None:
+                expected = (cfg.num_layers, *tokens.shape, cfg.num_heads, cfg.attention_degree + 1)
+                if query_coefficients.shape != expected:
+                    raise ValueError(f"query_coefficients must have shape {expected}, got {query_coefficients.shape}")
         if tokens.shape[1] > cfg.max_seq_len:
             raise ValueError(f"Sequence length {tokens.shape[1]} exceeds max_seq_len={cfg.max_seq_len}")
         x = self.token_embedding(tokens)
@@ -113,9 +138,11 @@ class TransformerLM(nnx.Module):
         if cfg.remat and telemetry.active():
             raise ValueError("Training telemetry requires model.remat == False")
         diagnostics = []
+        captured_coefficients = []
         for index, layer_name in enumerate(self.layer_names):
             layer = getattr(self, layer_name)
             parameters = parameters_for_layer(self, self.attention_parameter_specs, index)
+            layer_coefficients = None if query_coefficients is None else query_coefficients[index]
             if cfg.remat:
                 result = nnx.remat(_call_block_remat, static_argnums=(2, 4))(
                     layer, x, deterministic, rngs, return_diagnostics, parameters,
@@ -124,10 +151,14 @@ class TransformerLM(nnx.Module):
                 with telemetry.scope(f"layer_{index:02d}"):
                     telemetry.record_residual(x)
                     result = layer(x, deterministic=deterministic, rngs=rngs,
-                                   return_diagnostics=return_diagnostics, attention_parameters=parameters)
+                                   return_diagnostics=return_diagnostics, attention_parameters=parameters,
+                                   query_coefficients=layer_coefficients, return_coefficients=return_coefficients)
             if return_diagnostics:
                 x, layer_diagnostics = result
                 diagnostics.append(layer_diagnostics)
+            elif return_coefficients:
+                x, layer_captured = result
+                captured_coefficients.append(layer_captured)
             else:
                 x = result
 
@@ -136,4 +167,6 @@ class TransformerLM(nnx.Module):
         x = self.final_norm(x)
         with jax.named_scope("vocabulary_projection"):
             logits = self.lm_head(x)
+        if return_coefficients:
+            return logits, jnp.stack(captured_coefficients)
         return (logits, tuple(diagnostics)) if return_diagnostics else logits

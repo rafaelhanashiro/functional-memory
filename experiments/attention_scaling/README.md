@@ -9,6 +9,40 @@ learned polynomial attention, GLA, and Gated DeltaNet.
 [Run index](runs.csv) · [Study membership](sweep.yaml) ·
 [Shared implementation](../../scaffolds/transformer/README.md)
 
+## Fixed-input coefficient oracle
+
+Two exploratory coefficient-only fits on **Kennel** use the retained degree-eight
+query-only checkpoint `r50be104c2a9e`, step 19,074. `rec7a01f3282c` fits one sequence;
+`rfc37cfdf49d0` fits a full batch of 256, with separate coefficients for every
+example, layer, head, query and order. All pretrained parameters stay frozen. The
+[exploratory collection](../../results/exploratory/coefficient_oracle/README.md)
+documents the question, fixed-input selection, convergence rule and interpretation.
+These runs enter no canonical comparison.
+
+Both fits are complete. Their compact measurements and provenance live with their
+run IDs; retained checkpoints and logs remain on Kennel. Fresh executions use new
+run IDs in an isolated worktree, with its CUDA 12 and CUDA 13 environments synced
+from its own lock as described in [CLUSTERS.md](../../CLUSTERS.md).
+The allocation command for this pair was:
+
+```bash
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.attention_scaling.launch_coefficient_oracle prepare \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r50be104c2a9e
+```
+
+After committing the frozen inputs, the two executions were submitted with:
+
+```bash
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.attention_scaling.launch_coefficient_oracle submit \
+  rec7a01f3282c rfc37cfdf49d0 --partition standard,long
+```
+
+Each job requests one B300 or H100, microbatches the fixed inputs, checks the frozen
+execution set on every start/requeue, qualifies checkpoint capture and replay before
+fitting, and saves resumable progress on a time-limit signal. The launcher selects
+CUDA 13 on B300 and CUDA 12 on H100. Fit-only metrics are kept distinct from held-out
+validation metrics; the retained best coefficients are needed to reproduce the fit.
+
 ## Frozen pretrained-head polynomial sparsity
 
 This exploratory experiment asks whether fixed or query-dependent subsets of
@@ -465,19 +499,13 @@ order's amplitude at the same rate. It repeats `rccf19c31669d` with
 so order r's modulation moves at lr/r!, and with the Mosaic query kernel, which now covers
 degree 8. It runs on one GPU on `standard` (global microbatch 32) with the command above.
 
-### Degree 12 and order-scaled query–key
+### Degree 12
 
-Four runs extend this to m = 12 and add order scaling to query–key, each from the
-query-only recipe `rccf19c31669d` apart from the listed settings, at global microbatch 32 on
-one GPU: static learned coefficients at m = 12 (`r3012d19137cd`), query-only with
-`attention_coefficient_amplitude_scale: factorial` at m = 12 (`r0c9b8b75ec17`), and
-query–key with the same scaling at m = 8 (`r7eb08c9a60b7`) and m = 12 (`raf8b1ba3c29b`).
-The scaling applies to the query amplitude; the key factor `f_r = 1 + a^k_r tanh(·)` is
-already relative to `c_r`. Static and query-only use the Mosaic kernels, which cover degree
-12 at `d_K = 64`. Query–key uses the one-pass Triton kernel (`--allow-triton-attention`):
-Mosaic runs query–key once per order and rounds each order's output to BF16 before the sum,
-which corrupted gradients at m = 1. They launch in that order with the command above,
-`PARTITION=standard` and `GPUS=1`.
+Two runs extend this to m = 12, each from the query-only recipe `rccf19c31669d` apart from
+the listed settings, at global microbatch 32 on one B300: static learned coefficients
+(`r3012d19137cd`) and query-only with `attention_coefficient_amplitude_scale: factorial`
+(`r0c9b8b75ec17`). Both use the Mosaic kernels, which cover degree 12 at `d_K = 64`, and
+launched with the command above, `PARTITION=standard` and `GPUS=1`.
 
 ### Factorially scaled coefficients
 

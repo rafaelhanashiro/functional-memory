@@ -200,6 +200,30 @@
     {
       "path": "scaffolds/transformer/validation/runs/hermite-qk-b300/tests.json",
       "sha256": "a462f666596f83cd1cf37b6926d3324db8cf54ed8e8d02dd5345ffe688b7adbf"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/capture-replay-b300.json",
+      "sha256": "e467626c816426c3e7102f6611f62bb45d25fa65f6b276e44422726b51b1e671"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/external-replay-b300.json",
+      "sha256": "76cc8af798451d9ae30e7cfdcd7e85fb5f1a73aaea6d3b5aa8a4d8959c1aa0f0"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/external-replay-h100.json",
+      "sha256": "a0ac315a2a6ad14cc3bb8d987cca7d6bfe3458c25fdeae0ccb4fd03fb96f96aa"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/gpu-b300.json",
+      "sha256": "6b5ea8ff153102f5fcae0f2673e5df96ff906eed7a520ea33b185b3dfe830ed6"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/gpu-h100.json",
+      "sha256": "3f449ae1f3e466c6a4f31757bb9de3e8d0176521186caaaa49ffd7360274d6d1"
+    },
+    {
+      "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/tests.json",
+      "sha256": "666f28c4459947d84b89b49b77d0ffa60b275d99f71e91612f8c79bf8f967ae8"
     }
   ],
   "slurm_logs": [

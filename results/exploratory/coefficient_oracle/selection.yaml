@@ -1,0 +1,50 @@
+schema_version: 1
+opened: '2026-10-23'
+question: How much can free query polynomial coefficients improve a fixed pretrained
+  model on fixed inputs?
+settings:
+  metric: fit_nll
+  parent_run_id: r50be104c2a9e
+  same_first_sequence: true
+  generalization_claim: false
+  last_query_analysis:
+    run_id: rec7a01f3282c
+    selected_checkpoint_step: 2387
+    query_index: 2047
+    measurement: last_query_polynomials.json
+    measurement_sha256: 1c34e1e2dcc3b2842080f5fff5f19bea6cdffe0f058cf10066a91fe0a26edff8
+    score_domain: observed fitted scores for this query; no extrapolation
+    shape_scaling: each curve divided by its positive RMS on fitted scores
+runs:
+- study: attention_scaling
+  run_id: rec7a01f3282c
+  role: single_sequence
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rec7a01f3282c/config.yaml
+      sha256: 07cd8bda65fa5ce9c2638cc41d65795a2d30fa6643de7073fa99dbfe9e494f5d
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rec7a01f3282c/metrics.jsonl
+      sha256: 8e7bcf3294df517f0b4527be7adda901509ad0f61ad92f71580e1a9111a1bbe8
+    completion.json:
+      path: experiments/attention_scaling/runs/rec7a01f3282c/completion.json
+      sha256: 4dee93f5f83d12e2192324b8c9b44c72883b74438fc4fd26ea7f0f13251f55f2
+    metadata.json:
+      path: experiments/attention_scaling/runs/rec7a01f3282c/metadata.json
+      sha256: aa658ebd64ae865b40eb6d27b99303f468b76a14b311481a1f15c04715039812
+- study: attention_scaling
+  run_id: rfc37cfdf49d0
+  role: full_batch
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/rfc37cfdf49d0/config.yaml
+      sha256: ef4d191fc6ca7668e4cf840ee18630be50fafe9d4d2621b9c0ed2239b2a7f5d7
+    metrics.jsonl:
+      path: experiments/attention_scaling/runs/rfc37cfdf49d0/metrics.jsonl
+      sha256: 7cd5acefc2eadd9ee5d5d26e36930311edb442c49d28cf9f00f8bc0089e6f1eb
+    completion.json:
+      path: experiments/attention_scaling/runs/rfc37cfdf49d0/completion.json
+      sha256: 3ad1e4e47e313f796bafa07bd784d2bb1e15ad1fc1657f4177960bd5b19f332f
+    metadata.json:
+      path: experiments/attention_scaling/runs/rfc37cfdf49d0/metadata.json
+      sha256: fad3d5330615ce6a4a01bedc693439b8ca64aaca5dbd4f208dc9f28bc46c4e60

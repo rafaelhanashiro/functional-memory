@@ -11,6 +11,64 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Direct query-coefficient capture and override
+
+On 2026-10-23, the [CPU validation record](runs/coefficient-override-cpu/tests.json)
+recorded 62 passing joint checks (8 override API, 4 fitting-runner, 50 records),
+plus 3 existing compatibility checks. The synthetic degree-eight model preserves its original
+forward when captured effective coefficients are replayed, supports JIT, and
+propagates finite coefficient gradients through the frozen layers. Optimizing
+only the coefficient table leaves every pretrained parameter unchanged. Independent
+examples have matching gradients, Adam states, and updates when evaluated alone,
+together, or split into microbatches. The runner checks also verify plateau timing,
+checkpoint continuation, and durable learning-rate decisions. The new API requires
+`model.remat: false`; existing model rematerialization remains unchanged.
+The optimizer check differentiates an independent objective in factorial-scaled
+increments, then verifies clipping, Adam moments, and effective coefficient updates.
+
+The [B300 replay diagnostic](runs/coefficient-override-cpu/capture-replay-b300.json)
+on `akita`, job `224096`, source `f47580a`, found exact logit and loss replay with
+the captured effective coefficients. Multiplying and dividing those coefficients
+by factorials changed them by at most `1.49e-8`, but amplified the maximum logit
+difference to `0.28125`. The runner therefore stores the effective FP32 coefficients
+directly and applies factorial scaling to optimizer gradients and updates. This
+diagnostic performed no coefficient fitting.
+
+With exact coefficient storage, separately compiled evaluation differed from the
+capturing forward by at most `0.0003443` nats/token on
+[B300, batch 1](runs/coefficient-override-cpu/external-replay-b300.json) and
+`0.0007401` on [H100, batch 8](runs/coefficient-override-cpu/external-replay-h100.json).
+These checks used source `d5823fd`, jobs `224097` and `224098`, and failed the
+initial `1e-5` NLL comparison. Independently compiled BF16 forwards use an absolute
+per-example tolerance of `0.002` nats/token (`rtol=0`); internal capture/replay
+retains the tighter check. These measurements establish the discrepancy without
+identifying its compiler-level cause.
+
+Exact commands, pass counts, source file hashes, and the dependency-lock hash are
+in the record. Repeat the new checks from the repository root:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  scaffolds/transformer/tests/test_coefficient_override.py \
+  experiments/attention_scaling/tests/test_coefficient_oracle.py
+```
+
+GPU fitting qualification passed on [B300, batch 1](runs/coefficient-override-cpu/gpu-b300.json)
+and [H100, batch 8](runs/coefficient-override-cpu/gpu-h100.json), jobs `224100` on
+`akita` and `224101` on `dogo`, source `2e77d06`. Internal replay was exact. Repeated
+independent forwards produced identical logits, and independent-graph logit
+relative RMS errors were below `0.005` on both GPUs. Every example's evaluation
+and training-forward NLL difference was below `0.002`. Both devices passed finite
+gradient and improving-update checks, coefficient checkpoint round trips, and
+array-exact next updates after restoration. Improvement and plateau measurements
+use the same compiled training forward, so cross-graph offsets are not counted
+as fitting gains.
+
+The validation record pins these immutable qualification copies, their source run
+IDs, jobs, hardware, source commit, and checksums. Each production allocation
+repeats its own checks in the run's `oracle_acceptance.json`. Scientific fitting
+outcomes remain under the runs; this record contains software qualification only.
+
 ### Query-key polynomial backward tiles
 
 The one-pass fused query-key polynomial kernel uses 32-by-32 backward tiles for

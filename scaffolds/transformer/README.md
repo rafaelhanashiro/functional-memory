@@ -296,6 +296,19 @@ Per-head output RMSNorm remains an independent option through
 actual input-dependent coefficient means, standard deviations, minima, and
 maxima on the fixed diagnostic sample, separately from projection parameters.
 
+For direct coefficient adaptation with a frozen backbone, query-only models expose
+`logits, c = model(tokens, return_coefficients=True)`. The returned FP32 `c` has
+shape `[layers, batch, time, heads, m+1]` and contains the actual coefficients used
+in that forward pass, after bias and amplitude scaling. Calling
+`model(tokens, query_coefficients=c)` bypasses the coefficient generator and uses
+these effective values directly, without further factorial scaling or tanh.
+Each example and query has its own polynomial, shared across its causal keys.
+All other attention operations and model parameters are unchanged; gradients flow
+through the frozen layers to the supplied array. Optimize only this array to keep
+the backbone fixed. Both operations support JIT, require `model.remat: false`, and
+can be combined to return the supplied coefficients. Capture and `return_diagnostics`
+are mutually exclusive. Static and query-key conditioning reject both operations.
+
 ### PaTH position encoding
 
 `positional_encoding: path` replaces RoPE with PaTH (Yang et al., arXiv:2505.16381):

@@ -1,0 +1,39 @@
+{
+  "diagnostics": {
+    "coefficient_max_absolute_roundtrip_error": 1.4901161193847656e-08,
+    "coefficient_relative_roundtrip_l2_error": 5.5592814796057155e-09,
+    "factorial_replay_logit_max_absolute_error": 0.28125,
+    "factorial_replay_logit_relative_rms_error": 0.004654186312109232,
+    "factorial_replay_nll": [
+      2.5326147079467773
+    ],
+    "original_logit_max_absolute_error": 0.0,
+    "original_logit_relative_rms_error": 0.0,
+    "original_nll": [
+      2.5323195457458496
+    ],
+    "parent_logit_rms": 6.111818790435791,
+    "raw_replay_logit_max_absolute_error": 0.0,
+    "raw_replay_logit_relative_rms_error": 0.0,
+    "raw_replay_nll": [
+      2.5323195457458496
+    ]
+  },
+  "logit_max_absolute_error": 0.28125,
+  "microbatch_index": 0,
+  "nll_max_absolute_error": 0.0002951622009277344,
+  "original_nll": [
+    2.5323195457458496
+  ],
+  "phase": "initial_coefficient_replay",
+  "replay_nll": [
+    2.5326147079467773
+  ],
+  "status": "failed",
+  "time_utc": "2026-10-23T05:17:37.140569+00:00",
+  "tolerances": {
+    "logit_max_absolute_error": 0.05,
+    "nll_atol": 1e-05,
+    "nll_rtol": 1e-05
+  }
+}
