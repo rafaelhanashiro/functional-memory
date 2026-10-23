@@ -6,13 +6,14 @@
 #     scaffolds/transformer/launchers/kennel.sbatch \
 #     experiments.<study>.acceptance \
 #     experiments/<study>/runs/<run>/config.yaml "$(git rev-parse HEAD)" [GPU_COUNT] [GPU_TYPES]
+# One GPU is the default. For an explicit multi-GPU run, override both --gres and GPU_COUNT.
 #SBATCH --job-name=transformer
 #SBATCH --partition=sweep
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=256G
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:1
 #SBATCH --exclude=collie,samoyed,doodle,terrier
 #SBATCH --time=2-00:00:00
 #SBATCH --requeue
@@ -21,7 +22,7 @@ set -euo pipefail
 ADAPTER="${1:?Expected the experiment acceptance module}"
 CONFIG="${2:?Expected experiments/<study>/runs/<run>/config.yaml}"
 LAUNCH_COMMIT="${3:?Expected the launch commit}"
-GPU_COUNT="${4:-4}"
+GPU_COUNT="${4:-1}"
 GPU_TYPES="${5:-B300,H100}"
 EXECUTION_ROOT="${SLURM_SUBMIT_DIR:?Submit from the experiment worktree root}"
 cd "$EXECUTION_ROOT"

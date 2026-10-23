@@ -186,6 +186,12 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 
 ## Scaffold and runtime separation
 
+- New training runs use one GPU by default, and independent runs have no scheduling
+  dependencies on one another. Use multiple GPUs only when explicitly requested or
+  needed because the model does not fit on one GPU. Keep the scientific global batch
+  size fixed through gradient accumulation; GPU count is execution provenance, not a
+  model hyperparameter. Changes to an existing run's allocation preserve its frozen
+  recipe and checkpoint and require acceptance on the new allocation.
 - New dot-product Transformer experiments must enable QK normalization unless the
   user explicitly requests plain QK scores. Set `model.qk_norm: true` in the frozen
   recipe; do not inherit `false` when copying a legacy run. GLA and degree-zero

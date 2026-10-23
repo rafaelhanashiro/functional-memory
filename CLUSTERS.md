@@ -40,6 +40,12 @@ A100/A6000 nodes; A6000 training is markedly slower in this project's tests. Gen
 Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
 60 seconds (the supplied PDFs say 120); `sweep` has no grace period.
 
+Training runs default to one GPU, with independent runs scheduled separately.
+`scaffolds/transformer/launchers/kennel.sbatch` requests `--gres=gpu:1` and defaults
+its `GPU_COUNT` argument to 1. Preserve the global batch through gradient accumulation.
+An explicit multi-GPU run must set both the Slurm GPU request and `GPU_COUNT` to
+the same count; use it only when requested or needed to fit the model.
+
 ### Kennel transfer policy
 
 The shared launcher helper `scaffolds/transformer/launchers/kennel_runtime.sh`
@@ -144,12 +150,12 @@ CPUs in `mit_normal_gpu`, 4 GPUs in `mit_preemptable`. H200 nodes have 8 GPUs,
 
 ### ORCD launch policy
 
-`scaffolds/transformer/launchers/orcd.sbatch` requests 2×H200 in either
-`mit_preemptable` or `mit_normal_gpu`, whichever frees first. Because the caps are
-per user, 2-GPU jobs can hold three allocations (six GPUs) at once, while 4-GPU jobs
-fit only in `mit_preemptable`. Every job asks for 12 hours with
-`--time-min=06:00:00`, so a whole 200M run fits one `mit_preemptable` allocation, and
-Slurm's backfill can still start the job in `mit_normal_gpu`, trimming its limit to
+`scaffolds/transformer/launchers/orcd.sbatch` defaults to one H200 in either
+`mit_preemptable` or `mit_normal_gpu`, whichever frees first. Its `GPU_COUNT`
+argument also defaults to 1. Independent single-GPU runs let Slurm use the available
+per-user capacity; explicit multi-GPU overrides must change both the resource request
+and `GPU_COUNT`. Every job asks for 12 hours with `--time-min=06:00:00`.
+Slurm's backfill can start the job in `mit_normal_gpu`, trimming its limit to
 that partition's 6-hour maximum (on 2026-10-05 a 12-hour request with a lower
 `--time-min` started there with a 6-hour limit). Ten minutes before its limit a job
 requeues itself and resumes from its latest checkpoint, losing at most one checkpoint
