@@ -13,7 +13,9 @@ for these synthetic checks. The authoritative record is
 
 ### Static coefficient capture and override
 
-The static coefficient adaptation API passes nine CPU override checks, including
+The [CPU validation record](runs/static-coefficient-override/tests.json) records
+nine override checks and 37 runner, coefficient-scaling, and QK RMSNorm checks.
+The static coefficient adaptation checks include
 signed coefficients with 14 heads, QK RMSNorm, and truncated reference
 initialization. Capture leaves the ordinary static forward unchanged and returns
 the represented FP32 coefficients after factorial scaling. Replaying that table

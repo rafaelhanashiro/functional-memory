@@ -35,7 +35,7 @@ before fitting starts.
 
 ## Findings and open decision
 
-The run is prepared; fitting results are not yet available. The open decision is
+The run is submitted on Kennel; fitting results are not yet available. The open decision is
 whether free query coefficients reveal useful additional fitting capacity in this
 4B learned-static checkpoint. A large gain does not establish that a shared causal
 coefficient generator can realize it, or explain the small held-out gap between

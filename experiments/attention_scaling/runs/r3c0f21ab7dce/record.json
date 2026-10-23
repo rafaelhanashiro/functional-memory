@@ -6,8 +6,10 @@
     "path": "experiments/attention_scaling/runs/r3c0f21ab7dce/config.yaml",
     "sha256": "ba7eb84d08f5e4c2ae28b63ea8ae96e8c23ff89acc88e77813f7401f86335db6"
   },
+  "frozen_execution_sha256": "9a34aa5ab48ef9d9bc6f6c8ec729c9ba314464a64d40bc912e0c58cbba0a1d21",
   "home_cluster": "kennel",
   "label": "coefficient_oracle_4b-m008-static-sequences1-seed42",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle-4b/experiments/attention_scaling/runs/r3c0f21ab7dce/training.log",
   "name": "coefficient_oracle_4b-m008-static-sequences1-seed42",
   "parent_run_id": "r9b8acfcbeb89",
   "record_schema_version": 1,
@@ -100,5 +102,30 @@
     "step": 7500,
     "validation_nll": 2.66059447354392
   },
-  "status": "planned"
+  "source_commit": "f19feb30f74d1d7a739032d8791a3939c126ab51",
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--nice=0",
+      "--partition=debug,standard,long",
+      "--gres=gpu:1",
+      "--exclude=collie,samoyed,doodle,terrier,mastiff",
+      "--cpus-per-task=8",
+      "--mem=96G",
+      "--time=02:00:00",
+      "--job-name=coef-oracle-r3c0f21ab7dce",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle-4b/experiments/attention_scaling/runs/r3c0f21ab7dce/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle-4b/experiments/attention_scaling/runs/r3c0f21ab7dce/training.log",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle-4b/experiments/attention_scaling/coefficient_oracle.sbatch",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle-4b",
+      "f19feb30f74d1d7a739032d8791a3939c126ab51",
+      "r3c0f21ab7dce"
+    ],
+    "partition": "debug,standard,long",
+    "qualify_only": false,
+    "slurm_job_id": "224586",
+    "submitted_utc": "2026-10-23T22:13:51.225273+00:00"
+  }
 }
