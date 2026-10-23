@@ -4,7 +4,7 @@ Do independent erasure and higher-degree memory improve Gated DeltaNet (GDN), an
 they let narrow keys match wide ones? Terminal held-out perplexity of 200M models after
 19,074 updates (10.0B tokens), seed 0. No training happens here; the figures and
 tables are built from the runs named in [`selection.yaml`](selection.yaml). Home
-cluster: Kennel. Some runs are still pending; their cells stay visible.
+cluster: Kennel. Cancelled runs retain their cells and any recorded measurements.
 
 ## Model
 
@@ -42,7 +42,7 @@ initialization. Softmax references use QK-norm.
 <!-- BEGIN GENERATED RESULTS -->
 ### Terminal perplexity
 
-18 cells: 10 complete, 1 incomplete, 6 pending, 1 not run, 0 failed.
+18 cells: 10 complete, 0 incomplete, 0 pending, 7 cancelled, 1 not run, 0 failed.
 
 ![Terminal perplexity by key width](terminal_ppl.png)
 
@@ -50,9 +50,9 @@ initialization. Softmax references use QK-norm.
 
 | d_K | softmax | Gated DeltaNet | GDN m = 1 | GDN m = 2 | GDN m = 3 | GDN m = 4 |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 8 | 15.732 | 14.816 | pending | pending | 13.817 | pending |
-| 16 | 14.470 | 14.217 | pending | pending | 13.439 | pending |
-| 64 | 13.731 | 13.594 | 13.579 | 13.179 | incomplete (update 7,000: 15.64) | — |
+| 8 | 15.732 | 14.816 | cancelled | cancelled | 13.817 | cancelled |
+| 16 | 14.470 | 14.217 | cancelled | cancelled | 13.439 | cancelled |
+| 64 | 13.731 | 13.594 | 13.579 | 13.179 | cancelled (update 7,000: 15.64) | — |
 
 ### Against tied Gated DeltaNet
 
@@ -79,7 +79,7 @@ initialization. Softmax references use QK-norm.
 - **Cubic memory makes narrow keys competitive:** at `d_K = 16` it reaches 13.439,
   5.5% below tied GDN at the same width (14.217) and below tied GDN at `d_K = 64`. At
   `d_K = 8` it reaches 13.817, 6.7% below tied GDN (14.816) and 12.2% below softmax
-  (15.732). The width-matched independent-erase controls are pending; at `d_K = 64`
+  (15.732). The width-matched independent-erase controls were cancelled before training; at `d_K = 64`
   independent and tied erase differ by 0.1%.
 - **The polynomial gain holds through training.** Against tied GDN, quadratic
   `d_K = 64` stays between -2.3% and -3.1% from update 1,000 onward. Cubic `d_K = 64`
@@ -95,12 +95,13 @@ initialization. Softmax references use QK-norm.
   all of the gradient norm (1.76 of 1.77 in quadratic's final window). With clipping
   at norm 1, this scales every other parameter's update down by the same factor.
 
-## Pending runs
+## Cancelled runs
 
-Cubic `d_K = 64` is training (queued on B300). The width-matched controls at
-`d_K = 8` and 16 (independent erase `m = 1`, quadratic `m = 2`) and quartic `m = 4` at
-both widths are held before training. Each pending run is selected, so its cell
-fills in when its record changes and the selection is refreshed.
+No polynomial GDN runs remain queued. The width-matched controls at `d_K = 8`
+and 16 (independent erase `m = 1`, quadratic `m = 2`) and quartic `m = 4` at both
+widths were cancelled before training. Cubic `d_K = 64` was also cancelled; this
+collection retains its pinned measurements through update 7,000, not a terminal
+result. All seven runs remain selected, with their recipes and retained artifacts.
 
 ## Limits
 
@@ -113,8 +114,8 @@ fills in when its record changes and the selection is refreshed.
   its attempts.
 - Each added order adds 163,840 parameters: cubic `d_K = 64` has 211.5M against
   210.8M for tied GDN (+0.3%). At `d_K = 8` and 16 the models have 192.4–195.7M.
-- The `d_K = 8` and 16 comparisons use tied GDN until their independent-erase
-  controls finish.
+- The `d_K = 8` and 16 comparisons use tied GDN; their independent-erase
+  controls were cancelled before training.
 - The order-0 gradient also inflates clipping, so polynomial and linear runs train
   with different effective step sizes. Whether limiting it helps is untested.
 

@@ -140,6 +140,15 @@
     "sha256": "bd5a2c35ed07fab2217a52db7435d2ac5ace5b848fdb07d6b893d818f0ec2264",
     "size_bytes": 184
   },
+  "cancellation": {
+    "cancelled_utc": "2026-10-23T19:45:54+00:00",
+    "production_started": true,
+    "reason": "user_requested",
+    "resume_checkpoint_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/checkpoints/12500",
+    "resume_checkpoint_step": 12500,
+    "slurm_job_id": "223319",
+    "slurm_state": "CANCELLED"
+  },
   "config": {
     "path": "experiments/attention_scaling/runs/r83c3394eb730/config.yaml",
     "sha256": "11f43dfe6b2430f53f4d584bffef9aed9e8ec94296bc7c26d16b67dd207de0ab"
@@ -401,7 +410,7 @@
   "run_id": "r83c3394eb730",
   "seed": 0,
   "source_commit": "6945d1b8c5f3e01755b2ef72f4f8474f7e529fc4",
-  "status": "queued",
+  "status": "cancelled",
   "step": 7000,
   "submission": {
     "acceptance_before_training": true,

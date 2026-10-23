@@ -42,6 +42,7 @@ INK, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"
 STATUS_STYLE = {
     "numerical_failure": ("#f5c5bd", "#b44c40", "xx", "Numerical failure (update shown)"),
     "incomplete": ("#f9e5ae", "#bb8b28", "..", "Incomplete (last update shown)"),
+    "cancelled": ("#e8e1e8", "#9a8295", "--", "Cancelled (last update when available)"),
     "pending": ("#dbe7f3", "#6f8fb0", "\\\\", "Pending (held or queued)"),
     "not_run": ("#e5e8ec", "#929aa4", "//", "Not run"),
 }
@@ -124,7 +125,7 @@ def load_rows(root: Path, selection: dict) -> list[dict]:
             metadata = _json(directory / "metadata.json")
             for key, value in selection["data_identity"].items():
                 _match(metadata.get("data_identity", {}).get(key), value, f"{label} data identity {key}")
-        status = (recorded if recorded in ("complete", "numerical_failure")
+        status = (recorded if recorded in ("complete", "numerical_failure", "cancelled")
                   else "incomplete" if validations else "pending")
         row = {key: entry.get(key) for key in ("role", "label", "mechanism", "d_k", "erase", "write", "degree")}
         row.update(run_id=name, control_run_id=entry.get("control"), status=status,
@@ -197,6 +198,8 @@ def _cell_text(row: dict | None) -> tuple[str, str]:
         return f"FAIL\n@{row['failure_step']:,}", "numerical_failure"
     if row["status"] == "incomplete":
         return f"INCOMPLETE\n@{row['last_step']:,}", "incomplete"
+    if row["status"] == "cancelled":
+        return ("CANCELLED" + (f"\n@{row['last_step']:,}" if row["last_step"] is not None else ""), "cancelled")
     return "PENDING", "pending"
 
 
@@ -353,6 +356,9 @@ def _tables(rows: list[dict], selection: dict) -> str:
             return f"incomplete (update {row['last_step']:,}: {row['last_validation_perplexity']:.2f})"
         if row["status"] == "numerical_failure":
             return f"fail @{row['failure_step']:,}"
+        if row["status"] == "cancelled":
+            return (f"cancelled (update {row['last_step']:,}: {row['last_validation_perplexity']:.2f})"
+                    if row["last_step"] is not None else "cancelled")
         return "pending"
     grid = ["| d_K | " + " | ".join(name.replace("m=", "GDN m = ") for name, _ in columns) + " |",
             "| ---: | " + " | ".join("---:" for _ in columns) + " |"]
@@ -370,7 +376,8 @@ def _tables(rows: list[dict], selection: dict) -> str:
                           for width in selection["d_k"]) for status in ("complete", *STATUS_STYLE)}
     return ("### Terminal perplexity\n\n"
             f"{sum(counts.values())} cells: {counts['complete']} complete, {counts['incomplete']} incomplete, "
-            f"{counts['pending']} pending, {counts['not_run']} not run, {counts['numerical_failure']} failed.\n\n"
+            f"{counts['pending']} pending, {counts['cancelled']} cancelled, {counts['not_run']} not run, "
+            f"{counts['numerical_failure']} failed.\n\n"
             "![Terminal perplexity by key width](terminal_ppl.png)\n\n[PDF](terminal_ppl.pdf)\n\n"
             + "\n".join(grid) + "\n\n"
             "### Against tied Gated DeltaNet\n\n"

@@ -1,4 +1,11 @@
 {
+  "cancellation": {
+    "cancelled_utc": "2026-10-23T19:50:06+00:00",
+    "production_started": false,
+    "reason": "user_requested",
+    "slurm_job_id": "219039",
+    "slurm_state": "CANCELLED"
+  },
   "config": {
     "path": "experiments/attention_scaling/runs/rae2329afb5bd/config.yaml",
     "sha256": "3716913451111ac3b22f98bc0aa67c9f12284db9e3ba7e9290c158beecc1c27e"
@@ -8,21 +15,11 @@
   "home_cluster": "kennel",
   "label": "200m-dk016-gdn-independent-erase-warmup400-seed0",
   "name": "200m-dk016-gdn-independent-erase-warmup400-seed0",
-  "pause": {
-    "paused_utc": "2026-10-15T21:16:36.032888+00:00",
-    "production_started": false,
-    "reason": "user_requested",
-    "resume_checkpoint_path": null,
-    "resume_checkpoint_step": null,
-    "slurm_job_id": "219039",
-    "slurm_reason": "JobHeldUser",
-    "slurm_restart_count": 0,
-    "slurm_state": "PENDING"
-  },
+  "pause": null,
   "record_schema_version": 1,
   "run_id": "rae2329afb5bd",
   "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
-  "status": "paused",
+  "status": "cancelled",
   "submission": {
     "command": [
       "sbatch",

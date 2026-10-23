@@ -1,4 +1,11 @@
 {
+  "cancellation": {
+    "cancelled_utc": "2026-10-23T19:50:06+00:00",
+    "production_started": false,
+    "reason": "user_requested",
+    "slurm_job_id": "219037",
+    "slurm_state": "CANCELLED"
+  },
   "config": {
     "path": "experiments/attention_scaling/runs/rf885f946fc9b/config.yaml",
     "sha256": "5c05492da7d07d57aaeb6cba8fbaa63396e07aeb7f0066a2b378fd3a0fc7a6a1"
@@ -8,21 +15,11 @@
   "home_cluster": "kennel",
   "label": "200m-dk016-gdn-quadratic-geometry-warmup400-seed0",
   "name": "200m-dk016-gdn-quadratic-geometry-warmup400-seed0",
-  "pause": {
-    "paused_utc": "2026-10-15T21:16:36.032888+00:00",
-    "production_started": false,
-    "reason": "user_requested",
-    "resume_checkpoint_path": null,
-    "resume_checkpoint_step": null,
-    "slurm_job_id": "219037",
-    "slurm_reason": "JobHeldUser",
-    "slurm_restart_count": 0,
-    "slurm_state": "PENDING"
-  },
+  "pause": null,
   "record_schema_version": 1,
   "run_id": "rf885f946fc9b",
   "source_commit": "0e28ffaf87a44477b9d1707fd2fbbb75ef3d5900",
-  "status": "paused",
+  "status": "cancelled",
   "submission": {
     "command": [
       "sbatch",
