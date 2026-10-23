@@ -1,7 +1,8 @@
 """Fit only free polynomial coefficients on a fixed, explicitly selected input.
 
-Coefficient tables have [example, layer, query, head, order] axes.  Their stored
-coordinates are r! c_r; the model receives ordinary monomial coefficients.
+Coefficient tables have [example, layer, query, head, order] axes and store the
+effective monomial c_r exactly. Adam operates in factorial coordinates r! c_r
+through gradient/update preconditioning, without rounding the initialization.
 The pretrained parameter tree is an immutable argument, never an optimizer input.
 """
 from __future__ import annotations
@@ -101,16 +102,16 @@ def make_functions(graph, degree: int, oracle: dict):
     def capture(params, tokens):
         model = nnx.merge(graph, params)
         logits, coefficients = model(tokens[:, :-1], deterministic=True, return_coefficients=True)
-        table = jnp.swapaxes(jnp.stack(coefficients), 0, 1) * factorial
+        table = jnp.swapaxes(jnp.stack(coefficients), 0, 1)
         replay = model(tokens[:, :-1], deterministic=True,
-                       query_coefficients=jnp.swapaxes(table / factorial, 0, 1))
+                       query_coefficients=jnp.swapaxes(table, 0, 1))
         return table, nll(logits, tokens), nll(replay, tokens), jnp.max(jnp.abs(
             logits.astype(jnp.float32) - replay.astype(jnp.float32)))
 
     def losses(table, params, tokens):
         model = nnx.merge(graph, params)
         logits = model(tokens[:, :-1], deterministic=True,
-                       query_coefficients=jnp.swapaxes(table / factorial, 0, 1))
+                       query_coefficients=jnp.swapaxes(table, 0, 1))
         return nll(logits, tokens)
 
     def objective(table, params, tokens):
@@ -121,10 +122,13 @@ def make_functions(graph, degree: int, oracle: dict):
     @jax.jit
     def step(table, optimizer, params, tokens, learning_rate):
         (_, per_example), gradient = jax.value_and_grad(objective, has_aux=True)(table, params, tokens)
+        # For u_r = r! c_r, dL/du_r = (dL/dc_r)/r!. Keep c itself as the
+        # stored parameter so captured FP32 values are reproduced bit-for-bit.
+        gradient = gradient / factorial
         axes = tuple(range(1, gradient.ndim))
         norms = jnp.sqrt(jnp.sum(jnp.square(gradient), axis=axes))
         updates, optimizer = jax.vmap(tx.update)(gradient, optimizer, table)
-        candidate = optax.apply_updates(table, -learning_rate * updates)
+        candidate = optax.apply_updates(table, -learning_rate * updates / factorial)
         finite = jnp.all(jnp.isfinite(candidate)) & jnp.all(jnp.isfinite(norms))
         finite &= jnp.all(jnp.stack([jnp.all(jnp.isfinite(leaf)) for leaf in jax.tree.leaves(optimizer)]))
         return candidate, optimizer, per_example, norms, finite
@@ -234,6 +238,14 @@ def qualify(run: Path, functions, params, tokens, table, optimizer, learning_rat
         raise RuntimeError(f"Parent replay parity failed: logits error {logits_error}")
     updated, updated_opt, before, norms, finite = train_step(table, optimizer, params, tokens, learning_rate)
     before, norms, finite = jax.device_get((before, norms, finite))
+    if not np.allclose(original_nll, before, rtol=1e-5, atol=1e-5):
+        failure = {"status": "failed", "phase": "separate_training_forward_replay", "time_utc": _utc(),
+                   "original_nll": original_nll.tolist(), "training_forward_nll": before.tolist(),
+                   "nll_max_absolute_error": float(np.max(np.abs(original_nll - before))),
+                   "nll_rtol": 1e-5, "nll_atol": 1e-5}
+        _write_json(run / "oracle_acceptance_failure.json", failure)
+        print(json.dumps(failure), flush=True)
+        raise RuntimeError("Separately compiled training forward does not reproduce original NLL")
     if not finite or not np.all(np.isfinite(norms)) or not np.any(norms > 0):
         raise RuntimeError("Coefficient gradient/update acceptance failed")
     after = np.asarray(evaluate(updated, params, tokens))
@@ -256,7 +268,8 @@ def qualify(run: Path, functions, params, tokens, table, optimizer, learning_rat
         if not np.array_equal(np.asarray(left), np.asarray(right)):
             raise RuntimeError("Resumed coefficient update differs from uninterrupted update")
     shutil.rmtree(directory)
-    return {"status": "passed", "completed_utc": _utc(), "parent_nll": float(before.mean()),
+    return {"status": "passed", "completed_utc": _utc(), "parent_nll": float(original_nll.mean()),
+            "separate_training_forward_nll": float(before.mean()),
             "one_update_nll": float(after.mean()), "max_logit_replay_error": float(logits_error),
             "gradient_norm_min": float(norms.min()), "gradient_norm_max": float(norms.max()),
             "checkpoint_resume_exact": True, "frozen_parameter_sha256": state_sha256(params),
@@ -288,6 +301,7 @@ def main(argv=None):
                "resolved_attention_backend": recipe["model"]["attention_backend"],
                "coefficient_layout": "example,layer,query,head,order",
                "optimizer_coordinates": "factorial(order)*monomial_coefficient",
+               "coefficient_storage": "effective_monomial_coefficients",
                "microbatch_size": int(oracle["microbatch_size"]),
                "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
                "slurm_partition": os.environ.get("SLURM_JOB_PARTITION"), "node": os.uname().nodename,
@@ -341,9 +355,14 @@ def main(argv=None):
     for index, tokens in enumerate(token_chunks):
         table, losses, replay_losses, error = capture(params, tokens)
         losses, replay_losses, error = jax.device_get((losses, replay_losses, error))
-        if not np.allclose(losses, replay_losses, rtol=1e-5, atol=1e-5) or float(error) > 0.05:
+        external_replay_losses = np.asarray(evaluate(table, params, tokens))
+        if (not np.allclose(losses, replay_losses, rtol=1e-5, atol=1e-5)
+                or not np.allclose(losses, external_replay_losses, rtol=1e-5, atol=1e-5)
+                or float(error) > 0.05):
             failure = {"status": "failed", "phase": "initial_coefficient_replay", "microbatch_index": index,
                        "original_nll": losses.tolist(), "replay_nll": replay_losses.tolist(),
+                       "external_replay_nll": external_replay_losses.tolist(),
+                       "external_nll_max_absolute_error": float(np.max(np.abs(losses - external_replay_losses))),
                        "nll_max_absolute_error": float(np.max(np.abs(losses - replay_losses))),
                        "logit_max_absolute_error": float(error), "time_utc": _utc(),
                        "tolerances": {"nll_rtol": 1e-5, "nll_atol": 1e-5, "logit_max_absolute_error": 0.05}}
@@ -355,9 +374,9 @@ def main(argv=None):
             raise RuntimeError("Captured coefficients do not reproduce parent logits/loss; see oracle_acceptance_failure.json")
         tables.append(table)
         optimizers.append(initialize_optimizer(table))
-        parent_losses.extend(replay_losses.tolist())
+        parent_losses.extend(external_replay_losses.tolist())
         if index % 4 == 0 or index + 1 == len(token_chunks):
-            print(f"Captured coefficients for microbatch {index + 1}/{len(token_chunks)}; NLL {np.mean(replay_losses):.6f}", flush=True)
+            print(f"Captured coefficients for microbatch {index + 1}/{len(token_chunks)}; external replay NLL {np.mean(external_replay_losses):.6f}", flush=True)
     learning_rate = float(oracle["learning_rate"])
     runtime.update(trainable_parameter_count=sum(int(value.size) for value in tables),
                    microbatch_size=microbatch, resolved_attention_backend=config.model.attention_backend)
@@ -502,7 +521,8 @@ def main(argv=None):
         with ocp.StandardCheckpointer() as checkpointer:
             checkpointer.save(final_path, {"coefficients": best_tables})
         _write_json(checkpoint / "coefficient_identity.json", {"step": controller["best_step"],
-                    "layout": "microbatches of [example,layer,query,head,order]", "coordinates": "factorial(order)*c",
+                    "layout": "microbatches of [example,layer,query,head,order]", "coordinates": "effective_monomial_c",
+                    "optimizer_coordinates": "factorial(order)*c",
                     "parent_run_id": oracle["parent_run_id"], "parent_checkpoint": oracle["parent_checkpoint"]})
         _write_json(run / "completion.json", outcome)
     _write_json(run / "metadata.json", {**outcome, "oracle_runtime": runtime})

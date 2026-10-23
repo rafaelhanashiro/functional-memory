@@ -17,8 +17,8 @@ original forward pass, including input dependence in every layer.
 
 | Role | Run | Fitting sequences | Free coefficients |
 | --- | --- | ---: | ---: |
-| Single sequence | `r9678a74c0b2d` | 1 | 2,949,120 |
-| Full batch | `r7dd028e36501` | 256 | 754,974,720 |
+| Single sequence | `rec7a01f3282c` | 1 | 2,949,120 |
+| Full batch | `rfc37cfdf49d0` | 256 | 754,974,720 |
 
 The inputs are the first 256 packed evaluation sequences, each with 2,048 prediction
 positions. The single-sequence run uses the first of the same sequences. These
@@ -27,9 +27,11 @@ are **fitting metrics**, with no generalization claim. The free tables are indep
 across examples, so the full batch comprises 256 independent fits with a common
 stopping rule. Per-example gradient scaling and clipping preserve that independence.
 
-The optimizer learns `r! c_r` with Adam (learning rate 0.01, betas 0.9/0.95,
+The optimizer uses `r! c_r` coordinates with Adam (learning rate 0.01, betas 0.9/0.95,
 epsilon 1e-8, no weight decay, gradient norm clipped to 1 independently per
-sequence). After at least 2,000 updates, an improvement of less than 0.001 nats/token
+sequence). Effective coefficients are stored directly to preserve the captured
+initialization exactly; gradients and updates apply the factorial scaling. After
+at least 2,000 updates, an improvement of less than 0.001 nats/token
 over 200 updates triggers a tenfold learning-rate reduction. The fit continues for
 500 confirmation updates and stops only if the loss remains on a plateau; otherwise
 it continues. A 10,000-update safety budget pauses an unconverged fit. The best fitting

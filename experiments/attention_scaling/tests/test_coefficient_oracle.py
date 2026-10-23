@@ -1,5 +1,7 @@
 """Coefficient-only fitting is independent per example and resumes exactly."""
 
+import math
+
 from flax import nnx
 import jax
 import jax.numpy as jnp
@@ -36,7 +38,7 @@ def fitting():
     graph, params = nnx.split(model, nnx.Param)
     functions = make_functions(graph, config.attention_degree, _oracle())
     tokens = jnp.arange(16).reshape(2, 8) % config.vocab_size
-    return functions, params, tokens
+    return functions, params, tokens, graph
 
 
 def _assert_trees_equal(actual, expected):
@@ -52,12 +54,13 @@ def _assert_trees_close(actual, expected):
 
 
 def test_single_sequence_batch_and_microbatch_updates_agree_and_freeze_parent(fitting):
-    (capture, initialize, step, evaluate), params, tokens = fitting
+    (capture, initialize, step, evaluate), params, tokens, _ = fitting
     frozen_before = jax.tree.map(lambda x: np.array(x, copy=True), params)
     table, original, replay, logits_error = capture(params, tokens)
     assert table.shape == (2, 2, 7, 2, 9)
-    assert float(logits_error) < 1e-5
-    np.testing.assert_allclose(original, replay, rtol=1e-6, atol=1e-6)
+    assert float(logits_error) == 0.0
+    np.testing.assert_array_equal(original, replay)
+    np.testing.assert_array_equal(evaluate(table, params, tokens), original)
     optimizer = initialize(table)
     split_tokens = [tokens[index:index + 1] for index in range(2)]
     split_tables = [capture(params, inputs)[0] for inputs in split_tokens]
@@ -79,6 +82,48 @@ def test_single_sequence_batch_and_microbatch_updates_agree_and_freeze_parent(fi
     _assert_trees_equal(params, frozen_before)
 
 
+def test_effective_storage_preserves_capture_and_factorial_coordinate_chain_rule(fitting):
+    (capture, _, _, evaluate), params, tokens, graph = fitting
+    table, _, _, _ = capture(params, tokens)
+    factorial = jnp.asarray([math.factorial(order) for order in range(9)], jnp.float32)
+
+    @jax.jit
+    def capture_effective(params, tokens):
+        _, coefficients = nnx.merge(graph, params)(tokens[:, :-1], return_coefficients=True)
+        return jnp.swapaxes(coefficients, 0, 1)
+
+    np.testing.assert_array_equal(table, capture_effective(params, tokens))
+
+    # An independent objective in factorial-scaled increments gives dL/du
+    # without multiplying/dividing the initial effective coefficient values.
+    def coordinate_objective(increment):
+        return evaluate(table + increment / factorial, params, tokens).sum()
+
+    coordinate_gradient = jax.jit(jax.grad(coordinate_objective))(jnp.zeros_like(table))
+    axes = tuple(range(1, table.ndim))
+    expected_norms = jnp.sqrt(jnp.square(coordinate_gradient).sum(axis=axes))
+    oracle = {**_oracle(), "clip_norm": float(expected_norms.min()) / 4}
+    _, initialize, step, _ = make_functions(graph, 8, oracle)
+    initial_optimizer = initialize(table)
+    learning_rate = 1e-3
+    updated, optimizer, _, actual_norms, finite = step(
+        table, initial_optimizer, params, tokens, learning_rate)
+    assert bool(finite)
+    np.testing.assert_allclose(actual_norms, expected_norms, rtol=2e-5, atol=1e-8)
+    shape = (table.shape[0],) + (1,) * (table.ndim - 1)
+    clipped = coordinate_gradient * (oracle["clip_norm"] / expected_norms).reshape(shape)
+    # Adam's first bias-corrected update, in u coordinates, then transformed to c.
+    expected_update_u = clipped / (jnp.abs(clipped) + oracle["epsilon"])
+    expected_coefficients = table - learning_rate * expected_update_u / factorial
+    np.testing.assert_allclose(updated, expected_coefficients, rtol=2e-5, atol=2e-8)
+    adam = optimizer[1]
+    np.testing.assert_array_equal(adam.count, np.ones(table.shape[0], dtype=np.int32))
+    np.testing.assert_allclose(adam.mu, (1 - oracle["beta1"]) * clipped, rtol=2e-5, atol=1e-9)
+    np.testing.assert_allclose(adam.nu, (1 - oracle["beta2"]) * jnp.square(clipped), rtol=3e-5, atol=1e-12)
+    zero_rate, _, _, _, _ = step(table, initial_optimizer, params, tokens, 0.0)
+    np.testing.assert_array_equal(zero_rate, table)
+
+
 def test_plateau_requires_initial_budget_window_and_confirmation():
     oracle = _oracle()
     flat = [2.0] * 2601
@@ -97,7 +142,7 @@ def test_plateau_requires_initial_budget_window_and_confirmation():
 
 
 def test_checkpoint_restores_controller_optimizer_and_exact_next_step(fitting, tmp_path):
-    (capture, initialize, step, _), params, tokens = fitting
+    (capture, initialize, step, _), params, tokens, _ = fitting
     initial, _, _, _ = capture(params, tokens)
     optimizer = initialize(initial)
     learning_rate = 1e-3

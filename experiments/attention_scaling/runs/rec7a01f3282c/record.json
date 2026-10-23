@@ -3,15 +3,15 @@
   "coefficient_parameterization": "free_per_example_query_coefficients",
   "coefficient_sharing": "per_example_layer_head_query",
   "config": {
-    "path": "experiments/attention_scaling/runs/r7dd028e36501/config.yaml",
-    "sha256": "6900bddd1fe67a27020897f20f84cd8729348c60d84516ac392e41ed4f1b1c41"
+    "path": "experiments/attention_scaling/runs/rec7a01f3282c/config.yaml",
+    "sha256": "07cd8bda65fa5ce9c2638cc41d65795a2d30fa6643de7073fa99dbfe9e494f5d"
   },
   "home_cluster": "kennel",
-  "label": "200m-m008-query-coefficient-oracle-sequences256-seed0",
-  "name": "200m-m008-query-coefficient-oracle-sequences256-seed0",
+  "label": "200m-m008-query-coefficient-oracle-sequences1-seed0",
+  "name": "200m-m008-query-coefficient-oracle-sequences1-seed0",
   "parent_run_id": "r50be104c2a9e",
   "record_schema_version": 1,
-  "run_id": "r7dd028e36501",
+  "run_id": "rec7a01f3282c",
   "seed": 0,
   "source_checkpoint": {
     "file_count": 14,

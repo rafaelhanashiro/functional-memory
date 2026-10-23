@@ -9,16 +9,16 @@ settings:
   generalization_claim: false
 runs:
 - study: attention_scaling
-  run_id: r9678a74c0b2d
+  run_id: rec7a01f3282c
   role: single_sequence
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r9678a74c0b2d/config.yaml
-      sha256: 0316da904c2a90b19c3e2c7942190868b67395e657d0cace7dfcee6cffd52094
+      path: experiments/attention_scaling/runs/rec7a01f3282c/config.yaml
+      sha256: 07cd8bda65fa5ce9c2638cc41d65795a2d30fa6643de7073fa99dbfe9e494f5d
 - study: attention_scaling
-  run_id: r7dd028e36501
+  run_id: rfc37cfdf49d0
   role: full_batch
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r7dd028e36501/config.yaml
-      sha256: 6900bddd1fe67a27020897f20f84cd8729348c60d84516ac392e41ed4f1b1c41
+      path: experiments/attention_scaling/runs/rfc37cfdf49d0/config.yaml
+      sha256: ef4d191fc6ca7668e4cf840ee18630be50fafe9d4d2621b9c0ed2239b2a7f5d7

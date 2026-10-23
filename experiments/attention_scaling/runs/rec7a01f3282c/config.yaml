@@ -7,7 +7,7 @@ data:
   text_field: text
   train_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
   eval_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
-  batch_size: 256
+  batch_size: 1
   sequence_length: 2049
   shuffle_seed: 0
   synthetic_vocab_size: 32000
@@ -82,22 +82,22 @@ train:
   seed: 0
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/attention_scaling/runs/r7dd028e36501
-  checkpoint_dir: experiments/attention_scaling/runs/r7dd028e36501/checkpoints
-  micro_batch_size: 8
+  workdir: experiments/attention_scaling/runs/rec7a01f3282c
+  checkpoint_dir: experiments/attention_scaling/runs/rec7a01f3282c/checkpoints
+  micro_batch_size: 1
   log_every: 1
   eval_every: 1
   eval_batches: 1
   ckpt_every: 100
   wandb_project: functional-memory
   wandb_entity: rafah-massachusetts-institute-of-technology
-  wandb_run_name: 200m-m008-query-coefficient-oracle-sequences256-seed0
+  wandb_run_name: 200m-m008-query-coefficient-oracle-sequences1-seed0
   wandb_group: attention_scaling
   wandb_dir: null
   wandb_mode: online
 schema_version: 1
 experiment_kind: fixed_input_coefficient_oracle
-condition: coefficient_oracle/sequences_256
+condition: coefficient_oracle/sequences_1
 oracle:
   parent_run_id: r50be104c2a9e
   parent_config: /data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r50be104c2a9e/config.yaml
@@ -106,13 +106,14 @@ oracle:
   parent_checkpoint_step: 19074
   parent_checkpoint_sha256: fd301a55324a065ebb6000f2cc5991e00750b9174c88eb58531887940e9e39a2
   eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
-  sequence_count: 256
-  microbatch_size: 8
+  sequence_count: 1
+  microbatch_size: 1
   data_start: 0
   data_split: eval
   data_role: fitting inputs; no generalization evaluation
   parameterization: free_per_example_query_coefficients
-  coefficient_storage: factorial_scaled; effective c_r = stored_c_r / r!
+  coefficient_storage: effective monomial coefficients; exact captured initialization
+  optimizer_coordinates: factorial_scaled; gradients and updates divided by r!
   frozen_parameters: all pretrained model parameters
   initialization: capture actual coefficients on the original forward pass
   max_updates: 10000

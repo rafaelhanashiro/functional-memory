@@ -14,8 +14,8 @@ for these synthetic checks. The authoritative record is
 ### Direct query-coefficient capture and override
 
 On 2026-10-23, the [CPU validation record](runs/coefficient-override-cpu/tests.json)
-recorded 8 override API checks, 3 existing compatibility checks, and 3 fitting-runner
-checks, all passing. The synthetic degree-eight model preserves its original
+recorded 62 passing joint checks (8 override API, 4 fitting-runner, 50 records),
+plus 3 existing compatibility checks. The synthetic degree-eight model preserves its original
 forward when captured effective coefficients are replayed, supports JIT, and
 propagates finite coefficient gradients through the frozen layers. Optimizing
 only the coefficient table leaves every pretrained parameter unchanged. Independent
@@ -23,8 +23,16 @@ examples have matching gradients, Adam states, and updates when evaluated alone,
 together, or split into microbatches. The runner checks also verify plateau timing,
 checkpoint continuation, and durable learning-rate decisions. The new API requires
 `model.remat: false`; existing model rematerialization remains unchanged.
-A joint run also passed 61 checks including the shared records suite; this count
-includes the override and fitting-runner checks above.
+The optimizer check differentiates an independent objective in factorial-scaled
+increments, then verifies clipping, Adam moments, and effective coefficient updates.
+
+The [B300 replay diagnostic](runs/coefficient-override-cpu/capture-replay-b300.json)
+on `akita`, job `224096`, source `f47580a`, found exact logit and loss replay with
+the captured effective coefficients. Multiplying and dividing those coefficients
+by factorials changed them by at most `1.49e-8`, but amplified the maximum logit
+difference to `0.28125`. The runner therefore stores the effective FP32 coefficients
+directly and applies factorial scaling to optimizer gradients and updates. This
+diagnostic performed no coefficient fitting.
 
 Exact commands, pass counts, source file hashes, and the dependency-lock hash are
 in the record. Repeat the new checks from the repository root:
@@ -35,7 +43,7 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
   experiments/attention_scaling/tests/test_coefficient_oracle.py
 ```
 
-GPU qualification is pending. The production allocations must pass their
+Full GPU fitting qualification is pending. The production allocations must pass their
 checkpoint replay, coefficient-gradient, frozen-parameter, and checkpoint-resume
 gates before fitting; the resulting evidence belongs in each run's
 `oracle_acceptance.json`, at the paths listed in the validation record. No GPU

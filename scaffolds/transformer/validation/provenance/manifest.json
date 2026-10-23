@@ -202,8 +202,12 @@
       "sha256": "a462f666596f83cd1cf37b6926d3324db8cf54ed8e8d02dd5345ffe688b7adbf"
     },
     {
+      "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/capture-replay-b300.json",
+      "sha256": "e467626c816426c3e7102f6611f62bb45d25fa65f6b276e44422726b51b1e671"
+    },
+    {
       "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/tests.json",
-      "sha256": "937d76a8598e7d37c117278d8acf548a8ef048aea0f9c6bf30ffb70a25105cbe"
+      "sha256": "ac558ac3394a819821c0c52b133ca3f6254ba4cc38f590b22d51e7b34eb4ef92"
     }
   ],
   "slurm_logs": [

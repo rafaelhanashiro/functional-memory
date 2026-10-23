@@ -1,19 +1,40 @@
 {
   "backend": "cpu",
+  "capture_replay_diagnostic": {
+    "finding": "Direct effective-coefficient replay is exact. A factorial multiply/divide roundtrip changes FP32 coefficients and fails replay parity.",
+    "gpu_type": "B300",
+    "job_id": "224096",
+    "node": "akita",
+    "path": "scaffolds/transformer/validation/runs/coefficient-override-cpu/capture-replay-b300.json",
+    "scope": "Software replay diagnostic only; no coefficient fitting updates.",
+    "sha256": "e467626c816426c3e7102f6611f62bb45d25fa65f6b276e44422726b51b1e671",
+    "source_commit": "f47580a13c0ec4dd0efdca9afb478e59708e8371"
+  },
   "checks": [
     {
+      "breakdown": {
+        "coefficient_oracle_runner": 4,
+        "coefficient_override": 8,
+        "records": 50
+      },
       "command": [
         "scaffolds/transformer/.venv/bin/python",
         "-m",
         "pytest",
+        "-q",
+        "-c",
+        "scaffolds/transformer/pyproject.toml",
         "scaffolds/transformer/tests/test_coefficient_override.py",
-        "-q"
+        "experiments/attention_scaling/tests/test_coefficient_oracle.py",
+        "scaffolds/records/tests/test_records.py",
+        "--import-mode=importlib"
       ],
-      "elapsed_seconds": 18.26,
+      "elapsed_seconds": 27.21,
       "environment": {
-        "JAX_PLATFORMS": "cpu"
+        "JAX_PLATFORMS": "cpu",
+        "PYTHONPATH": "."
       },
-      "passed": 8
+      "passed": 62
     },
     {
       "command": [
@@ -30,41 +51,6 @@
         "JAX_PLATFORMS": "cpu"
       },
       "passed": 3
-    },
-    {
-      "command": [
-        "scaffolds/transformer/.venv/bin/python",
-        "-m",
-        "pytest",
-        "experiments/attention_scaling/tests/test_coefficient_oracle.py",
-        "-q"
-      ],
-      "elapsed_seconds": 11.88,
-      "environment": {
-        "JAX_PLATFORMS": "cpu"
-      },
-      "passed": 3
-    },
-    {
-      "command": [
-        "scaffolds/transformer/.venv/bin/python",
-        "-m",
-        "pytest",
-        "-q",
-        "-c",
-        "scaffolds/transformer/pyproject.toml",
-        "scaffolds/transformer/tests/test_coefficient_override.py",
-        "experiments/attention_scaling/tests/test_coefficient_oracle.py",
-        "scaffolds/records/tests/test_records.py",
-        "--import-mode=importlib"
-      ],
-      "coverage_note": "Includes the eight override and three runner checks above; counts are not additive.",
-      "elapsed_seconds": 25.12,
-      "environment": {
-        "JAX_PLATFORMS": "cpu",
-        "PYTHONPATH": "."
-      },
-      "passed": 61
     }
   ],
   "coverage": [
@@ -76,15 +62,18 @@
     "existing query initialization and diagnostics, and GLA rematerialization compatibility",
     "per-example Adam gradients, optimizer states, and updates agree across batch sizes and microbatch splits",
     "2000 initial updates, 200-update plateau window, and 500-update confirmation behavior",
-    "exact checkpoint continuation including same-step controller and learning-rate replacement"
+    "exact checkpoint continuation including same-step controller and learning-rate replacement",
+    "captured FP32 coefficient values and separately compiled initial evaluation reproduce the original model exactly",
+    "factorial-coordinate chain rule, per-example clipping, Adam moments, and effective coefficient updates agree with an independently differentiated increment objective",
+    "zero learning rate preserves initial effective coefficients bitwise"
   ],
   "data": "synthetic test fixtures",
   "date": "2026-10-23",
   "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
   "gpu_qualification": {
     "acceptance_artifacts": [
-      "experiments/attention_scaling/runs/r9678a74c0b2d/oracle_acceptance.json",
-      "experiments/attention_scaling/runs/r7dd028e36501/oracle_acceptance.json"
+      "experiments/attention_scaling/runs/rec7a01f3282c/oracle_acceptance.json",
+      "experiments/attention_scaling/runs/rfc37cfdf49d0/oracle_acceptance.json"
     ],
     "required_checks": [
       "parent checkpoint replay parity",
@@ -97,13 +86,15 @@
   "home_cluster": "kennel",
   "source_commit": null,
   "source_files_sha256": {
-    "experiments/attention_scaling/coefficient_oracle.py": "682b23e2caddd7450b86dbc986effed456790a71fbddf0d1da48cd03cdcf4997",
-    "experiments/attention_scaling/tests/test_coefficient_oracle.py": "6b154dd5f12664ec074a1bab41864d8257e3e5ff24758d22bc4c038a62331e07",
+    "experiments/attention_scaling/coefficient_oracle.py": "f3b801d7999ffd0f3b2da79e856d23784477e2c26c421c8c0153ffc969602e37",
+    "experiments/attention_scaling/tests/test_coefficient_oracle.py": "a564cae2809d9c132354d33ef345045b2a5a6d187bb67f3c898ffdf173a48497",
     "scaffolds/records/__init__.py": "e8e1e5ed00b2803ac45c4eb2d8dd605a14b0a9dd8a27ec7c697ced01b45db50f",
     "scaffolds/records/tests/test_records.py": "561e4d71df434fa01c9c67066db07b9473281158aea72e8b8440ba7c30933566",
     "scaffolds/transformer/attention/multihead.py": "2120a9adcf2d92b1fc8ad8b722d865a5caf9e8c30379da9e5c9eeaefd93b6480",
     "scaffolds/transformer/models/architectures/transformer.py": "89c51761fde2979137dfaf48c23da8df70af3df2adbd5602c8f3019ae88af21b",
-    "scaffolds/transformer/tests/test_coefficient_override.py": "b5920e4fc174d544f2a2d95469803b0dc6cf82a8f7540572962cea5fe513a4c6"
+    "scaffolds/transformer/tests/test_coefficient_override.py": "b5920e4fc174d544f2a2d95469803b0dc6cf82a8f7540572962cea5fe513a4c6",
+    "scaffolds/transformer/tests/test_gla_integration.py": "64efb226363776f97b1ff395d6a1d130a87afccd7dff09b0d4a61cfca188337a",
+    "scaffolds/transformer/tests/test_input_dependent_coefficients.py": "20796a6a63b42b225e9aff649f300e9b60054ad2622a134a1a67b793fef4e949"
   },
   "status": "passed"
 }

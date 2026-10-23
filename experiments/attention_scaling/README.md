@@ -12,8 +12,8 @@ learned polynomial attention, GLA, and Gated DeltaNet.
 ## Fixed-input coefficient oracle
 
 Two exploratory coefficient-only fits on **Kennel** use the retained degree-eight
-query-only checkpoint `r50be104c2a9e`, step 19,074. `r9678a74c0b2d` fits one sequence;
-`r7dd028e36501` fits a full batch of 256, with separate coefficients for every
+query-only checkpoint `r50be104c2a9e`, step 19,074. `rec7a01f3282c` fits one sequence;
+`rfc37cfdf49d0` fits a full batch of 256, with separate coefficients for every
 example, layer, head, query and order. All pretrained parameters stay frozen. The
 [exploratory collection](../../results/exploratory/coefficient_oracle/README.md)
 documents the question, fixed-input selection, convergence rule and interpretation.
@@ -32,7 +32,7 @@ After committing the frozen inputs, submit both jobs from that worktree:
 
 ```bash
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.attention_scaling.launch_coefficient_oracle submit \
-  r9678a74c0b2d r7dd028e36501 --partition standard,long
+  rec7a01f3282c rfc37cfdf49d0 --partition standard,long
 ```
 
 Each job requests one B300 or H100, microbatches the fixed inputs, checks the frozen
