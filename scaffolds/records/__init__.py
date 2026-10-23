@@ -36,6 +36,7 @@ INDEX_COLUMNS = (
     "quadratic_mode", "weight_decay_policy", "seed", "training_steps", "prediction_tokens",
     "source_commit",
     "terminal_step", "terminal_validation_nll", "terminal_validation_perplexity",
+    "terminal_fit_nll", "terminal_fit_perplexity",
     "feature_selection", "active_features", "terminal_validation_relative_output_rms", "best_validation_relative_output_rms",
     "config", "record", "metrics",
 )
@@ -508,6 +509,8 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "terminal_step": _first(terminal.get("step"), record.get("training_updates"), get("step")),
         "terminal_validation_nll": _first(record.get("terminal_validation_nll"), get("validation_nll")),
         "terminal_validation_perplexity": _first(record.get("terminal_validation_perplexity"), get("validation_perplexity")),
+        "terminal_fit_nll": _first(record.get("terminal_fit_nll"), get("fit_nll")),
+        "terminal_fit_perplexity": _first(record.get("terminal_fit_perplexity"), get("fit_perplexity")),
         "feature_selection": fit.get("variant"), "active_features": fit.get("budget"),
         "terminal_validation_relative_output_rms": relative_output_rms(completion.get("terminal_validation")),
         "best_validation_relative_output_rms": relative_output_rms(completion.get("best_validation")),

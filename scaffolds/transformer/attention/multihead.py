@@ -191,8 +191,21 @@ class MultiHeadAttention(nnx.Module):
         rngs: nnx.Rngs | jax.Array | None = None, return_diagnostics: bool = False,
         coefficients: jax.Array | None = None,
         attention_parameters: dict[str, jax.Array] | None = None,
-    ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array]]:
+        query_coefficients: jax.Array | None = None,
+        return_coefficients: bool = False,
+    ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array] | jax.Array]:
+        """Optionally replace or return effective query coefficients [B, T, H, m+1]."""
         batch, seq_len, _ = x.shape
+        if return_coefficients and return_diagnostics:
+            raise ValueError("return_coefficients and return_diagnostics are mutually exclusive")
+        if query_coefficients is not None or return_coefficients:
+            if self.attention_coefficient_conditioning != "query":
+                raise ValueError("Coefficient override and capture require query-only conditioning")
+            if query_coefficients is not None:
+                expected = (batch, seq_len, self.num_heads, self.attention_degree + 1)
+                if query_coefficients.shape != expected:
+                    raise ValueError(f"query_coefficients must have shape {expected}, got {query_coefficients.shape}")
+                query_coefficients = jnp.asarray(query_coefficients, dtype=jnp.float32)
         parameters = {} if attention_parameters is None else dict(attention_parameters)
         log_scale = parameters.pop("qk_norm_log_scale", None)
         if self.qk_norm != (log_scale is not None):
@@ -220,10 +233,13 @@ class MultiHeadAttention(nnx.Module):
 
             if query_kernel is None or query_bias is None:
                 raise ValueError("Query-conditioned attention requires its model-owned kernel and bias")
-            parameters["query_polynomial_coefficients"] = project_coefficients(
-                x, query_kernel, query_bias, amplitude=query_amplitude,
-                activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
-                amplitude_scale=self.attention_coefficient_amplitude_scale)
+            effective_coefficients = query_coefficients
+            if effective_coefficients is None:
+                effective_coefficients = project_coefficients(
+                    x, query_kernel, query_bias, amplitude=query_amplitude,
+                    activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
+                    amplitude_scale=self.attention_coefficient_amplitude_scale)
+            parameters["query_polynomial_coefficients"] = effective_coefficients
             if self.attention_coefficient_conditioning == "query_key":
                 if key_kernel is None or key_amplitude is None:
                     raise ValueError("Query-key attention requires its model-owned key kernel and amplitude")
@@ -249,8 +265,9 @@ class MultiHeadAttention(nnx.Module):
             # Cosine scores: the mechanisms' q'.k'/sqrt(d_K) becomes exp(gamma) cos(q, k).
             q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)
         if self.positional_encoding == "path":
-            return self._path_attention(x, q.astype(self.dtype), k.astype(self.dtype), v, parameters,
-                                        path_parameters, output_norm_scale, return_diagnostics)
+            result = self._path_attention(x, q.astype(self.dtype), k.astype(self.dtype), v, parameters,
+                                          path_parameters, output_norm_scale, return_diagnostics)
+            return (result, effective_coefficients) if return_coefficients else result
         positions = jnp.arange(seq_len)
         q = apply_rope(q, positions, self.rope_theta)
         k = apply_rope(k, positions, self.rope_theta)
@@ -284,6 +301,8 @@ class MultiHeadAttention(nnx.Module):
         y = scale_attention_output(y, self.attention_output_scaling,
                                    output_norm_scale=output_norm_scale, eps=self.rms_norm_eps)
         output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))
+        if return_coefficients:
+            return output, effective_coefficients
         return (output, diagnostics) if return_diagnostics else output
 
     def _path_attention(self, x, q, k, v, parameters, path_parameters, output_norm_scale, return_diagnostics):

@@ -9,6 +9,38 @@ learned polynomial attention, GLA, and Gated DeltaNet.
 [Run index](runs.csv) · [Study membership](sweep.yaml) ·
 [Shared implementation](../../scaffolds/transformer/README.md)
 
+## Fixed-input coefficient oracle
+
+Two exploratory coefficient-only fits on **Kennel** use the retained degree-eight
+query-only checkpoint `r50be104c2a9e`, step 19,074. `r9678a74c0b2d` fits one sequence;
+`r7dd028e36501` fits a full batch of 256, with separate coefficients for every
+example, layer, head, query and order. All pretrained parameters stay frozen. The
+[exploratory collection](../../results/exploratory/coefficient_oracle/README.md)
+documents the question, fixed-input selection, convergence rule and interpretation.
+These runs enter no canonical comparison.
+
+The worktree is `worktrees/coefficient-oracle`, branch `codex/coefficient-oracle`.
+Its CUDA 12 and CUDA 13 environments are synced from its own lock as described in
+[CLUSTERS.md](../../CLUSTERS.md). Recipes were allocated with:
+
+```bash
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.attention_scaling.launch_coefficient_oracle prepare \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r50be104c2a9e
+```
+
+After committing the frozen inputs, submit both jobs from that worktree:
+
+```bash
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.attention_scaling.launch_coefficient_oracle submit \
+  r9678a74c0b2d r7dd028e36501 --partition standard,long
+```
+
+Each job requests one B300 or H100, microbatches the fixed inputs, checks the frozen
+execution set on every start/requeue, qualifies checkpoint capture and replay before
+fitting, and saves resumable progress on a time-limit signal. The launcher selects
+CUDA 13 on B300 and CUDA 12 on H100. Fit-only metrics are kept distinct from held-out
+validation metrics; the retained best coefficients are needed to reproduce the fit.
+
 ## Frozen pretrained-head polynomial sparsity
 
 This exploratory experiment asks whether fixed or query-dependent subsets of

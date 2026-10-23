@@ -43,6 +43,29 @@ def test_pretrained_head_index_distinguishes_reconstruction_from_lm_loss(tmp_pat
     assert row["prediction_tokens"] == ""
 
 
+@pytest.mark.parametrize("outcome_source", ["terminal", "completion", "metadata", "record"])
+def test_index_keeps_fixed_input_fitting_outcomes_separate_from_validation(tmp_path, outcome_source):
+    study = tmp_path / "study"
+    run = create_run(study, {"experiment_kind": "fixed_input_coefficient_oracle"})
+    outcome = {"fit_nll": 0.5, "fit_perplexity": 1.6487212707}
+    updates = {"status": "complete"}
+    if outcome_source == "terminal":
+        updates["terminal"] = outcome
+    elif outcome_source == "record":
+        updates.update({"terminal_" + key: value for key, value in outcome.items()})
+    else:
+        (run / f"{outcome_source}.json").write_text(json.dumps(outcome))
+    update_record(run, updates)
+    first = regenerate_index(study).read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+    with (study / "runs.csv").open() as stream:
+        row, = list(csv.DictReader(stream))
+    assert row["terminal_fit_nll"] == "0.5"
+    assert float(row["terminal_fit_perplexity"]) == pytest.approx(outcome["fit_perplexity"])
+    assert row["terminal_validation_nll"] == ""
+    assert row["terminal_validation_perplexity"] == ""
+
+
 def test_identical_recipes_get_distinct_ids_and_resume_keeps_identity(tmp_path):
     study = tmp_path / "study"
     first = create_run(study, recipe(), "same-label")
@@ -107,6 +130,8 @@ def test_index_reproduces_bytes_and_preserves_unknown_legacy_fields(tmp_path):
     assert row["prediction_tokens"] == ""
     assert row["terminal_step"] == "20"
     assert row["terminal_validation_nll"] == "2.0"
+    assert row["terminal_fit_nll"] == ""
+    assert row["terminal_fit_perplexity"] == ""
     assert row["metrics"] == f"runs/{run.name}/metrics.jsonl"
     assert load_study(study)["runs"][0]["execution"]["attempts"][0]["gpu"] == "H100"
 

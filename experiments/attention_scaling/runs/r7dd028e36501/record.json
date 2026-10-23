@@ -1,0 +1,99 @@
+{
+  "checkpoint_retention": "best fitting coefficients, required to reproduce the fitted oracle",
+  "coefficient_parameterization": "free_per_example_query_coefficients",
+  "coefficient_sharing": "per_example_layer_head_query",
+  "config": {
+    "path": "experiments/attention_scaling/runs/r7dd028e36501/config.yaml",
+    "sha256": "6900bddd1fe67a27020897f20f84cd8729348c60d84516ac392e41ed4f1b1c41"
+  },
+  "home_cluster": "kennel",
+  "label": "200m-m008-query-coefficient-oracle-sequences256-seed0",
+  "name": "200m-m008-query-coefficient-oracle-sequences256-seed0",
+  "parent_run_id": "r50be104c2a9e",
+  "record_schema_version": 1,
+  "run_id": "r7dd028e36501",
+  "seed": 0,
+  "source_checkpoint": {
+    "file_count": 14,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "a963070f7184556d4e122cc91eea9d07eb3666ab81c99820ba5b1952e0637d40",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "f6f336bef0a03250d0e804bd42271794391a521d8f38029c0cb33b1fb5279f7a",
+        "size_bytes": 148488
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "5ede360765ad765aed462373959e1f2347d57f0e79006afcbe22d0b2bcfc1e86",
+        "size_bytes": 46444
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "94a2faf80a89c09c642d0e03963a0d5135a117416a57e6a0fffbcd811be776b7",
+        "size_bytes": 51712
+      },
+      {
+        "path": "default/d/3d28396e19aae5dee8de44d6b767979e",
+        "sha256": "a14127c485914a9db0d328b3af773adb0fe1e7abf062709a06f1a95256809091",
+        "size_bytes": 5490
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "1cc5bbc69a46c69ff820832d1732b1b981088a9f10f1043843efcfd43044c728",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/07719dae8ce82900ff0315d2f9c55cfd",
+        "sha256": "5f54d10e3966540af97d5367cad391a0ce758cb7438b635ab5268d5759186948",
+        "size_bytes": 708
+      },
+      {
+        "path": "default/ocdbt.process_0/d/2a2514ade6ded65ededc73119a204c63",
+        "sha256": "f4f52ea5955fd91f6ce8390d5e91f973ba71fa23c8d990791dcaa7e17aff85bc",
+        "size_bytes": 813
+      },
+      {
+        "path": "default/ocdbt.process_0/d/343b0d72a156748feb242cdacbaafedb",
+        "sha256": "1ffa46db12e465a7112e3b588d2b8596308df0e2ae840c29d922476a1c62db83",
+        "size_bytes": 835530752
+      },
+      {
+        "path": "default/ocdbt.process_0/d/37aad5b19d1476e211ae644416f59146",
+        "sha256": "6e968440a24f6ec6e1cc2e352c83ea026010b1a97d03e22bc90ae6cab557c8d9",
+        "size_bytes": 794
+      },
+      {
+        "path": "default/ocdbt.process_0/d/cfb574afc7b15903f5c6503659baab6d",
+        "sha256": "882e36aa1a0fa3640b54393662f90adc0b77f4514374eda9a78066d2e590d67b",
+        "size_bytes": 1376661504
+      },
+      {
+        "path": "default/ocdbt.process_0/d/d4c8fa19a94d330c68aff4082ab365d3",
+        "sha256": "9d25d076c659fbdee858ba46ba1fad52780968e7b7031dc1cb1dbdfbcedb3c8e",
+        "size_bytes": 195
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "2e6de3b75bf3cc5e640fac0528fcb24ce1ebc1c789198587ad86f1c23cbc7aaf",
+        "size_bytes": 349
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "0b98dba263d99b6aa2812b899e69774c98dcba605955e3916ef2394d03aafb36",
+        "size_bytes": 138
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r50be104c2a9e/checkpoints/19074",
+    "sha256": "fd301a55324a065ebb6000f2cc5991e00750b9174c88eb58531887940e9e39a2",
+    "size_bytes": 2212447871,
+    "step": 19074,
+    "validation_nll": 2.595216210399355
+  },
+  "status": "planned"
+}

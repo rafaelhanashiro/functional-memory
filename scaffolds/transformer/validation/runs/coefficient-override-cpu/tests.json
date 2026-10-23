@@ -1,0 +1,109 @@
+{
+  "backend": "cpu",
+  "checks": [
+    {
+      "command": [
+        "scaffolds/transformer/.venv/bin/python",
+        "-m",
+        "pytest",
+        "scaffolds/transformer/tests/test_coefficient_override.py",
+        "-q"
+      ],
+      "elapsed_seconds": 18.26,
+      "environment": {
+        "JAX_PLATFORMS": "cpu"
+      },
+      "passed": 8
+    },
+    {
+      "command": [
+        "scaffolds/transformer/.venv/bin/python",
+        "-m",
+        "pytest",
+        "scaffolds/transformer/tests/test_input_dependent_coefficients.py::test_canonical_backbone_and_initial_function_match_static_control",
+        "scaffolds/transformer/tests/test_input_dependent_coefficients.py::test_diagnostics_report_actual_token_distributions_separately_from_biases",
+        "scaffolds/transformer/tests/test_gla_integration.py::test_gla_remat_preserves_logits_diagnostics_and_causality",
+        "-q"
+      ],
+      "elapsed_seconds": 23.36,
+      "environment": {
+        "JAX_PLATFORMS": "cpu"
+      },
+      "passed": 3
+    },
+    {
+      "command": [
+        "scaffolds/transformer/.venv/bin/python",
+        "-m",
+        "pytest",
+        "experiments/attention_scaling/tests/test_coefficient_oracle.py",
+        "-q"
+      ],
+      "elapsed_seconds": 11.88,
+      "environment": {
+        "JAX_PLATFORMS": "cpu"
+      },
+      "passed": 3
+    },
+    {
+      "command": [
+        "scaffolds/transformer/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-c",
+        "scaffolds/transformer/pyproject.toml",
+        "scaffolds/transformer/tests/test_coefficient_override.py",
+        "experiments/attention_scaling/tests/test_coefficient_oracle.py",
+        "scaffolds/records/tests/test_records.py",
+        "--import-mode=importlib"
+      ],
+      "coverage_note": "Includes the eight override and three runner checks above; counts are not additive.",
+      "elapsed_seconds": 25.12,
+      "environment": {
+        "JAX_PLATFORMS": "cpu",
+        "PYTHONPATH": "."
+      },
+      "passed": 61
+    }
+  ],
+  "coverage": [
+    "exact capture and replay of effective degree-eight query coefficients, including factorial scaling",
+    "JIT, independent coefficients per example, and coefficient-generator bypass",
+    "finite nonzero gradients through every frozen layer and finite-difference agreement",
+    "coefficient-only updates decrease loss without changing pretrained parameters",
+    "shape, conditioning, diagnostic-return, and rematerialization guards",
+    "existing query initialization and diagnostics, and GLA rematerialization compatibility",
+    "per-example Adam gradients, optimizer states, and updates agree across batch sizes and microbatch splits",
+    "2000 initial updates, 200-update plateau window, and 500-update confirmation behavior",
+    "exact checkpoint continuation including same-step controller and learning-rate replacement"
+  ],
+  "data": "synthetic test fixtures",
+  "date": "2026-10-23",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "gpu_qualification": {
+    "acceptance_artifacts": [
+      "experiments/attention_scaling/runs/r9678a74c0b2d/oracle_acceptance.json",
+      "experiments/attention_scaling/runs/r7dd028e36501/oracle_acceptance.json"
+    ],
+    "required_checks": [
+      "parent checkpoint replay parity",
+      "finite coefficient gradients and decreasing fitting loss",
+      "checkpoint round-trip and exact next update",
+      "frozen pretrained parameter identity"
+    ],
+    "status": "pending"
+  },
+  "home_cluster": "kennel",
+  "source_commit": null,
+  "source_files_sha256": {
+    "experiments/attention_scaling/coefficient_oracle.py": "682b23e2caddd7450b86dbc986effed456790a71fbddf0d1da48cd03cdcf4997",
+    "experiments/attention_scaling/tests/test_coefficient_oracle.py": "6b154dd5f12664ec074a1bab41864d8257e3e5ff24758d22bc4c038a62331e07",
+    "scaffolds/records/__init__.py": "e8e1e5ed00b2803ac45c4eb2d8dd605a14b0a9dd8a27ec7c697ced01b45db50f",
+    "scaffolds/records/tests/test_records.py": "561e4d71df434fa01c9c67066db07b9473281158aea72e8b8440ba7c30933566",
+    "scaffolds/transformer/attention/multihead.py": "2120a9adcf2d92b1fc8ad8b722d865a5caf9e8c30379da9e5c9eeaefd93b6480",
+    "scaffolds/transformer/models/architectures/transformer.py": "89c51761fde2979137dfaf48c23da8df70af3df2adbd5602c8f3019ae88af21b",
+    "scaffolds/transformer/tests/test_coefficient_override.py": "b5920e4fc174d544f2a2d95469803b0dc6cf82a8f7540572962cea5fe513a4c6"
+  },
+  "status": "passed"
+}

@@ -1,0 +1,131 @@
+data:
+  source: packed
+  dataset_name: HuggingFaceFW/fineweb-edu
+  dataset_config: sample-100BT
+  split: train
+  tokenizer_name: NousResearch/Llama-2-7b-hf
+  text_field: text
+  train_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
+  eval_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
+  batch_size: 1
+  sequence_length: 2049
+  shuffle_seed: 0
+  synthetic_vocab_size: 32000
+model:
+  kind: transformer
+  vocab_size: 32000
+  max_seq_len: 2048
+  num_layers: 10
+  hidden_size: 1024
+  num_heads: 16
+  num_kv_heads: 16
+  qk_head_dim: 64
+  value_head_dim: 64
+  intermediate_size: 3008
+  rope_theta: 10000.0
+  rms_norm_eps: 1.0e-06
+  dropout: 0.0
+  tie_embeddings: false
+  remat: false
+  attention_backend: mosaic
+  attention_degree: 8
+  attention_normalization: false
+  attention_output_scaling: head_rms_norm
+  attention_mechanism: dot_product
+  gdn_conv_size: 4
+  gdn_erase_mode: tied
+  gdn_write_activation: sigmoid
+  gla_gate_rank: 16
+  gla_gate_tau: 16.0
+  gla_chunk_size: 64
+  gla_inner_chunk_size: 16
+  gla_use_rope: true
+  quadratic_mode: fixed
+  quadratic_sharing: global
+  attention_coefficients: learned
+  attention_fixed_coefficients: null
+  attention_fixed_square_factors: null
+  attention_coefficient_sharing: per_head
+  attention_coefficient_conditioning: query
+  attention_coefficient_activation: tanh
+  attention_coefficient_amplitude_initial: 0.0
+  attention_coefficient_projection_initial_std: 0.03125
+  attention_coefficient_tanh_bias: false
+  positional_encoding: rope
+  path_w_rank: 32
+  path_conv_size: 3
+  attention_coefficient_amplitude_scale: factorial
+  attention_coefficient_scale: factorial
+  attention_coefficient_parameterization: direct
+  attention_coefficient_initialization: taylor
+  attention_denominator_degree: null
+  attention_denominator_parameterization: direct
+  attention_denominator_constant: fixed
+  qk_norm: true
+  qk_norm_sharing: per_head
+  qk_norm_initial_scale: null
+  qk_norm_eps: 1.0e-06
+  initialization: transformer_reference
+optim:
+  learning_rate: 0.01
+  min_learning_rate: 0.001
+  weight_decay: 0.0
+  weight_decay_policy: exclude_embeddings_norms_biases_v1
+  coefficient_penalty: 0.0
+  coefficient_penalty_denominator: true
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip_norm: 1.0
+  warmup_steps: 0
+  total_steps: 10000
+train:
+  seed: 0
+  source_commit: auto
+  dtype: bfloat16
+  workdir: experiments/attention_scaling/runs/r9678a74c0b2d
+  checkpoint_dir: experiments/attention_scaling/runs/r9678a74c0b2d/checkpoints
+  micro_batch_size: 1
+  log_every: 1
+  eval_every: 1
+  eval_batches: 1
+  ckpt_every: 100
+  wandb_project: functional-memory
+  wandb_entity: rafah-massachusetts-institute-of-technology
+  wandb_run_name: 200m-m008-query-coefficient-oracle-sequences1-seed0
+  wandb_group: attention_scaling
+  wandb_dir: null
+  wandb_mode: online
+schema_version: 1
+experiment_kind: fixed_input_coefficient_oracle
+condition: coefficient_oracle/sequences_1
+oracle:
+  parent_run_id: r50be104c2a9e
+  parent_config: /data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r50be104c2a9e/config.yaml
+  parent_config_sha256: e3ada186e7a55567059c13cade5aa035f43af5f24b8ebf7411cdaf781ba54ec6
+  parent_checkpoint: /data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r50be104c2a9e/checkpoints/19074
+  parent_checkpoint_step: 19074
+  parent_checkpoint_sha256: fd301a55324a065ebb6000f2cc5991e00750b9174c88eb58531887940e9e39a2
+  eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+  sequence_count: 1
+  microbatch_size: 1
+  data_start: 0
+  data_split: eval
+  data_role: fitting inputs; no generalization evaluation
+  parameterization: free_per_example_query_coefficients
+  coefficient_storage: factorial_scaled; effective c_r = stored_c_r / r!
+  frozen_parameters: all pretrained model parameters
+  initialization: capture actual coefficients on the original forward pass
+  max_updates: 10000
+  initial_updates: 2000
+  plateau_window: 200
+  plateau_tolerance: 0.001
+  confirmation_updates: 500
+  learning_rate: 0.01
+  learning_rate_decay: 0.1
+  beta1: 0.9
+  beta2: 0.95
+  epsilon: 1.0e-08
+  clip_norm: 1.0
+  gradient_scaling: per-sequence mean NLL, clipped independently per sequence
+  checkpoint_every: 100
+  checkpoint_selection: lowest aggregate fitting NLL; no independent validation

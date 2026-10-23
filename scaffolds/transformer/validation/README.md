@@ -11,6 +11,36 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Direct query-coefficient capture and override
+
+On 2026-10-23, the [CPU validation record](runs/coefficient-override-cpu/tests.json)
+recorded 8 override API checks, 3 existing compatibility checks, and 3 fitting-runner
+checks, all passing. The synthetic degree-eight model preserves its original
+forward when captured effective coefficients are replayed, supports JIT, and
+propagates finite coefficient gradients through the frozen layers. Optimizing
+only the coefficient table leaves every pretrained parameter unchanged. Independent
+examples have matching gradients, Adam states, and updates when evaluated alone,
+together, or split into microbatches. The runner checks also verify plateau timing,
+checkpoint continuation, and durable learning-rate decisions. The new API requires
+`model.remat: false`; existing model rematerialization remains unchanged.
+A joint run also passed 61 checks including the shared records suite; this count
+includes the override and fitting-runner checks above.
+
+Exact commands, pass counts, source file hashes, and the dependency-lock hash are
+in the record. Repeat the new checks from the repository root:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  scaffolds/transformer/tests/test_coefficient_override.py \
+  experiments/attention_scaling/tests/test_coefficient_oracle.py
+```
+
+GPU qualification is pending. The production allocations must pass their
+checkpoint replay, coefficient-gradient, frozen-parameter, and checkpoint-resume
+gates before fitting; the resulting evidence belongs in each run's
+`oracle_acceptance.json`, at the paths listed in the validation record. No GPU
+throughput or scientific fitting outcomes are recorded here.
+
 ### Query-key polynomial backward tiles
 
 The one-pass fused query-key polynomial kernel uses 32-by-32 backward tiles for
