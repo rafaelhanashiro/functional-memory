@@ -4,74 +4,18 @@ training_steps: 7570
 canonical_learning_rate: 0.001
 runs:
 - study: transformer_200m_4b
-  run_id: r83139ea7389c
-  label: exp
-  role: comparison
-  sources:
-    config.yaml:
-      path: experiments/transformer_200m_4b/runs/r83139ea7389c/config.yaml
-      sha256: 9bcd49b8acb9b34aed37c21e51fe201d7b3e1859b1c7ffe0ddefc6881587726d
-- study: transformer_200m_4b
-  run_id: r019ca96d6533
-  label: fixed-m8
-  role: comparison
-  sources:
-    config.yaml:
-      path: experiments/transformer_200m_4b/runs/r019ca96d6533/config.yaml
-      sha256: ab3233d65995f2ca4427cf8aa133f9b2f68d9f7c0631c369585888cd2fd636fb
-- study: transformer_200m_4b
-  run_id: r9b8acfcbeb89
-  label: static-m8
-  role: comparison
-  sources:
-    config.yaml:
-      path: experiments/transformer_200m_4b/runs/r9b8acfcbeb89/config.yaml
-      sha256: 09cce71385f5939fa90c461930f93ccbf477991b0797b94b0be86502b022aaa0
-- study: transformer_200m_4b
-  run_id: r98d5895c02d0
-  label: query-m8
-  role: comparison
-  sources:
-    config.yaml:
-      path: experiments/transformer_200m_4b/runs/r98d5895c02d0/config.yaml
-      sha256: cc5c2801a1825f38baa336d44e0e0657df6b4d48af09a0558198ac4321b99c33
-- study: transformer_200m_4b
-  run_id: r452a474ef2c5
+  run_id: r833fbb6eedcb
   label: query_key-m8
   role: comparison
   sources:
     config.yaml:
-      path: experiments/transformer_200m_4b/runs/r452a474ef2c5/config.yaml
-      sha256: 490c800b6e4b22f6455863c665471e32c0e20491c67d864c27cb4eb6ddcf930c
+      path: experiments/transformer_200m_4b/runs/r833fbb6eedcb/config.yaml
+      sha256: db94207d47c1dc49a4bb7ad8f109a7d3fbe78ce9c49ad951df639eedfd23efc3
 - study: transformer_200m_4b
-  run_id: r1f200b0dd8e5
-  label: fixed-m12
-  role: comparison
-  sources:
-    config.yaml:
-      path: experiments/transformer_200m_4b/runs/r1f200b0dd8e5/config.yaml
-      sha256: 4d7a2e3d5cd256fc24ce2555515e4b6c594496bcf597cec0f4cd5df3ae4e119d
-- study: transformer_200m_4b
-  run_id: r0a6dcf1038a2
-  label: static-m12
-  role: comparison
-  sources:
-    config.yaml:
-      path: experiments/transformer_200m_4b/runs/r0a6dcf1038a2/config.yaml
-      sha256: 63c9b9ca7070dd4f33945ca78d39688dcc277026bf0608eea94c033b6b47ea58
-- study: transformer_200m_4b
-  run_id: r2500f78bd19f
-  label: query-m12
-  role: comparison
-  sources:
-    config.yaml:
-      path: experiments/transformer_200m_4b/runs/r2500f78bd19f/config.yaml
-      sha256: d25be35e89206aad00c77f9c463cad764a8ed9fab8aef85ba7f245061ec8de43
-- study: transformer_200m_4b
-  run_id: r4129bc606124
+  run_id: rfd48f7bbe9f4
   label: query_key-m12
   role: comparison
   sources:
     config.yaml:
-      path: experiments/transformer_200m_4b/runs/r4129bc606124/config.yaml
-      sha256: 5e7d336e3f3f938161ef6fda7637a6ba640d784296d655fd0e8c96505038eb46
+      path: experiments/transformer_200m_4b/runs/rfd48f7bbe9f4/config.yaml
+      sha256: 83c4ece8ac43adcd62155eaf9d24c904e9e8f244dec0d9ae361716ce9714bc3c

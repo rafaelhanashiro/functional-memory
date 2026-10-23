@@ -1,0 +1,13 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/rfd48f7bbe9f4/config.yaml",
+    "sha256": "83c4ece8ac43adcd62155eaf9d24c904e9e8f244dec0d9ae361716ce9714bc3c"
+  },
+  "home_cluster": "kennel",
+  "label": "query_key-m12",
+  "name": "query_key-m12",
+  "phase": "comparison",
+  "record_schema_version": 1,
+  "run_id": "rfd48f7bbe9f4",
+  "status": "planned"
+}

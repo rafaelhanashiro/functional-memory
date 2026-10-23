@@ -1,4 +1,4 @@
-"""Offline orchestration checks: immutable recipes, terminal selection, and bounded submissions."""
+"""Offline orchestration checks: immutable recipes, terminal selection, and independent submissions."""
 import copy
 import json
 from pathlib import Path
@@ -166,7 +166,55 @@ def test_nine_comparison_configs_apply_entire_coefficient_scaling(study, tmp_pat
     assert base == before
 
 
-def test_pilot_submissions_use_two_lanes_and_wait_for_all_three(study, monkeypatch):
+@pytest.mark.parametrize("stop", [None, 1500])
+def test_new_submission_requests_one_gpu_and_preserves_scientific_recipe(study, monkeypatch, stop):
+    directory, _ = study
+    base = config_to_dict(load_config(directory / "recipe.yaml"))
+    run = pipeline._allocate(base, "single-gpu", "comparison")
+    before = (run / "config.yaml").read_bytes()
+    commands = []
+    monkeypatch.setattr(pipeline.subprocess, "check_output",
+                        lambda command, **_kwargs: commands.append(command) or "600\n")
+    assert pipeline._submit(run, "source", stop=stop) == "600"
+    command, = commands
+    assert {"--gres=gpu:1", "--cpus-per-task=8", "--mem=96G", "--time=2-00:00:00"} <= set(command)
+    assert not any(argument.startswith("--dependency=") for argument in command)
+    launcher = command.index("scaffolds/transformer/launchers/kennel.sbatch")
+    assert command[launcher + 1:] == [
+        "experiments.transformer_200m_4b.acceptance",
+        f"experiments/transformer_200m_4b/runs/{run.name}/config.yaml", "source", "1", "B300,H100",
+        *([str(stop)] if stop is not None else []),
+    ]
+    record = load_run(run)
+    assert record["submission"]["gpu_count"] == 1
+    assert record["submission"]["stop_after_step"] == stop
+    assert (run / "config.yaml").read_bytes() == before
+    frozen = load_config(run / "config.yaml")
+    assert frozen.data.batch_size == 256 and frozen.train.micro_batch_size == 16
+
+
+@pytest.mark.parametrize("degree", [8, 12])
+def test_query_key_submission_requests_one_b300_and_seven_days_without_changing_recipe(study, monkeypatch, degree):
+    directory, _ = study
+    base = config_to_dict(load_config(directory / "recipe.yaml"))
+    run = pipeline._allocate(pipeline.variant_config(base, "query_key", degree),
+                             f"query-key-{degree}", "comparison")
+    before = (run / "config.yaml").read_bytes()
+    commands = []
+    monkeypatch.setattr(pipeline.subprocess, "check_output",
+                        lambda command, **_kwargs: commands.append(command) or "601\n")
+    assert pipeline._submit(run, "source") == "601"
+    command, = commands
+    assert {"--gres=gpu:b300:1", "--cpus-per-task=8", "--mem=96G", "--time=7-00:00:00"} <= set(command)
+    assert not any(argument.startswith("--dependency=") for argument in command)
+    assert command[-2:] == ["1", "B300"]
+    assert load_run(run)["submission"]["gpu_count"] == 1
+    assert (run / "config.yaml").read_bytes() == before
+    frozen = load_config(run / "config.yaml")
+    assert frozen.model.attention_backend == "fused" and frozen.model.attention_degree == degree
+
+
+def test_pilots_schedule_independently_and_selection_waits_for_all_three(study, monkeypatch):
     _, runs = study
     monkeypatch.setattr(pipeline, "_git", lambda *_args: "source")
     monkeypatch.setattr("scaffolds.launch.frozen.changes", lambda *_args: [])
@@ -177,9 +225,7 @@ def test_pilot_submissions_use_two_lanes_and_wait_for_all_three(study, monkeypat
     monkeypatch.setattr(pipeline, "_submit", submit)
     monkeypatch.setattr(pipeline.subprocess, "check_output", lambda command, **_kwargs: commands.append(command) or "500\n")
     pipeline.submit_pilots()
-    assert [item[2] for item in submissions] == [
-        {"stop": 1500, "dependency": None}, {"stop": 1500, "dependency": None},
-        {"stop": 1500, "dependency": "afterany:201"}]
+    assert [item[2] for item in submissions] == [{"stop": 1500}] * 3
     assert "--dependency=afterany:201:202:203" in commands[0]
     assert all(load_run(run)["lr_selection_job_id"] == "500" for run in runs)
 
@@ -231,8 +277,7 @@ def test_advance_freezes_nine_recipes_before_any_submission_and_schedules_report
     assert [(run / "config.yaml").read_bytes() for run in pilots] == before
     assert len(comparisons) == 9
     assert yaml.safe_load((directory / "recipe.yaml").read_text())["optim"]["learning_rate"] == .0005
-    for index, (_, kwargs) in enumerate(submissions):
-        assert kwargs["dependency"] == (None if index < 2 else f"afterany:{299 + index}")
+    assert all(not kwargs.get("dependency") for _, kwargs in submissions)
     assert reports == [(comparisons, [str(i) for i in range(301, 310)])]
     with pytest.raises(ValueError, match="already finalized"):
         pipeline.prepare_pilots()

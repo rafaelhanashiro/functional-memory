@@ -210,19 +210,25 @@ def _submit(run: Path, source: str, *, stop: int | None = None, dependency: str 
             raise ValueError(f"Run {run.name} has a stale submission {job}; reconcile its outcome before retrying")
         return job
     relative = run.relative_to(ROOT)
-    command = ["sbatch", "--parsable", "--partition=sweep", "--gres=gpu:2", "--cpus-per-task=16",
-               "--mem=192G", "--time=2-00:00:00", f"--job-name={run.name}", f"--output={relative}/training.log"]
+    # The current query-key kernel needs the faster GPU and a longer allocation;
+    # these are execution choices, not changes to the scientific recipe.
+    query_key = load_config(run / "config.yaml").model.attention_coefficient_conditioning == "query_key"
+    gpu_types = "B300" if query_key else "B300,H100"
+    gres = "gpu:b300:1" if query_key else "gpu:1"
+    allocation = "7-00:00:00" if query_key else "2-00:00:00"
+    command = ["sbatch", "--parsable", "--partition=sweep", f"--gres={gres}", "--cpus-per-task=8",
+               "--mem=96G", f"--time={allocation}", f"--job-name={run.name}", f"--output={relative}/training.log"]
     if dependency:
         command.append(f"--dependency={dependency}")
     command += ["scaffolds/transformer/launchers/kennel.sbatch",
-                f"experiments.{STUDY.name}.acceptance", f"{relative}/config.yaml", source, "2", "B300,H100"]
+                f"experiments.{STUDY.name}.acceptance", f"{relative}/config.yaml", source, "1", gpu_types]
     if stop is not None:
         command.append(str(stop))
     job = subprocess.check_output(command, cwd=ROOT, text=True).strip().split(";")[0]
     if not job.isdigit():
         raise RuntimeError(f"Unexpected sbatch output: {job}")
     update_record(run, {"status": "pending", "submission": {"slurm_job_id": job, "launch_commit": source,
-                  "gpu_count": 2, "partition": "sweep", "stop_after_step": stop, "command": command}})
+                  "gpu_count": 1, "partition": "sweep", "stop_after_step": stop, "command": command}})
     return job
 
 
@@ -234,13 +240,7 @@ def submit_pilots() -> None:
     from scaffolds.launch.frozen import changes
     if changes(ROOT, source, STUDY.name, "transformer"):
         raise ValueError("Commit all execution code and pilot inputs before submitting")
-    jobs, lanes = [], [None, None]
-    for index, run in enumerate(runs):
-        lane = index % 2
-        job = _submit(run, source, stop=PILOT_STEPS,
-                      dependency=f"afterany:{lanes[lane]}" if lanes[lane] else None)
-        jobs.append(job)
-        lanes[lane] = job
+    jobs = [_submit(run, source, stop=PILOT_STEPS) for run in runs]
     previous_coordinators = {load_run(run).get("lr_selection_job_id") for run in runs} - {None}
     if previous_coordinators and _queued_jobs(sorted(previous_coordinators)):
         print(json.dumps({"pilots": jobs, "selection_jobs": sorted(previous_coordinators), "reused": True}))
@@ -317,12 +317,8 @@ def advance(*, submit: bool) -> list[Path]:
         if _git("diff", "--cached", "--name-only"):
             _git("commit", "-m", "Select the 4B recipe learning rate and freeze the nine attention comparisons")
         source = _git("rev-parse", "HEAD")
-        # At most two new two-GPU jobs at once; later jobs depend on the corresponding lane.
-        lanes, jobs = [None, None], []
-        for index, run in enumerate(runs):
-            lane = index % 2
-            lanes[lane] = _submit(run, source, dependency=f"afterany:{lanes[lane]}" if lanes[lane] else None)
-            jobs.append(lanes[lane])
+        # These runs are scientifically independent; let Slurm schedule each allocation.
+        jobs = [_submit(run, source) for run in runs]
         _submit_report(runs, jobs)
         regenerate_index(STUDY)
     print(json.dumps({"canonical_learning_rate": peak, "runs": [r.name for r in runs]}))

@@ -28,10 +28,10 @@ model:
   dropout: 0.0
   tie_embeddings: false
   remat: false
-  attention_backend: cudnn
-  attention_degree: null
-  attention_normalization: true
-  attention_output_scaling: none
+  attention_backend: fused
+  attention_degree: 8
+  attention_normalization: false
+  attention_output_scaling: head_rms_norm
   attention_mechanism: dot_product
   gdn_conv_size: 4
   gdn_erase_mode: tied
@@ -44,20 +44,20 @@ model:
   gla_use_rope: true
   quadratic_mode: fixed
   quadratic_sharing: global
-  attention_coefficients: fixed
+  attention_coefficients: learned
   attention_fixed_coefficients: null
   attention_fixed_square_factors: null
-  attention_coefficient_sharing: global
-  attention_coefficient_conditioning: static
-  attention_coefficient_activation: identity
-  attention_coefficient_amplitude_initial: 1.0
-  attention_coefficient_projection_initial_std: 0.0
+  attention_coefficient_sharing: per_head
+  attention_coefficient_conditioning: query_key
+  attention_coefficient_activation: tanh
+  attention_coefficient_amplitude_initial: 0.0
+  attention_coefficient_projection_initial_std: 0.03340765523905305
   attention_coefficient_tanh_bias: false
   positional_encoding: rope
   path_w_rank: 32
   path_conv_size: 3
-  attention_coefficient_amplitude_scale: none
-  attention_coefficient_scale: none
+  attention_coefficient_amplitude_scale: factorial
+  attention_coefficient_scale: factorial
   attention_coefficient_parameterization: direct
   attention_coefficient_initialization: taylor
   attention_denominator_degree: null
@@ -70,8 +70,8 @@ model:
   qk_norm_eps: 1.0e-06
   initialization: transformer_truncated_reference
 optim:
-  learning_rate: 0.0005
-  min_learning_rate: 5.0e-05
+  learning_rate: 0.001
+  min_learning_rate: 0.0001
   weight_decay: 0.1
   weight_decay_policy: exclude_embeddings_norms_biases_v1
   coefficient_penalty: 0.0
@@ -85,8 +85,8 @@ train:
   seed: 42
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/transformer_200m_4b/runs/r7de4554cb320
-  checkpoint_dir: experiments/transformer_200m_4b/runs/r7de4554cb320/checkpoints
+  workdir: experiments/transformer_200m_4b/runs/r833fbb6eedcb
+  checkpoint_dir: experiments/transformer_200m_4b/runs/r833fbb6eedcb/checkpoints
   micro_batch_size: 16
   log_every: 10
   eval_every: 500
@@ -96,7 +96,7 @@ train:
   ckpt_every: 500
   wandb_project: functional-memory
   wandb_entity: rafah-massachusetts-institute-of-technology
-  wandb_run_name: softmax-lr-0.0005
+  wandb_run_name: query_key-m8
   wandb_group: transformer_200m_4b
   wandb_dir: null
   wandb_mode: online

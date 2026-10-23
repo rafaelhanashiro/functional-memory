@@ -81,8 +81,9 @@ floor. Commit the complete run recipe before using the shared launcher. Rerunnin
 an LR candidate uses this same recipe with an explicit peak/floor override and a
 fresh run ID; an ordinary new run does not rerun LR selection.
 
-Each job requests two H100/B300 GPUs on the low-priority `sweep` partition, with
-microbatch 16 and gradient accumulation to the fixed global batch. The shared
+New jobs request one GPU, with global microbatch 16 and gradient accumulation to
+the fixed global batch of 256. Each comparison is scheduled independently on the
+low-priority `sweep` partition. The shared
 launcher performs allocation-specific acceptance before training: CPU/accelerator
 tests, initialization identity, a short full-model pilot, and exact fresh-process
 checkpoint resumption. New checks cover actual 14-head, 2,048-token attention
@@ -93,7 +94,7 @@ The nine comparison recipes are frozen with the selected LR. Independent trainin
 runs have no inter-run scheduling dependencies; Slurm schedules them according to
 available resources and cluster policy. Each run retains its own frozen configuration
 and source commit; resumed jobs preserve those inputs.
-After all nine comparison jobs exit, a dependent CPU report job refreshes the
+After the selected comparison jobs exit, a dependent CPU report job refreshes the
 explicit selections and regenerates the figures and summary, including failures
 and incomplete outcomes.
 
@@ -105,4 +106,23 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records index experiments/tr
 scaffolds/transformer/.venv/bin/python -m scaffolds.records validate experiments/transformer_200m_4b
 scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_200m_4b/results
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.results.plot
+```
+
+## Query–key execution
+
+Query–key degrees 8 and 12 are `r833fbb6eedcb` and `rfd48f7bbe9f4`. Each requests
+one B300, eight CPUs, 96 GB host RAM, and a seven-day allocation. These are independent
+jobs. The launcher qualifies runtime against the allocated Slurm time limit before
+training; the model, coefficient definitions, seed, global batch, and canonical
+0.001/0.0001 LR schedule are unchanged. Their run records contain the exact commands.
+
+After committing the inputs, submit these two selected runs from this worktree:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python - <<'PYTHON'
+from experiments.transformer_200m_4b.pipeline import STUDY, _git, _submit, _submit_report
+runs = [STUDY / "runs" / rid for rid in ("r833fbb6eedcb", "rfd48f7bbe9f4")]
+jobs = [_submit(run, _git("rev-parse", "HEAD")) for run in runs]
+_submit_report(runs, jobs)
+PYTHON
 ```
