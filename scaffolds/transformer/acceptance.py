@@ -37,6 +37,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 from scaffolds.transformer.configs import config_to_dict, load_config, validate_config
+from scaffolds.transformer.training.cadence import scheduled_work_counts
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKS = ("cpu-tests", "cpu-distributed-tests", "gpu-tests", "initialization", "pilot", "resume")
@@ -545,6 +546,10 @@ def _worker(spec: AcceptanceSpec, args, experiment: dict) -> dict:
         config.train.checkpoint_dir = None
         config.train.wandb_mode = "disabled"
         config.train.eval_every = spec.pilot_steps
+        # The scratch worker needs validation at its own stop, regardless of a
+        # production recipe's denser early cadence. Never edit the frozen recipe.
+        config.train.eval_early_every = None
+        config.train.eval_early_until = 0
         config.train.eval_batches = 1
         # Model, context, batch, seed, LR schedule, and step horizon are the production recipe's.
         return run_training(config, resume=True, stop_after_step=args.stop_after_step, audit_checkpoint=True)
@@ -622,8 +627,7 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
                 raise RuntimeError("Pilot has no valid synchronized steady update timing")
             config = experiment["config"]
             total = config["optim"]["total_steps"]
-            evaluations = total // config["train"]["eval_every"] + 1
-            checkpoints = total // config["train"]["ckpt_every"] + 1
+            evaluations, checkpoints = scheduled_work_counts(load_config(args.config))
             # Compilation once plus conservative evaluation and checkpoint costs.
             projected = (timing["runtime_seconds"] + max(steady) * total
                          + max(timing["evaluation_seconds"]) * config["train"]["eval_batches"] * evaluations

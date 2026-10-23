@@ -1,0 +1,4 @@
+run_id,label,status,peak_lr,failure_step,latest_step,latest_validation_nll,latest_validation_perplexity,terminal_validation_nll,terminal_validation_perplexity
+r7de4554cb320,softmax-lr-0.0005,planned,0.0005,,,,,,
+ra2b851b0dd7e,softmax-lr-0.001,planned,0.001,,,,,,
+r8ae39cc59cb1,softmax-lr-0.002,planned,0.002,,,,,,

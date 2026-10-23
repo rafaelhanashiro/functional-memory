@@ -1,0 +1,13 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/ra2b851b0dd7e/config.yaml",
+    "sha256": "bd7fe2d8aa1a5707a207d659b4d1be3cb1dd5b7edc69f308d8374cf6bd6f7c02"
+  },
+  "home_cluster": "kennel",
+  "label": "softmax-lr-0.001",
+  "name": "softmax-lr-0.001",
+  "phase": "lr_pilot",
+  "record_schema_version": 1,
+  "run_id": "ra2b851b0dd7e",
+  "status": "planned"
+}

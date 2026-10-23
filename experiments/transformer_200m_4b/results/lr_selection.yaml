@@ -1,0 +1,29 @@
+study: transformer_200m_4b
+pilot_steps: 1500
+selection_rule: lowest_step_1500_validation_nll_lower_peak_on_exact_tie
+canonical_learning_rate: null
+runs:
+- study: transformer_200m_4b
+  run_id: r7de4554cb320
+  label: softmax-lr-0.0005
+  role: lr_pilot
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r7de4554cb320/config.yaml
+      sha256: a7ad945763810b87b66552937448633f83c7521ae6a128e5732219e0cbc8c4dc
+- study: transformer_200m_4b
+  run_id: ra2b851b0dd7e
+  label: softmax-lr-0.001
+  role: lr_pilot
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/ra2b851b0dd7e/config.yaml
+      sha256: bd7fe2d8aa1a5707a207d659b4d1be3cb1dd5b7edc69f308d8374cf6bd6f7c02
+- study: transformer_200m_4b
+  run_id: r8ae39cc59cb1
+  label: softmax-lr-0.002
+  role: lr_pilot
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r8ae39cc59cb1/config.yaml
+      sha256: d25b09f652d98939cbaac4d3724e05cbfefd71f293cb552158dab7b494a64dc6

@@ -12,6 +12,7 @@ from scaffolds.transformer.acceptance import attention_test_paths, matches_softm
 from scaffolds.transformer.configs import Config, ModelConfig, validate_config
 from scaffolds.transformer.configs.loader import config_dicts_equal, config_to_dict
 from scaffolds.transformer.models import build_model
+from scaffolds.transformer.models.initialization import REFERENCE, _weight_initializer
 from scaffolds.transformer.training import tracking
 from scaffolds.transformer.training.checkpointing import state_sha256
 
@@ -41,7 +42,8 @@ def test_flax_default_is_unchanged_and_reference_schemes_are_deterministic():
     default = _weights(_model_config())[1]
     explicit = _weights(ModelConfig(**{**_model_config().__dict__}))[1]
     assert state_sha256(nnx.state(default, nnx.Param)) == state_sha256(nnx.state(explicit, nnx.Param))
-    for scheme, mechanism in (("transformer_reference", "dot_product"), ("gla_reference", "gla")):
+    for scheme, mechanism in (("transformer_reference", "dot_product"),
+                              ("transformer_truncated_reference", "dot_product"), ("gla_reference", "gla")):
         first = nnx.state(_weights(_model_config(scheme, mechanism))[1], nnx.Param)
         again = nnx.state(_weights(_model_config(scheme, mechanism))[1], nnx.Param)
         other = nnx.state(_weights(_model_config(scheme, mechanism), seed=1)[1], nnx.Param)
@@ -86,7 +88,40 @@ def test_gla_reference_uses_xavier_for_queries_keys_and_gates():
             assert not np.any(np.asarray(value[...])), key
 
 
+def test_truncated_reference_preserves_the_conditional_gaussian_variance_and_scales_support():
+    weights, model = _weights(_model_config("transformer_truncated_reference"))
+    # Variance of Z | |Z| < a, where Z is standard normal: 1 - 2a phi(a)/(2 Phi(a)-1).
+    variance = 1 - 4 * math.exp(-2) / math.sqrt(2 * math.pi) / math.erf(math.sqrt(2))
+    for key, value in weights.items():
+        if not key.endswith(("/kernel", "/embedding")):
+            continue
+        residual = key.endswith(("attention/o_proj/kernel", "feed_forward/down_proj/kernel"))
+        std = 0.02 / math.sqrt(2 * LAYERS) if residual else 0.02
+        array = np.asarray(value[...])
+        assert np.all(np.abs(array) < 2 * std), key  # no clipped mass on the bounds
+        assert abs(array.std() / (std * math.sqrt(variance)) - 1) < 0.05, key
+        assert value.dtype == jnp.float32
+    assert model.token_embedding.embedding.get_metadata("weight_decay", True) is False
+    for key, value in weights.items():
+        if key.endswith("norm/scale"):
+            np.testing.assert_array_equal(value[...], 1)
+            assert value.get_metadata("weight_decay", True) is False
+    np.testing.assert_allclose(weights["qk_norm_log_scale"][...], math.log(math.sqrt(32)), rtol=1e-6)
+
+
+def test_new_initialization_leaves_existing_reference_draws_and_defaults_unchanged():
+    key = jax.random.PRNGKey(81)
+    for path, scale in ((('token_embedding',), 0.02),
+                        (('layers_0', 'attention', 'o_proj'), 0.02 / math.sqrt(2 * LAYERS))):
+        actual = _weight_initializer("transformer_reference", path, LAYERS)(key, (128, 256), jnp.float32)
+        expected = jax.nn.initializers.normal(scale)(key, (128, 256), jnp.float32)
+        np.testing.assert_array_equal(actual, expected)
+    assert REFERENCE == {"dot_product": "transformer_reference", "gla": "gla_reference",
+                         "gated_deltanet": "gated_deltanet_reference"}
+
+
 @pytest.mark.parametrize("scheme,mechanism", [("transformer_reference", "gla"), ("gla_reference", "dot_product"),
+                                              ("transformer_truncated_reference", "gla"),
                                               ("xavier", "dot_product")])
 def test_mismatched_or_unknown_schemes_are_rejected(scheme, mechanism):
     with pytest.raises(ValueError, match="initialization"):

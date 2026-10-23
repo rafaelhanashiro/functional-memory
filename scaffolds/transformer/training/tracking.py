@@ -133,7 +133,7 @@ def attention_metrics(diagnostics: dict) -> dict:
         for key, value in layer.items():
             if key != "layer" and isinstance(value, (int, float)) and not isinstance(value, bool):
                 payload[f"{prefix}/layer{layer['layer']:02d}/{key}"] = value
-    for key in ("coefficients", "qk_norm_scale"):
+    for key in ("coefficients", "qk_norm_scale", "qk_norm_gains"):
         _summarize_effective_values(payload, f"{prefix}/{key}", diagnostics.get(key) or {})
     return payload
 

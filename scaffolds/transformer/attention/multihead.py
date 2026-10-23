@@ -10,7 +10,7 @@ from flax import nnx
 
 from scaffolds.transformer.attention.core import attention_core
 from scaffolds.transformer.attention.output_scaling import OUTPUT_SCALINGS, scale_attention_output
-from scaffolds.transformer.attention.qk_norm import cosine_score_operands
+from scaffolds.transformer.attention.qk_norm import cosine_score_operands, rms_score_operands
 from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
 from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
@@ -56,6 +56,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_coefficient_scale=config.attention_coefficient_scale,
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
+        qk_norm_type=config.qk_norm_type,
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
         positional_encoding=config.positional_encoding,
         rngs=rngs,
@@ -77,6 +78,7 @@ class MultiHeadAttention(nnx.Module):
         positional_encoding: str = "rope",
         attention_coefficient_amplitude_scale: str = "none",
         attention_coefficient_scale: str = "none",
+        qk_norm_type: str = "cosine_log_scale",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path"):
@@ -89,6 +91,8 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("attention_normalization must be a boolean")
         if not isinstance(qk_norm, bool):
             raise ValueError("qk_norm must be a boolean")
+        if qk_norm_type not in ("cosine_log_scale", "rms_norm"):
+            raise ValueError(f"Unknown QK-norm type: {qk_norm_type}")
         if qk_norm and attention_degree == 0:
             raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
         if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused", "mosaic")):
@@ -175,6 +179,7 @@ class MultiHeadAttention(nnx.Module):
         self.attention_normalization = attention_normalization
         self.quadratic_mode = quadratic_mode
         self.qk_norm = qk_norm
+        self.qk_norm_type = qk_norm_type
         self.qk_norm_eps = qk_norm_eps
         self.attention_output_scaling = attention_output_scaling
         self.rms_norm_eps = rms_norm_eps
@@ -195,8 +200,13 @@ class MultiHeadAttention(nnx.Module):
         batch, seq_len, _ = x.shape
         parameters = {} if attention_parameters is None else dict(attention_parameters)
         log_scale = parameters.pop("qk_norm_log_scale", None)
-        if self.qk_norm != (log_scale is not None):
+        q_gain = parameters.pop("qk_norm_q_gain", None)
+        k_gain = parameters.pop("qk_norm_k_gain", None)
+        if (self.qk_norm and self.qk_norm_type == "cosine_log_scale") != (log_scale is not None):
             raise ValueError("QK-norm requires exactly its model-owned qk_norm_log_scale parameter")
+        rms_enabled = self.qk_norm and self.qk_norm_type == "rms_norm"
+        if rms_enabled != (q_gain is not None) or rms_enabled != (k_gain is not None):
+            raise ValueError("QK RMSNorm requires exactly its model-owned qk_norm_q_gain and qk_norm_k_gain parameters")
         output_norm_scale = parameters.pop("output_norm_scale", None)
         if (self.attention_output_scaling == "head_rms_norm") != (output_norm_scale is not None):
             raise ValueError("Head RMSNorm output scaling requires exactly its model-owned output_norm_scale parameter")
@@ -246,8 +256,11 @@ class MultiHeadAttention(nnx.Module):
         k = k.reshape(batch, seq_len, self.num_kv_heads, self.qk_head_dim)
         v = v.reshape(batch, seq_len, self.num_kv_heads, self.value_head_dim)
         if self.qk_norm:
-            # Cosine scores: the mechanisms' q'.k'/sqrt(d_K) becomes exp(gamma) cos(q, k).
-            q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)
+            if self.qk_norm_type == "rms_norm":
+                q, k = rms_score_operands(q, k, q_gain, k_gain, eps=self.qk_norm_eps)
+            else:
+                # Preserve the historical scaled-cosine arithmetic exactly.
+                q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)
         if self.positional_encoding == "path":
             return self._path_attention(x, q.astype(self.dtype), k.astype(self.dtype), v, parameters,
                                         path_parameters, output_norm_scale, return_diagnostics)

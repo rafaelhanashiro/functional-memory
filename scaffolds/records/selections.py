@@ -80,11 +80,16 @@ def _array_roles(selection: dict[str, Any]) -> dict[str, str]:
 
 
 def _repository_root(directory: Path) -> Path:
-    """The checkout holding ``results/``, for collections at any depth beneath it."""
-    for parent in directory.parents:
+    """Resolve root or study-local results without requiring Git metadata."""
+    for parent in (directory, *directory.parents):
         if parent.name == "results":
+            # A self-contained setup keeps its results beside runs, under
+            # experiments/<study>/results[/<analysis>]. Scientific pins remain
+            # repository-relative, including when this directory itself is used.
+            if parent.parent.parent.name == "experiments":
+                return parent.parent.parent.parent
             return parent.parent
-    raise ValueError(f"A result collection must live under results/: {directory}")
+    raise ValueError(f"A result collection must live under results/ or experiments/<study>/results/: {directory}")
 
 
 def refresh_selection(directory: str | Path) -> list[str]:

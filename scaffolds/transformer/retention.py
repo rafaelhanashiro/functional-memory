@@ -21,7 +21,7 @@ from scaffolds.records import capture_artifacts, update_record
 
 # Completion fields that must agree with the recipe when the completion records them.
 IDENTITY_KEYS = ("attention_degree", "attention_mechanism", "quadratic_mode", "quadratic_sharing", "qk_head_dim",
-                 "qk_norm", "qk_norm_sharing", "gdn_polynomial_degree")
+                 "qk_norm", "qk_norm_type", "qk_norm_sharing", "gdn_polynomial_degree")
 
 
 def finalize_run(config) -> dict:

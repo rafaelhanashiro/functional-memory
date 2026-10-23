@@ -4,6 +4,40 @@ import pytest
 from scaffolds.transformer import acceptance as preflight
 
 
+def test_scratch_pilot_overrides_early_evaluation_without_mutating_production_recipe(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from scaffolds.transformer.configs import Config, load_config, save_config
+    from scaffolds.transformer.training import loop
+    from scaffolds.transformer.training.cadence import evaluation_due
+
+    config = Config()
+    config.optim.total_steps = 7570
+    config.train.eval_every = 500
+    config.train.eval_early_every = 100
+    config.train.eval_early_until = 1500
+    path = tmp_path / "config.yaml"
+    save_config(config, path)
+    original = path.read_bytes()
+    captured = {}
+
+    def train(scratch, **kwargs):
+        captured.update(config=scratch, options=kwargs)
+        return {"final_step": kwargs["stop_after_step"]}
+
+    monkeypatch.setattr(loop, "run_training", train)
+    args = SimpleNamespace(worker="pilot", config=path, directory=tmp_path / "acceptance", stop_after_step=20)
+    spec = preflight.AcceptanceSpec(entry_module="unused", pilot_steps=20, cpu_tests=())
+    preflight._worker(spec, args, {"source_commit": "a" * 40})
+    scratch = captured["config"]
+    assert scratch.train.eval_every == 20 and scratch.train.eval_early_every is None
+    assert scratch.train.eval_early_until == 0 and evaluation_due(scratch, 20)
+    assert scratch.optim.total_steps == 7570
+    assert captured["options"] == {"resume": True, "stop_after_step": 20, "audit_checkpoint": True}
+    assert path.read_bytes() == original
+    frozen = load_config(path)
+    assert (frozen.train.eval_every, frozen.train.eval_early_every, frozen.train.eval_early_until) == (500, 100, 1500)
+
+
 def test_acceptance_rejects_skipped_or_empty_test_reports(tmp_path):
     report = tmp_path / "report.xml"
     report.write_text('<testsuite><testcase name="a"/><testcase name="b"><skipped/></testcase></testsuite>')

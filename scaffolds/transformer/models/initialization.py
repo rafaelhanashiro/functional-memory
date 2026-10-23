@@ -11,6 +11,10 @@ initial values.
 - ``transformer_reference`` (GPT-2/Megatron): every Linear and embedding weight
   N(0, 0.02); the residual output projections (attention ``o_proj``, MLP
   ``down_proj``) N(0, 0.02 / sqrt(2 * num_layers)).
+- ``transformer_truncated_reference``: the same roles and residual scaling, with
+  draws from N(0, 0.02) conditioned on [-0.04, 0.04]. This is true truncation,
+  without clipping or variance compensation; the resulting standard deviation
+  before residual scaling is about 0.0175925.
 - ``gla_reference`` (berlino/gated_linear_attention): every Linear and embedding
   weight N(0, 0.02), then the query, key, and both low-rank gate projections
   Xavier-uniform with gain 2^-2.5.
@@ -30,12 +34,16 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 
-INITIALIZATIONS = ("flax_default", "transformer_reference", "gla_reference", "gated_deltanet_reference")
+INITIALIZATIONS = ("flax_default", "transformer_reference", "transformer_truncated_reference",
+                   "gla_reference", "gated_deltanet_reference")
 # Each reference scheme belongs to one attention mechanism.
-MECHANISMS = {"transformer_reference": "dot_product", "gla_reference": "gla",
+MECHANISMS = {"transformer_reference": "dot_product", "transformer_truncated_reference": "dot_product",
+              "gla_reference": "gla",
               "gated_deltanet_reference": "gated_deltanet"}
-# The canonical initialization of each attention mechanism: its reference scheme.
-REFERENCE = {mechanism: scheme for scheme, mechanism in MECHANISMS.items()}
+# Stable references for existing studies and fresh recipes with initialization unset.
+# Adding an opt-in recipe must not change historical result eligibility or defaults.
+REFERENCE = {"dot_product": "transformer_reference", "gla": "gla_reference",
+             "gated_deltanet": "gated_deltanet_reference"}
 _GLA_XAVIER = ("q_proj", "k_proj", "gate_low_rank", "gate_proj")
 
 
@@ -49,9 +57,15 @@ def _xavier_uniform(gain: float):
 
 def _weight_initializer(scheme: str, path: tuple[str, ...], num_layers: int):
     parent, name = (path[-2] if len(path) > 1 else ""), path[-1]
-    if scheme == "transformer_reference":
+    if scheme in ("transformer_reference", "transformer_truncated_reference"):
         residual = (parent, name) in (("attention", "o_proj"), ("feed_forward", "down_proj"))
-        return _normal(0.02 / math.sqrt(2 * num_layers) if residual else 0.02)
+        std = 0.02 / math.sqrt(2 * num_layers) if residual else 0.02
+        if scheme == "transformer_truncated_reference":
+            # random.truncated_normal uses standard-normal bounds; scaling the draw
+            # scales both its variance and support without compensating either.
+            return lambda key, shape, dtype: jax.random.truncated_normal(
+                key, lower=-2.0, upper=2.0, shape=shape, dtype=dtype) * std
+        return _normal(std)
     if scheme == "gla_reference":
         return _xavier_uniform(2 ** -2.5) if parent == "attention" and name in _GLA_XAVIER else _normal(0.02)
     if scheme == "gated_deltanet_reference":

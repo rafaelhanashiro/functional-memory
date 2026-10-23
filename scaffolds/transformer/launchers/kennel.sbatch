@@ -5,7 +5,7 @@
 #   sbatch --job-name=<run> --output=experiments/<study>/runs/<run>/training.log \
 #     scaffolds/transformer/launchers/kennel.sbatch \
 #     experiments.<study>.acceptance \
-#     experiments/<study>/runs/<run>/config.yaml "$(git rev-parse HEAD)" [GPU_COUNT] [GPU_TYPES]
+#     experiments/<study>/runs/<run>/config.yaml "$(git rev-parse HEAD)" [GPU_COUNT] [GPU_TYPES] [STOP_AFTER_STEP]
 #SBATCH --job-name=transformer
 #SBATCH --partition=sweep
 #SBATCH --nodes=1
@@ -23,6 +23,15 @@ CONFIG="${2:?Expected experiments/<study>/runs/<run>/config.yaml}"
 LAUNCH_COMMIT="${3:?Expected the launch commit}"
 GPU_COUNT="${4:-4}"
 GPU_TYPES="${5:-B300,H100}"
+STOP_AFTER_STEP="${6:-}"
+if [[ -n "$STOP_AFTER_STEP" && ! "$STOP_AFTER_STEP" =~ ^[1-9][0-9]*$ ]]; then
+  echo "STOP_AFTER_STEP must be a positive integer: $STOP_AFTER_STEP" >&2
+  exit 1
+fi
+TRAIN_ARGUMENTS=()
+if [[ -n "$STOP_AFTER_STEP" ]]; then
+  TRAIN_ARGUMENTS+=(--stop-after-step "$STOP_AFTER_STEP")
+fi
 EXECUTION_ROOT="${SLURM_SUBMIT_DIR:?Submit from the experiment worktree root}"
 cd "$EXECUTION_ROOT"
 if [[ ! "$CONFIG" =~ ^experiments/([A-Za-z0-9_]+)/runs/(r[0-9a-f]{12})/config\.yaml$ ]]; then
@@ -109,14 +118,14 @@ export TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CU
 eval "$("$PYTHON" -m "$ADAPTER" "$CONFIG" --runtime-env)"
 mkdir -p "$LOGS" "$JAX_COMPILATION_CACHE_DIR" "$XDG_CACHE_HOME" "$TMPDIR"
 
-"$PYTHON" - "$RUN_ROOT" "$CONFIG" "$LAUNCH_COMMIT" "$GPU_TYPE" "$GPU_COUNT" "$EXPERIMENT" <<'PY'
+"$PYTHON" - "$RUN_ROOT" "$CONFIG" "$LAUNCH_COMMIT" "$GPU_TYPE" "$GPU_COUNT" "$EXPERIMENT" "$STOP_AFTER_STEP" <<'PY'
 import hashlib, json, os, subprocess, sys
 from datetime import UTC, datetime
 from pathlib import Path
 from scaffolds.launch.frozen import frozen_hash
 from scaffolds.records import load_run, update_record, validate_record
 from scaffolds.transformer.configs import load_config
-root, config, launch, gpu_type, gpu_count, experiment = sys.argv[1:]
+root, config, launch, gpu_type, gpu_count, experiment, stop_after_step = sys.argv[1:]
 run_root = Path(root)
 recipe = load_config(config)
 if recipe.train.workdir.resolve() != run_root.resolve():
@@ -129,6 +138,7 @@ attempt = {
     "launch_commit": launch, "config_path": config,
     "config_sha256": hashlib.sha256(Path(config).read_bytes()).hexdigest(),
     "home_cluster": "kennel", "gpu_type": gpu_type, "gpu_count": int(gpu_count),
+    "stop_after_step": int(stop_after_step) if stop_after_step else None,
     "slurm_job_id": os.environ["SLURM_JOB_ID"], "slurm_restart_count": os.environ.get("SLURM_RESTART_COUNT", "0"),
     "slurm_partition": os.environ.get("SLURM_JOB_PARTITION"), "started_utc": datetime.now(UTC).isoformat(),
     "acceptance_directory": str((run_root / ".runtime" / "acceptance" / f"{gpu_type}-{gpu_count}").resolve()),
@@ -155,5 +165,9 @@ summary = json.loads(path.read_text())
 update_record(root, {"acceptance": None})
 update_record(root, {"acceptance": {"summary": summary, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}})
 PY
-run_step "$PYTHON" -m scaffolds.transformer.train "$CONFIG" --wandb-mode "$WANDB_MODE_SETTING"
-run_step "$PYTHON" -m scaffolds.transformer.retention "$RUN_ROOT/config.json"
+run_step "$PYTHON" -m scaffolds.transformer.train "$CONFIG" --wandb-mode "$WANDB_MODE_SETTING" "${TRAIN_ARGUMENTS[@]}"
+# Pilots retain the latest resumable checkpoint as well as validation best.
+# Final retention runs when training continues without an early-stop limit.
+if [[ -z "$STOP_AFTER_STEP" ]]; then
+  run_step "$PYTHON" -m scaffolds.transformer.retention "$RUN_ROOT/config.json"
+fi

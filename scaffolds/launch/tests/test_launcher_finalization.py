@@ -132,7 +132,7 @@ def test_transformer_launchers_watch_their_log_and_run_long_steps_under_it(launc
     steps = re.findall(r'^(.*)"\$PYTHON" -m ("\$ADAPTER" "\$CONFIG" --directory|scaffolds\.transformer\.\w+)', text, re.M)
     assert [module for _, module in steps] == ['"$ADAPTER" "$CONFIG" --directory', "scaffolds.transformer.train",
                                                "scaffolds.transformer.retention"]
-    assert all(prefix == "run_step " for prefix, _ in steps)
+    assert all(prefix.strip() == "run_step" for prefix, _ in steps)
 
 
 def test_the_finalizer_and_watchdog_agree_on_the_stall_exit_code():
