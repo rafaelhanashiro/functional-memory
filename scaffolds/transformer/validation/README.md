@@ -69,6 +69,97 @@ IDs, jobs, hardware, source commit, and checksums. Each production allocation
 repeats its own checks in the run's `oracle_acceptance.json`. Scientific fitting
 outcomes remain under the runs; this record contains software qualification only.
 
+### B300 query-key performance at the 200M / 4B shape
+
+On 2026-10-23, job `224602`, source `ba403d0`, compared resident attention
+operands on one B300 using the new setup's local shape `[16, 2048, 14, 64]`.
+The [kernel report](runs/query-key-4b-b300/kernel.json) contains three warmups
+and ten synchronized samples per configuration, excluding compilation and
+profiling. The current B300 selector uses 64-by-64 backward tiles; its 32-by-32
+override is restricted to H100. Changing only the backward tiles gave:
+
+| Mechanism | Current forward + backward | With 32-by-32 backward | Speedup |
+| --- | ---: | ---: | ---: |
+| cuDNN softmax | 1.443 ms | — | — |
+| Query-key degree 8 | 121.782 ms | 12.860 ms | 9.47x |
+| Query-key degree 12 | 195.048 ms | 18.113 ms | 10.77x |
+
+The [GPU profiles](runs/query-key-4b-b300/profile-summary.json) identify the
+key/value/key-factor-gradient kernel as the dominant cost: 113.666 ms of
+120.968 ms recorded GPU kernel time at degree 8, and 182.771 ms at degree 12.
+With smaller tiles that kernel takes 5.901 and 9.453 ms, respectively.
+The [compiler evidence](runs/query-key-4b-b300/compiler-evidence.json) shows
+that 64-by-64 tiles trigger Blackwell `tcgen05` lowering with heavy register
+spilling, whereas 32-by-32 tiles use `mma.sync` and much smaller machine code.
+Reassembling the extracted PTX with the locked CUDA 13.2 compiler reproduces
+the cached dKV machine code byte for byte for all four configurations.
+
+| Degree | Tile | Compiler spill stores | Compiler spill loads | Machine-code bytes |
+| --- | --- | ---: | ---: | ---: |
+| 8 | 64-by-64 | 31,652 | 39,740 | 574,976 |
+| 8 | 32-by-32 | 544 | 420 | 30,720 |
+| 12 | 64-by-64 | 43,108 | 53,612 | 781,696 |
+| 12 | 32-by-32 | 752 | 684 | 40,704 |
+
+Spill counts are static compiler statistics, not measured memory traffic.
+The tile change also changes instruction lowering and synchronization; these
+measurements do not attribute every saved cycle exclusively to spilling.
+Raw PTX, cubins, and assembler logs are retained under
+`validation/logs/query-key-4b-b300/compiler/` (ignored).
+
+Forward outputs are byte-identical. All five input gradients pass global,
+batch/head, and coefficient/factor degree/head parity checks; the largest global
+relative L2 error is 3.66e-5. This is synthetic-input parity with the production
+kernel, not independent correctness or trained-checkpoint qualification. No
+production tile selector is changed. Query-only Mosaic measures 3.472/4.681 ms
+at degrees 8/12, but uses its production BF16 weight arithmetic; it is not a
+matched-precision comparison with the query-key BF16x3 products.
+
+The [training context](runs/query-key-4b-b300/training-context.json) pins the
+existing 4B runs and their input hashes: softmax measures 0.501 s/update on two
+B300s, and query-only degree 8 measures 0.801 s/update on two B300s. The selected
+query-key runs request one B300 and had not started when inspected. Single-GPU
+training also uses Python gradient accumulation, unlike the compiled scan on
+multiple GPUs.
+
+Job `224603`, source `109dbd3`, measured fresh production-loop training with each
+exact frozen recipe on the same single B300. Three warmup updates precede three
+timed updates; the table reports mean completion intervals. The full scientific
+learning-rate horizon, data, seed, global batch 256, microbatch 16, and 15-layer
+model are preserved. All losses and update numerics are finite. Compilation,
+evaluation, checkpoint writes, and W&B are excluded; data loading, transfer,
+gradient accumulation, optimization, and numerical checks are included.
+
+| Recipe | Seconds/update | Slowdown vs softmax | Prediction tokens/s |
+| --- | ---: | ---: | ---: |
+| [Softmax](runs/query-key-4b-b300/training-ra2b851b0dd7e.json) | 1.656 | 1.00x | 316,573 |
+| [Query-key degree 8](runs/query-key-4b-b300/training-r833fbb6eedcb.json) | 30.786 | 18.59x | 17,030 |
+| [Query-key degree 12](runs/query-key-4b-b300/training-rfd48f7bbe9f4.json) | 48.487 | 29.28x | 10,813 |
+
+For scale, 15 layers times 16 microbatches times the isolated current attention
+timing predicts 29.23/46.81 seconds per update at degrees 8/12, close to the
+measured 30.79/48.49 seconds. This is a component-cost estimate, not a full-model
+trace decomposition. The mean interval outside the measured update is about
+6 ms. This confirms that attention dominates the current slowdown; the
+single-GPU accumulation path is secondary. These are short fresh-training
+diagnostics, not full-budget runs. The full-update benefit of smaller backward
+tiles has not been measured, and the candidate still requires production
+qualification. Disposable pilot checkpoints were removed after successful runs.
+
+Reproduce from a checkout of source `109dbd3`, with its own locked CUDA 13
+environment, choosing unused output/profile paths:
+
+```bash
+# Within a one-B300 allocation configured by launchers/kennel_runtime.sh:
+python -m scaffolds.transformer.benchmarks.benchmark_query_key_profile \
+  --output NEW_OUTPUT/kernel.json --profile-dir NEW_PROFILES --include-query-mosaic
+python -m scaffolds.transformer.benchmarks.analyze_profile NEW_PROFILES \
+  --step-name attention_forward_backward --output NEW_OUTPUT/profile-summary.json
+# The retained launcher also runs the exact softmax and query-key recipes:
+sbatch scaffolds/transformer/validation/profile_query_key_4b.sbatch \
+  "$(git rev-parse HEAD)" training 3
+```
+
 ### Query-key polynomial backward tiles
 
 The one-pass fused query-key polynomial kernel uses 32-by-32 backward tiles for

@@ -1,0 +1,619 @@
+{
+  "caveats": [
+    "Instruction counts are static text counts, not dynamic executed instructions.",
+    "PTX register identifiers are virtual registers; use profiler physical register counts separately.",
+    "Profile occupancy is theoretical, not measured achieved occupancy.",
+    "Compilation geometry changes compiler lowering as well as tile dimensions; evidence does not isolate a particular instruction as the cause.",
+    "Spill byte counts are compiler-reported static spill load/store sizes, not measured traffic per call. Reassembled dKV machine code matches the cached executable byte-for-byte in all four configurations. Other per-kernel matches are recorded explicitly; unmatched reassembly counts are diagnostic only."
+  ],
+  "conclusion": "The production 64x64 Blackwell backward lowering produces tcgen05 code with heavy register spilling and large machine code. The 32x32 lowering uses mma.sync, reduces dKV spill stores/loads about 98%, and reduces dKV duration about 19x. This establishes a compiler/kernel resource pathology; it does not attribute every saved cycle solely to spills.",
+  "created_at_utc": "2026-10-23T23:22:14.900483+00:00",
+  "job_id": "224602",
+  "ptxas_inspection": {
+    "scope": "CPU reassembly of extracted exact PTX; no GPU execution; per-kernel machine-code hashes compared to retained cubin",
+    "tool_path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+    "tool_sha256": "19e72e997567f783361f2b27403689d4254cde5d6ee78757660217126cd1a0e7",
+    "tool_version": "ptxas: NVIDIA (R) Ptx optimizing assembler\nCopyright (c) 2005-2026 NVIDIA Corporation\nBuilt on Fri_May_08_10:53:34_AM_PDT_2026\nCuda compilation tools, release 13.2, V13.2.86\nBuild cuda_13.2.r13.2/compiler.37953736_0\n"
+  },
+  "results": [
+    {
+      "backward_tiles": [
+        32,
+        32
+      ],
+      "cache_artifact": {
+        "bytes": 155156,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/cache/jit_objective-0a839b5b8b595422fe5b6625b2d08fdcb87e59200b9340704935d5ff0691647b-cache",
+        "sha256": "addab8a726350de2ca5fc077a824a872ad4e63dfa3952fd013bb5b51f2458f2f"
+      },
+      "cubin_artifact": {
+        "bytes": 225696,
+        "path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m8_backward32.cubin",
+        "sha256": "2d0e49f7a2b4ee114de354b6cfabeb9d1040d4be0e93a1bee2a2478a5f50f60b"
+      },
+      "degree": 8,
+      "forward_tiles": [
+        64,
+        64
+      ],
+      "id": "query_key_m8_backward32",
+      "kernels": {
+        "query_key_polynomial_8_unnormalized_dkv_factors": {
+          "assembler": {
+            "matches_original_cubin_text": true,
+            "physical_registers": 255,
+            "reassembled_text_sha256": "737dfb19c2b2d9d5aaac39d921145b79ee9aa78fb45a6a55c37aa1af8b2143eb",
+            "spill_load_bytes": 420,
+            "spill_store_bytes": 544,
+            "stack_frame_bytes": 416
+          },
+          "cubin_text_bytes": 30720,
+          "cubin_text_sha256": "737dfb19c2b2d9d5aaac39d921145b79ee9aa78fb45a6a55c37aa1af8b2143eb",
+          "gpu_trace": {
+            "duration_us": 5900.534,
+            "kernel_details": "regs:255 static_shared:0 dynamic_shared:23680 grid:64,16,14 block:128,1,1 occ_pct:12.5",
+            "theoretical_occupancy_pct": 12.5
+          },
+          "ptx_bytes": 87855,
+          "ptx_lines": 2265,
+          "static_instruction_substring_counts": {
+            "bar.sync": 30,
+            "cp.async": 50,
+            "ld.global": 58,
+            "ld.local": 0,
+            "ld.shared": 49,
+            "mbarrier": 0,
+            "mma.sync": 64,
+            "st.global": 13,
+            "st.local": 0,
+            "st.shared": 13,
+            "tcgen05": 0,
+            "wgmma": 0
+          }
+        },
+        "query_key_polynomial_8_unnormalized_dq_coefficients": {
+          "assembler": {
+            "matches_original_cubin_text": true,
+            "physical_registers": 254,
+            "reassembled_text_sha256": "8942d69845c70f29041d015b407c47e4f57eadd6bfe28e6136e3bde14bf23831",
+            "spill_load_bytes": 0,
+            "spill_store_bytes": 0,
+            "stack_frame_bytes": 0
+          },
+          "cubin_text_bytes": 25216,
+          "cubin_text_sha256": "8942d69845c70f29041d015b407c47e4f57eadd6bfe28e6136e3bde14bf23831",
+          "gpu_trace": {
+            "duration_us": 4284.391,
+            "kernel_details": "regs:254 static_shared:0 dynamic_shared:23552 grid:64,16,14 block:128,1,1 occ_pct:12.5",
+            "theoretical_occupancy_pct": 12.5
+          },
+          "ptx_bytes": 79280,
+          "ptx_lines": 2058,
+          "static_instruction_substring_counts": {
+            "bar.sync": 42,
+            "cp.async": 46,
+            "ld.global": 38,
+            "ld.local": 0,
+            "ld.shared": 28,
+            "mbarrier": 0,
+            "mma.sync": 40,
+            "st.global": 11,
+            "st.local": 0,
+            "st.shared": 22,
+            "tcgen05": 0,
+            "wgmma": 0
+          }
+        },
+        "query_key_polynomial_8_unnormalized_forward": {
+          "assembler": {
+            "matches_original_cubin_text": false,
+            "physical_registers": 189,
+            "reassembled_text_sha256": "73b58a658ac1bbc01aee88decd95a8bbbd2d009c68535641d2e3b115d25c2d48",
+            "spill_load_bytes": 0,
+            "spill_store_bytes": 0,
+            "stack_frame_bytes": 0
+          },
+          "cubin_text_bytes": 68352,
+          "cubin_text_sha256": "a6324b33e33b981119d7ffb47f282db66fa89e5705ceb157b9093bbe5f5d1360",
+          "gpu_trace": {
+            "duration_us": 1618.223,
+            "kernel_details": "regs:189 static_shared:0 dynamic_shared:35096 grid:32,16,14 block:128,1,1 occ_pct:12.5",
+            "theoretical_occupancy_pct": 12.5
+          },
+          "ptx_bytes": 173867,
+          "ptx_lines": 4770,
+          "static_instruction_substring_counts": {
+            "bar.sync": 44,
+            "cp.async": 65,
+            "ld.global": 13,
+            "ld.local": 0,
+            "ld.shared": 145,
+            "mbarrier": 32,
+            "mma.sync": 0,
+            "st.global": 8,
+            "st.local": 0,
+            "st.shared": 12,
+            "tcgen05": 79,
+            "wgmma": 0
+          }
+        }
+      },
+      "ptx_artifact": {
+        "bytes": 372608,
+        "path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m8_backward32.ptx",
+        "sha256": "886820e27c3df4f1dd2a9799adfa94f25abee2afc34fc656ace5f5b22f7eb05d"
+      },
+      "ptxas_reassembly": {
+        "command": [
+          "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+          "--gpu-name=sm_103a",
+          "--verbose",
+          "--warn-on-spills",
+          "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m8_backward32.ptx",
+          "-o",
+          "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m8_backward32.reassembled.cubin"
+        ],
+        "cubin_path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m8_backward32.reassembled.cubin",
+        "cubin_sha256": "21e98df171d4527dfe01db2a9edfdbc5cfbe5292f9c61d59c70e6ce0eeeae85f",
+        "log_path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m8_backward32.ptxas.log",
+        "log_sha256": "f72da7131df9e8a1bb3891588693561a9dc6230ad13d7abec03c1703481878b7",
+        "returncode": 0,
+        "seconds": 0.5812044851481915
+      },
+      "trace_artifact": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/profiles/query_key_m8_backward32/plugins/profile/2026_10_23_19_19_51/akita.csail.mit.edu.trace.json.gz",
+        "sha256": "b5d8a294021254c0fa4eaf6c9254e5aa5903692ccc04320c91f30b874cdc59d4"
+      }
+    },
+    {
+      "backward_tiles": [
+        64,
+        64
+      ],
+      "cache_artifact": {
+        "bytes": 599233,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/cache/jit_objective-3ae628e152e163de50f11ecf4ff85d20080c237043b47b4a514456af0616f71b-cache",
+        "sha256": "91dbe5d232679690387a5400bbd365a428ee086971765e64a03968612a26d4e0"
+      },
+      "cubin_artifact": {
+        "bytes": 1618416,
+        "path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m8_production.cubin",
+        "sha256": "a43d1b3421d0271cf8f14df815fb29ca478b2786c4f004ce6ac087b1ea149b61"
+      },
+      "degree": 8,
+      "forward_tiles": [
+        64,
+        64
+      ],
+      "id": "query_key_m8_production",
+      "kernels": {
+        "query_key_polynomial_8_unnormalized_dkv_factors": {
+          "assembler": {
+            "matches_original_cubin_text": true,
+            "physical_registers": 56,
+            "reassembled_text_sha256": "64292d5f804c070248c488676d1b2d9e225dc3492dadc1120a480f91bca86d42",
+            "spill_load_bytes": 39740,
+            "spill_store_bytes": 31652,
+            "stack_frame_bytes": 5992
+          },
+          "cubin_text_bytes": 574976,
+          "cubin_text_sha256": "64292d5f804c070248c488676d1b2d9e225dc3492dadc1120a480f91bca86d42",
+          "gpu_trace": {
+            "duration_us": 113665.868,
+            "kernel_details": "regs:56 static_shared:0 dynamic_shared:61984 grid:32,16,14 block:128,1,1 occ_pct:18.75",
+            "theoretical_occupancy_pct": 18.75
+          },
+          "ptx_bytes": 744835,
+          "ptx_lines": 19118,
+          "static_instruction_substring_counts": {
+            "bar.sync": 412,
+            "cp.async": 106,
+            "ld.global": 296,
+            "ld.local": 0,
+            "ld.shared": 529,
+            "mbarrier": 64,
+            "mma.sync": 0,
+            "st.global": 17,
+            "st.local": 0,
+            "st.shared": 424,
+            "tcgen05": 155,
+            "wgmma": 0
+          }
+        },
+        "query_key_polynomial_8_unnormalized_dq_coefficients": {
+          "assembler": {
+            "matches_original_cubin_text": false,
+            "physical_registers": 255,
+            "reassembled_text_sha256": "bbfa354fb437926f405060e26295a817c113fd3b44a2182e3278d09c7dcb59f5",
+            "spill_load_bytes": 3780,
+            "spill_store_bytes": 2824,
+            "stack_frame_bytes": 1360
+          },
+          "cubin_text_bytes": 134016,
+          "cubin_text_sha256": "ca3bb2f90ba3be8bb7078590529329896560a471a28006a63ebac20338985894",
+          "gpu_trace": {
+            "duration_us": 5517.948,
+            "kernel_details": "regs:255 static_shared:0 dynamic_shared:52000 grid:32,16,14 block:128,1,1 occ_pct:12.5",
+            "theoretical_occupancy_pct": 12.5
+          },
+          "ptx_bytes": 283884,
+          "ptx_lines": 7702,
+          "static_instruction_substring_counts": {
+            "bar.sync": 63,
+            "cp.async": 70,
+            "ld.global": 16,
+            "ld.local": 0,
+            "ld.shared": 146,
+            "mbarrier": 40,
+            "mma.sync": 0,
+            "st.global": 13,
+            "st.local": 0,
+            "st.shared": 28,
+            "tcgen05": 93,
+            "wgmma": 0
+          }
+        },
+        "query_key_polynomial_8_unnormalized_forward": {
+          "assembler": {
+            "matches_original_cubin_text": false,
+            "physical_registers": 189,
+            "reassembled_text_sha256": "a6324b33e33b981119d7ffb47f282db66fa89e5705ceb157b9093bbe5f5d1360",
+            "spill_load_bytes": 0,
+            "spill_store_bytes": 0,
+            "stack_frame_bytes": 0
+          },
+          "cubin_text_bytes": 68352,
+          "cubin_text_sha256": "73b58a658ac1bbc01aee88decd95a8bbbd2d009c68535641d2e3b115d25c2d48",
+          "gpu_trace": {
+            "duration_us": 1618.801,
+            "kernel_details": "regs:189 static_shared:0 dynamic_shared:35096 grid:32,16,14 block:128,1,1 occ_pct:12.5",
+            "theoretical_occupancy_pct": 12.5
+          },
+          "ptx_bytes": 173867,
+          "ptx_lines": 4770,
+          "static_instruction_substring_counts": {
+            "bar.sync": 44,
+            "cp.async": 65,
+            "ld.global": 13,
+            "ld.local": 0,
+            "ld.shared": 145,
+            "mbarrier": 32,
+            "mma.sync": 0,
+            "st.global": 8,
+            "st.local": 0,
+            "st.shared": 12,
+            "tcgen05": 79,
+            "wgmma": 0
+          }
+        }
+      },
+      "ptx_artifact": {
+        "bytes": 1234192,
+        "path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m8_production.ptx",
+        "sha256": "1e8ea1e6ccd92b2b9d76a3561a148bba298285ff4a7baab4151838bfaeccc857"
+      },
+      "ptxas_reassembly": {
+        "command": [
+          "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+          "--gpu-name=sm_103a",
+          "--verbose",
+          "--warn-on-spills",
+          "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m8_production.ptx",
+          "-o",
+          "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m8_production.reassembled.cubin"
+        ],
+        "cubin_path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m8_production.reassembled.cubin",
+        "cubin_sha256": "ac0b3621787072fb0b7cbe93d9e28b38c7035e11df631fbccdddf2975c35279b",
+        "log_path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m8_production.ptxas.log",
+        "log_sha256": "cabd37fd96b40c0690821362304c3ca0b0f246d1921521130d9e6fcfd8e1b074",
+        "returncode": 0,
+        "seconds": 5.160339728929102
+      },
+      "trace_artifact": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/profiles/query_key_m8_production/plugins/profile/2026_10_23_19_19_41/akita.csail.mit.edu.trace.json.gz",
+        "sha256": "cd8cf665c86fac037f4c7bf9f4c492a887ed0da25090fd30b1a6cdd687ae5bc2"
+      }
+    },
+    {
+      "backward_tiles": [
+        32,
+        32
+      ],
+      "cache_artifact": {
+        "bytes": 188059,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/cache/jit_objective-caa8593be7baba7347705eb3084bdaf7d4702c57a972aed829f90e78682d2895-cache",
+        "sha256": "1e9eca39a6c44b0089e2ae769de2e269596f32b4e323a874f1c9e270b2318d08"
+      },
+      "cubin_artifact": {
+        "bytes": 282016,
+        "path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m12_backward32.cubin",
+        "sha256": "67556d59d9b573349f2552acd740f1bcee626207b6ad56a2b854843a76c4deda"
+      },
+      "degree": 12,
+      "forward_tiles": [
+        64,
+        64
+      ],
+      "id": "query_key_m12_backward32",
+      "kernels": {
+        "query_key_polynomial_12_unnormalized_dkv_factors": {
+          "assembler": {
+            "matches_original_cubin_text": true,
+            "physical_registers": 255,
+            "reassembled_text_sha256": "dc14d11ad62d2d01996ec3ea5d344caf42575007d40e75da37b9c1b13663d676",
+            "spill_load_bytes": 684,
+            "spill_store_bytes": 752,
+            "stack_frame_bytes": 632
+          },
+          "cubin_text_bytes": 40704,
+          "cubin_text_sha256": "dc14d11ad62d2d01996ec3ea5d344caf42575007d40e75da37b9c1b13663d676",
+          "gpu_trace": {
+            "duration_us": 9453.316,
+            "kernel_details": "regs:255 static_shared:0 dynamic_shared:24192 grid:64,16,14 block:128,1,1 occ_pct:12.5",
+            "theoretical_occupancy_pct": 12.5
+          },
+          "ptx_bytes": 110891,
+          "ptx_lines": 2893,
+          "static_instruction_substring_counts": {
+            "bar.sync": 38,
+            "cp.async": 66,
+            "ld.global": 82,
+            "ld.local": 0,
+            "ld.shared": 69,
+            "mbarrier": 0,
+            "mma.sync": 64,
+            "st.global": 17,
+            "st.local": 0,
+            "st.shared": 17,
+            "tcgen05": 0,
+            "wgmma": 0
+          }
+        },
+        "query_key_polynomial_12_unnormalized_dq_coefficients": {
+          "assembler": {
+            "matches_original_cubin_text": true,
+            "physical_registers": 255,
+            "reassembled_text_sha256": "095b66b5afc1d5d2be67d602b6463f40b1643d0f97726bd19e95278abe24fe42",
+            "spill_load_bytes": 0,
+            "spill_store_bytes": 0,
+            "stack_frame_bytes": 0
+          },
+          "cubin_text_bytes": 34560,
+          "cubin_text_sha256": "095b66b5afc1d5d2be67d602b6463f40b1643d0f97726bd19e95278abe24fe42",
+          "gpu_trace": {
+            "duration_us": 5699.228,
+            "kernel_details": "regs:255 static_shared:0 dynamic_shared:24064 grid:64,16,14 block:128,1,1 occ_pct:12.5",
+            "theoretical_occupancy_pct": 12.5
+          },
+          "ptx_bytes": 104243,
+          "ptx_lines": 2710,
+          "static_instruction_substring_counts": {
+            "bar.sync": 58,
+            "cp.async": 62,
+            "ld.global": 54,
+            "ld.local": 0,
+            "ld.shared": 40,
+            "mbarrier": 0,
+            "mma.sync": 40,
+            "st.global": 15,
+            "st.local": 0,
+            "st.shared": 30,
+            "tcgen05": 0,
+            "wgmma": 0
+          }
+        },
+        "query_key_polynomial_12_unnormalized_forward": {
+          "assembler": {
+            "matches_original_cubin_text": false,
+            "physical_registers": 206,
+            "reassembled_text_sha256": "9305b83422c9fddc0c9d8470aae8366eb28c60b74f531ee432028af13e2decde",
+            "spill_load_bytes": 0,
+            "spill_store_bytes": 0,
+            "stack_frame_bytes": 0
+          },
+          "cubin_text_bytes": 82688,
+          "cubin_text_sha256": "8588b3de7b5bf6cfa79de74b16235b786d21a8ace3c98aa4e92ef75494aab7ea",
+          "gpu_trace": {
+            "duration_us": 1992.212,
+            "kernel_details": "regs:206 static_shared:0 dynamic_shared:36120 grid:32,16,14 block:128,1,1 occ_pct:12.5",
+            "theoretical_occupancy_pct": 12.5
+          },
+          "ptx_bytes": 210181,
+          "ptx_lines": 5702,
+          "static_instruction_substring_counts": {
+            "bar.sync": 44,
+            "cp.async": 81,
+            "ld.global": 17,
+            "ld.local": 0,
+            "ld.shared": 209,
+            "mbarrier": 32,
+            "mma.sync": 0,
+            "st.global": 8,
+            "st.local": 0,
+            "st.shared": 12,
+            "tcgen05": 79,
+            "wgmma": 0
+          }
+        }
+      },
+      "ptx_artifact": {
+        "bytes": 462529,
+        "path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m12_backward32.ptx",
+        "sha256": "5dd9e1f0277380b013f8addbf3b0530dc218d95e25d94369f21190abcb5944c8"
+      },
+      "ptxas_reassembly": {
+        "command": [
+          "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+          "--gpu-name=sm_103a",
+          "--verbose",
+          "--warn-on-spills",
+          "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m12_backward32.ptx",
+          "-o",
+          "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m12_backward32.reassembled.cubin"
+        ],
+        "cubin_path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m12_backward32.reassembled.cubin",
+        "cubin_sha256": "2817ccdb4dd1e0808283b9495721794abf287b413c0343dbc80c58cdc21353fa",
+        "log_path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m12_backward32.ptxas.log",
+        "log_sha256": "b36785fbbd85cac916da6415e035a64cbc93227c5a7904a9d8e0fd911f1fde7b",
+        "returncode": 0,
+        "seconds": 0.7637972133234143
+      },
+      "trace_artifact": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/profiles/query_key_m12_backward32/plugins/profile/2026_10_23_19_21_00/akita.csail.mit.edu.trace.json.gz",
+        "sha256": "c8025889db34afe0069506bde52e56ee0b3bab382fe4e46cfdd7f84467b5fa92"
+      }
+    },
+    {
+      "backward_tiles": [
+        64,
+        64
+      ],
+      "cache_artifact": {
+        "bytes": 804182,
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/cache/jit_objective-e55ab8437fc00cdb82ec416214b1fdb47be9bfdbaf9434c2a804f7993754d982-cache",
+        "sha256": "7928e912fca60681f6b32d5bb4ee294017da6090d3cc2a22a504556f75f038d5"
+      },
+      "cubin_artifact": {
+        "bytes": 2262840,
+        "path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m12_production.cubin",
+        "sha256": "dd72138aeb50295f45496c875db59b00630eb6b0131a0c36578713d70b2759f4"
+      },
+      "degree": 12,
+      "forward_tiles": [
+        64,
+        64
+      ],
+      "id": "query_key_m12_production",
+      "kernels": {
+        "query_key_polynomial_12_unnormalized_dkv_factors": {
+          "assembler": {
+            "matches_original_cubin_text": true,
+            "physical_registers": 56,
+            "reassembled_text_sha256": "eb84a410e027987614f4f58922b3bc60c19edf821466d16b1a0efd13fc35c7e8",
+            "spill_load_bytes": 53612,
+            "spill_store_bytes": 43108,
+            "stack_frame_bytes": 7880
+          },
+          "cubin_text_bytes": 781696,
+          "cubin_text_sha256": "eb84a410e027987614f4f58922b3bc60c19edf821466d16b1a0efd13fc35c7e8",
+          "gpu_trace": {
+            "duration_us": 182770.522,
+            "kernel_details": "regs:56 static_shared:0 dynamic_shared:64032 grid:32,16,14 block:128,1,1 occ_pct:18.75",
+            "theoretical_occupancy_pct": 18.75
+          },
+          "ptx_bytes": 1020122,
+          "ptx_lines": 25872,
+          "static_instruction_substring_counts": {
+            "bar.sync": 548,
+            "cp.async": 138,
+            "ld.global": 424,
+            "ld.local": 0,
+            "ld.shared": 593,
+            "mbarrier": 64,
+            "mma.sync": 0,
+            "st.global": 21,
+            "st.local": 0,
+            "st.shared": 520,
+            "tcgen05": 155,
+            "wgmma": 0
+          }
+        },
+        "query_key_polynomial_12_unnormalized_dq_coefficients": {
+          "assembler": {
+            "matches_original_cubin_text": false,
+            "physical_registers": 255,
+            "reassembled_text_sha256": "2f93682cb63197c81aafdf207a3b6fdd205225a24efe0d21bea9934fbbb3d187",
+            "spill_load_bytes": 5548,
+            "spill_store_bytes": 3652,
+            "stack_frame_bytes": 1840
+          },
+          "cubin_text_bytes": 180480,
+          "cubin_text_sha256": "ff48c06796a8fe0ea41ce753bdd7e2ec7b6420f64edc52933b4a0eae51704015",
+          "gpu_trace": {
+            "duration_us": 8910.174,
+            "kernel_details": "regs:255 static_shared:0 dynamic_shared:53024 grid:32,16,14 block:128,1,1 occ_pct:12.5",
+            "theoretical_occupancy_pct": 12.5
+          },
+          "ptx_bytes": 380554,
+          "ptx_lines": 10254,
+          "static_instruction_substring_counts": {
+            "bar.sync": 71,
+            "cp.async": 86,
+            "ld.global": 20,
+            "ld.local": 0,
+            "ld.shared": 210,
+            "mbarrier": 40,
+            "mma.sync": 0,
+            "st.global": 17,
+            "st.local": 0,
+            "st.shared": 28,
+            "tcgen05": 93,
+            "wgmma": 0
+          }
+        },
+        "query_key_polynomial_12_unnormalized_forward": {
+          "assembler": {
+            "matches_original_cubin_text": true,
+            "physical_registers": 206,
+            "reassembled_text_sha256": "8588b3de7b5bf6cfa79de74b16235b786d21a8ace3c98aa4e92ef75494aab7ea",
+            "spill_load_bytes": 0,
+            "spill_store_bytes": 0,
+            "stack_frame_bytes": 0
+          },
+          "cubin_text_bytes": 82688,
+          "cubin_text_sha256": "8588b3de7b5bf6cfa79de74b16235b786d21a8ace3c98aa4e92ef75494aab7ea",
+          "gpu_trace": {
+            "duration_us": 1991.509,
+            "kernel_details": "regs:206 static_shared:0 dynamic_shared:36120 grid:32,16,14 block:128,1,1 occ_pct:12.5",
+            "theoretical_occupancy_pct": 12.5
+          },
+          "ptx_bytes": 210181,
+          "ptx_lines": 5702,
+          "static_instruction_substring_counts": {
+            "bar.sync": 44,
+            "cp.async": 81,
+            "ld.global": 17,
+            "ld.local": 0,
+            "ld.shared": 209,
+            "mbarrier": 32,
+            "mma.sync": 0,
+            "st.global": 8,
+            "st.local": 0,
+            "st.shared": 12,
+            "tcgen05": 79,
+            "wgmma": 0
+          }
+        }
+      },
+      "ptx_artifact": {
+        "bytes": 1648071,
+        "path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m12_production.ptx",
+        "sha256": "cc01e3fe1d4d5d6ad3fb57991c5b4df8fdea9524c2bc9acc765bcdf3544319e4"
+      },
+      "ptxas_reassembly": {
+        "command": [
+          "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13/bin/ptxas",
+          "--gpu-name=sm_103a",
+          "--verbose",
+          "--warn-on-spills",
+          "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m12_production.ptx",
+          "-o",
+          "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m12_production.reassembled.cubin"
+        ],
+        "cubin_path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m12_production.reassembled.cubin",
+        "cubin_sha256": "78cf746a8a215f1d42f6529f44d1bde3c2da154142f0fa225cf95e6505e18601",
+        "log_path": "scaffolds/transformer/validation/logs/query-key-4b-b300/compiler/query_key_m12_production.ptxas.log",
+        "log_sha256": "e848459a89d5fb8deadc051ac90be138ce18a59cfb9388ed34700bdf6ffef3b0",
+        "returncode": 0,
+        "seconds": 8.158990093506873
+      },
+      "trace_artifact": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-4b-b300/profiles/query_key_m12_production/plugins/profile/2026_10_23_19_20_48/akita.csail.mit.edu.trace.json.gz",
+        "sha256": "57b5e3255553d2cf03075ac15710969cc59b5aa5e5251b6408e7a0c10c378447"
+      }
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Read-only inspection of compiled artifacts and existing GPU traces; attention benchmark, no new GPU execution",
+  "source_commit": "ba403d03e4964eafc9adda70db2f6fccb1429335"
+}
