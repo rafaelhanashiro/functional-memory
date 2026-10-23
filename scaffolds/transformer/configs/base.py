@@ -40,6 +40,8 @@ class ModelConfig:
     intermediate_size: int = 256
     rope_theta: float = 10000.0
     rms_norm_eps: float = 1e-6
+    # Opt-in FP32 backbone normalization arithmetic; False preserves historical BF16 recipes.
+    rms_norm_fp32: bool = False
     dropout: float = 0.0
     # Retained for recipe compatibility; this scaffold requires separate weights.
     tie_embeddings: bool = False
@@ -126,19 +128,22 @@ class ModelConfig:
     # "fixed" pins the denominator's constant at 1; "learned" learns it with the other
     # coefficients (or factors), leaving the common scale of numerator and denominator free.
     attention_denominator_constant: Literal["fixed", "learned"] = "fixed"
-    # Cosine scores for any dot-product mechanism: s = exp(gamma) * cos(q, k) with a
+    # Historical cosine scores: s = exp(gamma) * cos(q, k) with a
     # learned log scale gamma per layer and head (or one shared), initialized at
     # log(qk_norm_initial_scale); null selects sqrt(qk_head_dim).
     # QK-norm is the default for dot-product attention: unset resolves to on, except for
     # GLA (rejects it) and degree 0 (never reads Q/K). Plain scores need qk_norm: false.
     qk_norm: bool | None = None
-    qk_norm_sharing: Literal["global", "per_head"] = "per_head"
+    # rms_norm uses separate Q/K channel gains per layer, shared across heads,
+    # applied before RoPE. Set sharing=per_layer and leave initial_scale=null.
+    qk_norm_type: Literal["cosine_log_scale", "rms_norm"] = "cosine_log_scale"
+    qk_norm_sharing: Literal["global", "per_head", "per_layer"] = "per_head"
     qk_norm_initial_scale: float | None = None
     qk_norm_eps: float = 1e-6
     # Weight initialization: the scaffold's Flax defaults, or an architecture's reference
     # recipe ("transformer_reference" for dot-product attention, "gla_reference" for GLA);
     # see models/initialization.py.
-    initialization: Literal["flax_default", "transformer_reference", "gla_reference",
+    initialization: Literal["flax_default", "transformer_reference", "transformer_truncated_reference", "gla_reference",
                             "gated_deltanet_reference"] = "flax_default"
 
     def mosaic_supported(self) -> bool:
@@ -188,6 +193,8 @@ class ModelConfig:
             raise ValueError("The shared scaffold supports only kind=transformer")
         if self.tie_embeddings is not False:
             raise ValueError("model.tie_embeddings must be false: the shared scaffold requires untied embeddings")
+        if not isinstance(self.rms_norm_fp32, bool):
+            raise ValueError("model.rms_norm_fp32 must be a boolean")
         for name in (
             "vocab_size", "max_seq_len", "num_layers", "hidden_size", "num_heads",
             "num_kv_heads", "qk_head_dim", "value_head_dim", "intermediate_size",
@@ -427,8 +434,13 @@ class ModelConfig:
             self.qk_norm = False  # Degree 0 ignores Q and K, so QK-norm cannot apply.
         if not isinstance(self.qk_norm, bool):
             raise ValueError("model.qk_norm must be a boolean")
-        if self.qk_norm_sharing not in ("global", "per_head"):
+        if self.qk_norm_type not in ("cosine_log_scale", "rms_norm"):
+            raise ValueError(f"Unknown QK-norm type: {self.qk_norm_type}")
+        allowed_sharing = ("per_layer",) if self.qk_norm_type == "rms_norm" else ("global", "per_head")
+        if self.qk_norm_sharing not in allowed_sharing:
             raise ValueError(f"Unknown QK-norm sharing: {self.qk_norm_sharing}")
+        if self.qk_norm_type == "rms_norm" and self.qk_norm_initial_scale is not None:
+            raise ValueError("QK RMSNorm initializes channel gains at one; qk_norm_initial_scale must be null")
         for name in ("qk_norm_initial_scale", "qk_norm_eps"):
             value = getattr(self, name)
             if name == "qk_norm_initial_scale" and value is None:
@@ -483,6 +495,9 @@ class TrainConfig:
     micro_batch_size: int = 2
     log_every: int = 10
     eval_every: int = 10
+    # Optional initial evaluation cadence, fixed in the recipe for pilots/resumptions.
+    eval_early_every: int | None = None
+    eval_early_until: int = 0
     eval_batches: int = 1
     ckpt_every: int = 10
     # W&B mirrors committed metrics; launchers choose the mode. Name and group
@@ -524,6 +539,15 @@ def validate_config(config: Config) -> None:
             raise ValueError(f"{name} must be a positive integer")
     if data.batch_size % train.micro_batch_size:
         raise ValueError("data.batch_size must be divisible by train.micro_batch_size")
+    if (not isinstance(train.eval_early_until, int) or isinstance(train.eval_early_until, bool)
+            or train.eval_early_until < 0):
+        raise ValueError("train.eval_early_until must be a nonnegative integer")
+    if train.eval_early_every is None:
+        if train.eval_early_until != 0:
+            raise ValueError("train.eval_early_every and train.eval_early_until must be set together")
+    elif (not isinstance(train.eval_early_every, int) or isinstance(train.eval_early_every, bool)
+          or train.eval_early_every <= 0 or train.eval_early_until <= 0):
+        raise ValueError("train.eval_early_every and train.eval_early_until must both be positive integers")
     if not 2 <= data.sequence_length <= config.model.max_seq_len + 1:
         raise ValueError("data.sequence_length must be between 2 and model.max_seq_len + 1")
     if data.source == "synthetic" and not 1 < data.synthetic_vocab_size <= config.model.vocab_size:

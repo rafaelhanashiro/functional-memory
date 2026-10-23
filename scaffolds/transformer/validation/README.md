@@ -11,6 +11,20 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Static coefficient capture and override
+
+The static coefficient adaptation API passes nine CPU override checks, including
+signed coefficients with 14 heads, QK RMSNorm, and truncated reference
+initialization. Capture leaves the ordinary static forward unchanged and returns
+the represented FP32 coefficients after factorial scaling. Replaying that table
+uses the general per-query polynomial path without another factorial division or
+activation. Checks cover JIT replay, independent query/example updates, gradients
+through frozen later layers, an improving coefficient update, and unchanged
+pretrained parameters. Run `JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python
+-m pytest -q scaffolds/transformer/tests/test_coefficient_override.py` to repeat.
+GPU replay and checkpoint qualification are required in the fitting allocation
+before production; its `oracle_acceptance.json` retains those measurements.
+
 ### Direct query-coefficient capture and override
 
 On 2026-10-23, the [CPU validation record](runs/coefficient-override-cpu/tests.json)
@@ -68,6 +82,35 @@ The validation record pins these immutable qualification copies, their source ru
 IDs, jobs, hardware, source commit, and checksums. Each production allocation
 repeats its own checks in the run's `oracle_acceptance.json`. Scientific fitting
 outcomes remain under the runs; this record contains software qualification only.
+
+### Selectable QK RMSNorm, truncated initialization, and pilot cadence
+
+The shared scaffold now supports Q/K RMSNorm with independent learned channel
+gains per layer, shared across heads, before RoPE; fixed standard attention scaling
+remains in the backend. The opt-in `transformer_truncated_reference` initialization
+conditions a Gaussian with standard deviation 0.02 on ±0.04 without variance
+compensation, then scales residual projections by `1/sqrt(2L)`.
+`rms_norm_fp32` selects FP32 backbone norm arithmetic. Existing named initializers,
+cosine QK normalization, and historical precision defaults remain unchanged.
+
+CPU verification on 2026-10-23 passed 81 QK/config/parameter-policy/telemetry tests
+(four GPU-only cases were skipped), 23 selected initialization/norm/allocation
+tests, and 48 acceptance/evaluation-cadence tests. These cover forward values and
+gradients, gain ownership and decay exclusions, conditional-Gaussian support and
+variance, legacy recipe identity, and scratch-pilot evaluation without mutating
+the production recipe. Runtime projections count the actual evaluation and
+checkpoint schedules, including the early cadence. Reproduce with:
+
+```bash
+export JAX_PLATFORMS=cpu
+scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_qk_rms_norm.py scaffolds/transformer/tests/test_config.py scaffolds/transformer/tests/test_parameter_policy.py scaffolds/transformer/tests/test_telemetry.py
+scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_initialization.py scaffolds/transformer/tests/test_normalization.py scaffolds/records/tests/test_records.py -k 'initialization or reference or norm'
+scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_acceptance.py scaffolds/transformer/tests/test_evaluation_cadence.py
+```
+
+This is CPU correctness evidence. Full-context GPU kernels, production memory and
+throughput, and checkpoint continuation are qualified separately in each run's
+acceptance record before production begins.
 
 ### Query-key polynomial backward tiles
 

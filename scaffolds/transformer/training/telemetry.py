@@ -157,6 +157,7 @@ _GROUP_RULES = (
     ("attention_short_convolution", re.compile(r"/(q_conv|k_conv|v_conv)/")),
     ("mlp", re.compile(r"feed_forward")),
     ("qk_norm_scale", re.compile(r"qk_norm_log_scale")),
+    ("qk_norm_gains", re.compile(r"qk_norm_[qk]_gain")),
     ("attention_output_norm", re.compile(r"output_norm_scale|o_norm_scale")),
     ("attention_coefficients", re.compile(r"coefficient|polynomial|denominator")),
     ("norm_scales", re.compile(r"(attention_norm|ffn_norm|final_norm)/")),

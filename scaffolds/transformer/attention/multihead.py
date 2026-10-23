@@ -10,7 +10,7 @@ from flax import nnx
 
 from scaffolds.transformer.attention.core import attention_core
 from scaffolds.transformer.attention.output_scaling import OUTPUT_SCALINGS, scale_attention_output
-from scaffolds.transformer.attention.qk_norm import cosine_score_operands
+from scaffolds.transformer.attention.qk_norm import cosine_score_operands, rms_score_operands
 from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
 from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
@@ -56,6 +56,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_coefficient_scale=config.attention_coefficient_scale,
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
+        qk_norm_type=config.qk_norm_type,
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
         positional_encoding=config.positional_encoding,
         rngs=rngs,
@@ -77,6 +78,7 @@ class MultiHeadAttention(nnx.Module):
         positional_encoding: str = "rope",
         attention_coefficient_amplitude_scale: str = "none",
         attention_coefficient_scale: str = "none",
+        qk_norm_type: str = "cosine_log_scale",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path"):
@@ -89,6 +91,8 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("attention_normalization must be a boolean")
         if not isinstance(qk_norm, bool):
             raise ValueError("qk_norm must be a boolean")
+        if qk_norm_type not in ("cosine_log_scale", "rms_norm"):
+            raise ValueError(f"Unknown QK-norm type: {qk_norm_type}")
         if qk_norm and attention_degree == 0:
             raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
         if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused", "mosaic")):
@@ -175,6 +179,7 @@ class MultiHeadAttention(nnx.Module):
         self.attention_normalization = attention_normalization
         self.quadratic_mode = quadratic_mode
         self.qk_norm = qk_norm
+        self.qk_norm_type = qk_norm_type
         self.qk_norm_eps = qk_norm_eps
         self.attention_output_scaling = attention_output_scaling
         self.rms_norm_eps = rms_norm_eps
@@ -199,8 +204,10 @@ class MultiHeadAttention(nnx.Module):
         if return_coefficients and return_diagnostics:
             raise ValueError("return_coefficients and return_diagnostics are mutually exclusive")
         if query_coefficients is not None or return_coefficients:
-            if self.attention_coefficient_conditioning != "query":
-                raise ValueError("Coefficient override and capture require query-only conditioning")
+            if (self.attention_coefficient_conditioning not in ("static", "query")
+                    or self.attention_normalization or self.attention_degree is None
+                    or self.attention_degree < 1):
+                raise ValueError("Coefficient override and capture require unnormalized static or query coefficients")
             if query_coefficients is not None:
                 expected = (batch, seq_len, self.num_heads, self.attention_degree + 1)
                 if query_coefficients.shape != expected:
@@ -208,8 +215,13 @@ class MultiHeadAttention(nnx.Module):
                 query_coefficients = jnp.asarray(query_coefficients, dtype=jnp.float32)
         parameters = {} if attention_parameters is None else dict(attention_parameters)
         log_scale = parameters.pop("qk_norm_log_scale", None)
-        if self.qk_norm != (log_scale is not None):
+        q_gain = parameters.pop("qk_norm_q_gain", None)
+        k_gain = parameters.pop("qk_norm_k_gain", None)
+        if (self.qk_norm and self.qk_norm_type == "cosine_log_scale") != (log_scale is not None):
             raise ValueError("QK-norm requires exactly its model-owned qk_norm_log_scale parameter")
+        rms_enabled = self.qk_norm and self.qk_norm_type == "rms_norm"
+        if rms_enabled != (q_gain is not None) or rms_enabled != (k_gain is not None):
+            raise ValueError("QK RMSNorm requires exactly its model-owned qk_norm_q_gain and qk_norm_k_gain parameters")
         output_norm_scale = parameters.pop("output_norm_scale", None)
         if (self.attention_output_scaling == "head_rms_norm") != (output_norm_scale is not None):
             raise ValueError("Head RMSNorm output scaling requires exactly its model-owned output_norm_scale parameter")
@@ -249,6 +261,24 @@ class MultiHeadAttention(nnx.Module):
         elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_tanh_bias,
                                                  key_kernel, key_amplitude)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
+        kernel_coefficient_activation = self.attention_coefficient_activation
+        if self.attention_coefficient_conditioning == "static" and (
+                query_coefficients is not None or return_coefficients):
+            if "polynomial_coefficients" not in parameters:
+                raise ValueError("Static coefficient capture and override require direct polynomial coefficients")
+            # Capture the represented coefficients after their one factorial division.
+            # Capture alone preserves the ordinary static attention call exactly.
+            effective_coefficients = jnp.broadcast_to(
+                parameters["polynomial_coefficients"],
+                (batch, seq_len, self.num_heads, self.attention_degree + 1))
+            if query_coefficients is not None:
+                effective_coefficients = query_coefficients
+                parameters.pop("polynomial_coefficients")
+                parameters["query_polynomial_coefficients"] = effective_coefficients
+                # The core's tanh branch selects the general per-query polynomial
+                # kernel. These are already effective coefficients: no activation,
+                # generator, or further factorial scaling is applied to the table.
+                kernel_coefficient_activation = "tanh"
         from scaffolds.transformer.attention.path import PATH_ARGUMENTS
 
         path_parameters = {name: parameters.pop(name, None) for name in PATH_ARGUMENTS}
@@ -262,8 +292,11 @@ class MultiHeadAttention(nnx.Module):
         k = k.reshape(batch, seq_len, self.num_kv_heads, self.qk_head_dim)
         v = v.reshape(batch, seq_len, self.num_kv_heads, self.value_head_dim)
         if self.qk_norm:
-            # Cosine scores: the mechanisms' q'.k'/sqrt(d_K) becomes exp(gamma) cos(q, k).
-            q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)
+            if self.qk_norm_type == "rms_norm":
+                q, k = rms_score_operands(q, k, q_gain, k_gain, eps=self.qk_norm_eps)
+            else:
+                # Preserve the historical scaled-cosine arithmetic exactly.
+                q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)
         if self.positional_encoding == "path":
             result = self._path_attention(x, q.astype(self.dtype), k.astype(self.dtype), v, parameters,
                                           path_parameters, output_norm_scale, return_diagnostics)
@@ -290,7 +323,7 @@ class MultiHeadAttention(nnx.Module):
         result = attention_core(
             q, k, v, backend=self.backend, attention_degree=self.attention_degree,
             attention_normalization=self.attention_normalization,
-            attention_coefficient_activation=self.attention_coefficient_activation,
+            attention_coefficient_activation=kernel_coefficient_activation,
             quadratic_mode=self.quadratic_mode, **parameters,
             return_diagnostics=return_diagnostics, dropout=self.dropout,
             deterministic=deterministic, rngs=rngs, weights_dtype=x.dtype,

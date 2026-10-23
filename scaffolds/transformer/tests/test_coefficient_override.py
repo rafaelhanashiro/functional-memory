@@ -1,6 +1,7 @@
 """Free query coefficients preserve checkpoint forwards and isolate adaptation."""
 
 from dataclasses import replace
+import math
 
 from flax import nnx
 import jax
@@ -29,6 +30,19 @@ def _config(**updates):
 
 def _tokens():
     return jnp.arange(14).reshape(2, 7) % 16
+
+
+def _static_config(**updates):
+    return _config(**{
+        "attention_coefficient_conditioning": "static",
+        "attention_coefficient_activation": "identity",
+        "attention_coefficient_amplitude_scale": "none",
+        "attention_coefficient_projection_initial_std": 0,
+        "attention_coefficient_tanh_bias": False,
+        "qk_norm_type": "rms_norm", "qk_norm_sharing": "per_layer",
+        "rms_norm_fp32": True, "initialization": "transformer_truncated_reference",
+        **updates,
+    })
 
 
 def _loss(logits, targets):
@@ -122,17 +136,69 @@ def test_shape_errors_and_ambiguous_returns_are_rejected():
         attention(x, return_coefficients=True, return_diagnostics=True)
 
 
-@pytest.mark.parametrize("conditioning", ("static", "query_key"))
-def test_coefficient_access_rejects_other_conditioning(conditioning):
-    config = _config() if conditioning == "query_key" else _config(
-        attention_coefficient_conditioning="static",
-        attention_coefficient_activation="identity", attention_coefficient_amplitude_scale="none",
-        attention_coefficient_projection_initial_std=0, attention_coefficient_tanh_bias=False)
-    model = build_model(replace(config, attention_coefficient_conditioning=conditioning), 7)
-    with pytest.raises(ValueError, match="query-only"):
+def test_coefficient_access_rejects_query_key_conditioning():
+    model = build_model(replace(_config(), attention_coefficient_conditioning="query_key"), 7)
+    with pytest.raises(ValueError, match="static or query"):
         model(_tokens(), return_coefficients=True)
-    with pytest.raises(ValueError, match="query-only"):
+    with pytest.raises(ValueError, match="static or query"):
         model(_tokens(), query_coefficients=jnp.zeros((2, 2, 7, 2, 9)))
+
+
+def test_static_capture_preserves_forward_and_replays_effective_coefficients():
+    config = _static_config(num_layers=3, num_heads=14, num_kv_heads=14,
+                            hidden_size=28, intermediate_size=40)
+    model = build_model(config, 7)
+    # Include signed, non-Taylor learned values so duplicate factorial scaling or
+    # accidental tanh application cannot pass merely by reproducing initialization.
+    stored = jnp.linspace(-0.3, 1.7, model.polynomial_coefficients.size).reshape(
+        model.polynomial_coefficients.shape)
+    model.polynomial_coefficients[...] = stored
+    tokens = _tokens()
+    expected = model(tokens)
+    captured, coefficients = model(tokens, return_coefficients=True)
+    np.testing.assert_array_equal(captured, expected)
+    represented = stored / jnp.asarray([math.factorial(r) for r in range(9)], jnp.float32)
+    np.testing.assert_array_equal(coefficients, jnp.broadcast_to(
+        represented[:, None, None, :, :], (3, 2, 7, 14, 9)))
+    np.testing.assert_allclose(model(tokens, query_coefficients=coefficients),
+                               expected, rtol=2e-5, atol=2e-6)
+    graph, state = nnx.split(model)
+    compiled = jax.jit(lambda state, table: nnx.merge(graph, state)(tokens, query_coefficients=table))
+    np.testing.assert_allclose(compiled(state, coefficients), expected, rtol=2e-5, atol=2e-6)
+    model.polynomial_coefficients[...] += 0.5
+    np.testing.assert_allclose(model(tokens, query_coefficients=coefficients),
+                               expected, rtol=2e-5, atol=2e-6)
+    assert not np.allclose(model(tokens), expected)
+
+
+def test_static_override_has_independent_query_gradients_and_frozen_backbone():
+    model = build_model(_static_config(), 7)
+    tokens = _tokens()
+    expected, coefficients = model(tokens, return_coefficients=True)
+    before = jax.tree.map(lambda x: np.array(x, copy=True), nnx.state(model, nnx.Param))
+    graph, state = nnx.split(model)
+
+    def objective(table):
+        return _loss(nnx.merge(graph, state)(tokens, query_coefficients=table), (tokens + 1) % 16)
+
+    loss, gradient = jax.jit(jax.value_and_grad(objective))(coefficients)
+    assert np.isfinite(gradient).all()
+    assert all(float(jnp.linalg.norm(layer)) > 0 for layer in gradient)
+    direction = gradient / jnp.linalg.norm(gradient)
+    eps = 2e-3
+    early = direction.at[1:].set(0)
+    finite_difference = (objective(coefficients + eps * early)
+                         - objective(coefficients - eps * early)) / (2 * eps)
+    np.testing.assert_allclose(finite_difference, jnp.sum(gradient * early), rtol=0.03, atol=2e-5)
+    assert float(objective(coefficients - 1e-3 * direction)) < float(loss)
+    changed = coefficients.at[:, 0, -1, :, 1].add(0.2)
+    actual = model(tokens, query_coefficients=changed)
+    np.testing.assert_allclose(actual[1], expected[1], rtol=2e-5, atol=2e-6)
+    np.testing.assert_allclose(actual[0, :-1], expected[0, :-1], rtol=2e-5, atol=2e-6)
+    assert not np.allclose(actual[0, -1], expected[0, -1])
+    for original, current in zip(jax.tree.leaves(before),
+                                 jax.tree.leaves(nnx.state(model, nnx.Param)), strict=True):
+        np.testing.assert_array_equal(current, original)
 
 
 def test_default_static_model_diagnostics_remain_available_with_remat():

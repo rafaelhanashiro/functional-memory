@@ -518,6 +518,22 @@ def test_cli_requires_explicit_opt_out_for_flax_default_initialization(tmp_path,
     validate_record(run)
 
 
+def test_cli_preserves_explicit_truncated_reference_initialization(tmp_path, monkeypatch, capsys):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    source.write_text("model:\n  initialization: transformer_truncated_reference\n  rms_norm_fp32: true\n")
+    study = tmp_path / "transformer_200m_4b"
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    model = yaml.safe_load((run / "config.yaml").read_text())["model"]
+    assert model["initialization"] == "transformer_truncated_reference"
+    assert model["rms_norm_fp32"] is True
+    assert model["qk_norm"] is True
+    validate_record(run)
+
+
 def test_cli_allows_explicit_plain_qk_opt_out(tmp_path, monkeypatch, capsys):
     from scaffolds.records.__main__ import main
 

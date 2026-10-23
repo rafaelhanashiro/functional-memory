@@ -401,11 +401,28 @@ def attention_identity(config) -> dict:
 
 
 def qk_norm_identity(model) -> dict:
-    """Cosine-score facts recorded beside the mechanism's own identity."""
+    """Normalization and parameter ownership recorded beside the mechanism identity."""
     from scaffolds.transformer.attention.qk_norm import initial_scale
 
+    if model.qk_norm_type == "rms_norm":
+        return {
+            "qk_norm": True,
+            "qk_norm_type": "rms_norm",
+            "qk_norm_sharing": "per_layer",
+            "qk_norm_eps": model.qk_norm_eps,
+            "qk_norm_parameter_count": 2 * model.num_layers * model.qk_head_dim,
+            "qk_norm_gain_shape": [model.num_layers, model.qk_head_dim],
+            "qk_norm_initial_gain": 1.0,
+            "qk_norm_gain_shared_across_heads": True,
+            "qk_norm_stats_dtype": "float32",
+            "attention_score_formula": (
+                "<RoPE(g_Q * q / sqrt(mean(q^2) + eps)), "
+                "RoPE(g_K * k / sqrt(mean(k^2) + eps))> / sqrt(d_K); "
+                "independent Q/K channel gains per layer, shared across heads"),
+        }
     return {
         "qk_norm": True,
+        "qk_norm_type": "cosine_log_scale",
         "qk_norm_sharing": model.qk_norm_sharing,
         "qk_norm_initial_scale": initial_scale(model),
         "qk_norm_eps": model.qk_norm_eps,
@@ -571,6 +588,20 @@ def qk_norm_scale_report(params, config) -> dict:
     }
 
 
+def qk_norm_gain_report(params) -> dict:
+    """Keep every Q/K gain, with the final axis distinguishing Q from K."""
+    gains = np.stack([np.asarray(jax.device_get(params[name][...]), dtype=np.float64)
+                      for name in ("qk_norm_q_gain", "qk_norm_k_gain")], axis=-1)
+    return {
+        "raw_parameter_names": ["g_Q", "g_K"],
+        "raw": _serializable(gains),
+        "effective_coefficient_names": ["g_Q", "g_K"],
+        "effective": _serializable(gains),
+        "axes": ["layer", "channel", "query_or_key"],
+        "finite": bool(np.all(np.isfinite(gains))),
+    }
+
+
 def fixed_diagnostic_sample(config, *, validated_manifest=None):
     """Read only the first held-out record, with an independent iterator."""
     sample = next(make_eval_iterator(
@@ -707,10 +738,16 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         if not coefficient_report["finite"]:
             issues.append("Nonfinite fixed square factors")
     scale_report = None
+    gain_report = None
     if config.model.qk_norm:
-        scale_report = qk_norm_scale_report(params, config)
-        if not scale_report["finite"]:
-            issues.append("Nonfinite QK-norm scales")
+        if config.model.qk_norm_type == "rms_norm":
+            gain_report = qk_norm_gain_report(params)
+            if not gain_report["finite"]:
+                issues.append("Nonfinite QK RMSNorm gains")
+        else:
+            scale_report = qk_norm_scale_report(params, config)
+            if not scale_report["finite"]:
+                issues.append("Nonfinite QK-norm scales")
     report = {
         "format": "shared-transformer-attention-diagnostics",
         "version": 1,
@@ -740,4 +777,6 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         report["kernel_values"] = "unshifted_query_polynomial"
     if scale_report is not None:
         report["qk_norm_scale"] = scale_report
+    if gain_report is not None:
+        report["qk_norm_gains"] = gain_report
     return report

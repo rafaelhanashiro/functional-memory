@@ -24,34 +24,42 @@ def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def prepare(parent):
+def prepare(parent, *, sequence_counts=None, topic=TOPIC):
     parent = Path(parent).resolve()
+    topic = Path(topic).resolve()
+    if topic.parent != ROOT / "results/exploratory":
+        raise ValueError("The topic must be directly under results/exploratory")
     record = load_run(parent)
-    validate_record(parent, checkpoint_hashes=False)
+    validate_record(parent, checkpoint_hashes=True)
     if record["home_cluster"] != "kennel" or record["status"] != "complete":
         raise ValueError("The parent must be a completed Kennel run")
     source = yaml.safe_load((parent / "config.yaml").read_text())
     model = source["model"]
-    if (model["attention_degree"] != 8 or model["attention_coefficient_conditioning"] != "query"
-            or model["initialization"] != "transformer_reference"):
-        raise ValueError("Expected the reference-initialized degree-eight query-only parent")
+    if (model["attention_degree"] != 8 or model["attention_coefficient_conditioning"] not in ("static", "query")
+            or model["attention_coefficients"] != "learned" or model["attention_normalization"]
+            or model["attention_coefficient_parameterization"] != "direct"
+            or model["initialization"] not in ("transformer_reference", "transformer_truncated_reference")):
+        raise ValueError("Expected a reference-initialized degree-eight static or query-only learned polynomial parent")
     best = json.loads((parent / "best_validation.json").read_text())
     checkpoint = parent / "checkpoints" / str(best["step"])
     if not checkpoint.is_dir():
         raise FileNotFoundError(checkpoint)
     if record["selected_checkpoint"]["step"] != best["step"]:
         raise ValueError("Parent selected checkpoint and validation best disagree")
-    if TOPIC.joinpath("selection.yaml").exists():
+    if topic.joinpath("selection.yaml").exists():
         raise ValueError("This worktree already has an allocated coefficient-oracle selection")
+    counts = (1, source["data"]["batch_size"]) if sequence_counts is None else tuple(sequence_counts)
+    if not counts or len(set(counts)) != len(counts) or any(count < 1 for count in counts):
+        raise ValueError("Sequence counts must be distinct positive integers")
     runs = []
-    for count in (1, source["data"]["batch_size"]):
+    for count in counts:
         recipe = deepcopy(source)
         # This historical, irrelevant GDN field is absent from the current dot-product schema.
         if recipe["model"].get("gdn_polynomial_degree") == 1:
             recipe["model"].pop("gdn_polynomial_degree")
-        label = f"200m-m008-query-coefficient-oracle-sequences{count}-seed0"
+        label = f"{topic.name}-m008-{model['attention_coefficient_conditioning']}-sequences{count}-seed{source['train']['seed']}"
         recipe.update(schema_version=1, experiment_kind="fixed_input_coefficient_oracle",
-                      condition=f"coefficient_oracle/sequences_{count}")
+                      condition=f"{topic.name}/sequences_{count}")
         recipe["data"]["batch_size"] = count
         recipe["optim"].update(learning_rate=0.01, min_learning_rate=0.001,
                                weight_decay=0.0, warmup_steps=0, total_steps=10000)
@@ -60,6 +68,7 @@ def prepare(parent):
                                wandb_run_name=label, wandb_group="attention_scaling", wandb_dir=None)
         recipe["oracle"] = {
             "parent_run_id": parent.name, "parent_config": str(parent / "config.yaml"),
+            "parent_study": parent.parent.parent.name,
             "parent_config_sha256": sha256(parent / "config.yaml"),
             "parent_checkpoint": str(checkpoint), "parent_checkpoint_step": best["step"],
             "parent_checkpoint_sha256": record["selected_checkpoint"]["sha256"],
@@ -81,30 +90,30 @@ def prepare(parent):
         }
         run = create_run(STUDY, recipe, label=label)
         update_record(run, {
-            "home_cluster": "kennel", "seed": 0, "parent_run_id": parent.name,
+            "home_cluster": "kennel", "seed": source["train"]["seed"], "parent_run_id": parent.name,
             "coefficient_sharing": "per_example_layer_head_query",
             "coefficient_parameterization": "free_per_example_query_coefficients",
             "checkpoint_retention": "best fitting coefficients, required to reproduce the fitted oracle",
             "source_checkpoint": {**record["selected_checkpoint"], "path": str(checkpoint)},
         })
         runs.append(run)
-    TOPIC.mkdir(parents=True, exist_ok=True)
+    topic.mkdir(parents=True, exist_ok=True)
     selection = {
-        "schema_version": 1, "opened": "2026-10-23",
+        "schema_version": 1, "opened": datetime.now(UTC).date().isoformat(),
         "question": "How much can free query polynomial coefficients improve a fixed pretrained model on fixed inputs?",
         "settings": {"metric": "fit_nll", "parent_run_id": parent.name,
                      "same_first_sequence": True, "generalization_claim": False},
         "runs": [{"study": "attention_scaling", "run_id": run.name,
-                  "role": "single_sequence" if index == 0 else "full_batch", "sources": {}}
-                 for index, run in enumerate(runs)],
+                  "role": "single_sequence" if count == 1 else f"sequences_{count}", "sources": {}}
+                 for count, run in zip(counts, runs)],
     }
-    (TOPIC / "selection.yaml").write_text(yaml.safe_dump(selection, sort_keys=False))
-    refresh_selection(TOPIC)
+    (topic / "selection.yaml").write_text(yaml.safe_dump(selection, sort_keys=False))
+    refresh_selection(topic)
     regenerate_index(STUDY)
     print(" ".join(run.name for run in runs), flush=True)
 
 
-def submit(run_ids, *, partition, qualify_only=False):
+def submit(run_ids, *, partition, qualify_only=False, time_limit="12:00:00"):
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     dirty = changes(ROOT, commit, "attention_scaling", "transformer")
     if dirty:
@@ -125,7 +134,7 @@ def submit(run_ids, *, partition, qualify_only=False):
         command = ["sbatch", "--parsable", "--nice=0", f"--partition={partition}",
                    "--gres=gpu:1", "--exclude=collie,samoyed,doodle,terrier,mastiff",
                    "--cpus-per-task=8", "--mem=96G",
-                   "--time=00:30:00" if qualify_only else "--time=12:00:00",
+                   "--time=00:30:00" if qualify_only else f"--time={time_limit}",
                    f"--job-name=coef-oracle-{run_id}", f"--output={log}", f"--error={log}",
                    str(STUDY / "coefficient_oracle.sbatch"), str(ROOT), commit, run_id]
         if qualify_only:
@@ -149,15 +158,19 @@ def main():
     sub = parser.add_subparsers(dest="command", required=True)
     prep = sub.add_parser("prepare")
     prep.add_argument("--parent", type=Path, required=True)
+    prep.add_argument("--sequence-counts", type=int, nargs="+",
+                      help="Allocate only these fitting sizes; defaults to one sequence and the parent batch")
+    prep.add_argument("--topic", type=Path, default=TOPIC)
     launch = sub.add_parser("submit")
     launch.add_argument("run_ids", nargs="+")
     launch.add_argument("--partition", default="standard,long")
     launch.add_argument("--qualify-only", action="store_true")
+    launch.add_argument("--time-limit", default="12:00:00")
     args = parser.parse_args()
     if args.command == "prepare":
-        prepare(args.parent)
+        prepare(args.parent, sequence_counts=args.sequence_counts, topic=args.topic)
     else:
-        submit(args.run_ids, partition=args.partition, qualify_only=args.qualify_only)
+        submit(args.run_ids, partition=args.partition, qualify_only=args.qualify_only, time_limit=args.time_limit)
 
 
 if __name__ == "__main__":

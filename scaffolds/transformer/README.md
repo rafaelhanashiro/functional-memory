@@ -178,7 +178,7 @@ broadcast differentiation. `attention_backend: auto` selects fused execution on
 supported NVIDIA GPUs and the blocked reference otherwise. The blocked reference
 provides diagnostics while the fused output continues through subsequent layers.
 
-### QK-norm (cosine scores)
+### QK normalization
 
 QK-norm is required for new dot-product experiments unless the user explicitly
 requests plain QK scores. A recipe that leaves `qk_norm` unset gets `true`; frozen
@@ -189,7 +189,8 @@ silently retaining plain `q·k / sqrt(d_K)` scores. Historical recipes and resum
 retain their recorded settings. GLA rejects `qk_norm: true`, and degree 0, which
 never reads Q or K, resolves
 it to `false`. It composes with every dot-product mechanism above and
-changes only the score. Q and K are unit-normalized per head in FP32,
+changes only the score. The default `qk_norm_type: cosine_log_scale` preserves the
+historical implementation. Q and K are unit-normalized per head in FP32,
 `x̂ = x / sqrt(||x||² + qk_norm_eps)`, and the score becomes
 
 ```text
@@ -214,6 +215,19 @@ under `attention_diagnostics.qk_norm_scale`; W&B receives their mean, minimum,
 and maximum. Recipes and metadata identify the option with `qk_norm`,
 `qk_norm_sharing`, `qk_norm_initial_scale`, and `qk_norm_eps`. GLA and degree 0
 do not use it.
+
+The alternative `qk_norm_type: rms_norm` requires `qk_norm_sharing: per_layer`
+and `qk_norm_initial_scale: null`. It applies `g_Q * q / sqrt(mean(q²) + eps)`
+and `g_K * k / sqrt(mean(k²) + eps)` before RoPE. Statistics are independent for
+each token and head and computed in FP32; each layer's two gain vectors have
+`qk_head_dim` entries and broadcast across heads. The model owns the FP32 arrays
+`qk_norm_q_gain` and `qk_norm_k_gain`, both shaped `[num_layers, qk_head_dim]`,
+initialized to one and excluded from weight decay. There is no scalar log scale;
+the existing kernels retain their `QKᵀ / sqrt(d_K)` scaling. Channel gains generally
+do not commute with RoPE, so their placement before RoPE is part of this mode's
+definition. Validation retains every gain under `attention_diagnostics.qk_norm_gains`
+and W&B mirrors Q/K gain means, minima, and maxima. Adding this mode does not change
+the arithmetic or parameter trees of historical cosine-score recipes.
 
 ### Input-dependent polynomial coefficients
 
@@ -267,11 +281,18 @@ stored `c~_r` starts at `r!` times the Taylor value (so at 1) and attention uses
 `c~_r / r!`. Order `r` then moves at `lr/r!`, its gradient carries `s^r / r!` instead of
 `s^r`, and the coefficient penalty is rejected. Diagnostics report stored and represented
 values (`effective` coefficients, `effective_projection_bias`).
+To scale the entire query-dependent coefficient, enable both factorial options:
+`c_r(x_t) = [b_r + a_r tanh(w_r^T x_t)] / r!`, with stored `b_r = 1` and
+`a_r = 0` for a Taylor start. Static coefficients need only
+`attention_coefficient_scale: factorial`.
 `attention_coefficient_conditioning: query_key` (tanh only) multiplies each key's
 degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i` with
 `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` from the key token's activation
 (`key_polynomial_kernel` `[layers, heads, hidden_size, m+1]`, `key_polynomial_amplitude`
 `[layers, heads, m+1]`; drawn and started like `W` and `a`, so the start is unchanged).
+With both factorial options enabled its entire pair coefficient is
+`[b_r + a_r tanh(w_r^T x_t)] [1 + a^k_r tanh(w_k_r^T x_i)] / r!`.
+The key factor is dimensionless and receives no second factorial division.
 The pair coefficient factorizes, so nothing pairwise is stored: the blocked reference
 scales each key column, the fused Triton kernel (`backends/fused_query_key_polynomial.py`)
 forms `c_r(x_t) f_r(x_i)` inside each tile in one pass (its key-side backward also
@@ -296,18 +317,21 @@ Per-head output RMSNorm remains an independent option through
 actual input-dependent coefficient means, standard deviations, minima, and
 maxima on the fixed diagnostic sample, separately from projection parameters.
 
-For direct coefficient adaptation with a frozen backbone, query-only models expose
+For direct coefficient adaptation with a frozen backbone, unnormalized direct learned
+static and query-only models expose
 `logits, c = model(tokens, return_coefficients=True)`. The returned FP32 `c` has
 shape `[layers, batch, time, heads, m+1]` and contains the actual coefficients used
-in that forward pass, after bias and amplitude scaling. Calling
-`model(tokens, query_coefficients=c)` bypasses the coefficient generator and uses
+in that forward pass, after bias and amplitude scaling. Static coefficients are
+broadcast across examples and query positions, with the normal forward unchanged.
+Calling `model(tokens, query_coefficients=c)` replaces the static coefficients or
+bypasses the query coefficient generator and uses
 these effective values directly, without further factorial scaling or tanh.
 Each example and query has its own polynomial, shared across its causal keys.
 All other attention operations and model parameters are unchanged; gradients flow
 through the frozen layers to the supplied array. Optimize only this array to keep
 the backbone fixed. Both operations support JIT, require `model.remat: false`, and
 can be combined to return the supplied coefficients. Capture and `return_diagnostics`
-are mutually exclusive. Static and query-key conditioning reject both operations.
+are mutually exclusive. Query-key conditioning rejects both operations.
 
 ### PaTH position encoding
 
@@ -410,8 +434,14 @@ mechanism-owned attention parameters (`models/initialization.py`).
 |---|---|---|
 | `flax_default` | any | Flax defaults |
 | `transformer_reference` | dot-product | N(0, 0.02); attention `o_proj` and MLP `down_proj` N(0, 0.02/√(2L)) (GPT-2/Megatron) |
+| `transformer_truncated_reference` | dot-product | N(0, 0.02) conditioned on ±0.04 without variance compensation (actual std ≈0.0175925); attention `o_proj` and MLP `down_proj` draws divided by √(2L) |
 | `gla_reference` | GLA | N(0, 0.02); query, key, and both low-rank gate projections Xavier-uniform, gain 2^-2.5 (official GLA code) |
 | `gated_deltanet_reference` | Gated DeltaNet | Embeddings and output head N(0, 0.02); Linear weights Uniform(±1/√fan_in); MLP `down_proj` also divided by √(2L) (official `lit_gpt`, `mamba_init`) |
+
+`model.rms_norm_fp32: true` computes backbone RMSNorm squares, means, reciprocal
+square roots, and gain multiplication in FP32. Its default is `false`, preserving
+historical arithmetic. The truncated initializer is also explicit: adding it does
+not change the reference chosen when a new recipe leaves initialization unset.
 
 ### Gated DeltaNet
 
@@ -693,6 +723,12 @@ the recipe's full learning-rate horizon. Resume is the default, and Slurm requeu
 also resumes; `--no-resume` applies only to an uninitialized run. A fresh execution
 gets a fresh run ID even when its scientific settings match a previous run.
 
+`train.eval_early_every` and `train.eval_early_until` optionally freeze a denser early
+evaluation cadence. Steps through `eval_early_until` use `eval_early_every`; later
+steps use `eval_every`, and the terminal step always evaluates. The schedule uses
+global steps across checkpoint resumptions. Unset/zero early settings preserve the
+original single cadence.
+
 `record.json` summarizes status, source, execution attempts, acceptance, runtime,
 resolved configuration and backend, data identity, and retained checkpoints.
 `config.json`, `metadata.json`, completion and retention files are raw trainer
@@ -776,7 +812,10 @@ Studies configure these shared modules with execution modules at their root
   GPU type, checks the frozen execution set against the launch commit
   (`scaffolds/launch/frozen.py`), uses the worktree's environment, pins `CUDA_HOME`
   to the locked CUDA toolkit, runs acceptance, then trains; `training.log` appends
-  across requeues. The frozen set includes study `sweep.yaml`, every run's
+  across requeues. An optional sixth positional argument, `STOP_AFTER_STEP`, ends
+  a pilot at that global update while keeping the recipe's full LR horizon. It is
+  recorded in the attempt, and final checkpoint retention is skipped for pilots;
+  continuation without that argument performs final retention. The frozen set includes study `sweep.yaml`, every run's
   `config.yaml`, root execution modules, and shared record/launch helpers. Metrics,
   records and `results/` remain editable while jobs run. Both launchers source
   `scaffolds/launch/watchdog.sh`: when `training.log` has not grown for

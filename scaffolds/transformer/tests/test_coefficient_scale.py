@@ -82,16 +82,44 @@ def test_stored_gradient_is_the_coefficient_gradient_divided_by_r_factorial(cond
     assert np.abs(gradients[0][..., -1]).max() > 0
 
 
-def test_amplitude_and_coefficient_scales_combine_for_query_coefficients():
-    degree = 8
-    plain = _model(degree, "query")
+@pytest.mark.parametrize("conditioning", ["query", "query_key"])
+@pytest.mark.parametrize("degree", [8, 12])
+def test_entire_coefficient_scaling_preserves_values_and_all_parameter_gradients(conditioning, degree):
+    """(b + a*tanh(Wx))/r! scales the whole coefficient, including its key interaction.
+
+    Compare two storage parameterizations of identical nonconstant coefficients;
+    this catches scaling just b or a, or applying a second factorial to the key factor.
+    """
+    plain = _model(degree, conditioning)
     both = replace(plain, attention_coefficient_scale="factorial", attention_coefficient_amplitude_scale="factorial")
     plain_model, scaled_model = build_model(plain, 13), build_model(both, 13)
     amplitude = jnp.asarray(np.random.default_rng(1).normal(size=plain_model.query_polynomial_amplitude.shape) * 0.05,
                             jnp.float32)
     plain_model.query_polynomial_amplitude[...] = amplitude / _factorials(degree)
     scaled_model.query_polynomial_amplitude[...] = amplitude
+    if conditioning == "query_key":
+        # The key factor is dimensionless; it is multiplied by the already scaled
+        # query coefficient, and starts at one when its amplitude starts at zero.
+        for model in (plain_model, scaled_model):
+            model.key_polynomial_amplitude[...] = 0.15
     np.testing.assert_allclose(scaled_model(TOKENS), plain_model(TOKENS), rtol=2e-4, atol=2e-5)
+    gradients = []
+    for model in (plain_model, scaled_model):
+        graphdef, params, rest = nnx.split(model, nnx.Param, ...)
+
+        def loss(params):
+            return jnp.mean(nnx.merge(graphdef, params, rest)(TOKENS) ** 2)
+
+        gradients.append(jax.grad(loss)(params))
+    for name in ("query_polynomial_bias", "query_polynomial_amplitude"):
+        expected = np.asarray(gradients[0][name][...]) / _factorials(degree)
+        np.testing.assert_allclose(gradients[1][name][...], expected, rtol=3e-4, atol=1e-10)
+        assert np.abs(expected[..., -1]).max() > 0
+    unchanged = ["query_polynomial_kernel"]
+    if conditioning == "query_key":
+        unchanged += ["key_polynomial_kernel", "key_polynomial_amplitude"]
+    for name in unchanged:
+        np.testing.assert_allclose(gradients[1][name][...], gradients[0][name][...], rtol=3e-4, atol=1e-10)
 
 
 @pytest.mark.parametrize("updates", [

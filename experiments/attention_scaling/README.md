@@ -43,6 +43,20 @@ fitting, and saves resumable progress on a time-limit signal. The launcher selec
 CUDA 13 on B300 and CUDA 12 on H100. Fit-only metrics are kept distinct from held-out
 validation metrics; the retained best coefficients are needed to reproduce the fit.
 
+The [4B learned-static diagnostic](../../results/exploratory/coefficient_oracle_4b/README.md)
+is one new single-sequence run, `r3c0f21ab7dce`, from parent `r9b8acfcbeb89` at
+its retained step 7,500. Its scientific settings and findings are in that exploratory
+topic. From `worktrees/coefficient-oracle-4b`, allocation and launch commands are:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.attention_scaling.launch_coefficient_oracle prepare \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r9b8acfcbeb89 \
+  --sequence-counts 1 --topic results/exploratory/coefficient_oracle_4b
+# Commit the frozen execution inputs before submitting the allocated run.
+scaffolds/transformer/.venv/bin/python -m experiments.attention_scaling.launch_coefficient_oracle submit \
+  r3c0f21ab7dce --partition debug,standard,long --time-limit 02:00:00
+```
+
 ## Frozen pretrained-head polynomial sparsity
 
 This exploratory experiment asks whether fixed or query-dependent subsets of

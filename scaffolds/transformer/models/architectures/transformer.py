@@ -41,9 +41,9 @@ class SwiGLU(nnx.Module):
 class Block(nnx.Module):
     def __init__(self, config: ModelConfig, *, rngs: nnx.Rngs):
         cfg = config
-        self.attention_norm = RMSNorm(cfg.hidden_size, cfg.rms_norm_eps)
+        self.attention_norm = RMSNorm(cfg.hidden_size, cfg.rms_norm_eps, fp32=cfg.rms_norm_fp32)
         self.attention = attention_from_config(cfg, rngs=rngs)
-        self.ffn_norm = RMSNorm(cfg.hidden_size, cfg.rms_norm_eps)
+        self.ffn_norm = RMSNorm(cfg.hidden_size, cfg.rms_norm_eps, fp32=cfg.rms_norm_fp32)
         self.feed_forward = SwiGLU(cfg.hidden_size, cfg.intermediate_size, rngs=rngs)
 
     def __call__(
@@ -89,7 +89,7 @@ class TransformerLM(nnx.Module):
         self.layer_names = tuple(f"layers_{idx}" for idx in range(config.num_layers))
         for layer_name in self.layer_names:
             setattr(self, layer_name, Block(config, rngs=rngs))
-        self.final_norm = RMSNorm(config.hidden_size, config.rms_norm_eps)
+        self.final_norm = RMSNorm(config.hidden_size, config.rms_norm_eps, fp32=config.rms_norm_fp32)
         self.lm_head = nnx.Linear(config.hidden_size, config.vocab_size, use_bias=False, rngs=rngs)
         self.attention_parameter_specs = attention_parameter_specs(config)
         random_mechanism = any(spec.initial_std for spec in self.attention_parameter_specs)
@@ -114,16 +114,19 @@ class TransformerLM(nnx.Module):
     ):
         """Optionally replace or return effective coefficients [L, B, T, H, m+1].
 
-        Overrides bypass only the query coefficient generator; all other operations
-        remain differentiable. Capture returns coefficients from this same forward
-        pass, after bias and amplitude scaling. No scaling is applied to overrides.
+        Overrides replace static coefficients or bypass the query generator; all
+        other operations remain differentiable. Capture returns coefficients from
+        this same forward pass, after scaling. No scaling is applied to overrides.
         """
         cfg = self.config
         if return_coefficients and return_diagnostics:
             raise ValueError("return_coefficients and return_diagnostics are mutually exclusive")
         if query_coefficients is not None or return_coefficients:
-            if cfg.attention_coefficient_conditioning != "query":
-                raise ValueError("Coefficient override and capture require query-only conditioning")
+            if (cfg.attention_coefficient_conditioning not in ("static", "query")
+                    or cfg.attention_coefficients != "learned" or cfg.attention_normalization
+                    or cfg.attention_coefficient_parameterization != "direct"
+                    or cfg.attention_degree is None or cfg.attention_degree < 1):
+                raise ValueError("Coefficient override and capture require unnormalized direct static or query coefficients")
             if cfg.remat:
                 raise ValueError("Coefficient override and capture require model.remat == False")
             if query_coefficients is not None:

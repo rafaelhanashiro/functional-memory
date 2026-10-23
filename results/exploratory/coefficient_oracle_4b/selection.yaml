@@ -1,0 +1,17 @@
+schema_version: 1
+opened: '2026-10-23'
+question: How much can free query polynomial coefficients improve a fixed pretrained
+  model on fixed inputs?
+settings:
+  metric: fit_nll
+  parent_run_id: r9b8acfcbeb89
+  same_first_sequence: true
+  generalization_claim: false
+runs:
+- study: attention_scaling
+  run_id: r3c0f21ab7dce
+  role: single_sequence
+  sources:
+    config.yaml:
+      path: experiments/attention_scaling/runs/r3c0f21ab7dce/config.yaml
+      sha256: ba7eb84d08f5e4c2ae28b63ea8ae96e8c23ff89acc88e77813f7401f86335db6

@@ -1,0 +1,40 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r4129bc606124/config.yaml",
+    "sha256": "5e7d336e3f3f938161ef6fda7637a6ba640d784296d655fd0e8c96505038eb46"
+  },
+  "home_cluster": "kennel",
+  "label": "query_key-m12",
+  "name": "query_key-m12",
+  "phase": "comparison",
+  "record_schema_version": 1,
+  "report_job_id": "224149",
+  "run_id": "r4129bc606124",
+  "status": "pending",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=sweep",
+      "--gres=gpu:2",
+      "--cpus-per-task=16",
+      "--mem=192G",
+      "--time=2-00:00:00",
+      "--job-name=r4129bc606124",
+      "--output=experiments/transformer_200m_4b/runs/r4129bc606124/training.log",
+      "--dependency=afterany:224146",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/r4129bc606124/config.yaml",
+      "36b074480751897c8b8f9754cbc13c22594024be",
+      "2",
+      "B300,H100"
+    ],
+    "current_dependency": null,
+    "gpu_count": 2,
+    "launch_commit": "36b074480751897c8b8f9754cbc13c22594024be",
+    "partition": "sweep",
+    "slurm_job_id": "224148",
+    "stop_after_step": null
+  }
+}
