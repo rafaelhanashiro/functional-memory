@@ -805,6 +805,14 @@ results code built with the `views` dependency group
 
 ## Launch, acceptance, retention, and analysis
 
+Both shared launchers default to one GPU. Independent training runs are submitted
+without inter-run dependencies. Keep the recipe's global batch size fixed; the
+training runtime uses gradient accumulation for the configured microbatch. An
+explicit multi-GPU allocation must override both Slurm's `--gres` request and the
+launcher's fourth positional argument (`GPU_COUNT`), for example `--gres=gpu:2`
+and `2` on Kennel, or `--gres=gpu:h200:2` and `2` on ORCD. Allocation changes are
+recorded as runtime provenance and trigger acceptance for that allocation.
+
 Studies configure these shared modules with execution modules at their root
 (for example `experiments/<study>/acceptance.py`):
 

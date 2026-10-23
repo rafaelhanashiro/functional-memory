@@ -39,18 +39,12 @@ experiments/<study>/
 scaffolds/<capability>/      shared implementation, tests, and environment
 ```
 
-- The established 10B-token shared-Transformer attention experiments belong to
-  `experiments/attention_scaling/`. The user-requested 200M / 4B-token setup is isolated
-  in `experiments/transformer_200m_4b/`, including its `recipe.yaml`, run membership,
-  `runs/<run_id>/`, execution helpers, and flat `results/` collection. Add runs there
-  deliberately; do not reproduce the old grid automatically. Reusable implementations
-  remain in the shared scaffolds. Its nested results follow all selection, provenance,
-  and regeneration rules below; old studies and result selections retain their recipes.
-  Attention family, normalization, QK normalization,
+- All shared-Transformer attention experiments belong to
+  `experiments/attention_scaling/`. Attention family, normalization, QK normalization,
   degree, width, coefficient parameterization, sharing, and seed distinguish runs
   within this study; do not create a new study directory for a sweep or mechanism.
   `experiments/state_rank/` is a separate scientific question. Comparisons and their
-  explicit primary/control run selections belong under the applicable `results/`.
+  explicit primary/control run selections belong under `results/`.
 - A study groups a scientific question. Varying several axes (for example key width,
   polynomial degree, normalization, coefficient parameterization, sharing, and seed)
   produces runs within a study. Each run ID identifies one execution of a complete
@@ -192,6 +186,12 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 
 ## Scaffold and runtime separation
 
+- New training runs use one GPU by default, and independent runs have no scheduling
+  dependencies on one another. Use multiple GPUs only when explicitly requested or
+  needed because the model does not fit on one GPU. Keep the scientific global batch
+  size fixed through gradient accumulation; GPU count is execution provenance, not a
+  model hyperparameter. Changes to an existing run's allocation preserve its frozen
+  recipe and checkpoint and require acceptance on the new allocation.
 - New dot-product Transformer experiments must enable QK normalization unless the
   user explicitly requests plain QK scores. Set `model.qk_norm: true` in the frozen
   recipe; do not inherit `false` when copying a legacy run. GLA and degree-zero

@@ -6,20 +6,21 @@
 #     scaffolds/transformer/launchers/orcd.sbatch \
 #     experiments.<study>.acceptance \
 #     experiments/<study>/runs/<run>/config.yaml "$(git rev-parse HEAD)" [GPU_COUNT] [GPU_TYPES]
+# One GPU is the default. For an explicit multi-GPU run, override both --gres and GPU_COUNT.
 #
-# A job starts in whichever GPU partition frees first. It asks for 12 hours, enough
-# for a whole run, with a 6-hour minimum: Slurm's backfill trims the limit to
+# A job starts in whichever GPU partition frees first. It asks for 12 hours
+# with a 6-hour minimum: Slurm's backfill trims the limit to
 # mit_normal_gpu's 6-hour maximum when it starts the job there. Ten minutes before
 # the limit the job requeues itself and resumes from its latest checkpoint.
 # Preemption in mit_preemptable also requeues. Per-user caps are 2 GPUs in
-# mit_normal_gpu and 4 in mit_preemptable, so 2-GPU jobs can hold three allocations.
+# mit_normal_gpu and 4 in mit_preemptable; independent jobs use one GPU each.
 #SBATCH --job-name=transformer
 #SBATCH --partition=mit_preemptable,mit_normal_gpu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --gres=gpu:h200:2
+#SBATCH --gres=gpu:h200:1
 #SBATCH --time=12:00:00
 #SBATCH --time-min=06:00:00
 #SBATCH --signal=B:USR1@600
@@ -29,7 +30,7 @@ set -euo pipefail
 ADAPTER="${1:?Expected the experiment acceptance module}"
 CONFIG="${2:?Expected experiments/<study>/runs/<run>/config.yaml}"
 LAUNCH_COMMIT="${3:?Expected the launch commit}"
-GPU_COUNT="${4:-2}"
+GPU_COUNT="${4:-1}"
 GPU_TYPES="${5:-H200}"
 EXECUTION_ROOT="${SLURM_SUBMIT_DIR:?Submit from the experiment worktree root}"
 cd "$EXECUTION_ROOT"
