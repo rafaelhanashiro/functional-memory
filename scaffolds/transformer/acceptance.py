@@ -85,6 +85,7 @@ class AcceptanceSpec:
     """Environment the launcher exports for this experiment (for example XLA flags)."""
     pilot_steps: int = 20
     allocation_hours: int = 48
+    """Qualification horizon; launchers that require one allocation can override it at runtime."""
     select_tests: Callable | None = None
     """Optional recipe/backend selector called as ``(config, resolved_backend, cpu)``."""
 
@@ -266,6 +267,28 @@ def runtime_identity() -> dict:
     return {"TRANSFORMER_HOST_STAGING": host_staging, **{key: os.environ.get(key) for key in RUNTIME_KEYS}}
 
 
+def allocation_seconds(spec: AcceptanceSpec) -> int:
+    """Resolve the launcher's granted wall-clock budget without changing the recipe."""
+    value = os.environ.get("TRANSFORMER_ALLOCATION_SECONDS")
+    if value is not None:
+        if not value.isascii() or not value.isdecimal() or int(value) <= 0:
+            raise ValueError("TRANSFORMER_ALLOCATION_SECONDS must be a positive integer")
+        return int(value)
+    seconds = spec.allocation_hours * 3600
+    if not math.isfinite(seconds) or seconds <= 0 or int(seconds) != seconds:
+        raise ValueError("AcceptanceSpec.allocation_hours must yield a positive finite integer number of seconds")
+    return int(seconds)
+
+
+def require_allocation_budget(projected_seconds: float, limit_seconds: int) -> None:
+    """Keep the existing two-hour allowance for acceptance and runtime overhead."""
+    if not math.isfinite(projected_seconds) or projected_seconds < 0:
+        raise RuntimeError("Pilot has no valid projected runtime")
+    if projected_seconds > limit_seconds - 2 * 3600:
+        raise RuntimeError(f"Pilot projects beyond a {limit_seconds / 3600:g}h allocation "
+                           f"with a 2h reserve: {projected_seconds / 3600:.2f} hours")
+
+
 def identity(spec: AcceptanceSpec, config_path: Path, gpu_count: int, gpu_type: str) -> dict:
     # The launcher exports its launch commit; analysis commits may have advanced HEAD since.
     source = os.environ.get("SHARED_TRANSFORMER_SOURCE_COMMIT") or subprocess.check_output(
@@ -285,6 +308,7 @@ def identity(spec: AcceptanceSpec, config_path: Path, gpu_count: int, gpu_type: 
                            (("train", config.data.train_manifest), ("eval", config.data.eval_manifest))},
         "gpu_count": gpu_count, "gpu_type": gpu_type.upper(),
         "runtime": runtime_identity(),
+        "allocation_seconds": allocation_seconds(spec),
     }
     return _sealed(payload)
 
@@ -315,7 +339,8 @@ def record(path: Path, experiment: dict, **fields) -> None:
         "identity": experiment["identity"], "source_commit": experiment["source_commit"],
         "status": "passed", "completed_utc": datetime.now(UTC).isoformat(),
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
-        "slurm_restart_count": os.environ.get("SLURM_RESTART_COUNT", "0"), **fields,
+        "slurm_restart_count": os.environ.get("SLURM_RESTART_COUNT", "0"),
+        "allocation_seconds": experiment.get("allocation_seconds"), **fields,
     })
 
 
@@ -628,8 +653,7 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             projected = (timing["runtime_seconds"] + max(steady) * total
                          + max(timing["evaluation_seconds"]) * config["train"]["eval_batches"] * evaluations
                          + max(timing["checkpoint_seconds"]) * checkpoints)
-            if projected > (spec.allocation_hours - 2) * 3600:
-                raise RuntimeError(f"Pilot projects beyond a {spec.allocation_hours}h allocation: {projected / 3600:.2f} hours")
+            require_allocation_budget(projected, experiment["allocation_seconds"])
             record(path, experiment, outcome=outcome, validation=validation, projected_hours=projected / 3600)
         stage = "resume"
         path = directory / f"{stage}.json"
@@ -653,6 +677,7 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
     except BaseException as error:
         write_json(directory / "failure.json", {"identity": experiment["identity"], "stage": stage,
                    "error": f"{type(error).__name__}: {error}", "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
+                   "allocation_seconds": experiment.get("allocation_seconds"),
                    "failed_utc": datetime.now(UTC).isoformat()})
         raise
 
@@ -661,7 +686,7 @@ def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("config", nargs="?", type=Path)
     parser.add_argument("--directory", type=Path)
-    parser.add_argument("--gpu-count", type=int, default=4)
+    parser.add_argument("--gpu-count", type=int, default=1)
     parser.add_argument("--gpu-type", default="H100")
     parser.add_argument("--worker", choices=("hardware", "initialization", "pilot"))
     parser.add_argument("--output", type=Path)
