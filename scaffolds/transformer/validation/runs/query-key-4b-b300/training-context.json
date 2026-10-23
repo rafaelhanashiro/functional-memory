@@ -1,0 +1,287 @@
+{
+  "created_utc": "2026-10-23T23:19:40.665877+00:00",
+  "measured_runs": [
+    {
+      "attention_degree": null,
+      "attention_implementation": "cudnn",
+      "backend": "cudnn",
+      "batch": {
+        "global_batch_size": 256,
+        "global_micro_batch_size": 16,
+        "gradient_accumulation_steps": 16,
+        "local_micro_batch_size": 8,
+        "prediction_tokens_per_sequence": 2048,
+        "prediction_tokens_per_update": 524288
+      },
+      "derived_timing": {
+        "prediction_tokens_per_second": 1046661.9695362692,
+        "prediction_tokens_per_second_per_device": 523330.9847681346,
+        "summed_training_interval_seconds": 3741.830193500966,
+        "weighted_seconds_per_update": 0.5009143498662605
+      },
+      "hardware": {
+        "device_kinds": [
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC"
+        ],
+        "gpu_count": 2,
+        "source": "record.execution.runtime.devices; all recorded runtime_history entries agree"
+      },
+      "parameter_count": 198439936,
+      "record_status": "complete",
+      "role": "softmax",
+      "run_id": "r22d4b280738e",
+      "selected_windows": {
+        "count": 27,
+        "distinct_attempt_count": 3,
+        "first_validation_step": 200,
+        "first_window_start_step": 100,
+        "last_validation_step": 7570,
+        "measured_prediction_tokens": 3916431360,
+        "measured_update_count": 7470
+      },
+      "sources": {
+        "config": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-softmax/experiments/transformer_200m_4b/runs/r22d4b280738e/config.yaml",
+          "sha256": "61ab46701c51c091b2292f2ebebbc2678ac11cb543c3681e217b1bc757a1384d"
+        },
+        "metadata": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-softmax/experiments/transformer_200m_4b/runs/r22d4b280738e/metadata.json",
+          "sha256": "bb9a4a413e1ec853e14e3ec183ecc45ca0f7ea3b36aec2f66497e67027c01763"
+        },
+        "metrics": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-softmax/experiments/transformer_200m_4b/runs/r22d4b280738e/metrics.jsonl",
+          "sha256": "c345e2ba6381c3980546bdefc0d5d1407fbb701006c22c853738c31344d06eab"
+        },
+        "record": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-softmax/experiments/transformer_200m_4b/runs/r22d4b280738e/record.json",
+          "sha256": "9608663ec1859739d1f974252f695df5bed4a1709e9dac77d08907649bfe378d"
+        }
+      }
+    },
+    {
+      "attention_degree": 8,
+      "attention_implementation": "pallas_mosaic_gpu_query_polynomial",
+      "backend": "mosaic",
+      "batch": {
+        "global_batch_size": 256,
+        "global_micro_batch_size": 16,
+        "gradient_accumulation_steps": 16,
+        "local_micro_batch_size": 8,
+        "prediction_tokens_per_sequence": 2048,
+        "prediction_tokens_per_update": 524288
+      },
+      "derived_timing": {
+        "prediction_tokens_per_second": 654185.9089809116,
+        "prediction_tokens_per_second_per_device": 327092.9544904558,
+        "summed_training_interval_seconds": 5986.725342496298,
+        "weighted_seconds_per_update": 0.8014357888214589
+      },
+      "hardware": {
+        "device_kinds": [
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC"
+        ],
+        "gpu_count": 2,
+        "source": "record.execution.runtime.devices; all recorded runtime_history entries agree"
+      },
+      "parameter_count": 200150596,
+      "record_status": "complete",
+      "role": "query_m8",
+      "run_id": "r98d5895c02d0",
+      "selected_windows": {
+        "count": 27,
+        "distinct_attempt_count": 2,
+        "first_validation_step": 200,
+        "first_window_start_step": 100,
+        "last_validation_step": 7570,
+        "measured_prediction_tokens": 3916431360,
+        "measured_update_count": 7470
+      },
+      "sources": {
+        "config": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r98d5895c02d0/config.yaml",
+          "sha256": "cc5c2801a1825f38baa336d44e0e0657df6b4d48af09a0558198ac4321b99c33"
+        },
+        "metadata": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r98d5895c02d0/metadata.json",
+          "sha256": "74f1d6bd10213f223af30ac74aca894a62ba4a1301c373f91b5ae6747e70098f"
+        },
+        "metrics": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r98d5895c02d0/metrics.jsonl",
+          "sha256": "4faad5a3d94c31698cbff78a46ec1502d4555d62033215f582e4c49da9109b98"
+        },
+        "record": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r98d5895c02d0/record.json",
+          "sha256": "10adbfcd799cd4211191b5bf9847eb0f4419bd2fc53ac4b2ec9951e2e1b31312"
+        }
+      }
+    },
+    {
+      "attention_degree": 8,
+      "attention_implementation": "pallas_mosaic_gpu_query_polynomial_equal_coefficients",
+      "backend": "mosaic",
+      "batch": {
+        "global_batch_size": 256,
+        "global_micro_batch_size": 16,
+        "gradient_accumulation_steps": 16,
+        "local_micro_batch_size": 8,
+        "prediction_tokens_per_sequence": 2048,
+        "prediction_tokens_per_update": 524288
+      },
+      "derived_timing": {
+        "prediction_tokens_per_second": 717237.5510128255,
+        "prediction_tokens_per_second_per_device": 358618.7755064127,
+        "summed_training_interval_seconds": 5460.438252946362,
+        "weighted_seconds_per_update": 0.7309823631788972
+      },
+      "hardware": {
+        "device_kinds": [
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC"
+        ],
+        "gpu_count": 2,
+        "source": "record.execution.runtime.devices; all recorded runtime_history entries agree"
+      },
+      "parameter_count": 198453376,
+      "record_status": "complete",
+      "role": "fixed_m8",
+      "run_id": "r019ca96d6533",
+      "selected_windows": {
+        "count": 27,
+        "distinct_attempt_count": 1,
+        "first_validation_step": 200,
+        "first_window_start_step": 100,
+        "last_validation_step": 7570,
+        "measured_prediction_tokens": 3916431360,
+        "measured_update_count": 7470
+      },
+      "sources": {
+        "config": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r019ca96d6533/config.yaml",
+          "sha256": "ab3233d65995f2ca4427cf8aa133f9b2f68d9f7c0631c369585888cd2fd636fb"
+        },
+        "metadata": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r019ca96d6533/metadata.json",
+          "sha256": "366ae7bf7ca01bdf3d1f785f5b5fcef11b7338dbe30cee292fc3e721827f21a6"
+        },
+        "metrics": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r019ca96d6533/metrics.jsonl",
+          "sha256": "bf003893b80d267b4c5a932ebc3dc0bcb8e4ad5c3d2315359f3d39333506c453"
+        },
+        "record": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r019ca96d6533/record.json",
+          "sha256": "40b0d1b31e32593050c3cb7600ba8145759b578ce978eeb5f8576d5a768eae6f"
+        }
+      }
+    },
+    {
+      "attention_degree": 8,
+      "attention_implementation": "pallas_mosaic_gpu_query_polynomial_equal_coefficients",
+      "backend": "mosaic",
+      "batch": {
+        "global_batch_size": 256,
+        "global_micro_batch_size": 16,
+        "gradient_accumulation_steps": 16,
+        "local_micro_batch_size": 8,
+        "prediction_tokens_per_sequence": 2048,
+        "prediction_tokens_per_update": 524288
+      },
+      "derived_timing": {
+        "prediction_tokens_per_second": 720817.4394302982,
+        "prediction_tokens_per_second_per_device": 360408.7197151491,
+        "summed_training_interval_seconds": 5433.319375701249,
+        "weighted_seconds_per_update": 0.7273519913924028
+      },
+      "hardware": {
+        "device_kinds": [
+          "NVIDIA B300 SXM6 AC",
+          "NVIDIA B300 SXM6 AC"
+        ],
+        "gpu_count": 2,
+        "source": "record.execution.runtime.devices; all recorded runtime_history entries agree"
+      },
+      "parameter_count": 198455266,
+      "record_status": "complete",
+      "role": "static_m8",
+      "run_id": "r9b8acfcbeb89",
+      "selected_windows": {
+        "count": 27,
+        "distinct_attempt_count": 1,
+        "first_validation_step": 200,
+        "first_window_start_step": 100,
+        "last_validation_step": 7570,
+        "measured_prediction_tokens": 3916431360,
+        "measured_update_count": 7470
+      },
+      "sources": {
+        "config": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r9b8acfcbeb89/config.yaml",
+          "sha256": "09cce71385f5939fa90c461930f93ccbf477991b0797b94b0be86502b022aaa0"
+        },
+        "metadata": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r9b8acfcbeb89/metadata.json",
+          "sha256": "242445ad2c57590f3f9dfb806f4c3bb657636a49bec6ea4b526dafbe7393acf2"
+        },
+        "metrics": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r9b8acfcbeb89/metrics.jsonl",
+          "sha256": "db8f30d42c830ea51b26f807c55627293da4e896e496719261dbe922568a0b4c"
+        },
+        "record": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r9b8acfcbeb89/record.json",
+          "sha256": "deda9eae5d6eb3e1a36995f2c04a4f4844b864e4497001d69be256fb095906ba"
+        }
+      }
+    }
+  ],
+  "purpose": "Compact derived training-runtime context for the 4B query-key B300 scaffold diagnostic; not a scientific result selection.",
+  "query_key_runs": [
+    {
+      "has_training_metrics": false,
+      "measurement_note": "No full-model training timing is available in this run at the time of this snapshot.",
+      "record_status": "pending",
+      "run_id": "r833fbb6eedcb",
+      "slurm_job_id": "224595",
+      "sources": {
+        "config": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/experiments/transformer_200m_4b/runs/r833fbb6eedcb/config.yaml",
+          "sha256": "db94207d47c1dc49a4bb7ad8f109a7d3fbe78ce9c49ad951df639eedfd23efc3"
+        },
+        "record": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/experiments/transformer_200m_4b/runs/r833fbb6eedcb/record.json",
+          "sha256": "a5faf75fd8fccac4b29fccc2dc52f5fda1a1f0faa240a64fd44707614aa517da"
+        }
+      },
+      "submitted_gpu_count": 1,
+      "submitted_gpu_type": "B300"
+    },
+    {
+      "has_training_metrics": false,
+      "measurement_note": "No full-model training timing is available in this run at the time of this snapshot.",
+      "record_status": "pending",
+      "run_id": "rfd48f7bbe9f4",
+      "slurm_job_id": "224596",
+      "sources": {
+        "config": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/experiments/transformer_200m_4b/runs/rfd48f7bbe9f4/config.yaml",
+          "sha256": "83c4ece8ac43adcd62155eaf9d24c904e9e8f244dec0d9ae361716ce9714bc3c"
+        },
+        "record": {
+          "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/experiments/transformer_200m_4b/runs/rfd48f7bbe9f4/record.json",
+          "sha256": "0a4b0d2aaa42ecb3a5f0507a3792c0535b290cfea66b20000eb14983169aa7fd"
+        }
+      },
+      "submitted_gpu_count": 1,
+      "submitted_gpu_type": "B300"
+    }
+  ],
+  "schema_version": 1,
+  "selection_rule": {
+    "exclusions": "First 100-update window is excluded; no validation loss, quality result, or raw measurement rows are copied.",
+    "include": "event == validation; step > 100; positive training_interval_seconds; positive step - training_window_start_step.",
+    "input": "Current validation events in each explicitly named canonical run metrics.jsonl.",
+    "restart_handling": "Use each event's explicit training_window_start_step, not the preceding event or a contiguous-run assumption. Reject duplicate validation event_id/step entries. Grouping by attempt_id is unnecessary for the pooled mean; distinct attempt count is recorded.",
+    "timing_scope": "Training windows include data loading, training, and logging; evaluation and its checkpoint are outside the recorded interval.",
+    "weighting": "Sum training_interval_seconds divided by sum(step - training_window_start_step). Tokens per second is sum of measured window prediction tokens divided by sum training_interval_seconds."
+  }
+}
