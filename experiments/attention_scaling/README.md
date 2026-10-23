@@ -94,8 +94,7 @@ with 400 warmup updates. These runs explicitly use `transformer_reference`
 initialization and the native `triton_scalar` backend. Each run uses **one H100**,
 layer rematerialization, and a microbatch of 16 sequences, accumulated to the
 global optimization batch. The selected backend fuses head RMSNorm and uses
-the regular-RBF recurrence for the 5-, 9-, and 20-function fits. Checkpoints are saved every 500 updates. Baselines are
-existing executions to be identified explicitly; this sweep allocates only RBF runs.
+the regular-RBF recurrence for the 5-, 9-, and 20-function fits. Checkpoints are saved every 500 updates. The RBF exploratory comparison explicitly selects existing baseline executions; this sweep allocates only RBF runs.
 
 The full frozen configurations are authoritative. To reconstruct a fit for a
 count `n`, use:
