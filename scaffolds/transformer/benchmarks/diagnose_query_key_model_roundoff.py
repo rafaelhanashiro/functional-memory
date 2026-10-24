@@ -36,7 +36,6 @@ from scaffolds.transformer.data.packed import PackedBatchIterator
 from scaffolds.transformer.training.state import create_state
 
 
-DEFAULT_CASES = ((0, 10), (0, 13), (4, 2), (5, 2), (14, 2))
 NAMES = ("q", "k", "v", "coefficients", "factors")
 TOLERANCE = 0.025
 GROUP_TOLERANCE = 0.05
@@ -219,6 +218,31 @@ def fp64_projection(kind, captured, head_index, cotangent, amplitude_scale):
         return np.asarray(jax.device_get(result))
 
 
+def compare_repeated_gradients(actual, reference):
+    """Quantify execution/compilation variability without hiding it in a tree hash.
+
+    In BF16 training Embed casts its table before take, so its transpose may
+    scatter BF16 gradients. Do not assume embedding noise has an FP32 bound.
+    Exact repeat acceptance is preserved until measured evidence justifies a
+    separate numerical criterion; the existing parity gates are also reported.
+    """
+    result = compare_gradients(actual, reference)
+    pairs_a = jax.tree_util.tree_flatten_with_path(actual)[0]
+    pairs_b = jax.tree_util.tree_flatten_with_path(reference)[0]
+    for row, (_, observed), (_, expected) in zip(result["leaves"], pairs_a, pairs_b, strict=True):
+        row["actual_sha256"] = array_hash(observed)
+        row["reference_sha256"] = array_hash(expected)
+        row["dtype"] = str(expected.dtype)
+        row["is_embedding"] = "['token_embedding']['embedding']" in row["parameter"]
+    result["nonembedding_array_exact"] = all(row["array_equal"] and row["all_finite"]
+                                              for row in result["leaves"] if not row["is_embedding"])
+    result["embedding_array_exact"] = all(row["array_equal"] and row["all_finite"]
+                                           for row in result["leaves"] if row["is_embedding"])
+    result["array_exact"] = result["nonembedding_array_exact"] and result["embedding_array_exact"]
+    result["changed_parameters"] = [row["parameter"] for row in result["leaves"] if not row["array_equal"]]
+    return result
+
+
 def capture_models(state, batch, rng, heads, layers, report, output, original_query, original_key):
     captures, projection_inputs, full_grads = {}, {}, {}
     original_attention = kernel._attention
@@ -234,6 +258,7 @@ def capture_models(state, batch, rng, heads, layers, report, output, original_qu
             raise FloatingPointError("Nonfinite uninstrumented full-model loss")
         grad_hash, _ = parameter_digest(grads)
         baseline = {"loss": float(loss), "logits_sha256": array_hash(logits), "gradient_sha256": grad_hash}
+        baseline_grads = immutable_snapshot(grads)
         del loss, logits, grads, operation
         captures[tile] = {}
         projection_inputs[tile] = {"query": {}, "key": {}}
@@ -262,6 +287,12 @@ def capture_models(state, batch, rng, heads, layers, report, output, original_qu
             trial["evaluations"].append({"loss": float(loss), "logits_sha256": array_hash(logits), "gradient_sha256": grad_hash})
             if repeat == 0:
                 full_grads[tile] = immutable_snapshot(grads)
+                trial["instrumentation_gradients"] = compare_repeated_gradients(full_grads[tile], baseline_grads)
+                del baseline_grads
+            else:
+                repeat_grads = immutable_snapshot(grads)
+                trial["repeat_gradients"] = compare_repeated_gradients(repeat_grads, full_grads[tile])
+                del repeat_grads
             enabled["capture"] = False
             del result, loss, logits, grads
             write_report(output, report)
@@ -271,6 +302,10 @@ def capture_models(state, batch, rng, heads, layers, report, output, original_qu
             raise RuntimeError(f"Capture did not bind exactly 15 layers: {counts}, {query_counts}, {key_counts}")
         trial["deterministic"] = trial["evaluations"][0] == trial["evaluations"][1]
         trial["instrumentation_array_exact"] = baseline == trial["evaluations"][0]
+        trial["repeat_forward_exact"] = all(trial["evaluations"][0][key] == trial["evaluations"][1][key]
+                                             for key in ("loss", "logits_sha256"))
+        trial["instrumentation_forward_exact"] = all(baseline[key] == trial["evaluations"][0][key]
+                                                      for key in ("loss", "logits_sha256"))
         write_report(output, report)
         del operation
     report["gradients"] = compare_gradients(full_grads[32], full_grads[64])
@@ -359,16 +394,14 @@ def diagnose(args):
             or config.train.micro_batch_size != 16 or config.data.sequence_length != 2049 or config.model.remat
             or config.data.source != "packed" or config.optim.coefficient_penalty != 0):
         raise ValueError("Requires the unrematerialized full 4B query-key recipe")
-    selected_report = json.loads(args.parity_report.read_text()) if args.parity_report else None
-    if selected_report is not None:
+    selected_reports = [(p, json.loads(p.read_text())) for p in args.parity_report]
+    for selected_path, selected_report in selected_reports:
         if selected_report["input_recipe"]["sha256"] != digest(path):
             raise ValueError("Parity report describes a different frozen recipe")
-        groups = failed_projection_groups(selected_report)
-        cases = sorted({(group["layer"], group["head"]) for group in groups} | {(14, 2)})
-    else:
-        cases = list(DEFAULT_CASES)
-    heads = tuple(sorted({head for _, head in cases}))
-    layers = {layer for layer, _ in cases}
+    # Capture once before choosing cases: fresh compilations can change which
+    # small cancelled projection groups fail, even at identical primal inputs.
+    heads = tuple(range(config.model.num_heads))
+    layers = set(range(config.model.num_layers))
     devices = jax.local_devices()
     if len(devices) != 1 or "B300" not in devices[0].device_kind:
         raise ValueError("Requires exactly one B300")
@@ -377,15 +410,16 @@ def diagnose(args):
     report = {"format": "query-key-model-roundoff-diagnostic", "schema_version": 1, "status": "running",
               "created_at_utc": datetime.now(UTC).isoformat(), "provenance": source,
               "input_recipe": {"path": str(path), "sha256": digest(path), "configuration": config_to_dict(config)},
-              "configuration": {"heads_captured": list(heads), "cases": [list(case) for case in cases],
+              "configuration": {"heads_captured": list(heads), "layers_captured": sorted(layers),
+                                "case_selection": "union of failed projection groups from every supplied historical report and this capture, plus layer14/head2 control",
+                                "repeat_acceptance": "exact full gradients; per-leaf differences and original numerical gates reported separately; no unmeasured embedding tolerance",
                                 "perturbation_seed": args.perturbation_seed, "local_relative_l2_tolerance": TOLERANCE,
                                 "projection_group_tolerance": GROUP_TOLERANCE, "attribution_residual_tolerance": ATTRIBUTION_TOLERANCE,
                                 "reference": "independent analytic FP64 attention VJP and FP64 reconstruction of tanh/projection; actual FP32 projection VJP measured separately",
                                 "attribution": "oracle(candidate32 incoming dO) - oracle(original64 incoming dO) must explain at least 90% of each failed full-model projection group delta in L2",
                                 "limitation": "local replay does not override failed full-model gates; attribution locates error before this block but does not identify the upstream operation responsible"},
               "cases": [], "full_model_trials": []}
-    if args.parity_report:
-        report["selected_parity_report"] = {"path": str(args.parity_report.resolve()), "sha256": digest(args.parity_report)}
+    report["selected_parity_reports"] = [{"path": str(p.resolve()), "sha256": digest(p)} for p, _ in selected_reports]
     write_report(output, report)
     original_attention, original_selector = kernel._attention, kernel._backward_tile_sizes
     original_query, original_key = projections.project_coefficients, projections.project_key_factors
@@ -405,11 +439,14 @@ def diagnose(args):
         captures, projection_inputs, projection_grads = capture_models(
             state, batch, rng, heads, layers, report, output, original_query, original_key)
         current_failures = failed_projection_groups(report)
-        selected_failures = failed_projection_groups(selected_report) if selected_report else []
+        selected_failures = [dict(group, source_report=str(p.resolve())) for p, old in selected_reports
+                             for group in failed_projection_groups(old)]
         identity = lambda group: (group["parameter"], group["layer"], group["head"], group["order"])
         failure_union = {identity(group): group for group in selected_failures}
         failure_union.update({identity(group): group for group in current_failures})
         failures = list(failure_union.values())
+        cases = sorted({(group["layer"], group["head"]) for group in failures} | {(14, 2)})
+        report["configuration"]["cases"] = [list(case) for case in cases]
         report["selected_report_failures_reproduced"] = {identity(group) for group in selected_failures} <= {identity(group) for group in current_failures}
         report["original_failure_reproduction"] = []
         for original in selected_failures:
@@ -418,6 +455,7 @@ def diagnose(args):
                                     projection_grads[64][parameter][layer, head, :, order], tolerance=GROUP_TOLERANCE)
             report["original_failure_reproduction"].append({
                 "parameter": parameter, "layer": layer, "head": head, "order": order,
+                "source_report": original["source_report"],
                 "original_relative_l2_error": original["relative_l2_error"],
                 "original_reference_l2": original["reference_l2"], "current": metrics})
         uncovered = [g for g in failures if (g["layer"], g["head"]) not in cases]
@@ -435,11 +473,11 @@ def diagnose(args):
         after_digest, _ = parameter_digest(state.params)
         if after_digest != report["parameter_sha256"]:
             raise RuntimeError("Capture modified immutable model parameters")
-        if selected_report:
-            report["same_parameters_and_batch_as_parity"] = (report["parameter_sha256"] == selected_report["compared_parameter_sha256"]
-                                                            and report["batch"]["sha256"] == selected_report["batch"]["sha256"])
-            if not report["same_parameters_and_batch_as_parity"]:
-                raise RuntimeError("Capture did not reproduce qualification parameters and data")
+        report["same_parameters_and_batch_as_parity"] = all(
+            report["parameter_sha256"] == old.get("compared_parameter_sha256", old.get("parameter_sha256"))
+            and report["batch"]["sha256"] == old["batch"]["sha256"] for _, old in selected_reports)
+        if not report["same_parameters_and_batch_as_parity"]:
+            raise RuntimeError("Capture did not reproduce qualification parameters and data")
         write_report(output, report)
         kernel._attention = original_attention
         projections.project_coefficients, projections.project_key_factors = original_query, original_key
@@ -455,7 +493,7 @@ def diagnose(args):
             leaf["all_finite"] and leaf["relative_l2_error"] is not None and leaf["relative_l2_error"] <= TOLERANCE
             and leaf["max_abs_error"] <= 5 * TOLERANCE * leaf["reference_max_abs"] for leaf in report["gradients"]["leaves"])
         report["status"] = ("complete" if report["source_recipe_unchanged"] and report["failed_groups_covered"]
-                            and not unhandled and report["selected_report_failures_reproduced"]
+                            and not unhandled
                             and all(t["deterministic"] and t["instrumentation_array_exact"] for t in trials)
                             and report["full_model_leaf_gates_pass"]
                             and report["logits_exact"] and report["loss_absolute_difference"] <= LOSS_TOLERANCE
@@ -481,7 +519,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--experiment", default="transformer_200m_4b")
     parser.add_argument("--perturbation-seed", type=int, default=86421)
-    parser.add_argument("--parity-report", type=Path, help="Select failed projection groups from this exact recipe's qualification report")
+    parser.add_argument("--parity-report", type=Path, action="append", default=[],
+                        help="Include failed groups from this recipe's qualification report; repeat for multiple reports")
     if diagnose(parser.parse_args())["status"] != "complete":
         raise SystemExit(1)
 
