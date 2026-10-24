@@ -9,5 +9,29 @@
   "phase": "comparison",
   "record_schema_version": 1,
   "run_id": "r49b7943aee1b",
-  "status": "planned"
+  "status": "pending",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--gres=gpu:1",
+      "--cpus-per-task=8",
+      "--mem=96G",
+      "--time=2-00:00:00",
+      "--job-name=r49b7943aee1b",
+      "--output=experiments/transformer_200m_4b/runs/r49b7943aee1b/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/r49b7943aee1b/config.yaml",
+      "6338ee9a8a7c2e07732e87c292b7de1871ec4a70",
+      "1",
+      "B300,H100"
+    ],
+    "gpu_count": 1,
+    "launch_commit": "6338ee9a8a7c2e07732e87c292b7de1871ec4a70",
+    "partition": "long",
+    "slurm_job_id": "224774",
+    "stop_after_step": null
+  }
 }
