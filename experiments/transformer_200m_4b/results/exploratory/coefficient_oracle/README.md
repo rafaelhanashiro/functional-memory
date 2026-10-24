@@ -13,8 +13,8 @@ backbone frozen. They live in the
 | `r3c0f21ab7dce` | Free coefficients per layer, head, query, and order | Static `r9b8acfcbeb89`, step 7,500 | Complete |
 | `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r0963b3e6610b` | One coefficient table shared across 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
-| `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Prepared |
-| `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Prepared |
+| `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Running |
+| `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Queued |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
@@ -179,6 +179,11 @@ one clipping and optimizer update. The batch fit accumulates microbatches of eig
 the sequence fit uses one. The minimum 2,000 updates, 200-update plateau window,
 0.001-nat tolerance, tenfold LR reduction, and 500 confirmation updates match the
 position-dependent fit. The 10,000-update safety limit pauses an unconverged run.
+
+The single-sequence fit is Slurm job `224916`, on one H100 in `debug`;
+the independent full-batch fit is job `224917`, submitted to `long` because
+the available `standard` GPU allowance is already running or committed. Each
+job qualifies its GPU execution and checkpoint resume before fitting.
 
 The batch static tensor is a restriction of the position-dependent tensor, on the
 same source backbone and fitting batch. Comparing these fitting results tests the
