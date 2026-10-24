@@ -2045,4 +2045,7 @@ The [CPU record](runs/shared-batch-coefficient-fit/cpu.json) qualifies one posit
 coefficient table broadcast across sequences: batch-mean initialization, mean gradients
 accumulated before one factorial-coordinate Adam update, microbatch invariance,
 frozen source parameters, and exact checkpoint resume. Existing generator and
-independent-coefficient checks also pass. GPU qualification is required before fitting.
+independent-coefficient checks also pass. The [H100 qualification](runs/shared-batch-coefficient-fit/gpu-h100.json)
+passes original coefficient replay over all 256 sequences, repeated shared-table
+forward execution, an improving mean-gradient update, an unchanged source tree,
+and exact checkpoint resume for the 15-layer degree-eight model.

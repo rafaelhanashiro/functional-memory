@@ -145,7 +145,9 @@ window, 0.001-nat tolerance, tenfold LR reduction, 500 confirmation updates, and
 10,000-update safety limit match the other free-coefficient fit.
 
 Slurm job `224910` is running on one H100 on `dogo` in the `debug` partition.
-It qualifies the GPU execution and checkpoint resume before fitting.
+GPU qualification passed original coefficient replay, shared-table repeatability,
+an improving full-batch update, unchanged pretrained parameters, and exact checkpoint
+resume. Fitting is underway; no terminal result is available yet.
 
 This tests whether one coefficient table can reduce loss across many fitting
 sequences simultaneously. It places a stronger sharing constraint than independent
