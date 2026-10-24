@@ -28,7 +28,7 @@ STUDY = Path(__file__).resolve().parent
 ROOT = STUDY.parents[1]
 PEAKS = (5e-4, 1e-3, 2e-3)
 PILOT_STEPS = 1500
-COMPARISONS = (("exp", None), *((kind, degree) for degree in (8, 12)
+COMPARISONS = (("exp", None), *((kind, degree) for degree in (4, 8, 12)
                               for kind in ("fixed", "static", "query", "query_key")))
 
 

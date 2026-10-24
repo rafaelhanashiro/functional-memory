@@ -40,15 +40,15 @@ The discarded pilots at peaks 0.0005 and 0.002 (each with a 10% floor) reached
 step-1,500 validation PPL 22.0744 and 22.0731, versus 21.8184 at the selected 0.001;
 all used seed 42 and the same recipe. Their outcomes are retained only in this note.
 
-The canonical LR and its 10% floor apply to these nine full-budget variants:
+The canonical LR and its 10% floor apply to these thirteen full-budget variants:
 
 | Variant | Degrees | Backend |
 | --- | --- | --- |
 | Unnormalized exponential + head RMSNorm | exact exponential | fused |
-| Fixed Taylor + head RMSNorm | 8, 12 | Mosaic |
-| Learned static + head RMSNorm | 8, 12 | Mosaic |
-| Learned query + head RMSNorm | 8, 12 | Mosaic |
-| Learned query–key + head RMSNorm | 8, 12 | fused |
+| Fixed Taylor + head RMSNorm | 4, 8, 12 | Mosaic |
+| Learned static + head RMSNorm | 4, 8, 12 | Mosaic |
+| Learned query + head RMSNorm | 4, 8, 12 | Mosaic |
+| Learned query–key + head RMSNorm | 4, 8, 12 | fused |
 
 For order r, static coefficients are `c_r = c_tilde_r / r!`. Query coefficients
 are `c_r(x_t) = [b_r + a_r tanh(W_r x_t)] / r!`; **both b and a** are scaled.
@@ -90,7 +90,7 @@ checkpoint resumption. New checks cover actual 14-head, 2,048-token attention
 forward/backward against the blocked reference, including learned gains and every
 coefficient order. Acceptance failure prevents production.
 
-The nine comparison recipes are frozen with the selected LR. Independent training
+The comparison recipes are frozen with the selected LR. Independent training
 runs have no inter-run scheduling dependencies; Slurm schedules them according to
 available resources and cluster policy. Each run retains its own frozen configuration
 and source commit; resumed jobs preserve those inputs.

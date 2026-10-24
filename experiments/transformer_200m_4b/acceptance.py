@@ -38,8 +38,8 @@ def check_config(config):
     if config.train.dtype != "bfloat16" or config.train.seed != 42:
         raise ValueError("200M / 4B setup uses BF16 computation with seed 42")
     model = config.model
-    if model.attention_degree is not None and model.attention_degree not in (8, 12):
-        raise ValueError("This comparison includes polynomial degrees 8 and 12")
+    if model.attention_degree is not None and model.attention_degree not in (4, 8, 12):
+        raise ValueError("This comparison includes polynomial degrees 4, 8, and 12")
     if model.attention_normalization:
         if model.attention_degree is not None or model.attention_output_scaling != "none":
             raise ValueError("The normalized control is ordinary softmax without head output RMSNorm")

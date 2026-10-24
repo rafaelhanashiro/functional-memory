@@ -53,10 +53,10 @@ def test_reference_recipe_matches_agreed_count_schedule_and_lr_gate():
 
 @pytest.mark.parametrize(("kind", "degree"), pipeline.COMPARISONS,
                          ids=[f"{kind}-{degree}" for kind, degree in pipeline.COMPARISONS])
-def test_all_nine_comparisons_preserve_recipe_and_have_matching_gpu_gates(tmp_path, kind, degree):
+def test_all_comparisons_preserve_recipe_and_have_matching_gpu_gates(tmp_path, kind, degree):
     config = _load_variant(tmp_path, kind, degree)
     acceptance.check_config(config)
-    assert len(pipeline.COMPARISONS) == len(set(pipeline.COMPARISONS)) == 9
+    assert len(pipeline.COMPARISONS) == len(set(pipeline.COMPARISONS)) == 13
     model = config.model
     assert model.attention_normalization is False and model.attention_output_scaling == "head_rms_norm"
     extra = 15 * 14 * 64  # output RMSNorm gains for every layer and head

@@ -144,11 +144,11 @@ def test_existing_label_cannot_silently_reuse_another_recipe_or_phase(study):
         pipeline._allocate(base, "softmax-lr-0.0005", "lr_pilot")
 
 
-def test_nine_comparison_configs_apply_entire_coefficient_scaling(study, tmp_path):
+def test_comparison_configs_apply_entire_coefficient_scaling(study, tmp_path):
     directory, _ = study
     base = config_to_dict(load_config(directory / "recipe.yaml"))
     before = copy.deepcopy(base)
-    assert len(pipeline.COMPARISONS) == 9
+    assert len(pipeline.COMPARISONS) == 13
     for kind, degree in pipeline.COMPARISONS:
         config = pipeline.variant_config(base, kind, degree)
         path = tmp_path / "variant.yaml"
@@ -193,7 +193,7 @@ def test_new_submission_requests_one_gpu_and_preserves_scientific_recipe(study, 
     assert frozen.data.batch_size == 256 and frozen.train.micro_batch_size == 16
 
 
-@pytest.mark.parametrize("degree", [8, 12])
+@pytest.mark.parametrize("degree", [4, 8, 12])
 def test_query_key_submission_requests_one_b300_and_seven_days_without_changing_recipe(study, monkeypatch, degree):
     directory, _ = study
     base = config_to_dict(load_config(directory / "recipe.yaml"))
@@ -261,13 +261,13 @@ def _offline_advance(monkeypatch):
     return calls
 
 
-def test_advance_freezes_nine_recipes_before_any_submission_and_schedules_report(study, monkeypatch):
+def test_advance_freezes_comparison_recipes_before_any_submission_and_schedules_report(study, monkeypatch):
     directory, pilots = study
     before = [(run / "config.yaml").read_bytes() for run in pilots]
     calls = _offline_advance(monkeypatch)
     submissions, reports = [], []
     def submit(run, source, **kwargs):
-        assert len([row for row in load_study(directory)["runs"] if row.get("phase") == "comparison"]) == 9
+        assert len([row for row in load_study(directory)["runs"] if row.get("phase") == "comparison"]) == 13
         assert any(call[0] == "commit" for call in calls)
         submissions.append((run, kwargs))
         return str(300 + len(submissions))
@@ -275,10 +275,10 @@ def test_advance_freezes_nine_recipes_before_any_submission_and_schedules_report
     monkeypatch.setattr(pipeline, "_submit_report", lambda runs, jobs: reports.append((runs, jobs)))
     comparisons = pipeline.advance(submit=True)
     assert [(run / "config.yaml").read_bytes() for run in pilots] == before
-    assert len(comparisons) == 9
+    assert len(comparisons) == 13
     assert yaml.safe_load((directory / "recipe.yaml").read_text())["optim"]["learning_rate"] == .0005
     assert all(not kwargs.get("dependency") for _, kwargs in submissions)
-    assert reports == [(comparisons, [str(i) for i in range(301, 310)])]
+    assert reports == [(comparisons, [str(i) for i in range(301, 314)])]
     with pytest.raises(ValueError, match="already finalized"):
         pipeline.prepare_pilots()
 
