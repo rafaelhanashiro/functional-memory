@@ -19,6 +19,15 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r28fb40a1d0e9/config.yaml
       sha256: dc5cee68fa148a1c6470f23d03cd7a8e0c674de1c2d38b70e6bdbe49623cd1fd
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r28fb40a1d0e9/metrics.jsonl
+      sha256: e731204af3e570fac6d54ddc75d7fca72c8b65bd44dfb1186eaa21bc14bc6e67
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r28fb40a1d0e9/metadata.json
+      sha256: 03dd3bf825d765e1b85b41f343a572430871fab0dd5377595a6edb59c5ba35b9
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r28fb40a1d0e9/best_validation.json
+      sha256: 48ecdd81ed1c4455e367c8d827d1389d42bfd59151566b50c1925c30ac66fa6f
 - study: transformer_200m_4b
   run_id: r0332cff0b0c0
   role: learned_static
@@ -26,3 +35,12 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r0332cff0b0c0/config.yaml
       sha256: 89637515727ac7ea40df8497dd044c844387d128f373fe54c7976cbb5d4b5589
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r0332cff0b0c0/metrics.jsonl
+      sha256: 58c099f1b4841e232d00ff30863db5eb61dd90bf571c0812f6882041feb5289d
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r0332cff0b0c0/metadata.json
+      sha256: 93b3fef20ae36d03ff18a903a4ff0d4f34e9f7ce180ccc8f0c4c02f0d1fbd007
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r0332cff0b0c0/best_validation.json
+      sha256: 48ecdd81ed1c4455e367c8d827d1389d42bfd59151566b50c1925c30ac66fa6f

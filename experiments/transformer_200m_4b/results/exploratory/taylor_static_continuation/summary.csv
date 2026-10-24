@@ -1,3 +1,3 @@
 role,run_id,status,continuation_update,global_step,validation_nll,validation_perplexity,sampled_train_nll,is_terminal,is_validation_best
-fixed_taylor,r28fb40a1d0e9,acceptance,,,,,,,
-learned_static,r0332cff0b0c0,acceptance,,,,,,,
+fixed_taylor,r28fb40a1d0e9,running,0,7500,2.6571883943520094,14.256150025566818,,False,True
+learned_static,r0332cff0b0c0,running,0,7500,2.6571883943520094,14.256150025566818,,False,True

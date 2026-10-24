@@ -39,8 +39,9 @@ before production. Execution commands are in the [study README](../../../README.
 
 ## Findings and open decision
 
-Both runs are allocated one B300 each in `standard` and are performing GPU
-acceptance before production. No continuation measurements are available yet.
+Both runs passed GPU acceptance and are training on one B300 each in `standard`.
+Their independently evaluated starting checkpoints have exactly matching held-out
+PPL **14.2561500256**. Post-update comparisons are not yet available.
 Their job IDs and execution settings are in their run records. Compare
 held-out NLL/PPL at matched continuation updates, particularly the terminal update
 500. Validation-best measurements are reported separately. A run that fails or is

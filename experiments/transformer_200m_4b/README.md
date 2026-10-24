@@ -100,9 +100,9 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transfor
   --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r019ca96d6533
 # The allocated IDs below identify this pair; do not allocate it again for a requeue.
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
-  r28fb40a1d0e9 --partition standard,long --time-limit 02:00:00
+  r28fb40a1d0e9 --partition standard,long --time-limit 06:00:00
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
-  r0332cff0b0c0 --partition standard,long --time-limit 02:00:00
+  r0332cff0b0c0 --partition standard,long --time-limit 06:00:00
 ```
 
 Each job requests one B300 or H100 GPU. The launcher's frozen-source check and
