@@ -3685,7 +3685,7 @@
   "same_parameters_and_batch_as_parity": true,
   "schema_version": 1,
   "selected_parity_report": {
-    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/validation/runs/query-key-b300-qualification/r833fbb6eedcb/full-model-parity.json",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-qualification/r833fbb6eedcb/full-model-parity.json",
     "sha256": "f23e41bc640fb2430cca4c559fac3a90e7d7d36b14e8df6e10120f49fab9536a"
   },
   "selected_report_failures_reproduced": true,

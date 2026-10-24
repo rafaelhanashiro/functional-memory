@@ -15,7 +15,7 @@
   "completed_utc": "2026-10-24T00:26:28.749282+00:00",
   "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
   "junit": {
-    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/validation/logs/query-key-b300-qualification/cpu.xml",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-b300-qualification/cpu.xml",
     "sha256": "d921afcb0f73f67c08ae074445e4d7c84df3a6a9b08c0ce310f49ec099fbc2ba"
   },
   "source_commit": "4ecd2ad4c285a4dfb854202cf7b13ee330c2e34e",

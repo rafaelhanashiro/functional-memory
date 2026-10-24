@@ -6,7 +6,7 @@
   "finished_utc": "2026-10-24T00:39:12.759292+00:00",
   "format": "b300-query-key-production-qualification",
   "hardware": {
-    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/validation/runs/query-key-b300-qualification/hardware.json",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-qualification/hardware.json",
     "sha256": "0962b2dde9a3d46498887bd9d9dd0f623c1f1d69d2d02ca289734b72d0dbf5d1"
   },
   "home_cluster": "kennel",
@@ -83,7 +83,7 @@
       "elapsed_seconds": 51.91812106408179,
       "exit_code": 0,
       "junit": {
-        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/validation/runs/query-key-b300-qualification/gpu-tests.xml",
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-qualification/gpu-tests.xml",
         "sha256": "b7b8659aa19d65a6a15eb3a3bbc44ced8c86bfca0071f343cd66304a66f2b688"
       },
       "name": "focused-gpu-tests",

@@ -44,13 +44,29 @@
         "sha256": "2919152df34159be6df2f02d94c2a8570e40ed4992d7d154c847b107b07cef17"
       },
       "source_commit": "3eac4af31e245686bed820574c9155d00f05b831"
+    },
+    {
+      "check": "coefficient",
+      "environment": {
+        "JAX_PLATFORMS": "cpu",
+        "OMP_NUM_THREADS": "2",
+        "PYTHONPATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1"
+      },
+      "exit_code": 0,
+      "original_execution": "Identical script body supplied to Python on standard input",
+      "script": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-b300-qualification/cpu-smokes/query-key-roundoff-cpu-coefficient-smoke.py",
+        "sha256": "d675e4059065675c7c426f5924374acd828e7bcb4c3836fef5333580922d401c"
+      },
+      "source_commit": "8924c44721df6b661275125d33b498bff49f8b59"
     }
   ],
   "findings": [
     "Independent analytic FP64 attention and projection gradients match dense autodiff at rtol=atol=1e-12.",
     "Explicit layer callbacks and production FP32 projection pullbacks pass.",
     "Reduced 15-layer NNX model preserves loss/logits/gradients through instrumentation and repeated compiled calls.",
-    "Per-leaf repeat comparison distinguishes embedding-only changes from other parameter changes."
+    "Per-leaf repeat comparison distinguishes embedding-only changes from other parameter changes.",
+    "Independent FP64 bias and both amplitude derivatives match autodiff at 1e-12 across factorial-scale combinations; FP32 controls match at 1e-6, and across-head attribution aggregation passes."
   ],
   "format": "query-key-roundoff-cpu-smoke-record",
   "limitations": [

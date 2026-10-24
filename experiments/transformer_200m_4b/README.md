@@ -115,6 +115,11 @@ one B300, eight CPUs, 96 GB host RAM, and a seven-day allocation. These are inde
 jobs. The launcher qualifies runtime against the allocated Slurm time limit before
 training; the model, coefficient definitions, seed, global batch, and canonical
 0.001/0.0001 LR schedule are unchanged. Their run records contain the exact commands.
+The B300 32-by-32 backward selector is qualified for both frozen recipes; see the
+[scaffold qualification](../../scaffolds/transformer/validation/README.md#b300-query-key-production-qualification)
+for independent gradient checks, full-update timings, and checkpoint/resume evidence.
+The execution source is pinned by `validation/query-key-b300-4b-20261023`; each
+allocation repeats production acceptance before training.
 
 After committing the inputs, submit these two selected runs from this worktree:
 

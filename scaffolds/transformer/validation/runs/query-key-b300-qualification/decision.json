@@ -1,0 +1,1888 @@
+{
+  "assessor_source_sha256": "e5d420b1876e81d3622c9c77436d00f28a4b6fc77dc87d33b91ab18ef88fc525",
+  "coefficient_protocol_commit": "61a4f9139f8a113580eaecf7eac1ae4f188b670b",
+  "created_at_utc": "2026-10-24T02:26:42.394003+00:00",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "evidence": [
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-qualification/roundoff-protocol.json",
+      "sha256": "5fa9171ad05517064678df9aac5f6cf4dc6109841ffe13ac370114fd8a0e8237"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-qualification/repeat-protocol.json",
+      "sha256": "7f44d9ad1c82637f856beb0b4f0fb53bc52fdc2832f3743cf223e4f455cf223c"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-qualification/coefficient-protocol.json",
+      "sha256": "a9941df499417cd9b4331dc7679aa75764bfb936077171b48dbf3141cf538aab"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/summary.json",
+      "sha256": "c1b47a9e1ae50606568e25ba1afe380378cc5b096b7dd180dd3dc1e73add8e83"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/experiments/transformer_200m_4b/runs/r833fbb6eedcb/config.yaml",
+      "sha256": "db94207d47c1dc49a4bb7ad8f109a7d3fbe78ce9c49ad951df639eedfd23efc3"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/experiments/transformer_200m_4b/runs/rfd48f7bbe9f4/config.yaml",
+      "sha256": "83c4ece8ac43adcd62155eaf9d24c904e9e8f244dec0d9ae361716ce9714bc3c"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/hardware.json",
+      "sha256": "f647c9131a06fdb093749d361e737f50fbee238b1bcbd3b3b00b7f94709074c3"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-qualification/cpu.json",
+      "sha256": "959de4a12840985355e8c953acc58a35fb17cc950c9fdcb8f821765bfffa749d"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/acceptance.py",
+      "sha256": "71f04b7244f33dba4c86d97337c15072d8b8759e96fa9d24778204559ec848fe"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/attention/backends/fused_query_key_polynomial.py",
+      "sha256": "67537f3a6035162f2edb76c01b5d9498349ff1f66342673be9afadfde6245732"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/tests/test_acceptance.py",
+      "sha256": "31e8b3399b735722adf20cc8d3ed31177170baad0f9b2a0148d383f64af9ee86"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/tests/test_query_key_tiling.py",
+      "sha256": "8c9d70951d59996d64f17f1753cf8fcadb239fc152bc645cda6b3af68e1b63b5"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/query-key-b300-qualification/cpu.xml",
+      "sha256": "d921afcb0f73f67c08ae074445e4d7c84df3a6a9b08c0ce310f49ec099fbc2ba"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/gpu-tests.xml",
+      "sha256": "927b4e6980f92e0bf4448a306cfc4d38ab4388eb94df0038a1f3fad3af9423b9"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-qualification/r833fbb6eedcb/full-model-parity.json",
+      "sha256": "f23e41bc640fb2430cca4c559fac3a90e7d7d36b14e8df6e10120f49fab9536a"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/r833fbb6eedcb/full-model-parity.json",
+      "sha256": "971dc28b282649420669879d57884be0028dd4afb8b67ea5f29a960ec804d4b0"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/rfd48f7bbe9f4/full-model-parity.json",
+      "sha256": "5ee6059a2114d55d440442015759bc29df4b7cce52924e6632a5b7f8a2a76ef2"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/benchmarks/qualify_query_key_model.py",
+      "sha256": "75949355c472d029e65c7ae09c174af11679ea60643acf0926b65b0ec7696309"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-qualification/roundoff-m8.json",
+      "sha256": "f8299d0d6f324c1bd414cfeb1e69c857e10635597230c3538a9f883d4f6dc27e"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-qualification/roundoff-m12.json",
+      "sha256": "321fa51528f5465eacae049f37259ad9b2c48e27cf7a2ff258d43f654dc1d25d"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/benchmarks/diagnose_query_key_model_roundoff.py",
+      "sha256": "6117a08dc463896abb245b1e244d67a0b7a64c787ef0d49aaea369c928608ad4"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/r833fbb6eedcb/throughput-production.json",
+      "sha256": "92c232d9c6b17cd276b64c02cdc827840aa76ebe81654db5702ca793d03306d3"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/benchmarks/benchmark_training_throughput.py",
+      "sha256": "81f2bca777e83359fb609690cc1ce53518ccb43fcae98d3962edc0cf4f061e1b"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/r833fbb6eedcb/throughput-original.json",
+      "sha256": "19004beefcd862468830e0a5c8f16426315b9106e468714a5c90316547ba3ccf"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/r833fbb6eedcb/pilot-result.json",
+      "sha256": "be33e19486f4719c3785265999a235a88ba25a161b40604a8af0455cfca94398"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/r833fbb6eedcb/resume-result.json",
+      "sha256": "35a02c7a3e710f3f85ff52fbc18968de6952b89c3a8538a36f7c51a3a7cff25e"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/rfd48f7bbe9f4/throughput-production.json",
+      "sha256": "557a32f66832436d32b554ed51c875934afc4eef6999ea5ccb51131f9eed3e18"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/rfd48f7bbe9f4/throughput-original.json",
+      "sha256": "719ecb30be5821489ab118f23988c5010ae71b4186699dc8a36b72c0f98df359"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/rfd48f7bbe9f4/pilot-result.json",
+      "sha256": "21ae8a6971714feb58a177077b9b9fa91429b56d8a9a589ed6354dfde5fc8520"
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-assessment/rfd48f7bbe9f4/resume-result.json",
+      "sha256": "d2049a8c81b630228a4fdc8401e2641839c6f267c2965adf4344a5f1a4cf3b60"
+    }
+  ],
+  "executed_benchmarks": [
+    {
+      "path": "scaffolds/transformer/benchmarks/qualify_query_key_model.py",
+      "sha256": "75949355c472d029e65c7ae09c174af11679ea60643acf0926b65b0ec7696309",
+      "source_commit": "e6f51e4eb76d302c872fc54dd25068987876ad9a"
+    },
+    {
+      "path": "scaffolds/transformer/benchmarks/qualify_query_key_model.py",
+      "sha256": "75949355c472d029e65c7ae09c174af11679ea60643acf0926b65b0ec7696309",
+      "source_commit": "90ff3ab3913f84137895d46fa496f37070cf94bb"
+    },
+    {
+      "path": "scaffolds/transformer/benchmarks/diagnose_query_key_model_roundoff.py",
+      "sha256": "e7c533d8a317ef89fc8818c2866b05a2e0fb1adfd62784a2bab16ef33197b86d",
+      "source_commit": "3eac4af31e245686bed820574c9155d00f05b831"
+    },
+    {
+      "path": "scaffolds/transformer/benchmarks/diagnose_query_key_model_roundoff.py",
+      "sha256": "6117a08dc463896abb245b1e244d67a0b7a64c787ef0d49aaea369c928608ad4",
+      "source_commit": "8924c44721df6b661275125d33b498bff49f8b59"
+    },
+    {
+      "path": "scaffolds/transformer/benchmarks/benchmark_training_throughput.py",
+      "sha256": "81f2bca777e83359fb609690cc1ce53518ccb43fcae98d3962edc0cf4f061e1b",
+      "source_commit": "90ff3ab3913f84137895d46fa496f37070cf94bb"
+    }
+  ],
+  "finished_at_utc": "2026-10-24T02:26:43.172549+00:00",
+  "format": "b300-query-key-qualification-decision",
+  "interpretation": "Raw 5% projection/coefficient-group rejections and strict whole-gradient repeat verdicts remain unchanged. Qualification requires independent oracle/attribution gates plus the prospective repeat addendum: exact forward/nonembedding gradients and embedding variation within unchanged whole-leaf bounds.",
+  "limitation": "Attribution locates differences in the incoming cotangent; it does not identify the upstream operation responsible. Production must still pass its own allocation acceptance.",
+  "oracles": [
+    {
+      "coefficient_groups_independently_attributed": 0,
+      "historical_failure_membership_recurrence_required": false,
+      "local_projection_and_attribution_gates": "passed",
+      "raw_status": "failed",
+      "repeat_addendum": "passed",
+      "repeat_measurements": [
+        {
+          "comparisons": {
+            "instrumentation_gradients": {
+              "embedding_array_equal": false,
+              "embedding_max_error_over_reference_max": 0.004284274193548387,
+              "embedding_relative_l2_error": 0.005148238891973653,
+              "nonembedding_gradients_array_exact": true
+            },
+            "repeat_gradients": {
+              "embedding_array_equal": false,
+              "embedding_max_error_over_reference_max": 0.00516633064516129,
+              "embedding_relative_l2_error": 0.004963354030533515,
+              "nonembedding_gradients_array_exact": true
+            }
+          },
+          "raw_deterministic": false,
+          "raw_instrumentation_array_exact": false,
+          "tile": 64
+        },
+        {
+          "comparisons": {
+            "instrumentation_gradients": {
+              "embedding_array_equal": false,
+              "embedding_max_error_over_reference_max": 0.00525,
+              "embedding_relative_l2_error": 0.004668571750875307,
+              "nonembedding_gradients_array_exact": true
+            },
+            "repeat_gradients": {
+              "embedding_array_equal": false,
+              "embedding_max_error_over_reference_max": 0.00525,
+              "embedding_relative_l2_error": 0.004726963868370739,
+              "nonembedding_gradients_array_exact": true
+            }
+          },
+          "raw_deterministic": false,
+          "raw_instrumentation_array_exact": false,
+          "tile": 32
+        }
+      ],
+      "run_id": "r833fbb6eedcb",
+      "selected_report_failures_reproduced": false
+    },
+    {
+      "coefficient_groups_independently_attributed": 20,
+      "historical_failure_membership_recurrence_required": false,
+      "local_projection_and_attribution_gates": "passed",
+      "raw_status": "failed",
+      "repeat_addendum": "passed",
+      "repeat_measurements": [
+        {
+          "comparisons": {
+            "instrumentation_gradients": {
+              "embedding_array_equal": false,
+              "embedding_max_error_over_reference_max": 0.055793991416309016,
+              "embedding_relative_l2_error": 0.015432473260465263,
+              "nonembedding_gradients_array_exact": true
+            },
+            "repeat_gradients": {
+              "embedding_array_equal": false,
+              "embedding_max_error_over_reference_max": 0.046218487394957986,
+              "embedding_relative_l2_error": 0.015197998249219873,
+              "nonembedding_gradients_array_exact": true
+            }
+          },
+          "raw_deterministic": false,
+          "raw_instrumentation_array_exact": false,
+          "tile": 64
+        },
+        {
+          "comparisons": {
+            "instrumentation_gradients": {
+              "embedding_array_equal": false,
+              "embedding_max_error_over_reference_max": 0.04185022026431718,
+              "embedding_relative_l2_error": 0.01632962127675655,
+              "nonembedding_gradients_array_exact": true
+            },
+            "repeat_gradients": {
+              "embedding_array_equal": false,
+              "embedding_max_error_over_reference_max": 0.04449152542372881,
+              "embedding_relative_l2_error": 0.015718811374473084,
+              "nonembedding_gradients_array_exact": true
+            }
+          },
+          "raw_deterministic": false,
+          "raw_instrumentation_array_exact": false,
+          "tile": 32
+        }
+      ],
+      "run_id": "rfd48f7bbe9f4",
+      "selected_report_failures_reproduced": false
+    }
+  ],
+  "production_allowed": true,
+  "production_frozen_execution_sha256": "c64c99afedf5b266aa5cb28f2c2cde5f9ce06df2c5e9bedcb912a1021f555585",
+  "production_source_commit": "8924c44721df6b661275125d33b498bff49f8b59",
+  "protocol_commit": "7293e9702c4f4b8e9dfb4001dbad6da946cd3ede",
+  "raw_statuses_preserved": true,
+  "repeat_protocol_commit": "c05b6ed306dd93b1d6e6c51b639790db7fc04c37",
+  "runs": {
+    "r833fbb6eedcb": {
+      "attributed_coefficient_groups": [],
+      "attributed_projection_groups": [
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          10,
+          3
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          10,
+          6
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          10,
+          7
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          13,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          4,
+          2,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          4,
+          2,
+          3
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          4,
+          2,
+          4
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          5,
+          2,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          5,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          3
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          4
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          5
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          6
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          7
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          8
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          13,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          13,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          13,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          4,
+          2,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          4,
+          2,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          4,
+          2,
+          3
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          5,
+          2,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          5,
+          13,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          8,
+          0,
+          8
+        ]
+      ],
+      "original_update_seconds": 30.972539068820577,
+      "pilot_resume": "passed",
+      "production_update_seconds": 4.8337544451157255,
+      "raw_full_model_status": "failed",
+      "rejected_coefficient_groups": [],
+      "rejected_projection_groups": [
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          10,
+          3
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          10,
+          6
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          10,
+          7
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          13,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          4,
+          2,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          4,
+          2,
+          3
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          4,
+          2,
+          4
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          5,
+          2,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          5,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          3
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          4
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          5
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          6
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          7
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          8
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          13,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          13,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          13,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          4,
+          2,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          4,
+          2,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          4,
+          2,
+          3
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          5,
+          2,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          5,
+          13,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          8,
+          0,
+          8
+        ]
+      ],
+      "speedup": 6.407553263305881,
+      "whole_parameter_and_forward_gates": "passed"
+    },
+    "rfd48f7bbe9f4": {
+      "attributed_coefficient_groups": [
+        [
+          "['key_polynomial_amplitude'].value",
+          0,
+          null,
+          1
+        ],
+        [
+          "['key_polynomial_amplitude'].value",
+          3,
+          null,
+          8
+        ],
+        [
+          "['key_polynomial_amplitude'].value",
+          3,
+          null,
+          9
+        ],
+        [
+          "['key_polynomial_amplitude'].value",
+          3,
+          null,
+          12
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          0,
+          null,
+          1
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          0,
+          null,
+          2
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          0,
+          null,
+          3
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          0,
+          null,
+          4
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          0,
+          null,
+          5
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          3,
+          null,
+          7
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          3,
+          null,
+          8
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          3,
+          null,
+          9
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          3,
+          null,
+          10
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          3,
+          null,
+          11
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          3,
+          null,
+          12
+        ],
+        [
+          "['query_polynomial_bias'].value",
+          0,
+          null,
+          2
+        ],
+        [
+          "['query_polynomial_bias'].value",
+          3,
+          null,
+          9
+        ],
+        [
+          "['query_polynomial_bias'].value",
+          3,
+          null,
+          10
+        ],
+        [
+          "['query_polynomial_bias'].value",
+          3,
+          null,
+          11
+        ],
+        [
+          "['query_polynomial_bias'].value",
+          3,
+          null,
+          12
+        ]
+      ],
+      "attributed_projection_groups": [
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          0,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          0,
+          3
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          6,
+          3
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          10,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          11,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          13,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          1,
+          8,
+          11
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          1,
+          8,
+          12
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          2
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          3
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          4
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          5
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          6
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          7
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          8
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          9
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          11
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          6,
+          6
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          6,
+          7
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          6,
+          9
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          6,
+          10
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          6,
+          11
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          6,
+          12
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          0,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          0,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          0,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          0,
+          3
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          2,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          2,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          2,
+          3
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          5
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          6
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          7
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          8
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          9
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          10
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          8,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          3
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          4
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          5
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          11,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          11,
+          3
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          13,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          13,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          1,
+          10,
+          10
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          4
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          5
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          6
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          7
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          8
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          9
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          10
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          11
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          12
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          4
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          5
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          6
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          8
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          9
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          10
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          11
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          12
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          6,
+          10,
+          10
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          8,
+          4,
+          5
+        ]
+      ],
+      "original_update_seconds": 48.461878752335906,
+      "pilot_resume": "passed",
+      "production_update_seconds": 5.853420898939173,
+      "raw_full_model_status": "failed",
+      "rejected_coefficient_groups": [
+        [
+          "['key_polynomial_amplitude'].value",
+          0,
+          null,
+          1
+        ],
+        [
+          "['key_polynomial_amplitude'].value",
+          3,
+          null,
+          8
+        ],
+        [
+          "['key_polynomial_amplitude'].value",
+          3,
+          null,
+          9
+        ],
+        [
+          "['key_polynomial_amplitude'].value",
+          3,
+          null,
+          12
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          0,
+          null,
+          1
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          0,
+          null,
+          2
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          0,
+          null,
+          3
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          0,
+          null,
+          4
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          0,
+          null,
+          5
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          3,
+          null,
+          7
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          3,
+          null,
+          8
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          3,
+          null,
+          9
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          3,
+          null,
+          10
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          3,
+          null,
+          11
+        ],
+        [
+          "['query_polynomial_amplitude'].value",
+          3,
+          null,
+          12
+        ],
+        [
+          "['query_polynomial_bias'].value",
+          0,
+          null,
+          2
+        ],
+        [
+          "['query_polynomial_bias'].value",
+          3,
+          null,
+          9
+        ],
+        [
+          "['query_polynomial_bias'].value",
+          3,
+          null,
+          10
+        ],
+        [
+          "['query_polynomial_bias'].value",
+          3,
+          null,
+          11
+        ],
+        [
+          "['query_polynomial_bias'].value",
+          3,
+          null,
+          12
+        ]
+      ],
+      "rejected_projection_groups": [
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          0,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          0,
+          3
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          6,
+          3
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          10,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          11,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          0,
+          13,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          1,
+          8,
+          11
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          1,
+          8,
+          12
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          1
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          2
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          3
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          4
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          5
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          6
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          7
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          8
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          9
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          0,
+          11
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          6,
+          6
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          6,
+          7
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          6,
+          9
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          6,
+          10
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          6,
+          11
+        ],
+        [
+          "['key_polynomial_kernel'].value",
+          3,
+          6,
+          12
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          0,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          0,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          0,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          0,
+          3
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          2,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          2,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          2,
+          3
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          5
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          6
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          7
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          8
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          9
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          6,
+          10
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          8,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          1
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          3
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          4
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          10,
+          5
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          11,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          11,
+          3
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          13,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          0,
+          13,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          1,
+          10,
+          10
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          0
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          2
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          4
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          5
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          6
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          7
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          8
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          9
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          10
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          11
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          0,
+          12
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          4
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          5
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          6
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          8
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          9
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          10
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          11
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          3,
+          6,
+          12
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          6,
+          10,
+          10
+        ],
+        [
+          "['query_polynomial_kernel'].value",
+          8,
+          4,
+          5
+        ]
+      ],
+      "speedup": 8.27924039447065,
+      "whole_parameter_and_forward_gates": "passed"
+    }
+  },
+  "schema_version": 1,
+  "source_equivalence": [
+    {
+      "allowed_frozen_diagnostic_change": "scaffolds/transformer/benchmarks/diagnose_query_key_model_roundoff.py",
+      "changed_paths": [
+        {
+          "path": "scaffolds/transformer/benchmarks/diagnose_query_key_model_roundoff.py",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/assess_query_key_b300.py",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/diagnose_query_key_b300.sbatch",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/coefficient-protocol.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/cpu-roundoff.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/cpu.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/gpu-tests.xml",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/hardware.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/r833fbb6eedcb/full-model-parity.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/repeat-protocol.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/roundoff-m8-repeat-observation.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/roundoff-m8.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/roundoff-protocol.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/summary.json",
+          "status": "A"
+        }
+      ],
+      "frozen_execution_sha256": "14d04916d16bdb5dc6c8e0ba14ac4d072c30d88c18d4d7999a96034e0c586e6c",
+      "source_commit": "90ff3ab3913f84137895d46fa496f37070cf94bb"
+    },
+    {
+      "allowed_frozen_diagnostic_change": "scaffolds/transformer/benchmarks/diagnose_query_key_model_roundoff.py",
+      "changed_paths": [
+        {
+          "path": "scaffolds/transformer/benchmarks/diagnose_query_key_model_roundoff.py",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/assess_query_key_b300.py",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/diagnose_query_key_b300.sbatch",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/qualify_query_key_b300.py",
+          "status": "M"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/coefficient-protocol.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/cpu-roundoff.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/cpu.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/gpu-tests.xml",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/hardware.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/r833fbb6eedcb/full-model-parity.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/repeat-protocol.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/roundoff-m8-repeat-observation.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/roundoff-m8.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/roundoff-protocol.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/summary.json",
+          "status": "A"
+        }
+      ],
+      "frozen_execution_sha256": "14d04916d16bdb5dc6c8e0ba14ac4d072c30d88c18d4d7999a96034e0c586e6c",
+      "source_commit": "e6f51e4eb76d302c872fc54dd25068987876ad9a"
+    },
+    {
+      "allowed_frozen_diagnostic_change": "scaffolds/transformer/benchmarks/diagnose_query_key_model_roundoff.py",
+      "changed_paths": [
+        {
+          "path": "scaffolds/transformer/benchmarks/diagnose_query_key_model_roundoff.py",
+          "status": "M"
+        },
+        {
+          "path": "scaffolds/transformer/validation/assess_query_key_b300.py",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/coefficient-protocol.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/cpu-roundoff.json",
+          "status": "A"
+        },
+        {
+          "path": "scaffolds/transformer/validation/runs/query-key-b300-qualification/roundoff-m8.json",
+          "status": "A"
+        }
+      ],
+      "frozen_execution_sha256": "2be1be9b3e906034b237313896516ae0749646114243ea723bba696c8c219dc2",
+      "source_commit": "3eac4af31e245686bed820574c9155d00f05b831"
+    },
+    {
+      "allowed_frozen_diagnostic_change": "scaffolds/transformer/benchmarks/diagnose_query_key_model_roundoff.py",
+      "changed_paths": [],
+      "frozen_execution_sha256": "c64c99afedf5b266aa5cb28f2c2cde5f9ce06df2c5e9bedcb912a1021f555585",
+      "source_commit": "8924c44721df6b661275125d33b498bff49f8b59"
+    }
+  ],
+  "status": "qualified"
+}
