@@ -12,7 +12,7 @@ backbone frozen. They live in the
 | --- | --- | --- | --- |
 | `r3c0f21ab7dce` | Free coefficients per layer, head, query, and order | Static `r9b8acfcbeb89`, step 7,500 | Complete |
 | `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Complete |
-| `r0963b3e6610b` | One coefficient table shared across 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Prepared |
+| `r0963b3e6610b` | One coefficient table shared across 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
@@ -143,6 +143,9 @@ there are no separate per-sequence parameters or optimizer states. Every forward
 recomputes the backbone normally. The minimum 2,000 updates, 200-update plateau
 window, 0.001-nat tolerance, tenfold LR reduction, 500 confirmation updates, and
 10,000-update safety limit match the other free-coefficient fit.
+
+Slurm job `224910` is running on one H100 on `dogo` in the `debug` partition.
+It qualifies the GPU execution and checkpoint resume before fitting.
 
 This tests whether one coefficient table can reduce loss across many fitting
 sequences simultaneously. It places a stronger sharing constraint than independent
