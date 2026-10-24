@@ -12,6 +12,7 @@ backbone frozen. They live in the
 | --- | --- | --- | --- |
 | `r3c0f21ab7dce` | Free coefficients per layer, head, query, and order | Static `r9b8acfcbeb89`, step 7,500 | Complete |
 | `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Complete |
+| `r1f2f749ff099` | Original degree-four tanh query coefficient generator | Query-only `r49b7943aee1b`, step 7,500 | Prepared |
 | `r0963b3e6610b` | One coefficient table shared across 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
 | `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
@@ -119,6 +120,38 @@ separately compiled training forward differs from the capture forward by
 0.00172043 nats, within the recorded BF16 tolerance of 0.002. Both the initial
 and fitted losses in the table use the same training graph. Checkpoint roundtrip
 and the next resumed update were exact.
+
+## Degree-four query coefficient generator
+
+Opened: **2026-10-24**. Run `r1f2f749ff099` repeats the single-sequence
+query-generator fit at degree four, starting from the trained query-only
+checkpoint `r49b7943aee1b` at step **7,500**. The question is whether this
+degree-four model can memorize the same sequence that the degree-eight generator
+fit above memorized. The pretrained backbones differ, so this is a comparison of
+achieved fitting capacity, not an isolated degree ablation on one backbone.
+
+Only the original query bias, amplitude, and projection parameters are trained:
+**942,900 parameters**, with `c_r(x) = [b_r + a_r tanh(W_r x)] / r!`, for orders
+zero through four. The trained generator is restored without resetting it.
+Q/K/V projections, normalization gains, embeddings, MLPs, and the output head
+remain frozen; activations are recomputed normally on every forward. This is
+coefficient-only fitting, unlike the all-parameter Taylor continuation.
+
+The first packed evaluation sequence is reused as fitting data: **2,048 prediction
+targets**, with the same token checksum as `rd7bf9bc37cb6`. Adam uses LR **0.001**,
+betas **0.9/0.95**, epsilon **1e-8**, clipping at **1**, and no weight decay.
+The minimum **2,000** updates, **200**-update plateau window, **0.001**-nat
+improvement threshold, tenfold LR reduction, and **500** confirmation updates
+match the degree-eight fit. An unconverged run pauses at the **10,000**-update
+safety limit. The retained checkpoint minimizes fitting NLL, with terminal
+metrics reported separately.
+
+The run is prepared for one B300 or H100 in `standard`. GPU qualification must
+pass source replay, finite nonzero gradients for all generator groups, an
+improving update, exact resume, and unchanged backbone parameters before fitting.
+No fitting result is available yet. Success would establish memorization of
+this sequence; a poor fit would not by itself prove that degree four cannot
+memorize it. There is no held-out generalization measurement in this diagnostic.
 
 ## Coefficients shared across a full batch
 

@@ -41,6 +41,32 @@ def fitting_scope(parameterization, parent_batch_size, sequence_count=None):
     return 1, "query_generator_single_sequence"
 
 
+def fitting_role(role, degree):
+    """Keep existing degree-eight selections stable while distinguishing other degrees."""
+    if type(degree) is not int or degree < 1:
+        raise ValueError("Coefficient fitting requires a positive integer degree")
+    return role if degree == 8 else f"{role}_m{degree}"
+
+
+def parent_degree(model):
+    """Require the trained query family and a degree supported by its backend."""
+    from scaffolds.transformer.configs import ModelConfig
+
+    degree = model.get("attention_degree")
+    fitting_role("query_generator_single_sequence", degree)
+    if (model["attention_coefficient_conditioning"] != "query"
+            or model["attention_coefficients"] != "learned" or model["attention_normalization"]
+            or model["attention_coefficient_activation"] != "tanh"
+            or model["attention_coefficient_scale"] != "factorial"
+            or model["attention_coefficient_amplitude_scale"] != "factorial"
+            or model["initialization"] != "transformer_truncated_reference"
+            or not model["qk_norm"] or model["attention_backend"] != "mosaic"):
+        raise ValueError("Expected a 4B factorial-scaled query-only parent")
+    # The shared model validator owns supported Mosaic widths and degrees.
+    ModelConfig(**model)
+    return degree
+
+
 def prepare(parent: Path, *, parameterization="query_coefficient_generator", sequence_count=None):
     if parameterization not in PARAMETERIZATIONS:
         raise ValueError(f"Unknown coefficient parameterization: {parameterization}")
@@ -54,14 +80,8 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
     source = yaml.safe_load((parent / "config.yaml").read_text())
     count, role = fitting_scope(parameterization, int(source["data"]["batch_size"]), sequence_count)
     model = source["model"]
-    if (model["attention_degree"] != 8 or model["attention_coefficient_conditioning"] != "query"
-            or model["attention_coefficients"] != "learned" or model["attention_normalization"]
-            or model["attention_coefficient_activation"] != "tanh"
-            or model["attention_coefficient_scale"] != "factorial"
-            or model["attention_coefficient_amplitude_scale"] != "factorial"
-            or model["initialization"] != "transformer_truncated_reference"
-            or not model["qk_norm"] or model["attention_backend"] != "mosaic"):
-        raise ValueError("Expected the 4B degree-eight factorial-scaled query-only parent")
+    degree = parent_degree(model)
+    role = fitting_role(role, degree)
     best = json.loads((parent / "best_validation.json").read_text())
     descriptor = record["selected_checkpoint"]
     checkpoint = Path(descriptor["path"])
@@ -88,10 +108,9 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
         )))
         sequence_identity["batch_sha256"] = hashlib.sha256(batch.astype(np.int32).tobytes()).hexdigest()
     recipe = deepcopy(source)
-    recipe["model"].pop("gdn_polynomial_degree", None)
-    label = "shared-coefficients-m8-full-batch" if shared else "query-generator-m8-single-sequence"
+    label = f"shared-coefficients-m{degree}-full-batch" if shared else f"query-generator-m{degree}-single-sequence"
     if static:
-        label = "static-coefficients-m8-" + ("single-sequence" if count == 1 else "full-batch")
+        label = f"static-coefficients-m{degree}-" + ("single-sequence" if count == 1 else "full-batch")
     recipe.update(schema_version=1, experiment_kind="fixed_input_coefficient_fit",
                   condition=f"coefficient_oracle/{role}")
     recipe["data"]["batch_size"] = count
@@ -164,7 +183,18 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
     print(run.name, flush=True)
 
 
-def submit(run_id, *, partition="debug,standard,long", time_limit="02:00:00"):
+def live_job_state(job_id):
+    """Expired Slurm IDs are absent; scheduler errors must not trigger a duplicate job."""
+    result = subprocess.run(["squeue", "-h", "-j", str(job_id), "-o", "%T"],
+                            text=True, capture_output=True)
+    if result.returncode:
+        if "invalid job id" in result.stderr.lower():
+            return ""
+        raise RuntimeError(f"Cannot check existing Slurm job {job_id}: {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def submit(run_id, *, partition="standard,long", time_limit="02:00:00"):
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     dirty = changes(ROOT, commit, STUDY.name, "transformer")
     if dirty:
@@ -176,7 +206,7 @@ def submit(run_id, *, partition="debug,standard,long", time_limit="02:00:00"):
         raise ValueError("The run is already complete")
     previous = record.get("submission", {}).get("slurm_job_id")
     if previous:
-        live = subprocess.check_output(["squeue", "-h", "-j", str(previous), "-o", "%T"], text=True).strip()
+        live = live_job_state(previous)
         if live:
             raise ValueError(f"Run already has live job {previous}: {live}")
     log = run / "training.log"
@@ -205,7 +235,7 @@ def main():
     prep.add_argument("--sequence-count", type=int, choices=(1, 256))
     launch = sub.add_parser("submit")
     launch.add_argument("run_id")
-    launch.add_argument("--partition", default="debug,standard,long")
+    launch.add_argument("--partition", default="standard,long")
     launch.add_argument("--time-limit", default="02:00:00")
     args = parser.parse_args()
     if args.command == "prepare":
