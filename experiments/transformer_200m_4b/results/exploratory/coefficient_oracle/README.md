@@ -12,7 +12,7 @@ backbone frozen. They live in the
 | --- | --- | --- | --- |
 | `r3c0f21ab7dce` | Free coefficients per layer, head, query, and order | Static `r9b8acfcbeb89`, step 7,500 | Complete |
 | `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Complete |
-| `r1f2f749ff099` | Original degree-four tanh query coefficient generator | Query-only `r49b7943aee1b`, step 7,500 | Queued |
+| `r1f2f749ff099` | Original degree-four tanh query coefficient generator | Query-only `r49b7943aee1b`, step 7,500 | Complete |
 | `r0963b3e6610b` | One coefficient table shared across 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
 | `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
@@ -146,13 +146,36 @@ match the degree-eight fit. An unconverged run pauses at the **10,000**-update
 safety limit. The retained checkpoint minimizes fitting NLL, with terminal
 metrics reported separately.
 
-Slurm job **224960** is queued for one B300 or H100 in `standard`, currently
-waiting for resources. GPU qualification must
-pass source replay, finite nonzero gradients for all generator groups, an
-improving update, exact resume, and unchanged backbone parameters before fitting.
-No fitting result is available yet. Success would establish memorization of
-this sequence; a poor fit would not by itself prove that degree four cannot
-memorize it. There is no held-out generalization measurement in this diagnostic.
+### Findings
+
+Slurm job **224960** completed on one B300 on `akita` in `standard` in **2 minutes
+29 seconds**, including GPU qualification. The learning rate decreased at update
+**2,194**, and fitting stopped at **2,694** after 500 confirmation updates on the
+plateau. The retained best generator is from update **2,685**. All backbone
+parameters retained their original checksum. All 2,695 loss and gradient-norm
+measurements were finite; 201 measured gradient norms exceeded the clipping
+threshold of 1.
+
+| Measurement | Update | Fitting NLL | Fitting PPL |
+| --- | ---: | ---: | ---: |
+| Initial | 0 | 2.616209507 | 13.68375697 |
+| Best retained | 2,685 | 0.006344396 | 1.00636456 |
+| Terminal | 2,694 | 0.006474757 | 1.00649576 |
+
+**The degree-four query generator can nearly memorize this sequence with its
+backbone frozen.** Degree four therefore has sufficient capacity for this
+single-sequence diagnostic. The degree-eight generator reached best PPL 1.00544
+on the same sequence; their small difference is not a controlled degree ablation
+because their pretrained backbones differ. This result does not establish
+held-out generalization or explain the small gains in joint pretraining or
+Taylor continuation.
+
+GPU qualification passed source replay, finite nonzero gradients for all three
+generator groups, an improving update, exact checkpoint resume, and unchanged
+backbone parameters. Original and replayed standalone logits matched exactly.
+The separately compiled training forward differed by 0.00069380 nats/token,
+within the recorded BF16 tolerance of 0.002. Initial and fitted metrics above
+use the same training graph, so this offset is not counted as fitting improvement.
 
 ## Coefficients shared across a full batch
 
