@@ -17,7 +17,8 @@ shift 3
 python3 scaffolds/launch/frozen.py check --launch-commit "$LAUNCH_COMMIT" --experiment transformer_200m_4b --scaffold transformer
 source scaffolds/transformer/launchers/kennel_runtime.sh
 PYTHON="$PWD/scaffolds/transformer/$TRANSFORMER_ENVIRONMENT_DIR/bin/python"
-export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda OMP_NUM_THREADS=8 MKL_NUM_THREADS=8 PYTHONUNBUFFERED=1 WANDB_MODE=disabled
+# Host callbacks need a CPU backend while CUDA remains the default device.
+export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda,cpu OMP_NUM_THREADS=8 MKL_NUM_THREADS=8 PYTHONUNBUFFERED=1 WANDB_MODE=disabled
 export SHARED_TRANSFORMER_SOURCE_COMMIT="$LAUNCH_COMMIT"
 TASK_TMP=$(mktemp -d "${SLURM_TMPDIR:-/tmp}/query-key-roundoff-${SLURM_JOB_ID}-XXXXXX")
 trap 'rm -rf "$TASK_TMP"' EXIT
