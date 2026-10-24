@@ -196,7 +196,10 @@ higher-tier job needs the node, which also loses up to one checkpoint interval;
 about 3.5×; exclude both until they are repaired. The 2×H100 NVL nodes (`node1708`,
 `node1709`) train the 200M recipe about 1.6× slower than H100 80GB HBM3.
 A requeue or preemption resets the job's submit time and with it its queue age, so
-later runs of the same sweep can overtake it. H200 uses direct device transfer. Order a
+later runs of the same sweep can overtake it. H200 uses direct device transfer. ORCD nodes
+keep Linux's default `vm.max_map_count` of 65,530 memory mappings per process, which
+one-process JAX test stages reach without the cache clearing in
+`scaffolds/transformer/tests/conftest.py`. Order a
 sweep's runs with `sbatch --nice`: 1000 priority points equal about 8 hours of queue age.
 
 Acceptance shares passed test stages through the worktree's

@@ -947,3 +947,8 @@ accumulation, packed-data cursors, interruption and resume, checkpoint audits,
 acceptance, and retention. GPU-marked tests exercise the fused forward and backward
 implementations; without the locked toolkit, a node's older `ptxas` rejects the Triton
 kernels' PTX and the Gated DeltaNet and GLA kernel tests fail.
+
+Each command runs its tests in one process. `tests/conftest.py` clears JAX's caches after
+any test that leaves the process holding more than half of `vm.max_map_count` memory
+mappings, and stops the run with an explicit error if clearing cannot keep it below nine
+tenths.

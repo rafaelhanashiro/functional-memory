@@ -378,3 +378,7 @@ def test_unnormalized_static_mosaic_runs_require_their_kernel_tests():
 ])
 def test_mosaic_gpu_tests_cover_only_the_precision_in_use(model, backend, expected):
     assert preflight.mosaic_test_options({"model": model}, backend) == expected
+
+
+def test_test_processes_accept_the_mosaic_precision_option(pytestconfig):
+    assert pytestconfig.getoption("--mosaic-precision") in (None, "bf16", "bf16x3")
