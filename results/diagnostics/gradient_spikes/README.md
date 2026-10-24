@@ -1,6 +1,6 @@
 # Gradient spikes
 
-Opened 2026-10-09. Kept as a diagnostic record of gradient behavior.
+A diagnostic record of gradient behavior; no comparison depends on it.
 
 Where do gradient spikes occur in unnormalized learned-coefficient attention, with and
 without head RMSNorm, and how do they compare with softmax, Gated DeltaNet, and
@@ -42,4 +42,4 @@ norm exceeds 5× the median of the preceding 100 updates. All runs: `d_K = 64`, 
 Limits: one seed; spikes are relative to each run's running median; each window of 1,000
 updates keeps the statistics of at most 20 spikes.
 
-Regenerate: `scaffolds/transformer/.venv/bin/python results/exploratory/gradient_spikes/plot.py`
+Regenerate: `scaffolds/transformer/.venv/bin/python results/diagnostics/gradient_spikes/plot.py`

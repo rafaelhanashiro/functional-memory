@@ -1,11 +1,11 @@
-"""Gradient-norm figure and spike table for the gradient_spikes topic.
+"""Gradient-norm figure and spike table for the gradient_spikes diagnostic.
 
 Reads only each selected run's committed metrics.jsonl (pinned in selection.yaml):
 per-validation-window mean and maximum of the pre-clip gradient norm over every
 update, and, where recorded, each gradient spike's update, norm, running median,
 and the parameter group with the largest gradient norm.
 
-  scaffolds/transformer/.venv/bin/python results/exploratory/gradient_spikes/plot.py
+  scaffolds/transformer/.venv/bin/python results/diagnostics/gradient_spikes/plot.py
 """
 from __future__ import annotations
 

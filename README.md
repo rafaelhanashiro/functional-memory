@@ -10,11 +10,14 @@ a result collection can combine runs from several studies.
 | Attention scaling: softmax, Taylor, Hermite, learned polynomials, and Gated DeltaNet | [Heatmaps and degree curves](results/attention_scaling/README.md) | [10B attention runs](experiments/attention_scaling/README.md) |
 | Input-dependent (tanh) polynomial coefficients | [Matched-degree comparison](results/input_dependent_coefficients/README.md) | [10B attention runs](experiments/attention_scaling/README.md#input-dependent-coefficient-comparison) |
 | Polynomial Gated DeltaNet: independent erase, polynomial memory, key width | [Heatmap and validation gap](results/gdn_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md#polynomial-gated-deltanet) |
+| Rational polynomial attention: separate learned denominator | [Comparison by denominator](results/rational_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md) |
 | 200M Transformer / 4B-token setup | [Results and exploratory diagnostics](experiments/transformer_200m_4b/results/README.md) | [Recipe and runs](experiments/transformer_200m_4b/README.md) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 
 Exploratory results awaiting a decision (promote or discard) are in
-[`results/exploratory/`](results/exploratory/README.md).
+[`results/exploratory/`](results/exploratory/README.md). Closed diagnostic records of
+training behavior, such as gradient spikes, are in
+[`results/diagnostics/`](results/diagnostics/README.md).
 
 The established 10B attention settings vary within `experiments/attention_scaling/runs/<run_id>/`.
 The separately requested 200M / 4B setup owns its recipe, runs, results, and exploratory
@@ -26,8 +29,9 @@ its inputs explicitly, so the same run can participate in several comparisons.
 
 The maintained 10B attention results are the combined heatmap and degree plot in
 `results/attention_scaling/`, the input-dependent coefficient comparison in
-`results/input_dependent_coefficients/`, and the polynomial GDN comparison in
-`results/gdn_polynomial/`. Run inventories, learning-curve data, coefficient
+`results/input_dependent_coefficients/`, the polynomial GDN comparison in
+`results/gdn_polynomial/`, and the rational polynomial comparison in
+`results/rational_polynomial/`. Run inventories, learning-curve data, coefficient
 diagnostics, and execution metadata remain under their studies; result directories
 organize the comparisons we want to present.
 

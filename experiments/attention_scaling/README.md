@@ -129,7 +129,8 @@ numerator and a separate denominator polynomial of its own degree, optionally
 nonnegative and with its constant fixed at 1 or learned (`attention_denominator_*`), optionally starting at linear
 attention (`attention_coefficient_initialization`) and with a penalty on high-order
 coefficients in the training loss (`optim.coefficient_penalty`, with or without the
-denominator). QK normalization changes
+denominator); outcomes are in the
+[rational polynomial comparison](../../results/rational_polynomial/README.md). QK normalization changes
 the scores independently of normalization of the attention weights. Unnormalized
 attention may rescale each head's output before the output projection, by `1/t` or
 by a per-head RMSNorm (`attention_output_scaling`). GLA uses its

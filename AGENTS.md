@@ -21,6 +21,9 @@ results/<analysis>/
 results/exploratory/
   README.md                 open exploratory topics and the date each opened
   <topic>/                  README.md, optional selection.yaml and figures
+results/diagnostics/
+  README.md                 closed diagnostic records of training behavior
+  <topic>/                  README.md, selection.yaml, figures and their plot.py
 results/simplified/
   README.md                 purpose, sources, regeneration commands
   <analysis>/               presentation figures simplifying results/<analysis>/, plot.py
@@ -74,10 +77,13 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   remain visible. Terminal and validation-best metrics must be distinguished.
 - Keep the maintained attention comparisons in `results/attention_scaling/`: the
   combined heatmap and degree plot, their explicit selections, and regeneration code.
-  Two attention questions have their own canonical collections at the user's request:
+  Three attention questions have their own canonical collections at the user's request:
   `results/input_dependent_coefficients/` (tanh query-dependent coefficients against
-  static ones) and `results/gdn_polynomial/` (polynomial Gated DeltaNet). Do not create
-  a result directory for any other mechanism or sweep unless the user asks. Learning curves and
+  static ones), `results/gdn_polynomial/` (polynomial Gated DeltaNet), and
+  `results/rational_polynomial/` (separate learned denominator polynomials). Do not
+  create a result directory for any other mechanism or sweep unless the user asks.
+  Each canonical collection stands alone: never merge one into another, and never fold
+  a newly canonical experiment into an existing collection. Learning curves and
   coefficient diagnostics remain available in run measurements; add a maintained
   diagnostic figure only when it serves a requested comparison. State-rank results
   belong to `results/state_rank/`.
@@ -94,11 +100,23 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   the usual lifecycle, records, and retained artifacts, and enter no canonical
   selection. The applicable `results/exploratory/README.md` lists the open topics;
   the root exploratory index may link to study-local topics. Mention open topics in
-  status updates. A topic ends in one of two ways: promote it (move its selection,
-  findings, and code into the canonical collection, add tests, and delete the topic),
-  or discard it (delete the topic and its runs with their artifacts). Exploratory
+  status updates. A topic ends in one of two ways: promote it or discard it.
+  Promoting makes the topic its own canonical collection, `results/<topic>/`: move its
+  selection, findings, and code there, add regeneration code and tests, list it in the
+  root README and in the canonical collections above, and delete the topic. A promoted
+  topic is never merged into an existing canonical collection, even a related one.
+  Discarding deletes the topic and its runs with their artifacts. At the user's request,
+  a topic that records training behavior rather than comparing mechanisms may instead
+  close as a diagnostic (below). Exploratory
   topics are exempt from the one-collection rule and from tests, not from the
   provenance rules.
+- `results/diagnostics/<topic>/` holds closed records of training behavior (for
+  example gradient spikes) that compare no mechanisms and feed no comparison. Each has
+  flat files: a short README with the question, runs, findings, and limits; a selection
+  YAML of explicit run IDs pinned by `scaffolds.records refresh`; and figures or tables
+  that regenerate from it. A diagnostic has no open decision and needs no tests. Its
+  runs live in their study with the usual lifecycle and records and enter no canonical
+  selection. `results/diagnostics/README.md` lists the topics.
 - `results/simplified/<analysis>/` holds presentation figures: simplified, easy-to-read
   versions of a canonical collection's figures for sending to people outside the
   project. They read that collection's selections and code (no selection, findings, or

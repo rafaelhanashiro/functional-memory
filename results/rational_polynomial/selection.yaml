@@ -1,12 +1,29 @@
 question: Does a separate learned denominator polynomial let normalized learned polynomial
-  attention train through?
-study: experiments/attention_scaling
-metric: terminal validation perplexity
+  attention train, and how does it compare with softmax and fixed Taylor?
+settings:
+  metric: terminal_validation_perplexity
+  validation_best_reported_separately: true
+  numerator_degree: 8
+  qk_head_dim: 64
+  warmup_steps: 400
+  seed: 0
+  coefficient_initialization: linear
+  coefficient_penalty: 0.01
+  curve_metric: validation_perplexity
+  curve_x: training_tokens
+  curve_table_steps:
+  - 1000
+  - 2000
+  - 5000
+  - 10000
+  - 19074
+  coefficient_score_range: 3.0
+  coefficient_source: terminal validation diagnostics in metrics.jsonl
 runs:
-- run_id: r90f6452bba82
-  label: rational degree 8, signed degree-8 denominator, lambda = 0.01 on both, linear-attention
-    start, transformer reference initialization
+- study: attention_scaling
+  run_id: r90f6452bba82
   role: primary
+  label: signed degree-8 denominator, penalized, weight decay 0.1
   sources:
     config.yaml:
       path: experiments/attention_scaling/runs/r90f6452bba82/config.yaml
@@ -17,10 +34,10 @@ runs:
     numerical_failure_step_00000073.json:
       path: experiments/attention_scaling/runs/r90f6452bba82/numerical_failure_step_00000073.json
       sha256: f0acb56c53a3f86a5aeebf4cc095a75ff3d993eb3c14dff70739d57e263ab752
-- run_id: rc8aeb26cf795
-  label: rational degree 8, signed degree-8 denominator, lambda = 0.01 on both, weight
-    decay 0.01, linear-attention start, transformer reference initialization
+- study: attention_scaling
+  run_id: rc8aeb26cf795
   role: primary
+  label: signed degree-8 denominator, penalized, weight decay 0.01
   sources:
     config.yaml:
       path: experiments/attention_scaling/runs/rc8aeb26cf795/config.yaml
@@ -31,10 +48,10 @@ runs:
     numerical_failure_step_00000044.json:
       path: experiments/attention_scaling/runs/rc8aeb26cf795/numerical_failure_step_00000044.json
       sha256: 8c05ae9fde3804c46b5894883835ef88da56c337a5afe73fcc23fe2cce97ab3f
-- run_id: rd5ac0e3013e3
-  label: rational degree 8, linear denominator with learned constant, numerator-only
-    lambda = 0.01, linear-attention start, transformer reference initialization
+- study: attention_scaling
+  run_id: rd5ac0e3013e3
   role: primary
+  label: linear denominator with learned constant, unpenalized
   sources:
     config.yaml:
       path: experiments/attention_scaling/runs/rd5ac0e3013e3/config.yaml
@@ -51,10 +68,10 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/rd5ac0e3013e3/best_validation.json
       sha256: d33710c42ab25e1253854eb719ccc7cb44b3d685ac88a9f2d0aea8863d07a768
-- run_id: r05cd33157d94
-  label: rational degree 8, nonnegative quadratic denominator with learned constant,
-    numerator-only lambda = 0.01, linear-attention start, transformer reference initialization
+- study: attention_scaling
+  run_id: r05cd33157d94
   role: primary
+  label: nonnegative quadratic denominator with learned constant, unpenalized
   sources:
     config.yaml:
       path: experiments/attention_scaling/runs/r05cd33157d94/config.yaml
@@ -71,10 +88,10 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/r05cd33157d94/best_validation.json
       sha256: 74209663845af2a7cd47003b2c575aff9c5c5c90a793e63cdadbdea11f9d8910
-- run_id: rbafa372b4e8b
-  label: rational degree 8, nonnegative degree-8 denominator, lambda = 0.01 on both,
-    weight decay 0.01, linear-attention start, transformer reference initialization
+- study: attention_scaling
+  run_id: rbafa372b4e8b
   role: primary
+  label: nonnegative degree-8 denominator, penalized, weight decay 0.01
   sources:
     config.yaml:
       path: experiments/attention_scaling/runs/rbafa372b4e8b/config.yaml
@@ -91,9 +108,10 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/rbafa372b4e8b/best_validation.json
       sha256: a6796f5e527b41c4f1406035e67e6519fc9caa069168db5f5f69a2dff5f0692d
-- run_id: rdf00da0866a8
-  label: softmax, transformer reference initialization
+- study: attention_scaling
+  run_id: rdf00da0866a8
   role: control
+  label: softmax
   sources:
     config.yaml:
       path: experiments/attention_scaling/runs/rdf00da0866a8/config.yaml
@@ -110,9 +128,10 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/rdf00da0866a8/best_validation.json
       sha256: dff398331d0901d6a929cc3136220a805525c45c0aff1af36f4fdac4f19b17ae
-- run_id: r10baef5d8428
-  label: normalized fixed Taylor degree 8, transformer reference initialization
+- study: attention_scaling
+  run_id: r10baef5d8428
   role: control
+  label: normalized fixed Taylor, degree 8
   sources:
     config.yaml:
       path: experiments/attention_scaling/runs/r10baef5d8428/config.yaml
