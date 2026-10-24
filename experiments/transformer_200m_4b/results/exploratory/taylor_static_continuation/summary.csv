@@ -1,0 +1,3 @@
+role,run_id,status,continuation_update,global_step,validation_nll,validation_perplexity,sampled_train_nll,is_terminal,is_validation_best
+fixed_taylor,r28fb40a1d0e9,planned,,,,,,,
+learned_static,r0332cff0b0c0,planned,,,,,,,

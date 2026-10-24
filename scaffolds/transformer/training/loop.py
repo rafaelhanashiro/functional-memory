@@ -337,7 +337,14 @@ def resolve_packed_data_cursor(
                 f"Packed-data identity does not match the existing run: {identity_path}"
             )
     else:
-        if start_step != 0:
+        if config.continuation.parent_checkpoint and start_step == config.continuation.parent_step:
+            parent_identity_path = Path(config.continuation.parent_config).parent / "data_identity.json"
+            parent_identity_bytes = parent_identity_path.read_bytes()
+            if hashlib.sha256(parent_identity_bytes).hexdigest() != config.continuation.parent_data_identity_sha256:
+                raise ValueError("Continuation parent data identity hash changed")
+            if json.loads(parent_identity_bytes) != identity:
+                raise ValueError("Continuation dataset differs from its parent")
+        elif start_step != 0:
             raise ValueError(
                 "Cannot resume packed data without the current scaffold's data identity"
             )
@@ -595,7 +602,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         validated_eval_manifest = load_packed_manifest(config.data.eval_manifest)
     # Check data identity on all entries, including an already completed run.
     start_sequence = resolve_packed_data_cursor(
-        config, latest_before or 0,
+        config, latest_before if latest_before is not None else config.continuation.parent_step,
         validated_train_manifest=validated_train_manifest,
         validated_eval_manifest=validated_eval_manifest,
     )
@@ -633,6 +640,11 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
     restored_step = None
     if resume:
         state, restored_step = restore_latest_checkpoint(manager, state)
+    fresh_continuation = restored_step is None and bool(config.continuation.parent_checkpoint)
+    if fresh_continuation:
+        from scaffolds.transformer.training.continuation import initialize_continuation_state
+        state, continuation_audit = initialize_continuation_state(config, state)
+        write_json_atomic(config.train.workdir / "continuation.json", continuation_audit)
     start_step = int(state.step)
     if end_step < start_step:
         raise ValueError("stop_after_step precedes restored training step")
@@ -693,6 +705,56 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         telemetry_window = telemetry.TelemetryWindow()
         telemetry_values = previous_telemetry = None
         attempt_id = f"{os.environ.get('SLURM_JOB_ID', 'local')}:{os.environ.get('SLURM_RESTART_COUNT', '0')}:{uuid.uuid4().hex[:8]}"
+        if fresh_continuation:
+            # Measure the child itself before its first update. Persist the baseline
+            # transactionally so it can remain the validation-best checkpoint.
+            baseline_start = time.perf_counter()
+            diagnostics = attention_diagnostics(state, config, diagnostic_sample, diagnostic_provenance)
+            if not diagnostics["valid"]:
+                _fail_numerics(config, state, start_step, "Invalid continuation baseline diagnostics",
+                               diagnostic_sample, diagnostic_provenance, diagnostics=diagnostics)
+            eval_loss = evaluate(
+                state, make_eval_iterator(config.data, validated_manifest=validated_eval_manifest),
+                config.train.eval_batches, data_parallel=data_parallel, eval_seed=config.train.seed,
+                micro_batch_size=layout.global_micro_batch_size)
+            if not math.isfinite(eval_loss):
+                _fail_numerics(config, state, start_step, "Nonfinite continuation baseline validation loss",
+                               diagnostic_sample, diagnostic_provenance, diagnostics=diagnostics, loss=eval_loss)
+            eval_ppl = _perplexity(config, state, start_step, eval_loss, diagnostic_sample,
+                                   diagnostic_provenance, diagnostics=diagnostics)
+            record = {
+                "schema_version": METRICS_SCHEMA_VERSION, "event": "validation",
+                "event_id": f"validation:{start_step}", "attempt_id": attempt_id,
+                "timestamp_utc": datetime.now(UTC).isoformat(), "step": start_step,
+                "checkpoint_step": start_step, "continuation_updates": 0,
+                "training_tokens": start_step * tokens_per_step,
+                "training_window_start_step": start_step, "train_nll_sample_count": 0,
+                "validation_nll": eval_loss, "validation_perplexity": eval_ppl,
+                "validation_batches": config.train.eval_batches,
+                "validation_sequences": config.train.eval_batches * config.data.batch_size,
+                "validation_tokens": config.train.eval_batches * tokens_per_step,
+                "learning_rate": float(schedule(start_step)), "parameter_count": parameter_count,
+                "qk_head_dim": config.model.qk_head_dim, "value_head_dim": config.model.value_head_dim,
+                **attention_identity(config), "attention_diagnostics": diagnostics,
+                "source_commit": config.train.source_commit or None,
+                "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
+                "slurm_restart_count": int(os.environ.get("SLURM_RESTART_COUNT", "0")),
+                "wandb_run_id": wandb_run_id, "is_best": True,
+            }
+            timing["evaluation_seconds"].append(time.perf_counter() - baseline_start)
+            metrics_store.stage(record)
+            if not save_checkpoint(manager, start_step, state, metrics={
+                "validation_nll": eval_loss, "validation_perplexity": eval_ppl,
+                "has_validation": True, "training_tokens": start_step * tokens_per_step,
+            }):
+                raise RuntimeError("Failed to save continuation baseline")
+            manager.wait_until_finished()
+            best_nll = eval_loss
+            write_json_atomic(config.train.workdir / "best_validation.json", _best_validation_record(record))
+            metrics_store.commit(record, latest_checkpoint_step=manager.latest_step(),
+                                 mirror=lambda event: tracking.log_validation(wandb_run, event))
+            print(f"continuation_baseline step={start_step} val_nll={eval_loss:.6f} val_ppl={eval_ppl:.4f}", flush=True)
+            window_time = time.perf_counter()
         for step in trange(start_step + 1, end_step + 1, desc="train"):
             train_step_start = time.perf_counter()
             step_rng = jax.random.fold_in(rng, step)

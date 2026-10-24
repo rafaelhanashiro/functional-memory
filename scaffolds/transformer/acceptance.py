@@ -37,7 +37,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 from scaffolds.transformer.configs import config_to_dict, load_config, validate_config
-from scaffolds.transformer.training.cadence import scheduled_work_counts
+from scaffolds.transformer.training.cadence import evaluation_due, scheduled_work_counts
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKS = ("cpu-tests", "cpu-distributed-tests", "gpu-tests", "initialization", "pilot", "resume")
@@ -100,6 +100,9 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         paths.extend(spec.select_tests(config, resolved_backend, cpu))
     if not cpu:
         paths.extend(runtime_test_paths)
+    if cpu and config.get("continuation", {}).get("parent_checkpoint"):
+        paths.extend(("scaffolds/transformer/tests/test_continuation.py",
+                      "scaffolds/transformer/tests/test_continuation_acceptance.py"))
     model = config["model"]
     if model.get("positional_encoding", "rope") == "path":
         paths.append(PATH_ATTENTION_TESTS)
@@ -267,7 +270,8 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
             "model", "training", "telemetry", "checkpoint_audit", "parameter_policy")),
         check_config=validate_config,
         required_backend=None if request == "auto" else request,
-        check_initialization=(None if config.model.attention_mechanism in ("gla", "gated_deltanet")
+        check_initialization=(None if (config.model.attention_mechanism in ("gla", "gated_deltanet")
+                                      or continuation_start_step(config))
                               else matches_softmax_backbone_initialization),
         runtime_env=runtime_env,
         select_tests=attention_test_paths,
@@ -438,6 +442,28 @@ def validate_resume_audit(initial: dict, resumed: dict) -> None:
         raise RuntimeError("Restarted training changed the next batch or RNG")
 
 
+def continuation_start_step(config) -> int:
+    """The absolute update at which a fresh child starts; ordinary runs start at zero."""
+    continuation = config.get("continuation", {}) if isinstance(config, dict) else config.continuation
+    if isinstance(continuation, dict):
+        return int(continuation["parent_step"]) if continuation.get("parent_checkpoint") else 0
+    return int(continuation.parent_step) if continuation.parent_checkpoint else 0
+
+
+def remaining_work_counts(config) -> tuple[int, int]:
+    """Count the child's baseline and scheduled evaluations/checkpoint writes."""
+    start = continuation_start_step(config)
+    if start == 0:
+        return scheduled_work_counts(config)
+    total = config.optim.total_steps
+    evaluations = {step for step in range(start + 1, total + 1) if evaluation_due(config, step)}
+    checkpoints = evaluations | {
+        step for step in range(start + 1, total + 1) if step % config.train.ckpt_every == 0
+    } | {total}
+    # A fresh continuation first evaluates and saves its restored baseline.
+    return len(evaluations) + 1, len(checkpoints) + 1
+
+
 def initialization_facts(config) -> dict:
     """Parameter count and hash of the initialization training will use."""
     import jax
@@ -447,12 +473,28 @@ def initialization_facts(config) -> dict:
     from scaffolds.transformer.training.checkpointing import state_sha256
 
     config.model.attention_backend = "blocked"  # Initialization does not depend on the backend.
-    rng = jax.random.PRNGKey(config.train.seed)  # Same derivation as training/state.py create_state.
-    params = nnx.state(build_model(config.model, nnx.Rngs(params=rng, dropout=jax.random.fold_in(rng, 0))), nnx.Param)
+    continuation = None
+    if continuation_start_step(config):
+        from scaffolds.transformer.training.continuation import initialize_continuation_state
+
+        state, continuation = initialize_continuation_state(config)
+        params = state.params
+        if int(state.step) != continuation_start_step(config):
+            raise RuntimeError("Continuation initialization did not preserve the parent step")
+        for kind in ("parameters", "optimizer"):
+            if continuation[f"parent_{kind}_sha256"] != continuation[f"backbone_{kind}_sha256"]:
+                raise RuntimeError(f"Continuation changed the parent's backbone {kind}")
+        if (config.model.attention_coefficients == "learned"
+                and continuation.get("new_coefficient_optimizer_count") != 0):
+            raise RuntimeError("New coefficients must start with a fresh optimizer clock")
+    else:
+        rng = jax.random.PRNGKey(config.train.seed)  # Same derivation as training/state.py create_state.
+        params = nnx.state(build_model(config.model, nnx.Rngs(params=rng, dropout=jax.random.fold_in(rng, 0))), nnx.Param)
     count = sum(leaf.size for leaf in jax.tree.leaves(params))
     if count != model_parameter_count(config.model):
         raise RuntimeError(f"Initialized parameter count {count} differs from the model formula")
-    return {"parameter_count": count, "parameter_sha256": state_sha256(params)}
+    return {"parameter_count": count, "parameter_sha256": state_sha256(params),
+            **({"continuation": continuation} if continuation is not None else {})}
 
 
 def matches_softmax_initialization(config) -> dict:
@@ -597,7 +639,7 @@ def _worker(spec: AcceptanceSpec, args, experiment: dict) -> dict:
         config.train.workdir = args.directory / "pilot"
         config.train.checkpoint_dir = None
         config.train.wandb_mode = "disabled"
-        config.train.eval_every = spec.pilot_steps
+        config.train.eval_every = continuation_start_step(config) + spec.pilot_steps
         # The scratch worker needs validation at its own stop, regardless of a
         # production recipe's denser early cadence. Never edit the frozen recipe.
         config.train.eval_early_every = None
@@ -611,6 +653,11 @@ def _worker(spec: AcceptanceSpec, args, experiment: dict) -> dict:
 def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
     directory = args.directory
     directory.mkdir(parents=True, exist_ok=True)
+    start_step = continuation_start_step(experiment["config"])
+    pilot_stop = start_step + spec.pilot_steps
+    resume_stop = pilot_stop + 1
+    if start_step and resume_stop > experiment["config"]["optim"]["total_steps"]:
+        raise ValueError("The remaining training budget must include the pilot and its resume update")
     hardware = _run_worker(spec, args, "hardware", directory / "hardware.json", stop=spec.pilot_steps)
     experiment = on_devices(experiment, hardware["device_kinds"])
     write_json(directory / "identity.json", experiment)
@@ -665,13 +712,14 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             # A preempted pilot may have saved a checkpoint without timing; restart it.
             if (directory / "pilot").exists():
                 shutil.rmtree(directory / "pilot")
-            outcome = _run_worker(spec, args, "pilot", directory / "pilot-result.json", stop=spec.pilot_steps)
-            if outcome["final_step"] != spec.pilot_steps or outcome["data_parallel_devices"] != args.gpu_count:
+            outcome = _run_worker(spec, args, "pilot", directory / "pilot-result.json", stop=pilot_stop)
+            if (outcome["final_step"] != pilot_stop or outcome["data_parallel_devices"] != args.gpu_count
+                    or outcome.get("start_step", 0) != start_step):
                 raise RuntimeError(f"Incomplete full-recipe pilot: {outcome}")
             if spec.required_backend is not None and outcome["attention_backend"] != spec.required_backend:
                 raise RuntimeError(f"Production requires backend {spec.required_backend!r}; resolved {outcome['attention_backend']!r}")
             records = [json.loads(line) for line in (directory / "pilot/metrics.jsonl").read_text().splitlines()]
-            validation = next(row for row in records if row["step"] == spec.pilot_steps)
+            validation = next(row for row in records if row["step"] == pilot_stop)
             if not math.isfinite(validation["validation_nll"]) or not validation["attention_diagnostics"]["valid"]:
                 raise RuntimeError("Pilot validation or attention diagnostics failed")
             timing = outcome["timing"]
@@ -679,8 +727,8 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             if not steady or any(not math.isfinite(x) or x <= 0 for x in steady):
                 raise RuntimeError("Pilot has no valid synchronized steady update timing")
             config = experiment["config"]
-            total = config["optim"]["total_steps"]
-            evaluations, checkpoints = scheduled_work_counts(load_config(args.config))
+            total = config["optim"]["total_steps"] - start_step
+            evaluations, checkpoints = remaining_work_counts(load_config(args.config))
             # Compilation once plus conservative evaluation and checkpoint costs.
             projected = (timing["runtime_seconds"] + max(steady) * total
                          + max(timing["evaluation_seconds"]) * config["train"]["eval_batches"] * evaluations
@@ -690,13 +738,13 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
         stage = "resume"
         path = directory / f"{stage}.json"
         if not passed(path, experiment):
-            outcome = _run_worker(spec, args, "pilot", directory / "resume-result.json", stop=spec.pilot_steps + 1)
+            outcome = _run_worker(spec, args, "pilot", directory / "resume-result.json", stop=resume_stop)
             restored = outcome["restored_step"]
             # A retry after the resumed checkpoint was committed can already be at the next step.
-            if (restored not in (spec.pilot_steps, spec.pilot_steps + 1) or outcome["final_step"] != spec.pilot_steps + 1
+            if (restored not in (pilot_stop, resume_stop) or outcome["final_step"] != resume_stop
                     or outcome["data_start_sequence"] != restored * experiment["config"]["data"]["batch_size"]):
                 raise RuntimeError(f"Pilot resume did not preserve optimizer and data position: {outcome}")
-            if restored == spec.pilot_steps:
+            if restored == pilot_stop:
                 validate_resume_audit(json.loads((directory / "pilot.json").read_text())["outcome"], outcome)
             record(path, experiment, outcome=outcome)
         reused = {name: json.loads((directory / f"{name}.json").read_text()).get("reused_from")

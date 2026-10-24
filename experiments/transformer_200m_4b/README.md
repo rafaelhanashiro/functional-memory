@@ -84,6 +84,32 @@ The shared fitting runtime qualifies the frozen-backbone update and checkpoint
 resume before production. The launcher checks frozen inputs at each start and
 requeue and selects the locked CUDA environment for its GPU.
 
+## Matched Taylor continuations
+
+The [delayed coefficient-learning topic](results/exploratory/taylor_static_continuation/README.md)
+compares 500 updates with fixed Taylor against learning static coefficients from
+the same pretrained Taylor checkpoint. It preserves the backbone optimizer and
+next training-data position, with a fresh Adam clock for newly introduced
+coefficients. Both continuations use the shared trainer and acceptance procedure.
+
+Allocate the pair once in its isolated worktree, then commit all frozen inputs
+before either independent submission:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation prepare \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r019ca96d6533
+# The allocated IDs below identify this pair; do not allocate it again for a requeue.
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
+  r28fb40a1d0e9 --partition standard,long --time-limit 02:00:00
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
+  r0332cff0b0c0 --partition standard,long --time-limit 02:00:00
+```
+
+Each job requests one B300 or H100 GPU. The launcher's frozen-source check and
+shared runtime qualification run on every allocation; the scientific global batch
+stays fixed through gradient accumulation. See the topic for comparison settings,
+findings, and regeneration.
+
 ## Execution and records
 
 Home cluster: **Kennel**. Data manifests live under

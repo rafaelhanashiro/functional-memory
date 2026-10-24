@@ -1,0 +1,121 @@
+"""Initialize a fresh continuation while retaining pretrained Adam history and data time."""
+
+from dataclasses import asdict
+import hashlib
+import math
+from pathlib import Path
+
+import jax
+import numpy as np
+import orbax.checkpoint as ocp
+from flax import nnx
+
+from scaffolds.records import _tree_descriptor
+from scaffolds.transformer.configs import load_config
+from scaffolds.transformer.training.checkpointing import state_sha256
+from scaffolds.transformer.training.optim import ContinuationAdamState, split_continuation_parameters
+from scaffolds.transformer.training.state import create_state
+
+
+def _parent_config(config):
+    continuation = config.continuation
+    path = Path(continuation.parent_config)
+    if hashlib.sha256(path.read_bytes()).hexdigest() != continuation.parent_config_sha256:
+        raise ValueError("Continuation parent config hash changed")
+    parent = load_config(path)
+    if parent.continuation.parent_checkpoint:
+        raise ValueError("A continuation parent must use the original shared optimizer")
+    if parent.model.attention_coefficients != "fixed" or parent.model.attention_fixed_coefficients is not None:
+        raise ValueError("Continuation requires a fixed Taylor parent")
+    if (parent.model.attention_mechanism != "dot_product" or parent.model.attention_degree is None
+            or parent.model.quadratic_mode != "fixed"):
+        raise ValueError("Continuation requires polynomial dot-product attention")
+    allowed_model_changes = {"attention_coefficients", "attention_coefficient_sharing",
+                             "attention_coefficient_scale", "attention_backend"}
+    for key, value in asdict(parent.model).items():
+        if key not in allowed_model_changes and getattr(config.model, key) != value:
+            raise ValueError(f"Continuation changes parent model.{key}")
+    if asdict(parent.data) != asdict(config.data):
+        raise ValueError("Continuation must preserve the parent data recipe and batch size")
+    for key in ("beta1", "beta2", "weight_decay", "weight_decay_policy", "grad_clip_norm",
+                "coefficient_penalty", "coefficient_penalty_denominator"):
+        if getattr(parent.optim, key) != getattr(config.optim, key):
+            raise ValueError(f"Continuation changes parent optim.{key}")
+    for key in ("seed", "dtype"):
+        if getattr(parent.train, key) != getattr(config.train, key):
+            raise ValueError(f"Continuation changes parent train.{key}")
+    if continuation.parent_step > parent.optim.total_steps:
+        raise ValueError("Continuation parent step exceeds its training budget")
+    # Acceptance restores on CPU with the blocked reference; backend is execution,
+    # and does not change any checkpoint parameter or optimizer shape.
+    parent.model.attention_backend = config.model.attention_backend
+    return parent
+
+
+def initialize_continuation_state(config, state=None):
+    """Return the child state and verified audit; new coefficient Adam starts at zero.
+
+    Existing backbone moments and their bias-correction count are preserved exactly.
+    The child's global step is the parent's step, so batch order and RNG continue at
+    the next pretrained update. Checkpoint resumptions use the usual trainer restore.
+    """
+    continuation = config.continuation
+    if not continuation.parent_checkpoint:
+        raise ValueError("No continuation parent is configured")
+    parent_config = _parent_config(config)
+    checkpoint = Path(continuation.parent_checkpoint).resolve()
+    if _tree_descriptor(checkpoint)["sha256"] != continuation.parent_checkpoint_sha256:
+        raise ValueError("Continuation parent checkpoint hash changed")
+    rng = jax.random.PRNGKey(config.train.seed)
+    parent_template = create_state(parent_config, rng)
+    directory = checkpoint / "default" if (checkpoint / "default").is_dir() else checkpoint
+    with ocp.StandardCheckpointer() as checkpointer:
+        parent = checkpointer.restore(directory, target={"state": parent_template})["state"]
+    if int(parent.step) != continuation.parent_step:
+        raise ValueError("Continuation checkpoint step differs from the pinned parent step")
+    if state is None:
+        state = create_state(config, rng)
+    new_coefficient_count = None
+    if config.model.attention_coefficients == "learned":
+        coefficients, backbone = split_continuation_parameters(state.params)
+        if not jax.tree.leaves(coefficients):
+            raise ValueError("Continuation did not introduce its coefficient array")
+        if jax.tree.structure(backbone) != jax.tree.structure(parent.params):
+            raise ValueError("Continuation backbone parameter tree differs from parent")
+        expected = np.asarray([1.0 if config.model.attention_coefficient_scale == "factorial"
+                               else 1.0 / math.factorial(order)
+                               for order in range(config.model.attention_degree + 1)], np.float32)
+        for value in jax.tree.leaves(coefficients):
+            if not np.array_equal(np.asarray(value), np.broadcast_to(expected, value.shape)):
+                raise ValueError("Continuation coefficients are not exactly Taylor initialized")
+        params = nnx.State.merge(parent.params, coefficients)
+        new_adam = state.opt_state[1].coefficients
+        new_coefficient_count = int(new_adam[0].count)
+        if new_coefficient_count != 0:
+            raise ValueError("New coefficient optimizer must have zero history")
+        opt_state = (parent.opt_state[0], ContinuationAdamState(parent.opt_state[1], new_adam))
+    else:
+        if jax.tree.structure(state.params) != jax.tree.structure(parent.params):
+            raise ValueError("Continuation parameter tree differs from parent")
+        params, opt_state = parent.params, parent.opt_state
+    state = state.replace(params=params, opt_state=opt_state, step=parent.step)
+    backbone = split_continuation_parameters(state.params)[1] if new_coefficient_count is not None else state.params
+    backbone_adam = state.opt_state[1].backbone if new_coefficient_count is not None else state.opt_state[1]
+    audit = {
+        "parent_step": int(parent.step),
+        "parent_config_sha256": continuation.parent_config_sha256,
+        "parent_checkpoint_sha256": continuation.parent_checkpoint_sha256,
+        "parent_parameters_sha256": state_sha256(parent.params),
+        "backbone_parameters_sha256": state_sha256(backbone),
+        "parent_optimizer_sha256": state_sha256(parent.opt_state[1]),
+        "backbone_optimizer_sha256": state_sha256(backbone_adam),
+        "backbone_optimizer_count": int(backbone_adam[0].count),
+        "new_coefficient_optimizer_count": new_coefficient_count,
+        "data_start_sequence": int(parent.step) * config.data.batch_size,
+        "seed": config.train.seed,
+    }
+    if audit["parent_parameters_sha256"] != audit["backbone_parameters_sha256"]:
+        raise AssertionError("Continuation modified the pretrained backbone")
+    if audit["parent_optimizer_sha256"] != audit["backbone_optimizer_sha256"]:
+        raise AssertionError("Continuation modified the pretrained optimizer history")
+    return state, audit

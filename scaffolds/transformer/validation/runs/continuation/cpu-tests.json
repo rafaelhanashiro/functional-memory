@@ -1,0 +1,32 @@
+{
+  "format": "shared-transformer-continuation-cpu-validation",
+  "date": "2026-10-24",
+  "platform": "CPU",
+  "result": "passed",
+  "tests": [
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest scaffolds/transformer/tests/test_continuation.py -q",
+      "passed": 7,
+      "failed": 0,
+      "seconds": 24.04
+    },
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest scaffolds/transformer/tests/test_continuation.py scaffolds/transformer/tests/test_config.py scaffolds/transformer/tests/test_tracking.py scaffolds/transformer/tests/test_training.py -q",
+      "passed": 88,
+      "failed": 0,
+      "skipped": 5,
+      "skip_reason": "Multi-device tests require additional CPU devices",
+      "seconds": 42.28
+    }
+  ],
+  "checks": [
+    "Pinned parent config/checkpoint/data identity",
+    "Exact pretrained backbone and Adam state preservation",
+    "Matching initial objective",
+    "Fresh coefficient Adam bias correction against independent reference",
+    "Backbone update equivalence under supplied gradients",
+    "Exact interrupted packed-data continuation and RNG cursor",
+    "Transactional independently evaluated baseline checkpoint and measurements",
+    "Validation mirror omits nonexistent baseline training measurements"
+  ]
+}

@@ -68,6 +68,10 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
     normalized = []
     for value in (left, right):
         value = copy.deepcopy(value)
+        value.setdefault("continuation", {"parent_config": "", "parent_config_sha256": "",
+                                          "parent_checkpoint": "", "parent_checkpoint_sha256": "",
+                                          "parent_data_identity_sha256": "",
+                                          "parent_step": 0})
         value.setdefault("model", {}).setdefault("attention_degree", None)
         value["model"].setdefault("attention_normalization", True)
         value["model"].setdefault("attention_output_scaling", "none")

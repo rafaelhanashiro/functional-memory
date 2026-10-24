@@ -1,0 +1,44 @@
+{
+  "check": "matched continuation restored parameters and Adam history",
+  "runs": {
+    "r0332cff0b0c0": {
+      "child_config_sha256": "89637515727ac7ea40df8497dd044c844387d128f373fe54c7976cbb5d4b5589",
+      "continuation": {
+        "backbone_optimizer_count": 7500,
+        "backbone_optimizer_sha256": "8f349509e6379dd588c53ef701363c6d0a5402a2f41689e534a51acd97ab60c4",
+        "backbone_parameters_sha256": "66279bf144a11338454dba96df2d92880cc5ee52e178251e952cd57b9f6719f4",
+        "data_start_sequence": 1920000,
+        "new_coefficient_optimizer_count": 0,
+        "parent_checkpoint_sha256": "d1176741de88e4951abad40ae31223b3bc0bc73cd87555a6f0d8430ddf03ba09",
+        "parent_config_sha256": "ab3233d65995f2ca4427cf8aa133f9b2f68d9f7c0631c369585888cd2fd636fb",
+        "parent_optimizer_sha256": "8f349509e6379dd588c53ef701363c6d0a5402a2f41689e534a51acd97ab60c4",
+        "parent_parameters_sha256": "66279bf144a11338454dba96df2d92880cc5ee52e178251e952cd57b9f6719f4",
+        "parent_step": 7500,
+        "seed": 42
+      },
+      "parameter_count": 198455266,
+      "parameter_sha256": "47b7633232fbeafe1efb08618fd0d4cd8929e173c3d061f035a2b42cb52210e2",
+      "parent_data_identity_sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+    },
+    "r28fb40a1d0e9": {
+      "child_config_sha256": "dc5cee68fa148a1c6470f23d03cd7a8e0c674de1c2d38b70e6bdbe49623cd1fd",
+      "continuation": {
+        "backbone_optimizer_count": 7500,
+        "backbone_optimizer_sha256": "8f349509e6379dd588c53ef701363c6d0a5402a2f41689e534a51acd97ab60c4",
+        "backbone_parameters_sha256": "66279bf144a11338454dba96df2d92880cc5ee52e178251e952cd57b9f6719f4",
+        "data_start_sequence": 1920000,
+        "new_coefficient_optimizer_count": null,
+        "parent_checkpoint_sha256": "d1176741de88e4951abad40ae31223b3bc0bc73cd87555a6f0d8430ddf03ba09",
+        "parent_config_sha256": "ab3233d65995f2ca4427cf8aa133f9b2f68d9f7c0631c369585888cd2fd636fb",
+        "parent_optimizer_sha256": "8f349509e6379dd588c53ef701363c6d0a5402a2f41689e534a51acd97ab60c4",
+        "parent_parameters_sha256": "66279bf144a11338454dba96df2d92880cc5ee52e178251e952cd57b9f6719f4",
+        "parent_step": 7500,
+        "seed": 42
+      },
+      "parameter_count": 198453376,
+      "parameter_sha256": "66279bf144a11338454dba96df2d92880cc5ee52e178251e952cd57b9f6719f4",
+      "parent_data_identity_sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+    }
+  },
+  "status": "passed"
+}

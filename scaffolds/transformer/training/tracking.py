@@ -201,11 +201,7 @@ def log_train(run, step: int, nll: float, perplexity: float, learning_rate: floa
 def log_validation(run, record: dict) -> None:
     """Mirror one committed validation record."""
     payload = {
-        "train/nll_window_mean": record["train_nll_sample_mean"],
-        "train/ppl_from_window_mean": record["train_perplexity_from_mean_nll"],
         "train/tokens": record["training_tokens"],
-        "train/tokens_per_second": record["tokens_per_second"],
-        "train/tokens_per_second_per_device": record["tokens_per_second_per_device"],
         "val/nll": record["validation_nll"],
         "val/ppl": record["validation_perplexity"],
         "val/is_best": int(record["is_best"]),
@@ -215,6 +211,10 @@ def log_validation(run, record: dict) -> None:
     if "train_coefficient_penalty" in record:
         payload["train/coefficient_penalty"] = record["train_coefficient_penalty"]
     for source, destination in (
+        ("train_nll_sample_mean", "train/nll_window_mean"),
+        ("train_perplexity_from_mean_nll", "train/ppl_from_window_mean"),
+        ("tokens_per_second", "train/tokens_per_second"),
+        ("tokens_per_second_per_device", "train/tokens_per_second_per_device"),
         ("train_gradient_norm_mean", "train/gradient_norm_pre_clip_window_mean"),
         ("train_gradient_norm_max", "train/gradient_norm_pre_clip_window_max"),
         ("train_gradient_clipped_fraction", "train/gradient_clipped_fraction"),

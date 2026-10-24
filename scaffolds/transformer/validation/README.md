@@ -11,6 +11,20 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Pretrained Taylor continuation
+
+The continuation runtime preserves pretrained parameters, backbone Adam moments and
+bias-correction count, and the packed-data/RNG cursor. Newly introduced static
+coefficients have fresh independent Adam history; clipping acts on the combined
+gradient. CPU tests cover exact parent restoration, matching starting objectives,
+the first coefficient update against an independent Adam reference, unchanged
+backbone-update semantics, interrupted packed training with exact resume, baseline
+metrics, and rejection of changed source identities. See
+[CPU test record](runs/continuation/cpu-tests.json) and the separately recorded
+[full-size parent restore](runs/continuation/cpu-parent-initialization.json).
+GPU acceptance additionally qualifies the actual continuation and its fresh-process
+resume on the allocated hardware before production training.
+
 ### Static coefficient capture and override
 
 The [CPU validation record](runs/static-coefficient-override/tests.json) records

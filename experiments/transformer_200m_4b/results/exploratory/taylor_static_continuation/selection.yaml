@@ -1,0 +1,28 @@
+schema_version: 1
+opened: '2026-10-24'
+question: Does enabling static coefficients after Taylor pretraining improve matched
+  continuation?
+settings:
+  metric: validation_perplexity
+  parent_run_id: r019ca96d6533
+  parent_step: 7500
+  updates: 500
+  evaluation_every: 100
+  learning_rate: 0.0001
+  primary_comparison: terminal held-out NLL/PPL at the same continuation update
+  validation_best: reported separately from terminal
+runs:
+- study: transformer_200m_4b
+  run_id: r28fb40a1d0e9
+  role: fixed_taylor
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r28fb40a1d0e9/config.yaml
+      sha256: dc5cee68fa148a1c6470f23d03cd7a8e0c674de1c2d38b70e6bdbe49623cd1fd
+- study: transformer_200m_4b
+  run_id: r0332cff0b0c0
+  role: learned_static
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r0332cff0b0c0/config.yaml
+      sha256: 89637515727ac7ea40df8497dd044c844387d128f373fe54c7976cbb5d4b5589

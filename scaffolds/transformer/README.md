@@ -31,6 +31,25 @@ to resume a run with an absent or different policy identifier. Reproduce or resu
 historical runs using their recorded source commit; loading an old recipe for a new
 run uses the canonical policy. Existing scientific records are unchanged.
 
+## Continuation from a pretrained Taylor checkpoint
+
+An optional `continuation` recipe section pins `parent_config`, its
+`parent_config_sha256`, `parent_checkpoint`, its `parent_checkpoint_sha256`, and
+`parent_step`. Packed data additionally pins `parent_data_identity_sha256`, the
+SHA256 of `data_identity.json` beside the parent recipe. Empty defaults preserve
+ordinary training. Continuations use zero warmup and equal peak/minimum learning
+rates; `optim.total_steps` is the absolute ending step, including the parent steps.
+
+The shared trainer restores every pretrained parameter and its Adam moments/count
+without change, continues the parent's batch cursor and RNG clock, and independently
+evaluates and checkpoints the starting state before the first new update. A child
+may retain fixed Taylor or introduce direct static Taylor-initialized coefficients.
+New coefficients use a separate Adam state whose moments and bias-correction count
+start at zero; global clipping still acts once on the combined averaged gradient.
+Backbone/data recipe changes are rejected, and `continuation.json` records verified
+parent/backbone hashes. Subsequent resumptions restore the child's full checkpoint
+through the normal trainer. Acceptance pilots are offset by the parent step.
+
 ## Model, runtime, and launch scripts
 
 The model and trainer share one implementation across clusters. Generic device

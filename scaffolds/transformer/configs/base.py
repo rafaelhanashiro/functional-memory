@@ -511,17 +511,54 @@ class TrainConfig:
 
 
 @dataclass
+class ContinuationConfig:
+    """A new run initialized from a pinned pretrained state, including Adam history."""
+    parent_config: str = ""
+    parent_config_sha256: str = ""
+    parent_checkpoint: str = ""
+    parent_checkpoint_sha256: str = ""
+    parent_data_identity_sha256: str = ""
+    parent_step: int = 0
+
+
+@dataclass
 class Config:
     data: DataConfig = field(default_factory=DataConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
     optim: OptimConfig = field(default_factory=OptimConfig)
     train: TrainConfig = field(default_factory=TrainConfig)
+    continuation: ContinuationConfig = field(default_factory=ContinuationConfig)
 
 
 def validate_config(config: Config) -> None:
     """Validate loaded/overridden settings before allocating a model."""
     config.model.__post_init__()
     data, optim, train = config.data, config.optim, config.train
+    continuation = config.continuation
+    if continuation.parent_checkpoint:
+        if not continuation.parent_config:
+            raise ValueError("Continuation requires its parent_config")
+        for name in ("parent_config_sha256", "parent_checkpoint_sha256"):
+            digest = getattr(continuation, name)
+            if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+                raise ValueError(f"continuation.{name} must be a SHA256 digest")
+        if data.source == "packed":
+            digest = continuation.parent_data_identity_sha256
+            if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+                raise ValueError("Packed continuation requires parent_data_identity_sha256")
+        if type(continuation.parent_step) is not int or not 0 < continuation.parent_step < optim.total_steps:
+            raise ValueError("Continuation requires 0 < parent_step < optim.total_steps")
+        if optim.warmup_steps != 0 or optim.min_learning_rate != optim.learning_rate:
+            raise ValueError("Continuation currently requires a constant learning rate with zero warmup")
+        if (config.model.attention_coefficients == "learned" and
+                (config.model.attention_coefficient_conditioning != "static"
+                 or config.model.attention_coefficient_parameterization != "direct"
+                 or config.model.attention_coefficient_initialization != "taylor")):
+            raise ValueError("Continuation introduces only static direct Taylor-initialized coefficients")
+    elif any((continuation.parent_config, continuation.parent_config_sha256,
+              continuation.parent_checkpoint_sha256, continuation.parent_data_identity_sha256,
+              continuation.parent_step)):
+        raise ValueError("Incomplete continuation specification")
     if optim.weight_decay_policy != "exclude_embeddings_norms_biases_v1":
         raise ValueError("optim.weight_decay_policy must be exclude_embeddings_norms_biases_v1")
     if data.source not in ("synthetic", "packed"):
