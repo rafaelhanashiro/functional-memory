@@ -1,6 +1,16 @@
 {
-  "best_nll": 2.719759941101074,
-  "best_step": 0,
+  "best_fit_nll": 0.0031009980011731386,
+  "best_nll": 0.0031009980011731386,
+  "best_step": 2496,
+  "finished_utc": "2026-10-24T23:20:00.691659+00:00",
+  "fit_nll": 0.0031083114445209503,
+  "fit_perplexity": 1.0031131472536412,
+  "frozen_parameter_scope": "all_pretrained_parameters",
+  "frozen_parameters_unchanged": true,
+  "initial_nll": 2.719759941101074,
+  "interpretation": "Fixed-input coefficient fitting, not held-out generalization.",
+  "learning_rate_reduced_at": 2000,
+  "nll_reduction": 2.716658943099901,
   "oracle_runtime": {
     "coefficient_layout": "example,layer,query,head,order",
     "coefficient_storage": "effective_monomial_coefficients",
@@ -31,6 +41,7 @@
       "orbax-checkpoint": "0.11.40"
     }
   },
-  "status": "running",
-  "step": 0
+  "parameterization": "free_per_example_query_coefficients",
+  "status": "complete",
+  "step": 2500
 }

@@ -16,7 +16,7 @@ backbone frozen. They live in the
 | `r0963b3e6610b` | One coefficient table shared across 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
 | `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
-| `r7505c6d49711` | Independent coefficients per sequence, layer, query, head, and order on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
+| `r7505c6d49711` | Independent coefficients per sequence, layer, query, head, and order on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
@@ -372,30 +372,72 @@ after 500 confirmation updates on a plateau; 10,000 is the safety budget.
 Qualification checks original coefficient replay, finite improving updates,
 unchanged pretrained parameters, and exact checkpoint resume on the allocated GPU.
 
-The run uses its own `worktrees/batch-coefficient-oracle-4b` checkout. Slurm job
-**225066** started on one **B300** on `akita` in `long`, with a six-hour limit and
-the locked CUDA 13 environment. No other run needed preemption. Execution attempts
-and the actual allocation are recorded in the run. GPU qualification passed
-exact original-forward replay, finite improving gradients, unchanged pretrained
-parameters, and exact checkpoint resume. Fitting is underway; findings remain pending.
+### Findings
 
-After successful fitting, `coefficient_fit.sbatch` automatically runs
-`analyze_batch_coefficients.py` on CPU. It samples 64 uniformly spaced query
-positions from all 256 sequences, multiplies coefficients by `r!`, and removes
-positive common scale. PCA is calculated separately per layer and head; a basis
-fitted on the first 192 sequences is also evaluated on the remaining 64.
-Compact measurements live in the run's `batch_coefficient_geometry.json`, with
-checkpoint identity, sampling settings, and analysis source provenance. This
-measures coefficient reconstruction, not retained fitting PPL or generalization.
-The open decision is whether the observed shape structure warrants coefficient
-compression and a fitted-forward PPL check before changing the shared generator.
+Slurm job **225066** completed on one **B300** on `akita` in `long` in **1 hour
+5 minutes 8 seconds**, including qualification and coefficient analysis, using
+the locked CUDA 13 environment. The learning rate decreased at update **2,000**;
+fitting stopped at **2,500** after 500 confirmation updates on the plateau. The
+retained best coefficients are from update **2,496**. All pretrained parameters
+retained their original checksum. GPU qualification passed exact original-forward
+replay, finite improving gradients, and exact checkpoint resume.
 
-To reproduce the CPU analysis after the run completes:
+| Measurement | Update | Fitting NLL | Fitting PPL |
+| --- | ---: | ---: | ---: |
+| Initial | 0 | 2.719759941 | 15.17667851 |
+| Best retained | 2,496 | 0.003100998 | 1.00310581 |
+| Terminal | 2,500 | 0.003108311 | 1.00311315 |
+
+**Independent query coefficients nearly memorize the full fitting batch with the
+backbone frozen.** Each sequence has its own fitted table, so this establishes
+capacity under that freedom, not transfer to unseen sequences or the ability of
+a shared causal generator to predict the tables.
+
+### Coefficient geometry
+
+`analyze_batch_coefficients.py` analyzed the retained checkpoint on CPU after
+fitting. It samples 64 uniformly spaced query positions from all 256 sequences,
+multiplies coefficients by `r!`, and divides each nine-dimensional coefficient
+vector by its positive L2 norm, preserving sign. This removes positive common
+scale, which is largely redundant under head RMSNorm. PCA is centered separately
+for each of the **210 layer/head pairs**. Compact measurements live in the run's
+[batch_coefficient_geometry.json](../../../runs/r7505c6d49711/batch_coefficient_geometry.json),
+with checkpoint identity, sampling settings, and analysis source provenance.
+
+| Components | Median coefficient variance captured | Median error reduction on other fitted sequences |
+| ---: | ---: | ---: |
+| 1 | 44.4% | 44.0% |
+| 2 | 69.1% | 69.2% |
+| 3 | 82.9% | 82.9% |
+| 4 | 89.8% | 89.7% |
+| 5 | 94.4% | 94.4% |
+| 6 | 96.9% | 96.8% |
+
+The first column of measurements uses all fitting sequences. The last fits the
+PCA basis on the first **192 sequences** and measures reconstruction on the
+remaining **64**, relative to using the training-sequence mean alone. The median
+layer/head requires **five components for 90%** of variance and **six for 95%**.
+The similar reconstruction on the other fitted sequences indicates that the
+coefficient directions share structure across these independently fitted tables.
+It motivates testing a few shared polynomial basis functions with query-dependent
+mixing weights, but does not establish that such a parametrization improves
+training.
+
+These are coordinate-dependent coefficient-space statistics, without weighting
+by the attention scores actually encountered. They do not show that compressed
+coefficients preserve attention outputs or fitting PPL. Every table was fitted
+using its own sequence's targets, including the 64 sequences used to test the
+basis, so the split is not a language-model generalization measurement. Whether
+a causal generator can predict the fitted coefficients also remains untested.
+The open decision is whether to reconstruct coefficients with fewer components
+and check fitting PPL before changing the shared generator.
+
+To recompute the CPU summary without changing the saved measurements or provenance:
 
 ```bash
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
   experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/analyze_batch_coefficients.py \
-  --run experiments/transformer_200m_4b/runs/r7505c6d49711
+  --run experiments/transformer_200m_4b/runs/r7505c6d49711 --dry-run --overwrite
 ```
 
 ## Open decision and regeneration
