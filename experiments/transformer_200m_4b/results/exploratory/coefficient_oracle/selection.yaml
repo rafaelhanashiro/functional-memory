@@ -105,3 +105,24 @@ runs:
     generator_dependence:
       path: experiments/transformer_200m_4b/runs/r1f2f749ff099/generator_dependence.json
       sha256: 981e02fa02fbac08a055d123f511d25e94dc8bdb8126a3a1d817c8cfc5187760
+- study: transformer_200m_4b
+  run_id: r7505c6d49711
+  role: free_coefficients_full_batch
+  parent_run_id: r98d5895c02d0
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r7505c6d49711/config.yaml
+      sha256: f8403938bd862685b67d2693d011201d4132db2e04a5553ccbccbd8a769632a0
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r7505c6d49711/metrics.jsonl
+      sha256: a728f62788384a8815609f83311aec68efdc0a02a20ff863012d5ed92278680e
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r7505c6d49711/completion.json
+      sha256: 88d68683ba16ee0279e3b517f14bd7febf971fe274a3332609e135b54de9a15b
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r7505c6d49711/metadata.json
+      sha256: 2958ef7bb08ddae112eae3bf88edb5fcdc112bd8428b35a42d8e1ac227d8eb89
+  diagnostics:
+    batch_coefficient_geometry:
+      path: experiments/transformer_200m_4b/runs/r7505c6d49711/batch_coefficient_geometry.json
+      sha256: 9c764efb97920defd635cdb124351e56aa7d7703335acf52532b4d674c5bb99c
