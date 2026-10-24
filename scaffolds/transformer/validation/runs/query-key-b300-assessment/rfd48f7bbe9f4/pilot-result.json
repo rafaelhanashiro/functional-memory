@@ -1,0 +1,91 @@
+{
+  "attention_backend": "fused",
+  "attention_backend_requested": "fused",
+  "attention_coefficient_activation": "tanh",
+  "attention_coefficient_amplitude_initial": 0.0,
+  "attention_coefficient_amplitude_scale": "factorial",
+  "attention_coefficient_conditioning": "query_key",
+  "attention_coefficient_count": 4900350,
+  "attention_coefficient_initialization": "taylor",
+  "attention_coefficient_input": "pre_attention_rmsnorm_activation",
+  "attention_coefficient_parameterization": "direct",
+  "attention_coefficient_projection_dtype": "float32",
+  "attention_coefficient_projection_initial_std": 0.03340765523905305,
+  "attention_coefficient_scale": "factorial",
+  "attention_coefficient_scale_formula": "stored c~_r (static coefficients or query bias b) start at r! times the represented value; attention uses c_r = c~_r / r!",
+  "attention_coefficient_sharing": "per_head",
+  "attention_coefficients": "learned",
+  "attention_degree": 12,
+  "attention_formula": "sum_(i<=t) sum_(r<=12) c_r(x_t) f_r(x_i) s_ti^r v_i, s_ti = Q_t K_i^T / sqrt(d_k); c(x_t) = b + (a/r!)*tanh(x_t W) per layer/head, W initially N(0, 0.0334077^2) per entry, a initially 0, b_r initially 1/r!; f(x_i) = 1 + a_k*tanh(x_i W_k) per layer/head, W_k drawn like W and a_k starting like a; x_t and x_i are the key and query tokens' activations after the block input RMSNorm, then per-head RMSNorm over value channels with a learned gain",
+  "attention_implementation": "pallas_triton_query_key_polynomial",
+  "attention_kernel": "query_key_polynomial_unnormalized",
+  "attention_normalization": false,
+  "attention_output_normalization": "head_rms_norm",
+  "attention_output_scaling": "head_rms_norm",
+  "attention_score_formula": "<RoPE(g_Q * q / sqrt(mean(q^2) + eps)), RoPE(g_K * k / sqrt(mean(k^2) + eps))> / sqrt(d_K); independent Q/K channel gains per layer, shared across heads",
+  "attention_score_scale": "1/sqrt(d_k)",
+  "attention_signed": true,
+  "best_checkpoint_after": 20,
+  "checkpoint_audit": {
+    "checkpoint_state_sha256": "4f88426fbcacf8510d5ec1c35d0a410ea4f711bb1a29daff73176d88c751dd58",
+    "final_state_sha256": "4f88426fbcacf8510d5ec1c35d0a410ea4f711bb1a29daff73176d88c751dd58",
+    "first_update": {
+      "batch_sha256": "34623711909754c9cc5a6789285fbe8d79f1fef56a93fa21604046c99698515e",
+      "rng_sha256": "ca740f8c91e80e8f60ed12fce7fe4097d5c2b522e9745857ef131adae09f387b",
+      "step": 1
+    },
+    "next_update": {
+      "batch_sha256": "6d41f993d971e38d1a30988bba80a9912800af23d201b28dacb1a6001814d96c",
+      "rng_sha256": "d211a2d8fd03ca30bccabe4ff25fea90d3305bbc8ac90234498466501c4b9709",
+      "step": 21
+    },
+    "start_state_sha256": "bb91f47c86aec91482ece97917a89e51d60807a942f07c21329df0cf4acd31b5"
+  },
+  "coefficient_penalty": 0.0,
+  "data_parallel_devices": 1,
+  "data_start_sequence": 0,
+  "diagnostic_backend": "blocked",
+  "diagnostic_query_block_size": 128,
+  "end_step": 20,
+  "final_step": 20,
+  "key_block_size": 64,
+  "latest_checkpoint_after": 20,
+  "latest_checkpoint_before": null,
+  "m0_qk_parameter_note": null,
+  "qk_norm": true,
+  "qk_norm_eps": 1e-06,
+  "qk_norm_gain_shape": [
+    15,
+    64
+  ],
+  "qk_norm_gain_shared_across_heads": true,
+  "qk_norm_initial_gain": 1.0,
+  "qk_norm_parameter_count": 1920,
+  "qk_norm_sharing": "per_layer",
+  "qk_norm_stats_dtype": "float32",
+  "qk_norm_type": "rms_norm",
+  "query_block_size": 64,
+  "restored": false,
+  "restored_step": null,
+  "start_step": 0,
+  "timing": {
+    "checkpoint_seconds": [
+      8.87524888664484
+    ],
+    "evaluation_seconds": [
+      49.52681097853929
+    ],
+    "runtime_seconds": 248.26924300938845,
+    "train_step_seconds": [
+      26.318651045672596,
+      6.206759553402662,
+      6.077020274475217,
+      6.087705799378455,
+      6.06406157463789,
+      6.250102578662336,
+      6.060468092560768,
+      6.398640803992748
+    ]
+  },
+  "training_tokens": 10485760
+}

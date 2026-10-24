@@ -1,0 +1,114 @@
+{
+  "active_stage": "r833fbb6eedcb:full-model-parity",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "elapsed_seconds": 245.05506644491106,
+  "error": "RuntimeError: r833fbb6eedcb:full-model-parity exited 1",
+  "finished_utc": "2026-10-24T00:39:12.759292+00:00",
+  "format": "b300-query-key-production-qualification",
+  "hardware": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-qualification/hardware.json",
+    "sha256": "0962b2dde9a3d46498887bd9d9dd0f623c1f1d69d2d02ca289734b72d0dbf5d1"
+  },
+  "home_cluster": "kennel",
+  "node": "akita.csail.mit.edu",
+  "notes": [
+    "Focused GPU tests; CPU checks are recorded separately before launch.",
+    "Fresh-process throughput workers compare only backward geometry.",
+    "Pilot/resume workers use the exact recipe and audit checkpoint state, data, and RNG.",
+    "Diagnostic workers do not apply the full-training allocation-budget gate; production acceptance repeats it."
+  ],
+  "orchestrator_source_sha256": "76005f53e4b63840f30103526cf0feb615630d4914ebbc38ffaf5aac9921e514",
+  "recipes": [
+    {
+      "degree": 8,
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/experiments/transformer_200m_4b/runs/r833fbb6eedcb/config.yaml",
+      "run_id": "r833fbb6eedcb",
+      "sha256": "db94207d47c1dc49a4bb7ad8f109a7d3fbe78ce9c49ad951df639eedfd23efc3"
+    },
+    {
+      "degree": 12,
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/experiments/transformer_200m_4b/runs/rfd48f7bbe9f4/config.yaml",
+      "run_id": "rfd48f7bbe9f4",
+      "sha256": "83c4ece8ac43adcd62155eaf9d24c904e9e8f244dec0d9ae361716ce9714bc3c"
+    }
+  ],
+  "runs": {
+    "r833fbb6eedcb": {
+      "degree": 8
+    }
+  },
+  "schema_version": 1,
+  "scratch": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/.cache/query-key-b300-qualification/224612-20261024T003507702547Z",
+  "scratch_removed": true,
+  "slurm_job_id": "224612",
+  "source_commit": "e6f51e4eb76d302c872fc54dd25068987876ad9a",
+  "stages": [
+    {
+      "command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/.venv-cuda13/bin/python",
+        "-m",
+        "scaffolds.transformer.validation.qualify_query_key_b300",
+        "--source-commit",
+        "e6f51e4eb76d302c872fc54dd25068987876ad9a",
+        "--worker",
+        "hardware",
+        "--config",
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/experiments/transformer_200m_4b/runs/r833fbb6eedcb/config.yaml",
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/experiments/transformer_200m_4b/runs/rfd48f7bbe9f4/config.yaml",
+        "--output",
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/validation/runs/query-key-b300-qualification/hardware.json"
+      ],
+      "elapsed_seconds": 4.1496339943259954,
+      "exit_code": 0,
+      "name": "hardware",
+      "started_utc": "2026-10-24T00:35:07.705543+00:00",
+      "status": "complete"
+    },
+    {
+      "command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/.venv-cuda13/bin/python",
+        "-m",
+        "pytest",
+        "-c",
+        "scaffolds/transformer/pyproject.toml",
+        "-q",
+        "--import-mode=importlib",
+        "-m",
+        "gpu",
+        "scaffolds/transformer/tests/test_query_key_tiling.py",
+        "scaffolds/transformer/tests/test_qk_rms_attention_backends.py::test_full_context_qk_rms_backend[query_key-8-fused]",
+        "scaffolds/transformer/tests/test_qk_rms_attention_backends.py::test_full_context_qk_rms_backend[query_key-12-fused]",
+        "--junitxml=/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/validation/runs/query-key-b300-qualification/gpu-tests.xml"
+      ],
+      "elapsed_seconds": 51.91812106408179,
+      "exit_code": 0,
+      "junit": {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/runs/query-key-b300-qualification/gpu-tests.xml",
+        "sha256": "b7b8659aa19d65a6a15eb3a3bbc44ced8c86bfca0071f343cd66304a66f2b688"
+      },
+      "name": "focused-gpu-tests",
+      "started_utc": "2026-10-24T00:35:11.859065+00:00",
+      "status": "complete",
+      "tests_passed": 12
+    },
+    {
+      "command": [
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/.venv-cuda13/bin/python",
+        "-m",
+        "scaffolds.transformer.benchmarks.qualify_query_key_model",
+        "--config",
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/experiments/transformer_200m_4b/runs/r833fbb6eedcb/config.yaml",
+        "--output",
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b-query-key-gpu1/scaffolds/transformer/validation/runs/query-key-b300-qualification/r833fbb6eedcb/full-model-parity.json"
+      ],
+      "elapsed_seconds": 188.9720457540825,
+      "exit_code": 1,
+      "name": "r833fbb6eedcb:full-model-parity",
+      "started_utc": "2026-10-24T00:36:03.782943+00:00",
+      "status": "failed",
+      "validation_error": "RuntimeError: r833fbb6eedcb:full-model-parity exited 1"
+    }
+  ],
+  "started_utc": "2026-10-24T00:35:07.703351+00:00",
+  "status": "failed"
+}

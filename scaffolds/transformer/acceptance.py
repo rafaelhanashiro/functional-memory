@@ -59,6 +59,7 @@ PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
 TRITON_PORT_TESTS = "scaffolds/transformer/tests/test_triton_port.py"
 QUERY_KEY_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_key_polynomial.py"
+QUERY_KEY_TILING_TESTS = "scaffolds/transformer/tests/test_query_key_tiling.py"
 TANH_WRITE_GDN_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write.py"
 TANH_WRITE_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write_kernel.py"
 POLYNOMIAL_GDN_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn.py"
@@ -91,11 +92,14 @@ class AcceptanceSpec:
     """Optional recipe/backend selector called as ``(config, resolved_backend, cpu)``."""
 
 
-def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu: bool) -> tuple[str, ...]:
+def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu: bool,
+               runtime_test_paths: tuple[str, ...] = ()) -> tuple[str, ...]:
     """Include the resolved mechanism's required checks even if an adapter omits them."""
     paths = list(spec.cpu_tests if cpu else spec.gpu_tests)
     if spec.select_tests is not None:
         paths.extend(spec.select_tests(config, resolved_backend, cpu))
+    if not cpu:
+        paths.extend(runtime_test_paths)
     model = config["model"]
     if model.get("positional_encoding", "rope") == "path":
         paths.append(PATH_ATTENTION_TESTS)
@@ -125,6 +129,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(QUERY_TANH_POLYNOMIAL_TESTS)
         if conditioning == "query_key":
             paths.append(QUERY_KEY_POLYNOMIAL_TESTS)
+            if resolved_backend == "fused" and cpu:
+                paths.append(QUERY_KEY_TILING_TESTS)
     if model.get("attention_coefficient_scale", "none") != "none":
         paths.append(COEFFICIENT_SCALE_TESTS)
     if (resolved_backend == "fused" and model.get("attention_mechanism", "dot_product") == "dot_product"
@@ -134,6 +140,26 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                  or model.get("attention_fixed_square_factors") is not None)):
         paths.append(NORMALIZED_POLYNOMIAL_TESTS)
     return tuple(dict.fromkeys(paths))
+
+
+def _runtime_test_paths(config, resolved_backend: str) -> tuple[str, ...]:
+    """Require implementation-specific GPU checks only when that implementation is selected.
+
+    The backend owns device and shape eligibility; acceptance does not duplicate
+    its hardware policy. CPU selector checks are always included by test_paths.
+    """
+    if (resolved_backend == "fused" and config.model.attention_mechanism == "dot_product"
+            and config.model.attention_coefficient_conditioning == "query_key"):
+        import jax.numpy as jnp
+        from scaffolds.transformer.attention.backends.fused_query_key_polynomial import _backward_tile_sizes
+
+        tiles = _backward_tile_sizes(
+            config.model.qk_head_dim, config.model.value_head_dim,
+            degree=config.model.attention_degree, time=config.data.sequence_length - 1,
+            dtype=jnp.dtype(config.train.dtype), interpret=False)
+        if tiles == (32, 32):
+            return (QUERY_KEY_TILING_TESTS,)
+    return ()
 
 
 def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tuple[str, ...]:
@@ -553,10 +579,11 @@ def _worker(spec: AcceptanceSpec, args, experiment: dict) -> dict:
             raise RuntimeError(f"Expected {args.gpu_count} {args.gpu_type} GPUs; got {devices}")
         packages = ("jax", "flax", "optax", "orbax-checkpoint")
         config = load_config(args.config)
+        backend = resolve_attention_backend(
+            config.model, dtype=config.train.dtype, sequence_length=config.data.sequence_length - 1)
         return {"devices": [str(d) for d in devices], "device_kinds": [d.device_kind for d in devices],
                 "versions": {name: version(name) for name in packages},
-                "attention_backend": resolve_attention_backend(
-                    config.model, dtype=config.train.dtype, sequence_length=config.data.sequence_length - 1)}
+                "attention_backend": backend, "runtime_test_paths": _runtime_test_paths(config, backend)}
     if args.worker == "initialization":
         config = load_config(args.config)
         facts = initialization_facts(config)
@@ -596,7 +623,8 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             path = directory / f"{stage}.json"
             if passed(path, experiment):
                 continue
-            paths = test_paths(spec, experiment["config"], resolved_backend=hardware["attention_backend"], cpu=cpu)
+            paths = test_paths(spec, experiment["config"], resolved_backend=hardware["attention_backend"], cpu=cpu,
+                               runtime_test_paths=tuple(hardware.get("runtime_test_paths", ())))
             if not cpu:
                 selection = (*selection, *mosaic_test_options(experiment["config"], hardware["attention_backend"]))
             if not paths:

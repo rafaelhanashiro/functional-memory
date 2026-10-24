@@ -124,10 +124,10 @@ On 2026-10-23, job `224602`, source `ba403d0`, compared resident attention
 operands on one B300 using the new setup's local shape `[16, 2048, 14, 64]`.
 The [kernel report](runs/query-key-4b-b300/kernel.json) contains three warmups
 and ten synchronized samples per configuration, excluding compilation and
-profiling. The current B300 selector uses 64-by-64 backward tiles; its 32-by-32
-override is restricted to H100. Changing only the backward tiles gave:
+profiling. At this source, B300 used 64-by-64 backward tiles; the 32-by-32
+selector was restricted to H100. Changing only the backward tiles gave:
 
-| Mechanism | Current forward + backward | With 32-by-32 backward | Speedup |
+| Mechanism | Original forward + backward | With 32-by-32 backward | Speedup |
 | --- | ---: | ---: | ---: |
 | cuDNN softmax | 1.443 ms | — | — |
 | Query-key degree 8 | 121.782 ms | 12.860 ms | 9.47x |
@@ -159,8 +159,8 @@ Raw PTX, cubins, and assembler logs are retained under
 Forward outputs are byte-identical. All five input gradients pass global,
 batch/head, and coefficient/factor degree/head parity checks; the largest global
 relative L2 error is 3.66e-5. This is synthetic-input parity with the production
-kernel, not independent correctness or trained-checkpoint qualification. No
-production tile selector is changed. Query-only Mosaic measures 3.472/4.681 ms
+kernel, not independent correctness or trained-checkpoint qualification. This
+isolated diagnostic did not change production selection. Query-only Mosaic measures 3.472/4.681 ms
 at degrees 8/12, but uses its production BF16 weight arithmetic; it is not a
 matched-precision comparison with the query-key BF16x3 products.
 
@@ -185,15 +185,15 @@ gradient accumulation, optimization, and numerical checks are included.
 | [Query-key degree 8](runs/query-key-4b-b300/training-r833fbb6eedcb.json) | 30.786 | 18.59x | 17,030 |
 | [Query-key degree 12](runs/query-key-4b-b300/training-rfd48f7bbe9f4.json) | 48.487 | 29.28x | 10,813 |
 
-For scale, 15 layers times 16 microbatches times the isolated current attention
+For scale, 15 layers times 16 microbatches times the isolated original attention
 timing predicts 29.23/46.81 seconds per update at degrees 8/12, close to the
 measured 30.79/48.49 seconds. This is a component-cost estimate, not a full-model
 trace decomposition. The mean interval outside the measured update is about
-6 ms. This confirms that attention dominates the current slowdown; the
+6 ms. This confirms that attention dominated the original slowdown; the
 single-GPU accumulation path is secondary. These are short fresh-training
-diagnostics, not full-budget runs. The full-update benefit of smaller backward
-tiles has not been measured, and the candidate still requires production
-qualification. Disposable pilot checkpoints were removed after successful runs.
+diagnostics, not full-budget runs. The qualification below measures the full-update
+benefit of smaller backward tiles and checks the full model and checkpoint runtime.
+Disposable pilot checkpoints were removed after successful runs.
 
 Reproduce from a checkout of source `109dbd3`, with its own locked CUDA 13
 environment, choosing unused output/profile paths:
@@ -209,10 +209,87 @@ sbatch scaffolds/transformer/validation/profile_query_key_4b.sbatch \
   "$(git rev-parse HEAD)" training 3
 ```
 
+### B300 query-key production qualification
+
+The qualification targets the new 200M model / 4B prediction-token recipe:
+one B300, 15 layers, 14 heads, width 64, context 2048, BF16, microbatch 16,
+global batch 256, and query-key polynomial degrees 8 and 12. Forward retains
+64-by-64 tiles; the qualified backward uses 32-by-32. Mathematical definitions,
+precision, initialization, seed, learning-rate horizon and scientific recipes
+are unchanged.
+
+The [CPU record](runs/query-key-b300-qualification/cpu.json) has 96 passing checks.
+Job `224667`, source `90ff3ab`, passed all 12 focused B300 GPU checks: independent
+FP64 gradients, full-context blocked/original comparisons, output RMSNorm,
+causality, explicit nonfinite behavior, and the actual QK RMSNorm composition.
+Its [assessment](runs/query-key-b300-assessment/summary.json) measures fresh
+training through the production loop on the same physical B300, with three
+warmup updates and three timed updates per geometry:
+
+| Degree | Original 64-by-64 backward | 32-by-32 backward | Full-update speedup |
+| --- | ---: | ---: | ---: |
+| 8 | 30.973 s | 4.834 s | 6.408x |
+| 12 | 48.462 s | 5.853 s | 8.279x |
+
+These completion intervals include data loading, transfers, gradient accumulation,
+optimizer updates and numerical checks. Compilation, evaluation and checkpoint
+writes are excluded. They are short steady-state measurements, not full-budget
+training times.
+
+The original full-model 5% slice comparison remains recorded as failed. Forward
+logits and loss are identical; every whole-parameter gradient passes the unchanged
+2.5% relative-L2 and 12.5% relative-maximum gates. Some small coefficient slices
+are sensitive to changes in the incoming adjoint across the BF16 model. The
+[oracle protocol](runs/query-key-b300-qualification/roundoff-protocol.json),
+[repeat protocol](runs/query-key-b300-qualification/repeat-protocol.json), and
+[coefficient coverage](runs/query-key-b300-qualification/coefficient-protocol.json)
+specify the additional checks before their measurements.
+
+The [degree-8 replay](runs/query-key-b300-qualification/roundoff-m8.json) covers
+all 26 rejected historical/current slices across eight layer/head cases. Both
+geometries agree with independent FP64 attention and projection derivatives;
+changed incoming adjoints explain at least 99.9903% of each observed slice
+change. All 145 nonembedding gradients, logits and losses repeat exactly and
+are unchanged by capture instrumentation. Only the embedding parameter gradient
+varies (0.467–0.515% relative L2), within the unchanged whole-parameter bound.
+Attribution locates the difference before each replayed attention block; it does
+not identify every upstream operation responsible or promise bitwise training.
+
+The [degree-12 replay](runs/query-key-b300-qualification/roundoff-m12.json)
+covers all 72 rejected projection slices and 20 bias/amplitude slices across 33
+layer/head cases. All 78 coefficient-family/order vectors across the two affected
+layers pass independent all-head contractions. The worst local attention-gradient
+error against FP64 is 0.199%; changed incoming adjoints explain at least 99.9825%
+of each rejected slice's change. All 145 nonembedding gradients repeat exactly;
+embedding variation is 1.520–1.633% relative L2 and 4.185–5.579%
+relative maximum, within the original 2.5%/12.5% bounds.
+
+The [combined decision](runs/query-key-b300-qualification/decision.json) is
+**qualified** for both frozen recipes. It independently checks the numerical
+gates, complete rejected-slice coverage, source equivalence, matched timing,
+and the two 20-step pilots followed by fresh-process step-21 resumes. Both
+resumes restore exact checkpoint state, next batch and RNG. Failed raw slice
+and strict whole-gradient repeat verdicts remain preserved; the additional
+mechanism checks establish qualification separately. This does not establish
+full-budget stability. Each production allocation still runs its own acceptance.
+
+The [main integration record](runs/query-key-b300-qualification/cpu-main.json)
+also has 96 passing CPU checks. Only the generic backend selector, tiling tests
+and acceptance changes are integrated into the primary scaffold. The
+[retained-artifact manifest](runs/query-key-b300-qualification/retained-artifacts.json)
+pins the decision, logs and CPU smoke scripts.
+
+Full-model reproduction uses the complete frozen 4B source at tag
+`validation/query-key-b300-4b-20261023` (`8924c44721df6b661275125d33b498bff49f8b59`).
+Create a detached worktree of that tag, sync its own locked CUDA 13 environment,
+and use fresh diagnostic output paths. Preserve the recipe's QK RMSNorm, FP32
+backbone norms, and truncated reference initialization. The primary scaffold
+evolves independently; the tag preserves the exact qualified execution source.
+
 ### Query-key polynomial backward tiles
 
 The one-pass fused query-key polynomial kernel uses 32-by-32 backward tiles for
-H100 BF16 inputs with context 2048, Q/K and value width 64, and degree 8 or 12.
+H100 and B300 BF16 inputs with context 2048, Q/K and value width 64, and degree 8 or 12.
 Forward keeps its original 64-by-64 tiles; other devices and shapes retain the
 original geometry. No polynomial, precision, or coefficient-scaling rule changes.
 
