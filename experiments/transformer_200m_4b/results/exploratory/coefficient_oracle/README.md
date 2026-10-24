@@ -16,7 +16,7 @@ backbone frozen. They live in the
 | `r0963b3e6610b` | One coefficient table shared across 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
 | `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
-| `r7505c6d49711` | Independent coefficients per sequence, layer, query, head, and order on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Prepared |
+| `r7505c6d49711` | Independent coefficients per sequence, layer, query, head, and order on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
@@ -372,10 +372,12 @@ after 500 confirmation updates on a plateau; 10,000 is the safety budget.
 Qualification checks original coefficient replay, finite improving updates,
 unchanged pretrained parameters, and exact checkpoint resume on the allocated GPU.
 
-The run uses its own `worktrees/batch-coefficient-oracle-4b` checkout. It requests
-one B300 in `long` with six hours; the user authorized priority over other runs,
-including requeueing another allocation if required. Execution attempts and the
-actual allocation are recorded in the run. Findings remain pending.
+The run uses its own `worktrees/batch-coefficient-oracle-4b` checkout. Slurm job
+**225066** started on one **B300** on `akita` in `long`, with a six-hour limit and
+the locked CUDA 13 environment. No other run needed preemption. Execution attempts
+and the actual allocation are recorded in the run. GPU qualification passed
+exact original-forward replay, finite improving gradients, unchanged pretrained
+parameters, and exact checkpoint resume. Fitting is underway; findings remain pending.
 
 After successful fitting, `coefficient_fit.sbatch` automatically runs
 `analyze_batch_coefficients.py` on CPU. It samples 64 uniformly spaced query
