@@ -1,0 +1,25 @@
+{
+  "basis": "Original64 and candidate32 both changed whole-gradient hashes on repeated calls; per-leaf differences have not yet been measured. The model uses BF16 embedding lookup, whose parameter-gradient accumulation is downstream of all attention adjoints.",
+  "comparisons": [
+    "Repeated calls of each compiled geometry",
+    "Each geometry with and without capture instrumentation"
+  ],
+  "coverage": "Capture all layers and heads, then independently replay the union of all historically rejected and currently rejected projection slices. Historical failed memberships may vary across independent compilations; none may be omitted from oracle coverage.",
+  "format": "query-key-repeat-diagnostic-protocol",
+  "interpretation": "Only variation confined to the token-embedding gradient is eligible for this criterion. Its numerical bounds are the unchanged full-model whole-parameter bounds. Any variation in attention or other model gradients remains a failure requiring investigation. Preserve and report the original whole-gradient hash inequality.",
+  "required_checks": {
+    "all_nonembedding_gradients_array_exact": true,
+    "embedding_gradient_all_finite_nonzero": true,
+    "embedding_gradient_max_absolute_error_over_reference_max": 0.125,
+    "embedding_gradient_relative_l2_max": 0.025,
+    "loss_and_logits_array_exact": true
+  },
+  "schema_version": 1,
+  "status": "prospective",
+  "unchanged_requirements": [
+    "Independent FP64 local attention 2.5% and projection 5% gates",
+    "At least 90% attribution of each captured projection difference",
+    "Whole-parameter 2.5% and forward gates",
+    "Matched throughput and exact checkpoint/state/data/RNG restoration"
+  ]
+}
