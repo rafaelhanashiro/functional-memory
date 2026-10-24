@@ -435,7 +435,7 @@ and check fitting PPL before changing the shared generator.
 To recompute the CPU summary without changing the saved measurements or provenance:
 
 ```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
+JAX_PLATFORMS=cpu PYTHONPATH=. scaffolds/transformer/.venv/bin/python \
   experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/analyze_batch_coefficients.py \
   --run experiments/transformer_200m_4b/runs/r7505c6d49711 --dry-run --overwrite
 ```
