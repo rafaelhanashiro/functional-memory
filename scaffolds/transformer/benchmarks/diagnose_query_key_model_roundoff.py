@@ -15,6 +15,7 @@ from functools import partial
 import gc
 import hashlib
 import json
+import math
 from pathlib import Path
 import time
 
@@ -29,7 +30,7 @@ from scaffolds.transformer.benchmarks.benchmark_train_step import parameter_dige
 from scaffolds.transformer.benchmarks.benchmark_training_throughput import _execution_provenance, digest
 from scaffolds.transformer.benchmarks.qualify_query_key_model import (
     compare_array, compare_gradients, full_objective, immutable_snapshot, perturbed_parameters,
-    name_for_path, PROJECTION_NAMES, LOSS_TOLERANCE,
+    name_for_path, PROJECTION_NAMES, COEFFICIENT_NAMES, LOSS_TOLERANCE,
 )
 from scaffolds.transformer.configs import config_to_dict, load_config, validate_config
 from scaffolds.transformer.data.packed import PackedBatchIterator
@@ -168,6 +169,13 @@ def failed_projection_groups(report):
             for group in leaf.get("groups", {}).get("failed", [])]
 
 
+def failed_coefficient_groups(report):
+    return [dict(parameter=leaf["parameter"], **group)
+            for leaf in report["gradients"]["leaves"]
+            if any(name in leaf["parameter"] for name in COEFFICIENT_NAMES)
+            for group in leaf.get("groups", {}).get("failed", [])]
+
+
 def projection_pullback(kind, captured, head_index, amplitude_scale):
     """Use the production FP32 tanh/projection Jacobian, holding its inputs fixed."""
     if kind == "query":
@@ -216,6 +224,55 @@ def fp64_projection(kind, captured, head_index, cotangent, amplitude_scale):
         activation = jnp.tanh(x @ weights)
         result = x.T @ (dc * amplitude * (1 - activation ** 2))
         return np.asarray(jax.device_get(result))
+
+
+def fp64_coefficient_parameters(kind, captured, head_index, cotangent, amplitude_scale, bias_scale):
+    """Independent bias/amplitude derivatives, including model parameter scales."""
+    x, weights, *_ = captured
+    with jax.enable_x64(), jax.default_matmul_precision("highest"):
+        x = jnp.asarray(x, jnp.float64).reshape(-1, x.shape[-1])
+        weights = jnp.asarray(weights[head_index], jnp.float64)
+        cotangent = jnp.asarray(cotangent[:, :, 0], jnp.float64).reshape(-1, weights.shape[-1])
+        factorials = jnp.asarray([math.factorial(r) for r in range(weights.shape[-1])], jnp.float64)
+        amplitude = jnp.sum(cotangent * jnp.tanh(x @ weights), axis=0)
+        if kind == "query":
+            bias = jnp.sum(cotangent, axis=0)
+            if amplitude_scale == "factorial":
+                amplitude = amplitude / factorials
+            if bias_scale == "factorial":
+                bias = bias / factorials
+            values = {"query_polynomial_bias": bias, "query_polynomial_amplitude": amplitude}
+        else:
+            values = {"key_polynomial_amplitude": amplitude}
+        return {name: np.asarray(jax.device_get(value)) for name, value in values.items()}
+
+
+def coefficient_parameter_pullback(kind, captured, head_index, amplitude_scale, bias_scale):
+    """Production FP32 projection VJP with respect to its bias/amplitudes."""
+    x, weights, *rest = captured
+    x = jnp.asarray(x)
+    weights = jnp.asarray(weights[head_index:head_index + 1])
+    amplitude = jnp.asarray(rest[-1][head_index:head_index + 1])
+    if kind == "query":
+        effective_bias = jnp.asarray(rest[0][head_index:head_index + 1])
+
+        @jax.jit
+        def pullback(cotangent):
+            operation = lambda b, a: projections.project_coefficients(
+                x, weights, b, amplitude=a, activation="tanh", amplitude_scale=amplitude_scale)
+            _, vjp = jax.vjp(operation, effective_bias, amplitude)
+            db, da = vjp(cotangent.astype(jnp.float32))
+            if bias_scale == "factorial":
+                # The captured bias is after model-owned factorial_scale; apply
+                # its transpose to recover the raw model parameter gradient.
+                db = db / jnp.asarray([math.factorial(r) for r in range(db.shape[-1])], jnp.float32)
+            return {"query_polynomial_bias": db[0], "query_polynomial_amplitude": da[0]}
+    else:
+        @jax.jit
+        def pullback(cotangent):
+            _, vjp = jax.vjp(lambda a: projections.project_key_factors(x, weights, a), amplitude)
+            return {"key_polynomial_amplitude": vjp(cotangent.astype(jnp.float32))[0][0]}
+    return pullback
 
 
 def compare_repeated_gradients(actual, reference):
@@ -311,11 +368,12 @@ def capture_models(state, batch, rng, heads, layers, report, output, original_qu
     report["gradients"] = compare_gradients(full_grads[32], full_grads[64])
     projection_grads = {
         tile: {name_for_path(p): a for p, a in jax.tree_util.tree_flatten_with_path(full_grads[tile])[0]
-               if any(name in name_for_path(p) for name in PROJECTION_NAMES)} for tile in (64, 32)}
+               if any(name in name_for_path(p) for name in (*PROJECTION_NAMES, *COEFFICIENT_NAMES))} for tile in (64, 32)}
     return captures, projection_inputs, projection_grads
 
 
-def diagnose_case(layer, head, heads, captures, projection_inputs, projection_grads, failures, amplitude_scale):
+def diagnose_case(layer, head, heads, captures, projection_inputs, projection_grads, failures, amplitude_scale,
+                  bias_scale, coefficient_outputs, coefficient_layers, replay_operations, oracle_operation):
     print(f"Local FP64 oracle and geometry replay: layer={layer} head={head}", flush=True)
     index = heads.index(head)
     host_inputs = {tile: tuple(x[:, :, index:index + 1] for x in captures[tile][layer]) for tile in (64, 32)}
@@ -335,29 +393,46 @@ def diagnose_case(layer, head, heads, captures, projection_inputs, projection_gr
     }
     pullbacks = {kind: projection_pullback(kind, values, index, amplitude_scale)
                  for kind, values in projection_values.items()}
+    coefficient_pullbacks = ({kind: coefficient_parameter_pullback(kind, values, index, amplitude_scale, bias_scale)
+                             for kind, values in projection_values.items()} if layer in coefficient_layers else {})
+    coefficient_data = {"fp64": {}, "production_oracles": {}, "replays": {}}
     projected_oracles, production_oracles = {}, {}
     for incoming in (64, 32):
         print(f"  incoming cotangent from tile{incoming}: FP64 oracle", flush=True)
         arrays = tuple(jax.device_put(np.array(x, copy=True), may_alias=False) for x in host_inputs[incoming])
         with jax.enable_x64(), jax.default_matmul_precision("highest"):
-            reference = immutable_snapshot(jax.block_until_ready(jax.jit(fp64_gradients)(*arrays)))
+            reference = immutable_snapshot(jax.block_until_ready(oracle_operation(*arrays)))
         projected_oracles[incoming], production_oracles[incoming] = {}, {}
+        coefficient_data["fp64"][incoming], coefficient_data["production_oracles"][incoming] = {}, {}
         for kind, offset in (("query", 3), ("key", 4)):
             projected_oracles[incoming][kind] = fp64_projection(kind, projection_values[kind], index, reference[offset], amplitude_scale)
             production_oracles[incoming][kind] = np.asarray(jax.device_get(pullbacks[kind](jnp.asarray(reference[offset], dtype=jnp.float32))))
             case["projection_comparisons"][f"incoming{incoming}_{kind}_fp32_vjp_versus_fp64_contraction"] = compare_projection(
                 production_oracles[incoming][kind], projected_oracles[incoming][kind])
+            if coefficient_pullbacks:
+                coefficient_data["fp64"][incoming].update(fp64_coefficient_parameters(
+                    kind, projection_values[kind], index, reference[offset], amplitude_scale, bias_scale))
+                coefficient_data["production_oracles"][incoming].update(immutable_snapshot(
+                    coefficient_pullbacks[kind](jnp.asarray(reference[offset], dtype=jnp.float32))))
         candidates = {}
         for tile in (64, 32):
             kernel._backward_tile_sizes = lambda *a, tile=tile, **kw: (tile, tile)
-            jax.clear_caches()
-            operation = jax.jit(lambda *xs: kernel._attention_bwd(False, tuple(xs[:5]), xs[5]))
+            if tile not in replay_operations:
+                # Freeze each geometry into its own compiled executable once;
+                # subsequent heads reuse it without depending on global selector.
+                operation = jax.jit(lambda *xs: kernel._attention_bwd(False, tuple(xs[:5]), xs[5]))
+                replay_operations[tile] = operation.lower(*arrays).compile()
+            operation = replay_operations[tile]
             candidates[tile] = immutable_snapshot(jax.block_until_ready(operation(*arrays)))
+            coefficient_data["replays"][(tile, incoming)] = {}
             label = f"tile{tile}_at_incoming{incoming}_versus_fp64"
             case["comparisons"][label] = compare_local(candidates[tile], reference)
             for kind, offset in (("query", 3), ("key", 4)):
                 contracted = np.asarray(jax.device_get(pullbacks[kind](jnp.asarray(candidates[tile][offset]))))
                 case["projection_comparisons"][f"{label}_{kind}"] = compare_projection(contracted, projected_oracles[incoming][kind])
+                if coefficient_pullbacks:
+                    coefficient_data["replays"][(tile, incoming)].update(immutable_snapshot(
+                        coefficient_pullbacks[kind](jnp.asarray(candidates[tile][offset]))))
                 if tile == incoming:
                     parameter = next(name for name in projection_grads[tile] if f"{kind}_polynomial_kernel" in name)
                     expected = projection_grads[tile][parameter][layer, head]
@@ -381,7 +456,56 @@ def diagnose_case(layer, head, heads, captures, projection_inputs, projection_gr
     case["accepted"] = (all(v["accepted"] for v in case["comparisons"].values())
                         and all(v["accepted"] for v in case["projection_comparisons"].values())
                         and all(v["accepted"] and v["production_projection_control"]["accepted"] for v in case["attribution"]))
+    if coefficient_pullbacks:
+        coefficient_outputs[(layer, head)] = coefficient_data
+        case["coefficient_parameter_sha256"] = {
+            category: {str(key): {name: array_hash(value) for name, value in values.items()}
+                       for key, values in entries.items()} for category, entries in coefficient_data.items()}
     return case
+
+
+def compare_coefficient_groups(layers, heads, outputs, full_grads, failures):
+    """Compare model-owned coefficient gradients as vectors across all heads."""
+    required = {(g["parameter"], g["layer"], g["order"]) for g in failures}
+    rows = []
+    for layer in sorted(layers):
+        for name in COEFFICIENT_NAMES:
+            parameter = next(p for p in full_grads[64] if name in p)
+            count = full_grads[64][parameter].shape[-1]
+            for order in range(count):
+                row = {"parameter": parameter, "layer": layer, "order": order, "heads": list(heads),
+                       "comparisons": {}, "required_attribution": (parameter, layer, order) in required,
+                       "attribution": None}
+                oracles, controls = {}, {}
+                for incoming in (64, 32):
+                    oracles[incoming] = np.asarray([outputs[(layer, head)]["fp64"][incoming][name][order]
+                                                   for head in heads], np.float64)
+                    controls[incoming] = np.asarray([outputs[(layer, head)]["production_oracles"][incoming][name][order]
+                                                    for head in heads], np.float64)
+                    row["comparisons"][f"incoming{incoming}_fp32_vjp_versus_fp64_contraction"] = compare_array(
+                        controls[incoming], oracles[incoming], tolerance=GROUP_TOLERANCE)
+                    for tile in (64, 32):
+                        replay = np.asarray([outputs[(layer, head)]["replays"][(tile, incoming)][name][order]
+                                             for head in heads], np.float64)
+                        row["comparisons"][f"tile{tile}_at_incoming{incoming}_versus_fp64"] = compare_array(
+                            replay, oracles[incoming], tolerance=GROUP_TOLERANCE)
+                        if tile == incoming:
+                            row["comparisons"][f"tile{tile}_replay_versus_full_model"] = compare_array(
+                                replay, full_grads[tile][parameter][layer, :, order], tolerance=0.001)
+                if row["required_attribution"]:
+                    observed = (full_grads[32][parameter][layer, :, order].astype(np.float64)
+                                - full_grads[64][parameter][layer, :, order].astype(np.float64))
+                    attribution = compare_array(oracles[32] - oracles[64], observed, tolerance=ATTRIBUTION_TOLERANCE)
+                    attribution["explained_fraction_lower_bound"] = (None if attribution["relative_l2_error"] is None
+                                                                     else 1 - attribution["relative_l2_error"])
+                    attribution["production_projection_control"] = compare_array(
+                        controls[32] - controls[64], observed, tolerance=ATTRIBUTION_TOLERANCE)
+                    row["attribution"] = attribution
+                row["accepted"] = all(v["accepted"] for v in row["comparisons"].values())
+                if row["attribution"] is not None:
+                    row["accepted"] &= row["attribution"]["accepted"] and row["attribution"]["production_projection_control"]["accepted"]
+                rows.append(row)
+    return rows
 
 
 def diagnose(args):
@@ -411,14 +535,14 @@ def diagnose(args):
               "created_at_utc": datetime.now(UTC).isoformat(), "provenance": source,
               "input_recipe": {"path": str(path), "sha256": digest(path), "configuration": config_to_dict(config)},
               "configuration": {"heads_captured": list(heads), "layers_captured": sorted(layers),
-                                "case_selection": "union of failed projection groups from every supplied historical report and this capture, plus layer14/head2 control",
+                                "case_selection": "historical/current failed projection pairs, all heads of layers with failed coefficient bias/amplitude groups, plus layer14/head2 control",
                                 "repeat_acceptance": "exact full gradients; per-leaf differences and original numerical gates reported separately; no unmeasured embedding tolerance",
                                 "perturbation_seed": args.perturbation_seed, "local_relative_l2_tolerance": TOLERANCE,
                                 "projection_group_tolerance": GROUP_TOLERANCE, "attribution_residual_tolerance": ATTRIBUTION_TOLERANCE,
                                 "reference": "independent analytic FP64 attention VJP and FP64 reconstruction of tanh/projection; actual FP32 projection VJP measured separately",
                                 "attribution": "oracle(candidate32 incoming dO) - oracle(original64 incoming dO) must explain at least 90% of each failed full-model projection group delta in L2",
                                 "limitation": "local replay does not override failed full-model gates; attribution locates error before this block but does not identify the upstream operation responsible"},
-              "cases": [], "full_model_trials": []}
+              "cases": [], "coefficient_groups": [], "full_model_trials": []}
     report["selected_parity_reports"] = [{"path": str(p.resolve()), "sha256": digest(p)} for p, _ in selected_reports]
     write_report(output, report)
     original_attention, original_selector = kernel._attention, kernel._backward_tile_sizes
@@ -438,33 +562,41 @@ def diagnose(args):
         rng = jax.random.fold_in(jax.random.PRNGKey(config.train.seed), 1)
         captures, projection_inputs, projection_grads = capture_models(
             state, batch, rng, heads, layers, report, output, original_query, original_key)
-        current_failures = failed_projection_groups(report)
+        current_failures = failed_projection_groups(report) + failed_coefficient_groups(report)
         selected_failures = [dict(group, source_report=str(p.resolve())) for p, old in selected_reports
-                             for group in failed_projection_groups(old)]
-        identity = lambda group: (group["parameter"], group["layer"], group["head"], group["order"])
+                             for group in failed_projection_groups(old) + failed_coefficient_groups(old)]
+        identity = lambda group: (group["parameter"], group["layer"], group.get("head"), group["order"])
         failure_union = {identity(group): group for group in selected_failures}
         failure_union.update({identity(group): group for group in current_failures})
         failures = list(failure_union.values())
-        cases = sorted({(group["layer"], group["head"]) for group in failures} | {(14, 2)})
+        projection_failures = [g for g in failures if g.get("head") is not None]
+        coefficient_failures = [g for g in failures if g.get("head") is None]
+        coefficient_layers = {g["layer"] for g in coefficient_failures}
+        cases = sorted({(g["layer"], g["head"]) for g in projection_failures}
+                       | {(layer, head) for layer in coefficient_layers for head in heads} | {(14, 2)})
         report["configuration"]["cases"] = [list(case) for case in cases]
+        report["configuration"]["coefficient_layers"] = sorted(coefficient_layers)
         report["selected_report_failures_reproduced"] = {identity(group) for group in selected_failures} <= {identity(group) for group in current_failures}
         report["original_failure_reproduction"] = []
         for original in selected_failures:
             parameter, layer, head, order = identity(original)
-            metrics = compare_array(projection_grads[32][parameter][layer, head, :, order],
-                                    projection_grads[64][parameter][layer, head, :, order], tolerance=GROUP_TOLERANCE)
+            select = ((layer, slice(None), order) if head is None else (layer, head, slice(None), order))
+            metrics = compare_array(projection_grads[32][parameter][select], projection_grads[64][parameter][select],
+                                    tolerance=GROUP_TOLERANCE)
             report["original_failure_reproduction"].append({
                 "parameter": parameter, "layer": layer, "head": head, "order": order,
                 "source_report": original["source_report"],
                 "original_relative_l2_error": original["relative_l2_error"],
                 "original_reference_l2": original["reference_l2"], "current": metrics})
-        uncovered = [g for g in failures if (g["layer"], g["head"]) not in cases]
+        uncovered = [g for g in projection_failures if (g["layer"], g["head"]) not in cases]
+        uncovered += [g for g in coefficient_failures if any((g["layer"], head) not in cases for head in heads)]
         unhandled = [dict(parameter=leaf["parameter"], **group) for leaf in report["gradients"]["leaves"]
-                     if not any(name in leaf["parameter"] for name in PROJECTION_NAMES)
+                     if not any(name in leaf["parameter"] for name in (*PROJECTION_NAMES, *COEFFICIENT_NAMES))
                      for group in leaf.get("groups", {}).get("failed", [])]
         report["failed_groups_covered"], report["uncovered_failures"] = not uncovered, uncovered
         report["unhandled_nonprojection_groups"] = unhandled
-        report["full_model_failed_projection_groups"] = failures
+        report["full_model_failed_projection_groups"] = projection_failures
+        report["full_model_failed_coefficient_groups"] = coefficient_failures
         trials = report["full_model_trials"]
         report["logits_exact"] = trials[0]["evaluations"][0]["logits_sha256"] == trials[1]["evaluations"][0]["logits_sha256"]
         report["loss_absolute_difference"] = abs(trials[0]["evaluations"][0]["loss"] - trials[1]["evaluations"][0]["loss"])
@@ -484,9 +616,18 @@ def diagnose(args):
         del state, batch, rng, params
         jax.clear_caches()
         gc.collect()
+        coefficient_outputs, completed_coefficient_layers, replay_operations = {}, set(), {}
+        oracle_operation = jax.jit(fp64_gradients)
         for layer, head in cases:
             report["cases"].append(diagnose_case(layer, head, heads, captures, projection_inputs, projection_grads,
-                                                 failures, config.model.attention_coefficient_amplitude_scale))
+                                                 projection_failures, config.model.attention_coefficient_amplitude_scale,
+                                                 config.model.attention_coefficient_scale, coefficient_outputs,
+                                                 coefficient_layers, replay_operations, oracle_operation))
+            if (layer in coefficient_layers and layer not in completed_coefficient_layers
+                    and all((layer, h) in coefficient_outputs for h in heads)):
+                report["coefficient_groups"].extend(compare_coefficient_groups(
+                    {layer}, heads, coefficient_outputs, projection_grads, coefficient_failures))
+                completed_coefficient_layers.add(layer)
             write_report(output, report)
         report["source_recipe_unchanged"] = digest(path) == report["input_recipe"]["sha256"]
         report["full_model_leaf_gates_pass"] = all(
@@ -497,7 +638,9 @@ def diagnose(args):
                             and all(t["deterministic"] and t["instrumentation_array_exact"] for t in trials)
                             and report["full_model_leaf_gates_pass"]
                             and report["logits_exact"] and report["loss_absolute_difference"] <= LOSS_TOLERANCE
-                            and all(case["accepted"] for case in report["cases"]) else "failed")
+                            and all(case["accepted"] for case in report["cases"])
+                            and all(group["accepted"] for group in report["coefficient_groups"])
+                            and completed_coefficient_layers == coefficient_layers else "failed")
     except Exception as error:
         report.update(status="failed", error=f"{type(error).__name__}: {error}")
         raise
