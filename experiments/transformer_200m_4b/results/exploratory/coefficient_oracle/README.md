@@ -13,6 +13,8 @@ backbone frozen. They live in the
 | `r3c0f21ab7dce` | Free coefficients per layer, head, query, and order | Static `r9b8acfcbeb89`, step 7,500 | Complete |
 | `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r0963b3e6610b` | One coefficient table shared across 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
+| `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Prepared |
+| `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Prepared |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
@@ -153,6 +155,35 @@ This tests whether one coefficient table can reduce loss across many fitting
 sequences simultaneously. It places a stronger sharing constraint than independent
 per-sequence coefficients, but the batch is training data for this diagnostic;
 transfer to unseen sequences is not measured.
+
+## Static coefficients on one sequence and a full batch
+
+Two further fits remove both query-position and input-content dependence. Each
+trains one effective monomial coefficient tensor `[layer, head, order]`, shape
+`[15, 14, 9]`: **1,890 trainable scalars**. Every query position and every sequence
+uses the same polynomial within a layer and head. This is the static coefficient
+parametrization, evaluated as a fitting diagnostic with the backbone frozen.
+
+Both start from query-only parent `r98d5895c02d0`, checkpoint 7,500. Run
+`r22854de31b96` fits the same first packed sequence; `r5b28697413fa` fits the
+same first 256 packed sequences as the position-dependent batch diagnostic. For each fit, initialization is the mean
+of that parent's effective coefficients across all sequences and query positions
+in its fitting set. This projection changes the original forward, so original,
+projected-initial, and fitting-graph initial losses are recorded separately.
+All original model parameters remain frozen; the original generator is bypassed
+by the static tensor, and activations are recomputed normally.
+
+Both use Adam in factorial coordinates with LR 0.01, betas 0.9/0.95, epsilon
+1e-8, clipping at 1, and no decay. Gradients average over all fitting tokens before
+one clipping and optimizer update. The batch fit accumulates microbatches of eight;
+the sequence fit uses one. The minimum 2,000 updates, 200-update plateau window,
+0.001-nat tolerance, tenfold LR reduction, and 500 confirmation updates match the
+position-dependent fit. The 10,000-update safety limit pauses an unconverged run.
+
+The batch static tensor is a restriction of the position-dependent tensor, on the
+same source backbone and fitting batch. Comparing these fitting results tests the
+benefit of query-position freedom. Neither fit evaluates unseen-sequence transfer,
+and neither retrains the backbone as in the original static pretraining runs.
 
 ## Open decision and regeneration
 

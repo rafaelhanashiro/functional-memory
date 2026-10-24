@@ -38,8 +38,9 @@ each with its pretrained backbone frozen.
 Run `r3c0f21ab7dce` is the completed free-coefficient fit from the static checkpoint;
 `rd7bf9bc37cb6` is the completed fit of the original query generator from the query-only checkpoint.
 `r0963b3e6610b` fits one position-dependent coefficient table shared across the
-parent recipe's entire 256-sequence batch. Their fitting metrics enter no canonical
-pretraining comparison.
+parent recipe's entire 256-sequence batch. Static fits `r22854de31b96` (one
+sequence) and `r5b28697413fa` (full batch) additionally share coefficients across
+query positions. Their fitting metrics enter no canonical pretraining comparison.
 
 Allocate the query-generator fit in its own worktree (once), commit the frozen
 inputs, then submit one B300 or H100 job:
@@ -61,6 +62,22 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transfor
 # Commit frozen inputs before submitting; resumptions retain this run ID.
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit submit \
   r0963b3e6610b --partition debug,standard,long --time-limit 02:00:00
+```
+
+Allocate both static fits in one isolated worktree before committing or launching:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit prepare \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r98d5895c02d0 \
+  --parameterization static_coefficients --sequence-count 1
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit prepare \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r98d5895c02d0 \
+  --parameterization static_coefficients --sequence-count 256
+# Commit both recipes and implementation before either independent submission.
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit submit \
+  r22854de31b96 --partition debug,standard,long --time-limit 02:00:00
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit submit \
+  r5b28697413fa --partition long --time-limit 06:00:00
 ```
 
 The shared fitting runtime qualifies the frozen-backbone update and checkpoint

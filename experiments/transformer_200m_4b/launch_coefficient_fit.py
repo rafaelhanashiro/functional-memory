@@ -18,24 +18,41 @@ from scaffolds.records.selections import refresh_selection
 ROOT = Path(__file__).resolve().parents[2]
 STUDY = ROOT / "experiments/transformer_200m_4b"
 TOPIC = STUDY / "results/exploratory/coefficient_oracle"
-PARAMETERIZATIONS = ("query_coefficient_generator", "shared_batch_query_coefficients")
+PARAMETERIZATIONS = ("query_coefficient_generator", "shared_batch_query_coefficients", "static_coefficients")
 
 
 def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def prepare(parent: Path, *, parameterization="query_coefficient_generator"):
+def fitting_scope(parameterization, parent_batch_size, sequence_count=None):
+    """Resolve deliberately selected inputs without silently changing older modes."""
     if parameterization not in PARAMETERIZATIONS:
         raise ValueError(f"Unknown coefficient parameterization: {parameterization}")
-    shared = parameterization == "shared_batch_query_coefficients"
-    role = "shared_coefficients_full_batch" if shared else "query_generator_single_sequence"
+    if parameterization == "static_coefficients":
+        if sequence_count not in {1, 256} or sequence_count not in {1, parent_batch_size}:
+            raise ValueError("Static fitting requires --sequence-count 1 or the parent's full 256-sequence batch")
+        suffix = "single_sequence" if sequence_count == 1 else "full_batch"
+        return sequence_count, f"static_coefficients_{suffix}"
+    if sequence_count is not None:
+        raise ValueError("--sequence-count is only supported for static_coefficients")
+    if parameterization == "shared_batch_query_coefficients":
+        return parent_batch_size, "shared_coefficients_full_batch"
+    return 1, "query_generator_single_sequence"
+
+
+def prepare(parent: Path, *, parameterization="query_coefficient_generator", sequence_count=None):
+    if parameterization not in PARAMETERIZATIONS:
+        raise ValueError(f"Unknown coefficient parameterization: {parameterization}")
+    static = parameterization == "static_coefficients"
+    shared = parameterization in {"shared_batch_query_coefficients", "static_coefficients"}
     parent = parent.resolve()
     record = load_run(parent)
     validate_record(parent, checkpoint_hashes=False)
     if record["status"] != "complete" or record["home_cluster"] != "kennel":
         raise ValueError("The parent must be a completed Kennel run")
     source = yaml.safe_load((parent / "config.yaml").read_text())
+    count, role = fitting_scope(parameterization, int(source["data"]["batch_size"]), sequence_count)
     model = source["model"]
     if (model["attention_degree"] != 8 or model["attention_coefficient_conditioning"] != "query"
             or model["attention_coefficients"] != "learned" or model["attention_normalization"]
@@ -60,7 +77,6 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator"):
     sequence_identity = json.loads((reference_run / "data_identity.json").read_text())
     if sequence_identity["manifest_sha256"] != sha256(source["data"]["eval_manifest"]):
         raise ValueError("The fitting sequence's manifest changed")
-    count = int(source["data"]["batch_size"]) if shared else 1
     microbatch = min(count, 8) if shared else 1
     learning_rate = 0.01 if shared else 0.001
     if shared:
@@ -74,6 +90,8 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator"):
     recipe = deepcopy(source)
     recipe["model"].pop("gdn_polynomial_degree", None)
     label = "shared-coefficients-m8-full-batch" if shared else "query-generator-m8-single-sequence"
+    if static:
+        label = "static-coefficients-m8-" + ("single-sequence" if count == 1 else "full-batch")
     recipe.update(schema_version=1, experiment_kind="fixed_input_coefficient_fit",
                   condition=f"coefficient_oracle/{role}")
     recipe["data"]["batch_size"] = count
@@ -115,11 +133,18 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator"):
             initialization="mean of parent effective coefficients across the entire fitting batch at each layer/query/head/order",
             gradient_scaling="mean next-token NLL across the full batch; accumulate all microbatch gradients before one clip and Adam update",
         )
+    if static:
+        recipe["oracle"].update(
+            trainable_parameters=["static_effective_monomial_coefficients"],
+            coefficient_storage="one [layer, head, order] table shared across all query positions, sequences, and causal keys",
+            initialization="mean of parent effective coefficients across all fitting sequences and query positions at each layer/head/order",
+        )
     run = create_run(STUDY, recipe, label=label)
     update_record(run, {
         "home_cluster": "kennel", "seed": source["train"]["seed"],
         "parent_run_id": parent.name, "parent_study": parent.parent.parent.name,
-        "coefficient_sharing": ("shared across sequences and causal keys; separate per layer/query position/head/order"
+        "coefficient_sharing": ("shared across query positions, sequences, and causal keys; separate per layer/head/order" if static else
+                                "shared across sequences and causal keys; separate per layer/query position/head/order"
                                 if shared else "shared query-conditioned generator per layer and head"),
         "coefficient_parameterization": parameterization,
         "checkpoint_retention": "best fitting parameters; backbone referenced by source checkpoint",
@@ -177,13 +202,14 @@ def main():
     prep = sub.add_parser("prepare")
     prep.add_argument("--parent", type=Path, required=True)
     prep.add_argument("--parameterization", choices=PARAMETERIZATIONS, default=PARAMETERIZATIONS[0])
+    prep.add_argument("--sequence-count", type=int, choices=(1, 256))
     launch = sub.add_parser("submit")
     launch.add_argument("run_id")
     launch.add_argument("--partition", default="debug,standard,long")
     launch.add_argument("--time-limit", default="02:00:00")
     args = parser.parse_args()
     if args.command == "prepare":
-        prepare(args.parent, parameterization=args.parameterization)
+        prepare(args.parent, parameterization=args.parameterization, sequence_count=args.sequence_count)
     else:
         submit(args.run_id, partition=args.partition, time_limit=args.time_limit)
 

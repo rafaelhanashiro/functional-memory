@@ -2049,3 +2049,13 @@ independent-coefficient checks also pass. The [H100 qualification](runs/shared-b
 passes original coefficient replay over all 256 sequences, repeated shared-table
 forward execution, an improving mean-gradient update, an unchanged source tree,
 and exact checkpoint resume for the 15-layer degree-eight model.
+
+## Static coefficient fitting
+
+The [CPU record](runs/static-coefficient-fit/cpu.json) qualifies one coefficient
+vector per layer and head, shared across all positions and sequences. Checks
+cover mean initialization over both axes, equivalence to a constant positional
+table, direct full-batch gradients, one factorial-coordinate Adam update after
+accumulation, a frozen source tree, and exact resume for single-sequence and
+batch fitting. Existing coefficient-fitting modes retain their checks. Each GPU
+execution must pass its forward, update, and resume qualification before fitting.

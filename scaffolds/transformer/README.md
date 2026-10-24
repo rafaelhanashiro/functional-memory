@@ -346,7 +346,11 @@ the full fitting batch and records original-parent and projected-initial losses
 separately. A scan computes microbatch gradients at the same table, averages them
 over the complete batch, and then performs one clipping/Adam update in factorial
 coordinates. It never maintains a separate coefficient table or optimizer for
-each sequence. All modes verify input identity, forward
+each sequence. `static_coefficients` uses the same optimizer over one
+`[layer,head,order]` table, shared across query positions as well as sequences.
+Its initialization averages captured effective coefficients over all fitting
+sequences and query positions. This mode accepts one sequence or a full batch
+without changing its trainable parameter count. All modes verify input identity, forward
 replay, an improving update, frozen-parameter checksums, and exact checkpoint
 resume before fitting. The study provides the frozen recipe and launches:
 `python -m scaffolds.transformer.training.coefficient_fit --run <run-directory>`.

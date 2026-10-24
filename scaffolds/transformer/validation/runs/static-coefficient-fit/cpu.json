@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "static table has no sequence or query-position axes",
+    "mean projection over sequences and positions",
+    "constant positional table forward equivalence",
+    "independent direct full-batch gradient",
+    "tied-position gradient equals sum of positional gradients",
+    "single factorial-coordinate Adam update",
+    "microbatch partition invariance",
+    "frozen source parameters",
+    "exact checkpoint resume and projection qualification for one and multiple sequences",
+    "existing shared table, query generator, and independent coefficient regression checks"
+  ],
+  "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_static_coefficient_fit.py scaffolds/transformer/tests/test_shared_coefficient_fit.py scaffolds/transformer/tests/test_coefficient_generator_fit.py experiments/attention_scaling/tests/test_coefficient_oracle.py",
+  "date": "2026-10-24",
+  "platform": "cpu",
+  "seconds": 49.76,
+  "sources": {
+    "scaffolds/transformer/tests/test_static_coefficient_fit.py": "38c2418b1b70b8de01124f417c9fa7573702972a5d51708c8f9ac2c78e882c36",
+    "scaffolds/transformer/training/coefficient_fit.py": "2ec0636d7a07d0abdeeed3c787a3485b03a86442a7e24506aae9274e56bbde08"
+  },
+  "static_tests_passed": 5,
+  "status": "passed",
+  "tests_passed": 18
+}

@@ -7,7 +7,8 @@ The pretrained parameter tree is an immutable argument, never an optimizer input
 Generator fitting instead optimizes only the original model's query-coefficient
 parameters. Each forward recomputes the full model with its frozen backbone.
 Shared-batch fitting uses one [layer,query,head,order] table and averages every
-sequence's gradient before a single clipping/Adam update.
+sequence's gradient before a single clipping/Adam update. Static fitting uses
+one [layer,head,order] table shared across query positions as well as sequences.
 """
 from __future__ import annotations
 
@@ -221,6 +222,19 @@ def make_functions(graph, degree: int, oracle: dict):
     return capture, jax.jit(jax.vmap(tx.init)), step, jax.jit(losses)
 
 
+def expand_shared_coefficients(table, tokens, *, static=False):
+    """Broadcast one trainable table; no sequence/position-specific parameters exist."""
+    if static:
+        if table.ndim != 3:
+            raise ValueError("Static coefficients require [layer,head,order] axes")
+        return jnp.broadcast_to(table[:, None, None],
+            (table.shape[0], tokens.shape[0], tokens.shape[1] - 1, *table.shape[1:]))
+    if table.ndim != 4:
+        raise ValueError("Shared coefficients require [layer,query,head,order] axes")
+    return jnp.broadcast_to(table[:, None],
+        (table.shape[0], tokens.shape[0], *table.shape[1:]))
+
+
 def make_shared_functions(graph, degree: int, oracle: dict):
     """Fit one coefficient table against the mean loss of the complete batch.
 
@@ -235,11 +249,10 @@ def make_shared_functions(graph, degree: int, oracle: dict):
                            eps=float(oracle["epsilon"])),
     )
 
+    static = oracle.get("parameterization") == "static_coefficients"
+
     def microbatch_losses(table, params, tokens):
-        if table.ndim != 4:
-            raise ValueError("Shared coefficients require [layer,query,head,order] axes")
-        coefficients = jnp.broadcast_to(table[:, None],
-            (table.shape[0], tokens.shape[0], *table.shape[1:]))
+        coefficients = expand_shared_coefficients(table, tokens, static=static)
         logits = nnx.merge(graph, params)(tokens[:, :-1], deterministic=True,
                                         query_coefficients=coefficients)
         return optax.softmax_cross_entropy_with_integer_labels(
@@ -429,8 +442,8 @@ def qualify(run: Path, functions, params, tokens, table, optimizer, learning_rat
     if graph is not None:
         print("Measuring independent-graph logit error and external-forward repeatability", flush=True)
         diagnostic_tokens = tokens[0] if shared else tokens
-        diagnostic_table = (jnp.broadcast_to(table[None], (diagnostic_tokens.shape[0], *table.shape))
-                            if shared else table)
+        diagnostic_table = (jnp.swapaxes(expand_shared_coefficients(
+            table, diagnostic_tokens, static=table.ndim == 3), 0, 1) if shared else table)
         external_diagnostics = external_replay_diagnostics(
             graph, params, diagnostic_tokens, diagnostic_table, generator=generator)
         print("Independent replay: " + json.dumps(external_diagnostics), flush=True)
@@ -509,10 +522,11 @@ def main(argv=None):
     oracle = recipe["oracle"]
     parameterization = oracle.get("parameterization", "free_per_example_query_coefficients")
     if parameterization not in {"free_per_example_query_coefficients", "query_coefficient_generator",
-                                "shared_batch_query_coefficients"}:
+                                "shared_batch_query_coefficients", "static_coefficients"}:
         raise ValueError(f"Unknown coefficient parameterization: {parameterization}")
     generator = parameterization == "query_coefficient_generator"
-    shared = parameterization == "shared_batch_query_coefficients"
+    static = parameterization == "static_coefficients"
+    shared = parameterization == "shared_batch_query_coefficients" or static
     if generator and (int(oracle["sequence_count"]) != 1 or int(oracle["microbatch_size"]) != 1):
         raise ValueError("Generator fitting requires one fixed sequence and microbatch size one")
     print(f"Starting coefficient oracle {run.name}: {oracle['sequence_count']} fixed sequences", flush=True)
@@ -531,6 +545,7 @@ def main(argv=None):
                "device_kind": jax.devices()[0].device_kind, "device_count": 1,
                "resolved_attention_backend": recipe["model"]["attention_backend"],
                "coefficient_layout": ("model_parameter_tree" if generator else
+                                      "layer,head,order" if static else
                                       "layer,query,head,order" if shared else "example,layer,query,head,order"),
                "optimizer_coordinates": "stored_generator_parameters" if generator else "factorial(order)*monomial_coefficient",
                "coefficient_storage": "model_generator_parameters" if generator else "effective_monomial_coefficients",
@@ -625,7 +640,7 @@ def main(argv=None):
             print(json.dumps(failure), flush=True)
             raise RuntimeError("Captured coefficients do not reproduce parent logits/loss; see oracle_acceptance_failure.json")
         if shared:
-            table_sum = table.sum(axis=0)
+            table_sum = table.sum(axis=(0, 2) if static else 0)
             shared_table_sum = table_sum if shared_table_sum is None else shared_table_sum + table_sum
             # Capture storage never grows with the fitting batch size.
             shared_table_sum.block_until_ready()
@@ -638,13 +653,15 @@ def main(argv=None):
         if index % 4 == 0 or index + 1 == len(token_chunks):
             print(f"Captured coefficients for microbatch {index + 1}/{len(token_chunks)}; external replay NLL {np.mean(external_replay_losses):.6f}", flush=True)
     if shared:
-        tables = [shared_table_sum / count]
+        projection_count = count * (batch.shape[1] - 1) if static else count
+        tables = [shared_table_sum / projection_count]
         optimizers = [initialize_optimizer(tables[0])]
         token_chunks = [jnp.stack(token_chunks)]
         projected_losses = np.asarray(evaluate(tables[0], params, token_chunks[0]))
         if not np.all(np.isfinite(projected_losses)):
             raise RuntimeError("Batch-mean coefficient projection produced nonfinite NLL")
-        projection = {"method": "arithmetic mean of original effective coefficients across all fitting sequences",
+        projection = {"method": ("arithmetic mean of original effective coefficients across all fitting sequences and query positions"
+                                 if static else "arithmetic mean of original effective coefficients across all fitting sequences"),
                       "sequence_count": count, "coefficient_shape": list(tables[0].shape),
                       "parent_nll": float(np.mean(original_parent_losses)),
                       "parent_external_replay_nll": float(np.mean(parent_losses)),
@@ -819,7 +836,8 @@ def main(argv=None):
     if shared:
         outcome.update(original_parent_nll=projection["parent_nll"],
                        projected_initial_evaluation_nll=projection["projected_initial_nll"],
-                       coefficient_sharing="one table shared across every fitting sequence",
+                       coefficient_sharing=("one table shared across every fitting sequence and query position" if static else
+                                            "one table shared across every fitting sequence"),
                        optimizer_updates_per_step=1)
     if status == "paused":
         outcome["pause_reason"] = "preemption or interruption" if stop_requested else "Safety update budget exhausted; follow-up required."
@@ -834,6 +852,7 @@ def main(argv=None):
             checkpointer.save(final_path, {"generator_parameters" if generator else "coefficients": best_tables})
         _write_json(checkpoint / "coefficient_identity.json", {"step": controller["best_step"],
                     "layout": ("model_parameter_tree" if generator else
+                               "one [layer,head,order] table shared across all sequences and query positions" if static else
                                "one [layer,query,head,order] table shared across the batch" if shared else
                                "microbatches of [example,layer,query,head,order]"),
                     "coordinates": "stored_generator_parameters" if generator else "effective_monomial_c",

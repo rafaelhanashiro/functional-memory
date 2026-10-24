@@ -50,3 +50,19 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r0963b3e6610b/config.yaml
       sha256: 7086c0c5bcfe890cd3f2895803679a49225b7aa2b69175d873595aa638903827
+- study: transformer_200m_4b
+  run_id: r22854de31b96
+  role: static_coefficients_single_sequence
+  parent_run_id: r98d5895c02d0
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r22854de31b96/config.yaml
+      sha256: 1ba68b54f6547e1139e5444cb5b86ecb77f914cd89de13e2bddffc917bb17530
+- study: transformer_200m_4b
+  run_id: r5b28697413fa
+  role: static_coefficients_full_batch
+  parent_run_id: r98d5895c02d0
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r5b28697413fa/config.yaml
+      sha256: b0bbc9116351f98cbc2a7a28d79c000ee8140f29ecbde61449b1072045b09d00

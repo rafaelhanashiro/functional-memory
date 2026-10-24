@@ -194,7 +194,7 @@ def test_index_distinguishes_query_conditioning_and_keeps_recipe_identity(tmp_pa
     assert regenerate_index(study).read_bytes() == first
 
 
-@pytest.mark.parametrize("parameterization", [None, "query_coefficient_generator", "shared_batch_query_coefficients"])
+@pytest.mark.parametrize("parameterization", [None, "query_coefficient_generator", "shared_batch_query_coefficients", "static_coefficients"])
 def test_index_uses_shared_batch_table_recipe_instead_of_parent_generator(tmp_path, parameterization):
     study = tmp_path / "study"
     config = {"model": {"attention_coefficients": "learned",
@@ -217,6 +217,8 @@ def test_index_uses_shared_batch_table_recipe_instead_of_parent_generator(tmp_pa
               "coefficient_parameterization", "coefficient_initialization")
     expected = (("position", "identity", "shared_batch_query_coefficients", "mean_parent_batch_coefficients")
                 if parameterization == "shared_batch_query_coefficients" else
+                ("none", "identity", "static_coefficients", "mean_parent_token_coefficients")
+                if parameterization == "static_coefficients" else
                 ("query", "tanh", "direct", "taylor"))
     assert tuple(row[field] for field in fields) == expected
 
