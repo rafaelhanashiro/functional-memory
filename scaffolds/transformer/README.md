@@ -43,7 +43,13 @@ rates; `optim.total_steps` is the absolute ending step, including the parent ste
 The shared trainer restores every pretrained parameter and its Adam moments/count
 without change, continues the parent's batch cursor and RNG clock, and independently
 evaluates and checkpoints the starting state before the first new update. A child
-may retain fixed Taylor or introduce direct static Taylor-initialized coefficients.
+may retain fixed Taylor or introduce direct static or query-conditioned coefficients.
+Query continuations use `c_r(x) = (b_r + a_r tanh(x W_r)) / r!`, with `b_r = 1`
+and either zero amplitudes or zero projections, so every input starts at Taylor.
+Both coefficient and amplitude scales must be `factorial`; an inner tanh bias is
+not supported for continuations. Zero amplitudes with random projections initially
+learn through the amplitudes; the projections begin receiving gradients once those
+amplitudes move.
 New coefficients use a separate Adam state whose moments and bias-correction count
 start at zero; global clipping still acts once on the combined averaged gradient.
 Backbone/data recipe changes are rejected, and `continuation.json` records verified

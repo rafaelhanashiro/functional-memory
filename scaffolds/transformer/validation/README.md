@@ -29,6 +29,18 @@ used matching data and RNG, passed finite 20-update pilots, and resumed exactly 
 a fresh process. Each passed 47 GPU tests; fixed and learned cases additionally
 passed 256 and 324 CPU tests respectively, plus nine distributed CPU tests each.
 
+Query-conditioned continuations also preserve that state while introducing fresh
+Adam history for bias, amplitude, and projection parameters. The
+[query continuation CPU tests](runs/query-continuation/cpu-tests.json) cover matching
+initial logits and backbone gradients, amplitude-first learning with initially
+zero amplitudes and random projections, subsequent projection updates, and exact
+interrupted resume. They also cover the alternative exact-Taylor initialization
+with zero projections and unit amplitudes. The
+[200M degree-four restore](runs/query-continuation/cpu-parent-initialization.json)
+verified identical pretrained parameter and Adam hashes, with backbone count 7,500
+and new coefficient count zero. GPU qualification remains the acceptance gate
+before each new allocation's production training.
+
 ### Static coefficient capture and override
 
 The [CPU validation record](runs/static-coefficient-override/tests.json) records

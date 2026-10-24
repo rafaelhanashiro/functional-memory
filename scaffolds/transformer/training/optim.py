@@ -62,8 +62,10 @@ class ContinuationAdamState(NamedTuple):
 
 
 def split_continuation_parameters(params):
-    """Separate the newly introduced static array from every retained parameter."""
-    return params.split(lambda path, _: path[0] == "polynomial_coefficients", ...)
+    """Separate new static/query coefficient parameters from the retained backbone."""
+    names = {"polynomial_coefficients", "query_polynomial_bias",
+             "query_polynomial_kernel", "query_polynomial_amplitude"}
+    return params.split(lambda path, _: path[0] in names, ...)
 
 
 def attention_weight_decay_mask(params, *, excluded_names):

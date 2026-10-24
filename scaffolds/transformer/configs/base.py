@@ -550,11 +550,21 @@ def validate_config(config: Config) -> None:
             raise ValueError("Continuation requires 0 < parent_step < optim.total_steps")
         if optim.warmup_steps != 0 or optim.min_learning_rate != optim.learning_rate:
             raise ValueError("Continuation currently requires a constant learning rate with zero warmup")
-        if (config.model.attention_coefficients == "learned" and
-                (config.model.attention_coefficient_conditioning != "static"
-                 or config.model.attention_coefficient_parameterization != "direct"
-                 or config.model.attention_coefficient_initialization != "taylor")):
-            raise ValueError("Continuation introduces only static direct Taylor-initialized coefficients")
+        if config.model.attention_coefficients == "learned":
+            model = config.model
+            if (model.attention_coefficient_conditioning not in ("static", "query")
+                    or model.attention_coefficient_parameterization != "direct"
+                    or model.attention_coefficient_initialization != "taylor"):
+                raise ValueError("Continuation introduces only static or query direct Taylor-initialized coefficients")
+            if model.attention_coefficient_conditioning == "query" and (
+                    model.attention_coefficient_activation != "tanh"
+                    or model.attention_coefficient_scale != "factorial"
+                    or model.attention_coefficient_amplitude_scale != "factorial"
+                    or model.attention_coefficient_tanh_bias
+                    or (model.attention_coefficient_amplitude_initial != 0
+                        and model.attention_coefficient_projection_initial_std != 0)):
+                raise ValueError("Query continuation requires exact Taylor initialization: factorial-scaled tanh "
+                                 "coefficients with no inner bias and either zero amplitude or zero projection")
     elif any((continuation.parent_config, continuation.parent_config_sha256,
               continuation.parent_checkpoint_sha256, continuation.parent_data_identity_sha256,
               continuation.parent_step)):

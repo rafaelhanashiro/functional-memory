@@ -11,7 +11,7 @@ import orbax.checkpoint as ocp
 from flax import nnx
 
 from scaffolds.records import _tree_descriptor
-from scaffolds.transformer.configs import load_config
+from scaffolds.transformer.configs import load_config, validate_config
 from scaffolds.transformer.training.checkpointing import state_sha256
 from scaffolds.transformer.training.optim import ContinuationAdamState, split_continuation_parameters
 from scaffolds.transformer.training.state import create_state
@@ -31,7 +31,11 @@ def _parent_config(config):
             or parent.model.quadratic_mode != "fixed"):
         raise ValueError("Continuation requires polynomial dot-product attention")
     allowed_model_changes = {"attention_coefficients", "attention_coefficient_sharing",
-                             "attention_coefficient_scale", "attention_backend"}
+                             "attention_coefficient_scale", "attention_backend",
+                             "attention_coefficient_conditioning", "attention_coefficient_activation",
+                             "attention_coefficient_amplitude_initial",
+                             "attention_coefficient_projection_initial_std",
+                             "attention_coefficient_amplitude_scale"}
     for key, value in asdict(parent.model).items():
         if key not in allowed_model_changes and getattr(config.model, key) != value:
             raise ValueError(f"Continuation changes parent model.{key}")
@@ -52,6 +56,30 @@ def _parent_config(config):
     return parent
 
 
+def _check_taylor_initialization(config, coefficients):
+    """Check the realized arrays, including an identically zero query-dependent term."""
+    model = config.model
+    expected = np.asarray([1.0 if model.attention_coefficient_scale == "factorial"
+                           else 1.0 / math.factorial(order)
+                           for order in range(model.attention_degree + 1)], np.float32)
+    query = model.attention_coefficient_conditioning == "query"
+    names = ({"query_polynomial_bias", "query_polynomial_amplitude", "query_polynomial_kernel"}
+             if query else {"polynomial_coefficients"})
+    if set(coefficients) != names:
+        raise ValueError("Continuation coefficient parameter tree differs from its recipe")
+    bias = np.asarray(coefficients["query_polynomial_bias" if query else "polynomial_coefficients"][...])
+    if not np.array_equal(bias, np.broadcast_to(expected, bias.shape)):
+        raise ValueError("Continuation coefficients are not exactly Taylor initialized")
+    if query:
+        amplitude = np.asarray(coefficients["query_polynomial_amplitude"][...])
+        kernel = np.asarray(coefficients["query_polynomial_kernel"][...])
+        if (not np.all(np.isfinite(kernel)) or not np.all(np.isfinite(amplitude))
+                or not (np.all(amplitude == 0) or np.all(kernel == 0))):
+            raise ValueError("Continuation query-dependent term is not identically zero")
+        if not np.all(amplitude == model.attention_coefficient_amplitude_initial):
+            raise ValueError("Continuation query amplitude differs from its initialization recipe")
+
+
 def initialize_continuation_state(config, state=None):
     """Return the child state and verified audit; new coefficient Adam starts at zero.
 
@@ -59,6 +87,7 @@ def initialize_continuation_state(config, state=None):
     The child's global step is the parent's step, so batch order and RNG continue at
     the next pretrained update. Checkpoint resumptions use the usual trainer restore.
     """
+    validate_config(config)
     continuation = config.continuation
     if not continuation.parent_checkpoint:
         raise ValueError("No continuation parent is configured")
@@ -82,12 +111,7 @@ def initialize_continuation_state(config, state=None):
             raise ValueError("Continuation did not introduce its coefficient array")
         if jax.tree.structure(backbone) != jax.tree.structure(parent.params):
             raise ValueError("Continuation backbone parameter tree differs from parent")
-        expected = np.asarray([1.0 if config.model.attention_coefficient_scale == "factorial"
-                               else 1.0 / math.factorial(order)
-                               for order in range(config.model.attention_degree + 1)], np.float32)
-        for value in jax.tree.leaves(coefficients):
-            if not np.array_equal(np.asarray(value), np.broadcast_to(expected, value.shape)):
-                raise ValueError("Continuation coefficients are not exactly Taylor initialized")
+        _check_taylor_initialization(config, coefficients)
         params = nnx.State.merge(parent.params, coefficients)
         new_adam = state.opt_state[1].coefficients
         new_coefficient_count = int(new_adam[0].count)

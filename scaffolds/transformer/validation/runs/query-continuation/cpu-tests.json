@@ -1,0 +1,30 @@
+{
+  "format": "shared-transformer-query-continuation-cpu-validation",
+  "date": "2026-10-24",
+  "platform": "CPU",
+  "result": "passed",
+  "tests": [
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest scaffolds/transformer/tests/test_continuation.py scaffolds/transformer/tests/test_continuation_acceptance.py -q",
+      "passed": 20,
+      "failed": 0,
+      "seconds": 68.35
+    },
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest scaffolds/transformer/tests/test_continuation.py::test_query_continuation_rejects_non_taylor_initialization scaffolds/transformer/tests/test_continuation.py::test_changed_parent_inputs_are_rejected -q",
+      "passed": 2,
+      "failed": 0,
+      "seconds": 6.17
+    }
+  ],
+  "checks": [
+    "Exact pretrained backbone parameters and Adam history at initialization",
+    "Matching initial logits, objective, and backbone gradients for static and query coefficients",
+    "Both zero-amplitude/random-projection and zero-projection/unit-amplitude query initializations",
+    "Nonzero amplitude gradients first, then projection updates for zero-amplitude initialization",
+    "Fresh Adam bias correction for every newly introduced coefficient parameter",
+    "Exact interrupted packed-data query continuation, RNG clock, and baseline measurements",
+    "Rejection of non-Taylor and permanently inactive query initialization",
+    "Actual 200M degree-four checkpoint restore recorded separately"
+  ]
+}

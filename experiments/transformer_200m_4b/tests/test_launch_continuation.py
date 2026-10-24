@@ -48,6 +48,40 @@ def test_independent_single_gpu_submission_uses_shared_acceptance():
                            "a" * 40, "1", "B300,H100"]
 
 
+def test_query_pair_matches_canonical_m4_initialization_and_training():
+    source = {
+        "model": {"attention_degree": 4, "hidden_size": 896,
+                  "attention_coefficients": "fixed", "qk_norm": True,
+                  "attention_coefficient_sharing": "global",
+                  "attention_coefficient_conditioning": "static",
+                  "attention_coefficient_scale": "none"},
+        "optim": {"learning_rate": 0.001, "min_learning_rate": 0.0001,
+                  "warmup_steps": 455, "total_steps": 7570},
+        "data": {"batch_size": 256, "shuffle_seed": 0},
+        "train": {"seed": 42, "eval_batches": 19},
+    }
+    original = deepcopy(source)
+    pair = recipes(source, {"parent_step": 7500}, conditioning="query")
+    assert source == original
+    assert set(pair) == {"fixed_taylor", "learned_query"}
+    control, query = pair["fixed_taylor"], pair["learned_query"]
+    assert control["model"] == source["model"]
+    assert query["model"]["attention_degree"] == 4
+    assert query["model"]["attention_coefficient_conditioning"] == "query"
+    assert query["model"]["attention_coefficient_activation"] == "tanh"
+    assert query["model"]["attention_coefficient_amplitude_initial"] == 0.0
+    assert query["model"]["attention_coefficient_projection_initial_std"] == 1 / 896**0.5
+    assert query["model"]["attention_coefficient_tanh_bias"] is False
+    assert query["model"]["attention_coefficient_scale"] == "factorial"
+    assert query["model"]["attention_coefficient_amplitude_scale"] == "factorial"
+    assert control["data"] == query["data"] == source["data"]
+    assert control["optim"] == query["optim"]
+    assert control["continuation"] == query["continuation"]
+    assert query["optim"]["total_steps"] == 8000
+    assert query["train"]["wandb_run_name"] == "taylor-m4-continuation-learned_query"
+    assert launch_continuation.topic_path("query") != launch_continuation.topic_path("static")
+
+
 def test_default_allocation_leaves_time_after_acceptance_reserve(monkeypatch):
     from scaffolds.transformer.acceptance import require_allocation_budget
 

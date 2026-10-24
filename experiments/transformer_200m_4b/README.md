@@ -115,6 +115,24 @@ shared runtime qualification run on every allocation; the scientific global batc
 stays fixed through gradient accumulation. See the topic for comparison settings,
 findings, and regeneration.
 
+The [query continuation topic](results/exploratory/taylor_query_continuation/README.md)
+compares degree-four query-dependent coefficients with a matched fixed-Taylor
+continuation. Both train all backbone parameters for the same 500 additional
+updates. The query generator starts with the study's zero-amplitude/random-projection
+initialization, reproducing Taylor exactly. Prepare in its own worktree, then
+commit frozen inputs before independent submission:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation prepare \
+  --conditioning query \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/experiments/transformer_200m_4b/runs/r79da929de109
+# Already allocated below; reuse these IDs for resumptions.
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
+  rf311afb9339e --conditioning query --partition standard --time-limit 06:00:00
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
+  r6186c797b4db --conditioning query --partition standard --time-limit 06:00:00
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**. Data manifests live under
