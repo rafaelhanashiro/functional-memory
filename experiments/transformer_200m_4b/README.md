@@ -66,6 +66,20 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch
   r0963b3e6610b --partition debug,standard,long --time-limit 02:00:00
 ```
 
+Allocate the independent per-sequence batch fit in its own worktree. Run
+`r7505c6d49711` uses the same query-only parent and 256 fitting sequences, with
+separate coefficient tables for every sequence. Its completed fit automatically
+produces the CPU coefficient-shape analysis in the existing exploratory topic.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit prepare \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r98d5895c02d0 \
+  --parameterization free_per_example_query_coefficients --sequence-count 256
+# Commit frozen inputs before submitting; resumptions retain this run ID.
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit submit \
+  r7505c6d49711 --partition long --gpu-type B300 --time-limit 06:00:00
+```
+
 Allocate both static fits in one isolated worktree before committing or launching:
 
 ```bash

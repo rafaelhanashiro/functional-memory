@@ -16,6 +16,7 @@ backbone frozen. They live in the
 | `r0963b3e6610b` | One coefficient table shared across 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
 | `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
+| `r7505c6d49711` | Independent coefficients per sequence, layer, query, head, and order on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Prepared |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
@@ -344,6 +345,56 @@ The batch static tensor is a restriction of the position-dependent tensor, on th
 same source backbone and fitting batch. Comparing these fitting results tests the
 benefit of query-position freedom. Neither fit evaluates unseen-sequence transfer,
 and neither retrains the backbone as in the original static pretraining runs.
+
+## Independent coefficients across a full batch
+
+Opened: **2026-10-24**. Run `r7505c6d49711` fits independent degree-eight
+coefficient tables on the first **256 packed evaluation sequences**, restoring
+the query-only parent `r98d5895c02d0` at its retained step **7,500**. It tests
+whether successful fits across sequences share a compact family of polynomial
+shapes. This is the 4B counterpart of the older 10B batch oracle; both its parent
+and its retained artifacts have **Kennel** as their home cluster.
+
+All pretrained parameters stay frozen. Effective monomial coefficients have shape
+`[256, 15, 2048, 14, 9]`: **990,904,320 independent fitted scalars**, shared only
+across a query's causal keys. Each sequence starts with the coefficients captured
+from its own original forward pass. The batch and parent checkpoint are pinned
+by SHA256. These are free coefficient tables, so a shared causal generator's
+ability to predict them remains a separate question.
+
+The same batch is used by the shared-position and static batch diagnostics.
+Microbatches of eight fit the independent tables with Adam in factorial
+coordinates `r! c_r`, LR **0.01**, betas **0.9/0.95**, epsilon **1e-8**, no weight
+decay, and gradient clipping at **1 independently for each sequence**. Each
+reported update advances every sequence once. After at least 2,000 updates,
+improvement below 0.001 nats over 200 updates reduces LR tenfold. Fitting stops
+after 500 confirmation updates on a plateau; 10,000 is the safety budget.
+Qualification checks original coefficient replay, finite improving updates,
+unchanged pretrained parameters, and exact checkpoint resume on the allocated GPU.
+
+The run uses its own `worktrees/batch-coefficient-oracle-4b` checkout. It requests
+one B300 in `long` with six hours; the user authorized priority over other runs,
+including requeueing another allocation if required. Execution attempts and the
+actual allocation are recorded in the run. Findings remain pending.
+
+After successful fitting, `coefficient_fit.sbatch` automatically runs
+`analyze_batch_coefficients.py` on CPU. It samples 64 uniformly spaced query
+positions from all 256 sequences, multiplies coefficients by `r!`, and removes
+positive common scale. PCA is calculated separately per layer and head; a basis
+fitted on the first 192 sequences is also evaluated on the remaining 64.
+Compact measurements live in the run's `batch_coefficient_geometry.json`, with
+checkpoint identity, sampling settings, and analysis source provenance. This
+measures coefficient reconstruction, not retained fitting PPL or generalization.
+The open decision is whether the observed shape structure warrants coefficient
+compression and a fitted-forward PPL check before changing the shared generator.
+
+To reproduce the CPU analysis after the run completes:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
+  experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/analyze_batch_coefficients.py \
+  --run experiments/transformer_200m_4b/runs/r7505c6d49711
+```
 
 ## Open decision and regeneration
 
