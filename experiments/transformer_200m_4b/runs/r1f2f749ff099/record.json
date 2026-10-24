@@ -74,6 +74,11 @@
       "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r1f2f749ff099/training.log",
       "sha256": "36fd4b27c81b4aa85f468809672eb05dcc415aa73acb97280b2274e65e59b8fe",
       "size_bytes": 21912
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/r1f2f749ff099/generator_dependence.json",
+      "sha256": "981e02fa02fbac08a055d123f511d25e94dc8bdb8126a3a1d817c8cfc5187760",
+      "size_bytes": 4584
     }
   ],
   "attempts": [
@@ -112,6 +117,11 @@
     "size_bytes": 448
   },
   "frozen_execution_sha256": "dc3c7823750effbe3d44143005ecb63512e5412007745d301890141bd698b1bc",
+  "generator_dependence": {
+    "path": "experiments/transformer_200m_4b/runs/r1f2f749ff099/generator_dependence.json",
+    "sha256": "981e02fa02fbac08a055d123f511d25e94dc8bdb8126a3a1d817c8cfc5187760",
+    "size_bytes": 4584
+  },
   "home_cluster": "kennel",
   "label": "query-generator-m4-single-sequence",
   "log": {

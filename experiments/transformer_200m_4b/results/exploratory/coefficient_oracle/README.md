@@ -177,6 +177,56 @@ The separately compiled training forward differed by 0.00069380 nats/token,
 within the recorded BF16 tolerance of 0.002. Initial and fitted metrics above
 use the same training graph, so this offset is not counted as fitting improvement.
 
+### Departure from Taylor and input dependence at degree four
+
+The retained generator at update 2,685 was inspected on its fitting sequence in
+Slurm job `224965` (one B300, 58 seconds). Measurements and checkpoint identities
+are in the run's [generator_dependence.json](../../../runs/r1f2f749ff099/generator_dependence.json),
+pinned in this collection's selection. No parameters were updated.
+
+Effective coefficients were captured at all 15 layers, 14 heads, and 2,048 query
+positions. In coordinates `r! * c_r`, Taylor has value one at every order.
+
+| Measurement | Pretrained query generator | Fitted generator |
+| --- | ---: | ---: |
+| RMS coefficient deviation from Taylor | 0.42045 | 0.72748 |
+| RMS coefficient variation across query positions | 0.09728 | 0.46609 |
+| RMS input-dependent amplitude | 0.22500 | 0.60315 |
+| Median coefficient-direction cosine with Taylor | 0.96553 | 0.81727 |
+
+Query variation is measured about each layer/head/order's sequence mean.
+Coefficient distances depend on the chosen coordinates; positive common scales
+are largely removed by head RMSNorm. The direction statistic also changes,
+showing that the departure includes polynomial shape changes.
+
+The following ablations substitute coefficients in every layer and recompute all
+activations with the same frozen backbone. Each uses the same compiled forward;
+replaying the captured fitted coefficients exactly matches the native fitted
+forward's NLL. The difference from the saved fitting-graph NLL is 0.00000408 nats.
+
+| Coefficients used | Sequence fitting NLL | Sequence fitting PPL |
+| --- | ---: | ---: |
+| Fitted query-dependent coefficients | 0.006348467 | 1.00637 |
+| Fitted coefficients averaged over queries, per layer/head/order | 3.184901237 | 24.16490 |
+| Fixed Taylor coefficients `1/r!` | 4.548325062 | 94.47404 |
+
+The fitted solution makes substantial use of query variation and departs
+functionally from fixed Taylor. These interventions do not retrain the static
+coefficients or backbone, and the Taylor intervention does not use a separately
+trained fixed-Taylor backbone. They establish dependence in this fitted solution,
+not a lower bound for optimized static models or generalization to unseen inputs.
+
+The inspection implementation is `inspect_generator.py`. To reproduce the raw
+measurement on one GPU, from a checkout with the retained parent and fitted
+checkpoints available, run:
+
+```bash
+PYTHONPATH=. python experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/inspect_generator.py --run experiments/transformer_200m_4b/runs/r1f2f749ff099
+```
+
+Use the cluster-selected locked environment. The command refuses to overwrite an
+existing measurement; a reproduction checkout should omit that output first.
+
 ## Coefficients shared across a full batch
 
 Run `r0963b3e6610b` restores the original query-only checkpoint `r98d5895c02d0`

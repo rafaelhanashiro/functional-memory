@@ -101,3 +101,7 @@ runs:
     metadata.json:
       path: experiments/transformer_200m_4b/runs/r1f2f749ff099/metadata.json
       sha256: 9bf7b97944d79e9b0e2d495e41cbee565dece8df015aae4c48efedcd014492f6
+  diagnostics:
+    generator_dependence:
+      path: experiments/transformer_200m_4b/runs/r1f2f749ff099/generator_dependence.json
+      sha256: 981e02fa02fbac08a055d123f511d25e94dc8bdb8126a3a1d817c8cfc5187760
