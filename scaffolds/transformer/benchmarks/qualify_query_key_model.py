@@ -206,6 +206,7 @@ def qualify(args):
                           "logit_relative_l2_tolerance": LOGIT_TOLERANCE, "loss_absolute_tolerance": LOSS_TOLERANCE},
         "trials": [],
     }
+    report["provenance"]["benchmark_source_sha256"] = digest(Path(__file__))
     write_report(output, report)
     original_selector = kernel._backward_tile_sizes
     started = time.monotonic()
@@ -213,7 +214,7 @@ def qualify(args):
         batch_host = next(PackedBatchIterator(config.data.train_manifest, batch_size=16, sequence_length=2049))
         batch_host.setflags(write=False)
         report["batch"] = {"shape": list(batch_host.shape), "sha256": hashlib.sha256(batch_host.tobytes()).hexdigest(),
-                           "manifest_path": str(config.data.train_manifest), "manifest_sha256": digest(config.data.train_manifest),
+                           "manifest_path": str(config.data.train_manifest), "manifest_sha256": digest(Path(config.data.train_manifest)),
                            "start_sequence": 0}
         state = create_state(config, jax.random.PRNGKey(config.train.seed))
         jax.block_until_ready(state)
