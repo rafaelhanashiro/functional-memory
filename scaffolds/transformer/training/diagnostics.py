@@ -37,6 +37,8 @@ UNNORMALIZED_MEASUREMENTS = frozenset((
 def _initialization_text(model) -> str:
     """How the learned coefficients start, for formula strings."""
     initialization = getattr(model, "attention_coefficient_initialization", "taylor")
+    if getattr(model, "attention_basis", None) is not None:
+        return "fitted basis coefficients"
     return "1/r!" if initialization == "taylor" else "linear attention (a_1 = 1, every other coefficient 0)"
 
 
@@ -316,14 +318,27 @@ def attention_identity(config) -> dict:
         })
     if config.model.attention_basis is not None:
         identity.update(
-            attention_kernel="fixed_basis" if normalized else "fixed_basis_unnormalized",
+            attention_kernel=(("query_basis" if query_conditioned else "learned_basis")
+                              if config.model.attention_coefficients == "learned" else "fixed_basis")
+                             + ("" if normalized else "_unnormalized"),
             attention_formula="sum_j c_j b_j(s), s = QK^T / sqrt(d_k), causal weighted values"
-                              + (" divided by the causal kernel sum" if normalized else ""),
+                              + (" divided by the causal kernel sum" if normalized else "")
+                              + (f"; {tanh_formula} per layer/head, {tanh_start}, b initially fitted basis weights; "
+                                 "x_t is the activation after the block input RMSNorm" if query_conditioned else ""),
             attention_score_scale="1/sqrt(d_k)",
             attention_output_normalization="signed_row_sum" if normalized else False,
             attention_basis=config.model.attention_basis,
-            attention_coefficients="fixed", attention_coefficient_sharing="global",
+            attention_coefficients=config.model.attention_coefficients,
+            attention_coefficient_sharing=config.model.attention_coefficient_sharing,
+            attention_coefficient_conditioning=conditioning,
+            attention_coefficient_initialization="projection",
+            attention_basis_count=len(config.model.attention_basis["basis"]),
         )
+        if config.model.attention_coefficients == "learned":
+            from scaffolds.transformer.attention.parameters import attention_parameter_specs
+            identity["attention_coefficient_count"] = sum(
+                len(spec.initial) * (1 if spec.sharing == "global" else config.model.num_layers * config.model.num_heads)
+                for spec in attention_parameter_specs(config.model) if "basis" in spec.name)
     if config.model.qk_norm:
         identity.update(qk_norm_identity(config.model))
     scaling = config.model.attention_output_scaling
@@ -473,18 +488,18 @@ def polynomial_coefficient_report(params, config) -> dict:
 
 
 
-def query_coefficient_report(params, raw_layers) -> dict:
+def query_coefficient_report(params, raw_layers, *, prefix="query_polynomial") -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
     effective coefficients. Summary arrays have shape [layers,heads,degree+1].
     """
-    bias = np.asarray(jax.device_get(params["query_polynomial_bias"][...]), dtype=np.float64)
-    kernel = np.asarray(jax.device_get(params["query_polynomial_kernel"][...]), dtype=np.float64)
-    amplitude = (np.asarray(jax.device_get(params["query_polynomial_amplitude"][...]), dtype=np.float64)
-                 if "query_polynomial_amplitude" in params else None)
-    inner_bias = (np.asarray(jax.device_get(params["query_polynomial_tanh_bias"][...]), dtype=np.float64)
-                  if "query_polynomial_tanh_bias" in params else None)
+    bias = np.asarray(jax.device_get(params[f"{prefix}_bias"][...]), dtype=np.float64)
+    kernel = np.asarray(jax.device_get(params[f"{prefix}_kernel"][...]), dtype=np.float64)
+    amplitude = (np.asarray(jax.device_get(params[f"{prefix}_amplitude"][...]), dtype=np.float64)
+                 if f"{prefix}_amplitude" in params else None)
+    inner_bias = (np.asarray(jax.device_get(params[f"{prefix}_tanh_bias"][...]), dtype=np.float64)
+                  if f"{prefix}_tanh_bias" in params else None)
     key_amplitude = (np.asarray(jax.device_get(params["key_polynomial_amplitude"][...]), dtype=np.float64)
                      if "key_polynomial_amplitude" in params else None)
     summaries = {
@@ -636,9 +651,16 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         if not coefficient_report["finite"]:
             issues.append("Nonfinite quadratic coefficients")
     elif config.model.attention_coefficient_conditioning in ("query", "query_key"):
-        coefficient_report = query_coefficient_report(params, raw_layers)
+        coefficient_report = query_coefficient_report(params, raw_layers,
+            prefix="query_basis" if config.model.attention_basis is not None else "query_polynomial")
         if not coefficient_report["finite"]:
-            issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
+            issues.append("Nonfinite query-dependent coefficients or projection parameters")
+    elif config.model.attention_basis is not None and config.model.attention_coefficients == "learned":
+        values = np.asarray(jax.device_get(params["basis_coefficients"][...]), dtype=np.float64)
+        coefficient_report = {"effective": _serializable(values), "finite": bool(np.isfinite(values).all()),
+                              "trainable": True}
+        if not coefficient_report["finite"]:
+            issues.append("Nonfinite learned basis coefficients")
     elif has_learned_polynomial(config.model):
         coefficient_report = polynomial_coefficient_report(params, config)
         if not coefficient_report["finite"]:
@@ -695,6 +717,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         "issues": issues,
     }
     if coefficient_report is not None:
+        if config.model.attention_basis is not None:
+            coefficient_report["effective_coefficient_names"] = [f"basis_{i}" for i in range(len(config.model.attention_basis["basis"]))]
         report["coefficients"] = coefficient_report
     if has_fixed_polynomial(config.model):
         report["kernel_values"] = "unshifted_fixed_polynomial"
@@ -703,7 +727,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     if config.model.attention_coefficient_conditioning in ("query", "query_key"):
         report["kernel_values"] = "unshifted_query_polynomial"
     if config.model.attention_basis is not None:
-        report["kernel_values"] = "unshifted_fixed_basis"
+        report["kernel_values"] = ("unshifted_query_basis" if config.model.attention_coefficient_conditioning == "query" else "unshifted_learned_basis"
+                                   if config.model.attention_coefficients == "learned" else "unshifted_fixed_basis")
     if scale_report is not None:
         report["qk_norm_scale"] = scale_report
     return report

@@ -30,6 +30,7 @@ def blocked_dot_product_attention(
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
     score_kernel=None,
+    basis_coefficients=None,
     **denominators,
 ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array]]:
     """Attend to the full causal prefix using bounded, recomputed score blocks.
@@ -128,6 +129,13 @@ def blocked_dot_product_attention(
         raise ValueError("Key factors require query coefficients of the same shape [batch,time,heads,m+1]")
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
+    if basis_coefficients is not None:
+        if score_kernel is None or not hasattr(score_kernel, "basis"):
+            raise ValueError("Runtime basis coefficients require an ExpProjection")
+        count = len(score_kernel.basis)
+        if basis_coefficients.shape not in ((count,), (heads, count), (batch, time, heads, count)):
+            raise ValueError("Basis coefficients require [R], [H,R] or [B,T,H,R]")
+        basis_coefficients = jnp.broadcast_to(basis_coefficients, (batch, time, heads, count))
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
     block_size = min(query_block_size, time)
     block_count = (time + block_size - 1) // block_size
@@ -135,6 +143,9 @@ def blocked_dot_product_attention(
     queries = jnp.pad(q, ((0, 0), (0, pad), (0, 0), (0, 0)))
     queries = queries.reshape(batch, block_count, block_size, heads, qk_dim)
     queries = jnp.swapaxes(queries, 0, 1)
+    if basis_coefficients is not None:
+        padded_basis_coefficients = jnp.pad(basis_coefficients.astype(jnp.float32),
+                                           ((0, 0), (0, pad), (0, 0), (0, 0)))
     if query_conditioned:
         padded_coefficients = jnp.pad(query_polynomial_coefficients.astype(jnp.float32),
                                       ((0, 0), (0, pad), (0, 0), (0, 0)))
@@ -156,7 +167,14 @@ def blocked_dot_product_attention(
         if score_kernel is not None:
             # Arbitrary projections may be signed. Use unshifted scores and the
             # same exact signed-sum failure semantics as learned polynomials.
-            kernel = jnp.asarray(score_kernel(jnp.where(causal, scores, 0.0)), dtype=jnp.float32)
+            safe_scores = jnp.where(causal, scores, 0.0)
+            if basis_coefficients is None:
+                kernel = jnp.asarray(score_kernel(safe_scores), dtype=jnp.float32)
+            else:
+                c = jax.lax.dynamic_slice_in_dim(padded_basis_coefficients, start, block_size, axis=1)
+                kernel = jnp.zeros_like(safe_scores)
+                for order, function in enumerate(score_kernel.basis):
+                    kernel = kernel + jnp.swapaxes(c[..., order], 1, 2)[..., None] * function(safe_scores)
             kernel = jnp.broadcast_to(kernel, scores.shape)
             invalid_kernel = ~jnp.isfinite(kernel)
         elif not attention_normalization and attention_degree is None:
@@ -287,4 +305,7 @@ def blocked_dot_product_attention(
         output_blocks = result
     output = jnp.swapaxes(output_blocks, 0, 1).reshape(batch, block_count * block_size, heads, v.shape[-1])
     output = output[:, :time]
+    if return_diagnostics and basis_coefficients is not None:
+        from scaffolds.transformer.attention.input_dependent import coefficient_statistics
+        diagnostics.update(jax.lax.stop_gradient(coefficient_statistics(basis_coefficients)))
     return (output, diagnostics) if return_diagnostics else output

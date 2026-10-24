@@ -15,32 +15,36 @@ import jax.numpy as jnp
 
 def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
-                    tanh_bias: bool = False, conditioning: str = "query"):
+                    tanh_bias: bool = False, conditioning: str = "query",
+                    initial_coefficients=None, name_prefix="query_polynomial"):
     """b starts at 1/r!; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial
     and its optional inner bias beta at zero. "query_key" adds the key factor's W_k (same draw
     rule, independent draws) and a_k (same start as a)."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     count = degree + 1
+    if initial_coefficients is not None and len(initial_coefficients) != count:
+        raise ValueError("Expected one initial coefficient per basis function")
     specs = (
         AttentionParameterSpec(
-            name="query_polynomial_bias", argument="query_polynomial_bias",
-            initial=tuple(1.0 / math.factorial(r) for r in range(count)), sharing="per_head", weight_decay=False,
+            name=f"{name_prefix}_bias", argument=f"{name_prefix}_bias",
+            initial=(tuple(1.0 / math.factorial(r) for r in range(count))
+                     if initial_coefficients is None else tuple(initial_coefficients)), sharing="per_head", weight_decay=False,
         ),
         AttentionParameterSpec(
-            name="query_polynomial_kernel", argument="query_polynomial_kernel",
+            name=f"{name_prefix}_kernel", argument=f"{name_prefix}_kernel",
             initial=(0.0,) * (hidden_size * count), initial_shape=(hidden_size, count),
             sharing="per_head", weight_decay=False, initial_std=float(projection_initial_std),
         ),
     )
     if activation == "tanh":
         specs += (AttentionParameterSpec(
-            name="query_polynomial_amplitude", argument="query_polynomial_amplitude",
+            name=f"{name_prefix}_amplitude", argument=f"{name_prefix}_amplitude",
             initial=(float(amplitude_initial),) * count, sharing="per_head", weight_decay=False,
         ),)
         if tanh_bias:
             specs += (AttentionParameterSpec(
-                name="query_polynomial_tanh_bias", argument="query_polynomial_tanh_bias",
+                name=f"{name_prefix}_tanh_bias", argument=f"{name_prefix}_tanh_bias",
                 initial=(0.0,) * count, sharing="per_head", weight_decay=False,
             ),)
     elif activation != "identity":

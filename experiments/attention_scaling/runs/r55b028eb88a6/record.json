@@ -1,0 +1,21 @@
+{
+  "config": {
+    "path": "experiments/attention_scaling/runs/r55b028eb88a6/config.yaml",
+    "sha256": "9a9593c062ba13579d85d6f8cb07fdefb7e20429eee17cf0e42e71b1c86f1e25"
+  },
+  "home_cluster": "kennel",
+  "label": "200m-rbf9-static-learned-headrms-qknorm-triton-chinchilla1x-seed0",
+  "name": "200m-rbf9-static-learned-headrms-qknorm-triton-chinchilla1x-seed0",
+  "record_schema_version": 1,
+  "run_id": "r55b028eb88a6",
+  "status": "planned",
+  "training_budget": {
+    "actual_tokens": 3998744576,
+    "chinchilla_multiple": 1.0000954630711258,
+    "convention": "20 tokens per total trainable parameter",
+    "parameter_count": 199918144,
+    "target_tokens": 3998362880,
+    "tokens_per_update": 524288,
+    "total_steps": 7627
+  }
+}

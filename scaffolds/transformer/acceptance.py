@@ -97,6 +97,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         if cpu:
             paths.append("scaffolds/transformer/tests/test_triton_bridge_precision.py")
     model = config["model"]
+    if model.get("attention_basis") is not None and model.get("attention_coefficients") == "learned":
+        paths.append("scaffolds/transformer/tests/test_learned_basis.py")
     if (model.get("attention_mechanism") == "gated_deltanet"
             and model.get("gdn_write_activation", "sigmoid") == "tanh"):
         if cpu:
@@ -157,6 +159,10 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
         if quadratic:
             tests.extend(["learned_quadratic", "learned_training"] if cpu else
                          (["learned_fused_attention"] if fused else []))
+        elif model.get("attention_basis") is not None:
+            tests.extend(["basis_projection", "basis_attention"] if cpu else ["basis_gpu"])
+            if learned:
+                tests.append("learned_basis")
         elif learned:
             if cpu:
                 tests.extend(["learned_polynomial", "learned_polynomial_training"])
@@ -180,11 +186,6 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
                 tests.append("fixed_square_factors_fused" if square else "fixed_polynomial_fused")
             if model.get("qk_norm") and (cpu or fused):
                 tests.append("fixed_polynomial_qk_norm")
-        elif model.get("attention_basis") is not None:
-            if cpu:
-                tests.extend(["basis_projection", "basis_attention"])
-            else:
-                tests.append("basis_gpu")
         elif normalized:
             if degree is None:
                 if cpu:

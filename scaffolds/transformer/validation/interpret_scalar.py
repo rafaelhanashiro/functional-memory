@@ -30,13 +30,15 @@ def check(name, mode, streaming):
     adj, delta = torch.empty(shape), torch.empty(shape[:3])
     dg = torch.empty((1, 2, 2, 32))
     dq, dk, dv = (torch.empty_like(v) for _ in range(3))
+    dummy_c = torch.zeros(1)
+    dummy_dc = torch.zeros(1)
     common = dict(T=137, H=2, DQ=32, DV=32, SCALE=32**-.5, MODE=mode,
                   FN=spec.function, PARAMS=spec.parameters, EXP=spec.exponential, PRECISE=False)
-    kernels.forward[(2, 2)](q, k, v, gain, out, n, stats, **common,
+    kernels.forward[(2, 2)](q, k, v, gain, dummy_c, out, n, stats, **common,
                            EPS=1e-6, STREAM=streaming, BM=128, BN=64)
     kernels.preprocess[(2, 2)](n, stats, gain, go, adj, delta, dg, T=137, H=2, DV=32, MODE=mode, BM=128)
-    kernels.backward_q[(2, 2)](q, k, v, adj, delta, stats, dq, **common, BM=128, BN=32)
-    kernels.backward_kv[(2, 2)](q, k, v, adj, delta, stats, dk, dv, **common, BM=32, BN=128)
+    kernels.backward_q[(2, 2)](q, k, v, adj, delta, stats, dummy_c, dq, dummy_dc, **common, BM=128, BN=32)
+    kernels.backward_kv[(2, 2)](q, k, v, adj, delta, stats, dummy_c, dk, dv, **common, BM=32, BN=128)
     actual = (out, dq, dk, dv, dg.sum((0, 2)) if mode == 2 else torch.zeros_like(gain))
     expected = oracle(*(x.float().numpy() for x in (q, k, v, gain, go)), evaluate, {0: "none", 1: "sum", 2: "rms"}[mode], 1e-6)
     errors = {}

@@ -30,7 +30,21 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
     if getattr(config, "attention_coefficients", "fixed") == "learned":
         parameterization = getattr(config, "attention_coefficient_parameterization", "direct")
         conditioning = getattr(config, "attention_coefficient_conditioning", "static")
-        if conditioning in ("query", "query_key"):
+        if getattr(config, "attention_basis", None) is not None:
+            from scaffolds.transformer.attention.basis import projection_from_config
+            values = projection_from_config(config.attention_basis).coefficients
+            if conditioning == "query":
+                from scaffolds.transformer.attention.input_dependent import parameter_specs
+                specs = parameter_specs(
+                    hidden_size=config.hidden_size, degree=len(values)-1, activation="tanh",
+                    amplitude_initial=config.attention_coefficient_amplitude_initial,
+                    projection_initial_std=config.attention_coefficient_projection_initial_std,
+                    tanh_bias=config.attention_coefficient_tanh_bias,
+                    initial_coefficients=values, name_prefix="query_basis")
+            else:
+                specs = (AttentionParameterSpec("basis_coefficients", "basis_coefficients", values,
+                                                config.attention_coefficient_sharing),)
+        elif conditioning in ("query", "query_key"):
             from scaffolds.transformer.attention.input_dependent import parameter_specs
 
             specs = parameter_specs(

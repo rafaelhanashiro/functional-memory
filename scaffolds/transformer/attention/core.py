@@ -30,6 +30,7 @@ def attention_core(
     rngs=None,
     weights_dtype=None,
     score_kernel=None,
+    basis_coefficients=None,
     **denominators,
 ):
     """Apply the mechanism selected by the existing flat model configuration.
@@ -54,23 +55,26 @@ def attention_core(
             raise ValueError("A callable scalar score kernel cannot be combined with polynomial options")
         if backend == "triton_scalar":
             from scaffolds.transformer.attention.backends.triton_scalar import basis_kernel, scalar_attention
-            output = scalar_attention(q, k, v, kernel=basis_kernel(score_kernel, implementation="auto"),
+            output = scalar_attention(q, k, v, kernel=basis_kernel(score_kernel, implementation="auto" if basis_coefficients is None else "direct"),
+                                      basis_coefficients=basis_coefficients,
                                       attention_normalization=attention_normalization)
             if not return_diagnostics:
                 return output
             _, diagnostics = blocked_dot_product_attention(
-                q, k, v, score_kernel=score_kernel, attention_normalization=attention_normalization,
+                q, k, v, score_kernel=score_kernel, basis_coefficients=basis_coefficients, attention_normalization=attention_normalization,
                 return_diagnostics=True)
             return output, diagnostics
         if backend != "blocked":
             raise ValueError("A custom scalar score kernel requires blocked or triton_scalar execution")
         return blocked_dot_product_attention(
-            q, k, v, score_kernel=score_kernel, attention_normalization=attention_normalization,
+            q, k, v, score_kernel=score_kernel, basis_coefficients=basis_coefficients, attention_normalization=attention_normalization,
             attention_degree=attention_degree, quadratic_mode=quadratic_mode, coefficients=coefficients,
             polynomial_coefficients=polynomial_coefficients, polynomial_square_factors=polynomial_square_factors,
             query_polynomial_coefficients=query_polynomial_coefficients, key_polynomial_factors=key_polynomial_factors,
             return_diagnostics=return_diagnostics, **denominators,
         )
+    if basis_coefficients is not None:
+        raise ValueError("Basis coefficients require a scalar basis score kernel")
     if key_polynomial_factors is not None and query_polynomial_coefficients is None:
         raise ValueError("Key factors require query coefficients")
     if query_polynomial_coefficients is not None:

@@ -94,12 +94,44 @@ def dot(a, b, PRECISE: tl.constexpr):
 
 
 @tr.jit
+def evaluate(s, FN: tl.constexpr, PARAMS: tl.constexpr, GRAD: tl.constexpr,
+             C, CI, NC: tl.constexpr):
+    if NC:
+        value = tl.full(s.shape, 0.0, tl.float32)
+        derivative = tl.full(s.shape, 0.0, tl.float32)
+        for i in tl.static_range(NC):
+            b, db = basis_term(s, PARAMS[4*i], 1.0, PARAMS[4*i+2], PARAMS[4*i+3], GRAD)
+            coefficient = tl.load(C + CI + i, CI >= 0, 0)
+            value += coefficient * b
+            if GRAD:
+                derivative += coefficient * db
+        return value, derivative
+    else:
+        return FN(s, PARAMS, GRAD)
+
+
+@tr.jit
+def basis_backward(s, dp, scale, C, CI, DC, PARAMS: tl.constexpr, NC: tl.constexpr):
+    # dL/dc_ij = sum_k <dL/dY_i, V_k> b_j(s_ik), with the saved positive
+    # streaming scale removed exactly. Causal masking is already in dp.
+    derivative = tl.full(s.shape, 0.0, tl.float32)
+    slots = tl.arange(0, tr.next_power_of_2(NC))
+    for i in tl.static_range(NC):
+        b, db = basis_term(s, PARAMS[4*i], 1.0, PARAMS[4*i+2], PARAMS[4*i+3], True)
+        coefficient = tl.load(C + CI + i, CI >= 0, 0)
+        derivative += coefficient * db
+        partial = tl.sum(b * dp * scale, 1)
+        DC += tl.where(slots[None, :] == i, partial[:, None], 0.0)
+    return derivative * scale, DC
+
+
+@tr.jit
 def scaled_values(s, log_scale, FN: tl.constexpr, PARAMS: tl.constexpr,
-                  EXP: tl.constexpr, GRAD: tl.constexpr):
+                  EXP: tl.constexpr, GRAD: tl.constexpr, C=0, CI=0, NC: tl.constexpr=0):
     if EXP:
         w, dw = FN(s - log_scale, PARAMS, GRAD)
     else:
-        w, dw = FN(s, PARAMS, GRAD)
+        w, dw = evaluate(s, FN, PARAMS, GRAD, C, CI, NC)
         scale = tl.exp(-log_scale)
         w = w * scale
         if GRAD:
@@ -112,7 +144,8 @@ def forward_inner(acc, rowsum, log_scale, invalid, q, kd, vd, qi,
                   start, stop, T: tl.constexpr, SCALE: tl.constexpr,
                   BM: tl.constexpr, BN: tl.constexpr, PRECISE: tl.constexpr,
                   FN: tl.constexpr, PARAMS: tl.constexpr, EXP: tl.constexpr,
-                  MODE: tl.constexpr, STREAM: tl.constexpr, DIAGONAL: tl.constexpr):
+                  MODE: tl.constexpr, STREAM: tl.constexpr, DIAGONAL: tl.constexpr,
+                  C, CI, NC: tl.constexpr):
     for lo in range(start, stop, BN):
         ki = lo + tl.arange(0, BN)
         k = kd.load([lo, 0]).T
@@ -126,7 +159,7 @@ def forward_inner(acc, rowsum, log_scale, invalid, q, kd, vd, qi,
             if EXP:
                 bound = tl.max(tl.where(valid, s, -float("inf")), 1)
             else:
-                raw, _ = FN(s, PARAMS, False)
+                raw, _ = evaluate(s, FN, PARAMS, False, C, CI, NC)
                 invalid |= tl.sum((valid & ((raw != raw) | (tl.abs(raw) == float("inf")))).to(tl.int32), 1) > 0
                 bound = tl.log(tl.maximum(tl.max(tl.where(valid, tl.abs(raw), 0.0), 1), 1.0e-30))
             middle = tl.maximum(log_scale, bound)
@@ -143,7 +176,7 @@ def forward_inner(acc, rowsum, log_scale, invalid, q, kd, vd, qi,
             rowsum = rowsum * alpha
             log_scale = middle + tl.log(mass)
         else:
-            w, _ = FN(s, PARAMS, False)
+            w, _ = evaluate(s, FN, PARAMS, False, C, CI, NC)
             invalid |= tl.sum((valid & ((w != w) | (tl.abs(w) == float("inf")))).to(tl.int32), 1) > 0
             w = tl.where(valid, w, 0.0)
         v = vd.load([lo, 0])
@@ -154,11 +187,11 @@ def forward_inner(acc, rowsum, log_scale, invalid, q, kd, vd, qi,
 
 
 @tr.jit
-def forward(Q, K, V, Gain, O, N, Stats, T: tl.constexpr, H: tl.constexpr,
+def forward(Q, K, V, Gain, C, O, N, Stats, T: tl.constexpr, H: tl.constexpr,
             DQ: tl.constexpr, DV: tl.constexpr, SCALE: tl.constexpr,
             EPS: tl.constexpr, MODE: tl.constexpr, STREAM: tl.constexpr,
             FN: tl.constexpr, PARAMS: tl.constexpr, EXP: tl.constexpr,
-            PRECISE: tl.constexpr, BM: tl.constexpr, BN: tl.constexpr):
+            PRECISE: tl.constexpr, BM: tl.constexpr, BN: tl.constexpr, NC: tl.constexpr=0):
     tile = tl.program_id(0)
     bh = tl.program_id(1)
     batch, head = bh // H, bh % H
@@ -169,6 +202,7 @@ def forward(Q, K, V, Gain, O, N, Stats, T: tl.constexpr, H: tl.constexpr,
     vd = tl.make_tensor_descriptor(V + vbase, [T, DV], [H * DV, 1], [BN, DV])
     q = qd.load([tile * BM, 0])
     qi = tile * BM + tl.arange(0, BM)
+    ci = tl.where(qi < T, ((batch * T + qi) * H + head) * NC, -1)[:, None]
     acc = tl.zeros((BM, DV), tl.float32)
     rowsum = tl.zeros((BM,), tl.float32)
     if STREAM and EXP and MODE == 1:
@@ -180,10 +214,10 @@ def forward(Q, K, V, Gain, O, N, Stats, T: tl.constexpr, H: tl.constexpr,
     invalid = tl.full((BM,), False, tl.int1)
     acc, rowsum, log_scale, invalid = forward_inner(
         acc, rowsum, log_scale, invalid, q, kd, vd, qi, 0, tile * BM,
-        T, SCALE, BM, BN, PRECISE, FN, PARAMS, EXP, MODE, STREAM, False)
+        T, SCALE, BM, BN, PRECISE, FN, PARAMS, EXP, MODE, STREAM, False, C, ci, NC)
     acc, rowsum, log_scale, invalid = forward_inner(
         acc, rowsum, log_scale, invalid, q, kd, vd, qi, tile * BM, (tile + 1) * BM,
-        T, SCALE, BM, BN, PRECISE, FN, PARAMS, EXP, MODE, STREAM, True)
+        T, SCALE, BM, BN, PRECISE, FN, PARAMS, EXP, MODE, STREAM, True, C, ci, NC)
     channels = tl.arange(0, DV)
     if MODE == 2:
         # Rebase the weight-mass scale to max(1, ||Y||_infinity). This also
@@ -250,11 +284,11 @@ def preprocess(N, Stats, Gain, DO, Adj, Delta, DGain,
 
 
 @tr.jit
-def backward_q(Q, K, V, Adj, Delta, Stats, DQOut,
+def backward_q(Q, K, V, Adj, Delta, Stats, C, DQOut, DCOut,
                T: tl.constexpr, H: tl.constexpr, DQ: tl.constexpr, DV: tl.constexpr,
                SCALE: tl.constexpr, MODE: tl.constexpr, FN: tl.constexpr,
                PARAMS: tl.constexpr, EXP: tl.constexpr, PRECISE: tl.constexpr,
-               BM: tl.constexpr, BN: tl.constexpr):
+               BM: tl.constexpr, BN: tl.constexpr, NC: tl.constexpr=0):
     tile, bh = tl.program_id(0), tl.program_id(1)
     batch, head = bh // H, bh % H
     qi = tile * BM + tl.arange(0, BM)
@@ -272,25 +306,37 @@ def backward_q(Q, K, V, Adj, Delta, Stats, DQOut,
     else:
         logs = tl.full((BM,), 0.0, tl.float32)
     dq = tl.zeros((BM, DQ), tl.float32)
+    ci = tl.where(qi < T, ((batch * T + qi) * H + head) * NC, -1)[:, None]
+    if NC:
+        dc = tl.zeros((BM, tr.next_power_of_2(NC)), tl.float32)
     for lo in range(0, (tile + 1) * BM, BN):
         ki = lo + tl.arange(0, BN)
         k = tl.load(K + ((batch * T + ki[None, :]) * H + head) * DQ + d[:, None], ki[None, :] < T, 0)
         v = tl.load(V + ((batch * T + ki[None, :]) * H + head) * DV + e[:, None], ki[None, :] < T, 0)
         valid = (qi[:, None] >= ki[None, :]) & (qi[:, None] < T) & (ki[None, :] < T)
         s = dot(q, k, False) * SCALE
-        _, dw = scaled_values(tl.where(valid, s, 0.0), logs[:, None], FN, PARAMS, EXP, True)
-        dp = dot(adj, v, PRECISE)
-        ds = tl.where(valid, dw * (dp - delta[:, None]), 0.0)
+        dp = dot(adj, v, PRECISE) - delta[:, None]
+        if NC:
+            dw, dc = basis_backward(tl.where(valid, s, 0.0), tl.where(valid, dp, 0.0),
+                                    tl.exp(-logs[:, None]), C, ci, dc, PARAMS, NC)
+        else:
+            _, dw = scaled_values(tl.where(valid, s, 0.0), logs[:, None], FN, PARAMS, EXP, True)
+        ds = tl.where(valid, dw * dp, 0.0)
         dq += dot(ds, k.T, PRECISE) * SCALE
     tl.store(DQOut + qidx, dq, qi[:, None] < T)
+    if NC:
+        slots = tl.arange(0, tr.next_power_of_2(NC))
+        tl.store(DCOut + ci + slots[None, :], dc, (qi[:, None] < T) & (slots[None, :] < NC))
+    elif tile == 0 and bh == 0:
+        tl.store(DCOut, 0.0)
 
 
 @tr.jit
-def backward_kv(Q, K, V, Adj, Delta, Stats, DK, DVOut,
+def backward_kv(Q, K, V, Adj, Delta, Stats, C, DK, DVOut,
                 T: tl.constexpr, H: tl.constexpr, DQ: tl.constexpr, DV: tl.constexpr,
                 SCALE: tl.constexpr, MODE: tl.constexpr, FN: tl.constexpr,
                 PARAMS: tl.constexpr, EXP: tl.constexpr, PRECISE: tl.constexpr,
-                BM: tl.constexpr, BN: tl.constexpr):
+                BM: tl.constexpr, BN: tl.constexpr, NC: tl.constexpr=0):
     tile, bh = tl.program_id(0), tl.program_id(1)
     batch, head = bh // H, bh % H
     ki = tile * BN + tl.arange(0, BN)
@@ -314,7 +360,8 @@ def backward_kv(Q, K, V, Adj, Delta, Stats, DK, DVOut,
             logs = tl.full((BM,), 0.0, tl.float32)
         valid = (qi[None, :] >= ki[:, None]) & (qi[None, :] < T) & (ki[:, None] < T)
         s = dot(k, qt, False) * SCALE
-        w, dw = scaled_values(tl.where(valid, s, 0.0), logs[None, :], FN, PARAMS, EXP, True)
+        ci = tl.where(qi < T, ((batch * T + qi) * H + head) * NC, -1)[None, :]
+        w, dw = scaled_values(tl.where(valid, s, 0.0), logs[None, :], FN, PARAMS, EXP, True, C, ci, NC)
         w = tl.where(valid, w, 0.0)
         dv += dot(w, adj, PRECISE)
         dp = dot(v, adj.T, PRECISE)

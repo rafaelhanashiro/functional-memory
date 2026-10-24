@@ -19,7 +19,8 @@ def has_fixed_square_factors(model) -> bool:
 
 
 def has_learned_polynomial(model) -> bool:
-    return getattr(model, "attention_coefficients", "fixed") == "learned"
+    return (getattr(model, "attention_coefficients", "fixed") == "learned"
+            and getattr(model, "attention_basis", None) is None)
 
 
 def has_sum_of_squares_kernel(model) -> bool:

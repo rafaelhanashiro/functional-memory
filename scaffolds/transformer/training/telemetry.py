@@ -158,7 +158,7 @@ _GROUP_RULES = (
     ("mlp", re.compile(r"feed_forward")),
     ("qk_norm_scale", re.compile(r"qk_norm_log_scale")),
     ("attention_output_norm", re.compile(r"output_norm_scale|o_norm_scale")),
-    ("attention_coefficients", re.compile(r"coefficient|polynomial|denominator")),
+    ("attention_coefficients", re.compile(r"coefficient|polynomial|basis|denominator")),
     ("norm_scales", re.compile(r"(attention_norm|ffn_norm|final_norm)/")),
 )
 

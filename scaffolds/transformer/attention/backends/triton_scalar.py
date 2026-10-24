@@ -2,8 +2,9 @@
 
 ScalarKernel.function is a @triton.jit function (s, parameters, WITH_GRAD)
 returning (f(s), f'(s)). Parameters are immutable compile-time constants.
-The JAX custom VJP differentiates Q/K/V and the optional per-head RMSNorm gain;
-function parameters are fixed. No arbitrary Python callable is executed on GPU.
+The JAX custom VJP differentiates Q/K/V, the optional per-head RMSNorm gain,
+and optional runtime scalar-basis coefficients (global, per-head, or per-query).
+Basis functions and their centers/widths remain compile-time constants. No arbitrary Python callable is executed on GPU.
 
 Streaming accumulation keeps Y = exp(log_scale) * accumulator with a positive
 scale 1 + sum(abs(f)) (normalized exp uses sum(exp) without the unit prior).
@@ -91,37 +92,38 @@ def _call(fn, *args, shapes, grid, name, **meta):
                        name=f"scalar::{name}", enable_fp_fusion=False, **meta)
 
 
-def _common(q, v, kernel, mode, precise):
+def _common(q, v, kernel, mode, precise, coefficients):
     return dict(T=q.shape[1], H=q.shape[2], DQ=q.shape[-1], DV=v.shape[-1],
                 SCALE=q.shape[-1] ** -0.5, MODE=mode, FN=kernel.function,
-                PARAMS=kernel.parameters, EXP=kernel.exponential, PRECISE=precise)
+                PARAMS=kernel.parameters, EXP=kernel.exponential, PRECISE=precise,
+                NC=coefficients.shape[-1] if coefficients.ndim == 4 else 0)
 
 
-def _forward(q, k, v, gain, kernel, mode, streaming, precise, eps, tuning):
+def _forward(q, k, v, gain, coefficients, kernel, mode, streaming, precise, eps, tuning):
     from . import triton_scalar_kernels as kernels
     shapes = (jax.ShapeDtypeStruct(v.shape, v.dtype),
               jax.ShapeDtypeStruct(v.shape, jnp.float32),
               jax.ShapeDtypeStruct((*v.shape[:3], 2), jnp.float32))
-    return _call(kernels.forward, q, k, v, gain, shapes=shapes,
+    return _call(kernels.forward, q, k, v, gain, coefficients, shapes=shapes,
                  grid=((q.shape[1] + tuning.forward_q - 1) // tuning.forward_q, q.shape[0] * q.shape[2]),
-                 name=f"{kernel.name}_forward", **_common(q, v, kernel, mode, precise),
+                 name=f"{kernel.name}_forward", **_common(q, v, kernel, mode, precise, coefficients),
                  EPS=eps, STREAM=streaming, BM=tuning.forward_q, BN=tuning.forward_k,
                  num_warps=tuning.forward_warps, num_stages=tuning.stages)
 
 
-@partial(jax.custom_vjp, nondiff_argnums=(4, 5, 6, 7, 8, 9))
-def _attention(q, k, v, gain, kernel, mode, streaming, precise, eps, tuning):
-    return _forward(q, k, v, gain, kernel, mode, streaming, precise, eps, tuning)[0]
+@partial(jax.custom_vjp, nondiff_argnums=(5, 6, 7, 8, 9, 10))
+def _attention(q, k, v, gain, coefficients, kernel, mode, streaming, precise, eps, tuning):
+    return _forward(q, k, v, gain, coefficients, kernel, mode, streaming, precise, eps, tuning)[0]
 
 
-def _attention_fwd(q, k, v, gain, kernel, mode, streaming, precise, eps, tuning):
-    out, n, stats = _forward(q, k, v, gain, kernel, mode, streaming, precise, eps, tuning)
-    return out, (q, k, v, gain, n, stats)
+def _attention_fwd(q, k, v, gain, coefficients, kernel, mode, streaming, precise, eps, tuning):
+    out, n, stats = _forward(q, k, v, gain, coefficients, kernel, mode, streaming, precise, eps, tuning)
+    return out, (q, k, v, gain, coefficients, n, stats)
 
 
 def _attention_bwd(kernel, mode, streaming, precise, eps, tuning, residuals, do):
     from . import triton_scalar_kernels as kernels
-    q, k, v, gain, n, stats = residuals
+    q, k, v, gain, coefficients, n, stats = residuals
     batch, time, heads, width = v.shape
     tiles = (time + 127) // 128
     adj, delta, d_gain = _call(
@@ -131,19 +133,20 @@ def _attention_bwd(kernel, mode, streaming, precise, eps, tuning, residuals, do)
                 jax.ShapeDtypeStruct((batch, heads, tiles, width), jnp.float32)),
         grid=(tiles, batch * heads), name="preprocess", T=time, H=heads, DV=width,
         MODE=mode, BM=128, num_warps=4)
-    meta = _common(q, v, kernel, mode, precise)
-    dq = _call(kernels.backward_q, q, k, v, adj, delta, stats,
-               shapes=jax.ShapeDtypeStruct(q.shape, q.dtype),
+    meta = _common(q, v, kernel, mode, precise, coefficients)
+    dq, dc = _call(kernels.backward_q, q, k, v, adj, delta, stats, coefficients,
+               shapes=(jax.ShapeDtypeStruct(q.shape, q.dtype),
+                       jax.ShapeDtypeStruct(coefficients.shape, jnp.float32)),
                grid=((time + tuning.backward_q - 1) // tuning.backward_q, batch * heads),
                name=f"{kernel.name}_dq", **meta, BM=tuning.backward_q, BN=tuning.backward_k,
                num_warps=4, num_stages=3)
-    dk, dv = _call(kernels.backward_kv, q, k, v, adj, delta, stats,
+    dk, dv = _call(kernels.backward_kv, q, k, v, adj, delta, stats, coefficients,
                   shapes=(jax.ShapeDtypeStruct(k.shape, k.dtype), jax.ShapeDtypeStruct(v.shape, v.dtype)),
                   grid=((time + tuning.kv_k - 1) // tuning.kv_k, batch * heads),
                   name=f"{kernel.name}_dkv", **meta, BM=tuning.kv_q, BN=tuning.kv_k,
                   num_warps=4, num_stages=3)
     dg = jnp.sum(d_gain, axis=(0, 2)).astype(gain.dtype) if mode == 2 else jnp.zeros_like(gain)
-    return dq, dk, dv, dg
+    return dq, dk, dv, dg, dc.astype(coefficients.dtype)
 
 
 _attention.defvjp(_attention_fwd, _attention_bwd)
@@ -151,7 +154,7 @@ _attention.defvjp(_attention_fwd, _attention_bwd)
 
 def scalar_attention(q, k, v, *, kernel: ScalarKernel, attention_normalization=False,
                      output_norm_scale=None, eps=1e-6, streaming=None,
-                     precision="bf16", tuning=Tuning()):
+                     precision="bf16", tuning=Tuning(), basis_coefficients=None):
     """Causal f(QKᵀ/sqrt(dK))V, optionally normalized or fused with head RMSNorm.
 
     BTHD layout, common BF16/FP32 input dtype, head widths 16/32/64/128.
@@ -182,7 +185,16 @@ def scalar_attention(q, k, v, *, kernel: ScalarKernel, attention_normalization=F
     if streaming is None:
         streaming = mode != 0
     gain = output_norm_scale if output_norm_scale is not None else jnp.ones(v.shape[-2:], jnp.float32)
-    return _attention(q, k, v, gain, kernel, mode, bool(streaming), precision == "tf32x3", eps, tuning)
+    if basis_coefficients is None:
+        coefficients = jnp.zeros((1,), jnp.float32)
+    else:
+        if kernel.name != "basis" or len(kernel.parameters) % 4:
+            raise ValueError("Runtime coefficients require a direct named basis kernel")
+        count = len(kernel.parameters) // 4
+        if basis_coefficients.shape not in ((count,), (q.shape[2], count), (*q.shape[:3], count)):
+            raise ValueError("Basis coefficients require [R], [H,R] or [B,T,H,R]")
+        coefficients = jnp.broadcast_to(basis_coefficients, (*q.shape[:3], count)).astype(jnp.float32)
+    return _attention(q, k, v, gain, coefficients, kernel, mode, bool(streaming), precision == "tf32x3", eps, tuning)
 
 
 def uniform_rbf_kernel(projection):
