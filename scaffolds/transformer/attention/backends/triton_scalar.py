@@ -154,11 +154,13 @@ _attention.defvjp(_attention_fwd, _attention_bwd)
 
 def scalar_attention(q, k, v, *, kernel: ScalarKernel, attention_normalization=False,
                      output_norm_scale=None, eps=1e-6, streaming=None,
-                     precision="bf16", tuning=Tuning(), basis_coefficients=None):
+                     precision=None, tuning=Tuning(), basis_coefficients=None):
     """Causal f(QKᵀ/sqrt(dK))V, optionally normalized or fused with head RMSNorm.
 
     BTHD layout, common BF16/FP32 input dtype, head widths 16/32/64/128.
-    Precision 'bf16' rounds weights and RMS adjoints for BF16 tensor products;
+    Auto precision retains FP32 weights/adjoints for learned basis coefficients
+    and uses BF16 tensor products for fixed kernels. Explicit precision 'bf16'
+    rounds weights and RMS adjoints for BF16 tensor products;
     'tf32x3' retains FP32 operands. Outputs and Q/K/V gradients use input dtype.
     The first implementation targets H100 (sm90); other GPUs are rejected.
     """
@@ -168,6 +170,11 @@ def scalar_attention(q, k, v, *, kernel: ScalarKernel, attention_normalization=F
         raise ValueError("Scalar Triton attention supports positive sizes and widths 16/32/64/128")
     if q.dtype != k.dtype or q.dtype != v.dtype or q.dtype not in (jnp.bfloat16, jnp.float32):
         raise ValueError("Expected a common BF16 or FP32 dtype")
+    if precision is None:
+        # RMSNorm removes almost all sensitivity to a common coefficient scale.
+        # BF16 weights/adjoints can introduce a much larger spurious gradient
+        # along that direction; retain FP32 operands when learning the weights.
+        precision = "tf32x3" if basis_coefficients is not None else "bf16"
     if precision not in ("bf16", "tf32x3") or not math.isfinite(eps) or eps <= 0:
         raise ValueError("Invalid precision or RMSNorm epsilon")
     if attention_normalization and output_norm_scale is not None:

@@ -334,6 +334,8 @@ def attention_identity(config) -> dict:
             attention_coefficient_initialization="projection",
             attention_basis_count=len(config.model.attention_basis["basis"]),
         )
+        if config.model.attention_backend == "triton_scalar":
+            identity["attention_scalar_precision"] = "tf32x3" if config.model.attention_coefficients == "learned" else "bf16"
         if config.model.attention_coefficients == "learned":
             from scaffolds.transformer.attention.parameters import attention_parameter_specs
             identity["attention_coefficient_count"] = sum(

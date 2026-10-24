@@ -1,4 +1,4 @@
-# Fixed RBF basis counts
+# RBF basis counts and coefficient learning
 
 Opened: **2026-10-21**. Home cluster: **Kennel**.
 
@@ -39,6 +39,17 @@ schedule is not a completed 1× training run.
 | 5 | `r0fbe4040cc36` | submitted: job `224474` |
 | 9 | `r6e1b71e49350` | submitted: job `224473` |
 | 20 | `r8f7f83e9b6ee` | acceptance checks: job `224472` |
+
+### Learned 9-RBF comparison
+
+Two fresh 1× runs test whether learning the nine fitted coefficients improves
+quality: static per-layer/head weights (`r55b028eb88a6`) and query-dependent
+`b + a*tanh(x W)` weights (`r564c8c864d15`). Both initialize at the same fitted
+kernel as fixed control `r6e1b71e49350`; centers and widths stay fixed.
+The [study recipe](../../../experiments/attention_scaling/README.md#learned-9-rbf-coefficients-at-1-chinchilla)
+specifies initialization, exact budgets and launch commands. These runs enter no
+quality selection until measurements are available. The open decision now also
+includes whether to promote coefficient learning and input dependence.
 
 ## Findings and open decision
 

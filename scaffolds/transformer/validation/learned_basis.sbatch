@@ -24,6 +24,10 @@ OUT="scaffolds/transformer/validation/runs/learned-basis/$SLURM_JOB_ID"
 mkdir -p "$OUT"
 nvidia-smi --query-gpu=index,uuid,name,driver_version --format=csv > "$OUT/gpus.csv"
 scontrol show job "$SLURM_JOB_ID" > "$OUT/allocation.txt"
+if [[ "${PHASE:-tests}" == probe ]]; then
+  "$PYTHON" -m scaffolds.transformer.validation.probe_learned_basis > "$OUT/probe.log" 2>&1
+  exit 0
+fi
 "$PYTHON" -m pytest -x -q -m gpu scaffolds/transformer/tests/test_learned_basis.py \
   scaffolds/transformer/tests/test_triton_scalar.py --junitxml="$OUT/tests.xml" > "$OUT/tests.log" 2>&1
 "$PYTHON" - "$OUT/tests.xml" <<'PY'

@@ -69,6 +69,8 @@ def check_operator(backend, dtype, count, sharing, *, zero=False):
         a, b = np.asarray(a, np.float64), np.asarray(b, np.float64)
         assert np.isfinite(a).all(), label
         error = np.linalg.norm(a-b) / max(np.linalg.norm(b), 1e-8)
+        if label == "coefficients":
+            tolerance = .002
         assert error < tolerance, (label, sharing, count, error)
         if label == "coefficients":
             # A large central coefficient must not hide a missing outer-basis gradient.

@@ -272,8 +272,13 @@ kernel=...)` for causal BTHD operands. `ScalarKernel` contains an inlined
 `@triton.jit` callback `(scores, parameters, WITH_GRAD) -> (value, derivative)`
 and immutable compile-time parameters. `exponential_kernel`,
 `polynomial_kernel`, and `basis_kernel` provide exponential, fixed polynomial,
-and frozen named-basis callbacks. Function parameters are fixed; the custom
-backward differentiates Q, K, V and the optional per-head RMSNorm gain.
+and named-basis callbacks. The custom backward differentiates Q, K, V, the
+optional per-head RMSNorm gain, and optional runtime `basis_coefficients`.
+Runtime coefficients have shape `[R]`, `[H,R]`, or `[B,T,H,R]`; they replace the
+fitted weights while basis definitions remain fixed. The default precision for
+learned weights is `tf32x3`, retaining FP32 operands through weighted-value
+products and adjoints to avoid spurious coefficient-scale gradients after
+RMSNorm. Fixed kernels retain the BF16 product default.
 `uniform_rbf_kernel` is an explicit alternative for equally spaced Gaussian
 centers with a common width: two exponentials initialize a product recurrence
 for the unchanged fitted sum and derivative. It starts at the endpoint nearer
@@ -306,13 +311,24 @@ signed weights still require a nonzero signed sum.
 Supported operands have BF16 or FP32 dtype and head widths 16, 32, 64 or 128.
 BF16 execution rounds weights and backward adjoints for tensor-core products;
 `precision="tf32x3"` retains FP32 operands for those products. The model's explicit
-`triton_scalar` backend currently requires a frozen basis, uses the callback's
-`implementation="auto"` selection, and fuses RMSNorm when requested. Its default
+`triton_scalar` backend supports fixed or learned named bases and fuses RMSNorm
+when requested. Fixed weights use `implementation="auto"`; learned weights use
+direct evaluation. Its default
 tiles are 64×32 for forward and dQ, and 32×64 for dK/dV; `tuning=Tuning(...)`
 overrides them for direct API calls. Backend `auto` remains blocked for basis attention. Diagnostic collection
 uses an additional blocked calculation, so it is not part of the fused fast path.
 Correctness and benchmark evidence belongs in the
 [validation record](validation/README.md).
+
+Learn named-basis coefficients by setting `attention_coefficients: learned`,
+`attention_coefficient_initialization: projection`, and unnormalized attention.
+Static weights support global or per-head sharing. Query-dependent coefficients
+use `attention_coefficient_conditioning: query`, `attention_coefficient_sharing:
+per_head`, and `attention_coefficient_activation: tanh`; their formula is the
+same FP32 `b + a*tanh(x W)` as the polynomial path. Biases start at the fitted
+weights. Amplitude/projection initialization uses the existing coefficient
+settings, and centers/widths remain fixed. Each parameter is owned by the model
+and excluded from weight decay. Both variants expose coefficient diagnostics.
 
 ### QK-norm (cosine scores)
 
