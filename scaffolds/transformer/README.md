@@ -812,6 +812,15 @@ explicit multi-GPU allocation must override both Slurm's `--gres` request and th
 launcher's fourth positional argument (`GPU_COUNT`), for example `--gres=gpu:2`
 and `2` on Kennel, or `--gres=gpu:h200:2` and `2` on ORCD. Allocation changes are
 recorded as runtime provenance and trigger acceptance for that allocation.
+The Kennel launcher resolves Slurm's granted `TimeLimit` through
+`scaffolds/launch/allocation.py` and exports `TRANSFORMER_ALLOCATION_SECONDS`.
+Acceptance records this budget and includes it in its identity, so a shorter
+allocation cannot reuse a passed runtime gate from a longer one. The projected
+runtime must fit with a two-hour reserve. ORCD deliberately resumes across its
+6-hour or 12-hour allocations, so it retains the adapter's `allocation_hours`
+qualification horizon (48 hours by default) instead of limiting full training to
+one backfilled allocation. Other callers use that same fallback unless they set
+the runtime override; this budget never changes the recipe.
 
 Studies configure these shared modules with execution modules at their root
 (for example `experiments/<study>/acceptance.py`):

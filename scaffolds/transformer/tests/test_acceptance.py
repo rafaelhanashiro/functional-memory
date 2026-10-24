@@ -246,6 +246,55 @@ def test_runtime_identity_requires_resolved_transfer_policy_and_records_toolkit(
     assert preflight.runtime_identity()["CUDA_HOME"] == "/locked/nvidia/cuda_nvcc"
 
 
+def test_runtime_allocation_budget_overrides_the_adapter_fallback(monkeypatch):
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), allocation_hours=48)
+    monkeypatch.delenv("TRANSFORMER_ALLOCATION_SECONDS", raising=False)
+    assert preflight.allocation_seconds(spec) == 48 * 3600
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", str(7 * 24 * 3600))
+    assert preflight.allocation_seconds(spec) == 7 * 24 * 3600
+    # The same long single-GPU run fits the requested week, but not the old fallback.
+    preflight.require_allocation_budget(65 * 3600, preflight.allocation_seconds(spec))
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", str(48 * 3600))
+    with pytest.raises(RuntimeError, match="48h allocation"):
+        preflight.require_allocation_budget(65 * 3600, preflight.allocation_seconds(spec))
+    # A backfilled allocation must use its actual shorter limit, not the requested one.
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", str(6 * 3600))
+    with pytest.raises(RuntimeError, match="6h allocation"):
+        preflight.require_allocation_budget(5 * 3600, preflight.allocation_seconds(spec))
+
+
+@pytest.mark.parametrize("value", ["", "0", "-1", "1.5", "nan", "inf", "UNLIMITED", " 3600", "٣٦٠٠"])
+def test_invalid_runtime_allocation_budget_is_rejected(monkeypatch, value):
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", value)
+    with pytest.raises(ValueError, match="positive integer"):
+        preflight.allocation_seconds(preflight.AcceptanceSpec(entry_module="unused", cpu_tests=()))
+
+
+def test_acceptance_budget_changes_invalidate_passed_gate_but_preserve_test_cache(tmp_path, monkeypatch):
+    import json
+    from scaffolds.transformer.configs import Config
+
+    config = Config()
+    config.train.source_commit = "auto"
+    monkeypatch.setattr(preflight, "load_config", lambda path: config)
+    monkeypatch.setattr(preflight, "sha256", lambda path: "fixture-sha256")
+    monkeypatch.setenv("SHARED_TRANSFORMER_SOURCE_COMMIT", "a" * 40)
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", str(168 * 3600))
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    original = preflight.on_devices(preflight.identity(spec, tmp_path / "recipe.yaml", 1, "H100"), ["H100"])
+    cache = tmp_path / "success.json"
+    preflight.record(cache, original)
+    assert json.loads(cache.read_text())["allocation_seconds"] == 168 * 3600
+    assert preflight.passed(cache, original)
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", str(48 * 3600))
+    changed = preflight.on_devices(preflight.identity(spec, tmp_path / "recipe.yaml", 1, "H100"), ["H100"])
+    assert changed["allocation_seconds"] == 48 * 3600
+    assert changed["config"] == original["config"]
+    assert not preflight.passed(cache, changed)
+    assert preflight.stage_identity(original, "gpu-tests", ["kernel.py"], ["-m", "gpu"], cpu=False) == (
+        preflight.stage_identity(changed, "gpu-tests", ["kernel.py"], ["-m", "gpu"], cpu=False))
+
+
 def test_resume_audit_requires_identical_state_batch_and_rng():
     update = {"step": 21, "batch_sha256": "a" * 64, "rng_sha256": "b" * 64}
     initial = {"checkpoint_audit": {"final_state_sha256": "c" * 64, "checkpoint_state_sha256": "c" * 64,

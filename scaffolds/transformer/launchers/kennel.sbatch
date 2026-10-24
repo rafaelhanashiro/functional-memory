@@ -73,6 +73,9 @@ if [[ ! -x "$PYTHON" ]]; then
   exit 1
 fi
 echo "cuda_environment=$TRANSFORMER_CUDA_ENVIRONMENT python=$PYTHON"
+TRANSFORMER_ALLOCATION_SECONDS="$("$PYTHON" scaffolds/launch/allocation.py "$SLURM_JOB_ID")"
+export TRANSFORMER_ALLOCATION_SECONDS
+echo "allocation_seconds=$TRANSFORMER_ALLOCATION_SECONDS"
 LOGS="$RUN_ROOT/.runtime"
 CACHE="$EXECUTION_ROOT/.cache/$EXPERIMENT"
 export SHARED_TRANSFORMER_SOURCE_COMMIT="$LAUNCH_COMMIT"
@@ -140,6 +143,7 @@ attempt = {
     "config_sha256": hashlib.sha256(Path(config).read_bytes()).hexdigest(),
     "home_cluster": "kennel", "gpu_type": gpu_type, "gpu_count": int(gpu_count),
     "stop_after_step": int(stop_after_step) if stop_after_step else None,
+    "allocation_seconds": int(os.environ["TRANSFORMER_ALLOCATION_SECONDS"]),
     "slurm_job_id": os.environ["SLURM_JOB_ID"], "slurm_restart_count": os.environ.get("SLURM_RESTART_COUNT", "0"),
     "slurm_partition": os.environ.get("SLURM_JOB_PARTITION"), "started_utc": datetime.now(UTC).isoformat(),
     "acceptance_directory": str((run_root / ".runtime" / "acceptance" / f"{gpu_type}-{gpu_count}").resolve()),

@@ -45,6 +45,10 @@ Training runs default to one GPU, with independent runs scheduled separately.
 its `GPU_COUNT` argument to 1. Preserve the global batch through gradient accumulation.
 An explicit multi-GPU run must set both the Slurm GPU request and `GPU_COUNT` to
 the same count; use it only when requested or needed to fit the model.
+The Kennel launcher reads the granted wall-clock limit from `scontrol show job`
+and passes it to acceptance as `TRANSFORMER_ALLOCATION_SECONDS`. Acceptance uses
+that limit instead of the adapter's fallback budget. ORCD keeps the adapter's
+qualification horizon because training intentionally resumes across allocations.
 
 ### Kennel transfer policy
 
