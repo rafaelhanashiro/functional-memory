@@ -301,8 +301,8 @@ the factor folded into degree-specific values. The per-order path rounds each pa
 output to V's dtype before summing, which at degree one corrupts the gradient after head
 RMSNorm. Diagnostics report the key factors beside the query coefficients.
 
-For H100 BF16 query-key attention at context 2048, Q/K and value width 64, and
-degree 8 or 12, the fused backend uses 32-by-32 backward tiles and keeps the
+For H100 and B300 BF16 query-key attention at context 2048, Q/K and value width 64,
+and degree 4, 8 or 12, the fused backend uses 32-by-32 backward tiles and keeps the
 original forward tiles. Other devices and shapes keep their original geometry.
 The arithmetic precision and coefficient parameterization are unchanged.
 Kernel timings and qualification are in the

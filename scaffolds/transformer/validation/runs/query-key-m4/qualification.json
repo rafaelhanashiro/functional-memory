@@ -1,0 +1,34 @@
+{
+  "format": "query-key-backward-tile-qualification",
+  "schema_version": 1,
+  "source_commit": "b81bb7bfb7d07ae92c27981368e6f9cb1aa136cf",
+  "change": "fused_query_key_polynomial._backward_tile_sizes selects 32x32 backward tiles at degree 4 as well as 8 and 12 (H100/B300, BF16, context 2048, width 64)",
+  "test_file": "scaffolds/transformer/tests/test_query_key_tiling.py",
+  "gpu_tests_cover": [
+    "independent FP64 composed head-RMSNorm gradients at time 67, FP32 and BF16, degrees 4/8/12",
+    "context-2048 parity with the blocked reference and the original 64x64 backward, every coefficient/factor degree and head",
+    "forward byte-identical to the original geometry",
+    "causal prefix outputs and gradients",
+    "future nonfinite keys, factors and coefficients leave the prefix finite"
+  ],
+  "allocations": [
+    {
+      "slurm_job_id": "225050",
+      "node": "dogo",
+      "device": "NVIDIA H100 80GB HBM3",
+      "environment": "cuda12",
+      "result": "58 passed",
+      "pytest_seconds": 109.23,
+      "timing": "h100-tuning.json"
+    },
+    {
+      "slurm_job_id": "225051",
+      "node": "akita",
+      "device": "NVIDIA B300 SXM6 AC",
+      "environment": "cuda13",
+      "result": "58 passed",
+      "pytest_seconds": 172.9,
+      "timing": "b300-tuning.json"
+    }
+  ]
+}
