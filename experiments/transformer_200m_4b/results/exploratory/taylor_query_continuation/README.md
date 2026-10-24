@@ -51,7 +51,9 @@ checkpoint continuation before production. Launch commands are in the study READ
 
 ## Status and open decision
 
-The pair is prepared for submission. `selection.yaml` explicitly selects only
+Both jobs have started on one H100 each on Kennel's `mastiff`, in the `standard`
+partition: query job **224947** and fixed-Taylor job **224948**. They run the shared
+GPU acceptance checks before production. `selection.yaml` explicitly selects only
 these two degree-four continuations. No findings are available yet, and these runs
 enter no canonical pretraining comparison.
 

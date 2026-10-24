@@ -5,7 +5,7 @@
   "result": "passed",
   "tests": [
     {
-      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest scaffolds/transformer/tests/test_continuation.py scaffolds/transformer/tests/test_continuation_acceptance.py -q",
+      "command": "JAX_PLATFORMS=cpu /data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/.venv/bin/python -m pytest scaffolds/transformer/tests/test_continuation.py scaffolds/transformer/tests/test_continuation_acceptance.py -q",
       "passed": 20,
       "failed": 0,
       "seconds": 68.35

@@ -13,8 +13,10 @@
     "updates": 500
   },
   "experiment_kind": "matched_checkpoint_continuation",
+  "frozen_execution_sha256": "21cc13fcf226767ed4dc6ab6002bfaa0b96f73aaa6dc2c9cddb555423ee2efd9",
   "home_cluster": "kennel",
   "label": "taylor-m4-continuation-fixed_taylor",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-continuation-m4/experiments/transformer_200m_4b/runs/rf311afb9339e/training.log",
   "name": "taylor-m4-continuation-fixed_taylor",
   "parent_run_id": "r79da929de109",
   "parent_study": "transformer_200m_4b",
@@ -108,6 +110,7 @@
     "step": 7500,
     "validation_nll": 2.691626767578878
   },
+  "source_commit": "5230a18ede70800b3ddf4105c8c61f8307953c08",
   "source_configuration": {
     "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/experiments/transformer_200m_4b/runs/r79da929de109/config.yaml",
     "sha256": "9a1898124fb001b12bcd22a73126b74c63bee444bc6a3638cd576e2a088c548d"
@@ -116,5 +119,28 @@
     "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/experiments/transformer_200m_4b/runs/r79da929de109/data_identity.json",
     "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
   },
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=06:00:00",
+      "--job-name=taylor-continue-rf311afb9339e",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-continuation-m4/experiments/transformer_200m_4b/runs/rf311afb9339e/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-continuation-m4/experiments/transformer_200m_4b/runs/rf311afb9339e/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/rf311afb9339e/config.yaml",
+      "5230a18ede70800b3ddf4105c8c61f8307953c08",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "standard",
+    "slurm_job_id": "224948",
+    "submitted_utc": "2026-10-24T16:52:52.526542+00:00"
+  }
 }
