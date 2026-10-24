@@ -36,7 +36,8 @@ def _device(kind="NVIDIA H100 80GB HBM3", capability="9.0"):
 @pytest.mark.parametrize("updates,device,expected", [
     ({}, _device(), (32, 32)),
     ({"degree": 12}, _device("NVIDIA H100 PCIe"), (32, 32)),
-    ({"degree": 4}, _device(), (64, 64)),
+    ({"degree": 4}, _device(), (32, 32)),
+    ({"degree": 6}, _device(), (64, 64)),
     ({"degree": 16}, _device(), (64, 64)),
     ({"time": 1024}, _device(), (64, 64)),
     ({"dtype": jnp.float32}, _device(), (64, 64)),
@@ -45,7 +46,8 @@ def _device(kind="NVIDIA H100 80GB HBM3", capability="9.0"):
     ({}, _device("NVIDIA H200", "9.0"), (64, 64)),
     ({}, _device("NVIDIA B300 SXM6 AC", "10.3"), (32, 32)),
     ({"degree": 12}, _device("NVIDIA B300 SXM6 AC", "10.3"), (32, 32)),
-    ({"degree": 4}, _device("NVIDIA B300", "10.3"), (64, 64)),
+    ({"degree": 4}, _device("NVIDIA B300", "10.3"), (32, 32)),
+    ({"degree": 6}, _device("NVIDIA B300", "10.3"), (64, 64)),
     ({"time": 1024}, _device("NVIDIA B300", "10.3"), (64, 64)),
     ({"dtype": jnp.float32}, _device("NVIDIA B300", "10.3"), (64, 64)),
     ({"dq": 32}, _device("NVIDIA B300", "10.3"), (64, 64)),
@@ -90,7 +92,8 @@ def test_fused_query_key_acceptance_requires_tiling_checks(cpu, backend):
     ([_device()], 8, True),
     ([_device("NVIDIA B300 SXM6 AC", "10.3")], 8, True),
     ([_device("NVIDIA B300 SXM6 AC", "10.3")], 12, True),
-    ([_device("NVIDIA B300 SXM6 AC", "10.3")], 4, False),
+    ([_device("NVIDIA B300 SXM6 AC", "10.3")], 4, True),
+    ([_device("NVIDIA B300 SXM6 AC", "10.3")], 6, False),
     ([_device("NVIDIA H200", "9.0")], 8, False),
     ([_device("NVIDIA A100", "8.0")], 8, False),
     ([_device("NVIDIA B200", "10.0")], 8, False),
@@ -181,7 +184,7 @@ def _compare_all(actual, expected, tolerance):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("degree", (8, 12))
+@pytest.mark.parametrize("degree", (4, 8, 12))
 @pytest.mark.parametrize("dtype", (jnp.float32, jnp.bfloat16))
 def test_gpu_tuned_head_rmsnorm_and_all_gradients_match_small_fp64(monkeypatch, degree, dtype):
     _requires_qualified_gpu()
@@ -198,7 +201,7 @@ def test_gpu_tuned_head_rmsnorm_and_all_gradients_match_small_fp64(monkeypatch, 
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("degree", (8, 12))
+@pytest.mark.parametrize("degree", (4, 8, 12))
 def test_gpu_tuned_production_context_head_rmsnorm_matches_blocked_and_original(monkeypatch, degree):
     _requires_qualified_gpu()
     assert kernel._backward_tile_sizes(64, 64, degree=degree, time=2048, dtype=jnp.bfloat16,
@@ -218,7 +221,7 @@ def test_gpu_tuned_production_context_head_rmsnorm_matches_blocked_and_original(
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("degree", (8, 12))
+@pytest.mark.parametrize("degree", (4, 8, 12))
 def test_gpu_tuned_production_prefix_and_gradients_are_causal(degree):
     _requires_qualified_gpu()
     operands, cotangent = _inputs(degree, time=2048, dtype=jnp.bfloat16)
@@ -236,7 +239,7 @@ def test_gpu_tuned_production_prefix_and_gradients_are_causal(degree):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("degree", (8, 12))
+@pytest.mark.parametrize("degree", (4, 8, 12))
 def test_gpu_tuned_future_nonfinite_keys_and_factors_leave_prefix_finite(degree):
     _requires_qualified_gpu()
     q = jnp.ones((1, 2048, 1, 64), jnp.bfloat16)
