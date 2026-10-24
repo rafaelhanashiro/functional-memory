@@ -353,7 +353,7 @@ evolves independently; the tag preserves the exact qualified execution source.
 ### Query-key polynomial backward tiles
 
 The one-pass fused query-key polynomial kernel uses 32-by-32 backward tiles for
-H100 and B300 BF16 inputs with context 2048, Q/K and value width 64, and degree 8 or 12.
+H100 and B300 BF16 inputs with context 2048, Q/K and value width 64, and degree 4, 8 or 12.
 Forward keeps its original 64-by-64 tiles; other devices and shapes retain the
 original geometry. No polynomial, precision, or coefficient-scaling rule changes.
 
@@ -384,6 +384,22 @@ covering independent FP64 comparisons, signed coefficients, output RMSNorm and
 all input/gain gradients, context-2048 parity with the blocked and original
 implementations, causality, and nonfinite masking. The forward output remains
 byte-identical to the original kernel in the production-context comparisons.
+
+**Degree 4** uses the same 32-by-32 backward from source `b81bb7b`. On the 200M / 4B
+attention shape `[batch=16, time=2048, heads=14, width=64]`, the
+[H100](runs/query-key-m4/h100-tuning.json) (job `225050`, `dogo`) and
+[B300](runs/query-key-m4/b300-tuning.json) (job `225051`, `akita`) benchmarks measured:
+
+| GPU | Original forward + backward | Production forward + backward | Speedup |
+| --- | ---: | ---: | ---: |
+| H100 80GB HBM3 | 13.717 ms | 8.961 ms | 1.53x |
+| B300 | 20.025 ms | 8.156 ms | 2.46x |
+
+Every geometry each sweep compiled passed its numerical gates (B300 cannot fit
+64-by-128 tiles in tensor memory); the fastest (64-by-32 on H100, 7.930 ms; 32-by-64 on B300, 7.771 ms) beat the production
+geometry by at most 11.5% and are not selected. In both allocations the tiling test file,
+now at degrees 4, 8 and 12, passed all 58 GPU checks
+([qualification](runs/query-key-m4/qualification.json)). Timings cover attention alone.
 
 Repeat within an H100 allocation, choosing a fresh validation output directory:
 
