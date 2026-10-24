@@ -3,12 +3,48 @@
     "path": "experiments/attention_scaling/runs/r564c8c864d15/config.yaml",
     "sha256": "31682e7570b6218bf0e503a2f69219abbdbe8ed4cd63b436b07fdfe3b82f6ab3"
   },
+  "frozen_execution_sha256": "0bb7f8c0c61dab26ecae5ecb41035c218afbebd4bfa72b683bcceb52fce82bac",
   "home_cluster": "kennel",
+  "kernel_qualification": {
+    "path": "scaffolds/transformer/validation/runs/learned-basis/record.json",
+    "sha256": "900705001221ce03f96cf7c1a65e608a5eedfb0beb5c97fc681a7bff841ecc62"
+  },
   "label": "200m-rbf9-query-learned-headrms-qknorm-triton-chinchilla1x-seed0",
   "name": "200m-rbf9-query-learned-headrms-qknorm-triton-chinchilla1x-seed0",
   "record_schema_version": 1,
   "run_id": "r564c8c864d15",
-  "status": "planned",
+  "source_commit": "4ab8dcea4c1000a200fa2031e82b4236e6ff818a",
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--time=24:00:00",
+      "--gres=gpu:h100:1",
+      "--cpus-per-task=8",
+      "--mem=128G",
+      "--job-name=r564c8c864d15",
+      "--output=experiments/attention_scaling/runs/r564c8c864d15/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.attention_scaling.acceptance",
+      "experiments/attention_scaling/runs/r564c8c864d15/config.yaml",
+      "4ab8dcea4c1000a200fa2031e82b4236e6ff818a",
+      "1",
+      "H100"
+    ],
+    "gpu_count": 1,
+    "gpu_type": "H100",
+    "partition": "standard",
+    "runtime_environment": {
+      "EJKERNEL_TRITON_CACHE_COMPILES": "1",
+      "EJKERNEL_TRITON_CACHE_DIR": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-learned-9/.cache/transformer/triton",
+      "TRANSFORMER_ALLOCATION_HOURS": "24",
+      "TRANSFORMER_WANDB_MODE": "offline"
+    },
+    "slurm_job_id": "225071",
+    "submitted_utc": "2026-10-24T22:51:59+00:00"
+  },
   "training_budget": {
     "actual_tokens": 4028104704,
     "chinchilla_multiple": 1.000055072107757,

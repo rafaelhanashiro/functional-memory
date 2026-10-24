@@ -216,6 +216,8 @@ parameters therefore receive the same budget convention. The fixed 9-RBF
 comparison is `r6e1b71e49350`; results remain in the
 [RBF exploratory topic](../../results/exploratory/rbf_basis/README.md).
 
+Submitted Slurm jobs: **225070** (static) and **225071** (query-dependent).
+
 Home cluster: **Kennel**, worktree `worktrees/rbf-learned-9`, branch
 `codex/rbf-learned-9`. Each run uses one H100. Native coefficient gradients are
 qualified against independent dense attention, followed by the shared full-recipe
@@ -226,7 +228,7 @@ uploadable history within each run while project permissions are unresolved.
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
 export EJKERNEL_TRITON_CACHE_COMPILES=1
 export EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/transformer/triton"
-LAUNCH_COMMIT=$(git rev-parse HEAD)
+LAUNCH_COMMIT=4ab8dcea4c1000a200fa2031e82b4236e6ff818a
 for RUN in r55b028eb88a6 r564c8c864d15; do
   env -u LD_LIBRARY_PATH TRANSFORMER_ALLOCATION_HOURS=24 TRANSFORMER_WANDB_MODE=offline \
     sbatch --partition=standard --time=24:00:00 --gres=gpu:h100:1 \
