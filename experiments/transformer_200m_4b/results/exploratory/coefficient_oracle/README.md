@@ -12,7 +12,7 @@ backbone frozen. They live in the
 | --- | --- | --- | --- |
 | `r3c0f21ab7dce` | Free coefficients per layer, head, query, and order | Static `r9b8acfcbeb89`, step 7,500 | Complete |
 | `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Complete |
-| `r1f2f749ff099` | Original degree-four tanh query coefficient generator | Query-only `r49b7943aee1b`, step 7,500 | Prepared |
+| `r1f2f749ff099` | Original degree-four tanh query coefficient generator | Query-only `r49b7943aee1b`, step 7,500 | Queued |
 | `r0963b3e6610b` | One coefficient table shared across 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
 | `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
@@ -146,7 +146,8 @@ match the degree-eight fit. An unconverged run pauses at the **10,000**-update
 safety limit. The retained checkpoint minimizes fitting NLL, with terminal
 metrics reported separately.
 
-The run is prepared for one B300 or H100 in `standard`. GPU qualification must
+Slurm job **224960** is queued for one B300 or H100 in `standard`, currently
+waiting for resources. GPU qualification must
 pass source replay, finite nonzero gradients for all generator groups, an
 improving update, exact resume, and unchanged backbone parameters before fitting.
 No fitting result is available yet. Success would establish memorization of
