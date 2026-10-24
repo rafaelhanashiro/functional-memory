@@ -28,8 +28,8 @@ See [AGENTS.md](AGENTS.md) for retention and migration rules.
 | --- | --- | --- |
 | `debug` | 2 hours | Quick checks; at most 2 GPUs per user |
 | `standard` | 24 hours | Normal jobs; at most 4 GPUs per user |
-| `long` | 7 days | Longer/larger jobs; avoid monopolizing the cluster |
-| `sweep` | 7 days | Low-priority sweeps using spare capacity |
+| `long` | 7 days | Additional normal capacity and longer jobs, within the live allowance |
+| `sweep` | 7 days | Overflow after the permitted `standard` and `long` allowances are used |
 
 GPU types currently include A6000, A100, H100, and B300; use `sinfo` to inspect
 nodes before choosing hardware. On 2026-09-22 they were: `akita` 8×B300;
@@ -40,9 +40,35 @@ A100/A6000 nodes; A6000 training is markedly slower in this project's tests. Gen
 Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
 60 seconds (the supplied PDFs say 120); `sweep` has no grace period.
 
+**Scheduling policy:** use the full permitted `standard` and `long` allowances before
+`sweep`. Prefer `standard` for jobs that fit its time limit and use `long` capacity
+too; submit only overflow to `sweep` once the applicable higher-priority allowances
+are allocated or committed to eligible jobs. Before each batch of submissions,
+inspect the user's running and queued GPU requests across worktrees and the live
+partition, QoS, and account limits. A busy cluster or a pending `Priority` reason does
+not itself justify choosing `sweep`. A scientific sweep can run in `standard` or
+`long`. Do not apply a blanket `--nice=1000` penalty; leave `nice` at its default
+unless deliberately ordering jobs.
+
+The partition/QoS check on **2026-10-23** confirmed `standard`'s four-GPU-per-user cap,
+24-hour limit, and priority tier 4; `long` has a seven-day limit and tier 2, and
+`sweep` has tier 1. No numeric `long` GPU allowance was verified: the partition
+references a `long` QoS not listed by `sacctmgr show qos`, so recheck the live limits
+instead of assuming a cap or unlimited capacity. Useful checks are:
+
+```bash
+squeue -u "$USER" -o '%.18i %.12P %.9T %.22b %.40R'
+scontrol show partition standard
+scontrol show partition long
+sacctmgr show qos format=Name,MaxTRESPerUser,MaxJobsPerUser,MaxSubmitJobsPerUser
+sacctmgr show assoc where user="$USER" format=Cluster,Account,User,Partition,QOS,DefaultQOS,MaxTRESPerJob,MaxJobs,MaxSubmitJobs
+```
+
 Training runs default to one GPU, with independent runs scheduled separately.
-`scaffolds/transformer/launchers/kennel.sbatch` requests `--gres=gpu:1` and defaults
-its `GPU_COUNT` argument to 1. Preserve the global batch through gradient accumulation.
+`scaffolds/transformer/launchers/kennel.sbatch` defaults to `--partition=standard,long`,
+a 24-hour allocation, and `--gres=gpu:1`; its `GPU_COUNT` argument defaults to 1.
+Request `--partition=long` and a suitable limit explicitly for allocations longer
+than 24 hours. Preserve the global batch through gradient accumulation.
 An explicit multi-GPU run must set both the Slurm GPU request and `GPU_COUNT` to
 the same count; use it only when requested or needed to fit the model.
 The Kennel launcher reads the granted wall-clock limit from `scontrol show job`

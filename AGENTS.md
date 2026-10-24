@@ -201,6 +201,15 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   size fixed through gradient accumulation; GPU count is execution provenance, not a
   model hyperparameter. Changes to an existing run's allocation preserve its frozen
   recipe and checkpoint and require acceptance on the new allocation.
+- On Kennel, use the permitted `standard` and `long` GPU allowances before submitting
+  overflow to `sweep`. Prefer `standard` for allocations that fit its time limit and
+  use the available `long` allowance too; a scientific sweep does not imply the Slurm
+  `sweep` partition. Check live partition, QoS, and account limits and count the user's
+  running and queued GPU allocations across worktrees before choosing partitions.
+  Use `sweep` only after the applicable higher-priority allowances are allocated or
+  committed to eligible jobs. Leave `nice` at its default unless deliberately ordering
+  jobs; do not add a blanket priority penalty. See `CLUSTERS.md` for current limits
+  and launcher defaults.
 - New dot-product Transformer experiments must enable QK normalization unless the
   user explicitly requests plain QK scores. Set `model.qk_norm: true` in the frozen
   recipe; do not inherit `false` when copying a legacy run. GLA and degree-zero

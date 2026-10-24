@@ -826,6 +826,11 @@ explicit multi-GPU allocation must override both Slurm's `--gres` request and th
 launcher's fourth positional argument (`GPU_COUNT`), for example `--gres=gpu:2`
 and `2` on Kennel, or `--gres=gpu:h200:2` and `2` on ORCD. Allocation changes are
 recorded as runtime provenance and trigger acceptance for that allocation.
+Kennel defaults to `--partition=standard,long` with a 24-hour allocation. Submitters
+use the available standard and long allowances before placing overflow in sweep,
+checking current limits and queued/running allocations as documented in
+[CLUSTERS.md](../../CLUSTERS.md). Longer jobs explicitly request `--partition=long`
+and an appropriate time limit. Routine launches add no artificial nice penalty.
 The Kennel launcher resolves Slurm's granted `TimeLimit` through
 `scaffolds/launch/allocation.py` and exports `TRANSFORMER_ALLOCATION_SECONDS`.
 Acceptance records this budget and includes it in its identity, so a shorter
