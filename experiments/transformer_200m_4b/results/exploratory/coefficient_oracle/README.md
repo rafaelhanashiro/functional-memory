@@ -183,13 +183,15 @@ position-dependent fit. The 10,000-update safety limit pauses an unconverged run
 The single-sequence fit completed on one H100 in `debug`, Slurm job `224916`,
 in 2 minutes 50 seconds including qualification. The independent full-batch fit
 is job `224917`, running on one H100 in `debug` with two-hour resumable allocations.
-Each job qualifies its GPU execution and checkpoint resume before fitting.
+Both jobs passed GPU qualification, including exact checkpoint resume, before fitting.
 
 ### Single-sequence findings
 
 The plateau controller reduced LR from 0.01 to 0.001 at update 3,430 and stopped
 at update 4,112. The best retained static tensor is from update 4,041. All pretrained
-parameters remained unchanged.
+parameters remained unchanged. All measurements were finite, but optimization
+was uneven: 212 of 4,113 gradient evaluations exceeded the clipping threshold,
+including 24 after the LR reduction.
 
 | Measurement | Update | Fitting NLL | Fitting PPL |
 | --- | ---: | ---: | ---: |

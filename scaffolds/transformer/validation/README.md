@@ -2063,3 +2063,7 @@ execution must pass its forward, update, and resume qualification before fitting
 The [single-sequence H100 qualification](runs/static-coefficient-fit/gpu-h100-single.json)
 passes original replay, repeated static-table forward, an improving gradient update,
 frozen source parameters, and exact checkpoint resume at shape `[15,14,9]`.
+
+The [256-sequence H100 qualification](runs/static-coefficient-fit/gpu-h100-batch.json)
+also passes with eight-sequence microbatches and one mean-gradient Adam update
+per full batch, using the same static tensor shape.
