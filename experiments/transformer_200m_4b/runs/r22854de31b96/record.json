@@ -72,7 +72,7 @@
       "size_bytes": 231
     },
     {
-      "path": "experiments/transformer_200m_4b/runs/r22854de31b96/training.log",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r22854de31b96/training.log",
       "sha256": "193450b0724dee480fdc8d2f3137cc6c6912f5f0cce47a203bf6fdc64c966f49",
       "size_bytes": 29283
     }
@@ -116,11 +116,11 @@
   "home_cluster": "kennel",
   "label": "static-coefficients-m8-single-sequence",
   "log": {
-    "path": "experiments/transformer_200m_4b/runs/r22854de31b96/training.log",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r22854de31b96/training.log",
     "sha256": "193450b0724dee480fdc8d2f3137cc6c6912f5f0cce47a203bf6fdc64c966f49",
     "size_bytes": 29283
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-coefficient-fit-4b/experiments/transformer_200m_4b/runs/r22854de31b96/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r22854de31b96/training.log",
   "metadata": {
     "path": "experiments/transformer_200m_4b/runs/r22854de31b96/metadata.json",
     "sha256": "4093c6a33e6429453f4ad5342588a326e8f43c75a7f2585bf2995e3cfd3e996f",
@@ -253,9 +253,10 @@
     ],
     "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
     "kind": "directory",
-    "path": "experiments/transformer_200m_4b/runs/r22854de31b96/checkpoints/4041",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r22854de31b96/checkpoints/4041",
     "sha256": "ced0863f9b050a30bed2f5220e933aaa741c1b9ef424cf6057a86636c95df217",
-    "size_bytes": 9584
+    "size_bytes": 9584,
+    "step": 4041
   },
   "source_checkpoint": {
     "file_count": 15,
