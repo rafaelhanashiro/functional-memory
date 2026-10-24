@@ -8,19 +8,19 @@ settings:
   same_first_sequence: true
   generalization_claim: false
 runs:
-- study: attention_scaling
+- study: transformer_200m_4b
   run_id: r3c0f21ab7dce
   role: single_sequence
   sources:
     config.yaml:
-      path: experiments/attention_scaling/runs/r3c0f21ab7dce/config.yaml
+      path: experiments/transformer_200m_4b/runs/r3c0f21ab7dce/config.yaml
       sha256: ba7eb84d08f5e4c2ae28b63ea8ae96e8c23ff89acc88e77813f7401f86335db6
     metrics.jsonl:
-      path: experiments/attention_scaling/runs/r3c0f21ab7dce/metrics.jsonl
+      path: experiments/transformer_200m_4b/runs/r3c0f21ab7dce/metrics.jsonl
       sha256: f30ea02df483ee558dffe0f9244928684bef2ec8bba9579d8f5a8f1a3face0eb
     completion.json:
-      path: experiments/attention_scaling/runs/r3c0f21ab7dce/completion.json
+      path: experiments/transformer_200m_4b/runs/r3c0f21ab7dce/completion.json
       sha256: d1e2f59caf4fa79be2357ec8cec6028014c29f9764814a974f1d25c331256fe9
     metadata.json:
-      path: experiments/attention_scaling/runs/r3c0f21ab7dce/metadata.json
+      path: experiments/transformer_200m_4b/runs/r3c0f21ab7dce/metadata.json
       sha256: eae38dd061c2ac6b6581e09c782fa110f51f306cb69078a2546b6624c6b261e5

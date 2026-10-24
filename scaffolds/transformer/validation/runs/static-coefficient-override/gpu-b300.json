@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "source_commit": "f19feb30f74d1d7a739032d8791a3939c126ab51",
-  "source_run": "experiments/attention_scaling/runs/r3c0f21ab7dce",
+  "source_run": "experiments/transformer_200m_4b/runs/r3c0f21ab7dce",
   "source_artifact": "oracle_acceptance.json",
   "source_artifact_sha256": "8904ca3dfb1d216a737a0ba26576dec1d791a4fc149d27e54247af26226b6392",
   "slurm_job_id": "224586",

@@ -5,7 +5,7 @@ Opened: **2026-10-23**. Home cluster: **Kennel**.
 How much can the 4B-token learned-static model improve on one sequence when each
 query can choose its polynomial coefficients freely? This is one exploratory
 fitting run, `r3c0f21ab7dce`, in
-[attention scaling](../../../experiments/attention_scaling/README.md#fixed-input-coefficient-oracle).
+[200M / 4B study](../../../README.md).
 It enters no canonical comparison.
 
 The source is degree-eight learned-static run `r9b8acfcbeb89` from the 200M / 4B
@@ -63,5 +63,5 @@ coefficients live only under its run directory. Update the selection after new
 measurements with:
 
 ```bash
-scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh results/exploratory/coefficient_oracle_4b
+scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_200m_4b/results/exploratory/coefficient_oracle
 ```

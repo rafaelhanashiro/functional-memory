@@ -39,12 +39,20 @@ experiments/<study>/
 scaffolds/<capability>/      shared implementation, tests, and environment
 ```
 
-- All shared-Transformer attention experiments belong to
-  `experiments/attention_scaling/`. Attention family, normalization, QK normalization,
+- The established 10B-token shared-Transformer attention experiments belong to
+  `experiments/attention_scaling/`. The user-requested 200M / 4B-token setup is isolated
+  in `experiments/transformer_200m_4b/`, including its `recipe.yaml`, run membership,
+  `runs/<run_id>/`, execution helpers, and `results/` collections. Its exploratory
+  diagnostics belong under `experiments/transformer_200m_4b/results/exploratory/<topic>/`,
+  with their runs in the same study. Add runs deliberately; do not reproduce the old
+  grid automatically. Reusable implementations remain in the shared scaffolds.
+  Its nested results follow all selection, provenance, and regeneration rules below;
+  old studies and result selections retain their recipes.
+  Attention family, normalization, QK normalization,
   degree, width, coefficient parameterization, sharing, and seed distinguish runs
   within this study; do not create a new study directory for a sweep or mechanism.
   `experiments/state_rank/` is a separate scientific question. Comparisons and their
-  explicit primary/control run selections belong under `results/`.
+  explicit primary/control run selections belong under the applicable `results/`.
 - A study groups a scientific question. Varying several axes (for example key width,
   polynomial degree, normalization, coefficient parameterization, sharing, and seed)
   produces runs within a study. Each run ID identifies one execution of a complete
@@ -78,13 +86,14 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   figure, table, finding, or status report; `results/attention_scaling/collect.py`
   rejects them.
 - Exploratory experiments, whose place in the canonical results is not yet decided,
-  report under `results/exploratory/<topic>/`, one directory per question with flat
+  report under their applicable `results/exploratory/<topic>/`, one directory per question with flat
   files: a README with the question, runs, findings, the open decision, and the date
   opened; an optional selection YAML of explicit run IDs with roles, pinned by
   `scaffolds.records refresh`; and optional figures or tables that regenerate from
   it. Tests are not required. Their runs live in their study like any other run, with
   the usual lifecycle, records, and retained artifacts, and enter no canonical
-  selection. `results/exploratory/README.md` lists the open topics; mention them in
+  selection. The applicable `results/exploratory/README.md` lists the open topics;
+  the root exploratory index may link to study-local topics. Mention open topics in
   status updates. A topic ends in one of two ways: promote it (move its selection,
   findings, and code into the canonical collection, add tests, and delete the topic),
   or discard it (delete the topic and its runs with their artifacts). Exploratory
