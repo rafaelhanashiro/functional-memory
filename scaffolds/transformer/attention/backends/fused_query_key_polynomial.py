@@ -162,16 +162,20 @@ def _columns(array):
 def _backward_tile_sizes(dq, dv, *, degree, time, dtype, interpret):
     """Qualified smaller backward tiles; other shapes/devices retain the original geometry.
 
-    At the production H100 context, m=8/12's per-degree gradient accumulators
-    make 64x64 backward tiles substantially slower than 32x32. Forward keeps
-    its existing tiles. Precision and reductions are otherwise unchanged.
+    At the production H100/B300 context, m=8/12's per-degree gradient
+    accumulators make 64x64 backward tiles substantially slower than 32x32.
+    Forward keeps its existing tiles. Precision and reductions are unchanged.
     """
     if (not interpret and dtype == jnp.bfloat16 and dq == dv == 64
             and time == 2048 and degree in (8, 12)):
         devices = jax.local_devices()
-        if devices and all(getattr(device, "compute_capability", None) == "9.0"
-                           and getattr(device, "device_kind", "").startswith("NVIDIA H100")
-                           for device in devices):
+        h100 = all(getattr(device, "compute_capability", None) == "9.0"
+                   and getattr(device, "device_kind", "").startswith("NVIDIA H100")
+                   for device in devices)
+        b300 = all(getattr(device, "compute_capability", None) == "10.3"
+                   and getattr(device, "device_kind", "").startswith("NVIDIA B300")
+                   for device in devices)
+        if devices and (h100 or b300):
             return 32, 32
     return _tile_sizes(dq, dv)
 
