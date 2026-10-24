@@ -163,7 +163,7 @@ def qualify(args):
     started = time.monotonic()
     write(summary_path, report)
 
-    def run(name, command):
+    def run(name, command, *, allow_failure=False):
         entry = {"name": name, "command": list(map(str, command)), "status": "running",
                  "started_utc": datetime.now(UTC).isoformat()}
         report["stages"].append(entry)
@@ -175,7 +175,7 @@ def qualify(args):
         entry.update(exit_code=result.returncode, elapsed_seconds=time.monotonic() - stage_started,
                      status="complete" if result.returncode == 0 else "failed")
         write(summary_path, report)
-        if result.returncode:
+        if result.returncode and not allow_failure:
             raise RuntimeError(f"{name} exited {result.returncode}")
         return entry
 
@@ -200,10 +200,13 @@ def qualify(args):
             current = report["runs"][run_id] = {"degree": row["degree"]}
             parity = directory / "full-model-parity.json"
             run(f"{run_id}:full-model-parity", [sys.executable, "-m", MODEL_MODULE,
-                                               "--config", config, "--output", parity])
-            if read(parity)["status"] != "complete":
+                                               "--config", config, "--output", parity],
+                allow_failure=args.collect_after_parity_failure)
+            parity_result = read(parity)
+            if parity_result["status"] != "complete" and not (
+                    args.collect_after_parity_failure and "gradients" in parity_result):
                 raise RuntimeError(f"Full-model parity failed for {run_id}")
-            current["full_model_parity"] = artifact(parity)
+            current["full_model_parity"] = {**artifact(parity), "status": parity_result["status"]}
             timing = {}
             for geometry in ("production", "original"):
                 path = directory / f"throughput-{geometry}.json"
@@ -256,7 +259,8 @@ def qualify(args):
         report["source_recipes_unchanged"] = all(digest(row["path"]) == row["sha256"] for row in rows)
         if not report["source_recipes_unchanged"]:
             raise RuntimeError("Input recipes changed")
-        report["status"] = "complete"
+        report["status"] = ("complete" if all(
+            row["full_model_parity"]["status"] == "complete" for row in report["runs"].values()) else "failed")
         report.pop("active_stage", None)
         write(summary_path, report)
         shutil.rmtree(scratch)
@@ -269,7 +273,8 @@ def qualify(args):
     finally:
         report.update(finished_utc=datetime.now(UTC).isoformat(), elapsed_seconds=time.monotonic() - started)
         write(summary_path, report)
-    print("QUALIFICATION_COMPLETE " + str(summary_path), flush=True)
+    print(f"QUALIFICATION_{report['status'].upper()} {summary_path}", flush=True)
+    return report
 
 
 def main():
@@ -283,6 +288,8 @@ def main():
     parser.add_argument("--geometry", choices=("production", "original"), default="production")
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--iterations", type=int, default=3)
+    parser.add_argument("--collect-after-parity-failure", action="store_true",
+                        help="Collect remaining evidence after a completed parity rejection; still fail qualification")
     args = parser.parse_args()
     args.config = [path.resolve() for path in args.config]
     source = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
@@ -306,7 +313,8 @@ def main():
     else:
         if args.output_dir is None:
             parser.error("Qualification requires --output-dir")
-        qualify(args)
+        if qualify(args)["status"] != "complete":
+            raise SystemExit(1)
 
 
 if __name__ == "__main__":
