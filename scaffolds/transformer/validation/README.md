@@ -1929,3 +1929,15 @@ runtime source identity. Every one of the 53 Python files in the benchmarked
 source was compared byte-for-byte with `2e0e88d`, and all matched. The final shared source is retained at `d493a41`, but
 an immutable hash of its benchmark-time dirty tree was not recorded. These
 small benchmarks are supporting evidence rather than production experiment data.
+
+### Learned scalar-basis coefficients on H100
+
+[Qualification](runs/learned-basis/record.json): 81 GPU checks passed on one H100
+(job 225069), including independent forward and gradient checks for 3/9 Gaussian
+bases, global/head/query coefficients, FP32/BF16 inputs, zero coefficients, and
+end-to-end query projection gradients. The fixed scalar-kernel regression suite
+also passes. CPU model/configuration/initialization regressions passed 186 tests.
+Learned weights default to TF32x3 products with FP32 operands: BF16 intermediates
+can introduce a spurious coefficient-scale gradient after RMSNorm. The precision
+probe and qualification launcher live here; full-recipe training and checkpoint
+resume checks remain required on each production allocation.

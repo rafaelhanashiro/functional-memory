@@ -189,7 +189,8 @@ def test_model_connects_gain_to_fused_operation_and_projects_once(monkeypatch):
     cfg = load_config(ROOT / "experiments/attention_scaling/runs" / RUNS[3] / "config.yaml")
     fit = projection_from_config(cfg.model.attention_basis)
     calls = []
-    def fused(q, k, v, *, kernel, output_norm_scale, eps):
+    def fused(q, k, v, *, kernel, output_norm_scale, eps, basis_coefficients=None):
+        assert basis_coefficients is None
         calls.append(kernel)
         raw = blocked_dot_product_attention(q, k, v, score_kernel=fit, attention_normalization=False)
         return scale_attention_output(raw, "head_rms_norm", output_norm_scale=output_norm_scale, eps=eps)

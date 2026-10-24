@@ -1,0 +1,33 @@
+{
+  "checks": [
+    "Independent dense Gaussian forward and Q/K/V, gain, coefficient gradients",
+    "3 and 9 bases; global, head and query coefficients; FP32 and BF16",
+    "Zero coefficients retain a nonzero coefficient gradient",
+    "End-to-end query projection, bias, amplitude and input gradients",
+    "Fixed scalar-kernel regression suite"
+  ],
+  "cpu_regression_tests_passed": 186,
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "device": "NVIDIA H100 80GB HBM3",
+  "format": "learned-basis-h100-qualification",
+  "gpu_report": {
+    "path": "scaffolds/transformer/validation/runs/learned-basis/225069/tests.xml",
+    "sha256": "3f5456e6f50de18ebcbeba4f4a139b858127f49c62ad6b7ce1d2a3ddb84e3e57"
+  },
+  "home_cluster": "kennel",
+  "learned_precision": "tf32x3",
+  "limitations": [
+    "Learned production recipes require unnormalized attention",
+    "Basis definitions stay fixed; only coefficients are learned",
+    "Qualified on H100 only"
+  ],
+  "precision_probe": {
+    "nine_basis_query_tf32x3_coefficient_relative_error": 3.5945771624652274e-07,
+    "slurm_job_id": "225068",
+    "three_basis_global_bf16_coefficient_relative_error": 0.1304555229120087,
+    "three_basis_global_tf32x3_coefficient_relative_error": 3.39321616583043e-05
+  },
+  "slurm_job_id": "225069",
+  "source_commit": "0d1f75d0268207ce771c5820ed9fe23b063c0ded",
+  "tests_passed": 81
+}
