@@ -8,6 +8,8 @@ the [Transformer scaffold](../../scaffolds/transformer/README.md).
 
 ## Reference recipe
 
+![200M / 4B reference architecture, training recipe, and learning-rate screen](recipe.png)
+
 The pretraining reference has 15 layers, width 896, 14 query/KV heads of width 64,
 SwiGLU width 2304, context 2048, vocabulary 32,000, untied embeddings, and RoPE
 theta 10,000, with no biases or dropout. Normalized softmax has 198,439,936 parameters.
