@@ -38,8 +38,14 @@ interrupted resume. They also cover the alternative exact-Taylor initialization
 with zero projections and unit amplitudes. The
 [200M degree-four restore](runs/query-continuation/cpu-parent-initialization.json)
 verified identical pretrained parameter and Adam hashes, with backbone count 7,500
-and new coefficient count zero. GPU qualification remains the acceptance gate
-before each new allocation's production training.
+and new coefficient count zero. [H100 qualification](runs/query-continuation/gpu-h100.json)
+passed for degree-four fixed and query-conditioned continuations on one H100 PCIe
+with CUDA 12 and Mosaic. The fixed and query cases passed 261 and 439 CPU tests,
+respectively, nine distributed CPU tests each, and 47 and 68 GPU tests. Both passed
+restored-state initialization, a 20-update pilot, and exact fresh-process resume,
+using identical initial backbone/Adam histories and data/RNG positions. GPU
+qualification remains the acceptance gate before each new allocation's production
+training.
 
 ### Static coefficient capture and override
 

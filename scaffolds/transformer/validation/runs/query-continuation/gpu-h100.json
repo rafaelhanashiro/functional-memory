@@ -1,0 +1,136 @@
+{
+  "cases": [
+    {
+      "case": "fixed_taylor",
+      "initialization": {
+        "backbone_optimizer_count": 7500,
+        "matches_parent_backbone_optimizer": true,
+        "matches_parent_backbone_parameters": true,
+        "new_coefficient_optimizer_count": null
+      },
+      "parameter_count": 198453376,
+      "pilot": {
+        "data_start_sequence": 1920000,
+        "final_step": 7520,
+        "first_update": {
+          "batch_sha256": "fa2b2c70fca053cbcff0f31f5074f3ff86ea61b7a6e606472e9150609dc3d949",
+          "rng_sha256": "b73019e37de90f5e53aa88be006f9656540d99562288de7a7458c49283a2d8b5",
+          "step": 7501
+        },
+        "start_step": 7500,
+        "status": "passed"
+      },
+      "qualified_utc": "2026-10-24T17:15:04.350162+00:00",
+      "resume": {
+        "checkpoint_matches_live_state": true,
+        "final_step": 7521,
+        "next_batch_and_rng_match": true,
+        "next_update": {
+          "batch_sha256": "03e058e68272108a5a057f42a916ade1bc830b3ff02718568aca1fb4578037c5",
+          "rng_sha256": "f36d21e3223ed781e5642a52081d6f48ae5853a684c0291648570f1fe7f8438a",
+          "step": 7521
+        },
+        "restored_state_matches_saved_state": true,
+        "restored_step": 7520,
+        "saved_state_sha256": "acd87afc0c8754b09095501d0f21269a47048c6beafbb4dc9bdf8b893362e4fe"
+      },
+      "run_id": "rf311afb9339e",
+      "slurm_job_id": "224948",
+      "tests_passed": {
+        "cpu-distributed-tests": 9,
+        "cpu-tests": 261,
+        "gpu-tests": 47
+      }
+    },
+    {
+      "case": "learned_query",
+      "initialization": {
+        "backbone_optimizer_count": 7500,
+        "matches_parent_backbone_optimizer": true,
+        "matches_parent_backbone_parameters": true,
+        "new_coefficient_optimizer_count": 0
+      },
+      "parameter_count": 199396276,
+      "pilot": {
+        "data_start_sequence": 1920000,
+        "final_step": 7520,
+        "first_update": {
+          "batch_sha256": "fa2b2c70fca053cbcff0f31f5074f3ff86ea61b7a6e606472e9150609dc3d949",
+          "rng_sha256": "b73019e37de90f5e53aa88be006f9656540d99562288de7a7458c49283a2d8b5",
+          "step": 7501
+        },
+        "start_step": 7500,
+        "status": "passed"
+      },
+      "qualified_utc": "2026-10-24T17:16:21.204757+00:00",
+      "resume": {
+        "checkpoint_matches_live_state": true,
+        "final_step": 7521,
+        "next_batch_and_rng_match": true,
+        "next_update": {
+          "batch_sha256": "03e058e68272108a5a057f42a916ade1bc830b3ff02718568aca1fb4578037c5",
+          "rng_sha256": "f36d21e3223ed781e5642a52081d6f48ae5853a684c0291648570f1fe7f8438a",
+          "step": 7521
+        },
+        "restored_state_matches_saved_state": true,
+        "restored_step": 7520,
+        "saved_state_sha256": "536b8704f1eb75e4bac5c853a9bc74c9cecd7638dd7f7a880dc24b3c7d1820f9"
+      },
+      "run_id": "r6186c797b4db",
+      "slurm_job_id": "224947",
+      "tests_passed": {
+        "cpu-distributed-tests": 9,
+        "cpu-tests": 439,
+        "gpu-tests": 68
+      }
+    }
+  ],
+  "checks": {
+    "matched_backbone_initialization_and_optimizer": true,
+    "matched_first_batch_and_rng": true,
+    "pilot_and_fresh_process_resume": true
+  },
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "format": "shared-transformer-query-continuation-gpu-qualification",
+  "hardware": {
+    "attention_backend": "mosaic",
+    "device_kinds": [
+      "NVIDIA H100 PCIe"
+    ],
+    "gpu_count": 1,
+    "home_cluster": "kennel",
+    "package_versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    },
+    "runtime": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-continuation-m4/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_FLAGS": null,
+      "XLA_PYTHON_CLIENT_ALLOCATOR": null,
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    }
+  },
+  "model": {
+    "attention_normalization": false,
+    "attention_output_scaling": "head_rms_norm",
+    "dtype": "bfloat16",
+    "global_batch_size": 256,
+    "hidden_size": 896,
+    "num_heads": 14,
+    "num_layers": 15,
+    "polynomial_degree": 4,
+    "qk_head_dim": 64,
+    "qk_norm": "per_layer_rms_norm",
+    "sequence_length": 2048,
+    "value_head_dim": 64
+  },
+  "source_commit": "5230a18ede70800b3ddf4105c8c61f8307953c08",
+  "status": "passed",
+  "version": 1
+}
