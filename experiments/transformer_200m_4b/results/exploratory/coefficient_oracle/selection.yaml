@@ -1,7 +1,6 @@
 schema_version: 1
 opened: '2026-10-23'
-question: How much can polynomial coefficients fit a fixed sequence with a frozen
-  4B backbone?
+question: How much can polynomial coefficients fit fixed inputs with a frozen 4B backbone?
 settings:
   metric: fit_nll
   same_first_sequence: true
@@ -43,3 +42,11 @@ runs:
     metadata.json:
       path: experiments/transformer_200m_4b/runs/rd7bf9bc37cb6/metadata.json
       sha256: 5471d32a3c48f0463f585c7b5b5b68a8e795ec6a35bcab40b33f08b23bd12138
+- study: transformer_200m_4b
+  run_id: r0963b3e6610b
+  role: shared_coefficients_full_batch
+  parent_run_id: r98d5895c02d0
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r0963b3e6610b/config.yaml
+      sha256: 7086c0c5bcfe890cd3f2895803679a49225b7aa2b69175d873595aa638903827

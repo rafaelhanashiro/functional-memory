@@ -339,13 +339,22 @@ coefficient tables; `query_coefficient_generator` mode optimizes only the origin
 query generator's bias, amplitude, projection, and optional inner tanh bias.
 Generator mode currently accepts one sequence. It recomputes all activations
 through the frozen backbone and uses native stored parameter coordinates, keeping
-factorial scaling inside the model. Both modes verify input identity, forward
+factorial scaling inside the model. `shared_batch_query_coefficients` optimizes
+one `[layer,query,head,order]` table shared across every fitting sequence. It
+initializes from the arithmetic mean of captured effective coefficients across
+the full fitting batch and records original-parent and projected-initial losses
+separately. A scan computes microbatch gradients at the same table, averages them
+over the complete batch, and then performs one clipping/Adam update in factorial
+coordinates. It never maintains a separate coefficient table or optimizer for
+each sequence. All modes verify input identity, forward
 replay, an improving update, frozen-parameter checksums, and exact checkpoint
 resume before fitting. The study provides the frozen recipe and launches:
 `python -m scaffolds.transformer.training.coefficient_fit --run <run-directory>`.
 The retained best checkpoint contains only fitted parameters and references the
 source checkpoint for the frozen backbone. Per-update measurements are fitting
-metrics; no held-out evaluation is implied.
+metrics; no held-out evaluation is implied. Shared-table qualification checks
+original replay before projection and compares the training forward with the
+projected model; changing the initial function is not counted as fitting progress.
 
 ### PaTH position encoding
 

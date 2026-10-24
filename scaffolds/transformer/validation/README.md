@@ -2038,3 +2038,11 @@ update, frozen-backbone checksums, and exact resumed updates for the full degree
 15-layer model at 2,048 prediction tokens. Separately compiled BF16 training and
 capture forwards differ by 0.00172043 nats, within the explicit 0.002 tolerance;
 the standalone original and restored forward logits match exactly.
+
+## Coefficients shared across fitting sequences
+
+The [CPU record](runs/shared-batch-coefficient-fit/cpu.json) qualifies one position-dependent
+coefficient table broadcast across sequences: batch-mean initialization, mean gradients
+accumulated before one factorial-coordinate Adam update, microbatch invariance,
+frozen source parameters, and exact checkpoint resume. Existing generator and
+independent-coefficient checks also pass. GPU qualification is required before fitting.

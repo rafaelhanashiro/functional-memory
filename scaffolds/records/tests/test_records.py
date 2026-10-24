@@ -194,6 +194,33 @@ def test_index_distinguishes_query_conditioning_and_keeps_recipe_identity(tmp_pa
     assert regenerate_index(study).read_bytes() == first
 
 
+@pytest.mark.parametrize("parameterization", [None, "query_coefficient_generator", "shared_batch_query_coefficients"])
+def test_index_uses_shared_batch_table_recipe_instead_of_parent_generator(tmp_path, parameterization):
+    study = tmp_path / "study"
+    config = {"model": {"attention_coefficients": "learned",
+                        "attention_coefficient_conditioning": "query",
+                        "attention_coefficient_activation": "tanh",
+                        "attention_coefficient_parameterization": "direct",
+                        "attention_coefficient_initialization": "taylor"}}
+    if parameterization is not None:
+        config["oracle"] = {"parameterization": parameterization}
+    run = create_run(study, config)
+    # Mutable runtime descriptions must not select the scientific parameterization.
+    update_record(run, {"coefficient_parameterization": "shared_batch_query_coefficients"})
+    original_recipe = (run / "config.yaml").read_bytes()
+    first = regenerate_index(study).read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+    assert (run / "config.yaml").read_bytes() == original_recipe
+    with (study / "runs.csv").open() as stream:
+        row, = list(csv.DictReader(stream))
+    fields = ("coefficient_conditioning", "coefficient_activation",
+              "coefficient_parameterization", "coefficient_initialization")
+    expected = (("position", "identity", "shared_batch_query_coefficients", "mean_parent_batch_coefficients")
+                if parameterization == "shared_batch_query_coefficients" else
+                ("query", "tanh", "direct", "taylor"))
+    assert tuple(row[field] for field in fields) == expected
+
+
 def test_index_keeps_custom_polynomial_distinct_without_inventing_basis(tmp_path):
     study = tmp_path / "study"
     create_run(study, {"model": {"attention_degree": 2, "attention_coefficients": "fixed",

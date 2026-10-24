@@ -33,10 +33,13 @@ specify their own fitting objective, trainable parameters, and stopping rule.
 
 The [coefficient fitting topic](results/exploratory/coefficient_oracle/README.md)
 compares the fitting capacity of free query coefficients and the trained tanh
-query generator on one sequence, each with its own pretrained backbone frozen.
+query generator on one sequence, and coefficients shared across a full batch,
+each with its pretrained backbone frozen.
 Run `r3c0f21ab7dce` is the completed free-coefficient fit from the static checkpoint;
 `rd7bf9bc37cb6` is the completed fit of the original query generator from the query-only checkpoint.
-Their fitting metrics enter no canonical pretraining comparison.
+`r0963b3e6610b` fits one position-dependent coefficient table shared across the
+parent recipe's entire 256-sequence batch. Their fitting metrics enter no canonical
+pretraining comparison.
 
 Allocate the query-generator fit in its own worktree (once), commit the frozen
 inputs, then submit one B300 or H100 job:
@@ -47,6 +50,17 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transfor
 # Commit the allocated recipe and implementation before submitting.
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit submit \
   rd7bf9bc37cb6 --partition debug,standard,long --time-limit 02:00:00
+```
+
+Allocate the shared-coefficient batch fit with the same parent in its own worktree:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit prepare \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r98d5895c02d0 \
+  --parameterization shared_batch_query_coefficients
+# Commit frozen inputs before submitting; resumptions retain this run ID.
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit submit \
+  r0963b3e6610b --partition debug,standard,long --time-limit 02:00:00
 ```
 
 The shared fitting runtime qualifies the frozen-backbone update and checkpoint
