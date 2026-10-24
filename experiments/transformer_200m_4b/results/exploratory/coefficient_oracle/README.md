@@ -10,7 +10,7 @@ keep each source checkpoint's backbone frozen. They live in the
 | Run | Trained parameters | Source checkpoint | Status |
 | --- | --- | --- | --- |
 | `r3c0f21ab7dce` | Free coefficients per layer, head, query, and order | Static `r9b8acfcbeb89`, step 7,500 | Complete |
-| `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Prepared |
+| `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Running |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
@@ -88,7 +88,8 @@ sequence checksum. GPU qualification checks original-forward replay, gradients
 for all three generator parameter groups, a loss-reducing update, exact resume,
 and an unchanged frozen backbone.
 
-Findings are pending. If this generator nearly memorizes the sequence, it has
+Slurm job `224691` runs on one B300 in the `debug` partition. Findings are pending.
+If this generator nearly memorizes the sequence, it has
 sufficient capacity for this diagnostic. A higher plateau would implicate the
 generator or its optimization; it would not establish a pure representation
 limit. A free-coefficient fit from the same query-only checkpoint is a possible
