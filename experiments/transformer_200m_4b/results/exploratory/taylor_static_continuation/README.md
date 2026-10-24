@@ -39,8 +39,9 @@ before production. Execution commands are in the [study README](../../../README.
 
 ## Findings and open decision
 
-Both runs are submitted and awaiting GPU allocation; no continuation measurements
-are available yet. Their job IDs and execution settings are in their run records. Compare
+Both runs are allocated one B300 each in `standard` and are performing GPU
+acceptance before production. No continuation measurements are available yet.
+Their job IDs and execution settings are in their run records. Compare
 held-out NLL/PPL at matched continuation updates, particularly the terminal update
 500. Validation-best measurements are reported separately. A run that fails or is
 incomplete remains visible in `summary.csv`.
