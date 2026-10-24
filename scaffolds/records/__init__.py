@@ -462,6 +462,10 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
     budget = (optim.get("total_steps"), data.get("batch_size"), data.get("sequence_length"))
     prediction_tokens = budget[0] * budget[1] * (budget[2] - 1) if all(type(value) is int for value in budget) else None
     fit = config.get("fit", {}) if config.get("experiment_kind") == "frozen_pretrained_head_distillation" else {}
+    oracle = config.get("oracle", {})
+    shared_batch_coefficients = (isinstance(oracle, dict)
+                                 and oracle.get("parameterization") == "shared_batch_query_coefficients")
+    static_coefficients = isinstance(oracle, dict) and oracle.get("parameterization") == "static_coefficients"
 
     def relative_output_rms(rows):
         if not isinstance(rows, list) or not rows:
@@ -491,10 +495,10 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "qk_norm": _first(model.get("qk_norm"), record.get("qk_norm"), metadata.get("qk_norm")),
         "initialization": model.get("initialization"),
         "coefficient_mode": mode,
-        "coefficient_conditioning": model.get("attention_coefficient_conditioning"),
-        "coefficient_activation": model.get("attention_coefficient_activation"),
-        "coefficient_parameterization": _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
-        "coefficient_initialization": model.get("attention_coefficient_initialization"),
+        "coefficient_conditioning": "none" if static_coefficients else "position" if shared_batch_coefficients else model.get("attention_coefficient_conditioning"),
+        "coefficient_activation": "identity" if shared_batch_coefficients or static_coefficients else model.get("attention_coefficient_activation"),
+        "coefficient_parameterization": oracle["parameterization"] if shared_batch_coefficients or static_coefficients else _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
+        "coefficient_initialization": "mean_parent_token_coefficients" if static_coefficients else "mean_parent_batch_coefficients" if shared_batch_coefficients else model.get("attention_coefficient_initialization"),
         "coefficient_sharing": sharing,
         "denominator_degree": model.get("attention_denominator_degree"),
         "denominator_parameterization": model.get("attention_denominator_parameterization"),

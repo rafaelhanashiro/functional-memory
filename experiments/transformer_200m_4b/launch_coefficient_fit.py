@@ -1,4 +1,4 @@
-"""Allocate and submit a fixed-sequence fit of a pretrained query coefficient generator."""
+"""Allocate and submit fixed-input polynomial coefficient fitting diagnostics."""
 from __future__ import annotations
 
 import argparse
@@ -18,20 +18,41 @@ from scaffolds.records.selections import refresh_selection
 ROOT = Path(__file__).resolve().parents[2]
 STUDY = ROOT / "experiments/transformer_200m_4b"
 TOPIC = STUDY / "results/exploratory/coefficient_oracle"
-ROLE = "query_generator_single_sequence"
+PARAMETERIZATIONS = ("query_coefficient_generator", "shared_batch_query_coefficients", "static_coefficients")
 
 
 def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def prepare(parent: Path):
+def fitting_scope(parameterization, parent_batch_size, sequence_count=None):
+    """Resolve deliberately selected inputs without silently changing older modes."""
+    if parameterization not in PARAMETERIZATIONS:
+        raise ValueError(f"Unknown coefficient parameterization: {parameterization}")
+    if parameterization == "static_coefficients":
+        if sequence_count not in {1, 256} or sequence_count not in {1, parent_batch_size}:
+            raise ValueError("Static fitting requires --sequence-count 1 or the parent's full 256-sequence batch")
+        suffix = "single_sequence" if sequence_count == 1 else "full_batch"
+        return sequence_count, f"static_coefficients_{suffix}"
+    if sequence_count is not None:
+        raise ValueError("--sequence-count is only supported for static_coefficients")
+    if parameterization == "shared_batch_query_coefficients":
+        return parent_batch_size, "shared_coefficients_full_batch"
+    return 1, "query_generator_single_sequence"
+
+
+def prepare(parent: Path, *, parameterization="query_coefficient_generator", sequence_count=None):
+    if parameterization not in PARAMETERIZATIONS:
+        raise ValueError(f"Unknown coefficient parameterization: {parameterization}")
+    static = parameterization == "static_coefficients"
+    shared = parameterization in {"shared_batch_query_coefficients", "static_coefficients"}
     parent = parent.resolve()
     record = load_run(parent)
     validate_record(parent, checkpoint_hashes=False)
     if record["status"] != "complete" or record["home_cluster"] != "kennel":
         raise ValueError("The parent must be a completed Kennel run")
     source = yaml.safe_load((parent / "config.yaml").read_text())
+    count, role = fitting_scope(parameterization, int(source["data"]["batch_size"]), sequence_count)
     model = source["model"]
     if (model["attention_degree"] != 8 or model["attention_coefficient_conditioning"] != "query"
             or model["attention_coefficients"] != "learned" or model["attention_normalization"]
@@ -50,21 +71,33 @@ def prepare(parent: Path):
         raise ValueError("Parent retained checkpoint and validation best disagree")
     selection_path = TOPIC / "selection.yaml"
     selection = yaml.safe_load(selection_path.read_text())
-    if any(entry["role"] == ROLE for entry in selection["runs"]):
-        raise ValueError("A query-generator fit is already allocated in this topic")
+    if any(entry["role"] == role for entry in selection["runs"]):
+        raise ValueError(f"A {role} fit is already allocated in this topic")
     reference_run = STUDY / "runs/r3c0f21ab7dce"
     sequence_identity = json.loads((reference_run / "data_identity.json").read_text())
     if sequence_identity["manifest_sha256"] != sha256(source["data"]["eval_manifest"]):
         raise ValueError("The fitting sequence's manifest changed")
+    microbatch = min(count, 8) if shared else 1
+    learning_rate = 0.01 if shared else 0.001
+    if shared:
+        import numpy as np
+        from scaffolds.transformer.data.packed import PackedBatchIterator
+        batch = next(iter(PackedBatchIterator(
+            source["data"]["eval_manifest"], batch_size=count,
+            sequence_length=source["data"]["sequence_length"], start_sequence=0,
+        )))
+        sequence_identity["batch_sha256"] = hashlib.sha256(batch.astype(np.int32).tobytes()).hexdigest()
     recipe = deepcopy(source)
     recipe["model"].pop("gdn_polynomial_degree", None)
-    label = "query-generator-m8-single-sequence"
+    label = "shared-coefficients-m8-full-batch" if shared else "query-generator-m8-single-sequence"
+    if static:
+        label = "static-coefficients-m8-" + ("single-sequence" if count == 1 else "full-batch")
     recipe.update(schema_version=1, experiment_kind="fixed_input_coefficient_fit",
-                  condition="coefficient_oracle/query_generator_single_sequence")
-    recipe["data"]["batch_size"] = 1
-    recipe["optim"].update(learning_rate=0.001, min_learning_rate=0.0001,
+                  condition=f"coefficient_oracle/{role}")
+    recipe["data"]["batch_size"] = count
+    recipe["optim"].update(learning_rate=learning_rate, min_learning_rate=learning_rate / 10,
                            weight_decay=0.0, warmup_steps=0, total_steps=10000)
-    recipe["train"].update(source_commit="auto", micro_batch_size=1,
+    recipe["train"].update(source_commit="auto", micro_batch_size=microbatch,
                            log_every=1, eval_every=1, eval_batches=1, ckpt_every=100,
                            wandb_run_name=label, wandb_group=STUDY.name, wandb_dir=None)
     recipe["oracle"] = {
@@ -75,9 +108,9 @@ def prepare(parent: Path):
         "parent_checkpoint_sha256": descriptor["sha256"],
         "eval_manifest_sha256": sequence_identity["manifest_sha256"],
         "batch_sha256": sequence_identity["batch_sha256"],
-        "sequence_count": 1, "microbatch_size": 1, "data_start": 0,
+        "sequence_count": count, "microbatch_size": microbatch, "data_start": 0,
         "data_split": "eval", "data_role": "fitting inputs; no generalization evaluation",
-        "parameterization": "query_coefficient_generator",
+        "parameterization": parameterization,
         "trainable_parameters": ["query_polynomial_bias", "query_polynomial_amplitude", "query_polynomial_kernel"],
         "coefficient_storage": "native trained generator parameters",
         "optimizer_coordinates": "native stored generator parameters; factorial scaling remains in the model",
@@ -85,28 +118,45 @@ def prepare(parent: Path):
         "initialization": "restore trained query coefficient generator without resetting parameters",
         "max_updates": 10000, "initial_updates": 2000, "plateau_window": 200,
         "plateau_tolerance": 0.001, "confirmation_updates": 500,
-        "learning_rate": 0.001, "learning_rate_decay": 0.1,
+        "learning_rate": learning_rate, "learning_rate_decay": 0.1,
         "beta1": 0.9, "beta2": 0.95, "epsilon": 1e-8, "clip_norm": 1.0,
         "gradient_scaling": "mean next-token NLL on the one fixed sequence",
         "checkpoint_every": 100,
         "checkpoint_selection": "lowest fitting NLL; no independent validation",
     }
+    if shared:
+        recipe["oracle"].update(
+            trainable_parameters=["shared_effective_monomial_coefficients"],
+            coefficient_storage="one [layer, query_position, head, order] table shared across all sequences and causal keys",
+            optimizer_coordinates="factorial(order)*effective_monomial_coefficient",
+            frozen_parameters="all pretrained parameters; original query generator bypassed by the shared table",
+            initialization="mean of parent effective coefficients across the entire fitting batch at each layer/query/head/order",
+            gradient_scaling="mean next-token NLL across the full batch; accumulate all microbatch gradients before one clip and Adam update",
+        )
+    if static:
+        recipe["oracle"].update(
+            trainable_parameters=["static_effective_monomial_coefficients"],
+            coefficient_storage="one [layer, head, order] table shared across all query positions, sequences, and causal keys",
+            initialization="mean of parent effective coefficients across all fitting sequences and query positions at each layer/head/order",
+        )
     run = create_run(STUDY, recipe, label=label)
     update_record(run, {
         "home_cluster": "kennel", "seed": source["train"]["seed"],
         "parent_run_id": parent.name, "parent_study": parent.parent.parent.name,
-        "coefficient_sharing": "shared query-conditioned generator per layer and head",
-        "coefficient_parameterization": "query_coefficient_generator",
-        "checkpoint_retention": "best fitting generator parameters; backbone referenced by source checkpoint",
+        "coefficient_sharing": ("shared across query positions, sequences, and causal keys; separate per layer/head/order" if static else
+                                "shared across sequences and causal keys; separate per layer/query position/head/order"
+                                if shared else "shared query-conditioned generator per layer and head"),
+        "coefficient_parameterization": parameterization,
+        "checkpoint_retention": "best fitting parameters; backbone referenced by source checkpoint",
         "source_checkpoint": {**descriptor, "path": str(checkpoint)},
     })
     previous_parent = selection["settings"].pop("parent_run_id", None)
     for entry in selection["runs"]:
         if previous_parent:
             entry.setdefault("parent_run_id", previous_parent)
-    selection["question"] = "How much can polynomial coefficients fit a fixed sequence with a frozen 4B backbone?"
+    selection["question"] = "How much can polynomial coefficients fit fixed inputs with a frozen 4B backbone?"
     selection["settings"]["comparison"] = "Different source backbones; compare fitting capacity, not a matched-backbone parameterization ablation"
-    selection["runs"].append({"study": STUDY.name, "run_id": run.name, "role": ROLE,
+    selection["runs"].append({"study": STUDY.name, "run_id": run.name, "role": role,
                               "parent_run_id": parent.name, "sources": {}})
     selection_path.write_text(yaml.safe_dump(selection, sort_keys=False))
     refresh_selection(TOPIC)
@@ -133,7 +183,7 @@ def submit(run_id, *, partition="debug,standard,long", time_limit="02:00:00"):
     command = ["sbatch", "--parsable", "--nice=0", f"--partition={partition}",
                "--gres=gpu:1", "--exclude=collie,samoyed,doodle,terrier,mastiff",
                "--cpus-per-task=8", "--mem=96G", f"--time={time_limit}",
-               f"--job-name=query-fit-{run_id}", f"--output={log}", f"--error={log}",
+               f"--job-name=coefficient-fit-{run_id}", f"--output={log}", f"--error={log}",
                str(STUDY / "coefficient_fit.sbatch"), str(ROOT), commit, run_id]
     job = subprocess.check_output(command, cwd=ROOT, text=True).strip().split(";")[0]
     if not job.isdigit():
@@ -151,13 +201,15 @@ def main():
     sub = parser.add_subparsers(dest="command", required=True)
     prep = sub.add_parser("prepare")
     prep.add_argument("--parent", type=Path, required=True)
+    prep.add_argument("--parameterization", choices=PARAMETERIZATIONS, default=PARAMETERIZATIONS[0])
+    prep.add_argument("--sequence-count", type=int, choices=(1, 256))
     launch = sub.add_parser("submit")
     launch.add_argument("run_id")
     launch.add_argument("--partition", default="debug,standard,long")
     launch.add_argument("--time-limit", default="02:00:00")
     args = parser.parse_args()
     if args.command == "prepare":
-        prepare(args.parent)
+        prepare(args.parent, parameterization=args.parameterization, sequence_count=args.sequence_count)
     else:
         submit(args.run_id, partition=args.partition, time_limit=args.time_limit)
 

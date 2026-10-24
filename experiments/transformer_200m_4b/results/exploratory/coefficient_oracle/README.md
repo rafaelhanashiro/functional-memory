@@ -2,19 +2,23 @@
 
 Opened: **2026-10-23**. Home cluster: **Kennel**.
 
-How much of the ability to fit one sequence can the trained query-only coefficient
-generator realize? These exploratory fits use the same first packed sequence and
-keep each source checkpoint's backbone frozen. They live in the
+How much can polynomial coefficients fit one sequence or a full batch, and how
+does sharing coefficients across sequences constrain that capacity? These exploratory
+fits start at the first packed evaluation sequence and keep each source checkpoint's
+backbone frozen. They live in the
 [200M / 4B study](../../../README.md) and enter no canonical comparison.
 
 | Run | Trained parameters | Source checkpoint | Status |
 | --- | --- | --- | --- |
 | `r3c0f21ab7dce` | Free coefficients per layer, head, query, and order | Static `r9b8acfcbeb89`, step 7,500 | Complete |
 | `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Complete |
+| `r0963b3e6610b` | One coefficient table shared across 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
+| `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Complete |
+| `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
-perplexities measure the fitting sequence, not generalization.
+perplexities measure the fitting inputs, not held-out generalization.
 
 ## Free coefficients from the static checkpoint
 
@@ -115,6 +119,124 @@ separately compiled training forward differs from the capture forward by
 0.00172043 nats, within the recorded BF16 tolerance of 0.002. Both the initial
 and fitted losses in the table use the same training graph. Checkpoint roundtrip
 and the next resumed update were exact.
+
+## Coefficients shared across a full batch
+
+Run `r0963b3e6610b` restores the original query-only checkpoint `r98d5895c02d0`
+at step 7,500. It fits a single effective coefficient table with axes
+`[layer, query_position, head, order]`, shape `[15, 2048, 14, 9]`, and
+**3,870,720 trainable scalars**. This same table is broadcast across every sequence
+in the batch, and each query polynomial is shared across its causal keys. It is
+position dependent but does not depend on input content. All pretrained parameters
+are frozen, and the original query generator is bypassed by the table.
+
+The fitting input is the first **256 packed evaluation sequences**, with **524,288
+prediction targets**, including the first sequence used above. Initial coefficients
+are the arithmetic mean of the parent model's effective coefficients over these
+256 sequences at each layer, query position, head, and order. That projection
+changes the model's function, so original-parent NLL, projected-initial NLL, and
+fitting-graph initial NLL are recorded separately. Fitting gains compare the initial
+and fitted states using the same training graph.
+
+Adam operates in factorial-scaled coordinates with LR 0.01, betas 0.9/0.95,
+epsilon 1e-8, clipping at 1, and no decay. Microbatches of eight accumulate the
+mean gradient over the entire batch before **one** clipping and Adam update;
+there are no separate per-sequence parameters or optimizer states. Every forward
+recomputes the backbone normally. The minimum 2,000 updates, 200-update plateau
+window, 0.001-nat tolerance, tenfold LR reduction, 500 confirmation updates, and
+10,000-update safety limit match the other free-coefficient fit.
+
+Slurm job `224910` is running on one H100 on `dogo` in the `debug` partition.
+GPU qualification passed original coefficient replay, shared-table repeatability,
+an improving full-batch update, unchanged pretrained parameters, and exact checkpoint
+resume. Fitting is underway; no terminal result is available yet.
+
+This tests whether one coefficient table can reduce loss across many fitting
+sequences simultaneously. It places a stronger sharing constraint than independent
+per-sequence coefficients, but the batch is training data for this diagnostic;
+transfer to unseen sequences is not measured.
+
+## Static coefficients on one sequence and a full batch
+
+Two further fits remove both query-position and input-content dependence. Each
+trains one effective monomial coefficient tensor `[layer, head, order]`, shape
+`[15, 14, 9]`: **1,890 trainable scalars**. Every query position and every sequence
+uses the same polynomial within a layer and head. This is the static coefficient
+parametrization, evaluated as a fitting diagnostic with the backbone frozen.
+
+Both start from query-only parent `r98d5895c02d0`, checkpoint 7,500. Run
+`r22854de31b96` fits the same first packed sequence; `r5b28697413fa` fits the
+same first 256 packed sequences as the position-dependent batch diagnostic. For each fit, initialization is the mean
+of that parent's effective coefficients across all sequences and query positions
+in its fitting set. This projection changes the original forward, so original,
+projected-initial, and fitting-graph initial losses are recorded separately.
+All original model parameters remain frozen; the original generator is bypassed
+by the static tensor, and activations are recomputed normally.
+
+Both use Adam in factorial coordinates with LR 0.01, betas 0.9/0.95, epsilon
+1e-8, clipping at 1, and no decay. Gradients average over all fitting tokens before
+one clipping and optimizer update. The batch fit accumulates microbatches of eight;
+the sequence fit uses one. The minimum 2,000 updates, 200-update plateau window,
+0.001-nat tolerance, tenfold LR reduction, and 500 confirmation updates match the
+position-dependent fit. The 10,000-update safety limit pauses an unconverged run.
+
+The single-sequence fit completed on one H100 in `debug`, Slurm job `224916`,
+in 2 minutes 50 seconds including qualification. The independent full-batch fit
+completed on one H100 in `debug`, Slurm job `224917`, in 1 hour 14 minutes
+18 seconds including qualification.
+Both jobs passed GPU qualification, including exact checkpoint resume, before fitting.
+
+### Single-sequence findings
+
+The plateau controller reduced LR from 0.01 to 0.001 at update 3,430 and stopped
+at update 4,112. The best retained static tensor is from update 4,041. All pretrained
+parameters remained unchanged. All measurements were finite, but optimization
+was uneven: 212 of 4,113 gradient evaluations exceeded the clipping threshold,
+including 24 after the LR reduction.
+
+| Measurement | Update | Fitting NLL | Fitting PPL |
+| --- | ---: | ---: | ---: |
+| Initial training graph | 0 | 2.611659288 | 13.62163433 |
+| Best retained | 4,041 | 2.170698166 | 8.76440091 |
+| Terminal | 4,112 | 2.172165871 | 8.77727391 |
+
+Static coefficients improve fitting, but this run does not approach memorization.
+The original query generator (`rd7bf9bc37cb6`) reached PPL 1.00544 from the same
+parent checkpoint and sequence. The fit optimizers operate on different parameters
+with different learning rates, so this comparison demonstrates the fitting achieved
+by these runs; it does not prove a global optimum for static coefficients.
+
+Qualification replayed the original coefficients exactly. The static projected
+forward is repeatable, and its training graph differed by only 0.00015569 nats
+from the separately compiled evaluation graph. Initialization and final fitting
+metrics above use the same training graph. Checkpoint resume was exact.
+
+### Full-batch findings
+
+The plateau controller reduced LR from 0.01 to 0.001 at update 2,000 and stopped
+at update 2,500 after 500 confirmation updates. The best retained static tensor
+is from update 2,333. All 2,501 measurements and gradient norms were finite,
+no gradient was clipped, and all pretrained parameters remained unchanged.
+
+| Measurement | Update | Fitting NLL | Fitting PPL |
+| --- | ---: | ---: | ---: |
+| Initial training graph | 0 | 2.728801250 | 15.31451774 |
+| Best retained | 2,333 | 2.720215797 | 15.18359847 |
+| Terminal | 2,500 | 2.720302105 | 15.18490899 |
+
+The static batch fit improves only slightly from its projected initialization
+and plateaus far from memorization. Its final loss is close to the original
+query-only checkpoint's batch NLL, 2.719785738: fitting mostly recovers the loss
+introduced by averaging away the input and position dependence. The residual
+difference is smaller than the recorded BF16 cross-compilation tolerance, so it
+is not evidence that either original or fitted static coefficients are better.
+This result describes the achieved fit under this optimizer and stopping rule,
+not a proven global optimum or a held-out generalization measurement.
+
+The batch static tensor is a restriction of the position-dependent tensor, on the
+same source backbone and fitting batch. Comparing these fitting results tests the
+benefit of query-position freedom. Neither fit evaluates unseen-sequence transfer,
+and neither retrains the backbone as in the original static pretraining runs.
 
 ## Open decision and regeneration
 

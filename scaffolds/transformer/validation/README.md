@@ -2038,3 +2038,32 @@ update, frozen-backbone checksums, and exact resumed updates for the full degree
 15-layer model at 2,048 prediction tokens. Separately compiled BF16 training and
 capture forwards differ by 0.00172043 nats, within the explicit 0.002 tolerance;
 the standalone original and restored forward logits match exactly.
+
+## Coefficients shared across fitting sequences
+
+The [CPU record](runs/shared-batch-coefficient-fit/cpu.json) qualifies one position-dependent
+coefficient table broadcast across sequences: batch-mean initialization, mean gradients
+accumulated before one factorial-coordinate Adam update, microbatch invariance,
+frozen source parameters, and exact checkpoint resume. Existing generator and
+independent-coefficient checks also pass. The [H100 qualification](runs/shared-batch-coefficient-fit/gpu-h100.json)
+passes original coefficient replay over all 256 sequences, repeated shared-table
+forward execution, an improving mean-gradient update, an unchanged source tree,
+and exact checkpoint resume for the 15-layer degree-eight model.
+
+## Static coefficient fitting
+
+The [CPU record](runs/static-coefficient-fit/cpu.json) qualifies one coefficient
+vector per layer and head, shared across all positions and sequences. Checks
+cover mean initialization over both axes, equivalence to a constant positional
+table, direct full-batch gradients, one factorial-coordinate Adam update after
+accumulation, a frozen source tree, and exact resume for single-sequence and
+batch fitting. Existing coefficient-fitting modes retain their checks. Each GPU
+execution must pass its forward, update, and resume qualification before fitting.
+
+The [single-sequence H100 qualification](runs/static-coefficient-fit/gpu-h100-single.json)
+passes original replay, repeated static-table forward, an improving gradient update,
+frozen source parameters, and exact checkpoint resume at shape `[15,14,9]`.
+
+The [256-sequence H100 qualification](runs/static-coefficient-fit/gpu-h100-batch.json)
+also passes with eight-sequence microbatches and one mean-gradient Adam update
+per full batch, using the same static tensor shape.

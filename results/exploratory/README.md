@@ -6,7 +6,7 @@ either promoted into a canonical result collection or deleted with its runs; see
 
 | Topic | Question | Opened |
 | --- | --- | --- |
-| [4B coefficient oracle](../../experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/README.md) | How much can free coefficients and the original query generator fit one sequence with a frozen 4B backbone? | 2026-10-23 |
+| [4B coefficient oracle](../../experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/README.md) | How does sharing coefficients across sequences and query positions affect fitting with a frozen 4B backbone? | 2026-10-23 |
 | [coefficient_oracle](coefficient_oracle/README.md) | How much can free per-query polynomial coefficients improve a fixed pretrained model on one sequence or a full batch? | 2026-10-23 |
 | [gradient_spikes](gradient_spikes/README.md) | Where do gradient spikes occur in learned-coefficient attention, with and without head RMSNorm, and in the references? Kept as a diagnostic record. | 2026-10-09 |
 | [path_position_encoding](path_position_encoding/README.md) | Does replacing RoPE with PaTH improve softmax and query-conditioned tanh polynomial attention? | 2026-10-19 |
