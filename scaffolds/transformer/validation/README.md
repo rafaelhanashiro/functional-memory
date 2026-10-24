@@ -22,8 +22,12 @@ backbone-update semantics, interrupted packed training with exact resume, baseli
 metrics, and rejection of changed source identities. See
 [CPU test record](runs/continuation/cpu-tests.json) and the separately recorded
 [full-size parent restore](runs/continuation/cpu-parent-initialization.json).
-GPU acceptance additionally qualifies the actual continuation and its fresh-process
-resume on the allocated hardware before production training.
+[B300 qualification](runs/continuation/gpu-b300.json) passed for both fixed Taylor
+and learned static degree-eight continuations of the 200M model on one GPU with
+CUDA 13 and Mosaic. Both restored identical backbone parameters and Adam history,
+used matching data and RNG, passed finite 20-update pilots, and resumed exactly in
+a fresh process. Each passed 47 GPU tests; fixed and learned cases additionally
+passed 256 and 324 CPU tests respectively, plus nine distributed CPU tests each.
 
 ### Static coefficient capture and override
 

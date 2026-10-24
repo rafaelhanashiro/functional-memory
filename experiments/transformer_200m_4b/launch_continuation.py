@@ -21,6 +21,7 @@ TOPIC = STUDY / "results/exploratory/taylor_static_continuation"
 ROLES = ("fixed_taylor", "learned_static")
 UPDATES = 500
 LEARNING_RATE = 0.0001
+DEFAULT_TIME_LIMIT = "06:00:00"
 
 
 def sha256(path: Path) -> str:
@@ -130,7 +131,18 @@ def submission_command(run_id: str, commit: str, *, partition: str, time_limit: 
             str((run / "config.yaml").relative_to(ROOT)), commit, "1", "B300,H100"]
 
 
-def submit(run_id: str, *, partition: str = "standard,long", time_limit: str = "02:00:00") -> str:
+def live_job_state(job_id: str) -> str:
+    """An expired Slurm job ID is absent; other scheduler failures remain errors."""
+    result = subprocess.run(["squeue", "-h", "-j", str(job_id), "-o", "%T"],
+                            text=True, capture_output=True)
+    if result.returncode:
+        if "invalid job id" in result.stderr.lower():
+            return ""
+        raise RuntimeError(f"Cannot check existing Slurm job {job_id}: {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def submit(run_id: str, *, partition: str = "standard,long", time_limit: str = DEFAULT_TIME_LIMIT) -> str:
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     dirty = changes(ROOT, commit, STUDY.name, "transformer")
     if dirty:
@@ -145,7 +157,7 @@ def submit(run_id: str, *, partition: str = "standard,long", time_limit: str = "
         raise ValueError("The run is already complete")
     previous = record.get("submission", {}).get("slurm_job_id")
     if previous:
-        live = subprocess.check_output(["squeue", "-h", "-j", str(previous), "-o", "%T"], text=True).strip()
+        live = live_job_state(str(previous))
         if live:
             raise ValueError(f"Run already has live job {previous}: {live}")
     command = submission_command(run_id, commit, partition=partition, time_limit=time_limit)
@@ -164,7 +176,7 @@ def submit(run_id: str, *, partition: str = "standard,long", time_limit: str = "
     return job
 
 
-def main() -> None:
+def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     prep = sub.add_parser("prepare")
@@ -172,8 +184,8 @@ def main() -> None:
     launch = sub.add_parser("submit")
     launch.add_argument("run_id")
     launch.add_argument("--partition", default="standard,long")
-    launch.add_argument("--time-limit", default="02:00:00")
-    args = parser.parse_args()
+    launch.add_argument("--time-limit", default=DEFAULT_TIME_LIMIT)
+    args = parser.parse_args(argv)
     if args.command == "prepare":
         prepare(args.parent)
     else:

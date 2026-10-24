@@ -39,19 +39,36 @@ before production. Execution commands are in the [study README](../../../README.
 
 ## Findings and open decision
 
-Both runs passed GPU acceptance and are training on one B300 each in `standard`.
+Both runs completed all 500 updates on one B300 each after passing GPU acceptance.
 Their independently evaluated starting checkpoints have exactly matching held-out
-PPL **14.2561500256**. Post-update comparisons are not yet available.
-Their job IDs and execution settings are in their run records. Compare
-held-out NLL/PPL at matched continuation updates, particularly the terminal update
-500. Validation-best measurements are reported separately. A run that fails or is
-incomplete remains visible in `summary.csv`.
+PPL **14.2561500256**. The terminal checkpoint is also validation best in both runs.
 
-If learned coefficients improve over the continued Taylor control, delayed
-coefficient learning becomes a candidate training change. If they fall behind,
-coefficient optimization and regularization remain the next questions. This single
-seed and short continuation cannot establish that any parameterization is optimal.
-The runs enter no canonical pretraining comparison while this topic is open.
+| Continuation | Initial PPL | Terminal PPL | Validation-best PPL / step |
+| --- | ---: | ---: | --- |
+| Fixed Taylor | 14.256150 | 14.195665 | 14.195665 / 8,000 |
+| Learned static | 14.256150 | 14.194798 | 14.194798 / 8,000 |
+
+Learned static is slightly better at every post-update evaluation, but its terminal
+advantage is only **0.000867 PPL (0.0061%)**, or **0.0000611 nats/token**. The two
+continuations are effectively tied. Both improve with the additional training;
+this improvement alone cannot be attributed to learning coefficients.
+
+All 1,890 stored coefficients moved from their Taylor initialization `a_r = 1`.
+Their mean absolute change is **0.008436**, with a maximum change of **0.04032**;
+terminal values span approximately **[0.95968, 1.03931]**. Thus the learned branch
+performed real coefficient updates, but remained close to Taylor. Every validation
+passed the numerical diagnostics, and neither continuation clipped gradients.
+
+This single-seed, 500-update test shows that enabling static coefficients late
+preserves Taylor's quality, with negligible observed benefit at learning rate
+0.0001. It does not identify the cause of the original from-scratch static deficit
+or establish delayed unfreezing as a general fix. Other coefficient learning rates,
+longer continuations, and seed variation remain untested here.
+
+**Open decision:** whether to investigate coefficient update scale or a different
+unfreezing point next. The topic remains open, and these runs enter no canonical
+pretraining comparison. `summary.csv` reports every matched evaluation, terminal
+status, and validation-best selection separately.
 
 ## Regeneration
 

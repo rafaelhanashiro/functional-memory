@@ -1,5 +1,9 @@
 from copy import deepcopy
+import subprocess
 
+import pytest
+
+from experiments.transformer_200m_4b import launch_continuation
 from experiments.transformer_200m_4b.launch_continuation import recipes, submission_command
 
 
@@ -35,10 +39,40 @@ def test_matched_pair_preserves_parent_science_except_new_coefficients():
 
 def test_independent_single_gpu_submission_uses_shared_acceptance():
     command = submission_command("r0123456789ab", "a" * 40,
-                                 partition="standard,long", time_limit="02:00:00")
+                                 partition="standard,long", time_limit="06:00:00")
     assert "--gres=gpu:1" in command
     assert "--partition=standard,long" in command
     assert not any(arg.startswith(("--dependency", "--nice")) for arg in command)
     assert command[-5:] == ["experiments.transformer_200m_4b.acceptance",
                            "experiments/transformer_200m_4b/runs/r0123456789ab/config.yaml",
                            "a" * 40, "1", "B300,H100"]
+
+
+def test_default_allocation_leaves_time_after_acceptance_reserve(monkeypatch):
+    from scaffolds.transformer.acceptance import require_allocation_budget
+
+    captured = {}
+    monkeypatch.setattr(launch_continuation, "submit", lambda run_id, **kwargs: captured.update(kwargs))
+    launch_continuation.main(["submit", "r0123456789ab"])
+    assert captured["time_limit"] == launch_continuation.DEFAULT_TIME_LIMIT
+    hours, minutes, seconds = map(int, captured["time_limit"].split(":"))
+    allocation = 3600 * hours + 60 * minutes + seconds
+    require_allocation_budget(3600, allocation)
+
+
+@pytest.mark.parametrize("returncode,stdout,stderr,expected", [
+    (0, "RUNNING\n", "", "RUNNING"),
+    (0, "", "", ""),
+    (1, "", "slurm_load_jobs error: Invalid job id specified", ""),
+])
+def test_live_job_lookup_accepts_expired_ids(monkeypatch, returncode, stdout, stderr, expected):
+    monkeypatch.setattr(launch_continuation.subprocess, "run", lambda *args, **kwargs:
+                        subprocess.CompletedProcess(args[0], returncode, stdout=stdout, stderr=stderr))
+    assert launch_continuation.live_job_state("224999") == expected
+
+
+def test_live_job_lookup_preserves_scheduler_errors(monkeypatch):
+    monkeypatch.setattr(launch_continuation.subprocess, "run", lambda *args, **kwargs:
+                        subprocess.CompletedProcess(args[0], 1, stdout="", stderr="scheduler unavailable"))
+    with pytest.raises(RuntimeError, match="scheduler unavailable"):
+        launch_continuation.live_job_state("224999")

@@ -105,6 +105,9 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch
   r0332cff0b0c0 --partition standard,long --time-limit 06:00:00
 ```
 
+The two recorded continuations are complete; findings and the open research
+decision are in the topic. Fresh reproductions receive new run IDs. The launcher
+defaults to six hours, including the shared acceptance procedure's two-hour reserve.
 Each job requests one B300 or H100 GPU. The launcher's frozen-source check and
 shared runtime qualification run on every allocation; the scientific global batch
 stays fixed through gradient accumulation. See the topic for comparison settings,
