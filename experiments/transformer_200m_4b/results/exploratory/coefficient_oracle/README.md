@@ -10,7 +10,7 @@ keep each source checkpoint's backbone frozen. They live in the
 | Run | Trained parameters | Source checkpoint | Status |
 | --- | --- | --- | --- |
 | `r3c0f21ab7dce` | Free coefficients per layer, head, query, and order | Static `r9b8acfcbeb89`, step 7,500 | Complete |
-| `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Running |
+| `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
@@ -88,12 +88,33 @@ sequence checksum. GPU qualification checks original-forward replay, gradients
 for all three generator parameter groups, a loss-reducing update, exact resume,
 and an unchanged frozen backbone.
 
-Slurm job `224691` runs on one B300 in the `debug` partition. Findings are pending.
-If this generator nearly memorizes the sequence, it has
-sufficient capacity for this diagnostic. A higher plateau would implicate the
-generator or its optimization; it would not establish a pure representation
-limit. A free-coefficient fit from the same query-only checkpoint is a possible
-follow-up, not part of this execution.
+### Findings
+
+Slurm job `224691` completed on one B300 in the `debug` partition in **3 minutes
+27 seconds**, including GPU qualification. Fitting stopped at update **2,684**,
+500 updates after the plateau controller reduced the learning rate at **2,184**.
+The retained best generator is from update **2,656**. All backbone parameters
+retained their original checksum; all three generator parameter groups had
+finite, nonzero gradients in qualification.
+
+| Measurement | Update | Fitting NLL | Fitting PPL |
+| --- | ---: | ---: | ---: |
+| Initial | 0 | 2.603273392 | 13.50788234 |
+| Best retained | 2,656 | 0.005425740 | 1.00544049 |
+| Terminal | 2,684 | 0.005504376 | 1.00551955 |
+
+**The original trained query generator can nearly memorize this sequence with
+its backbone frozen.** Its parametrization therefore has sufficient capacity
+for this diagnostic. The result does not establish an advantage on unseen
+sequences or explain why joint pretraining ties fixed Taylor. The earlier free
+coefficients also nearly memorized the sequence, but from a different backbone;
+their small difference in fitting PPL is not a controlled comparison.
+
+The original and restored standalone forward logits matched exactly. The
+separately compiled training forward differs from the capture forward by
+0.00172043 nats, within the recorded BF16 tolerance of 0.002. Both the initial
+and fitted losses in the table use the same training graph. Checkpoint roundtrip
+and the next resumed update were exact.
 
 ## Open decision and regeneration
 

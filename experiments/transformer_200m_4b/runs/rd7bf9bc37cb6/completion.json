@@ -1,0 +1,17 @@
+{
+  "best_fit_nll": 0.0054257395677268505,
+  "best_nll": 0.0054257395677268505,
+  "best_step": 2656,
+  "finished_utc": "2026-10-24T02:44:39.928336+00:00",
+  "fit_nll": 0.005504376254975796,
+  "fit_perplexity": 1.0055195531676555,
+  "frozen_parameter_scope": "backbone",
+  "frozen_parameters_unchanged": true,
+  "initial_nll": 2.603273391723633,
+  "interpretation": "Fixed-input coefficient fitting, not held-out generalization.",
+  "learning_rate_reduced_at": 2184,
+  "nll_reduction": 2.597847652155906,
+  "parameterization": "query_coefficient_generator",
+  "status": "complete",
+  "step": 2684
+}

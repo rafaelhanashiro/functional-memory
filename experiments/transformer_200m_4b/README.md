@@ -35,7 +35,7 @@ The [coefficient fitting topic](results/exploratory/coefficient_oracle/README.md
 compares the fitting capacity of free query coefficients and the trained tanh
 query generator on one sequence, each with its own pretrained backbone frozen.
 Run `r3c0f21ab7dce` is the completed free-coefficient fit from the static checkpoint;
-`rd7bf9bc37cb6` fits the original query generator from the query-only checkpoint.
+`rd7bf9bc37cb6` is the completed fit of the original query generator from the query-only checkpoint.
 Their fitting metrics enter no canonical pretraining comparison.
 
 Allocate the query-generator fit in its own worktree (once), commit the frozen

@@ -2032,5 +2032,9 @@ parameter updates as well as free coefficient tables. Its
 identity, selective generator updates, native Adam coordinates without duplicate
 factorial scaling, downstream activation recomputation, group-gradient accounting,
 and exact checkpoint resume. Six generator checks and four existing free-table
-checks pass. GPU qualification runs before fitting and is retained in the run's
-`oracle_acceptance.json`; CPU evidence alone does not qualify the GPU execution.
+checks pass. [B300 qualification](runs/query-generator-fit/gpu-b300.json)
+passed original-forward replay, all three parameter-group gradients, an improving
+update, frozen-backbone checksums, and exact resumed updates for the full degree-eight
+15-layer model at 2,048 prediction tokens. Separately compiled BF16 training and
+capture forwards differ by 0.00172043 nats, within the explicit 0.002 tolerance;
+the standalone original and restored forward logits match exactly.
