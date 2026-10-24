@@ -180,8 +180,10 @@ not identify every upstream operation responsible or promise bitwise training.
 The [degree-12 replay](runs/query-key-b300-qualification/roundoff-m12.json)
 covers all 72 rejected projection slices and 20 bias/amplitude slices across 33
 layer/head cases. All 78 coefficient-family/order vectors across the two affected
-layers pass independent all-head contractions. All 145 nonembedding gradients
-repeat exactly; embedding variation is 1.520–1.633% relative L2 and 4.185–5.579%
+layers pass independent all-head contractions. The worst local attention-gradient
+error against FP64 is 0.199%; changed incoming adjoints explain at least 99.9825%
+of each rejected slice's change. All 145 nonembedding gradients repeat exactly;
+embedding variation is 1.520–1.633% relative L2 and 4.185–5.579%
 relative maximum, within the original 2.5%/12.5% bounds.
 
 The [combined decision](runs/query-key-b300-qualification/decision.json) is
