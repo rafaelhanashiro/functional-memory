@@ -1,4 +1,19 @@
 {
+  "attempts": [
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 80GB HBM3",
+      "node": "dogo.csail.mit.edu",
+      "phase": "training",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-coefficient-fit-4b/scaffolds/transformer/.venv/bin/python",
+      "slurm_job_id": "224917",
+      "slurm_partition": "debug",
+      "slurm_restart_count": 0,
+      "source_commit": "0f41845e9c5720c581f32c2d2be40fe7935232fe",
+      "started_utc": "2026-10-24T11:02:03.270684+00:00"
+    }
+  ],
   "checkpoint_retention": "best fitting parameters; backbone referenced by source checkpoint",
   "coefficient_parameterization": "static_coefficients",
   "coefficient_sharing": "shared across query positions, sequences, and causal keys; separate per layer/head/order",
@@ -11,9 +26,43 @@
   "label": "static-coefficients-m8-full-batch",
   "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-coefficient-fit-4b/experiments/transformer_200m_4b/runs/r5b28697413fa/training.log",
   "name": "static-coefficients-m8-full-batch",
+  "oracle_runtime": {
+    "coefficient_layout": "layer,head,order",
+    "coefficient_storage": "effective_monomial_coefficients",
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "device_count": 1,
+    "device_kind": "NVIDIA H100 80GB HBM3",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-coefficient-fit-4b/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": null,
+      "NCCL_P2P_DISABLE": null,
+      "XLA_FLAGS": null
+    },
+    "microbatch_size": 8,
+    "node": "dogo.csail.mit.edu",
+    "optimizer_coordinates": "factorial(order)*monomial_coefficient",
+    "parameterization": "static_coefficients",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-coefficient-fit-4b/scaffolds/transformer/.venv/bin/python",
+    "resolved_attention_backend": "mosaic",
+    "slurm_job_id": "224917",
+    "slurm_partition": "debug",
+    "source_commit": "0f41845e9c5720c581f32c2d2be40fe7935232fe",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
   "parent_run_id": "r98d5895c02d0",
   "parent_study": "transformer_200m_4b",
   "record_schema_version": 1,
+  "requested_allocation": {
+    "gpu_count": 1,
+    "partition": "debug,long",
+    "time_limit": "02:00:00"
+  },
   "run_id": "r5b28697413fa",
   "seed": 42,
   "source_checkpoint": {
@@ -104,7 +153,7 @@
     "validation_nll": 2.6602695725466075
   },
   "source_commit": "0f41845e9c5720c581f32c2d2be40fe7935232fe",
-  "status": "submitted",
+  "status": "running",
   "submission": {
     "command": [
       "sbatch",

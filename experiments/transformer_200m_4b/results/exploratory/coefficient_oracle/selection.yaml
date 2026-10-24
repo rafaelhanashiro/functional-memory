@@ -58,6 +58,15 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r22854de31b96/config.yaml
       sha256: 1ba68b54f6547e1139e5444cb5b86ecb77f914cd89de13e2bddffc917bb17530
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r22854de31b96/metrics.jsonl
+      sha256: 789272dd007d13a6643b0e5c4fc69534d8c8c5d12fdd923fe963dc8b8e27b9fd
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r22854de31b96/completion.json
+      sha256: 8bfecde650afecddc63cf83c22bcff78da9efb12dab4167db55d3467915c1423
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r22854de31b96/metadata.json
+      sha256: 4093c6a33e6429453f4ad5342588a326e8f43c75a7f2585bf2995e3cfd3e996f
 - study: transformer_200m_4b
   run_id: r5b28697413fa
   role: static_coefficients_full_batch

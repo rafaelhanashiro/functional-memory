@@ -77,7 +77,7 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transfor
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit submit \
   r22854de31b96 --partition debug,standard,long --time-limit 02:00:00
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit submit \
-  r5b28697413fa --partition long --time-limit 06:00:00
+  r5b28697413fa --partition debug,long --time-limit 02:00:00
 ```
 
 The shared fitting runtime qualifies the frozen-backbone update and checkpoint

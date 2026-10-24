@@ -2059,3 +2059,7 @@ table, direct full-batch gradients, one factorial-coordinate Adam update after
 accumulation, a frozen source tree, and exact resume for single-sequence and
 batch fitting. Existing coefficient-fitting modes retain their checks. Each GPU
 execution must pass its forward, update, and resume qualification before fitting.
+
+The [single-sequence H100 qualification](runs/static-coefficient-fit/gpu-h100-single.json)
+passes original replay, repeated static-table forward, an improving gradient update,
+frozen source parameters, and exact checkpoint resume at shape `[15,14,9]`.

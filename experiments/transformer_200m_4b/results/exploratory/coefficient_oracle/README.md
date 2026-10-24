@@ -13,8 +13,8 @@ backbone frozen. They live in the
 | `r3c0f21ab7dce` | Free coefficients per layer, head, query, and order | Static `r9b8acfcbeb89`, step 7,500 | Complete |
 | `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r0963b3e6610b` | One coefficient table shared across 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
-| `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Running |
-| `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Queued |
+| `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Complete |
+| `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Running |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
@@ -180,10 +180,33 @@ the sequence fit uses one. The minimum 2,000 updates, 200-update plateau window,
 0.001-nat tolerance, tenfold LR reduction, and 500 confirmation updates match the
 position-dependent fit. The 10,000-update safety limit pauses an unconverged run.
 
-The single-sequence fit is Slurm job `224916`, on one H100 in `debug`;
-the independent full-batch fit is job `224917`, submitted to `long` because
-the available `standard` GPU allowance is already running or committed. Each
-job qualifies its GPU execution and checkpoint resume before fitting.
+The single-sequence fit completed on one H100 in `debug`, Slurm job `224916`,
+in 2 minutes 50 seconds including qualification. The independent full-batch fit
+is job `224917`, running on one H100 in `debug` with two-hour resumable allocations.
+Each job qualifies its GPU execution and checkpoint resume before fitting.
+
+### Single-sequence findings
+
+The plateau controller reduced LR from 0.01 to 0.001 at update 3,430 and stopped
+at update 4,112. The best retained static tensor is from update 4,041. All pretrained
+parameters remained unchanged.
+
+| Measurement | Update | Fitting NLL | Fitting PPL |
+| --- | ---: | ---: | ---: |
+| Initial training graph | 0 | 2.611659288 | 13.62163433 |
+| Best retained | 4,041 | 2.170698166 | 8.76440091 |
+| Terminal | 4,112 | 2.172165871 | 8.77727391 |
+
+Static coefficients improve fitting, but this run does not approach memorization.
+The original query generator (`rd7bf9bc37cb6`) reached PPL 1.00544 from the same
+parent checkpoint and sequence. The fit optimizers operate on different parameters
+with different learning rates, so this comparison demonstrates the fitting achieved
+by these runs; it does not prove a global optimum for static coefficients.
+
+Qualification replayed the original coefficients exactly. The static projected
+forward is repeatable, and its training graph differed by only 0.00015569 nats
+from the separately compiled evaluation graph. Initialization and final fitting
+metrics above use the same training graph. Checkpoint resume was exact.
 
 The batch static tensor is a restriction of the position-dependent tensor, on the
 same source backbone and fitting batch. Comparing these fitting results tests the
