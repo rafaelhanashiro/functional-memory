@@ -1,12 +1,22 @@
-# Free coefficients from the 4B learned-static checkpoint
+# Coefficient fitting with frozen 4B backbones
 
 Opened: **2026-10-23**. Home cluster: **Kennel**.
 
-How much can the 4B-token learned-static model improve on one sequence when each
-query can choose its polynomial coefficients freely? This is one exploratory
-fitting run, `r3c0f21ab7dce`, in
-[200M / 4B study](../../../README.md).
-It enters no canonical comparison.
+How much of the ability to fit one sequence can the trained query-only coefficient
+generator realize? These exploratory fits use the same first packed sequence and
+keep each source checkpoint's backbone frozen. They live in the
+[200M / 4B study](../../../README.md) and enter no canonical comparison.
+
+| Run | Trained parameters | Source checkpoint | Status |
+| --- | --- | --- | --- |
+| `r3c0f21ab7dce` | Free coefficients per layer, head, query, and order | Static `r9b8acfcbeb89`, step 7,500 | Complete |
+| `rd7bf9bc37cb6` | Original tanh query coefficient generator | Query-only `r98d5895c02d0`, step 7,500 | Prepared |
+
+The source backbones differ. These are fitting-capacity diagnostics, not a
+matched-backbone comparison of coefficient parameterizations. All reported
+perplexities measure the fitting sequence, not generalization.
+
+## Free coefficients from the static checkpoint
 
 The source is degree-eight learned-static run `r9b8acfcbeb89` from the 200M / 4B
 setup, using its retained validation-best checkpoint at step **7,500**. The
@@ -33,7 +43,7 @@ best fitting coefficients are retained after completion. GPU acceptance must
 verify coefficient replay, finite improving updates, and exact checkpoint resume
 before fitting starts.
 
-## Findings and open decision
+### Findings
 
 The run completed 2,500 updates on one B300 (Slurm job `224586`), with total
 allocation time 2 minutes 25 seconds including GPU qualification. The learning
@@ -58,9 +68,38 @@ starts 0.00089169 nats/token lower because of BF16 compilation rounding, within
 the recorded 0.002 tolerance. Both sides of the fitting improvement above use the
 same compiled training forward; this offset is not counted as improvement.
 
-[selection.yaml](selection.yaml) names the single run. Measurements and retained
-coefficients live only under its run directory. Update the selection after new
-measurements with:
+## Original query coefficient generator
+
+Run `rd7bf9bc37cb6` restores the trained degree-eight query-only checkpoint without
+resetting its generator. Only `query_polynomial_bias`, `query_polynomial_amplitude`,
+and `query_polynomial_kernel` are optimized: **1,697,220 parameters**. Q/K/V,
+normalization gains, output projections, embeddings, MLPs, and the output head
+remain fixed. Every forward recomputes intermediate activations normally; no
+activation or coefficient table is substituted for the shared generator.
+
+The model retains `c_r(x) = [b_r + a_r tanh(W_r x)] / r!`. Adam updates its native
+stored parameters, with LR 0.001, betas 0.9/0.95, epsilon 1e-8, clipping at 1,
+and no weight decay. The factorial is already applied by the model and is not
+applied again to gradients or updates. The minimum 2,000 updates, 200-update
+plateau window, 0.001-nat tolerance, tenfold LR reduction, and 500-update
+confirmation match the free-coefficient diagnostic; a 10,000-update safety limit
+pauses an unconverged run. The same 2,048 prediction targets are pinned by their
+sequence checksum. GPU qualification checks original-forward replay, gradients
+for all three generator parameter groups, a loss-reducing update, exact resume,
+and an unchanged frozen backbone.
+
+Findings are pending. If this generator nearly memorizes the sequence, it has
+sufficient capacity for this diagnostic. A higher plateau would implicate the
+generator or its optimization; it would not establish a pure representation
+limit. A free-coefficient fit from the same query-only checkpoint is a possible
+follow-up, not part of this execution.
+
+## Open decision and regeneration
+
+Decide whether these fitting results motivate changes to the shared coefficient
+generator or its training. [selection.yaml](selection.yaml) names the exact runs
+and their source parents. Measurements and retained fitted parameters live only
+under each run. Launch commands are in the [study README](../../../README.md).
 
 ```bash
 scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_200m_4b/results/exploratory/coefficient_oracle

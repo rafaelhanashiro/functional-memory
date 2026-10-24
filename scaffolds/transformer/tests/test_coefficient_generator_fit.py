@@ -1,0 +1,149 @@
+"""Generator adaptation updates only the original coefficient network."""
+from flax import nnx
+import jax
+import jax.numpy as jnp
+import numpy as np
+import optax
+import pytest
+
+from scaffolds.transformer.configs import ModelConfig
+from scaffolds.transformer.models import build_model
+from scaffolds.transformer.training.checkpointing import state_sha256
+from scaffolds.transformer.training.coefficient_fit import (
+    GENERATOR_PARAMETER_NAMES, make_generator_functions, qualify, restore_state,
+    save_state, split_generator_parameters, _generator_group_norms,
+)
+
+
+@pytest.fixture(scope="module")
+def fitting():
+    config = ModelConfig(
+        vocab_size=16, max_seq_len=7, num_layers=2, hidden_size=8, num_heads=2,
+        num_kv_heads=2, qk_head_dim=2, value_head_dim=4, intermediate_size=12,
+        attention_degree=8, attention_normalization=False, attention_coefficients="learned",
+        attention_coefficient_sharing="per_head", attention_coefficient_conditioning="query",
+        attention_coefficient_activation="tanh", attention_coefficient_scale="factorial",
+        attention_coefficient_amplitude_scale="factorial", attention_coefficient_tanh_bias=True,
+        attention_coefficient_projection_initial_std=.2, attention_coefficient_amplitude_initial=.2,
+        attention_backend="blocked", attention_output_scaling="head_rms_norm",
+        qk_norm=True, qk_norm_type="rms_norm", qk_norm_sharing="per_layer",
+        rms_norm_fp32=True, initialization="transformer_truncated_reference", remat=False,
+    )
+    graph, source = nnx.split(build_model(config, 7), nnx.Param)
+    options = dict(clip_norm=1., beta1=.9, beta2=.95, epsilon=1e-8)
+    functions = make_generator_functions(graph, options)
+    return graph, source, jnp.arange(8)[None] % 16, options, functions
+
+
+def _equal(actual, expected):
+    assert jax.tree.structure(actual) == jax.tree.structure(expected)
+    for left, right in zip(jax.tree.leaves(actual), jax.tree.leaves(expected), strict=True):
+        np.testing.assert_array_equal(left, right)
+
+
+def test_split_replays_source_and_only_generator_parameters_change(fitting):
+    graph, source, tokens, _, (capture, initialize, step, evaluate) = fitting
+    generator, frozen = split_generator_parameters(source)
+    assert set(generator.keys()) == GENERATOR_PARAMETER_NAMES
+    assert sum(value.size for value in jax.tree.leaves(generator)) == 2 * 2 * 9 * (8 + 3)
+    frozen_hash = state_sha256(frozen)
+    source_hash = state_sha256(source)
+    initial, parent_nll, replay_nll, logit_error = capture(source, tokens)
+    _equal(initial, generator)
+    np.testing.assert_array_equal(parent_nll, replay_nll)
+    assert float(logit_error) == 0.
+    np.testing.assert_allclose(evaluate(initial, source, tokens), parent_nll, rtol=1e-5, atol=1e-6)
+    optimizer = initialize(initial)
+    current = initial
+    for _ in range(5):
+        current, optimizer, _, norm, finite, groups = step(current, optimizer, source, tokens, 1e-3)
+        assert bool(finite) and float(norm[0]) > 0
+        assert all(np.isfinite(value) and float(value) > 0 for value in groups.values())
+        np.testing.assert_allclose(sum(value ** 2 for value in groups.values()), norm[0] ** 2,
+                                   rtol=2e-5, atol=1e-9)
+    assert float(evaluate(current, source, tokens)[0]) < float(parent_nll[0])
+    updated = nnx.state(nnx.merge(graph, frozen, current), nnx.Param)
+    actual_generator, actual_frozen = split_generator_parameters(updated)
+    _equal(actual_generator, current)
+    _equal(actual_frozen, frozen)
+    assert state_sha256(source) == source_hash
+    assert state_sha256(actual_frozen) == frozen_hash
+    for key in GENERATOR_PARAMETER_NAMES:
+        assert not np.array_equal(current[key][...], initial[key][...])
+
+
+def test_step_uses_stored_parameter_gradients_without_extra_factorials(fitting):
+    _, source, tokens, options, (capture, initialize, step, evaluate) = fitting
+    initial = capture(source, tokens)[0]
+    gradient = jax.jit(jax.grad(lambda values: evaluate(values, source, tokens).mean()))(initial)
+    expected_norm = optax.global_norm(gradient)
+    clip = jnp.minimum(1., options["clip_norm"] / expected_norm)
+    expected = jax.tree.map(
+        lambda value, grad: value - 1e-3 * (grad * clip) / (jnp.abs(grad * clip) + options["epsilon"]),
+        initial, gradient,
+    )
+    result = step(initial, initialize(initial), source, tokens, 1e-3)
+    np.testing.assert_allclose(result[3][0], expected_norm, rtol=1e-5, atol=1e-8)
+    for actual, desired in zip(jax.tree.leaves(result[0]), jax.tree.leaves(expected), strict=True):
+        np.testing.assert_allclose(actual, desired, rtol=2e-5, atol=2e-7)
+
+
+def test_later_generator_inputs_recompute_and_propagate_early_changes(fitting):
+    graph, source, tokens, _, (capture, _, _, evaluate) = fitting
+    generator = capture(source, tokens)[0]
+    _, frozen = split_generator_parameters(source)
+    # A first-layer coefficient change modifies later-layer coefficient inputs,
+    # while the later generator's own parameters remain identical.
+    shifted = jax.tree.map(lambda value: value, generator)
+    shifted["query_polynomial_bias"][...] = shifted["query_polynomial_bias"][...].at[0, :, 0].add(.5)
+    _, initial_coefficients = nnx.merge(graph, frozen, generator)(tokens[:, :-1], return_coefficients=True)
+    _, changed_coefficients = nnx.merge(graph, frozen, shifted)(tokens[:, :-1], return_coefficients=True)
+    assert not np.allclose(initial_coefficients[1], changed_coefficients[1], rtol=1e-6, atol=1e-9)
+    # Finite differences include the changed downstream generator activations.
+    direction = jax.tree.map(jnp.zeros_like, generator)
+    direction["query_polynomial_bias"][...] = direction["query_polynomial_bias"][...].at[0, :, 0].set(1.)
+    gradient = jax.jit(jax.grad(lambda values: evaluate(values, source, tokens).mean()))(generator)
+    eps = 2e-3
+    plus = jax.tree.map(lambda v, d: v + eps * d, generator, direction)
+    minus = jax.tree.map(lambda v, d: v - eps * d, generator, direction)
+    numerical = (evaluate(plus, source, tokens).mean() - evaluate(minus, source, tokens).mean()) / (2 * eps)
+    analytic = sum(jnp.sum(g * d) for g, d in zip(jax.tree.leaves(gradient), jax.tree.leaves(direction)))
+    np.testing.assert_allclose(numerical, analytic, rtol=.06, atol=5e-5)
+
+
+def test_generator_checkpoint_resume_and_runtime_acceptance(fitting, tmp_path):
+    graph, source, tokens, _, functions = fitting
+    capture, initialize, step, _ = functions
+    initial = capture(source, tokens)[0]
+    optimizer = initialize(initial)
+    updated, moments = step(initial, optimizer, source, tokens, 1e-3)[:2]
+    controller = dict(step=1, best_step=1, best_loss=2., history=[2.1, 2.], learning_rate=1e-3)
+    root = tmp_path / "checkpoints"
+    root.mkdir()
+    path = save_state(root, 1, [updated], [moments], [updated], controller)
+    restored, restored_controller = restore_state(path, [updated], [moments])
+    assert restored_controller == controller
+    _equal(restored["tables"][0], updated)
+    _equal(step(restored["tables"][0], restored["optimizers"][0], source, tokens, 1e-3),
+           step(updated, moments, source, tokens, 1e-3))
+    report = qualify(tmp_path, functions, source, tokens, initial, optimizer, 1e-3,
+                     graph=graph, generator=True)
+    assert report["checkpoint_resume_exact"]
+    assert report["frozen_parameter_scope"] == "backbone"
+    assert set(report["generator_gradient_norms"]) == GENERATOR_PARAMETER_NAMES
+    assert report["one_update_nll"] < report["separate_training_forward_nll"]
+
+
+def test_generator_fit_rejects_multiple_sequences(fitting):
+    _, source, tokens, _, (capture, _, _, evaluate) = fitting
+    initial = capture(source, tokens)[0]
+    with pytest.raises(ValueError, match="one sequence"):
+        evaluate(initial, source, jnp.concatenate([tokens, tokens]))
+
+
+def test_group_norms_include_all_layer_leaves():
+    state = nnx.State({
+        "first": {"query_polynomial_bias": nnx.Param(jnp.asarray([3.]))},
+        "second": {"query_polynomial_bias": nnx.Param(jnp.asarray([4.]))},
+    })
+    assert float(_generator_group_norms(state)["query_polynomial_bias"]) == 5.

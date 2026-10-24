@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "original forward replay",
+    "generator-only update with frozen backbone",
+    "native stored-parameter Adam coordinates",
+    "downstream activation recomputation and finite differences",
+    "finite global norm and group norm aggregation",
+    "exact checkpoint resume",
+    "single-sequence restriction"
+  ],
+  "commands": [
+    "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_coefficient_generator_fit.py",
+    "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_coefficient_generator_fit.py experiments/attention_scaling/tests/test_coefficient_oracle.py"
+  ],
+  "date": "2026-10-23",
+  "generator_tests_passed": 6,
+  "legacy_free_coefficient_tests_passed": 4,
+  "platform": "cpu",
+  "sources": {
+    "experiments/attention_scaling/tests/test_coefficient_oracle.py": "a564cae2809d9c132354d33ef345045b2a5a6d187bb67f3c898ffdf173a48497",
+    "scaffolds/transformer/tests/test_coefficient_generator_fit.py": "3106f7734ff5d24e062bf1faf433631885cb60b3b6877044e4a5ada4756ba189",
+    "scaffolds/transformer/training/coefficient_fit.py": "cf88af079a769e7f72662357bfe9f90455bb657f27a19d0b90811246e58287c5"
+  },
+  "status": "passed"
+}

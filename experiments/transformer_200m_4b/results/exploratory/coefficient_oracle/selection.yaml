@@ -1,12 +1,13 @@
 schema_version: 1
 opened: '2026-10-23'
-question: How much can free query polynomial coefficients improve a fixed pretrained
-  model on fixed inputs?
+question: How much can polynomial coefficients fit a fixed sequence with a frozen
+  4B backbone?
 settings:
   metric: fit_nll
-  parent_run_id: r9b8acfcbeb89
   same_first_sequence: true
   generalization_claim: false
+  comparison: Different source backbones; compare fitting capacity, not a matched-backbone
+    parameterization ablation
 runs:
 - study: transformer_200m_4b
   run_id: r3c0f21ab7dce
@@ -24,3 +25,12 @@ runs:
     metadata.json:
       path: experiments/transformer_200m_4b/runs/r3c0f21ab7dce/metadata.json
       sha256: eae38dd061c2ac6b6581e09c782fa110f51f306cb69078a2546b6624c6b261e5
+  parent_run_id: r9b8acfcbeb89
+- study: transformer_200m_4b
+  run_id: rd7bf9bc37cb6
+  role: query_generator_single_sequence
+  parent_run_id: r98d5895c02d0
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rd7bf9bc37cb6/config.yaml
+      sha256: 1439e6b1a2d35476a82f45d3647b499acc59b6af3206d6e0a1042449743f1aef

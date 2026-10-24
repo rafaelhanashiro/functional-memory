@@ -5,8 +5,8 @@ run IDs and pin their scientific inputs; measurements, recipes, execution record
 and retained artifacts remain under `../runs/`.
 
 The current collection is the exploratory
-[coefficient oracle](exploratory/coefficient_oracle/README.md): fitting free query
-coefficients on a fixed sequence with a frozen pretrained backbone. Its fitting
+[coefficient oracle](exploratory/coefficient_oracle/README.md): fitting free coefficients or the trained query generator on a fixed sequence
+with its pretrained backbone frozen. Its fitting
 perplexity is not held-out validation perplexity and enters no canonical
 pretraining comparison. Findings and interpretation belong to the topic README.
 

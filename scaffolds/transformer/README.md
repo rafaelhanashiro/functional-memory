@@ -333,6 +333,20 @@ the backbone fixed. Both operations support JIT, require `model.remat: false`, a
 can be combined to return the supplied coefficients. Capture and `return_diagnostics`
 are mutually exclusive. Query-key conditioning rejects both operations.
 
+`training.coefficient_fit` runs fixed-input adaptation from a pinned pretrained
+checkpoint. Its `free_per_example_query_coefficients` mode optimizes captured
+coefficient tables; `query_coefficient_generator` mode optimizes only the original
+query generator's bias, amplitude, projection, and optional inner tanh bias.
+Generator mode currently accepts one sequence. It recomputes all activations
+through the frozen backbone and uses native stored parameter coordinates, keeping
+factorial scaling inside the model. Both modes verify input identity, forward
+replay, an improving update, frozen-parameter checksums, and exact checkpoint
+resume before fitting. The study provides the frozen recipe and launches:
+`python -m scaffolds.transformer.training.coefficient_fit --run <run-directory>`.
+The retained best checkpoint contains only fitted parameters and references the
+source checkpoint for the frozen backbone. Per-update measurements are fitting
+metrics; no held-out evaluation is implied.
+
 ### PaTH position encoding
 
 `positional_encoding: path` replaces RoPE with PaTH (Yang et al., arXiv:2505.16381):

@@ -2023,3 +2023,14 @@ runtime source identity. Every one of the 53 Python files in the benchmarked
 source was compared byte-for-byte with `2e0e88d`, and all matched. The final shared source is retained at `d493a41`, but
 an immutable hash of its benchmark-time dirty tree was not recorded. These
 small benchmarks are supporting evidence rather than production experiment data.
+
+### Frozen-backbone query-generator fitting
+
+The shared `training.coefficient_fit` runtime supports native query-generator
+parameter updates as well as free coefficient tables. Its
+[CPU qualification](runs/query-generator-fit/cpu.json) covers original-forward
+identity, selective generator updates, native Adam coordinates without duplicate
+factorial scaling, downstream activation recomputation, group-gradient accounting,
+and exact checkpoint resume. Six generator checks and four existing free-table
+checks pass. GPU qualification runs before fitting and is retained in the run's
+`oracle_acceptance.json`; CPU evidence alone does not qualify the GPU execution.
