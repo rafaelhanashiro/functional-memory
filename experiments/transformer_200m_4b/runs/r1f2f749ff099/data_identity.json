@@ -1,0 +1,10 @@
+{
+  "batch_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+  "interpretation": "Fixed fitting inputs; these are not held-out measurements after adaptation.",
+  "manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+  "manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+  "sequence_count": 1,
+  "sequence_length": 2049,
+  "split": "eval",
+  "start_sequence": 0
+}

@@ -86,6 +86,20 @@ The shared fitting runtime qualifies the frozen-backbone update and checkpoint
 resume before production. The launcher checks frozen inputs at each start and
 requeue and selects the locked CUDA environment for its GPU.
 
+Degree-four query-generator fit `r1f2f749ff099` repeats the same single-sequence
+diagnostic from its trained degree-four parent. It trains only the coefficient
+generator, keeping the backbone frozen. Its settings and findings belong to the
+same [coefficient fitting topic](results/exploratory/coefficient_oracle/README.md).
+In its isolated worktree:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit prepare \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/experiments/transformer_200m_4b/runs/r49b7943aee1b
+# Already allocated; use this ID for resumptions and commit frozen inputs before launch.
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_fit submit \
+  r1f2f749ff099 --partition standard --time-limit 02:00:00
+```
+
 ## Matched Taylor continuations
 
 The [delayed coefficient-learning topic](results/exploratory/taylor_static_continuation/README.md)

@@ -1,0 +1,40 @@
+{
+  "checkpoint_resume_exact": true,
+  "completed_utc": "2026-10-24T18:00:55.723501+00:00",
+  "cross_compilation_nll_atol": 0.002,
+  "cross_compilation_nll_rtol": 0.0,
+  "device": "NVIDIA B300 SXM6 AC",
+  "external_evaluation_max_nll_error": 0.0002655982971191406,
+  "external_evaluation_nll": 2.61716890335083,
+  "external_forward_repeated_exactly": true,
+  "frozen_parameter_scope": "backbone",
+  "frozen_parameter_sha256": "9a29d98a9e5ec539f1df29a0c58ae4eea21c75b51b54bd5fd8391bbc2198694c",
+  "generator_gradient_norms": {
+    "query_polynomial_amplitude": 0.08702696859836578,
+    "query_polynomial_bias": 0.09107176214456558,
+    "query_polynomial_kernel": 0.044186681509017944
+  },
+  "gradient_norm_max": 0.1334923952817917,
+  "gradient_norm_min": 0.1334923952817917,
+  "independent_graph_diagnostics": {
+    "all_logits_finite": true,
+    "external_nll": [
+      2.61716890335083
+    ],
+    "logit_max_absolute_error": 0.0,
+    "logit_relative_rms_error": 0.0,
+    "original_nll": [
+      2.61716890335083
+    ],
+    "repeated_external_logit_max_absolute_error": 0.0
+  },
+  "max_logit_replay_error": 0.0,
+  "one_update_nll": 2.6005218029022217,
+  "parent_nll": 2.616903305053711,
+  "projected_initial_nll": null,
+  "projection_nll_change": null,
+  "separate_training_forward_nll": 2.6162095069885254,
+  "status": "passed",
+  "training_forward_max_nll_error": 0.0006937980651855469,
+  "training_forward_reference": "original_parent"
+}
