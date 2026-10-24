@@ -1,4 +1,22 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor-static-continuation-4b/experiments/transformer_200m_4b/runs/r28fb40a1d0e9/.runtime/acceptance/B300-1",
+      "allocation": "JobId=224931 JobName=taylor-continue-r28fb40a1d0e9 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20048 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:09 TimeLimit=02:00:00 TimeMin=N/A SubmitTime=2026-10-24T10:05:13 EligibleTime=2026-10-24T10:05:13 AccrueTime=2026-10-24T10:05:13 StartTime=2026-10-24T10:05:27 EndTime=2026-10-24T12:05:27 Deadline=N/A PreemptEligibleTime=2026-10-24T12:05:27 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-24T10:05:27 Scheduler=Main Partition=standard AllocNode:Sid=kennel:4147461 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor-static-continuation-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor-static-continuation-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor-static-continuation-4b/experiments/transformer_200m_4b/runs/r28fb40a1d0e9/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor-static-continuation-4b/experiments/transformer_200m_4b/runs/r28fb40a1d0e9/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 7200,
+      "config_path": "experiments/transformer_200m_4b/runs/r28fb40a1d0e9/config.yaml",
+      "config_sha256": "dc5cee68fa148a1c6470f23d03cd7a8e0c674de1c2d38b70e6bdbe49623cd1fd",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "e3c4553734aa7e13c27d8026ef0f70bcb5f5cd1f",
+      "slurm_job_id": "224931",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-24T14:05:36.606759+00:00",
+      "stop_after_step": null
+    }
+  ],
   "condition": "fixed_taylor",
   "config": {
     "path": "experiments/transformer_200m_4b/runs/r28fb40a1d0e9/config.yaml",
@@ -13,8 +31,10 @@
     "updates": 500
   },
   "experiment_kind": "matched_checkpoint_continuation",
+  "frozen_execution_sha256": "bb312d158a50182a3db7493adc86d898a013065a5fb77c8733e5765b0588b6ea",
   "home_cluster": "kennel",
   "label": "taylor-m8-continuation-fixed_taylor",
+  "log_path": "experiments/transformer_200m_4b/runs/r28fb40a1d0e9/training.log",
   "name": "taylor-m8-continuation-fixed_taylor",
   "parent_run_id": "r019ca96d6533",
   "parent_study": "transformer_200m_4b",
@@ -103,6 +123,7 @@
     "step": 7500,
     "validation_nll": 2.6571883919991945
   },
+  "source_commit": "e3c4553734aa7e13c27d8026ef0f70bcb5f5cd1f",
   "source_configuration": {
     "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r019ca96d6533/config.yaml",
     "sha256": "ab3233d65995f2ca4427cf8aa133f9b2f68d9f7c0631c369585888cd2fd636fb"
@@ -111,5 +132,28 @@
     "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_200m_4b/runs/r019ca96d6533/data_identity.json",
     "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
   },
-  "status": "planned"
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=02:00:00",
+      "--job-name=taylor-continue-r28fb40a1d0e9",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor-static-continuation-4b/experiments/transformer_200m_4b/runs/r28fb40a1d0e9/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/taylor-static-continuation-4b/experiments/transformer_200m_4b/runs/r28fb40a1d0e9/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/r28fb40a1d0e9/config.yaml",
+      "e3c4553734aa7e13c27d8026ef0f70bcb5f5cd1f",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "standard,long",
+    "slurm_job_id": "224931",
+    "submitted_utc": "2026-10-24T14:05:13.898036+00:00"
+  }
 }
