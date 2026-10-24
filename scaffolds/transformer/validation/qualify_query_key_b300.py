@@ -232,7 +232,7 @@ def qualify(args):
                               if item["step"] == PILOT_STEPS and item.get("validation_nll") is not None)
             if not math.isfinite(validation["validation_nll"]) or not validation["attention_diagnostics"]["valid"]:
                 raise RuntimeError(f"Invalid pilot validation or attention diagnostics for {run_id}")
-            if (pilot_dir / "pilot/numerical_failure.json").exists():
+            if any((pilot_dir / "pilot").glob("numerical_failure_step_*.json")):
                 raise RuntimeError(f"Pilot numerical failure for {run_id}")
             run(f"{run_id}:resume", [*worker, "--output", resume_path, "--stop-after-step", PILOT_STEPS + 1])
             after = read(resume_path)
