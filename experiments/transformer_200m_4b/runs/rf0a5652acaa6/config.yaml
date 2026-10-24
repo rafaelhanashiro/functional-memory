@@ -5,8 +5,8 @@ data:
   split: train
   tokenizer_name: NousResearch/Llama-2-7b-hf
   text_field: text
-  train_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
-  eval_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
+  train_manifest: /home/rafah/projects/ofm/datasets/fineweb_12b/train/manifest.json
+  eval_manifest: /home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json
   batch_size: 256
   sequence_length: 2049
   shuffle_seed: 0
@@ -29,7 +29,7 @@ model:
   tie_embeddings: false
   remat: false
   attention_backend: fused
-  attention_degree: 12
+  attention_degree: 8
   attention_normalization: false
   attention_output_scaling: head_rms_norm
   attention_mechanism: dot_product
@@ -85,8 +85,8 @@ train:
   seed: 42
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/transformer_200m_4b/runs/rfd48f7bbe9f4
-  checkpoint_dir: experiments/transformer_200m_4b/runs/rfd48f7bbe9f4/checkpoints
+  workdir: experiments/transformer_200m_4b/runs/rf0a5652acaa6
+  checkpoint_dir: experiments/transformer_200m_4b/runs/rf0a5652acaa6/checkpoints
   micro_batch_size: 16
   log_every: 10
   eval_every: 500
@@ -96,7 +96,7 @@ train:
   ckpt_every: 500
   wandb_project: functional-memory
   wandb_entity: rafah-massachusetts-institute-of-technology
-  wandb_run_name: query_key-m12
+  wandb_run_name: query_key-m8
   wandb_group: transformer_200m_4b
   wandb_dir: null
   wandb_mode: online

@@ -62,7 +62,7 @@ truncated Gaussian. All comparison variants use per-head attention-output RMSNor
 
 ## Execution on Kennel
 
-Home cluster: Kennel. Data manifests live under
+Home cluster: Kennel, except the query–key runs (ORCD, below). Kennel data manifests live under
 `/data/cl/u/rafah/home/datasets/fineweb_12b/`; hashes are in `sweep.yaml` and execution
 evidence. Retained artifacts belong under this study in the primary checkout on
 Kennel. Develop/execute in the study's own worktree. Sync both locked environments
@@ -110,24 +110,23 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.result
 
 ## Query–key execution
 
-Query–key degrees 8 and 12 are `r833fbb6eedcb` and `rfd48f7bbe9f4`. Each requests
-one B300, eight CPUs, 96 GB host RAM, and a seven-day allocation. These are independent
-jobs. The launcher qualifies runtime against the allocated Slurm time limit before
-training; the model, coefficient definitions, seed, global batch, and canonical
-0.001/0.0001 LR schedule are unchanged. Their run records contain the exact commands.
-The B300 32-by-32 backward selector is qualified for both frozen recipes; see the
-[scaffold qualification](../../scaffolds/transformer/validation/README.md#b300-query-key-production-qualification)
-for independent gradient checks, full-update timings, and checkpoint/resume evidence.
-The execution source is pinned by `validation/query-key-b300-4b-20261023`; each
-allocation repeats production acceptance before training.
-
-After committing the inputs, submit these two selected runs from this worktree:
+Query–key degrees 4, 8 and 12 are `r097fcda6a3af`, `rf0a5652acaa6` and `ree2eb2e4287e`,
+with home cluster ORCD. Their recipes read ORCD's FineWeb manifests, byte-identical to
+Kennel's; model, coefficients, seed, global batch and LR schedule match the other
+comparisons. Each runs on one H100 80GB HBM3, where the fused kernel selects the
+qualified 32-by-32 backward at all three degrees
+([tiles](../../scaffolds/transformer/validation/README.md#query-key-polynomial-backward-tiles),
+[B300 production evidence for degrees 8 and 12](../../scaffolds/transformer/validation/README.md#b300-query-key-production-qualification)).
+Jobs exclude `node3009`/`node3209` (throttling GPUs) and the H100 NVL nodes
+`node1708`/`node1709`, requeue every 12 hours and resume from their latest checkpoint;
+every allocation repeats acceptance. Submit from the ORCD worktree root after
+committing the inputs, and record each job in its run's `submission`:
 
 ```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python - <<'PYTHON'
-from experiments.transformer_200m_4b.pipeline import STUDY, _git, _submit, _submit_report
-runs = [STUDY / "runs" / rid for rid in ("r833fbb6eedcb", "rfd48f7bbe9f4")]
-jobs = [_submit(run, _git("rev-parse", "HEAD")) for run in runs]
-_submit_report(runs, jobs)
-PYTHON
+for run in r097fcda6a3af rf0a5652acaa6 ree2eb2e4287e; do
+  sbatch --parsable --job-name="$run" --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node1708,node1709 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_200m_4b.acceptance \
+    "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
 ```

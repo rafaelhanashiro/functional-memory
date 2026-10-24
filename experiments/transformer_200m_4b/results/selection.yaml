@@ -4,18 +4,18 @@ training_steps: 7570
 canonical_learning_rate: 0.001
 runs:
 - study: transformer_200m_4b
-  run_id: r833fbb6eedcb
+  run_id: rf0a5652acaa6
   label: query_key-m8
   role: comparison
   sources:
     config.yaml:
-      path: experiments/transformer_200m_4b/runs/r833fbb6eedcb/config.yaml
-      sha256: db94207d47c1dc49a4bb7ad8f109a7d3fbe78ce9c49ad951df639eedfd23efc3
+      path: experiments/transformer_200m_4b/runs/rf0a5652acaa6/config.yaml
+      sha256: cc5335b5789d9518570aae48a3ff3e40cc0690eeb700394dc2171833199e47d5
 - study: transformer_200m_4b
-  run_id: rfd48f7bbe9f4
+  run_id: ree2eb2e4287e
   label: query_key-m12
   role: comparison
   sources:
     config.yaml:
-      path: experiments/transformer_200m_4b/runs/rfd48f7bbe9f4/config.yaml
-      sha256: 83c4ece8ac43adcd62155eaf9d24c904e9e8f244dec0d9ae361716ce9714bc3c
+      path: experiments/transformer_200m_4b/runs/ree2eb2e4287e/config.yaml
+      sha256: b5df226a10cfa8f3644e74471652faaecfca9800233c403d9404095526395cf8
