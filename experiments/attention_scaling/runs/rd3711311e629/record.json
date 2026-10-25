@@ -16,5 +16,32 @@
   "name": "rbf9-rafael-200m-4b-static",
   "record_schema_version": 1,
   "run_id": "rd3711311e629",
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--partition=standard",
+      "--time=24:00:00",
+      "--gres=gpu:h100:1",
+      "--cpus-per-task=8",
+      "--mem=128G",
+      "--job-name=rd3711311e629",
+      "--output=experiments/attention_scaling/runs/rd3711311e629/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.attention_scaling.rbf_matched",
+      "experiments/attention_scaling/runs/rd3711311e629/config.yaml",
+      "0b37b4cf51a3f441364b282877f9ef6efec8ef60",
+      "1",
+      "H100"
+    ],
+    "gpu_count": 1,
+    "gpu_type": "H100",
+    "home_cluster": "kennel",
+    "launch_commit": "0b37b4cf51a3f441364b282877f9ef6efec8ef60",
+    "slurm_job_id": "226109",
+    "submitted_utc": "2026-10-25T21:20:14.054834+00:00",
+    "wandb_mode": "offline"
+  }
 }
