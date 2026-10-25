@@ -52,6 +52,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_fixed_coefficients=config.attention_fixed_coefficients,
         attention_coefficient_conditioning=config.attention_coefficient_conditioning,
         attention_coefficient_activation=config.attention_coefficient_activation,
+        attention_coefficient_readout=config.attention_coefficient_readout,
         attention_coefficient_amplitude_scale=config.attention_coefficient_amplitude_scale,
         attention_coefficient_scale=config.attention_coefficient_scale,
         attention_fixed_square_factors=config.attention_fixed_square_factors,
@@ -75,6 +76,7 @@ class MultiHeadAttention(nnx.Module):
         attention_output_scaling: str = "none", rms_norm_eps: float = 1e-6,
         attention_coefficient_conditioning: str = "static",
         attention_coefficient_activation: str = "identity",
+        attention_coefficient_readout: str = "diagonal",
         positional_encoding: str = "rope",
         attention_coefficient_amplitude_scale: str = "none",
         attention_coefficient_scale: str = "none",
@@ -155,6 +157,12 @@ class MultiHeadAttention(nnx.Module):
         if (attention_coefficient_conditioning == "query" and attention_coefficient_activation == "identity"
                 and attention_degree != 1):
             raise ValueError("Identity query coefficients require degree-one attention")
+        if attention_coefficient_readout not in ("diagonal", "dense"):
+            raise ValueError("Unknown attention coefficient readout")
+        if attention_coefficient_readout == "dense" and (
+                attention_coefficient_conditioning != "query" or attention_coefficient_activation != "tanh"):
+            raise ValueError("Dense coefficient readout requires tanh query-only coefficients")
+        self.attention_coefficient_readout = attention_coefficient_readout
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
         if attention_coefficient_amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {attention_coefficient_amplitude_scale}")
@@ -213,6 +221,7 @@ class MultiHeadAttention(nnx.Module):
         query_kernel = parameters.pop("query_polynomial_kernel", None)
         query_bias = parameters.pop("query_polynomial_bias", None)
         query_amplitude = parameters.pop("query_polynomial_amplitude", None)
+        query_mixing = parameters.pop("query_polynomial_mixing", None)
         query_tanh_bias = parameters.pop("query_polynomial_tanh_bias", None)
         key_kernel = parameters.pop("key_polynomial_kernel", None)
         key_amplitude = parameters.pop("key_polynomial_amplitude", None)
@@ -230,8 +239,12 @@ class MultiHeadAttention(nnx.Module):
 
             if query_kernel is None or query_bias is None:
                 raise ValueError("Query-conditioned attention requires its model-owned kernel and bias")
+            if (self.attention_coefficient_readout == "dense") != (query_mixing is not None):
+                raise ValueError("Coefficient readout must match its model-owned mixing parameter")
+            if query_mixing is not None and query_amplitude is not None:
+                raise ValueError("Dense readout replaces the diagonal amplitude parameter")
             parameters["query_polynomial_coefficients"] = project_coefficients(
-                x, query_kernel, query_bias, amplitude=query_amplitude,
+                x, query_kernel, query_bias, amplitude=query_amplitude, mixing=query_mixing,
                 activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
                 amplitude_scale=self.attention_coefficient_amplitude_scale)
             if self.attention_coefficient_conditioning == "query_key":
@@ -240,7 +253,7 @@ class MultiHeadAttention(nnx.Module):
                 parameters["key_polynomial_factors"] = project_key_factors(x, key_kernel, key_amplitude)
             elif key_kernel is not None or key_amplitude is not None:
                 raise ValueError("Query-conditioned attention cannot receive key factor parameters")
-        elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_tanh_bias,
+        elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_mixing, query_tanh_bias,
                                                  key_kernel, key_amplitude)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
         from scaffolds.transformer.attention.path import PATH_ARGUMENTS

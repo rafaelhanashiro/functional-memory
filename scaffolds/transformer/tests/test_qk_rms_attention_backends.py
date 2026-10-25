@@ -19,7 +19,7 @@ from scaffolds.transformer.attention.positional import apply_rope
 
 CASES = [("softmax", 0, "cudnn"), ("exp", 0, "fused")] + [
     (family, degree, "fused" if family == "query_key" else "mosaic")
-    for family in ("fixed", "static", "query", "query_key") for degree in (4, 8, 12)
+    for family in ("fixed", "static", "query", "query_key") for degree in (2, 4, 8, 12)
 ]
 
 

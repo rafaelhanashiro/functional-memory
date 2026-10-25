@@ -15,13 +15,23 @@ import jax.numpy as jnp
 
 def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
-                    tanh_bias: bool = False, conditioning: str = "query"):
+                    tanh_bias: bool = False, conditioning: str = "query", readout: str = "diagonal",
+                    feature_count: int | None = None):
     """b starts at 1/r!; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial
     and its optional inner bias beta at zero. "query_key" adds the key factor's W_k (same draw
-    rule, independent draws) and a_k (same start as a)."""
+    rule, independent draws) and a_k (same start as a). Dense readout projects onto K =
+    feature_count tanh features (degree+1 when null) and mixes them through V [degree+1, K],
+    diagonal at amplitude_initial when K = degree+1 and otherwise zero."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
+    if readout not in ("diagonal", "dense"):
+        raise ValueError(f"Unknown coefficient readout: {readout}")
+    if readout == "dense" and (activation != "tanh" or conditioning != "query"):
+        raise ValueError("Dense coefficient readout requires tanh query-only coefficients")
     count = degree + 1
+    features = count if feature_count is None else feature_count
+    if features != count and (readout != "dense" or amplitude_initial != 0):
+        raise ValueError("A feature count other than degree+1 requires dense readout with V starting at zero")
     specs = (
         AttentionParameterSpec(
             name="query_polynomial_bias", argument="query_polynomial_bias",
@@ -29,19 +39,27 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
         ),
         AttentionParameterSpec(
             name="query_polynomial_kernel", argument="query_polynomial_kernel",
-            initial=(0.0,) * (hidden_size * count), initial_shape=(hidden_size, count),
+            initial=(0.0,) * (hidden_size * features), initial_shape=(hidden_size, features),
             sharing="per_head", weight_decay=False, initial_std=float(projection_initial_std),
         ),
     )
     if activation == "tanh":
-        specs += (AttentionParameterSpec(
-            name="query_polynomial_amplitude", argument="query_polynomial_amplitude",
-            initial=(float(amplitude_initial),) * count, sharing="per_head", weight_decay=False,
-        ),)
+        if readout == "dense":
+            specs += (AttentionParameterSpec(
+                name="query_polynomial_mixing", argument="query_polynomial_mixing",
+                initial=tuple(float(amplitude_initial) if output == feature else 0.0
+                              for output in range(count) for feature in range(features)),
+                initial_shape=(count, features), sharing="per_head", weight_decay=False,
+            ),)
+        else:
+            specs += (AttentionParameterSpec(
+                name="query_polynomial_amplitude", argument="query_polynomial_amplitude",
+                initial=(float(amplitude_initial),) * count, sharing="per_head", weight_decay=False,
+            ),)
         if tanh_bias:
             specs += (AttentionParameterSpec(
                 name="query_polynomial_tanh_bias", argument="query_polynomial_tanh_bias",
-                initial=(0.0,) * count, sharing="per_head", weight_decay=False,
+                initial=(0.0,) * features, sharing="per_head", weight_decay=False,
             ),)
     elif activation != "identity":
         raise ValueError(f"Unknown coefficient activation: {activation}")
@@ -66,33 +84,80 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
     return specs
 
 
-def project_coefficients(x, kernel, bias, *, amplitude=None, activation="identity", tanh_bias=None,
+def _diagonal_readout(features, amplitude, bias, amplitude_scale):
+    """The same rounded FP32 diagonal computation in both readout families."""
+    amplitude = amplitude.astype(jnp.float32)
+    if amplitude_scale == "factorial":
+        amplitude = amplitude / jnp.asarray([math.factorial(r) for r in range(bias.shape[-1])], jnp.float32)
+    # The incoming bias may itself have been factorial-scaled by the caller.
+    # Preserve each rounded operand before multiplying/adding so the compiler
+    # cannot reassociate scaling or contract a different expression in one arm.
+    amplitude, bias = jax.lax.optimization_barrier((amplitude, bias.astype(jnp.float32)))
+    product = jax.lax.optimization_barrier(amplitude * features)
+    return jax.lax.optimization_barrier(product + bias)
+
+
+def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activation="identity", tanh_bias=None,
                          amplitude_scale="none"):
     """FP32 c=b+xW or c=b+a*tanh(xW+beta); the inner bias beta is optional and otherwise absent.
 
-    amplitude_scale="factorial" uses the effective amplitude a_r/r! for order r.
+    A dense mixing matrix V [head,output_order,feature] replaces diagonal amplitude; its K
+    features (kernel [H,D,K]) may differ in number from the R = degree+1 coefficients.
+    amplitude_scale="factorial" divides output order r's amplitude or mixing row by r!.
     """
-    if (x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1]
-            or bias.shape != (kernel.shape[0], kernel.shape[-1])):
-        raise ValueError("Query coefficient projection requires x [B,T,D], kernel [H,D,R], bias [H,R]")
+    if (x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1] or bias.ndim != 2
+            or bias.shape[0] != kernel.shape[0]):
+        raise ValueError("Query coefficient projection requires x [B,T,D], kernel [H,D,K], bias [H,R]")
+    rectangular = kernel.shape[-1] != bias.shape[-1]
+    if rectangular and (activation != "tanh" or mixing is None):
+        raise ValueError("Only dense tanh readout may use a feature count other than the coefficient count")
     projected = jnp.einsum(
         "btd,hdr->bthr", x.astype(jnp.float32), kernel.astype(jnp.float32),
         precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32,
     )
     if activation == "tanh":
-        if amplitude is None or amplitude.shape != bias.shape:
-            raise ValueError("Tanh coefficients require a model-owned amplitude with the bias shape")
+        if mixing is None:
+            if amplitude is None or amplitude.shape != bias.shape:
+                raise ValueError("Tanh coefficients require a model-owned amplitude with the bias shape")
+        elif amplitude is not None or mixing.shape != (*bias.shape, kernel.shape[-1]):
+            raise ValueError("Dense tanh coefficients require only a mixing matrix [head,output_order,feature]")
         if tanh_bias is not None:
-            if tanh_bias.shape != bias.shape:
-                raise ValueError("The bias inside tanh must have the outer bias shape [H,R]")
+            if tanh_bias.shape != (kernel.shape[0], kernel.shape[-1]):
+                raise ValueError("The bias inside tanh must have the feature shape [H,K]")
             projected = projected + tanh_bias.astype(jnp.float32)
-        amplitude = amplitude.astype(jnp.float32)
-        if amplitude_scale == "factorial":
-            amplitude = amplitude / jnp.asarray([math.factorial(r) for r in range(bias.shape[-1])], jnp.float32)
-        elif amplitude_scale != "none":
+        if amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown amplitude scale: {amplitude_scale}")
-        projected = amplitude * jnp.tanh(projected)
-    elif (activation != "identity" or amplitude is not None or tanh_bias is not None
+        # Dense readout reuses these features for its diagonal and residual.
+        # Materialize them in both families: fusing tanh only in the diagonal
+        # arm introduced one-ulp differences amplified by later BF16 residuals.
+        features = jax.lax.optimization_barrier(jnp.tanh(projected))
+        if mixing is None:
+            return _diagonal_readout(features, amplitude, bias, amplitude_scale)
+        mixing = mixing.astype(jnp.float32)
+        if rectangular:
+            # No diagonal exists: c_r = b_r + sum_j (V_rj [/ r!]) h_j, every V entry differentiated.
+            if amplitude_scale == "factorial":
+                factorials = jnp.asarray([math.factorial(r) for r in range(bias.shape[-1])], jnp.float32)
+                mixing = mixing / factorials[None, :, None]
+            readout = jnp.einsum(
+                "bthj,hrj->bthr", features, mixing,
+                precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32,
+            )
+            return bias.astype(jnp.float32) + readout
+        amplitude = jnp.diagonal(mixing, axis1=-2, axis2=-1)
+        diagonal = _diagonal_readout(features, amplitude, bias, amplitude_scale)
+        off_diagonal = jnp.where(jnp.eye(bias.shape[-1], dtype=bool), 0.0, mixing)
+        if amplitude_scale == "factorial":
+            factorials = jnp.asarray([math.factorial(r) for r in range(bias.shape[-1])], jnp.float32)
+            off_diagonal = off_diagonal / factorials[None, :, None]
+        residual = jnp.einsum(
+            "bthj,hrj->bthr", features, off_diagonal,
+            precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32,
+        )
+        # The zero residual is still differentiated: every off-diagonal entry
+        # can learn immediately, including at V = diag(a).
+        return diagonal + residual
+    elif (activation != "identity" or amplitude is not None or mixing is not None or tanh_bias is not None
           or amplitude_scale != "none"):
         raise ValueError("Identity coefficients cannot receive an amplitude, its scale, or an inner bias; "
                          "unknown activation otherwise")

@@ -296,6 +296,17 @@ def attention_identity(config) -> dict:
         amplitude_scale = config.model.attention_coefficient_amplitude_scale if query_tanh else "none"
         tanh_formula = ("c(x_t) = b + (a/r!)*tanh(x_t W" if amplitude_scale == "factorial" else "c(x_t) = b + a*tanh(x_t W") + (
             " + beta)" if inner_bias else ")")
+        if config.model.attention_coefficient_readout == "dense":
+            tanh_formula = ("c_r(x_t) = b_r + sum_j (V_rj/r!)*tanh(x_t W_j" if amplitude_scale == "factorial"
+                            else "c_r(x_t) = b_r + sum_j V_rj*tanh(x_t W_j") + (
+                                " + beta_j)" if inner_bias else ")")
+            features = config.model.attention_coefficient_feature_count or config.model.attention_degree + 1
+            tanh_formula += f", j = 1..{features}"
+            tanh_start = (tanh_start.replace("a initially", "V initially diagonal with entries")
+                          if features == config.model.attention_degree + 1
+                          else tanh_start.replace("a initially 0", "V initially zero"))
+            identity["attention_coefficient_readout"] = "dense"
+            identity["attention_coefficient_feature_count"] = features
         identity.update(
             attention_kernel="query_key_polynomial_unnormalized" if key_conditioned else "query_polynomial_unnormalized",
             attention_coefficient_conditioning=conditioning,
@@ -527,6 +538,8 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
     kernel = np.asarray(jax.device_get(params["query_polynomial_kernel"][...]), dtype=np.float64)
     amplitude = (np.asarray(jax.device_get(params["query_polynomial_amplitude"][...]), dtype=np.float64)
                  if "query_polynomial_amplitude" in params else None)
+    mixing = (np.asarray(jax.device_get(params["query_polynomial_mixing"][...]), dtype=np.float64)
+              if "query_polynomial_mixing" in params else None)
     inner_bias = (np.asarray(jax.device_get(params["query_polynomial_tanh_bias"][...]), dtype=np.float64)
                   if "query_polynomial_tanh_bias" in params else None)
     key_amplitude = (np.asarray(jax.device_get(params["key_polynomial_amplitude"][...]), dtype=np.float64)
@@ -544,6 +557,7 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
         "projection_kernel_l2": _serializable(np.linalg.norm(kernel, axis=-2)),
         "finite": bool(np.isfinite(bias).all() and np.isfinite(kernel).all()
                        and (amplitude is None or np.isfinite(amplitude).all())
+                       and (mixing is None or np.isfinite(mixing).all())
                        and (inner_bias is None or np.isfinite(inner_bias).all())
                        and all(np.isfinite(values).all() for values in summaries.values())),
     }
@@ -553,6 +567,13 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
             factorials = np.asarray([math.factorial(r) for r in range(amplitude.shape[-1])], dtype=np.float64)
             report.update(modulation_amplitude_scale="1/r!",
                           effective_modulation_amplitude=_serializable(amplitude / factorials))
+    if mixing is not None:
+        report.update(activation="tanh", readout="dense", modulation_mixing=_serializable(mixing),
+                      modulation_mixing_axes=["layer", "head", "output_order", "feature"])
+        if amplitude_scale == "factorial":
+            factorials = np.asarray([math.factorial(r) for r in range(mixing.shape[-2])], dtype=np.float64)
+            report.update(modulation_amplitude_scale="1/r!",
+                          effective_modulation_mixing=_serializable(mixing / factorials[:, None]))
     if coefficient_scale == "factorial":
         factorials = np.asarray([math.factorial(r) for r in range(bias.shape[-1])], dtype=np.float64)
         report.update(projection_bias_scale="1/r!", effective_projection_bias=_serializable(bias / factorials))

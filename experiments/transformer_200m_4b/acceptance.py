@@ -38,8 +38,8 @@ def check_config(config):
     if config.train.dtype != "bfloat16" or config.train.seed != 42:
         raise ValueError("200M / 4B setup uses BF16 computation with seed 42")
     model = config.model
-    if model.attention_degree is not None and model.attention_degree not in (4, 8, 12):
-        raise ValueError("This comparison includes polynomial degrees 4, 8, and 12")
+    if model.attention_degree is not None and model.attention_degree not in (2, 4, 8, 12):
+        raise ValueError("This study includes polynomial degrees 2, 4, 8, and 12")
     if model.attention_normalization:
         if model.attention_degree is not None or model.attention_output_scaling != "none":
             raise ValueError("The normalized control is ordinary softmax without head output RMSNorm")
@@ -58,6 +58,9 @@ def check_config(config):
                     or not math.isclose(model.attention_coefficient_projection_initial_std,
                                         1 / math.sqrt(model.hidden_size), rel_tol=1e-12)):
                 raise ValueError("Query and query-key coefficients scale both b and a, with zero-amplitude Taylor start")
+        # Dense readout: V [degree+1, K] starts at zero and is order-scaled like a.
+        if model.attention_coefficient_readout == "dense" and model.attention_coefficient_conditioning != "query":
+            raise ValueError("Dense coefficient readout is a query-only generator")
 
 
 def spec(config):
