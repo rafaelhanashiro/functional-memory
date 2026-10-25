@@ -198,6 +198,12 @@ existing QK RMSNorm channel gains, and `model.qk_norm_head_scale: true`. They us
 7,570-update learning-rate schedule. The fixed Taylor control uses Mosaic; the
 exponential reference uses the fused backend.
 
+A third control, `r2b22f2ff6461` (`query-m4-head-scale`), copies the canonical `query-m4`
+recipe with only `model.qk_norm_head_scale: true` added, so the original query generator
+is compared with and without the per-head scale. It executes from
+`worktrees/query-m4-head-scale-4b` (branch `claude/query-m4-head-scale-4b`) with the same
+command, one GPU on `standard,long`.
+
 The fixed Taylor comparison isolates the coefficient-generator choice under the
 same QK setup. The current dense run retains its nine features and one-third dense
 mixing contribution; the controls have fixed coefficients and no dense readout.
