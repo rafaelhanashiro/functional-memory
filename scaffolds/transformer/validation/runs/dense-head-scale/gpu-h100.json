@@ -1,0 +1,177 @@
+{
+  "format": "shared-transformer-dense-head-scale-h100-validation",
+  "source_commit": "6f44aeaf0df134a3bcfad6034275633240e4b916",
+  "date": "2026-10-25",
+  "result": "passed",
+  "recipe": {
+    "layers": 15,
+    "hidden_size": 896,
+    "heads": 14,
+    "qk_head_dim": 64,
+    "context_tokens": 2048,
+    "global_batch_size": 256,
+    "micro_batch_size": 16,
+    "dtype": "bfloat16",
+    "qk_norm_type": "rms_norm",
+    "qk_norm_head_scale": true,
+    "coefficient_readout": "dense",
+    "coefficient_readout_scale": 0.3333333333333333
+  },
+  "limits": "H100 qualification at the two recorded recipes. Pilot timing is a short sample; the conservative allocation projection includes compilation overhead. It is not a scientific performance result or B300 qualification.",
+  "runs": [
+    {
+      "run_id": "r04a5b2a3e8dd",
+      "degree": 4,
+      "feature_count": 9,
+      "slurm_job_id": "225920",
+      "acceptance_identity": "cc8b16e9f99523ad6fc5b7f5f08dc381dfa7975be6ef758da85d6d29236c3dad",
+      "completed_utc": "2026-10-25T16:39:20.351938+00:00",
+      "hardware": {
+        "attention_backend": "mosaic",
+        "device_kinds": [
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "devices": [
+          "cuda:0"
+        ],
+        "runtime_test_paths": [],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "tests": {
+        "cpu-tests": {
+          "passed": 509,
+          "seconds": 731.234
+        },
+        "cpu-distributed-tests": {
+          "passed": 9,
+          "seconds": 22.323
+        },
+        "gpu-tests": {
+          "passed": 86,
+          "seconds": 417.875
+        }
+      },
+      "joint_gpu_cases": [
+        "test_gpu_joint_scaled_dense_model_forward_and_gradients_match_reference[0.0-4]",
+        "test_gpu_joint_scaled_dense_model_forward_and_gradients_match_reference[0.0-8]",
+        "test_gpu_joint_scaled_dense_model_forward_and_gradients_match_reference[0.15-4]",
+        "test_gpu_joint_scaled_dense_model_forward_and_gradients_match_reference[0.15-8]"
+      ],
+      "initialization": {
+        "passed": true,
+        "parameter_count": 200157526
+      },
+      "pilot": {
+        "steps": 20,
+        "backend": "mosaic",
+        "devices": 1,
+        "finite_validation_and_valid_diagnostics": true,
+        "sampled_steady_update_seconds_mean": 2.7733947000732377,
+        "sampled_steady_update_seconds_max": 2.8892319439910352,
+        "conservative_projected_hours": 12.372590405830998
+      },
+      "resume": {
+        "restored_step": 20,
+        "final_step": 21,
+        "data_start_sequence": 5120,
+        "checkpoint_state_sha256_matches": true,
+        "next_batch_and_rng_sha256_match": true
+      },
+      "evidence": {
+        "directory": "experiments/transformer_200m_4b/runs/r04a5b2a3e8dd/.runtime/acceptance/H100-1",
+        "sha256": {
+          "cpu-tests.json": "c1bbf566aceead37987314394b1032222c705e3549b9f47521f81a2c5e7ddf8c",
+          "cpu-distributed-tests.json": "bbf117766c1e23fbe4c290bcb47b95d30a941d54342bdedde9f965b7f115a259",
+          "gpu-tests.json": "fca978dd11021ac75ded48787bfeb5b63478a42857d9c91d43e684d01f5c73f3",
+          "initialization.json": "b8dc7ad1e5b6744fa09c7baba374147a6e5380f632cbfc723830d14b8da5f7d3",
+          "pilot.json": "0428dbf54a75a32753838055267a47862cfab7b4b317c61b2bbc763e2f1e23e7",
+          "resume.json": "e0ae1318cbd89dc6758cd7e10aafb5c08ebbf2dc1f1d0998834cbff9eb8fc275",
+          "success.json": "5cdc62394615495d0a7bf2780770f6c04abda4362438d28499f6bfe876c2eb21"
+        },
+        "gpu_tests_xml_sha256": "fb3b60904461f9849266f9e02183a6a40bd509e077855fb16ac2a76c9f8c9b77"
+      }
+    },
+    {
+      "run_id": "rfccffdd239dd",
+      "degree": 8,
+      "feature_count": 9,
+      "slurm_job_id": "225921",
+      "acceptance_identity": "a993caf2b3f9627208eaff7c726a148d27694084a95af92975c4fe82156bca6e",
+      "completed_utc": "2026-10-25T16:39:26.381770+00:00",
+      "hardware": {
+        "attention_backend": "mosaic",
+        "device_kinds": [
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "devices": [
+          "cuda:0"
+        ],
+        "runtime_test_paths": [],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "tests": {
+        "cpu-tests": {
+          "passed": 509,
+          "seconds": 732.403
+        },
+        "cpu-distributed-tests": {
+          "passed": 9,
+          "seconds": 20.484
+        },
+        "gpu-tests": {
+          "passed": 86,
+          "seconds": 418.278
+        }
+      },
+      "joint_gpu_cases": [
+        "test_gpu_joint_scaled_dense_model_forward_and_gradients_match_reference[0.0-4]",
+        "test_gpu_joint_scaled_dense_model_forward_and_gradients_match_reference[0.0-8]",
+        "test_gpu_joint_scaled_dense_model_forward_and_gradients_match_reference[0.15-4]",
+        "test_gpu_joint_scaled_dense_model_forward_and_gradients_match_reference[0.15-8]"
+      ],
+      "initialization": {
+        "passed": true,
+        "parameter_count": 200165926
+      },
+      "pilot": {
+        "steps": 20,
+        "backend": "mosaic",
+        "devices": 1,
+        "finite_validation_and_valid_diagnostics": true,
+        "sampled_steady_update_seconds_mean": 2.839924249332398,
+        "sampled_steady_update_seconds_max": 2.9605750350747257,
+        "conservative_projected_hours": 12.437779270117042
+      },
+      "resume": {
+        "restored_step": 20,
+        "final_step": 21,
+        "data_start_sequence": 5120,
+        "checkpoint_state_sha256_matches": true,
+        "next_batch_and_rng_sha256_match": true
+      },
+      "evidence": {
+        "directory": "experiments/transformer_200m_4b/runs/rfccffdd239dd/.runtime/acceptance/H100-1",
+        "sha256": {
+          "cpu-tests.json": "9d6a1192e12e381275dfdb064a9dc98b3c1e9d559a1bb40d173fe9ea3dffbcd5",
+          "cpu-distributed-tests.json": "4c746273dc2070d692b7647ae3b2afe6be4afa2617c7ffd410471bdfd01cdd03",
+          "gpu-tests.json": "842bc8d6d9d4ca4b07add0052c63f34c90bc707a985fb52512514d38973c8370",
+          "initialization.json": "edddc8efc656def163e5f750e5b6e6d99c34cc68c814af7f0f0c6742e9dba043",
+          "pilot.json": "50bddc4952086c5ab86f71839e063f9820af2c19c07cb5e715b34275b10a0ac4",
+          "resume.json": "67125b691ad3421307e62f4ed899e1cb5bb99767c56a903bb74462cfd7a8267b",
+          "success.json": "da7bcc6083230facf55dda9da0f64c0b11cd5996e61e23557564c57b577ad815"
+        },
+        "gpu_tests_xml_sha256": "0417967c84f93986c6c80c5088957be51b60e6024c2602310a305d292a3eae7d"
+      }
+    }
+  ]
+}

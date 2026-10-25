@@ -1,4 +1,40 @@
 {
+  "acceptance": {
+    "sha256": "5cdc62394615495d0a7bf2780770f6c04abda4362438d28499f6bfe876c2eb21",
+    "summary": {
+      "allocation_seconds": 86400,
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-10-25T16:39:20.351938+00:00",
+      "hardware": {
+        "attention_backend": "mosaic",
+        "device_kinds": [
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "devices": [
+          "cuda:0"
+        ],
+        "runtime_test_paths": [],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "cc8b16e9f99523ad6fc5b7f5f08dc381dfa7975be6ef758da85d6d29236c3dad",
+      "slurm_job_id": "225920",
+      "slurm_restart_count": "0",
+      "source_commit": "6f44aeaf0df134a3bcfad6034275633240e4b916",
+      "status": "passed"
+    }
+  },
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dense-qk-scale-4b/experiments/transformer_200m_4b/runs/r04a5b2a3e8dd/.runtime/acceptance/H100-1",
@@ -22,17 +58,194 @@
     "path": "experiments/transformer_200m_4b/runs/r04a5b2a3e8dd/config.yaml",
     "sha256": "f7f99b5e5890f7d08ac4b9b76bfa6666e065b1c359adb2e373b97c201d8ddc56"
   },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "error": null,
+  "execution": {
+    "attention_backend": "mosaic",
+    "raw_config": {
+      "path": "config.json",
+      "sha256": "2fd0aebb9ced8a61990b14fbfdb7a623d38e55327fb362d9da6e8c071e6c362f"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": "66c2ce77cdcf5b2d1ab76650fecbc13222e2135a2cae3b658577754e0d0de7c4"
+    },
+    "resolved_config": {
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "mosaic",
+        "attention_coefficient_activation": "tanh",
+        "attention_coefficient_amplitude_initial": 0.0,
+        "attention_coefficient_amplitude_scale": "factorial",
+        "attention_coefficient_conditioning": "query",
+        "attention_coefficient_feature_count": 9,
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_projection_initial_std": 0.03340765523905305,
+        "attention_coefficient_readout": "dense",
+        "attention_coefficient_readout_scale": 0.3333333333333333,
+        "attention_coefficient_scale": "factorial",
+        "attention_coefficient_sharing": "per_head",
+        "attention_coefficient_tanh_bias": false,
+        "attention_coefficients": "learned",
+        "attention_degree": 4,
+        "attention_denominator_constant": "fixed",
+        "attention_denominator_degree": null,
+        "attention_denominator_parameterization": "direct",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_mechanism": "dot_product",
+        "attention_normalization": false,
+        "attention_output_scaling": "head_rms_norm",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "tied",
+        "gdn_polynomial_degree": 1,
+        "gdn_write_activation": "sigmoid",
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 896,
+        "initialization": "transformer_truncated_reference",
+        "intermediate_size": 2304,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 14,
+        "num_kv_heads": 14,
+        "num_layers": 15,
+        "path_conv_size": 3,
+        "path_w_rank": 32,
+        "positional_encoding": "rope",
+        "qk_head_dim": 64,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_head_scale": true,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_layer",
+        "qk_norm_type": "rms_norm",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rms_norm_fp32": true,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.0,
+        "coefficient_penalty_denominator": true,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.001,
+        "min_learning_rate": 0.0001,
+        "total_steps": 7570,
+        "warmup_steps": 455,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dense-qk-scale-4b/experiments/transformer_200m_4b/runs/r04a5b2a3e8dd/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 19,
+        "eval_early_every": 100,
+        "eval_early_until": 1500,
+        "eval_every": 500,
+        "log_every": 10,
+        "micro_batch_size": 16,
+        "seed": 42,
+        "source_commit": "6f44aeaf0df134a3bcfad6034275633240e4b916",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "transformer_200m_4b",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "dense-query-m4-k9-head-scale-vdiv3",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dense-qk-scale-4b/experiments/transformer_200m_4b/runs/r04a5b2a3e8dd"
+      }
+    },
+    "resolved_config_sha256": "debcd2d02500075eed2edb541a6598cf22c66ae2ac25cd2d340e5a223589c9e9",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_FLAGS": null,
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "225920",
+        "timestamp_utc": "2026-10-25T16:39:45.346387+00:00"
+      }
+    ]
+  },
   "experiment_kind": "full_pretraining",
   "frozen_execution_sha256": "78a9ff2e04d39466a2e2414ed335bd0ede919d39576958bbe15d1baf41884fbb",
   "home_cluster": "kennel",
   "label": "dense-query-m4-k9-head-scale-vdiv3",
-  "log_path": "experiments/transformer_200m_4b/runs/r04a5b2a3e8dd/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dense-qk-scale-4b/experiments/transformer_200m_4b/runs/r04a5b2a3e8dd/training.log",
   "name": "dense-query-m4-k9-head-scale-vdiv3",
+  "numerical_failure_path": null,
   "record_schema_version": 1,
   "run_id": "r04a5b2a3e8dd",
   "seed": 42,
   "source_commit": "6f44aeaf0df134a3bcfad6034275633240e4b916",
-  "status": "acceptance",
+  "status": "running",
+  "step": 0,
   "submission": {
     "command": [
       "sbatch",
@@ -55,5 +268,7 @@
     "partition": "standard",
     "slurm_job_id": "225920",
     "submitted_utc": "2026-10-25T16:08:57.009373+00:00"
-  }
+  },
+  "training_tokens": 0,
+  "updated_utc": "2026-10-25T16:39:45.358829+00:00"
 }

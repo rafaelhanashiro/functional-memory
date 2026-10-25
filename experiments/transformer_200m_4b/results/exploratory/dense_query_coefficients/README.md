@@ -50,9 +50,13 @@ and `r98d5895c02d0` (m = 8, 14.300); fixed Taylor `r79da929de109` (m = 4, 14.756
 | 4 | `r04a5b2a3e8dd` | `r5397d762caa1` |
 | 8 | `rfccffdd239dd` | `r98403594f227` |
 
-Jobs **225920** (degree four) and **225921** (degree eight) are running GPU
-qualification on one H100 each on Kennel `dogo`, in `standard`, with 24-hour
-allocations. Production training begins only after every acceptance stage passes.
+Jobs **225920** (degree four) and **225921** (degree eight) are training from
+scratch on one H100 80GB HBM3 each on Kennel `dogo`, in `standard`, with 24-hour
+allocations. Both passed all acceptance stages: 509 CPU, nine distributed CPU,
+and 86 GPU checks; full-model initialization; a 20-update pilot; and exact
+checkpoint/data/RNG restoration followed by update 21. Production starts at
+update zero separately from the disposable pilots. Qualification is recorded in
+[the scaffold validation](../../../../../scaffolds/transformer/validation/runs/dense-head-scale/gpu-h100.json).
 
 The additional degree-four and degree-eight runs both use **K = 9**. They retain
 the original RMS normalization and separate Q/K channel gains shared within each

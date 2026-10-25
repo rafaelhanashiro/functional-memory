@@ -200,6 +200,9 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r04a5b2a3e8dd/config.yaml
       sha256: f7f99b5e5890f7d08ac4b9b76bfa6666e065b1c359adb2e373b97c201d8ddc56
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r04a5b2a3e8dd/metadata.json
+      sha256: 66c2ce77cdcf5b2d1ab76650fecbc13222e2135a2cae3b658577754e0d0de7c4
 - study: transformer_200m_4b
   run_id: rfccffdd239dd
   label: dense-query-m8-k9-head-scale-vdiv3
@@ -209,3 +212,6 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/rfccffdd239dd/config.yaml
       sha256: 9a5dcf5918621d7dc00b285cbc0520769ebbd7c03652e366b91d146f6f480576
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/rfccffdd239dd/metadata.json
+      sha256: f7162afb8653b06a45b48291abc60dfcd9d7c9ac37b5aec8adac351a8e726d25

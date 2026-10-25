@@ -1,0 +1,143 @@
+{
+  "attention_backend": "mosaic",
+  "attention_backend_requested": "mosaic",
+  "attention_coefficient_activation": "tanh",
+  "attention_coefficient_amplitude_initial": 0.0,
+  "attention_coefficient_amplitude_scale": "factorial",
+  "attention_coefficient_conditioning": "query",
+  "attention_coefficient_count": 942900,
+  "attention_coefficient_feature_count": 9,
+  "attention_coefficient_initialization": "taylor",
+  "attention_coefficient_input": "pre_attention_rmsnorm_activation",
+  "attention_coefficient_parameterization": "direct",
+  "attention_coefficient_projection_dtype": "float32",
+  "attention_coefficient_projection_initial_std": 0.03340765523905305,
+  "attention_coefficient_readout": "dense",
+  "attention_coefficient_readout_scale": 0.3333333333333333,
+  "attention_coefficient_scale": "factorial",
+  "attention_coefficient_scale_formula": "stored c~_r (static coefficients or query bias b) start at r! times the represented value; attention uses c_r = c~_r / r!",
+  "attention_coefficient_sharing": "per_head",
+  "attention_coefficients": "learned",
+  "attention_degree": 4,
+  "attention_formula": "sum_(i<=t) sum_(r<=4) c_r(x_t) s_ti^r v_i, s_ti = Q_t K_i^T / sqrt(d_k); c_r(x_t) = b_r + 0.333333333 * sum_j (V_rj/r!)*tanh(x_t W_j), j = 1..9 per layer/head, W initially N(0, 0.0334077^2) per entry, V initially zero, b_r initially 1/r!; x_t is the activation after the block input RMSNorm, then per-head RMSNorm over value channels with a learned gain",
+  "attention_implementation": "pallas_mosaic_gpu_query_polynomial",
+  "attention_kernel": "query_polynomial_unnormalized",
+  "attention_normalization": false,
+  "attention_output_normalization": "head_rms_norm",
+  "attention_output_scaling": "head_rms_norm",
+  "attention_score_formula": "exp(gamma_h) * <RoPE(g_Q * q / sqrt(mean(q^2) + eps)), RoPE(g_K * k / sqrt(mean(k^2) + eps))> / sqrt(d_K); independent Q/K channel gains per layer, shared across heads; gamma_h learned independently per layer/head, initially zero",
+  "attention_score_scale": "1/sqrt(d_k)",
+  "attention_signed": true,
+  "attention_weight_precision": "bf16",
+  "coefficient_penalty": 0.0,
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0"
+  ],
+  "diagnostic_backend": "blocked",
+  "diagnostic_query_block_size": 128,
+  "diagnostic_sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "error": null,
+  "execution_runtime": {
+    "batch_transfer": "host_to_shard",
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      }
+    ],
+    "environment": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_FLAGS": null,
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct"
+  },
+  "key_block_size": null,
+  "m0_qk_parameter_note": null,
+  "next_train_sequence": 0,
+  "numerical_failure_path": null,
+  "parameter_count": 200157526,
+  "qk_head_dim": 64,
+  "qk_norm": true,
+  "qk_norm_eps": 1e-06,
+  "qk_norm_gain_shape": [
+    15,
+    64
+  ],
+  "qk_norm_gain_shared_across_heads": true,
+  "qk_norm_head_scale": true,
+  "qk_norm_head_scale_initial": 1.0,
+  "qk_norm_head_scale_shape": [
+    15,
+    14,
+    1
+  ],
+  "qk_norm_head_scale_sharing": "per_head",
+  "qk_norm_initial_gain": 1.0,
+  "qk_norm_parameter_count": 2130,
+  "qk_norm_sharing": "per_layer",
+  "qk_norm_stats_dtype": "float32",
+  "qk_norm_type": "rms_norm",
+  "query_block_size": null,
+  "rng_state": {
+    "completed_updates": 0,
+    "seed": 42
+  },
+  "runtime_history": [
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_FLAGS": null,
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "225920",
+      "timestamp_utc": "2026-10-25T16:39:45.346387+00:00"
+    }
+  ],
+  "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "seed": 42,
+  "slurm_job_id": "225920",
+  "slurm_restart_count": 0,
+  "source_commit": "6f44aeaf0df134a3bcfad6034275633240e4b916",
+  "status": "running",
+  "step": 0,
+  "target_steps": 7570,
+  "target_tokens": 3968860160,
+  "training_tokens": 0,
+  "updated_utc": "2026-10-25T16:39:45.358829+00:00",
+  "value_head_dim": 64
+}

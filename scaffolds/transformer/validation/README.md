@@ -21,8 +21,17 @@ the unchanged RMSNorm channel gains, and one-third scaling of only the dense
 mixing contribution. Both degree-four and degree-eight nine-feature models
 preserve their initial function, train both new parameter groups, and reproduce
 the next update exactly after checkpoint restore. Legacy defaults retain their
-previous behavior. Four new combined GPU tests and a full-size pilot with
-fresh-process resume remain allocation-specific gates before production.
+previous behavior.
+
+The [H100 record](runs/dense-head-scale/gpu-h100.json) qualifies both degrees
+with K=9 on one H100 80GB HBM3. Each allocation passed 509 CPU, nine distributed
+CPU, and 86 GPU checks, including all four combined scaling forward/gradient
+cases. Both full-size 20-update pilots produced finite validation and valid
+attention diagnostics. Fresh-process resume preserved the complete checkpoint
+state, next batch and RNG hashes, then completed update 21. The sampled steady
+updates averaged 2.77 seconds at degree four and 2.84 seconds at degree eight.
+These short pilots qualify correctness and the allocation budget; they do not
+measure the scientific effect of the changes or qualify B300 execution.
 
 ### Selectable QK RMSNorm, truncated initialization, and pilot cadence
 
