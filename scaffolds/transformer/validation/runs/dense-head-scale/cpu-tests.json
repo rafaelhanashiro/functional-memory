@@ -1,0 +1,50 @@
+{
+  "format": "shared-transformer-dense-head-scale-cpu-validation",
+  "source_commit": "6f44aeaf0df134a3bcfad6034275633240e4b916",
+  "date": "2026-10-25",
+  "platform": "CPU",
+  "result": "passed",
+  "tests": [
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_qk_head_scale.py scaffolds/transformer/tests/test_qk_rms_norm.py scaffolds/transformer/tests/test_qk_norm.py",
+      "passed": 66,
+      "skipped": 5,
+      "seconds": 82.77
+    },
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_dense_mixing_scale.py scaffolds/transformer/tests/test_dense_query_readout.py scaffolds/transformer/tests/test_coefficient_scale.py scaffolds/transformer/tests/test_query_tanh_polynomial.py scaffolds/transformer/tests/test_acceptance.py -m 'not gpu' --tb=short",
+      "passed": 213,
+      "deselected": 33,
+      "seconds": 198.03
+    },
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/records/tests/test_records.py",
+      "passed": 47,
+      "seconds": 1.6
+    }
+  ],
+  "checks": [
+    "Independent per-head score scaling once, preserving RMS normalization and channel gains",
+    "Head log scales zero initialize to identity and are excluded from weight decay",
+    "Dense modulation and derivatives divided by three with Taylor bias unchanged",
+    "Degree-four rectangular and degree-eight square nine-feature readouts",
+    "Independent FP64 coefficient forward/gradient reference",
+    "Initial parity with unscaled dense models, fixed Taylor within FP32 rounding",
+    "Combined parameter updates and exact next update after checkpoint restore",
+    "Legacy defaults and canonical initialization acceptance controls"
+  ],
+  "limit": "CPU checks use small synthetic models. Four new combined GPU checks and full-size pilot/resume are mandatory allocation-specific acceptance gates before production.",
+  "file_sha256": {
+    "scaffolds/transformer/attention/qk_norm.py": "e31c721cc3da9213b8100582dcbd5976d99a39e96456f1a7026d5e961a1a27b6",
+    "scaffolds/transformer/attention/input_dependent.py": "f919799b550c044acd7b95178b6065eb8e5b277f21e56889aaa7e5abcc93513a",
+    "scaffolds/transformer/attention/parameters.py": "5aa46eb1a4d4195075d1d88fec818a7d7b76423abf43a8e6500f1bece412fe6f",
+    "scaffolds/transformer/attention/multihead.py": "2bb56b4086acfed16333e44a104430c2584a69df7d7c0daf65162d8b01169227",
+    "scaffolds/transformer/configs/base.py": "d893dc69f6a5cc11d58b021f2f98f0e9facb7cf843dd1eafd1edea7e91b4c949",
+    "scaffolds/transformer/configs/loader.py": "eeac15ebea3f99805825c9028d35b1b770ab84ee546d4195b76377bef153515c",
+    "scaffolds/transformer/training/diagnostics.py": "70303a4e8f962a41c49aa663e62906390054e6f3044eda689512ef0f193cdff0",
+    "scaffolds/transformer/acceptance.py": "54f57344b7766c2e860e29c618bd38692936c13169cf17aa7b1006c8485f2a11",
+    "scaffolds/transformer/tests/test_qk_head_scale.py": "e472ddb55e1ff51ed4f7110a255f0a3a1cc6810b15fbe5788731136d73e4d1b2",
+    "scaffolds/transformer/tests/test_dense_mixing_scale.py": "e6296db974abdc6522a2fa109ac91f626204aab3efdfddb0a964a0c024408105",
+    "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+  }
+}

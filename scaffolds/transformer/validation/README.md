@@ -11,6 +11,19 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Per-head RMS QK scaling and reduced dense readout
+
+The [CPU record](runs/dense-head-scale/cpu-tests.json) pins source `6f44aeaf`
+and the tested implementation files. It records 66 QK checks (five GPU skips),
+213 dense/readout/acceptance checks (33 GPU cases excluded), and 47 run-record
+checks. Independent references verify a positive score multiplier per layer/head,
+the unchanged RMSNorm channel gains, and one-third scaling of only the dense
+mixing contribution. Both degree-four and degree-eight nine-feature models
+preserve their initial function, train both new parameter groups, and reproduce
+the next update exactly after checkpoint restore. Legacy defaults retain their
+previous behavior. Four new combined GPU tests and a full-size pilot with
+fresh-process resume remain allocation-specific gates before production.
+
 ### Selectable QK RMSNorm, truncated initialization, and pilot cadence
 
 The shared scaffold now supports Q/K RMSNorm with independent learned channel

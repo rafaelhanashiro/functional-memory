@@ -50,6 +50,10 @@ and `r98d5895c02d0` (m = 8, 14.300); fixed Taylor `r79da929de109` (m = 4, 14.756
 | 4 | `r04a5b2a3e8dd` | `r5397d762caa1` |
 | 8 | `rfccffdd239dd` | `r98403594f227` |
 
+Jobs **225920** (degree four) and **225921** (degree eight) are running GPU
+qualification on one H100 each on Kennel `dogo`, in `standard`, with 24-hour
+allocations. Production training begins only after every acceptance stage passes.
+
 The additional degree-four and degree-eight runs both use **K = 9**. They retain
 the original RMS normalization and separate Q/K channel gains shared within each
 layer. Each layer/head additionally learns a positive scalar
