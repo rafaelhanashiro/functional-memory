@@ -25,16 +25,16 @@
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.transformer_200m_4b.acceptance",
       "experiments/transformer_200m_4b/runs/r7de01791778b/config.yaml",
-      "86ed534849a82657a289a1a58621fae6229c9b76",
+      "6a8f5c6d1c4c8cf4288d5e1686c10fc469278aec",
       "1",
       "B300,H100"
     ],
     "gpu_count": 1,
-    "launch_commit": "86ed534849a82657a289a1a58621fae6229c9b76",
+    "launch_commit": "6a8f5c6d1c4c8cf4288d5e1686c10fc469278aec",
     "nice": 0,
     "partition": "standard",
     "scheduling_priority": 1,
-    "slurm_job_id": "225374",
+    "slurm_job_id": "225387",
     "stop_after_step": null
   }
 }
