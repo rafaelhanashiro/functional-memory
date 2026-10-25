@@ -8,5 +8,29 @@
   "name": "query-m4-head-scale",
   "record_schema_version": 1,
   "run_id": "r2b22f2ff6461",
-  "status": "planned"
+  "status": "pending",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=r2b22f2ff6461",
+      "--output=experiments/transformer_200m_4b/runs/r2b22f2ff6461/training.log",
+      "--error=experiments/transformer_200m_4b/runs/r2b22f2ff6461/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/r2b22f2ff6461/config.yaml",
+      "b7130e5f2f290fddea451a0d5e63d5d3a4134110",
+      "1",
+      "B300,H100"
+    ],
+    "gpu_count": 1,
+    "launch_commit": "b7130e5f2f290fddea451a0d5e63d5d3a4134110",
+    "partition": "standard,long",
+    "slurm_job_id": "226282"
+  }
 }
