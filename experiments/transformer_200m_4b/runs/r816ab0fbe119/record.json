@@ -1,18 +1,52 @@
 {
+  "acceptance": null,
+  "artifacts": [
+    {
+      "path": "experiments/transformer_200m_4b/runs/r816ab0fbe119/training.log",
+      "sha256": "27ff795f72181c87280f6b7728911769f76964b0ffb4b33f3195255ff02b1a2b",
+      "size_bytes": 4075
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r816ab0fbe119/.runtime/acceptance/H100-1",
+      "allocation": "JobId=226145 JobName=r816ab0fbe119 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20048 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:12:47 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-25T17:57:41 EligibleTime=2026-10-25T17:57:41 AccrueTime=2026-10-25T17:57:41 StartTime=2026-10-25T17:57:46 EndTime=2026-10-26T17:57:46 Deadline=N/A PreemptEligibleTime=2026-10-25T19:57:46 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-25T17:57:46 Scheduler=Main Partition=standard AllocNode:Sid=kennel:3808883 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r816ab0fbe119/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r816ab0fbe119/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_200m_4b/runs/r816ab0fbe119/config.yaml",
+      "config_sha256": "56b8c0fc0d776c44822e1a22d2608f3de96354702f17da43fac0e4dbf994abc5",
+      "exit_code": 1,
+      "finished_utc": "2026-10-25T22:21:42.719828+00:00",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "5d3924ebc19d07066e3fc08e201a19f8c7374ebc",
+      "slurm_job_id": "226145",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-25T22:10:33.733574+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_200m_4b/runs/r816ab0fbe119/config.yaml",
     "sha256": "56b8c0fc0d776c44822e1a22d2608f3de96354702f17da43fac0e4dbf994abc5"
   },
-  "frozen_execution_sha256": "36d95421b0ecaa6db6981dacf0e5d38b5bc98da5f5aba8cca4bbcd4e7e745839",
+  "error": null,
+  "frozen_execution_sha256": "bbc2cedcfda2dcce81f93fd4874ddb1817a0ba6764783a9333e739f580f455f6",
   "home_cluster": "kennel",
   "label": "fixed-m4-head-scale",
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r816ab0fbe119/training.log",
+  "log": {
+    "path": "experiments/transformer_200m_4b/runs/r816ab0fbe119/training.log",
+    "sha256": "27ff795f72181c87280f6b7728911769f76964b0ffb4b33f3195255ff02b1a2b",
+    "size_bytes": 4075
+  },
+  "log_path": "experiments/transformer_200m_4b/runs/r816ab0fbe119/training.log",
   "name": "fixed-m4-head-scale",
   "record_schema_version": 1,
   "run_id": "r816ab0fbe119",
   "seed": 42,
-  "source_commit": "5d3924ebc19d07066e3fc08e201a19f8c7374ebc",
-  "status": "queued",
+  "source_commit": "789889b37ee20d688aba71b6deff522eebfb0db8",
+  "status": "submitted",
   "submission": {
     "allocation_seconds": 86400,
     "command": [
@@ -29,7 +63,7 @@
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.transformer_200m_4b.acceptance",
       "experiments/transformer_200m_4b/runs/r816ab0fbe119/config.yaml",
-      "5d3924ebc19d07066e3fc08e201a19f8c7374ebc",
+      "789889b37ee20d688aba71b6deff522eebfb0db8",
       "1",
       "B300,H100"
     ],
@@ -39,7 +73,7 @@
       "H100"
     ],
     "partition": "standard",
-    "slurm_job_id": "226145",
-    "submitted_utc": "2026-10-25T21:57:41.440025+00:00"
+    "slurm_job_id": "226183",
+    "submitted_utc": "2026-10-25T22:30:24.183128+00:00"
   }
 }

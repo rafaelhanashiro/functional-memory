@@ -1,0 +1,25 @@
+{
+  "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q -c scaffolds/transformer/pyproject.toml scaffolds/transformer/tests/test_qk_head_scale.py -m \"not gpu\" --import-mode=importlib --junitxml=/tmp/functional-memory-qk-head-oracle-cpu.xml",
+  "completed_utc": "2026-10-25T22:29:44.241386+00:00",
+  "coverage": [
+    "Fixed exp and Taylor initial-function parity and trainable independent head scales",
+    "Independent smooth scalar oracle checked by FP64 finite differences for exp and Taylor",
+    "Independent nonzero distinct head sensitivities and legacy QK head-scale checks"
+  ],
+  "elapsed_seconds": 33.18,
+  "gpu_gate_collection": [
+    "test_full_context_qk_rms_head_scale_backend[exp-0-fused]",
+    "test_full_context_qk_rms_head_scale_backend[fixed-4-mosaic]"
+  ],
+  "junit": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/scaffolds/transformer/validation/logs/qk-head-controls-cpu-oracle.xml",
+    "sha256": "0ac3fa2cd927344a9fa290963fb2a0409ee77cb4fb9f6ddd61868dda9a6dea7d"
+  },
+  "source_commit": "789889b37ee20d688aba71b6deff522eebfb0db8",
+  "status": "passed",
+  "tested_sources": {
+    "scaffolds/transformer/tests/test_qk_head_scale.py": "fc8035cd557acb4c265cdf94f22dc71d4e5c423a7b2a448ddc46f08fccdf0bf1",
+    "scaffolds/transformer/tests/test_qk_rms_attention_backends.py": "6dc882a756a30865253690128ea002ab12e865057cd3f0ec7b9e509b027ed58f"
+  },
+  "tests_passed": 16
+}

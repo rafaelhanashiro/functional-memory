@@ -107,10 +107,10 @@ exponential reference assesses the exact exponential under the same QK and outpu
 scaling. All comparisons use matched updates and report terminal and
 validation-best measurements separately.
 
-These controls run from `worktrees/qk-head-controls-4b` in independent Kennel
-`standard` allocations with 24-hour limits. Exponential job **226144** uses one
-H100 on `mastiff`; fixed-Taylor job **226145** uses one H100 on `dogo`. Both are
-in acceptance; production starts only after all qualification stages pass. The
+These controls are queued from `worktrees/qk-head-controls-4b` for independent
+Kennel `standard` allocations with 24-hour limits and one B300 or H100 each:
+exponential job **226182** and fixed-Taylor job **226183**. Each allocation requires
+fresh GPU qualification and all acceptance stages to pass before production starts. The
 [study README](../../../README.md#controls-with-matching-per-head-qk-scaling)
 contains the exact launch commands. Execution status comes from each run's record;
 the pinned selection and regenerated summary keep missing measurements visible.

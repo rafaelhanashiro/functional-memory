@@ -23,8 +23,9 @@ gains, output gains, and attention inputs. Random-cotangent checks retain their
 4% tolerance, including the aggregate head-scale gradient. Each head also uses
 an independent FP32 smooth-attention reference with a tangent-aligned cotangent:
 its positive squared-tangent target avoids a nearly cancelling scalar reduction.
-The per-head tolerance remains 4%. The oracle is checked against FP64 finite
-differences on CPU. The [precision probe](runs/qk-head-controls/precision_probe.py)
+The per-head tolerance remains 4%. The [16 CPU checks](runs/qk-head-controls/cpu-oracle-tests.json)
+include the oracle's agreement with FP64 finite differences.
+The [precision probe](runs/qk-head-controls/precision_probe.py)
 compares full-context BF16 kernel gradients with independent FP32/FP64 references;
 its GPU results are pending. Each allocation must still pass its GPU check,
 full-size pilot, and fresh-process checkpoint resume before production.
