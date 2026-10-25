@@ -297,9 +297,12 @@ def attention_identity(config) -> dict:
         tanh_formula = ("c(x_t) = b + (a/r!)*tanh(x_t W" if amplitude_scale == "factorial" else "c(x_t) = b + a*tanh(x_t W") + (
             " + beta)" if inner_bias else ")")
         if config.model.attention_coefficient_readout == "dense":
+            readout_scale = config.model.attention_coefficient_readout_scale
             tanh_formula = ("c_r(x_t) = b_r + sum_j (V_rj/r!)*tanh(x_t W_j" if amplitude_scale == "factorial"
                             else "c_r(x_t) = b_r + sum_j V_rj*tanh(x_t W_j") + (
                                 " + beta_j)" if inner_bias else ")")
+            if readout_scale != 1.0:
+                tanh_formula = tanh_formula.replace("b_r + sum_j", f"b_r + {readout_scale:.9g} * sum_j")
             features = config.model.attention_coefficient_feature_count or config.model.attention_degree + 1
             tanh_formula += f", j = 1..{features}"
             tanh_start = (tanh_start.replace("a initially", "V initially diagonal with entries")
@@ -307,6 +310,8 @@ def attention_identity(config) -> dict:
                           else tanh_start.replace("a initially 0", "V initially zero"))
             identity["attention_coefficient_readout"] = "dense"
             identity["attention_coefficient_feature_count"] = features
+            if readout_scale != 1.0:
+                identity["attention_coefficient_readout_scale"] = readout_scale
         identity.update(
             attention_kernel="query_key_polynomial_unnormalized" if key_conditioned else "query_polynomial_unnormalized",
             attention_coefficient_conditioning=conditioning,
@@ -416,7 +421,7 @@ def qk_norm_identity(model) -> dict:
     from scaffolds.transformer.attention.qk_norm import initial_scale
 
     if model.qk_norm_type == "rms_norm":
-        return {
+        identity = {
             "qk_norm": True,
             "qk_norm_type": "rms_norm",
             "qk_norm_sharing": "per_layer",
@@ -431,6 +436,17 @@ def qk_norm_identity(model) -> dict:
                 "RoPE(g_K * k / sqrt(mean(k^2) + eps))> / sqrt(d_K); "
                 "independent Q/K channel gains per layer, shared across heads"),
         }
+        if model.qk_norm_head_scale:
+            identity.update(
+                qk_norm_head_scale=True,
+                qk_norm_head_scale_sharing="per_head",
+                qk_norm_head_scale_shape=[model.num_layers, model.num_heads, 1],
+                qk_norm_head_scale_initial=1.0,
+                qk_norm_parameter_count=identity["qk_norm_parameter_count"] + model.num_layers * model.num_heads,
+                attention_score_formula="exp(gamma_h) * " + identity["attention_score_formula"]
+                                        + "; gamma_h learned independently per layer/head, initially zero",
+            )
+        return identity
     return {
         "qk_norm": True,
         "qk_norm_type": "cosine_log_scale",
@@ -528,7 +544,8 @@ def polynomial_coefficient_report(params, config) -> dict:
 
 
 
-def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coefficient_scale="none") -> dict:
+def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coefficient_scale="none",
+                             readout_scale=1.0) -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
@@ -570,10 +587,15 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
     if mixing is not None:
         report.update(activation="tanh", readout="dense", modulation_mixing=_serializable(mixing),
                       modulation_mixing_axes=["layer", "head", "output_order", "feature"])
+        effective_mixing = mixing * readout_scale
         if amplitude_scale == "factorial":
             factorials = np.asarray([math.factorial(r) for r in range(mixing.shape[-2])], dtype=np.float64)
             report.update(modulation_amplitude_scale="1/r!",
-                          effective_modulation_mixing=_serializable(mixing / factorials[:, None]))
+                          effective_modulation_mixing=_serializable(effective_mixing / factorials[:, None]))
+        elif readout_scale != 1.0:
+            report["effective_modulation_mixing"] = _serializable(effective_mixing)
+        if readout_scale != 1.0:
+            report["readout_scale"] = readout_scale
     if coefficient_scale == "factorial":
         factorials = np.asarray([math.factorial(r) for r in range(bias.shape[-1])], dtype=np.float64)
         report.update(projection_bias_scale="1/r!", effective_projection_bias=_serializable(bias / factorials))
@@ -620,6 +642,21 @@ def qk_norm_gain_report(params) -> dict:
         "effective": _serializable(gains),
         "axes": ["layer", "channel", "query_or_key"],
         "finite": bool(np.all(np.isfinite(gains))),
+    }
+
+
+def qk_norm_head_scale_report(params) -> dict:
+    """Independent score multipliers on top of the retained RMSNorm gains."""
+    raw = np.asarray(jax.device_get(params["qk_norm_head_log_scale"][...]), dtype=np.float64)
+    with np.errstate(over="ignore"):
+        effective = np.exp(raw)
+    return {
+        "raw_parameter_names": ["gamma_h"],
+        "raw": _serializable(raw),
+        "effective_coefficient_names": ["alpha_h"],
+        "effective": _serializable(effective),
+        "axes": ["layer", "head", "scalar"],
+        "finite": bool(np.isfinite(raw).all() and np.isfinite(effective).all()),
     }
 
 
@@ -724,7 +761,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     elif config.model.attention_coefficient_conditioning in ("query", "query_key"):
         coefficient_report = query_coefficient_report(
             params, raw_layers, amplitude_scale=config.model.attention_coefficient_amplitude_scale,
-            coefficient_scale=config.model.attention_coefficient_scale)
+            coefficient_scale=config.model.attention_coefficient_scale,
+            readout_scale=config.model.attention_coefficient_readout_scale)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
     elif has_learned_polynomial(config.model):
@@ -760,11 +798,16 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
             issues.append("Nonfinite fixed square factors")
     scale_report = None
     gain_report = None
+    head_scale_report = None
     if config.model.qk_norm:
         if config.model.qk_norm_type == "rms_norm":
             gain_report = qk_norm_gain_report(params)
             if not gain_report["finite"]:
                 issues.append("Nonfinite QK RMSNorm gains")
+            if config.model.qk_norm_head_scale:
+                head_scale_report = qk_norm_head_scale_report(params)
+                if not head_scale_report["finite"]:
+                    issues.append("Nonfinite QK RMSNorm head scales")
         else:
             scale_report = qk_norm_scale_report(params, config)
             if not scale_report["finite"]:
@@ -800,4 +843,6 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         report["qk_norm_scale"] = scale_report
     if gain_report is not None:
         report["qk_norm_gains"] = gain_report
+    if head_scale_report is not None:
+        report["qk_norm_head_scales"] = head_scale_report
     return report

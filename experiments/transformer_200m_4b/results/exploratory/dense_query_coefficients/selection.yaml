@@ -14,6 +14,15 @@ comparison:
   report:
   - terminal (update 7570)
   - validation-best
+  joint_scaling_pairs:
+  - degree: 4
+    feature_count: 9
+    primary_run_id: r04a5b2a3e8dd
+    baseline_run_id: r5397d762caa1
+  - degree: 8
+    feature_count: 9
+    primary_run_id: rfccffdd239dd
+    baseline_run_id: r98403594f227
 runs:
 - study: transformer_200m_4b
   run_id: rb83b6290a229
@@ -42,6 +51,18 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r98403594f227/config.yaml
       sha256: 70896a6db4ff7b7e8bc864189b4106e3d951aea3852cd6e32811e71c26ad3064
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r98403594f227/metrics.jsonl
+      sha256: 2ca96ff84d0ccc228d68ba43a97c92325d013cd2097620d244e8a5ae5137e6e8
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r98403594f227/completion.json
+      sha256: ec73d77680cc91814b8d0bca1cfc6f208c38d8a2bd7ee53461a532e3d82f6efe
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r98403594f227/metadata.json
+      sha256: 434a011abe2d9cb1cf030eebec210177150ab5e6df61cdf59bca08fd32a209d7
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r98403594f227/best_validation.json
+      sha256: 9a84d116061f79ba3001ff0e4e9d00b2d3591a59b8607a0c2a5322d71f1377ac
 - study: transformer_200m_4b
   run_id: re6d9f618439d
   label: dense-query-m2-k9
@@ -60,6 +81,18 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r5397d762caa1/config.yaml
       sha256: 3bdf89bf66d24c8e89b3984192d56912f9e7bb0cbca9f31fa0312c391aaf2a58
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r5397d762caa1/metrics.jsonl
+      sha256: cfc6f69e8a2ddbf643390428865f01e8a5c2d13b1fb12887862b92ce28431408
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r5397d762caa1/completion.json
+      sha256: e979d1dea0bf5677ab7a2941fb6ed8310cf2c3b4bb2b96c78df6b828ae40cbc9
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r5397d762caa1/metadata.json
+      sha256: fd79fa2c4f4af473a7ca80f7afd8d3208cb59c30021849151aa51cef416e37a4
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r5397d762caa1/best_validation.json
+      sha256: 52cb20bf8b2d8e7fb6d2f40a26381b2237ecb50c5dbee601e0e879a6579eab9a
 - study: transformer_200m_4b
   run_id: r1bbf3b794a14
   label: query-m2
@@ -86,6 +119,18 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r49b7943aee1b/config.yaml
       sha256: a9c1839a8a365f4ae335054403588daae2a97bc3facc4cda4ccffd860dc90864
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r49b7943aee1b/metrics.jsonl
+      sha256: f492bda3feb5d7e8719901aa07247557b24d174d815a89671495c57eb881c867
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r49b7943aee1b/completion.json
+      sha256: bda271ff0bf706acfa63b3562a460d8c0a5fa82d01bc13bbbc8b33c577becdcc
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r49b7943aee1b/metadata.json
+      sha256: aade11b44f0ef71aae4dde2232ab99905689272716c995b1d223aa769e06756c
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r49b7943aee1b/best_validation.json
+      sha256: 3932b3697a0767d816f20904dda96e7eab34ccecadc09c0b1e5a4e2cc287e188
 - study: transformer_200m_4b
   run_id: r98d5895c02d0
   label: query-m8
@@ -94,6 +139,18 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r98d5895c02d0/config.yaml
       sha256: cc5c2801a1825f38baa336d44e0e0657df6b4d48af09a0558198ac4321b99c33
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r98d5895c02d0/metrics.jsonl
+      sha256: 4faad5a3d94c31698cbff78a46ec1502d4555d62033215f582e4c49da9109b98
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r98d5895c02d0/completion.json
+      sha256: bbd27bc91efddb06aca8968514724e618d05bc8fa7665025ee63107e0c7fdafc
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r98d5895c02d0/metadata.json
+      sha256: 74f1d6bd10213f223af30ac74aca894a62ba4a1301c373f91b5ae6747e70098f
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r98d5895c02d0/best_validation.json
+      sha256: f9d68c4c618df83726d29dc057656699b8718590b7ea44d0c8abdec4ac5ab4e3
 - study: transformer_200m_4b
   run_id: r79da929de109
   label: fixed-m4
@@ -102,6 +159,18 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r79da929de109/config.yaml
       sha256: 9a1898124fb001b12bcd22a73126b74c63bee444bc6a3638cd576e2a088c548d
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r79da929de109/metrics.jsonl
+      sha256: 5393ae5dc688b48353069f5abcc34c14495c69ad004b8caeba8828cff0624b97
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r79da929de109/completion.json
+      sha256: 9bc50de6c88dca476f330c41c19c12e07b7b26332e373feb6ef306f5b89fdbd6
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r79da929de109/metadata.json
+      sha256: 0572bc495fbdf0e073f9bfa93e82093bad2ab196f054914c7640ef312a93b68d
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r79da929de109/best_validation.json
+      sha256: 919ef3bdaf7f7b9d7c9be3917e19334092e32af7bf82381321709885680d92ce
 - study: transformer_200m_4b
   run_id: r019ca96d6533
   label: fixed-m8
@@ -110,3 +179,33 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r019ca96d6533/config.yaml
       sha256: ab3233d65995f2ca4427cf8aa133f9b2f68d9f7c0631c369585888cd2fd636fb
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r019ca96d6533/metrics.jsonl
+      sha256: bf003893b80d267b4c5a932ebc3dc0bcb8e4ad5c3d2315359f3d39333506c453
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r019ca96d6533/completion.json
+      sha256: 79ee034902eaa48e0afd2c2677a2ee83541e6032f478fd5f44d6cc9ae8f7bbe6
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r019ca96d6533/metadata.json
+      sha256: 366ae7bf7ca01bdf3d1f785f5b5fcef11b7338dbe30cee292fc3e721827f21a6
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r019ca96d6533/best_validation.json
+      sha256: 9aa0f501aee1a2e3ee2ef6b1afee386663249b62b830e1a14683dc5500a0f57b
+- study: transformer_200m_4b
+  run_id: r04a5b2a3e8dd
+  label: dense-query-m4-k9-head-scale-vdiv3
+  role: dense_head_scale_readout_third
+  baseline_run_id: r5397d762caa1
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r04a5b2a3e8dd/config.yaml
+      sha256: f7f99b5e5890f7d08ac4b9b76bfa6666e065b1c359adb2e373b97c201d8ddc56
+- study: transformer_200m_4b
+  run_id: rfccffdd239dd
+  label: dense-query-m8-k9-head-scale-vdiv3
+  role: dense_head_scale_readout_third
+  baseline_run_id: r98403594f227
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rfccffdd239dd/config.yaml
+      sha256: 9a5dcf5918621d7dc00b285cbc0520769ebbd7c03652e366b91d146f6f480576

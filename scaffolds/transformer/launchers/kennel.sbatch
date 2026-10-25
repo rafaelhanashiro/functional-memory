@@ -8,14 +8,14 @@
 #     experiments/<study>/runs/<run>/config.yaml "$(git rev-parse HEAD)" [GPU_COUNT] [GPU_TYPES] [STOP_AFTER_STEP]
 # One GPU is the default. For an explicit multi-GPU run, override both --gres and GPU_COUNT.
 #SBATCH --job-name=transformer
-#SBATCH --partition=sweep
+#SBATCH --partition=standard,long
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=256G
 #SBATCH --gres=gpu:1
 #SBATCH --exclude=collie,samoyed,doodle,terrier
-#SBATCH --time=2-00:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --requeue
 #SBATCH --open-mode=append
 set -euo pipefail

@@ -222,12 +222,20 @@ and `g_K * k / sqrt(mean(k²) + eps)` before RoPE. Statistics are independent fo
 each token and head and computed in FP32; each layer's two gain vectors have
 `qk_head_dim` entries and broadcast across heads. The model owns the FP32 arrays
 `qk_norm_q_gain` and `qk_norm_k_gain`, both shaped `[num_layers, qk_head_dim]`,
-initialized to one and excluded from weight decay. There is no scalar log scale;
+initialized to one and excluded from weight decay. By default there is no scalar log scale;
 the existing kernels retain their `QKᵀ / sqrt(d_K)` scaling. Channel gains generally
 do not commute with RoPE, so their placement before RoPE is part of this mode's
 definition. Validation retains every gain under `attention_diagnostics.qk_norm_gains`
 and W&B mirrors Q/K gain means, minima, and maxima. Adding this mode does not change
 the arithmetic or parameter trees of historical cosine-score recipes.
+
+`qk_norm_head_scale: true` adds a positive score multiplier per layer/head to
+this RMS mode while retaining its shared channel gains. The FP32 parameter
+`qk_norm_head_log_scale`, shaped `[num_layers, num_heads, 1]`, starts at zero,
+has no weight decay, and multiplies the normalized query by `exp(gamma)` before
+RoPE. Thus each attention score is multiplied by `exp(gamma)` and the initial
+function is unchanged. This option requires enabled QK RMSNorm on dot-product
+attention; its default `false` preserves existing parameter trees and arithmetic.
 
 ### Input-dependent polynomial coefficients
 
@@ -285,6 +293,19 @@ To scale the entire query-dependent coefficient, enable both factorial options:
 `c_r(x_t) = [b_r + a_r tanh(w_r^T x_t)] / r!`, with stored `b_r = 1` and
 `a_r = 0` for a Taylor start. Static coefficients need only
 `attention_coefficient_scale: factorial`.
+
+`attention_coefficient_readout: dense` replaces the diagonal amplitudes in a
+tanh query-only generator with `query_polynomial_mixing`, shaped
+`[layers, heads, m+1, K]`. `attention_coefficient_feature_count` selects K
+(default `null`: m+1), and the projection then has K columns per head.
+`attention_coefficient_readout_scale`, a finite positive multiplier with default
+1, scales the mixing contribution only. With both factorial options enabled,
+the represented coefficients are
+`c_r(x) = b_r/r! + readout_scale * sum_j V[r,j] tanh(w_j^T x)/r!`.
+The bias is unchanged, and `V=0` retains the Taylor initialization at any scale.
+A nondefault readout scale requires dense readout. Diagnostics retain the stored
+mixing matrix and its effective values including readout and factorial scaling.
+
 `attention_coefficient_conditioning: query_key` (tanh only) multiplies each key's
 degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i` with
 `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` from the key token's activation

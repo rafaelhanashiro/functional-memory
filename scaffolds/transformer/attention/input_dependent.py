@@ -98,13 +98,19 @@ def _diagonal_readout(features, amplitude, bias, amplitude_scale):
 
 
 def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activation="identity", tanh_bias=None,
-                         amplitude_scale="none"):
+                         amplitude_scale="none", readout_scale=1.0):
     """FP32 c=b+xW or c=b+a*tanh(xW+beta); the inner bias beta is optional and otherwise absent.
 
     A dense mixing matrix V [head,output_order,feature] replaces diagonal amplitude; its K
     features (kernel [H,D,K]) may differ in number from the R = degree+1 coefficients.
     amplitude_scale="factorial" divides output order r's amplitude or mixing row by r!.
+    readout_scale multiplies only the dense modulation; it never rescales the bias.
     """
+    if (isinstance(readout_scale, bool) or not isinstance(readout_scale, (int, float))
+            or not math.isfinite(readout_scale) or readout_scale <= 0):
+        raise ValueError("Dense readout scale must be finite and positive")
+    if readout_scale != 1.0 and (activation != "tanh" or mixing is None):
+        raise ValueError("A nondefault readout scale requires dense tanh coefficients")
     if (x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1] or bias.ndim != 2
             or bias.shape[0] != kernel.shape[0]):
         raise ValueError("Query coefficient projection requires x [B,T,D], kernel [H,D,K], bias [H,R]")
@@ -134,6 +140,18 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
         if mixing is None:
             return _diagonal_readout(features, amplitude, bias, amplitude_scale)
         mixing = mixing.astype(jnp.float32)
+        if readout_scale != 1.0:
+            # Preserve the historical square/rectangular arithmetic at scale 1.
+            # The new scale applies to each output-order/feature contribution,
+            # after any factorial scaling, while b retains its original value.
+            if amplitude_scale == "factorial":
+                factorials = jnp.asarray([math.factorial(r) for r in range(bias.shape[-1])], jnp.float32)
+                mixing = mixing / factorials[None, :, None]
+            mixing = mixing * jnp.asarray(readout_scale, jnp.float32)
+            return bias.astype(jnp.float32) + jnp.einsum(
+                "bthj,hrj->bthr", features, mixing,
+                precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32,
+            )
         if rectangular:
             # No diagonal exists: c_r = b_r + sum_j (V_rj [/ r!]) h_j, every V entry differentiated.
             if amplitude_scale == "factorial":

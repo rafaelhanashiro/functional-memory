@@ -90,6 +90,9 @@ class ModelConfig:
     # Dense readout mixes all degree+1 tanh features into every output coefficient.
     # Diagonal preserves the historical one-feature-per-coefficient generator.
     attention_coefficient_readout: Literal["diagonal", "dense"] = "diagonal"
+    # Multiply only the dense input-dependent readout by this fixed scale; the
+    # Taylor bias and its factorial scaling remain unchanged.
+    attention_coefficient_readout_scale: float = 1.0
     # Dense readout's tanh feature count K, independent of the degree; null means degree+1.
     # V then has shape [degree+1, K] per layer/head; K other than degree+1 starts V at zero.
     attention_coefficient_feature_count: int | None = None
@@ -146,6 +149,9 @@ class ModelConfig:
     qk_norm_sharing: Literal["global", "per_head", "per_layer"] = "per_head"
     qk_norm_initial_scale: float | None = None
     qk_norm_eps: float = 1e-6
+    # Add a positive scalar exp(gamma) per layer/head after RMSNorm's channel
+    # gains. gamma starts at zero; the existing channel gains remain per layer.
+    qk_norm_head_scale: bool = False
     # Weight initialization: the scaffold's Flax defaults, or an architecture's reference
     # recipe ("transformer_reference" for dot-product attention, "gla_reference" for GLA);
     # see models/initialization.py.
@@ -327,6 +333,12 @@ class ModelConfig:
                 or self.attention_coefficient_activation != "tanh"
                 or self.attention_coefficient_parameterization != "direct"):
             raise ValueError("Dense coefficient readout requires learned direct tanh query-only coefficients")
+        readout_scale = self.attention_coefficient_readout_scale
+        if (not isinstance(readout_scale, (int, float)) or isinstance(readout_scale, bool)
+                or not math.isfinite(readout_scale) or readout_scale <= 0):
+            raise ValueError("model.attention_coefficient_readout_scale must be finite and positive")
+        if readout_scale != 1.0 and self.attention_coefficient_readout != "dense":
+            raise ValueError("A non-unit readout scale requires dense coefficient readout")
         features = self.attention_coefficient_feature_count
         if features is not None:
             if isinstance(features, bool) or not isinstance(features, int) or features < 1:
@@ -457,6 +469,12 @@ class ModelConfig:
             self.qk_norm = False  # Degree 0 ignores Q and K, so QK-norm cannot apply.
         if not isinstance(self.qk_norm, bool):
             raise ValueError("model.qk_norm must be a boolean")
+        if not isinstance(self.qk_norm_head_scale, bool):
+            raise ValueError("model.qk_norm_head_scale must be a boolean")
+        if self.qk_norm_head_scale and (
+                not self.qk_norm or self.qk_norm_type != "rms_norm"
+                or self.attention_mechanism != "dot_product"):
+            raise ValueError("QK head scaling requires enabled dot-product QK RMSNorm")
         if self.qk_norm_type not in ("cosine_log_scale", "rms_norm"):
             raise ValueError(f"Unknown QK-norm type: {self.qk_norm_type}")
         allowed_sharing = ("per_layer",) if self.qk_norm_type == "rms_norm" else ("global", "per_head")

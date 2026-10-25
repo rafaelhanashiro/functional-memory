@@ -86,6 +86,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("quadratic_sharing", "global")
         # Runs recorded before QK-norm existed trained without it, whatever the current default.
         value["model"].setdefault("qk_norm", False)
+        value["model"].setdefault("qk_norm_head_scale", False)
         value["model"].setdefault("attention_coefficients", "fixed")
         fixed_coefficients = value["model"].setdefault("attention_fixed_coefficients", None)
         if isinstance(fixed_coefficients, (tuple, list)):
@@ -103,6 +104,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("attention_coefficient_conditioning", "static")
         value["model"].setdefault("attention_coefficient_activation", "identity")
         value["model"].setdefault("attention_coefficient_readout", "diagonal")
+        value["model"].setdefault("attention_coefficient_readout_scale", 1.0)
         value["model"].setdefault("attention_coefficient_feature_count", None)
         value["model"].setdefault("attention_coefficient_amplitude_initial", 1.0)
         value["model"].setdefault("attention_coefficient_projection_initial_std", 0.0)

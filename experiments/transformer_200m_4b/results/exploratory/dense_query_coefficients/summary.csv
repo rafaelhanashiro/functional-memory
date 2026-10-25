@@ -1,0 +1,14 @@
+run_id,label,role,baseline_run_id,degree,features,qk_norm_type,qk_norm_head_scale,readout_scale,status,target_step,target_tokens,ppl_at_500,ppl_at_1000,ppl_at_1500,ppl_at_3000,ppl_at_5000,ppl_at_7000,ppl_at_7570,latest_evaluation_step,latest_ppl,best_step,best_ppl,terminal_step,terminal_ppl,tokens_at_terminal
+rb83b6290a229,dense-query-m2-k3,dense,,2,3,rms_norm,False,1.0,pending,7570,3968860160,,,,,,,,,,,,,,
+r7de01791778b,dense-query-m4-k5,dense,,4,5,rms_norm,False,1.0,pending,7570,3968860160,,,,,,,,,,,,,,
+r98403594f227,dense-query-m8-k9,dense,,8,9,rms_norm,False,1.0,complete,7570,3968860160,46.1690,26.5692,22.4306,18.3645,16.1874,15.0428,14.9206,7570,14.9206,7500,14.9125,7570,14.9206,3968860160
+re6d9f618439d,dense-query-m2-k9,dense,,2,9,rms_norm,False,1.0,pending,7570,3968860160,,,,,,,,,,,,,,
+r5397d762caa1,dense-query-m4-k9,dense,,4,9,rms_norm,False,1.0,complete,7570,3968860160,53.0362,27.7276,22.9448,18.5924,16.3843,15.2181,15.0949,7570,15.0949,7500,15.0881,7570,15.0949,3968860160
+r1bbf3b794a14,query-m2,original_query_control,,2,,rms_norm,False,1.0,pending,7570,3968860160,,,,,,,,,,,,,,
+r5755f840bacc,fixed-m2,fixed_taylor_control,,2,,rms_norm,False,1.0,pending,7570,3968860160,,,,,,,,,,,,,,
+r49b7943aee1b,query-m4,original_query_baseline,,4,,rms_norm,False,1.0,complete,7570,3968860160,55.8327,27.2632,22.5370,18.3207,16.1078,14.9617,14.8401,7570,14.8401,7500,14.8354,7570,14.8401,3968860160
+r98d5895c02d0,query-m8,original_query_baseline,,8,,rms_norm,False,1.0,complete,7570,3968860160,48.3133,25.7808,21.4795,17.5796,15.5038,14.4228,14.3053,7570,14.3053,7500,14.3001,7570,14.3053,3968860160
+r79da929de109,fixed-m4,fixed_taylor_baseline,,4,,rms_norm,False,1.0,complete,7570,3968860160,63.2768,28.6065,22.9950,18.3370,16.0464,14.8832,14.7600,7570,14.7600,7500,14.7557,7570,14.7600,3968860160
+r019ca96d6533,fixed-m8,fixed_taylor_baseline,,8,,rms_norm,False,1.0,complete,7570,3968860160,51.1859,26.2204,21.6599,17.5687,15.4777,14.3765,14.2609,7570,14.2609,7500,14.2561,7570,14.2609,3968860160
+r04a5b2a3e8dd,dense-query-m4-k9-head-scale-vdiv3,dense_head_scale_readout_third,r5397d762caa1,4,9,rms_norm,True,0.3333333333333333,planned,7570,3968860160,,,,,,,,,,,,,,
+rfccffdd239dd,dense-query-m8-k9-head-scale-vdiv3,dense_head_scale_readout_third,r98403594f227,8,9,rms_norm,True,0.3333333333333333,planned,7570,3968860160,,,,,,,,,,,,,,

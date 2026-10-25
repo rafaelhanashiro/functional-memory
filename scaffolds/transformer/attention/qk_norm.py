@@ -8,6 +8,8 @@ orthogonal, so its scalar normalization commutes with RoPE. ``rms_norm`` instead
 uses independent learned Q/K channel gains, shared across heads in each layer.
 Those gains apply before RoPE and do not in general commute with it. Both modes
 preserve the kernels' ordinary ``QK^T / sqrt(d_K)`` arithmetic.
+RMSNorm may additionally multiply each head's queries by its own positive scalar
+``exp(gamma_h)``, initially one, preserving the existing channel gains.
 """
 
 import math
@@ -49,6 +51,28 @@ def rms_parameter_specs(*, qk_head_dim: int):
         name=name, argument=name, initial=(1.0,) * qk_head_dim,
         sharing="per_layer", weight_decay=False,
     ) for name in ("qk_norm_q_gain", "qk_norm_k_gain"))
+
+
+def rms_head_scale_specs():
+    """An independent positive score multiplier per layer/head, initially one."""
+    from scaffolds.transformer.attention.parameters import AttentionParameterSpec
+
+    return (AttentionParameterSpec(
+        name="qk_norm_head_log_scale", argument="qk_norm_head_log_scale",
+        initial=(0.0,), sharing="per_head", weight_decay=False,
+    ),)
+
+
+def scale_rms_queries(q: jax.Array, head_log_scale: jax.Array) -> jax.Array:
+    """Multiply RMS-normalized queries by exp(gamma), without renormalizing them.
+
+    q is [batch,time,heads,channels], after its existing channel gains. Scaling
+    queries alone multiplies the resulting QK score once by the head's scale.
+    """
+    if q.ndim != 4 or head_log_scale.shape != (q.shape[2], 1):
+        raise ValueError("QK RMS head scaling requires queries [B,T,H,D] and log scales [H,1]")
+    scale = jnp.exp(head_log_scale.astype(jnp.float32)).reshape(1, 1, q.shape[2], 1)
+    return (q.astype(jnp.float32) * scale).astype(q.dtype)
 
 
 def rms_score_operands(q: jax.Array, k: jax.Array, q_gain: jax.Array, k_gain: jax.Array, *, eps: float):

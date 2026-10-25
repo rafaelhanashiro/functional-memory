@@ -1,0 +1,15 @@
+{
+  "condition": "dense_head_scale_vdiv3",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/rfccffdd239dd/config.yaml",
+    "sha256": "9a5dcf5918621d7dc00b285cbc0520769ebbd7c03652e366b91d146f6f480576"
+  },
+  "experiment_kind": "full_pretraining",
+  "home_cluster": "kennel",
+  "label": "dense-query-m8-k9-head-scale-vdiv3",
+  "name": "dense-query-m8-k9-head-scale-vdiv3",
+  "record_schema_version": 1,
+  "run_id": "rfccffdd239dd",
+  "seed": 42,
+  "status": "planned"
+}

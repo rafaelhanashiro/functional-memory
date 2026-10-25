@@ -10,7 +10,7 @@ from flax import nnx
 
 from scaffolds.transformer.attention.core import attention_core
 from scaffolds.transformer.attention.output_scaling import OUTPUT_SCALINGS, scale_attention_output
-from scaffolds.transformer.attention.qk_norm import cosine_score_operands, rms_score_operands
+from scaffolds.transformer.attention.qk_norm import cosine_score_operands, rms_score_operands, scale_rms_queries
 from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
 from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
@@ -53,11 +53,13 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_coefficient_conditioning=config.attention_coefficient_conditioning,
         attention_coefficient_activation=config.attention_coefficient_activation,
         attention_coefficient_readout=config.attention_coefficient_readout,
+        attention_coefficient_readout_scale=config.attention_coefficient_readout_scale,
         attention_coefficient_amplitude_scale=config.attention_coefficient_amplitude_scale,
         attention_coefficient_scale=config.attention_coefficient_scale,
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         qk_norm_type=config.qk_norm_type,
+        qk_norm_head_scale=config.qk_norm_head_scale,
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
         positional_encoding=config.positional_encoding,
         rngs=rngs,
@@ -77,10 +79,12 @@ class MultiHeadAttention(nnx.Module):
         attention_coefficient_conditioning: str = "static",
         attention_coefficient_activation: str = "identity",
         attention_coefficient_readout: str = "diagonal",
+        attention_coefficient_readout_scale: float = 1.0,
         positional_encoding: str = "rope",
         attention_coefficient_amplitude_scale: str = "none",
         attention_coefficient_scale: str = "none",
         qk_norm_type: str = "cosine_log_scale",
+        qk_norm_head_scale: bool = False,
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path"):
@@ -95,6 +99,10 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("qk_norm must be a boolean")
         if qk_norm_type not in ("cosine_log_scale", "rms_norm"):
             raise ValueError(f"Unknown QK-norm type: {qk_norm_type}")
+        if not isinstance(qk_norm_head_scale, bool):
+            raise ValueError("qk_norm_head_scale must be a boolean")
+        if qk_norm_head_scale and (not qk_norm or qk_norm_type != "rms_norm"):
+            raise ValueError("QK head scaling requires enabled QK RMSNorm")
         if qk_norm and attention_degree == 0:
             raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
         if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused", "mosaic")):
@@ -162,7 +170,15 @@ class MultiHeadAttention(nnx.Module):
         if attention_coefficient_readout == "dense" and (
                 attention_coefficient_conditioning != "query" or attention_coefficient_activation != "tanh"):
             raise ValueError("Dense coefficient readout requires tanh query-only coefficients")
+        if (not isinstance(attention_coefficient_readout_scale, (int, float))
+                or isinstance(attention_coefficient_readout_scale, bool)
+                or not math.isfinite(attention_coefficient_readout_scale)
+                or attention_coefficient_readout_scale <= 0):
+            raise ValueError("Coefficient readout scale must be finite and positive")
+        if attention_coefficient_readout_scale != 1.0 and attention_coefficient_readout != "dense":
+            raise ValueError("A non-unit readout scale requires dense coefficient readout")
         self.attention_coefficient_readout = attention_coefficient_readout
+        self.attention_coefficient_readout_scale = attention_coefficient_readout_scale
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
         if attention_coefficient_amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {attention_coefficient_amplitude_scale}")
@@ -188,6 +204,7 @@ class MultiHeadAttention(nnx.Module):
         self.quadratic_mode = quadratic_mode
         self.qk_norm = qk_norm
         self.qk_norm_type = qk_norm_type
+        self.qk_norm_head_scale = qk_norm_head_scale
         self.qk_norm_eps = qk_norm_eps
         self.attention_output_scaling = attention_output_scaling
         self.rms_norm_eps = rms_norm_eps
@@ -210,11 +227,14 @@ class MultiHeadAttention(nnx.Module):
         log_scale = parameters.pop("qk_norm_log_scale", None)
         q_gain = parameters.pop("qk_norm_q_gain", None)
         k_gain = parameters.pop("qk_norm_k_gain", None)
+        head_log_scale = parameters.pop("qk_norm_head_log_scale", None)
         if (self.qk_norm and self.qk_norm_type == "cosine_log_scale") != (log_scale is not None):
             raise ValueError("QK-norm requires exactly its model-owned qk_norm_log_scale parameter")
         rms_enabled = self.qk_norm and self.qk_norm_type == "rms_norm"
         if rms_enabled != (q_gain is not None) or rms_enabled != (k_gain is not None):
             raise ValueError("QK RMSNorm requires exactly its model-owned qk_norm_q_gain and qk_norm_k_gain parameters")
+        if self.qk_norm_head_scale != (head_log_scale is not None):
+            raise ValueError("QK RMS head scaling requires exactly its model-owned qk_norm_head_log_scale parameter")
         output_norm_scale = parameters.pop("output_norm_scale", None)
         if (self.attention_output_scaling == "head_rms_norm") != (output_norm_scale is not None):
             raise ValueError("Head RMSNorm output scaling requires exactly its model-owned output_norm_scale parameter")
@@ -246,7 +266,8 @@ class MultiHeadAttention(nnx.Module):
             parameters["query_polynomial_coefficients"] = project_coefficients(
                 x, query_kernel, query_bias, amplitude=query_amplitude, mixing=query_mixing,
                 activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
-                amplitude_scale=self.attention_coefficient_amplitude_scale)
+                amplitude_scale=self.attention_coefficient_amplitude_scale,
+                readout_scale=self.attention_coefficient_readout_scale)
             if self.attention_coefficient_conditioning == "query_key":
                 if key_kernel is None or key_amplitude is None:
                     raise ValueError("Query-key attention requires its model-owned key kernel and amplitude")
@@ -271,6 +292,8 @@ class MultiHeadAttention(nnx.Module):
         if self.qk_norm:
             if self.qk_norm_type == "rms_norm":
                 q, k = rms_score_operands(q, k, q_gain, k_gain, eps=self.qk_norm_eps)
+                if self.qk_norm_head_scale:
+                    q = scale_rms_queries(q, head_log_scale)
             else:
                 # Preserve the historical scaled-cosine arithmetic exactly.
                 q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)

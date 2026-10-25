@@ -82,8 +82,9 @@ an LR candidate uses this same recipe with an explicit peak/floor override and a
 fresh run ID; an ordinary new run does not rerun LR selection.
 
 New jobs request one GPU, with global microbatch 16 and gradient accumulation to
-the fixed global batch of 256. Each comparison is scheduled independently on the
-low-priority `sweep` partition. The shared
+the fixed global batch of 256. Schedule independent jobs in `standard` and the
+available `long` allowance before using `sweep` for overflow, after checking the
+live limits and allocations described in [CLUSTERS.md](../../CLUSTERS.md). The shared
 launcher performs allocation-specific acceptance before training: CPU/accelerator
 tests, initialization identity, a short full-model pilot, and exact fresh-process
 checkpoint resumption. New checks cover actual 14-head, 2,048-token attention
@@ -150,3 +151,38 @@ sbatch --parsable --partition=standard --nice=0 --gres=gpu:1 --cpus-per-task=8 -
 ```
 
 Each record's `submission` holds its exact command, partition and priority.
+
+### Dense coefficients with per-head QK scaling
+
+Two additional full-budget runs in the same exploratory topic test degree four and
+eight with nine tanh features each. They retain the original QK RMSNorm and shared
+per-layer channel gains, add a learned positive score scale per layer/head, and
+multiply the dense coefficient mixing contribution by one-third. The new fields
+are `model.qk_norm_head_scale: true` and
+`model.attention_coefficient_readout_scale: 0.3333333333333333`.
+
+The head log scales start at zero (score multipliers one); the dense mixing matrix
+starts at zero, and the Taylor bias is unchanged. The two runs therefore preserve
+the original initial function, training data, seed, learning-rate schedule, batch,
+and total budget. They test both requested changes together; separate effects
+cannot be identified from this pair. The comparison and findings stay in the
+[dense coefficient topic](results/exploratory/dense_query_coefficients/README.md).
+
+The allocated IDs are `r04a5b2a3e8dd` (m=4) and `rfccffdd239dd` (m=8), both
+with K=9. From `worktrees/dense-qk-scale-4b`, after syncing both locked
+environments and committing the frozen inputs, submit each independently:
+
+```bash
+for run in r04a5b2a3e8dd rfccffdd239dd; do
+  sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --job-name="$run" \
+    --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+    --error="experiments/transformer_200m_4b/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+    "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
+The shared launcher qualifies the new head-scale and dense-readout gradients,
+reference initialization, full-size pilot, and checkpoint resumption on the
+allocated GPU before production. Keep these run IDs for resumptions.

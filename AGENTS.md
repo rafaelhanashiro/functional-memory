@@ -21,6 +21,9 @@ results/<analysis>/
 results/exploratory/
   README.md                 open exploratory topics and the date each opened
   <topic>/                  README.md, optional selection.yaml and figures
+results/diagnostics/
+  README.md                 closed diagnostic records of training behavior
+  <topic>/                  README.md, selection.yaml, figures and their plot.py
 results/simplified/
   README.md                 purpose, sources, regeneration commands
   <analysis>/               presentation figures simplifying results/<analysis>/, plot.py
@@ -42,10 +45,12 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 - The established 10B-token shared-Transformer attention experiments belong to
   `experiments/attention_scaling/`. The user-requested 200M / 4B-token setup is isolated
   in `experiments/transformer_200m_4b/`, including its `recipe.yaml`, run membership,
-  `runs/<run_id>/`, execution helpers, and flat `results/` collection. Add runs there
-  deliberately; do not reproduce the old grid automatically. Reusable implementations
-  remain in the shared scaffolds. Its nested results follow all selection, provenance,
-  and regeneration rules below; old studies and result selections retain their recipes.
+  `runs/<run_id>/`, execution helpers, and `results/` collections. Its exploratory
+  diagnostics belong under `experiments/transformer_200m_4b/results/exploratory/<topic>/`,
+  with their runs in the same study. Add runs deliberately; do not reproduce the old
+  grid automatically. Reusable implementations remain in the shared scaffolds.
+  Its nested results follow all selection, provenance, and regeneration rules below;
+  old studies and result selections retain their recipes.
   Attention family, normalization, QK normalization,
   degree, width, coefficient parameterization, sharing, and seed distinguish runs
   within this study; do not create a new study directory for a sweep or mechanism.
@@ -72,10 +77,13 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   remain visible. Terminal and validation-best metrics must be distinguished.
 - Keep the maintained attention comparisons in `results/attention_scaling/`: the
   combined heatmap and degree plot, their explicit selections, and regeneration code.
-  Two attention questions have their own canonical collections at the user's request:
+  Three attention questions have their own canonical collections at the user's request:
   `results/input_dependent_coefficients/` (tanh query-dependent coefficients against
-  static ones) and `results/gdn_polynomial/` (polynomial Gated DeltaNet). Do not create
-  a result directory for any other mechanism or sweep unless the user asks. Learning curves and
+  static ones), `results/gdn_polynomial/` (polynomial Gated DeltaNet), and
+  `results/rational_polynomial/` (separate learned denominator polynomials). Do not
+  create a result directory for any other mechanism or sweep unless the user asks.
+  Each canonical collection stands alone: never merge one into another, and never fold
+  a newly canonical experiment into an existing collection. Learning curves and
   coefficient diagnostics remain available in run measurements; add a maintained
   diagnostic figure only when it serves a requested comparison. State-rank results
   belong to `results/state_rank/`.
@@ -84,18 +92,31 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   figure, table, finding, or status report; `results/attention_scaling/collect.py`
   rejects them.
 - Exploratory experiments, whose place in the canonical results is not yet decided,
-  report under `results/exploratory/<topic>/`, one directory per question with flat
+  report under their applicable `results/exploratory/<topic>/`, one directory per question with flat
   files: a README with the question, runs, findings, the open decision, and the date
   opened; an optional selection YAML of explicit run IDs with roles, pinned by
   `scaffolds.records refresh`; and optional figures or tables that regenerate from
   it. Tests are not required. Their runs live in their study like any other run, with
   the usual lifecycle, records, and retained artifacts, and enter no canonical
-  selection. `results/exploratory/README.md` lists the open topics; mention them in
-  status updates. A topic ends in one of two ways: promote it (move its selection,
-  findings, and code into the canonical collection, add tests, and delete the topic),
-  or discard it (delete the topic and its runs with their artifacts). Exploratory
+  selection. The applicable `results/exploratory/README.md` lists the open topics;
+  the root exploratory index may link to study-local topics. Mention open topics in
+  status updates. A topic ends in one of two ways: promote it or discard it.
+  Promoting makes the topic its own canonical collection, `results/<topic>/`: move its
+  selection, findings, and code there, add regeneration code and tests, list it in the
+  root README and in the canonical collections above, and delete the topic. A promoted
+  topic is never merged into an existing canonical collection, even a related one.
+  Discarding deletes the topic and its runs with their artifacts. At the user's request,
+  a topic that records training behavior rather than comparing mechanisms may instead
+  close as a diagnostic (below). Exploratory
   topics are exempt from the one-collection rule and from tests, not from the
   provenance rules.
+- `results/diagnostics/<topic>/` holds closed records of training behavior (for
+  example gradient spikes) that compare no mechanisms and feed no comparison. Each has
+  flat files: a short README with the question, runs, findings, and limits; a selection
+  YAML of explicit run IDs pinned by `scaffolds.records refresh`; and figures or tables
+  that regenerate from it. A diagnostic has no open decision and needs no tests. Its
+  runs live in their study with the usual lifecycle and records and enter no canonical
+  selection. `results/diagnostics/README.md` lists the topics.
 - `results/simplified/<analysis>/` holds presentation figures: simplified, easy-to-read
   versions of a canonical collection's figures for sending to people outside the
   project. They read that collection's selections and code (no selection, findings, or
@@ -198,6 +219,15 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   size fixed through gradient accumulation; GPU count is execution provenance, not a
   model hyperparameter. Changes to an existing run's allocation preserve its frozen
   recipe and checkpoint and require acceptance on the new allocation.
+- On Kennel, use the permitted `standard` and `long` GPU allowances before submitting
+  overflow to `sweep`. Prefer `standard` for allocations that fit its time limit and
+  use the available `long` allowance too; a scientific sweep does not imply the Slurm
+  `sweep` partition. Check live partition, QoS, and account limits and count the user's
+  running and queued GPU allocations across worktrees before choosing partitions.
+  Use `sweep` only after the applicable higher-priority allowances are allocated or
+  committed to eligible jobs. Leave `nice` at its default unless deliberately ordering
+  jobs; do not add a blanket priority penalty. See `CLUSTERS.md` for current limits
+  and launcher defaults.
 - New dot-product Transformer experiments must enable QK normalization unless the
   user explicitly requests plain QK scores. Set `model.qk_norm: true` in the frozen
   recipe; do not inherit `false` when copying a legacy run. GLA and degree-zero
