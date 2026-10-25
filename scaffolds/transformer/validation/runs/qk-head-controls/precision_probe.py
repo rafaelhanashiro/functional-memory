@@ -19,7 +19,7 @@ from scaffolds.transformer.attention.positional import apply_rope
 from scaffolds.transformer.attention.qk_norm import rms_score_operands, scale_rms_queries
 from scaffolds.transformer.tests.test_qk_rms_attention_backends import _inputs, _operation
 
-jax.config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", False)
 jax.config.update("jax_default_matmul_precision", "highest")
 
 
@@ -85,11 +85,11 @@ def prepared(operands):
 
 def gamma_contraction(qn, scaled, rotate, dq, gamma):
     dscaled = jax.vjp(rotate, scaled)[1](dq.astype(jnp.bfloat16))[0]
-    terms = dscaled.astype(jnp.float64) * qn.astype(jnp.float64) * jnp.exp(gamma.astype(jnp.float64))[None, None]
-    signed = jnp.sum(terms, axis=(0, 1, 3))
-    magnitude = jnp.sum(jnp.abs(terms), axis=(0, 1, 3))
-    return {"gamma": np.asarray(signed).tolist(), "absolute_contribution_sum": np.asarray(magnitude).tolist(),
-            "cancellation_ratio": np.asarray(magnitude / jnp.maximum(jnp.abs(signed), 1e-30)).tolist()}
+    terms = host(dscaled) * host(qn) * np.exp(host(gamma))[None, None]
+    signed = np.sum(terms, axis=(0, 1, 3))
+    magnitude = np.sum(np.abs(terms), axis=(0, 1, 3))
+    return {"gamma": signed.tolist(), "absolute_contribution_sum": magnitude.tolist(),
+            "cancellation_ratio": (magnitude / np.maximum(np.abs(signed), 1e-30)).tolist()}
 
 
 def main():
@@ -114,9 +114,10 @@ def main():
         result = report["families"][family] = {}
         values = {}
         for precision in (jnp.float32, jnp.float64):
-            arrays = tuple(x.astype(precision) for x in operands)
-            values[str(precision)] = jax.jit(partial(vjp, partial(smooth_reference, family)))(arrays, cotangent.astype(precision))
-            jax.block_until_ready(values[str(precision)])
+            with jax.enable_x64(precision == jnp.float64):
+                arrays = tuple(x.astype(precision) for x in operands)
+                values[str(precision)] = jax.jit(partial(vjp, partial(smooth_reference, family)))(arrays, cotangent.astype(precision))
+                jax.block_until_ready(values[str(precision)])
         ref32, ref64 = values[str(jnp.float32)], values[str(jnp.float64)]
         result["smooth_fp32_vs_fp64"] = summarize(host(ref32[1]), host(ref64[1]))
         result["smooth_fp64_gamma"] = host(ref64[1][5]).reshape(-1).tolist()
@@ -140,19 +141,22 @@ def main():
                           kernel_outputs["blocked"])[1](cotangent)[0]
         output_reference = lambda y: (
             y / jnp.sqrt(jnp.mean(y * y, axis=-1, keepdims=True) + 1e-6) * gain.astype(y.dtype))
-        doutput64 = jax.vjp(output_reference, kernel_outputs["blocked"].astype(jnp.float64))[1](
-            cotangent.astype(jnp.float64))[0]
+        with jax.enable_x64():
+            doutput64 = jax.vjp(output_reference, kernel_outputs["blocked"].astype(jnp.float64))[1](
+                cotangent.astype(jnp.float64))[0]
+            jax.block_until_ready(doutput64)
         result["output_rms_bf16_upstream_vs_fp64"] = relative_per_head(doutput, doutput64)
         local = {}
         for name in ("blocked", backend):
             local[name] = jax.jit(lambda q, k, v, dy: jax.vjp(partial(kernel, name), q, k, v)[1](dy))(q, k, v, doutput)
             jax.block_until_ready(local[name])
-        exact_operands = tuple(x.astype(jnp.float64) for x in (q, k, v))
-        local64 = jax.jit(lambda q, k, v, dy: jax.vjp(partial(raw_reference, family), q, k, v)[1](dy))(
-            *exact_operands, doutput.astype(jnp.float64))
-        local64_unrounded = jax.jit(lambda q, k, v, dy: jax.vjp(partial(raw_reference, family), q, k, v)[1](dy))(
-            *exact_operands, doutput64)
-        jax.block_until_ready(local64)
+        with jax.enable_x64():
+            exact_operands = tuple(x.astype(jnp.float64) for x in (q, k, v))
+            local64 = jax.jit(lambda q, k, v, dy: jax.vjp(partial(raw_reference, family), q, k, v)[1](dy))(
+                *exact_operands, doutput.astype(jnp.float64))
+            local64_unrounded = jax.jit(lambda q, k, v, dy: jax.vjp(partial(raw_reference, family), q, k, v)[1](dy))(
+                *exact_operands, doutput64)
+            jax.block_until_ready((local64, local64_unrounded))
         result["local_common_bf16_upstream"] = {
             name: {key: relative_per_head(a, b) for key, a, b in zip("qkv", host(local[name]), host(local64))}
             for name in local}
@@ -177,9 +181,10 @@ def main():
             operation = partial(_operation, family, degree, name, head_scale=True)
             aligned_values[name] = jax.jit(partial(vjp, operation))(operands, aligned)
             jax.block_until_ready(aligned_values[name])
-        aligned64 = jax.jit(partial(vjp, partial(smooth_reference, family)))(
-            tuple(x.astype(jnp.float64) for x in operands), aligned.astype(jnp.float64))
-        jax.block_until_ready(aligned64)
+        with jax.enable_x64():
+            aligned64 = jax.jit(partial(vjp, partial(smooth_reference, family)))(
+                tuple(x.astype(jnp.float64) for x in operands), aligned.astype(jnp.float64))
+            jax.block_until_ready(aligned64)
         result["aligned_backend_vs_blocked"] = summarize(host(aligned_values[backend][1]), host(aligned_values["blocked"][1]))
         result["aligned_backend_vs_smooth_fp64"] = summarize(host(aligned_values[backend][1]), host(aligned64[1]))
         result["aligned_gamma"] = {name: host(value[1][5]).reshape(-1).tolist()
