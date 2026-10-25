@@ -269,6 +269,34 @@ python -m scaffolds.transformer.benchmarks.tune_query_key \
 python -m pytest -q scaffolds/transformer/tests/test_query_key_tiling.py
 ```
 
+### Dense query coefficients with K features
+
+Dense readout feeds `K` tanh features `h_j = tanh(w_j^T x)` into every coefficient,
+`c_r = [b_r + sum_j V_rj h_j] / r!`, with `V` of shape `[m+1, K]` per layer and head and `K`
+independent of the degree. `K = m+1` keeps the exact diagonal replay of the original
+generator; fresh runs start at `V = 0`, exactly fixed Taylor. The
+[qualification record](runs/dense-query-k/qualification.json) lists every check.
+
+CPU: 473 study and scaffold tests pass. GPU, one B300 (job `225367`) and one H100 (job
+`225368`): the Taylor-exact start, the production-shape Mosaic backend at degree 2, and the
+two-layer production composition in BF16 against a blocked FP32 reference. Whole-parameter
+gradients stay within 2.5x the blocked BF16 path's own rounding (floor 3%) at the start
+(`V = 0`) and with moderate coefficients (`V` std 0.05) for every tested `(m, K)`:
+
+| `V` std | (2, 3) | (2, 9) | (4, 5) | (8, 9) |
+| --- | ---: | ---: | ---: | ---: |
+| 0 | 2.5% / 2.1% | 2.5% / 2.1% | 1.6% / 1.7% | 1.7% / 1.6% |
+| 0.05 | 1.8% / 1.8% | 1.8% / 1.8% | 1.7% / 1.8% | 3.4% / 4.4% |
+| 0.3 | 4.4% / **7.9%** | 4.2% / **8.8%** | 2.4% / 2.6% | 9.4% / 9.4% |
+
+Worst whole-parameter relative L2 against FP32, blocked BF16 / Mosaic BF16 (B300, job
+`225366`). **Limitation:** with strongly signed coefficients (`V` std 0.3) at degree 2, the
+canonical BF16 weight precision rounds the coefficient-bias gradient to 7.6–8.3% against
+1.9–3.2% for blocked BF16; that case is an expected, non-strict test failure. Degree-2
+fixed and original-query controls share the same kernel numerics. Each production
+allocation repeats acceptance, including initialization identity, a pilot and a
+fresh-process checkpoint resume.
+
 ### Query-dependent tanh polynomial coefficients
 
 The direct fused query-polynomial kernel passed all 12 H100 CUDA cases on
