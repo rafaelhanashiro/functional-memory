@@ -11,6 +11,17 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Fixed Taylor and exponential controls with per-head QK scaling
+
+The [CPU checks](runs/qk-head-controls/cpu-tests.json) pin source `5d3924eb`.
+All 78 selected checks pass, including unchanged initialization and trainable
+head scales for fixed Taylor and unnormalized exp with head-output RMSNorm.
+Acceptance now selects a full-context forward/gradient check for the actual
+control: exp/fused or degree-four fixed Taylor/Mosaic. These checks use distinct
+nonunit scales and check every head's scale gradient, along with Q/K channel
+gains, output gains, and attention inputs. Each allocation must still pass its
+GPU check, full-size pilot, and fresh-process checkpoint resume before production.
+
 ### Per-head RMS QK scaling and reduced dense readout
 
 The [CPU record](runs/dense-head-scale/cpu-tests.json) pins source `6f44aeaf`

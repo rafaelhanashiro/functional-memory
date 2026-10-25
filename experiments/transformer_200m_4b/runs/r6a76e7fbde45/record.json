@@ -3,11 +3,43 @@
     "path": "experiments/transformer_200m_4b/runs/r6a76e7fbde45/config.yaml",
     "sha256": "599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6"
   },
+  "frozen_execution_sha256": "36d95421b0ecaa6db6981dacf0e5d38b5bc98da5f5aba8cca4bbcd4e7e745839",
   "home_cluster": "kennel",
   "label": "exp-head-scale",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r6a76e7fbde45/training.log",
   "name": "exp-head-scale",
   "record_schema_version": 1,
   "run_id": "r6a76e7fbde45",
   "seed": 42,
-  "status": "planned"
+  "source_commit": "5d3924ebc19d07066e3fc08e201a19f8c7374ebc",
+  "status": "queued",
+  "submission": {
+    "allocation_seconds": 86400,
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=r6a76e7fbde45",
+      "--output=experiments/transformer_200m_4b/runs/r6a76e7fbde45/training.log",
+      "--error=experiments/transformer_200m_4b/runs/r6a76e7fbde45/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/r6a76e7fbde45/config.yaml",
+      "5d3924ebc19d07066e3fc08e201a19f8c7374ebc",
+      "1",
+      "B300,H100"
+    ],
+    "gpu_count": 1,
+    "gpu_types": [
+      "B300",
+      "H100"
+    ],
+    "partition": "standard",
+    "slurm_job_id": "226144",
+    "submitted_utc": "2026-10-25T21:57:39.552928+00:00"
+  }
 }

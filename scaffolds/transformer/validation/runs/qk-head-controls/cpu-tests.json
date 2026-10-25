@@ -1,0 +1,30 @@
+{
+  "format": "shared-transformer-qk-head-controls-cpu-validation",
+  "source_commit": "5d3924ebc19d07066e3fc08e201a19f8c7374ebc",
+  "date": "2026-10-25",
+  "platform": "CPU",
+  "result": "passed",
+  "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q -c scaffolds/transformer/pyproject.toml scaffolds/transformer/tests/test_qk_head_scale.py scaffolds/transformer/tests/test_attention_acceptance.py scaffolds/transformer/tests/test_dense_mixing_scale.py -m 'not gpu' --import-mode=importlib",
+  "passed": 78,
+  "gpu_cases_deselected": 4,
+  "seconds": 349.09,
+  "junit_sha256": "13c49cf0e5c28f6391c215f072a84bbc788b6350384cb0d555b48827d1bfeb90",
+  "checks": [
+    "Exp and fixed Taylor retain identical initial predictions when zero-initialized head log scales are added",
+    "Per-head scale parameters train while retaining shared QK channel gains",
+    "Acceptance selects the actual exp/fused or fixed Taylor/m4/Mosaic head-scale GPU gate",
+    "Existing head-scale and dense-readout correctness checks remain valid"
+  ],
+  "gpu_gates_pending": [
+    "test_full_context_qk_rms_head_scale_backend[exp-0-fused]",
+    "test_full_context_qk_rms_head_scale_backend[fixed-4-mosaic]"
+  ],
+  "limit": "CPU evidence; full-context GPU forward/gradient checks and full-size pilot/resume must pass in each production allocation.",
+  "file_sha256": {
+    "scaffolds/transformer/acceptance.py": "a13ab7e2efdc0695305dcd3ec2c80b12e5af819564842d477975bc66b212a8e4",
+    "scaffolds/transformer/tests/test_attention_acceptance.py": "47f9c2c9477b63d0473f9bc54d07e5d060f91338aafa6eab0156dc82ec1339dd",
+    "scaffolds/transformer/tests/test_qk_head_scale.py": "03c3f5114fd17017489715328bf4b94936230bfe6086a544ff824c91874ee6e5",
+    "scaffolds/transformer/tests/test_qk_rms_attention_backends.py": "ab2e80b925c0aecbe574eb1713e4ec254b77ddfe89011867c227555ce40d1289",
+    "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+  }
+}
