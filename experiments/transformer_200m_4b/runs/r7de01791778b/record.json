@@ -1,0 +1,13 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r7de01791778b/config.yaml",
+    "sha256": "0ed260d4b0f708b37bcf3306944c44ef3a27c74d6d7354a179c08c8ddbaf4872"
+  },
+  "home_cluster": "kennel",
+  "label": "dense-query-m4-k5",
+  "name": "dense-query-m4-k5",
+  "phase": "exploratory",
+  "record_schema_version": 1,
+  "run_id": "r7de01791778b",
+  "status": "planned"
+}

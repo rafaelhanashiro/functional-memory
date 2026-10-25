@@ -1,0 +1,112 @@
+topic: dense_query_coefficients
+study: transformer_200m_4b
+comparison:
+  metric: held-out validation perplexity
+  tokens_per_update: 524288
+  matched_updates:
+  - 500
+  - 1000
+  - 1500
+  - 3000
+  - 5000
+  - 7000
+  - 7570
+  report:
+  - terminal (update 7570)
+  - validation-best
+runs:
+- study: transformer_200m_4b
+  run_id: rb83b6290a229
+  label: dense-query-m2-k3
+  role: dense
+  priority: 1
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rb83b6290a229/config.yaml
+      sha256: 6088f3f08a6ccbb92985ea0c4734defdb80108b58f9e8d55fdb3bbf384ef4706
+- study: transformer_200m_4b
+  run_id: r7de01791778b
+  label: dense-query-m4-k5
+  role: dense
+  priority: 1
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r7de01791778b/config.yaml
+      sha256: 0ed260d4b0f708b37bcf3306944c44ef3a27c74d6d7354a179c08c8ddbaf4872
+- study: transformer_200m_4b
+  run_id: r98403594f227
+  label: dense-query-m8-k9
+  role: dense
+  priority: 1
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r98403594f227/config.yaml
+      sha256: 70896a6db4ff7b7e8bc864189b4106e3d951aea3852cd6e32811e71c26ad3064
+- study: transformer_200m_4b
+  run_id: re6d9f618439d
+  label: dense-query-m2-k9
+  role: dense
+  priority: 2
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/re6d9f618439d/config.yaml
+      sha256: ce63b8ed366dafed863d967afcdcf61a3f1b0e9cc90b2d19e61b88b84563ebb1
+- study: transformer_200m_4b
+  run_id: r5397d762caa1
+  label: dense-query-m4-k9
+  role: dense
+  priority: 2
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r5397d762caa1/config.yaml
+      sha256: 3bdf89bf66d24c8e89b3984192d56912f9e7bb0cbca9f31fa0312c391aaf2a58
+- study: transformer_200m_4b
+  run_id: r1bbf3b794a14
+  label: query-m2
+  role: original_query_control
+  priority: 3
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r1bbf3b794a14/config.yaml
+      sha256: 588ff33e531dcdb5b3cab699b970eae9b1cb7cf4dd38664c9db917571e4c2fc3
+- study: transformer_200m_4b
+  run_id: r5755f840bacc
+  label: fixed-m2
+  role: fixed_taylor_control
+  priority: 3
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r5755f840bacc/config.yaml
+      sha256: c18fd14a2b7c4e178daf5724ffd819f404f59b8e9f3533cd1e63f38349388943
+- study: transformer_200m_4b
+  run_id: r49b7943aee1b
+  label: query-m4
+  role: original_query_baseline
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r49b7943aee1b/config.yaml
+      sha256: a9c1839a8a365f4ae335054403588daae2a97bc3facc4cda4ccffd860dc90864
+- study: transformer_200m_4b
+  run_id: r98d5895c02d0
+  label: query-m8
+  role: original_query_baseline
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r98d5895c02d0/config.yaml
+      sha256: cc5c2801a1825f38baa336d44e0e0657df6b4d48af09a0558198ac4321b99c33
+- study: transformer_200m_4b
+  run_id: r79da929de109
+  label: fixed-m4
+  role: fixed_taylor_baseline
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r79da929de109/config.yaml
+      sha256: 9a1898124fb001b12bcd22a73126b74c63bee444bc6a3638cd576e2a088c548d
+- study: transformer_200m_4b
+  run_id: r019ca96d6533
+  label: fixed-m8
+  role: fixed_taylor_baseline
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r019ca96d6533/config.yaml
+      sha256: ab3233d65995f2ca4427cf8aa133f9b2f68d9f7c0631c369585888cd2fd636fb

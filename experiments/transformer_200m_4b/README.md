@@ -130,3 +130,23 @@ for run in r097fcda6a3af rf0a5652acaa6 ree2eb2e4287e; do
     "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
 done
 ```
+
+## Dense query coefficient sweep
+
+Seven exploratory runs compare dense query coefficients, whose K tanh features are mixed
+into every polynomial coefficient, with the original query generator and fixed Taylor; see
+the [topic](results/exploratory/dense_query_coefficients/README.md) for runs, method and
+results. Each copies the canonical `query-m4` or `fixed-m4` recipe and changes only the
+degree and, for dense runs, `attention_coefficient_readout: dense` with
+`attention_coefficient_feature_count: K`. Each requests one GPU (B300 or H100) and runs
+from this worktree root after committing its inputs; scheduling priority 1 (dense, K = m+1)
+before 2 (dense, K = 9) before 3 (degree-two controls) is set with `--nice`:
+
+```bash
+sbatch --parsable --partition=standard --nice=0 --gres=gpu:1 --cpus-per-task=8 --mem=96G \
+  --time=1-00:00:00 --job-name=<run_id> --output=experiments/transformer_200m_4b/runs/<run_id>/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+  experiments/transformer_200m_4b/runs/<run_id>/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+Each record's `submission` holds its exact command, partition and priority.

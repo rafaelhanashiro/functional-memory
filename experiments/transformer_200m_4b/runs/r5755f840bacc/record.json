@@ -1,0 +1,13 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r5755f840bacc/config.yaml",
+    "sha256": "c18fd14a2b7c4e178daf5724ffd819f404f59b8e9f3533cd1e63f38349388943"
+  },
+  "home_cluster": "kennel",
+  "label": "fixed-m2",
+  "name": "fixed-m2",
+  "phase": "exploratory",
+  "record_schema_version": 1,
+  "run_id": "r5755f840bacc",
+  "status": "planned"
+}

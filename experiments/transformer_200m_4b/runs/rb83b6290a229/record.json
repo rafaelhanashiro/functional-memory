@@ -1,0 +1,13 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/rb83b6290a229/config.yaml",
+    "sha256": "6088f3f08a6ccbb92985ea0c4734defdb80108b58f9e8d55fdb3bbf384ef4706"
+  },
+  "home_cluster": "kennel",
+  "label": "dense-query-m2-k3",
+  "name": "dense-query-m2-k3",
+  "phase": "exploratory",
+  "record_schema_version": 1,
+  "run_id": "rb83b6290a229",
+  "status": "planned"
+}
