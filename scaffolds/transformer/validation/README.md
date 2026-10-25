@@ -356,6 +356,81 @@ training behavior are checked separately by the model tests and run acceptance.
 Regenerate in a matching locked H100 allocation with the launcher's CUDA
 settings: `python -m pytest -q -m gpu scaffolds/transformer/tests/test_basis_gpu.py`.
 
+
+### Selectable QK RMSNorm, truncated initialization, and pilot cadence
+
+The shared scaffold now supports Q/K RMSNorm with independent learned channel
+gains per layer, shared across heads, before RoPE; fixed standard attention scaling
+remains in the backend. The opt-in `transformer_truncated_reference` initialization
+conditions a Gaussian with standard deviation 0.02 on ±0.04 without variance
+compensation, then scales residual projections by `1/sqrt(2L)`.
+`rms_norm_fp32` selects FP32 backbone norm arithmetic. Existing named initializers,
+cosine QK normalization, and historical precision defaults remain unchanged.
+
+CPU verification on 2026-10-23 passed 81 QK/config/parameter-policy/telemetry tests
+(four GPU-only cases were skipped), 23 selected initialization/norm/allocation
+tests, and 48 acceptance/evaluation-cadence tests. These cover forward values and
+gradients, gain ownership and decay exclusions, conditional-Gaussian support and
+variance, legacy recipe identity, and scratch-pilot evaluation without mutating
+the production recipe. Runtime projections count the actual evaluation and
+checkpoint schedules, including the early cadence. Reproduce with:
+
+```bash
+export JAX_PLATFORMS=cpu
+scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_qk_rms_norm.py scaffolds/transformer/tests/test_config.py scaffolds/transformer/tests/test_parameter_policy.py scaffolds/transformer/tests/test_telemetry.py
+scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_initialization.py scaffolds/transformer/tests/test_normalization.py scaffolds/records/tests/test_records.py -k 'initialization or reference or norm'
+scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_acceptance.py scaffolds/transformer/tests/test_evaluation_cadence.py
+```
+
+This is CPU correctness evidence. Full-context GPU kernels, production memory and
+throughput, and checkpoint continuation are qualified separately in each run's
+acceptance record before production begins.
+
+### Query-key polynomial backward tiles
+
+The one-pass fused query-key polynomial kernel uses 32-by-32 backward tiles for
+H100 BF16 inputs with context 2048, Q/K and value width 64, and degree 8 or 12.
+Forward keeps its original 64-by-64 tiles; other devices and shapes retain the
+original geometry. No polynomial, precision, or coefficient-scaling rule changes.
+
+On one H100 80GB HBM3 on Kennel (`dogo`), the production-shaped benchmark
+`[batch=32, time=2048, heads=16, width=64]` measured:
+
+| Degree | Original forward + backward | Tuned forward + backward | Speedup |
+| --- | ---: | ---: | ---: |
+| 8 | 76.414 ms | 28.356 ms | 2.695x |
+| 12 | 168.779 ms | 42.819 ms | 3.942x |
+
+The [production comparison](runs/query-key-tuning/production.json), source
+`618f442`, job `223789`, compares the actual mixed forward/backward geometry with
+the original geometry. The [tile sweep](runs/query-key-tuning/tuning.json), source
+`c53c02c`, job `223788`, measures seven shared forward/backward geometries per degree.
+Inputs have QK-normalized scores with scale 8, synthetic full-factorial query
+coefficients and varying key factors. Each timing includes a real forward output
+and all five input gradients, uses resident arrays and a runtime cotangent, and
+reports the median of ten synchronized calls after three warmups. Compilation and
+parity checks are excluded. All candidates pass the recorded numerical gates,
+including each coefficient/factor degree and head. Timings cover attention alone,
+not projections, output RMSNorm, optimizer updates, or complete training steps.
+They do not establish B300 performance or parity on retained trained checkpoints.
+
+The [qualification record](runs/query-key-tuning/qualification.json) records all
+22 passing checks in job `223789`: 12 selector/fallback checks and 10 H100 checks
+covering independent FP64 comparisons, signed coefficients, output RMSNorm and
+all input/gain gradients, context-2048 parity with the blocked and original
+implementations, causality, and nonfinite masking. The forward output remains
+byte-identical to the original kernel in the production-context comparisons.
+
+Repeat within an H100 allocation, choosing a fresh validation output directory:
+
+```bash
+RUN_DIR=scaffolds/transformer/validation/runs/query-key-tuning-repeat
+python -m scaffolds.transformer.benchmarks.tune_query_key \
+  --degrees 8 12 --candidates 64x64x4x2 --include-production \
+  --output "$RUN_DIR/production.json"
+python -m pytest -q scaffolds/transformer/tests/test_query_key_tiling.py
+```
+
 ### Query-dependent tanh polynomial coefficients
 
 The direct fused query-polynomial kernel passed all 12 H100 CUDA cases on
@@ -1352,13 +1427,14 @@ broadcasting their coefficient gradients back. Scores, polynomials, row
 sums, and accumulators are FP32, with the Triton kernels' failure rules: NaN rows for a
 nonfinite, nonpositive (even Taylor degree), or zero (odd degree) row sum, a nonfinite score
 or weight (query), or an overflowing output. They accept BF16 inputs, Q/K width 8, 16, 32,
-64, or 128, value width 64, degree >= 1 (query and static: 1-8), and time a multiple of 128 (H100) or
+64, or 128, value width 64, degree >= 1 (query and static: 1-12, where B300's dK/dV fits), and time a multiple of 128 (H100) or
 256 (B300), and raise `ValueError` otherwise. Tensor cores contract in steps of one
 shared-memory swizzle row, so Q/K tiles use 32-, 64-, and 128-byte swizzles at widths 16,
 32, and 64 or more; width 8 is zero-padded to the 16-element minimum. On B300 the dK/dV kernel keeps every
 query's coefficients in shared memory and runs a three-stage Q/dO ring unless that exceeds
-the 227 KB per block (degree 8 at d_K = 128 and 2,048 tokens), then two; dQ stages its output
-in each warpgroup's Q buffer.
+the 227 KB per block (degree 8 at d_K = 128 and 2,048 tokens), then two
+(`common.blackwell_dkv_stages`, which also bounds the supported degree: 12 at d_K = 64, 9 at
+d_K = 128); dQ stages its output in each warpgroup's Q buffer.
 
 Weights and score gradients enter the tensor cores at a weight precision chosen per setup
 (`api.default_precision`, recorded as `attention_weight_precision` in run metadata):
@@ -1876,6 +1952,124 @@ The helper keeps incomplete/rejected variants visible, audits input identities a
 sample counts, and does not pool measurements across physical GPUs. Its
 `training_comparisons` pool the explicitly named trial pairs from raw samples,
 retain each timing clock, and report per-trial counts and mean spread.
+
+## Fused PaTH attention kernels
+
+`attention/backends/fla_path_attention.py` runs PaTH attention (`positional_encoding: path`,
+`attention_backend: fused`) on flash-linear-attention's Triton kernels (commit `516143e`)
+through `attention/backends/triton_port.py`. Softmax launches FLA's eleven
+`parallel_path_attn` kernels unchanged; the tanh query polynomial replaces the six
+softmax-dependent kernels with a fork (`fla_path_polynomial_kernels.py`). The reference is
+the JAX implementation `attention/path.py` (`blocked`). Records: `runs/path-kernels/<gpu>/`
+(tests, benchmark, GDN port) and `runs/path-pilot/` (training pilots).
+
+### Tests
+
+| GPU | Job, source | Fused PaTH GPU tests | GDN GPU tests | CPU |
+| --- | --- | ---: | ---: | --- |
+| H100 SXM (`dogo`, `.venv`) | 222686, `e39f466` | 35 passed | 48 passed | full suite passed |
+| B300 (`akita`, `.venv-cuda13`) | 223582, `6db92b3` | 35 passed | 40 passed (widths 128 and 256 deselected) | full suite passed (`6db92b3`) |
+
+The GPU tests compare outputs and every gradient (dq, dk, dv, dw, dbeta, dc) with the
+FP32-HIGHEST JAX implementation in BF16 at the production context (T = 2048, width 64) for
+softmax and m = 1-4, at lengths 128-1,536 around the 128-token query blocks and 512-token
+splits, at widths 16, 32, and 128, and check causality, NaN rows, repeatability at the
+production batch, and the model's dispatch. FLA's `parallel_path_bwd_dq` kernel, unchanged
+and in the fork, fails to launch (`CUDA_ERROR_LAUNCH_FAILED`) at width 128 on B300, so the
+fused path rejects width 128 on Blackwell and `auto` resolves it to `blocked`. CPU tests
+run the same launches in Triton's interpreter in FP32 against the JAX implementation,
+including FLA's A100- and Ada-class tile branches. FLA's GDN kernel crashes at width 128 in
+FP32 on B300 and poisons the process ([CLUSTERS.md](../../../CLUSTERS.md)), so GDN cases at
+widths 128 and 256 are not run there.
+
+### Accuracy
+
+Relative L2 error against FP32 HIGHEST, BF16 q/k/v, B = 2, T = 2048, 4 heads, width 64,
+scores `8 cos(q, k)` (H100, job 223344):
+
+| Kernel | Implementation | Output | dq, dk | dv | dw, dbeta | dc |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Softmax | fused | 2.7e-3 | 4.1e-3 | 2.9e-3 | 7.1e-3, 7.6e-3 | |
+| | JAX | 1.6e-3 | 1.7e-3 | 1.7e-3 | 8.7e-4, 9.3e-4 | |
+| m = 1-4 | fused | 2.5-2.7e-3 | 5.4-5.7e-3 | 2.6-2.9e-3 | 8.2-8.7e-3 | 1.2-3.6e-3 |
+| | JAX | 1.7e-3 | 1.8e-3 | 1.7e-3 | 1.0-1.1e-3 | 1.7-4.0e-4 |
+
+B300 (job 223581) matches these to two digits. FLA rounds intermediates to BF16 and
+stores dw and dbeta in BF16. Outputs, dq, and dc repeat bitwise over 10 runs at the
+production batch on both GPUs; dk, dv, dw, and dbeta, summed with FP32 atomics, vary by up
+to 4e-5, 2e-5, and 1e-3 (relative L2).
+
+### Speed
+
+Forward and backward per layer, B = 32, T = 2048, 16 heads, width 64, H100 SXM (job 223344):
+
+| Kernel | Fused | JAX | Speedup | RoPE-free reference |
+| --- | ---: | ---: | ---: | ---: |
+| Softmax | 17.8 ms | 119.3 ms | 6.7x | 3.1 ms (cuDNN) |
+| m = 2 | 14.4 ms | 114.5 ms | 7.9x | 4.0 ms (Mosaic) |
+| m = 4 | 15.9 ms | 112.2 ms | 7.1x | 4.7 ms (Mosaic) |
+
+B300 (job 223581):
+
+| Kernel | Fused | JAX | Speedup | RoPE-free reference |
+| --- | ---: | ---: | ---: | ---: |
+| Softmax | 13.7 ms | 65.2 ms | 4.7x | 2.3 ms (cuDNN) |
+| m = 2 | 13.7 ms | 61.3 ms | 4.5x | 3.6 ms (Mosaic) |
+| m = 4 | 15.0 ms | 60.0 ms | 4.0x | 4.6 ms (Mosaic) |
+
+FLA's own `parallel_path_attn` in PyTorch (`benchmark_upstream_path.py`, CUDA 13, torch
+2.9.1, Triton 3.7.1, same B300 job) takes 3.60 ms forward and 13.34 ms forward and backward
+for softmax, against the bridge's 4.20 ms and 13.74 ms. On the same inputs (B = 2, 4 heads)
+the two agree to relative L2 2e-4 (output), 3e-4 to 1.2e-3 (dq, dk, dv), and 3.5e-3 (dw,
+dbeta), below either's error against FP32, but not bitwise: dk, dv, dw, and dbeta use
+atomics, and the outputs differ by up to 1e-3 on values up to 4 (cause not isolated; each
+runtime autotunes the UT-transform kernels independently).
+
+A full update of the 200M recipe on one GPU: 3.0-3.1 s fused and 11.9 s JAX on H100 SXM
+(pilots, microbatch 16); 2.16-2.32 s fused and 5.9-6.2 s JAX on B300 (the m = 2 and m = 4
+runs, microbatch 32).
+
+### Training pilots
+
+`pilot_path.sbatch` trains `rb901a10c4777`'s recipe (tanh m = 2) for 1,000 updates on one
+H100 SXM, microbatch 16, from its initialization and data. Validation NLL:
+
+| Implementation | 100 | 300 | 500 | 700 | 900 | 1,000 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| JAX | 6.7490 | 5.1931 | 4.5408 | 4.1220 | 3.8334 | 3.7188 |
+| Fused | 6.7465 | 5.1782 | 4.5320 | 4.1274 | 3.8501 | 3.7373 |
+| Fused, repeat | 6.7463 | 5.1874 | 4.5303 | 4.1256 | 3.8415 | 3.7258 |
+
+The fused runs differ from the JAX run by -0.015 to +0.019, and from each other by up to
+0.025: the implementations agree within run-to-run variation.
+
+### Gated DeltaNet on `triton_port`
+
+`compare_gdn_port.py` lowers the GDN forward and backward (tied and independent gates,
+BF16 and FP32) with the bridge before (`7fb44dc`) and after the move onto `triton_port`:
+all 10 Triton custom calls per case are identical, including their compiled kernels, and
+outputs and gradients are bitwise equal on H100 and B300
+(`runs/path-kernels/<gpu>/gdn-port.json`).
+
+### Reproduction
+
+From a committed worktree on Kennel with both environments synced (for the comparison with
+FLA's own PyTorch kernels on B300, also `uv sync --project
+scaffolds/transformer/benchmarks/upstream_runtime --locked --link-mode hardlink`); the third
+argument is `tests` (fused PaTH and GDN GPU tests and the GDN launch comparison) or
+`benchmark`:
+
+```bash
+sbatch --partition=debug --nodelist=dogo --gres=gpu:h100:1 \
+  --output=scaffolds/transformer/validation/logs/path-kernels/%j.log \
+  scaffolds/transformer/validation/qualify_path_kernels.sbatch "$(git rev-parse HEAD)" H100 tests
+sbatch --partition=long --nodelist=akita --gres=gpu:b300:1 \
+  --output=scaffolds/transformer/validation/logs/path-kernels/%j.log \
+  scaffolds/transformer/validation/qualify_path_kernels.sbatch "$(git rev-parse HEAD)" B300 benchmark
+sbatch --partition=long --nodelist=dogo --gres=gpu:h100:1 \
+  --output=scaffolds/transformer/validation/logs/path-pilot/%j.log \
+  scaffolds/transformer/validation/pilot_path.sbatch "$(git rev-parse HEAD)" H100 rb901a10c4777 fused 1000 "" 16
+```
 
 ## Reproduction
 

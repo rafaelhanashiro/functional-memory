@@ -1,0 +1,20 @@
+{
+  "comparison_mode": "query",
+  "config": {
+    "path": "experiments/attention_scaling/runs/r77e00510b1b0/config.yaml",
+    "sha256": "601ac337c7b9b263de9b2ba1de217663427ea684f6d9cd66b22b4fb39ec07dc4"
+  },
+  "home_cluster": "kennel",
+  "label": "rbf9-rafael-200m-4b-query",
+  "matched_reference": {
+    "config_sha256": "9bcd49b8acb9b34aed37c21e51fe201d7b3e1859b1c7ffe0ddefc6881587726d",
+    "run_id": "r83139ea7389c",
+    "softmax_counterpart_parameter_sha256": "bb6ab6df9c4f8b8f3df92843890b150eee2c34dd7cf8be2ba2cb8c663c67d13b",
+    "source_commit": "36b074480751897c8b8f9754cbc13c22594024be",
+    "study": "transformer_200m_4b"
+  },
+  "name": "rbf9-rafael-200m-4b-query",
+  "record_schema_version": 1,
+  "run_id": "r77e00510b1b0",
+  "status": "planned"
+}

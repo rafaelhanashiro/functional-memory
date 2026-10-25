@@ -80,7 +80,7 @@ def _assert_all(actual, expected, label):
 
 @pytest.mark.parametrize("coefficients", ["fixed", "per_head", "shared"])
 @pytest.mark.parametrize("width", (16, 64))
-@pytest.mark.parametrize("degree", (1, 2, 3, 4, 8))
+@pytest.mark.parametrize("degree", (1, 2, 3, 4, 8, 12))
 def test_outputs_and_vjp_match_fp64_and_triton(degree, width, coefficients):
     operands, c, cotangent = _inputs(degree, width, coefficients)
     mosaic = _forward_and_vjp("mosaic", degree, operands, c, cotangent)
@@ -90,7 +90,7 @@ def test_outputs_and_vjp_match_fp64_and_triton(degree, width, coefficients):
     _assert_all(mosaic, _forward_and_vjp("fused", degree, operands, c, cotangent), f"Mosaic vs Triton, {label}")
 
 
-@pytest.mark.parametrize("degree", (3, 8))
+@pytest.mark.parametrize("degree", (3, 8, 12))
 @pytest.mark.parametrize("coefficients", ["fixed", "per_head"])
 def test_production_context_matches_triton(coefficients, degree):
     operands, c, cotangent = _inputs(degree, 64, coefficients, time=2048, heads=4)

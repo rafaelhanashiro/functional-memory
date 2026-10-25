@@ -169,3 +169,25 @@ def test_refresh_finds_the_checkout_from_an_exploratory_topic(tmp_path):
     outside.mkdir()
     with pytest.raises(ValueError, match="under results/"):
         refresh_selection(outside)
+
+
+@pytest.mark.parametrize("relative", ["results", "results/comparison", "results/exploratory/topic",
+                                      "experiments/toy/results", "experiments/toy/results/comparison"])
+def test_refresh_handles_root_and_study_local_results_without_git(tmp_path, relative):
+    source = run(tmp_path, "toy", "r000000000001", **{"metrics.jsonl": "1\n"})
+    # A local comparison may also explicitly include a control from another study.
+    control = run(tmp_path, "other", "r000000000002", **{"metrics.jsonl": "2\n"})
+    directory = tmp_path / relative
+    directory.mkdir(parents=True, exist_ok=True)
+    selection = {"runs": [{"study": study, "run_id": run_id, "label": label}
+                          for study, run_id, label in (("toy", source.name, "candidate"),
+                                                       ("other", control.name, "control"))]}
+    path = directory / "selection.yaml"
+    path.write_text(yaml.safe_dump(selection, sort_keys=False))
+    assert refresh_selection(directory) == [f"selection.yaml: toy/{source.name} pinned",
+                                            f"selection.yaml: other/{control.name} pinned"]
+    entries = yaml.safe_load(path.read_text())["runs"]
+    verify_pinned_runs(tmp_path, entries)
+    assert refresh_selection(directory) == []
+    (source / "metrics.jsonl").write_text("3\n")
+    assert refresh_selection(directory) == [f"selection.yaml: toy/{source.name} metrics.jsonl changed"]

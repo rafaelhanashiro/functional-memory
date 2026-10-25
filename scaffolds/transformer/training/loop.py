@@ -38,6 +38,7 @@ from scaffolds.transformer.training.checkpointing import (
     validate_resume_progress,
 )
 from scaffolds.transformer.training import telemetry, tracking
+from scaffolds.transformer.training.cadence import evaluation_due
 from scaffolds.transformer.training.distributed import (
     BatchLayout,
     DataParallelFunctions,
@@ -724,7 +725,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             state, loss, *numerical_metrics = step_result
             telemetry_vector = numerical_metrics.pop() if collect_telemetry else None
             is_log = step == start_step + 1 or step % config.train.log_every == 0
-            is_eval = step % config.train.eval_every == 0 or step == config.optim.total_steps
+            is_eval = evaluation_due(config, step)
             is_checkpoint = is_eval or step % config.train.ckpt_every == 0 or step == end_step
             # Check every update, including steps between log/checkpoint events.
             loss_value = float(loss)

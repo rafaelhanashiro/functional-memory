@@ -40,6 +40,8 @@ def coefficient_penalty_sum(params, model, *, include_denominator: bool = True) 
     )
 
     parameterization = getattr(model, "attention_coefficient_parameterization", "direct")
+    if getattr(model, "attention_coefficient_scale", "none") != "none":
+        raise ValueError("The coefficient penalty is defined on unscaled coefficients")
     if not has_learned_polynomial(model) or parameterization not in ("direct", "rational"):
         raise ValueError("The coefficient penalty applies to learned direct or rational polynomial coefficients")
     rational = has_rational_kernel(model)

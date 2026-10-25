@@ -29,12 +29,20 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
+from scaffolds.transformer.attention.backends.mosaic import common
 from scaffolds.transformer.attention.backends.mosaic.common import BF16, BF16X3, PRECISIONS, QUERY, TAYLOR
 
 WIDTHS = (8, 16, 32, 64, 128)
 VALUE_WIDTH = 64
 MIN_WIDTH = 16  # BF16 tensor-core contraction step on Hopper and Blackwell
-MAX_QUERY_DEGREE = 8  # B300 dK/dV holds (m+1) FP32 coefficients for every query in shared memory
+MAX_QUERY_DEGREE = 12  # largest qualified degree; B300 must also fit it (query_degree_supported)
+
+
+def query_degree_supported(degree, width, time):
+    """Whether the query-coefficient kernels run degree m at this key width and sequence length
+    on both GPUs: B300's dK/dV holds (m+1) FP32 coefficients for every query in shared memory."""
+    return (1 <= degree <= MAX_QUERY_DEGREE and time > 0 and common.blackwell_dkv_stages(
+        max(width, MIN_WIDTH), VALUE_WIDTH, degree + 1, time) is not None)
 
 
 def default_precision(family: str, degree: int) -> str:

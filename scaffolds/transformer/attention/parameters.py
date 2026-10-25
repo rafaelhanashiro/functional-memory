@@ -1,6 +1,7 @@
 """Model-level attention parameter ownership, independent of layer execution."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+import math
 from typing import Literal
 import zlib
 
@@ -17,12 +18,24 @@ class AttentionParameterSpec:
     name: str
     argument: str
     initial: tuple[float, ...]
-    sharing: Literal["global", "per_head"]
+    sharing: Literal["global", "per_head", "per_layer"]
     weight_decay: bool = False
     initial_shape: tuple[int, ...] | None = None
     # Independent N(0, initial_std^2) noise added to every stored entry, drawn from the
     # mechanism stream so the backbone's initialization is unchanged.
     initial_std: float = 0.0
+    # An explicit shared draw lets matched bases reuse the same coefficient generator.
+    random_stream_name: str | None = None
+
+
+# The input-independent coefficient arrays that ``attention_coefficient_scale`` stores scaled.
+SCALED_COEFFICIENTS = ("polynomial_coefficients", "query_polynomial_bias")
+
+
+def factorial_scale(values: jax.Array) -> jax.Array:
+    """Divide order r (the last axis) by r!: the coefficients a stored c~_r represents."""
+    factorials = jnp.asarray([math.factorial(order) for order in range(values.shape[-1])], jnp.float32)
+    return values.astype(jnp.float32) / factorials
 
 
 def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
@@ -33,6 +46,8 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         if getattr(config, "attention_basis", None) is not None:
             from scaffolds.transformer.attention.basis import projection_from_config
             values = projection_from_config(config.attention_basis).coefficients
+            if config.attention_coefficient_scale == "projection":
+                values = (1.0,) * len(values)
             if conditioning == "query":
                 from scaffolds.transformer.attention.input_dependent import parameter_specs
                 specs = parameter_specs(
@@ -41,6 +56,9 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                     projection_initial_std=config.attention_coefficient_projection_initial_std,
                     tanh_bias=config.attention_coefficient_tanh_bias,
                     initial_coefficients=values, name_prefix="query_basis")
+                if config.attention_coefficient_scale == "projection":
+                    specs = tuple(replace(spec, random_stream_name="query_polynomial_kernel")
+                                  if spec.name == "query_basis_kernel" else spec for spec in specs)
             else:
                 specs = (AttentionParameterSpec("basis_coefficients", "basis_coefficients", values,
                                                 config.attention_coefficient_sharing),)
@@ -74,6 +92,11 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
 
                 specs = parameter_specs(degree=config.attention_degree, sharing=config.attention_coefficient_sharing,
                                         initialization=initialization)
+        if getattr(config, "attention_coefficient_scale", "none") == "factorial":
+            # Store r! times each starting coefficient, so the represented start is unchanged.
+            specs = tuple(replace(spec, initial=tuple(value * math.factorial(order)
+                                                      for order, value in enumerate(spec.initial)))
+                          if spec.name in SCALED_COEFFICIENTS else spec for spec in specs)
     elif config.quadratic_mode == "fixed":
         specs = ()
     else:
@@ -81,9 +104,18 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
 
         specs = parameter_specs(mode=config.quadratic_mode, sharing=config.quadratic_sharing)
     if getattr(config, "qk_norm", False):
-        from scaffolds.transformer.attention.qk_norm import initial_scale, parameter_specs as qk_norm_specs
+        from scaffolds.transformer.attention.qk_norm import (
+            initial_scale, parameter_specs as qk_norm_specs, rms_parameter_specs,
+        )
 
-        specs += qk_norm_specs(initial_scale=initial_scale(config), sharing=config.qk_norm_sharing)
+        specs += (rms_parameter_specs(qk_head_dim=config.qk_head_dim)
+                  if config.qk_norm_type == "rms_norm" else
+                  qk_norm_specs(initial_scale=initial_scale(config), sharing=config.qk_norm_sharing))
+    if getattr(config, "positional_encoding", "rope") == "path":
+        from scaffolds.transformer.attention.path import parameter_specs as path_specs
+
+        specs += path_specs(hidden_size=config.hidden_size, qk_head_dim=config.qk_head_dim,
+                            rank=config.path_w_rank, conv_size=config.path_conv_size)
     if getattr(config, "attention_output_scaling", "none") == "head_rms_norm":
         from scaffolds.transformer.attention.output_scaling import parameter_specs as output_specs
 
@@ -101,17 +133,19 @@ def initial_attention_parameter_values(specs, *, num_layers: int, num_heads: int
     """Each declared array's starting value; random entries come from ``key`` by parameter name."""
     values = {}
     for spec in specs:
-        if spec.sharing not in ("global", "per_head"):
+        if spec.sharing not in ("global", "per_head", "per_layer"):
             raise ValueError(f"Unknown attention parameter sharing: {spec.sharing}")
         initial = jnp.asarray(spec.initial, dtype=jnp.float32)
         if spec.initial_shape is not None:
             initial = initial.reshape(spec.initial_shape)
-        shape = initial.shape if spec.sharing == "global" else (num_layers, num_heads, *initial.shape)
+        shape = (initial.shape if spec.sharing == "global" else (num_layers, *initial.shape)
+                 if spec.sharing == "per_layer" else (num_layers, num_heads, *initial.shape))
         value = jnp.broadcast_to(initial, shape)
         if spec.initial_std:
             if key is None:
                 raise ValueError(f"{spec.name} has a random initialization and needs the mechanism key")
-            name_key = jax.random.fold_in(key, zlib.crc32(spec.name.encode()) & 0x7FFFFFFF)
+            stream_name = spec.random_stream_name or spec.name
+            name_key = jax.random.fold_in(key, zlib.crc32(stream_name.encode()) & 0x7FFFFFFF)
             value = value + spec.initial_std * jax.random.normal(name_key, shape, jnp.float32)
         values[spec.name] = value
     return values
@@ -132,10 +166,8 @@ def initialize_attention_parameters(owner, specs, *, num_layers: int, num_heads:
 
 def attention_parameter_count(config) -> int:
     """Count declared trainable values without allocating any device arrays."""
-    return sum(
-        len(spec.initial) * (1 if spec.sharing == "global" else config.num_layers * config.num_heads)
-        for spec in attention_parameter_specs(config)
-    )
+    multiplier = {"global": 1, "per_layer": config.num_layers, "per_head": config.num_layers * config.num_heads}
+    return sum(len(spec.initial) * multiplier[spec.sharing] for spec in attention_parameter_specs(config))
 
 
 def parameters_for_layer(owner, specs, layer_index: int) -> dict:

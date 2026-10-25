@@ -1,0 +1,22 @@
+{
+  "completed_utc": "2026-10-20T20:19:16.005653+00:00",
+  "cuda_environment": "cuda12",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "device_kinds": [
+    "NVIDIA H100 80GB HBM3"
+  ],
+  "exit_code": 0,
+  "gpu_type": "H100",
+  "home_cluster": "kennel",
+  "node": "dogo",
+  "runtime_environment": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/path_kernels/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "slurm_job_id": "223344",
+  "source_commit": "43a372aef89df9f892b483bb22c30170085c0136",
+  "status": "passed",
+  "step": "benchmark"
+}

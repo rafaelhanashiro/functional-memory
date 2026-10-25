@@ -23,7 +23,7 @@ from scaffolds.transformer.attention.backends.mosaic import common
 L = plgpu.Layout.TCGEN05
 WGS = 2
 TMA_ELEMENTS = 256  # TMA moves at most 256 elements per dimension
-SMEM_BYTES = 232448 - 2048  # per-block shared memory, less a margin for barriers and alignment
+SMEM_BYTES = common.BLACKWELL_SMEM_BYTES
 
 
 def _transforms(cols, dtype):
@@ -401,8 +401,10 @@ def dkv(q, k, v, do, vectors, *, which, family, degree, scale, precision, block_
     n_parts = common.part_count(precision)
     chunks = time // TMA_ELEMENTS
     if stages is None:  # every query's vectors share the block with K/V and the Q/dO ring
-        fixed = 2 * (WGS * BK * (dqk + dv) + n_vec * time * 2)
-        stages = 3 if fixed + 3 * 2 * block_q * (dqk + dv) <= SMEM_BYTES else 2
+        stages = common.blackwell_dkv_stages(dqk, dv, n_vec, time, block_q=block_q, block_k=BK, warpgroups=WGS)
+        if stages is None:
+            raise ValueError(f"Blackwell dK/dV cannot hold {n_vec} per-query vectors for {time} queries "
+                             f"beside width {dqk} keys in shared memory")
 
     def kernel(q_gmem, k_gmem, v_gmem, do_gmem, vec_gmem, out_gmem,
                k_smem, v_smem, q_smem, do_smem, vec_smem, regions, acc_tmem,

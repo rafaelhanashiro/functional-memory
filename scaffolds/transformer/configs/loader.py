@@ -73,6 +73,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("attention_normalization", True)
         value["model"].setdefault("attention_output_scaling", "none")
         value["model"].setdefault("initialization", "flax_default")
+        value["model"].setdefault("rms_norm_fp32", False)
         value["model"].setdefault("gdn_conv_size", 4)
         value["model"].setdefault("gdn_erase_mode", "tied")
         value["model"].setdefault("gdn_write_activation", "sigmoid")
@@ -105,11 +106,19 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("attention_coefficient_amplitude_initial", 1.0)
         value["model"].setdefault("attention_coefficient_projection_initial_std", 0.0)
         value["model"].setdefault("attention_coefficient_tanh_bias", False)
+        value["model"].setdefault("positional_encoding", "rope")
+        value["model"].setdefault("path_w_rank", 32)
+        value["model"].setdefault("path_conv_size", 3)
+        value["model"].setdefault("attention_coefficient_amplitude_scale", "none")
+        value["model"].setdefault("attention_coefficient_scale", "none")
         value.setdefault("optim", {}).setdefault("coefficient_penalty", 0.0)
-        for key, default in (("qk_norm", False), ("qk_norm_sharing", "per_head"),
+        for key, default in (("qk_norm", False), ("qk_norm_type", "cosine_log_scale"),
+                             ("qk_norm_sharing", "per_head"),
                              ("qk_norm_initial_scale", None), ("qk_norm_eps", 1e-6)):
             value["model"].setdefault(key, default)
         value.setdefault("train", {}).setdefault("checkpoint_dir", None)
+        value["train"].setdefault("eval_early_every", None)
+        value["train"].setdefault("eval_early_until", 0)
         for key in ("wandb_group", "wandb_dir"):
             value["train"].setdefault(key, None)
         # The W&B mirror mode is an execution setting; wandb_run.json pins the run's identity.

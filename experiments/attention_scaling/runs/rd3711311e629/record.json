@@ -1,0 +1,20 @@
+{
+  "comparison_mode": "static",
+  "config": {
+    "path": "experiments/attention_scaling/runs/rd3711311e629/config.yaml",
+    "sha256": "3f332cdba4a929e49d91be1534db8555cc762a931e1989448404d75de74341b8"
+  },
+  "home_cluster": "kennel",
+  "label": "rbf9-rafael-200m-4b-static",
+  "matched_reference": {
+    "config_sha256": "9bcd49b8acb9b34aed37c21e51fe201d7b3e1859b1c7ffe0ddefc6881587726d",
+    "run_id": "r83139ea7389c",
+    "softmax_counterpart_parameter_sha256": "bb6ab6df9c4f8b8f3df92843890b150eee2c34dd7cf8be2ba2cb8c663c67d13b",
+    "source_commit": "36b074480751897c8b8f9754cbc13c22594024be",
+    "study": "transformer_200m_4b"
+  },
+  "name": "rbf9-rafael-200m-4b-static",
+  "record_schema_version": 1,
+  "run_id": "rd3711311e629",
+  "status": "planned"
+}

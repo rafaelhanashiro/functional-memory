@@ -267,6 +267,21 @@ GPU use requires the usual hardware qualification.
 
 ### Native Triton scalar attention
 
+For relative learning of a fitted scalar basis, set
+`attention_coefficient_scale: projection`. Stored static coefficients start at
+one and represent `c_j = s_j theta_j`, where `s_j` is the frozen fitted weight.
+For tanh query conditioning also set
+`attention_coefficient_amplitude_scale: projection`: the represented coefficients
+are `c_j(x) = s_j [b_j + a_j tanh(w_j^T x)]`. Biases start at one, amplitudes at
+zero, and the projection standard deviation is specified by the recipe.
+All fitted scales must be nonzero. Signed fitted scales are supported, and every
+coefficient remains unconstrained. This is the scalar-basis counterpart of
+factorial scaling for Taylor coefficients; factorials are rejected for RBF indices.
+The relative query-basis generator uses the polynomial generator's named random
+stream, so matching head count, basis count, hidden size, seed and projection spread
+give identical initial projection arrays. The historical `none` setting retains
+its original parameterization and random stream.
+
 `attention/backends/triton_scalar.py` exposes `scalar_attention(q, k, v,
 kernel=...)` for causal BTHD operands. `ScalarKernel` contains an inlined
 `@triton.jit` callback `(scores, parameters, WITH_GRAD) -> (value, derivative)`
@@ -332,6 +347,8 @@ and excluded from weight decay. Both variants expose coefficient diagnostics.
 
 ### QK-norm (cosine scores)
 
+### QK normalization
+
 QK-norm is required for new dot-product experiments unless the user explicitly
 requests plain QK scores. A recipe that leaves `qk_norm` unset gets `true`; frozen
 new recipes record `qk_norm: true`. To run an explicitly requested plain-score
@@ -341,7 +358,8 @@ silently retaining plain `q·k / sqrt(d_K)` scores. Historical recipes and resum
 retain their recorded settings. GLA rejects `qk_norm: true`, and degree 0, which
 never reads Q or K, resolves
 it to `false`. It composes with every dot-product mechanism above and
-changes only the score. Q and K are unit-normalized per head in FP32,
+changes only the score. The default `qk_norm_type: cosine_log_scale` preserves the
+historical implementation. Q and K are unit-normalized per head in FP32,
 `x̂ = x / sqrt(||x||² + qk_norm_eps)`, and the score becomes
 
 ```text
@@ -366,6 +384,19 @@ under `attention_diagnostics.qk_norm_scale`; W&B receives their mean, minimum,
 and maximum. Recipes and metadata identify the option with `qk_norm`,
 `qk_norm_sharing`, `qk_norm_initial_scale`, and `qk_norm_eps`. GLA and degree 0
 do not use it.
+
+The alternative `qk_norm_type: rms_norm` requires `qk_norm_sharing: per_layer`
+and `qk_norm_initial_scale: null`. It applies `g_Q * q / sqrt(mean(q²) + eps)`
+and `g_K * k / sqrt(mean(k²) + eps)` before RoPE. Statistics are independent for
+each token and head and computed in FP32; each layer's two gain vectors have
+`qk_head_dim` entries and broadcast across heads. The model owns the FP32 arrays
+`qk_norm_q_gain` and `qk_norm_k_gain`, both shaped `[num_layers, qk_head_dim]`,
+initialized to one and excluded from weight decay. There is no scalar log scale;
+the existing kernels retain their `QKᵀ / sqrt(d_K)` scaling. Channel gains generally
+do not commute with RoPE, so their placement before RoPE is part of this mode's
+definition. Validation retains every gain under `attention_diagnostics.qk_norm_gains`
+and W&B mirrors Q/K gain means, minima, and maxima. Adding this mode does not change
+the arithmetic or parameter trees of historical cosine-score recipes.
 
 ### Input-dependent polynomial coefficients
 
@@ -408,11 +439,29 @@ keeps the Taylor start, while the amplitude's gradient `tanh(w_r^T x_t)` is nonz
 `c_r = b_r + a_r tanh(w_r^T x_t + beta_r)`, stored as `query_polynomial_tanh_bias`
 (`[layers, heads, m+1]`, FP32, no weight decay) and starting at zero, so a constant
 shift of the pre-activation need not be read from `x_t` through `w_r`.
+`attention_coefficient_amplitude_scale: factorial` (tanh only; default `none`) uses the
+effective amplitude `a_r/r!`, `c_r = b_r + (a_r/r!) tanh(w_r^T x_t)`, with no new
+parameters. Because Adam's step is invariant to the gradient's scale, order `r`'s
+modulation then moves at `lr/r!`, in proportion to its Taylor bias. Diagnostics report
+the stored `a_r` and the effective amplitude.
+`attention_coefficient_scale: factorial` does the same for the input-independent part of
+learned direct unnormalized coefficients, static `c_r` or the tanh query bias `b_r`: the
+stored `c~_r` starts at `r!` times the Taylor value (so at 1) and attention uses
+`c~_r / r!`. Order `r` then moves at `lr/r!`, its gradient carries `s^r / r!` instead of
+`s^r`, and the coefficient penalty is rejected. Diagnostics report stored and represented
+values (`effective` coefficients, `effective_projection_bias`).
+To scale the entire query-dependent coefficient, enable both factorial options:
+`c_r(x_t) = [b_r + a_r tanh(w_r^T x_t)] / r!`, with stored `b_r = 1` and
+`a_r = 0` for a Taylor start. Static coefficients need only
+`attention_coefficient_scale: factorial`.
 `attention_coefficient_conditioning: query_key` (tanh only) multiplies each key's
 degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i` with
 `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` from the key token's activation
 (`key_polynomial_kernel` `[layers, heads, hidden_size, m+1]`, `key_polynomial_amplitude`
 `[layers, heads, m+1]`; drawn and started like `W` and `a`, so the start is unchanged).
+With both factorial options enabled its entire pair coefficient is
+`[b_r + a_r tanh(w_r^T x_t)] [1 + a^k_r tanh(w_k_r^T x_i)] / r!`.
+The key factor is dimensionless and receives no second factorial division.
 The pair coefficient factorizes, so nothing pairwise is stored: the blocked reference
 scales each key column, the fused Triton kernel (`backends/fused_query_key_polynomial.py`)
 forms `c_r(x_t) f_r(x_i)` inside each tile in one pass (its key-side backward also
@@ -420,6 +469,13 @@ accumulates the key-factor gradient), and the Mosaic query kernel runs once per 
 the factor folded into degree-specific values. The per-order path rounds each partial
 output to V's dtype before summing, which at degree one corrupts the gradient after head
 RMSNorm. Diagnostics report the key factors beside the query coefficients.
+
+For H100 BF16 query-key attention at context 2048, Q/K and value width 64, and
+degree 8 or 12, the fused backend uses 32-by-32 backward tiles and keeps the
+original forward tiles. Other devices and shapes keep their original geometry.
+The arithmetic precision and coefficient parameterization are unchanged.
+Kernel timings and qualification are in the
+[validation record](validation/README.md#query-key-polynomial-backward-tiles).
 
 The tanh path uses a dedicated fused kernel (or its Mosaic GPU counterpart,
 `attention_backend: mosaic`) that directly evaluates the query-dependent polynomial, with gradients for Q/K/V and every coefficient.
@@ -429,6 +485,54 @@ Per-head output RMSNorm remains an independent option through
 `attention_output_scaling: head_rms_norm`. Validation diagnostics report the
 actual input-dependent coefficient means, standard deviations, minima, and
 maxima on the fixed diagnostic sample, separately from projection parameters.
+
+### PaTH position encoding
+
+`positional_encoding: path` replaces RoPE with PaTH (Yang et al., arXiv:2505.16381):
+the score between query `t` and key `s <= t` is
+`q_t^T H_t H_(t-1) ... H_(s+1) k_s / sqrt(d_K)` with `H_t = I - beta_t w_t w_t^T`.
+As in the authors' flash-linear-attention layer, `w_t` comes from a rank-`path_w_rank`
+(32) projection shared by a layer's heads, a width-`path_conv_size` (3) causal depthwise
+convolution with SiLU, and L2 normalization per head, and
+`beta_t = 2 sigmoid(x_t W_beta + b_beta)` lies in (0, 2). The arrays `path_w_down`
+(`[layers, hidden, rank]`), `path_w_up`, `path_w_conv`, `path_beta_kernel`, and
+`path_beta_bias` (`[layers, heads, ...]`) are drawn from the mechanism stream
+(projections N(0, 0.02^2), the convolution with PyTorch's default variance, a zero bias),
+so the backbone keeps the softmax control's weights; all but the bias take weight decay.
+
+`attention_backend: blocked` runs `attention/path.py`, the authors' chunked algorithm in
+JAX: a UT transform per 128-token chunk, then a sweep over chunk distance that scores each
+query chunk against the key chunk behind it and moves the queries through that chunk's
+Householder product. Automatic differentiation of a rematerialized forward pass gives the
+derivative. It supports softmax (normalized, with a running maximum) and tanh
+query-conditioned unnormalized polynomials, is tested against the definition and the
+authors' PyTorch reference, and is the reference for the fused kernels and their
+diagnostics.
+
+`attention_backend: fused` runs FLA's fused Triton kernels
+(`attention/backends/fla_path_attention.py`, through `triton_port`, below). Softmax
+launches the eleven kernels of FLA's `parallel_path_attn` unchanged and in FLA's order,
+with its tiles (64-token UT-transform chunks and key blocks, 128-token query blocks, and
+512-token splits on H100 and B300), warps, stages, autotune menus, TF32 products, FP16
+copies of `w`, and buffers; outputs FLA updates in place are aliased outputs. The tanh
+query polynomial uses the same launches with FLA's six softmax-dependent kernels replaced
+by a fork (`fla_path_polynomial_kernels.py`): `o_t = sum_s p_t(s_ts) v_s` without
+normalization, so no running maximum, normalizer, or `delta`; the backward's softmax
+derivative becomes `dS_ts = p_t'(s_ts) dP_ts / sqrt(d_K)`, and the kernels that visit a
+(query, key) block also return `dc_r(t) = sum_s s_ts^r dP_ts`. Transport, Householder, and
+UT-transform arithmetic are FLA's. It needs an sm90+ GPU, `train.dtype: bfloat16` (with
+FP32 tiles one of FLA's kernels exceeds the shared memory), a prediction length divisible
+by 128, equal Q/K and value widths of 16, 32, 64, or 128 (up to 64 on B300, where FLA's dq
+kernel fails to launch at width 128), and degree 1-4; `auto` selects
+it there and the JAX implementation elsewhere. A row with a nonfinite output becomes NaN,
+as in `path.py`; a softmax score of -inf gets zero weight, as in FlashAttention. FLA
+rounds several intermediates to BF16 (dw and dbeta are stored in BF16): against FP32 its
+errors in the output and the q, k, v gradients are 1.5-3 times the JAX implementation's,
+and in dw, dbeta, and the coefficient gradients about 8 times (all below 1e-2 at the
+production shape). Its backward accumulates dk, dv, dw, and the split products'
+gradient with FP32 atomic additions, so dk, dv, dw, and dbeta are not bitwise repeatable;
+outputs, dq, and the coefficient gradients are. Accuracy, speed, and training pilots are
+in [validation](validation/README.md#fused-path-attention-kernels).
 
 ### Unnormalized output scaling
 
@@ -483,8 +587,14 @@ mechanism-owned attention parameters (`models/initialization.py`).
 |---|---|---|
 | `flax_default` | any | Flax defaults |
 | `transformer_reference` | dot-product | N(0, 0.02); attention `o_proj` and MLP `down_proj` N(0, 0.02/√(2L)) (GPT-2/Megatron) |
+| `transformer_truncated_reference` | dot-product | N(0, 0.02) conditioned on ±0.04 without variance compensation (actual std ≈0.0175925); attention `o_proj` and MLP `down_proj` draws divided by √(2L) |
 | `gla_reference` | GLA | N(0, 0.02); query, key, and both low-rank gate projections Xavier-uniform, gain 2^-2.5 (official GLA code) |
 | `gated_deltanet_reference` | Gated DeltaNet | Embeddings and output head N(0, 0.02); Linear weights Uniform(±1/√fan_in); MLP `down_proj` also divided by √(2L) (official `lit_gpt`, `mamba_init`) |
+
+`model.rms_norm_fp32: true` computes backbone RMSNorm squares, means, reciprocal
+square roots, and gain multiplication in FP32. Its default is `false`, preserving
+historical arithmetic. The truncated initializer is also explicit: adding it does
+not change the reference chosen when a new recipe leaves initialization unset.
 
 ### Gated DeltaNet
 
@@ -501,7 +611,7 @@ and the output projection. There is no positional encoding and no QK-norm.
 `blocked` is a token-by-token FP32 reference. `fused`
 (`attention/backends/fla_gated_delta_rule.py`) launches FLA's own chunked Triton kernels,
 imported unmodified from the pinned `flash-linear-attention` in the CUDA extra, through
-the vendored bridge: thin wrappers reorder arguments into the bridge's convention, the
+`triton_port` (below): thin wrappers reorder arguments into the bridge's convention, the
 forward and backward follow FLA's launch sequence under `jax.custom_vjp`, and the two
 chunk-local cumulative sums run in JAX. FLA reads the GPU through torch, which the
 environment installs CPU-only to satisfy imports, so the glue applies FLA's GPU choices
@@ -565,6 +675,54 @@ Explicit `precision`/`num_warps`/`min_ctas_per_sm` keyword arguments on
 effect when tracing a fresh executable. Backend metadata records the resolved
 options. Qualification and throughput measurements belong in
 [validation](validation/README.md).
+
+### Triton kernels written for PyTorch
+
+`attention/backends/triton_port.py` brings Triton kernels written for PyTorch (FLA's)
+into JAX without changing them. It replaces their torch host code: `device()` reads the
+compute capability from JAX and the opt-in shared memory from the CUDA driver (the
+scaffold's CPU-only torch cannot), `Device.has_shared_memory` and `Device.tile` reproduce
+FLA's `check_shared_mem` tiers and the tile sizes derived from them, `per_architecture`
+selects per-family autotune menus (FLA's reduced Blackwell menus), `autotune` hands a menu
+to jaxlib's autotuner, `jit_function` exposes an upstream kernel body, and `chunk_indices`
+and `chunk_offsets` build FLA's variable-length chunk tables. `launch(kernel, *inputs,
+outputs=..., grid=..., name=..., dot_precision=..., num_warps=..., num_stages=...,
+**constexprs)` declares one launch, with outputs `empty(shape, dtype)`, `zeros(shape,
+dtype)` (upstream `torch.zeros`, e.g. for atomic sums), or `update(array)` (an array the
+kernel modifies in place, aliased to its output). It lowers to the vendored ejkernel
+`triton_call` on a GPU; inside `triton_port.interpreter()` the same launches run in
+Triton's interpreter on the CPU through `jax.pure_callback`, with tiles chosen for an
+emulated device, so a port's orchestration and gradients can be tested without a GPU
+(FP32 or FP16 operands: the interpreter cannot compute in BF16). Only Triton kernels are
+in scope; CUDA/C++ extensions and calls into PyTorch are not.
+
+Each ported kernel follows one convention:
+
+1. **Wrappers** (`<name>_kernels.py`): `@triton.jit` functions in the bridge's argument
+   order (inputs, arrays updated in place, outputs, constexprs) that call the upstream
+   body from `jit_function` with its heuristic flags fixed. A kernel whose mathematics
+   changes is copied into its own module with the upstream license header and a
+   docstring listing every change; unchanged kernels are never copied.
+2. **Operation** (`<name>.py`): a `jax.custom_vjp` whose forward and backward follow the
+   upstream autograd function's launch sequence, dtype casts, and buffer semantics, with
+   tiles, warps, stages, and menus taken from `triton_port.device()` through the
+   upstream branches, and an explicit dot precision.
+3. **Reference oracle**: a pure-JAX implementation of the same contract, which is the
+   recipe's `blocked` backend and computes its diagnostics.
+4. **Tests**: CPU tests in `interpreter()` comparing outputs and every gradient with the
+   oracle (including the upstream tile branches), and GPU tests (`-m gpu`, no skips) in
+   BF16 at the production shape against the FP32-HIGHEST oracle, at tile-boundary
+   lengths, for causality, nonfinite inputs, repeatability, and the model's dispatch.
+   `acceptance.py` adds both for recipes that resolve to the kernel.
+5. **Qualification**: the GPU tests pass on one H100 (`dogo`, `.venv`) and one B300
+   (`akita`, `.venv-cuda13`); results, benchmarks, and limitations are recorded in a
+   `validation/` section with JSON under `validation/runs/`. Launches run outside XLA
+   command buffers (`--xla_gpu_enable_command_buffer=`, set by acceptance's runtime
+   environment) with the locked toolkit's `ptxas`.
+
+FLA's Gated DeltaNet and PaTH attention follow it; FLA's GDN launches are unchanged by
+the move onto `triton_port` (compared launch for launch and bitwise in
+[validation](validation/README.md#fused-path-attention-kernels)).
 
 ### Gated linear attention
 
@@ -639,9 +797,11 @@ gradients enter the tensor cores rounded once to BF16, as in FlashAttention and 
 except for normalized odd-degree Taylor attention, whose cancelling row sums keep
 FP32-precision weights (`api.default_precision`; recorded as
 `attention_weight_precision`). They cover normalized fixed Taylor attention (degree >= 1),
-tanh query-conditioned polynomial attention (degree 1-8), and unnormalized polynomials with
-static fixed or learned coefficients (degree 1-8, on the query-coefficient kernel with every
-query's coefficients equal), with Q/K width 8, 16, 32, 64, or
+tanh query-conditioned polynomial attention, and unnormalized polynomials with static fixed
+or learned coefficients (on the query-coefficient kernel with every query's coefficients
+equal), both at degrees 1-12 where B300's dK/dV kernel holds every query's coefficients in
+shared memory (`api.query_degree_supported`: 12 at `d_K <= 64` and 9 at `d_K = 128`, with
+2,048 tokens), with Q/K width 8, 16, 32, 64, or
 128, value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
 (H100) or 256 (B300). An explicit `mosaic` request raises for other recipes, GPUs, or
 shapes; `auto` then uses the fused kernels. Diagnostics come from the blocked reference,
@@ -730,6 +890,12 @@ the recipe's full learning-rate horizon. Resume is the default, and Slurm requeu
 also resumes; `--no-resume` applies only to an uninitialized run. A fresh execution
 gets a fresh run ID even when its scientific settings match a previous run.
 
+`train.eval_early_every` and `train.eval_early_until` optionally freeze a denser early
+evaluation cadence. Steps through `eval_early_until` use `eval_early_every`; later
+steps use `eval_every`, and the terminal step always evaluates. The schedule uses
+global steps across checkpoint resumptions. Unset/zero early settings preserve the
+original single cadence.
+
 `record.json` summarizes status, source, execution attempts, acceptance, runtime,
 resolved configuration and backend, data identity, and retained checkpoints.
 `config.json`, `metadata.json`, completion and retention files are raw trainer
@@ -813,7 +979,10 @@ Studies configure these shared modules with execution modules at their root
   GPU type, checks the frozen execution set against the launch commit
   (`scaffolds/launch/frozen.py`), uses the worktree's environment, pins `CUDA_HOME`
   to the locked CUDA toolkit, runs acceptance, then trains; `training.log` appends
-  across requeues. The frozen set includes study `sweep.yaml`, every run's
+  across requeues. An optional sixth positional argument, `STOP_AFTER_STEP`, ends
+  a pilot at that global update while keeping the recipe's full LR horizon. It is
+  recorded in the attempt, and final checkpoint retention is skipped for pilots;
+  continuation without that argument performs final retention. The frozen set includes study `sweep.yaml`, every run's
   `config.yaml`, root execution modules, and shared record/launch helpers. Metrics,
   records and `results/` remain editable while jobs run. Both launchers source
   `scaffolds/launch/watchdog.sh`: when `training.log` has not grown for

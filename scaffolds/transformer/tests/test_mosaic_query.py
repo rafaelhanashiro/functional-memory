@@ -13,11 +13,13 @@ import numpy as np
 import pytest
 
 from scaffolds.transformer.attention.backends.fused_query_polynomial import fused_query_polynomial_attention
-from scaffolds.transformer.attention.backends.mosaic.api import WIDTHS, query_polynomial_attention
+from scaffolds.transformer.attention.backends.mosaic.api import (
+    MAX_QUERY_DEGREE, WIDTHS, query_degree_supported, query_polynomial_attention,
+)
 from scaffolds.transformer.attention.backends.mosaic.common import PRECISIONS
 from scaffolds.transformer.tests.test_fused_attention import _assert_relative
 
-DEGREES = (1, 2, 3, 4, 8)
+DEGREES = (1, 2, 3, 4, 8, 12)
 QKV_TOLERANCES = (0.006, 0.025, 0.025, 0.015)  # output, dq, dk, dv: the BF16 bounds of test_fused_attention
 COEFFICIENT_TOLERANCE = 0.01
 pytestmark = pytest.mark.gpu
@@ -99,12 +101,13 @@ def test_production_context_matches_triton(degree, precision):
 
 @pytest.mark.parametrize("precision", PRECISIONS)
 @pytest.mark.parametrize("width", (64, 128))
-def test_degree_eight_fits_the_production_context(width, precision):
+def test_largest_degree_fits_the_production_context(width, precision):
     # B300's dK/dV keeps every query's m+1 coefficients in shared memory: the largest case.
-    operands, cotangent = _inputs(8, width, time=2048, heads=4)
+    degree = max(m for m in range(1, MAX_QUERY_DEGREE + 1) if query_degree_supported(m, width, 2048))
+    operands, cotangent = _inputs(degree, width, time=2048, heads=4)
     mosaic = jax.jit(partial(_vjp, partial(query_polynomial_attention, precision=precision)))(operands, cotangent)
     triton = jax.jit(partial(_vjp, fused_query_polynomial_attention))(operands, cotangent)
-    _assert_all(mosaic, triton, f"production context, degree=8, width={width}, {precision}")
+    _assert_all(mosaic, triton, f"production context, degree={degree}, width={width}, {precision}")
 
 
 @pytest.mark.parametrize("precision", PRECISIONS)
@@ -142,13 +145,13 @@ def test_nonfinite_weight_poisons_its_row_even_with_zero_values():
     assert np.isfinite(output[finite]).all()
 
 
-@pytest.mark.parametrize("change", ["coefficient dtype", "degree 9", "coefficient shape", "width", "time", "precision"])
+@pytest.mark.parametrize("change", ["coefficient dtype", "degree too high", "coefficient shape", "width", "time", "precision"])
 def test_unsupported_inputs_raise(change):
     (q, k, v, c), _ = _inputs(2, 64, time=512, heads=1)
     if change == "coefficient dtype":
         c = c.astype(jnp.bfloat16)
-    elif change == "degree 9":
-        c = jnp.zeros((*c.shape[:3], 10), jnp.float32)
+    elif change == "degree too high":
+        c = jnp.zeros((*c.shape[:3], MAX_QUERY_DEGREE + 2), jnp.float32)
     elif change == "coefficient shape":
         c = c[:, :-1]
     elif change == "width":

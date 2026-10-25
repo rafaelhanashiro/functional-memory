@@ -28,6 +28,8 @@ import math
 import jax
 import jax.numpy as jnp
 
+from scaffolds.transformer.attention.backends import triton_port
+
 CHUNK_SIZE = 64
 RCP_LN2 = 1.0 / math.log(2.0)
 # FLA's state kernels (common/chunk_delta_h.py) hold at most four 64-wide key blocks and
@@ -35,86 +37,65 @@ RCP_LN2 = 1.0 / math.log(2.0)
 MAX_KEY_DIM = 256
 
 
-def _next_power_of_2(value: int) -> int:
-    return 1 << (int(value) - 1).bit_length()
-
-
-def _max_shared_memory_per_block(ordinal: int) -> int:
-    """The opt-in shared-memory limit Triton reports, read from the CUDA driver directly.
-
-    Triton's own driver object asks torch whether CUDA is available, which the
-    scaffold's CPU-only torch denies.
-    """
-    import ctypes
-
-    cuda = ctypes.CDLL("libcuda.so.1")
-    device, value = ctypes.c_int(), ctypes.c_int()
-    for status in (cuda.cuInit(0), cuda.cuDeviceGet(ctypes.byref(device), ordinal),
-                   # CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN
-                   cuda.cuDeviceGetAttribute(ctypes.byref(value), 97, device)):
-        if status:
-            raise RuntimeError(f"CUDA driver query failed with status {status}")
-    return value.value
-
-
-@lru_cache(maxsize=None)
 def _device_class() -> tuple[str, int]:
     """("hopper" | "blackwell" | "other", maximum shared memory per block) of the local GPUs."""
-    device = jax.local_devices()[0]
-    major = int(str(device.compute_capability).split(".")[0])
-    shared = _max_shared_memory_per_block(0)
-    return ("hopper" if major == 9 else "blackwell" if major in (10, 12) else "other"), shared
+    device = triton_port.device()
+    return device.arch, device.shared_memory
+
+
+def _kernels():
+    """Autotuned wrappers with FLA's menus for this device class (imports FLA; GPU only)."""
+    return _tuned(triton_port.device())
 
 
 @lru_cache(maxsize=None)
-def _kernels():
-    """Autotuned wrappers with FLA's menus for this device class (imports FLA; GPU only)."""
+def _tuned(device: triton_port.Device):
     import triton
     from packaging.version import Version
 
     from scaffolds.transformer.attention.backends import fla_gated_delta_rule_kernels as raw
 
-    arch, shared = _device_class()
-    if arch == "hopper" and Version("3.4.0") <= Version(triton.__version__) < Version("3.7.1"):
+    if device.arch == "hopper" and Version("3.4.0") <= Version(triton.__version__) < Version("3.7.1"):
         # FLA refuses this combination: chunk_bwd_dqkwg returns wrong gradients (FLA #640).
         raise RuntimeError(f"Triton {triton.__version__} on Hopper corrupts FLA's gated dqkwg; use >= 3.7.1")
-    blackwell = arch == "blackwell"
     config = triton.Config
-    o_warps = (2, 4) if arch == "hopper" else (2, 4, 8)
-    fwd_o_configs = ([] if blackwell else [config({"BK": 128, "BV": 128}, num_warps=8, num_stages=3)]) + [
+    # FLA's reduced Blackwell menus, kept while a Triton tl.dot recurrence race is outstanding.
+    o_warps = triton_port.per_architecture(device, (2, 4, 8), hopper=(2, 4))
+    fwd_o_configs = triton_port.per_architecture(
+        device, [config({"BK": 128, "BV": 128}, num_warps=8, num_stages=3)], blackwell=[]) + [
         config({"BK": 64, "BV": 64}, num_warps=4, num_stages=3),
         config({"BK": 32, "BV": 32}, num_warps=2, num_stages=3)]
     menus = {
         "kkt_solve": [config({"BK": bk}, num_warps=w) for bk in (32, 64) for w in (1, 2, 4)],
         "recompute_w_u": [config({}, num_warps=w, num_stages=s) for w in (2, 4, 8) for s in (2, 3, 4)],
         "fwd_h": [config({"BV": bv}, num_warps=w, num_stages=s)
-                  for w in ((2,) if blackwell else (2, 4)) for s in (2, 3, 4) for bv in (32, 64)],
+                  for w in triton_port.per_architecture(device, (2, 4), blackwell=(2,)) for s in (2, 3, 4)
+                  for bv in (32, 64)],
         "fwd_o": fwd_o_configs,
         "bwd_dv_local": [config({}, num_warps=w, num_stages=s) for w in o_warps for s in (2, 3, 4)],
         "bwd_dhu": [config({"BV": bv}, num_warps=w, num_stages=s) for w in (2, 4) for s in (2, 3, 4)
                     for bv in (32, 64)],
         "bwd_dqkwg": [config({}, num_warps=w, num_stages=s) for w in o_warps for s in (2, 3, 4)],
         "wy_bwd": [config({}, num_warps=w, num_stages=s)
-                   for w in ((2,) if blackwell else (2, 4)) for s in ((4,) if blackwell else (2, 3, 4))],
+                   for w in triton_port.per_architecture(device, (2, 4), blackwell=(2,))
+                   for s in triton_port.per_architecture(device, (2, 3, 4), blackwell=(4,))],
     }
     menus["recompute_w_u_independent"] = menus["recompute_w_u"]
     menus["wy_bwd_independent"] = menus["wy_bwd"]
-    # The bridge benchmarks the configurations itself; a dummy benchmarker keeps Triton's
-    # Autotuner from asking its (torch-backed) driver for one.
-    tuned = {name: triton.autotune(configs=configs, key=["K", "V"] if name != "kkt_solve" else ["K"],
-                                   do_bench=lambda *args, **kwargs: 0.0)(getattr(raw, name))
+    tuned = {name: triton_port.autotune(getattr(raw, name), configs, key=["K", "V"] if name != "kkt_solve" else ["K"])
              for name, configs in menus.items()}
     # FLA's tile caps from the device's shared memory (check_shared_mem 'hopper' / 'ada' / default).
-    tile = 128 if shared >= 232448 else 64 if shared >= 101376 else 32
-    wy_tile = 64 if shared >= 102400 else 32
+    tile = device.tile({"hopper": 128, "ada": 64}, 32)
+    wy_tile = device.tile({"default": 64}, 32)
     return tuned, tile, wy_tile
 
 
 def _call(kernel, *args, out, grid, name, zeroed=(), **meta):
-    from scaffolds.transformer.attention.backends.ejkernel_bridge import triton_call
-
-    return triton_call(*args, kernel=kernel, out_shape=out, grid=grid, name=f"fla::gdn::{name}",
-                       zeroed_outputs=zeroed, default_dot_input_precision="tf32x3", **meta)
+    shapes = out if isinstance(out, (list, tuple)) else [out]
+    outputs = [(triton_port.zeros if index in zeroed else triton_port.empty)(shape.shape, shape.dtype)
+               for index, shape in enumerate(shapes)]
+    return triton_port.launch(kernel, *args, outputs=outputs if isinstance(out, (list, tuple)) else outputs[0],
+                              grid=grid, name=f"fla::gdn::{name}", dot_precision="tf32x3", **meta)
 
 
 def _shape(shape, dtype):
@@ -192,8 +173,8 @@ def _gated_delta_rule_bwd(scale, residuals, do):
     value_dim, chunks = v.shape[-1], length // CHUNK_SIZE
     do = do.astype(v.dtype)
     meta = dict(H=heads, HV=heads, K=key_dim, V=value_dim, BT=CHUNK_SIZE)
-    bk = min(max(_next_power_of_2(key_dim), 16), tile)
-    bv = min(max(_next_power_of_2(value_dim), 16), tile)
+    bk = min(max(triton_port.next_power_of_2(key_dim), 16), tile)
+    bv = min(max(triton_port.next_power_of_2(value_dim), 16), tile)
     w, u = _prepare_w_u(kernels, k, v, g_chunk, beta, a, erase)
     v_new, h = _call(tuned["fwd_h"], k, u, w, g_chunk, length,
                      out=[_shape(v.shape, v.dtype), _shape((batch, chunks, heads, key_dim, value_dim), k.dtype)],
@@ -208,8 +189,8 @@ def _gated_delta_rule_bwd(scale, residuals, do):
                            out=[_shape(q.shape, q.dtype), _shape(k.shape, k.dtype), _shape(w.shape, w.dtype),
                                 _shape((nk, batch, length, heads), jnp.float32)],
                            grid=(nk, chunks, batch * heads), name="bwd_dqkwg", B=batch, BK=bk, BV=bv, **meta)
-    wy_bk = min(max(_next_power_of_2(key_dim), 16), wy_tile)
-    wy_bv = min(max(_next_power_of_2(value_dim), 16), wy_tile)
+    wy_bk = min(max(triton_port.next_power_of_2(key_dim), 16), wy_tile)
+    wy_bv = min(max(triton_port.next_power_of_2(value_dim), 16), wy_tile)
     if erase is None:
         dk2, dv, db, dg2 = _call(tuned["wy_bwd"], k, v, beta, g_chunk, a, dw, dv, length,
                                  out=[_shape(k.shape, k.dtype), _shape(v.shape, v.dtype), _shape(beta.shape, beta.dtype),

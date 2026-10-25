@@ -40,6 +40,8 @@ class ModelConfig:
     intermediate_size: int = 256
     rope_theta: float = 10000.0
     rms_norm_eps: float = 1e-6
+    # Opt-in FP32 backbone normalization arithmetic; False preserves historical BF16 recipes.
+    rms_norm_fp32: bool = False
     dropout: float = 0.0
     # Retained for recipe compatibility; this scaffold requires separate weights.
     tie_embeddings: bool = False
@@ -95,6 +97,22 @@ class ModelConfig:
     # Tanh coefficients may learn an offset inside the tanh, c_r = b_r + a_r tanh(w_r^T x_t + beta_r),
     # starting at beta_r = 0, so a constant shift of the pre-activation need not come through w_r.
     attention_coefficient_tanh_bias: bool = False
+    # Dot-product position encoding: "rope" rotates queries and keys; "path" replaces it with
+    # PaTH (arXiv:2505.16381), scores transported through token Householder products
+    # I - beta_t w_t w_t^T. w_t comes from a rank-path_w_rank projection, a width-path_conv_size
+    # causal SiLU convolution, and L2 normalization per head; beta_t = 2 sigmoid(x_t W + b).
+    positional_encoding: Literal["rope", "path"] = "rope"
+    path_w_rank: int = 32
+    path_conv_size: int = 3
+    # "factorial" divides the tanh amplitude of order r by r!, c_r = b_r + (a_r/r!) tanh(w_r^T x_t),
+    # so under Adam's unit-scale steps order r's modulation moves at lr/r!, matching b_r = 1/r!.
+    attention_coefficient_amplitude_scale: Literal["none", "factorial", "projection"] = "none"
+    # "factorial" stores order r's input-independent coefficient (static c_r, or the query
+    # bias b_r) as r! times its value, c_r = c~_r / r!, so under Adam it moves at lr/r!
+    # and its gradient carries s^r / r! rather than s^r. It starts at the same values.
+    # "projection" instead multiplies stored scalar-basis coefficients by their
+    # frozen fitted weights, the analogue of learning relative Taylor coefficients.
+    attention_coefficient_scale: Literal["none", "factorial", "projection"] = "none"
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
     # (even m, row-normalized only), so the kernel is nonnegative by construction;
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
@@ -116,26 +134,29 @@ class ModelConfig:
     # "fixed" pins the denominator's constant at 1; "learned" learns it with the other
     # coefficients (or factors), leaving the common scale of numerator and denominator free.
     attention_denominator_constant: Literal["fixed", "learned"] = "fixed"
-    # Cosine scores for any dot-product mechanism: s = exp(gamma) * cos(q, k) with a
+    # Historical cosine scores: s = exp(gamma) * cos(q, k) with a
     # learned log scale gamma per layer and head (or one shared), initialized at
     # log(qk_norm_initial_scale); null selects sqrt(qk_head_dim).
     # QK-norm is the default for dot-product attention: unset resolves to on, except for
     # GLA (rejects it) and degree 0 (never reads Q/K). Plain scores need qk_norm: false.
     qk_norm: bool | None = None
-    qk_norm_sharing: Literal["global", "per_head"] = "per_head"
+    # rms_norm uses separate Q/K channel gains per layer, shared across heads,
+    # applied before RoPE. Set sharing=per_layer and leave initial_scale=null.
+    qk_norm_type: Literal["cosine_log_scale", "rms_norm"] = "cosine_log_scale"
+    qk_norm_sharing: Literal["global", "per_head", "per_layer"] = "per_head"
     qk_norm_initial_scale: float | None = None
     qk_norm_eps: float = 1e-6
     # Weight initialization: the scaffold's Flax defaults, or an architecture's reference
     # recipe ("transformer_reference" for dot-product attention, "gla_reference" for GLA);
     # see models/initialization.py.
-    initialization: Literal["flax_default", "transformer_reference", "gla_reference",
+    initialization: Literal["flax_default", "transformer_reference", "transformer_truncated_reference", "gla_reference",
                             "gated_deltanet_reference"] = "flax_default"
 
     def mosaic_supported(self) -> bool:
         """Whether a Mosaic GPU kernel implements this recipe's attention: normalized fixed
         Taylor, tanh query-conditioned polynomial attention, or an unnormalized polynomial with
         static (fixed or learned) coefficients, at its widths and degrees."""
-        from scaffolds.transformer.attention.backends.mosaic.api import MAX_QUERY_DEGREE, VALUE_WIDTH, WIDTHS
+        from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
 
         if self.attention_basis is not None:
             return False
@@ -148,14 +169,32 @@ class ModelConfig:
                   and self.attention_coefficient_conditioning == "static")
         query = (not self.attention_normalization and self.attention_coefficient_conditioning in ("query", "query_key")
                  and self.attention_coefficient_activation == "tanh" and integer_degree
-                 and 1 <= degree <= MAX_QUERY_DEGREE)
+                 and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len))
         # Static coefficients run on the query-coefficient kernel with every query's coefficients equal.
         static = (not self.attention_normalization and self.attention_coefficient_conditioning == "static"
                   and self.quadratic_mode == "fixed" and self.attention_coefficient_parameterization == "direct"
                   and self.attention_fixed_square_factors is None and integer_degree
-                  and 1 <= degree <= MAX_QUERY_DEGREE)
+                  and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len))
         return (self.attention_mechanism == "dot_product" and (taylor or query or static)
+                and getattr(self, "positional_encoding", "rope") == "rope"
                 and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
+
+    def path_fused_supported(self) -> bool:
+        """Whether FLA's fused PaTH kernels cover this recipe's widths and degree (any GPU, length)."""
+        from scaffolds.transformer.attention.backends.fla_path_attention import HEAD_DIMS, MAX_DEGREE
+
+        degree = self.attention_degree
+        return (self.positional_encoding == "path" and self.qk_head_dim in HEAD_DIMS
+                and self.value_head_dim == self.qk_head_dim
+                and (degree is None or (isinstance(degree, int) and 1 <= degree <= MAX_DEGREE)))
+
+    def path_kernel(self) -> str | None:
+        """The PaTH attention kernel this recipe uses, or None for RoPE recipes."""
+        if self.positional_encoding != "path":
+            return None
+        if self.attention_normalization and self.attention_degree is None:
+            return "softmax"
+        return "query_polynomial"
 
     def __post_init__(self):
         if self.attention_basis is not None:
@@ -180,6 +219,8 @@ class ModelConfig:
             raise ValueError("The shared scaffold supports only kind=transformer")
         if self.tie_embeddings is not False:
             raise ValueError("model.tie_embeddings must be false: the shared scaffold requires untied embeddings")
+        if not isinstance(self.rms_norm_fp32, bool):
+            raise ValueError("model.rms_norm_fp32 must be a boolean")
         for name in (
             "vocab_size", "max_seq_len", "num_layers", "hidden_size", "num_heads",
             "num_kv_heads", "qk_head_dim", "value_head_dim", "intermediate_size",
@@ -197,6 +238,26 @@ class ModelConfig:
             raise ValueError("model.qk_head_dim must be even for RoPE")
         if self.attention_backend not in ("auto", "blocked", "fused", "mosaic", "triton_scalar", "manual", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
+        if self.positional_encoding not in ("rope", "path"):
+            raise ValueError(f"Unknown positional encoding: {self.positional_encoding}")
+        for name in ("path_w_rank", "path_conv_size"):
+            value = getattr(self, name)
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+                raise ValueError(f"model.{name} must be a positive integer")
+        if self.positional_encoding == "path":
+            softmax = (self.attention_normalization and self.attention_degree is None
+                       and self.attention_coefficients == "fixed" and self.quadratic_mode == "fixed")
+            query_tanh = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
+                          and self.attention_coefficient_activation == "tanh")
+            if self.attention_mechanism != "dot_product" or not (softmax or query_tanh):
+                raise ValueError("PaTH position encoding supports softmax and tanh query-conditioned "
+                                 "unnormalized polynomial attention")
+            if self.attention_backend not in ("auto", "blocked", "fused"):
+                raise ValueError("PaTH attention runs on model.attention_backend blocked (its chunked JAX "
+                                 "implementation), fused (FLA's Triton kernels), or auto")
+            if self.attention_backend == "fused" and not self.path_fused_supported():
+                raise ValueError("Fused PaTH needs equal qk_head_dim and value_head_dim in 16, 32, 64, 128 "
+                                 "and polynomial degree 1-4")
         if self.attention_backend == "mosaic" and not self.mosaic_supported():
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
                              "query-conditioned or static-coefficient unnormalized polynomial attention of "
@@ -306,6 +367,28 @@ class ModelConfig:
             raise ValueError("model.attention_coefficient_tanh_bias must be a boolean")
         if self.attention_coefficient_tanh_bias and self.attention_coefficient_activation != "tanh":
             raise ValueError("A bias inside tanh applies to tanh coefficients only")
+        if self.attention_coefficient_amplitude_scale not in ("none", "factorial", "projection"):
+            raise ValueError(f"Unknown attention coefficient amplitude scale: {self.attention_coefficient_amplitude_scale}")
+        if self.attention_coefficient_amplitude_scale != "none" and self.attention_coefficient_activation != "tanh":
+            raise ValueError("An amplitude scale applies to tanh coefficients only")
+        if self.attention_coefficient_scale not in ("none", "factorial", "projection"):
+            raise ValueError(f"Unknown attention coefficient scale: {self.attention_coefficient_scale}")
+        if self.attention_coefficient_scale != "none" and (
+                self.attention_coefficients != "learned" or self.attention_normalization
+                or self.attention_coefficient_parameterization != "direct"
+                or (self.attention_coefficient_conditioning != "static"
+                    and self.attention_coefficient_activation != "tanh")):
+            raise ValueError("A coefficient scale applies to learned direct unnormalized coefficients, "
+                             "static or tanh query-conditioned")
+        for scale in (self.attention_coefficient_scale, self.attention_coefficient_amplitude_scale):
+            if scale == "projection":
+                if self.attention_basis is None or self.attention_coefficients != "learned":
+                    raise ValueError("Projection scaling requires learned scalar-basis coefficients")
+                from scaffolds.transformer.attention.basis import projection_from_config
+                if any(value == 0 for value in projection_from_config(self.attention_basis).coefficients):
+                    raise ValueError("Projection scaling requires nonzero fitted basis coefficients")
+            if scale == "factorial" and self.attention_basis is not None:
+                raise ValueError("Factorial scaling applies to polynomial orders, not scalar-basis indices")
         if self.attention_coefficients == "learned":
             if self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed":
                 raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")
@@ -389,8 +472,13 @@ class ModelConfig:
             self.qk_norm = False  # Degree 0 ignores Q and K, so QK-norm cannot apply.
         if not isinstance(self.qk_norm, bool):
             raise ValueError("model.qk_norm must be a boolean")
-        if self.qk_norm_sharing not in ("global", "per_head"):
+        if self.qk_norm_type not in ("cosine_log_scale", "rms_norm"):
+            raise ValueError(f"Unknown QK-norm type: {self.qk_norm_type}")
+        allowed_sharing = ("per_layer",) if self.qk_norm_type == "rms_norm" else ("global", "per_head")
+        if self.qk_norm_sharing not in allowed_sharing:
             raise ValueError(f"Unknown QK-norm sharing: {self.qk_norm_sharing}")
+        if self.qk_norm_type == "rms_norm" and self.qk_norm_initial_scale is not None:
+            raise ValueError("QK RMSNorm initializes channel gains at one; qk_norm_initial_scale must be null")
         for name in ("qk_norm_initial_scale", "qk_norm_eps"):
             value = getattr(self, name)
             if name == "qk_norm_initial_scale" and value is None:
@@ -445,6 +533,9 @@ class TrainConfig:
     micro_batch_size: int = 2
     log_every: int = 10
     eval_every: int = 10
+    # Optional initial evaluation cadence, fixed in the recipe for pilots/resumptions.
+    eval_early_every: int | None = None
+    eval_early_until: int = 0
     eval_batches: int = 1
     ckpt_every: int = 10
     # W&B mirrors committed metrics; launchers choose the mode. Name and group
@@ -486,6 +577,15 @@ def validate_config(config: Config) -> None:
             raise ValueError(f"{name} must be a positive integer")
     if data.batch_size % train.micro_batch_size:
         raise ValueError("data.batch_size must be divisible by train.micro_batch_size")
+    if (not isinstance(train.eval_early_until, int) or isinstance(train.eval_early_until, bool)
+            or train.eval_early_until < 0):
+        raise ValueError("train.eval_early_until must be a nonnegative integer")
+    if train.eval_early_every is None:
+        if train.eval_early_until != 0:
+            raise ValueError("train.eval_early_every and train.eval_early_until must be set together")
+    elif (not isinstance(train.eval_early_every, int) or isinstance(train.eval_early_every, bool)
+          or train.eval_early_every <= 0 or train.eval_early_until <= 0):
+        raise ValueError("train.eval_early_every and train.eval_early_until must both be positive integers")
     if not 2 <= data.sequence_length <= config.model.max_seq_len + 1:
         raise ValueError("data.sequence_length must be between 2 and model.max_seq_len + 1")
     if data.source == "synthetic" and not 1 < data.synthetic_vocab_size <= config.model.vocab_size:
@@ -494,10 +594,13 @@ def validate_config(config: Config) -> None:
         raise ValueError("Packed data requires train_manifest and eval_manifest")
     if train.dtype not in ("float32", "bfloat16"):
         raise ValueError("train.dtype must be float32 or bfloat16")
-    if (config.model.attention_mechanism == "dot_product"
+    if (config.model.attention_mechanism == "dot_product" and config.model.positional_encoding == "rope"
             and config.model.attention_backend in ("fused", "cudnn") and config.model.attention_degree is None
             and config.model.attention_normalization and train.dtype != "bfloat16"):
         raise ValueError("Fused exact-softmax attention uses cuDNN and requires train.dtype=bfloat16")
+    if (config.model.positional_encoding == "path" and config.model.attention_backend == "fused"
+            and train.dtype != "bfloat16"):
+        raise ValueError("Fused PaTH attention requires train.dtype=bfloat16")
     if config.model.attention_backend == "mosaic" and train.dtype != "bfloat16":
         raise ValueError("Mosaic attention requires train.dtype=bfloat16")
     if config.model.attention_backend == "fused" and (

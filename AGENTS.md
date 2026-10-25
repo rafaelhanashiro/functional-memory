@@ -39,12 +39,18 @@ experiments/<study>/
 scaffolds/<capability>/      shared implementation, tests, and environment
 ```
 
-- All shared-Transformer attention experiments belong to
-  `experiments/attention_scaling/`. Attention family, normalization, QK normalization,
+- The established 10B-token shared-Transformer attention experiments belong to
+  `experiments/attention_scaling/`. The user-requested 200M / 4B-token setup is isolated
+  in `experiments/transformer_200m_4b/`, including its `recipe.yaml`, run membership,
+  `runs/<run_id>/`, execution helpers, and flat `results/` collection. Add runs there
+  deliberately; do not reproduce the old grid automatically. Reusable implementations
+  remain in the shared scaffolds. Its nested results follow all selection, provenance,
+  and regeneration rules below; old studies and result selections retain their recipes.
+  Attention family, normalization, QK normalization,
   degree, width, coefficient parameterization, sharing, and seed distinguish runs
   within this study; do not create a new study directory for a sweep or mechanism.
   `experiments/state_rank/` is a separate scientific question. Comparisons and their
-  explicit primary/control run selections belong under `results/`.
+  explicit primary/control run selections belong under the applicable `results/`.
 - A study groups a scientific question. Varying several axes (for example key width,
   polynomial degree, normalization, coefficient parameterization, sharing, and seed)
   produces runs within a study. Each run ID identifies one execution of a complete
@@ -66,7 +72,10 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   remain visible. Terminal and validation-best metrics must be distinguished.
 - Keep the maintained attention comparisons in `results/attention_scaling/`: the
   combined heatmap and degree plot, their explicit selections, and regeneration code.
-  Do not create a result directory for each mechanism or sweep. Learning curves and
+  Two attention questions have their own canonical collections at the user's request:
+  `results/input_dependent_coefficients/` (tanh query-dependent coefficients against
+  static ones) and `results/gdn_polynomial/` (polynomial Gated DeltaNet). Do not create
+  a result directory for any other mechanism or sweep unless the user asks. Learning curves and
   coefficient diagnostics remain available in run measurements; add a maintained
   diagnostic figure only when it serves a requested comparison. State-rank results
   belong to `results/state_rank/`.
@@ -198,7 +207,8 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   defaults; fresh allocation of an explicitly requested Flax-default run requires
   `--allow-flax-default-init`. Historical recipes and resumptions keep their settings.
 - New normalized fixed Taylor, tanh query-conditioned, and static-coefficient (fixed or
-  learned) unnormalized polynomial attention experiments of degree up to 8 use the
+  learned) unnormalized polynomial attention experiments that the Mosaic GPU kernels
+  support (degree up to 12 at `d_K <= 64` and 9 at `d_K = 128`, with 2,048 tokens) use the
   Mosaic GPU kernels (`model.attention_backend: mosaic`; `auto` also resolves to them on
   H100 and B300) unless the user explicitly requests the fused Triton kernels; do not
   inherit `fused` when copying a legacy recipe. Fresh allocation of such a recipe with

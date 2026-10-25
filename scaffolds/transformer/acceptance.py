@@ -37,6 +37,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 from scaffolds.transformer.configs import config_to_dict, load_config, validate_config
+from scaffolds.transformer.training.cadence import scheduled_work_counts
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKS = ("cpu-tests", "cpu-distributed-tests", "gpu-tests", "initialization", "pilot", "resume")
@@ -53,6 +54,10 @@ RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHO
 NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
+COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py"
+PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
+PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
+TRITON_PORT_TESTS = "scaffolds/transformer/tests/test_triton_port.py"
 QUERY_KEY_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_key_polynomial.py"
 TANH_WRITE_GDN_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write.py"
 TANH_WRITE_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write_kernel.py"
@@ -99,6 +104,11 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     model = config["model"]
     if model.get("attention_basis") is not None and model.get("attention_coefficients") == "learned":
         paths.append("scaffolds/transformer/tests/test_learned_basis.py")
+
+    if model.get("positional_encoding", "rope") == "path":
+        paths.append(PATH_ATTENTION_TESTS)
+        if resolved_backend == "fused":
+            paths.extend((PATH_ATTENTION_FUSED_TESTS, *((TRITON_PORT_TESTS,) if cpu else ())))
     if (model.get("attention_mechanism") == "gated_deltanet"
             and model.get("gdn_write_activation", "sigmoid") == "tanh"):
         if cpu:
@@ -123,6 +133,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(QUERY_TANH_POLYNOMIAL_TESTS)
         if conditioning == "query_key":
             paths.append(QUERY_KEY_POLYNOMIAL_TESTS)
+    if model.get("attention_coefficient_scale", "none") != "none":
+        paths.append(COEFFICIENT_SCALE_TESTS)
     if (resolved_backend == "fused" and model.get("attention_mechanism", "dot_product") == "dot_product"
             and model.get("attention_normalization", True)
             and (model.get("attention_coefficients") == "learned"
@@ -227,7 +239,8 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
     """Shared acceptance for a Transformer recipe across all attention families."""
     validate_config(config)
     runtime_env = {}
-    if config.model.attention_mechanism in ("gla", "gated_deltanet"):
+    if (config.model.attention_mechanism in ("gla", "gated_deltanet")
+            or (config.model.positional_encoding == "path" and config.model.attention_backend in ("auto", "fused"))):
         # The custom-call bridge executes outside XLA command buffers.
         flags = os.environ.get("XLA_FLAGS", "").split()
         flags = [flag for flag in flags if not flag.startswith("--xla_gpu_enable_command_buffer=")]
@@ -427,6 +440,9 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_amplitude_initial=1.0,
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
+                                           positional_encoding="rope",
+                                           attention_coefficient_amplitude_scale="none",
+                                           attention_coefficient_scale="none",
                                            attention_coefficient_initialization="taylor",
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
@@ -472,6 +488,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_conditioning="static",
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
+        positional_encoding="rope",
+        attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
@@ -491,6 +509,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         "softmax_counterpart_parameter_sha256": initialization_facts(control)["parameter_sha256"],
         "mechanism_parameters": {spec.name: {"shape": list(actual[(spec.name,)].shape), "initial": list(spec.initial),
                                              **({"initial_std": spec.initial_std} if spec.initial_std else {}),
+                                             **({"random_stream_name": spec.random_stream_name} if spec.random_stream_name else {}),
                                              "weight_decay": spec.weight_decay} for spec in specs},
     }
 
@@ -546,6 +565,10 @@ def _worker(spec: AcceptanceSpec, args, experiment: dict) -> dict:
         config.train.checkpoint_dir = None
         config.train.wandb_mode = "disabled"
         config.train.eval_every = spec.pilot_steps
+        # The scratch worker needs validation at its own stop, regardless of a
+        # production recipe's denser early cadence. Never edit the frozen recipe.
+        config.train.eval_early_every = None
+        config.train.eval_early_until = 0
         config.train.eval_batches = 1
         # Model, context, batch, seed, LR schedule, and step horizon are the production recipe's.
         return run_training(config, resume=True, stop_after_step=args.stop_after_step, audit_checkpoint=True)
@@ -623,8 +646,7 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
                 raise RuntimeError("Pilot has no valid synchronized steady update timing")
             config = experiment["config"]
             total = config["optim"]["total_steps"]
-            evaluations = total // config["train"]["eval_every"] + 1
-            checkpoints = total // config["train"]["ckpt_every"] + 1
+            evaluations, checkpoints = scheduled_work_counts(load_config(args.config))
             # Compilation once plus conservative evaluation and checkpoint costs.
             projected = (timing["runtime_seconds"] + max(steady) * total
                          + max(timing["evaluation_seconds"]) * config["train"]["eval_batches"] * evaluations

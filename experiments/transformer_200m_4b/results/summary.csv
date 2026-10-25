@@ -1,0 +1,13 @@
+run_id,label,status,peak_lr,failure_step,latest_step,latest_validation_nll,latest_validation_perplexity,terminal_validation_nll,terminal_validation_perplexity
+r7de4554cb320,softmax-lr-0.0005,paused,0.0005,,1500,3.0944181147374605,22.074390037489373,,
+ra2b851b0dd7e,softmax-lr-0.001,paused,0.001,,1500,3.0827526301145554,21.81837773697275,,
+r8ae39cc59cb1,softmax-lr-0.002,paused,0.002,,1500,3.0943599076647508,22.07310518925743,,
+r83139ea7389c,exp,planned,0.001,,,,,,
+r019ca96d6533,fixed-m8,planned,0.001,,,,,,
+r9b8acfcbeb89,static-m8,planned,0.001,,,,,,
+r98d5895c02d0,query-m8,planned,0.001,,,,,,
+r452a474ef2c5,query_key-m8,planned,0.001,,,,,,
+r1f200b0dd8e5,fixed-m12,planned,0.001,,,,,,
+r0a6dcf1038a2,static-m12,planned,0.001,,,,,,
+r2500f78bd19f,query-m12,planned,0.001,,,,,,
+r4129bc606124,query_key-m12,planned,0.001,,,,,,

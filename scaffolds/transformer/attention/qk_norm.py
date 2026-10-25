@@ -1,10 +1,13 @@
-"""Cosine attention scores: unit-normalized Q/K with a learned log scale.
+"""Q/K normalization outside the attention kernels.
 
-With ``qk_norm`` every dot-product mechanism scores ``s_ij = exp(gamma) cos(q_i, k_j)``,
+The historical ``cosine_log_scale`` mode scores ``s_ij = exp(gamma) cos(q_i, k_j)``,
 so ``|s_ij| <= exp(gamma)`` and the kernel sees a bounded argument. The mechanisms
 keep their ``QK^T / sqrt(d_K)`` arithmetic and fused kernels: the attention module
 feeds them ``q' = exp(gamma) sqrt(d_K) q / ||q||`` and ``k' = k / ||k||``. RoPE is
-orthogonal, so normalizing before it equals normalizing after it.
+orthogonal, so its scalar normalization commutes with RoPE. ``rms_norm`` instead
+uses independent learned Q/K channel gains, shared across heads in each layer.
+Those gains apply before RoPE and do not in general commute with it. Both modes
+preserve the kernels' ordinary ``QK^T / sqrt(d_K)`` arithmetic.
 """
 
 import math
@@ -34,6 +37,40 @@ def parameter_specs(*, initial_scale: float, sharing: str):
         name="qk_norm_log_scale", argument="qk_norm_log_scale",
         initial=(math.log(initial_scale),), sharing=sharing, weight_decay=False,
     ),)
+
+
+def rms_parameter_specs(*, qk_head_dim: int):
+    """Independent per-layer Q/K channel gains, shared across heads, without decay."""
+    from scaffolds.transformer.attention.parameters import AttentionParameterSpec
+
+    if not isinstance(qk_head_dim, int) or isinstance(qk_head_dim, bool) or qk_head_dim <= 0:
+        raise ValueError("QK RMSNorm requires a positive integer head dimension")
+    return tuple(AttentionParameterSpec(
+        name=name, argument=name, initial=(1.0,) * qk_head_dim,
+        sharing="per_layer", weight_decay=False,
+    ) for name in ("qk_norm_q_gain", "qk_norm_k_gain"))
+
+
+def rms_score_operands(q: jax.Array, k: jax.Array, q_gain: jax.Array, k_gain: jax.Array, *, eps: float):
+    """Normalize each token/head over channels in FP32, then apply its layer's gains.
+
+    Q/K have shape ``[batch, time, heads, channels]``. Each gain has shape
+    ``[channels]`` and broadcasts over tokens and heads; statistics never do.
+    Return the input dtype after the FP32 normalization and gain multiplication.
+    """
+    if q.ndim != 4 or q.shape != k.shape:
+        raise ValueError("Q and K must share the shape [batch, time, heads, channels]")
+    if q_gain.shape != (q.shape[-1],) or k_gain.shape != (k.shape[-1],):
+        raise ValueError("QK RMSNorm gains must each have shape (channels,)")
+    if not _positive_finite(eps):
+        raise ValueError("QK RMSNorm requires a finite positive eps")
+
+    def normalize(values, gain):
+        fp32 = values.astype(jnp.float32)
+        normalized = fp32 * jax.lax.rsqrt(jnp.mean(jnp.square(fp32), axis=-1, keepdims=True) + eps)
+        return (normalized * gain.astype(jnp.float32)).astype(values.dtype)
+
+    return normalize(q, q_gain), normalize(k, k_gain)
 
 
 def unit_normalize(x: jax.Array, eps: float) -> jax.Array:

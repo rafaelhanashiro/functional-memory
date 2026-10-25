@@ -1,5 +1,6 @@
 """Shared Q/K/V projections, positional encoding, and output projection."""
 
+from functools import partial
 from typing import Literal
 import math
 
@@ -9,7 +10,7 @@ from flax import nnx
 
 from scaffolds.transformer.attention.core import attention_core
 from scaffolds.transformer.attention.output_scaling import OUTPUT_SCALINGS, scale_attention_output
-from scaffolds.transformer.attention.qk_norm import cosine_score_operands
+from scaffolds.transformer.attention.qk_norm import cosine_score_operands, rms_score_operands
 from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
 from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
@@ -54,10 +55,14 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_fixed_coefficients=config.attention_fixed_coefficients,
         attention_coefficient_conditioning=config.attention_coefficient_conditioning,
         attention_coefficient_activation=config.attention_coefficient_activation,
+        attention_coefficient_amplitude_scale=config.attention_coefficient_amplitude_scale,
+        attention_coefficient_scale=config.attention_coefficient_scale,
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
+        qk_norm_type=config.qk_norm_type,
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
         score_kernel=score_kernel,
+        positional_encoding=config.positional_encoding,
         rngs=rngs,
     )
 
@@ -75,8 +80,17 @@ class MultiHeadAttention(nnx.Module):
         attention_coefficient_conditioning: str = "static",
         attention_coefficient_activation: str = "identity",
         score_kernel=None,
+        positional_encoding: str = "rope",
+        attention_coefficient_amplitude_scale: str = "none",
+        attention_coefficient_scale: str = "none",
+        qk_norm_type: str = "cosine_log_scale",
         rngs: nnx.Rngs,
     ):
+        if positional_encoding not in ("rope", "path"):
+            raise ValueError(f"Unknown positional encoding: {positional_encoding}")
+        if positional_encoding == "path" and backend not in ("auto", "blocked", "fused"):
+            raise ValueError("PaTH attention runs on backend 'blocked' (JAX) or 'fused' (FLA's Triton kernels)")
+        self.positional_encoding = positional_encoding
         _validate_degree(attention_degree)
         if score_kernel is not None and (
                 not callable(score_kernel) or backend not in ("blocked", "triton_scalar") or attention_degree is not None
@@ -88,6 +102,8 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("attention_normalization must be a boolean")
         if not isinstance(qk_norm, bool):
             raise ValueError("qk_norm must be a boolean")
+        if qk_norm_type not in ("cosine_log_scale", "rms_norm"):
+            raise ValueError(f"Unknown QK-norm type: {qk_norm_type}")
         if qk_norm and attention_degree == 0:
             raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
         if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused", "mosaic", "triton_scalar")):
@@ -152,7 +168,19 @@ class MultiHeadAttention(nnx.Module):
                 and attention_degree != 1):
             raise ValueError("Identity query coefficients require degree-one attention")
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
+        if attention_coefficient_amplitude_scale not in ("none", "factorial", "projection"):
+            raise ValueError(f"Unknown attention coefficient amplitude scale: {attention_coefficient_amplitude_scale}")
+        if attention_coefficient_amplitude_scale != "none" and attention_coefficient_activation != "tanh":
+            raise ValueError("An amplitude scale applies to tanh coefficients only")
         self.attention_coefficient_activation = attention_coefficient_activation
+        self.attention_coefficient_amplitude_scale = attention_coefficient_amplitude_scale
+        if attention_coefficient_scale not in ("none", "factorial", "projection"):
+            raise ValueError(f"Unknown attention coefficient scale: {attention_coefficient_scale}")
+        self.attention_coefficient_scale = attention_coefficient_scale
+        for scale in (attention_coefficient_scale, attention_coefficient_amplitude_scale):
+            if (scale == "projection" and score_kernel is None
+                    or scale == "factorial" and score_kernel is not None):
+                raise ValueError("Coefficient scaling must match the polynomial or scalar basis")
         self.hidden_size = hidden_size
         self.num_heads = num_heads
         self.num_kv_heads = num_kv_heads
@@ -167,6 +195,7 @@ class MultiHeadAttention(nnx.Module):
         self.attention_normalization = attention_normalization
         self.quadratic_mode = quadratic_mode
         self.qk_norm = qk_norm
+        self.qk_norm_type = qk_norm_type
         self.qk_norm_eps = qk_norm_eps
         self.attention_output_scaling = attention_output_scaling
         self.rms_norm_eps = rms_norm_eps
@@ -187,8 +216,13 @@ class MultiHeadAttention(nnx.Module):
         batch, seq_len, _ = x.shape
         parameters = {} if attention_parameters is None else dict(attention_parameters)
         log_scale = parameters.pop("qk_norm_log_scale", None)
-        if self.qk_norm != (log_scale is not None):
+        q_gain = parameters.pop("qk_norm_q_gain", None)
+        k_gain = parameters.pop("qk_norm_k_gain", None)
+        if (self.qk_norm and self.qk_norm_type == "cosine_log_scale") != (log_scale is not None):
             raise ValueError("QK-norm requires exactly its model-owned qk_norm_log_scale parameter")
+        rms_enabled = self.qk_norm and self.qk_norm_type == "rms_norm"
+        if rms_enabled != (q_gain is not None) or rms_enabled != (k_gain is not None):
+            raise ValueError("QK RMSNorm requires exactly its model-owned qk_norm_q_gain and qk_norm_k_gain parameters")
         output_norm_scale = parameters.pop("output_norm_scale", None)
         if (self.attention_output_scaling == "head_rms_norm") != (output_norm_scale is not None):
             raise ValueError("Head RMSNorm output scaling requires exactly its model-owned output_norm_scale parameter")
@@ -199,6 +233,28 @@ class MultiHeadAttention(nnx.Module):
         query_tanh_bias = parameters.pop(f"{query_prefix}_tanh_bias", None)
         key_kernel = parameters.pop("key_polynomial_kernel", None)
         key_amplitude = parameters.pop("key_polynomial_amplitude", None)
+        if self.attention_coefficient_scale == "factorial":
+            from scaffolds.transformer.attention.parameters import factorial_scale
+
+            if (query_bias is None) == ("polynomial_coefficients" not in parameters):
+                raise ValueError("A coefficient scale needs exactly one learned coefficient array")
+            if query_bias is not None:
+                query_bias = factorial_scale(query_bias)
+            else:
+                parameters["polynomial_coefficients"] = factorial_scale(parameters["polynomial_coefficients"])
+        if self.attention_coefficient_scale == "projection":
+            scale = jnp.asarray(self.score_kernel.coefficients, dtype=jnp.float32)
+            if (query_bias is None) == ("basis_coefficients" not in parameters):
+                raise ValueError("Projection scaling needs exactly one learned basis coefficient array")
+            if query_bias is not None:
+                query_bias = query_bias.astype(jnp.float32) * scale
+            else:
+                parameters["basis_coefficients"] = parameters["basis_coefficients"].astype(jnp.float32) * scale
+        if self.attention_coefficient_amplitude_scale == "projection":
+            if query_amplitude is None:
+                raise ValueError("Projection amplitude scaling requires a learned query amplitude")
+            query_amplitude = query_amplitude.astype(jnp.float32) * jnp.asarray(
+                self.score_kernel.coefficients, dtype=jnp.float32)
         if self.attention_coefficient_conditioning in ("query", "query_key"):
             from scaffolds.transformer.attention.input_dependent import project_coefficients, project_key_factors
 
@@ -206,7 +262,9 @@ class MultiHeadAttention(nnx.Module):
                 raise ValueError("Query-conditioned attention requires its model-owned kernel and bias")
             parameters["basis_coefficients" if self.score_kernel is not None else "query_polynomial_coefficients"] = project_coefficients(
                 x, query_kernel, query_bias, amplitude=query_amplitude,
-                activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias)
+                activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
+                amplitude_scale=("none" if self.attention_coefficient_amplitude_scale == "projection"
+                                 else self.attention_coefficient_amplitude_scale))
             if self.attention_coefficient_conditioning == "query_key":
                 if key_kernel is None or key_amplitude is None:
                     raise ValueError("Query-key attention requires its model-owned key kernel and amplitude")
@@ -216,6 +274,12 @@ class MultiHeadAttention(nnx.Module):
         elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_tanh_bias,
                                                  key_kernel, key_amplitude)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
+        from scaffolds.transformer.attention.path import PATH_ARGUMENTS
+
+        path_parameters = {name: parameters.pop(name, None) for name in PATH_ARGUMENTS}
+        if (self.positional_encoding == "path") != all(value is not None for value in path_parameters.values()):
+            if self.positional_encoding == "path" or any(value is not None for value in path_parameters.values()):
+                raise ValueError("PaTH position encoding requires exactly its model-owned gate parameters")
         q, k, v = self.q_proj(x), self.k_proj(x), self.v_proj(x)
         if self.backend != "manual":
             q, k, v = (operand.astype(self.dtype) for operand in (q, k, v))
@@ -223,8 +287,14 @@ class MultiHeadAttention(nnx.Module):
         k = k.reshape(batch, seq_len, self.num_kv_heads, self.qk_head_dim)
         v = v.reshape(batch, seq_len, self.num_kv_heads, self.value_head_dim)
         if self.qk_norm:
-            # Cosine scores: the mechanisms' q'.k'/sqrt(d_K) becomes exp(gamma) cos(q, k).
-            q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)
+            if self.qk_norm_type == "rms_norm":
+                q, k = rms_score_operands(q, k, q_gain, k_gain, eps=self.qk_norm_eps)
+            else:
+                # Preserve the historical scaled-cosine arithmetic exactly.
+                q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)
+        if self.positional_encoding == "path":
+            return self._path_attention(x, q.astype(self.dtype), k.astype(self.dtype), v, parameters,
+                                        path_parameters, output_norm_scale, return_diagnostics)
         positions = jnp.arange(seq_len)
         q = apply_rope(q, positions, self.rope_theta)
         k = apply_rope(k, positions, self.rope_theta)
@@ -272,6 +342,52 @@ class MultiHeadAttention(nnx.Module):
             score_kernel=self.score_kernel,
         )
         y, diagnostics = result if return_diagnostics else (result, None)
+        telemetry.record_attention_output(
+            y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None)
+        y = scale_attention_output(y, self.attention_output_scaling,
+                                   output_norm_scale=output_norm_scale, eps=self.rms_norm_eps)
+        output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))
+        return (output, diagnostics) if return_diagnostics else output
+
+    def _path_attention(self, x, q, k, v, parameters, path_parameters, output_norm_scale, return_diagnostics):
+        """PaTH-transported scores replace RoPE; the kernel and output path are unchanged."""
+        from scaffolds.transformer.attention.input_dependent import coefficient_statistics
+        from scaffolds.transformer.attention.path import CHUNK_SIZE, path_attention, path_gates
+
+        batch, seq_len = x.shape[:2]
+        if self.num_kv_heads != self.num_heads:
+            raise ValueError("PaTH attention requires one key head per query head")
+        w, beta = path_gates(x, *(path_parameters[name] for name in (
+            "path_w_down", "path_w_up", "path_w_conv", "path_beta_kernel", "path_beta_bias")), num_heads=self.num_heads)
+        coefficients = parameters.pop("query_polynomial_coefficients", None)
+        if parameters:
+            raise ValueError(f"PaTH attention does not accept {sorted(parameters)}")
+        if self.attention_normalization and self.attention_degree is None and coefficients is None:
+            kernel = "softmax"
+        elif (not self.attention_normalization and coefficients is not None
+              and self.attention_coefficient_activation == "tanh"):
+            kernel = "query_polynomial"
+        else:
+            raise ValueError("PaTH supports softmax and tanh query-conditioned polynomial attention")
+        chunk = CHUNK_SIZE if seq_len % CHUNK_SIZE == 0 else seq_len
+        if seq_len % CHUNK_SIZE and seq_len > CHUNK_SIZE:
+            raise ValueError(f"PaTH needs a sequence length divisible by {CHUNK_SIZE} (or at most {CHUNK_SIZE})")
+        reference = partial(path_attention, q, k, v, w, beta, kernel=kernel, coefficients=coefficients,
+                            chunk_size=chunk, return_diagnostics=True)
+        if self.backend == "fused":
+            # "auto" is resolved before tracing; an unresolved request runs the JAX reference.
+            from scaffolds.transformer.attention.backends.fla_path_attention import fused_path_attention
+
+            y = fused_path_attention(q, k, v, w, beta, kernel=kernel, coefficients=coefficients)
+            # Diagnostics come from the blocked reference, as for the other fused kernels.
+            diagnostics = reference()[1] if return_diagnostics else {}
+        else:
+            y, diagnostics = reference()
+        if coefficients is not None:
+            diagnostics.update(jax.lax.stop_gradient(coefficient_statistics(coefficients)))
+        diagnostics.update(jax.lax.stop_gradient({
+            "path_beta_mean": jnp.mean(beta), "path_beta_min": jnp.min(beta), "path_beta_max": jnp.max(beta),
+        }))
         telemetry.record_attention_output(
             y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None)
         y = scale_attention_output(y, self.attention_output_scaling,

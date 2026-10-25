@@ -249,6 +249,14 @@ def attention_identity(config) -> dict:
         )
     if hasattr(config, "_attention_backend_resume_request"):
         identity["attention_backend_resume_requested"] = config._attention_backend_resume_request
+    if getattr(config.model, "attention_coefficient_scale", "none") != "none":
+        identity.update(
+            attention_coefficient_scale=config.model.attention_coefficient_scale,
+            attention_coefficient_scale_formula=(
+                "stored coefficients start at one; attention multiplies them by the frozen fitted basis weights"
+                if config.model.attention_coefficient_scale == "projection" else
+                "stored c~_r (static coefficients or query bias b) start at r! times the represented "
+                "value; attention uses c_r = c~_r / r!"))
     if is_signed_kernel(config.model):
         identity["attention_signed"] = True
     if learned_polynomial:
@@ -289,7 +297,9 @@ def attention_identity(config) -> dict:
         tanh_start = (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero") + (
             f", a initially {amplitude:g}" if amplitude != 1.0 else ", a initially 1") + (
             ", beta initially 0" if inner_bias else "")
-        tanh_formula = "c(x_t) = b + a*tanh(x_t W + beta)" if inner_bias else "c(x_t) = b + a*tanh(x_t W)"
+        amplitude_scale = config.model.attention_coefficient_amplitude_scale if query_tanh else "none"
+        tanh_formula = ("c(x_t) = b + (a/r!)*tanh(x_t W" if amplitude_scale == "factorial" else "c(x_t) = b + a*tanh(x_t W") + (
+            " + beta)" if inner_bias else ")")
         identity.update(
             attention_kernel="query_key_polynomial_unnormalized" if key_conditioned else "query_polynomial_unnormalized",
             attention_coefficient_conditioning=conditioning,
@@ -299,6 +309,7 @@ def attention_identity(config) -> dict:
             **({"attention_coefficient_amplitude_initial": amplitude,
                 "attention_coefficient_projection_initial_std": spread} if (amplitude, spread) != (1.0, 0.0) else {}),
             **({"attention_coefficient_tanh_bias": True} if inner_bias else {}),
+            **({"attention_coefficient_amplitude_scale": amplitude_scale} if amplitude_scale != "none" else {}),
             attention_formula=((f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) f_r(x_i) s_ti^r v_i" if key_conditioned
                                 else f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i")
                                + ", s_ti = Q_t K_i^T / sqrt(d_k); "
@@ -317,14 +328,30 @@ def attention_identity(config) -> dict:
                                           2 * config.model.num_layers * config.model.num_heads),
         })
     if config.model.attention_basis is not None:
+        coefficient_formula = ""
+        if config.model.attention_coefficients == "learned":
+            relative = config.model.attention_coefficient_scale == "projection"
+            if query_conditioned:
+                bias_term = "s_j * b_j" if relative else "b_j"
+                amplitude_term = ("s_j * a_j" if config.model.attention_coefficient_amplitude_scale == "projection"
+                                  else "a_j")
+                coefficient_formula = (
+                    f"; c_j(x_t) = {bias_term} + {amplitude_term} * tanh(x_t W_j"
+                    + (" + beta_j)" if inner_bias else ")")
+                    + f" per layer/head, {tanh_start}, b initially "
+                    + ("one" if relative else "fitted basis weights")
+                    + "; x_t is the activation after the block input RMSNorm")
+            elif relative:
+                coefficient_formula = "; c_j = s_j * theta_j, theta initially one"
+            if relative or config.model.attention_coefficient_amplitude_scale == "projection":
+                coefficient_formula += "; s_j are the frozen fitted basis weights"
         identity.update(
             attention_kernel=(("query_basis" if query_conditioned else "learned_basis")
                               if config.model.attention_coefficients == "learned" else "fixed_basis")
                              + ("" if normalized else "_unnormalized"),
             attention_formula="sum_j c_j b_j(s), s = QK^T / sqrt(d_k), causal weighted values"
                               + (" divided by the causal kernel sum" if normalized else "")
-                              + (f"; {tanh_formula} per layer/head, {tanh_start}, b initially fitted basis weights; "
-                                 "x_t is the activation after the block input RMSNorm" if query_conditioned else ""),
+                              + coefficient_formula,
             attention_score_scale="1/sqrt(d_k)",
             attention_output_normalization="signed_row_sum" if normalized else False,
             attention_basis=config.model.attention_basis,
@@ -350,7 +377,7 @@ def attention_identity(config) -> dict:
             attention_formula=identity.get("attention_formula", "causal_softmax(QK^T / sqrt(d_k)) V") + (
                 ", divided by the number of visible keys t" if scaling == "inverse_position"
                 else ", then per-head RMSNorm over value channels with a learned gain"))
-    if config.model.attention_backend == "fused":
+    if config.model.attention_backend == "fused" and config.model.positional_encoding != "path":
         if not normalized:
             from scaffolds.transformer.attention.backends.fused_unnormalized import _tile_sizes
         else:
@@ -389,15 +416,58 @@ def attention_identity(config) -> dict:
             "diagnostic_backend": "blocked",
             "diagnostic_query_block_size": QUERY_BLOCK_SIZE,
         })
+    if config.model.positional_encoding == "path":
+        from scaffolds.transformer.attention.backends.fla_path_attention import SPLIT
+        from scaffolds.transformer.attention.path import CHUNK_SIZE
+
+        model = config.model
+        identity.update({
+            "positional_encoding": "path",
+            "path_w_rank": model.path_w_rank,
+            "path_conv_size": model.path_conv_size,
+            "path_parameter_count": model.num_layers * (model.hidden_size * model.path_w_rank + model.num_heads * (
+                (model.path_w_rank + model.path_conv_size) * model.qk_head_dim + model.hidden_size + 1)),
+            "attention_implementation": "jax_path_chunked_ut_transform",
+            "path_chunk_size": CHUNK_SIZE,
+            "query_block_size": None,
+            "diagnostic_backend": "jax_path_chunked_ut_transform",
+            **({"attention_implementation": ("fla_parallel_path_attention_triton" if model.path_kernel() == "softmax"
+                                             else "fla_parallel_path_query_polynomial_triton"),
+                # FLA sizes its tiles from the GPU's shared memory: 64-token UT-transform chunks and
+                # key blocks, 128-token query blocks, and 512-token splits on H100 and B300.
+                "path_chunk_size": None, "path_split_size": SPLIT, "key_block_size": None,
+                "attention_kernel_dot_precision": "tf32"}
+               if model.attention_backend == "fused" else {}),
+            "attention_score_position_encoding": (
+                "PaTH: s_ts = q_t^T H_t ... H_(s+1) k_s / sqrt(d_k), H_t = I - beta_t w_t w_t^T; "
+                "w_t = L2norm(SiLU(causal_conv(x_t W_down W_up))) per head, beta_t = 2 sigmoid(x_t W_beta + b); no RoPE"),
+        })
     return identity
 
 
 def qk_norm_identity(model) -> dict:
-    """Cosine-score facts recorded beside the mechanism's own identity."""
+    """Normalization and parameter ownership recorded beside the mechanism identity."""
     from scaffolds.transformer.attention.qk_norm import initial_scale
 
+    if model.qk_norm_type == "rms_norm":
+        return {
+            "qk_norm": True,
+            "qk_norm_type": "rms_norm",
+            "qk_norm_sharing": "per_layer",
+            "qk_norm_eps": model.qk_norm_eps,
+            "qk_norm_parameter_count": 2 * model.num_layers * model.qk_head_dim,
+            "qk_norm_gain_shape": [model.num_layers, model.qk_head_dim],
+            "qk_norm_initial_gain": 1.0,
+            "qk_norm_gain_shared_across_heads": True,
+            "qk_norm_stats_dtype": "float32",
+            "attention_score_formula": (
+                "<RoPE(g_Q * q / sqrt(mean(q^2) + eps)), "
+                "RoPE(g_K * k / sqrt(mean(k^2) + eps))> / sqrt(d_K); "
+                "independent Q/K channel gains per layer, shared across heads"),
+        }
     return {
         "qk_norm": True,
+        "qk_norm_type": "cosine_log_scale",
         "qk_norm_sharing": model.qk_norm_sharing,
         "qk_norm_initial_scale": initial_scale(model),
         "qk_norm_eps": model.qk_norm_eps,
@@ -471,6 +541,8 @@ def polynomial_coefficient_report(params, config) -> dict:
         raw = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
         raw_names = [f"c{order}" for order in range(raw.shape[-1])]
         effective = raw
+        if getattr(config.model, "attention_coefficient_scale", "none") == "factorial":
+            effective = raw / np.asarray([math.factorial(order) for order in range(raw.shape[-1])], np.float64)
     if has_rational_kernel(config.model):
         from scaffolds.transformer.attention.rational_polynomial import denominator_constant, denominator_degree
 
@@ -490,7 +562,8 @@ def polynomial_coefficient_report(params, config) -> dict:
 
 
 
-def query_coefficient_report(params, raw_layers, *, prefix="query_polynomial") -> dict:
+def query_coefficient_report(params, raw_layers, *, prefix="query_polynomial", amplitude_scale="none",
+                             coefficient_scale="none", projection_coefficients=None) -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
@@ -522,6 +595,23 @@ def query_coefficient_report(params, raw_layers, *, prefix="query_polynomial") -
     }
     if amplitude is not None:
         report.update(activation="tanh", modulation_amplitude=_serializable(amplitude))
+        if amplitude_scale == "factorial":
+            factorials = np.asarray([math.factorial(r) for r in range(amplitude.shape[-1])], dtype=np.float64)
+            report.update(modulation_amplitude_scale="1/r!",
+                          effective_modulation_amplitude=_serializable(amplitude / factorials))
+    if coefficient_scale == "factorial":
+        factorials = np.asarray([math.factorial(r) for r in range(bias.shape[-1])], dtype=np.float64)
+        report.update(projection_bias_scale="1/r!", effective_projection_bias=_serializable(bias / factorials))
+    if coefficient_scale == "projection" or amplitude_scale == "projection":
+        scale = np.asarray(projection_coefficients, dtype=np.float32).astype(np.float64)
+        if scale.shape != (bias.shape[-1],) or not np.isfinite(scale).all():
+            raise ValueError("Expected finite fitted coefficients for projection-scaled diagnostics")
+        report["projection_coefficients"] = _serializable(scale)
+        if coefficient_scale == "projection":
+            report.update(projection_bias_scale="fitted_basis", effective_projection_bias=_serializable(bias * scale))
+        if amplitude_scale == "projection" and amplitude is not None:
+            report.update(modulation_amplitude_scale="fitted_basis",
+                          effective_modulation_amplitude=_serializable(amplitude * scale))
     if inner_bias is not None:
         report["tanh_bias"] = _serializable(inner_bias)
     if key_amplitude is not None:
@@ -551,6 +641,20 @@ def qk_norm_scale_report(params, config) -> dict:
         "effective_coefficient_names": ["alpha"],
         "effective": _serializable(effective),
         "finite": bool(np.all(np.isfinite(raw)) and np.all(np.isfinite(effective))),
+    }
+
+
+def qk_norm_gain_report(params) -> dict:
+    """Keep every Q/K gain, with the final axis distinguishing Q from K."""
+    gains = np.stack([np.asarray(jax.device_get(params[name][...]), dtype=np.float64)
+                      for name in ("qk_norm_q_gain", "qk_norm_k_gain")], axis=-1)
+    return {
+        "raw_parameter_names": ["g_Q", "g_K"],
+        "raw": _serializable(gains),
+        "effective_coefficient_names": ["g_Q", "g_K"],
+        "effective": _serializable(gains),
+        "axes": ["layer", "channel", "query_or_key"],
+        "finite": bool(np.all(np.isfinite(gains))),
     }
 
 
@@ -653,13 +757,22 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         if not coefficient_report["finite"]:
             issues.append("Nonfinite quadratic coefficients")
     elif config.model.attention_coefficient_conditioning in ("query", "query_key"):
-        coefficient_report = query_coefficient_report(params, raw_layers,
-            prefix="query_basis" if config.model.attention_basis is not None else "query_polynomial")
+        coefficient_report = query_coefficient_report(
+            params, raw_layers, prefix="query_basis" if config.model.attention_basis is not None else "query_polynomial",
+            amplitude_scale=config.model.attention_coefficient_amplitude_scale,
+            coefficient_scale=config.model.attention_coefficient_scale,
+            projection_coefficients=(config.model.attention_basis["coefficients"]
+                                     if config.model.attention_basis is not None else None))
         if not coefficient_report["finite"]:
             issues.append("Nonfinite query-dependent coefficients or projection parameters")
     elif config.model.attention_basis is not None and config.model.attention_coefficients == "learned":
         values = np.asarray(jax.device_get(params["basis_coefficients"][...]), dtype=np.float64)
-        coefficient_report = {"effective": _serializable(values), "finite": bool(np.isfinite(values).all()),
+        effective = values
+        if config.model.attention_coefficient_scale == "projection":
+            effective = values * np.asarray(config.model.attention_basis["coefficients"], dtype=np.float32)
+        coefficient_report = {"raw": _serializable(values), "effective": _serializable(effective),
+                              "scale": config.model.attention_coefficient_scale,
+                              "finite": bool(np.isfinite(values).all() and np.isfinite(effective).all()),
                               "trainable": True}
         if not coefficient_report["finite"]:
             issues.append("Nonfinite learned basis coefficients")
@@ -695,10 +808,16 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         if not coefficient_report["finite"]:
             issues.append("Nonfinite fixed square factors")
     scale_report = None
+    gain_report = None
     if config.model.qk_norm:
-        scale_report = qk_norm_scale_report(params, config)
-        if not scale_report["finite"]:
-            issues.append("Nonfinite QK-norm scales")
+        if config.model.qk_norm_type == "rms_norm":
+            gain_report = qk_norm_gain_report(params)
+            if not gain_report["finite"]:
+                issues.append("Nonfinite QK RMSNorm gains")
+        else:
+            scale_report = qk_norm_scale_report(params, config)
+            if not scale_report["finite"]:
+                issues.append("Nonfinite QK-norm scales")
     report = {
         "format": "shared-transformer-attention-diagnostics",
         "version": 1,
@@ -733,4 +852,6 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                                    if config.model.attention_coefficients == "learned" else "unshifted_fixed_basis")
     if scale_report is not None:
         report["qk_norm_scale"] = scale_report
+    if gain_report is not None:
+        report["qk_norm_gains"] = gain_report
     return report

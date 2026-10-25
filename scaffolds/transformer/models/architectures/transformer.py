@@ -40,9 +40,9 @@ class SwiGLU(nnx.Module):
 class Block(nnx.Module):
     def __init__(self, config: ModelConfig, *, rngs: nnx.Rngs):
         cfg = config
-        self.attention_norm = RMSNorm(cfg.hidden_size, cfg.rms_norm_eps)
+        self.attention_norm = RMSNorm(cfg.hidden_size, cfg.rms_norm_eps, fp32=cfg.rms_norm_fp32)
         self.attention = attention_from_config(cfg, rngs=rngs)
-        self.ffn_norm = RMSNorm(cfg.hidden_size, cfg.rms_norm_eps)
+        self.ffn_norm = RMSNorm(cfg.hidden_size, cfg.rms_norm_eps, fp32=cfg.rms_norm_fp32)
         self.feed_forward = SwiGLU(cfg.hidden_size, cfg.intermediate_size, rngs=rngs)
 
     def __call__(
@@ -83,7 +83,7 @@ class TransformerLM(nnx.Module):
         self.layer_names = tuple(f"layers_{idx}" for idx in range(config.num_layers))
         for layer_name in self.layer_names:
             setattr(self, layer_name, Block(config, rngs=rngs))
-        self.final_norm = RMSNorm(config.hidden_size, config.rms_norm_eps)
+        self.final_norm = RMSNorm(config.hidden_size, config.rms_norm_eps, fp32=config.rms_norm_fp32)
         self.lm_head = nnx.Linear(config.hidden_size, config.vocab_size, use_bias=False, rngs=rngs)
         self.attention_parameter_specs = attention_parameter_specs(config)
         random_mechanism = any(spec.initial_std for spec in self.attention_parameter_specs)

@@ -1,0 +1,13 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r9b8acfcbeb89/config.yaml",
+    "sha256": "09cce71385f5939fa90c461930f93ccbf477991b0797b94b0be86502b022aaa0"
+  },
+  "home_cluster": "kennel",
+  "label": "static-m8",
+  "name": "static-m8",
+  "phase": "comparison",
+  "record_schema_version": 1,
+  "run_id": "r9b8acfcbeb89",
+  "status": "planned"
+}

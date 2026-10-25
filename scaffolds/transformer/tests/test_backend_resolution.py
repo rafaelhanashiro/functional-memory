@@ -187,7 +187,8 @@ MOSAIC_STATIC = dict(MOSAIC_TAYLOR, attention_degree=3, attention_normalization=
     MOSAIC_QUERY, dict(MOSAIC_QUERY, attention_degree=1), dict(MOSAIC_QUERY, attention_degree=4),
     MOSAIC_STATIC, dict(MOSAIC_STATIC, attention_coefficient_sharing="global"),
     dict(MOSAIC_STATIC, attention_degree=1), dict(MOSAIC_STATIC, attention_degree=8),
-    dict(MOSAIC_QUERY, attention_degree=8),
+    dict(MOSAIC_QUERY, attention_degree=8), dict(MOSAIC_QUERY, attention_degree=12), dict(MOSAIC_STATIC, attention_degree=12),
+    dict(MOSAIC_QUERY, attention_degree=9, qk_head_dim=128, max_seq_len=2048),
     dict(MOSAIC_TAYLOR, attention_normalization=False), dict(MOSAIC_TAYLOR, attention_normalization=False, attention_degree=4),
     dict(MOSAIC_TAYLOR, attention_normalization=False, attention_fixed_coefficients=(0.5, 1.0, 0.5)),
 ])
@@ -202,9 +203,13 @@ def test_mosaic_accepts_its_kernels(settings):
     dict(MOSAIC_TAYLOR, attention_fixed_coefficients=(0.5, 1.0, 0.5)),
     dict(MOSAIC_TAYLOR, attention_normalization=False, attention_degree=None),
     dict(MOSAIC_TAYLOR, attention_normalization=False, attention_degree=0),
-    dict(MOSAIC_STATIC, attention_degree=9),
+    dict(MOSAIC_STATIC, attention_degree=13),
     dict(MOSAIC_TAYLOR, attention_mechanism="gated_deltanet", attention_degree=None),
-    dict(MOSAIC_QUERY, attention_degree=9),
+    dict(MOSAIC_QUERY, attention_degree=13),
+    # B300's dK/dV must hold every query's m+1 coefficients beside the key block.
+    dict(MOSAIC_QUERY, attention_degree=10, qk_head_dim=128, max_seq_len=2048),
+    dict(MOSAIC_STATIC, attention_degree=12, qk_head_dim=128, max_seq_len=2048),
+    dict(MOSAIC_QUERY, attention_degree=8, max_seq_len=4096),
     dict(MOSAIC_QUERY, attention_degree=1, attention_coefficient_activation="identity"),
     dict(MOSAIC_TAYLOR, qk_head_dim=48),
     dict(MOSAIC_TAYLOR, value_head_dim=128),
@@ -212,6 +217,19 @@ def test_mosaic_accepts_its_kernels(settings):
 def test_mosaic_rejects_recipes_without_a_kernel(settings):
     with pytest.raises(ValueError, match="mosaic"):
         ModelConfig(**settings)
+
+
+def test_query_degree_limit_is_blackwell_dkv_shared_memory():
+    from scaffolds.transformer.attention.backends.mosaic.api import MAX_QUERY_DEGREE, query_degree_supported
+    from scaffolds.transformer.attention.backends.mosaic.common import blackwell_dkv_stages
+
+    # Degree 8 keeps its qualified ring depths: three stages at d_K = 64, two at 128.
+    assert blackwell_dkv_stages(64, 64, 9, 2048) == 3 and blackwell_dkv_stages(128, 64, 9, 2048) == 2
+    assert blackwell_dkv_stages(128, 64, 13, 2048) is None
+    assert [m for m in range(1, MAX_QUERY_DEGREE + 2) if query_degree_supported(m, 64, 2048)] == list(range(1, 13))
+    assert max(m for m in range(1, MAX_QUERY_DEGREE + 1) if query_degree_supported(m, 128, 2048)) == 9
+    assert query_degree_supported(12, 8, 2048)  # padded to the 16-wide contraction step
+    assert not query_degree_supported(8, 64, 4096)
 
 
 @pytest.mark.parametrize("dtype,platform,capability,length,error", [
@@ -242,6 +260,8 @@ def test_mosaic_resolution_checks_the_allocation(monkeypatch, dtype, platform, c
     (MOSAIC_STATIC, "bfloat16", 10, 2048, "mosaic"),
     (dict(MOSAIC_TAYLOR, attention_normalization=False), "bfloat16", 9, 2048, "mosaic"),
     (dict(MOSAIC_STATIC, attention_degree=8), "bfloat16", 9, 2048, "mosaic"),
+    (dict(MOSAIC_STATIC, attention_degree=12), "bfloat16", 9, 2048, "mosaic"),
+    (dict(MOSAIC_STATIC, attention_degree=12, qk_head_dim=128, max_seq_len=2048), "bfloat16", 9, 2048, "fused"),
     (dict(MOSAIC_STATIC, attention_degree=16), "bfloat16", 9, 2048, "fused"),
     (MOSAIC_TAYLOR, "float32", 9, 2048, "fused"),
     (MOSAIC_TAYLOR, "bfloat16", 8, 2048, "fused"),

@@ -7,20 +7,27 @@ a result collection can combine runs from several studies.
 
 | Study | Results | Run data and reproduction |
 | --- | --- | --- |
+| 200M / 4B-token reference: QK RMSNorm, truncated initialization, selected LR | [Isolated comparisons](experiments/transformer_200m_4b/results/README.md) | [Recipe and runs](experiments/transformer_200m_4b/README.md) |
 | Attention scaling: softmax, Taylor, Hermite, learned polynomials, and Gated DeltaNet | [Heatmaps and degree curves](results/attention_scaling/README.md) | [All attention runs](experiments/attention_scaling/README.md) |
+| Input-dependent (tanh) polynomial coefficients | [Matched-degree comparison](results/input_dependent_coefficients/README.md) | [All attention runs](experiments/attention_scaling/README.md#input-dependent-coefficient-comparison) |
+| Polynomial Gated DeltaNet: independent erase, polynomial memory, key width | [Heatmap and validation gap](results/gdn_polynomial/README.md) | [All attention runs](experiments/attention_scaling/README.md#polynomial-gated-deltanet) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 
 Exploratory results awaiting a decision (promote or discard) are in
 [`results/exploratory/`](results/exploratory/README.md).
 
-All attention settings vary within `experiments/attention_scaling/runs/<run_id>/`.
-There are no separate experiment folders for individual mechanisms or sweeps.
+The established 10B-token attention settings vary within
+`experiments/attention_scaling/runs/<run_id>/`. The new 200M / 4B-token setup keeps
+its recipe, runs, and results together in `experiments/transformer_200m_4b/` and
+reuses the same scaffolds. Within each setup, mechanisms and sweeps share one run pool.
 The [run index](experiments/attention_scaling/runs.csv) exposes the settings,
 home cluster, training budget, status, and outcome. Each result collection selects
 its inputs explicitly, so the same run can participate in several comparisons.
 
 The maintained attention results are the combined heatmap and degree plot in
-`results/attention_scaling/`. The complete run inventory, learning-curve data,
+`results/attention_scaling/`, the input-dependent coefficient comparison in
+`results/input_dependent_coefficients/`, and the polynomial GDN comparison in
+`results/gdn_polynomial/`. The complete run inventory, learning-curve data,
 coefficient diagnostics, and execution metadata remain under
 `experiments/attention_scaling/`; result directories organize the comparisons we
 want to present, rather than individual sweeps.

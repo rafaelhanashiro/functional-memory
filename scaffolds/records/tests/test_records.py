@@ -2,7 +2,9 @@ from concurrent.futures import ThreadPoolExecutor
 import csv
 import hashlib
 import json
+import os
 from pathlib import Path
+import stat
 from types import SimpleNamespace
 
 import pytest
@@ -491,6 +493,22 @@ def test_cli_requires_explicit_opt_out_for_flax_default_initialization(tmp_path,
     validate_record(run)
 
 
+def test_cli_preserves_explicit_truncated_reference_initialization(tmp_path, monkeypatch, capsys):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    source.write_text("model:\n  initialization: transformer_truncated_reference\n  rms_norm_fp32: true\n")
+    study = tmp_path / "transformer_200m_4b"
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    model = yaml.safe_load((run / "config.yaml").read_text())["model"]
+    assert model["initialization"] == "transformer_truncated_reference"
+    assert model["rms_norm_fp32"] is True
+    assert model["qk_norm"] is True
+    validate_record(run)
+
+
 def test_cli_allows_explicit_plain_qk_opt_out(tmp_path, monkeypatch, capsys):
     from scaffolds.records.__main__ import main
 
@@ -559,3 +577,17 @@ def test_cli_keeps_backends_without_a_mosaic_kernel_or_already_mosaic(tmp_path, 
     main()
     run = Path(capsys.readouterr().out.strip())
     assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_backend"] == model["attention_backend"]
+
+
+@pytest.mark.parametrize("umask,mode", [(0o022, 0o644), (0o002, 0o664), (0o077, 0o600)])
+def test_records_written_atomically_follow_the_process_umask(tmp_path, umask, mode):
+    previous = os.umask(umask)
+    try:
+        study = tmp_path / "study"
+        run = create_run(study, recipe())
+        update_record(run, {"status": "running"})
+        regenerate_index(study)
+    finally:
+        os.umask(previous)
+    for path in (run / "config.yaml", run / "record.json", study / "sweep.yaml", study / "runs.csv"):
+        assert stat.S_IMODE(path.stat().st_mode) == mode, path.name

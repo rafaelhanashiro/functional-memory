@@ -1,0 +1,2739 @@
+{
+  "candidate_status_counts": {
+    "accepted": 4
+  },
+  "completed_at_utc": "2026-10-22T04:29:56.411518+00:00",
+  "configuration": {
+    "budget_policy": "checked between candidates; an ongoing compilation is not interrupted",
+    "candidates": [
+      {
+        "block_k": 64,
+        "block_q": 64,
+        "id": "q64_k64_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "id": "production",
+        "uses_kernel_defaults": true
+      }
+    ],
+    "coefficient_formula": "(beta + alpha*tanh(z))/r!: beta=1+.2*tanh(N), alpha=.4*tanh(N), z=N",
+    "degrees": [
+      8,
+      12
+    ],
+    "dtype": "bfloat16",
+    "iterations": 10,
+    "key_factor_formula": "1+.3*tanh(N), independently varying by batch/token/head/degree",
+    "max_minutes": 10.0,
+    "objective": "sum(float32(output)*float32(dynamic_cotangent)); output returned as aux; gradients all five operands",
+    "parity": "global and every batch/head; coefficient/factor gradients also each degree and head/degree; limits relative L2 and 3x relative max",
+    "precision": "unchanged production FP32 polynomial and BF16x3 mixed products",
+    "reference": "production 64x64/4warp/2stage, independent immutable host copies; not an independent correctness oracle",
+    "score_formula": "score_scale*cosine(q,k), normalized before BF16 conversion",
+    "score_scale": 8.0,
+    "seed": 0,
+    "shape": [
+      32,
+      2048,
+      16,
+      64
+    ],
+    "timing": "synchronized resident compiled calls; no compilation, copies, or comparisons",
+    "warmup": 3
+  },
+  "created_at_utc": "2026-10-22T04:29:20.956918+00:00",
+  "elapsed_seconds": 35.23555894009769,
+  "format": "query-key-polynomial-tile-tuning",
+  "provenance": {
+    "device": {
+      "description": "cuda:0",
+      "id": 0,
+      "kind": "NVIDIA H100 80GB HBM3",
+      "platform": "gpu",
+      "process_index": 0
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "223789",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": null
+    },
+    "hostname": "dogo.csail.mit.edu",
+    "package_versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda12-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cudnn-cu12": "9.22.0.52"
+    },
+    "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "source_commit": "618f442adb701b222f8b78fa9d9ab592c4301d84",
+    "source_dirty": false,
+    "source_sha256": {
+      "scaffolds/transformer/attention/__init__.py": "0a21df8dcefe750872141602b4c96aff999c403997438957926250c916cb2913",
+      "scaffolds/transformer/attention/backends/__init__.py": "fc73b96b509d55a0f8a4df7d0cf1cc1ec2c3888d89e7173e4bc5e463a60307e1",
+      "scaffolds/transformer/attention/backends/chunked_gla_triton.py": "41414d6211c843e4baf595d6f4e10da6711ac3cc0a6cc742b33166315b38c554",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/__init__.py": "ef92364015dd7b51126b31aa2b8d02bb351c576851c1a975b003cb7f398b5317",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "c8fc64909df8487d5b02f1d4af8a41af6b075faf0be34803b51f09a0f7471289",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "07c78127f6ae50107d51f2acfcd5982f3b97e95c4cee1787eff401cd90b69389",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "37b1b0fad5a8ea13c0ebdd9c798d4a868fe385ccb8dc234ac8d80db5b2feec15",
+      "scaffolds/transformer/attention/backends/fla_independent_gated_delta_rule_kernels.py": "06bedf24690a1180660df5eb927a04719a0ff341410461d9e8dc3e051d4ee264",
+      "scaffolds/transformer/attention/backends/fla_path_attention.py": "26e19eb6f7bbbc523b79aa3fe0f3f51f71c9cb6ad422ece5ef10cecc45b52dc3",
+      "scaffolds/transformer/attention/backends/fla_path_attention_kernels.py": "82b13d08a02984b857c40f69ef581294b55c997bcb85ad282b8f7a650e8b5e98",
+      "scaffolds/transformer/attention/backends/fla_path_polynomial_kernels.py": "48d3fe6001eb878c2b9951d2321059e4c5ac5d3caf402f49d9bb619feddf10f2",
+      "scaffolds/transformer/attention/backends/fused_learned_polynomial.py": "39fb6f0f882ed4cb0227dddff7480398eddc2210b3efb9f810b698b13d52903e",
+      "scaffolds/transformer/attention/backends/fused_normalized_polynomial.py": "5ddf0f0590e7a84586fce84a6231ff9d870c61f634b56b02aa804602513bd770",
+      "scaffolds/transformer/attention/backends/fused_quadratic.py": "0f0fca19c8af2d7d616c9e96d788c86c58d8a226db69e4f5cb36b1c39b246fef",
+      "scaffolds/transformer/attention/backends/fused_query_key_polynomial.py": "2d6479a8ae47657553a290bd4c4be5e8de24c59374f9b54dfc76c03a912feb7d",
+      "scaffolds/transformer/attention/backends/fused_query_polynomial.py": "06b65fa98394728709beae046848a57427dac9e7b3ccee48371a5d8db22be80c",
+      "scaffolds/transformer/attention/backends/fused_taylor.py": "b0eccdbff0701b02be950f64ab5db5a1dcaff0c6fca8b68c01fd3277ef2d157a",
+      "scaffolds/transformer/attention/backends/fused_unnormalized.py": "97f01d04d630e256fe1a1506574030045526a510b0108e31a9bdc783c2d2b99d",
+      "scaffolds/transformer/attention/backends/mosaic/__init__.py": "895aaddb244c2f1e7967a80668ca7f97199446c0db8e08776a95cbbd0b4e3034",
+      "scaffolds/transformer/attention/backends/mosaic/api.py": "9642ec94aa1ef4548491b61b01f214e17c000b5e7b576df4472b30cb1292194f",
+      "scaffolds/transformer/attention/backends/mosaic/blackwell.py": "e4c4394dbe4c07ccb04c370243163591e4bef87e26c44e1e3c38b348662be0ac",
+      "scaffolds/transformer/attention/backends/mosaic/common.py": "5f681f7f564bf1fd8305e1c33218d3e6e665f8405e2fd26a582957381d22233e",
+      "scaffolds/transformer/attention/backends/mosaic/hopper.py": "aac192218b95592665b3f74da417027e425eb993460a3ef8f3d98f86d90b45a9",
+      "scaffolds/transformer/attention/backends/polynomial_gdn.py": "443248e13f7b5bbea675f33c78e29f969043f76d36dad8f65420c41a495e1ac2",
+      "scaffolds/transformer/attention/backends/polynomial_gdn_kernels.py": "98f2edab325a3ab75bb79f932f5ad85ca9313b246db99bdefbcb82e64cb4588b",
+      "scaffolds/transformer/attention/backends/reference.py": "b9b1ff122d8dd9e8e42cd8001c7d592c27c06eb49b116359c419b7ff6316773e",
+      "scaffolds/transformer/attention/backends/selection.py": "f5e92bd344414b18e495df6160acbc6fa7bfafb827a8bbd95f7311f253304213",
+      "scaffolds/transformer/attention/backends/triton_port.py": "bf7323f3dfe4b9deb089d4c11a7c959c781e892c55d6db990ec234b1a9e2597b",
+      "scaffolds/transformer/attention/core.py": "a7a6a93c12452c3fea43794642245662e77821d1bf8ed9c40df1b75bc5003b62",
+      "scaffolds/transformer/attention/gated_deltanet.py": "cd8f10f8fdcf602daf372905d8e690f8f43a77a575ac2a99b8415a734e446a6e",
+      "scaffolds/transformer/attention/gla.py": "15fcedae8355786adcf0c386d8d597065bdd5e412011c6eb12bfa7d1592fa72a",
+      "scaffolds/transformer/attention/input_dependent.py": "77a4dfb7ef07166aef61b225d44f73faa84a3a760b476d7718cadc8568be355f",
+      "scaffolds/transformer/attention/learned_polynomial.py": "ffcc1cc0eef829864f13bfb4413e14f97c3c4390e879492947d07d73199b88dd",
+      "scaffolds/transformer/attention/learned_quadratic.py": "2dd52c7b2f839836f8b7ea799ab382d8974957160902cc30d6c710a00b9b4f40",
+      "scaffolds/transformer/attention/multihead.py": "9c7c928be6a9ad03798aa5bf45370187b2b4a4ed815e2cfdeec0b8964271ba0d",
+      "scaffolds/transformer/attention/nonnegative_polynomial.py": "e9162adc1772395c4e677350d0a8938d12e523ea371cae3db037ec50d4e82df6",
+      "scaffolds/transformer/attention/output_scaling.py": "575d9ea927319a3d55039b621e7ff00028aca0d3b06085168edf9609f78bd708",
+      "scaffolds/transformer/attention/parameters.py": "ea2293cf979d7dfd048850c3ce859d60e7b137cce563b735036b2d1522d6b831",
+      "scaffolds/transformer/attention/path.py": "a0aa3a256501cab961a4fdf0517ada6f255642e8016765505dbd6520912712ee",
+      "scaffolds/transformer/attention/polynomial_gdn_reference.py": "ea10043a9e9077bc870f594c71aeb0d5d098788a8e50c1b93df25a92ba8df25b",
+      "scaffolds/transformer/attention/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269",
+      "scaffolds/transformer/attention/qk_norm.py": "919e84929d39664444267a2e5446c8e715b007129a7211168d33c6f7afac4f65",
+      "scaffolds/transformer/attention/rational_polynomial.py": "83907937199331c5f1815369543a83a1372e8154343ae072c48a12a9d0b823f9",
+      "scaffolds/transformer/attention/softmax.py": "47470b42e8e212c91a5044d448f4c36b4d30b9d0b581d3153e6fb73f91f4b04d",
+      "scaffolds/transformer/attention/taylor.py": "550a930352ac08533bf345508a9382a039c1caa27fba2e1b67659dbe27f768a1",
+      "scaffolds/transformer/attention/unnormalized.py": "327957b89995b8edb6eb70c3b994b0bf3c1de750813d87979378f2a0bc153155",
+      "scaffolds/transformer/benchmarks/benchmark_attention.py": "e07681b2c193e6a2c5642d150bc9a8d39b3ffd87de9812ea281010b21f9ec400",
+      "scaffolds/transformer/benchmarks/tune_query_key.py": "ba61cc729d60f392f38065df289c82419b58de26ee2892934e700e8bd9ad2091",
+      "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ]
+  },
+  "results": [
+    {
+      "baseline": {
+        "config": {
+          "block_k": 64,
+          "block_q": 64,
+          "id": "q64_k64_w4_s2",
+          "num_stages": 2,
+          "num_warps": 4
+        },
+        "forward": {
+          "compilation_seconds": 0.8944602648261935,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 478150656,
+            "available": true,
+            "generated_code_size_in_bytes": 60352,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 134217728,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 339738624
+          },
+          "max_ms": 4.909086041152477,
+          "median_ms": 4.796844092197716,
+          "min_ms": 4.7440920025110245,
+          "p10_ms": 4.7673947410658,
+          "p90_ms": 4.896891000680625,
+          "samples_ms": [
+            4.7440920025110245,
+            4.7727341298013926,
+            4.779482958838344,
+            4.769983934238553,
+            4.779584007337689,
+            4.814104177057743,
+            4.862115951254964,
+            4.909086041152477,
+            4.895535996183753,
+            4.89176600240171
+          ],
+          "timed_iterations": 10,
+          "warmup_iterations": 3
+        },
+        "forward_backward": {
+          "compilation_seconds": 4.849554636050016,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 612368384,
+            "available": true,
+            "generated_code_size_in_bytes": 281656,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 612368444,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 339739224
+          },
+          "max_ms": 138.79721495322883,
+          "median_ms": 76.41446439083666,
+          "min_ms": 76.18956011720002,
+          "p10_ms": 76.28406167495996,
+          "p90_ms": 82.68974816892293,
+          "samples_ms": [
+            76.18956011720002,
+            138.79721495322883,
+            76.4516550116241,
+            76.41334389336407,
+            76.2945618480444,
+            76.33196306414902,
+            76.38908387161791,
+            76.41990412957966,
+            76.41558488830924,
+            76.45558519288898
+          ],
+          "timed_iterations": 10,
+          "warmup_iterations": 3
+        },
+        "is_baseline": true,
+        "parity": {
+          "backward_forward": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.006,
+            "relative_max_tolerance": 0.018000000000000002
+          },
+          "forward": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.006,
+            "relative_max_tolerance": 0.018000000000000002
+          },
+          "gradient_coefficients": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_degree": [
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 0,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 2,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 3,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 4,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 5,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 6,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 7,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 8,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              }
+            ],
+            "per_head_degree": {
+              "accepted": true,
+              "count": 144,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_factors": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_degree": [
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 0,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 2,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 3,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 4,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 5,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 6,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 7,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 8,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              }
+            ],
+            "per_head_degree": {
+              "accepted": true,
+              "count": 144,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_k": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_q": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_v": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.015,
+            "relative_max_tolerance": 0.045
+          },
+          "objective": {
+            "absolute_error": 0.0,
+            "accepted": true,
+            "actual": -1401.34375,
+            "policy": "finite only; scalar objective can cancel",
+            "reference": -1401.34375
+          }
+        },
+        "status": "accepted"
+      },
+      "best": {
+        "forward": {
+          "candidate": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "median_ms": 4.796844092197716,
+          "speedup_over_baseline": 1.0
+        },
+        "forward_backward": {
+          "candidate": {
+            "id": "production",
+            "uses_kernel_defaults": true
+          },
+          "median_ms": 28.356004506349564,
+          "speedup_over_baseline": 2.6948248076955164
+        }
+      },
+      "candidates": [
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.8944602648261935,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 478150656,
+              "available": true,
+              "generated_code_size_in_bytes": 60352,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 134217728,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 339738624
+            },
+            "max_ms": 4.909086041152477,
+            "median_ms": 4.796844092197716,
+            "min_ms": 4.7440920025110245,
+            "p10_ms": 4.7673947410658,
+            "p90_ms": 4.896891000680625,
+            "samples_ms": [
+              4.7440920025110245,
+              4.7727341298013926,
+              4.779482958838344,
+              4.769983934238553,
+              4.779584007337689,
+              4.814104177057743,
+              4.862115951254964,
+              4.909086041152477,
+              4.895535996183753,
+              4.89176600240171
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 4.849554636050016,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 612368384,
+              "available": true,
+              "generated_code_size_in_bytes": 281656,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 612368444,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 339739224
+            },
+            "max_ms": 138.79721495322883,
+            "median_ms": 76.41446439083666,
+            "min_ms": 76.18956011720002,
+            "p10_ms": 76.28406167495996,
+            "p90_ms": 82.68974816892293,
+            "samples_ms": [
+              76.18956011720002,
+              138.79721495322883,
+              76.4516550116241,
+              76.41334389336407,
+              76.2945618480444,
+              76.33196306414902,
+              76.38908387161791,
+              76.41990412957966,
+              76.41558488830924,
+              76.45558519288898
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": true,
+          "parity": {
+            "backward_forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_coefficients": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 5,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 6,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 7,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 8,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 144,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_factors": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 5,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 6,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 7,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 8,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 144,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "absolute_error": 0.0,
+              "accepted": true,
+              "actual": -1401.34375,
+              "policy": "finite only; scalar objective can cancel",
+              "reference": -1401.34375
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "id": "production",
+            "uses_kernel_defaults": true
+          },
+          "forward": {
+            "compilation_seconds": 0.8942873619962484,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 478150656,
+              "available": true,
+              "generated_code_size_in_bytes": 60352,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 134217728,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 339738624
+            },
+            "max_ms": 4.9120960757136345,
+            "median_ms": 4.7980379313230515,
+            "min_ms": 4.769332939758897,
+            "p10_ms": 4.785056761465967,
+            "p90_ms": 4.86155110411346,
+            "samples_ms": [
+              4.769332939758897,
+              4.795842804014683,
+              4.793223924934864,
+              4.786803852766752,
+              4.789564060047269,
+              4.80023305863142,
+              4.835854051634669,
+              4.837584914639592,
+              4.855934996157885,
+              4.9120960757136345
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.8258451118599623,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 612368384,
+              "available": true,
+              "generated_code_size_in_bytes": 128824,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 612368444,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 339739224
+            },
+            "max_ms": 28.885375009849668,
+            "median_ms": 28.356004506349564,
+            "min_ms": 28.23326108045876,
+            "p10_ms": 28.236798872239888,
+            "p90_ms": 28.572969743981957,
+            "samples_ms": [
+              28.885375009849668,
+              28.538258047774434,
+              28.406725032255054,
+              28.454846004024148,
+              28.407854959368706,
+              28.23719196021557,
+              28.305283980444074,
+              28.28626288101077,
+              28.29374303109944,
+              28.23326108045876
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "backward_forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_coefficients": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.6340972618688413e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 2.2752326594013055e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7051004447794007e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.705150106382705e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6990200638693556e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.692196140469964e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.679451627064129e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 5,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6723269957495193e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 6,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6597575738840558e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 7,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6532955341529933e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 8,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6322993361458424e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 144,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.7347534100654775e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_factors": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.6968772422427493e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.827308720740077e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7008523294731866e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.702548807576564e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.694196868151694e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6891173255734003e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6812679590808042e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 5,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6662380237368539e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 6,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.657517713571157e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 7,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6475644018759644e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 8,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6333755407151785e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 144,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.7353902884925471e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.560080226197339e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 9.108940309584501e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.4775877532617655e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 8.802602208356385e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.590260005980876e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 8.38291025514488e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "absolute_error": 0.0,
+              "accepted": true,
+              "actual": -1401.34375,
+              "policy": "finite only; scalar objective can cancel",
+              "reference": -1401.34375
+            }
+          },
+          "status": "accepted"
+        }
+      ],
+      "degree": 8
+    },
+    {
+      "baseline": {
+        "config": {
+          "block_k": 64,
+          "block_q": 64,
+          "id": "q64_k64_w4_s2",
+          "num_stages": 2,
+          "num_warps": 4
+        },
+        "forward": {
+          "compilation_seconds": 0.42941942694596946,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 511705088,
+            "available": true,
+            "generated_code_size_in_bytes": 81280,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 134217728,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 373293056
+          },
+          "max_ms": 9.86258382909,
+          "median_ms": 9.804981877095997,
+          "min_ms": 9.757841005921364,
+          "p10_ms": 9.759244974702597,
+          "p90_ms": 9.852729015983641,
+          "samples_ms": [
+            9.757841005921364,
+            9.821512969210744,
+            9.759400971233845,
+            9.773082099854946,
+            9.800331899896264,
+            9.798842016607523,
+            9.828232927247882,
+            9.80963185429573,
+            9.86258382909,
+            9.851634036749601
+          ],
+          "timed_iterations": 10,
+          "warmup_iterations": 3
+        },
+        "forward_backward": {
+          "compilation_seconds": 7.520439420128241,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 645922816,
+            "available": true,
+            "generated_code_size_in_bytes": 401808,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 645922876,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 373293688
+          },
+          "max_ms": 168.90639695338905,
+          "median_ms": 168.77853451296687,
+          "min_ms": 168.54188893921673,
+          "p10_ms": 168.67695555556566,
+          "p90_ms": 168.87952310498804,
+          "samples_ms": [
+            168.54188893921673,
+            168.80146507173777,
+            168.79089502617717,
+            168.84833597578108,
+            168.90639695338905,
+            168.69771294295788,
+            168.76617399975657,
+            168.87653712183237,
+            168.6919629573822,
+            168.73844317160547
+          ],
+          "timed_iterations": 10,
+          "warmup_iterations": 3
+        },
+        "is_baseline": true,
+        "parity": {
+          "backward_forward": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.006,
+            "relative_max_tolerance": 0.018000000000000002
+          },
+          "forward": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.006,
+            "relative_max_tolerance": 0.018000000000000002
+          },
+          "gradient_coefficients": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_degree": [
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 0,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 2,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 3,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 4,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 5,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 6,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 7,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 8,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 9,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 10,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 11,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 12,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              }
+            ],
+            "per_head_degree": {
+              "accepted": true,
+              "count": 208,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_factors": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_degree": [
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 0,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 2,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 3,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 4,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 5,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 6,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 7,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 8,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 9,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 10,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 11,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 12,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              }
+            ],
+            "per_head_degree": {
+              "accepted": true,
+              "count": 208,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_k": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_q": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_v": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 512,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.015,
+            "relative_max_tolerance": 0.045
+          },
+          "objective": {
+            "absolute_error": 0.0,
+            "accepted": true,
+            "actual": 114847.578125,
+            "policy": "finite only; scalar objective can cancel",
+            "reference": 114847.578125
+          }
+        },
+        "status": "accepted"
+      },
+      "best": {
+        "forward": {
+          "candidate": {
+            "id": "production",
+            "uses_kernel_defaults": true
+          },
+          "median_ms": 9.765131399035454,
+          "speedup_over_baseline": 1.0040808952211826
+        },
+        "forward_backward": {
+          "candidate": {
+            "id": "production",
+            "uses_kernel_defaults": true
+          },
+          "median_ms": 42.818937450647354,
+          "speedup_over_baseline": 3.941679653015659
+        }
+      },
+      "candidates": [
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.42941942694596946,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 511705088,
+              "available": true,
+              "generated_code_size_in_bytes": 81280,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 134217728,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 373293056
+            },
+            "max_ms": 9.86258382909,
+            "median_ms": 9.804981877095997,
+            "min_ms": 9.757841005921364,
+            "p10_ms": 9.759244974702597,
+            "p90_ms": 9.852729015983641,
+            "samples_ms": [
+              9.757841005921364,
+              9.821512969210744,
+              9.759400971233845,
+              9.773082099854946,
+              9.800331899896264,
+              9.798842016607523,
+              9.828232927247882,
+              9.80963185429573,
+              9.86258382909,
+              9.851634036749601
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 7.520439420128241,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 645922816,
+              "available": true,
+              "generated_code_size_in_bytes": 401808,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 645922876,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 373293688
+            },
+            "max_ms": 168.90639695338905,
+            "median_ms": 168.77853451296687,
+            "min_ms": 168.54188893921673,
+            "p10_ms": 168.67695555556566,
+            "p90_ms": 168.87952310498804,
+            "samples_ms": [
+              168.54188893921673,
+              168.80146507173777,
+              168.79089502617717,
+              168.84833597578108,
+              168.90639695338905,
+              168.69771294295788,
+              168.76617399975657,
+              168.87653712183237,
+              168.6919629573822,
+              168.73844317160547
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": true,
+          "parity": {
+            "backward_forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_coefficients": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 5,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 6,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 7,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 8,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 9,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 10,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 11,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 12,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 208,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_factors": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 5,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 6,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 7,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 8,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 9,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 10,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 11,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 12,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 208,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "absolute_error": 0.0,
+              "accepted": true,
+              "actual": 114847.578125,
+              "policy": "finite only; scalar objective can cancel",
+              "reference": 114847.578125
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "id": "production",
+            "uses_kernel_defaults": true
+          },
+          "forward": {
+            "compilation_seconds": 0.42765682889148593,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 511705088,
+              "available": true,
+              "generated_code_size_in_bytes": 81280,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 134217728,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 373293056
+            },
+            "max_ms": 9.842752944678068,
+            "median_ms": 9.765131399035454,
+            "min_ms": 9.728181175887585,
+            "p10_ms": 9.742958890274167,
+            "p90_ms": 9.824456088244915,
+            "samples_ms": [
+              9.728181175887585,
+              9.822423104196787,
+              9.768821997568011,
+              9.820963023230433,
+              9.842752944678068,
+              9.76345082744956,
+              9.744600858539343,
+              9.766811970621347,
+              9.75667079910636,
+              9.750031167641282
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 4.259236101992428,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 645922816,
+              "available": true,
+              "generated_code_size_in_bytes": 172688,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 645922876,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 373293688
+            },
+            "max_ms": 43.44699997454882,
+            "median_ms": 42.818937450647354,
+            "min_ms": 42.755814967677,
+            "p10_ms": 42.75672482326627,
+            "p90_ms": 42.909284331835806,
+            "samples_ms": [
+              43.44699997454882,
+              42.8087068721652,
+              42.755814967677,
+              42.814717860892415,
+              42.82315704040229,
+              42.75682591833174,
+              42.83438716083765,
+              42.83683793619275,
+              42.84953814931214,
+              42.758396128192544
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "backward_forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_coefficients": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.6289080201614508e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.4328865723616877e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7014770034658184e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.70160260060044e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6946921284424673e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6881303778742914e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6805764982807763e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 5,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.675739142696884e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 6,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6656327951835085e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 7,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6590502824314782e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 8,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6413694133738604e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 9,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.640526001094693e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 10,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6239178422402976e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 11,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.5805226781067444e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 12,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6316873812033964e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 208,
+                "failed_count": 0,
+                "max_relative_l2_error": 2.157924304246737e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_factors": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.6969884907610617e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.837061901332284e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7027753356224158e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7027582074807823e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6919794424873584e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6882597460174964e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6754988023646235e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 5,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6697246045142618e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 6,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.656413665441425e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 7,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.646194757122093e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 8,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6399731085571164e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 9,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.608071680704861e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 10,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.5947966608565467e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 11,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6847612157831873e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 12,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.5980680567114256e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 208,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.9529347085400491e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.490380669478699e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 8.882076730556851e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.5591077836867985e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 8.098986048345338e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.536052976748529e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 512,
+                "failed_count": 0,
+                "max_relative_l2_error": 7.865828930319699e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "absolute_error": 0.0,
+              "accepted": true,
+              "actual": 114847.578125,
+              "policy": "finite only; scalar objective can cancel",
+              "reference": 114847.578125
+            }
+          },
+          "status": "accepted"
+        }
+      ],
+      "degree": 12
+    }
+  ],
+  "schema_version": 1,
+  "status": "complete"
+}
