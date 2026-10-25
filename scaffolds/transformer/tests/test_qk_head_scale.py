@@ -19,6 +19,7 @@ from scaffolds.transformer.configs import load_config, validate_config
 from scaffolds.transformer.configs.loader import config_dicts_equal, config_to_dict
 from scaffolds.transformer.models import build_model, model_parameter_count
 from scaffolds.transformer.tests.test_training import tiny_config
+from scaffolds.transformer.tests.test_qk_rms_attention_backends import _smooth_head_scale_reference
 from scaffolds.transformer.training import loop
 from scaffolds.transformer.training.optim import make_optimizer
 from scaffolds.transformer.training.state import create_state
@@ -169,6 +170,29 @@ def test_fixed_control_head_scaling_preserves_initial_function_and_trains(tmp_pa
     before_scale = np.asarray(state.params["qk_norm_head_log_scale"][...])
     after_scale = np.asarray(after.params["qk_norm_head_log_scale"][...])
     assert np.all(after_scale != before_scale)
+
+
+@pytest.mark.parametrize("family", ("exp", "fixed"))
+def test_independent_scalar_oracle_matches_fp64_finite_difference(family):
+    rng = np.random.default_rng(1701)
+    arrays = [rng.normal(size=(1, 7, 3, 8)) for _ in range(3)]
+    arrays += [rng.uniform(.8, 1.2, size=8) for _ in range(2)]
+    arrays += [np.log(np.asarray([[.7], [1.0], [1.3]])), rng.uniform(.8, 1.2, size=(3, 8))]
+    with jax.enable_x64():
+        operands = tuple(jnp.asarray(x, jnp.float64) for x in arrays)
+        reference = lambda gamma: _smooth_head_scale_reference(family, *operands[:5], gamma, operands[6])
+        tangent = jax.jvp(reference, (operands[5],), (jnp.ones_like(operands[5]),))[1]
+        expected = np.asarray(jnp.sum(tangent * tangent, axis=(0, 1, 3)))
+        step = 1e-5
+        for head in range(3):
+            perturbation = jnp.zeros_like(operands[5]).at[head, 0].set(step)
+            finite_difference = (reference(operands[5] + perturbation) - reference(operands[5] - perturbation)) / (2 * step)
+            other_heads = [index for index in range(3) if index != head]
+            np.testing.assert_array_equal(finite_difference[:, :, other_heads], 0)
+            contracted = float(jnp.sum(finite_difference * tangent))
+            np.testing.assert_allclose(contracted, expected[head], rtol=1e-7, atol=1e-8)
+        assert np.all(expected > 0)
+        assert np.unique(np.round(expected, 5)).size == 3
 
 
 @pytest.mark.parametrize("changes", [

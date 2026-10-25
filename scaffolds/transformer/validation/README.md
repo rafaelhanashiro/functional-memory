@@ -19,8 +19,15 @@ head scales for fixed Taylor and unnormalized exp with head-output RMSNorm.
 Acceptance now selects a full-context forward/gradient check for the actual
 control: exp/fused or degree-four fixed Taylor/Mosaic. These checks use distinct
 nonunit scales and check every head's scale gradient, along with Q/K channel
-gains, output gains, and attention inputs. Each allocation must still pass its
-GPU check, full-size pilot, and fresh-process checkpoint resume before production.
+gains, output gains, and attention inputs. Random-cotangent checks retain their
+4% tolerance, including the aggregate head-scale gradient. Each head also uses
+an independent FP32 smooth-attention reference with a tangent-aligned cotangent:
+its positive squared-tangent target avoids a nearly cancelling scalar reduction.
+The per-head tolerance remains 4%. The oracle is checked against FP64 finite
+differences on CPU. The [precision probe](runs/qk-head-controls/precision_probe.py)
+compares full-context BF16 kernel gradients with independent FP32/FP64 references;
+its GPU results are pending. Each allocation must still pass its GPU check,
+full-size pilot, and fresh-process checkpoint resume before production.
 
 ### Per-head RMS QK scaling and reduced dense readout
 

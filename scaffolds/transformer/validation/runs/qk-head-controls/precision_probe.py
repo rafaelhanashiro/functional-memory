@@ -138,6 +138,11 @@ def main():
         # One exact same upstream gradient for all local VJPs, including the dense oracle.
         doutput = jax.vjp(lambda y: scale_attention_output(y, "head_rms_norm", output_norm_scale=gain),
                           kernel_outputs["blocked"])[1](cotangent)[0]
+        output_reference = lambda y: (
+            y / jnp.sqrt(jnp.mean(y * y, axis=-1, keepdims=True) + 1e-6) * gain.astype(y.dtype))
+        doutput64 = jax.vjp(output_reference, kernel_outputs["blocked"].astype(jnp.float64))[1](
+            cotangent.astype(jnp.float64))[0]
+        result["output_rms_bf16_upstream_vs_fp64"] = relative_per_head(doutput, doutput64)
         local = {}
         for name in ("blocked", backend):
             local[name] = jax.jit(lambda q, k, v, dy: jax.vjp(partial(kernel, name), q, k, v)[1](dy))(q, k, v, doutput)
@@ -145,13 +150,18 @@ def main():
         exact_operands = tuple(x.astype(jnp.float64) for x in (q, k, v))
         local64 = jax.jit(lambda q, k, v, dy: jax.vjp(partial(raw_reference, family), q, k, v)[1](dy))(
             *exact_operands, doutput.astype(jnp.float64))
+        local64_unrounded = jax.jit(lambda q, k, v, dy: jax.vjp(partial(raw_reference, family), q, k, v)[1](dy))(
+            *exact_operands, doutput64)
         jax.block_until_ready(local64)
         result["local_common_bf16_upstream"] = {
             name: {key: relative_per_head(a, b) for key, a, b in zip("qkv", host(local[name]), host(local64))}
             for name in local}
         result["local_gamma_contraction"] = {
             name: gamma_contraction(qn, scaled, rotate, value[0], operands[5])
-            for name, value in {**local, "dense_fp64_rounded_dq": local64}.items()}
+            for name, value in {**local, "dense_fp64_rounded_dq": local64,
+                                "dense_fp64_unrounded_upstream": local64_unrounded}.items()}
+        result["local_dq_dk_upstream_rounding_effect"] = {
+            key: relative_per_head(a, b) for key, a, b in zip("qk", host(local64[:2]), host(local64_unrounded[:2]))}
         save()
 
         # A smooth FP64 reference has a well-defined derivative; finite differences

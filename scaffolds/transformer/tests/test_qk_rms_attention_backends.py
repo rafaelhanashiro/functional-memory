@@ -69,6 +69,38 @@ def _vjp(operation, operands, cotangent):
     return output, pullback(cotangent)
 
 
+def _smooth_head_scale_reference(family, *operands):
+    """Independent dense exp/Taylor math, preserving FP32 or FP64 throughout.
+
+    Production helpers explicitly cast their RMS statistics to FP32 and their
+    operands to BF16. This oracle instead differentiates the smooth attention
+    formula and does not share those implementation or rounding decisions.
+    """
+    q, k, v, query_gain, key_gain, gamma, output_gain = operands
+    q = q / jnp.sqrt(jnp.mean(q * q, axis=-1, keepdims=True) + 1e-6) * query_gain
+    k = k / jnp.sqrt(jnp.mean(k * k, axis=-1, keepdims=True) + 1e-6) * key_gain
+    q = q * jnp.exp(gamma)[None, None]
+    dimension = q.shape[-1]
+    frequencies = jnp.arange(q.shape[1], dtype=q.dtype)[:, None] / (
+        10000 ** (2 * jnp.arange(dimension // 2, dtype=q.dtype) / dimension))[None]
+    cos, sin = jnp.cos(frequencies)[None, :, None], jnp.sin(frequencies)[None, :, None]
+
+    def rotate(x):
+        first, second = jnp.split(x, 2, axis=-1)
+        return jnp.concatenate((first * cos - second * sin, second * cos + first * sin), axis=-1)
+
+    scores = jnp.einsum("bthd,bshd->bhts", rotate(q), rotate(k)) / math.sqrt(dimension)
+    causal = jnp.arange(q.shape[1])[:, None] >= jnp.arange(k.shape[1])[None, :]
+    if family == "exp":
+        weights = jnp.exp(jnp.where(causal, scores, -jnp.inf))
+    elif family == "fixed":
+        weights = jnp.where(causal, sum(scores ** r / math.factorial(r) for r in range(5)), 0)
+    else:
+        raise ValueError(f"Unsupported head-scale control: {family}")
+    output = jnp.einsum("bhts,bshd->bthd", weights, v)
+    return output / jnp.sqrt(jnp.mean(output * output, axis=-1, keepdims=True) + 1e-6) * output_gain
+
+
 def _assert_relative(actual, expected, label, tolerance=0.04):
     actual, expected = np.asarray(actual, np.float64), np.asarray(expected, np.float64)
     assert np.isfinite(actual).all(), label
@@ -101,10 +133,10 @@ def _check_full_context(family, degree, backend, *, head_scale=False):
         names.append("key_factors")
     for name, got, want in zip(names, actual[1], expected[1], strict=True):
         if name == "head_log_scale":
-            # Every head must learn its own scalar; an aggregate norm can hide
-            # an omitted gradient for a head with a smaller reference gradient.
-            for head in range(got.shape[0]):
-                _assert_relative(got[head], want[head], f"d{name}[h={head}]")
+            # Random scalar contractions can nearly cancel even when the local
+            # BF16 VJPs agree. Keep their aggregate check and independently probe
+            # every head with the well-conditioned cotangent below.
+            _assert_relative(got, want, f"d{name}")
         elif name in ("stored_coefficients", "key_factors"):
             # Orderwise checks prevent a correct constant gradient from hiding a
             # missing or incorrectly factorial-scaled high-order gradient.
@@ -128,3 +160,26 @@ def test_full_context_qk_rms_backend(family, degree, backend):
 def test_full_context_qk_rms_head_scale_backend(family, degree, backend):
     """Fixed controls retain QK/output gains and differentiate each head's scalar."""
     _check_full_context(family, degree, backend, head_scale=True)
+    operands, _ = _inputs(family, degree, head_scale=True)
+    reference_operands = tuple(x.astype(jnp.float32) for x in operands)
+
+    def reference(gamma):
+        return _smooth_head_scale_reference(family, *reference_operands[:5], gamma, reference_operands[6])
+
+    with jax.default_matmul_precision("highest"):
+        tangent = jax.jit(lambda gamma: jax.jvp(reference, (gamma,), (jnp.ones_like(gamma),))[1])(
+            reference_operands[5])
+    cotangent = tangent.astype(jnp.bfloat16)
+    # Heads are independent. For each head, cotangent=dY/dgamma makes the
+    # scalar VJP its squared tangent norm (up to the cotangent's BF16 rounding),
+    # so missing gradients cannot hide behind a cancellation-dominated target.
+    expected = jnp.sum(tangent * cotangent.astype(jnp.float32), axis=(0, 1, 3))[:, None]
+
+    def loss(gamma):
+        output = _operation(family, degree, backend, *operands[:5], gamma, operands[6], head_scale=True)
+        return jnp.sum(output.astype(jnp.float32) * cotangent.astype(jnp.float32))
+
+    actual = jax.jit(jax.grad(loss))(operands[5])
+    assert np.all(np.isfinite(expected)) and np.all(np.asarray(expected) > 1e-8)
+    for head in range(actual.shape[0]):
+        _assert_relative(actual[head], expected[head], f"aligned dhead_log_scale[h={head}]")
