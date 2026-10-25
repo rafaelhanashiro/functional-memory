@@ -16,7 +16,8 @@ CUDA_HOME="$(transformer_cuda_home "$PYTHON")"
 export CUDA_HOME TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
 export PATH="$CUDA_HOME/bin:$PATH" PYTHONPATH="$PWD"
 export EJKERNEL_TRITON_CACHE_COMPILES=1 EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/learned-basis"
-unset JAX_PLATFORMS
+# Match the production launcher, including its CUDA-only JAX backend.
+export JAX_PLATFORMS=cuda
 TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/learned-basis-${SLURM_JOB_ID}.XXXXXX")"
 export TMPDIR
 trap 'rm -rf -- "$TMPDIR"' EXIT

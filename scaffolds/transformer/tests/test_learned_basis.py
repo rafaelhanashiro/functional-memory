@@ -1,6 +1,7 @@
 """Learned scalar bases: independent values/gradients, model ownership and initialization."""
 from dataclasses import replace
 from functools import lru_cache, partial
+from pathlib import Path
 
 from flax import nnx
 import jax
@@ -8,13 +9,13 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from scaffolds.transformer.attention.basis import fit_exp, rbf
+from scaffolds.transformer.attention.basis import projection_from_config
 from scaffolds.transformer.attention.backends.triton_scalar import basis_kernel, scalar_attention
 from scaffolds.transformer.attention.core import attention_core
 from scaffolds.transformer.attention.input_dependent import project_coefficients
 from scaffolds.transformer.attention.output_scaling import scale_attention_output
 from scaffolds.transformer.attention.parameters import attention_parameter_specs, initial_attention_parameter_values
-from scaffolds.transformer.configs import ModelConfig, Config, config_to_dict
+from scaffolds.transformer.configs import ModelConfig, Config, config_to_dict, load_config
 from scaffolds.transformer.models import build_model
 from scaffolds.transformer.training.diagnostics import attention_identity
 from scaffolds.transformer import acceptance
@@ -22,7 +23,12 @@ from scaffolds.transformer import acceptance
 
 @lru_cache
 def projection(count=9):
-    return fit_exp([rbf(float(c), 1.) for c in np.linspace(-6., 6., count)], quadrature_order=128, check_order=256)
+    # Restore the frozen fit exactly as training does. GPU-only workers have
+    # no CPU JAX backend and must never invoke the CPU fitting routine.
+    run = {3: "r4614f6fff21f", 9: "r6e1b71e49350"}[count]
+    root = Path(__file__).resolve().parents[3]
+    recipe = load_config(root / "experiments/attention_scaling/runs" / run / "config.yaml")
+    return projection_from_config(recipe.model.attention_basis)
 
 
 def dense(q, k, v, gain, c, *, count):
@@ -48,7 +54,7 @@ def operation(q, k, v, gain, c, *, count, backend):
 
 
 def check_operator(backend, dtype, count, sharing, *, zero=False):
-    projection(count)  # Fit outside JAX tracing.
+    projection(count)  # Load the frozen recipe outside JAX tracing.
     rng = np.random.default_rng(352)
     shape = (2, 137, 2, 32) if backend == "triton_scalar" else (2, 17, 2, 8)
     q, k, v, go = [jnp.asarray(rng.normal(size=shape), dtype) for _ in range(4)]
