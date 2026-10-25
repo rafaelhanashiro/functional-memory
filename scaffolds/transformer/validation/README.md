@@ -1941,3 +1941,11 @@ Learned weights default to TF32x3 products with FP32 operands: BF16 intermediate
 can introduce a spurious coefficient-scale gradient after RMSNorm. The precision
 probe and qualification launcher live here; full-recipe training and checkpoint
 resume checks remain required on each production allocation.
+
+[Production-environment qualification](runs/learned-basis/production.json) uses
+CUDA-only JAX, loading frozen fits without requiring a CPU fitting backend. Static
+and query-dependent recipes passed 97 and 118 GPU tests, respectively, plus
+full-size 20-update pilots, finite coefficient diagnostics and exact checkpoint
+resumption. Median updates were 6.58 s and 6.80 s (79.7k and 77.0k tokens/s) on
+one H100, with global batch 256, context 2048 and microbatch 16. These are startup
+pilot measurements; the full-budget projections are 14.85 and 15.43 hours.

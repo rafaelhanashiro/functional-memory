@@ -1,0 +1,40 @@
+{
+  "hardware": "NVIDIA H100 80GB HBM3",
+  "home_cluster": "kennel",
+  "jax_platforms": "cuda",
+  "runs": [
+    {
+      "median_update_seconds": 6.579398598987609,
+      "pilot_diagnostics_valid": true,
+      "pilot_steps": 20,
+      "projected_training_hours": 14.852425381815863,
+      "resumed_final_step": 21,
+      "resumed_from_step": 20,
+      "run_id": "r55b028eb88a6",
+      "slurm_job_id": "225077",
+      "tests_passed": {
+        "cpu-distributed-tests": 9,
+        "cpu-tests": 329,
+        "gpu-tests": 97
+      },
+      "tokens_per_second": 79686.31055134335
+    },
+    {
+      "median_update_seconds": 6.804801156045869,
+      "pilot_diagnostics_valid": true,
+      "pilot_steps": 20,
+      "projected_training_hours": 15.434683423447876,
+      "resumed_final_step": 21,
+      "resumed_from_step": 20,
+      "run_id": "r564c8c864d15",
+      "slurm_job_id": "225078",
+      "tests_passed": {
+        "cpu-distributed-tests": 9,
+        "cpu-tests": 429,
+        "gpu-tests": 118
+      },
+      "tokens_per_second": 77046.77741159053
+    }
+  ],
+  "source_commit": "3f009173139a41aaf28545aefbe66257862d0a1e"
+}
