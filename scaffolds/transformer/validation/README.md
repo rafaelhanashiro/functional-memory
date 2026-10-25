@@ -292,7 +292,9 @@ gradients stay within 2.5x the blocked BF16 path's own rounding (floor 3%) at th
 Worst whole-parameter relative L2 against FP32, blocked BF16 / Mosaic BF16 (B300, job
 `225366`). **Limitation:** with strongly signed coefficients (`V` std 0.3) at degree 2, the
 canonical BF16 weight precision rounds the coefficient-bias gradient to 7.6–8.3% against
-1.9–3.2% for blocked BF16; that case is an expected, non-strict test failure. Degree-2
+1.9–3.2% for blocked BF16. That case is a validation-only, expected failure
+(`tests/test_dense_query_stress.py`) outside production acceptance, which requires every
+case to pass. Degree-2
 fixed and original-query controls share the same kernel numerics. Each production
 allocation repeats acceptance, including initialization identity, a pilot and a
 fresh-process checkpoint resume.

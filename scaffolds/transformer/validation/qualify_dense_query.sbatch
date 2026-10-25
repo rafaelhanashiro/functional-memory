@@ -20,5 +20,5 @@ export PATH="$CUDA_HOME/bin:$PATH"
 printf 'job=%s source=%s environment=%s\n' "$SLURM_JOB_ID" "$LAUNCH_COMMIT" "$TRANSFORMER_CUDA_ENVIRONMENT"
 nvidia-smi --query-gpu=name,uuid,temperature.gpu,clocks.current.sm --format=csv
 BACKEND=scaffolds/transformer/tests/test_qk_rms_attention_backends.py::test_full_context_qk_rms_backend
-"$PYTHON" -m pytest -q -rA scaffolds/transformer/tests/test_dense_query_readout.py \
+"$PYTHON" -m pytest -q -rA scaffolds/transformer/tests/test_dense_query_readout.py scaffolds/transformer/tests/test_dense_query_stress.py \
   "$BACKEND[query-2-mosaic]" "$BACKEND[fixed-2-mosaic]" "$BACKEND[query-4-mosaic]" "$BACKEND[query-8-mosaic]"
