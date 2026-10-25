@@ -216,7 +216,10 @@ parameters therefore receive the same budget convention. The fixed 9-RBF
 comparison is `r6e1b71e49350`; results remain in the
 [RBF exploratory topic](../../results/exploratory/rbf_basis/README.md).
 
-Submitted Slurm jobs: **225077** (static) and **225078** (query-dependent).
+Both runs completed their full budgets on 2026-10-25: Slurm jobs **225077**
+(static) and **225078** (query-dependent). Each retains its validation-best
+checkpoint, which is also terminal, and native offline W&B history. Quality
+findings are in the [RBF exploratory topic](../../results/exploratory/rbf_basis/README.md#learned-9-rbf-comparison).
 
 Home cluster: **Kennel**, worktree `worktrees/rbf-learned-9`, branch
 `codex/rbf-learned-9`. Each run uses one H100. Native coefficient gradients are

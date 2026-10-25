@@ -47,9 +47,23 @@ quality: static per-layer/head weights (`r55b028eb88a6`) and query-dependent
 `b + a*tanh(x W)` weights (`r564c8c864d15`). Both initialize at the same fitted
 kernel as fixed control `r6e1b71e49350`; centers and widths stay fixed.
 The [study recipe](../../../experiments/attention_scaling/README.md#learned-9-rbf-coefficients-at-1-chinchilla)
-specifies initialization, exact budgets and launch commands. These runs enter no
-quality selection until measurements are available. The open decision now also
-includes whether to promote coefficient learning and input dependence.
+specifies initialization, exact budgets and launch commands. Both runs completed
+on 2026-10-25, with finite diagnostics and their terminal checkpoint also validation
+best. Their measurements remain outside the canonical attention-scaling selection.
+
+| Coefficients | Run ID | Training tokens | Terminal validation NLL | Terminal validation PPL |
+| --- | --- | ---: | ---: | ---: |
+| Static learned | `r55b028eb88a6` | 3,998,744,576 | 2.764058 | 15.864093 |
+| Query-dependent learned | `r564c8c864d15` | 4,028,104,704 | 2.757587 | 15.761758 |
+
+Query dependence lowers terminal perplexity by 0.65% in these seed-zero runs.
+Its additional parameters also receive additional training tokens under the same
+20-tokens-per-parameter convention. At the common 7,600-update checkpoint
+(3,984,588,800 tokens), perplexities are 15.866787 and 15.774150, respectively;
+their learning-rate schedules still differ with their total budgets. This small
+single-seed difference does not establish a robust advantage. Both retain native
+offline W&B histories for upload once project permissions permit it. The open
+decision includes whether to promote coefficient learning and input dependence.
 
 ## Findings and open decision
 
@@ -106,9 +120,10 @@ schedule and is not included in this figure.
 | Gated DeltaNet (210.8M parameters) | `rdf74e4289926` | 10.000 | 13.594 | terminal |
 <!-- END RBF COMPARISON -->
 
-The open decision is whether to promote this comparison into the canonical
-attention-scaling collection. Learned RBF coefficients have not been tested;
-the current native Triton callback and frozen recipes implement fixed fits.
+The open decision is whether to promote the fixed-basis comparison and the
+learned-coefficient experiments into the canonical attention-scaling collection.
+The 10B-token figure above uses fixed coefficients; the learned 1× results are
+reported separately above.
 
 ## Regeneration
 
