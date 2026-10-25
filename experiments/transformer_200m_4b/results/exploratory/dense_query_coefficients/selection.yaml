@@ -23,6 +23,10 @@ comparison:
     feature_count: 9
     primary_run_id: rfccffdd239dd
     baseline_run_id: r98403594f227
+  head_scale_controls:
+    primary_run_id: r04a5b2a3e8dd
+    fixed_taylor_control_run_id: r816ab0fbe119
+    exponential_reference_run_id: r6a76e7fbde45
 runs:
 - study: transformer_200m_4b
   run_id: rb83b6290a229
@@ -215,3 +219,19 @@ runs:
     metadata.json:
       path: experiments/transformer_200m_4b/runs/rfccffdd239dd/metadata.json
       sha256: f7162afb8653b06a45b48291abc60dfcd9d7c9ac37b5aec8adac351a8e726d25
+- study: transformer_200m_4b
+  run_id: r816ab0fbe119
+  label: fixed-m4-head-scale
+  role: head_scale_fixed_taylor_control
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/config.yaml
+      sha256: 56b8c0fc0d776c44822e1a22d2608f3de96354702f17da43fac0e4dbf994abc5
+- study: transformer_200m_4b
+  run_id: r6a76e7fbde45
+  label: exp-head-scale
+  role: head_scale_exponential_reference
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r6a76e7fbde45/config.yaml
+      sha256: 599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6

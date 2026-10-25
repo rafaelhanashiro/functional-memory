@@ -1,0 +1,13 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r6a76e7fbde45/config.yaml",
+    "sha256": "599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6"
+  },
+  "home_cluster": "kennel",
+  "label": "exp-head-scale",
+  "name": "exp-head-scale",
+  "record_schema_version": 1,
+  "run_id": "r6a76e7fbde45",
+  "seed": 42,
+  "status": "planned"
+}

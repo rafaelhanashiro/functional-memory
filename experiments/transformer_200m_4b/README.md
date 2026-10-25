@@ -186,3 +186,38 @@ done
 The shared launcher qualifies the new head-scale and dense-readout gradients,
 reference initialization, full-size pilot, and checkpoint resumption on the
 allocated GPU before production. Keep these run IDs for resumptions.
+
+### Controls with matching per-head QK scaling
+
+Two fresh full-budget runs provide controls for the current degree-four dense run
+`r04a5b2a3e8dd`: `r816ab0fbe119` (`fixed-m4-head-scale`) uses fixed degree-four
+Taylor coefficients, and `r6a76e7fbde45` (`exp-head-scale`) uses the exact
+unnormalized exponential. Both retain per-head attention-output RMSNorm, the
+existing QK RMSNorm channel gains, and `model.qk_norm_head_scale: true`. They use
+`transformer_truncated_reference`, seed 42, global batch 256, and the same
+7,570-update learning-rate schedule. The fixed Taylor control uses Mosaic; the
+exponential reference uses the fused backend.
+
+The fixed Taylor comparison isolates the coefficient-generator choice under the
+same QK setup. The current dense run retains its nine features and one-third dense
+mixing contribution; the controls have fixed coefficients and no dense readout.
+The exponential run supplies a reference with the same QK and output scaling.
+Findings and explicit selections stay in the existing
+[dense coefficient topic](results/exploratory/dense_query_coefficients/README.md).
+
+From `worktrees/qk-head-controls-4b`, after syncing both locked environments and
+committing the frozen inputs, submit each independently:
+
+```bash
+for run in r6a76e7fbde45 r816ab0fbe119; do
+  sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --job-name="$run" \
+    --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+    --error="experiments/transformer_200m_4b/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+    "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
+Each allocation must pass the shared launcher's acceptance checks, full-model
+pilot, and checkpoint-resumption checks before production starts from update zero.

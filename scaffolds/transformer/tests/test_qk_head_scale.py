@@ -145,6 +145,32 @@ def test_head_scales_are_fp32_not_decayed_and_train(tmp_path):
     assert np.any(np.asarray(after.params[spec.name][...]) != np.asarray(state.params[spec.name][...]))
 
 
+@pytest.mark.parametrize("degree", (None, 4), ids=("exp", "fixed-taylor-4"))
+def test_fixed_control_head_scaling_preserves_initial_function_and_trains(tmp_path, degree):
+    config = tiny_config(tmp_path)
+    config.model = replace(
+        config.model, attention_backend="blocked", attention_degree=degree,
+        attention_normalization=False, attention_output_scaling="head_rms_norm",
+        qk_norm=True, qk_norm_type="rms_norm", qk_norm_sharing="per_layer",
+        qk_norm_head_scale=True, initialization="transformer_truncated_reference")
+    validate_config(config)
+    model = build_model(config.model, 17)
+    baseline = build_model(replace(config.model, qk_norm_head_scale=False), 17)
+    tokens = jnp.arange(16).reshape(4, 4) % 16
+    np.testing.assert_array_equal(model(tokens), baseline(tokens))
+    params = nnx.state(model, nnx.Param)
+    assert params["qk_norm_head_log_scale"].shape == (config.model.num_layers, config.model.num_heads, 1)
+    for name in ("qk_norm_q_gain", "qk_norm_k_gain"):
+        np.testing.assert_array_equal(params[name][...], nnx.state(baseline, nnx.Param)[name][...])
+    state = create_state(config, jax.random.key(13))
+    after, loss, _ = loop.train_step(
+        state, jnp.arange(20).reshape(4, 5) % 16, jax.random.key(2), check_all_gradients=True)
+    assert np.isfinite(float(loss))
+    before_scale = np.asarray(state.params["qk_norm_head_log_scale"][...])
+    after_scale = np.asarray(after.params["qk_norm_head_log_scale"][...])
+    assert np.all(after_scale != before_scale)
+
+
 @pytest.mark.parametrize("changes", [
     {"qk_norm_head_scale": 1}, {"qk_norm": False}, {"attention_degree": 0},
     {"qk_norm_type": "cosine_log_scale", "qk_norm_sharing": "per_head"},

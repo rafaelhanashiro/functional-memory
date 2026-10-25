@@ -12,3 +12,5 @@ r79da929de109,fixed-m4,fixed_taylor_baseline,,4,,rms_norm,False,1.0,complete,757
 r019ca96d6533,fixed-m8,fixed_taylor_baseline,,8,,rms_norm,False,1.0,complete,7570,3968860160,51.1859,26.2204,21.6599,17.5687,15.4777,14.3765,14.2609,7570,14.2609,7500,14.2561,7570,14.2609,3968860160
 r04a5b2a3e8dd,dense-query-m4-k9-head-scale-vdiv3,dense_head_scale_readout_third,r5397d762caa1,4,9,rms_norm,True,0.3333333333333333,running,7570,3968860160,,,,,,,,,,,,,,
 rfccffdd239dd,dense-query-m8-k9-head-scale-vdiv3,dense_head_scale_readout_third,r98403594f227,8,9,rms_norm,True,0.3333333333333333,running,7570,3968860160,,,,,,,,,,,,,,
+r816ab0fbe119,fixed-m4-head-scale,head_scale_fixed_taylor_control,,4,,rms_norm,True,1.0,planned,7570,3968860160,,,,,,,,,,,,,,
+r6a76e7fbde45,exp-head-scale,head_scale_exponential_reference,,,,rms_norm,True,1.0,planned,7570,3968860160,,,,,,,,,,,,,,

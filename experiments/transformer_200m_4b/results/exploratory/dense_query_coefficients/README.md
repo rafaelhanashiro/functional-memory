@@ -26,8 +26,9 @@ c_r(x) = [b_r + a_r tanh(w_r^T x)] / r!; fixed Taylor is c_r = 1/r!.
 
 Every run repeats the canonical 4B recipe (seed 42, data order 0, global batch 256 x 2048,
 7,570 updates, peak/minimum LR 1e-3/1e-4 with 455 warmup, QK RMSNorm, unnormalized
-attention with per-head output RMSNorm, Mosaic kernel, one GPU) and changes only the
-coefficient generator, degree, and the explicitly selected score/readout scaling.
+attention with per-head output RMSNorm, one GPU) and changes only the attention
+kernel, coefficient generator, degree, and the explicitly selected score/readout
+scaling. Polynomial runs use Mosaic; the exponential reference uses the fused backend.
 
 | Priority | Run | Label | m | K | Generator |
 | --- | --- | --- | ---: | ---: | --- |
@@ -80,6 +81,37 @@ The matched dense controls are `r5397d762caa1` (m=4, K=9) and `r98403594f227`
 and smaller dense readout contributions. It does not distinguish which change
 causes any observed difference. The original query and fixed-Taylor selections
 remain available as reference mechanisms.
+
+## Controls with matching per-head QK scaling
+
+Two fresh controls compare against the current degree-four dense run
+`r04a5b2a3e8dd` with the same QK RMSNorm, shared per-layer Q/K channel gains,
+learned positive scale per layer/head, and per-head attention-output RMSNorm:
+
+| Run | Label | Attention | Comparison role |
+| --- | --- | --- | --- |
+| `r816ab0fbe119` | `fixed-m4-head-scale` | Fixed Taylor, m=4 | Coefficient-generator control |
+| `r6a76e7fbde45` | `exp-head-scale` | Exact unnormalized exponential | Exponential reference |
+
+Both use `transformer_truncated_reference` and train from scratch on the same
+seed-42, global-batch-256, 7,570-update recipe. Each head log scale starts at zero,
+so its initial score multiplier is one. Fixed Taylor uses `c_r = 1/r!`, starts at
+the current dense run's initial polynomial, and keeps its coefficients fixed.
+The exponential reference applies the exact exponential to the scaled scores.
+
+Comparing `r816ab0fbe119` with `r04a5b2a3e8dd` isolates the choice of coefficient
+generator under the same QK setup. The dense run retains its nine tanh features,
+learned Taylor bias, and **one-third mixing contribution**. The two controls have
+no dense readout, so this multiplier applies only to the dense run. The
+exponential reference assesses the exact exponential under the same QK and output
+scaling. All comparisons use matched updates and report terminal and
+validation-best measurements separately.
+
+These controls are allocated in `worktrees/qk-head-controls-4b` and request one
+B300 or H100 each, independently, on Kennel `standard` for 24 hours. The
+[study README](../../../README.md#controls-with-matching-per-head-qk-scaling)
+contains the exact launch commands. Execution status comes from each run's record;
+the pinned selection and regenerated summary keep missing measurements visible.
 
 ## Comparison and status
 

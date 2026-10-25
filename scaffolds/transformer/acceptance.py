@@ -57,6 +57,8 @@ QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polyn
 DENSE_QUERY_READOUT_TESTS = "scaffolds/transformer/tests/test_dense_query_readout.py"
 DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.py"
 QK_HEAD_SCALE_TESTS = "scaffolds/transformer/tests/test_qk_head_scale.py"
+QK_HEAD_SCALE_BACKEND_TESTS = (
+    "scaffolds/transformer/tests/test_qk_rms_attention_backends.py::test_full_context_qk_rms_head_scale_backend")
 COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py"
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
@@ -104,11 +106,22 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if not cpu:
         paths.extend(runtime_test_paths)
     model = config["model"]
-    if (model.get("qk_norm_head_scale", False) or model.get("attention_coefficient_readout_scale", 1.0) != 1.0) and (
+    if (model.get("attention_coefficient_readout", "diagonal") == "dense"
+            and (model.get("qk_norm_head_scale", False) or model.get("attention_coefficient_readout_scale", 1.0) != 1.0)) and (
             cpu or resolved_backend == "mosaic"):
         paths.append(DENSE_MIXING_SCALE_TESTS)
     if cpu and model.get("qk_norm_head_scale", False):
         paths.append(QK_HEAD_SCALE_TESTS)
+    if (not cpu and model.get("qk_norm_head_scale", False)
+            and model.get("attention_mechanism", "dot_product") == "dot_product"
+            and not model.get("attention_normalization", True)
+            and model.get("attention_coefficients", "fixed") == "fixed"
+            and model.get("attention_fixed_coefficients") is None
+            and model.get("attention_fixed_square_factors") is None
+            and (model.get("attention_degree"), resolved_backend) in ((None, "fused"), (4, "mosaic"))):
+        degree = model.get("attention_degree")
+        family = "exp" if degree is None else "fixed"
+        paths.append(f"{QK_HEAD_SCALE_BACKEND_TESTS}[{family}-{degree or 0}-{resolved_backend}]")
     if model.get("positional_encoding", "rope") == "path":
         paths.append(PATH_ATTENTION_TESTS)
         if resolved_backend == "fused":

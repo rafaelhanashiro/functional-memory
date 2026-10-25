@@ -71,6 +71,23 @@ def test_reference_gla_does_not_require_a_fused_kernel():
     assert any(path.endswith("test_gla.py") for path in checks(config, "blocked", True))
 
 
+@pytest.mark.parametrize("degree,backend,family", [(None, "fused", "exp"), (4, "mosaic", "fixed")])
+def test_fixed_head_scale_controls_require_their_own_backend_gate(degree, backend, family):
+    config = recipe(attention_degree=degree, attention_backend=backend, qk_head_dim=64, value_head_dim=64,
+                    attention_normalization=False, attention_output_scaling="head_rms_norm",
+                    qk_norm=True, qk_norm_type="rms_norm", qk_norm_sharing="per_layer",
+                    qk_norm_head_scale=True)
+    expected = ("scaffolds/transformer/tests/test_qk_rms_attention_backends.py::"
+                f"test_full_context_qk_rms_head_scale_backend[{family}-{degree or 0}-{backend}]")
+    for cpu in (False, True):
+        paths = checks(config, backend, cpu)
+        assert (expected in paths) is not cpu
+        assert ("scaffolds/transformer/tests/test_qk_head_scale.py" in paths) is cpu
+        assert not any("dense_mixing_scale" in path for path in paths)
+    config.model.qk_norm_head_scale = False
+    assert expected not in checks(config, backend, False)
+
+
 @pytest.mark.parametrize("changes", [
     {}, {"attention_degree": 0},
     {"attention_degree": 2, "quadratic_mode": "unrestricted"},
