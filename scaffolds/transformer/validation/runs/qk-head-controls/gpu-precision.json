@@ -1,0 +1,106 @@
+{
+  "artifacts": {
+    "log": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/scaffolds/transformer/validation/runs/qk-head-controls/precision-226187.log",
+      "sha256": "477747e7ad2df946961885a30c1fa33e801de1902e20066d4f50c0cd436fd8f1",
+      "size_bytes": 753
+    },
+    "report": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/scaffolds/transformer/validation/runs/qk-head-controls/precision-report.json",
+      "sha256": "475bfde4bee0792b6d8d97e977442174c0d6b72deb92d2295d1879dcab69e7ee",
+      "size_bytes": 107232
+    }
+  },
+  "cluster": "kennel",
+  "completed_utc": "2026-10-25T22:34:02.985617+00:00",
+  "device_kinds": [
+    "NVIDIA H100 PCIe"
+  ],
+  "elapsed_seconds": 30,
+  "families": {
+    "exp": {
+      "aligned_gamma_max_head_relative_error_vs_blocked": 3.976918523056185e-05,
+      "aligned_gamma_max_head_relative_error_vs_fp64": 0.00013024563532341204,
+      "aligned_oracle_min_gamma": 52039.16401686617,
+      "backend": "fused",
+      "degree": null,
+      "local_vjp_max_head_relative_error_vs_fp64": {
+        "k": 0.0016711773524183118,
+        "q": 0.001666565142492097,
+        "v": 0.0016646424038596972
+      },
+      "max_cancellation_ratio_by_implementation": {
+        "blocked": 5272.327468548642,
+        "dense_fp64_rounded_dq": 5274.088569719789,
+        "dense_fp64_unrounded_upstream": 5802.941908290934,
+        "fused": 5278.563774558203
+      },
+      "output_rms_upstream_max_head_relative_rounding_error": 0.0019346454353159329,
+      "random_gamma_aggregate_relative_error_vs_blocked": 0.0054454576875234174,
+      "random_gamma_max_head_relative_error_vs_blocked": 0.06347043078121284
+    },
+    "fixed": {
+      "aligned_gamma_max_head_relative_error_vs_blocked": 7.704268305573025e-05,
+      "aligned_gamma_max_head_relative_error_vs_fp64": 0.00012798096947995547,
+      "aligned_oracle_min_gamma": 48137.51703637552,
+      "backend": "mosaic",
+      "degree": 4,
+      "local_vjp_max_head_relative_error_vs_fp64": {
+        "k": 0.002361126008855857,
+        "q": 0.0023841386961234185,
+        "v": 0.0023991659069871095
+      },
+      "max_cancellation_ratio_by_implementation": {
+        "blocked": 210030.12223570462,
+        "dense_fp64_rounded_dq": 210378.25808511372,
+        "dense_fp64_unrounded_upstream": 100733.4061354539,
+        "mosaic": 76975.54751232345
+      },
+      "output_rms_upstream_max_head_relative_rounding_error": 0.0017689270180983342,
+      "random_gamma_aggregate_relative_error_vs_blocked": 0.008320399319003052,
+      "random_gamma_max_head_relative_error_vs_blocked": 0.7560529566685479
+    }
+  },
+  "gpu_count": 1,
+  "inputs": {
+    "attention_output_scaling": "head_rms_norm",
+    "head_scale_range": [
+      0.7,
+      1.3
+    ],
+    "qk_channel_gains": "independent nonuniform gains"
+  },
+  "limits": [
+    "Synthetic H100 PCIe forward/gradient checks only; no training pilot or checkpoint continuation",
+    "B300 execution is qualified separately by each production allocation acceptance"
+  ],
+  "method": [
+    "Independent dense smooth FP32 and FP64 attention, including RMSNorm and RoPE",
+    "Local kernel VJPs against FP64 at identical prepared BF16 operands and upstream gradient",
+    "Separate output-RMS upstream-gradient rounding and scalar contraction cancellation",
+    "Nonzero tangent-aligned scalar cotangents with independent heads"
+  ],
+  "node": "mastiff",
+  "runtime": {
+    "environment": "cuda12",
+    "matmul_precision": "highest",
+    "oracle_precisions": [
+      "float32",
+      "float64"
+    ],
+    "production_dtype": "bfloat16",
+    "production_x64": false
+  },
+  "script_sha256": "c929851cd153ca29341f55a2e537978ae8752aa33fa854dfdd743438af398e85",
+  "shape": {
+    "batch": 1,
+    "heads": 14,
+    "qk_head_dim": 64,
+    "tokens": 2048,
+    "value_head_dim": 64
+  },
+  "slurm_job_id": "226187",
+  "source_commit": "c08e7a430899bf1fae8790a227eee5168a6d2ee7",
+  "status": "passed",
+  "validation_kind": "synthetic_precision_diagnostic"
+}

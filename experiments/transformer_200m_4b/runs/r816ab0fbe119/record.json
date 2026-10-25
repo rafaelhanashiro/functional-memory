@@ -25,6 +25,22 @@
       "slurm_restart_count": "0",
       "started_utc": "2026-10-25T22:10:33.733574+00:00",
       "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r816ab0fbe119/.runtime/acceptance/B300-1",
+      "allocation": "JobId=226183 JobName=r816ab0fbe119 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20048 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:04 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-25T18:30:24 EligibleTime=2026-10-25T18:30:24 AccrueTime=2026-10-25T18:30:24 StartTime=2026-10-25T18:31:28 EndTime=2026-10-26T18:31:28 Deadline=N/A PreemptEligibleTime=2026-10-25T20:31:28 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-25T18:31:28 Scheduler=Main Partition=standard AllocNode:Sid=kennel:367317 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r816ab0fbe119/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r816ab0fbe119/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_200m_4b/runs/r816ab0fbe119/config.yaml",
+      "config_sha256": "56b8c0fc0d776c44822e1a22d2608f3de96354702f17da43fac0e4dbf994abc5",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "789889b37ee20d688aba71b6deff522eebfb0db8",
+      "slurm_job_id": "226183",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-25T22:31:31.999208+00:00",
+      "stop_after_step": null
     }
   ],
   "config": {
@@ -46,7 +62,7 @@
   "run_id": "r816ab0fbe119",
   "seed": 42,
   "source_commit": "789889b37ee20d688aba71b6deff522eebfb0db8",
-  "status": "submitted",
+  "status": "acceptance",
   "submission": {
     "allocation_seconds": 86400,
     "command": [

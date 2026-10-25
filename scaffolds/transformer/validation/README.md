@@ -25,10 +25,16 @@ an independent FP32 smooth-attention reference with a tangent-aligned cotangent:
 its positive squared-tangent target avoids a nearly cancelling scalar reduction.
 The per-head tolerance remains 4%. The [16 CPU checks](runs/qk-head-controls/cpu-oracle-tests.json)
 include the oracle's agreement with FP64 finite differences.
-The [precision probe](runs/qk-head-controls/precision_probe.py)
-compares full-context BF16 kernel gradients with independent FP32/FP64 references;
-its GPU results are pending. Each allocation must still pass its GPU check,
-full-size pilot, and fresh-process checkpoint resume before production.
+The [GPU precision record](runs/qk-head-controls/gpu-precision.json) and
+[per-head measurements](runs/qk-head-controls/precision-report.json) cover 2,048
+tokens and 14 heads on one H100 PCIe. Random scalar contractions cancel by up to
+210,030-fold. With the tangent-aligned cotangent, the maximum per-head error
+against independent FP64 is 0.0131% for exp/fused and 0.0128% for fixed
+Taylor/Mosaic; local dQ/dK errors stay below 0.239%. This is synthetic precision
+evidence, not training or checkpoint-continuation qualification. B300 acceptance
+is ongoing; each allocation must pass its GPU check, full-size pilot, and
+fresh-process checkpoint resume before production. Regenerate with
+`sbatch scaffolds/transformer/validation/runs/qk-head-controls/precision_probe.sbatch`.
 
 ### Per-head RMS QK scaling and reduced dense readout
 
