@@ -16,32 +16,46 @@ import jax.numpy as jnp
 def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
                     tanh_bias: bool = False, conditioning: str = "query", readout: str = "diagonal",
-                    feature_count: int | None = None):
+                    feature_count: int | None = None, kernel_weight_decay: bool = False):
     """b starts at 1/r!; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial
     and its optional inner bias beta at zero. "query_key" adds the key factor's W_k (same draw
     rule, independent draws) and a_k (same start as a). Dense readout projects onto K =
     feature_count tanh features (degree+1 when null) and mixes them through V [degree+1, K],
-    diagonal at amplitude_initial when K = degree+1 and otherwise zero."""
+    diagonal at amplitude_initial when K = degree+1 and otherwise zero. Sigmoid coefficients
+    have no b or a: W alone, and dense V. kernel_weight_decay decays the query W only."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     if readout not in ("diagonal", "dense"):
         raise ValueError(f"Unknown coefficient readout: {readout}")
-    if readout == "dense" and (activation != "tanh" or conditioning != "query"):
-        raise ValueError("Dense coefficient readout requires tanh query-only coefficients")
+    if readout == "dense" and (activation not in ("tanh", "sigmoid") or conditioning != "query"):
+        raise ValueError("Dense coefficient readout requires tanh or sigmoid query-only coefficients")
     count = degree + 1
     features = count if feature_count is None else feature_count
     if features != count and (readout != "dense" or amplitude_initial != 0):
         raise ValueError("A feature count other than degree+1 requires dense readout with V starting at zero")
+    kernel = AttentionParameterSpec(
+        name="query_polynomial_kernel", argument="query_polynomial_kernel",
+        initial=(0.0,) * (hidden_size * features), initial_shape=(hidden_size, features),
+        sharing="per_head", weight_decay=bool(kernel_weight_decay), initial_std=float(projection_initial_std),
+    )
+    if activation == "sigmoid":
+        if tanh_bias or conditioning != "query":
+            raise ValueError("Sigmoid coefficients are query-only, without an inner bias")
+        if amplitude_initial != 1.0:
+            raise ValueError("Sigmoid coefficients have no amplitude; dense V starts at the identity")
+        if readout == "diagonal":
+            return (kernel,)
+        return (kernel, AttentionParameterSpec(
+            name="query_polynomial_mixing", argument="query_polynomial_mixing",
+            initial=tuple(1.0 if output == feature else 0.0 for output in range(count) for feature in range(features)),
+            initial_shape=(count, features), sharing="per_head", weight_decay=False,
+        ))
     specs = (
         AttentionParameterSpec(
             name="query_polynomial_bias", argument="query_polynomial_bias",
             initial=tuple(1.0 / math.factorial(r) for r in range(count)), sharing="per_head", weight_decay=False,
         ),
-        AttentionParameterSpec(
-            name="query_polynomial_kernel", argument="query_polynomial_kernel",
-            initial=(0.0,) * (hidden_size * features), initial_shape=(hidden_size, features),
-            sharing="per_head", weight_decay=False, initial_std=float(projection_initial_std),
-        ),
+        kernel,
     )
     if activation == "tanh":
         if readout == "dense":
@@ -97,9 +111,37 @@ def _diagonal_readout(features, amplitude, bias, amplitude_scale):
     return jax.lax.optimization_barrier(product + bias)
 
 
+def _sigmoid_coefficients(x, kernel, mixing, amplitude_scale, readout_scale):
+    """FP32 c_r = sigmoid(x w_r) [/ r!], or dense c_r = readout_scale * sum_j (V_rj [/ r!]) sigmoid(x w_j)."""
+    if x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1]:
+        raise ValueError("Sigmoid coefficient projection requires x [B,T,D] and kernel [H,D,K]")
+    if mixing is not None and (mixing.ndim != 3 or mixing.shape[0] != kernel.shape[0]
+                               or mixing.shape[-1] != kernel.shape[-1]):
+        raise ValueError("Dense sigmoid coefficients require a mixing matrix [head,output_order,feature]")
+    if amplitude_scale not in ("none", "factorial"):
+        raise ValueError(f"Unknown amplitude scale: {amplitude_scale}")
+    projected = jnp.einsum(
+        "btd,hdr->bthr", x.astype(jnp.float32), kernel.astype(jnp.float32),
+        precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32,
+    )
+    features = jax.nn.sigmoid(projected)
+    count = kernel.shape[-1] if mixing is None else mixing.shape[1]
+    factorials = jnp.asarray([math.factorial(r) for r in range(count)], jnp.float32)
+    if mixing is None:
+        return features / factorials if amplitude_scale == "factorial" else features
+    mixing = mixing.astype(jnp.float32)
+    if amplitude_scale == "factorial":
+        mixing = mixing / factorials[None, :, None]
+    if readout_scale != 1.0:
+        mixing = mixing * jnp.asarray(readout_scale, jnp.float32)
+    return jnp.einsum("bthj,hrj->bthr", features, mixing,
+                      precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32)
+
+
 def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activation="identity", tanh_bias=None,
                          amplitude_scale="none", readout_scale=1.0):
     """FP32 c=b+xW or c=b+a*tanh(xW+beta); the inner bias beta is optional and otherwise absent.
+    Sigmoid coefficients c=sigmoid(xW) take bias=None (see _sigmoid_coefficients).
 
     A dense mixing matrix V [head,output_order,feature] replaces diagonal amplitude; its K
     features (kernel [H,D,K]) may differ in number from the R = degree+1 coefficients.
@@ -109,8 +151,12 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
     if (isinstance(readout_scale, bool) or not isinstance(readout_scale, (int, float))
             or not math.isfinite(readout_scale) or readout_scale <= 0):
         raise ValueError("Dense readout scale must be finite and positive")
-    if readout_scale != 1.0 and (activation != "tanh" or mixing is None):
-        raise ValueError("A nondefault readout scale requires dense tanh coefficients")
+    if readout_scale != 1.0 and (activation not in ("tanh", "sigmoid") or mixing is None):
+        raise ValueError("A nondefault readout scale requires dense tanh or sigmoid coefficients")
+    if activation == "sigmoid":
+        if bias is not None or amplitude is not None or tanh_bias is not None:
+            raise ValueError("Sigmoid coefficients have no bias, amplitude, or inner bias")
+        return _sigmoid_coefficients(x, kernel, mixing, amplitude_scale, readout_scale)
     if (x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1] or bias.ndim != 2
             or bias.shape[0] != kernel.shape[0]):
         raise ValueError("Query coefficient projection requires x [B,T,D], kernel [H,D,K], bias [H,R]")

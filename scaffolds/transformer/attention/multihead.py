@@ -152,10 +152,10 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Blocked/fused attention requires dropout=0")
         if attention_coefficient_conditioning not in ("static", "query", "query_key"):
             raise ValueError("Unknown attention coefficient conditioning")
-        if attention_coefficient_activation not in ("identity", "tanh"):
+        if attention_coefficient_activation not in ("identity", "tanh", "sigmoid"):
             raise ValueError("Unknown attention coefficient activation")
         if attention_coefficient_activation != "identity" and attention_coefficient_conditioning == "static":
-            raise ValueError("Tanh coefficients require query conditioning")
+            raise ValueError("Tanh and sigmoid coefficients require query conditioning")
         if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":
             raise ValueError("Query-key coefficients require the tanh activation")
         if attention_coefficient_conditioning in ("query", "query_key") and (
@@ -168,8 +168,9 @@ class MultiHeadAttention(nnx.Module):
         if attention_coefficient_readout not in ("diagonal", "dense"):
             raise ValueError("Unknown attention coefficient readout")
         if attention_coefficient_readout == "dense" and (
-                attention_coefficient_conditioning != "query" or attention_coefficient_activation != "tanh"):
-            raise ValueError("Dense coefficient readout requires tanh query-only coefficients")
+                attention_coefficient_conditioning != "query"
+                or attention_coefficient_activation not in ("tanh", "sigmoid")):
+            raise ValueError("Dense coefficient readout requires tanh or sigmoid query-only coefficients")
         if (not isinstance(attention_coefficient_readout_scale, (int, float))
                 or isinstance(attention_coefficient_readout_scale, bool)
                 or not math.isfinite(attention_coefficient_readout_scale)
@@ -182,8 +183,9 @@ class MultiHeadAttention(nnx.Module):
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
         if attention_coefficient_amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {attention_coefficient_amplitude_scale}")
-        if attention_coefficient_amplitude_scale != "none" and attention_coefficient_activation != "tanh":
-            raise ValueError("An amplitude scale applies to tanh coefficients only")
+        if (attention_coefficient_amplitude_scale != "none"
+                and attention_coefficient_activation not in ("tanh", "sigmoid")):
+            raise ValueError("An amplitude scale applies to tanh and sigmoid coefficients only")
         self.attention_coefficient_activation = attention_coefficient_activation
         self.attention_coefficient_amplitude_scale = attention_coefficient_amplitude_scale
         if attention_coefficient_scale not in ("none", "factorial"):
@@ -257,8 +259,9 @@ class MultiHeadAttention(nnx.Module):
         if self.attention_coefficient_conditioning in ("query", "query_key"):
             from scaffolds.transformer.attention.input_dependent import project_coefficients, project_key_factors
 
-            if query_kernel is None or query_bias is None:
-                raise ValueError("Query-conditioned attention requires its model-owned kernel and bias")
+            if query_kernel is None or (query_bias is None) != (self.attention_coefficient_activation == "sigmoid"):
+                raise ValueError("Query-conditioned attention requires its model-owned kernel and, "
+                                 "except for sigmoid coefficients, bias")
             if (self.attention_coefficient_readout == "dense") != (query_mixing is not None):
                 raise ValueError("Coefficient readout must match its model-owned mixing parameter")
             if query_mixing is not None and query_amplitude is not None:

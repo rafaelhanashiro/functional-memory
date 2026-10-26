@@ -46,11 +46,18 @@ def check_config(config):
     elif model.attention_output_scaling != "head_rms_norm":
         raise ValueError("The unnormalized comparison requires per-head output RMSNorm")
     if model.attention_coefficients == "learned":
-        if (model.attention_coefficient_scale != "factorial"
+        sigmoid = model.attention_coefficient_activation == "sigmoid"
+        if (model.attention_coefficient_scale != ("none" if sigmoid else "factorial")
                 or model.attention_coefficient_parameterization != "direct"
                 or model.attention_coefficient_sharing != "per_head"):
-            raise ValueError("Learned comparison coefficients use direct per-head whole-coefficient order scaling")
-        if model.attention_coefficient_conditioning in ("query", "query_key"):
+            raise ValueError("Learned comparison coefficients use direct per-head whole-coefficient order "
+                             "scaling; sigmoid coefficients have no input-independent part to scale")
+        if sigmoid:
+            # Pure sigmoid c_r = sigmoid(w_r^T x) [/ r!], with or without order scaling.
+            if (model.attention_coefficient_conditioning != "query"
+                    or model.attention_coefficient_projection_initial_std != 0):
+                raise ValueError("Sigmoid coefficients are query-only with W starting at zero")
+        elif model.attention_coefficient_conditioning in ("query", "query_key"):
             if (model.attention_coefficient_amplitude_scale != "factorial"
                     or model.attention_coefficient_activation != "tanh"
                     or model.attention_coefficient_amplitude_initial != 0

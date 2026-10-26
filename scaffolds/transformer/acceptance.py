@@ -55,6 +55,7 @@ NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polyn
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
 DENSE_QUERY_READOUT_TESTS = "scaffolds/transformer/tests/test_dense_query_readout.py"
+SIGMOID_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_sigmoid_coefficients.py"
 DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.py"
 QK_HEAD_SCALE_TESTS = "scaffolds/transformer/tests/test_qk_head_scale.py"
 COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py"
@@ -133,10 +134,14 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     conditioning = model.get("attention_coefficient_conditioning", "static")
     if conditioning in ("query", "query_key"):
         paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)
-        if model.get("attention_coefficient_activation", "identity") == "tanh":
+        activation = model.get("attention_coefficient_activation", "identity")
+        if activation in ("tanh", "sigmoid"):
+            # Sigmoid coefficients run on the same query-coefficient kernels as tanh.
             paths.append(QUERY_TANH_POLYNOMIAL_TESTS)
-            if model.get("attention_coefficient_readout", "diagonal") == "dense":
-                paths.append(DENSE_QUERY_READOUT_TESTS)
+        if activation == "tanh" and model.get("attention_coefficient_readout", "diagonal") == "dense":
+            paths.append(DENSE_QUERY_READOUT_TESTS)
+        if activation == "sigmoid":
+            paths.append(SIGMOID_COEFFICIENT_TESTS)
         if conditioning == "query_key":
             paths.append(QUERY_KEY_POLYNOMIAL_TESTS)
             if resolved_backend == "fused" and cpu:
