@@ -1,15 +1,36 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/sigmoid-coefficients-4b/experiments/transformer_200m_4b/runs/r8b4e2a0603aa/.runtime/acceptance/H100-1",
+      "allocation": "JobId=226509 JobName=r8b4e2a0603aa UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20048 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:32 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-26T01:30:49 EligibleTime=2026-10-26T01:30:49 AccrueTime=2026-10-26T01:30:49 StartTime=2026-10-26T01:31:34 EndTime=2026-10-27T01:31:34 Deadline=N/A PreemptEligibleTime=2026-10-26T03:31:34 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-26T01:31:34 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1311947 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/sigmoid-coefficients-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/sigmoid-coefficients-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/sigmoid-coefficients-4b/experiments/transformer_200m_4b/runs/r8b4e2a0603aa/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/sigmoid-coefficients-4b/experiments/transformer_200m_4b/runs/r8b4e2a0603aa/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_200m_4b/runs/r8b4e2a0603aa/config.yaml",
+      "config_sha256": "9484cae190edf1c51ccaf145b216e93f0230c2006cc5bb803817207fbb168818",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "0e9dc3cd64dfd279f90fe2f76a06f6031f9795b1",
+      "slurm_job_id": "226509",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-26T05:32:06.005925+00:00",
+      "stop_after_step": null
+    }
+  ],
   "condition": "sigmoid_scaled",
   "config": {
     "path": "experiments/transformer_200m_4b/runs/r8b4e2a0603aa/config.yaml",
     "sha256": "9484cae190edf1c51ccaf145b216e93f0230c2006cc5bb803817207fbb168818"
   },
+  "frozen_execution_sha256": "0180528c2584ed5aa03fd55d339683562eaab43e2f1e4f42e3b6b495eb656481",
   "home_cluster": "kennel",
   "label": "sigmoid-m4-scaled",
+  "log_path": "experiments/transformer_200m_4b/runs/r8b4e2a0603aa/training.log",
   "name": "sigmoid-m4-scaled",
   "record_schema_version": 1,
   "run_id": "r8b4e2a0603aa",
-  "status": "pending",
+  "source_commit": "0e9dc3cd64dfd279f90fe2f76a06f6031f9795b1",
+  "status": "acceptance",
   "submission": {
     "command": [
       "sbatch",
@@ -29,7 +50,9 @@
       "1",
       "B300,H100"
     ],
+    "nice": 0,
     "partition": "standard",
+    "priority": 1,
     "slurm_job_id": "226509",
     "submitted_utc": "2026-10-26T05:30:49.110098+00:00"
   }

@@ -206,4 +206,6 @@ sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --
   experiments/transformer_200m_4b/runs/<run_id>/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
 ```
 
-Each record's `submission` holds its exact command and partition.
+The four runs without W decay have priority 1. The four with W decay have priority 2,
+set with `scontrol update jobid=<job> nice=1000`. Each record's `submission` holds its
+exact command, partition and priority.

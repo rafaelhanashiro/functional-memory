@@ -29,7 +29,9 @@
       "1",
       "B300,H100"
     ],
+    "nice": 0,
     "partition": "long",
+    "priority": 1,
     "slurm_job_id": "226514",
     "submitted_utc": "2026-10-26T05:30:49.439416+00:00"
   }
