@@ -9,5 +9,28 @@
   "name": "dense-sigmoid-m4-k5-scaled-wdecay",
   "record_schema_version": 1,
   "run_id": "rf7e1a83e2e23",
-  "status": "planned"
+  "status": "pending",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=rf7e1a83e2e23",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/sigmoid-coefficients-4b/experiments/transformer_200m_4b/runs/rf7e1a83e2e23/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/sigmoid-coefficients-4b/experiments/transformer_200m_4b/runs/rf7e1a83e2e23/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/rf7e1a83e2e23/config.yaml",
+      "0e9dc3cd64dfd279f90fe2f76a06f6031f9795b1",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "long",
+    "slurm_job_id": "226515",
+    "submitted_utc": "2026-10-26T05:30:49.518069+00:00"
+  }
 }
