@@ -120,7 +120,7 @@ def save_figure(fig, prefix):
 
 
 def write_summary(probes, output):
-    fields = ["run_id", "role", "parent_run_id", "checkpoint_step", "variant", "subset",
+    fields = ["run_id", "role", "parent_run_id", "checkpoint_step", "variant", "subset", "evaluation_forward",
               "sequence_count", "nll", "perplexity", "delta_nll_from_fitted_raw", "fraction_fitted_gain_erased"]
     with output.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
@@ -138,6 +138,8 @@ def write_summary(probes, output):
                     writer.writerow({"run_id": entry["run_id"], "role": entry["role"],
                         "parent_run_id": entry["parent_run_id"], "checkpoint_step": data["selected_checkpoint_step"],
                         "variant": variant, "subset": subset, "sequence_count": row["sequence_count"],
+                        "evaluation_forward": ("ordinary_native_replay" if kind == "query" or variant == "original_parent"
+                                               else "coefficient_override_replay"),
                         "nll": format(row["nll"], ".12g"), "perplexity": format(row["perplexity"], ".12g"),
                         "delta_nll_from_fitted_raw": format(row["nll"] - reference, ".12g"),
                         "fraction_fitted_gain_erased": format((row["nll"] - reference) / gain, ".12g") if gain > 0 else ""})
@@ -145,6 +147,23 @@ def write_summary(probes, output):
 
 def short_number(value):
     return f"{value:.3f}" if value < 100 else f"{value:.3g}"
+
+
+def query_parity_label(label, snapshot, default_tolerance):
+    """Keep the original per-sequence bound visible, including legacy reports."""
+    parity = snapshot.get("external_native_nll_comparison", {})
+    tolerance = parity.get("nll_replay_atol", default_tolerance)
+    maximum = parity.get("max_absolute_nll_delta", snapshot.get("external_native_max_nll_error"))
+    mean = parity.get("mean_nll_delta")
+    if maximum is None:
+        return f"{label}: instrumented/native NLL parity not recorded"
+    passed = parity.get("original_per_sequence_bound_passed", maximum <= tolerance)
+    state = "PASSED" if passed else "FAILED"
+    mean_text = "mean ΔNLL not recorded" if mean is None else f"mean ΔNLL {mean:+.3g}"
+    aggregate = "" if mean is None else (
+        "; aggregate PASSED" if parity.get("aggregate_nll_passed", abs(mean) <= tolerance) else "; aggregate FAILED")
+    return (f"{label}: per-sequence parity {state} (bound {tolerance:g}); "
+            f"{mean_text}, max |ΔNLL| {maximum:.3g}{aggregate}")
 
 
 def plot_free(data, prefix):
@@ -197,8 +216,8 @@ def plot_query(data, prefix):
     before, after = diagnostic["before"], diagnostic["after"]
     layer_count = len(before["statistics"]["tanh_derivative_mean"])
     layers = np.arange(1, layer_count + 1)
-    fig, axes = plt.subplots(2, 3, figsize=(14.2, 8.7), layout="constrained")
-    fig.suptitle("Query coefficient generator: native forward before and after fitting", fontsize=17, weight="bold")
+    fig, axes = plt.subplots(2, 3, figsize=(14.2, 9.5), layout="constrained")
+    fig.suptitle("Query coefficient generator: instrumented before/after statistics", fontsize=17, weight="bold")
     statistic_panels = (
         (axes[0, 0], "saturated_099_fraction", 100., "Saturated tanh units", "|tanh(z)| ≥ 0.99 (%)"),
         (axes[0, 1], "tanh_derivative_mean", 1., "Tanh derivative", "Mean 1 − tanh²(z)"),
@@ -233,9 +252,13 @@ def plot_query(data, prefix):
         ax.set_xlabel("Layer"); ax.set_xticks([1, 5, 10, 15]); ax.grid(alpha=.18); ax.set_axisbelow(True)
     initial = data["measurements"]["original_parent"]["all_fitting_sequences"]["perplexity"]
     fitted = data["measurements"]["fitted_raw"]["all_fitting_sequences"]["perplexity"]
+    before_parity = query_parity_label("Before", before, data.get("nll_replay_atol", .002))
+    after_parity = query_parity_label("After", after, data.get("nll_replay_atol", .002))
     fig.supxlabel(
-        f"m = 4 · B = 256 · fitting perplexity {initial:.3f} → {fitted:.3f} · backbone and QK scales frozen\n"
-        "Each generator is measured on its own causal forward; later-layer inputs can change. Top panels average all tokens, heads and orders.\n"
+        f"m = 4 · B = 256 · ordinary native replay fitting PPL {initial:.3f} → {fitted:.3f} · backbone and QK scales frozen\n"
+        f"{before_parity}\n{after_parity}\n"
+        "Activation statistics use the instrumented compiled forward; the fitting PPL and CSV losses use ordinary native replay.\n"
+        "Each generator uses its own causal inputs; later-layer activations can change. Top panels average all tokens, heads and orders.\n"
         "Radius uses 64 sampled positions; shading spans 10–90% of head-wise medians. RMS epsilon frequencies use every head and position.\n"
         "These are activation and accumulated parameter measurements, not effective Adam learning rates or a causal diagnosis of loss.\n"
         "Free, static and query fits start from different pretrained backbones; their fitting losses are not a matched-backbone generalization comparison.", fontsize=9)

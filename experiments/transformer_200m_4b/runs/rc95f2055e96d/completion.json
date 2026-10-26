@@ -1,0 +1,20 @@
+{
+  "best_fit_nll": 2.0814828872680664,
+  "best_nll": 2.0814828872680664,
+  "best_step": 5273,
+  "coefficient_sharing": "one input-dependent generator per layer/head shared across the fitting batch",
+  "finished_utc": "2026-10-26T18:36:39.620697+00:00",
+  "fit_nll": 2.081552028656006,
+  "fit_perplexity": 8.016901724970998,
+  "frozen_parameter_scope": "backbone",
+  "frozen_parameters_unchanged": true,
+  "generator_readout": "diagonal",
+  "initial_nll": 2.751295328140259,
+  "interpretation": "Fixed-input coefficient fitting, not held-out generalization.",
+  "learning_rate_reduced_at": 4648,
+  "nll_reduction": 0.6698124408721924,
+  "optimizer_updates_per_step": 1,
+  "parameterization": "query_coefficient_generator",
+  "status": "complete",
+  "step": 5276
+}

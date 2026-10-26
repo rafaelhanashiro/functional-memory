@@ -56,21 +56,75 @@
     "training_forward_max_nll_error": 0.00036215782165527344,
     "training_forward_reference": "original_parent"
   },
+  "analyses": {
+    "batch_functional_probe": {
+      "analysis_script_sha256": "d902ae2a3431ab5214ef1fcc29f938ec755a78db590f3705035dff54e0a61d3f",
+      "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/batch_functional_probe.json",
+      "selected_checkpoint_sha256": "484cc39563b5da3c47b5fddf6fcd9e594de018e93c5991aaed609aee015a7ab0",
+      "sha256": "362e76f4e725a5f952b9a615d6d3eb58784ee591c6d842be4b4fb9385f0611ed",
+      "size_bytes": 392920,
+      "source_commit": "3005eb099a4c7aee1abed43e3be2f83861c0070f"
+    }
+  },
+  "analysis_submissions": {
+    "batch_functional_probe": {
+      "command": [
+        "sbatch",
+        "--parsable",
+        "--partition=debug",
+        "--nice=0",
+        "--gres=gpu:1",
+        "--exclude=collie,samoyed,doodle,terrier",
+        "--cpus-per-task=8",
+        "--mem=96G",
+        "--time=02:00:00",
+        "--no-requeue",
+        "--job-name=m4-free-static-analysis",
+        "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-headscale-overfit/experiments/transformer_200m_4b/runs/rda6029c3286f/.runtime/functional-batch-slurm.log",
+        "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-headscale-overfit/experiments/transformer_200m_4b/runs/rda6029c3286f/.runtime/functional-batch-slurm.log",
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-headscale-overfit/experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/inspect_batch_fit.sbatch",
+        "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-headscale-overfit",
+        "3005eb099a4c7aee1abed43e3be2f83861c0070f",
+        "rda6029c3286f",
+        "rceea84f19f6b"
+      ],
+      "dependency": null,
+      "home_cluster": "kennel",
+      "slurm_job_id": "226723",
+      "source_commit": "3005eb099a4c7aee1abed43e3be2f83861c0070f",
+      "submitted_utc": "2026-10-26T18:18:36.202514+00:00"
+    }
+  },
   "artifacts": [
+    {
+      "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/batch_coefficient_geometry.json",
+      "sha256": "40dbf61ed1972c6a3ad1328ebb120307fbd6008f6629061aa487766bae358653",
+      "size_bytes": 502340
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/completion.json",
+      "sha256": "96cdf91b42906f7b6b2fcd96ed904e33756d3668058cdd8addf5b0e4b51b7b70",
+      "size_bytes": 625
+    },
     {
       "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/data_identity.json",
       "sha256": "28fe9d9f3c5503078a5df226fcc398e9983b73f8140ae71c4a504e47f18f929c",
       "size_bytes": 450
     },
     {
+      "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/free_coefficient_shape.json",
+      "sha256": "cd3b343396ea9e682a4801600575673fb8de6ecd6beb80191ec635fc9103e18f",
+      "size_bytes": 736029
+    },
+    {
       "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/metadata.json",
-      "sha256": "507431ab46ceefff60003be9e7cb3f5698e50bea32ca7696c8f24754923d364d",
-      "size_bytes": 1477
+      "sha256": "2f7c8edeb72f6cfb0c016079f29113be5a12d24af83a57f60dafb77e10742828",
+      "size_bytes": 2005
     },
     {
       "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/metrics.jsonl",
-      "sha256": "aba83bcd2c75d2f981e941bf36ef81c53c149a37c56ada8b93963d437a557d16",
-      "size_bytes": 1883258
+      "sha256": "5d6d416ae8c074ef1d9459a96e1bce6e7e5b94d091ddb3a094d440fb11530af5",
+      "size_bytes": 15887668
     },
     {
       "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/oracle_acceptance.json",
@@ -81,11 +135,6 @@
       "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/wandb_run.json",
       "sha256": "790e58aa1c453e155066e35003150fb68d014f2813dbd9abd171fac59d1647de",
       "size_bytes": 231
-    },
-    {
-      "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/training.log",
-      "sha256": "a1b5610165eee3fe1db17425fe935cf29219de49f243b62b2088bff1d221a039",
-      "size_bytes": 5729
     }
   ],
   "attempts": [
@@ -107,6 +156,8 @@
     },
     {
       "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "exit_code": 0,
+      "finished_utc": "2026-10-26T17:50:18.215777+00:00",
       "gpu_count": 1,
       "gpu_type": "NVIDIA B300 SXM6 AC",
       "node": "akita.csail.mit.edu",
@@ -123,6 +174,11 @@
   "checkpoint_retention": "best fitting parameters; backbone referenced by source checkpoint",
   "coefficient_parameterization": "free_per_example_query_coefficients",
   "coefficient_sharing": "shared across causal keys; separate per sequence/layer/query position/head/order",
+  "completion": {
+    "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/completion.json",
+    "sha256": "96cdf91b42906f7b6b2fcd96ed904e33756d3668058cdd8addf5b0e4b51b7b70",
+    "size_bytes": 625
+  },
   "config": {
     "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/config.yaml",
     "sha256": "01d002eba9db2b6d753ab2e7f87f8c3e0e1fe983a4d2e3f5fc8ab57c3f141a27"
@@ -136,39 +192,39 @@
   "home_cluster": "kennel",
   "label": "free-coefficients-m4-full-batch-head-scale",
   "log": {
-    "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/training.log",
-    "sha256": "a1b5610165eee3fe1db17425fe935cf29219de49f243b62b2088bff1d221a039",
-    "size_bytes": 5729
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/rda6029c3286f/training.log",
+    "sha256": "c1a1c7495ede67e85af8e6ceea767816a1df6e31dc4ad9fad897fe50889e7081",
+    "size_bytes": 25738
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-headscale-overfit/experiments/transformer_200m_4b/runs/rda6029c3286f/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/rda6029c3286f/training.log",
   "metadata": {
     "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/metadata.json",
-    "sha256": "507431ab46ceefff60003be9e7cb3f5698e50bea32ca7696c8f24754923d364d",
-    "size_bytes": 1477
+    "sha256": "2f7c8edeb72f6cfb0c016079f29113be5a12d24af83a57f60dafb77e10742828",
+    "size_bytes": 2005
   },
   "metrics": {
     "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/metrics.jsonl",
-    "sha256": "aba83bcd2c75d2f981e941bf36ef81c53c149a37c56ada8b93963d437a557d16",
-    "size_bytes": 1883258
+    "sha256": "5d6d416ae8c074ef1d9459a96e1bce6e7e5b94d091ddb3a094d440fb11530af5",
+    "size_bytes": 15887668
   },
   "name": "free-coefficients-m4-full-batch-head-scale",
   "oracle_outcome": {
-    "best_fit_nll": 0.28342974185943604,
-    "best_nll": 0.005633111111819744,
-    "best_step": 300,
-    "finished_utc": "2026-10-26T16:58:46.689707+00:00",
-    "fit_nll": 0.28342974185943604,
-    "fit_perplexity": 1.3276755970182268,
+    "best_fit_nll": 0.0029746191576123238,
+    "best_nll": 0.0029746191576123238,
+    "best_step": 2453,
+    "finished_utc": "2026-10-26T17:49:56.591785+00:00",
+    "fit_nll": 0.0029804138466715813,
+    "fit_perplexity": 1.0029848596957465,
     "frozen_parameter_scope": "all_pretrained_parameters",
     "frozen_parameters_unchanged": true,
     "initial_nll": 2.7472734451293945,
     "interpretation": "Fixed-input coefficient fitting, not held-out generalization.",
-    "learning_rate_reduced_at": null,
-    "nll_reduction": 2.4638437032699585,
+    "learning_rate_reduced_at": 2000,
+    "nll_reduction": 2.744298825971782,
     "parameterization": "free_per_example_query_coefficients",
     "pause_reason": "preemption or interruption",
-    "status": "paused",
-    "step": 109
+    "status": "complete",
+    "step": 2500
   },
   "oracle_runtime": {
     "coefficient_layout": "example,layer,query,head,order",
@@ -203,98 +259,88 @@
   "parent_run_id": "r816ab0fbe119",
   "parent_study": "transformer_200m_4b",
   "record_schema_version": 1,
-  "retained_best_checkpoint_step": 109,
+  "retained_best_checkpoint_step": 2453,
   "run_id": "rda6029c3286f",
   "seed": 42,
   "selected_checkpoint": {
-    "file_count": 16,
+    "file_count": 14,
     "files": [
       {
-        "path": "controller.json",
-        "sha256": "efe50f4d2118567166bba7b95878e63e2294c8f329f03fc52b9ab3c7c438c42d",
-        "size_bytes": 2902
-      },
-      {
-        "path": "default/_CHECKPOINT_METADATA",
-        "sha256": "9cb808c23c637642ef89e827645414a729f0ea6914a1c1fecfc5d1e714acf85e",
+        "path": "best/_CHECKPOINT_METADATA",
+        "sha256": "3aad71e10d9fa470f01f272f0016c88fd1a10e8ff71defc7f673856971e259ec",
         "size_bytes": 262
       },
       {
-        "path": "default/_METADATA",
-        "sha256": "884c062d01440906a82f401f5e8b5f28489929d045d828668711ecc02905f8e8",
-        "size_bytes": 48265
+        "path": "best/_METADATA",
+        "sha256": "f8c7946eaed8124af48eff6cce4e91fd9dc99184aa5166fe8acc6d9e975178d1",
+        "size_bytes": 7373
       },
       {
-        "path": "default/_sharding",
-        "sha256": "7ed919d3d7056b30fb120ef1e1a1f3920b644126b47f6c9c2c9f6292005cb11d",
-        "size_bytes": 15801
+        "path": "best/_sharding",
+        "sha256": "00710323eafa93912ed1ef7a5aa8f5d27552b4fec9c7ef275328114b7eedad67",
+        "size_bytes": 3169
       },
       {
-        "path": "default/array_metadatas/process_0",
-        "sha256": "b7e098a438f9d21d83c489b3e3ba09d195fe99b46b857b7db259a01d58c6475d",
-        "size_bytes": 22979
+        "path": "best/array_metadatas/process_0",
+        "sha256": "4722e2cd7bca04ac0cedcefe99ebb1a7f3bd62c78a55be52c3d05017c7916356",
+        "size_bytes": 4843
       },
       {
-        "path": "default/d/705194398779048cb66b20884ded03e3",
-        "sha256": "8765730bdaaa6c5aa92130c4a0e09e3f8360e10cd8f1be19df89554e4dc9b4d3",
-        "size_bytes": 1831
+        "path": "best/d/f4daf3c4241462097df55ae703f3a967",
+        "sha256": "3bca25538da7692bfed93591c4bae02428af98aae6098ce3f8762d6387e8d5c1",
+        "size_bytes": 778
       },
       {
-        "path": "default/manifest.ocdbt",
-        "sha256": "cb97655a51869039f395874a13826fdbb4dd4a5be13cf616e1de0ab9b4b4e5ba",
-        "size_bytes": 118
+        "path": "best/manifest.ocdbt",
+        "sha256": "3ef8d9bf6d045940086e546ec8b7bc8070e57282a1cc88ca96050149eeb6e82c",
+        "size_bytes": 117
       },
       {
-        "path": "default/ocdbt.process_0/d/23e0c6f9dc671e6286330b0aa3fad44e",
-        "sha256": "1db39e4cfb6348b81b71c150b80eca007ae368d2a727244a809076a8cf4ca8bd",
-        "size_bytes": 2185043968
+        "path": "best/ocdbt.process_0/d/12921b830f0e189e5d5d7d10a25bd08e",
+        "sha256": "bdf428c642faa9b7498d595cd27648c46743bc01251cd055ce4725661c1862f7",
+        "size_bytes": 1652269056
       },
       {
-        "path": "default/ocdbt.process_0/d/3b57f42f43dd1072af87d77f4abb7a90",
-        "sha256": "cc86a4a428d1ce97cd8100064eac5166b9812b3f5ff242658d31cb539ef99ed9",
-        "size_bytes": 191823872
+        "path": "best/ocdbt.process_0/d/3aa9b3b75afa003ce254f6f166cba1db",
+        "sha256": "f387558db4c62076badd4a2ac09853846d1df05f656b8cfa7265d2ccb0dd84bb",
+        "size_bytes": 194
       },
       {
-        "path": "default/ocdbt.process_0/d/7e5d6d2219983432a13d71bb1e22e1f3",
-        "sha256": "d266d67ed7bd27eb81355dd87fc878a083cf5bd93193bdc3684e7fa02defbbd1",
-        "size_bytes": 2200801280
+        "path": "best/ocdbt.process_0/d/857149d4addd83751069d057ecfb9983",
+        "sha256": "43efa41c77086accaad7575daaed660b0b73b00cdf5ee18a1845df287b97f49e",
+        "size_bytes": 127176704
       },
       {
-        "path": "default/ocdbt.process_0/d/8f262d5796188a76077f3aa1d28166f7",
-        "sha256": "38f18548c82c18cd71f92345bb55ca9c786b2db3371084f5fc46cf4fe740ecea",
-        "size_bytes": 450
+        "path": "best/ocdbt.process_0/d/adbe1730723e4e58960f1bfbbae36506",
+        "sha256": "6f7299600bbecd59454ff0959ec9cbf3fd61a0238b6d6f3d939e6d49c0137948",
+        "size_bytes": 63545344
       },
       {
-        "path": "default/ocdbt.process_0/d/aeed4112a01469c0836b1bcfd7ce0019",
-        "sha256": "b49b63f86a548becdb22714aee1271791e860c8fbe7cfbe602149458e07fba82",
-        "size_bytes": 2186526720
+        "path": "best/ocdbt.process_0/d/d4b6ad4c8c36047e1f819d6bb180fc79",
+        "sha256": "a5194fc379b5d5db75c9583a4d6b35574dfd4d64ad394d91b57cd745837d7e8a",
+        "size_bytes": 284
       },
       {
-        "path": "default/ocdbt.process_0/d/df0a45222680a432752ce4259e7f31c2",
-        "sha256": "e20643d6b21d6e5ccf272736a9e98c37e86ef7b5ebd9a0a49df09a6c4bf4144d",
-        "size_bytes": 1472212992
+        "path": "best/ocdbt.process_0/d/e4a11df9860a17dec627664884b05636",
+        "sha256": "3832de8a0fa50b8232acc5fe2bcf8ce0435c3a52714b5773945b113060389337",
+        "size_bytes": 190586880
       },
       {
-        "path": "default/ocdbt.process_0/d/e4bc936aa88c432acd63bbdc95ee4389",
-        "sha256": "1dfbc7052042a1c2a9ee652e1f7c810e7be5b865e9bc06c5ec7b03c29a8abe89",
-        "size_bytes": 453
+        "path": "best/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "81c5bdf0f5ce27f28c45a9f682dc0bff1fd000436cf13805f014825b9354ad60",
+        "size_bytes": 364
       },
       {
-        "path": "default/ocdbt.process_0/d/e8b15ec69778de2c58533ef3b7243a2a",
-        "sha256": "ec37609703892c4fa579228b1567eb13543da08a17e352daecb620f40f1fa414",
-        "size_bytes": 189
-      },
-      {
-        "path": "default/ocdbt.process_0/manifest.ocdbt",
-        "sha256": "20530d25c5187fcd0d3c586c839f66c47f3e1a70a4b06e6689d7361a5dfd0041",
-        "size_bytes": 357
+        "path": "coefficient_identity.json",
+        "sha256": "a70de2104c9475887f01e39dbda5d1f7d3b85ceef69575921c42e13ff291b7c6",
+        "size_bytes": 413
       }
     ],
     "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
     "kind": "directory",
-    "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/checkpoints/109",
-    "sha256": "302130dd58d5f7edcb06bd041cbb372c1834c96426a1d84564b5770085b1a53b",
-    "size_bytes": 8236502439
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/rda6029c3286f/checkpoints/2453",
+    "sha256": "484cc39563b5da3c47b5fddf6fcd9e594de018e93c5991aaed609aee015a7ab0",
+    "size_bytes": 2033595781
   },
   "source_checkpoint": {
     "file_count": 15,
@@ -385,8 +431,8 @@
   },
   "source_commit": "09789129e8e22f40e49aac1c09a6c723c5a38134",
   "started_utc": "2026-10-26T16:55:59.617839+00:00",
-  "status": "running",
-  "step": 300,
+  "status": "complete",
+  "step": 2500,
   "submission": {
     "command": [
       "sbatch",

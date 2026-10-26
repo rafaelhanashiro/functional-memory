@@ -17,9 +17,9 @@ backbone frozen. They live in the
 | `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r7505c6d49711` | Independent coefficients per sequence, layer, query, head, and order on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
-| `rc95f2055e96d` | Original degree-four query generator on 256 sequences, with per-head QK scaling | Query-only `r2b22f2ff6461`, step 7,500 | Running |
-| `rda6029c3286f` | Free degree-four coefficients per sequence and query on 256 sequences, with per-head QK scaling | Fixed Taylor `r816ab0fbe119`, step 7,500 | Running |
-| `rceea84f19f6b` | Static degree-four coefficients on 256 sequences, with per-head QK scaling | Static `r4339a245820e`, step 7,500 | Running |
+| `rc95f2055e96d` | Original degree-four query generator on 256 sequences, with per-head QK scaling | Query-only `r2b22f2ff6461`, step 7,500 | Complete |
+| `rda6029c3286f` | Free degree-four coefficients per sequence and query on 256 sequences, with per-head QK scaling | Fixed Taylor `r816ab0fbe119`, step 7,500 | Complete |
+| `rceea84f19f6b` | Static degree-four coefficients on 256 sequences, with per-head QK scaling | Static `r4339a245820e`, step 7,500 | Complete |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
@@ -87,6 +87,254 @@ python -m experiments.transformer_200m_4b.launch_coefficient_fit submit rceea84f
 The debug allocations checkpoint and requeue before the time limit. Runtime
 environment selection follows the allocated GPU and the worktree's locked
 CUDA environment.
+
+### Fitting outcomes and optimization audit
+
+Free and static fitting completed at update **2,500**, after reducing LR at
+2,000 and completing the 500-update plateau confirmation. Query fitting completed
+at **5,276**, after reducing LR at **4,648** and confirming the plateau. Every
+backbone retains its original parameter checksum.
+
+| Fit | Initial PPL | Best retained PPL | Best update | Terminal PPL |
+| --- | ---: | ---: | ---: | ---: |
+| Query | 15.662907 | 8.016347 | 5,273 | 8.016902 |
+| Free | 15.600039 | 1.002979 | 2,453 | 1.002985 |
+| Static | 15.648623 | 15.617530 | 2,394 | 15.618483 |
+
+The implementation audit found no concrete bug in factorial-coordinate updates,
+full-batch gradient averaging, clipping order, parameter freezing, or resumption.
+Stored static/free coordinates are `u_r = r! c_r`; their gradients and effective
+coefficient updates each divide by `r!` in the appropriate direction. The native
+query generator already applies its factorial scaling inside the model. Fitting
+metrics are contiguous, batch NLL equals the mean sequence NLL, and perplexity is
+`exp(mean NLL)`. GPU qualification and final replay check the frozen parent and
+retained coefficient checkpoint independently. These checks do not prove that
+optimization finds the best solution in a parameterization.
+
+The source pretraining runs do not show chronic clipping. Weighted compact
+training windows cover all 7,570 updates exactly once:
+
+| Parent | Updates clipped, all training | Updates clipped after 1,500 | Terminal validation PPL |
+| --- | ---: | ---: | ---: |
+| Query `r2b22f2ff6461` | 3.408% | 0.247% | 14.7792 |
+| Static `r4339a245820e` | 3.633% | 0.198% | 14.7727 |
+| Taylor `r816ab0fbe119` | 3.395% | 0.0165% | 14.7242 |
+
+These are terminal validation values, not the fitting PPL or the validation-best
+checkpoint values. Every recorded parent attention diagnostic is finite, with no
+reported issues. Clipping during coefficient-only fitting must therefore be
+examined separately from the original pretraining gap. A clipping multiplier is
+not an effective Adam learning rate, and gradient-energy shares are not parameter
+update shares.
+
+The query fit improves every sequence in the fitting batch. During the last 200
+measurements at LR 0.001, 99% of full-batch gradient norms exceed the clipping
+threshold, with median norm **3.48**. During the last 200 at LR 0.0001, only **1%**
+exceed it, with median **0.397**; the final 500-measurement clipping fraction is
+**0.8%**. Best fitting PPL improves from **8.1713** before the reduction to **8.0163**.
+The original LR produces much noisier optimization, but persistent clipping at the
+final plateau does not explain the remaining large gap to the free table. Static
+fitting has no clipping and improves only 0.00199 nats at its retained best.
+
+![Optimization and learning-rate diagnostics](optimization_curves.png)
+
+### What the free coefficients encode
+
+The retained free checkpoint has moderate factorial-coordinate magnitudes, with
+99th percentiles around 2.0–2.4 across the five orders. The median direction differs
+from Taylor by **33.93 degrees**, while each layer/head's mean direction is much
+closer: median **4.93 degrees** from Taylor. This is substantial variation around
+a largely Taylor-like average, rather than a single uniformly improved static
+polynomial. Mixed coefficient signs occur in 41.14% of sampled vectors; coefficient
+signs alone do not determine whether the polynomial is negative on observed scores.
+
+Centered PCA of unit vectors `r!c / ||r!c||` captures a median **92.88%** of
+coefficient-direction variance with three components and **97.58%** with four.
+The first layer's original generator only sees its current token embedding after
+normalization. Repeated occurrences of one token therefore share coefficients in
+that layer, although the free oracle can distinguish them. An optimistic token
+lookup leaves 80.46% of observed directional variation within repeated token IDs;
+this does not establish that such variation is necessary for low loss.
+
+![Free coefficient directions](free_coefficient_shape.png)
+
+### Functional reconstruction of the free coefficients
+
+The GPU probe replays every prediction position in all 256 fitting sequences.
+Raw replay reproduces the retained best NLL within **0.000000662 nats**, and the
+full-rank coefficient round trip produces identical losses. These controls pass
+before interpreting the reconstruction ablations. The selected measurement is
+`rda6029c3286f/batch_functional_probe.json`; compact source measurements stay in
+the run and are pinned by the selection.
+
+| Reconstruction, without refitting | Fitting NLL | Fitting PPL | Fitted NLL improvement lost |
+| --- | ---: | ---: | ---: |
+| Original free table | 0.002974 | 1.002978 | 0% |
+| Unit factorial-coordinate radius, every layer | 0.002981 | 1.002985 | 0.00026% |
+| PCA: mean direction only | 2.748248 | 15.615257 | 100.04% |
+| PCA: one component | 1.480650 | 4.395803 | 53.85% |
+| PCA: two components | 0.614885 | 1.849444 | 22.30% |
+| PCA: three components | 0.773630 | 2.167620 | 28.08% |
+| PCA: four components | 0.108155 | 1.114220 | 3.83% |
+| PCA: five components, round-trip control | 0.002974 | 1.002978 | 0% |
+| First layer: token mean direction, original radii | 0.140181 | 1.150482 | 5.00% |
+| First layer: token-only vector, unit radius | 0.139925 | 1.150187 | 4.99% |
+
+The fraction lost is `(NLL_reconstructed - NLL_free) / (NLL_parent - NLL_free)`.
+Magnitude can be removed with negligible effect on this fitted solution. A fixed
+coefficient direction removes almost all its benefit. Four PCA components retain
+most of the fitting gain, but three are worse than two despite explaining more
+coefficient variance. Coefficient reconstruction error is therefore not a reliable
+proxy for attention or loss error. Degree-four coefficients already have only four
+directional degrees of freedom; PCA4 is not evidence of a large intrinsic reduction.
+
+The first-layer token-only substitution preserves about 95% of the total NLL gain
+while leaving later oracle layers unchanged. Thus first-layer occurrence-dependent
+coefficients are not the dominant source of this hybrid's fitting improvement.
+The remaining loss increase does not prove that an optimized token-only generator
+cannot fit: the token average minimizes a coefficient-direction surrogate, and
+later layers are not refitted after the substitution.
+
+PCA bases use the first 192 fitting sequences and 64 endpoint-inclusive positions;
+they are then evaluated at every position in all 256 sequences. The other 64
+sequences test basis transfer, not LM generalization. PCA latents still come from
+their target-fitted oracle tables: even rank three retains 630 free latent values
+per prediction position across all layers and heads. Token means use all fitting
+positions. The separate CPU shape analysis uses mid-bin positions and excludes
+positions below 64 for its repeated-token summaries; the two samplings are not
+identical. Numeric PCA bases learned from evaluation targets must not initialize
+a purported clean pretraining comparison.
+
+![Functional coefficient reconstruction](batch_functional_free.png)
+
+### Query generator and numerical sensitivity
+
+The generator changes substantially during fitting: median coefficient-direction
+change is **29.45 degrees**, with a 90th percentile of **67.66 degrees**. It is not
+stuck at its source checkpoint. The following activation statistics come from an
+instrumented forward; the qualification below records its numerical limits.
+
+| Measurement | Pretrained query parent | Fitted query generator |
+| --- | ---: | ---: |
+| Tanh activations with absolute value at least 0.99 | 47.52% | 55.88% |
+| Tanh derivatives below 0.01 | 41.50% | 51.05% |
+| Mean tanh derivative | 0.20155 | 0.17397 |
+| Projection-weight RMS | 0.05871 | 0.16270 |
+| Stored amplitude RMS | 0.24930 | 0.68050 |
+| Median factorial-coordinate radius | 2.18788 | 2.06308 |
+| First-percentile factorial-coordinate radius | 1.83996 | 0.69552 |
+| Severe bias/modulation cancellation | 0.0876% | 0.9283% |
+
+Here severe cancellation means `|b + a tanh(z)| < 0.01 (|b| + |a tanh(z)|)`.
+Increased saturation can suppress some projection-feature derivatives, but it
+does not demonstrate globally vanishing generator gradients: amplitude growth and
+small coefficient radii increase the measured projection-to-direction Jacobian
+mean square from **0.717 to 9.784**. The current parameterization therefore has
+uneven sensitivities, rather than simply failing to learn.
+
+No observed head/query output has mean-square below the RMS epsilon. Only **one**
+observation before fitting and **two** afterward fall below 100 times epsilon,
+out of **110,100,480** observations per snapshot. The epsilon floor is not a
+widespread explanation for this fitting gap.
+
+![Instrumented query-generator statistics](batch_functional_query.png)
+
+Ordinary native replay reproduces the retained fitting-best checkpoint. The
+instrumented BF16 forward's batch-average NLL differs by only **0.0000390 nats**
+after fitting, but **22/256 sequences** exceed the established **0.002-nat**
+per-sequence cross-compilation bound; the maximum is **0.00380683**. Before
+fitting none exceed it. This bound remains recorded as **failed**, not widened.
+The explicit `--record-parity-discrepancies` analysis option retains the
+measurement while requiring native checkpoint replay and aggregate agreement.
+
+On the worst microbatch (sequences 200–207), each separately compiled program
+repeats exactly. The native coefficient-return API matches ordinary native NLL
+and logits exactly. The instrumented statistics program differs deterministically;
+its independent logits have relative RMS difference **2.23%**. Within a joint
+compilation the native and hooked forwards agree exactly. These controls establish
+graph-dependent numerical sensitivity, not stochastic execution corruption.
+
+A separate sequence-zero gradient probe compares the original checkpoint with the
+retained fitted checkpoint using its full causal keys. It measures the actual
+Mosaic coefficient derivative against an independent FP64 formula, keeping the
+recorded raw-output cotangent fixed. Median relative errors are about **2.6e-7**
+in both snapshots. Excluding query position zero, pooled relative L2 error is
+**2.56e-7 before** and **3.66e-7 after**. The full RMS-composed gradient error
+against the smooth FP64 reference is **0.199% before** and **0.133% after**. There
+is no clear coefficient-backward implementation bug in this sample. Relative errors near a mathematically vanishing gradient, especially
+at the first causal position, require their absolute errors and pooled norms;
+they must not be interpreted as large task-gradient errors from ratios alone.
+The median nonradial condition number is about **39.7 before** and **36.7 after**
+when excluding position zero: anisotropy exists, but did not broadly worsen in
+this sample. Full samples, rank counts, and pooled versus per-row summaries are
+retained in `precision_summary.json` and `precision_vjp_summary.csv`.
+
+The zero-probe instrumented fitted BF16 graph differs from its native sequence
+NLL by **0.00201344**, while the same checkpoint arrays under FP32 blocked
+attention differ by **0.0000002384** between native and instrumented execution.
+The logit relative RMS discrepancy falls from **0.01875** to **0.00000330**.
+Because both arithmetic and backend change, this control supports numerical
+sensitivity without attributing it to one precise compiler or kernel cause.
+Derivative measurements from the discrepant BF16 capture are explicitly labeled
+as belonging to that instrumented compiled execution. The canonical fitting PPL
+always comes from ordinary native evaluation, not from these diagnostic variants.
+
+### Parameterization decision
+
+The evidence motivates improving the coefficient generator, but does not identify
+a single cause of the gap or establish that a causal generator can reproduce
+label-fitted free tables. A useful next controlled diagnostic would preserve all
+five polynomial orders, use several nonlinear features mixed across orders, and
+control their preactivation scale. The current diagonal generator gives each
+order only one tanh feature; a dense readout removes that restriction, while an
+inner bias removes its odd-function restriction. Dense mixing already exists in
+the scaffold and is not itself a newly established optimization fix. A comparison
+should use the same frozen backbone, fitting inputs, and initialization for all
+variants; the present three fits have different source backbones.
+
+A separate coordinate change suggested by the successful unit-radius control is
+to predict the **four true directional degrees of freedom** of a degree-four
+polynomial. Simply normalizing an unconstrained five-output vector does not remove
+that vector's radial redundancy: ignoring epsilon, downstream head RMS already
+makes `F(v / ||v||) = F(v)`, including its derivative with respect to `v`.
+
+One concrete candidate uses a fixed Taylor-centered sphere chart. Let
+`u0 = (1,1,1,1,1)/sqrt(5)` and choose a fixed orthonormal basis `E` perpendicular
+to `u0`, independently of data. A causal generator outputs four coordinates `z`:
+
+```text
+u(z) = ((1 - ||z||^2) u0 + 2 E z) / (1 + ||z||^2)
+c_r(z) = sqrt(5) u_r(z) / r!
+```
+
+At `z=0` this is exactly Taylor. It retains every coefficient direction except
+the antipode, and removes the continuous coefficient-radius degree. Its tangent
+Jacobian has equal singular values `2 / (1 + ||z||^2)`, but large coordinates
+near the excluded antipode can themselves cause weak gradients. It does not
+prevent cancellation in attention outputs or eliminate neural-network parameter
+symmetries. Four directional outputs do not imply only four hidden features.
+This is an open candidate, not an implemented or demonstrated improvement; the
+lower-rank PCA ablations do not justify discarding another directional degree.
+
+Regenerate compact-data analyses from the repository root:
+
+```bash
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/audit_optimization.py
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/plot_optimization.py
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/free_coefficient_shape.py plot
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/plot_batch_functional.py
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/summarize_precision.py
+```
+
+The analyses use completed, pinned measurements. The
+read-only checkpoint probe uses `inspect_batch_fit.sbatch <checkout> <source-commit>
+<run-id>... --record-parity-discrepancies` on one qualified H100 or B300; its source, batch identity, and selected
+checkpoint are checked before evaluation. The bounded gradient/FP32 control uses
+`inspect_coefficient_vjp.sbatch <checkout> <source-commit> rc95f2055e96d
+--record-parity-discrepancies` on one B300. Both commands record any failed
+instrumentation bound explicitly, and native checkpoint replay remains required.
+Raw regeneration requires retained home-cluster checkpoints and data, while
+figures and summaries require only committed compact measurements.
 
 ## Free coefficients from the static checkpoint
 
