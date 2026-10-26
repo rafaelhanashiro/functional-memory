@@ -118,7 +118,9 @@ def collect(entry, *, allow_running):
     }
     windows = {"all": rows, "first_500": rows[:500], "last_500": rows[-500:]}
     for lr in sorted({row["learning_rate"] for row in rows}, reverse=True):
-        windows[f"lr_{lr:g}"] = [row for row in rows if row["learning_rate"] == lr]
+        phase = [row for row in rows if row["learning_rate"] == lr]
+        windows[f"lr_{lr:g}"] = phase
+        windows[f"lr_{lr:g}_last_200"] = phase[-200:]
     for name, selected in windows.items():
         result["windows"][name] = window(selected, float(oracle["clip_norm"]), independent)
     initial = np.asarray(rows[0]["per_sequence_nll"])
