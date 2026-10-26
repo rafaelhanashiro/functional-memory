@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r4339a245820e/config.yaml",
+    "sha256": "231679d1be72a9b3524f3ee5d7ac71931aa05d00d83ac50919e853196ed8bf9d"
+  },
+  "home_cluster": "kennel",
+  "label": "static-m4-head-scale",
+  "name": "static-m4-head-scale",
+  "record_schema_version": 1,
+  "run_id": "r4339a245820e",
+  "status": "planned"
+}

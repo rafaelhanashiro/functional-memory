@@ -204,6 +204,11 @@ is compared with and without the per-head scale. It executes from
 `worktrees/query-m4-head-scale-4b` (branch `claude/query-m4-head-scale-4b`) with the same
 command, one GPU on `standard,long`.
 
+A fourth control, `r4339a245820e` (`static-m4-head-scale`), copies the canonical
+`static-m4` recipe with only `model.qk_norm_head_scale: true` added. It executes from
+`worktrees/static-m4-head-scale-4b` (branch `claude/static-m4-head-scale-4b`) with the
+same command, one GPU on `standard,long`.
+
 The fixed Taylor comparison isolates the coefficient-generator choice under the
 same QK setup. The current dense run retains its nine features and one-third dense
 mixing contribution; the controls have fixed coefficients and no dense readout.
