@@ -126,3 +126,132 @@ runs:
     batch_coefficient_geometry:
       path: experiments/transformer_200m_4b/runs/r7505c6d49711/batch_coefficient_geometry.json
       sha256: 9c764efb97920defd635cdb124351e56aa7d7703335acf52532b4d674c5bb99c
+- study: transformer_200m_4b
+  run_id: rc95f2055e96d
+  role: query_generator_full_batch_m4_head_scale
+  parent_run_id: r2b22f2ff6461
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rc95f2055e96d/config.yaml
+      sha256: 27a22c6316ecf5382229e2589ad09fd32a77796e6ff5c380d85f4aa80fe135f2
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/rc95f2055e96d/metrics.jsonl
+      sha256: 553afb8839d4308e37fffe9b1684493cb965bda9bc013d932d40f466ef0786ff
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/rc95f2055e96d/completion.json
+      sha256: da80f5402e99a30bcd83130fd1e220a6fc94ab84fc75245e6d11697a0a355f9a
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/rc95f2055e96d/metadata.json
+      sha256: 8abf422b9c2a476840d12effdef17b16b0fbd70005911a782e5a9088d4cd9a85
+  diagnostics:
+    batch_functional_probe:
+      path: experiments/transformer_200m_4b/runs/rc95f2055e96d/batch_functional_probe.json
+      sha256: bcd30375c983af92985ad03aa53207083932668d5f09c00de2e99aaa03d7380a
+    coefficient_vjp_probe:
+      path: experiments/transformer_200m_4b/runs/rc95f2055e96d/coefficient_vjp_probe.json
+      sha256: f27cf9034bdabeb072d425839bf176c9bf2fb0f5951db97cb28acda196a8dcb5
+- study: transformer_200m_4b
+  run_id: rda6029c3286f
+  role: free_coefficients_full_batch_m4_head_scale
+  parent_run_id: r816ab0fbe119
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rda6029c3286f/config.yaml
+      sha256: 01d002eba9db2b6d753ab2e7f87f8c3e0e1fe983a4d2e3f5fc8ab57c3f141a27
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/rda6029c3286f/metrics.jsonl
+      sha256: 5d6d416ae8c074ef1d9459a96e1bce6e7e5b94d091ddb3a094d440fb11530af5
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/rda6029c3286f/completion.json
+      sha256: 96cdf91b42906f7b6b2fcd96ed904e33756d3668058cdd8addf5b0e4b51b7b70
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/rda6029c3286f/metadata.json
+      sha256: 2f7c8edeb72f6cfb0c016079f29113be5a12d24af83a57f60dafb77e10742828
+  diagnostics:
+    free_coefficient_shape:
+      path: experiments/transformer_200m_4b/runs/rda6029c3286f/free_coefficient_shape.json
+      sha256: cd3b343396ea9e682a4801600575673fb8de6ecd6beb80191ec635fc9103e18f
+    batch_coefficient_geometry:
+      path: experiments/transformer_200m_4b/runs/rda6029c3286f/batch_coefficient_geometry.json
+      sha256: 40dbf61ed1972c6a3ad1328ebb120307fbd6008f6629061aa487766bae358653
+    batch_functional_probe:
+      path: experiments/transformer_200m_4b/runs/rda6029c3286f/batch_functional_probe.json
+      sha256: 362e76f4e725a5f952b9a615d6d3eb58784ee591c6d842be4b4fb9385f0611ed
+- study: transformer_200m_4b
+  run_id: rceea84f19f6b
+  role: static_coefficients_full_batch_m4_head_scale
+  parent_run_id: r4339a245820e
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rceea84f19f6b/config.yaml
+      sha256: 35f16b059ff9b42f8e08f526f5a2cb1bc8c4bff77d1cd01b2e48fa909e96c5b1
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/rceea84f19f6b/metrics.jsonl
+      sha256: 99d1156840b8a570b276b709e59ddb371b730a88a110e52cc12aade0b0aeca57
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/rceea84f19f6b/completion.json
+      sha256: 21711414c7a7b28840d244f98392b807f4a20b4275e2aba55df88c9acfa301fc
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/rceea84f19f6b/metadata.json
+      sha256: 2255b57e12db1af3cff8a8ac0285b5ab41cd24b8138a37c6aef870346c385ebc
+  diagnostics:
+    batch_functional_probe:
+      path: experiments/transformer_200m_4b/runs/rceea84f19f6b/batch_functional_probe.json
+      sha256: 372eeb485938d405f85cf29682f7ea68f00d7afc4f900397736248de3e1db520
+- study: transformer_200m_4b
+  run_id: r2b22f2ff6461
+  role: qk_head_scale_parent_query
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/config.yaml
+      sha256: 6a88b0c50103f4ca51b0bf97107a9f3192cf0b9f8a97e14bc7f9173f4b7e2cd0
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/metrics.jsonl
+      sha256: 6ce4862b74cc17870352b58b94c8a03e38160895bd066136638e887870454cad
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/completion.json
+      sha256: cc149ac50f4beaca569155c677cc2fc6aed5366ea77f6ad6ef965958de7aba4e
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/metadata.json
+      sha256: 01c91b8ebab021a9181c9ae5e36f9cb225536ec337152c0d1222e65be4cb664c
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/best_validation.json
+      sha256: 2412159042d9b6e6d346cc495b80ad070a1337a1314b2fff0c50ea41ae8d27b9
+- study: transformer_200m_4b
+  run_id: r4339a245820e
+  role: qk_head_scale_parent_static
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r4339a245820e/config.yaml
+      sha256: 231679d1be72a9b3524f3ee5d7ac71931aa05d00d83ac50919e853196ed8bf9d
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r4339a245820e/metrics.jsonl
+      sha256: aac549c56baf062d85bf3a4026d92a81ea0181671127c7cfd89b75fbdd849fd4
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r4339a245820e/completion.json
+      sha256: afb56b2641f922fef2a15097909d892309d9814cf091d88d9fecc9b88743dc27
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r4339a245820e/metadata.json
+      sha256: e365b09aa102c907956d144ffcb066ee4bb78cfc52c554abce53013ffaa152f8
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r4339a245820e/best_validation.json
+      sha256: d487f8d386c07df16a7e5f8b7d6f6ff756be16fe0abc1b1d57829813167a5514
+- study: transformer_200m_4b
+  run_id: r816ab0fbe119
+  role: qk_head_scale_parent_taylor
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/config.yaml
+      sha256: 56b8c0fc0d776c44822e1a22d2608f3de96354702f17da43fac0e4dbf994abc5
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/metrics.jsonl
+      sha256: bfe9a6fc67b9462e30a4b610075118a6001ebc4c2885034ca5a55b5772453a8d
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/completion.json
+      sha256: 4b215c6374089daa6264ca749e458d9bcd6d7830adba4b223dc97e9204817330
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/metadata.json
+      sha256: 3287429f2c63130f3ddc5618578e5b8a294bdf72877976012835918a2e21525c
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/best_validation.json
+      sha256: 5d976697f0da120f1e7458d5b1c694b410564ab9ca3e187dab77247de7d80914

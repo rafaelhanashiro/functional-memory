@@ -1,0 +1,148 @@
+data:
+  source: packed
+  dataset_name: HuggingFaceFW/fineweb-edu
+  dataset_config: sample-100BT
+  split: train
+  tokenizer_name: NousResearch/Llama-2-7b-hf
+  text_field: text
+  train_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
+  eval_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
+  batch_size: 256
+  sequence_length: 2049
+  shuffle_seed: 0
+  synthetic_vocab_size: 32000
+model:
+  kind: transformer
+  vocab_size: 32000
+  max_seq_len: 2048
+  num_layers: 15
+  hidden_size: 896
+  num_heads: 14
+  num_kv_heads: 14
+  qk_head_dim: 64
+  value_head_dim: 64
+  intermediate_size: 2304
+  rope_theta: 10000.0
+  rms_norm_eps: 1.0e-06
+  rms_norm_fp32: true
+  dropout: 0.0
+  tie_embeddings: false
+  remat: false
+  attention_backend: mosaic
+  attention_degree: 4
+  attention_normalization: false
+  attention_output_scaling: head_rms_norm
+  attention_mechanism: dot_product
+  gdn_conv_size: 4
+  gdn_erase_mode: tied
+  gdn_write_activation: sigmoid
+  gdn_polynomial_degree: 1
+  gla_gate_rank: 16
+  gla_gate_tau: 16.0
+  gla_chunk_size: 64
+  gla_inner_chunk_size: 16
+  gla_use_rope: true
+  quadratic_mode: fixed
+  quadratic_sharing: global
+  attention_coefficients: fixed
+  attention_fixed_coefficients: null
+  attention_fixed_square_factors: null
+  attention_coefficient_sharing: global
+  attention_coefficient_conditioning: static
+  attention_coefficient_activation: identity
+  attention_coefficient_readout: diagonal
+  attention_coefficient_readout_scale: 1.0
+  attention_coefficient_feature_count: null
+  attention_coefficient_amplitude_initial: 1.0
+  attention_coefficient_projection_initial_std: 0.0
+  attention_coefficient_tanh_bias: false
+  positional_encoding: rope
+  path_w_rank: 32
+  path_conv_size: 3
+  attention_coefficient_amplitude_scale: none
+  attention_coefficient_scale: none
+  attention_coefficient_parameterization: direct
+  attention_coefficient_initialization: taylor
+  attention_denominator_degree: null
+  attention_denominator_parameterization: direct
+  attention_denominator_constant: fixed
+  qk_norm: true
+  qk_norm_type: rms_norm
+  qk_norm_sharing: per_layer
+  qk_norm_initial_scale: null
+  qk_norm_eps: 1.0e-06
+  qk_norm_head_scale: true
+  initialization: transformer_truncated_reference
+optim:
+  learning_rate: 0.01
+  min_learning_rate: 0.001
+  weight_decay: 0.0
+  weight_decay_policy: exclude_embeddings_norms_biases_v1
+  coefficient_penalty: 0.0
+  coefficient_penalty_denominator: true
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip_norm: 1.0
+  warmup_steps: 0
+  total_steps: 10000
+train:
+  seed: 42
+  source_commit: auto
+  dtype: bfloat16
+  workdir: experiments/transformer_200m_4b/runs/rda6029c3286f
+  checkpoint_dir: experiments/transformer_200m_4b/runs/rda6029c3286f/checkpoints
+  micro_batch_size: 8
+  log_every: 1
+  eval_every: 1
+  eval_early_every: 100
+  eval_early_until: 1500
+  eval_batches: 1
+  ckpt_every: 100
+  wandb_project: functional-memory
+  wandb_entity: rafah-massachusetts-institute-of-technology
+  wandb_run_name: free-coefficients-m4-full-batch-head-scale
+  wandb_group: transformer_200m_4b
+  wandb_dir: null
+  wandb_mode: online
+schema_version: 1
+experiment_kind: fixed_input_coefficient_fit
+condition: coefficient_oracle/free_coefficients_full_batch_m4_head_scale
+oracle:
+  parent_run_id: r816ab0fbe119
+  parent_study: transformer_200m_4b
+  parent_config: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r816ab0fbe119/config.yaml
+  parent_config_sha256: 56b8c0fc0d776c44822e1a22d2608f3de96354702f17da43fac0e4dbf994abc5
+  parent_checkpoint: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r816ab0fbe119/checkpoints/7500
+  parent_checkpoint_step: 7500
+  parent_checkpoint_sha256: 5c8d1f360da2a9c19217fba41521f0dd1ba148d73e42ff6634ca8c6fa79b74c1
+  eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+  batch_sha256: f2b3cfea843fb2ab2bd366e2590a6fea79ca08aee82339f37db484a4dbff170a
+  sequence_count: 256
+  microbatch_size: 8
+  data_start: 0
+  data_split: eval
+  data_role: fitting inputs; no generalization evaluation
+  parameterization: free_per_example_query_coefficients
+  trainable_parameters:
+  - per_example_effective_monomial_coefficients
+  coefficient_storage: independent [sequence, layer, query_position, head, order]
+    coefficients; shared across causal keys
+  optimizer_coordinates: factorial(order)*effective_monomial_coefficient
+  frozen_parameters: all pretrained parameters; attention coefficients replaced by
+    the per-example tables
+  initialization: capture actual coefficients on each sequence's original forward
+    pass
+  max_updates: 10000
+  initial_updates: 2000
+  plateau_window: 200
+  plateau_tolerance: 0.001
+  confirmation_updates: 500
+  learning_rate: 0.01
+  learning_rate_decay: 0.1
+  beta1: 0.9
+  beta2: 0.95
+  epsilon: 1.0e-08
+  clip_norm: 1.0
+  gradient_scaling: per-sequence mean NLL, clipped independently per sequence
+  checkpoint_every: 100
+  checkpoint_selection: lowest fitting NLL; no independent validation
