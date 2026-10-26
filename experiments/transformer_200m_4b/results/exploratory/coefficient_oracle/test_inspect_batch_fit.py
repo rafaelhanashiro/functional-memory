@@ -103,3 +103,45 @@ def test_query_inspector_preserves_native_forward_and_reads_live_inputs(tmp_path
     merged = nnx.merge_state(frozen, generator)
     for a, b in zip(jax.tree.leaves(merged), jax.tree.leaves(params), strict=True):
         np.testing.assert_array_equal(a, b)
+
+
+def test_native_hooks_capture_nontrivial_bfloat16_generator_without_reprojection(tmp_path):
+    """Nonzero W, signed b/a, two causal layers, and the real BF16 module policy."""
+    config = tiny_config(tmp_path)
+    config.model = replace(config.model, num_layers=2, attention_degree=4, attention_backend="blocked",
+        attention_normalization=False, attention_coefficients="learned",
+        attention_coefficient_conditioning="query", attention_coefficient_activation="tanh",
+        attention_coefficient_scale="factorial", attention_coefficient_amplitude_scale="factorial",
+        attention_coefficient_sharing="per_head", attention_output_scaling="head_rms_norm",
+        qk_norm=True, qk_norm_type="rms_norm", qk_norm_sharing="per_layer", qk_norm_head_scale=True,
+        initialization="transformer_truncated_reference")
+    model = build_model(config.model, 51)
+    for _, module in nnx.iter_graph(model):
+        if isinstance(module, nnx.Module) and hasattr(module, "dtype"):
+            module.dtype = jnp.bfloat16
+    rng = np.random.default_rng(34)
+    for name, scale in (("query_polynomial_kernel", .7), ("query_polynomial_bias", .2),
+                        ("query_polynomial_amplitude", .4)):
+        parameter = getattr(model, name)
+        parameter[...] = jnp.asarray(rng.normal(size=parameter.shape) * scale, jnp.float32)
+    graph, params = nnx.split(model, nnx.Param)
+    tokens = jnp.asarray(rng.integers(0, 16, size=(4, 5)))
+    positions = np.asarray([0, 2, 3])
+    inspect, compare = make_query_inspector(graph, positions)
+    parity = jax.device_get(compare(params, tokens))
+    assert float(parity["logit_max_absolute_error"]) == 0.
+    losses, stats, norms, activation, coordinates = jax.device_get(inspect(params, tokens))
+    np.testing.assert_allclose(losses, make_native_evaluator(graph)(params, tokens), atol=1e-6)
+
+    @jax.jit
+    def native_coefficients(state, inputs):
+        return nnx.merge(graph, state)(inputs[:, :-1], deterministic=True, return_coefficients=True)[1]
+
+    native = np.asarray(native_coefficients(params, tokens))
+    expected = np.take(native * np.asarray([1, 1, 2, 6, 24]), positions, axis=2)
+    np.testing.assert_allclose(coordinates, expected, atol=1e-6, rtol=1e-6)
+    np.testing.assert_allclose(norms, np.linalg.norm(expected, axis=-1), atol=1e-6)
+    assert np.max(stats["saturated_099_fraction"]) > 0
+    assert np.min(stats["tanh_derivative_mean"]) < .5
+    assert len(activation) == 10
+    assert not any("residual" in name for name in activation)

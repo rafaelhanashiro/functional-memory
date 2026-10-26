@@ -30,7 +30,7 @@ import tensorstore as ts
 import yaml
 
 from scaffolds.records import load_run, update_record, validate_record
-from scaffolds.transformer.attention.parameters import parameters_for_layer
+from scaffolds.transformer.attention import input_dependent
 from scaffolds.transformer.data.packed import PackedBatchIterator
 from scaffolds.transformer.training import telemetry
 from scaffolds.transformer.training.checkpointing import state_sha256
@@ -231,75 +231,94 @@ def make_override_evaluator(graph):
 
 
 def make_query_inspector(graph, positions):
-    """Use existing blocks in native order; collect diagnostics beside the forward."""
-    positions = jnp.asarray(positions)
-    original_record_attention_output = telemetry.record_attention_output
+    """Read actual generator operands through hooks in the native model forward.
 
-    def record_attention_output(y, *, head_rms_norm_eps=None):
-        original_record_attention_output(y, head_rms_norm_eps=head_rms_norm_eps)
-        if telemetry.active() and head_rms_norm_eps is not None:
-            squared = jnp.mean(jnp.square(y.astype(jnp.float32)), axis=-1)
-            for multiplier in (1, 100):
-                telemetry.record(f"head_mean_square_lt_{multiplier}eps_fraction_mean",
-                    jnp.mean((squared < multiplier * head_rms_norm_eps).astype(jnp.float32)), "mean")
+    Do not reconstruct the block loop, re-evaluate its RMSNorm/projection, or ask
+    the model for a different return signature. Hooks preserve every native
+    operation and only add diagnostic consumers of its existing tensors.
+    """
+    positions = jnp.asarray(positions)
+    native_project = input_dependent.project_coefficients
+    native_tanh = jnp.tanh
 
     def forward(params, inputs):
         model = nnx.merge(graph, params)
-        x = model.dropout(model.token_embedding(inputs), deterministic=True)
         statistics, norm_samples, coordinate_samples = [], [], []
-        # The process-local hook records two extra reductions during JIT tracing;
-        # the scaffold and native mathematical forward are unchanged.
-        with patch.object(telemetry, "record_attention_output", record_attention_output), telemetry.collect() as collector:
-            for index, name in enumerate(model.layer_names):
-                layer = getattr(model, name)
-                parameters = parameters_for_layer(model, model.attention_parameter_specs, index)
-                h = layer.attention_norm(x)
-                kernel = parameters["query_polynomial_kernel"].astype(jnp.float32)
-                bias = parameters["query_polynomial_bias"].astype(jnp.float32)
-                amplitude = parameters["query_polynomial_amplitude"].astype(jnp.float32)
-                z = jnp.einsum("btd,hdr->bthr", h.astype(jnp.float32), kernel,
-                               precision=jax.lax.Precision.HIGHEST,
-                               preferred_element_type=jnp.float32)
-                if "query_polynomial_tanh_bias" in parameters:
-                    z = z + parameters["query_polynomial_tanh_bias"].astype(jnp.float32)
-                feature = jnp.tanh(z)
-                derivative = 1. - jnp.square(feature)
-                with telemetry.scope(f"layer_{index:02d}"):
-                    x, coefficients = layer(x, deterministic=True, attention_parameters=parameters,
-                                            return_coefficients=True)
-                factorial = jnp.asarray([math.factorial(r) for r in range(coefficients.shape[-1])])
-                coordinates = coefficients * factorial
-                norm = jnp.linalg.norm(coordinates, axis=-1, keepdims=True)
-                direction = coordinates / jnp.maximum(norm, 1e-30)
-                modulation = amplitude * feature
-                cancellation = jnp.abs(coordinates) / jnp.maximum(
-                    jnp.abs(bias) + jnp.abs(modulation), 1e-30)
-                # Geometry sensitivity, not the task-loss gradient: ||d(u/||u||)/du_r||.
-                direction_jacobian = jnp.sqrt(jnp.maximum(0., 1. - direction ** 2)) / jnp.maximum(norm, 1e-12)
-                h_norm = jnp.linalg.norm(h.astype(jnp.float32), axis=-1)[:, :, None, None]
-                values = {
-                    "preactivation_mean_square": z ** 2,
-                    "saturated_099_fraction": (jnp.abs(feature) >= .99).astype(jnp.float32),
-                    "tanh_derivative_mean": derivative,
-                    "tanh_derivative_lt001_fraction": (derivative < .01).astype(jnp.float32),
-                    "cancellation_ratio_mean": cancellation,
-                    "cancellation_ratio_lt001_fraction": (cancellation < .01).astype(jnp.float32),
-                    "coefficient_mean_square_factorial_coordinates": coordinates ** 2,
-                    "direction_jacobian_norm_floor_fraction": jnp.broadcast_to(
-                        (norm < 1e-12).astype(jnp.float32), coordinates.shape),
-                    "direction_bias_jacobian_mean_square": direction_jacobian ** 2,
-                    "direction_amplitude_jacobian_mean_square": (direction_jacobian * feature) ** 2,
-                    "direction_projection_jacobian_frobenius_mean_square": (
-                        direction_jacobian * amplitude * derivative * h_norm) ** 2,
-                }
-                statistics.append({key: value.mean(axis=(0, 1)) for key, value in values.items()})
-                # take() preserves [sequence, sampled_query, head]; mixed advanced
-                # indexing with a scalar final index would move the sampled axis.
-                norm_samples.append(jnp.take(norm[..., 0], positions, axis=1))
-                coordinate_samples.append(jnp.take(coordinates, positions, axis=1))
-            logits = model.lm_head(model.final_norm(x))
+        activation = {}
+
+        def project(h, kernel, effective_bias, **kwargs):
+            if (kwargs.get("activation") != "tanh" or kwargs.get("mixing") is not None
+                    or kwargs.get("amplitude_scale") != "factorial"):
+                raise ValueError("Native statistics require the factorial diagonal tanh generator")
+            projected = []
+
+            def capture_tanh(z):
+                feature = native_tanh(z)
+                projected.append((z, feature))
+                return feature
+
+            # Scope the tanh hook to this one existing projection call. The
+            # native implementation supplies its actual rounded preactivation.
+            with patch.object(input_dependent.jnp, "tanh", capture_tanh):
+                coefficients = native_project(h, kernel, effective_bias, **kwargs)
+            if len(projected) != 1:
+                raise ValueError("Expected exactly one native tanh projection")
+            z, feature = projected[0]
+            derivative = 1. - jnp.square(feature)
+            factorial = jnp.asarray([math.factorial(r) for r in range(coefficients.shape[-1])], jnp.float32)
+            amplitude = kwargs["amplitude"].astype(jnp.float32)
+            coordinates = coefficients * factorial
+            norm = jnp.linalg.norm(coordinates, axis=-1, keepdims=True)
+            direction = coordinates / jnp.maximum(norm, 1e-30)
+            # Use the native rounded monomial operands for this ratio, rather
+            # than reconstructing stored b from a second parameter lookup.
+            modulation = (amplitude / factorial) * feature
+            cancellation = jnp.abs(coefficients) / jnp.maximum(
+                jnp.abs(effective_bias) + jnp.abs(modulation), 1e-30)
+            direction_jacobian = jnp.sqrt(jnp.maximum(0., 1. - direction ** 2)) / jnp.maximum(norm, 1e-12)
+            h_norm = jnp.linalg.norm(h.astype(jnp.float32), axis=-1)[:, :, None, None]
+            values = {
+                "preactivation_mean_square": z ** 2,
+                "saturated_099_fraction": (jnp.abs(feature) >= .99).astype(jnp.float32),
+                "tanh_derivative_mean": derivative,
+                "tanh_derivative_lt001_fraction": (derivative < .01).astype(jnp.float32),
+                "cancellation_ratio_mean": cancellation,
+                "cancellation_ratio_lt001_fraction": (cancellation < .01).astype(jnp.float32),
+                "coefficient_mean_square_factorial_coordinates": coordinates ** 2,
+                "direction_jacobian_norm_floor_fraction": jnp.broadcast_to(
+                    (norm < 1e-12).astype(jnp.float32), coordinates.shape),
+                "direction_bias_jacobian_mean_square": direction_jacobian ** 2,
+                "direction_amplitude_jacobian_mean_square": (direction_jacobian * feature) ** 2,
+                "direction_projection_jacobian_frobenius_mean_square": (
+                    direction_jacobian * amplitude * derivative * h_norm) ** 2,
+            }
+            statistics.append({key: value.mean(axis=(0, 1)) for key, value in values.items()})
+            norm_samples.append(jnp.take(norm[..., 0], positions, axis=1))
+            coordinate_samples.append(jnp.take(coordinates, positions, axis=1))
+            return coefficients
+
+        def record_attention_output(y, *, head_rms_norm_eps=None):
+            if head_rms_norm_eps is None:
+                raise ValueError("Native statistics require head-output RMSNorm")
+            index = sum(key.endswith("attention_output_rms") for key in activation)
+            prefix = f"layer_{index:02d}/"
+            squared = jnp.mean(jnp.square(y.astype(jnp.float32)), axis=-1)
+            activation[prefix + "attention_output_rms"] = squared.mean()
+            activation[prefix + "attention_output_head_rms_min"] = jnp.sqrt(squared.min())
+            activation[prefix + "head_rms_norm_gain_max"] = jax.lax.rsqrt(squared.min() + head_rms_norm_eps)
+            for multiplier in (1, 100):
+                activation[prefix + f"head_mean_square_lt_{multiplier}eps_fraction_mean"] = jnp.mean(
+                    (squared < multiplier * head_rms_norm_eps).astype(jnp.float32))
+
+        # No collector is activated: native residual telemetry stays a no-op.
+        # Only the two process-local hooks above add observable diagnostics.
+        with patch.object(input_dependent, "project_coefficients", project), patch.object(
+                telemetry, "record_attention_output", record_attention_output):
+            logits = model(inputs, deterministic=True)
+        if len(statistics) != len(model.layer_names) or len(activation) != 5 * len(model.layer_names):
+            raise ValueError("Native diagnostics did not visit every expected attention layer")
         stacked = {key: jnp.stack([row[key] for row in statistics]) for key in statistics[0]}
-        return logits, stacked, jnp.stack(norm_samples), collector.values, jnp.stack(coordinate_samples)
+        return logits, stacked, jnp.stack(norm_samples), activation, jnp.stack(coordinate_samples)
 
     @jax.jit
     def inspect(params, tokens):
@@ -347,6 +366,7 @@ def query_diagnostics(graph, params, batch, microbatch, positions):
             raise ValueError(f"Unknown activation telemetry reduction: {key}")
         telemetry_values[key] = float(value)
     return np.asarray(losses), {
+        "capture_method": "Process-local hooks on the unchanged native model, coefficient projection/tanh operands, and pre-output-RMS attention tensors; no duplicated layer loop or projection.",
         "native_wrapper_parity": parity,
         "statistics_axes": ["layer", "head", "order"], "statistics": means,
         "factorial_coordinate_norm_quantiles": np.quantile(norms, QUANTILES).tolist(),
@@ -474,10 +494,19 @@ def main():
         for label, params in (("before", source), ("after", fitted_params)):
             replay, diagnostic, coordinates = query_diagnostics(graph, params, batch, microbatch, positions)
             expected = initial if label == "before" else losses
-            error = float(np.max(np.abs(replay - expected)))
+            difference = replay - expected
+            error = float(np.max(np.abs(difference)))
+            parity_summary = {"snapshot": label, "mean_nll_delta": float(np.mean(difference)),
+                "max_absolute_nll_delta": error,
+                "signed_nll_delta_quantiles": np.quantile(difference, QUANTILES).tolist(),
+                "absolute_nll_delta_quantiles": np.quantile(np.abs(difference), QUANTILES).tolist(),
+                "quantile_probabilities": QUANTILES, "nll_replay_atol": tolerance}
+            print("Native diagnostic parity: " + json.dumps(parity_summary), flush=True)
             if error > tolerance:
-                raise ValueError(f"Diagnostic wrapper NLL differs from native: {error}")
+                raise ValueError("Native-hook diagnostic NLL differs from external native replay: "
+                                 + json.dumps(parity_summary))
             diagnostic["external_native_max_nll_error"] = error
+            diagnostic["external_native_nll_comparison"] = parity_summary
             generator, _ = split_generator_parameters(params)
             parameter_values = {str(path[-1]): np.asarray(value[...], np.float64)
                                 for path, value in nnx.to_flat_state(generator)}
