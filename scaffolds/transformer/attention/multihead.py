@@ -10,7 +10,7 @@ from flax import nnx
 
 from scaffolds.transformer.attention.core import attention_core
 from scaffolds.transformer.attention.output_scaling import OUTPUT_SCALINGS, scale_attention_output
-from scaffolds.transformer.attention.qk_norm import cosine_score_operands, rms_score_operands
+from scaffolds.transformer.attention.qk_norm import cosine_score_operands, rms_score_operands, scale_rms_queries
 from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
 from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
@@ -52,11 +52,14 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_fixed_coefficients=config.attention_fixed_coefficients,
         attention_coefficient_conditioning=config.attention_coefficient_conditioning,
         attention_coefficient_activation=config.attention_coefficient_activation,
+        attention_coefficient_readout=config.attention_coefficient_readout,
+        attention_coefficient_readout_scale=config.attention_coefficient_readout_scale,
         attention_coefficient_amplitude_scale=config.attention_coefficient_amplitude_scale,
         attention_coefficient_scale=config.attention_coefficient_scale,
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         qk_norm_type=config.qk_norm_type,
+        qk_norm_head_scale=config.qk_norm_head_scale,
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
         positional_encoding=config.positional_encoding,
         rngs=rngs,
@@ -75,10 +78,13 @@ class MultiHeadAttention(nnx.Module):
         attention_output_scaling: str = "none", rms_norm_eps: float = 1e-6,
         attention_coefficient_conditioning: str = "static",
         attention_coefficient_activation: str = "identity",
+        attention_coefficient_readout: str = "diagonal",
+        attention_coefficient_readout_scale: float = 1.0,
         positional_encoding: str = "rope",
         attention_coefficient_amplitude_scale: str = "none",
         attention_coefficient_scale: str = "none",
         qk_norm_type: str = "cosine_log_scale",
+        qk_norm_head_scale: bool = False,
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path"):
@@ -93,6 +99,10 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("qk_norm must be a boolean")
         if qk_norm_type not in ("cosine_log_scale", "rms_norm"):
             raise ValueError(f"Unknown QK-norm type: {qk_norm_type}")
+        if not isinstance(qk_norm_head_scale, bool):
+            raise ValueError("qk_norm_head_scale must be a boolean")
+        if qk_norm_head_scale and (not qk_norm or qk_norm_type != "rms_norm"):
+            raise ValueError("QK head scaling requires enabled QK RMSNorm")
         if qk_norm and attention_degree == 0:
             raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
         if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused", "mosaic")):
@@ -155,6 +165,20 @@ class MultiHeadAttention(nnx.Module):
         if (attention_coefficient_conditioning == "query" and attention_coefficient_activation == "identity"
                 and attention_degree != 1):
             raise ValueError("Identity query coefficients require degree-one attention")
+        if attention_coefficient_readout not in ("diagonal", "dense"):
+            raise ValueError("Unknown attention coefficient readout")
+        if attention_coefficient_readout == "dense" and (
+                attention_coefficient_conditioning != "query" or attention_coefficient_activation != "tanh"):
+            raise ValueError("Dense coefficient readout requires tanh query-only coefficients")
+        if (not isinstance(attention_coefficient_readout_scale, (int, float))
+                or isinstance(attention_coefficient_readout_scale, bool)
+                or not math.isfinite(attention_coefficient_readout_scale)
+                or attention_coefficient_readout_scale <= 0):
+            raise ValueError("Coefficient readout scale must be finite and positive")
+        if attention_coefficient_readout_scale != 1.0 and attention_coefficient_readout != "dense":
+            raise ValueError("A non-unit readout scale requires dense coefficient readout")
+        self.attention_coefficient_readout = attention_coefficient_readout
+        self.attention_coefficient_readout_scale = attention_coefficient_readout_scale
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
         if attention_coefficient_amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {attention_coefficient_amplitude_scale}")
@@ -180,6 +204,7 @@ class MultiHeadAttention(nnx.Module):
         self.quadratic_mode = quadratic_mode
         self.qk_norm = qk_norm
         self.qk_norm_type = qk_norm_type
+        self.qk_norm_head_scale = qk_norm_head_scale
         self.qk_norm_eps = qk_norm_eps
         self.attention_output_scaling = attention_output_scaling
         self.rms_norm_eps = rms_norm_eps
@@ -217,17 +242,21 @@ class MultiHeadAttention(nnx.Module):
         log_scale = parameters.pop("qk_norm_log_scale", None)
         q_gain = parameters.pop("qk_norm_q_gain", None)
         k_gain = parameters.pop("qk_norm_k_gain", None)
+        head_log_scale = parameters.pop("qk_norm_head_log_scale", None)
         if (self.qk_norm and self.qk_norm_type == "cosine_log_scale") != (log_scale is not None):
             raise ValueError("QK-norm requires exactly its model-owned qk_norm_log_scale parameter")
         rms_enabled = self.qk_norm and self.qk_norm_type == "rms_norm"
         if rms_enabled != (q_gain is not None) or rms_enabled != (k_gain is not None):
             raise ValueError("QK RMSNorm requires exactly its model-owned qk_norm_q_gain and qk_norm_k_gain parameters")
+        if self.qk_norm_head_scale != (head_log_scale is not None):
+            raise ValueError("QK RMS head scaling requires exactly its model-owned qk_norm_head_log_scale parameter")
         output_norm_scale = parameters.pop("output_norm_scale", None)
         if (self.attention_output_scaling == "head_rms_norm") != (output_norm_scale is not None):
             raise ValueError("Head RMSNorm output scaling requires exactly its model-owned output_norm_scale parameter")
         query_kernel = parameters.pop("query_polynomial_kernel", None)
         query_bias = parameters.pop("query_polynomial_bias", None)
         query_amplitude = parameters.pop("query_polynomial_amplitude", None)
+        query_mixing = parameters.pop("query_polynomial_mixing", None)
         query_tanh_bias = parameters.pop("query_polynomial_tanh_bias", None)
         key_kernel = parameters.pop("key_polynomial_kernel", None)
         key_amplitude = parameters.pop("key_polynomial_amplitude", None)
@@ -245,12 +274,17 @@ class MultiHeadAttention(nnx.Module):
 
             if query_kernel is None or query_bias is None:
                 raise ValueError("Query-conditioned attention requires its model-owned kernel and bias")
+            if (self.attention_coefficient_readout == "dense") != (query_mixing is not None):
+                raise ValueError("Coefficient readout must match its model-owned mixing parameter")
+            if query_mixing is not None and query_amplitude is not None:
+                raise ValueError("Dense readout replaces the diagonal amplitude parameter")
             effective_coefficients = query_coefficients
             if effective_coefficients is None:
                 effective_coefficients = project_coefficients(
-                    x, query_kernel, query_bias, amplitude=query_amplitude,
+                    x, query_kernel, query_bias, amplitude=query_amplitude, mixing=query_mixing,
                     activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
-                    amplitude_scale=self.attention_coefficient_amplitude_scale)
+                    amplitude_scale=self.attention_coefficient_amplitude_scale,
+                    readout_scale=self.attention_coefficient_readout_scale)
             parameters["query_polynomial_coefficients"] = effective_coefficients
             if self.attention_coefficient_conditioning == "query_key":
                 if key_kernel is None or key_amplitude is None:
@@ -258,22 +292,30 @@ class MultiHeadAttention(nnx.Module):
                 parameters["key_polynomial_factors"] = project_key_factors(x, key_kernel, key_amplitude)
             elif key_kernel is not None or key_amplitude is not None:
                 raise ValueError("Query-conditioned attention cannot receive key factor parameters")
-        elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_tanh_bias,
+        elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_mixing, query_tanh_bias,
                                                  key_kernel, key_amplitude)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
         kernel_coefficient_activation = self.attention_coefficient_activation
         if self.attention_coefficient_conditioning == "static" and (
                 query_coefficients is not None or return_coefficients):
-            if "polynomial_coefficients" not in parameters:
+            if (self.attention_fixed_square_factors is not None
+                    or "polynomial_square_factors" in parameters):
                 raise ValueError("Static coefficient capture and override require direct polynomial coefficients")
             # Capture the represented coefficients after their one factorial division.
             # Capture alone preserves the ordinary static attention call exactly.
+            # The fixed Taylor kernel represents its coefficients implicitly.
+            represented = parameters.get("polynomial_coefficients")
+            if represented is None:
+                represented = jnp.asarray(
+                    self.attention_fixed_coefficients if self.attention_fixed_coefficients is not None
+                    else [1 / math.factorial(order) for order in range(self.attention_degree + 1)],
+                    dtype=jnp.float32)
             effective_coefficients = jnp.broadcast_to(
-                parameters["polynomial_coefficients"],
+                represented,
                 (batch, seq_len, self.num_heads, self.attention_degree + 1))
             if query_coefficients is not None:
                 effective_coefficients = query_coefficients
-                parameters.pop("polynomial_coefficients")
+                parameters.pop("polynomial_coefficients", None)
                 parameters["query_polynomial_coefficients"] = effective_coefficients
                 # The core's tanh branch selects the general per-query polynomial
                 # kernel. These are already effective coefficients: no activation,
@@ -294,6 +336,8 @@ class MultiHeadAttention(nnx.Module):
         if self.qk_norm:
             if self.qk_norm_type == "rms_norm":
                 q, k = rms_score_operands(q, k, q_gain, k_gain, eps=self.qk_norm_eps)
+                if self.qk_norm_head_scale:
+                    q = scale_rms_queries(q, head_log_scale)
             else:
                 # Preserve the historical scaled-cosine arithmetic exactly.
                 q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)
@@ -310,7 +354,7 @@ class MultiHeadAttention(nnx.Module):
             if "coefficients" in parameters:
                 raise ValueError("Coefficients were supplied twice")
             parameters = {**parameters, "coefficients": coefficients}
-        if self.attention_fixed_coefficients is not None:
+        if self.attention_fixed_coefficients is not None and query_coefficients is None:
             if any(name in parameters for name in ("coefficients", "polynomial_coefficients", "polynomial_square_factors",
                                                 *DENOMINATOR_KINDS)):
                 raise ValueError("Fixed polynomial coefficients cannot be combined with supplied attention coefficients")

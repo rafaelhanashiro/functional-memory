@@ -30,6 +30,15 @@ def fitting_scope(parameterization, parent_batch_size, sequence_count=None):
     """Resolve deliberately selected inputs without silently changing older modes."""
     if parameterization not in PARAMETERIZATIONS:
         raise ValueError(f"Unknown coefficient parameterization: {parameterization}")
+    if parameterization == "query_coefficient_generator":
+        count = 1 if sequence_count is None else sequence_count
+        if count in {1, parent_batch_size}:
+            return count, "query_generator_single_sequence" if count == 1 else "query_generator_full_batch"
+        # A larger fixed batch: whole microbatches of eight, named by its size.
+        if type(count) is not int or count <= parent_batch_size or count % 8:
+            raise ValueError("Generator fitting requires --sequence-count 1, the parent's full 256-sequence "
+                             "batch, or a larger multiple of 8")
+        return count, f"query_generator_{count}_sequences"
     if parameterization in {"static_coefficients", "free_per_example_query_coefficients"}:
         if sequence_count not in {1, 256} or sequence_count not in {1, parent_batch_size}:
             raise ValueError("Coefficient-table fitting requires --sequence-count 1 or the parent's full 256-sequence batch")
@@ -37,7 +46,7 @@ def fitting_scope(parameterization, parent_batch_size, sequence_count=None):
         prefix = "static_coefficients" if parameterization == "static_coefficients" else "free_coefficients"
         return sequence_count, f"{prefix}_{suffix}"
     if sequence_count is not None:
-        raise ValueError("--sequence-count is only supported for static_coefficients or free_per_example_query_coefficients")
+        raise ValueError("--sequence-count is only supported for generator, static, or independent coefficient fits")
     if parameterization == "shared_batch_query_coefficients":
         return parent_batch_size, "shared_coefficients_full_batch"
     return 1, "query_generator_single_sequence"
@@ -50,28 +59,51 @@ def fitting_role(role, degree):
     return role if degree == 8 else f"{role}_m{degree}"
 
 
-def parent_degree(model):
-    """Require the trained query family and a degree supported by its backend."""
+def parent_degree(model, parameterization="query_coefficient_generator"):
+    """Check the requested fitted family against the unchanged source checkpoint."""
+    from dataclasses import fields
     from scaffolds.transformer.configs import ModelConfig
 
     degree = model.get("attention_degree")
     fitting_role("query_generator_single_sequence", degree)
-    if (model["attention_coefficient_conditioning"] != "query"
-            or model["attention_coefficients"] != "learned" or model["attention_normalization"]
-            or model["attention_coefficient_activation"] != "tanh"
-            or model["attention_coefficient_scale"] != "factorial"
-            or model["attention_coefficient_amplitude_scale"] != "factorial"
+    query = (model["attention_coefficient_conditioning"] == "query"
+             and model["attention_coefficients"] == "learned"
+             and model["attention_coefficient_activation"] == "tanh"
+             and model["attention_coefficient_scale"] == "factorial"
+             and model["attention_coefficient_amplitude_scale"] == "factorial")
+    static = (model["attention_coefficient_conditioning"] == "static"
+              and model["attention_coefficients"] == "learned"
+              and model["attention_coefficient_activation"] == "identity"
+              and model["attention_coefficient_scale"] == "factorial")
+    taylor = (model["attention_coefficient_conditioning"] == "static"
+              and model["attention_coefficients"] == "fixed"
+              and model.get("attention_fixed_coefficients") is None
+              and model.get("attention_fixed_square_factors") is None
+              and model.get("attention_coefficient_initialization", "taylor") == "taylor")
+    if parameterization == "query_coefficient_generator" and not query:
+        raise ValueError("Expected a 4B factorial-scaled query-only parent")
+    if (not (query or static or (taylor and parameterization == "free_per_example_query_coefficients"))
+            or model["attention_normalization"]
+            or model.get("attention_coefficient_parameterization", "direct") != "direct"
             or model["initialization"] != "transformer_truncated_reference"
             or not model["qk_norm"] or model["attention_backend"] != "mosaic"):
-        raise ValueError("Expected a 4B factorial-scaled query-only parent")
+        raise ValueError("Expected a compatible 4B unnormalized query, static, or fixed Taylor parent")
     # The shared model validator owns supported Mosaic widths and degrees.
-    ModelConfig(**model)
+    checked = dict(model)
+    if "gdn_polynomial_degree" not in {field.name for field in fields(ModelConfig)}:
+        checked.pop("gdn_polynomial_degree", None)
+    ModelConfig(**checked)
     return degree
 
 
-def prepare(parent: Path, *, parameterization="query_coefficient_generator", sequence_count=None):
+def prepare(parent: Path, *, parameterization="query_coefficient_generator", sequence_count=None,
+            generator_readout="diagonal"):
     if parameterization not in PARAMETERIZATIONS:
         raise ValueError(f"Unknown coefficient parameterization: {parameterization}")
+    if generator_readout not in {"diagonal", "dense"}:
+        raise ValueError("Generator readout must be diagonal or dense")
+    if generator_readout != "diagonal" and parameterization != "query_coefficient_generator":
+        raise ValueError("Dense readout requires query_coefficient_generator")
     static = parameterization == "static_coefficients"
     shared = parameterization in {"shared_batch_query_coefficients", "static_coefficients"}
     free = parameterization == "free_per_example_query_coefficients"
@@ -84,8 +116,14 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
     source = yaml.safe_load((parent / "config.yaml").read_text())
     count, role = fitting_scope(parameterization, int(source["data"]["batch_size"]), sequence_count)
     model = source["model"]
-    degree = parent_degree(model)
+    degree = parent_degree(model, parameterization)
+    if model.get("attention_coefficient_readout", "diagonal") != "diagonal":
+        raise ValueError("The fitting parent must have the original diagonal query readout")
+    if generator_readout == "dense":
+        role = role.replace("query_generator_", "dense_query_generator_", 1)
     role = fitting_role(role, degree)
+    if model.get("qk_norm_head_scale", False):
+        role += "_head_scale"
     best = json.loads((parent / "best_validation.json").read_text())
     descriptor = record["selected_checkpoint"]
     checkpoint = Path(descriptor["path"])
@@ -101,9 +139,9 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
     sequence_identity = json.loads((reference_run / "data_identity.json").read_text())
     if sequence_identity["manifest_sha256"] != sha256(source["data"]["eval_manifest"]):
         raise ValueError("The fitting sequence's manifest changed")
-    microbatch = min(count, 8) if table else 1
+    microbatch = min(count, 8)
     learning_rate = 0.01 if table else 0.001
-    if table:
+    if table or count > 1:
         import numpy as np
         from scaffolds.transformer.data.packed import PackedBatchIterator
         batch = next(iter(PackedBatchIterator(
@@ -112,13 +150,19 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
         )))
         sequence_identity["batch_sha256"] = hashlib.sha256(batch.astype(np.int32).tobytes()).hexdigest()
     recipe = deepcopy(source)
-    label = f"shared-coefficients-m{degree}-full-batch" if shared else f"query-generator-m{degree}-single-sequence"
+    generator_prefix = "query-generator-dense" if generator_readout == "dense" else "query-generator"
+    suffix = "single-sequence" if count == 1 else "full-batch" if count == int(source["data"]["batch_size"]) else f"{count}-sequences"
+    label = f"shared-coefficients-m{degree}-full-batch" if shared else f"{generator_prefix}-m{degree}-{suffix}"
     if static:
         label = f"static-coefficients-m{degree}-" + ("single-sequence" if count == 1 else "full-batch")
     if free:
         label = f"free-coefficients-m{degree}-" + ("single-sequence" if count == 1 else "full-batch")
+    if model.get("qk_norm_head_scale", False):
+        label += "-head-scale"
     recipe.update(schema_version=1, experiment_kind="fixed_input_coefficient_fit",
                   condition=f"coefficient_oracle/{role}")
+    if not table and (sequence_count is not None or generator_readout == "dense"):
+        recipe["model"]["attention_coefficient_readout"] = generator_readout
     recipe["data"]["batch_size"] = count
     recipe["optim"].update(learning_rate=learning_rate, min_learning_rate=learning_rate / 10,
                            weight_decay=0.0, warmup_steps=0, total_steps=10000)
@@ -149,6 +193,16 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
         "checkpoint_every": 100,
         "checkpoint_selection": "lowest fitting NLL; no independent validation",
     }
+    if not table:
+        recipe["oracle"]["generator_readout"] = generator_readout
+        recipe["oracle"]["optimizer_initialization"] = "fresh zero moments for this diagnostic; no parent optimizer state"
+        if count > 1:
+            recipe["oracle"]["gradient_scaling"] = "mean next-token NLL across the full batch; accumulate all microbatch gradients before one clip and Adam update"
+        if generator_readout == "dense":
+            recipe["oracle"].update(
+                trainable_parameters=["query_polynomial_bias", "query_polynomial_mixing", "query_polynomial_kernel"],
+                initialization="restore parent W and b; initialize V=diag(parent amplitude), preserving the parent function",
+            )
     if shared:
         recipe["oracle"].update(
             trainable_parameters=["shared_effective_monomial_coefficients"],
@@ -164,12 +218,18 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
             coefficient_storage="one [layer, head, order] table shared across all query positions, sequences, and causal keys",
             initialization="mean of parent effective coefficients across all fitting sequences and query positions at each layer/head/order",
         )
+        if model["attention_coefficient_conditioning"] == "static":
+            recipe["oracle"].update(
+                static_initialization="checkpoint",
+                initialization="restore the parent's exact effective static coefficients without averaging",
+                frozen_parameters="all pretrained parameters; attention coefficients replaced by the fitted static table",
+            )
     if free:
         recipe["oracle"].update(
             trainable_parameters=["per_example_effective_monomial_coefficients"],
             coefficient_storage="independent [sequence, layer, query_position, head, order] coefficients; shared across causal keys",
             optimizer_coordinates="factorial(order)*effective_monomial_coefficient",
-            frozen_parameters="all pretrained parameters; original query generator bypassed by the per-example tables",
+            frozen_parameters="all pretrained parameters; attention coefficients replaced by the per-example tables",
             initialization="capture actual coefficients on each sequence's original forward pass",
             gradient_scaling="per-sequence mean NLL, clipped independently per sequence",
         )
@@ -182,6 +242,7 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
                                 if shared else "shared across causal keys; separate per sequence/layer/query position/head/order"
                                 if free else "shared query-conditioned generator per layer and head"),
         "coefficient_parameterization": parameterization,
+        **({"generator_readout": generator_readout} if not table else {}),
         "checkpoint_retention": "best fitting parameters; backbone referenced by source checkpoint",
         "source_checkpoint": {**descriptor, "path": str(checkpoint)},
     })
@@ -210,7 +271,8 @@ def live_job_state(job_id):
     return result.stdout.strip()
 
 
-def submit(run_id, *, partition="standard,long", time_limit="02:00:00", gpu_type=None):
+def submit(run_id, *, partition="standard,long", time_limit="02:00:00", gpu_type=None,
+           qualify_only=False):
     if gpu_type not in {None, "B300", "H100"}:
         raise ValueError("GPU type must be B300 or H100")
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
@@ -230,16 +292,20 @@ def submit(run_id, *, partition="standard,long", time_limit="02:00:00", gpu_type
     log = run / "training.log"
     gpu_request = f"gpu:{gpu_type.lower()}:1" if gpu_type else "gpu:1"
     command = ["sbatch", "--parsable", "--nice=0", f"--partition={partition}",
-               f"--gres={gpu_request}", "--exclude=collie,samoyed,doodle,terrier,mastiff",
+               f"--gres={gpu_request}", "--exclude=collie,samoyed,doodle,terrier",
                "--cpus-per-task=8", "--mem=96G", f"--time={time_limit}",
                f"--job-name=coefficient-fit-{run_id}", f"--output={log}", f"--error={log}",
                str(STUDY / "coefficient_fit.sbatch"), str(ROOT), commit, run_id]
+    if qualify_only:
+        command.append("--qualify-only")
     job = subprocess.check_output(command, cwd=ROOT, text=True).strip().split(";")[0]
     if not job.isdigit():
         raise RuntimeError(f"Unexpected sbatch output: {job}")
     update_record(run, {"status": "submitted", "source_commit": commit,
+        **({"error": None} if record.get("error") else {}),
         "frozen_execution_sha256": frozen_hash(ROOT, commit, STUDY.name, "transformer"),
         "submission": {"slurm_job_id": job, "partition": partition, "command": command,
+                       "phase": "qualification" if qualify_only else "training",
                        "submitted_utc": datetime.now(UTC).isoformat()}, "log_path": str(log)})
     regenerate_index(STUDY)
     print(f"{run_id} job_id={job}", flush=True)
@@ -252,16 +318,20 @@ def main():
     prep.add_argument("--parent", type=Path, required=True)
     prep.add_argument("--parameterization", choices=PARAMETERIZATIONS, default=PARAMETERIZATIONS[0])
     prep.add_argument("--sequence-count", type=int, choices=(1, 256))
+    prep.add_argument("--generator-readout", choices=("diagonal", "dense"), default="diagonal")
     launch = sub.add_parser("submit")
     launch.add_argument("run_id")
     launch.add_argument("--partition", default="standard,long")
     launch.add_argument("--time-limit", default="02:00:00")
     launch.add_argument("--gpu-type", choices=("B300", "H100"))
+    launch.add_argument("--qualify-only", action="store_true")
     args = parser.parse_args()
     if args.command == "prepare":
-        prepare(args.parent, parameterization=args.parameterization, sequence_count=args.sequence_count)
+        prepare(args.parent, parameterization=args.parameterization, sequence_count=args.sequence_count,
+                generator_readout=args.generator_readout)
     else:
-        submit(args.run_id, partition=args.partition, time_limit=args.time_limit, gpu_type=args.gpu_type)
+        submit(args.run_id, partition=args.partition, time_limit=args.time_limit, gpu_type=args.gpu_type,
+               qualify_only=args.qualify_only)
 
 
 if __name__ == "__main__":

@@ -224,3 +224,28 @@ def test_packed_continuation_rejects_unpinned_parent_identity(pretrained, tmp_pa
     with pytest.raises(ValueError, match="parent data identity hash"):
         loop.resolve_packed_data_cursor(cfg, 3)
     assert not (cfg.train.workdir / "data_identity.json").exists()
+
+
+@pytest.mark.parametrize("features,zero_amplitude", [(3, False), (3, True), (5, True)])
+def test_dense_continuation_preserves_backbone_and_starts_new_mixing_clock(
+        pretrained, tmp_path, features, zero_amplitude):
+    _, parent, _, batch = pretrained
+    config = child_config(pretrained, tmp_path / "dense", learned=True, query=True,
+                          zero_amplitude=zero_amplitude)
+    config.model = replace(config.model, attention_coefficient_readout="dense",
+                           attention_coefficient_feature_count=features,
+                           attention_coefficient_readout_scale=1 / 3)
+    child, audit = initialize_continuation_state(config)
+    coefficients, backbone = split_continuation_parameters(child.params)
+    assert "query_polynomial_mixing" in coefficients
+    assert "query_polynomial_mixing" not in backbone
+    assert_equal_tree(backbone, parent.params)
+    assert_equal_tree(child.opt_state[1].backbone, parent.opt_state[1])
+    assert int(child.opt_state[1].coefficients[0].count) == 0
+    assert audit["parent_optimizer_sha256"] == audit["backbone_optimizer_sha256"]
+    expected = nnx.merge(parent.graphdef, parent.params)(batch[:, :-1], deterministic=True)
+    actual = nnx.merge(child.graphdef, child.params)(batch[:, :-1], deterministic=True)
+    np.testing.assert_allclose(actual, expected, rtol=2e-5, atol=2e-6)
+    updated, *_ = loop.train_step(child, batch, jax.random.PRNGKey(17))
+    assert int(updated.opt_state[1].coefficients[0].count) == 1
+    assert int(updated.opt_state[1].backbone[0].count) == 4

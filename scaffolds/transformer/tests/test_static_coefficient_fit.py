@@ -11,8 +11,36 @@ import pytest
 from scaffolds.transformer.tests.test_shared_coefficient_fit import fitting, _equal
 from scaffolds.transformer.training.checkpointing import state_sha256
 from scaffolds.transformer.training.coefficient_fit import (
-    make_shared_functions, qualify, restore_state, save_state,
+    exact_static_coefficients, make_shared_functions, qualify, restore_state, save_state,
 )
+
+
+def test_exact_static_initialization_does_not_average_or_accept_position_dependence():
+    table = jnp.linspace(-.7, 1.3, 2 * 2 * 5).reshape(2, 2, 5)
+    captured = jnp.broadcast_to(table[None, :, None], (8, 2, 37, 2, 5))
+    np.testing.assert_array_equal(exact_static_coefficients(captured), table)
+    with pytest.raises(ValueError, match="vary across sequences or query positions"):
+        exact_static_coefficients(captured.at[1, 0, 1, 0, 0].add(.01))
+
+
+def test_static_checkpoint_qualification_uses_original_parent(static_fit, tmp_path):
+    from scaffolds.transformer.models import build_model
+    from scaffolds.transformer.tests.test_coefficient_override import _static_config
+
+    _, _, tokens, options, _, _ = static_fit
+    model = build_model(_static_config(attention_degree=4, qk_norm_head_scale=True), 7)
+    model.polynomial_coefficients[...] = jnp.linspace(.6, 1.4, model.polynomial_coefficients.size).reshape(
+        model.polynomial_coefficients.shape)
+    graph, source = nnx.split(model, nnx.Param)
+    functions = make_shared_functions(graph, 4, options)
+    captured, parent_nll, _, error = functions[0](source, tokens)
+    table = exact_static_coefficients(captured)
+    report = qualify(tmp_path, functions, source, tokens.reshape(2, 2, 8),
+                     table, functions[1](table), .001, graph=graph, shared=True,
+                     parent_nll=parent_nll, capture_logit_error=error, parent_preserving=True)
+    assert report["training_forward_reference"] == "original_parent"
+    assert report["projection_nll_change"] is None
+    assert report["checkpoint_resume_exact"]
 
 
 @pytest.fixture(scope="module")

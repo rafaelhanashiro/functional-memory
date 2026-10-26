@@ -228,12 +228,19 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   committed to eligible jobs. Leave `nice` at its default unless deliberately ordering
   jobs; do not add a blanket priority penalty. See `CLUSTERS.md` for current limits
   and launcher defaults.
-- New dot-product Transformer experiments must enable QK normalization unless the
-  user explicitly requests plain QK scores. Set `model.qk_norm: true` in the frozen
-  recipe; do not inherit `false` when copying a legacy run. GLA and degree-zero
-  attention do not use QK normalization. Preserve historical recipes and resume
-  settings unchanged; a QK-normalized rerun receives a fresh run ID. Fresh CLI
-  allocation of an explicitly requested plain-score run requires `--allow-plain-qk`.
+- New dot-product Transformer experiments use QK RMSNorm with a learned positive
+  score scale per layer and head: `model.qk_norm: true`, `qk_norm_type: rms_norm`,
+  `qk_norm_sharing: per_layer`, `qk_norm_initial_scale: null`, and
+  `qk_norm_head_scale: true`. RMSNorm statistics are per token/head; Q/K channel
+  gains remain per layer and shared across heads, with a separate `exp(gamma)`
+  multiplier per head on Q before RoPE. Do not inherit an older QK setup when
+  copying a run. `scaffolds.records create` fills omitted settings with this
+  canonical setup and rejects explicit older settings unless the user requests
+  that comparison (`--allow-legacy-qk-normalization`). Explicitly requested plain
+  scores require `qk_norm: false` and `--allow-plain-qk`. GLA and degree-zero
+  attention do not use QK normalization. Preserve historical recipes, checkpoint
+  diagnostic parents, and resume settings unchanged; changed normalization
+  requires a fresh run ID. Runtime config defaults retain historical semantics.
 - New Transformer experiments use their attention mechanism's reference
   initialization (`transformer_reference` for dot-product attention, `gla_reference`,
   `gated_deltanet_reference`) unless the user explicitly requests Flax defaults, and

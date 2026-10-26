@@ -122,8 +122,12 @@ class TransformerLM(nnx.Module):
         if return_coefficients and return_diagnostics:
             raise ValueError("return_coefficients and return_diagnostics are mutually exclusive")
         if query_coefficients is not None or return_coefficients:
+            fixed_direct = (cfg.attention_coefficients == "fixed"
+                            and cfg.attention_coefficient_conditioning == "static"
+                            and cfg.attention_fixed_square_factors is None)
             if (cfg.attention_coefficient_conditioning not in ("static", "query")
-                    or cfg.attention_coefficients != "learned" or cfg.attention_normalization
+                    or (cfg.attention_coefficients != "learned" and not fixed_direct)
+                    or cfg.attention_normalization
                     or cfg.attention_coefficient_parameterization != "direct"
                     or cfg.attention_degree is None or cfg.attention_degree < 1):
                 raise ValueError("Coefficient override and capture require unnormalized direct static or query coefficients")

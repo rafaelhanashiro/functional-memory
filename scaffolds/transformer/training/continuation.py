@@ -35,7 +35,8 @@ def _parent_config(config):
                              "attention_coefficient_conditioning", "attention_coefficient_activation",
                              "attention_coefficient_amplitude_initial",
                              "attention_coefficient_projection_initial_std",
-                             "attention_coefficient_amplitude_scale"}
+                             "attention_coefficient_amplitude_scale", "attention_coefficient_readout",
+                             "attention_coefficient_feature_count", "attention_coefficient_readout_scale"}
     for key, value in asdict(parent.model).items():
         if key not in allowed_model_changes and getattr(config.model, key) != value:
             raise ValueError(f"Continuation changes parent model.{key}")
@@ -63,7 +64,9 @@ def _check_taylor_initialization(config, coefficients):
                            else 1.0 / math.factorial(order)
                            for order in range(model.attention_degree + 1)], np.float32)
     query = model.attention_coefficient_conditioning == "query"
-    names = ({"query_polynomial_bias", "query_polynomial_amplitude", "query_polynomial_kernel"}
+    dense = model.attention_coefficient_readout == "dense"
+    readout_name = "query_polynomial_mixing" if dense else "query_polynomial_amplitude"
+    names = ({"query_polynomial_bias", readout_name, "query_polynomial_kernel"}
              if query else {"polynomial_coefficients"})
     if set(coefficients) != names:
         raise ValueError("Continuation coefficient parameter tree differs from its recipe")
@@ -71,13 +74,16 @@ def _check_taylor_initialization(config, coefficients):
     if not np.array_equal(bias, np.broadcast_to(expected, bias.shape)):
         raise ValueError("Continuation coefficients are not exactly Taylor initialized")
     if query:
-        amplitude = np.asarray(coefficients["query_polynomial_amplitude"][...])
+        readout = np.asarray(coefficients[readout_name][...])
         kernel = np.asarray(coefficients["query_polynomial_kernel"][...])
-        if (not np.all(np.isfinite(kernel)) or not np.all(np.isfinite(amplitude))
-                or not (np.all(amplitude == 0) or np.all(kernel == 0))):
+        if (not np.all(np.isfinite(kernel)) or not np.all(np.isfinite(readout))
+                or not (np.all(readout == 0) or np.all(kernel == 0))):
             raise ValueError("Continuation query-dependent term is not identically zero")
-        if not np.all(amplitude == model.attention_coefficient_amplitude_initial):
-            raise ValueError("Continuation query amplitude differs from its initialization recipe")
+        expected_readout = model.attention_coefficient_amplitude_initial
+        if dense:
+            expected_readout *= np.eye(model.attention_degree + 1, kernel.shape[-1], dtype=np.float32)
+        if not np.all(readout == expected_readout):
+            raise ValueError("Continuation query amplitude or mixing differs from its initialization recipe")
 
 
 def initialize_continuation_state(config, state=None):

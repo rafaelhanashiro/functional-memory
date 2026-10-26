@@ -64,7 +64,7 @@ class ContinuationAdamState(NamedTuple):
 def split_continuation_parameters(params):
     """Separate new static/query coefficient parameters from the retained backbone."""
     names = {"polynomial_coefficients", "query_polynomial_bias",
-             "query_polynomial_kernel", "query_polynomial_amplitude"}
+             "query_polynomial_kernel", "query_polynomial_amplitude", "query_polynomial_mixing"}
     return params.split(lambda path, _: path[0] in names, ...)
 
 

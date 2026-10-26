@@ -54,6 +54,11 @@ RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHO
 NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
+DENSE_QUERY_READOUT_TESTS = "scaffolds/transformer/tests/test_dense_query_readout.py"
+DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.py"
+QK_HEAD_SCALE_TESTS = "scaffolds/transformer/tests/test_qk_head_scale.py"
+QK_HEAD_SCALE_BACKEND_TESTS = (
+    "scaffolds/transformer/tests/test_qk_rms_attention_backends.py::test_full_context_qk_rms_head_scale_backend")
 COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py"
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
@@ -104,6 +109,22 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         paths.extend(("scaffolds/transformer/tests/test_continuation.py",
                       "scaffolds/transformer/tests/test_continuation_acceptance.py"))
     model = config["model"]
+    if (model.get("attention_coefficient_readout", "diagonal") == "dense"
+            and (model.get("qk_norm_head_scale", False) or model.get("attention_coefficient_readout_scale", 1.0) != 1.0)
+            and (cpu or resolved_backend == "mosaic")):
+        paths.append(DENSE_MIXING_SCALE_TESTS)
+    if cpu and model.get("qk_norm_head_scale", False):
+        paths.append(QK_HEAD_SCALE_TESTS)
+    if (not cpu and model.get("qk_norm_head_scale", False)
+            and model.get("attention_mechanism", "dot_product") == "dot_product"
+            and not model.get("attention_normalization", True)
+            and model.get("attention_coefficients", "fixed") == "fixed"
+            and model.get("attention_fixed_coefficients") is None
+            and model.get("attention_fixed_square_factors") is None
+            and (model.get("attention_degree"), resolved_backend) in ((None, "fused"), (4, "mosaic"))):
+        degree = model.get("attention_degree")
+        family = "exp" if degree is None else "fixed"
+        paths.append(f"{QK_HEAD_SCALE_BACKEND_TESTS}[{family}-{degree or 0}-{resolved_backend}]")
     if model.get("positional_encoding", "rope") == "path":
         paths.append(PATH_ATTENTION_TESTS)
         if resolved_backend == "fused":
@@ -130,6 +151,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)
         if model.get("attention_coefficient_activation", "identity") == "tanh":
             paths.append(QUERY_TANH_POLYNOMIAL_TESTS)
+            if model.get("attention_coefficient_readout", "diagonal") == "dense":
+                paths.append(DENSE_QUERY_READOUT_TESTS)
         if conditioning == "query_key":
             paths.append(QUERY_KEY_POLYNOMIAL_TESTS)
             if resolved_backend == "fused" and cpu:
@@ -513,7 +536,9 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_output_scaling="none",
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
                                            attention_coefficient_parameterization="direct",
-                                           attention_coefficient_conditioning="static",
+                                           attention_coefficient_conditioning="static", attention_coefficient_readout="diagonal",
+                                           attention_coefficient_feature_count=None,
+                                           attention_coefficient_readout_scale=1.0,
                                            attention_coefficient_activation="identity",
                                            attention_coefficient_amplitude_initial=1.0,
                                            attention_coefficient_projection_initial_std=0.0,
@@ -563,13 +588,14 @@ def matches_softmax_backbone_initialization(config) -> dict:
         quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
         attention_fixed_square_factors=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",
-        attention_coefficient_conditioning="static",
+        attention_coefficient_conditioning="static", attention_coefficient_readout="diagonal",
+        attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
         positional_encoding="rope",
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
-        attention_denominator_constant="fixed", qk_norm=False))
+        attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
     added = {(spec.name,) for spec in specs}
     if set(actual) - set(expected) != added or set(expected) - set(actual):

@@ -45,8 +45,15 @@ def test_free_scope_rejects_missing_partial_or_wrong_parent_batch(parent_batch, 
 ])
 def test_existing_scopes_are_preserved(mode, expected):
     assert fitting_scope(mode, 256) == expected
-    with pytest.raises(ValueError, match='only supported'):
-        fitting_scope(mode, 256, 1)
+    if mode == 'query_coefficient_generator':
+        assert fitting_scope(mode, 256, 1) == expected
+        assert fitting_scope(mode, 256, 256) == (256, 'query_generator_full_batch')
+        for count in (0, 8, 128):
+            with pytest.raises(ValueError, match='requires --sequence-count'):
+                fitting_scope(mode, 256, count)
+    else:
+        with pytest.raises(ValueError, match='only supported'):
+            fitting_scope(mode, 256, 1)
 
 
 def test_degree_roles_preserve_existing_selection_names():
@@ -72,13 +79,35 @@ def test_parent_degree_uses_shared_backend_validation():
         launcher.parent_degree({**model, 'attention_coefficient_scale': 'none'})
 
 
-@pytest.mark.parametrize('parameterization,sequence_count,degree', [
-    ('query_coefficient_generator', None, 4),
-    ('free_per_example_query_coefficients', 256, 8),
-    ('free_per_example_query_coefficients', 1, 4),
+@pytest.mark.parametrize('parent_id,mode', [
+    ('r2b22f2ff6461', 'query_coefficient_generator'),
+    ('r4339a245820e', 'static_coefficients'),
+    ('r816ab0fbe119', 'free_per_example_query_coefficients'),
+])
+def test_head_scaled_parent_families_accept_only_compatible_fits(parent_id, mode):
+    source = yaml.safe_load((Path(__file__).parents[1] / 'runs' / parent_id / 'config.yaml').read_text())
+    assert launcher.parent_degree(source['model'], mode) == 4
+    assert source['model']['qk_norm_head_scale'] is True
+    if mode != 'query_coefficient_generator':
+        with pytest.raises(ValueError, match='query-only parent'):
+            launcher.parent_degree(source['model'], 'query_coefficient_generator')
+    if mode == 'free_per_example_query_coefficients':
+        with pytest.raises(ValueError, match='compatible 4B'):
+            launcher.parent_degree(source['model'], 'static_coefficients')
+
+
+@pytest.mark.parametrize('parameterization,sequence_count,degree,readout', [
+    ('query_coefficient_generator', None, 4, 'diagonal'),
+    ('query_coefficient_generator', 256, 8, 'diagonal'),
+    ('query_coefficient_generator', 256, 8, 'dense'),
+    ('free_per_example_query_coefficients', 256, 8, 'diagonal'),
+    ('free_per_example_query_coefficients', 1, 4, 'diagonal'),
+    ('query_coefficient_generator', 256, 4, 'diagonal'),
+    ('static_coefficients', 256, 4, 'diagonal'),
+    ('free_per_example_query_coefficients', 256, 4, 'diagonal'),
 ])
 def test_prepare_preserves_parent_and_allocates_the_selected_fit(
-        tmp_path, monkeypatch, parameterization, sequence_count, degree):
+        tmp_path, monkeypatch, parameterization, sequence_count, degree, readout):
     import hashlib
     import numpy as np
     from scaffolds.transformer.data import packed
@@ -89,6 +118,11 @@ def test_prepare_preserves_parent_and_allocates_the_selected_fit(
         source.pop(key, None)
     source['model']['attention_degree'] = degree
     source['model']['gdn_polynomial_degree'] = 1
+    if degree == 4 and sequence_count == 256:
+        parent_id = {'query_coefficient_generator': 'r2b22f2ff6461',
+                     'static_coefficients': 'r4339a245820e',
+                     'free_per_example_query_coefficients': 'r816ab0fbe119'}[parameterization]
+        source['model'] = yaml.safe_load((Path(__file__).parents[1] / 'runs' / parent_id / 'config.yaml').read_text())['model']
     source['data']['batch_size'] = 256
     manifest = tmp_path / 'eval-manifest.json'
     manifest.write_text('{}\n')
@@ -132,9 +166,13 @@ def test_prepare_preserves_parent_and_allocates_the_selected_fit(
         assert start_sequence == 0
         return iter([batch])
     monkeypatch.setattr(packed, 'PackedBatchIterator', packed_batch_iterator)
-    launcher.prepare(parent, parameterization=parameterization, sequence_count=sequence_count)
+    launcher.prepare(parent, parameterization=parameterization, sequence_count=sequence_count,
+                     generator_readout=readout)
     recipe = captured['recipe']
-    assert recipe['model'] == source['model']
+    expected_model = deepcopy(source['model'])
+    if parameterization == 'query_coefficient_generator' and sequence_count is not None:
+        expected_model['attention_coefficient_readout'] = readout
+    assert recipe['model'] == expected_model
     assert recipe['data']['batch_size'] == count
     assert recipe['train']['seed'] == source['train']['seed']
     for key in ('data_start', 'max_updates', 'initial_updates', 'plateau_window',
@@ -144,23 +182,46 @@ def test_prepare_preserves_parent_and_allocates_the_selected_fit(
     assert recipe['oracle']['parameterization'] == parameterization
     assert recipe['oracle']['sequence_count'] == count
     if parameterization == 'query_coefficient_generator':
-        expected_role = 'query_generator_single_sequence_m4'
-        assert captured['label'] == 'query-generator-m4-single-sequence'
-        assert recipe['oracle']['batch_sha256'] == sequence_identity['batch_sha256']
-        for key in ('microbatch_size', 'trainable_parameters', 'learning_rate'):
-            assert recipe['oracle'][key] == prior['oracle'][key]
+        suffix = 'single_sequence' if count == 1 else 'full_batch'
+        prefix = 'dense_query_generator' if readout == 'dense' else 'query_generator'
+        expected_role = launcher.fitting_role(f'{prefix}_{suffix}', degree)
+        label_prefix = 'query-generator-dense' if readout == 'dense' else 'query-generator'
+        expected_label = f'{label_prefix}-m{degree}-' + suffix.replace('_', '-')
+        expected_hash = sequence_identity['batch_sha256'] if count == 1 else hashlib.sha256(batch.tobytes()).hexdigest()
+        assert recipe['oracle']['batch_sha256'] == expected_hash
+        assert recipe['oracle']['microbatch_size'] == min(count, 8)
+        assert recipe['oracle']['learning_rate'] == prior['oracle']['learning_rate']
+        assert recipe['oracle']['optimizer_initialization'].startswith('fresh zero moments')
+        assert recipe['oracle']['generator_readout'] == readout
+        assert recipe['oracle']['trainable_parameters'] == [
+            'query_polynomial_bias',
+            'query_polynomial_mixing' if readout == 'dense' else 'query_polynomial_amplitude',
+            'query_polynomial_kernel',
+        ]
+        if count > 1:
+            assert 'before one clip and Adam update' in recipe['oracle']['gradient_scaling']
     else:
         suffix = 'single_sequence' if count == 1 else 'full_batch'
-        expected_role = launcher.fitting_role(f'free_coefficients_{suffix}', degree)
-        assert captured['label'] == f'free-coefficients-m{degree}-' + suffix.replace('_', '-')
+        prefix = 'static' if parameterization == 'static_coefficients' else 'free'
+        expected_role = launcher.fitting_role(f'{prefix}_coefficients_{suffix}', degree)
+        expected_label = f'{prefix}-coefficients-m{degree}-' + suffix.replace('_', '-')
         assert recipe['oracle']['batch_sha256'] == hashlib.sha256(batch.tobytes()).hexdigest()
         assert recipe['oracle']['microbatch_size'] == recipe['train']['micro_batch_size'] == min(count, 8)
         assert recipe['oracle']['learning_rate'] == recipe['optim']['learning_rate'] == 0.01
-        assert recipe['oracle']['trainable_parameters'] == ['per_example_effective_monomial_coefficients']
-        assert recipe['oracle']['initialization'] == "capture actual coefficients on each sequence's original forward pass"
-        assert recipe['oracle']['gradient_scaling'] == 'per-sequence mean NLL, clipped independently per sequence'
+        if parameterization == 'static_coefficients':
+            assert recipe['oracle']['trainable_parameters'] == ['static_effective_monomial_coefficients']
+            assert recipe['oracle']['static_initialization'] == 'checkpoint'
+            assert recipe['oracle']['initialization'] == "restore the parent's exact effective static coefficients without averaging"
+        else:
+            assert recipe['oracle']['trainable_parameters'] == ['per_example_effective_monomial_coefficients']
+            assert recipe['oracle']['initialization'] == "capture actual coefficients on each sequence's original forward pass"
+            assert recipe['oracle']['gradient_scaling'] == 'per-sequence mean NLL, clipped independently per sequence'
         assert recipe['oracle']['optimizer_coordinates'] == 'factorial(order)*effective_monomial_coefficient'
         assert recipe['oracle']['frozen_parameters'].startswith('all pretrained parameters;')
+    if source['model'].get('qk_norm_head_scale', False):
+        expected_role += '_head_scale'
+        expected_label += '-head-scale'
+    assert captured['label'] == expected_label
     assert recipe['condition'] == f'coefficient_oracle/{expected_role}'
     assert recipe['oracle']['parent_checkpoint_sha256'] == descriptor['sha256']
     assert recipe['oracle']['parent_config_sha256'] == launcher.sha256(parent / 'config.yaml')
@@ -188,7 +249,8 @@ def test_live_job_lookup_preserves_scheduler_errors(monkeypatch):
 
 
 @pytest.mark.parametrize('gpu_type,gres', [(None, 'gpu:1'), ('B300', 'gpu:b300:1'), ('H100', 'gpu:h100:1')])
-def test_submit_selects_gpu_without_changing_run_recipe(tmp_path, monkeypatch, gpu_type, gres):
+@pytest.mark.parametrize('qualify_only', [False, True])
+def test_submit_selects_gpu_without_changing_run_recipe(tmp_path, monkeypatch, gpu_type, gres, qualify_only):
     monkeypatch.setattr(launcher, 'STUDY', tmp_path)
     monkeypatch.setattr(launcher, 'load_run', lambda _: {'status': 'planned'})
     monkeypatch.setattr(launcher, 'validate_record', lambda *a, **kw: None)
@@ -203,9 +265,23 @@ def test_submit_selects_gpu_without_changing_run_recipe(tmp_path, monkeypatch, g
         return '225100\n'
     monkeypatch.setattr(launcher.subprocess, 'check_output', check_output)
     monkeypatch.setattr(launcher, 'update_record', lambda run, changes: captured.update(record=changes))
-    launcher.submit('r000000000008', partition='long', time_limit='06:00:00', gpu_type=gpu_type)
+    launcher.submit('r000000000008', partition='long', time_limit='06:00:00', gpu_type=gpu_type,
+                    qualify_only=qualify_only)
     assert f'--gres={gres}' in captured['command']
     assert '--partition=long' in captured['command']
     assert '--time=06:00:00' in captured['command']
     assert captured['record']['submission']['command'] == captured['command']
     assert captured['record']['submission']['slurm_job_id'] == '225100'
+    assert ('--qualify-only' in captured['command']) == qualify_only
+    assert captured['record']['submission']['phase'] == ('qualification' if qualify_only else 'training')
+
+
+@pytest.mark.parametrize('count', (512, 1024))
+def test_generator_fits_a_larger_fixed_batch_named_by_its_size(count):
+    assert fitting_scope('query_coefficient_generator', 256, count) == (count, f'query_generator_{count}_sequences')
+
+
+@pytest.mark.parametrize('count', (2, 255, 260, 1020))
+def test_generator_rejects_other_batch_sizes(count):
+    with pytest.raises(ValueError):
+        fitting_scope('query_coefficient_generator', 256, count)

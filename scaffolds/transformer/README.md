@@ -205,54 +205,46 @@ provides diagnostics while the fused output continues through subsequent layers.
 
 ### QK normalization
 
-QK-norm is required for new dot-product experiments unless the user explicitly
-requests plain QK scores. A recipe that leaves `qk_norm` unset gets `true`; frozen
-new recipes record `qk_norm: true`. To run an explicitly requested plain-score
-experiment, set `qk_norm: false` and pass `--allow-plain-qk` when allocating it with
-`python -m scaffolds.records create`. This prevents copied legacy recipes from
-silently retaining plain `q·k / sqrt(d_K)` scores. Historical recipes and resumptions
-retain their recorded settings. GLA rejects `qk_norm: true`, and degree 0, which
-never reads Q or K, resolves
-it to `false`. It composes with every dot-product mechanism above and
-changes only the score. The default `qk_norm_type: cosine_log_scale` preserves the
-historical implementation. Q and K are unit-normalized per head in FP32,
-`x̂ = x / sqrt(||x||² + qk_norm_eps)`, and the score becomes
+New dot-product experiments allocated with `python -m scaffolds.records create`
+use `qk_norm: true`, `qk_norm_type: rms_norm`, `qk_norm_sharing: per_layer`,
+`qk_norm_initial_scale: null`, and `qk_norm_head_scale: true`. The allocator fills
+omitted fields with these settings and rejects copied older settings unless
+`--allow-legacy-qk-normalization` explicitly opts into that comparison. Plain
+scores require `qk_norm: false` and `--allow-plain-qk`. GLA and degree-zero
+attention do not use QK normalization. Historical config loading, checkpoint
+resumption, and checkpoint-based diagnostics preserve their recorded settings;
+the runtime's defaults remain `cosine_log_scale` with head scaling disabled.
 
-```text
-s_ij = exp(γ) · <q_i, k_j> / (||q_i|| ||k_j||),   |s_ij| <= exp(γ)
-```
+RMSNorm applies `g_Q * q / sqrt(mean(q²) + eps)` and
+`g_K * k / sqrt(mean(k²) + eps)` before RoPE. Statistics are independent for each
+token and head and computed in FP32; each layer's two gain vectors have
+`qk_head_dim` entries and broadcast across heads. The FP32 arrays
+`qk_norm_q_gain` and `qk_norm_k_gain`, both `[num_layers, qk_head_dim]`, initialize
+to one and receive no weight decay. Channel gains generally do not commute with
+RoPE, so their placement before RoPE is part of this mode's definition.
 
-The kernels are untouched: `attention/multihead.py` feeds the mechanism
-`q' = exp(γ) sqrt(d_K) q̂` and `k' = k̂` (`attention/qk_norm.py`), whose
-`q'·k' / sqrt(d_K)` is the cosine score, so the blocked reference, the fused
-Pallas/Triton kernels, cuDNN softmax, and all diagnostics see `s_ij` directly. The
-normalization precedes RoPE, which is orthogonal, so the order is immaterial. The
-log scale `γ` is the `qk_norm_log_scale` array, `[1]` with `qk_norm_sharing: global`
-or `[num_layers, num_heads, 1]` with `per_head` (default), FP32, without weight
-decay, initialized at `log(qk_norm_initial_scale)`; `null` (default) selects
-`sqrt(d_K)`, the scale of RMSNorm-style QK-norm at initialization. The learned scale
-is log-parametrized so the optimizer moves it multiplicatively and it stays positive
-(a negative scale is a sign flip that the key projection absorbs). Because cosine
-scores ignore Q/K magnitudes, the model can sharpen attention only through `γ`,
-and rescaling the Q or K projection leaves the operator unchanged. Every
-validation records `γ` and `exp(γ)` for each layer and head in `metrics.jsonl`
-under `attention_diagnostics.qk_norm_scale`; W&B receives their mean, minimum,
-and maximum. Recipes and metadata identify the option with `qk_norm`,
-`qk_norm_sharing`, `qk_norm_initial_scale`, and `qk_norm_eps`. GLA and degree 0
-do not use it.
+With `qk_norm_head_scale: true`, the model also multiplies normalized Q by
+`exp(gamma)` once before RoPE. Each layer/head learns its own scalar in
+`qk_norm_head_log_scale` (`[num_layers, num_heads, 1]`, FP32, no weight decay).
+Zero initialization gives scale one and preserves the original RMSNorm function
+exactly. Q/K channel gains stay shared across heads; the additional scalar permits
+independent score magnitudes. The kernels retain `QKᵀ / sqrt(d_K)`, so this scale
+multiplies the score once, for softmax, exp, and polynomial kernels alike.
+Validation records channel gains in `attention_diagnostics.qk_norm_gains` and
+head log scales/effective scales in `attention_diagnostics.qk_norm_head_scales`;
+W&B mirrors their mean, minimum, and maximum. Historical RMSNorm recipes with
+`qk_norm_head_scale: false` have no additional scalar or parameter array.
 
-The alternative `qk_norm_type: rms_norm` requires `qk_norm_sharing: per_layer`
-and `qk_norm_initial_scale: null`. It applies `g_Q * q / sqrt(mean(q²) + eps)`
-and `g_K * k / sqrt(mean(k²) + eps)` before RoPE. Statistics are independent for
-each token and head and computed in FP32; each layer's two gain vectors have
-`qk_head_dim` entries and broadcast across heads. The model owns the FP32 arrays
-`qk_norm_q_gain` and `qk_norm_k_gain`, both shaped `[num_layers, qk_head_dim]`,
-initialized to one and excluded from weight decay. There is no scalar log scale;
-the existing kernels retain their `QKᵀ / sqrt(d_K)` scaling. Channel gains generally
-do not commute with RoPE, so their placement before RoPE is part of this mode's
-definition. Validation retains every gain under `attention_diagnostics.qk_norm_gains`
-and W&B mirrors Q/K gain means, minima, and maxima. Adding this mode does not change
-the arithmetic or parameter trees of historical cosine-score recipes.
+The historical `qk_norm_type: cosine_log_scale` normalizes Q and K per head in
+FP32 as `x̂ = x / sqrt(||x||² + qk_norm_eps)`, then feeds
+`q' = exp(gamma) sqrt(d_K) q̂` and `k' = k̂` to the unchanged kernels. Its score is
+`exp(gamma) * <q̂, k̂>`. The scalar `qk_norm_log_scale` is `[1]` with
+`qk_norm_sharing: global` or `[num_layers, num_heads, 1]` with `per_head`, FP32
+without weight decay. It initializes at `log(qk_norm_initial_scale)`, or at
+`log(sqrt(d_K))` when that setting is null. Validation retains these scales under
+`attention_diagnostics.qk_norm_scale`. Unlike channel gains, unit normalization
+and the scalar commute with RoPE. Existing cosine-score recipes retain their
+arithmetic and parameter trees.
 
 ### Input-dependent polynomial coefficients
 
@@ -310,6 +302,25 @@ To scale the entire query-dependent coefficient, enable both factorial options:
 `c_r(x_t) = [b_r + a_r tanh(w_r^T x_t)] / r!`, with stored `b_r = 1` and
 `a_r = 0` for a Taylor start. Static coefficients need only
 `attention_coefficient_scale: factorial`.
+`attention_coefficient_readout: dense` replaces diagonal tanh amplitudes with a
+matrix that mixes all tanh features into every polynomial order. With both
+factorial options enabled, `c_r(x) = [b_r + sum_j V_rj tanh(w_j^T x)] / r!`.
+It requires query-only tanh conditioning. `attention_coefficient_feature_count`
+sets the number of features `K` independently of the degree; null uses `m+1`.
+`query_polynomial_kernel` then has shape `[layers, heads, hidden_size, K]`, and
+`query_polynomial_mixing` has shape `[layers, heads, m+1, K]` (FP32, no weight
+decay), replacing the amplitude array. For `K = m+1`, initialization places the
+requested amplitude on the mixing diagonal, exactly reproducing the diagonal
+readout. Other `K` require zero initial amplitude and start mixing at zero.
+The bias and backbone initialization stay unchanged. Diagonal remains the
+runtime default for old checkpoints.
+
+`attention_coefficient_readout_scale` (default `1.0`) multiplies only the dense
+input-dependent term: `c_r = [b_r + scale * sum_j V_rj tanh(w_j^T x)] / r!`.
+For example, `1/3` reduces the effective mixing contribution while leaving the
+Taylor bias unchanged. It must be positive and finite; values other than one
+require dense readout. Diagnostics record the stored and effective mixing.
+
 `attention_coefficient_conditioning: query_key` (tanh only) multiplies each key's
 degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i` with
 `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` from the key token's activation

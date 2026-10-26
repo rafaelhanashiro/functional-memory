@@ -21,6 +21,10 @@ def main() -> None:
         help="explicitly opt a fresh dot-product experiment out of canonical QK normalization",
     )
     create.add_argument(
+        "--allow-legacy-qk-normalization", action="store_true",
+        help="explicitly preserve a fresh comparison's older QK normalization instead of RMSNorm with per-head scaling",
+    )
+    create.add_argument(
         "--allow-flax-default-init", action="store_true",
         help="explicitly opt a fresh experiment out of its mechanism's reference initialization",
     )
@@ -46,10 +50,37 @@ def main() -> None:
         if not isinstance(recipe, dict):
             parser.error("--config must contain a YAML mapping")
         if isinstance(recipe.get("model"), dict):
-            from scaffolds.transformer.configs import config_to_dict, load_config
+            from scaffolds.transformer.configs import Config, config_to_dict, load_config
             from scaffolds.transformer.models.initialization import REFERENCE
-            unset = "initialization" not in recipe["model"]
-            config = load_config(args.config)
+            supplied_model = recipe["model"]
+            unset = "initialization" not in supplied_model
+            canonical_qk = {"qk_norm_type": "rms_norm", "qk_norm_sharing": "per_layer",
+                            "qk_norm_initial_scale": None, "qk_norm_head_scale": True}
+            use_canonical_qk = (
+                supplied_model.get("attention_mechanism", "dot_product") == "dot_product"
+                and supplied_model.get("attention_degree") != 0
+                and supplied_model.get("qk_norm") is not False
+                and not args.allow_legacy_qk_normalization)
+            if use_canonical_qk:
+                incompatible = [key for key, value in canonical_qk.items()
+                                if key in supplied_model and supplied_model[key] != value]
+                if incompatible:
+                    parser.error(
+                        "new dot-product runs use QK RMSNorm with per-head scaling; this recipe has "
+                        f"noncanonical values for {', '.join(incompatible)}. Use the canonical settings "
+                        "or --allow-legacy-qk-normalization only for an explicitly requested comparison."
+                    )
+
+            def fresh_config():
+                # Apply allocation defaults before validating partial input recipes.
+                # Ordinary load_config and historical checkpoint settings are unchanged.
+                config = Config()
+                if use_canonical_qk:
+                    for key, value in canonical_qk.items():
+                        setattr(config.model, key, value)
+                return config
+
+            config = load_config(args.config, config_factory=fresh_config)
             recipe = config_to_dict(config)
             model = recipe["model"]
             if unset:

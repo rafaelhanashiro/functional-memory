@@ -6,13 +6,16 @@ import numpy as np
 import optax
 import pytest
 
-from scaffolds.transformer.configs import ModelConfig
+from scaffolds.transformer.configs import Config, ModelConfig
 from scaffolds.transformer.models import build_model
 from scaffolds.transformer.training.checkpointing import state_sha256
 from scaffolds.transformer.training.coefficient_fit import (
     GENERATOR_PARAMETER_NAMES, make_generator_functions, qualify, restore_state,
     save_state, split_generator_parameters, _generator_group_norms,
+    convert_generator_readout, make_conversion_diagnostics,
 )
+
+DIAGONAL_PARAMETER_NAMES = GENERATOR_PARAMETER_NAMES - {"query_polynomial_mixing"}
 
 
 @pytest.fixture(scope="module")
@@ -44,7 +47,7 @@ def _equal(actual, expected):
 def test_split_replays_source_and_only_generator_parameters_change(fitting):
     graph, source, tokens, _, (capture, initialize, step, evaluate) = fitting
     generator, frozen = split_generator_parameters(source)
-    assert set(generator.keys()) == GENERATOR_PARAMETER_NAMES
+    assert set(generator.keys()) == DIAGONAL_PARAMETER_NAMES
     assert sum(value.size for value in jax.tree.leaves(generator)) == 2 * 2 * 9 * (8 + 3)
     frozen_hash = state_sha256(frozen)
     source_hash = state_sha256(source)
@@ -68,7 +71,7 @@ def test_split_replays_source_and_only_generator_parameters_change(fitting):
     _equal(actual_frozen, frozen)
     assert state_sha256(source) == source_hash
     assert state_sha256(actual_frozen) == frozen_hash
-    for key in GENERATOR_PARAMETER_NAMES:
+    for key in DIAGONAL_PARAMETER_NAMES:
         assert not np.array_equal(current[key][...], initial[key][...])
 
 
@@ -130,15 +133,95 @@ def test_generator_checkpoint_resume_and_runtime_acceptance(fitting, tmp_path):
                      graph=graph, generator=True)
     assert report["checkpoint_resume_exact"]
     assert report["frozen_parameter_scope"] == "backbone"
-    assert set(report["generator_gradient_norms"]) == GENERATOR_PARAMETER_NAMES
+    assert set(report["generator_gradient_norms"]) == DIAGONAL_PARAMETER_NAMES
     assert report["one_update_nll"] < report["separate_training_forward_nll"]
 
 
-def test_generator_fit_rejects_multiple_sequences(fitting):
+def test_generator_fit_rejects_invalid_input_axes(fitting):
     _, source, tokens, _, (capture, _, _, evaluate) = fitting
     initial = capture(source, tokens)[0]
-    with pytest.raises(ValueError, match="one sequence"):
-        evaluate(initial, source, jnp.concatenate([tokens, tokens]))
+    with pytest.raises(ValueError, match="axes"):
+        evaluate(initial, source, tokens[None, None])
+
+
+def _converted(fitting, readout):
+    graph, source, tokens, options, functions = fitting
+    if readout == "diagonal":
+        return graph, source, tokens, options, functions
+    config = Config(model=nnx.merge(graph, source).config)
+    config.train.dtype = "float32"
+    graph, source = convert_generator_readout(config, graph, source, readout)
+    return graph, source, tokens, options, make_generator_functions(graph, options)
+
+
+def test_dense_conversion_preserves_trained_generator_and_backbone(fitting):
+    graph, source, tokens, options, (capture, initialize, step, _) = fitting
+    generator = capture(source, tokens)[0]
+    trained = step(generator, initialize(generator), source, tokens, 1e-3)[0]
+    _, frozen = split_generator_parameters(source)
+    source = nnx.state(nnx.merge(graph, frozen, trained), nnx.Param)
+    source_hash = state_sha256(source)
+    config = Config(model=nnx.merge(graph, source).config)
+    config.train.dtype = "float32"
+    dense_graph, dense_source = convert_generator_readout(config, graph, source, "dense")
+    dense_generator, dense_frozen = split_generator_parameters(dense_source)
+    _equal(dense_frozen, frozen)
+    for name in ("query_polynomial_bias", "query_polynomial_kernel", "query_polynomial_tanh_bias"):
+        np.testing.assert_array_equal(dense_generator[name][...], trained[name][...])
+    amplitude = trained["query_polynomial_amplitude"][...]
+    np.testing.assert_array_equal(dense_generator["query_polynomial_mixing"][...],
+                                  amplitude[..., :, None] * np.eye(amplitude.shape[-1]))
+    assert "query_polynomial_amplitude" not in dense_generator
+    report = make_conversion_diagnostics(graph, dense_graph)(source, dense_source, tokens)
+    assert bool(report["all_finite"])
+    np.testing.assert_allclose(report["converted_nll"], report["original_nll"], rtol=1e-6, atol=1e-7)
+    assert float(report["coefficient_relative_l2_error"]) < 1e-6
+    assert float(report["logit_max_absolute_error"]) < 1e-5
+    assert state_sha256(source) == source_hash
+
+
+@pytest.mark.parametrize("readout", ["diagonal", "dense"])
+def test_batch_gradient_accumulation_matches_one_full_batch_adam_update(fitting, readout):
+    graph, source, tokens, options, _ = _converted(fitting, readout)
+    # Trigger clipping to ensure that the mean gradient is clipped once, rather
+    # than separately clipping each microbatch's contribution.
+    options = dict(options, clip_norm=1e-4)
+    capture, initialize, step, evaluate = make_generator_functions(graph, options)
+    batch = jnp.concatenate([jnp.roll(tokens, shift, axis=1) for shift in range(4)])
+    chunks = batch.reshape(2, 2, batch.shape[-1])
+    initial = capture(source, batch[:2])[0]
+    optimizer = initialize(initial)
+    source_hash = state_sha256(source)
+    direct = step(initial, optimizer, source, batch, 1e-3)
+    accumulated = step(initial, optimizer, source, chunks, 1e-3)
+    assert float(accumulated[3][0]) > options["clip_norm"]
+    assert bool(accumulated[4])
+    # Parameter updates, first/second moments, Adam count, gradient norm, and all
+    # per-sequence losses must agree with differentiating the concatenated batch.
+    for actual, expected in zip(jax.tree.leaves(accumulated), jax.tree.leaves(direct), strict=True):
+        np.testing.assert_allclose(actual, expected, rtol=8e-5, atol=3e-7)
+    np.testing.assert_allclose(evaluate(initial, source, chunks), evaluate(initial, source, batch),
+                               rtol=1e-5, atol=1e-6)
+    assert state_sha256(source) == source_hash
+    assert all(float(value) > 0 for value in accumulated[5].values())
+    if readout == "dense":
+        mixing = accumulated[0]["query_polynomial_mixing"][...]
+        off_diagonal = 1 - jnp.eye(mixing.shape[-1])
+        assert float(jnp.linalg.norm(mixing * off_diagonal)) > 0
+
+
+@pytest.mark.parametrize("readout", ["diagonal", "dense"])
+def test_batch_generator_acceptance_and_exact_resume(fitting, readout, tmp_path):
+    graph, source, tokens, _, functions = _converted(fitting, readout)
+    capture, initialize, _, _ = functions
+    batch = jnp.concatenate([tokens, jnp.roll(tokens, 1, axis=1)])
+    generator, parent_nll, _, error = capture(source, batch)
+    report = qualify(tmp_path, functions, source, batch[:, None], generator, initialize(generator),
+                     1e-3, graph=graph, generator=True,
+                     parent_nll=np.asarray(parent_nll), capture_logit_error=float(error))
+    assert report["checkpoint_resume_exact"]
+    assert report["one_update_nll"] < report["separate_training_forward_nll"]
+    assert set(report["generator_gradient_norms"]) == set(generator.keys())
 
 
 def test_group_norms_include_all_layer_leaves():

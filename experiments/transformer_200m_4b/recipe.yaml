@@ -35,6 +35,7 @@ model:
   qk_norm: true
   qk_norm_type: rms_norm
   qk_norm_sharing: per_layer
+  qk_norm_head_scale: true
   qk_norm_initial_scale: null
   qk_norm_eps: 1.0e-06
   initialization: transformer_truncated_reference

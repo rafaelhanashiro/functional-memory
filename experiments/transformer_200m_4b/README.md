@@ -8,14 +8,26 @@ the [Transformer scaffold](../../scaffolds/transformer/README.md).
 
 ## Reference recipe
 
-![200M / 4B reference architecture, training recipe, and learning-rate screen](recipe.png)
+![200M / 4B reference recipe with learned per-head QK score scaling](recipe.png)
 
 The pretraining reference has 15 layers, width 896, 14 query/KV heads of width 64,
 SwiGLU width 2304, context 2048, vocabulary 32,000, untied embeddings, and RoPE
-theta 10,000, with no biases or dropout. Normalized softmax has 198,439,936 parameters.
-Q and K use independent per-layer, 64-channel RMSNorm gains shared across heads,
-before RoPE; scores retain division by sqrt(64). Normalization statistics, master
-parameters, and optimizer state use FP32; computation uses BF16.
+theta 10,000, with no biases or dropout. Normalized softmax has 198,440,146 parameters.
+The canonical QK setup is RMSNorm with a learned positive score scale for every
+layer and head (`model.qk_norm_head_scale: true`). Q and K retain independent
+per-layer, 64-channel RMSNorm gain vectors shared across heads. After normalization
+and these gains, Q is multiplied by `alpha = exp(gamma)` before RoPE; K receives
+no additional scalar. Scores retain division by sqrt(64), so each head's scale
+multiplies the score once. The 210 head log scales start at zero, making every
+initial multiplier one; the channel gains also start at one. Both are shared
+across sequences and query positions and excluded from weight decay.
+Normalization statistics, master parameters, and optimizer state use FP32;
+computation uses BF16.
+
+New pretraining runs use this setup. Historical run configurations and checkpoint
+resumptions retain their recorded normalization; changing the canonical recipe
+does not change those experiments. The architecture and optimizer below otherwise
+retain the established 4B recipe, including its previously selected learning rate.
 
 Linear and embedding weights use a Gaussian with underlying standard deviation
 0.02, truncated to [-0.04, 0.04] without variance compensation. Attention output
@@ -30,6 +42,12 @@ Llama-2 tokenizer, seed 42, global batch 256, and 7,570 updates
 cosine decay to 0.0001. Validation uses 9,961,472 tokens every 100 updates through
 1,500, then every 500 and at the final update. Individual diagnostic recipes
 specify their own fitting objective, trainable parameters, and stopping rule.
+
+Regenerate the reference image from the current recipe with:
+
+```bash
+scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/plot_recipe.py
+```
 
 ## Exploratory diagnostics
 

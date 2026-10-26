@@ -29,8 +29,10 @@ INDEX_COLUMNS = (
     "run_id", "label", "status", "home_cluster", "model_id", "condition",
     "attention_mechanism", "attention_family", "attention_kernel", "qk_head_dim",
     "gdn_erase_mode", "gdn_write_activation",
-    "attention_degree", "attention_normalization", "attention_output_scaling", "qk_norm", "initialization",
-    "coefficient_mode", "coefficient_conditioning", "coefficient_activation", "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing",
+    "attention_degree", "attention_normalization", "attention_output_scaling", "qk_norm",
+    "qk_norm_type", "qk_norm_sharing", "qk_norm_head_scale", "initialization",
+    "coefficient_mode", "coefficient_conditioning", "coefficient_activation",
+    "coefficient_readout", "coefficient_feature_count", "coefficient_readout_scale", "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing",
     "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
     "coefficient_penalty_denominator",
     "quadratic_mode", "weight_decay_policy", "seed", "training_steps", "prediction_tokens",
@@ -466,6 +468,13 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
     shared_batch_coefficients = (isinstance(oracle, dict)
                                  and oracle.get("parameterization") == "shared_batch_query_coefficients")
     static_coefficients = isinstance(oracle, dict) and oracle.get("parameterization") == "static_coefficients"
+    free_coefficients = (isinstance(oracle, dict)
+                         and oracle.get("parameterization") == "free_per_example_query_coefficients")
+    coefficient_table = shared_batch_coefficients or static_coefficients or free_coefficients
+    if free_coefficients:
+        mode = "learned"
+        kernel = "learned_polynomial_unnormalized"
+        sharing = "per_layer_per_head_per_sequence_per_position"
 
     def relative_output_rms(rows):
         if not isinstance(rows, list) or not rows:
@@ -482,7 +491,7 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "model_id": _first(model_id, record.get("model_id"), metadata.get("model_id")),
         "condition": _first(condition_name, record.get("condition"), metadata.get("condition")),
         "attention_mechanism": _first(model.get("attention_mechanism"), metadata.get("attention_mechanism")),
-        "attention_family": _attention_family(model, record, kernel),
+        "attention_family": "learned_polynomial" if free_coefficients else _attention_family(model, record, kernel),
         "attention_kernel": kernel,
         "gdn_erase_mode": _first(model.get("gdn_erase_mode"), get("gdn_erase_mode"))
             if model.get("attention_mechanism") == "gated_deltanet" else None,
@@ -493,12 +502,18 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "attention_normalization": _first(model.get("attention_normalization"), record.get("attention_normalization"), metadata.get("attention_normalization")),
         "attention_output_scaling": model.get("attention_output_scaling"),
         "qk_norm": _first(model.get("qk_norm"), record.get("qk_norm"), metadata.get("qk_norm")),
+        "qk_norm_type": model.get("qk_norm_type"),
+        "qk_norm_sharing": model.get("qk_norm_sharing"),
+        "qk_norm_head_scale": model.get("qk_norm_head_scale"),
         "initialization": model.get("initialization"),
         "coefficient_mode": mode,
-        "coefficient_conditioning": "none" if static_coefficients else "position" if shared_batch_coefficients else model.get("attention_coefficient_conditioning"),
-        "coefficient_activation": "identity" if shared_batch_coefficients or static_coefficients else model.get("attention_coefficient_activation"),
-        "coefficient_parameterization": oracle["parameterization"] if shared_batch_coefficients or static_coefficients else _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
-        "coefficient_initialization": "mean_parent_token_coefficients" if static_coefficients else "mean_parent_batch_coefficients" if shared_batch_coefficients else model.get("attention_coefficient_initialization"),
+        "coefficient_conditioning": "sequence_position" if free_coefficients else "none" if static_coefficients else "position" if shared_batch_coefficients else model.get("attention_coefficient_conditioning"),
+        "coefficient_activation": "identity" if coefficient_table else model.get("attention_coefficient_activation"),
+        "coefficient_readout": None if coefficient_table else model.get("attention_coefficient_readout"),
+        "coefficient_feature_count": None if coefficient_table else model.get("attention_coefficient_feature_count"),
+        "coefficient_readout_scale": None if coefficient_table else model.get("attention_coefficient_readout_scale"),
+        "coefficient_parameterization": oracle["parameterization"] if coefficient_table else _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
+        "coefficient_initialization": "captured_parent_coefficients" if free_coefficients else "parent_checkpoint" if static_coefficients and oracle.get("static_initialization") == "checkpoint" else "mean_parent_token_coefficients" if static_coefficients else "mean_parent_batch_coefficients" if shared_batch_coefficients else model.get("attention_coefficient_initialization"),
         "coefficient_sharing": sharing,
         "denominator_degree": model.get("attention_denominator_degree"),
         "denominator_parameterization": model.get("attention_denominator_parameterization"),

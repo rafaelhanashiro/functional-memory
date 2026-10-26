@@ -452,6 +452,9 @@ def test_cli_allocates_fully_resolved_fresh_transformer_recipe(tmp_path, monkeyp
     assert saved["train"]["source_commit"] == "auto"
     assert saved["model"]["tie_embeddings"] is False
     assert saved["model"]["qk_norm"] is True
+    assert saved["model"]["qk_norm_type"] == "rms_norm"
+    assert saved["model"]["qk_norm_sharing"] == "per_layer"
+    assert saved["model"]["qk_norm_head_scale"] is True
     assert saved["optim"]["weight_decay_policy"] == "exclude_embeddings_norms_biases_v1"
     assert load_run(run)["label"] == "fresh"
     validate_record(run)
@@ -645,3 +648,108 @@ def test_records_written_atomically_follow_the_process_umask(tmp_path, umask, mo
         os.umask(previous)
     for path in (run / "config.yaml", run / "record.json", study / "sweep.yaml", study / "runs.csv"):
         assert stat.S_IMODE(path.stat().st_mode) == mode, path.name
+
+
+@pytest.mark.parametrize("settings", [{}, {"qk_norm_head_scale": True}, {"qk_norm_type": "rms_norm"}])
+def test_cli_fresh_qk_defaults_resolve_before_validation(tmp_path, monkeypatch, capsys, settings):
+    from scaffolds.records.__main__ import main
+    from scaffolds.transformer.configs import load_config
+
+    source = tmp_path / "recipe.yaml"
+    source.write_text(yaml.safe_dump({"model": settings}))
+    original = source.read_bytes()
+    study = tmp_path / "study"
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    model = load_config(run / "config.yaml").model
+    assert model.qk_norm and model.qk_norm_head_scale
+    assert model.qk_norm_type == "rms_norm" and model.qk_norm_sharing == "per_layer"
+    assert model.qk_norm_initial_scale is None
+    assert source.read_bytes() == original
+
+
+@pytest.mark.parametrize("settings", [
+    {"qk_norm_type": "cosine_log_scale", "qk_norm_sharing": "per_head"},
+    {"qk_norm_type": "rms_norm", "qk_norm_sharing": "per_layer", "qk_norm_head_scale": False},
+])
+def test_cli_requires_opt_out_for_older_qk_normalization(tmp_path, monkeypatch, capsys, settings):
+    from scaffolds.records.__main__ import main
+    from scaffolds.transformer.configs import load_config
+
+    source = tmp_path / "historical.yaml"
+    source.write_text(yaml.safe_dump({"model": settings}))
+    original = source.read_bytes()
+    # Historical loading remains exact, independently of fresh allocation policy.
+    historical = load_config(source).model
+    assert historical.qk_norm_head_scale is False
+    study = tmp_path / "study"
+    arguments = ["records", "create", "--study", str(study), "--config", str(source)]
+    monkeypatch.setattr("sys.argv", arguments)
+    with pytest.raises(SystemExit) as failure:
+        main()
+    assert failure.value.code == 2
+    assert "--allow-legacy-qk-normalization" in capsys.readouterr().err
+    assert not study.exists()
+    monkeypatch.setattr("sys.argv", arguments + ["--allow-legacy-qk-normalization"])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    model = yaml.safe_load((run / "config.yaml").read_text())["model"]
+    for key, value in settings.items():
+        assert model[key] == value
+    assert model["qk_norm_head_scale"] is False
+    assert source.read_bytes() == original
+
+
+def test_index_exposes_qk_head_scaling_and_dense_readout_without_inventing_history(tmp_path):
+    study = tmp_path / "study"
+    historic = create_run(study, recipe())
+    fields = {"qk_norm_type": "rms_norm", "qk_norm_sharing": "per_layer", "qk_norm_head_scale": True,
+              "attention_coefficient_readout": "dense", "attention_coefficient_feature_count": 9,
+              "attention_coefficient_readout_scale": 1 / 3}
+    model = {**recipe()["model"], **fields}
+    current = create_run(study, {"model": model, "train": {"seed": 0}})
+    regenerate_index(study)
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    columns = {"qk_norm_type": "rms_norm", "qk_norm_sharing": "per_layer", "qk_norm_head_scale": "True",
+               "coefficient_readout": "dense", "coefficient_feature_count": "9",
+               "coefficient_readout_scale": str(1 / 3)}
+    for key, value in columns.items():
+        assert rows[current.name][key] == value
+        assert rows[historic.name][key] == ""
+
+
+
+def test_free_sequence_coefficients_from_taylor_are_indexed_as_the_fitted_polynomial(tmp_path):
+    study = tmp_path / "study"
+    config = {"model": {"attention_mechanism": "dot_product", "attention_degree": 4,
+                        "attention_coefficients": "fixed", "attention_normalization": False,
+                        "attention_coefficient_conditioning": "static",
+                        "attention_coefficient_sharing": "global",
+                        "attention_coefficient_activation": "identity",
+                        "attention_coefficient_readout": "diagonal",
+                        "attention_coefficient_feature_count": None,
+                        "attention_coefficient_readout_scale": 1.0,
+                        "attention_coefficient_parameterization": "direct",
+                        "attention_coefficient_initialization": "taylor"},
+              "oracle": {"parameterization": "free_per_example_query_coefficients"}}
+    run = create_run(study, config)
+    original = (run / "config.yaml").read_bytes()
+    # Parent metadata must not override the diagnostic's declared mathematics.
+    update_record(run, {"attention_family": "taylor", "attention_kernel": "taylor_unnormalized"})
+    first = regenerate_index(study).read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+    with (study / "runs.csv").open() as stream:
+        row, = list(csv.DictReader(stream))
+    assert row["coefficient_mode"] == "learned"
+    assert row["attention_family"] == "learned_polynomial"
+    assert row["attention_kernel"] == "learned_polynomial_unnormalized"
+    assert row["coefficient_conditioning"] == "sequence_position"
+    assert row["coefficient_activation"] == "identity"
+    assert row["coefficient_parameterization"] == "free_per_example_query_coefficients"
+    assert row["coefficient_initialization"] == "captured_parent_coefficients"
+    assert row["coefficient_sharing"] == "per_layer_per_head_per_sequence_per_position"
+    for name in ("coefficient_readout", "coefficient_feature_count", "coefficient_readout_scale"):
+        assert row[name] == ""
+    assert (run / "config.yaml").read_bytes() == original

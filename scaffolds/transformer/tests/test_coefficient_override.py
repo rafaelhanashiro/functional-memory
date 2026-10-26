@@ -213,6 +213,34 @@ def test_default_static_model_diagnostics_remain_available_with_remat():
         np.testing.assert_array_equal(left, right)
 
 
+@pytest.mark.parametrize("fixed_coefficients", [None, (1., .8, .4, -.1, .03)])
+def test_fixed_coefficients_capture_preserves_head_scales_and_allows_free_adaptation(fixed_coefficients):
+    config = _static_config(attention_degree=4, attention_coefficients="fixed",
+                            attention_coefficient_scale="none", qk_norm_head_scale=True,
+                            attention_fixed_coefficients=fixed_coefficients)
+    model = build_model(config, 7)
+    model.qk_norm_head_log_scale[...] = jnp.asarray([[[.3], [-.2]], [[.1], [.4]]])
+    tokens = _tokens()
+    before = jax.tree.map(lambda x: np.array(x, copy=True), nnx.state(model, nnx.Param))
+    expected = model(tokens)
+    captured, coefficients = model(tokens, return_coefficients=True)
+    np.testing.assert_array_equal(captured, expected)
+    represented = jnp.asarray(fixed_coefficients if fixed_coefficients is not None
+                              else [1 / math.factorial(order) for order in range(5)], jnp.float32)
+    np.testing.assert_array_equal(coefficients, jnp.broadcast_to(represented, (2, 2, 7, 2, 5)))
+    np.testing.assert_allclose(model(tokens, query_coefficients=coefficients), expected,
+                               rtol=2e-5, atol=2e-6)
+    graph, state = nnx.split(model)
+    objective = lambda table: _loss(nnx.merge(graph, state)(tokens, query_coefficients=table),
+                                    (tokens + 1) % 16)
+    loss, gradient = jax.jit(jax.value_and_grad(objective))(coefficients)
+    assert np.isfinite(gradient).all() and float(jnp.linalg.norm(gradient)) > 0
+    assert float(objective(coefficients - .001 * gradient / jnp.linalg.norm(gradient))) < float(loss)
+    for original, current in zip(jax.tree.leaves(before),
+                                 jax.tree.leaves(nnx.state(model, nnx.Param)), strict=True):
+        np.testing.assert_array_equal(current, original)
+
+
 def test_coefficient_access_rejects_rematerialized_model():
     model = build_model(_config(remat=True), 7)
     with pytest.raises(ValueError, match="model.remat == False"):

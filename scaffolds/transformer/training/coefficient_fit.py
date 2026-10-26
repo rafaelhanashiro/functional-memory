@@ -4,8 +4,9 @@ Coefficient tables have [example, layer, query, head, order] axes and store the
 effective monomial c_r exactly. Adam operates in factorial coordinates r! c_r
 through gradient/update preconditioning, without rounding the initialization.
 The pretrained parameter tree is an immutable argument, never an optimizer input.
-Generator fitting instead optimizes only the original model's query-coefficient
-parameters. Each forward recomputes the full model with its frozen backbone.
+Generator fitting optimizes a shared query-coefficient network, optionally
+embedding its diagonal readout in a dense one. Each forward recomputes the full
+model with its frozen backbone; microbatch gradients are averaged before Adam.
 Shared-batch fitting uses one [layer,query,head,order] table and averages every
 sequence's gradient before a single clipping/Adam update. Static fitting uses
 one [layer,head,order] table shared across query positions as well as sequences.
@@ -22,7 +23,7 @@ import shutil
 import signal
 import sys
 import time
-from dataclasses import fields
+from dataclasses import fields, replace
 from datetime import datetime, timezone
 from importlib.metadata import version
 
@@ -45,7 +46,7 @@ from scaffolds.transformer.training.checkpointing import state_sha256
 
 GENERATOR_PARAMETER_NAMES = frozenset({
     "query_polynomial_bias", "query_polynomial_amplitude", "query_polynomial_kernel",
-    "query_polynomial_tanh_bias",
+    "query_polynomial_tanh_bias", "query_polynomial_mixing",
 })
 
 
@@ -55,8 +56,9 @@ def split_generator_parameters(params):
         params, lambda path, value: str(path[-1]) in GENERATOR_PARAMETER_NAMES, ...,
     )
     names = {str(path[-1]) for path, _ in nnx.to_flat_state(generator)}
-    required = GENERATOR_PARAMETER_NAMES - {"query_polynomial_tanh_bias"}
-    if not required <= names or not jax.tree.leaves(frozen):
+    required = {"query_polynomial_bias", "query_polynomial_kernel"}
+    readout = names & {"query_polynomial_amplitude", "query_polynomial_mixing"}
+    if not required <= names or len(readout) != 1 or not jax.tree.leaves(frozen):
         raise ValueError("Expected a tanh query generator and a nonempty frozen backbone")
     return generator, frozen
 
@@ -67,6 +69,16 @@ def _generator_group_norms(state):
         name = str(path[-1])
         squared[name] = squared.get(name, 0.) + jnp.sum(jnp.square(value[...].astype(jnp.float32)))
     return {name: jnp.sqrt(value) for name, value in squared.items()}
+
+
+def exact_static_coefficients(captured):
+    """Preserve a static checkpoint's coefficients without a rounded batch mean."""
+    if captured.ndim != 5:
+        raise ValueError("Captured coefficients need [sequence,layer,query,head,order] axes")
+    static = captured[0, :, 0, :, :]
+    if not bool(jnp.all(captured == static[None, :, None, :, :])):
+        raise ValueError("Static checkpoint coefficients vary across sequences or query positions")
+    return static
 
 
 def make_generator_functions(graph, oracle: dict):
@@ -86,12 +98,19 @@ def make_generator_functions(graph, oracle: dict):
         _, frozen = split_generator_parameters(source)
         return nnx.merge(graph, frozen, generator)(tokens[:, :-1], deterministic=True)
 
-    def losses(generator, source, tokens):
-        if tokens.shape[0] != 1:
-            raise ValueError("Shared query-generator fitting currently requires one sequence")
+    def microbatch_losses(generator, source, tokens):
         return optax.softmax_cross_entropy_with_integer_labels(
             logits(generator, source, tokens).astype(jnp.float32), tokens[:, 1:],
         ).mean(axis=1)
+
+    def losses(generator, source, tokens):
+        if tokens.ndim == 2:
+            return microbatch_losses(generator, source, tokens)
+        if tokens.ndim != 3:
+            raise ValueError("Generator inputs require [sequence,token] or [microbatch,sequence,token] axes")
+        _, per_example = jax.lax.scan(
+            lambda _, chunk: (None, microbatch_losses(generator, source, chunk)), None, tokens)
+        return per_example.reshape(-1)
 
     @jax.jit
     def capture(source, tokens):
@@ -105,13 +124,27 @@ def make_generator_functions(graph, oracle: dict):
             original.astype(jnp.float32) - replay.astype(jnp.float32)))
 
     def objective(generator, source, tokens):
-        per_example = losses(generator, source, tokens)
+        per_example = microbatch_losses(generator, source, tokens)
         return per_example.mean(), per_example
 
     @jax.jit
     def step(generator, optimizer, source, tokens, learning_rate):
-        (_, per_example), gradient = jax.value_and_grad(objective, has_aux=True)(
-            generator, source, tokens)
+        if tokens.ndim == 2:
+            (_, per_example), gradient = jax.value_and_grad(objective, has_aux=True)(
+                generator, source, tokens)
+        elif tokens.ndim == 3:
+            # Every chunk uses the same generator. Average all gradients before
+            # the single clipping/Adam update; no per-sequence optimizer exists.
+            def accumulate(total, chunk):
+                (_, losses), gradient = jax.value_and_grad(objective, has_aux=True)(
+                    generator, source, chunk)
+                return jax.tree.map(jnp.add, total, gradient), losses
+            gradient, per_example = jax.lax.scan(
+                accumulate, jax.tree.map(jnp.zeros_like, generator), tokens)
+            gradient = jax.tree.map(lambda value: value / tokens.shape[0], gradient)
+            per_example = per_example.reshape(-1)
+        else:
+            raise ValueError("Generator inputs require [sequence,token] or [microbatch,sequence,token] axes")
         norm = optax.global_norm(gradient)
         updates, optimizer = tx.update(gradient, optimizer, generator)
         updates = jax.tree.map(lambda value: -learning_rate * value, updates)
@@ -169,6 +202,64 @@ def restore_parent(config: Config, checkpoint: Path):
                 restore_args=ocp.checkpoint_utils.construct_restore_args(item)),
         )
     return graph, restored["state"]["params"]
+
+
+def convert_generator_readout(config: Config, graph, params, readout: str):
+    """Embed the trained diagonal generator in the dense family, without resetting it.
+
+    Only the readout's representation changes: V=diag(a), with the same stored
+    factorial coordinates. Backbone, W, and b arrays are reused verbatim. The
+    diagnostic initializes fresh Adam state after conversion in either arm.
+    """
+    current = getattr(config.model, "attention_coefficient_readout", "diagonal")
+    if readout == current:
+        return graph, params
+    if current != "diagonal" or readout != "dense":
+        raise ValueError("Only diagonal-to-dense query generator conversion is supported")
+    model = build_model(replace(config.model, attention_coefficient_readout="dense"),
+                        nnx.Rngs(params=config.train.seed, dropout=config.train.seed))
+    dtype = {"bfloat16": jnp.bfloat16, "float32": jnp.float32}[config.train.dtype]
+    for _, module in nnx.iter_graph(model):
+        if isinstance(module, nnx.Module) and hasattr(module, "dtype"):
+            module.dtype = dtype
+    dense_graph, template = nnx.split(model, nnx.Param)
+    converted = []
+    for path, value in nnx.to_flat_state(params):
+        if str(path[-1]) == "query_polynomial_amplitude":
+            amplitude = value[...]
+            mixing = amplitude[..., :, None] * jnp.eye(amplitude.shape[-1], dtype=amplitude.dtype)
+            converted.append(((*path[:-1], "query_polynomial_mixing"), value.replace(mixing)))
+        else:
+            converted.append((path, value))
+    result = nnx.from_flat_state(converted)
+    expected = {path: value.shape for path, value in nnx.to_flat_state(template)}
+    actual = {path: value.shape for path, value in nnx.to_flat_state(result)}
+    if actual != expected:
+        raise ValueError("Converted generator state does not match the dense model")
+    if state_sha256(split_generator_parameters(params)[1]) != state_sha256(split_generator_parameters(result)[1]):
+        raise RuntimeError("Readout conversion changed the frozen backbone")
+    return dense_graph, result
+
+
+def make_conversion_diagnostics(original_graph, graph):
+    """Compare the converted model against the actual original parent forward."""
+    @jax.jit
+    def compare(original_params, params, tokens):
+        original, old_coefficients = nnx.merge(original_graph, original_params)(
+            tokens[:, :-1], deterministic=True, return_coefficients=True)
+        converted, coefficients = nnx.merge(graph, params)(
+            tokens[:, :-1], deterministic=True, return_coefficients=True)
+        nll = lambda logits: optax.softmax_cross_entropy_with_integer_labels(
+            logits.astype(jnp.float32), tokens[:, 1:]).mean(axis=1)
+        old_coefficients, coefficients = jnp.asarray(old_coefficients), jnp.asarray(coefficients)
+        return {"original_nll": nll(original), "converted_nll": nll(converted),
+                "coefficient_max_absolute_error": jnp.max(jnp.abs(old_coefficients - coefficients)),
+                "coefficient_relative_l2_error": jnp.linalg.norm(old_coefficients - coefficients) /
+                    jnp.maximum(jnp.linalg.norm(old_coefficients), 1e-30),
+                "logit_max_absolute_error": jnp.max(jnp.abs(original.astype(jnp.float32) - converted.astype(jnp.float32))),
+                "all_finite": jnp.all(jnp.isfinite(original)) & jnp.all(jnp.isfinite(converted)) &
+                    jnp.all(jnp.isfinite(coefficients))}
+    return compare
 
 
 def make_functions(graph, degree: int, oracle: dict):
@@ -418,15 +509,15 @@ def _retain_completed_best(run: Path, outcome: dict) -> Path:
 
 def qualify(run: Path, functions, params, tokens, table, optimizer, learning_rate,
             *, graph=None, external_nll_atol=1e-5, external_nll_rtol=1e-5, generator=False,
-            shared=False, parent_nll=None, capture_logit_error=None):
+            shared=False, parent_nll=None, capture_logit_error=None, parent_preserving=False):
     capture, _, train_step, evaluate = functions
     frozen = split_generator_parameters(params)[1] if generator else params
     frozen_sha256 = state_sha256(frozen)
-    if shared:
-        # Original capture/replay was checked for every microbatch before taking
-        # its mean. Projection intentionally changes the original model forward.
+    if shared or (generator and parent_nll is not None):
+        # Original capture/replay was checked on every microbatch. A shared
+        # table's projection changes the model; generator conversion must not.
         if parent_nll is None or capture_logit_error is None:
-            raise ValueError("Shared-table acceptance requires checked parent capture measurements")
+            raise ValueError("Batch acceptance requires checked parent capture measurements")
         original_nll = np.asarray(parent_nll)
         logits_error = float(capture_logit_error)
     else:
@@ -435,13 +526,16 @@ def qualify(run: Path, functions, params, tokens, table, optimizer, learning_rat
         if not np.allclose(original_nll, replay_nll, rtol=1e-5, atol=1e-5) or float(logits_error) > 0.05:
             raise RuntimeError(f"Parent replay parity failed: logits error {logits_error}")
     external_nll = np.asarray(evaluate(table, params, tokens))
+    if parent_preserving and not np.allclose(original_nll, external_nll,
+                                             rtol=external_nll_rtol, atol=external_nll_atol):
+        raise RuntimeError("Exact static initialization does not reproduce the parent NLL")
     repeated_nll = np.asarray(evaluate(table, params, tokens))
     if not np.array_equal(external_nll, repeated_nll):
         raise RuntimeError("Independent external coefficient forward is not repeatable")
     external_diagnostics = None
     if graph is not None:
         print("Measuring independent-graph logit error and external-forward repeatability", flush=True)
-        diagnostic_tokens = tokens[0] if shared else tokens
+        diagnostic_tokens = tokens[0] if tokens.ndim == 3 else tokens
         diagnostic_table = (jnp.swapaxes(expand_shared_coefficients(
             table, diagnostic_tokens, static=table.ndim == 3), 0, 1) if shared else table)
         external_diagnostics = external_replay_diagnostics(
@@ -457,11 +551,12 @@ def qualify(run: Path, functions, params, tokens, table, optimizer, learning_rat
     if generator and not all(np.isfinite(value) and value > 0 for value in group_norms.values()):
         raise RuntimeError(f"Generator parameter group has no finite nonzero gradient: {group_norms}")
     before, norms, finite = jax.device_get((before, norms, finite))
-    reference_nll = external_nll if shared else original_nll
+    projected = shared and not parent_preserving
+    reference_nll = external_nll if projected else original_nll
     if not np.allclose(reference_nll, before, rtol=external_nll_rtol, atol=external_nll_atol):
         failure = {"status": "failed", "phase": "separate_training_forward_replay", "time_utc": _utc(),
                    "reference_nll": reference_nll.tolist(), "training_forward_nll": before.tolist(),
-                   "reference": "projected_coefficients" if shared else "original_parent",
+                   "reference": "projected_coefficients" if projected else "original_parent",
                    "nll_max_absolute_error": float(np.max(np.abs(reference_nll - before))),
                    "nll_rtol": external_nll_rtol, "nll_atol": external_nll_atol}
         _write_json(run / "oracle_acceptance_failure.json", failure)
@@ -495,12 +590,12 @@ def qualify(run: Path, functions, params, tokens, table, optimizer, learning_rat
     return {"status": "passed", "completed_utc": _utc(), "parent_nll": float(original_nll.mean()),
             "separate_training_forward_nll": float(before.mean()),
             "external_evaluation_nll": float(external_nll.mean()),
-            "external_evaluation_max_nll_error": (None if shared else
+            "external_evaluation_max_nll_error": (None if projected else
                                                   float(np.max(np.abs(external_nll - original_nll)))),
             "training_forward_max_nll_error": float(np.max(np.abs(before - reference_nll))),
-            "training_forward_reference": "projected_coefficients" if shared else "original_parent",
-            "projected_initial_nll": float(external_nll.mean()) if shared else None,
-            "projection_nll_change": float(external_nll.mean() - original_nll.mean()) if shared else None,
+            "training_forward_reference": "projected_coefficients" if projected else "original_parent",
+            "projected_initial_nll": float(external_nll.mean()) if projected else None,
+            "projection_nll_change": float(external_nll.mean() - original_nll.mean()) if projected else None,
             "cross_compilation_nll_atol": external_nll_atol, "cross_compilation_nll_rtol": external_nll_rtol,
             "external_forward_repeated_exactly": True,
             "independent_graph_diagnostics": external_diagnostics,
@@ -527,8 +622,6 @@ def main(argv=None):
     generator = parameterization == "query_coefficient_generator"
     static = parameterization == "static_coefficients"
     shared = parameterization == "shared_batch_query_coefficients" or static
-    if generator and (int(oracle["sequence_count"]) != 1 or int(oracle["microbatch_size"]) != 1):
-        raise ValueError("Generator fitting requires one fixed sequence and microbatch size one")
     print(f"Starting coefficient oracle {run.name}: {oracle['sequence_count']} fixed sequences", flush=True)
     if len(jax.devices()) != 1:
         raise ValueError("Coefficient oracle requires exactly one visible accelerator")
@@ -573,6 +666,9 @@ def main(argv=None):
     if _sha256(source_config) != oracle["parent_config_sha256"]:
         raise ValueError("Parent configuration checksum changed")
     config = parent_config(source_config)
+    exact_static = static and oracle.get("static_initialization") == "checkpoint"
+    if exact_static and config.model.attention_coefficient_conditioning != "static":
+        raise ValueError("Exact static initialization requires a static parent checkpoint")
     if generator and (config.model.attention_coefficient_conditioning != "query"
                       or config.model.attention_coefficient_activation != "tanh"
                       or config.model.attention_coefficients != "learned"):
@@ -606,6 +702,23 @@ def main(argv=None):
     validate_record(parent_run, checkpoint_hashes=False)
     print("Restoring frozen parent parameters", flush=True)
     graph, params = restore_parent(config, Path(oracle["parent_checkpoint"]))
+    conversion_compare, conversion, original_graph, original_params = None, None, graph, params
+    if generator:
+        readout = recipe["model"].get("attention_coefficient_readout", "diagonal")
+        if oracle.get("generator_readout", readout) != readout:
+            raise ValueError("Generator readout differs between oracle and model recipe")
+        original_readout = getattr(config.model, "attention_coefficient_readout", "diagonal")
+        graph, params = convert_generator_readout(config, graph, params, readout)
+        runtime.update(generator_readout=readout, optimizer_updates_per_step=1,
+                       generator_shared_across_sequences=True,
+                       optimizer_initialization="fresh zero moments")
+        if readout != original_readout:
+            conversion_compare = make_conversion_diagnostics(original_graph, graph)
+            conversion = {"source_readout": original_readout, "target_readout": readout,
+                          "initialization": "V=diag(trained amplitude); W and b unchanged",
+                          "checked_sequence_count": 0,
+                          "coefficient_max_absolute_error": 0., "coefficient_relative_l2_error": 0.,
+                          "logit_max_absolute_error": 0., "nll_max_absolute_error": 0.}
     print("Parent restored; compiling coefficient capture and replay", flush=True)
     functions = (make_generator_functions(graph, oracle) if generator else
                  make_shared_functions(graph, config.model.attention_degree, oracle) if shared else
@@ -616,7 +729,7 @@ def main(argv=None):
     token_chunks = [jax.device_put(batch[i:i + microbatch]) for i in range(0, count, microbatch)]
     tables, optimizers, parent_losses = [], [], []
     original_parent_losses = []
-    shared_table_sum, maximum_capture_error = None, 0.0
+    shared_table_sum, static_parent_table, maximum_capture_error = None, None, 0.0
     for index, tokens in enumerate(token_chunks):
         table, losses, replay_losses, error = capture(params, tokens)
         losses, replay_losses, error = jax.device_get((losses, replay_losses, error))
@@ -639,12 +752,39 @@ def main(argv=None):
             _write_json(run / "oracle_acceptance_failure.json", failure)
             print(json.dumps(failure), flush=True)
             raise RuntimeError("Captured coefficients do not reproduce parent logits/loss; see oracle_acceptance_failure.json")
+        if conversion_compare is not None:
+            measured = {key: np.asarray(value) for key, value in jax.device_get(
+                conversion_compare(original_params, params, tokens)).items()}
+            conversion_error = float(np.max(np.abs(measured["original_nll"] - measured["converted_nll"])))
+            if (not bool(measured["all_finite"])
+                    or not np.allclose(measured["original_nll"], measured["converted_nll"],
+                                       rtol=external_nll_rtol, atol=external_nll_atol)
+                    or float(measured["coefficient_relative_l2_error"]) > 1e-6
+                    or float(measured["logit_max_absolute_error"]) > .05):
+                failure = {"status": "failed", "phase": "generator_readout_conversion",
+                           "microbatch_index": index,
+                           **{key: value.tolist() for key, value in measured.items()}}
+                _write_json(run / "oracle_acceptance_failure.json", failure)
+                raise RuntimeError("Dense generator conversion does not reproduce the original parent")
+            for key in ("coefficient_max_absolute_error", "coefficient_relative_l2_error", "logit_max_absolute_error"):
+                conversion[key] = max(conversion[key], float(measured[key]))
+            conversion["nll_max_absolute_error"] = max(conversion["nll_max_absolute_error"], conversion_error)
+            conversion["checked_sequence_count"] += tokens.shape[0]
+            # Qualification compares the training graph to the true parent,
+            # rather than only comparing the converted model to itself.
+            losses = measured["original_nll"]
         if shared:
-            table_sum = table.sum(axis=(0, 2) if static else 0)
-            shared_table_sum = table_sum if shared_table_sum is None else shared_table_sum + table_sum
-            # Capture storage never grows with the fitting batch size.
-            shared_table_sum.block_until_ready()
-        else:
+            if exact_static:
+                captured_static = exact_static_coefficients(table)
+                if static_parent_table is not None and not bool(jnp.array_equal(captured_static, static_parent_table)):
+                    raise ValueError("Static checkpoint coefficients differ across captured microbatches")
+                static_parent_table = captured_static
+            else:
+                table_sum = table.sum(axis=(0, 2) if static else 0)
+                shared_table_sum = table_sum if shared_table_sum is None else shared_table_sum + table_sum
+                # Capture storage never grows with the fitting batch size.
+                shared_table_sum.block_until_ready()
+        elif not generator or index == 0:
             tables.append(table)
             optimizers.append(initialize_optimizer(table))
         parent_losses.extend(external_replay_losses.tolist())
@@ -652,15 +792,23 @@ def main(argv=None):
         maximum_capture_error = max(maximum_capture_error, float(error))
         if index % 4 == 0 or index + 1 == len(token_chunks):
             print(f"Captured coefficients for microbatch {index + 1}/{len(token_chunks)}; external replay NLL {np.mean(external_replay_losses):.6f}", flush=True)
+    if generator and count > 1:
+        # Keep one generator and optimizer for the full batch. A scan holds one
+        # microbatch's activations at a time and returns one mean-gradient update.
+        token_chunks = [jnp.stack(token_chunks)]
+    if conversion is not None:
+        conversion["status"] = "passed"
+        print("Generator readout conversion: " + json.dumps(conversion), flush=True)
     if shared:
         projection_count = count * (batch.shape[1] - 1) if static else count
-        tables = [shared_table_sum / projection_count]
+        tables = [static_parent_table if exact_static else shared_table_sum / projection_count]
         optimizers = [initialize_optimizer(tables[0])]
         token_chunks = [jnp.stack(token_chunks)]
         projected_losses = np.asarray(evaluate(tables[0], params, token_chunks[0]))
         if not np.all(np.isfinite(projected_losses)):
             raise RuntimeError("Batch-mean coefficient projection produced nonfinite NLL")
-        projection = {"method": ("arithmetic mean of original effective coefficients across all fitting sequences and query positions"
+        projection = {"method": ("exact effective static coefficients from the parent checkpoint" if exact_static else
+                                 "arithmetic mean of original effective coefficients across all fitting sequences and query positions"
                                  if static else "arithmetic mean of original effective coefficients across all fitting sequences"),
                       "sequence_count": count, "coefficient_shape": list(tables[0].shape),
                       "parent_nll": float(np.mean(original_parent_losses)),
@@ -669,7 +817,8 @@ def main(argv=None):
                       "parent_per_sequence_nll": original_parent_losses,
                       "projected_per_sequence_nll": projected_losses.tolist(),
                       "maximum_capture_logit_error": maximum_capture_error,
-                      "interpretation": "Projection changes the model; fitting improvement starts after projection."}
+                      "interpretation": ("Initialization preserves the parent static coefficients exactly." if exact_static else
+                                         "Projection changes the model; fitting improvement starts after projection.")}
         _write_json(run / "coefficient_projection.json", projection)
         runtime.update(original_parent_nll=projection["parent_nll"],
                        projected_initial_nll=projection["projected_initial_nll"],
@@ -685,8 +834,16 @@ def main(argv=None):
     acceptance = qualify(run, functions, params, token_chunks[0], tables[0], optimizers[0], learning_rate,
                          graph=graph, external_nll_atol=external_nll_atol, external_nll_rtol=external_nll_rtol,
                          generator=generator, shared=shared,
-                         parent_nll=original_parent_losses if shared else None,
-                         capture_logit_error=maximum_capture_error if shared else None)
+                         parent_nll=original_parent_losses if shared or generator else None,
+                         capture_logit_error=maximum_capture_error if shared or generator else None,
+                         parent_preserving=exact_static)
+    if generator:
+        acceptance.update(generator_readout=runtime["generator_readout"],
+                          generator_shared_across_sequences=True, optimizer_updates_per_step=1,
+                          sequence_count=count, microbatch_size=microbatch,
+                          optimizer_initialization="fresh zero moments")
+        if conversion is not None:
+            acceptance["readout_conversion"] = conversion
     print(f"Qualification passed: training NLL {acceptance['separate_training_forward_nll']:.6f} -> {acceptance['one_update_nll']:.6f}", flush=True)
     _write_json(run / "oracle_acceptance.json", acceptance)
     (run / "oracle_acceptance_failure.json").unlink(missing_ok=True)
@@ -833,6 +990,10 @@ def main(argv=None):
                "interpretation": "Fixed-input coefficient fitting, not held-out generalization.",
                "frozen_parameters_unchanged": True, "parameterization": parameterization,
                "frozen_parameter_scope": "backbone" if generator else "all_pretrained_parameters"}
+    if generator:
+        outcome.update(generator_readout=runtime["generator_readout"],
+                       coefficient_sharing="one input-dependent generator per layer/head shared across the fitting batch",
+                       optimizer_updates_per_step=1)
     if shared:
         outcome.update(original_parent_nll=projection["parent_nll"],
                        projected_initial_evaluation_nll=projection["projected_initial_nll"],
