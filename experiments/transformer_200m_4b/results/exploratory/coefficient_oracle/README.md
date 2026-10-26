@@ -17,9 +17,9 @@ backbone frozen. They live in the
 | `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r7505c6d49711` | Independent coefficients per sequence, layer, query, head, and order on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
-| `rc95f2055e96d` | Original degree-four query generator on 256 sequences, with per-head QK scaling | Query-only `r2b22f2ff6461`, step 7,500 | Allocated |
-| `rda6029c3286f` | Free degree-four coefficients per sequence and query on 256 sequences, with per-head QK scaling | Fixed Taylor `r816ab0fbe119`, step 7,500 | Allocated |
-| `rceea84f19f6b` | Static degree-four coefficients on 256 sequences, with per-head QK scaling | Static `r4339a245820e`, step 7,500 | Allocated |
+| `rc95f2055e96d` | Original degree-four query generator on 256 sequences, with per-head QK scaling | Query-only `r2b22f2ff6461`, step 7,500 | Running |
+| `rda6029c3286f` | Free degree-four coefficients per sequence and query on 256 sequences, with per-head QK scaling | Fixed Taylor `r816ab0fbe119`, step 7,500 | Running |
+| `rceea84f19f6b` | Static degree-four coefficients on 256 sequences, with per-head QK scaling | Static `r4339a245820e`, step 7,500 | Running |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
@@ -55,8 +55,10 @@ single clipping/Adam update. Free fitting clips and updates each sequence
 independently. The shared stopping rule requires at least 2,000 updates,
 reduces LR tenfold when improvement is below 0.001 nats over 200 updates, and
 stops after 500 confirmation updates on a plateau, with a 10,000-update safety
-budget. GPU qualification checks parent replay, an improving finite update,
-frozen parameter hashes, and exact checkpoint resume before training.
+budget. GPU qualification checks parent replay, finite updates with strict NLL
+improvement within ten disposable Adam updates, frozen parameter hashes, and
+exact checkpoint resume before training. Qualification does not advance the
+production coefficients or optimizer; a transient first-step increase is allowed.
 
 These fits compare capacity from different source backbones, rather than
 isolating coefficient parameterization on a single backbone. The free-table
