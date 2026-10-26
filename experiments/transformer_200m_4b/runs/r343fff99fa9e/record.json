@@ -14,25 +14,23 @@
     "command": [
       "sbatch",
       "--parsable",
-      "--partition=long",
+      "--partition=standard",
       "--gres=gpu:1",
       "--cpus-per-task=16",
       "--mem=128G",
       "--time=24:00:00",
       "--job-name=r343fff99fa9e",
-      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/sigmoid-coefficients-4b/experiments/transformer_200m_4b/runs/r343fff99fa9e/training.log",
-      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/sigmoid-coefficients-4b/experiments/transformer_200m_4b/runs/r343fff99fa9e/training.log",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/sigmoid-decay-4b/experiments/transformer_200m_4b/runs/r343fff99fa9e/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/sigmoid-decay-4b/experiments/transformer_200m_4b/runs/r343fff99fa9e/training.log",
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.transformer_200m_4b.acceptance",
       "experiments/transformer_200m_4b/runs/r343fff99fa9e/config.yaml",
-      "0e9dc3cd64dfd279f90fe2f76a06f6031f9795b1",
+      "009649034c063495df84d9894f663e4078e1c53e",
       "1",
       "B300,H100"
     ],
-    "nice": 1000,
-    "partition": "long",
-    "priority": 2,
-    "slurm_job_id": "226511",
-    "submitted_utc": "2026-10-26T05:30:49.215994+00:00"
+    "partition": "standard",
+    "slurm_job_id": "226586",
+    "submitted_utc": "2026-10-26T14:04:02.597941+00:00"
   }
 }
