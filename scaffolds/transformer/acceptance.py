@@ -548,6 +548,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_amplitude_initial=1.0,
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
+                                           attention_coefficient_kernel_weight_decay=False,
                                            positional_encoding="rope",
                                            attention_coefficient_amplitude_scale="none",
                                            attention_coefficient_scale="none",
@@ -597,7 +598,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
-        positional_encoding="rope",
+        attention_coefficient_kernel_weight_decay=False, positional_encoding="rope",
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False))
