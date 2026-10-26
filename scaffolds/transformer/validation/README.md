@@ -11,6 +11,19 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Pure sigmoid query coefficients
+
+The [record](runs/sigmoid-coefficients/qualification.json) pins source `4ba2f657`.
+On CPU, all 92 test files passed: 1,820 checks, 18 skips, 17 files with only GPU cases.
+Independent FP64 references verify $c_r = \sigma(w_r^\top x)\,[/\,r!]$ and the dense
+$c_r = [1/\sqrt5]\sum_j V_{rj}[/\,r!]\,\sigma(w_j^\top x)$, with every derivative, at
+degrees 4 and 8. The order-scaled $W = 0$ start equals fixed Taylor through the model.
+Weight decay, when enabled, reaches $W$ alone. On one B300 (job 226503, CUDA 13) and one
+H100 (job 226504), 34 checks each passed. They include Mosaic BF16 loss and all
+gradients against FP32 and BF16 blocked references in all four diagonal/dense,
+scaled/unscaled combinations. Full-size pilots and resumption are left to each run's
+launcher acceptance.
+
 ### Per-head RMS QK scaling and reduced dense readout
 
 The [CPU record](runs/dense-head-scale/cpu-tests.json) pins source `6f44aeaf`

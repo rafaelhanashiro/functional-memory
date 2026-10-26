@@ -1,0 +1,13 @@
+{
+  "condition": "sigmoid_unscaled",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/rd5550f8db5e4/config.yaml",
+    "sha256": "c836b1bf6eefb949964e400102655f9857c9bdac8217994fc966fa8cd45add6c"
+  },
+  "home_cluster": "kennel",
+  "label": "sigmoid-m4-unscaled",
+  "name": "sigmoid-m4-unscaled",
+  "record_schema_version": 1,
+  "run_id": "rd5550f8db5e4",
+  "status": "planned"
+}

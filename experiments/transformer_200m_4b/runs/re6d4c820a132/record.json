@@ -1,0 +1,13 @@
+{
+  "condition": "sigmoid_unscaled_wdecay",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/re6d4c820a132/config.yaml",
+    "sha256": "41d2ddbad65d049081cb910c74b4f894559a09c16846c3457e9f67dbef2f1593"
+  },
+  "home_cluster": "kennel",
+  "label": "sigmoid-m4-unscaled-wdecay",
+  "name": "sigmoid-m4-unscaled-wdecay",
+  "record_schema_version": 1,
+  "run_id": "re6d4c820a132",
+  "status": "planned"
+}

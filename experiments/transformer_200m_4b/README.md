@@ -186,3 +186,24 @@ done
 The shared launcher qualifies the new head-scale and dense-readout gradients,
 reference initialization, full-size pilot, and checkpoint resumption on the
 allocated GPU before production. Keep these run IDs for resumptions.
+
+## Sigmoid query coefficients
+
+Eight exploratory degree-four runs replace the tanh generator with pure sigmoid
+coefficients, diagonal or dense with $K = 5$, with and without order scaling and weight
+decay on $W$, all with per-head QK scaling; see the
+[topic](results/exploratory/sigmoid_coefficients/README.md) for the runs and method. Each
+copies `query-m4` and changes only the generator fields and `model.qk_norm_head_scale`.
+From `worktrees/sigmoid-coefficients-4b`, after committing the inputs, submit each run
+independently on one GPU (`standard` first, then `long`):
+
+```bash
+sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --job-name=<run_id> \
+  --output=experiments/transformer_200m_4b/runs/<run_id>/training.log \
+  --error=experiments/transformer_200m_4b/runs/<run_id>/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+  experiments/transformer_200m_4b/runs/<run_id>/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+Each record's `submission` holds its exact command and partition.

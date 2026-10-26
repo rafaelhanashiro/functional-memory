@@ -1,0 +1,113 @@
+topic: sigmoid_coefficients
+study: transformer_200m_4b
+comparison:
+  metric: held-out validation perplexity
+  tokens_per_update: 524288
+  report:
+  - terminal (update 7570)
+  - validation-best
+runs:
+- study: transformer_200m_4b
+  run_id: r8b4e2a0603aa
+  label: sigmoid-m4-scaled
+  role: sigmoid
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r8b4e2a0603aa/config.yaml
+      sha256: 9484cae190edf1c51ccaf145b216e93f0230c2006cc5bb803817207fbb168818
+- study: transformer_200m_4b
+  run_id: rd5550f8db5e4
+  label: sigmoid-m4-unscaled
+  role: sigmoid
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rd5550f8db5e4/config.yaml
+      sha256: c836b1bf6eefb949964e400102655f9857c9bdac8217994fc966fa8cd45add6c
+- study: transformer_200m_4b
+  run_id: r343fff99fa9e
+  label: sigmoid-m4-scaled-wdecay
+  role: sigmoid
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r343fff99fa9e/config.yaml
+      sha256: 01693c42da03d4633da93262212e56c80c2526fe5602b6f9186b3ce282e7c77a
+- study: transformer_200m_4b
+  run_id: re6d4c820a132
+  label: sigmoid-m4-unscaled-wdecay
+  role: sigmoid
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/re6d4c820a132/config.yaml
+      sha256: 41d2ddbad65d049081cb910c74b4f894559a09c16846c3457e9f67dbef2f1593
+- study: transformer_200m_4b
+  run_id: r239ea241c978
+  label: dense-sigmoid-m4-k5-scaled
+  role: dense_sigmoid
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r239ea241c978/config.yaml
+      sha256: d0cf8c23d645e42dee4e30c74ce4e43f3be5867595617d2e6143098aac09e374
+- study: transformer_200m_4b
+  run_id: ra6ae537a5e37
+  label: dense-sigmoid-m4-k5-unscaled
+  role: dense_sigmoid
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/ra6ae537a5e37/config.yaml
+      sha256: 9458f28475fcebad7bf0ea2e490ee4bd1d6078dc8cca937abed29c4f84b77603
+- study: transformer_200m_4b
+  run_id: rf7e1a83e2e23
+  label: dense-sigmoid-m4-k5-scaled-wdecay
+  role: dense_sigmoid
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rf7e1a83e2e23/config.yaml
+      sha256: f08d4632b1d5ceaafc4cce62cf018b8f8d39ca4dc2ee0adcd9e5cb0d7f6d3a7a
+- study: transformer_200m_4b
+  run_id: r331b5fd5bebc
+  label: dense-sigmoid-m4-k5-unscaled-wdecay
+  role: dense_sigmoid
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r331b5fd5bebc/config.yaml
+      sha256: 02199a769fec31146736a1ffaf2117934ca8f6fde9c62f02c62f80a4a1281bac
+- study: transformer_200m_4b
+  run_id: r79da929de109
+  label: fixed-m4
+  role: fixed_taylor
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r79da929de109/config.yaml
+      sha256: 9a1898124fb001b12bcd22a73126b74c63bee444bc6a3638cd576e2a088c548d
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r79da929de109/metrics.jsonl
+      sha256: 5393ae5dc688b48353069f5abcc34c14495c69ad004b8caeba8828cff0624b97
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r79da929de109/completion.json
+      sha256: 9bc50de6c88dca476f330c41c19c12e07b7b26332e373feb6ef306f5b89fdbd6
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r79da929de109/metadata.json
+      sha256: 0572bc495fbdf0e073f9bfa93e82093bad2ab196f054914c7640ef312a93b68d
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r79da929de109/best_validation.json
+      sha256: 919ef3bdaf7f7b9d7c9be3917e19334092e32af7bf82381321709885680d92ce
+- study: transformer_200m_4b
+  run_id: r49b7943aee1b
+  label: query-m4
+  role: tanh_query
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r49b7943aee1b/config.yaml
+      sha256: a9c1839a8a365f4ae335054403588daae2a97bc3facc4cda4ccffd860dc90864
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r49b7943aee1b/metrics.jsonl
+      sha256: f492bda3feb5d7e8719901aa07247557b24d174d815a89671495c57eb881c867
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r49b7943aee1b/completion.json
+      sha256: bda271ff0bf706acfa63b3562a460d8c0a5fa82d01bc13bbbc8b33c577becdcc
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r49b7943aee1b/metadata.json
+      sha256: aade11b44f0ef71aae4dde2232ab99905689272716c995b1d223aa769e06756c
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r49b7943aee1b/best_validation.json
+      sha256: 3932b3697a0767d816f20904dda96e7eab34ccecadc09c0b1e5a4e2cc287e188

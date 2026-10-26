@@ -1,0 +1,13 @@
+{
+  "condition": "dense_sigmoid_k5_unscaled",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/ra6ae537a5e37/config.yaml",
+    "sha256": "9458f28475fcebad7bf0ea2e490ee4bd1d6078dc8cca937abed29c4f84b77603"
+  },
+  "home_cluster": "kennel",
+  "label": "dense-sigmoid-m4-k5-unscaled",
+  "name": "dense-sigmoid-m4-k5-unscaled",
+  "record_schema_version": 1,
+  "run_id": "ra6ae537a5e37",
+  "status": "planned"
+}

@@ -1,0 +1,58 @@
+{
+  "format": "shared-transformer-sigmoid-coefficients-validation",
+  "source_commit": "4ba2f6579399dcde223443401cd36931c8ec1d55",
+  "date": "2026-10-26",
+  "result": "passed",
+  "cpu": {
+    "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q <file> -m 'not gpu', for every file in scaffolds/transformer/tests, scaffolds/records/tests, experiments/transformer_200m_4b/tests",
+    "files": 92,
+    "files_without_cpu_tests": 17,
+    "passed": 1820,
+    "skipped": 18,
+    "failed": 0
+  },
+  "gpu": {
+    "command": "sbatch --partition=debug --gres=gpu:<b300|h100>:1 scaffolds/transformer/validation/qualify_sigmoid_coefficients.sbatch 4ba2f657",
+    "allocations": [
+      {
+        "slurm_job_id": "226503",
+        "partition": "debug",
+        "gpu": "NVIDIA B300 SXM6 AC",
+        "environment": "cuda13",
+        "passed": 34,
+        "failed": 0,
+        "seconds": 151.15
+      },
+      {
+        "slurm_job_id": "226504",
+        "partition": "debug",
+        "gpu": "NVIDIA H100 80GB HBM3",
+        "environment": "cuda12",
+        "passed": 34,
+        "failed": 0,
+        "seconds": 116.1
+      }
+    ]
+  },
+  "checks": [
+    "Diagonal and dense sigmoid coefficients and all derivatives against an independent FP64 reference, degrees 4 and 8, with and without 1/r! and 1/sqrt(5)",
+    "Parameters: W alone (diagonal) or W and V = I (dense); no bias or amplitude",
+    "Weight decay reaches W alone when enabled; V, QK gains, head scales and output norms excluded",
+    "Order-scaled W = 0 start equals fixed Taylor, and dense V = I equals diagonal, through the model",
+    "All eight regimes train their generator parameters",
+    "Config validation and the legacy default for the new field",
+    "Mosaic BF16 model loss and every gradient against FP32 and BF16 blocked references at degree 4 (two-layer, two-head model, d_K = 64, 256 tokens)",
+    "Full-context 14-head QK-RMS query-coefficient Mosaic backend at degree 4"
+  ],
+  "limit": "Full-size pilot, initialization identity and resume are checked by each run's own launcher acceptance on its allocated GPU.",
+  "file_sha256": {
+    "scaffolds/transformer/attention/input_dependent.py": "983300d4297441ae8d7d433ba201c8bbf062898064ca9d977c3975b1876e65fd",
+    "scaffolds/transformer/attention/multihead.py": "7725a0f3eef63937b46981915d17201b11f55930acf29e19713c231ce87c1ca1",
+    "scaffolds/transformer/attention/core.py": "c3933a63593766203e76c6490dc3da9f415d7f24c61fdc7b0a43524c738c0af1",
+    "scaffolds/transformer/attention/parameters.py": "fcc23c8d3e4906f7e5df4bdc5a4cc96bb03f2fa5b2a28558405968bf23bfe917",
+    "scaffolds/transformer/configs/base.py": "3b51d47fb555bf692b899c25c7f471cd213fd78f5c46a90c534527746cefcde3",
+    "scaffolds/transformer/training/diagnostics.py": "cf0060a52b9bad68c3dac4bda65f667b99d748ec6a6292c14b684530be9ec570",
+    "scaffolds/transformer/tests/test_sigmoid_coefficients.py": "fa54cdbe5d0a62d81283147383c26e945c0000a8e350af7ce4c0c8316415a281",
+    "experiments/transformer_200m_4b/acceptance.py": "bf0e554ef5616ffacc0ff6cb10c4106110cf4b42f50a6918c8474d71fa27523d"
+  }
+}

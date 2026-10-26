@@ -11,3 +11,4 @@ either promoted into a canonical result collection or deleted with its runs; see
 | [rational_polynomial](rational_polynomial/README.md) | Does a separate learned denominator polynomial let normalized learned polynomial attention train through where the shared signed polynomial failed? | 2026-10-04 |
 | [sparse_polynomial_heads](sparse_polynomial_heads/README.md) | Can fixed or query-dependent sparse polynomial features reproduce frozen pretrained softmax heads at a small active-feature budget? | 2026-10-15 |
 | [200M / 4B: dense_query_coefficients](../../experiments/transformer_200m_4b/results/exploratory/dense_query_coefficients/README.md) | Do dense K-feature query coefficients beat original query and fixed Taylor in full 4B pretraining? | 2026-10-25 |
+| [200M / 4B: sigmoid_coefficients](../../experiments/transformer_200m_4b/results/exploratory/sigmoid_coefficients/README.md) | Do pure sigmoid query coefficients beat tanh ones at m = 4? | 2026-10-26 |

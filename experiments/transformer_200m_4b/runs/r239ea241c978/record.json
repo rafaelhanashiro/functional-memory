@@ -1,0 +1,13 @@
+{
+  "condition": "dense_sigmoid_k5_scaled",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r239ea241c978/config.yaml",
+    "sha256": "d0cf8c23d645e42dee4e30c74ce4e43f3be5867595617d2e6143098aac09e374"
+  },
+  "home_cluster": "kennel",
+  "label": "dense-sigmoid-m4-k5-scaled",
+  "name": "dense-sigmoid-m4-k5-scaled",
+  "record_schema_version": 1,
+  "run_id": "r239ea241c978",
+  "status": "planned"
+}

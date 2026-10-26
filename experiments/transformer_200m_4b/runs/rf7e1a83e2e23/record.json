@@ -1,0 +1,13 @@
+{
+  "condition": "dense_sigmoid_k5_scaled_wdecay",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/rf7e1a83e2e23/config.yaml",
+    "sha256": "f08d4632b1d5ceaafc4cce62cf018b8f8d39ca4dc2ee0adcd9e5cb0d7f6d3a7a"
+  },
+  "home_cluster": "kennel",
+  "label": "dense-sigmoid-m4-k5-scaled-wdecay",
+  "name": "dense-sigmoid-m4-k5-scaled-wdecay",
+  "record_schema_version": 1,
+  "run_id": "rf7e1a83e2e23",
+  "status": "planned"
+}

@@ -1,0 +1,13 @@
+{
+  "condition": "sigmoid_scaled",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r8b4e2a0603aa/config.yaml",
+    "sha256": "9484cae190edf1c51ccaf145b216e93f0230c2006cc5bb803817207fbb168818"
+  },
+  "home_cluster": "kennel",
+  "label": "sigmoid-m4-scaled",
+  "name": "sigmoid-m4-scaled",
+  "record_schema_version": 1,
+  "run_id": "r8b4e2a0603aa",
+  "status": "planned"
+}
