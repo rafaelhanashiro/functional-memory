@@ -2,7 +2,7 @@
 # Submit only after all requested fits have completed. Supply resources and the
 # Slurm output path at submission; this analysis never trains or resumes a run.
 # sbatch --gres=gpu:1 --cpus-per-task=8 --mem=96G --time=02:00:00 ... \
-#   <this-script> <worktree> <committed-source> <run-id> [<run-id> ...]
+#   <this-script> <worktree> <committed-source> <run-id> [<run-id> ...] [--record-parity-discrepancies]
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --open-mode=append
@@ -11,6 +11,18 @@ EXECUTION_ROOT="${1:?Expected execution checkout}"
 EXPECTED_COMMIT="${2:?Expected committed source}"
 shift 2
 if (( $# == 0 )); then echo 'Expected at least one completed run ID' >&2; exit 1; fi
+RUN_IDS=()
+PROBE_ARGS=()
+for ARG in "$@"; do
+  if [[ "$ARG" == --record-parity-discrepancies ]]; then
+    PROBE_ARGS+=(--record-parity-discrepancies)
+  elif [[ "$ARG" =~ ^r[0-9a-f]{12}$ ]]; then
+    RUN_IDS+=("$ARG")
+  else
+    echo "Invalid run ID or analysis option: $ARG" >&2; exit 1
+  fi
+done
+if (( ${#RUN_IDS[@]} == 0 )); then echo 'Expected at least one completed run ID' >&2; exit 1; fi
 cd "$EXECUTION_ROOT"
 TOPIC=experiments/transformer_200m_4b/results/exploratory/coefficient_oracle
 python3 scaffolds/launch/frozen.py check --launch-commit "$EXPECTED_COMMIT" --experiment transformer_200m_4b --scaffold transformer
@@ -34,10 +46,9 @@ export JAX_COMPILATION_CACHE_DIR="$EXECUTION_ROOT/.cache/coefficient-fit/jax"
 mkdir -p "$JAX_COMPILATION_CACHE_DIR"
 cleanup() { rm -rf -- "$PROBE_TMPDIR"; }
 trap cleanup EXIT
-for RUN_ID in "$@"; do
-  if [[ ! "$RUN_ID" =~ ^r[0-9a-f]{12}$ ]]; then echo "Invalid run ID: $RUN_ID" >&2; exit 1; fi
+for RUN_ID in "${RUN_IDS[@]}"; do
   RUN_ROOT="$EXECUTION_ROOT/experiments/transformer_200m_4b/runs/$RUN_ID"
   mkdir -p "$RUN_ROOT/.runtime"
   "$PYTHON" -m experiments.transformer_200m_4b.results.exploratory.coefficient_oracle.inspect_batch_fit \
-    --run "$RUN_ROOT" 2>&1 | tee -a "$RUN_ROOT/.runtime/batch-functional-probe.log"
+    --run "$RUN_ROOT" "${PROBE_ARGS[@]}" 2>&1 | tee -a "$RUN_ROOT/.runtime/batch-functional-probe.log"
 done

@@ -5,12 +5,14 @@ from flax import nnx
 import jax
 import jax.numpy as jnp
 import numpy as np
+import pytest
 
 from scaffolds.transformer.models import build_model
 from scaffolds.transformer.tests.test_training import tiny_config
 from experiments.transformer_200m_4b.results.exploratory.coefficient_oracle.inspect_batch_fit import (
-    first_layer_token_directions, fit_direction_basis, make_native_evaluator,
-    make_query_inspector, replace_first_layer_by_token, transform_coefficients,
+    bounded_replay_control, first_layer_token_directions, fit_direction_basis, make_native_evaluator,
+    make_query_inspector, nll_parity, require_diagnostic_parity,
+    replace_first_layer_by_token, transform_coefficients,
 )
 
 
@@ -65,6 +67,20 @@ def test_token_replacement_changes_only_layer_zero_direction():
         repeated = fixed_radius[:, 0][inputs == token]
         np.testing.assert_array_equal(repeated, np.broadcast_to(repeated[0], repeated.shape))
     assert diagnostics["token_occurrences"] == 72
+
+
+def test_parity_discrepancy_mode_preserves_failure_and_aggregate_gate():
+    measured = nll_parity([2., 2.], [2.003, 1.997], .002)
+    assert measured["aggregate_nll_passed"]
+    assert not measured["original_per_sequence_bound_passed"]
+    assert measured["sequences_exceeding_original_bound"] == 2
+    assert len(measured["per_sequence_nll_deltas"]) == 2
+    with pytest.raises(ValueError, match="FAILED"):
+        require_diagnostic_parity(measured, record_discrepancies=False)
+    require_diagnostic_parity(measured, record_discrepancies=True)
+    failed_mean = nll_parity([2., 2.], [2.003, 2.004], .002)
+    with pytest.raises(ValueError, match="aggregate"):
+        require_diagnostic_parity(failed_mean, record_discrepancies=True)
 
 
 def test_query_inspector_preserves_native_forward_and_reads_live_inputs(tmp_path):
@@ -145,3 +161,10 @@ def test_native_hooks_capture_nontrivial_bfloat16_generator_without_reprojection
     assert np.min(stats["tanh_derivative_mean"]) < .5
     assert len(activation) == 10
     assert not any("residual" in name for name in activation)
+    native_loss = make_native_evaluator(graph)
+    repeated = bounded_replay_control(graph, params, np.asarray(tokens), 2, positions,
+        native_loss, np.asarray(native_loss(params, tokens)), losses)
+    assert repeated["microbatch_sequence_count"] == 2
+    assert all(item["all_returned_arrays_repeat_exactly"] for item in repeated["anchor_forwards"].values())
+    assert all(item["all_returned_arrays_repeat_exactly"] for item in repeated["materialized_logit_forwards"].values())
+    assert repeated["within_compiled_native_hook_logit_parity"]["logit_max_absolute_error"] == 0.

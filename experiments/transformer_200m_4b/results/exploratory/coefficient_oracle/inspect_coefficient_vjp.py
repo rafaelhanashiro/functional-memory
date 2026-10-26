@@ -8,6 +8,7 @@ not classified using a newly invented pass tolerance.
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 import hashlib
 import json
 import math
@@ -33,6 +34,7 @@ from scaffolds.transformer.attention import multihead
 from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial_attention
 from scaffolds.transformer.attention.output_scaling import scale_attention_output
 from scaffolds.transformer.data.packed import PackedBatchIterator
+from scaffolds.transformer.models import build_model
 from scaffolds.transformer.training.checkpointing import state_sha256
 from scaffolds.transformer.training.coefficient_fit import parent_config, restore_parent, split_generator_parameters
 from experiments.transformer_200m_4b.results.exploratory.coefficient_oracle.inspect_batch_fit import (
@@ -112,8 +114,8 @@ def error_metrics(actual, reference):
             if actual_norm > 0 and reference_norm > 0 else None}
 
 
-def make_capture(graph, model_config):
-    """Capture native operands and true task cotangents without replacing coefficients.
+def make_capture(graph, model_config, *, backend="mosaic"):
+    """Capture operands and instrumented-execution task cotangents without replacing coefficients.
 
     Zero additive probes enter after each head's output RMSNorm. Differentiating
     their values retains every downstream native block and generator-input path.
@@ -125,8 +127,8 @@ def make_capture(graph, model_config):
         captured, gains = [], []
 
         def core(q, k, v, **kwargs):
-            if kwargs["backend"] != "mosaic" or kwargs.get("return_diagnostics"):
-                raise ValueError("Expected ordinary Mosaic query attention")
+            if kwargs["backend"] != backend or kwargs.get("return_diagnostics"):
+                raise ValueError(f"Expected ordinary {backend} query attention")
             coefficients = kwargs["query_polynomial_coefficients"]
             output = native_core(q, k, v, **kwargs)
             captured.append((q, k, v, coefficients, output))
@@ -156,6 +158,54 @@ def make_capture(graph, model_config):
         return {"native_nll": nll, "logit_max_absolute_error": jnp.max(jnp.abs(difference)),
                 "logit_relative_rms_error": jnp.linalg.norm(difference) / jnp.maximum(jnp.linalg.norm(native.astype(jnp.float32)), 1e-30)}
     return capture, compare
+
+
+def assess_parity(parity, instrumented_nll, recorded_nll, tolerance):
+    """Preserve established bounds and identify which one actually failed."""
+    result = {**parity, "instrumented_nll": float(instrumented_nll),
+              "recorded_sequence_nll": float(recorded_nll), "established_nll_atol": float(tolerance)}
+    result["instrumented_minus_native_nll"] = float(instrumented_nll - parity["native_nll"])
+    result["native_minus_recorded_nll"] = float(parity["native_nll"] - recorded_nll)
+    finite = all(math.isfinite(value) for value in result.values())
+    checks = {"finite_measurements": finite,
+              "native_checkpoint_nll": finite and abs(result["native_minus_recorded_nll"]) <= tolerance,
+              "instrumented_native_nll": finite and abs(result["instrumented_minus_native_nll"]) <= tolerance}
+    result["checks"] = checks
+    result["failed_checks"] = [name for name, passed in checks.items() if not passed]
+    result["logit_errors_are_measured_without_an_added_acceptance_threshold"] = True
+    return result
+
+
+def precision_control_graph(config, source):
+    """Same checkpoint arrays with FP32 module arithmetic and blocked attention.
+
+    Mosaic requires BF16 inputs, so this is a precision/backend sensitivity
+    control, not an isolated change to Mosaic's arithmetic.
+    """
+    control_config = replace(config.model, attention_backend="blocked")
+    model = build_model(control_config, nnx.Rngs(params=config.train.seed, dropout=config.train.seed))
+    for _, module in nnx.iter_graph(model):
+        if isinstance(module, nnx.Module) and hasattr(module, "dtype"):
+            module.dtype = jnp.float32
+    graph, template = nnx.split(model, nnx.Param)
+    signature = lambda state: {path: (value.shape, value.dtype) for path, value in nnx.to_flat_state(state)}
+    if signature(template) != signature(source):
+        raise ValueError("FP32 control graph does not accept the identical checkpoint parameter tree")
+    return graph, control_config
+
+
+def precision_capture_control(capture, compare, probes, params, tokens):
+    """Run the same instrumented value-and-gradient capture, keeping only parity."""
+    with jax.default_matmul_precision("highest"):
+        (loss, (_, _, logits)), _ = capture(probes, params, tokens)
+        parity = {key: float(value) for key, value in jax.device_get(compare(params, tokens, logits)).items()}
+    parity["instrumented_nll"] = float(loss)
+    parity["instrumented_minus_native_nll"] = float(loss) - parity["native_nll"]
+    if not all(math.isfinite(value) for value in parity.values()):
+        raise ValueError(f"FP32 capture control produced nonfinite parity: {parity}")
+    return {"backend": "blocked", "module_dtype": "float32", "matmul_precision": "highest",
+            "same_checkpoint_parameter_arrays": True, **parity,
+            "interpretation": "Same before/after checkpoint arrays and sequence. Native and instrumented graphs both use FP32 module arithmetic with blocked attention. The loss is not required to equal BF16 checkpoint NLL; changing the backend as well as arithmetic prevents attributing any difference to one precise cause."}
 
 
 @jax.jit
@@ -242,6 +292,8 @@ def main():
     parser.add_argument("--run", type=Path, required=True)
     parser.add_argument("--sequence-index", type=int, default=0)
     parser.add_argument("--uniform-queries", type=int, default=16)
+    parser.add_argument("--record-parity-discrepancies", action="store_true",
+        help="Diagnostic only: retain instrumented-graph derivatives when capture/native NLL parity exceeds its established bound; native checkpoint replay must still pass")
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
     run = args.run.resolve(); output = run / OUTPUT
@@ -297,29 +349,49 @@ def main():
     fitted_params = nnx.merge_state(frozen, fitted)
     fitted_hash = state_sha256(fitted_params)
     capture, compare = make_capture(graph, config.model)
+    fp32_graph, fp32_config = precision_control_graph(config, source)
+    fp32_capture, fp32_compare = make_capture(fp32_graph, fp32_config, backend="blocked")
     probes = tuple(jnp.zeros((1, tokens.shape[1] - 1, config.model.num_heads, config.model.value_head_dim),
                              jnp.bfloat16) for _ in range(config.model.num_layers))
+    fp32_probes = tuple(probe.astype(jnp.float32) for probe in probes)
     acceptance = json.loads((run / "oracle_acceptance.json").read_text())
     nll_tolerance = acceptance["cross_compilation_nll_atol"]
     snapshots = {}
+    failure = None
     for label, params in (("before", source), ("after", fitted_params)):
         (loss, (captured, gains, logits)), cotangents = capture(probes, params, tokens)
-        parity = {key: float(value) for key, value in jax.device_get(compare(params, tokens, logits)).items()}
-        if (not all(math.isfinite(value) for value in parity.values())
-                or abs(float(loss) - parity["native_nll"]) > nll_tolerance
-                or abs(parity["native_nll"] - expected[label]) > nll_tolerance):
-            raise ValueError(f"Native/capture/checkpoint NLL replay failed for {label}: {parity}, expected {expected[label]}")
+        raw_parity = {key: float(value) for key, value in jax.device_get(compare(params, tokens, logits)).items()}
+        parity = assess_parity(raw_parity, float(loss), expected[label], nll_tolerance)
+        print(json.dumps({"snapshot": label, "bf16_capture_parity": parity}), flush=True)
+        snapshot = {"native_wrapper_parity": parity, "instrumented_nll": float(loss),
+                    "recorded_sequence_nll": expected[label]}
+        snapshots[label] = snapshot
         del logits
+        if not parity["checks"]["native_checkpoint_nll"]:
+            failure = f"Hard native checkpoint replay check failed for {label}: {parity['failed_checks']}"
+            break
+        snapshot["fp32_capture_control"] = precision_capture_control(
+            fp32_capture, fp32_compare, fp32_probes, params, tokens)
+        print(json.dumps({"snapshot": label, "fp32_capture_control": snapshot["fp32_capture_control"]}), flush=True)
+        passed = parity["checks"]["instrumented_native_nll"]
+        snapshot["cotangent_execution"] = (
+            "Instrumented compiled execution; native/capture NLL agrees within the established bound, but bitwise identity is not asserted."
+            if passed else
+            "Instrumented compiled execution with capture/native NLL discrepancy beyond the established bound; these are not claimed to be the native checkpoint's exact cotangents.")
+        snapshot["capture_parity_discrepancy_recorded"] = not passed
+        if not passed and not args.record_parity_discrepancies:
+            failure = f"Instrumented/native NLL parity failed for {label}; no derivative measurements retained for this snapshot without --record-parity-discrepancies"
+            break
         rows, replay_errors = sampled_measurements(captured, gains, cotangents,
             eps=config.model.rms_norm_eps, uniform_count=args.uniform_queries)
-        snapshots[label] = {"native_wrapper_parity": parity, "instrumented_nll": float(loss),
-                            "recorded_sequence_nll": expected[label], "kernel_forward_replay_errors": replay_errors,
-                            "summary": summarize(rows), "samples": rows}
+        snapshot.update({"kernel_forward_replay_errors": replay_errors, "summary": summarize(rows), "samples": rows})
         del captured, gains, cotangents
     if state_sha256(source) != source_hash or state_sha256(fitted_params) != fitted_hash:
         raise RuntimeError("Replay changed checkpoint parameter arrays")
     result = {
-        "schema_version": 1, "run_id": run.name, "selected_checkpoint_step": identity["step"],
+        "schema_version": 2, "run_id": run.name, "selected_checkpoint_step": identity["step"],
+        "status": "failed_parity" if failure else "complete", "failure": failure,
+        "record_parity_discrepancies_requested": args.record_parity_discrepancies,
         "checkpoint_sha256": record["selected_checkpoint"]["sha256"], "parent_run_id": oracle["parent_run_id"],
         "parent_checkpoint_sha256": oracle["parent_checkpoint_sha256"], "config_sha256": sha256(run / "config.yaml"),
         "completion_sha256": sha256(run / "completion.json"), "metrics_sha256": hashlib.sha256(payload).hexdigest(),
@@ -336,11 +408,11 @@ def main():
         "parameter_arrays_unchanged": True, "nll_replay_atol_from_fitting_acceptance": nll_tolerance,
         "snapshots": snapshots, "elapsed_seconds": time.monotonic() - started,
         "interpretation": {
-            "kernel_vjp": "Compare native dL/du with T^T times the recorded BF16 raw-output cotangent; isolates polynomial-kernel derivative arithmetic from RMS amplification. FP64 uses the exact captured BF16 operands but higher-precision score accumulation.",
+            "kernel_vjp": "Compare Mosaic dL/du with T^T times the recorded BF16 raw-output cotangent from the instrumented graph; isolates polynomial-kernel derivative arithmetic from RMS amplification. FP64 uses the exact captured BF16 operands but higher-precision score accumulation.",
             "rms_backward": "Compare actual BF16 raw-output cotangent with the independent FP64 RMS Jacobian at the same native raw output.",
             "forward_rounding": "Hold the upstream task cotangent fixed and compare FP64 RMS-composed coefficient gradients at native rounded y versus smooth y=T u.",
             "conditioning": "T_r=sum_causal s^r V/r!, u=r!c. Native-output J uses the RMS Jacobian at the recorded rounded y; smooth J uses y=T u. Tangents exclude coefficient radius only. Direction singular values multiply coefficient-tangent singular values by ||u||. Early causal prefixes may be structurally rank deficient.",
-            "limits": "One fitting sequence, not B256 gradient or clipping statistics. The before/after causal activations differ. Cotangents come from each native model's own sequence NLL. FP64 smooth derivatives differ from mixed-precision surrogate derivatives; numerical discrepancies are reported without an invented pass threshold. No trained parameter, optimizer state, or checkpoint is changed.",
+            "limits": "One fitting sequence, not B256 gradient or clipping statistics. The before/after causal activations differ. Cotangents come from each instrumented compiled model's own sequence NLL; failed capture/native parity is explicitly labeled and never excused by widening its bound. Native checkpoint identity/NLL replay and unchanged parameter arrays remain hard requirements. FP64 smooth derivatives differ from mixed-precision surrogate derivatives; numerical discrepancies are reported without an invented derivative pass threshold. No trained parameter, optimizer state, or checkpoint is changed.",
         },
     }
     temporary = output.with_suffix(".json.tmp")
@@ -351,7 +423,9 @@ def main():
         "source_commit": result["source_commit"], "analysis_script_sha256": result["analysis_script_sha256"],
         "selected_checkpoint_sha256": result["checkpoint_sha256"]}}})
     print(json.dumps({"run_id": run.name, "output": str(output), "summaries": {
-        label: snapshot["summary"] for label, snapshot in snapshots.items()}}), flush=True)
+        label: snapshot.get("summary") for label, snapshot in snapshots.items()}}), flush=True)
+    if failure:
+        raise ValueError(f"{failure}; full parity diagnostics saved to {output}")
 
 
 if __name__ == "__main__":

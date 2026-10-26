@@ -230,7 +230,7 @@ def make_override_evaluator(graph):
     return evaluate
 
 
-def make_query_inspector(graph, positions):
+def make_query_inspector(graph, positions, *, return_logits=False):
     """Read actual generator operands through hooks in the native model forward.
 
     Do not reconstruct the block loop, re-evaluate its RMSNorm/projection, or ask
@@ -325,7 +325,8 @@ def make_query_inspector(graph, positions):
         logits, stats, norms, activation, coordinates = forward(params, tokens[:, :-1])
         nll = optax.softmax_cross_entropy_with_integer_labels(
             logits.astype(jnp.float32), tokens[:, 1:]).mean(axis=1)
-        return nll, stats, norms, activation, coordinates
+        result = (nll, stats, norms, activation, coordinates)
+        return (*result, logits) if return_logits else result
 
     @jax.jit
     def compare(params, tokens):
@@ -336,6 +337,125 @@ def make_query_inspector(graph, positions):
                 "logit_relative_rms_error": jnp.linalg.norm(difference) /
                     jnp.maximum(jnp.linalg.norm(native.astype(jnp.float32)), 1e-30)}
     return inspect, compare
+
+
+def nll_parity(reference, observed, tolerance):
+    difference = np.asarray(observed, np.float64) - np.asarray(reference, np.float64)
+    return {
+        "mean_nll_delta": float(difference.mean()),
+        "max_absolute_nll_delta": float(np.max(np.abs(difference))),
+        "signed_nll_delta_quantiles": np.quantile(difference, QUANTILES).tolist(),
+        "absolute_nll_delta_quantiles": np.quantile(np.abs(difference), QUANTILES).tolist(),
+        "quantile_probabilities": QUANTILES, "nll_replay_atol": tolerance,
+        "aggregate_nll_passed": bool(abs(difference.mean()) <= tolerance),
+        "original_per_sequence_bound_passed": bool(np.all(np.abs(difference) <= tolerance)),
+        "sequences_exceeding_original_bound": int(np.count_nonzero(np.abs(difference) > tolerance)),
+        "per_sequence_nll_deltas": difference.tolist(),
+    }
+
+
+def require_diagnostic_parity(parity, *, record_discrepancies):
+    if not parity["aggregate_nll_passed"]:
+        raise ValueError("Diagnostic aggregate NLL exceeds the unchanged replay tolerance")
+    if not parity["original_per_sequence_bound_passed"] and not record_discrepancies:
+        compact = {key: value for key, value in parity.items() if key != "per_sequence_nll_deltas"}
+        raise ValueError("Diagnostic FAILED the original per-sequence replay bound; explicitly request "
+                         "--record-parity-discrepancies to retain this discrepancy: " + json.dumps(compact))
+
+
+def bounded_replay_control(graph, params, batch, microbatch, positions, native, reference, observed):
+    """Distinguish repeatability from changes between independently compiled outputs."""
+    worst_sequence = int(np.argmax(np.abs(np.asarray(observed) - reference)))
+    offset = worst_sequence // microbatch * microbatch
+    tokens = jax.device_put(batch[offset:offset + microbatch])
+    inspect, compare = make_query_inspector(graph, positions)
+
+    def coefficient_forward(*, return_logits=False):
+        @jax.jit
+        def evaluate(state, inputs):
+            logits, coefficients = nnx.merge(graph, state)(
+                inputs[:, :-1], deterministic=True, return_coefficients=True)
+            nll = optax.softmax_cross_entropy_with_integer_labels(
+                logits.astype(jnp.float32), inputs[:, 1:]).mean(axis=1)
+            factorial = jnp.asarray([math.factorial(r) for r in range(coefficients.shape[-1])], jnp.float32)
+            coordinates = jnp.take(coefficients * factorial, jnp.asarray(positions), axis=2)
+            return (nll, coordinates, logits) if return_logits else (nll, coordinates)
+        return evaluate
+
+    @jax.jit
+    def native_with_logits(state, inputs):
+        logits = nnx.merge(graph, state)(inputs[:, :-1], deterministic=True)
+        nll = optax.softmax_cross_entropy_with_integer_labels(
+            logits.astype(jnp.float32), inputs[:, 1:]).mean(axis=1)
+        return nll, logits
+
+    @jax.jit
+    def compare_arrays(left, right):
+        a, b = left.astype(jnp.float32), right.astype(jnp.float32)
+        delta = a - b
+        return {"exactly_equal": jnp.array_equal(left, right),
+                "max_absolute_error": jnp.max(jnp.abs(delta)),
+                "relative_rms_error": jnp.linalg.norm(delta) / jnp.maximum(jnp.linalg.norm(b), 1e-30)}
+
+    @jax.jit
+    def tree_equal(left, right):
+        return jnp.all(jnp.stack([jnp.array_equal(a, b) for a, b in
+                                  zip(jax.tree.leaves(left), jax.tree.leaves(right), strict=True)]))
+
+    def array_comparison(left, right):
+        return {key: bool(value) if key == "exactly_equal" else float(value)
+                for key, value in jax.device_get(compare_arrays(left, right)).items()}
+
+    variants = {}
+    for label, operation in (("ordinary_native", native), ("diagnostic", inspect),
+                              ("native_return_coefficients", coefficient_forward())):
+        first, second = operation(params, tokens), operation(params, tokens)
+        repeated_exactly = bool(tree_equal(first, second))
+        if not repeated_exactly:
+            raise ValueError(f"Repeated {label} forward changed on the worst fitting microbatch")
+        loss = first if label == "ordinary_native" else first[0]
+        variants[label] = {"all_returned_arrays_repeat_exactly": repeated_exactly,
+            "per_sequence_nll": np.asarray(loss, np.float64).tolist(),
+            "mean_nll": float(np.asarray(loss, np.float64).mean())}
+        del first, second
+    within_graph = {key: float(value) for key, value in jax.device_get(compare(params, tokens)).items()}
+    if within_graph["logit_max_absolute_error"] > .05:
+        raise ValueError(f"Native-hook within-compiled logit parity failed: {within_graph}")
+    ordinary_losses = np.asarray(variants["ordinary_native"]["per_sequence_nll"])
+    for label, result in variants.items():
+        delta = np.asarray(result["per_sequence_nll"]) - ordinary_losses
+        result["nll_delta_from_ordinary_native"] = delta.tolist()
+    diagnostic_losses = np.asarray(variants["diagnostic"]["per_sequence_nll"])
+    coefficient_losses = np.asarray(variants["native_return_coefficients"]["per_sequence_nll"])
+
+    # These extra-output programs are explicitly distinguished from the NLL-only
+    # anchor programs above: materializing logits can itself affect compilation.
+    diagnostic_with_logits, _ = make_query_inspector(graph, positions, return_logits=True)
+    materialized, logits = {}, {}
+    for label, operation in (("ordinary_native", native_with_logits),
+                              ("diagnostic", diagnostic_with_logits),
+                              ("native_return_coefficients", coefficient_forward(return_logits=True))):
+        first, second = operation(params, tokens), operation(params, tokens)
+        if not bool(tree_equal(first, second)):
+            raise ValueError(f"Repeated {label} materialized-logit forward changed")
+        loss = np.asarray(first[0], np.float64)
+        materialized[label] = {"all_returned_arrays_repeat_exactly": True,
+            "per_sequence_nll": loss.tolist(),
+            "delta_from_corresponding_anchor_nll": (loss - variants[label]["per_sequence_nll"]).tolist()}
+        logits[label] = first[-1]
+        del first, second
+    logit_comparisons = {label + "_vs_ordinary_native": array_comparison(value, logits["ordinary_native"])
+                         for label, value in logits.items() if label != "ordinary_native"}
+    logit_comparisons["diagnostic_vs_native_return_coefficients"] = array_comparison(
+        logits["diagnostic"], logits["native_return_coefficients"])
+    return {"worst_sequence_index": worst_sequence, "microbatch_start_index": offset,
+        "microbatch_sequence_count": len(tokens), "snapshot": "after",
+        "anchor_forwards": variants, "within_compiled_native_hook_logit_parity": within_graph,
+        "coefficient_return_minus_diagnostic_nll": (coefficient_losses - diagnostic_losses).tolist(),
+        "native_anchor_minus_original_full_batch_pass_nll": (ordinary_losses - reference[offset:offset + microbatch]).tolist(),
+        "diagnostic_anchor_minus_original_full_batch_pass_nll": (diagnostic_losses - observed[offset:offset + microbatch]).tolist(),
+        "materialized_logit_forwards": materialized, "independent_logit_comparisons": logit_comparisons,
+        "limits": "Same fitted BF16 checkpoint and worst B8 fitting microbatch, no training or precision conversion. Exact repeatability is checked separately for every compiled program. The native coefficient-return API adds no hand-written generator statistics. Materialized-logit controls return additional arrays and may themselves compile differently from their NLL-anchor programs; their loss changes are recorded rather than conflated with the original discrepancy."}
 
 
 def query_diagnostics(graph, params, batch, microbatch, positions):
@@ -382,6 +502,8 @@ def main():
     parser.add_argument("--run", type=Path, required=True)
     parser.add_argument("--pca-train-sequences", type=int, default=192)
     parser.add_argument("--query-samples", type=int, default=64)
+    parser.add_argument("--record-parity-discrepancies", action="store_true",
+        help="Explicitly retain failed per-sequence diagnostic parity; aggregate and checkpoint replay must still pass")
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
     run = args.run.resolve(); output = run / OUTPUT
@@ -489,24 +611,25 @@ def main():
         fitted_params = nnx.merge_state(frozen, fitted)
         losses = np.concatenate([np.asarray(native(fitted_params, jax.device_put(batch[i:i + microbatch])))
                                   for i in range(0, count, microbatch)])
+        if abs(float(losses.mean()) - completion["best_fit_nll"]) > tolerance:
+            raise ValueError("Native selected-checkpoint replay exceeds the unchanged fitting-NLL tolerance")
         measurements["fitted_raw"] = losses_summary(losses, args.pca_train_sequences)
         parameter_snapshots, coefficient_snapshots = {}, {}
         for label, params in (("before", source), ("after", fitted_params)):
             replay, diagnostic, coordinates = query_diagnostics(graph, params, batch, microbatch, positions)
             expected = initial if label == "before" else losses
-            difference = replay - expected
-            error = float(np.max(np.abs(difference)))
-            parity_summary = {"snapshot": label, "mean_nll_delta": float(np.mean(difference)),
-                "max_absolute_nll_delta": error,
-                "signed_nll_delta_quantiles": np.quantile(difference, QUANTILES).tolist(),
-                "absolute_nll_delta_quantiles": np.quantile(np.abs(difference), QUANTILES).tolist(),
-                "quantile_probabilities": QUANTILES, "nll_replay_atol": tolerance}
-            print("Native diagnostic parity: " + json.dumps(parity_summary), flush=True)
-            if error > tolerance:
-                raise ValueError("Native-hook diagnostic NLL differs from external native replay: "
-                                 + json.dumps(parity_summary))
-            diagnostic["external_native_max_nll_error"] = error
+            parity_summary = {"snapshot": label, **nll_parity(expected, replay, tolerance)}
+            compact = {key: value for key, value in parity_summary.items() if key != "per_sequence_nll_deltas"}
+            print("Native diagnostic parity: " + json.dumps(compact), flush=True)
+            require_diagnostic_parity(parity_summary, record_discrepancies=args.record_parity_discrepancies)
+            diagnostic["external_native_max_nll_error"] = parity_summary["max_absolute_nll_delta"]
             diagnostic["external_native_nll_comparison"] = parity_summary
+            diagnostic["statistics_forward"] = "instrumented_native_forward"
+            diagnostic["per_sequence_parity_status"] = (
+                "passed" if parity_summary["original_per_sequence_bound_passed"] else "FAILED_RECORDED_EXPLICITLY")
+            if label == "after":
+                diagnostics["bounded_repeatability_control"] = bounded_replay_control(
+                    graph, params, batch, microbatch, positions, native, expected, replay)
             generator, _ = split_generator_parameters(params)
             parameter_values = {str(path[-1]): np.asarray(value[...], np.float64)
                                 for path, value in nnx.to_flat_state(generator)}
@@ -559,6 +682,7 @@ def main():
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"), "gpu": jax.devices()[0].device_kind,
         "cuda_environment": os.environ.get("TRANSFORMER_CUDA_ENVIRONMENT"),
         "microbatch_size": microbatch, "nll_replay_atol": tolerance,
+        "record_parity_discrepancies_requested": args.record_parity_discrepancies,
         "recorded_best_nll": completion["best_fit_nll"], "best_checkpoint_replay_nll_error": fitted_nll - completion["best_fit_nll"],
         "frozen_parent_parameters_unchanged": True, "measurements": measurements, "diagnostics": diagnostics,
         "elapsed_seconds": time.monotonic() - started,

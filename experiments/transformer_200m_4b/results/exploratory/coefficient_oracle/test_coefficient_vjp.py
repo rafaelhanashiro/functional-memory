@@ -12,7 +12,8 @@ from scaffolds.transformer.attention import multihead
 from scaffolds.transformer.models import build_model
 from scaffolds.transformer.tests.test_training import tiny_config
 from experiments.transformer_200m_4b.results.exploratory.coefficient_oracle.inspect_coefficient_vjp import (
-    basis_outputs, make_capture, rms_jacobian, tangent_geometry,
+    assess_parity, basis_outputs, make_capture, precision_capture_control, precision_control_graph,
+    rms_jacobian, tangent_geometry,
 )
 
 
@@ -50,6 +51,18 @@ def test_reference_retains_absolute_causal_positions():
     matrices, _, mask = basis_outputs(q, k, v, np.asarray([1, 4]), 4)
     np.testing.assert_array_equal(mask.sum(axis=1), [2, 5])
     np.testing.assert_allclose(matrices[:, :, 0], [v[:2].sum(axis=0), v.sum(axis=0)])
+
+
+def test_parity_assessment_preserves_bounds_and_distinguishes_failures():
+    reference = {"native_nll": 1.96899247, "logit_max_absolute_error": 4.5,
+                 "logit_relative_rms_error": .018748}
+    result = assess_parity(reference, 2.0, 1.96931136, .002)
+    assert result["checks"]["native_checkpoint_nll"]
+    assert not result["checks"]["instrumented_native_nll"]
+    assert result["failed_checks"] == ["instrumented_native_nll"]
+    assert result["instrumented_nll"] == 2.0 and result["established_nll_atol"] == .002
+    invalid_native = assess_parity(reference, reference["native_nll"], 1.8, .002)
+    assert invalid_native["failed_checks"] == ["native_checkpoint_nll"]
 
 
 def test_native_zero_probes_preserve_forward_and_capture_task_cotangent(tmp_path):
@@ -102,3 +115,10 @@ def test_native_zero_probes_preserve_forward_and_capture_task_cotangent(tmp_path
         numerical = (objective(step) - objective(-step)) / (2 * step)
         np.testing.assert_allclose(numerical, np.asarray(cotangents[0])[location], rtol=.04, atol=2e-5)
         np.testing.assert_allclose(objective(0.), loss, atol=1e-6)
+        control_graph, control_config = precision_control_graph(config, params)
+        control_capture, control_compare = make_capture(control_graph, control_config, backend="blocked")
+        control = precision_capture_control(control_capture, control_compare, probes, params, tokens)
+        assert control["same_checkpoint_parameter_arrays"]
+        assert control["backend"] == "blocked" and control["module_dtype"] == "float32"
+        np.testing.assert_allclose(control["native_nll"], loss, atol=1e-6)
+        assert abs(control["instrumented_minus_native_nll"]) < 1e-6
