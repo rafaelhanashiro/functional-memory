@@ -64,6 +64,8 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
     if identity.get("attention_coefficient_conditioning") in ("query", "query_key"):
         tags.append(f"{identity['attention_coefficient_conditioning']}_conditioned_coefficients")
         tags.append(f"coefficient_{config.model.attention_coefficient_activation}")
+        if config.model.attention_coefficient_kernel_weight_decay:
+            tags.append("coefficient_kernel_weight_decay")
     if identity.get("attention_output_scaling"):
         tags.append(f"output_{identity['attention_output_scaling']}")
     if config.model.initialization != "flax_default":

@@ -85,9 +85,13 @@ class ModelConfig:
     # Query coefficients use the incoming attention activation, per layer/head. "query_key" also
     # multiplies each key's degree-r term by f_r(x_i) = 1 + a_r tanh(w_r^T x_i) from the key token.
     attention_coefficient_conditioning: Literal["static", "query", "query_key"] = "static"
-    # Legacy identity is degree-one affine; tanh supports b + a*tanh(x W).
-    attention_coefficient_activation: Literal["identity", "tanh"] = "identity"
-    # Dense readout mixes all degree+1 tanh features into every output coefficient.
+    # Legacy identity is degree-one affine; tanh supports b + a*tanh(x W); sigmoid is the pure
+    # c_r = sigmoid(x w_r), with no b or a (dense: c_r = sum_j V_rj sigmoid(x w_j), V starting at I).
+    attention_coefficient_activation: Literal["identity", "tanh", "sigmoid"] = "identity"
+    # Apply optim.weight_decay to the query coefficient projection W; b, a, V, and any key
+    # projection stay excluded.
+    attention_coefficient_kernel_weight_decay: bool = False
+    # Dense readout mixes all degree+1 tanh or sigmoid features into every output coefficient.
     # Diagonal preserves the historical one-feature-per-coefficient generator.
     attention_coefficient_readout: Literal["diagonal", "dense"] = "diagonal"
     # Multiply only the dense input-dependent readout by this fixed scale; the
@@ -112,6 +116,7 @@ class ModelConfig:
     path_conv_size: int = 3
     # "factorial" divides the tanh amplitude of order r by r!, c_r = b_r + (a_r/r!) tanh(w_r^T x_t),
     # so under Adam's unit-scale steps order r's modulation moves at lr/r!, matching b_r = 1/r!.
+    # Sigmoid coefficients become sigmoid(w_r^T x_t)/r! (dense: V's row r divided by r!).
     attention_coefficient_amplitude_scale: Literal["none", "factorial"] = "none"
     # "factorial" stores order r's input-independent coefficient (static c_r, or the query
     # bias b_r) as r! times its value, c_r = c~_r / r!, so under Adam it moves at lr/r!
@@ -172,7 +177,7 @@ class ModelConfig:
                   and self.attention_coefficient_parameterization == "direct"
                   and self.attention_coefficient_conditioning == "static")
         query = (not self.attention_normalization and self.attention_coefficient_conditioning in ("query", "query_key")
-                 and self.attention_coefficient_activation == "tanh" and integer_degree
+                 and self.attention_coefficient_activation in ("tanh", "sigmoid") and integer_degree
                  and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len))
         # Static coefficients run on the query-coefficient kernel with every query's coefficients equal.
         static = (not self.attention_normalization and self.attention_coefficient_conditioning == "static"
@@ -323,16 +328,16 @@ class ModelConfig:
             raise ValueError(f"Unknown attention coefficient sharing: {self.attention_coefficient_sharing}")
         if self.attention_coefficient_conditioning not in ("static", "query", "query_key"):
             raise ValueError(f"Unknown attention coefficient conditioning: {self.attention_coefficient_conditioning}")
-        if self.attention_coefficient_activation not in ("identity", "tanh"):
+        if self.attention_coefficient_activation not in ("identity", "tanh", "sigmoid"):
             raise ValueError(f"Unknown attention coefficient activation: {self.attention_coefficient_activation}")
         if self.attention_coefficient_readout not in ("diagonal", "dense"):
             raise ValueError(f"Unknown attention coefficient readout: {self.attention_coefficient_readout}")
         if self.attention_coefficient_readout == "dense" and (
                 self.attention_mechanism != "dot_product" or self.attention_coefficients != "learned"
                 or self.attention_coefficient_conditioning != "query"
-                or self.attention_coefficient_activation != "tanh"
+                or self.attention_coefficient_activation not in ("tanh", "sigmoid")
                 or self.attention_coefficient_parameterization != "direct"):
-            raise ValueError("Dense coefficient readout requires learned direct tanh query-only coefficients")
+            raise ValueError("Dense coefficient readout requires learned direct tanh or sigmoid query-only coefficients")
         readout_scale = self.attention_coefficient_readout_scale
         if (not isinstance(readout_scale, (int, float)) or isinstance(readout_scale, bool)
                 or not math.isfinite(readout_scale) or readout_scale <= 0):
@@ -366,7 +371,10 @@ class ModelConfig:
         if (not all(isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
                     for value in (amplitude, spread)) or spread < 0):
             raise ValueError("Tanh coefficient initialization needs a finite amplitude and a nonnegative spread")
-        if (amplitude, spread) != (1.0, 0.0):
+        if self.attention_coefficient_activation == "sigmoid":
+            if amplitude != 1.0:
+                raise ValueError("Sigmoid coefficients have no amplitude; dense V starts at the identity")
+        elif (amplitude, spread) != (1.0, 0.0):
             if self.attention_coefficient_activation != "tanh":
                 raise ValueError("Coefficient amplitude and projection initialization apply to tanh coefficients only")
             if amplitude == 0 and spread == 0:
@@ -377,8 +385,14 @@ class ModelConfig:
             raise ValueError("A bias inside tanh applies to tanh coefficients only")
         if self.attention_coefficient_amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {self.attention_coefficient_amplitude_scale}")
-        if self.attention_coefficient_amplitude_scale != "none" and self.attention_coefficient_activation != "tanh":
-            raise ValueError("An amplitude scale applies to tanh coefficients only")
+        if (self.attention_coefficient_amplitude_scale != "none"
+                and self.attention_coefficient_activation not in ("tanh", "sigmoid")):
+            raise ValueError("An amplitude scale applies to tanh and sigmoid coefficients only")
+        if not isinstance(self.attention_coefficient_kernel_weight_decay, bool):
+            raise ValueError("model.attention_coefficient_kernel_weight_decay must be a boolean")
+        if (self.attention_coefficient_kernel_weight_decay
+                and self.attention_coefficient_conditioning not in ("query", "query_key")):
+            raise ValueError("Coefficient kernel weight decay requires query-conditioned coefficients")
         if self.attention_coefficient_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient scale: {self.attention_coefficient_scale}")
         if self.attention_coefficient_scale != "none" and (

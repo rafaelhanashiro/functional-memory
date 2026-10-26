@@ -66,7 +66,7 @@ def attention_core(
             if attention_degree != 1:
                 raise ValueError("Identity query coefficients require degree-one attention")
             operation = query_linear_attention
-        elif attention_coefficient_activation == "tanh":
+        elif attention_coefficient_activation in ("tanh", "sigmoid"):
             operation = query_polynomial_attention
         else:
             raise ValueError("Unknown attention coefficient activation")
