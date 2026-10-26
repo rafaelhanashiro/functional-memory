@@ -1,0 +1,90 @@
+{
+  "checkpoint_retention": "best fitting parameters; backbone referenced by source checkpoint",
+  "coefficient_parameterization": "static_coefficients",
+  "coefficient_sharing": "shared across query positions, sequences, and causal keys; separate per layer/head/order",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/rceea84f19f6b/config.yaml",
+    "sha256": "35f16b059ff9b42f8e08f526f5a2cb1bc8c4bff77d1cd01b2e48fa909e96c5b1"
+  },
+  "home_cluster": "kennel",
+  "label": "static-coefficients-m4-full-batch-head-scale",
+  "name": "static-coefficients-m4-full-batch-head-scale",
+  "parent_run_id": "r4339a245820e",
+  "parent_study": "transformer_200m_4b",
+  "record_schema_version": 1,
+  "run_id": "rceea84f19f6b",
+  "seed": 42,
+  "source_checkpoint": {
+    "file_count": 12,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "793065783e1a2cbe69f4ec053d9476bf18b8f78915f68f64bc78da2dcd4e5fbd",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "13ff014087890e70b5a19c58a24045dff1759a27aa3ebd8294ec63bf2606b07d",
+        "size_bytes": 216519
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "cebf01dbe7df8d233418f30d2da0b4bbf5a304fcfa47884216f2818e9547865a",
+        "size_bytes": 67909
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "60bbb27a2ae7a19d6e8f17deb72562852fc7855dbe4642c3da83d0ab7748cfa7",
+        "size_bytes": 74230
+      },
+      {
+        "path": "default/d/90b36ef5491d08d5c91b08712bf54ed8",
+        "sha256": "d95b27d75c4492bb9fa550f19659be8a2d67f3cc770dca5d15c7e90040f16e34",
+        "size_bytes": 7244
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "66ec0394fbf390a5617a0da57791f99d0e967c524eb9e022c5df53a88d968cc0",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/272331231e17e2bbeeb6c7392380e613",
+        "sha256": "0d74c325ab4ec92b13c91beab924c5a514b7c53bbca40c673c766ba2daf501f7",
+        "size_bytes": 239
+      },
+      {
+        "path": "default/ocdbt.process_0/d/2faad897458493aba0321da6c3c26ed0",
+        "sha256": "59b43b96409be7646ee75e2b58d5efdd3998b748bfb87121eef7f9967b6c8a53",
+        "size_bytes": 40837120
+      },
+      {
+        "path": "default/ocdbt.process_0/d/41814470dcddad7c3d670ba7a39c8603",
+        "sha256": "f7f3853746539d5c9a7dbbde06c4b5b41a296d5651e729fbe57bb2b1986c3b05",
+        "size_bytes": 2143694848
+      },
+      {
+        "path": "default/ocdbt.process_0/d/f7aba8c90e3f6b84ae7b11a0575fc120",
+        "sha256": "15e92b2006072e3d5ee182437cf27b9601685c2add4e2e0c49d9e87fcf9d1c73",
+        "size_bytes": 3810
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "e892d435ea898719f4f1d66b06071c84ef7e5a1db0d7c1845bbdb9ffb2b883ce",
+        "size_bytes": 268
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "c3f66785686ae241bf3c5254b5051d65be7c32002868020a82f2bed25b98ef0e",
+        "size_bytes": 136
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r4339a245820e/checkpoints/7500",
+    "sha256": "e2b6079d8008d18405dd2a1ff2c313754ee712dacac652873f6b5d349293cc7c",
+    "size_bytes": 2184902807,
+    "step": 7500,
+    "validation_nll": 2.692375774446287
+  },
+  "status": "planned"
+}

@@ -1,0 +1,105 @@
+{
+  "checkpoint_retention": "best fitting parameters; backbone referenced by source checkpoint",
+  "coefficient_parameterization": "free_per_example_query_coefficients",
+  "coefficient_sharing": "shared across causal keys; separate per sequence/layer/query position/head/order",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/rda6029c3286f/config.yaml",
+    "sha256": "01d002eba9db2b6d753ab2e7f87f8c3e0e1fe983a4d2e3f5fc8ab57c3f141a27"
+  },
+  "home_cluster": "kennel",
+  "label": "free-coefficients-m4-full-batch-head-scale",
+  "name": "free-coefficients-m4-full-batch-head-scale",
+  "parent_run_id": "r816ab0fbe119",
+  "parent_study": "transformer_200m_4b",
+  "record_schema_version": 1,
+  "run_id": "rda6029c3286f",
+  "seed": 42,
+  "source_checkpoint": {
+    "file_count": 15,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "9f9227408c8cad81d31c6f15bec21fafa7a8f5a67ae8deb6a6c8b76cc6b7aeff",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "fd1a8124568e271f65b9ca65e5b21269f435a1a24a04a6a611c60c7a5039acd9",
+        "size_bytes": 215303
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "5f13b7362b78fb38bffa2b7daa32f24d61f4976b4c0dc28dc51cc64b3db65f27",
+        "size_bytes": 67472
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "769bb156a5036d45863a32cde14e34b64718e018d5845dd6353bb2b35e5386bf",
+        "size_bytes": 73730
+      },
+      {
+        "path": "default/d/37b9f55bc3bfb79fa13b8544db5f8add",
+        "sha256": "a4433a1fdb8d990f004a0e63f5665c2256872125a866518e34b83cb6b70116a0",
+        "size_bytes": 7140
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "0fbf197b9ad51234cf86eb7f47fa7aac7d19acec18e01eb752269f3cb3f808f5",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/2ba00457f9c747152c28fc8eb3553b0d",
+        "sha256": "2e4425ad465ff273cf400ad012e23d92878e5ec6f0666cd585ee66661c289180",
+        "size_bytes": 1895981056
+      },
+      {
+        "path": "default/ocdbt.process_0/d/3a59cafb30ac894ddf5477d8f0640dba",
+        "sha256": "8e3ee89b5f9d7ffe065ac0ad23ce6672c4f60164dc5380cb82add77bbabd869e",
+        "size_bytes": 439
+      },
+      {
+        "path": "default/ocdbt.process_0/d/5ee8040155192ba9cae21fbd266304d0",
+        "sha256": "d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e",
+        "size_bytes": 196
+      },
+      {
+        "path": "default/ocdbt.process_0/d/63efb61d5b065dec487bd1c9a19adf24",
+        "sha256": "94e6e04c8eb87712d8bc6f4e37e60cb93baf9f218a6227beb734da39230e3136",
+        "size_bytes": 30236672
+      },
+      {
+        "path": "default/ocdbt.process_0/d/a86633ef70b7b5d4f8143cc474767b99",
+        "sha256": "9d18bc981ab14545730845389ead22cfba4f3a1f416872e23acb653ee2a83054",
+        "size_bytes": 837
+      },
+      {
+        "path": "default/ocdbt.process_0/d/c3b2fb44e3effe8e7715f94f24ff3c7b",
+        "sha256": "4e193ca18fd8d409978b3ee167b466bdc3042ae6a821e0b61a7f60f69d2573ed",
+        "size_bytes": 728
+      },
+      {
+        "path": "default/ocdbt.process_0/d/e77d74c93b481d17811e6a5323f73675",
+        "sha256": "a579f34e776fd95a0f36fbbb51b19b853bb836da99b66842377533dcfde9ba5f",
+        "size_bytes": 257703936
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "8cdb50bddc40047da78d275fcfd4d42598e244649d3cc5caefa16940e7b3046c",
+        "size_bytes": 386
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "4e66a846b72a792e619677509db2ed60d6dc136831e5576c4f97509141f7e46c",
+        "size_bytes": 138
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r816ab0fbe119/checkpoints/7500",
+    "sha256": "5c8d1f360da2a9c19217fba41521f0dd1ba148d73e42ff6634ca8c6fa79b74c1",
+    "size_bytes": 2184288517,
+    "step": 7500,
+    "validation_nll": 2.6893279011312283
+  },
+  "status": "planned"
+}

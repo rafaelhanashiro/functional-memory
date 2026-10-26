@@ -17,10 +17,74 @@ backbone frozen. They live in the
 | `r22854de31b96` | Static coefficients on one sequence | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r5b28697413fa` | Static coefficients on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `r7505c6d49711` | Independent coefficients per sequence, layer, query, head, and order on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
+| `rc95f2055e96d` | Original degree-four query generator on 256 sequences, with per-head QK scaling | Query-only `r2b22f2ff6461`, step 7,500 | Allocated |
+| `rda6029c3286f` | Free degree-four coefficients per sequence and query on 256 sequences, with per-head QK scaling | Fixed Taylor `r816ab0fbe119`, step 7,500 | Allocated |
+| `rceea84f19f6b` | Static degree-four coefficients on 256 sequences, with per-head QK scaling | Static `r4339a245820e`, step 7,500 | Allocated |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. All reported
 perplexities measure the fitting inputs, not held-out generalization.
+
+## Degree-four batch fits with per-head QK scaling
+
+Opened **2026-10-26**. These three fits use the new QK RMSNorm setup with learned
+per-head scalar scaling. Each starts from its family's validation-best checkpoint
+at step **7,500**, after 4B-token pretraining. They share the first **256** packed
+evaluation sequences, each containing **2,048** next-token prediction positions;
+their recipes pin the same batch and dataset-manifest SHA256. The input becomes
+fitting data, with no independent generalization evaluation.
+
+| Run | Trainable parameters | Count | Initialization |
+| --- | --- | ---: | --- |
+| `rc95f2055e96d` | Original query generator's stored kernel, bias, and amplitude | 942,900 | Restore query checkpoint `r2b22f2ff6461` |
+| `rda6029c3286f` | Free coefficients `[sequence, layer, query, head, order]` | 550,502,400 | Fixed Taylor checkpoint `r816ab0fbe119`, exactly `1/r!` |
+| `rceea84f19f6b` | Static coefficients `[layer, head, order]` | 1,050 | Restore exact effective coefficients from static checkpoint `r4339a245820e` |
+
+The free table has shape `[256, 15, 2048, 14, 5]`; each polynomial is shared
+across its query's causal keys. The static table has shape `[15, 14, 5]` and is
+shared across every sequence and query position. Its initialization uses no
+averaging or projection. Query fitting recomputes coefficients from the inputs
+using the original trained generator. All other parameters stay frozen,
+including QK channel gains, per-head QK scalars, and output RMSNorm gains.
+
+Query fitting uses Adam on its native stored parameters at LR **0.001**; static
+and free fitting use LR **0.01** in factorial coordinates `r! c_r`. All use
+betas **0.9/0.95**, epsilon **1e-8**, no weight decay, and gradient clipping at
+**1**. Query and static fitting average all 32 microbatches of eight before a
+single clipping/Adam update. Free fitting clips and updates each sequence
+independently. The shared stopping rule requires at least 2,000 updates,
+reduces LR tenfold when improvement is below 0.001 nats over 200 updates, and
+stops after 500 confirmation updates on a plateau, with a 10,000-update safety
+budget. GPU qualification checks parent replay, an improving finite update,
+frozen parameter hashes, and exact checkpoint resume before training.
+
+These fits compare capacity from different source backbones, rather than
+isolating coefficient parameterization on a single backbone. The free-table
+result provides a flexible fitting reference; it does not demonstrate that an
+input-dependent generator can predict those coefficients on unseen inputs.
+The open question is whether the original query generator closes the fitting
+gap at degree four, and how much a static polynomial can fit from its own
+trained checkpoint under the canonical QK normalization.
+
+The frozen recipes and execution records contain the exact parent paths and
+launch provenance. Allocate with
+`python -m experiments.transformer_200m_4b.launch_coefficient_fit prepare`, using
+`--sequence-count 256`, the chosen `--parent`, and respectively
+`--parameterization query_coefficient_generator`,
+`--parameterization free_per_example_query_coefficients`, or
+`--parameterization static_coefficients`.
+
+From the committed experiment worktree, launch independently with one GPU each:
+
+```bash
+python -m experiments.transformer_200m_4b.launch_coefficient_fit submit rc95f2055e96d --partition standard --time-limit 24:00:00
+python -m experiments.transformer_200m_4b.launch_coefficient_fit submit rda6029c3286f --partition debug --time-limit 02:00:00
+python -m experiments.transformer_200m_4b.launch_coefficient_fit submit rceea84f19f6b --partition debug --time-limit 02:00:00
+```
+
+The debug allocations checkpoint and requeue before the time limit. Runtime
+environment selection follows the allocated GPU and the worktree's locked
+CUDA environment.
 
 ## Free coefficients from the static checkpoint
 

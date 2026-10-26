@@ -126,3 +126,27 @@ runs:
     batch_coefficient_geometry:
       path: experiments/transformer_200m_4b/runs/r7505c6d49711/batch_coefficient_geometry.json
       sha256: 9c764efb97920defd635cdb124351e56aa7d7703335acf52532b4d674c5bb99c
+- study: transformer_200m_4b
+  run_id: rc95f2055e96d
+  role: query_generator_full_batch_m4_head_scale
+  parent_run_id: r2b22f2ff6461
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rc95f2055e96d/config.yaml
+      sha256: 27a22c6316ecf5382229e2589ad09fd32a77796e6ff5c380d85f4aa80fe135f2
+- study: transformer_200m_4b
+  run_id: rda6029c3286f
+  role: free_coefficients_full_batch_m4_head_scale
+  parent_run_id: r816ab0fbe119
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rda6029c3286f/config.yaml
+      sha256: 01d002eba9db2b6d753ab2e7f87f8c3e0e1fe983a4d2e3f5fc8ab57c3f141a27
+- study: transformer_200m_4b
+  run_id: rceea84f19f6b
+  role: static_coefficients_full_batch_m4_head_scale
+  parent_run_id: r4339a245820e
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rceea84f19f6b/config.yaml
+      sha256: 35f16b059ff9b42f8e08f526f5a2cb1bc8c4bff77d1cd01b2e48fa909e96c5b1
