@@ -206,6 +206,7 @@ sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --
   experiments/transformer_200m_4b/runs/<run_id>/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
 ```
 
-The four runs without W decay have priority 1. The four with W decay have priority 2,
-set with `scontrol update jobid=<job> nice=1000`. Each record's `submission` holds its
-exact command, partition and priority.
+The four runs without W decay launch from that worktree, and were submitted first. The four
+with W decay launch the same way from `worktrees/sigmoid-decay-4b` (branch
+`claude/sigmoid-decay-4b`), whose acceptance builds its softmax controls without W decay.
+Each record's `submission` holds its exact command and partition.

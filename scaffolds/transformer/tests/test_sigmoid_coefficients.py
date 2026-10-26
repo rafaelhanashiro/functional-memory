@@ -215,6 +215,17 @@ def test_diagnostics_describe_the_sigmoid_generator(dense, factorial):
     assert ("readout" in report) is dense
 
 
+@pytest.mark.parametrize("dense", (False, True))
+@pytest.mark.parametrize("decay", (False, True))
+def test_acceptance_initialization_controls_accept_every_regime(dense, decay):
+    """The softmax controls drop the generator, including its W decay, and keep the backbone."""
+    facts = acceptance.matches_softmax_backbone_initialization(_config(dense=dense, decay=decay))
+    parameters = facts["mechanism_parameters"]
+    assert parameters["query_polynomial_kernel"]["weight_decay"] is decay
+    assert "query_polynomial_bias" not in parameters
+    assert ("query_polynomial_mixing" in parameters) is dense
+
+
 def test_acceptance_selects_sigmoid_checks():
     config = config_to_dict(_config())
     spec = acceptance.AcceptanceSpec(entry_module="tests", cpu_tests=(), gpu_tests=())

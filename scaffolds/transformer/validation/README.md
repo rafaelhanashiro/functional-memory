@@ -23,6 +23,9 @@ H100 (job 226504), 34 checks each passed. They include Mosaic BF16 loss and all
 gradients against FP32 and BF16 blocked references in all four diagonal/dense,
 scaled/unscaled combinations. Full-size pilots and resumption are left to each run's
 launcher acceptance.
+Acceptance's softmax controls reset `attention_coefficient_kernel_weight_decay`; the
+full-size initialization check passes for the diagonal and dense W-decay recipes, with
+decay on $W$ alone.
 
 ### Per-head RMS QK scaling and reduced dense readout
 
