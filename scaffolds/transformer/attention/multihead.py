@@ -62,6 +62,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         qk_norm_head_scale=config.qk_norm_head_scale,
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
         positional_encoding=config.positional_encoding,
+        attention_forget_gate=getattr(config, "attention_forget_gate", False),
         rngs=rngs,
     )
 
@@ -85,6 +86,7 @@ class MultiHeadAttention(nnx.Module):
         attention_coefficient_scale: str = "none",
         qk_norm_type: str = "cosine_log_scale",
         qk_norm_head_scale: bool = False,
+        attention_forget_gate: bool = False,
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path"):
@@ -152,10 +154,17 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Blocked/fused attention requires dropout=0")
         if attention_coefficient_conditioning not in ("static", "query", "query_key"):
             raise ValueError("Unknown attention coefficient conditioning")
-        if attention_coefficient_activation not in ("identity", "tanh", "sigmoid"):
+        if attention_coefficient_activation not in ("identity", *("tanh", "sigmoid", "pure_tanh", "affine_sigmoid")):
             raise ValueError("Unknown attention coefficient activation")
         if attention_coefficient_activation != "identity" and attention_coefficient_conditioning == "static":
             raise ValueError("Tanh and sigmoid coefficients require query conditioning")
+        if not isinstance(attention_forget_gate, bool):
+            raise ValueError("attention_forget_gate must be a boolean")
+        if attention_forget_gate and (attention_coefficient_conditioning != "query"
+                                      or attention_coefficient_activation == "identity"
+                                      or positional_encoding != "rope" or backend != "blocked"):
+            raise ValueError("The forget gate requires nonlinear query coefficients with RoPE on the blocked backend")
+        self.attention_forget_gate = attention_forget_gate
         if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":
             raise ValueError("Query-key coefficients require the tanh activation")
         if attention_coefficient_conditioning in ("query", "query_key") and (
@@ -169,7 +178,7 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Unknown attention coefficient readout")
         if attention_coefficient_readout == "dense" and (
                 attention_coefficient_conditioning != "query"
-                or attention_coefficient_activation not in ("tanh", "sigmoid")):
+                or attention_coefficient_activation not in ("tanh", "sigmoid", "pure_tanh", "affine_sigmoid")):
             raise ValueError("Dense coefficient readout requires tanh or sigmoid query-only coefficients")
         if (not isinstance(attention_coefficient_readout_scale, (int, float))
                 or isinstance(attention_coefficient_readout_scale, bool)
@@ -184,7 +193,7 @@ class MultiHeadAttention(nnx.Module):
         if attention_coefficient_amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {attention_coefficient_amplitude_scale}")
         if (attention_coefficient_amplitude_scale != "none"
-                and attention_coefficient_activation not in ("tanh", "sigmoid")):
+                and attention_coefficient_activation not in ("tanh", "sigmoid", "pure_tanh", "affine_sigmoid")):
             raise ValueError("An amplitude scale applies to tanh and sigmoid coefficients only")
         self.attention_coefficient_activation = attention_coefficient_activation
         self.attention_coefficient_amplitude_scale = attention_coefficient_amplitude_scale
@@ -274,9 +283,10 @@ class MultiHeadAttention(nnx.Module):
         if self.attention_coefficient_conditioning in ("query", "query_key"):
             from scaffolds.transformer.attention.input_dependent import project_coefficients, project_key_factors
 
-            if query_kernel is None or (query_bias is None) != (self.attention_coefficient_activation == "sigmoid"):
+            if query_kernel is None or (query_bias is None) != (
+                    self.attention_coefficient_activation in ("sigmoid", "pure_tanh")):
                 raise ValueError("Query-conditioned attention requires its model-owned kernel and, "
-                                 "except for sigmoid coefficients, bias")
+                                 "except for pure sigmoid and tanh coefficients, bias")
             if (self.attention_coefficient_readout == "dense") != (query_mixing is not None):
                 raise ValueError("Coefficient readout must match its model-owned mixing parameter")
             if query_mixing is not None and query_amplitude is not None:
@@ -298,6 +308,17 @@ class MultiHeadAttention(nnx.Module):
         elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_mixing, query_tanh_bias,
                                                  key_kernel, key_amplitude)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
+        from scaffolds.transformer.attention.forget_gate import PARAMETERS as FORGET_GATE_PARAMETERS, log_decay
+
+        forget_gate = [parameters.pop(name, None) for name in FORGET_GATE_PARAMETERS]
+        if any(value is None for value in forget_gate) if self.attention_forget_gate else any(
+                value is not None for value in forget_gate):
+            raise ValueError("The forget gate requires exactly its model-owned kernel, log rate and dt bias")
+        log_alpha = None
+        if self.attention_forget_gate:
+            # Cumulative FP32 log decay L_t; the kernel multiplies each weight by exp(L_t - L_i).
+            log_alpha = log_decay(x, *forget_gate)
+            parameters["query_log_decay"] = jnp.cumsum(log_alpha, axis=1)
         kernel_coefficient_activation = self.attention_coefficient_activation
         if self.attention_coefficient_conditioning == "static" and (
                 query_coefficients is not None or return_coefficients):
@@ -376,6 +397,12 @@ class MultiHeadAttention(nnx.Module):
             deterministic=deterministic, rngs=rngs, weights_dtype=x.dtype,
         )
         y, diagnostics = result if return_diagnostics else (result, None)
+        if return_diagnostics and log_alpha is not None:
+            diagnostics.update(jax.lax.stop_gradient({
+                "forget_gate_log_alpha_mean": jnp.mean(log_alpha, axis=(0, 1)),
+                "forget_gate_log_alpha_min": jnp.min(log_alpha, axis=(0, 1)),
+                "forget_gate_log_alpha_max": jnp.max(log_alpha, axis=(0, 1)),
+            }))
         telemetry.record_attention_output(
             y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None)
         y = scale_attention_output(y, self.attention_output_scaling,

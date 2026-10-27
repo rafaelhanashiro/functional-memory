@@ -12,6 +12,10 @@ import math
 import jax
 import jax.numpy as jnp
 
+# The feature f of affine generators c = b + a*f(x W) and of pure generators c = f(x W).
+AFFINE_FEATURES = {"tanh": jnp.tanh, "affine_sigmoid": jax.nn.sigmoid}
+PURE_FEATURES = {"sigmoid": jax.nn.sigmoid, "pure_tanh": jnp.tanh}
+
 
 def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
@@ -21,14 +25,15 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
     and its optional inner bias beta at zero. "query_key" adds the key factor's W_k (same draw
     rule, independent draws) and a_k (same start as a). Dense readout projects onto K =
     feature_count tanh features (degree+1 when null) and mixes them through V [degree+1, K],
-    diagonal at amplitude_initial when K = degree+1 and otherwise zero. Sigmoid coefficients
-    have no b or a: W alone, and dense V. kernel_weight_decay decays the query W only."""
+    diagonal at amplitude_initial when K = degree+1 and otherwise zero. affine_sigmoid has the
+    same parameters as tanh. Pure sigmoid and pure_tanh coefficients have no b or a: W alone,
+    and dense V. kernel_weight_decay decays the query W only."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     if readout not in ("diagonal", "dense"):
         raise ValueError(f"Unknown coefficient readout: {readout}")
-    if readout == "dense" and (activation not in ("tanh", "sigmoid") or conditioning != "query"):
-        raise ValueError("Dense coefficient readout requires tanh or sigmoid query-only coefficients")
+    if readout == "dense" and (activation not in (*AFFINE_FEATURES, *PURE_FEATURES) or conditioning != "query"):
+        raise ValueError("Dense coefficient readout requires nonlinear query-only coefficients")
     count = degree + 1
     features = count if feature_count is None else feature_count
     if features != count and (readout != "dense" or amplitude_initial != 0):
@@ -38,11 +43,11 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
         initial=(0.0,) * (hidden_size * features), initial_shape=(hidden_size, features),
         sharing="per_head", weight_decay=bool(kernel_weight_decay), initial_std=float(projection_initial_std),
     )
-    if activation == "sigmoid":
+    if activation in PURE_FEATURES:
         if tanh_bias or conditioning != "query":
-            raise ValueError("Sigmoid coefficients are query-only, without an inner bias")
+            raise ValueError(f"Pure {activation} coefficients are query-only, without an inner bias")
         if amplitude_initial != 1.0:
-            raise ValueError("Sigmoid coefficients have no amplitude; dense V starts at the identity")
+            raise ValueError(f"Pure {activation} coefficients have no amplitude; dense V starts at the identity")
         if readout == "diagonal":
             return (kernel,)
         return (kernel, AttentionParameterSpec(
@@ -57,7 +62,7 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
         ),
         kernel,
     )
-    if activation == "tanh":
+    if activation in AFFINE_FEATURES:
         if readout == "dense":
             specs += (AttentionParameterSpec(
                 name="query_polynomial_mixing", argument="query_polynomial_mixing",
@@ -111,20 +116,20 @@ def _diagonal_readout(features, amplitude, bias, amplitude_scale):
     return jax.lax.optimization_barrier(product + bias)
 
 
-def _sigmoid_coefficients(x, kernel, mixing, amplitude_scale, readout_scale):
-    """FP32 c_r = sigmoid(x w_r) [/ r!], or dense c_r = readout_scale * sum_j (V_rj [/ r!]) sigmoid(x w_j)."""
+def _pure_coefficients(x, kernel, mixing, amplitude_scale, readout_scale, feature):
+    """FP32 c_r = f(x w_r) [/ r!], or dense c_r = readout_scale * sum_j (V_rj [/ r!]) f(x w_j)."""
     if x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1]:
-        raise ValueError("Sigmoid coefficient projection requires x [B,T,D] and kernel [H,D,K]")
+        raise ValueError("Pure coefficient projection requires x [B,T,D] and kernel [H,D,K]")
     if mixing is not None and (mixing.ndim != 3 or mixing.shape[0] != kernel.shape[0]
                                or mixing.shape[-1] != kernel.shape[-1]):
-        raise ValueError("Dense sigmoid coefficients require a mixing matrix [head,output_order,feature]")
+        raise ValueError("Dense pure coefficients require a mixing matrix [head,output_order,feature]")
     if amplitude_scale not in ("none", "factorial"):
         raise ValueError(f"Unknown amplitude scale: {amplitude_scale}")
     projected = jnp.einsum(
         "btd,hdr->bthr", x.astype(jnp.float32), kernel.astype(jnp.float32),
         precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32,
     )
-    features = jax.nn.sigmoid(projected)
+    features = feature(projected)
     count = kernel.shape[-1] if mixing is None else mixing.shape[1]
     factorials = jnp.asarray([math.factorial(r) for r in range(count)], jnp.float32)
     if mixing is None:
@@ -140,8 +145,8 @@ def _sigmoid_coefficients(x, kernel, mixing, amplitude_scale, readout_scale):
 
 def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activation="identity", tanh_bias=None,
                          amplitude_scale="none", readout_scale=1.0):
-    """FP32 c=b+xW or c=b+a*tanh(xW+beta); the inner bias beta is optional and otherwise absent.
-    Sigmoid coefficients c=sigmoid(xW) take bias=None (see _sigmoid_coefficients).
+    """FP32 c=b+xW or c=b+a*f(xW+beta), f = tanh or sigmoid; the inner bias beta is optional and
+    otherwise absent. Pure coefficients c=f(xW) take bias=None (see _pure_coefficients).
 
     A dense mixing matrix V [head,output_order,feature] replaces diagonal amplitude; its K
     features (kernel [H,D,K]) may differ in number from the R = degree+1 coefficients.
@@ -151,23 +156,23 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
     if (isinstance(readout_scale, bool) or not isinstance(readout_scale, (int, float))
             or not math.isfinite(readout_scale) or readout_scale <= 0):
         raise ValueError("Dense readout scale must be finite and positive")
-    if readout_scale != 1.0 and (activation not in ("tanh", "sigmoid") or mixing is None):
+    if readout_scale != 1.0 and (activation not in (*AFFINE_FEATURES, *PURE_FEATURES) or mixing is None):
         raise ValueError("A nondefault readout scale requires dense tanh or sigmoid coefficients")
-    if activation == "sigmoid":
+    if activation in PURE_FEATURES:
         if bias is not None or amplitude is not None or tanh_bias is not None:
-            raise ValueError("Sigmoid coefficients have no bias, amplitude, or inner bias")
-        return _sigmoid_coefficients(x, kernel, mixing, amplitude_scale, readout_scale)
+            raise ValueError("Pure sigmoid and tanh coefficients have no bias, amplitude, or inner bias")
+        return _pure_coefficients(x, kernel, mixing, amplitude_scale, readout_scale, PURE_FEATURES[activation])
     if (x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1] or bias.ndim != 2
             or bias.shape[0] != kernel.shape[0]):
         raise ValueError("Query coefficient projection requires x [B,T,D], kernel [H,D,K], bias [H,R]")
     rectangular = kernel.shape[-1] != bias.shape[-1]
-    if rectangular and (activation != "tanh" or mixing is None):
+    if rectangular and (activation not in AFFINE_FEATURES or mixing is None):
         raise ValueError("Only dense tanh readout may use a feature count other than the coefficient count")
     projected = jnp.einsum(
         "btd,hdr->bthr", x.astype(jnp.float32), kernel.astype(jnp.float32),
         precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32,
     )
-    if activation == "tanh":
+    if activation in AFFINE_FEATURES:
         if mixing is None:
             if amplitude is None or amplitude.shape != bias.shape:
                 raise ValueError("Tanh coefficients require a model-owned amplitude with the bias shape")
@@ -182,7 +187,7 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
         # Dense readout reuses these features for its diagonal and residual.
         # Materialize them in both families: fusing tanh only in the diagonal
         # arm introduced one-ulp differences amplified by later BF16 residuals.
-        features = jax.lax.optimization_barrier(jnp.tanh(projected))
+        features = jax.lax.optimization_barrier(AFFINE_FEATURES[activation](projected))
         if mixing is None:
             return _diagonal_readout(features, amplitude, bias, amplitude_scale)
         mixing = mixing.astype(jnp.float32)
@@ -308,18 +313,26 @@ def key_factor_statistics(key_factors):
     }
 
 
-def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False):
-    """Apply a per-query polynomial directly in one fused attention operation."""
+def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False,
+                               log_decay=None):
+    """Apply a per-query polynomial directly in one fused attention operation.
+
+    ``log_decay`` [batch,time,heads] is the forget gate's cumulative FP32 sum L_t of
+    log alpha; each weight is multiplied by exp(L_t - L_i). Only the blocked reference has it.
+    """
     from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 
     if (coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3]
             or coefficients.shape[-1] < 2):
         raise ValueError("Query coefficients require [batch,time,heads,degree+1], degree >= 1")
+    if log_decay is not None and backend != "blocked":
+        raise ValueError("The forget gate runs on the blocked reference backend only")
     degree = coefficients.shape[-1] - 1
     if backend == "blocked":
         result = blocked_dot_product_attention(
             q, k, v, attention_degree=degree, attention_normalization=False,
-            query_polynomial_coefficients=coefficients, return_diagnostics=return_diagnostics,
+            query_polynomial_coefficients=coefficients, query_log_decay=log_decay,
+            return_diagnostics=return_diagnostics,
         )
         if not return_diagnostics:
             return result

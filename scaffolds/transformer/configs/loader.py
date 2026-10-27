@@ -114,6 +114,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("attention_coefficient_projection_initial_std", 0.0)
         value["model"].setdefault("attention_coefficient_tanh_bias", False)
         value["model"].setdefault("attention_coefficient_kernel_weight_decay", False)
+        value["model"].setdefault("attention_forget_gate", False)
         value["model"].setdefault("positional_encoding", "rope")
         value["model"].setdefault("path_w_rank", 32)
         value["model"].setdefault("path_conv_size", 3)

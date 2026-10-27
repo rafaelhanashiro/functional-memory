@@ -27,6 +27,7 @@ def blocked_dot_product_attention(
     polynomial_square_factors: jax.Array | None = None,
     query_polynomial_coefficients: jax.Array | None = None,
     key_polynomial_factors: jax.Array | None = None,
+    query_log_decay: jax.Array | None = None,
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
     **denominators,
@@ -50,6 +51,8 @@ def blocked_dot_product_attention(
     Query coefficients [batch,time,heads,m+1] instead define one unnormalized
     polynomial of degree m>=1 for each query and head; key factors of the same shape
     multiply each key's degree-r term, giving the pair coefficient c_r(t) f_r(i).
+    A forget gate's cumulative log decay L [batch,time,heads] (FP32, nonincreasing in time)
+    multiplies each query-coefficient weight by exp(L_t - L_i), evaluated as one difference.
     Square factors ([m+1] or [heads, m+1], even m) give q1^2 + q2^2: nonnegative
     kernel values, exact zeros allowed, and only a positive row sum is valid.
     Denominator coefficients ([d] or [heads, d]) with learned polynomial coefficients
@@ -117,6 +120,9 @@ def blocked_dot_product_attention(
     if key_conditioned and (not query_conditioned
                             or key_polynomial_factors.shape != query_polynomial_coefficients.shape):
         raise ValueError("Key factors require query coefficients of the same shape [batch,time,heads,m+1]")
+    decayed = query_log_decay is not None
+    if decayed and (not query_conditioned or key_conditioned or query_log_decay.shape != (batch, time, heads)):
+        raise ValueError("A forget gate's cumulative log decay [batch,time,heads] requires query coefficients alone")
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -130,6 +136,10 @@ def blocked_dot_product_attention(
         padded_coefficients = jnp.pad(query_polynomial_coefficients.astype(jnp.float32),
                                       ((0, 0), (0, pad), (0, 0), (0, 0)))
         key_factors = key_polynomial_factors.astype(jnp.float32) if key_conditioned else None
+        if decayed:
+            log_decay = query_log_decay.astype(jnp.float32)
+            # Padded queries repeat the last cumulative decay, keeping every L_t - L_i <= 0.
+            padded_log_decay = jnp.pad(log_decay, ((0, 0), (0, pad), (0, 0)), mode="edge")
     starts = jnp.arange(block_count, dtype=jnp.int32) * block_size
     key_positions = jnp.arange(time)
 
@@ -171,6 +181,11 @@ def blocked_dot_product_attention(
                 kernel = jnp.broadcast_to(pair_coefficient(attention_degree), safe_scores.shape)
                 for order in range(attention_degree - 1, -1, -1):
                     kernel = kernel * safe_scores + pair_coefficient(order)
+                if decayed:
+                    # prod_(j=i+1..t) alpha_j = exp(L_t - L_i), never above one for causal pairs.
+                    query_decay = jax.lax.dynamic_slice_in_dim(padded_log_decay, start, block_size, axis=1)
+                    gap = jnp.swapaxes(query_decay, 1, 2)[..., None] - jnp.swapaxes(log_decay, 1, 2)[:, :, None, :]
+                    kernel = kernel * jnp.exp(jnp.where(causal, gap, 0.0))
             else:
                 kernel = (_learned_polynomial(safe_scores, polynomial_coefficients) if polynomial_coefficients is not None
                       else square_sum_polynomial(safe_scores, polynomial_square_factors, attention_degree)

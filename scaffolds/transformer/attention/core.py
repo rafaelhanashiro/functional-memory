@@ -23,6 +23,7 @@ def attention_core(
     polynomial_square_factors: jax.Array | None = None,
     query_polynomial_coefficients: jax.Array | None = None,
     key_polynomial_factors: jax.Array | None = None,
+    query_log_decay: jax.Array | None = None,
     attention_coefficient_activation: str = "identity",
     return_diagnostics: bool = False,
     dropout=None,
@@ -46,6 +47,8 @@ def attention_core(
         raise ValueError("attention_normalization must be a boolean")
     if key_polynomial_factors is not None and query_polynomial_coefficients is None:
         raise ValueError("Key factors require query coefficients")
+    if query_log_decay is not None and (query_polynomial_coefficients is None or key_polynomial_factors is not None):
+        raise ValueError("The forget gate requires query coefficients without key factors")
     if query_polynomial_coefficients is not None:
         from scaffolds.transformer.attention.input_dependent import (
             query_key_polynomial_attention, query_linear_attention, query_polynomial_attention,
@@ -65,13 +68,14 @@ def attention_core(
         if attention_coefficient_activation == "identity":
             if attention_degree != 1:
                 raise ValueError("Identity query coefficients require degree-one attention")
-            operation = query_linear_attention
-        elif attention_coefficient_activation in ("tanh", "sigmoid"):
-            operation = query_polynomial_attention
-        else:
+            if query_log_decay is not None:
+                raise ValueError("The forget gate requires nonlinear query coefficients")
+            return query_linear_attention(q, k, v, query_polynomial_coefficients, backend=backend,
+                                          return_diagnostics=return_diagnostics)
+        if attention_coefficient_activation not in ("tanh", "sigmoid", "pure_tanh", "affine_sigmoid"):
             raise ValueError("Unknown attention coefficient activation")
-        return operation(q, k, v, query_polynomial_coefficients, backend=backend,
-                         return_diagnostics=return_diagnostics)
+        return query_polynomial_attention(q, k, v, query_polynomial_coefficients, backend=backend,
+                                          return_diagnostics=return_diagnostics, log_decay=query_log_decay)
     if not attention_normalization:
         from scaffolds.transformer.attention.unnormalized import unnormalized_attention
 

@@ -56,6 +56,7 @@ INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_depe
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
 DENSE_QUERY_READOUT_TESTS = "scaffolds/transformer/tests/test_dense_query_readout.py"
 SIGMOID_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_sigmoid_coefficients.py"
+COEFFICIENT_FORM_TESTS = "scaffolds/transformer/tests/test_coefficient_forms.py"
 DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.py"
 QK_HEAD_SCALE_TESTS = "scaffolds/transformer/tests/test_qk_head_scale.py"
 QK_HEAD_SCALE_BACKEND_TESTS = (
@@ -151,13 +152,15 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if conditioning in ("query", "query_key"):
         paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)
         activation = model.get("attention_coefficient_activation", "identity")
-        if activation in ("tanh", "sigmoid"):
-            # Sigmoid coefficients run on the same query-coefficient kernels as tanh.
+        if activation in ("tanh", "sigmoid", "pure_tanh", "affine_sigmoid"):
+            # Every nonlinear generator runs on the same query-coefficient kernels as tanh.
             paths.append(QUERY_TANH_POLYNOMIAL_TESTS)
         if activation == "tanh" and model.get("attention_coefficient_readout", "diagonal") == "dense":
             paths.append(DENSE_QUERY_READOUT_TESTS)
         if activation == "sigmoid":
             paths.append(SIGMOID_COEFFICIENT_TESTS)
+        if activation in ("pure_tanh", "affine_sigmoid") or model.get("attention_forget_gate", False):
+            paths.append(COEFFICIENT_FORM_TESTS)
         if conditioning == "query_key":
             paths.append(QUERY_KEY_POLYNOMIAL_TESTS)
             if resolved_backend == "fused" and cpu:
@@ -549,6 +552,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
                                            attention_coefficient_kernel_weight_decay=False,
+                                           attention_forget_gate=False,
                                            positional_encoding="rope",
                                            attention_coefficient_amplitude_scale="none",
                                            attention_coefficient_scale="none",
@@ -598,7 +602,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
-        attention_coefficient_kernel_weight_decay=False, positional_encoding="rope",
+        attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False, positional_encoding="rope",
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False))
@@ -619,6 +623,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         "softmax_counterpart_parameter_sha256": initialization_facts(control)["parameter_sha256"],
         "mechanism_parameters": {spec.name: {"shape": list(actual[(spec.name,)].shape), "initial": list(spec.initial),
                                              **({"initial_std": spec.initial_std} if spec.initial_std else {}),
+                                             **({"initializer": spec.initializer} if spec.initializer else {}),
                                              "weight_decay": spec.weight_decay} for spec in specs},
     }
 

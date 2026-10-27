@@ -92,7 +92,7 @@ class TransformerLM(nnx.Module):
         self.final_norm = RMSNorm(config.hidden_size, config.rms_norm_eps, fp32=config.rms_norm_fp32)
         self.lm_head = nnx.Linear(config.hidden_size, config.vocab_size, use_bias=False, rngs=rngs)
         self.attention_parameter_specs = attention_parameter_specs(config)
-        random_mechanism = any(spec.initial_std for spec in self.attention_parameter_specs)
+        random_mechanism = any(spec.initial_std or spec.initializer for spec in self.attention_parameter_specs)
         initialize_attention_parameters(
             self, self.attention_parameter_specs,
             num_layers=config.num_layers, num_heads=config.num_heads,
