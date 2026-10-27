@@ -1,4 +1,28 @@
 {
+  "acceptance": {
+    "allocation_seconds": 86400,
+    "error": "RuntimeError: Pilot projects beyond a 24h allocation with a 2h reserve: 28.07 hours",
+    "failed_utc": "2026-10-27T06:10:16.464169+00:00",
+    "failure": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/H100-1/failure.json",
+      "sha256": "983655045e9148fe997118377027845ac3aa385d13df955408058c359f3dad0a"
+    },
+    "identity": "797af090c3b47091a87d5f88f0cf031b82bd69866565671bab5e9f8f14bcf503",
+    "pilot_metadata": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/H100-1/pilot/metadata.json",
+      "sha256": "e1866f246dbcf1ff3bf873bfa4de14871daeff8b1de98cf1464130cd71c81a81"
+    },
+    "slurm_job_id": "227582",
+    "stage": "pilot",
+    "status": "failed"
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log",
+      "sha256": "d5063067c0d2bce2f034a9c21d19d3a99e196f15e43116d5628588642d5ac527",
+      "size_bytes": 4625
+    }
+  ],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/H100-1",
@@ -6,6 +30,8 @@
       "allocation_seconds": 86400,
       "config_path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/config.yaml",
       "config_sha256": "6b7a2c55f5c44500a6e1761cb5cf6dc28d3761448f826731fceb3e644bdf52c5",
+      "exit_code": 1,
+      "finished_utc": "2026-10-27T06:10:22.127461+00:00",
       "gpu_count": 1,
       "gpu_type": "H100",
       "home_cluster": "kennel",
@@ -22,24 +48,30 @@
     "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/config.yaml",
     "sha256": "6b7a2c55f5c44500a6e1761cb5cf6dc28d3761448f826731fceb3e644bdf52c5"
   },
+  "error": "RuntimeError: Pilot projects beyond a 24h allocation with a 2h reserve: 28.07 hours",
   "frozen_execution_sha256": "fa62201d9ddaf39ba95b123499113d4fef1e22dfa508634382ae2d7a3d76c997",
   "home_cluster": "kennel",
   "label": "query-m4-forget-gate",
+  "log": {
+    "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log",
+    "sha256": "d5063067c0d2bce2f034a9c21d19d3a99e196f15e43116d5628588642d5ac527",
+    "size_bytes": 4625
+  },
   "log_path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log",
   "name": "query-m4-forget-gate",
   "record_schema_version": 1,
   "run_id": "r111843b4c7cc",
   "source_commit": "efa12f10b9ddcb095400dec7f6e118f311e4110e",
-  "status": "acceptance",
+  "status": "pending",
   "submission": {
     "command": [
       "sbatch",
       "--parsable",
-      "--partition=standard",
+      "--partition=long",
       "--gres=gpu:1",
       "--cpus-per-task=16",
       "--mem=128G",
-      "--time=24:00:00",
+      "--time=2-00:00:00",
       "--exclude=mastiff,collie,samoyed,doodle,terrier,shiba",
       "--job-name=r111843b4c7cc",
       "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log",
@@ -51,8 +83,8 @@
       "1",
       "B300,H100"
     ],
-    "partition": "standard",
-    "slurm_job_id": "227582",
-    "submitted_utc": "2026-10-27T05:48:46.850659+00:00"
+    "partition": "long",
+    "slurm_job_id": "227593",
+    "submitted_utc": "2026-10-27T06:11:14.113627+00:00"
   }
 }
