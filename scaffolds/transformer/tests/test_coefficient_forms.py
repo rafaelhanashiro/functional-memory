@@ -149,17 +149,20 @@ def test_blocked_forget_gate_and_all_derivatives_match_float64():
     actual = lambda q, k, v, c, L: blocked_dot_product_attention(
         q, k, v, attention_degree=4, attention_normalization=False, query_polynomial_coefficients=c,
         query_log_decay=L, query_block_size=16)
-    np.testing.assert_allclose(jax.jit(actual)(*operands), wanted, rtol=2e-5, atol=2e-5)
-    gradients = jax.grad(lambda *x: jnp.sum(actual(*x) * jnp.asarray(cotangent, jnp.float32)),
-                         argnums=tuple(range(5)))(*operands)
+    # FP32 throughout: GPUs otherwise default FP32 matmuls to TF32, which s^4 amplifies.
+    with jax.default_matmul_precision("highest"):
+        np.testing.assert_allclose(jax.jit(actual)(*operands), wanted, rtol=2e-5, atol=2e-5)
+        gradients = jax.grad(lambda *x: jnp.sum(actual(*x) * jnp.asarray(cotangent, jnp.float32)),
+                             argnums=tuple(range(5)))(*operands)
     for name, value, expected in zip(("q", "k", "v", "c", "L"), gradients, gradients64):
         scale = np.linalg.norm(expected)
         assert scale > 0, name
         assert np.linalg.norm(np.asarray(value) - expected) / scale < 2e-5, name
     # Without decay the same call is the ordinary per-query polynomial.
-    undecayed = blocked_dot_product_attention(*operands[:3], attention_degree=4, attention_normalization=False,
-                                              query_polynomial_coefficients=operands[3], query_block_size=16)
-    zero = actual(*operands[:4], jnp.zeros_like(operands[4]))
+    with jax.default_matmul_precision("highest"):
+        undecayed = blocked_dot_product_attention(*operands[:3], attention_degree=4, attention_normalization=False,
+                                                  query_polynomial_coefficients=operands[3], query_block_size=16)
+        zero = actual(*operands[:4], jnp.zeros_like(operands[4]))
     np.testing.assert_allclose(zero, undecayed, rtol=1e-6, atol=1e-6)
 
 
