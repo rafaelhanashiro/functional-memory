@@ -205,9 +205,42 @@ generator, Adam state, fixed data identities, and validation/capacity candidates
 Completed runs retain the validation-best generator and refer to the unchanged
 parent checkpoint for their frozen backbone.
 
+## Query–key polynomial pretraining
+
+Three full-budget pretraining runs use unnormalized learned polynomial attention
+whose order-r coefficient depends on both the query and the key,
+`c_r(x_t) [1 + a_key_r tanh(W_key_r x_i)]` with `c_r(x_t) = [b_r + a_r tanh(W_r x_t)] / r!`.
+Offsets start at one and amplitudes at zero, so each run starts at fixed Taylor;
+coefficient projections start from N(0, 1/896). Learned parameters are independent
+per layer and head, and the attention output uses per-head RMSNorm.
+
+| Degree | Run |
+| --- | --- |
+| 4 | `r097fcda6a3af` |
+| 8 | `rf0a5652acaa6` |
+| 12 | `ree2eb2e4287e` |
+
+Their recipe precedes the per-head QK score scale: QK RMSNorm uses the per-layer
+gains only. Home cluster: **ORCD**, with ORCD's byte-identical FineWeb manifests.
+Each ran on one H100 80GB HBM3 with the fused query–key kernel at source commit
+`fc0903e` (branch `claude/transformer-200m-4b-query-key-orcd`). Retained
+checkpoints and logs are under ORCD's artifact root,
+`/orcd/pool/006/rafah/functional_memory/artifacts/`, at the paths recorded in each
+run. From a worktree at the source commit, each run was submitted as below; the
+recorded commands also pass a trailing `96`, which this launcher ignores.
+
+```bash
+for run in r097fcda6a3af rf0a5652acaa6 ree2eb2e4287e; do
+  sbatch --parsable --job-name="$run" --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_200m_4b.acceptance \
+    "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
+```
+
 ## Execution and records
 
-Home cluster: **Kennel**. Data manifests live under
+Home cluster: **Kennel**, except the query–key pretraining runs above (ORCD). Data manifests live under
 `/data/cl/u/rafah/home/datasets/fineweb_12b/`; common hashes are in `sweep.yaml`.
 Retained checkpoints and logs live under this study in the primary Kennel checkout,
 at the locations recorded in each run. The frozen recipe and execution record
