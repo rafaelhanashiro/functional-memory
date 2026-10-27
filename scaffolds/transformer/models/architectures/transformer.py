@@ -57,10 +57,13 @@ class Block(nnx.Module):
         attention_parameters: dict[str, jax.Array] | None = None,
         query_coefficients: jax.Array | None = None,
         return_coefficients: bool = False,
+        key_factors: jax.Array | None = None,
     ):
         extra = {}
         if query_coefficients is not None or return_coefficients:
             extra = {"query_coefficients": query_coefficients, "return_coefficients": return_coefficients}
+        if key_factors is not None:
+            extra["key_factors"] = key_factors
         with jax.named_scope("attention"):
             h = self.attention_norm(x)
             result = self.attention(h, deterministic=deterministic, rngs=rngs,
@@ -111,12 +114,15 @@ class TransformerLM(nnx.Module):
         return_diagnostics: bool = False,
         query_coefficients: jax.Array | None = None,
         return_coefficients: bool = False,
+        key_factors: jax.Array | None = None,
     ):
         """Optionally replace or return effective coefficients [L, B, T, H, m+1].
 
         Overrides replace static coefficients or bypass the query generator; all
         other operations remain differentiable. Capture returns coefficients from
         this same forward pass, after scaling. No scaling is applied to overrides.
+        ``key_factors`` [L, B, T, H, m+1], with replaced static coefficients, also
+        multiplies key i's order-r term: the pair coefficient is c_r(t) * g_r(i).
         """
         cfg = self.config
         if return_coefficients and return_diagnostics:
@@ -137,6 +143,9 @@ class TransformerLM(nnx.Module):
                 expected = (cfg.num_layers, *tokens.shape, cfg.num_heads, cfg.attention_degree + 1)
                 if query_coefficients.shape != expected:
                     raise ValueError(f"query_coefficients must have shape {expected}, got {query_coefficients.shape}")
+        if key_factors is not None and (query_coefficients is None or key_factors.shape != query_coefficients.shape
+                                        or cfg.attention_coefficient_conditioning != "static"):
+            raise ValueError("key_factors require static coefficients replaced by query_coefficients of the same shape")
         if tokens.shape[1] > cfg.max_seq_len:
             raise ValueError(f"Sequence length {tokens.shape[1]} exceeds max_seq_len={cfg.max_seq_len}")
         x = self.token_embedding(tokens)
@@ -150,6 +159,7 @@ class TransformerLM(nnx.Module):
             layer = getattr(self, layer_name)
             parameters = parameters_for_layer(self, self.attention_parameter_specs, index)
             layer_coefficients = None if query_coefficients is None else query_coefficients[index]
+            layer_key_factors = {} if key_factors is None else {"key_factors": key_factors[index]}
             if cfg.remat:
                 result = nnx.remat(_call_block_remat, static_argnums=(2, 4))(
                     layer, x, deterministic, rngs, return_diagnostics, parameters,
@@ -159,7 +169,8 @@ class TransformerLM(nnx.Module):
                     telemetry.record_residual(x)
                     result = layer(x, deterministic=deterministic, rngs=rngs,
                                    return_diagnostics=return_diagnostics, attention_parameters=parameters,
-                                   query_coefficients=layer_coefficients, return_coefficients=return_coefficients)
+                                   query_coefficients=layer_coefficients, return_coefficients=return_coefficients,
+                                   **layer_key_factors)
             if return_diagnostics:
                 x, layer_diagnostics = result
                 diagnostics.append(layer_diagnostics)

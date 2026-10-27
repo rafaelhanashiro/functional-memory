@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 STUDY = ROOT / "experiments/transformer_200m_4b"
 TOPIC = STUDY / "results/exploratory/coefficient_oracle"
 PARAMETERIZATIONS = ("query_coefficient_generator", "shared_batch_query_coefficients", "static_coefficients",
-                    "free_per_example_query_coefficients")
+                    "free_per_example_query_coefficients", "free_per_example_query_key_coefficients")
 
 
 def sha256(path):
@@ -39,11 +39,14 @@ def fitting_scope(parameterization, parent_batch_size, sequence_count=None):
             raise ValueError("Generator fitting requires --sequence-count 1, the parent's full 256-sequence "
                              "batch, or a larger multiple of 8")
         return count, f"query_generator_{count}_sequences"
-    if parameterization in {"static_coefficients", "free_per_example_query_coefficients"}:
+    if parameterization in {"static_coefficients", "free_per_example_query_coefficients",
+                            "free_per_example_query_key_coefficients"}:
         if sequence_count not in {1, 256} or sequence_count not in {1, parent_batch_size}:
             raise ValueError("Coefficient-table fitting requires --sequence-count 1 or the parent's full 256-sequence batch")
         suffix = "single_sequence" if sequence_count == 1 else "full_batch"
-        prefix = "static_coefficients" if parameterization == "static_coefficients" else "free_coefficients"
+        prefix = {"static_coefficients": "static_coefficients",
+                  "free_per_example_query_coefficients": "free_coefficients",
+                  "free_per_example_query_key_coefficients": "free_query_key_coefficients"}[parameterization]
         return sequence_count, f"{prefix}_{suffix}"
     if sequence_count is not None:
         raise ValueError("--sequence-count is only supported for generator, static, or independent coefficient fits")
@@ -82,7 +85,8 @@ def parent_degree(model, parameterization="query_coefficient_generator"):
               and model.get("attention_coefficient_initialization", "taylor") == "taylor")
     if parameterization == "query_coefficient_generator" and not query:
         raise ValueError("Expected a 4B factorial-scaled query-only parent")
-    if (not (query or static or (taylor and parameterization == "free_per_example_query_coefficients"))
+    if (not (query or static or (taylor and parameterization in {"free_per_example_query_coefficients",
+                                                                  "free_per_example_query_key_coefficients"}))
             or model["attention_normalization"]
             or model.get("attention_coefficient_parameterization", "direct") != "direct"
             or model["initialization"] != "transformer_truncated_reference"
@@ -106,7 +110,8 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
         raise ValueError("Dense readout requires query_coefficient_generator")
     static = parameterization == "static_coefficients"
     shared = parameterization in {"shared_batch_query_coefficients", "static_coefficients"}
-    free = parameterization == "free_per_example_query_coefficients"
+    free_query_key = parameterization == "free_per_example_query_key_coefficients"
+    free = parameterization == "free_per_example_query_coefficients" or free_query_key
     table = shared or free
     parent = parent.resolve()
     record = load_run(parent)
@@ -156,7 +161,8 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
     if static:
         label = f"static-coefficients-m{degree}-" + ("single-sequence" if count == 1 else "full-batch")
     if free:
-        label = f"free-coefficients-m{degree}-" + ("single-sequence" if count == 1 else "full-batch")
+        label = (f"free-query-key-coefficients-m{degree}-" if free_query_key else f"free-coefficients-m{degree}-") + (
+            "single-sequence" if count == 1 else "full-batch")
     if model.get("qk_norm_head_scale", False):
         label += "-head-scale"
     recipe.update(schema_version=1, experiment_kind="fixed_input_coefficient_fit",
@@ -233,13 +239,28 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
             initialization="capture actual coefficients on each sequence's original forward pass",
             gradient_scaling="per-sequence mean NLL, clipped independently per sequence",
         )
+    if free_query_key:
+        if model["attention_coefficient_conditioning"] != "static" or model["attention_coefficients"] != "fixed":
+            raise ValueError("Free query-key coefficients start from a fixed Taylor parent")
+        recipe["oracle"].update(
+            trainable_parameters=["per_example_effective_monomial_coefficients", "per_example_key_factors"],
+            coefficient_storage=("independent [sequence, layer, query_position, head, order] coefficients c and "
+                                 "[sequence, layer, key_position, head, order] key factors g; pair coefficient c_r(t) g_r(i)"),
+            optimizer_coordinates="factorial(order)*effective_monomial_coefficient for c; g directly",
+            frozen_parameters="all pretrained parameters; attention coefficients replaced by the per-example tables",
+            initialization="capture actual coefficients on each sequence's original forward pass; key factors one",
+            gradient_scaling="per-sequence mean NLL; each sequence's c and g clipped jointly",
+            fit_backend="fused",
+        )
     run = create_run(STUDY, recipe, label=label)
     update_record(run, {
         "home_cluster": "kennel", "seed": source["train"]["seed"],
         "parent_run_id": parent.name, "parent_study": parent.parent.parent.name,
         "coefficient_sharing": ("shared across query positions, sequences, and causal keys; separate per layer/head/order" if static else
                                 "shared across sequences and causal keys; separate per layer/query position/head/order"
-                                if shared else "shared across causal keys; separate per sequence/layer/query position/head/order"
+                                if shared else "query factor per sequence/layer/query position/head/order times a key factor "
+                                "per sequence/layer/key position/head/order" if free_query_key else
+                                "shared across causal keys; separate per sequence/layer/query position/head/order"
                                 if free else "shared query-conditioned generator per layer and head"),
         "coefficient_parameterization": parameterization,
         **({"generator_readout": generator_readout} if not table else {}),

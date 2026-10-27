@@ -223,8 +223,13 @@ class MultiHeadAttention(nnx.Module):
         attention_parameters: dict[str, jax.Array] | None = None,
         query_coefficients: jax.Array | None = None,
         return_coefficients: bool = False,
+        key_factors: jax.Array | None = None,
     ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array] | jax.Array]:
-        """Optionally replace or return effective query coefficients [B, T, H, m+1]."""
+        """Optionally replace or return effective query coefficients [B, T, H, m+1].
+
+        With replaced static coefficients, ``key_factors`` [B, T, H, m+1] multiply each
+        key's degree-r term, running the query-key polynomial kernel.
+        """
         batch, seq_len, _ = x.shape
         if return_coefficients and return_diagnostics:
             raise ValueError("return_coefficients and return_diagnostics are mutually exclusive")
@@ -238,6 +243,11 @@ class MultiHeadAttention(nnx.Module):
                 if query_coefficients.shape != expected:
                     raise ValueError(f"query_coefficients must have shape {expected}, got {query_coefficients.shape}")
                 query_coefficients = jnp.asarray(query_coefficients, dtype=jnp.float32)
+        if key_factors is not None:
+            if (query_coefficients is None or key_factors.shape != query_coefficients.shape
+                    or self.attention_coefficient_conditioning != "static"):
+                raise ValueError("key_factors require replaced static coefficients of the same shape")
+            key_factors = jnp.asarray(key_factors, dtype=jnp.float32)
         parameters = {} if attention_parameters is None else dict(attention_parameters)
         log_scale = parameters.pop("qk_norm_log_scale", None)
         q_gain = parameters.pop("qk_norm_q_gain", None)
@@ -321,6 +331,8 @@ class MultiHeadAttention(nnx.Module):
                 # kernel. These are already effective coefficients: no activation,
                 # generator, or further factorial scaling is applied to the table.
                 kernel_coefficient_activation = "tanh"
+                if key_factors is not None:
+                    parameters["key_polynomial_factors"] = key_factors
         from scaffolds.transformer.attention.path import PATH_ARGUMENTS
 
         path_parameters = {name: parameters.pop(name, None) for name in PATH_ARGUMENTS}

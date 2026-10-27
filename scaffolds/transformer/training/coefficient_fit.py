@@ -313,6 +313,56 @@ def make_functions(graph, degree: int, oracle: dict):
     return capture, jax.jit(jax.vmap(tx.init)), step, jax.jit(losses)
 
 
+def make_query_key_functions(parent_graph, graph, degree: int, oracle: dict):
+    """Free per-example query coefficients c and key factors g: the pair coefficient is c_r(t) g_r(i).
+
+    Tables are (c, g), each [example, layer, position, head, order]. Capture runs the
+    parent graph; losses and updates run ``graph``, the parent with its query-key
+    kernel backend. Adam treats c in factorial coordinates r! c_r, as for free query
+    coefficients, and g directly; each example's (c, g) is clipped jointly.
+    """
+    factorial = jnp.asarray([math.factorial(order) for order in range(degree + 1)], jnp.float32)
+    capture = make_functions(parent_graph, degree, oracle)[0]
+    tx = optax.chain(
+        optax.clip_by_global_norm(float(oracle["clip_norm"])),
+        optax.scale_by_adam(b1=float(oracle["beta1"]), b2=float(oracle["beta2"]),
+                           eps=float(oracle["epsilon"])),
+    )
+
+    def nll(logits, tokens):
+        return optax.softmax_cross_entropy_with_integer_labels(
+            logits.astype(jnp.float32), tokens[:, 1:],
+        ).mean(axis=1)
+
+    def losses(tables, params, tokens):
+        coefficients, key_factors = tables
+        model = nnx.merge(graph, params)
+        logits = model(tokens[:, :-1], deterministic=True,
+                       query_coefficients=jnp.swapaxes(coefficients, 0, 1),
+                       key_factors=jnp.swapaxes(key_factors, 0, 1))
+        return nll(logits, tokens)
+
+    def objective(tables, params, tokens):
+        per_example = losses(tables, params, tokens)
+        return per_example.sum(), per_example
+
+    @jax.jit
+    def step(tables, optimizer, params, tokens, learning_rate):
+        (_, per_example), (coefficient_gradient, key_gradient) = jax.value_and_grad(
+            objective, has_aux=True)(tables, params, tokens)
+        gradient = (coefficient_gradient / factorial, key_gradient)
+        axes = tuple(range(1, coefficient_gradient.ndim))
+        norms = jnp.sqrt(sum(jnp.sum(jnp.square(leaf), axis=axes) for leaf in gradient))
+        updates, optimizer = jax.vmap(tx.update)(gradient, optimizer, tables)
+        candidate = (tables[0] - learning_rate * updates[0] / factorial, tables[1] - learning_rate * updates[1])
+        finite = jnp.all(jnp.stack([jnp.all(jnp.isfinite(leaf)) for leaf in jax.tree.leaves(candidate)]))
+        finite &= jnp.all(jnp.isfinite(norms))
+        finite &= jnp.all(jnp.stack([jnp.all(jnp.isfinite(leaf)) for leaf in jax.tree.leaves(optimizer)]))
+        return candidate, optimizer, per_example, norms, finite
+
+    return capture, jax.jit(jax.vmap(tx.init)), step, jax.jit(losses)
+
+
 def expand_shared_coefficients(table, tokens, *, static=False):
     """Broadcast one trainable table; no sequence/position-specific parameters exist."""
     if static:
@@ -635,8 +685,10 @@ def main(argv=None):
     oracle = recipe["oracle"]
     parameterization = oracle.get("parameterization", "free_per_example_query_coefficients")
     if parameterization not in {"free_per_example_query_coefficients", "query_coefficient_generator",
-                                "shared_batch_query_coefficients", "static_coefficients"}:
+                                "shared_batch_query_coefficients", "static_coefficients",
+                                "free_per_example_query_key_coefficients"}:
         raise ValueError(f"Unknown coefficient parameterization: {parameterization}")
+    query_key = parameterization == "free_per_example_query_key_coefficients"
     generator = parameterization == "query_coefficient_generator"
     static = parameterization == "static_coefficients"
     shared = parameterization == "shared_batch_query_coefficients" or static
@@ -657,7 +709,9 @@ def main(argv=None):
                "resolved_attention_backend": recipe["model"]["attention_backend"],
                "coefficient_layout": ("model_parameter_tree" if generator else
                                       "layer,head,order" if static else
-                                      "layer,query,head,order" if shared else "example,layer,query,head,order"),
+                                      "layer,query,head,order" if shared else
+                                      "(c, g), each example,layer,position,head,order" if query_key else
+                                      "example,layer,query,head,order"),
                "optimizer_coordinates": "stored_generator_parameters" if generator else "factorial(order)*monomial_coefficient",
                "coefficient_storage": "model_generator_parameters" if generator else "effective_monomial_coefficients",
                "parameterization": parameterization,
@@ -718,9 +772,22 @@ def main(argv=None):
     if parent_record["selected_checkpoint"]["sha256"] != oracle["parent_checkpoint_sha256"]:
         raise ValueError("Parent checkpoint checksum changed")
     validate_record(parent_run, checkpoint_hashes=False)
+    if query_key and (config.model.attention_coefficient_conditioning != "static"
+                      or config.model.attention_coefficients != "fixed"):
+        raise ValueError("Free query-key fitting starts from a fixed Taylor parent")
     print("Restoring frozen parent parameters", flush=True)
     graph, params = restore_parent(config, Path(oracle["parent_checkpoint"]))
     conversion_compare, conversion, original_graph, original_params = None, None, graph, params
+    if query_key:
+        # The same parameters on the parent model with its query-key kernel backend;
+        # capture still runs the unchanged parent graph.
+        backend = oracle["fit_backend"]
+        query_key_config = replace(config, model=replace(config.model, attention_backend=backend))
+        query_key_graph, query_key_params = restore_parent(query_key_config, Path(oracle["parent_checkpoint"]))
+        if state_sha256(query_key_params) != state_sha256(params):
+            raise RuntimeError("The query-key graph's parameters differ from the parent's")
+        del query_key_params
+        runtime.update(fit_attention_backend=backend)
     if generator:
         readout = recipe["model"].get("attention_coefficient_readout", "diagonal")
         if oracle.get("generator_readout", readout) != readout:
@@ -740,7 +807,8 @@ def main(argv=None):
     print("Parent restored; compiling coefficient capture and replay", flush=True)
     functions = (make_generator_functions(graph, oracle) if generator else
                  make_shared_functions(graph, config.model.attention_degree, oracle) if shared else
-                 make_functions(graph, config.model.attention_degree, oracle))
+                 make_query_key_functions(graph, query_key_graph, config.model.attention_degree, oracle)
+                 if query_key else make_functions(graph, config.model.attention_degree, oracle))
     capture, initialize_optimizer, train_step, evaluate = functions
     capture_evaluate = (make_functions(graph, config.model.attention_degree, oracle)[3]
                         if shared else evaluate)
@@ -751,6 +819,10 @@ def main(argv=None):
     for index, tokens in enumerate(token_chunks):
         table, losses, replay_losses, error = capture(params, tokens)
         losses, replay_losses, error = jax.device_get((losses, replay_losses, error))
+        if query_key:
+            # Key factors start at one: the pair coefficient is the parent's c_r.
+            # The external replay below then checks the query-key backend against the parent.
+            table = (table, jnp.ones_like(table))
         external_replay_losses = np.asarray(capture_evaluate(table, params, tokens))
         if (not np.allclose(losses, replay_losses, rtol=1e-5, atol=1e-5)
                 or not np.allclose(losses, external_replay_losses, rtol=external_nll_rtol, atol=external_nll_atol)
@@ -850,7 +922,8 @@ def main(argv=None):
                    microbatch_size=microbatch, resolved_attention_backend=config.model.attention_backend)
     print("Qualifying coefficient-only gradient, improvement, and checkpoint resume", flush=True)
     acceptance = qualify(run, functions, params, token_chunks[0], tables[0], optimizers[0], learning_rate,
-                         graph=graph, external_nll_atol=external_nll_atol, external_nll_rtol=external_nll_rtol,
+                         graph=None if query_key else graph,
+                         external_nll_atol=external_nll_atol, external_nll_rtol=external_nll_rtol,
                          generator=generator, shared=shared,
                          parent_nll=original_parent_losses if shared or generator else None,
                          capture_logit_error=maximum_capture_error if shared or generator else None,
@@ -1035,8 +1108,10 @@ def main(argv=None):
                     "layout": ("model_parameter_tree" if generator else
                                "one [layer,head,order] table shared across all sequences and query positions" if static else
                                "one [layer,query,head,order] table shared across the batch" if shared else
-                               "microbatches of [example,layer,query,head,order]"),
-                    "coordinates": "stored_generator_parameters" if generator else "effective_monomial_c",
+                               "microbatches of (c, g), each [example,layer,position,head,order]; pair coefficient c_r(t) g_r(i)"
+                               if query_key else "microbatches of [example,layer,query,head,order]"),
+                    "coordinates": ("stored_generator_parameters" if generator else
+                                    "effective_monomial_c and key factor g" if query_key else "effective_monomial_c"),
                     "optimizer_coordinates": "stored_generator_parameters" if generator else "factorial(order)*c",
                     "parameterization": parameterization,
                     "parent_run_id": oracle["parent_run_id"], "parent_checkpoint": oracle["parent_checkpoint"]})
