@@ -1,8 +1,8 @@
 {
   "checkpoint_retention": "none; evaluates referenced checkpoints without optimizer updates",
   "config": {
-    "path": "experiments/transformer_200m_4b/runs/r6d2789b7b105/config.yaml",
-    "sha256": "9d3ab86f1aab367343373177dd539082f6c3ac67255bfefe8129553d12359d2a"
+    "path": "experiments/transformer_200m_4b/runs/rf033859dd68e/config.yaml",
+    "sha256": "5b0bc6c46ead7557f933f626ca1c5807b14fc853e69d895b615120bbcfb31a7a"
   },
   "generator_run_ids": [
     "r84e37a39e2a0"
@@ -13,7 +13,7 @@
   "parent_run_id": "r2b22f2ff6461",
   "parent_study": "transformer_200m_4b",
   "record_schema_version": 1,
-  "run_id": "r6d2789b7b105",
+  "run_id": "rf033859dd68e",
   "seed": 42,
   "status": "planned"
 }

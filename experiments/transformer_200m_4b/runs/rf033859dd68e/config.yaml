@@ -89,8 +89,8 @@ train:
   seed: 42
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/transformer_200m_4b/runs/r6d2789b7b105
-  checkpoint_dir: experiments/transformer_200m_4b/runs/r6d2789b7b105/checkpoints
+  workdir: experiments/transformer_200m_4b/runs/rf033859dd68e
+  checkpoint_dir: experiments/transformer_200m_4b/runs/rf033859dd68e/checkpoints
   micro_batch_size: 16
   log_every: 10
   eval_every: 500
@@ -171,9 +171,9 @@ evaluation:
   generators:
   - role: query_generator_1024_sequences_m4_head_scale
     run_id: r84e37a39e2a0
-    config_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r84e37a39e2a0/config.yaml
+    config_path: experiments/transformer_200m_4b/runs/r84e37a39e2a0/config.yaml
     config_sha256: 27562567c5879fecb3b47947503da4299ffa086d8c7489bcad92b749ae21ca06
-    checkpoint_path: experiments/transformer_200m_4b/runs/r84e37a39e2a0/checkpoints/4452
+    checkpoint_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r84e37a39e2a0/checkpoints/4452
     checkpoint_sha256: 6dc687cb75efceff40db1268505ecaa55f95c70ab935e4e72f89996fd76260ae
     checkpoint_files:
     - path: best/_CHECKPOINT_METADATA
