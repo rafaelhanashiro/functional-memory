@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
+import orbax.checkpoint as ocp
 import pytest
 
 from scaffolds.transformer.models import build_model
@@ -131,3 +132,32 @@ def test_launcher_scope_and_taylor_parent():
         256, "free_query_key_coefficients_full_batch")
     with pytest.raises(ValueError):
         fitting_scope("free_per_example_query_key_coefficients", 256, 1024)
+
+
+def test_stopped_fit_finalizes_its_best_snapshot(tmp_path):
+    import json
+    import yaml
+    from scaffolds.transformer.training.coefficient_fit import finalize_stopped, save_state
+
+    run = tmp_path / "run"
+    (run / "checkpoints").mkdir(parents=True)
+    recipe = {"model": {"num_layers": 2, "num_heads": 2, "attention_degree": 4}, "data": {"sequence_length": 9},
+              "oracle": {"parameterization": "free_per_example_query_key_coefficients", "microbatch_size": 2,
+                         "sequence_count": 4, "parent_run_id": "rparent", "parent_checkpoint": "/parent"}}
+    (run / "config.yaml").write_text(yaml.safe_dump(recipe))
+    (run / "record.json").write_text(json.dumps({"run_id": "run", "status": "running"}))
+    shape = (2, 2, 8, 2, 5)
+    tables = [(jnp.full(shape, 1. + i), jnp.full(shape, 2. + i)) for i in range(2)]
+    best = [(jnp.full(shape, 5. + i), jnp.full(shape, 6. + i)) for i in range(2)]
+    controller = {"step": 7, "best_step": 6, "best_loss": .01, "initial_loss": 2.7, "reduced_at": None}
+    save_state(run / "checkpoints", 7, tables, [{"m": t[0]} for t in tables], best, controller)
+    (run / "metrics.jsonl").write_text("".join(json.dumps({"step": s, "nll": 1. / (s + 1)}) + "\n" for s in range(9)))
+    outcome = finalize_stopped(run, "stopped at user request")
+    assert outcome["best_step"] == 6 and outcome["step"] == 7 and outcome["stopping"] == "stopped at user request"
+    assert [p.name for p in (run / "checkpoints").iterdir()] == ["6"]
+    with ocp.StandardCheckpointer() as checkpointer:
+        saved = checkpointer.restore(run / "checkpoints/6/best", target={"coefficients": best})
+    for left, right in zip(jax.tree.leaves(saved["coefficients"]), jax.tree.leaves(best)):
+        np.testing.assert_array_equal(left, right)
+    assert max(json.loads(line)["step"] for line in (run / "metrics.jsonl").read_text().splitlines()) == 7
+    assert json.loads((run / "record.json").read_text())["status"] == "complete"
