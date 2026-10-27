@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r2459b843ca81/config.yaml",
+    "sha256": "1aae00d4aa550715ad1a00a551b1feadb7923c69a760ef62ec93a2f183a82c18"
+  },
+  "home_cluster": "orcd",
+  "label": "query_key-m12-head-scale",
+  "name": "query_key-m12-head-scale",
+  "record_schema_version": 1,
+  "run_id": "r2459b843ca81",
+  "status": "planned"
+}

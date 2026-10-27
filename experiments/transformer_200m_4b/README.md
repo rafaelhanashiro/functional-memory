@@ -256,6 +256,44 @@ for run in r097fcda6a3af rf0a5652acaa6 ree2eb2e4287e; do
 done
 ```
 
+### With the per-head QK score scale
+
+Three more runs repeat these recipes with the canonical QK setup: the same
+per-layer gains plus a learned positive score scale per layer and head
+(`model.qk_norm_head_scale: true`). Nothing else in the recipe changes; the fused
+query–key kernel is kept (allocated with `--allow-triton-attention`) so that each
+run pairs with its predecessor above. The degree-four fixed, static, and query
+runs with the same QK setup are `r816ab0fbe119`, `r4339a245820e`, and
+`r2b22f2ff6461`; no degree-8 or degree-12 baseline uses it.
+
+| Degree | Run | Without the head scale |
+| --- | --- | --- |
+| 4 | `r501f5cca0d4c` | `r097fcda6a3af` |
+| 8 | `r536dee0929d5` | `rf0a5652acaa6` |
+| 12 | `r2459b843ca81` | `ree2eb2e4287e` |
+
+Home cluster: **ORCD**, one H100 80GB HBM3 each, from branch
+`claude/transformer-200m-4b-query-key-head-scale-orcd`. Its scaffold is newer than
+`fc0903e`: the attention kernels, launcher, and lock are unchanged, and the query
+coefficient readout evaluates the same FP32 expression. GPU acceptance runs the
+fused query–key head-scale backend tests at degrees 4, 8, and 12 before training.
+The node exclusions are those of the runs above: the throttled `node3009` and
+`node3209`, the H100 NVL nodes `node1708`, `node1709`, and `node4508`, `node2801`
+(failed CUDA initialization), and `node3409` (half the expected update rate).
+The pilot projects every remaining validation from its single compile-inclusive
+evaluation, which exceeds the default 48-hour horizon on a cold compilation cache,
+so these runs qualify against a 96-hour horizon through the runtime override:
+
+```bash
+for run in r501f5cca0d4c r536dee0929d5 r2459b843ca81; do
+  TRANSFORMER_ALLOCATION_SECONDS=345600 sbatch --parsable --job-name="$run" \
+    --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_200m_4b.acceptance \
+    "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs above (ORCD). Data manifests live under

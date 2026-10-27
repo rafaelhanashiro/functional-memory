@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r536dee0929d5/config.yaml",
+    "sha256": "14548b8b2a21f895aae06173211c15c0beb67be21ab64f27e82e9488d3d3ce1a"
+  },
+  "home_cluster": "orcd",
+  "label": "query_key-m8-head-scale",
+  "name": "query_key-m8-head-scale",
+  "record_schema_version": 1,
+  "run_id": "r536dee0929d5",
+  "status": "planned"
+}
