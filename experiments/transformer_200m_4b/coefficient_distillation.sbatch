@@ -14,6 +14,9 @@ export PYTHONPATH="$EXECUTION_ROOT${PYTHONPATH:+:$PYTHONPATH}"
 export DISTILLATION_SOURCE_COMMIT="$EXPECTED_COMMIT"
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-12}" MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 export PYTHONUNBUFFERED=1 PYTHONFAULTHANDLER=1 MPLBACKEND=Agg
+# Submission/record preparation runs on CPU; the allocated job must use CUDA.
+unset JAX_PLATFORM_NAME
+export JAX_PLATFORMS=cuda
 source scaffolds/transformer/launchers/kennel_runtime.sh
 PYTHON="$EXECUTION_ROOT/scaffolds/transformer/$TRANSFORMER_ENVIRONMENT_DIR/bin/python"
 CUDA_HOME="$(transformer_cuda_home "$PYTHON")"
