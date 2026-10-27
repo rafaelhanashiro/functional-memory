@@ -47,6 +47,7 @@ from scaffolds.transformer.training.checkpointing import state_sha256
 GENERATOR_PARAMETER_NAMES = frozenset({
     "query_polynomial_bias", "query_polynomial_amplitude", "query_polynomial_kernel",
     "query_polynomial_tanh_bias", "query_polynomial_mixing",
+    "key_polynomial_kernel", "key_polynomial_amplitude",
 })
 
 
@@ -60,6 +61,9 @@ def split_generator_parameters(params):
     readout = names & {"query_polynomial_amplitude", "query_polynomial_mixing"}
     if not required <= names or len(readout) != 1 or not jax.tree.leaves(frozen):
         raise ValueError("Expected a tanh query generator and a nonempty frozen backbone")
+    key_names = names & {"key_polynomial_kernel", "key_polynomial_amplitude"}
+    if key_names and len(key_names) != 2:
+        raise ValueError("Key conditioning requires both its kernel and amplitude")
     return generator, frozen
 
 
