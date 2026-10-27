@@ -11,6 +11,23 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Teacher-activation coefficient distillation
+
+The native capture/student adapters and independent dense regressions have 13
+passing CPU checks: preserved backbone and Taylor initialization, actual teacher
+activations after earlier free layers, production coefficient and gradient parity,
+independent clipping/Adam, synthetic teacher recovery, finite checks, and exact
+optimizer resume. Nine study protocol checks cover selected-data integrity,
+pooled metrics, and actual Orbax recovery. See
+[CPU qualification](coefficient_distillation_cpu.json). Full-size GPU qualification
+is a mandatory startup gate recorded in each execution's acceptance artifact;
+the CPU checks alone do not qualify a GPU/runtime combination.
+
+[B300 qualification](coefficient_distillation_b300.json) passed on CUDA 13 with
+Mosaic: capture and native logits/losses matched exactly across 256 sequences,
+native coefficient projection matched exactly, the frozen backbone hash was
+unchanged, and the next Adam update after checkpoint restoration was identical.
+
 ### Pretrained Taylor continuation
 
 The continuation runtime preserves pretrained parameters, backbone Adam moments and

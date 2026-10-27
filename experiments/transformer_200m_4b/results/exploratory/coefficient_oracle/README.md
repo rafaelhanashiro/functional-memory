@@ -20,10 +20,122 @@ backbone frozen. They live in the
 | `rc95f2055e96d` | Original degree-four query generator on 256 sequences, with per-head QK scaling | Query-only `r2b22f2ff6461`, step 7,500 | Complete |
 | `rda6029c3286f` | Free degree-four coefficients per sequence and query on 256 sequences, with per-head QK scaling | Fixed Taylor `r816ab0fbe119`, step 7,500 | Complete |
 | `rceea84f19f6b` | Static degree-four coefficients on 256 sequences, with per-head QK scaling | Static `r4339a245820e`, step 7,500 | Complete |
+| `rec777591a61b` | Dense generator supervised by free coefficients on teacher activations | Taylor `r816ab0fbe119`, step 7,500; teacher `rda6029c3286f`, step 2,453 | Complete |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
-matched-backbone comparison of coefficient parameterizations. All reported
-perplexities measure the fitting inputs, not held-out generalization.
+matched-backbone comparison of coefficient parameterizations. The original
+coefficient fits report fitting perplexity. The teacher-distillation experiment
+below separately evaluates fresh validation and test sequences.
+
+## Dense distillation from the free teacher
+
+Opened **2026-10-26**. Run `rec777591a61b` tests whether the existing dense
+generator can represent useful free-coefficient choices and transfer them to
+new sequences. The teacher is the retained degree-four B256 free fit
+`rda6029c3286f` at update 2,453. Its Taylor backbone `r816ab0fbe119` at update
+7,500 remains bitwise frozen. Recorded inputs are the actual teacher attention
+inputs after each block's attention RMSNorm, with all earlier layers using their
+free coefficients; they are not activations from an unchanged Taylor forward.
+
+The student uses nine tanh features per head, no inner tanh bias, a dense mixing
+matrix, and the existing 1/3 readout scale. Both bias and mixing use factorial
+coordinates. The stored bias begins at one, mixing at zero, and projections have
+standard deviation `1/sqrt(896)`, reproducing Taylor at initialization. This is
+the dense family used by `r04a5b2a3e8dd`, with no change to QK normalization or the
+output RMSNorm. Only the generator's projections, biases, and mixing matrices train.
+
+All 256 teacher sequences and all 2,048 query positions form the regression
+dataset. The objective is raw factorial-coordinate MSE, `u_r = r! c_r`, averaged
+over examples and orders independently for each layer/head. Each update samples
+4,096 query tokens with replacement. Adam uses betas 0.9/0.95, epsilon 1e-8,
+no decay, and independent per-layer/head clipping at one. A fixed 20,000-update
+budget uses cosine LR 0.001 to 0.0001. Full reconstruction errors, per-layer/head
+errors, and ordinary deployed fitting and validation PPL are measured every 1,000
+updates. No teacher activations or coefficients enter a deployed forward.
+
+The original evaluation manifest was almost entirely used for selecting the
+pretrained checkpoint, so fresh data come from unused portions of the packed
+training manifest. Validation uses sequence indices `[5000000, 5000256)` and
+final testing `[5000256, 5000512)`, beyond this backbone's training prefix. Neither
+set enters a coefficient fit or gradient update; recipes pin their manifest and
+token checksums. Validation selects the lowest deployed NLL, including the
+initial Taylor-equivalent student. Final testing evaluates that selected generator
+and the unchanged Taylor baseline only after selection.
+
+The capacity result is separate: the snapshot with the lowest full coefficient
+MSE is evaluated on the fitting batch at completion. Its measurements are retained
+even if fresh validation chooses an earlier snapshot or the Taylor initialization.
+Only the validation-best generator checkpoint remains after completion. A strong
+fit plus improved test PPL would support a transferable coefficient rule; comparing
+optimization routes additionally requires a matched direct-loss dense control.
+First-layer repeated tokens have identical inputs but can have different free
+targets, so exact raw regression may be impossible there; regression error alone
+does not establish a functional limitation.
+
+Startup qualification checks teacher replay and capture parity, exact backbone
+preservation, Taylor initialization, native coefficient-projection parity, finite
+feature updates after zero mixing moves, and exact optimizer resume. Numerical
+discrepancies retain the established bounds and abort qualification. The run's
+`distillation_acceptance.json`, `metrics.jsonl`, and final `completion.json` are
+the compact evidence. Teacher activation caches use allocation-local temporary
+storage and are regenerated from the pinned source checkpoint on a new allocation.
+
+Run preparation and launch commands are in the [study README](../../../README.md).
+
+### Distillation outcome
+
+The full 20,000-update budget completed on one B300. Actual fitting took about
+two minutes after preparation; the successful allocation lasted 10 minutes 58
+seconds. Teacher capture reproduced native logits and per-sequence losses exactly
+on this allocation, with aggregate teacher PPL **1.002978**. Native coefficient
+projection parity and optimizer checkpoint resume were exact; the backbone hash
+remained unchanged. No logged regression update clipped its gradients.
+
+| Model / selected snapshot | Fitting PPL | Fresh validation PPL | Untouched test PPL |
+| --- | ---: | ---: | ---: |
+| Frozen Taylor | 15.599915 | 15.071810 | 14.921153 |
+| Fitted free teacher | 1.002978 | Not applicable | Not applicable |
+| Dense, best coefficient MSE (update 20,000) | 15.624968 | 15.220033 | Not evaluated |
+| Validation-selected dense (initialization, update 0) | 15.599915 | 15.071810 | 14.921153 |
+
+The table and `distillation_summary.csv` regenerate from the explicitly selected
+run's pinned measurements:
+
+```bash
+scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/summarize_distillation.py --print-markdown
+```
+
+Raw factorial-coordinate MSE fell from **0.549740 to 0.495616** (9.85%), while
+mean angular error fell from **35.78 to 34.41 degrees**. The best coefficient fit
+was the terminal snapshot; it did not reproduce the teacher's language-model
+behavior. Every evaluated trained snapshot had worse fresh validation NLL than
+initialization. Consequently, validation selected the Taylor-equivalent initial
+generator, and the final test evaluated that fallback. Its identical test PPL
+must not be presented as successful generalization by a trained dense generator.
+
+The optimal constant predictor for this coefficient objective has MSE **0.520781**.
+Moving the mean away from Taylor explains **53.5%** of the dense fit's total MSE
+improvement. Input dependence removes another **4.83%** of the remaining teacher
+coefficient variance. Thus the generator learns some input-dependent signal on
+teacher activations, but does not closely imitate the free table. This constant
+reference is a coefficient-MSE baseline, not another trained language model.
+Its compact [measurement](../../../runs/rec777591a61b/distillation_reference.json)
+regenerates on the teacher's home cluster with:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/measure_distillation_reference.py \
+  --run experiments/transformer_200m_4b/runs/rec777591a61b
+```
+
+This experiment did not establish the proposed premise that dense can represent
+the fitted free solution but language-model training cannot reach it. It also
+does not prove that the dense family lacks useful solutions: the finite regression
+optimization, nonunique free coefficients, raw-MSE objective, and conflicting
+first-layer targets limit that inference. The open question is how much useful
+coefficient variation is predictable by a shared causal generator and which
+training objective can discover it. Exact measurements and per-layer/head errors
+are in the run's [completion](../../../runs/rec777591a61b/completion.json) and
+[learning curves](../../../runs/rec777591a61b/metrics.jsonl).
 
 ## Degree-four batch fits with per-head QK scaling
 
