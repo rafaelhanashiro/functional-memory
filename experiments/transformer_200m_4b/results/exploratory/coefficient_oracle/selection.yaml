@@ -297,3 +297,12 @@ runs:
     metadata.json:
       path: experiments/transformer_200m_4b/runs/rc76733052ecb/metadata.json
       sha256: b9da144a67f5a3db469139684326c67d0bae41649f3ba26773366f62ac84eb7b
+- study: transformer_200m_4b
+  run_id: r594b3706ecd7
+  role: query_key_teacher_distillation_m4_head_scale
+  parent_run_id: r816ab0fbe119
+  teacher_run_id: rc76733052ecb
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r594b3706ecd7/config.yaml
+      sha256: c85ced321bcc5e0c6837b32d5016b692fe1e4e78033efcdb966f889aebe81209

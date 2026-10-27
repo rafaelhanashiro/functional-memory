@@ -1,0 +1,34 @@
+{
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-key-distillation-4b/experiments/transformer_200m_4b/runs/r594b3706ecd7",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r594b3706ecd7/config.yaml",
+    "sha256": "c85ced321bcc5e0c6837b32d5016b692fe1e4e78033efcdb966f889aebe81209"
+  },
+  "dataset_identity": {
+    "fit": {
+      "batch_sha256": "f2b3cfea843fb2ab2bd366e2590a6fea79ca08aee82339f37db484a4dbff170a",
+      "manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "role": "teacher fitting",
+      "sequence_count": 256,
+      "start_sequence": 0
+    },
+    "heldout": {
+      "batch_sha256": "970d74b8b2d8c3a1eb815b4cb0dc6096533240db220218433879acaf7f4abead",
+      "manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+      "role": "held out; scored once after training, selects nothing",
+      "sequence_count": 256,
+      "start_sequence": 5000000
+    }
+  },
+  "home_cluster": "kennel",
+  "label": "query-key-teacher-distillation-m4-b256-head-scale",
+  "name": "query-key-teacher-distillation-m4-b256-head-scale",
+  "parent_run_id": "r816ab0fbe119",
+  "record_schema_version": 1,
+  "run_id": "r594b3706ecd7",
+  "seed": 42,
+  "status": "planned",
+  "teacher_run_id": "rc76733052ecb"
+}
