@@ -252,6 +252,23 @@ def test_forget_gate_diagnostics_on_the_reference_path():
     assert report["finite"] and np.all(np.asarray(report["log_alpha_sample"]["max"]) <= 0)
 
 
+@pytest.mark.parametrize(("form", "forget_gate"), (("pure_tanh", False), ("affine_sigmoid", False), ("tanh", True)))
+def test_training_diagnostics_end_to_end(form, forget_gate):
+    """The trainer's full diagnostic pass, as run at each validation, accepts every run."""
+    from scaffolds.transformer.training.diagnostics import attention_diagnostics, fixed_diagnostic_sample
+
+    config = _config(form, forget_gate)
+    config.data.batch_size = config.train.micro_batch_size = 2
+    state = create_state(config, jax.random.PRNGKey(0))
+    sample, provenance = fixed_diagnostic_sample(config)
+    report = attention_diagnostics(state, config, sample, provenance)
+    assert report["valid"], report["issues"]
+    assert report["coefficients"]["activation"] == form
+    assert ("forget_gate" in report["coefficients"]) is forget_gate
+    if forget_gate:
+        assert report["coefficients"]["forget_gate"]["finite"]
+
+
 def test_acceptance_selects_form_checks():
     spec = acceptance.AcceptanceSpec(entry_module="tests", cpu_tests=(), gpu_tests=())
     for form, forget_gate in (("pure_tanh", False), ("affine_sigmoid", False), ("tanh", True)):

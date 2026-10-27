@@ -268,8 +268,11 @@ and [forget gate](results/exploratory/forget_gate/README.md) topics.
 | `r917f3650296e` | affine-sigmoid-m4 | `attention_coefficient_activation: affine_sigmoid` |
 | `r111843b4c7cc` | query-m4-forget-gate | `attention_forget_gate: true` on `attention_backend: blocked` |
 
-From `worktrees/coefficient-forms-4b`, after committing the inputs, submit each run on
-one B300 or H100, excluding the B200 node `shiba`:
+Pure tanh and affine sigmoid launch from `worktrees/coefficient-forms-4b`, and the forget
+gate from `worktrees/forget-gate-4b` (branch `claude/forget-gate-4b`), whose diagnostics
+summarize the gate's per-head statistics. After committing the inputs, submit each run on
+one B300 or H100, excluding the B200 node `shiba` (and, for the slower blocked forget gate,
+the H100 PCIe node `mastiff`):
 
 ```bash
 sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
