@@ -16,7 +16,7 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=256G
 #SBATCH --gres=gpu:1
-#SBATCH --exclude=collie,samoyed,doodle,terrier
+#SBATCH --exclude=collie,samoyed,doodle,terrier,shiba
 #SBATCH --time=1-00:00:00
 #SBATCH --requeue
 #SBATCH --open-mode=append

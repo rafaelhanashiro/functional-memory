@@ -313,7 +313,7 @@ def submit(run_id, *, partition="standard,long", time_limit="02:00:00", gpu_type
     log = run / "training.log"
     gpu_request = f"gpu:{gpu_type.lower()}:1" if gpu_type else "gpu:1"
     command = ["sbatch", "--parsable", "--nice=0", f"--partition={partition}",
-               f"--gres={gpu_request}", "--exclude=collie,samoyed,doodle,terrier",
+               f"--gres={gpu_request}", "--exclude=collie,samoyed,doodle,terrier,shiba",
                "--cpus-per-task=8", "--mem=96G", f"--time={time_limit}",
                f"--job-name=coefficient-fit-{run_id}", f"--output={log}", f"--error={log}",
                str(STUDY / "coefficient_fit.sbatch"), str(ROOT), commit, run_id]

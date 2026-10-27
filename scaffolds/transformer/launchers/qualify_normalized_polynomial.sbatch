@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
-#SBATCH --exclude=collie,samoyed,doodle,terrier
+#SBATCH --exclude=collie,samoyed,doodle,terrier,shiba
 #SBATCH --time=01:00:00
 #SBATCH --open-mode=append
 set -euo pipefail

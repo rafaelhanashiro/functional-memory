@@ -31,12 +31,15 @@ See [AGENTS.md](AGENTS.md) for retention and migration rules.
 | `long` | 7 days | Additional normal capacity and longer jobs, within the live allowance |
 | `sweep` | 7 days | Overflow after the permitted `standard` and `long` allowances are used |
 
-GPU types currently include A6000, A100, H100, and B300; use `sinfo` to inspect
+GPU types currently include A6000, A100, H100, B200, and B300; use `sinfo` to inspect
 nodes before choosing hardware. On 2026-09-22 they were: `akita` 8×B300;
 `dogo` and `mastiff` 8×H100 each; `collie` 2×A100 and `samoyed` 10×A100;
-`doodle` 9×A6000 and `terrier` 10×A6000. Nodes define no Slurm features, so
+`doodle` 9×A6000 and `terrier` 10×A6000. `shiba` (8×B200, in `standard`, `long`,
+`sweep`, and `debug`) appeared by 2026-10-27. Nodes define no Slurm features, so
 accept either B300 or H100 by requesting `--gres=gpu:N` and excluding the
-A100/A6000 nodes; A6000 training is markedly slower in this project's tests. General priority is `debug > standard > long > sweep`.
+A100/A6000 nodes and `shiba`; A6000 training is markedly slower in this project's
+tests, and the transformer launcher accepts only B300 and H100, so a job granted
+a B200 exits within seconds. General priority is `debug > standard > long > sweep`.
 Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
 60 seconds (the supplied PDFs say 120); `sweep` has no grace period.
 
