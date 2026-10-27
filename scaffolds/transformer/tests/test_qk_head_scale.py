@@ -11,13 +11,15 @@ import optax
 import pytest
 from flax import nnx
 
+from scaffolds.transformer import acceptance
 from scaffolds.transformer.attention import multihead
 from scaffolds.transformer.attention.parameters import attention_parameter_specs
 from scaffolds.transformer.attention.positional import apply_rope
 from scaffolds.transformer.attention.qk_norm import rms_score_operands, scale_rms_queries
-from scaffolds.transformer.configs import load_config, validate_config
+from scaffolds.transformer.configs import Config, load_config, validate_config
 from scaffolds.transformer.configs.loader import config_dicts_equal, config_to_dict
 from scaffolds.transformer.models import build_model, model_parameter_count
+from scaffolds.transformer.tests.test_query_key_polynomial import _interpret, _model as query_key_model
 from scaffolds.transformer.tests.test_training import tiny_config
 from scaffolds.transformer.tests.test_qk_rms_attention_backends import _smooth_head_scale_reference
 from scaffolds.transformer.training import loop
@@ -222,3 +224,87 @@ def test_old_recipes_keep_disabled_head_scaling_and_unit_readout(tmp_path):
     assert "qk_norm_head_log_scale" not in nnx.state(build_model(restored.model, 2), nnx.Param)
 
 
+def query_key_rms_model(degree, head_scale, backend="blocked"):
+    return query_key_model(degree, qk_norm_type="rms_norm", qk_norm_sharing="per_layer",
+                           qk_norm_head_scale=head_scale, attention_backend=backend,
+                           initialization="transformer_truncated_reference")
+
+
+@pytest.mark.parametrize("degree", (4, 8, 12))
+def test_query_key_head_scaling_preserves_initial_function(degree):
+    model_config, baseline_config = query_key_rms_model(degree, True), query_key_rms_model(degree, False)
+    model, baseline = build_model(model_config, 13), build_model(baseline_config, 13)
+    layers, heads = model_config.num_layers, model_config.num_heads
+    assert model_parameter_count(model_config) - model_parameter_count(baseline_config) == layers * heads
+    tokens = jnp.arange(26).reshape(2, 13) % 16
+    np.testing.assert_array_equal(model(tokens), baseline(tokens))
+    params, baseline_params = nnx.state(model, nnx.Param), nnx.state(baseline, nnx.Param)
+    for name, value in baseline_params.items():
+        for a, b in zip(jax.tree.leaves(value), jax.tree.leaves(params[name]), strict=True):
+            np.testing.assert_array_equal(a, b)
+
+
+@pytest.mark.parametrize("degree", (4, 8))
+def test_query_key_head_scales_match_blocked_through_fused_interpreter(monkeypatch, degree):
+    """Nonunit scales and amplitudes exercise every query-key gradient path."""
+    _interpret(monkeypatch)
+    tokens = jnp.arange(26).reshape(2, 13) % 16
+    outputs, gradients = {}, {}
+    for backend in ("blocked", "fused"):
+        model = build_model(query_key_rms_model(degree, True, backend), 13)
+        model.qk_norm_head_log_scale[...] = jnp.log(jnp.asarray([[[.6], [1.4]], [[1.2], [.8]]]))
+        model.key_polynomial_amplitude[...] = jnp.full(model.key_polynomial_amplitude.shape, .3)
+        model.query_polynomial_amplitude[...] = jnp.full(model.query_polynomial_amplitude.shape, .3)
+        graphdef, params = nnx.split(model, nnx.Param)
+        outputs[backend] = model(tokens)
+        gradients[backend] = jax.grad(lambda p: jnp.sum(nnx.merge(graphdef, p)(tokens) ** 2))(params)
+    np.testing.assert_allclose(outputs["fused"], outputs["blocked"], rtol=1e-4, atol=1e-5)
+    for name in ("qk_norm_head_log_scale", "key_polynomial_kernel", "key_polynomial_amplitude",
+                 "query_polynomial_kernel", "query_polynomial_amplitude", "qk_norm_q_gain", "qk_norm_k_gain"):
+        fused, blocked = (np.asarray(gradients[backend][name][...]) for backend in ("fused", "blocked"))
+        assert np.all(np.isfinite(fused)) and np.abs(blocked).max() > 0, name
+        np.testing.assert_allclose(fused, blocked, rtol=1e-3, atol=1e-6, err_msg=name)
+
+
+def test_query_key_head_scales_train():
+    config = Config(model=query_key_rms_model(4, True))
+    config.data.synthetic_vocab_size, config.data.sequence_length, config.data.batch_size = 16, 14, 2
+    config.train.micro_batch_size = 2
+    config.optim.total_steps, config.optim.warmup_steps = 3, 0
+    validate_config(config)
+    state = create_state(config, jax.random.key(13))
+    after, loss, _ = loop.train_step(state, jnp.arange(28).reshape(2, 14) % 16, jax.random.key(2),
+                                     check_all_gradients=True)
+    assert np.isfinite(float(loss))
+    before = np.asarray(state.params["qk_norm_head_log_scale"][...])
+    assert np.all(np.asarray(after.params["qk_norm_head_log_scale"][...]) != before)
+
+
+def _head_scale_backend_tests(model, *, backend, cpu=False):
+    spec = acceptance.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    paths = acceptance.test_paths(spec, {"model": model}, resolved_backend=backend, cpu=cpu)
+    return [path for path in paths if path.startswith(acceptance.QK_HEAD_SCALE_BACKEND_TESTS)]
+
+
+@pytest.mark.parametrize("degree", (4, 8, 12))
+def test_acceptance_selects_every_query_key_head_scale_degree_on_gpu(degree):
+    model = {"attention_degree": degree, "attention_normalization": False, "attention_coefficients": "learned",
+             "attention_coefficient_conditioning": "query_key", "attention_coefficient_activation": "tanh",
+             "qk_norm_head_scale": True}
+    expected = [f"{acceptance.QK_HEAD_SCALE_BACKEND_TESTS}[query_key-{m}-fused]" for m in (4, 8, 12)]
+    assert _head_scale_backend_tests(model, backend="fused") == expected
+    assert _head_scale_backend_tests(model, backend="fused", cpu=True) == []
+    assert _head_scale_backend_tests(model, backend="mosaic") == []
+    assert _head_scale_backend_tests({**model, "qk_norm_head_scale": False}, backend="fused") == []
+    assert _head_scale_backend_tests({**model, "attention_coefficient_conditioning": "query"},
+                                     backend="fused") == []
+    # A degree without a parametrized GPU case is requested anyway, so pytest fails closed.
+    assert _head_scale_backend_tests({**model, "attention_degree": 6}, backend="fused")[1] == (
+        f"{acceptance.QK_HEAD_SCALE_BACKEND_TESTS}[query_key-6-fused]")
+
+
+@pytest.mark.parametrize(("degree", "backend", "case"), [(None, "fused", "exp-0-fused"),
+                                                         (4, "mosaic", "fixed-4-mosaic")])
+def test_acceptance_keeps_fixed_head_scale_controls_on_gpu(degree, backend, case):
+    model = {"attention_degree": degree, "attention_normalization": False, "qk_norm_head_scale": True}
+    assert _head_scale_backend_tests(model, backend=backend) == [f"{acceptance.QK_HEAD_SCALE_BACKEND_TESTS}[{case}]"]
