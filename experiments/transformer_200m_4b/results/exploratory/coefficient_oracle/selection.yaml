@@ -288,3 +288,12 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/rc76733052ecb/config.yaml
       sha256: 1f81939b94aa0fdf7ec50753fed090e705d4ccf67178cd01936347247cef84a4
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/rc76733052ecb/metrics.jsonl
+      sha256: d0707c6bbf58b5484b821546ace9cc9c1a1ba83047ca3c410cb642dcebcf66de
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/rc76733052ecb/completion.json
+      sha256: b9da144a67f5a3db469139684326c67d0bae41649f3ba26773366f62ac84eb7b
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/rc76733052ecb/metadata.json
+      sha256: b9da144a67f5a3db469139684326c67d0bae41649f3ba26773366f62ac84eb7b

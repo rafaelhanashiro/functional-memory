@@ -561,6 +561,72 @@ def _retain_completed_best(run: Path, outcome: dict) -> Path:
     return retained
 
 
+def finalize_stopped(run: Path, reason: str) -> dict:
+    """Seal a stopped free-table fit's best snapshot as its result, without more updates.
+
+    Reads the latest resumable checkpoint's best tables and controller, writes the same
+    best-coefficient save and completion as a converged fit, and records why it stopped.
+    """
+    recipe = yaml.safe_load((run / "config.yaml").read_text())
+    oracle = recipe["oracle"]
+    if oracle["parameterization"] not in {"free_per_example_query_coefficients",
+                                          "free_per_example_query_key_coefficients"}:
+        raise ValueError("Early finalization applies to per-example free-table fits")
+    if (run / "completion.json").exists():
+        raise FileExistsError("The fit is already complete")
+    root = run / "checkpoints"
+    latest = _latest(root)
+    if latest is None:
+        raise FileNotFoundError("No resumable checkpoint to finalize")
+    controller = json.loads((latest / "controller.json").read_text())
+    model = recipe["model"]
+    microbatch = int(oracle["microbatch_size"])
+    shape = (microbatch, model["num_layers"], recipe["data"]["sequence_length"] - 1,
+             model["num_heads"], model["attention_degree"] + 1)
+    leaf = jax.ShapeDtypeStruct(shape, jnp.float32)
+    query_key = oracle["parameterization"] == "free_per_example_query_key_coefficients"
+    template = [(leaf, leaf) if query_key else leaf for _ in range(int(oracle["sequence_count"]) // microbatch)]
+    item = {"best": template}
+    with ocp.PyTreeCheckpointer() as checkpointer:
+        best = checkpointer.restore(latest / "default", args=ocp.args.PyTreeRestore(
+            item=item, partial_restore=True,
+            restore_args=ocp.checkpoint_utils.construct_restore_args(item)))["best"]
+    if not all(bool(jnp.all(jnp.isfinite(value))) for value in jax.tree.leaves(best)):
+        raise FloatingPointError("Stopped fit's best tables are not finite")
+    step, best_step = int(controller["step"]), int(controller["best_step"])
+    metrics = run / "metrics.jsonl"
+    rows = [json.loads(line) for line in metrics.read_text().splitlines() if line.strip()]
+    rows = [row for row in rows if int(row["step"]) <= step]
+    metrics.write_text("".join(json.dumps(row, allow_nan=False) + "\n" for row in rows))
+    terminal = rows[-1]
+    checkpoint = root / str(best_step)
+    final_path = checkpoint / "best"
+    if final_path.exists():
+        shutil.rmtree(final_path)
+    with ocp.StandardCheckpointer() as checkpointer:
+        checkpointer.save(final_path, {"coefficients": best})
+    _write_json(checkpoint / "coefficient_identity.json", {"step": best_step,
+                "layout": ("microbatches of (c, g), each [example,layer,position,head,order]; pair coefficient "
+                           "c_r(t) g_r(i)" if query_key else "microbatches of [example,layer,query,head,order]"),
+                "coordinates": "effective_monomial_c and key factor g" if query_key else "effective_monomial_c",
+                "optimizer_coordinates": "factorial(order)*c", "parameterization": oracle["parameterization"],
+                "parent_run_id": oracle["parent_run_id"], "parent_checkpoint": oracle["parent_checkpoint"]})
+    outcome = {"status": "complete", "step": step, "best_step": best_step,
+               "initial_nll": controller["initial_loss"], "best_nll": controller["best_loss"],
+               "fit_nll": terminal["nll"], "fit_perplexity": math.exp(min(terminal["nll"], 80)),
+               "best_fit_nll": controller["best_loss"],
+               "nll_reduction": controller["initial_loss"] - controller["best_loss"],
+               "learning_rate_reduced_at": controller["reduced_at"], "finished_utc": _utc(),
+               "stopping": reason, "interpretation": "Fixed-input coefficient fitting, not held-out generalization.",
+               "parameterization": oracle["parameterization"], "frozen_parameter_scope": "all_pretrained_parameters"}
+    _write_json(run / "completion.json", outcome)
+    _write_json(run / "metadata.json", outcome)
+    checkpoint = _retain_completed_best(run, outcome)
+    update_record(run, {**capture_artifacts(run, checkpoint_directory=checkpoint), "status": "complete",
+                        "step": step, "oracle_outcome": outcome, "retained_best_checkpoint_step": best_step})
+    return outcome
+
+
 def qualify(run: Path, functions, params, tokens, table, optimizer, learning_rate,
             *, graph=None, external_nll_atol=1e-5, external_nll_rtol=1e-5, generator=False,
             shared=False, parent_nll=None, capture_logit_error=None, parent_preserving=False):
@@ -683,8 +749,13 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", type=Path, required=True)
     parser.add_argument("--qualify-only", action="store_true")
+    parser.add_argument("--finalize-stopped", metavar="REASON",
+                        help="seal a stopped free-table fit's best snapshot as its result")
     args = parser.parse_args(argv)
     run = args.run.resolve()
+    if args.finalize_stopped:
+        print(json.dumps(finalize_stopped(run, args.finalize_stopped)), flush=True)
+        return
     recipe = yaml.safe_load((run / "config.yaml").read_text())
     oracle = recipe["oracle"]
     parameterization = oracle.get("parameterization", "free_per_example_query_coefficients")

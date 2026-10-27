@@ -1,0 +1,17 @@
+{
+  "best_fit_nll": 0.0033740238286554813,
+  "best_nll": 0.0033740238286554813,
+  "best_step": 200,
+  "finished_utc": "2026-10-27T19:52:24.193536+00:00",
+  "fit_nll": 0.0033740238286554813,
+  "fit_perplexity": 1.0033797222541256,
+  "frozen_parameter_scope": "all_pretrained_parameters",
+  "initial_nll": 2.7472715377807617,
+  "interpretation": "Fixed-input coefficient fitting, not held-out generalization.",
+  "learning_rate_reduced_at": null,
+  "nll_reduction": 2.7438975139521062,
+  "parameterization": "free_per_example_query_key_coefficients",
+  "status": "complete",
+  "step": 200,
+  "stopping": "stopped at the user's request at update 200: fitting PPL 1.0034, from 15.600; no plateau confirmation"
+}

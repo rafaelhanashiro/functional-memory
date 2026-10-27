@@ -19,6 +19,7 @@ backbone frozen. They live in the
 | `r7505c6d49711` | Independent coefficients per sequence, layer, query, head, and order on 256 sequences | Query-only `r98d5895c02d0`, step 7,500 | Complete |
 | `rc95f2055e96d` | Original degree-four query generator on 256 sequences, with per-head QK scaling | Query-only `r2b22f2ff6461`, step 7,500 | Complete |
 | `rda6029c3286f` | Free degree-four coefficients per sequence and query on 256 sequences, with per-head QK scaling | Fixed Taylor `r816ab0fbe119`, step 7,500 | Complete |
+| `rc76733052ecb` | Free degree-four query coefficients times free key factors, c_r(t) g_r(i), per sequence on 256 sequences, with per-head QK scaling | Fixed Taylor `r816ab0fbe119`, step 7,500 | Complete |
 | `rceea84f19f6b` | Static degree-four coefficients on 256 sequences, with per-head QK scaling | Static `r4339a245820e`, step 7,500 | Complete |
 | `rec777591a61b` | Dense generator supervised by free coefficients on teacher activations | Taylor `r816ab0fbe119`, step 7,500; teacher `rda6029c3286f`, step 2,453 | Complete |
 
@@ -134,6 +135,24 @@ coefficient variation is predictable by a shared causal generator and which
 training objective can discover it. Exact measurements and per-layer/head errors
 are in the run's [completion](../../../runs/rec777591a61b/completion.json) and
 [learning curves](../../../runs/rec777591a61b/metrics.jsonl).
+
+## Free query-key coefficients
+
+Opened **2026-10-27**. Run `rc76733052ecb` is the free query-key analogue of
+`rda6029c3286f`: on the same frozen fixed-Taylor backbone (`r816ab0fbe119`, step
+7,500) and the same 256 fitting sequences, each sequence has free query coefficients
+`c [layer, query, head, order]` and free key factors `g [layer, key, head, order]`,
+and the weight of key i for query t uses the pair coefficient `c_r(t) g_r(i)`. They
+start at the parent's `1/r!` and one, run on the fused query-key kernel, and use the
+free fit's optimizer: Adam at LR 0.01 (c in factorial coordinates), each sequence's
+(c, g) clipped jointly at one. The converted model reproduced the parent on all 256
+sequences within 0.002 nats before training. The fit is the teacher for a query-key
+regression; it was stopped at update 200, at the user's request, before the plateau rule.
+
+| Fit | Initial PPL | Best PPL | Best update |
+| --- | ---: | ---: | ---: |
+| Free query coefficients (`rda6029c3286f`) | 15.600039 | 1.002979 | 2,453 |
+| Free query coefficients times key factors (`rc76733052ecb`) | 15.600010 | 1.003380 | 200 |
 
 ## Degree-four batch fits with per-head QK scaling
 
