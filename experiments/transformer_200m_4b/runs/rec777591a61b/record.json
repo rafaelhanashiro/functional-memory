@@ -1,0 +1,42 @@
+{
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/experiments/transformer_200m_4b/runs/rec777591a61b",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/rec777591a61b/config.yaml",
+    "sha256": "8c545715f7249de22ede4f09b8578042313f1fe96933c1216cdca32e30c00208"
+  },
+  "dataset_identity": {
+    "fit": {
+      "batch_sha256": "f2b3cfea843fb2ab2bd366e2590a6fea79ca08aee82339f37db484a4dbff170a",
+      "manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "role": "teacher fitting",
+      "sequence_count": 256,
+      "start_sequence": 0
+    },
+    "test": {
+      "batch_sha256": "8b406f57a7a0a9495dd813cbe53323664d846d3d3b17fe4cf19c65864192fb0d",
+      "manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+      "role": "held out; never optimizer inputs",
+      "sequence_count": 256,
+      "start_sequence": 5000256
+    },
+    "validation": {
+      "batch_sha256": "970d74b8b2d8c3a1eb815b4cb0dc6096533240db220218433879acaf7f4abead",
+      "manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+      "role": "held out; never optimizer inputs",
+      "sequence_count": 256,
+      "start_sequence": 5000000
+    }
+  },
+  "home_cluster": "kennel",
+  "label": "dense-teacher-distillation-m4-b256-head-scale",
+  "name": "dense-teacher-distillation-m4-b256-head-scale",
+  "parent_run_id": "r816ab0fbe119",
+  "record_schema_version": 1,
+  "run_id": "rec777591a61b",
+  "seed": 42,
+  "status": "planned",
+  "teacher_run_id": "rda6029c3286f"
+}

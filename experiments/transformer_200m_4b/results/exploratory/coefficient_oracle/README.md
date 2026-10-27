@@ -20,10 +20,67 @@ backbone frozen. They live in the
 | `rc95f2055e96d` | Original degree-four query generator on 256 sequences, with per-head QK scaling | Query-only `r2b22f2ff6461`, step 7,500 | Complete |
 | `rda6029c3286f` | Free degree-four coefficients per sequence and query on 256 sequences, with per-head QK scaling | Fixed Taylor `r816ab0fbe119`, step 7,500 | Complete |
 | `rceea84f19f6b` | Static degree-four coefficients on 256 sequences, with per-head QK scaling | Static `r4339a245820e`, step 7,500 | Complete |
+| `rec777591a61b` | Dense generator supervised by free coefficients on teacher activations | Taylor `r816ab0fbe119`, step 7,500; teacher `rda6029c3286f`, step 2,453 | Prepared |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
-matched-backbone comparison of coefficient parameterizations. All reported
-perplexities measure the fitting inputs, not held-out generalization.
+matched-backbone comparison of coefficient parameterizations. The original
+coefficient fits report fitting perplexity. The teacher-distillation experiment
+below separately evaluates fresh validation and test sequences.
+
+## Dense distillation from the free teacher
+
+Opened **2026-10-26**. Run `rec777591a61b` tests whether the existing dense
+generator can represent useful free-coefficient choices and transfer them to
+new sequences. The teacher is the retained degree-four B256 free fit
+`rda6029c3286f` at update 2,453. Its Taylor backbone `r816ab0fbe119` at update
+7,500 remains bitwise frozen. Recorded inputs are the actual teacher attention
+inputs after each block's attention RMSNorm, with all earlier layers using their
+free coefficients; they are not activations from an unchanged Taylor forward.
+
+The student uses nine tanh features per head, no inner tanh bias, a dense mixing
+matrix, and the existing 1/3 readout scale. Both bias and mixing use factorial
+coordinates. The stored bias begins at one, mixing at zero, and projections have
+standard deviation `1/sqrt(896)`, reproducing Taylor at initialization. This is
+the dense family used by `r04a5b2a3e8dd`, with no change to QK normalization or the
+output RMSNorm. Only the generator's projections, biases, and mixing matrices train.
+
+All 256 teacher sequences and all 2,048 query positions form the regression
+dataset. The objective is raw factorial-coordinate MSE, `u_r = r! c_r`, averaged
+over examples and orders independently for each layer/head. Each update samples
+4,096 query tokens with replacement. Adam uses betas 0.9/0.95, epsilon 1e-8,
+no decay, and independent per-layer/head clipping at one. A fixed 20,000-update
+budget uses cosine LR 0.001 to 0.0001. Full reconstruction errors, per-layer/head
+errors, and ordinary deployed fitting and validation PPL are measured every 1,000
+updates. No teacher activations or coefficients enter a deployed forward.
+
+The original evaluation manifest was almost entirely used for selecting the
+pretrained checkpoint, so fresh data come from unused portions of the packed
+training manifest. Validation uses sequence indices `[5000000, 5000256)` and
+final testing `[5000256, 5000512)`, beyond this backbone's training prefix. Neither
+set enters a coefficient fit or gradient update; recipes pin their manifest and
+token checksums. Validation selects the lowest deployed NLL, including the
+initial Taylor-equivalent student. Final testing evaluates that selected generator
+and the unchanged Taylor baseline only after selection.
+
+The capacity result is separate: the snapshot with the lowest full coefficient
+MSE is evaluated on the fitting batch at completion. Its measurements are retained
+even if fresh validation chooses an earlier snapshot or the Taylor initialization.
+Only the validation-best generator checkpoint remains after completion. A strong
+fit plus improved test PPL would support a transferable coefficient rule; comparing
+optimization routes additionally requires a matched direct-loss dense control.
+First-layer repeated tokens have identical inputs but can have different free
+targets, so exact raw regression may be impossible there; regression error alone
+does not establish a functional limitation.
+
+Startup qualification checks teacher replay and capture parity, exact backbone
+preservation, Taylor initialization, native coefficient-projection parity, finite
+feature updates after zero mixing moves, and exact optimizer resume. Numerical
+discrepancies retain the established bounds and abort qualification. The run's
+`distillation_acceptance.json`, `metrics.jsonl`, and final `completion.json` are
+the compact evidence. Teacher activation caches are temporary and regenerated
+from the pinned source checkpoint.
+
+Run preparation and launch commands are in the [study README](../../../README.md).
 
 ## Degree-four batch fits with per-head QK scaling
 

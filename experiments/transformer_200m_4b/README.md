@@ -179,6 +179,32 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch
   r6186c797b4db --conditioning query --partition standard --time-limit 06:00:00
 ```
 
+## Teacher-activation coefficient distillation
+
+The open [coefficient-oracle topic](results/exploratory/coefficient_oracle/README.md#dense-distillation-from-the-free-teacher)
+documents the scientific protocol, fitting metrics, and independent validation/test
+selection. `rec777591a61b` distills the degree-four B256 free teacher into the
+existing dense generator with a frozen Taylor backbone. Home cluster: **Kennel**.
+Its source checkpoints remain in the primary checkout; all new outputs belong
+to the run in its isolated worktree until completion.
+
+From the experiment worktree, after syncing both locked CUDA environments:
+
+```bash
+# Already allocated as rec777591a61b; prepare is only for a fresh execution.
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_distillation prepare \
+  --teacher /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/rda6029c3286f
+# Commit the frozen execution set before submission.
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_coefficient_distillation submit rec777591a61b
+```
+
+The launcher uses one available H100 or B300 on `standard`, with no scheduling
+dependency, and runs full-size qualification before fitting. `--gpu-type h100`
+or `--gpu-type b300` pins a GPU type if required. Requeues restore the latest
+generator, Adam state, fixed data identities, and validation/capacity candidates.
+Completed runs retain the validation-best generator and refer to the unchanged
+parent checkpoint for their frozen backbone.
+
 ## Execution and records
 
 Home cluster: **Kennel**. Data manifests live under

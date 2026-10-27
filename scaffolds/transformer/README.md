@@ -321,6 +321,16 @@ For example, `1/3` reduces the effective mixing contribution while leaving the
 Taylor bias unchanged. It must be positive and finite; values other than one
 require dense readout. Diagnostics record the stored and effective mixing.
 
+`training.coefficient_distillation_model` provides native teacher-input capture,
+free-table checkpoint streaming, Taylor-preserving dense student construction,
+packed generator parameters, and ordinary student evaluation. Teacher capture
+observes the attention module's actual normalized input and exposes both joint
+and independently compiled forward checks. `training.coefficient_distillation_regression`
+fits packed generators against factorial-coordinate targets. Each layer/head has
+its own mean loss and gradient clipping before Adam; deployment uses the same
+production coefficient projection. Dataset selection, fitting budgets, and result
+interpretation belong to the calling study.
+
 `attention_coefficient_conditioning: query_key` (tanh only) multiplies each key's
 degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i` with
 `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` from the key token's activation

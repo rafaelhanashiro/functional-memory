@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-26",
+  "platform": "CPU",
+  "passed": 22,
+  "source_files_sha256": {
+    "scaffolds/transformer/training/coefficient_distillation_model.py": "2c9700dbefb1fa19b10a55ca43bf4eed15ab6c343424b42fd8fb0fa07ea220c6",
+    "scaffolds/transformer/training/coefficient_distillation_regression.py": "9e6a4f40c7e078d73ac834488ca1b364398d3c238a715e00c96d5589810c0b76",
+    "scaffolds/transformer/tests/test_coefficient_distillation_model.py": "c40ac36eb19df3a45e017c5a7c64e25dd51343b84285375c7de9c5e7cb342503",
+    "scaffolds/transformer/tests/test_coefficient_distillation_regression.py": "5b1d1ca69ea619e6036288ecd1690ee76e75bc34ef254905113669ed2b22ef85",
+    "experiments/transformer_200m_4b/tests/test_coefficient_distillation.py": "f1dd03f538ecb53961c817ccec2693a28a747ef946c77f920aa1676ed6c70071"
+  },
+  "commands": [
+    "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_coefficient_distillation_model.py",
+    "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_coefficient_distillation_regression.py",
+    "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q experiments/transformer_200m_4b/tests/test_coefficient_distillation.py"
+  ],
+  "gpu_qualification": "required at run startup; not established by this CPU record"
+}
