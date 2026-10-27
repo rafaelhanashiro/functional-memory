@@ -1,0 +1,5 @@
+{
+  "retained": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-key-distillation-4b/experiments/transformer_200m_4b/runs/r594b3706ecd7/checkpoints/20000",
+  "selection": "lowest pair-regression error on the fitting batch's fixed evaluation pairs",
+  "teacher_cache_retained": false
+}

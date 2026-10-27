@@ -20,6 +20,7 @@ backbone frozen. They live in the
 | `rc95f2055e96d` | Original degree-four query generator on 256 sequences, with per-head QK scaling | Query-only `r2b22f2ff6461`, step 7,500 | Complete |
 | `rda6029c3286f` | Free degree-four coefficients per sequence and query on 256 sequences, with per-head QK scaling | Fixed Taylor `r816ab0fbe119`, step 7,500 | Complete |
 | `rc76733052ecb` | Free degree-four query coefficients times free key factors, c_r(t) g_r(i), per sequence on 256 sequences, with per-head QK scaling | Fixed Taylor `r816ab0fbe119`, step 7,500 | Complete |
+| `r594b3706ecd7` | Query-key generator regressed onto the free query-key pair coefficients on teacher activations | Taylor `r816ab0fbe119`, step 7,500; teacher `rc76733052ecb`, step 200 | Complete |
 | `rceea84f19f6b` | Static degree-four coefficients on 256 sequences, with per-head QK scaling | Static `r4339a245820e`, step 7,500 | Complete |
 | `rec777591a61b` | Dense generator supervised by free coefficients on teacher activations | Taylor `r816ab0fbe119`, step 7,500; teacher `rda6029c3286f`, step 2,453 | Complete |
 
@@ -153,6 +154,36 @@ regression; it was stopped at update 200, at the user's request, before the plat
 | --- | ---: | ---: | ---: |
 | Free query coefficients (`rda6029c3286f`) | 15.600039 | 1.002979 | 2,453 |
 | Free query coefficients times key factors (`rc76733052ecb`) | 15.600010 | 1.003380 | 200 |
+
+### Query-key regression onto the free teacher
+
+Run `r594b3706ecd7` regresses the native query-key generator,
+`c_r(x_t) f_r(x_i)` with `c_r(x) = [b~_r + a_r tanh(w_r x)] / r!` and
+`f_r(x) = 1 + a^k_r tanh(w^k_r x)`, onto the teacher's `r! c_r(t) g_r(i)`. Inputs are
+the teacher's own attention inputs at the query and key tokens; each update samples
+4,096 uniform causal pairs of the fitting batch, the same pairs for all 210
+layer/head regressions. The generator starts at Taylor (stored bias one, both
+amplitudes zero, projections N(0, 1/896)) and trains for 20,000 updates with Adam,
+cosine LR 0.001 to 0.0001, and per-network clipping at one. Following the two-batch
+protocol, the result is the snapshot with the lowest error on 262,144 fixed pairs of
+the fitting batch, scored once on the fresh batch (training-manifest sequences
+`[5000000, 5000256)`).
+
+| Model | Fitting batch PPL | Fresh batch PPL |
+| --- | ---: | ---: |
+| Frozen Taylor | 15.599915 | 15.071810 |
+| Free query-key teacher | 1.003380 | Not applicable |
+| Query-key, regressed onto the teacher (update 20,000) | 17.464797 | 16.976661 |
+| Dense, regressed onto the free query teacher (update 20,000) | 15.624968 | 15.220033 |
+
+Pair MSE in factorial coordinates fell from **0.4148 to 0.3564** (14.1%), almost all
+of it in the first 1,000 updates (0.3584), and mean angular error from 26.1 to 24.3
+degrees. Lower pair error did not mean a better model: fitting-batch PPL rose from
+17.00 at update 1,000 to 17.46 at update 20,000, and the regressed generator is about
+12% worse than frozen Taylor on both batches, worse than the dense regression. Uniform
+pair sampling weights the many low-weight distant pairs equally with the few that
+dominate each attention output, and the teacher's coefficients carry next-token
+information that causal inputs cannot predict; this run does not separate those causes.
 
 ## Degree-four batch fits with per-head QK scaling
 
