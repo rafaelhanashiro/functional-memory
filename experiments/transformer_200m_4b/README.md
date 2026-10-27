@@ -61,6 +61,30 @@ runs at the same budget, or the same variant across budgets.
 | 1× Chinchilla (reference) | 7,570 | 3,968,860,160 |
 | 2.5× Chinchilla | 18,925 | 9,922,150,400 |
 
+The first 2.5× runs repeat five 1× runs that use the canonical QK setup, changing
+only the budget. They execute from `worktrees/200m-chinchilla-2p5x` (branch
+`claude/200m-chinchilla-2p5x`), each on one GPU:
+
+| 2.5× run | Label | 1× partner |
+| --- | --- | --- |
+| `rbbb05a6db785` | `softmax-2.5x` | none with the canonical QK setup |
+| `re76c45df98cb` | `exp-2.5x` | `r6a76e7fbde45` (`exp-head-scale`) |
+| `r14bea34648b3` | `fixed-m4-2.5x` | `r816ab0fbe119` (`fixed-m4-head-scale`) |
+| `r96a6b6b572bf` | `static-m4-2.5x` | `r4339a245820e` (`static-m4-head-scale`) |
+| `r8c36a0ce6b13` | `query-m4-2.5x` | `r2b22f2ff6461` (`query-m4-head-scale`) |
+
+They request 24 hours on `standard,long` and exclude the H100 PCIe node, whose
+throughput would project past that limit:
+
+```bash
+sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier --job-name=<run_id> \
+  --output=experiments/transformer_200m_4b/runs/<run_id>/training.log \
+  --error=experiments/transformer_200m_4b/runs/<run_id>/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+  experiments/transformer_200m_4b/runs/<run_id>/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
+```
+
 Regenerate the reference image from the current recipe with:
 
 ```bash

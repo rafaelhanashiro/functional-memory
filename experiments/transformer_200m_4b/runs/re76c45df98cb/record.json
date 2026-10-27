@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/re76c45df98cb/config.yaml",
+    "sha256": "8a644e8245a03275c43ebff0466ddf89e007695adb04b62263fb5bf561392dbc"
+  },
+  "home_cluster": "kennel",
+  "label": "exp-2.5x",
+  "name": "exp-2.5x",
+  "record_schema_version": 1,
+  "run_id": "re76c45df98cb",
+  "status": "planned"
+}
