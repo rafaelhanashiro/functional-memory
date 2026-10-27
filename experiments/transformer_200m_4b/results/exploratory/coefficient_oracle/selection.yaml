@@ -315,3 +315,37 @@ runs:
     metadata.json:
       path: experiments/transformer_200m_4b/runs/r594b3706ecd7/metadata.json
       sha256: 8e4982f23ce2477dec33bc9f4ceff80d0794b0d09774aef0e10a3f3134e79729
+- study: transformer_200m_4b
+  run_id: r84e37a39e2a0
+  role: query_generator_1024_sequences_m4_head_scale
+  parent_run_id: r2b22f2ff6461
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r84e37a39e2a0/config.yaml
+      sha256: 27562567c5879fecb3b47947503da4299ffa086d8c7489bcad92b749ae21ca06
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r84e37a39e2a0/metrics.jsonl
+      sha256: 5dccc2da4454595b839d4ceac5724419176b591639fb41c3ceb3ef334547c8a3
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r84e37a39e2a0/completion.json
+      sha256: 525c56788ab4d3b4b40d510288a162e434d3b175130f0976e1e0ffe40884430b
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r84e37a39e2a0/metadata.json
+      sha256: 2ea90c6b56b860874ed79657e80601ae7f8b5ee91ef389828d6c392a32e4c536
+- study: transformer_200m_4b
+  run_id: rf033859dd68e
+  role: query_generator_1024_sequences_m4_head_scale_transfer
+  parent_run_id: r2b22f2ff6461
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rf033859dd68e/config.yaml
+      sha256: 5b0bc6c46ead7557f933f626ca1c5807b14fc853e69d895b615120bbcfb31a7a
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/rf033859dd68e/metrics.jsonl
+      sha256: 65ec8f296f80ae5377581a7a8ee90da7ddb50faff3aeb7cfd0ad451b8d1d32af
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/rf033859dd68e/completion.json
+      sha256: 3b75081b9f8f75b271e371f54b36d8b5f74f427e082372af42a776102c758e67
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/rf033859dd68e/metadata.json
+      sha256: 1a92c09e3507f83f3dc56fe9d083a2a8a567c6d22a56244cf3f8c040ae7ced91

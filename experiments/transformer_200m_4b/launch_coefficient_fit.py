@@ -338,7 +338,8 @@ def main():
     prep = sub.add_parser("prepare")
     prep.add_argument("--parent", type=Path, required=True)
     prep.add_argument("--parameterization", choices=PARAMETERIZATIONS, default=PARAMETERIZATIONS[0])
-    prep.add_argument("--sequence-count", type=int, choices=(1, 256))
+    # fitting_scope admits 1, the parent's batch, or a larger generator batch (a multiple of 8).
+    prep.add_argument("--sequence-count", type=int)
     prep.add_argument("--generator-readout", choices=("diagonal", "dense"), default="diagonal")
     launch = sub.add_parser("submit")
     launch.add_argument("run_id")

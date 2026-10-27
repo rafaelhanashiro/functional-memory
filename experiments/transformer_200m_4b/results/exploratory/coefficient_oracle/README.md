@@ -23,6 +23,8 @@ backbone frozen. They live in the
 | `r594b3706ecd7` | Query-key generator regressed onto the free query-key pair coefficients on teacher activations | Taylor `r816ab0fbe119`, step 7,500; teacher `rc76733052ecb`, step 200 | Complete |
 | `rceea84f19f6b` | Static degree-four coefficients on 256 sequences, with per-head QK scaling | Static `r4339a245820e`, step 7,500 | Complete |
 | `rec777591a61b` | Dense generator supervised by free coefficients on teacher activations | Taylor `r816ab0fbe119`, step 7,500; teacher `rda6029c3286f`, step 2,453 | Complete |
+| `r84e37a39e2a0` | Original degree-four query generator on 1,024 sequences, with per-head QK scaling | Query-only `r2b22f2ff6461`, step 7,500 | Complete |
+| `rf033859dd68e` | None: frozen evaluation of `r84e37a39e2a0` and its parent on the next 256 sequences | Query-only `r2b22f2ff6461`, step 7,500; fit `r84e37a39e2a0`, update 4,452 | Complete |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. The original
@@ -495,6 +497,33 @@ checkpoint are checked before evaluation. The bounded gradient/FP32 control uses
 instrumentation bound explicitly, and native checkpoint replay remains required.
 Raw regeneration requires retained home-cluster checkpoints and data, while
 figures and summaries require only committed compact measurements.
+
+## Degree-four query generator on 1,024 sequences
+
+Opened **2026-10-27**. `r84e37a39e2a0` repeats the `rc95f2055e96d` query fit on the
+first **1,024** packed evaluation sequences, from the same per-head QK-scale query
+checkpoint `r2b22f2ff6461` (step 7,500), with the same optimizer and stopping rule.
+LR dropped at update **3,977**; fitting stopped at **4,477** after the plateau
+confirmation, retaining update **4,452**. `rf033859dd68e` then freezes the retained
+generator and scores it and its parent, with no updates, on the fitting batch and on
+the next **256** sequences (1,024–1,279).
+
+| Model | Fitting batch (1,024) | First 256 of the fitting batch | Next 256 |
+| --- | ---: | ---: | ---: |
+| Parent query `r2b22f2ff6461` | 14.737 | 15.663 | 15.001 |
+| 1,024-sequence fit, update 4,452 | 11.256 | 11.939 | 17.167 |
+| 256-sequence fit `rc95f2055e96d`, update 5,273 | — | 8.016 | — |
+
+### Findings
+
+- Fitting 4× more sequences keeps much less of the gain: on the shared first 256
+  sequences, PPL is **11.94** against **8.02** for the 256-sequence fit.
+- The fit does not transfer. Next-batch PPL rises **14.4%**, from 15.001 to 17.167
+  (+0.135 nats per token); **255 of 256** unseen sequences get worse, while all 1,024
+  fitting sequences improve (median −0.260 nats).
+- The fitted generator therefore memorizes the batch through its 942,900 parameters
+  rather than learning a better coefficient rule. The fitting gains are capacity, not
+  evidence that the pretrained generator is undertrained.
 
 ## Free coefficients from the static checkpoint
 
