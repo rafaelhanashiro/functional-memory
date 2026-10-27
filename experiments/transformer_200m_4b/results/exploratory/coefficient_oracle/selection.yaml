@@ -280,3 +280,11 @@ runs:
     best_validation.json:
       path: experiments/transformer_200m_4b/runs/rec777591a61b/best_validation.json
       sha256: 583410a5d48811ae4a5454f041f4f3113f541fc8be7b91d3689f19cfc72c94f3
+- study: transformer_200m_4b
+  run_id: r84e37a39e2a0
+  role: query_generator_1024_sequences_m4_head_scale
+  parent_run_id: r2b22f2ff6461
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r84e37a39e2a0/config.yaml
+      sha256: 27562567c5879fecb3b47947503da4299ffa086d8c7489bcad92b749ae21ca06
