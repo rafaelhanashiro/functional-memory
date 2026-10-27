@@ -9,5 +9,29 @@
   "name": "query-m4-forget-gate",
   "record_schema_version": 1,
   "run_id": "r111843b4c7cc",
-  "status": "planned"
+  "status": "pending",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=mastiff,collie,samoyed,doodle,terrier,shiba",
+      "--job-name=r111843b4c7cc",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-forms-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-forms-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/r111843b4c7cc/config.yaml",
+      "edc2dd546f86b40ea1db81ab151e983290fac996",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "standard",
+    "slurm_job_id": "227518",
+    "submitted_utc": "2026-10-27T05:23:21.349147+00:00"
+  }
 }
