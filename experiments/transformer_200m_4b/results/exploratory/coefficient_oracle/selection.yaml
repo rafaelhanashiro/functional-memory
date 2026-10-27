@@ -288,3 +288,20 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r84e37a39e2a0/config.yaml
       sha256: 27562567c5879fecb3b47947503da4299ffa086d8c7489bcad92b749ae21ca06
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r84e37a39e2a0/metrics.jsonl
+      sha256: 5dccc2da4454595b839d4ceac5724419176b591639fb41c3ceb3ef334547c8a3
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r84e37a39e2a0/completion.json
+      sha256: 525c56788ab4d3b4b40d510288a162e434d3b175130f0976e1e0ffe40884430b
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r84e37a39e2a0/metadata.json
+      sha256: 2ea90c6b56b860874ed79657e80601ae7f8b5ee91ef389828d6c392a32e4c536
+- study: transformer_200m_4b
+  run_id: r6d2789b7b105
+  role: query_generator_1024_sequences_m4_head_scale_transfer
+  parent_run_id: r2b22f2ff6461
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r6d2789b7b105/config.yaml
+      sha256: 9d3ab86f1aab367343373177dd539082f6c3ac67255bfefe8129553d12359d2a

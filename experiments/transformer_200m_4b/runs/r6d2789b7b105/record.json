@@ -1,0 +1,19 @@
+{
+  "checkpoint_retention": "none; evaluates referenced checkpoints without optimizer updates",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r6d2789b7b105/config.yaml",
+    "sha256": "9d3ab86f1aab367343373177dd539082f6c3ac67255bfefe8129553d12359d2a"
+  },
+  "generator_run_ids": [
+    "r84e37a39e2a0"
+  ],
+  "home_cluster": "kennel",
+  "label": "query-generator-m4-1024-head-scale-transfer",
+  "name": "query-generator-m4-1024-head-scale-transfer",
+  "parent_run_id": "r2b22f2ff6461",
+  "parent_study": "transformer_200m_4b",
+  "record_schema_version": 1,
+  "run_id": "r6d2789b7b105",
+  "seed": 42,
+  "status": "planned"
+}
